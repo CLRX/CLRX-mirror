@@ -1545,6 +1545,8 @@ try
                 asmFlags &= ~ASM_WARNINGS;
             else if (word == "-forceAddSymbols")
                 asmFlags |= ASM_FORCE_ADD_SYMBOLS;
+            else if (word == "-buggy-fplit")
+                asmFlags |= ASM_BUGGYFPLIT;
             else if (word == "-I" || word == "-includePath")
                 nextIsIncludePath = true;
             else if (word.compare(0, 2, "-I")==0)
