@@ -939,6 +939,12 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         updateRegFlags(gcnRegs.regFlags, soffsetReg.start, arch);
 }
 
+static Flags correctOpType(uint32_t regsNum, Flags typeMask)
+{
+    return (regsNum==2 && (typeMask==INSTROP_FLOAT || typeMask==INSTROP_INT)) ?
+        INSTROP_V64BIT : typeMask;
+}
+
 void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
@@ -979,8 +985,9 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                     INSTROP_VOP3NEG : INSTROP_VOP3MODS);
     if (!skipRequiredComma(asmr, linePtr))
         return;
-    good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch,
-            (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags | vopOpModFlags |
+    cxuint regsNum = (gcnInsn.mode&GCN_REG_SRC0_64)?2:1;
+    good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch, regsNum,
+            correctOpType(regsNum, literalConstsFlags) | vopOpModFlags |
             INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS);
     
     uint32_t immValue = 0;
@@ -997,8 +1004,9 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     bool sgprRegInSrc1 = mode1 == GCN_DS1_SGPR || mode1 == GCN_SRC1_SGPR;
     skipSpacesToEnd(linePtr, end);
-    good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch,
-            (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags | vopOpModFlags |
+    regsNum = (gcnInsn.mode&GCN_REG_SRC1_64)?2:1;
+    good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch, regsNum,
+            correctOpType(regsNum, literalConstsFlags) | vopOpModFlags |
             (!sgprRegInSrc1 ? INSTROP_VREGS : 0)|INSTROP_SSOURCE|INSTROP_SREGS|
             INSTROP_UNALIGNED | (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
@@ -1210,8 +1218,9 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         
         if (!skipRequiredComma(asmr, linePtr))
             return;
-        good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch,
-                    (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
+        cxuint regsNum = (gcnInsn.mode&GCN_REG_SRC0_64)?2:1;
+        good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch, regsNum,
+                    correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
                     INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
                     INSTROP_VOP3MODS);
     }
@@ -1339,16 +1348,17 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
                 (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
-    
-    good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch,
-                    (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
+    cxuint regsNum = (gcnInsn.mode&GCN_REG_SRC0_64)?2:1;
+    good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch, regsNum,
+                    correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
                     INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
                     INSTROP_VOP3MODS);
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
-    good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch,
-                (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags | INSTROP_VOP3MODS|
+    regsNum = (gcnInsn.mode&GCN_REG_SRC1_64)?2:1;
+    good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch, regsNum,
+                correctOpType(regsNum, literalConstsFlags) | INSTROP_VOP3MODS|
                 INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
                 (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
     // modifiers
@@ -1521,11 +1531,15 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
                 (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
         
+        cxuint regsNum;
         if (mode2 != GCN_VOP3_VINTRP)
-            good &= parseOperand(asmr, linePtr, src0Op, nullptr, arch,
-                    (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
+        {
+            regsNum = (gcnInsn.mode&GCN_REG_SRC0_64)?2:1;
+            good &= parseOperand(asmr, linePtr, src0Op, nullptr, arch, regsNum,
+                    correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
                     INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|vop3Mods|
                     INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
+        }
         
         if (mode2 == GCN_VOP3_VINTRP)
         {
@@ -1581,8 +1595,9 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             if (!skipRequiredComma(asmr, linePtr))
                 return;
-            good &= parseOperand(asmr, linePtr, src1Op, nullptr, arch,
-                    (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags|INSTROP_VREGS|
+            regsNum = (gcnInsn.mode&GCN_REG_SRC1_64)?2:1;
+            good &= parseOperand(asmr, linePtr, src1Op, nullptr, arch, regsNum,
+                    correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
                     INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
                     INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
          
@@ -1590,10 +1605,11 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             {
                 if (!skipRequiredComma(asmr, linePtr))
                     return;
+                regsNum = (gcnInsn.mode&GCN_REG_SRC2_64)?2:1;
                 good &= parseOperand(asmr, linePtr, src2Op, nullptr, arch,
-                        is128Ops ? 4 : ((gcnInsn.mode&GCN_REG_SRC2_64)?2:1),
-                        literalConstsFlags|INSTROP_UNALIGNED|INSTROP_VREGS|
-                        INSTROP_SSOURCE|INSTROP_SREGS|
+                        is128Ops ? 4 : regsNum,
+                        correctOpType(regsNum, literalConstsFlags)|INSTROP_UNALIGNED|
+                        INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
                         vop3Mods|INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
             }
         }
