@@ -90,7 +90,7 @@ static const char* pseudoOpNamesTbl[] =
 {
     "32bit", "64bit", "abort", "align", "altmacro",
     "amd", "amdcl2", "arch", "ascii", "asciz",
-    "balign", "balignl", "balignw", "byte",
+    "balign", "balignl", "balignw", "buggyfplit", "byte",
     "data", "double", "else",
     "elseif", "elseif32", "elseif64",
     "elseifarch", "elseifb", "elseifc", "elseifdef",
@@ -111,7 +111,8 @@ static const char* pseudoOpNamesTbl[] =
     "ifne", "ifnes", "ifnfmt", "ifngpu", "ifnotdef", "incbin",
     "include", "int", "irp", "irpc", "kernel", "lflags",
     "line", "ln", "local", "long",
-    "macro", "main", "noaltmacro", "octa", "offset", "org",
+    "macro", "main", "noaltmacro",
+    "nobuggyfplit", "octa", "offset", "org",
     "p2align", "print", "purgem", "quad",
     "rawcode", "rept", "rodata",
     "sbttl", "section", "set",
@@ -125,7 +126,7 @@ enum
 {
     ASMOP_32BIT = 0, ASMOP_64BIT, ASMOP_ABORT, ASMOP_ALIGN, ASMOP_ALTMACRO,
     ASMOP_AMD, ASMOP_AMDCL2, ASMOP_ARCH, ASMOP_ASCII, ASMOP_ASCIZ,
-    ASMOP_BALIGN, ASMOP_BALIGNL, ASMOP_BALIGNW, ASMOP_BYTE,
+    ASMOP_BALIGN, ASMOP_BALIGNL, ASMOP_BALIGNW, ASMOP_BUGGYFPLIT, ASMOP_BYTE,
     ASMOP_DATA, ASMOP_DOUBLE, ASMOP_ELSE,
     ASMOP_ELSEIF, ASMOP_ELSEIF32, ASMOP_ELSEIF64,
     ASMOP_ELSEIFARCH, ASMOP_ELSEIFB, ASMOP_ELSEIFC, ASMOP_ELSEIFDEF,
@@ -146,7 +147,8 @@ enum
     ASMOP_IFNE, ASMOP_IFNES, ASMOP_IFNFMT, ASMOP_IFNGPU, ASMOP_IFNOTDEF, ASMOP_INCBIN,
     ASMOP_INCLUDE, ASMOP_INT, ASMOP_IRP, ASMOP_IRPC, ASMOP_KERNEL, ASMOP_LFLAGS,
     ASMOP_LINE, ASMOP_LN, ASMOP_LOCAL, ASMOP_LONG,
-    ASMOP_MACRO, ASMOP_MAIN, ASMOP_NOALTMACRO, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
+    ASMOP_MACRO, ASMOP_MAIN, ASMOP_NOALTMACRO,
+    ASMOP_NOBUGGYFPLIT, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
     ASMOP_RAWCODE, ASMOP_REPT, ASMOP_RODATA,
     ASMOP_SBTTL, ASMOP_SECTION, ASMOP_SET,
@@ -2034,6 +2036,10 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_BALIGNW:
             AsmPseudoOps::doAlignWord<uint16_t>(*this, stmtPlace, linePtr);
             break;
+        case ASMOP_BUGGYFPLIT:
+            if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+                buggyFPLit = true;
+            break;
         case ASMOP_BYTE:
             AsmPseudoOps::putIntegers<cxbyte>(*this, stmtPlace, linePtr);
             break;
@@ -2319,6 +2325,10 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_NOALTMACRO:
             if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
                 alternateMacro = false;
+            break;
+        case ASMOP_NOBUGGYFPLIT:
+            if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+                buggyFPLit = false;
             break;
         case ASMOP_OCTA:
             AsmPseudoOps::putUInt128s(*this, stmtPlace, linePtr);

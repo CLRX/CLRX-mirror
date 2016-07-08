@@ -428,6 +428,7 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
 {
     filenameIndex = 0;
     alternateMacro = (flags & ASM_ALTMACRO)!=0;
+    buggyFPLit = (flags & ASM_BUGGYFPLIT)!=0;
     localCount = macroCount = inclusionLevel = 0;
     macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;
@@ -462,6 +463,7 @@ Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
     filenameIndex = 0;
     filenames = _filenames;
     alternateMacro = (flags & ASM_ALTMACRO)!=0;
+    buggyFPLit = (flags & ASM_BUGGYFPLIT)!=0;
     localCount = macroCount = inclusionLevel = 0;
     macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;

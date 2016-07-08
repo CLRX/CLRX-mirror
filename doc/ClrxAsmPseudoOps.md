@@ -123,6 +123,10 @@ Syntax: .balignl ALIGNMENT[, [VALUE] [, LIMIT]]
 Refer to `.align`. `.balignw` treats fill value as 2-byte word. `.balignl` treats
 fill value as 4-byte word.
 
+### .buggyfplit
+
+Enable old and buggy behavior for floating point literals and constants.
+
 ### .byte
 
 Syntax: .byte ABS-EXPR,....
@@ -601,6 +605,10 @@ Go to main binary over binary of the kernel.
 ### .noaltmacro
 
 Disables alternate macro syntax.
+
+### .nobuggyfplit
+
+Disable old and buggy behavior for floating point literals and constants.
 
 ### .octa
 

@@ -48,8 +48,9 @@ enum: Flags
     ASM_WARNINGS = 1,   ///< enable all warnings for assembler
     ASM_FORCE_ADD_SYMBOLS = 2,
     ASM_ALTMACRO = 4,
+    ASM_BUGGYFPLIT = 8, // buggy handling of fpliterals (including fp constants)
     ASM_TESTRUN = (1U<<31), ///< only for running tests
-    ASM_ALL = FLAGS_ALL&~ASM_TESTRUN  ///< all flags
+    ASM_ALL = FLAGS_ALL&~(ASM_TESTRUN|ASM_BUGGYFPLIT)  ///< all flags
 };
 
 enum: cxbyte {
@@ -604,6 +605,7 @@ private:
     uint64_t macroCount;
     uint64_t localCount; // macro's local count
     bool alternateMacro;
+    bool buggyFPLit;
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;

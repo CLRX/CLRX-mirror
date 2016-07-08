@@ -779,6 +779,10 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     if (outTargetExpr!=nullptr)
         outTargetExpr->reset();
     
+    if (asmr.buggyFPLit && (instrOpMask&INSTROP_TYPE_MASK)==INSTROP_V64BIT)
+        // buggy fplit does not accept 64-bit values (high 32-bits)
+        instrOpMask = (instrOpMask&~INSTROP_TYPE_MASK) | INSTROP_INT;
+    
     const cxuint alignFlags = (instrOpMask&INSTROP_UNALIGNED);
     if ((instrOpMask&~INSTROP_UNALIGNED) == INSTROP_SREGS)
         return parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, true,
@@ -1018,42 +1022,50 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                         linePtr++;
                     
                     if (!encodeAsLiteral)
-                        switch (value)
-                        {
-                            case 0x0:
-                                operand.range = { 128, 0 };
-                                return true;
-                            case 0x3800: // 0.5
-                                operand.range = { 240, 0 };
-                                return true;
-                            case 0xb800: // -0.5
-                                operand.range = { 241, 0 };
-                                return true;
-                            case 0x3c00: // 1.0
-                                operand.range = { 242, 0 };
-                                return true;
-                            case 0xbc00: // -1.0
-                                operand.range = { 243, 0 };
-                                return true;
-                            case 0x4000: // 2.0
-                                operand.range = { 244, 0 };
-                                return true;
-                            case 0xc000: // -2.0
-                                operand.range = { 245, 0 };
-                                return true;
-                            case 0x4400: // 4.0
-                                operand.range = { 246, 0 };
-                                return true;
-                            case 0xc400: // -4.0
-                                operand.range = { 247, 0 };
-                                return true;
-                            case 0x3118: // 1/(2*PI)
-                                if (arch&ARCH_RX3X0)
-                                {
-                                    operand.range = { 248, 0 };
+                    {
+                        if (!asmr.buggyFPLit)
+                            switch (value)
+                            {
+                                case 0x0:
+                                    operand.range = { 128, 0 };
                                     return true;
-                                }
+                                case 0x3800: // 0.5
+                                    operand.range = { 240, 0 };
+                                    return true;
+                                case 0xb800: // -0.5
+                                    operand.range = { 241, 0 };
+                                    return true;
+                                case 0x3c00: // 1.0
+                                    operand.range = { 242, 0 };
+                                    return true;
+                                case 0xbc00: // -1.0
+                                    operand.range = { 243, 0 };
+                                    return true;
+                                case 0x4000: // 2.0
+                                    operand.range = { 244, 0 };
+                                    return true;
+                                case 0xc000: // -2.0
+                                    operand.range = { 245, 0 };
+                                    return true;
+                                case 0x4400: // 4.0
+                                    operand.range = { 246, 0 };
+                                    return true;
+                                case 0xc400: // -4.0
+                                    operand.range = { 247, 0 };
+                                    return true;
+                                case 0x3118: // 1/(2*PI)
+                                    if (arch&ARCH_RX3X0)
+                                    {
+                                        operand.range = { 248, 0 };
+                                        return true;
+                                    }
+                            }
+                        else if (value == 0)
+                        {   // old buggy behaviour (to 0.1.2 version)
+                            operand.range = { 128, 0 };
+                            return true;
                         }
+                    }
                 }
                 else if (fpType==FLTT_F32) /* otherwise, FLOAT */
                 {
