@@ -671,6 +671,13 @@ static bool isOnlyFloat(const char* str, const char* end, FloatLitType defaultFP
         
         if (point-beforeComma!=0 || afterComma-(point+1)!=0)
         {
+            if (beforeComma-point!=0 && str!=end && (*str=='p' || *str=='P'))
+            {
+                str++;
+                if (str!=end && (*str=='-' || *str=='+'))
+                    str++;
+                while (str!=end && isDigit(*str)) str++;
+            }
             outFPType = getFloatLitType(str, end, defaultFPType);
             return true;
         }
@@ -703,6 +710,13 @@ static bool isOnlyFloat(const char* str, const char* end, FloatLitType defaultFP
         
         if (point-beforeComma!=0 || afterComma-(point+1)!=0)
         {
+            if (beforeComma-point!=0 && str!=end && (*str=='e' || *str=='E'))
+            {
+                str++;
+                if (str!=end && (*str=='-' || *str=='+'))
+                    str++;
+                while (str!=end && isDigit(*str)) str++;
+            }
             outFPType = getFloatLitType(str, end, defaultFPType);
             return true;
         }
