@@ -618,6 +618,21 @@ enum FloatLitType
     FLTT_F64
 };
 
+static FloatLitType getFloatLitType(const char* str, const char* end,
+                        FloatLitType defaultFPType)
+{
+    if (str==end)
+        return defaultFPType; // end of string and no replacing suffix
+    else if (toLower(*str)=='l')
+        return FLTT_F64;
+    else if (toLower(*str)=='s')
+        return FLTT_F32;
+    else if (toLower(*str)=='h')
+        return FLTT_F16;
+    else
+        return defaultFPType;
+}
+
 /* check whether string is exclusively floating point value
  * (only floating point, and neither integer and nor symbol) */
 static bool isOnlyFloat(const char* str, const char* end, FloatLitType defaultFPType,
@@ -644,16 +659,7 @@ static bool isOnlyFloat(const char* str, const char* end, FloatLitType defaultFP
                 while (str!=end && isDigit(*str)) str++;
                 if (str-expPlace!=0)
                 {
-                    if (str==end)
-                        outFPType = defaultFPType; // end of string and no replacing suffix
-                    else if (toLower(*str)=='l')
-                        outFPType = FLTT_F64;
-                    else if (toLower(*str)=='s')
-                        outFPType = FLTT_F32;
-                    else if (toLower(*str)=='h')
-                        outFPType = FLTT_F16;
-                    else
-                        outFPType = defaultFPType;
+                    outFPType = getFloatLitType(str, end, defaultFPType);
                     return true; // if 'XXXp[+|-]XXX'
                 }
             }
@@ -665,16 +671,7 @@ static bool isOnlyFloat(const char* str, const char* end, FloatLitType defaultFP
         
         if (point-beforeComma!=0 || afterComma-(point+1)!=0)
         {
-            if (str==end)
-                outFPType = defaultFPType; // end of string and no replacing suffix
-            else if (toLower(*str)=='l')
-                outFPType = FLTT_F64;
-            else if (toLower(*str)=='s')
-                outFPType = FLTT_F32;
-            else if (toLower(*str)=='h')
-                outFPType = FLTT_F16;
-            else
-                outFPType = defaultFPType;
+            outFPType = getFloatLitType(str, end, defaultFPType);
             return true;
         }
     }
@@ -694,16 +691,7 @@ static bool isOnlyFloat(const char* str, const char* end, FloatLitType defaultFP
                 while (str!=end && isDigit(*str)) str++;
                 if (str-expPlace!=0)
                 {
-                    if (str==end)
-                        outFPType = defaultFPType; // end of string and no replacing suffix
-                    else if (toLower(*str)=='l')
-                        outFPType = FLTT_F64;
-                    else if (toLower(*str)=='s')
-                        outFPType = FLTT_F32;
-                    else if (toLower(*str)=='h')
-                        outFPType = FLTT_F16;
-                    else
-                        outFPType = defaultFPType;
+                    outFPType = getFloatLitType(str, end, defaultFPType);
                     return true; // if 'XXXe[+|-]XXX'
                 }
             }
@@ -715,16 +703,7 @@ static bool isOnlyFloat(const char* str, const char* end, FloatLitType defaultFP
         
         if (point-beforeComma!=0 || afterComma-(point+1)!=0)
         {
-            if (str==end)
-                outFPType = defaultFPType; // end of string and no replacing suffix
-            else if (toLower(*str)=='l')
-                outFPType = FLTT_F64;
-            else if (toLower(*str)=='s')
-                outFPType = FLTT_F32;
-            else if (toLower(*str)=='h')
-                outFPType = FLTT_F16;
-            else
-                outFPType = defaultFPType;
+            outFPType = getFloatLitType(str, end, defaultFPType);
             return true;
         }
     }
