@@ -611,9 +611,17 @@ bool GCNAsmUtils::parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& o
     }
 }
 
+enum FloatLitType
+{
+    FLTT_F16,
+    FLTT_F32,
+    FLTT_F64
+};
+
 /* check whether string is exclusively floating point value
  * (only floating point, and neither integer and nor symbol) */
-static bool isOnlyFloat(const char* str, const char* end, bool defaultFP32, bool& isFP32)
+static bool isOnlyFloat(const char* str, const char* end, FloatLitType defaultFPType,
+                        FloatLitType& outFPType)
 {
     if (str == end)
         return false;
@@ -636,10 +644,16 @@ static bool isOnlyFloat(const char* str, const char* end, bool defaultFP32, bool
                 while (str!=end && isDigit(*str)) str++;
                 if (str-expPlace!=0)
                 {
-                    if (str==end || toLower(*str)!=((defaultFP32)?'h':'s'))
-                        isFP32 = defaultFP32; // end of string and no replacing suffix
+                    if (str==end)
+                        outFPType = defaultFPType; // end of string and no replacing suffix
+                    else if (toLower(*str)=='l')
+                        outFPType = FLTT_F64;
+                    else if (toLower(*str)=='s')
+                        outFPType = FLTT_F32;
+                    else if (toLower(*str)=='h')
+                        outFPType = FLTT_F16;
                     else
-                        isFP32 = !defaultFP32;
+                        outFPType = defaultFPType;
                     return true; // if 'XXXp[+|-]XXX'
                 }
             }
@@ -651,10 +665,16 @@ static bool isOnlyFloat(const char* str, const char* end, bool defaultFP32, bool
         
         if (point-beforeComma!=0 || afterComma-(point+1)!=0)
         {
-            if (str==end || toLower(*str)!=((defaultFP32)?'h':'s'))
-                isFP32 = defaultFP32; // end of string and no replacing suffix
+            if (str==end)
+                outFPType = defaultFPType; // end of string and no replacing suffix
+            else if (toLower(*str)=='l')
+                outFPType = FLTT_F64;
+            else if (toLower(*str)=='s')
+                outFPType = FLTT_F32;
+            else if (toLower(*str)=='h')
+                outFPType = FLTT_F16;
             else
-                isFP32 = !defaultFP32;
+                outFPType = defaultFPType;
             return true;
         }
     }
@@ -674,10 +694,16 @@ static bool isOnlyFloat(const char* str, const char* end, bool defaultFP32, bool
                 while (str!=end && isDigit(*str)) str++;
                 if (str-expPlace!=0)
                 {
-                    if (str==end || toLower(*str)!=((defaultFP32)?'h':'s'))
-                        isFP32 = defaultFP32; // end of string and no replacing suffix
+                    if (str==end)
+                        outFPType = defaultFPType; // end of string and no replacing suffix
+                    else if (toLower(*str)=='l')
+                        outFPType = FLTT_F64;
+                    else if (toLower(*str)=='s')
+                        outFPType = FLTT_F32;
+                    else if (toLower(*str)=='h')
+                        outFPType = FLTT_F16;
                     else
-                        isFP32 = !defaultFP32;
+                        outFPType = defaultFPType;
                     return true; // if 'XXXe[+|-]XXX'
                 }
             }
@@ -689,10 +715,16 @@ static bool isOnlyFloat(const char* str, const char* end, bool defaultFP32, bool
         
         if (point-beforeComma!=0 || afterComma-(point+1)!=0)
         {
-            if (str==end || toLower(*str)!=((defaultFP32)?'h':'s'))
-                isFP32 = defaultFP32; // end of string and no replacing suffix
+            if (str==end)
+                outFPType = defaultFPType; // end of string and no replacing suffix
+            else if (toLower(*str)=='l')
+                outFPType = FLTT_F64;
+            else if (toLower(*str)=='s')
+                outFPType = FLTT_F32;
+            else if (toLower(*str)=='h')
+                outFPType = FLTT_F16;
             else
-                isFP32 = !defaultFP32;
+                outFPType = defaultFPType;
             return true;
         }
     }
@@ -706,18 +738,21 @@ bool GCNAsmUtils::parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_
         outTargetExpr->reset();
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    bool isFP32;
-    if (isOnlyFloat(linePtr, end, (instropMask&INSTROP_TYPE_MASK)!=INSTROP_F16, isFP32))
+    FloatLitType fpType;
+    FloatLitType defaultFpType = (instropMask&INSTROP_TYPE_MASK)!=INSTROP_F16 ?
+            ((instropMask&INSTROP_TYPE_MASK)==INSTROP_V64BIT ?
+            FLTT_F64 : FLTT_F32) : FLTT_F16;
+    if (isOnlyFloat(linePtr, end, defaultFpType, fpType))
     {
         try
         {
-        if (!isFP32)
+        if (fpType==FLTT_F16)
         {
             value = cstrtohCStyle(linePtr, end, linePtr);
             if (linePtr!=end && toLower(*linePtr)=='h')
                 linePtr++;
         }
-        else
+        else if (fpType==FLTT_F32)
         {
             union FloatUnion { uint32_t i; float f; };
             FloatUnion v;
@@ -725,6 +760,13 @@ bool GCNAsmUtils::parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_
             if (linePtr!=end && toLower(*linePtr)=='s')
                 linePtr++;
             value = v.i;
+        }
+        else
+        {   /* 64-bit (high 32-bits) */
+            uint32_t v = cstrtofXCStyle(linePtr, end, linePtr, 11, 20);
+            if (linePtr!=end && toLower(*linePtr)=='l')
+                linePtr++;
+            value = v;
         }
         }
         catch(const ParseException& ex)
@@ -945,7 +987,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         
         uint64_t value;
         operand.vopMods = 0; // zeroing operand modifiers
-        bool isFP32;
+        FloatLitType fpType;
         
         bool exprToResolve = false;
         bool encodeAsLiteral = false;
@@ -967,13 +1009,15 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         }
         
         if (!forceExpression && isOnlyFloat(negPlace, end, 
-                    (instrOpMask & INSTROP_TYPE_MASK)!=INSTROP_F16, isFP32))
+                    (instrOpMask & INSTROP_TYPE_MASK)!=INSTROP_F16?
+                    ((instrOpMask & INSTROP_TYPE_MASK)!=INSTROP_V64BIT?
+                        FLTT_F32:FLTT_F64):FLTT_F16, fpType))
         {   // if only floating point value
             /* if floating point literal can be processed */
             linePtr = negPlace;
             try
             {
-                if (!isFP32)
+                if (fpType==FLTT_F16)
                 {
                     value = cstrtohCStyle(linePtr, end, linePtr);
                     // skip suffix if needed
@@ -986,7 +1030,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                         return true;
                     }
                 }
-                else /* otherwise, FLOAT */
+                else if (fpType==FLTT_F32) /* otherwise, FLOAT */
                 {
                     union FloatUnion { uint32_t i; float f; };
                     FloatUnion v;
@@ -1028,6 +1072,53 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                                 operand.range = { 247, 0 };
                                 return true;
                             case 0x3e22f983: // 1/(2*PI)
+                                if (arch&ARCH_RX3X0)
+                                {
+                                    operand.range = { 248, 0 };
+                                    return true;
+                                }
+                        }
+                }
+                else
+                {
+                    uint32_t v = cstrtofXCStyle(linePtr, end, linePtr, 11, 20);
+                    // skip suffix if needed
+                    if (linePtr!=end && toLower(*linePtr)=='l')
+                        linePtr++;
+                    value = v;
+                    /// simplify to float constant immediate (-0.5, 0.5, 1.0, 2.0,...)
+                    /// constant immediates converted only to single floating points
+                    if (!encodeAsLiteral)
+                        switch (value)
+                        {
+                            case 0x0:
+                                operand.range = { 128, 0 };
+                                return true;
+                            case 0x3fe00000: // 0.5
+                                operand.range = { 240, 0 };
+                                return true;
+                            case 0xbfe00000: // -0.5
+                                operand.range = { 241, 0 };
+                                return true;
+                            case 0x3ff00000: // 1.0
+                                operand.range = { 242, 0 };
+                                return true;
+                            case 0xbff00000: // -1.0
+                                operand.range = { 243, 0 };
+                                return true;
+                            case 0x40000000: // 2.0
+                                operand.range = { 244, 0 };
+                                return true;
+                            case 0xc0000000: // -2.0
+                                operand.range = { 245, 0 };
+                                return true;
+                            case 0x40100000: // 4.0
+                                operand.range = { 246, 0 };
+                                return true;
+                            case 0xc0100000: // -4.0
+                                operand.range = { 247, 0 };
+                                return true;
+                            case 0x3fc45f30: // 1/(2*PI)
                                 if (arch&ARCH_RX3X0)
                                 {
                                     operand.range = { 248, 0 };
