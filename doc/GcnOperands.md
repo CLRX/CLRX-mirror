@@ -100,6 +100,23 @@ will be have different meaning.
 **NOTE:** These same literals and constants gives different values for 64-bit operand in
 vector instructions. To distinguish values, please use `lit()` function.
 
+**OLD_VERSIONS**: This version of CLRadeonExtender adds '--buggy-fplit' option to support
+sources for older versions (to 0.1.2). Versions to 0.1.2 incorrectly handles floating
+point literals and constants due to wrong assumptions. This and later versions fix
+that behaviour.
+
+Old and buggy behaviour:
+
+* support only half and single floating point literals (and constants)
+* shorten literals to constant only for single floating point literals
+
+New behaviour:
+
+* support half, single and double (only higher 32-bits) floating point literals
+(and constants)
+* shorten literals to constant for half, single and double literals (type depends
+from operand type)
+
 ### Hardware registers
 
 These register could be read or written by S_GETREG_\* and S_SETREG_\* instruction.
