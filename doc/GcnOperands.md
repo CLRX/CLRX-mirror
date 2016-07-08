@@ -81,6 +81,19 @@ Syntax: S_SUB_I32 SDST, SSRC0, SSRC1
 Syntax: S_AND_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Syntax: S_AND_B64 SDST(2), SSRC0(2), SSRC1(2:4)  
 
+### Constants and literals
+
+There are two ways to supply immediate value to GCN instruction: first is builtin constants
+(both  integer and floating points) and second is 32-bit immediate. Some type encoding
+allow to supply immediate with various size (16-bit or 12-bit).
+
+The literals are differently treated for scalar instructions and for vector instructions.
+In scalar instructions if operand is 64-bit, the literal value is exact value 64-bit value
+(sign or zero extended). By contrast, in vector instructions, for 64-bit operand, the
+literal is higher 32-bits of value (lower 32-bit are zero). Unhapilly, the CLRX assembler
+always encodes and decodes literal immediate as 32-bit value (includes floating values).
+The immediate constants are always exact value, either for 32-bit and 64-bit operands.
+
 ### Hardware registers
 
 These register could be read or written by S_GETREG_\* and S_SETREG_\* instruction.
