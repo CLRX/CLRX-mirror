@@ -862,8 +862,10 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_cvt_f32_f16  v158, -2.l", 0x7f3c16f5U, 0, false, true, "" },
     { "    v_cvt_f32_f16  v158, 4.l", 0x7f3c16f6U, 0, false, true, "" },
     { "    v_cvt_f32_f16  v158, -4.l", 0x7f3c16f7U, 0, false, true, "" },
-    { "    v_cvt_f32_f16  v158, 0.5", 0x7f3c16ffU, 0x3800, true, true, "" },
-    { "    v_cvt_f32_f16  v158, 0.5h", 0x7f3c16ffU, 0x3800, true, true, "" },
+    { "    v_cvt_f32_f16  v158, 0.5", 0x7f3c16f0U, 0, false, true, "" },
+    { "    v_cvt_f32_f16  v158, 0.5h", 0x7f3c16f0U, 0, false, true, "" },
+    { "    v_cvt_f32_f16  v158, 2.", 0x7f3c16f4U, 0, false, true, "" },
+    { "    v_cvt_f32_f16  v158, -2.", 0x7f3c16f5U, 0, false, true, "" },
     /* rest of VOP1 instructions */
     { "    v_cvt_rpi_i32_f32  v158, v79", 0x7f3c194fU, 0, false, true, "" },
     { "    v_cvt_rpi_i32_f32  v55, v27 vop3", 0xd3180037U, 0x0000011bU, true, true, "" },

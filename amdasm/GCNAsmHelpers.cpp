@@ -1017,11 +1017,43 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                     if (linePtr!=end && toLower(*linePtr)=='h')
                         linePtr++;
                     
-                    if (!encodeAsLiteral && value == 0)
-                    {
-                        operand.range = { 128, 0 };
-                        return true;
-                    }
+                    if (!encodeAsLiteral)
+                        switch (value)
+                        {
+                            case 0x0:
+                                operand.range = { 128, 0 };
+                                return true;
+                            case 0x3800: // 0.5
+                                operand.range = { 240, 0 };
+                                return true;
+                            case 0xb800: // -0.5
+                                operand.range = { 241, 0 };
+                                return true;
+                            case 0x3c00: // 1.0
+                                operand.range = { 242, 0 };
+                                return true;
+                            case 0xbc00: // -1.0
+                                operand.range = { 243, 0 };
+                                return true;
+                            case 0x4000: // 2.0
+                                operand.range = { 244, 0 };
+                                return true;
+                            case 0xc000: // -2.0
+                                operand.range = { 245, 0 };
+                                return true;
+                            case 0x4400: // 4.0
+                                operand.range = { 246, 0 };
+                                return true;
+                            case 0xc400: // -4.0
+                                operand.range = { 247, 0 };
+                                return true;
+                            case 0x3118: // 1/(2*PI)
+                                if (arch&ARCH_RX3X0)
+                                {
+                                    operand.range = { 248, 0 };
+                                    return true;
+                                }
+                        }
                 }
                 else if (fpType==FLTT_F32) /* otherwise, FLOAT */
                 {
