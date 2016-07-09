@@ -1091,7 +1091,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 /// simplify to float constant immediate (-0.5, 0.5, 1.0, 2.0,...)
                 /// constant immediates converted only to single floating points
                 /// new behaviour
-                if (!asmr.buggyFPLit && !encodeAsLiteral)
+                if (!asmr.buggyFPLit && !encodeAsLiteral && fpType==defaultFPType)
                 {
                     if (defaultFPType==FLTT_F16)
                         switch (value)
