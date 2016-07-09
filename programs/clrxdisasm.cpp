@@ -45,7 +45,7 @@ static const CLIOption programOptions[] =
         "set GPU type for Gallium/raw binaries", "DEVICE" },
     { "arch", 'A', CLIArgType::TRIMMED_STRING, false, false,
         "set GPU architecture for Gallium/raw binaries", "ARCH" },
-    { "buggy-fplit", 0, CLIArgType::NONE, false, false,
+    { "buggyFPLit", 0, CLIArgType::NONE, false, false,
         "use old and buggy fplit rules", nullptr },
     CLRX_CLI_AUTOHELP
     { nullptr, 0 }
@@ -76,7 +76,7 @@ try
             (cli.hasShortOption('f')?DISASM_FLOATLITS:0) |
             (cli.hasShortOption('h')?DISASM_HEXCODE:0);
      disasmFlags |= (cli.hasShortOption('C')?DISASM_CONFIG:0) |
-             (cli.hasLongOption("buggy-fplit")?DISASM_BUGGYFPLIT:0);
+             (cli.hasLongOption("buggyFPLit")?DISASM_BUGGYFPLIT:0);
     
     GPUDeviceType gpuDeviceType = GPUDeviceType::CAPE_VERDE;
     const bool fromRawCode = cli.hasShortOption('r');

@@ -51,7 +51,7 @@ static const CLIOption programOptions[] =
         "force add symbols to binaries", nullptr },
     { "alternate", 'a', CLIArgType::NONE, false, false,
         "enable alternate macro mode", nullptr }, 
-    { "buggy-fplit", 0, CLIArgType::NONE, false, false,
+    { "buggyFPLit", 0, CLIArgType::NONE, false, false,
         "use old and buggy fplit rules", nullptr },
     { "noWarnings", 'w', CLIArgType::NONE, false, false, "disable warnings", nullptr },
     CLRX_CLI_AUTOHELP
@@ -111,7 +111,7 @@ try
         flags |= ASM_WARNINGS;
     if (cli.hasShortOption('a'))
         flags |= ASM_ALTMACRO;
-    if (cli.hasLongOption("buggy-fplit"))
+    if (cli.hasLongOption("buggyFPLit"))
         flags |= ASM_BUGGYFPLIT;
     
     cxuint argsNum = cli.getArgsNum();

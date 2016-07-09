@@ -14,7 +14,7 @@ clrxasm [-6Swa?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
 [-g GPUDEVICE] [-A ARCH] [-t VERSION] [--defsym=SYM[=VALUE]] [--includePath=PATH]
 [--output OUTFILE] [--binaryFormat=BINFORMAT] [--64bit] [--gpuType=GPUDEVICE]
 [--arch=ARCH] [--driverVersion=VERSION] [--forceAddSymbols] [--noWarnings]
-[--alternate] [--buggy-fplit] [--help] [--usage] [--version] [file...]
+[--alternate] [--buggyFPLit] [--help] [--usage] [--version] [file...]
 
 ### Input
 
@@ -82,7 +82,7 @@ to keep compatibility with original format.
 
     Enable alternate macro syntax.
 
-* **--buggy-fplit**
+* **--buggyFPLit**
 
     Choose old and buggy floating point literals rules (to 0.1.2 version)
 for compatibility.

@@ -48,7 +48,7 @@ This option can be occurred many times to adding many include paths.
     Add all non-local symbols to binaries. By default any assembler does not add any symbols
 to keep compatibility with original format.
 
-* **-buggy-fplit**
+* **-buggyFPLit**
 
     Choose old and buggy floating point literals rules (to 0.1.2 version)
 for compatibility.

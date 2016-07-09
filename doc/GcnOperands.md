@@ -100,7 +100,7 @@ will be have different meaning.
 **NOTE:** These same literals and constants gives different values for 64-bit operand in
 vector instructions. To distinguish values, please use `lit()` function.
 
-**OLD_VERSIONS**: This version of CLRadeonExtender adds '--buggy-fplit' option to support
+**OLD_VERSIONS**: This version of CLRadeonExtender adds '--buggyFPLit' option to support
 sources for older versions (to 0.1.2). Versions to 0.1.2 incorrectly handles floating
 point literals and constants due to wrong assumptions. This and later versions fix
 that behaviour.
