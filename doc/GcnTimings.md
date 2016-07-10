@@ -199,7 +199,7 @@ Timings of VOP3 instructions are in this table:
  V_DIV_FMAS_F64        | DPFACTOR*8    | V_MSAD_U8             | 4
  V_DIV_SCALE_F32       | 16            | V_MULLIT_F32          | 4
  V_DIV_SCALE_F64       | DPFACTOR*4    | V_MUL_F64             | DPFACTOR*8
- V_FMA_F32             | 16            | V_MUL_HI_I32          | 16
+ V_FMA_F32             | 4 or 16 (1)   | V_MUL_HI_I32          | 16
  V_FMA_F64             | DPFACTOR*8    | V_MUL_HI_U32          | 16
  V_LDEXP_F64           | DPFACTOR*4    | V_MUL_LO_I32          | 16
  V_LERP_U8             | 4             | V_MUL_LO_U32          | 16
@@ -210,6 +210,8 @@ Timings of VOP3 instructions are in this table:
  V_MAD_I64_I32         | 16            | V_SAD_U32             | 4
  V_MAD_LEGACY_F32      | 4             | V_SAD_U8              | 4
  V_MAD_U32_U24         | 4             | V_TRIG_PREOP_F64      | DPFACTOR*8
+
+(1) - for device with DP speed 1/2, 1/4 or 1/8 is 4 cycles, for other devices is 16 cycles
 
 ### DS Instruction timings
 
