@@ -1676,10 +1676,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             skipCharAndSpacesToEnd(linePtr, end);
                             if (linePtr!=end && (*linePtr=='0' || *linePtr=='1'))
                             {
-                                if (*linePtr=='1')
-                                    mods |= VOP3_BOUNDCTRL;
-                                else // disable
-                                    mods &= ~VOP3_BOUNDCTRL;
+                                mods |= VOP3_BOUNDCTRL;
                                 linePtr++;
                             }
                             else
