@@ -1981,67 +1981,70 @@ void AsmPseudoOps::doDefRegVar(Assembler& asmr, const char* pseudoOpPlace,
                     "writable and addressable section");
         return;
     }
+    AsmSection& section = asmr.sections[asmr.currentSection];
     
-    skipSpacesToEnd(linePtr, end);
-    const char* regNamePlace = linePtr;
-    CString name = extractSymName(linePtr, end, false);
-    bool good = true;
-    if (name.empty())
-    {
-        asmr.printError(regNamePlace, "Expected reg-var name");
-        good = false;
-    }
-    skipSpacesToEnd(linePtr, end);
-    if (linePtr==end || *linePtr!=':')
-    {
-        asmr.printError(linePtr, "Expected colon after reg-var");
-        return;
-    }
-    linePtr++;
-    skipSpacesToEnd(linePtr, end);
-    AsmVariable var = { 0, 1 };
-    if (!asmr.isaAssembler->parseRegisterType(linePtr, end, var.type))
-    {
-        asmr.printError(linePtr, "Expected name of register type");
-        good = false;
-    }
-    skipSpacesToEnd(linePtr, end);
-    
-    if (linePtr!=end)
-    {
-        if (*linePtr!=':')
+    do {
+        skipSpacesToEnd(linePtr, end);
+        const char* regNamePlace = linePtr;
+        CString name = extractSymName(linePtr, end, false);
+        bool good = true;
+        if (name.empty())
+        {
+            asmr.printError(regNamePlace, "Expected reg-var name");
+            good = false;
+        }
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr==end || *linePtr!=':')
         {
             asmr.printError(linePtr, "Expected colon after reg-var");
-            return;
+            continue;
         }
         linePtr++;
         skipSpacesToEnd(linePtr, end);
-        uint64_t regSize;
-        if (!getAbsoluteValueArg(asmr, regSize, linePtr, true))
-            return;
-        GPUArchitecture arch = getGPUArchitectureFromDeviceType(asmr.deviceType);
-        if (regSize==0)
+        AsmVariable var = { 0, 1 };
+        if (!asmr.isaAssembler->parseRegisterType(linePtr, end, var.type))
         {
-            asmr.printError(linePtr, "Size of reg-var is zero");
+            asmr.printError(linePtr, "Expected name of register type");
             good = false;
         }
-        if (regSize>getGPUMaxRegistersNum(arch, regSize, 0))
+        skipSpacesToEnd(linePtr, end);
+        
+        if (linePtr!=end && *linePtr!=',')
         {
-            asmr.printError(linePtr, "Size of reg-var out of max number of registers");
-            good = false;
+            if (*linePtr!=':')
+            {
+                asmr.printError(linePtr, "Expected colon after reg-var");
+                continue;
+            }
+            linePtr++;
+            skipSpacesToEnd(linePtr, end);
+            uint64_t regSize;
+            if (!getAbsoluteValueArg(asmr, regSize, linePtr, true))
+                continue;
+            GPUArchitecture arch = getGPUArchitectureFromDeviceType(asmr.deviceType);
+            if (regSize==0)
+            {
+                asmr.printError(linePtr, "Size of reg-var is zero");
+                good = false;
+            }
+            if (regSize>getGPUMaxRegistersNum(arch, regSize, 0))
+            {
+                asmr.printError(linePtr, "Size of reg-var out of max number of registers");
+                good = false;
+            }
+            var.size = regSize;
         }
-        var.size = regSize;
-    }
-    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
-        return;
+        
+        if (!good)
+            continue;
+        
+        if (!section.addRegVar(name, var))
+            asmr.printError(regNamePlace, (std::string("Reg-var '")+name.c_str()+
+                        "' was already defined").c_str());
+        
+    } while(skipCommaForMultipleArgs(asmr, linePtr));
     
-    AsmSection& section = asmr.sections[asmr.currentSection];
-    if (!section.addRegVar(name, var))
-    {
-        asmr.printError(regNamePlace, (std::string("Reg-var '")+name.c_str()+
-                    "' was already defined").c_str());
-        return;
-    }
+    checkGarbagesAtEnd(asmr, linePtr);
 }
 
 void AsmPseudoOps::ignoreString(Assembler& asmr, const char* linePtr)
