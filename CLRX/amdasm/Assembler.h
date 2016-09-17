@@ -514,6 +514,30 @@ inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurren
         relativeSymOccurs = true;
 }
 
+typedef cxbyte AsmVarPlace;
+
+enum : AsmVarPlace
+{
+    GCNPLACE_SRC0 = 0,
+    GCNPLACE_SRC1,
+    GCNPLACE_SRC2
+};
+
+struct AsmVariable
+{
+    cxuint type;    // scalar/vector/other
+    uint16_t size;  // in regs
+};
+
+struct AsmVarUsage
+{
+    size_t address;
+    cxuint place;   // place in instruction
+    bool read;
+    bool write;
+    AsmVariable* var;
+};
+
 /// assembler section
 struct AsmSection
 {
@@ -524,6 +548,11 @@ struct AsmSection
     uint64_t alignment; ///< section alignment
     uint64_t size;  ///< section size
     std::vector<cxbyte> content;    ///< content of section
+    
+    /// register variables
+    //std::unordered_map<CString, AsmVariable> variables;
+    /// reg-var usage in section
+    //std::vector<AsmVarUsage> varUsages;
     
     /// get section's size
     size_t getSize() const

@@ -1095,11 +1095,32 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         }
         if (!res.first->second.occurrencesInExprs.empty())
         {   // found in expressions
-            std::unordered_set<const AsmExpression*> exprs;
+            std::vector<std::pair<const AsmExpression*, size_t> > exprs;
+            size_t i = 0;
             for (AsmExprSymbolOccurrence occur: res.first->second.occurrencesInExprs)
-                exprs.insert(occur.expression);
-            for (const AsmExpression* expr: exprs)
-                printError(expr->getSourcePos(), "Expression have register symbol");
+                exprs.push_back(std::make_pair(occur.expression, i++));
+            // remove duplicates
+            std::sort(exprs.begin(), exprs.end(),
+                      [](const std::pair<const AsmExpression*, size_t>& a,
+                         const std::pair<const AsmExpression*, size_t>& b)
+                    {
+                        if (a.first==b.first)
+                            return a.second<b.second;
+                        return a.first<b.first;
+                    });
+            exprs.resize(std::unique(exprs.begin(), exprs.end(),
+                       [](const std::pair<const AsmExpression*, size_t>& a,
+                         const std::pair<const AsmExpression*, size_t>& b)
+                       { return a.first==b.first; })-exprs.begin());
+            
+            std::sort(exprs.begin(), exprs.end(),
+                      [](const std::pair<const AsmExpression*, size_t>& a,
+                         const std::pair<const AsmExpression*, size_t>& b)
+                    { return a.second<b.second; });
+            // print errors
+            for (std::pair<const AsmExpression*, size_t> elem: exprs)
+                printError(elem.first->getSourcePos(), "Expression have register symbol");
+            
             printError(symbolPlace, (std::string("Register range symbol '") +
                             symbolName.c_str() + "' was used in some expressions").c_str());
             return false;
