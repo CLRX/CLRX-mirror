@@ -577,6 +577,7 @@ struct AsmVarUsage
 {
     size_t address;
     AsmVarPlace place;   ///< place in instruction
+    uint16_t rstart, rend;
     bool read;
     bool write;
     cxbyte align;   /// register alignment

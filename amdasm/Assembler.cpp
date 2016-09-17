@@ -1127,7 +1127,6 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         }
         // setup symbol entry (required)
         AsmSymbolEntry& symEntry = *res.first;
-        // check dependencies in expressions
         symEntry.second.expression = nullptr;
         symEntry.second.onceDefined = !reassign;
         symEntry.second.base = false;

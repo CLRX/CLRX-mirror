@@ -114,7 +114,7 @@ static const char* pseudoOpNamesTbl[] =
     "macro", "main", "noaltmacro",
     "nobuggyfplit", "octa", "offset", "org",
     "p2align", "print", "purgem", "quad",
-    "rawcode", "rept", "rodata",
+    "rawcode", "reg", "rept", "rodata",
     "sbttl", "section", "set",
     "short", "single", "size", "skip",
     "space", "string", "string16", "string32",
@@ -150,7 +150,7 @@ enum
     ASMOP_MACRO, ASMOP_MAIN, ASMOP_NOALTMACRO,
     ASMOP_NOBUGGYFPLIT, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
-    ASMOP_RAWCODE, ASMOP_REPT, ASMOP_RODATA,
+    ASMOP_RAWCODE, ASMOP_REG, ASMOP_REPT, ASMOP_RODATA,
     ASMOP_SBTTL, ASMOP_SECTION, ASMOP_SET,
     ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
@@ -1969,6 +1969,13 @@ void AsmPseudoOps::setAbsoluteOffset(Assembler& asmr, const char* linePtr)
     asmr.currentOutPos = value;
 }
 
+void AsmPseudoOps::doDefRegVar(Assembler& asmr, const char* linePtr)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    asmr.initializeOutputFormat();
+    skipSpacesToEnd(linePtr, end);
+}
+
 void AsmPseudoOps::ignoreString(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
@@ -1993,6 +2000,7 @@ bool AsmPseudoOps::checkPseudoOpName(const CString& string)
         return true;
     return false;
 }
+
 
 };
 
@@ -2350,6 +2358,8 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_QUAD:
             AsmPseudoOps::putIntegers<uint64_t>(*this, stmtPlace, linePtr);
+            break;
+        case ASMOP_REG:
             break;
         case ASMOP_REPT:
             AsmPseudoOps::doRepeat(*this, stmtPlace, linePtr);
