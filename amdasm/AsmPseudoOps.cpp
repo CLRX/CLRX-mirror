@@ -1969,11 +1969,79 @@ void AsmPseudoOps::setAbsoluteOffset(Assembler& asmr, const char* linePtr)
     asmr.currentOutPos = value;
 }
 
-void AsmPseudoOps::doDefRegVar(Assembler& asmr, const char* linePtr)
+void AsmPseudoOps::doDefRegVar(Assembler& asmr, const char* pseudoOpPlace,
+                       const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
     asmr.initializeOutputFormat();
+    
+    if (!asmr.isWriteableSection() || !asmr.isAddressableSection())
+    {
+        asmr.printError(pseudoOpPlace, "RegVar definition can be in "
+                    "writable and addressable section");
+        return;
+    }
+    
     skipSpacesToEnd(linePtr, end);
+    const char* regNamePlace = linePtr;
+    CString name = extractSymName(linePtr, end, false);
+    bool good = true;
+    if (name.empty())
+    {
+        asmr.printError(regNamePlace, "Expected reg-var name");
+        good = false;
+    }
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr==end || *linePtr!=':')
+    {
+        asmr.printError(linePtr, "Expected colon after reg-var");
+        return;
+    }
+    linePtr++;
+    skipSpacesToEnd(linePtr, end);
+    AsmVariable var = { 0, 1 };
+    if (!asmr.isaAssembler->parseRegisterType(linePtr, end, var.type))
+    {
+        asmr.printError(linePtr, "Expected name of register type");
+        good = false;
+    }
+    skipSpacesToEnd(linePtr, end);
+    
+    if (linePtr!=end)
+    {
+        if (*linePtr!=':')
+        {
+            asmr.printError(linePtr, "Expected colon after reg-var");
+            return;
+        }
+        linePtr++;
+        skipSpacesToEnd(linePtr, end);
+        uint64_t regSize;
+        if (!getAbsoluteValueArg(asmr, regSize, linePtr, true))
+            return;
+        GPUArchitecture arch = getGPUArchitectureFromDeviceType(asmr.deviceType);
+        if (regSize==0)
+        {
+            asmr.printError(linePtr, "Size of reg-var is zero");
+            good = false;
+        }
+        if (regSize>getGPUMaxRegistersNum(arch, regSize, 0))
+        {
+            asmr.printError(linePtr, "Size of reg-var out of max number of registers");
+            good = false;
+        }
+        var.size = regSize;
+    }
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    AsmSection& section = asmr.sections[asmr.currentSection];
+    if (!section.addRegVar(name, var))
+    {
+        asmr.printError(regNamePlace, (std::string("Reg-var '")+name.c_str()+
+                    "' was already defined").c_str());
+        return;
+    }
 }
 
 void AsmPseudoOps::ignoreString(Assembler& asmr, const char* linePtr)
@@ -2000,7 +2068,6 @@ bool AsmPseudoOps::checkPseudoOpName(const CString& string)
         return true;
     return false;
 }
-
 
 };
 
@@ -2360,6 +2427,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::putIntegers<uint64_t>(*this, stmtPlace, linePtr);
             break;
         case ASMOP_REG:
+            AsmPseudoOps::doDefRegVar(*this, stmtPlace, linePtr);
             break;
         case ASMOP_REPT:
             AsmPseudoOps::doRepeat(*this, stmtPlace, linePtr);

@@ -3034,3 +3034,20 @@ bool GCNAssembler::relocationIsFit(cxuint bits, AsmExprTargetType tgtType)
         return tgtType==GCNTGT_SOPJMP || tgtType==GCNTGT_LITIMM;
     return false;
 }
+
+bool GCNAssembler::parseRegisterType(const char*& linePtr, const char* end, cxuint& type)
+{
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr!=end)
+    {
+        const char c = toLower(*linePtr);
+        if (c=='v' || c=='s')
+        {
+            type = c=='v' ? REGTYPE_VGPR : REGTYPE_SGPR;
+            linePtr++;
+            return true;
+        }
+        return false;
+    }
+    return false;
+}

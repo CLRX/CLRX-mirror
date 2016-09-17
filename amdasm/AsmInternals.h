@@ -278,7 +278,8 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     
     static void undefSymbol(Assembler& asmr, const char* linePtr);
     
-    static void doDefRegVar(Assembler& asmr, const char* linePtr);
+    static void doDefRegVar(Assembler& asmr, const char* pseudoOpPlace,
+                    const char* linePtr);
     
     static void setAbsoluteOffset(Assembler& asmr, const char* linePtr);
     

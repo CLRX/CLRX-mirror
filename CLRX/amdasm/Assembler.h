@@ -127,6 +127,9 @@ public:
                         cxuint& regStart, cxuint& regEnd) = 0;
     /// return true if expresion of target fit to value with specified bits
     virtual bool relocationIsFit(cxuint bits, AsmExprTargetType tgtType) = 0;
+    /// parse register type for '.reg' pseudo-op
+    virtual bool parseRegisterType(const char*& linePtr,
+                       const char* end, cxuint& type) = 0;
 };
 
 /// GCN arch assembler
@@ -162,6 +165,7 @@ public:
     void fillAlignment(size_t size, cxbyte* output);
     bool parseRegisterRange(const char*& linePtr, cxuint& regStart, cxuint& regEnd);
     bool relocationIsFit(cxuint bits, AsmExprTargetType tgtType);
+    bool parseRegisterType(const char*& linePtr, const char* end, cxuint& type);
 };
 
 /*
@@ -599,6 +603,9 @@ struct AsmSection
     std::unordered_map<CString, AsmVariable> variables;
     /// reg-var usage in section
     std::vector<AsmVarUsage> varUsages;
+    
+    bool addRegVar(const CString& name, const AsmVariable& var)
+    { return variables.insert(std::make_pair(name, var)).second; }
     
     /// get section's size
     size_t getSize() const
