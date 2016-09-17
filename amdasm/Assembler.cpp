@@ -1093,8 +1093,15 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
                         "' is already defined").c_str());
             return false;
         }
+        if (!res.first->second.occurrencesInExprs.empty())
+        {   // found in expressions
+            printError(symbolPlace, (std::string("Register range symbol '") +
+                        symbolName.c_str() + "' was used in some expressions").c_str());
+            return false;
+        }
         // setup symbol entry (required)
         AsmSymbolEntry& symEntry = *res.first;
+        // check dependencies in expressions
         symEntry.second.expression = nullptr;
         symEntry.second.onceDefined = !reassign;
         symEntry.second.base = false;
