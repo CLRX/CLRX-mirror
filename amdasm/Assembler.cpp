@@ -1095,8 +1095,11 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         }
         if (!res.first->second.occurrencesInExprs.empty())
         {   // found in expressions
+            for (AsmExprSymbolOccurrence occur: res.first->second.occurrencesInExprs)
+                printError(occur.expression->getSourcePos(), 
+                            "Expression have register symbol");
             printError(symbolPlace, (std::string("Register range symbol '") +
-                        symbolName.c_str() + "' was used in some expressions").c_str());
+                            symbolName.c_str() + "' was used in some expressions").c_str());
             return false;
         }
         // setup symbol entry (required)
