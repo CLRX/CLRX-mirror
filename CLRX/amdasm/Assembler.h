@@ -232,6 +232,8 @@ struct AsmExprSymbolOccurrence
     { return expression==b.expression && opIndex==b.opIndex && argIndex==b.argIndex; }
 };
 
+struct AsmVariable;
+
 /// assembler symbol structure
 struct AsmSymbol
 {
@@ -247,7 +249,10 @@ struct AsmSymbol
     cxuint regRange:1;          ///< if symbol is register range
     uint64_t value;         ///< value of symbol
     uint64_t size;          ///< size of symbol
-    AsmExpression* expression;      ///< expression of symbol (if not resolved)
+    union {
+        AsmExpression* expression;      ///< expression of symbol (if not resolved)
+        AsmVariable* var;
+    };
     
     /** list of occurrences in expressions */
     std::vector<AsmExprSymbolOccurrence> occurrencesInExprs;
@@ -518,9 +523,48 @@ typedef cxbyte AsmVarPlace;
 
 enum : AsmVarPlace
 {
-    GCNPLACE_SRC0 = 0,
-    GCNPLACE_SRC1,
-    GCNPLACE_SRC2
+    GCNPLACE_SSRC0 = 0,
+    GCNPLACE_SSRC1,
+    GCNPLACE_SDST,
+    GCNPLACE_SMRD_SBASE,
+    GCNPLACE_SMRD_SDST,
+    GCNPLACE_SMRD_SOFFSET,
+    GCNPLACE_VOP_SRC0,
+    GCNPLACE_VOP_SRC1,
+    GCNPLACE_VOP_VDST,
+    GCNPLACE_VOP3_SRC0,
+    GCNPLACE_VOP3_SRC1,
+    GCNPLACE_VOP3_VDST,
+    GCNPLACE_VOP3_SSRC,
+    GCNPLACE_VOP3_SDST,
+    GCNPLACE_VINTRP_VSRC0,
+    GCNPLACE_VINTRP_VDST,
+    GCNPLACE_DS_ADDR,
+    GCNPLACE_DS_DATA0,
+    GCNPLACE_DS_DATA1,
+    GCNPLACE_DS_VDST,
+    GCNPLACE_M_VADDR,
+    GCNPLACE_M_VDATA,
+    GCNPLACE_M_SRSRC,
+    GCNPLACE_MIMG_SSAMP,
+    GCNPLACE_M_SOFFSET,
+    GCNPLACE_EXP_VSRC0,
+    GCNPLACE_EXP_VSRC1,
+    GCNPLACE_EXP_VSRC2,
+    GCNPLACE_EXP_VSRC3,
+    GCNPLACE_FLAT_ADDR,
+    GCNPLACE_FLAT_DATA,
+    GCNPLACE_FLAT_VDST,
+    GCNPLACE_DPPSDWA_SRC0,
+    GCNPLACE_SMEM_SBASE,
+    GCNPLACE_SMEM_SDATA,
+    GCNPLACE_SMEM_OFFSET
+};
+
+enum : cxbyte
+{
+    GCNREGTYPE_SGPR,
+    GCNREGTYPE_VGPR
 };
 
 struct AsmVariable
@@ -532,9 +576,10 @@ struct AsmVariable
 struct AsmVarUsage
 {
     size_t address;
-    cxuint place;   // place in instruction
+    AsmVarPlace place;   ///< place in instruction
     bool read;
     bool write;
+    cxbyte align;   /// register alignment
     AsmVariable* var;
 };
 
@@ -550,9 +595,9 @@ struct AsmSection
     std::vector<cxbyte> content;    ///< content of section
     
     /// register variables
-    //std::unordered_map<CString, AsmVariable> variables;
+    std::unordered_map<CString, AsmVariable> variables;
     /// reg-var usage in section
-    //std::vector<AsmVarUsage> varUsages;
+    std::vector<AsmVarUsage> varUsages;
     
     /// get section's size
     size_t getSize() const
