@@ -236,7 +236,7 @@ struct AsmExprSymbolOccurrence
     { return expression==b.expression && opIndex==b.opIndex && argIndex==b.argIndex; }
 };
 
-struct AsmVariable;
+struct AsmRegVar;
 
 /// assembler symbol structure
 struct AsmSymbol
@@ -255,7 +255,7 @@ struct AsmSymbol
     uint64_t size;          ///< size of symbol
     union {
         AsmExpression* expression;      ///< expression of symbol (if not resolved)
-        AsmVariable* var;
+        AsmRegVar* var;
     };
     
     /** list of occurrences in expressions */
@@ -562,7 +562,8 @@ enum : AsmVarPlace
     GCNPLACE_DPPSDWA_SRC0,
     GCNPLACE_SMEM_SBASE,
     GCNPLACE_SMEM_SDATA,
-    GCNPLACE_SMEM_OFFSET
+    GCNPLACE_SMEM_OFFSET,
+    ASMPLACE_NONE = 255
 };
 
 enum : cxbyte
@@ -571,7 +572,7 @@ enum : cxbyte
     GCNREGTYPE_VGPR
 };
 
-struct AsmVariable
+struct AsmRegVar
 {
     cxuint type;    // scalar/vector/other
     uint16_t size;  // in regs
@@ -585,7 +586,7 @@ struct AsmVarUsage
     bool read;
     bool write;
     cxbyte align;   /// register alignment
-    AsmVariable* var;
+    AsmRegVar* regVar;
 };
 
 /// assembler section
@@ -600,12 +601,12 @@ struct AsmSection
     std::vector<cxbyte> content;    ///< content of section
     
     /// register variables
-    std::unordered_map<CString, AsmVariable> variables;
+    std::unordered_map<CString, AsmRegVar> regVars;
     /// reg-var usage in section
-    std::vector<AsmVarUsage> varUsages;
+    std::vector<AsmVarUsage> regVarUsages;
     
-    bool addRegVar(const CString& name, const AsmVariable& var)
-    { return variables.insert(std::make_pair(name, var)).second; }
+    bool addRegVar(const CString& name, const AsmRegVar& var)
+    { return regVars.insert(std::make_pair(name, var)).second; }
     
     /// get section's size
     size_t getSize() const

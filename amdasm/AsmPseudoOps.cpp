@@ -2001,7 +2001,7 @@ void AsmPseudoOps::doDefRegVar(Assembler& asmr, const char* pseudoOpPlace,
         }
         linePtr++;
         skipSpacesToEnd(linePtr, end);
-        AsmVariable var = { 0, 1 };
+        AsmRegVar var = { 0, 1 };
         if (!asmr.isaAssembler->parseRegisterType(linePtr, end, var.type))
         {
             asmr.printError(linePtr, "Expected name of register type");
