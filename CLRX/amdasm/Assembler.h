@@ -580,13 +580,13 @@ struct AsmRegVar
 
 struct AsmVarUsage
 {
-    size_t address;
+    size_t offset;
     AsmRegField regField;   ///< place in instruction
     uint16_t rstart, rend;
     bool read;
     bool write;
     cxbyte align;   /// register alignment
-    const AsmRegVar* regVar;
+    const AsmRegVar* regVar;    // if null, then usage of called register
 };
 
 /// assembler section

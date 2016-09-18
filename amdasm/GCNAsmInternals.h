@@ -54,6 +54,10 @@ enum : Flags {
     INSTROP_V64BIT = 0x3000, // 64-bit value (specific for vector instructions)
     INSTROP_UNALIGNED = 0x8000, // not aligned, use by parseRegisterRange
     
+    INSTROP_READ = 0x10000,
+    INSTROP_WRITE = 0x20000,
+    INSTROP_ACCESS_MASK = 0x30000,
+    
     // for parseSRregRange/parseVRegRange
     INSTROP_SYMREGRANGE = 1
 };
