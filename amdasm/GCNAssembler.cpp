@@ -3017,7 +3017,7 @@ void GCNAssembler::fillAlignment(size_t size, cxbyte* output)
 }
 
 bool GCNAssembler::parseRegisterRange(const char*& linePtr, cxuint& regStart,
-          cxuint& regEnd)
+          cxuint& regEnd, const AsmRegVar*& regVar)
 {
     GCNOperand operand;
     if (!GCNAsmUtils::parseOperand(assembler, linePtr, operand, nullptr, curArchMask, 0,

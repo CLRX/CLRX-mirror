@@ -76,8 +76,8 @@ struct CLRX_INTERNAL GCNPlaceInfo
 };
 
 bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
-                 AsmVarUsage& varUsage, uint16_t arch, cxuint regsNum, Flags flags,
-                 AsmRegField regField, bool required)
+                 RegRange& regPair, const AsmRegVar*& regVar, uint16_t arch, cxuint regsNum,
+                 Flags flags, AsmRegField regField, bool required)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
@@ -88,8 +88,7 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
     
     const CString name = extractSymName(linePtr, end, false);
     bool regVarFound = false;
-    const AsmSection& section = asmr.sections[asmr.currentSection];
-    const AsmRegVar* regVar;
+    AsmSection& section = asmr.sections[asmr.currentSection];
     if (!name.empty())
         regVarFound = section.getRegVar(name, regVar);
     if (regVarFound)
@@ -147,14 +146,15 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
                 return false;
             }
             
-            varUsage = { asmr.currentOutPos, regField, uint16_t(rstart), uint16_t(rend),
-                (flags & INSTROP_READ)!=0, (flags & INSTROP_WRITE)!=0, 0, regVar };
+            if (regField!=ASMFIELD_NONE)
+                section.addVarUsage({ asmr.currentOutPos, regField, uint16_t(rstart),
+                    uint16_t(rend), (flags & INSTROP_READ)!=0,
+                    (flags & INSTROP_WRITE)!=0, 0, regVar });
             return true;
         }
     }
     if (printRegisterRangeExpected(asmr, regVarPlace, regTypeName, regsNum, required))
         return false;
-    varUsage.offset = SIZE_MAX;
     linePtr = oldLinePtr; // revert current line pointer
     return true;
 }

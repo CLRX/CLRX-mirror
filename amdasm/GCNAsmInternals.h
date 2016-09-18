@@ -139,8 +139,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                const char* regPoolName, cxuint requiredRegsNum);
     
     static bool parseRegVarRange(Assembler& asmr, const char*& linePtr,
-                 AsmVarUsage& varUsage, uint16_t arch, cxuint regsNum, Flags flags,
-                 AsmRegField regField, bool required = true);
+             RegRange& regPair, const AsmRegVar*& regVar, uint16_t arch,
+             cxuint regsNum, Flags flags, AsmRegField regField, bool required = true);
     
     static bool parseSymRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
                  uint16_t arch, cxuint regsNum, Flags flags, bool required = true);

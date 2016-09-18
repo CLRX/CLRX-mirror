@@ -82,6 +82,8 @@ enum : AsmExprTargetType
     GCNTGT_SMEMIMM
 };
 
+struct AsmRegVar;
+
 /// ISA assembler class
 class ISAAssembler: public NonCopyableAndNonMovable
 {
@@ -123,8 +125,8 @@ public:
     /// fill alignment when value is not given
     virtual void fillAlignment(size_t size, cxbyte* output) = 0;
     /// parse register range
-    virtual bool parseRegisterRange(const char*& linePtr,
-                        cxuint& regStart, cxuint& regEnd) = 0;
+    virtual bool parseRegisterRange(const char*& linePtr, cxuint& regStart,
+                        cxuint& regEnd, const AsmRegVar*& regVar) = 0;
     /// return true if expresion of target fit to value with specified bits
     virtual bool relocationIsFit(cxuint bits, AsmExprTargetType tgtType) = 0;
     /// parse register type for '.reg' pseudo-op
@@ -163,7 +165,8 @@ public:
     void setAllocatedRegisters(const cxuint* regs, Flags regFlags);
     const cxuint* getAllocatedRegisters(size_t& regTypesNum, Flags& regFlags) const;
     void fillAlignment(size_t size, cxbyte* output);
-    bool parseRegisterRange(const char*& linePtr, cxuint& regStart, cxuint& regEnd);
+    bool parseRegisterRange(const char*& linePtr, cxuint& regStart, cxuint& regEnd,
+                const AsmRegVar*& regVar);
     bool relocationIsFit(cxuint bits, AsmExprTargetType tgtType);
     bool parseRegisterType(const char*& linePtr, const char* end, cxuint& type);
 };
@@ -608,6 +611,9 @@ struct AsmSection
     bool addRegVar(const CString& name, const AsmRegVar& var);
     
     bool getRegVar(const CString& name, const AsmRegVar*& regVar) const;
+    
+    void addVarUsage(const AsmVarUsage& varUsage)
+    { regVarUsages.push_back(varUsage); }
     
     /// get section's size
     size_t getSize() const
