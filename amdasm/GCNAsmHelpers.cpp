@@ -69,13 +69,157 @@ void GCNAsmUtils::printXRegistersRequired(Assembler& asmr, const char* linePtr,
     asmr.printError(linePtr, buf);
 }
 
+struct CLRX_INTERNAL GCNPlaceInfo
+{
+    bool read, write;
+    bool scalar, vector;
+};
+
+enum : cxbyte
+{
+    GCNPLACEFLAG_READ = 1,
+    GCNPLACEFLAG_WRITE = 2,
+    GCNPLACEFLAG_READ_WRITE = 3,
+    GCNPLACEFLAG_VGPR = 4,
+    GCNPLACEFLAG_SGPR = 8,
+    GCNPLACEFLAG_GPR = 12
+};
+
+static const cxbyte gcnPlaceInfoTbl[] =
+{
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_SGPR, // GCNPLACE_SSRC0 = 0
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_SGPR, // GCNPLACE_SSRC1
+    GCNPLACEFLAG_WRITE | GCNPLACEFLAG_SGPR, // GCNPLACE_SDST
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_SGPR, // GCNPLACE_SMRD_SBASE
+    GCNPLACEFLAG_WRITE | GCNPLACEFLAG_SGPR, // GCNPLACE_SMRD_SDST
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_SGPR, // GCNPLACE_SMRD_SOFFSET
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_GPR, // GCNPLACE_VOP_SRC0
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_VOP_VSRC1
+    GCNPLACEFLAG_WRITE | GCNPLACEFLAG_VGPR, // GCNPLACE_VOP_VDST
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_GPR, // GCNPLACE_VOP3_SRC0
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_GPR, // GCNPLACE_VOP3_SRC1
+    GCNPLACEFLAG_WRITE | GCNPLACEFLAG_GPR, // GCNPLACE_VOP3_VDST
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_SGPR, // GCNPLACE_VOP3_SSRC
+    GCNPLACEFLAG_WRITE | GCNPLACEFLAG_SGPR, // GCNPLACE_VOP3_SDST
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_VINTRP_VSRC0
+    GCNPLACEFLAG_WRITE | GCNPLACEFLAG_VGPR, // GCNPLACE_VINTRP_VDST
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_DS_ADDR
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_DS_DATA0
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_DS_DATA1
+    GCNPLACEFLAG_WRITE | GCNPLACEFLAG_VGPR, // GCNPLACE_DS_VDST
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_M_VADDR
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_M_VDATA
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_SGPR, // GCNPLACE_M_SRSRC
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_SGPR, // GCNPLACE_MIMG_SSAMP
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_SGPR, // GCNPLACE_M_SOFFSET
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_EXP_VSRC0
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_EXP_VSRC1
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_EXP_VSRC2
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_EXP_VSRC3
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_FLAT_ADDR
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_VGPR, // GCNPLACE_FLAT_DATA
+    GCNPLACEFLAG_WRITE | GCNPLACEFLAG_VGPR, // GCNPLACE_FLAT_VDST
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_GPR, // GCNPLACE_DPPSDWA_SRC0
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_SGPR, // GCNPLACE_SMEM_SBASE
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_SGPR, // GCNPLACE_SMEM_SDATA
+    GCNPLACEFLAG_READ | GCNPLACEFLAG_SGPR // GCNPLACE_SMEM_OFFSET
+};
+
+bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
+                 AsmVarUsage& varUsage, uint16_t arch, cxuint regsNum, Flags flags,
+                 AsmVarPlace varPlace, bool required)
+{
+    const char* oldLinePtr = linePtr;
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    const char* regVarPlace = linePtr;
+    linePtr = oldLinePtr; // revert current line pointer
+    const char *regTypeName = (flags&INSTROP_VREGS) ? "vector" : "scalar";
+    
+    const CString name = extractSymName(linePtr, end, false);
+    bool regVarFound = false;
+    const AsmSection& section = asmr.sections[asmr.currentSection];
+    const AsmRegVar* regVar;
+    if (!name.empty())
+        regVarFound = section.getRegVar(name, regVar);
+    if (regVarFound)
+    {
+        cxuint rstart = 0;
+        cxuint rend = regVar->size;
+        if (((flags & INSTROP_VREGS)!=0 && regVar->type==REGTYPE_VGPR) ||
+            ((flags & INSTROP_SREGS)!=0 && regVar->type==REGTYPE_SGPR))
+        {
+            skipSpacesToEnd(linePtr, end);
+            if (*linePtr == '[')
+            {
+                uint64_t value1, value2;
+                skipCharAndSpacesToEnd(linePtr, end);
+                if (!getAbsoluteValueArg(asmr, value1, linePtr, true))
+                    return false;
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
+                {   // error
+                    asmr.printError(regVarPlace, "Unterminated register range");
+                    return false;
+                }
+                if (linePtr!=end && *linePtr==':')
+                {
+                    skipCharAndSpacesToEnd(linePtr, end);
+                    if (!getAbsoluteValueArg(asmr, value2, linePtr, true))
+                        return false;
+                }
+                else
+                    value2 = value1;
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr == end || *linePtr != ']')
+                {   // error
+                    asmr.printError(regVarPlace, "Unterminated register range");
+                    return false;
+                }
+                ++linePtr;
+                if (value2 < value1)
+                {   // error (illegal register range)
+                    asmr.printError(regVarPlace, "Illegal register range");
+                    return false;
+                }
+                if (value2 >= rend || value1 >= rend)
+                {
+                    asmr.printError(regVarPlace, "Register range out of range");
+                    return false;
+                }
+                rend = value2+1;
+                rstart = value1;
+            }
+            
+            if (regsNum!=0 && regsNum != rend-rstart)
+            {
+                printXRegistersRequired(asmr, regVarPlace, regTypeName, regsNum);
+                return false;
+            }
+            
+            const bool read = (varPlace!=ASMPLACE_NONE) ? 
+                (gcnPlaceInfoTbl[varPlace] & GCNPLACEFLAG_READ) != 0 : false;
+            const bool write = (varPlace!=ASMPLACE_NONE) ? 
+                (gcnPlaceInfoTbl[varPlace] & GCNPLACEFLAG_WRITE) != 0 : false;
+            varUsage = { asmr.currentOutPos, varPlace, uint16_t(rstart), uint16_t(rend),
+                read, write, 0, regVar };
+            return true;
+        }
+    }
+    if (printRegisterRangeExpected(asmr, regVarPlace, regTypeName, regsNum, required))
+        return false;
+    varUsage.regVar = nullptr;
+    linePtr = oldLinePtr; // revert current line pointer
+    return true;
+}
+
 bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
             RegRange& regPair, uint16_t arch, cxuint regsNum, Flags flags, bool required)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    const char* vgprRangePlace = linePtr;
+    const char* regRangePlace = linePtr;
     
     AsmSymbolEntry* symEntry = nullptr;
     if (linePtr!=end && *linePtr=='@')
@@ -106,7 +250,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
                 {   // error
-                    asmr.printError(vgprRangePlace, "Unterminated register range");
+                    asmr.printError(regRangePlace, "Unterminated register range");
                     return false;
                 }
                 if (linePtr!=end && *linePtr==':')
@@ -120,18 +264,18 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr == end || *linePtr != ']')
                 {   // error
-                    asmr.printError(vgprRangePlace, "Unterminated register range");
+                    asmr.printError(regRangePlace, "Unterminated register range");
                     return false;
                 }
                 ++linePtr;
                 if (value2 < value1)
                 {   // error (illegal register range)
-                    asmr.printError(vgprRangePlace, "Illegal register range");
+                    asmr.printError(regRangePlace, "Illegal register range");
                     return false;
                 }
                 if (value2 >= rend-rstart || value1 >= rend-rstart)
                 {
-                    asmr.printError(vgprRangePlace, "Register range out of range");
+                    asmr.printError(regRangePlace, "Register range out of range");
                     return false;
                 }
                 rend = rstart + value2+1;
@@ -140,7 +284,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
             
             if (regsNum!=0 && regsNum != rend-rstart)
             {
-                printXRegistersRequired(asmr, vgprRangePlace, regTypeName, regsNum);
+                printXRegistersRequired(asmr, regRangePlace, regTypeName, regsNum);
                 return false;
             }
             const cxuint maxSGPRsNum = (arch&ARCH_RX3X0) ? 102 : 104;
@@ -148,14 +292,14 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
             if ((flags & INSTROP_UNALIGNED) == 0 && rstart<maxSGPRsNum)
                 if ((rend-rstart==2 && (rstart&1)!=0) || (rend-rstart>2 && (rstart&3)!=0))
                 {
-                    asmr.printError(vgprRangePlace, "Unaligned scalar register range");
+                    asmr.printError(regRangePlace, "Unaligned scalar register range");
                     return false;
                 }
             regPair = { rstart, rend };
             return true;
         }
     }
-    if (printRegisterRangeExpected(asmr, vgprRangePlace, regTypeName, regsNum, required))
+    if (printRegisterRangeExpected(asmr, regRangePlace, regTypeName, regsNum, required))
         return false;
     regPair = { 0, 0 }; // no range
     linePtr = oldLinePtr; // revert current line pointer

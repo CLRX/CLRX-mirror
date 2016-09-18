@@ -536,7 +536,7 @@ enum : AsmVarPlace
     GCNPLACE_VOP_SRC0,
     GCNPLACE_VOP_SRC1,
     GCNPLACE_VOP_VDST,
-    GCNPLACE_VOP3_SRC0,
+    GCNPLACE_VOP3_VSRC0,
     GCNPLACE_VOP3_SRC1,
     GCNPLACE_VOP3_VDST,
     GCNPLACE_VOP3_SSRC,
@@ -586,7 +586,7 @@ struct AsmVarUsage
     bool read;
     bool write;
     cxbyte align;   /// register alignment
-    AsmRegVar* regVar;
+    const AsmRegVar* regVar;
 };
 
 /// assembler section
@@ -605,8 +605,9 @@ struct AsmSection
     /// reg-var usage in section
     std::vector<AsmVarUsage> regVarUsages;
     
-    bool addRegVar(const CString& name, const AsmRegVar& var)
-    { return regVars.insert(std::make_pair(name, var)).second; }
+    bool addRegVar(const CString& name, const AsmRegVar& var);
+    
+    bool getRegVar(const CString& name, const AsmRegVar*& regVar) const;
     
     /// get section's size
     size_t getSize() const

@@ -34,6 +34,18 @@
 
 using namespace CLRX;
 
+bool AsmSection::addRegVar(const CString& name, const AsmRegVar& var)
+{ return regVars.insert(std::make_pair(name, var)).second; }
+
+bool AsmSection::getRegVar(const CString& name, const AsmRegVar*& regVar) const
+{ 
+    auto it = regVars.find(name);
+    if (it==regVars.end())
+        return false;
+    regVar = &it->second;
+    return true;
+}
+
 const cxbyte CLRX::tokenCharTable[96] =
 {
     //' '   '!'   '"'   '#'   '$'   '%'   '&'   '''
