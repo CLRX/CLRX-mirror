@@ -34,6 +34,8 @@
 
 #cmakedefine HAVE_INT128
 
+#cmakedefine HAVE_UBUNTU_GPUPRO
+
 /* architecture setup */
 
 #if defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) || \
@@ -134,7 +136,11 @@
 #  ifdef HAVE_32BIT
 #  define DEFAULT_AMDOCLPATH "/usr/lib/libamdocl32.so"
 #  else
-#  define DEFAULT_AMDOCLPATH "/usr/lib64/libamdocl64.so"
+#    ifdef HAVE_UBUNTU_GPUPRO
+#    define DEFAULT_AMDOCLPATH "/usr/lib/x86_64-linux-gnu/amdgpu-pro/libamdocl64.so"
+#    else
+#    define DEFAULT_AMDOCLPATH "/usr/lib64/libamdocl64.so"
+#    endif
 #  endif
 
 #  define CLRX_NATIVE_DIR_SEP '/'

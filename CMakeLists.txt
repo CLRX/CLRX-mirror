@@ -115,6 +115,11 @@ ELSE(BUILD_32BIT)
     ENDIF(MSVC)
 ENDIF(BUILD_32BIT)
 
+IF(IS_DIRECTORY "/usr/lib/x86_64-linux-gnu/amdgpu-pro")
+SET(HAVE_UBUNTU_GPUPRO TRUE)
+MESSAGE(STATUS "AMDGPU-PRO for Ubuntu is found")
+ENDIF(IS_DIRECTORY "/usr/lib/x86_64-linux-gnu/amdgpu-pro")
+
 IF("${PROJECT_SOURCE_DIR}" MATCHES "${PROJECT_BINARY_DIR}")
     MESSAGE("Please do an out-of-tree build:")
     MESSAGE("rm -f CMakeCache.txt; mkdir -p default; cd default; cmake ..; make")
