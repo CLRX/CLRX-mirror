@@ -501,6 +501,29 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
         amdCL2Input.rwData = innerBin.getRwData();
         amdCL2Input.bssAlignment = innerBin.getBssAlignment();
         amdCL2Input.bssSize = innerBin.getBssSize();
+        
+        {
+            const cxbyte* noteContent = innerBin.getSectionContent(".note");
+            size_t notesSize = innerBin.getSectionHeader(".note").sh_size;
+            // find note about AMDGPU
+            for (size_t offset = 0; offset < notesSize; )
+            {
+                const Elf64_Nhdr* nhdr = (const Elf64_Nhdr*)(noteContent + offset);
+                size_t namesz = ULEV(nhdr->n_namesz);
+                size_t descsz = ULEV(nhdr->n_descsz);
+                if (ULEV(nhdr->n_type) == 0x3 && namesz==4 && descsz==0x1a &&
+                    ::strcmp((const char*)noteContent+offset+sizeof(Elf64_Nhdr), "AMD")==0)
+                {    // AMDGPU type
+                    const uint32_t* content = (const uint32_t*)
+                            (noteContent+offset+sizeof(Elf64_Nhdr) + 4);
+                    amdCL2Input.archMinor = ULEV(content[2]);
+                    amdCL2Input.archStepping = ULEV(content[3]);
+                }
+                size_t align = (((namesz+descsz)&3)!=0) ? 4-((namesz+descsz)&3) : 0;
+                offset += sizeof(Elf64_Nhdr) + namesz + descsz + align;
+            }
+        }
+        
         amdCL2Input.samplerConfig = samplerConfig;
         if (samplerConfig)
         {

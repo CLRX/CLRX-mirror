@@ -55,25 +55,28 @@ AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(const AmdCL2Input* amdInput)
 { }
 
 AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
+       uint32_t archMinor, uint32_t archStepping,
        uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData,
        size_t rwDataSize, const cxbyte* rwData, 
        const std::vector<AmdCL2KernelInput>& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    input = new AmdCL2Input{deviceType, globalDataSize, globalData,
-                rwDataSize, rwData, 0, 0, 0, nullptr, false, { }, { },
-                driverVersion, "", "", kernelInputs };
+    input = new AmdCL2Input{deviceType, archMinor, archStepping,
+                globalDataSize, globalData, rwDataSize, rwData, 0, 0, 0,
+                nullptr, false, { }, { }, driverVersion, "", "", kernelInputs };
 }
 
 AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
+       uint32_t archMinor, uint32_t archStepping,
        uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData,
        size_t rwDataSize, const cxbyte* rwData,
        std::vector<AmdCL2KernelInput>&& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    input = new AmdCL2Input{deviceType, globalDataSize, globalData,
-                rwDataSize, rwData, 0, 0, 0, nullptr, false, { }, { },
-                driverVersion, "", "", std::move(kernelInputs) };
+    input = new AmdCL2Input{deviceType, archMinor, archStepping,
+                globalDataSize, globalData, rwDataSize, rwData, 0, 0, 0,
+                nullptr, false, { }, { }, driverVersion, "", "",
+                std::move(kernelInputs) };
 }
 
 AmdCL2GPUBinGenerator::~AmdCL2GPUBinGenerator()
@@ -1637,6 +1640,8 @@ static const cxbyte noteSectionData[168] =
     0xf0, 0x83, 0x17, 0xfb, 0xfc, 0x7f, 0x00, 0x00
 };
 
+static const size_t noteAMDGPUTypeOffset = 0x74;
+
 static const cxbyte noteSectionData16_3[200] =
 {
     0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00,
@@ -1665,6 +1670,8 @@ static const cxbyte noteSectionData16_3[200] =
     0x63, 0x6f, 0x6e, 0x76, 0x65, 0x6e, 0x74, 0x69,
     0x6f, 0x6e, 0x3d, 0x30, 0x00, 0x00, 0x00, 0x00,
 };
+
+static const size_t noteAMDGPUTypeOffset_16_3 = 0x48;
 
 static CString constructName(size_t prefixSize, const char* prefix, const CString& name,
                  size_t suffixSize, const char* suffix)
@@ -1931,17 +1938,21 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8, ".strtab",
                                   SHT_STRTAB, SHF_STRINGS, 0, 0));
             innerBinSectionTable[ELFSECTID_STRTAB-ELFSECTID_START] = extraSectionIndex++;
-            if (!gpuProDriver)
-                innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData16_3),
-                           noteSectionData16_3, 8, ".note", SHT_NOTE, 0));
-            else
-            {   /* AMD GPU PRO */
-                noteBuf.reset(new cxbyte[sizeof(noteSectionData16_3)]);
-                ::memcpy(noteBuf.get(), noteSectionData16_3, sizeof(noteSectionData16_3));
+            
+            noteBuf.reset(new cxbyte[sizeof(noteSectionData16_3)]);
+            ::memcpy(noteBuf.get(), noteSectionData16_3, sizeof(noteSectionData16_3));
+            // set AMDGPU type
+            SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset_16_3),
+                  (arch==GPUArchitecture::GCN1_2) ? 8 : 7);
+            SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset_16_3 + 4),
+                  input->archMinor);
+            SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset_16_3 + 8),
+                  input->archStepping);
+            
+            if (gpuProDriver)
                 noteBuf[197] = 't';
-                innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData16_3),
-                           noteBuf.get(), 8, ".note", SHT_NOTE, 0));
-            }
+            innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData16_3),
+                       noteBuf.get(), 8, ".note", SHT_NOTE, 0));
             innerBinSectionTable[AMDCL2SECTID_NOTE-ELFSECTID_START] = extraSectionIndex++;
         }
         if (hasRWData)
@@ -2007,8 +2018,18 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         
         if (!is16_3Ver)
         {   /* this order of section for 1912.05 driver version */
-            innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData), noteSectionData, 8,
-                        ".note", SHT_NOTE, 0));
+            noteBuf.reset(new cxbyte[sizeof(noteSectionData)]);
+            ::memcpy(noteBuf.get(), noteSectionData, sizeof(noteSectionData));
+            // set AMDGPU type
+            SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset),
+                  (arch==GPUArchitecture::GCN1_2) ? 8 : 7);
+            SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset + 4),
+                  input->archMinor);
+            SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset + 8),
+                  input->archStepping);
+            innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData),
+                       noteBuf.get(), 8, ".note", SHT_NOTE, 0));
+            
             innerBinSectionTable[AMDCL2SECTID_NOTE-ELFSECTID_START] = extraSectionIndex++;
             innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".strtab",
                                   SHT_STRTAB, SHF_STRINGS, 0, 0));

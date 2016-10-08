@@ -112,6 +112,8 @@ struct AmdCL2KernelInput
 struct AmdCL2Input
 {
     GPUDeviceType deviceType;   ///< GPU device type
+    uint32_t archMinor;            /// arch minor
+    uint32_t archStepping;         /// arch stepping
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
     size_t rwDataSize;  ///< global rw data size
@@ -153,6 +155,8 @@ public:
     /// constructor
     /**
      * \param deviceType GPU device type
+     * \param archMinor architecture minor
+     * \param archStepping architecture minor
      * \param driverVersion number of driver version (majorVersion*100 + minorVersion)
      * \param globalDataSize size of constant global data
      * \param globalData global constant data
@@ -160,12 +164,14 @@ public:
      * \param rwData rw global data
      * \param kernelInputs array of kernel inputs
      */
-    AmdCL2GPUBinGenerator(GPUDeviceType deviceType, uint32_t driverVersion,
+    AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
+           uint32_t archMinor, uint32_t archStepping, uint32_t driverVersion,
            size_t globalDataSize, const cxbyte* globalData,
            size_t rwDataSize, const cxbyte* rwData,
            const std::vector<AmdCL2KernelInput>& kernelInputs);
     /// constructor
-    AmdCL2GPUBinGenerator(GPUDeviceType deviceType, uint32_t driverVersion,
+    AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
+           uint32_t archMinor, uint32_t archStepping, uint32_t driverVersion,
            size_t globalDataSize, const cxbyte* globalData,
            size_t rwDataSize, const cxbyte* rwData,
            std::vector<AmdCL2KernelInput>&& kernelInputs);

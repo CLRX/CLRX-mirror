@@ -147,6 +147,8 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
         throw Exception("Can't determine GPU device type");
     
     input->deviceType = gpuCodeTable[index].deviceType;
+    input->archMinor = 0;
+    input->archStepping = 0;
     input->compileOptions = binary.getCompileOptions();
     input->aclVersionString = binary.getAclVersionString();
     bool isInnerNewBinary = binary.hasInnerBinary() &&
@@ -178,6 +180,29 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
         input->samplerInit = innerBin.getSamplerInit();
         input->bssAlignment = innerBin.getBssAlignment();
         input->bssSize = innerBin.getBssSize();
+        
+        {
+            const cxbyte* noteContent = innerBin.getSectionContent(".note");
+            size_t notesSize = innerBin.getSectionHeader(".note").sh_size;
+            // find note about AMDGPU
+            for (size_t offset = 0; offset < notesSize; )
+            {
+                const Elf64_Nhdr* nhdr = (const Elf64_Nhdr*)(noteContent + offset);
+                size_t namesz = ULEV(nhdr->n_namesz);
+                size_t descsz = ULEV(nhdr->n_descsz);
+                if (ULEV(nhdr->n_type) == 0x3 && namesz==4 && descsz==0x1a &&
+                    ::strcmp((const char*)noteContent+offset+sizeof(Elf64_Nhdr), "AMD")==0)
+                {    // AMDGPU type
+                    const uint32_t* content = (const uint32_t*)
+                            (noteContent+offset+sizeof(Elf64_Nhdr) + 4);
+                    input->archMinor = ULEV(content[2]);
+                    input->archStepping = ULEV(content[3]);
+                }
+                size_t align = (((namesz+descsz)&3)!=0) ? 4-((namesz+descsz)&3) : 0;
+                offset += sizeof(Elf64_Nhdr) + namesz + descsz + align;
+            }
+        }
+        
         // if no kernels and data
         if (kernelInfosNum==0)
             return input.release();
@@ -780,7 +805,11 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     
     {
         char buf[40];
-        size_t size = snprintf(buf, 40, ".driver_version %u\n",
+        size_t size = snprintf(buf, 40, ".arch_minor %u\n", amdCL2Input->archMinor);
+        output.write(buf, size);
+        size = snprintf(buf, 40, ".arch_stepping %u\n", amdCL2Input->archStepping);
+        output.write(buf, size);
+        size = snprintf(buf, 40, ".driver_version %u\n",
                    amdCL2Input->driverVersion);
         output.write(buf, size);
     }

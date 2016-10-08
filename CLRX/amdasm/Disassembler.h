@@ -229,6 +229,8 @@ struct AmdCL2DisasmKernelInput
 struct AmdCL2DisasmInput
 {
     GPUDeviceType deviceType;   ///< GPU device type
+    uint32_t archMinor;     ///< GPU arch minor
+    uint32_t archStepping;     ///< GPU arch stepping
     cxuint driverVersion; ///< driver version
     CString compileOptions; ///< compile options which used by in clBuildProgram
     CString aclVersionString; ///< acl version string

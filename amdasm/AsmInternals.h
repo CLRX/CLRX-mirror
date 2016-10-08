@@ -463,6 +463,9 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
 {
     static bool checkPseudoOpName(const CString& string);
     
+    static void setArchMinor(AsmAmdCL2Handler& handler, const char* linePtr);
+    static void setArchStepping(AsmAmdCL2Handler& handler, const char* linePtr);
+    
     static void setAclVersion(AsmAmdCL2Handler& handler, const char* linePtr);
     static void setCompileOptions(AsmAmdCL2Handler& handler, const char* linePtr);
     

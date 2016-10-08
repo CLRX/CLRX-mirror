@@ -33,7 +33,8 @@ using namespace CLRX;
 
 static const char* amdCL2PseudoOpNamesTbl[] =
 {
-    "acl_version", "arg", "bssdata", "compile_options", "config",
+    "acl_version", "arch_minor", "arch_stepping",
+    "arg", "bssdata", "compile_options", "config",
     "cws", "debugmode", "dims", "driver_version", "dx10clamp", "exceptions",
     "floatmode", "get_driver_version", "globaldata", "ieeemode", "inner",
     "isametadata", "localsize", "metadata", "pgmrsrc1", "pgmrsrc2",
@@ -45,7 +46,8 @@ static const char* amdCL2PseudoOpNamesTbl[] =
 
 enum
 {
-    AMDCL2OP_ACL_VERSION = 0, AMDCL2OP_ARG, AMDCL2OP_BSSDATA, AMDCL2OP_COMPILE_OPTIONS,
+    AMDCL2OP_ACL_VERSION = 0, AMDCL2OP_ARCH_MINOR, AMDCL2OP_ARCH_STEPPING,
+    AMDCL2OP_ARG, AMDCL2OP_BSSDATA, AMDCL2OP_COMPILE_OPTIONS,
     AMDCL2OP_CONFIG, AMDCL2OP_CWS, AMDCL2OP_DEBUGMODE, AMDCL2OP_DIMS,
     AMDCL2OP_DRIVER_VERSION, AMDCL2OP_DX10CLAMP, AMDCL2OP_EXCEPTIONS,
     AMDCL2OP_FLOATMODE, AMDCL2OP_GET_DRIVER_VERSION, AMDCL2OP_GLOBALDATA,
@@ -347,6 +349,32 @@ void AsmAmdCL2PseudoOps::setAclVersion(AsmAmdCL2Handler& handler, const char* li
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     handler.output.aclVersion = out;
+}
+
+void AsmAmdCL2PseudoOps::setArchMinor(AsmAmdCL2Handler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value;
+    if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.archMinor = value;
+}
+
+void AsmAmdCL2PseudoOps::setArchStepping(AsmAmdCL2Handler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value;
+    if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.archStepping = value;
 }
 
 void AsmAmdCL2PseudoOps::setCompileOptions(AsmAmdCL2Handler& handler, const char* linePtr)
@@ -1163,6 +1191,12 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
     {
         case AMDCL2OP_ACL_VERSION:
             AsmAmdCL2PseudoOps::setAclVersion(*this, linePtr);
+            break;
+        case AMDCL2OP_ARCH_MINOR:
+            AsmAmdCL2PseudoOps::setArchMinor(*this, linePtr);
+            break;
+        case AMDCL2OP_ARCH_STEPPING:
+            AsmAmdCL2PseudoOps::setArchStepping(*this, linePtr);
             break;
         case AMDCL2OP_ARG:
             AsmAmdCL2PseudoOps::doArg(*this, stmtPlace, linePtr);

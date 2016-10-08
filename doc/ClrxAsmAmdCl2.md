@@ -60,6 +60,18 @@ Syntax: .acl_version "STRING"
 
 Set ACL version string.
 
+### .arch_minor
+
+Syntax: .arch_minor ARCH_MINOR
+
+Set architecture minor number.
+
+### .arch_stepping
+
+Syntax: .arch_minor ARCH_STEPPING
+
+Set architecture stepping number.
+
 ### .arg
 
 Syntax for scalar: .arg ARGNAME \[, "ARGTYPENAME"], ARGTYPE[, unused]  
