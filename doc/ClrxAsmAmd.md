@@ -143,6 +143,7 @@ Following pseudo-ops can be inside kernel config:
 * .hwlocal
 * .hwregion
 * .ieeemode
+* .localsize
 * .pgmrsrc2
 * .printfid
 * .privateid

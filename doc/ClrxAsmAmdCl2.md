@@ -136,6 +136,36 @@ Syntax: .bssdata [align=ALIGNMENT]
 
 Go to global data bss section. Optional argument sets alignment of section.
 
+### .config
+
+Open kernel configuration. Must be inside kernel. Kernel configuration can not be
+defined if any isametadata, metadata or stub was defined.
+Following pseudo-ops can be inside kernel config:
+
+* .arg
+* .cws
+* .debugmode
+* .dims
+* .dx10clamp
+* .exceptions
+* .localsize
+* .ieeemode
+* .pgmrsrc1
+* .pgmrsrc2
+* .priority
+* .privmode
+* .sampler
+* .scratchbuffer
+* .setupargs
+* .sgprsnum
+* .tgsize
+* .uavid
+* .useargs
+* .useenqueue
+* .usegeneric
+* .usesetup
+* .vgprsnum
+
 ### .cws
 
 Syntax: .cws SIZEHINT[, SIZEHINT[, SIZEHINT]]
