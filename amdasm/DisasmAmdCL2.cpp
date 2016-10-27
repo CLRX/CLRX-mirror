@@ -190,7 +190,9 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
                 const Elf64_Nhdr* nhdr = (const Elf64_Nhdr*)(noteContent + offset);
                 size_t namesz = ULEV(nhdr->n_namesz);
                 size_t descsz = ULEV(nhdr->n_descsz);
-                if (ULEV(nhdr->n_type) == 0x3 && namesz==4 && descsz==0x1a &&
+                if (usumGt(offset, namesz+descsz, notesSize))
+                    throw Exception("Note offset+size out of range");
+                if (ULEV(nhdr->n_type) == 0x3 && namesz==4 && descsz>=0x1a &&
                     ::strcmp((const char*)noteContent+offset+sizeof(Elf64_Nhdr), "AMD")==0)
                 {    // AMDGPU type
                     const uint32_t* content = (const uint32_t*)

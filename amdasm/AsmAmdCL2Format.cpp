@@ -357,8 +357,11 @@ void AsmAmdCL2PseudoOps::setArchMinor(AsmAmdCL2Handler& handler, const char* lin
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     uint64_t value;
+    const char* valuePlace = linePtr;
     if (!getAbsoluteValueArg(asmr, value, linePtr, true))
         return;
+    asmr.printWarningForRange(sizeof(cxuint)<<3, value,
+                 asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     handler.output.archMinor = value;
@@ -370,8 +373,11 @@ void AsmAmdCL2PseudoOps::setArchStepping(AsmAmdCL2Handler& handler, const char* 
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     uint64_t value;
+    const char* valuePlace = linePtr;
     if (!getAbsoluteValueArg(asmr, value, linePtr, true))
         return;
+    asmr.printWarningForRange(sizeof(cxuint)<<3, value,
+                 asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     handler.output.archStepping = value;
