@@ -147,6 +147,7 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
         throw Exception("Can't determine GPU device type");
     
     input->deviceType = gpuCodeTable[index].deviceType;
+    GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
     input->archMinor = 0;
     input->archStepping = 0;
     input->compileOptions = binary.getCompileOptions();
@@ -197,6 +198,10 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
                 {    // AMDGPU type
                     const uint32_t* content = (const uint32_t*)
                             (noteContent+offset+sizeof(Elf64_Nhdr) + 4);
+                    uint32_t major = ULEV(content[1]);
+                    if ((arch==GPUArchitecture::GCN1_2 && major!=8) ||
+                        (arch==GPUArchitecture::GCN1_1 && major!=7))
+                        throw Exception("Wrong arch major for GPU architecture");
                     input->archMinor = ULEV(content[2]);
                     input->archStepping = ULEV(content[3]);
                 }
