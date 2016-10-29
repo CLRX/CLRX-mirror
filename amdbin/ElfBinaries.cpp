@@ -592,11 +592,14 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
         const ElfRegionTemplate<Types>& region = regions[i];
         // fix alignment
         uint64_t toFill = 0;
-        if (region.align > 1)
+        typename Types::Word ralign = (region.type==ElfRegionType::SECTION) ?
+                        region.section.align : 0;
+        ralign = std::max(region.align, ralign);
+        if (ralign > 1)
         {
             const uint64_t curOffset = (fob.getWritten()-startOffset);
-            if (region.align!=0 && (curOffset&(region.align-1))!=0)
-                toFill = region.align - (curOffset&(region.align-1));
+            if (ralign!=0 && (curOffset&(ralign-1))!=0)
+                toFill = ralign - (curOffset&(ralign-1));
             fob.fill(toFill, 0);
         }
         assert(regionOffsets[i] == fob.getWritten()-startOffset);
@@ -614,7 +617,10 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         sregion.section.zeroOffset;
                 SLEV(phdr.p_offset, !zeroOffset ?
                         regionOffsets[progHeader.regionStart] : 0);
-                SLEV(phdr.p_align, regions[progHeader.regionStart].align);
+                typename Types::Word align = (sregion.type==ElfRegionType::SECTION) ?
+                        sregion.section.align : 0;
+                align = std::max(sregion.align, align);
+                SLEV(phdr.p_align, align);
                 
                 /* paddrBase and vaddrBase is base to program header virtual and physical
                  * addresses for program header. if not defined then get address base

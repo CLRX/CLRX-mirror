@@ -499,6 +499,7 @@ struct ElfRegionTemplate
         typename Types::Word addrBase;   ///< section address base
         typename Types::Word entSize;    ///< entries size
         bool zeroOffset;
+        typename Types::Word align;
     } section;  ///< section structure
     
     /// constructor for user region
@@ -534,11 +535,13 @@ struct ElfRegionTemplate
               typename Types::Word _align, const char* _name, uint32_t _type,
               typename Types::SectionFlags _flags, uint32_t _link = 0, uint32_t _info = 0,
               typename Types::Word _addrBase = 0,
-              typename Types::Word _entSize = 0, bool _zeroOffset = false)
+              typename Types::Word _entSize = 0, bool _zeroOffset = false,
+              typename Types::Word _sectAlign = 0)
             : type(ElfRegionType::SECTION), dataFromPointer(true), size(_size),
               align(_align), data(_data)
     {
-        section = {_name, _type, _flags, _link, _info, _addrBase, _entSize, _zeroOffset};
+        section = {_name, _type, _flags, _link, _info, _addrBase,
+            _entSize, _zeroOffset, _sectAlign};
     }
     
     /// constructor for section with generator
@@ -546,11 +549,13 @@ struct ElfRegionTemplate
               typename Types::Word _align, const char* inName, uint32_t _type,
               typename Types::SectionFlags _flags, uint32_t _link = 0, uint32_t _info = 0,
               typename Types::Word _addrBase = 0,
-              typename Types::Word _entSize = 0, bool _zeroOffset = false)
+              typename Types::Word _entSize = 0, bool _zeroOffset = false,
+              typename Types::Word _sectAlign = 0)
             : type(ElfRegionType::SECTION), dataFromPointer(false), size(_size),
               align(_align), dataGen(_data)
     {
-        section = {inName, _type, _flags, _link, _info, _addrBase, _entSize, _zeroOffset};
+        section = {inName, _type, _flags, _link, _info, _addrBase,
+            _entSize, _zeroOffset, _sectAlign};
     }
     /// constructor for external section (BinSection)
     /**
@@ -568,7 +573,7 @@ struct ElfRegionTemplate
             typename Types::SectionFlags(binSection.flags),
             uint32_t(convertSectionId(binSection.linkId, builtinSections,
                              maxBuiltinSection, startExtraIndex)),
-            binSection.info, 0, typename Types::Word(binSection.entSize) };
+            binSection.info, 0, typename Types::Word(binSection.entSize), 0 };
     }
     
     /// get program header table region
