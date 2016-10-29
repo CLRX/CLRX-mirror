@@ -15,6 +15,7 @@ CLRX/amdbin/Commons.h -text
 CLRX/amdbin/Elf.h -text
 CLRX/amdbin/ElfBinaries.h -text
 CLRX/amdbin/GalliumBinaries.h -text
+CLRX/amdbin/ROCmBinaries.h -text
 CLRX/utils/CLIParser.h -text
 CLRX/utils/CString.h -text
 CLRX/utils/Containers.h -text
