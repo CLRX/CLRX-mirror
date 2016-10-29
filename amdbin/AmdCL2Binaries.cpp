@@ -52,7 +52,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
             size_t binaryCodeSize, cxbyte* binaryCode, Flags _creationFlags)
         : creationFlags(_creationFlags), binarySize(binaryCodeSize), binary(binaryCode)
 {
-    if ((creationFlags & (AMDBIN_CREATE_KERNELDATA|AMDBIN_CREATE_KERNELSTUBS)) == 0)
+    if ((creationFlags & (AMDCL2BIN_CREATE_KERNELDATA|AMDCL2BIN_CREATE_KERNELSTUBS)) == 0)
         return; // nothing to initialize
     uint16_t textIndex = SHN_UNDEF;
     try

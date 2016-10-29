@@ -129,9 +129,9 @@ try
                 }
                 else if (isAmdCL2Binary(binaryData.size(), binaryData.data()))
                 {   // AMD OpenCL 2.0 binary
-                    binFlags |= AMDBIN_INNER_CREATE_KERNELDATA |
-                                AMDBIN_INNER_CREATE_KERNELDATAMAP |
-                                AMDBIN_INNER_CREATE_KERNELSTUBS;
+                    binFlags |= AMDCL2BIN_INNER_CREATE_KERNELDATA |
+                                AMDCL2BIN_INNER_CREATE_KERNELDATAMAP |
+                                AMDCL2BIN_INNER_CREATE_KERNELSTUBS;
                     AmdCL2MainGPUBinary amdBin(binaryData.size(),
                                        binaryData.data(), binFlags);
                     Disassembler disasm(amdBin, std::cout, disasmFlags);

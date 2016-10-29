@@ -39,13 +39,13 @@ namespace CLRX
 {
 
 enum : Flags {
-    AMDBIN_CREATE_KERNELDATA = 0x10,    ///< create kernel setup
-    AMDBIN_CREATE_KERNELDATAMAP = 0x20,    ///< create kernel setups map
-    AMDBIN_CREATE_KERNELSTUBS = 0x40,    ///< create kernel stub
+    AMDCL2BIN_CREATE_KERNELDATA = 0x10,    ///< create kernel setup
+    AMDCL2BIN_CREATE_KERNELDATAMAP = 0x20,    ///< create kernel setups map
+    AMDCL2BIN_CREATE_KERNELSTUBS = 0x40,    ///< create kernel stub
     
-    AMDBIN_INNER_CREATE_KERNELDATA = 0x10000,    ///< create kernel setup
-    AMDBIN_INNER_CREATE_KERNELDATAMAP = 0x20000,    ///< create kernel setups map
-    AMDBIN_INNER_CREATE_KERNELSTUBS = 0x40000    ///< create kernel stub
+    AMDCL2BIN_INNER_CREATE_KERNELDATA = 0x10000,    ///< create kernel setup
+    AMDCL2BIN_INNER_CREATE_KERNELDATAMAP = 0x20000,    ///< create kernel setups map
+    AMDCL2BIN_INNER_CREATE_KERNELSTUBS = 0x40000    ///< create kernel stub
 };
 
 /// AMD OpenCL 2.0 GPU metadata for kernel
@@ -130,13 +130,13 @@ public:
     
     /// return if binary has kernel datas
     bool hasKernelData() const
-    { return creationFlags & AMDBIN_CREATE_KERNELDATA; }
+    { return creationFlags & AMDCL2BIN_CREATE_KERNELDATA; }
     /// return if binary has kernel datas map
     bool hasKernelDataMap() const
-    { return creationFlags & AMDBIN_CREATE_KERNELDATAMAP; }
+    { return creationFlags & AMDCL2BIN_CREATE_KERNELDATAMAP; }
     /// return if binary has kernel stubs
     bool hasKernelStubs() const
-    { return creationFlags & AMDBIN_CREATE_KERNELSTUBS; }
+    { return creationFlags & AMDCL2BIN_CREATE_KERNELSTUBS; }
     
     /// get kernel stub for specified index
     const AmdCL2GPUKernelStub& getKernelStub(size_t index) const
@@ -183,10 +183,10 @@ public:
     
     /// return if binary has kernel datas
     bool hasKernelData() const
-    { return creationFlags & AMDBIN_CREATE_KERNELDATA; }
+    { return creationFlags & AMDCL2BIN_CREATE_KERNELDATA; }
     /// return if binary has kernel datas map
     bool hasKernelDataMap() const
-    { return creationFlags & AMDBIN_CREATE_KERNELDATAMAP; }
+    { return creationFlags & AMDCL2BIN_CREATE_KERNELDATAMAP; }
     
     /// get global data size
     size_t getGlobalDataSize() const

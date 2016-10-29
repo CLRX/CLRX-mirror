@@ -1287,8 +1287,8 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
                 AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                 AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
                 AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_INNER_CREATE_CALNOTES |
-                AMDBIN_CREATE_INFOSTRINGS | AMDBIN_INNER_CREATE_KERNELDATA |
-                AMDBIN_INNER_CREATE_KERNELDATAMAP | AMDBIN_INNER_CREATE_KERNELSTUBS);
+                AMDBIN_CREATE_INFOSTRINGS | AMDCL2BIN_INNER_CREATE_KERNELDATA |
+                AMDCL2BIN_INNER_CREATE_KERNELDATAMAP | AMDCL2BIN_INNER_CREATE_KERNELSTUBS);
             Disassembler disasm(amdBin, disasmOss, disasmFlags);
             disasm.disassemble();
             resultStr = disasmOss.str();
