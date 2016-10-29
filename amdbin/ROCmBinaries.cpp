@@ -32,12 +32,28 @@
 
 using namespace CLRX;
 
-ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode,
-            Flags creationFlags)
+ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags)
+        : ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
 }
 
 const ROCmKernel& ROCmBinary::getKernel(const char* name) const
 {
-    throw Exception("aaaa");
+    KernelMap::const_iterator it = binaryMapFind(kernelsMap.begin(),
+                             kernelsMap.end(), name);
+    if (it == kernelsMap.end())
+        throw Exception("Can't find kernel name");
+    return kernels[it->second];
+}
+
+bool CLRX::isROCmBinary(size_t binarySize, const cxbyte* binary)
+{
+    if (!isElfBinary(binarySize, binary))
+        return false;
+    if (binary[EI_CLASS] != ELFCLASS64)
+        return false;
+    const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr*>(binary);
+    if (ULEV(ehdr->e_machine) != 0xe0 || ULEV(ehdr->e_flags)!=0)
+        return false;
+    return true;
 }

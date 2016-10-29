@@ -83,6 +83,9 @@ public:
     const ROCmKernel& getKernel(const char* name) const;
 };
 
+/// check whether is Amd OpenCL 2.0 binary
+extern bool isROCmBinary(size_t binarySize, const cxbyte* binary);
+
 };
 
 #endif
