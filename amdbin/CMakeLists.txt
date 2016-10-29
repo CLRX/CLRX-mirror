@@ -25,7 +25,8 @@ SET(LIBAMDBINSRC
         AmdCL2Binaries.cpp
         AmdCL2BinGen.cpp
         ElfBinaries.cpp
-        GalliumBinaries.cpp)
+        GalliumBinaries.cpp
+        ROCmBinaries.cpp)
 
 SET(LINK_LIBRARIES CLRXUtils)
 

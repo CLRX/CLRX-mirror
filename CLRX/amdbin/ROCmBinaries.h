@@ -29,6 +29,7 @@
 #include <memory>
 #include <string>
 #include <CLRX/amdbin/Elf.h>
+#include <CLRX/amdbin/ElfBinaries.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/Utilities.h>
@@ -45,7 +46,7 @@ enum : Flags {
 };
 
 /// ROCm GPU metadata for kernel
-struct ROCmGPUKernel
+struct ROCmKernel
 {
     CString kernelName; ///< kernel name
     size_t setupSize;   ///< setup size
@@ -58,14 +59,28 @@ struct ROCmGPUKernel
 /** This object doesn't copy binary code content.
  * Only it takes and uses a binary code.
  */
-class ROCmMainGPUBinary : public ElfBinary64
+class ROCmBinary : public ElfBinary64, public NonCopyableAndNonMovable
 {
 public:
-    typedef Array<std::pair<CString, size_t> > MetadataMap;
-protected:
+    typedef Array<std::pair<CString, size_t> > KernelMap;
+private:
     size_t kernelsNum;
-    std::unique_ptr<ROCmGPUKernel[]> kernels;  ///< AMD metadatas
+    std::unique_ptr<ROCmKernel[]> kernels;  ///< AMD metadatas
+    KernelMap kernelsMap;
 public:
+    ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode,
+            Flags creationFlags = ROCMBIN_CREATE_ALL);
+    ~ROCmBinary() = default;
+    
+    size_t getKernelsNum() const
+    { return kernelsNum; }
+    
+    /// get kernel by index
+    const ROCmKernel& getKernel(size_t index) const
+    { return kernels[index]; }
+    
+    /// get kernel by name
+    const ROCmKernel& getKernel(const char* name) const;
 };
 
 };

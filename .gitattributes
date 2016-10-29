@@ -61,6 +61,7 @@ amdbin/AmdCL2Binaries.cpp -text
 amdbin/CMakeLists.txt -text svneol=unset#text/plain
 amdbin/ElfBinaries.cpp -text
 amdbin/GalliumBinaries.cpp -text
+amdbin/ROCmBinaries.cpp -text
 clwrapper/CLFunctions1.cpp -text
 clwrapper/CLFunctions2.cpp -text
 clwrapper/CLFunctions3.cpp -text
