@@ -39,8 +39,7 @@ namespace CLRX
 {
 
 enum : Flags {
-    ROCMBIN_CREATE_KERNELDATA = 0x10,    ///< create kernel setup
-    ROCMBIN_CREATE_KERNELDATAMAP = 0x20,    ///< create kernel setups map
+    ROCMBIN_CREATE_KERNELMAP = 0x10,    ///< create kernel setups map
     
     ROCMBIN_CREATE_ALL = ELF_CREATE_ALL | 0xfff0 ///< all ROCm binaries flags
 };
@@ -49,9 +48,7 @@ enum : Flags {
 struct ROCmKernel
 {
     CString kernelName; ///< kernel name
-    size_t setupSize;   ///< setup size
     cxbyte* setup;      ///< setup data
-    size_t codeSize;    ///< size
     cxbyte* code;     ///< data
 };
 
@@ -67,6 +64,8 @@ private:
     size_t kernelsNum;
     std::unique_ptr<ROCmKernel[]> kernels;  ///< AMD metadatas
     KernelMap kernelsMap;
+    size_t codeSize;
+    cxbyte* code;
 public:
     ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags = ROCMBIN_CREATE_ALL);
@@ -81,6 +80,16 @@ public:
     
     /// get kernel by name
     const ROCmKernel& getKernel(const char* name) const;
+    
+    /// get code size
+    size_t getCodeSize() const
+    { return codeSize; }
+    /// get code
+    const cxbyte* getCode() const
+    { return code; }
+    
+    bool hasKernelMap() const
+    { return (creationFlags & ROCMBIN_CREATE_KERNELMAP) != 0; };
 };
 
 /// check whether is Amd OpenCL 2.0 binary

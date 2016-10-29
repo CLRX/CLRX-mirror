@@ -33,8 +33,47 @@
 using namespace CLRX;
 
 ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags)
-        : ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
+        : ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
+          kernelsNum(0), codeSize(0), code(nullptr)
 {
+    cxuint textIndex = SHN_UNDEF;
+    try
+    { textIndex = getSectionIndex(".text"); }
+    catch(const Exception& ex)
+    { } // ignore failed
+    if (textIndex!=SHN_UNDEF)
+    {
+        code = getSectionContent(textIndex);
+        codeSize = ULEV(getSectionHeader(textIndex).sh_size);
+    }
+    
+    kernelsNum = 0;
+    const size_t symbolsNum = getSymbolsNum();
+    for (size_t i = 0; i < symbolsNum; i++)
+    {
+        const Elf64_Sym& sym = getSymbol(i);
+        if (sym.st_shndx==textIndex)
+            kernelsNum++;
+    }
+    if (code==nullptr && kernelsNum!=0)
+        throw Exception("No code if kernels number is not zero");
+    kernels.reset(new ROCmKernel[kernelsNum]);
+    size_t j = 0;
+    for (size_t i = 0; i < symbolsNum; i++)
+    {
+        const Elf64_Sym& sym = getSymbol(i);
+        if (sym.st_shndx!=textIndex)
+            continue;
+        const size_t value = ULEV(sym.st_value);
+        kernels[j++] = { getSymbolName(i), code+value, code+value+0x100 };
+    }
+    if (hasKernelMap())
+    {   // create kernels map
+        kernelsMap.resize(kernelsNum);
+        for (size_t i = 0; i < kernelsNum; i++)
+            kernelsMap[i] = std::make_pair(kernels[i].kernelName, i);
+        mapSort(kernelsMap.begin(), kernelsMap.end());
+    }
 }
 
 const ROCmKernel& ROCmBinary::getKernel(const char* name) const
@@ -49,6 +88,7 @@ const ROCmKernel& ROCmBinary::getKernel(const char* name) const
 bool CLRX::isROCmBinary(size_t binarySize, const cxbyte* binary)
 {
     if (!isElfBinary(binarySize, binary))
+        return false;
         return false;
     if (binary[EI_CLASS] != ELFCLASS64)
         return false;
