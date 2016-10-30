@@ -77,8 +77,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         if (value+0x100 > codeOffset+codeSize)
             throw Exception("Kernel offset is too big!");
         kernelOffsets[j] = std::make_pair(value, j);
-        kernels[j++] = { getSymbolName(i), binaryCode+value, size,
-            binaryCode+value+0x100 };
+        kernels[j++] = { getSymbolName(i), value, size, value+0x100 };
     }
     std::sort(kernelOffsets.get(), kernelOffsets.get()+kernelsNum,
             [](const KernelOffsetEntry& a, const KernelOffsetEntry& b)
@@ -99,7 +98,8 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         if (kernelOffsets[kernelsNum-1].first+0x100 > codeOffset+codeSize)
             throw Exception("Kernel size is too small!");
         ROCmKernel& kernel = kernels[kernelOffsets[kernelsNum-1].second];
-        uint64_t kcodeSize = codeSize - (kernelOffsets[kernelsNum-1].first+0x100);
+        uint64_t kcodeSize = codeSize -
+                (kernelOffsets[kernelsNum-1].first+0x100-codeOffset);
         if (kernel.codeSize==0 && kcodeSize>0)
             kernel.codeSize = kcodeSize;
         if (kernel.codeSize > kcodeSize)

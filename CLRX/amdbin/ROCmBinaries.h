@@ -48,9 +48,9 @@ enum : Flags {
 struct ROCmKernel
 {
     CString kernelName; ///< kernel name
-    cxbyte* setup;      ///< setup data
+    uint64_t setupOffset;      ///< setup data
     size_t codeSize;    ///< code size
-    cxbyte* code;     ///< code
+    uint64_t codeOffset;     ///< code
 };
 
 /// ROCm main binary for GPU for 64-bit mode
