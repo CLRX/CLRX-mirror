@@ -46,20 +46,25 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     }
     
     kernelsNum = 0;
+    size_t symsNum = 0;
     const size_t symbolsNum = getSymbolsNum();
     for (size_t i = 0; i < symbolsNum; i++)
     {
         const Elf64_Sym& sym = getSymbol(i);
         if (sym.st_shndx==textIndex)
-            kernelsNum++;
+        {
+            if (ELF64_ST_TYPE(sym.st_info)==10)
+                kernelsNum++;
+            symsNum++;
+        }
     }
     if (code==nullptr && kernelsNum!=0)
         throw Exception("No code if kernels number is not zero");
     kernels.reset(new ROCmKernel[kernelsNum]);
-    size_t j = 0;
-    
+    size_t j = 0, k = 0;
     typedef std::pair<uint64_t, size_t> KernelOffsetEntry;
-    std::unique_ptr<KernelOffsetEntry[]> kernelOffsets(new KernelOffsetEntry[kernelsNum]);
+    std::unique_ptr<KernelOffsetEntry[]> symOffsets(new KernelOffsetEntry[symsNum]);
+    
     for (size_t i = 0; i < symbolsNum; i++)
     {
         const Elf64_Sym& sym = getSymbol(i);
@@ -69,36 +74,35 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         if (value < codeOffset)
             throw Exception("Kernel offset is too small!");
         const size_t size = ULEV(sym.st_size);
+        if (ELF64_ST_TYPE(sym.st_info)!=10)
+        {
+            symOffsets[k++] = std::make_pair(value, SIZE_MAX);
+            continue;
+        }
+        else // if kernel symbol
+            symOffsets[k++] = std::make_pair(value, j);
+        
         if (value+0x100 > codeOffset+codeSize)
             throw Exception("Kernel offset is too big!");
-        kernelOffsets[j] = std::make_pair(value, j);
         kernels[j++] = { getSymbolName(i), value, size, value+0x100 };
     }
-    std::sort(kernelOffsets.get(), kernelOffsets.get()+kernelsNum,
+    std::sort(symOffsets.get(), symOffsets.get()+symsNum,
             [](const KernelOffsetEntry& a, const KernelOffsetEntry& b)
             { return a.first < b.first; });
     // checking distance between kernels
-    for (size_t i = 1; i < kernelsNum; i++)
+    for (size_t i = 1; i <= symsNum; i++)
     {
-        if (kernelOffsets[i-1].first+0x100 > kernelOffsets[i].first)
+        if (symOffsets[i-1].second==SIZE_MAX)
+            continue;   // if not kernel symbol
+        size_t end = (i<symsNum) ? symOffsets[i].first : codeOffset+codeSize;
+        if (symOffsets[i-1].first+0x100 > end)
             throw Exception("Kernel size is too small!");
-        ROCmKernel& kernel = kernels[kernelOffsets[i-1].second];
-        uint64_t kcodeSize = kernelOffsets[i].first - (kernelOffsets[i-1].first+0x100);
-        if (kernel.codeSize==0 && kcodeSize>0)
+        ROCmKernel& kernel = kernels[symOffsets[i-1].second];
+        uint64_t kcodeSize = end - (symOffsets[i-1].first+0x100);
+        if (kernel.codeSize==0)
             kernel.codeSize = kcodeSize;
-        if (kernel.codeSize > kcodeSize)
-            throw Exception("Kernel code size out of range");
-    }
-    {   // last kernel in position
-        if (kernelOffsets[kernelsNum-1].first+0x100 > codeOffset+codeSize)
-            throw Exception("Kernel size is too small!");
-        ROCmKernel& kernel = kernels[kernelOffsets[kernelsNum-1].second];
-        uint64_t kcodeSize = codeSize -
-                (kernelOffsets[kernelsNum-1].first+0x100-codeOffset);
-        if (kernel.codeSize==0 && kcodeSize>0)
-            kernel.codeSize = kcodeSize;
-        if (kernel.codeSize > kcodeSize)
-            throw Exception("Kernel code size out of range");
+        else
+            kernel.codeSize = std::min(kcodeSize, kernel.codeSize);
     }
     
     if (hasKernelMap())
