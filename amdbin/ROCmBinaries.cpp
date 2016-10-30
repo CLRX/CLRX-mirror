@@ -124,7 +124,6 @@ bool CLRX::isROCmBinary(size_t binarySize, const cxbyte* binary)
 {
     if (!isElfBinary(binarySize, binary))
         return false;
-        return false;
     if (binary[EI_CLASS] != ELFCLASS64)
         return false;
     const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr*>(binary);
