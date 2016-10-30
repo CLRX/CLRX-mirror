@@ -88,7 +88,7 @@ public:
     /// get code
     const cxbyte* getCode() const
     { return code; }
-    
+    /// returns true if kernel map exists
     bool hasKernelMap() const
     { return (creationFlags & ROCMBIN_CREATE_KERNELMAP) != 0; };
 };
