@@ -32,6 +32,7 @@ SET(LIBAMDASMSRC
         DisasmAmd.cpp
         DisasmAmdCL2.cpp
         DisasmGallium.cpp
+        DisasmROCm.cpp
         GCNAsmHelpers.cpp
         GCNAssembler.cpp
         GCNDisasm.cpp

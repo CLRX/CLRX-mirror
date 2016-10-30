@@ -28,6 +28,7 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/AmdCL2Binaries.h>
+#include <CLRX/amdbin/ROCmBinaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdasm/Disassembler.h>
 
@@ -51,6 +52,10 @@ extern CLRX_INTERNAL void disassembleAmdCL2(std::ostream& output,
         const AmdCL2DisasmInput* amdCL2Input, ISADisassembler* isaDisassembler,
         size_t& sectionCount, Flags flags);
 
+extern CLRX_INTERNAL void disassembleROCm(std::ostream& output,
+       const ROCmDisasmInput* rocmInput, ISADisassembler* isaDisassembler,
+       size_t& sectionCount, Flags flags);
+
 extern CLRX_INTERNAL void disassembleGallium(std::ostream& output,
        const GalliumDisasmInput* galliumInput, ISADisassembler* isaDisassembler,
        size_t& sectionCount, Flags flags);
@@ -63,6 +68,9 @@ extern CLRX_INTERNAL AmdDisasmInput* getAmdDisasmInputFromBinary64(
 
 extern CLRX_INTERNAL AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
             const AmdCL2MainGPUBinary& binary);
+
+extern CLRX_INTERNAL ROCmDisasmInput* getROCmDisasmInputFromBinary(
+            GPUDeviceType deviceType, const ROCmBinary& binary, Flags flags);
 
 extern CLRX_INTERNAL GalliumDisasmInput* getGalliumDisasmInputFromBinary(
             GPUDeviceType deviceType, const GalliumBinary& binary, Flags flags);

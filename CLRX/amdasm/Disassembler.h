@@ -248,6 +248,22 @@ struct AmdCL2DisasmInput
     std::vector<AmdCL2DisasmKernelInput> kernels;    ///< kernel inputs
 };
 
+struct ROCmDisasmKernelInput
+{
+    CString kernelName; ///< kernel name
+    const cxbyte* setup;
+    size_t codeSize;
+    const cxbyte* code;
+};
+
+struct ROCmDisasmInput
+{
+    GPUDeviceType deviceType;   ///< GPU device type
+    uint32_t archMinor;     ///< GPU arch minor
+    uint32_t archStepping;     ///< GPU arch stepping
+    
+    std::vector<ROCmDisasmKernelInput> kernels;    ///< kernel inputs
+};
 
 /// whole disassembler input (for Gallium driver GPU binaries)
 struct GalliumDisasmInput

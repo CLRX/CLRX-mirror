@@ -47,6 +47,7 @@ amdasm/DisasmAmd.cpp -text
 amdasm/DisasmAmdCL2.cpp -text
 amdasm/DisasmGallium.cpp -text
 amdasm/DisasmInternals.h -text
+amdasm/DisasmROCm.cpp -text
 amdasm/Disassembler.cpp -text
 amdasm/GCNAsmHelpers.cpp -text
 amdasm/GCNAsmInternals.h -text
