@@ -1673,6 +1673,39 @@ static const cxbyte noteSectionData16_3[200] =
 
 static const size_t noteAMDGPUTypeOffset_16_3 = 0x48;
 
+struct AMDGPUArchValues
+{
+    uint32_t major;
+    uint32_t minor;
+    uint32_t stepping;
+};
+
+
+static const AMDGPUArchValues amdGpuArchValuesTbl[] =
+{
+    { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
+    { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
+    { 0, 0, 0 }, // GPUDeviceType::TAHITI
+    { 0, 0, 0 }, // GPUDeviceType::OLAND
+    { 7, 0, 0 }, // GPUDeviceType::BONAIRE
+    { 7, 0, 0 }, // GPUDeviceType::SPECTRE
+    { 7, 0, 0 }, // GPUDeviceType::SPOOKY
+    { 7, 0, 0 }, // GPUDeviceType::KALINDI
+    { 0, 0, 0 }, // GPUDeviceType::HAINAN
+    { 7, 0, 1 }, // GPUDeviceType::HAWAII
+    { 8, 0, 0 }, // GPUDeviceType::ICELAND
+    { 8, 0, 0 }, // GPUDeviceType::TONGA
+    { 7, 0, 0 }, // GPUDeviceType::MULLINS
+    { 8, 0, 4 }, // GPUDeviceType::FIJI
+    { 8, 0, 1 }, // GPUDeviceType::CARRIZO
+    { 0, 0, 0 }, // GPUDeviceType::DUMMY
+    { 0, 0, 0 }, // GPUDeviceType::GOOSE
+    { 0, 0, 0 }, // GPUDeviceType::HORSE
+    { 8, 1, 0 }, // GPUDeviceType::STONEY
+    { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
+    { 8, 0, 4 } // GPUDeviceType::BAFFIN
+};
+
 static CString constructName(size_t prefixSize, const char* prefix, const CString& name,
                  size_t suffixSize, const char* suffix)
 {
@@ -1805,6 +1838,12 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
     if (arch == GPUArchitecture::GCN1_0)
         throw Exception("OpenCL 2.0 supported only for GCN1.1 or later");
+    
+    AMDGPUArchValues amdGpuArchValues = amdGpuArchValuesTbl[cxuint(input->deviceType)];
+    if (input->archMinor!=UINT32_MAX)
+        amdGpuArchValues.minor = input->archMinor;
+    if (input->archStepping!=UINT32_MAX)
+        amdGpuArchValues.stepping = input->archStepping;
     
     if ((hasGlobalData || hasRWData || hasSamplers) && !newBinaries)
         throw Exception("Old driver binaries doesn't support "
@@ -1943,11 +1982,11 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             ::memcpy(noteBuf.get(), noteSectionData16_3, sizeof(noteSectionData16_3));
             // set AMDGPU type
             SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset_16_3),
-                  (arch==GPUArchitecture::GCN1_2) ? 8 : 7);
+                  amdGpuArchValues.major);
             SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset_16_3 + 4),
-                  input->archMinor);
+                  amdGpuArchValues.minor);
             SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset_16_3 + 8),
-                  input->archStepping);
+                  amdGpuArchValues.stepping);
             
             if (gpuProDriver)
                 noteBuf[197] = 't';
@@ -2022,11 +2061,11 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             ::memcpy(noteBuf.get(), noteSectionData, sizeof(noteSectionData));
             // set AMDGPU type
             SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset),
-                  (arch==GPUArchitecture::GCN1_2) ? 8 : 7);
+                  amdGpuArchValues.major);
             SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset + 4),
-                  input->archMinor);
+                  amdGpuArchValues.minor);
             SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset + 8),
-                  input->archStepping);
+                  amdGpuArchValues.stepping);
             innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData),
                        noteBuf.get(), 8, ".note", SHT_NOTE, 0));
             

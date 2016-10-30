@@ -68,6 +68,7 @@ AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmFormatHandler(asse
         samplerInitSection(ASMSECT_NONE), extraSectionCount(0),
         innerExtraSectionCount(0)
 {
+    output.archMinor = output.archStepping = UINT32_MAX;
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
     sections.push_back({ ASMKERN_INNER, AsmSectionType::DATA, ELFSECTID_RODATA,
