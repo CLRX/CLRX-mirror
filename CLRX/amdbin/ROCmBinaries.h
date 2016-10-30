@@ -49,7 +49,8 @@ struct ROCmKernel
 {
     CString kernelName; ///< kernel name
     cxbyte* setup;      ///< setup data
-    cxbyte* code;     ///< data
+    size_t codeSize;    ///< code size
+    cxbyte* code;     ///< code
 };
 
 /// ROCm main binary for GPU for 64-bit mode

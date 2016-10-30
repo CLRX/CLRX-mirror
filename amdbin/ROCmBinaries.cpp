@@ -59,23 +59,46 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         throw Exception("No code if kernels number is not zero");
     kernels.reset(new ROCmKernel[kernelsNum]);
     size_t j = 0;
-    std::unique_ptr<uint64_t[]> kernelOffsets(new uint64_t[kernelsNum]);
+    
+    typedef std::pair<uint64_t, size_t> KernelOffsetEntry;
+    std::unique_ptr<KernelOffsetEntry[]> kernelOffsets(new KernelOffsetEntry[kernelsNum]);
     for (size_t i = 0; i < symbolsNum; i++)
     {
         const Elf64_Sym& sym = getSymbol(i);
         if (sym.st_shndx!=textIndex)
             continue;
         const size_t value = ULEV(sym.st_value);
+        const size_t size = ULEV(sym.st_size);
         if (value+0x100 > codeSize)
             throw Exception("Kernel offset is too big!");
-        kernelOffsets[j] = value;
-        kernels[j++] = { getSymbolName(i), code+value, code+value+0x100 };
+        kernelOffsets[j] = std::make_pair(value, j);
+        kernels[j++] = { getSymbolName(i), code+value, size, code+value+0x100 };
     }
-    std::sort(kernelOffsets.get(), kernelOffsets.get()+kernelsNum);
+    std::sort(kernelOffsets.get(), kernelOffsets.get()+kernelsNum,
+            [](const KernelOffsetEntry& a, const KernelOffsetEntry& b)
+            { return a.first < b.first; });
     // checking distance between kernels
     for (size_t i = 1; i < kernelsNum; i++)
-        if (kernelOffsets[i-1]+0x100 > kernelOffsets[i])
+    {
+        if (kernelOffsets[i-1].first+0x100 > kernelOffsets[i].first)
             throw Exception("Kernel size is too small!");
+        ROCmKernel& kernel = kernels[kernelOffsets[i-1].second];
+        uint64_t kcodeSize = kernelOffsets[i].first - (kernelOffsets[i-1].first+0x100);
+        if (kernel.codeSize==0 && kcodeSize>0)
+            kernel.codeSize = kcodeSize;
+        if (kernel.codeSize > kcodeSize)
+            throw Exception("Kernel code size out of range");
+    }
+    {   // last kernel in position
+        if (kernelOffsets[kernelsNum-1].first+0x100 > codeSize)
+            throw Exception("Kernel size is too small!");
+        ROCmKernel& kernel = kernels[kernelOffsets[kernelsNum-1].second];
+        uint64_t kcodeSize = codeSize - (kernelOffsets[kernelsNum-1].first+0x100);
+        if (kernel.codeSize==0 && kcodeSize>0)
+            kernel.codeSize = kcodeSize;
+        if (kernel.codeSize > kcodeSize)
+            throw Exception("Kernel code size out of range");
+    }
     
     if (hasKernelMap())
     {   // create kernels map
