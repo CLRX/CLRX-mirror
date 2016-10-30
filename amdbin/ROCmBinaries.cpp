@@ -41,10 +41,13 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     { textIndex = getSectionIndex(".text"); }
     catch(const Exception& ex)
     { } // ignore failed
+    uint64_t codeOffset = 0;
     if (textIndex!=SHN_UNDEF)
     {
         code = getSectionContent(textIndex);
-        codeSize = ULEV(getSectionHeader(textIndex).sh_size);
+        const Elf64_Shdr& textShdr = getSectionHeader(textIndex);
+        codeSize = ULEV(textShdr.sh_size);
+        codeOffset = ULEV(textShdr.sh_offset);
     }
     
     kernelsNum = 0;
@@ -68,11 +71,14 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         if (sym.st_shndx!=textIndex)
             continue;
         const size_t value = ULEV(sym.st_value);
+        if (value < codeOffset)
+            throw Exception("Kernel offset is too small!");
         const size_t size = ULEV(sym.st_size);
-        if (value+0x100 > codeSize)
+        if (value+0x100 > codeOffset+codeSize)
             throw Exception("Kernel offset is too big!");
         kernelOffsets[j] = std::make_pair(value, j);
-        kernels[j++] = { getSymbolName(i), code+value, size, code+value+0x100 };
+        kernels[j++] = { getSymbolName(i), binaryCode+value, size,
+            binaryCode+value+0x100 };
     }
     std::sort(kernelOffsets.get(), kernelOffsets.get()+kernelsNum,
             [](const KernelOffsetEntry& a, const KernelOffsetEntry& b)
@@ -90,7 +96,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             throw Exception("Kernel code size out of range");
     }
     {   // last kernel in position
-        if (kernelOffsets[kernelsNum-1].first+0x100 > codeSize)
+        if (kernelOffsets[kernelsNum-1].first+0x100 > codeOffset+codeSize)
             throw Exception("Kernel size is too small!");
         ROCmKernel& kernel = kernels[kernelOffsets[kernelsNum-1].second];
         uint64_t kcodeSize = codeSize - (kernelOffsets[kernelsNum-1].first+0x100);
