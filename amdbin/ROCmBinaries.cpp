@@ -18,13 +18,9 @@
  */
 
 #include <CLRX/Config.h>
-#include <cstdlib>
-#include <cstring>
-#include <climits>
 #include <cstdint>
 #include <map>
 #include <utility>
-#include <vector>
 #include <CLRX/amdbin/Elf.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
