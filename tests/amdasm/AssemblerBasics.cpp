@@ -21,7 +21,6 @@
 #include <iostream>
 #include <cstdio>
 #include <sstream>
-#include <map>
 #include <memory>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/amdasm/Assembler.h>

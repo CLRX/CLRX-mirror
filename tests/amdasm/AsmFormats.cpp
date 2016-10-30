@@ -22,7 +22,6 @@
 #include <cstdio>
 #include <sstream>
 #include <algorithm>
-#include <map>
 #include <memory>
 #include <CLRX/amdasm/Assembler.h>
 #include "../TestUtils.h"

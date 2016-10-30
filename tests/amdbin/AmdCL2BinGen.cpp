@@ -20,7 +20,6 @@
 #include <CLRX/Config.h>
 #include <iostream>
 #include <sstream>
-#include <map>
 #include <memory>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/amdbin/AmdCL2Binaries.h>

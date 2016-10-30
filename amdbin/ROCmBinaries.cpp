@@ -19,7 +19,6 @@
 
 #include <CLRX/Config.h>
 #include <cstdint>
-#include <map>
 #include <utility>
 #include <CLRX/amdbin/Elf.h>
 #include <CLRX/utils/Utilities.h>

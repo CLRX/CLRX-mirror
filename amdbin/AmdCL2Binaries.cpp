@@ -22,7 +22,6 @@
 #include <cstring>
 #include <climits>
 #include <cstdint>
-#include <map>
 #include <utility>
 #include <vector>
 #include <CLRX/amdbin/Elf.h>
