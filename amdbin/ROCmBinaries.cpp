@@ -59,14 +59,24 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         throw Exception("No code if kernels number is not zero");
     kernels.reset(new ROCmKernel[kernelsNum]);
     size_t j = 0;
+    std::unique_ptr<uint64_t[]> kernelOffsets(new uint64_t[kernelsNum]);
     for (size_t i = 0; i < symbolsNum; i++)
     {
         const Elf64_Sym& sym = getSymbol(i);
         if (sym.st_shndx!=textIndex)
             continue;
         const size_t value = ULEV(sym.st_value);
+        if (value+0x100 > codeSize)
+            throw Exception("Kernel offset is too big!");
+        kernelOffsets[j] = value;
         kernels[j++] = { getSymbolName(i), code+value, code+value+0x100 };
     }
+    std::sort(kernelOffsets.get(), kernelOffsets.get()+kernelsNum);
+    // checking distance between kernels
+    for (size_t i = 1; i < kernelsNum; i++)
+        if (kernelOffsets[i-1]+0x100 > kernelOffsets[i])
+            throw Exception("Kernel size is too small!");
+    
     if (hasKernelMap())
     {   // create kernels map
         kernelsMap.resize(kernelsNum);
