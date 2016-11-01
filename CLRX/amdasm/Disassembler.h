@@ -257,11 +257,13 @@ struct ROCmDisasmKernelInput
     size_t offset;
 };
 
-struct ROCmDisasmRegion
+/// disasm ROCm region
+struct ROCmDisasmRegionInput
 {
-    size_t size;
-    size_t offset;
-    size_t kernelIndex;
+    CString regionName; ///< region name
+    size_t size;    ///< region size
+    size_t offset;  ///< region offset in code
+    bool isKernel;  ///< true if kernel
 };
 
 struct ROCmDisasmInput
@@ -269,8 +271,7 @@ struct ROCmDisasmInput
     GPUDeviceType deviceType;   ///< GPU device type
     uint32_t archMinor;     ///< GPU arch minor
     uint32_t archStepping;     ///< GPU arch stepping
-    std::vector<ROCmDisasmKernelInput> kernels;    ///< kernel inputs
-    std::vector<ROCmDisasmRegion> regions;  ///< regions
+    std::vector<ROCmDisasmRegionInput> regions;  ///< regions
     size_t codeSize;    ///< code size
     const cxbyte* code; ///< code
 };

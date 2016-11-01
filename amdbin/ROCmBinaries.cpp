@@ -51,7 +51,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     {
         const Elf64_Sym& sym = getSymbol(i);
         const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
-        if (sym.st_shndx==textIndex &&
+        if (sym.st_shndx==textIndex && ELF64_ST_BIND(sym.st_info)==STB_GLOBAL &&
             (symType==STT_GNU_IFUNC || symType==STT_OBJECT))
             regionsNum++;
     }
@@ -73,13 +73,15 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         const size_t size = ULEV(sym.st_size);
         
         const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
-        const bool isKernel = (symType==STT_GNU_IFUNC);
-        if (symType==STT_GNU_IFUNC || symType==STT_OBJECT)
+        if (ELF64_ST_BIND(sym.st_info)==STB_GLOBAL &&
+            (symType==STT_GNU_IFUNC || symType==STT_OBJECT))
+        {
+            const bool isKernel = (symType==STT_GNU_IFUNC);
             symOffsets[j] = std::make_pair(value, j);
-        
-        if (isKernel && value+0x100 > codeOffset+codeSize)
-            throw Exception("Kernel offset is too big!");
-        regions[j++] = { getSymbolName(i), size, value, isKernel };
+            if (isKernel && value+0x100 > codeOffset+codeSize)
+                throw Exception("Kernel offset is too big!");
+            regions[j++] = { getSymbolName(i), size, value, isKernel };
+        }
     }
     std::sort(symOffsets.get(), symOffsets.get()+regionsNum,
             [](const RegionOffsetEntry& a, const RegionOffsetEntry& b)

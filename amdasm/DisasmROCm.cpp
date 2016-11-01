@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+#include <iostream>
 #include <cstdint>
 #include <cstdio>
 #include <string>
@@ -70,7 +71,6 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
 {
     std::unique_ptr<ROCmDisasmInput> input(new ROCmDisasmInput);
     uint32_t archMajor = 0;
-    const uint16_t textIndex = binary.getSectionIndex(".text");
     
     {
         const cxbyte* noteContent = binary.getSectionContent(".note");
@@ -97,6 +97,8 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
         }
     }
     // determine device type
+    std::cout << "archmajor: " << archMajor << ", archminor: " << input->archMinor <<
+            ", archstepping: " << input->archStepping << "\n";
     cxuint deviceNumber = 0;
     for (deviceNumber = 0; deviceNumber <= cxuint(GPUDeviceType::GPUDEVICE_MAX);
                  deviceNumber++)
@@ -108,12 +110,43 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
         throw Exception("Can't determine device type from arch values!");
     input->deviceType = GPUDeviceType(deviceNumber);
     
-    input->code = binary.getSectionContent(textIndex);
-    input->codeSize = ULEV(binary.getSectionHeader(textIndex).sh_size);
+    const size_t regionsNum = binary.getRegionsNum();
+    input->regions.resize(regionsNum);
+    size_t codeOffset = binary.getCode()-binary.getBinaryCode();
+    for (size_t i = 0; i < regionsNum; i++)
+    {
+        const ROCmRegion& region = binary.getRegion(i);
+        input->regions[i] = { region.regionName, region.size,
+            region.offset - codeOffset, region.isKernel };
+    }
+    
+    input->code = binary.getCode();
+    input->codeSize = binary.getCodeSize();
     return input.release();
 }
 
 void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInput,
            ISADisassembler* isaDisassembler, size_t& sectionCount, Flags flags)
 {
+    const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
+    const bool doMetadata = ((flags & (DISASM_METADATA|DISASM_CONFIG)) != 0);
+    const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
+    const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
+    
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(rocmInput->deviceType);
+    const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    
+    for (cxuint i = 0; i < rocmInput->regions.size(); i++)
+    {
+        const ROCmDisasmRegionInput& rinput = rocmInput->regions[i];
+        if (rinput.isKernel)
+        {
+            output.write(".kernel ", 8);
+            output.write(rinput.regionName.c_str(), rinput.regionName.size());
+            output.put('\n');
+        }
+    }
+    if (doDumpCode && rocmInput->code != nullptr && rocmInput->codeSize != 0)
+    {
+    }
 }

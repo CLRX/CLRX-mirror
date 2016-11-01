@@ -23,6 +23,8 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/CLIParser.h>
 #include <CLRX/amdbin/AmdBinaries.h>
+#include <CLRX/amdbin/AmdCL2Binaries.h>
+#include <CLRX/amdbin/ROCmBinaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdasm/Disassembler.h>
 
@@ -135,6 +137,13 @@ try
                     AmdCL2MainGPUBinary amdBin(binaryData.size(),
                                        binaryData.data(), binFlags);
                     Disassembler disasm(amdBin, std::cout, disasmFlags);
+                    disasm.disassemble();
+                }
+                else if (isROCmBinary(binaryData.size(), binaryData.data()))
+                {   // ROCm binary
+                    binFlags |= ROCMBIN_CREATE_REGIONMAP;
+                    ROCmBinary rocmBin(binaryData.size(), binaryData.data(), binFlags);
+                    Disassembler disasm(rocmBin, std::cout, disasmFlags);
                     disasm.disassemble();
                 }
                 else // if gallium binary
