@@ -336,15 +336,6 @@ enum: cxuint {
     GALLIUMSECTID_MAX = GALLIUMSECTID_NOTEGNUSTACK
 };
 
-/// disasm kernel info structure (Gallium binaries)
-struct GalliumDisasmKernelInput
-{
-    CString kernelName;   ///< kernel's name
-    GalliumProgInfoEntry progInfo[3];   ///< program info for kernel
-    uint32_t offset;    ///< offset of kernel code
-    std::vector<GalliumArgInfo> argInfos;   ///< arguments
-};
-
 /*
  * Gallium Binary generator
  */

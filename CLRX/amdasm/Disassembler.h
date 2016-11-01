@@ -265,6 +265,15 @@ struct ROCmDisasmInput
     std::vector<ROCmDisasmKernelInput> kernels;    ///< kernel inputs
 };
 
+/// disasm kernel info structure (Gallium binaries)
+struct GalliumDisasmKernelInput
+{
+    CString kernelName;   ///< kernel's name
+    GalliumProgInfoEntry progInfo[3];   ///< program info for kernel
+    uint32_t offset;    ///< offset of kernel code
+    std::vector<GalliumArgInfo> argInfos;   ///< arguments
+};
+
 /// whole disassembler input (for Gallium driver GPU binaries)
 struct GalliumDisasmInput
 {
