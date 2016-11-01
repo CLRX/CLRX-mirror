@@ -36,7 +36,8 @@
 using namespace CLRX;
 
 ISADisassembler::ISADisassembler(Disassembler& _disassembler, cxuint outBufSize)
-        : disassembler(_disassembler), output(outBufSize, _disassembler.getOutput())
+        : disassembler(_disassembler), startOffset(0),
+          dontPrintLabelsAfterCode(true), output(outBufSize, _disassembler.getOutput())
 { }
 
 ISADisassembler::~ISADisassembler()
@@ -45,6 +46,7 @@ ISADisassembler::~ISADisassembler()
 void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
               NamedLabelIter& namedLabelIter)
 {
+    pos += startOffset; // fix
     if ((namedLabelIter != namedLabels.end() && namedLabelIter->first <= pos) ||
             (labelIter != labels.end() && *labelIter <= pos))
     {
@@ -132,7 +134,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
 void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
                    NamedLabelIter namedLabelIter)
 {
-    size_t pos = start;
+    size_t pos = startOffset + start;
     while (namedLabelIter != namedLabels.end() || labelIter != labels.end())
     {
         size_t namedPos = SIZE_MAX;

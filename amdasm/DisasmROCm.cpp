@@ -40,37 +40,31 @@ struct AMDGPUArchValues
     uint32_t major;
     uint32_t minor;
     uint32_t stepping;
+    GPUDeviceType deviceType;
 };
 
 static const AMDGPUArchValues amdGpuArchValuesTbl[] =
 {
-    { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
-    { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
-    { 0, 0, 0 }, // GPUDeviceType::TAHITI
-    { 0, 0, 0 }, // GPUDeviceType::OLAND
-    { 7, 0, 0 }, // GPUDeviceType::BONAIRE
-    { 7, 0, 0 }, // GPUDeviceType::SPECTRE
-    { 7, 0, 0 }, // GPUDeviceType::SPOOKY
-    { 7, 0, 0 }, // GPUDeviceType::KALINDI
-    { 0, 0, 0 }, // GPUDeviceType::HAINAN
-    { 7, 0, 1 }, // GPUDeviceType::HAWAII
-    { 8, 0, 0 }, // GPUDeviceType::ICELAND
-    { 8, 0, 0 }, // GPUDeviceType::TONGA
-    { 7, 0, 0 }, // GPUDeviceType::MULLINS
-    { 8, 0, 4 }, // GPUDeviceType::FIJI
-    { 8, 0, 1 }, // GPUDeviceType::CARRIZO
-    { 0, 0, 0 }, // GPUDeviceType::DUMMY
-    { 0, 0, 0 }, // GPUDeviceType::GOOSE
-    { 0, 0, 0 }, // GPUDeviceType::HORSE
-    { 8, 1, 0 }, // GPUDeviceType::STONEY
-    { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
-    { 8, 0, 4 } // GPUDeviceType::BAFFIN
+    { 0, 0, 0, GPUDeviceType::CAPE_VERDE },
+    { 7, 0, 0, GPUDeviceType::BONAIRE },
+    { 7, 0, 1, GPUDeviceType::HAWAII },
+    { 8, 0, 0, GPUDeviceType::ICELAND },
+    { 8, 0, 1, GPUDeviceType::CARRIZO },
+    { 8, 0, 2, GPUDeviceType::ICELAND },
+    { 8, 0, 3, GPUDeviceType::FIJI },
+    { 8, 0, 4, GPUDeviceType::FIJI },
+    { 8, 1, 0, GPUDeviceType::STONEY }
 };
+
+static const size_t amdGpuArchValuesNum = sizeof(amdGpuArchValuesTbl) /
+                sizeof(AMDGPUArchValues);
 
 ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
 {
     std::unique_ptr<ROCmDisasmInput> input(new ROCmDisasmInput);
     uint32_t archMajor = 0;
+    input->archMinor = 0;
+    input->archStepping = 0;
     
     {
         const cxbyte* noteContent = binary.getSectionContent(".note");
@@ -97,18 +91,22 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
         }
     }
     // determine device type
-    std::cout << "archmajor: " << archMajor << ", archminor: " << input->archMinor <<
-            ", archstepping: " << input->archStepping << "\n";
-    cxuint deviceNumber = 0;
-    for (deviceNumber = 0; deviceNumber <= cxuint(GPUDeviceType::GPUDEVICE_MAX);
-                 deviceNumber++)
-        if (amdGpuArchValuesTbl[deviceNumber].major==archMajor &&
-            amdGpuArchValuesTbl[deviceNumber].minor==input->archMinor &&
-            amdGpuArchValuesTbl[deviceNumber].stepping==input->archStepping)
+    input->deviceType = GPUDeviceType::CAPE_VERDE;
+    if (archMajor==0)
+        input->deviceType = GPUDeviceType::CAPE_VERDE;
+    else if (archMajor==7)
+        input->deviceType = GPUDeviceType::BONAIRE;
+    else if (archMajor==8)
+        input->deviceType = GPUDeviceType::ICELAND;
+    
+    for (cxuint i = 0; i < amdGpuArchValuesNum; i++)
+        if (amdGpuArchValuesTbl[i].major==archMajor &&
+            amdGpuArchValuesTbl[i].minor==input->archMinor &&
+            amdGpuArchValuesTbl[i].stepping==input->archStepping)
+        {
+            input->deviceType = amdGpuArchValuesTbl[i].deviceType;
             break;
-    if (deviceNumber > cxuint(GPUDeviceType::GPUDEVICE_MAX))
-        throw Exception("Can't determine device type from arch values!");
-    input->deviceType = GPUDeviceType(deviceNumber);
+        }
     
     const size_t regionsNum = binary.getRegionsNum();
     input->regions.resize(regionsNum);
@@ -133,9 +131,6 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
     const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
     
-    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(rocmInput->deviceType);
-    const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
-    
     for (cxuint i = 0; i < rocmInput->regions.size(); i++)
     {
         const ROCmDisasmRegionInput& rinput = rocmInput->regions[i];
@@ -146,7 +141,43 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
             output.put('\n');
         }
     }
-    if (doDumpCode && rocmInput->code != nullptr && rocmInput->codeSize != 0)
+    
+    const size_t regionsNum = rocmInput->regions.size();
+    typedef std::pair<size_t, size_t> SortEntry;
+    std::unique_ptr<SortEntry[]> sorted(new SortEntry[regionsNum]);
+    for (size_t i = 0; i < regionsNum; i++)
+        sorted[i] = std::make_pair(rocmInput->regions[i].offset, i);
+    mapSort(sorted.get(), sorted.get() + regionsNum);
+    
+    if (rocmInput->code != nullptr && rocmInput->codeSize != 0)
     {
+        const cxbyte* code = rocmInput->code;
+        output.write(".text\n", 6);
+        for (size_t i = 0; i < regionsNum; i++)
+        {
+            const ROCmDisasmRegionInput& region = rocmInput->regions[sorted[i].second];
+            output.write(region.regionName.c_str(), region.regionName.size());
+            output.write(":\n", 2);
+            if (region.isKernel)
+            {
+                if (doMetadata && !doDumpConfig)
+                    printDisasmData(0x100, code + region.offset, output, true);
+                if (doDumpCode)
+                {
+                    isaDisassembler->setInput(region.size-256, code + region.offset+256,
+                                    region.offset+256);
+                    isaDisassembler->setDontPrintLabels(i+1<regionsNum);
+                    isaDisassembler->beforeDisassemble();
+                    isaDisassembler->disassemble();
+                }
+            }
+            else if (doDumpData)
+            {
+                output.write(".global ", 8);
+                output.write(region.regionName.c_str(), region.regionName.size());
+                output.write("\n", 1);
+                printDisasmData(region.size, code + region.offset, output, true);
+            }
+        }
     }
 }

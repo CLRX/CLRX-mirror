@@ -86,8 +86,10 @@ protected:
     typedef std::vector<std::pair<size_t, CString> >::const_iterator NamedLabelIter;
     
     Disassembler& disassembler; ///< disassembler instance
+    size_t startOffset; ///< start offset
     size_t inputSize;   ///< size of input
     const cxbyte* input;    ///< input code
+    bool dontPrintLabelsAfterCode;
     std::vector<size_t> labels; ///< list of local labels
     std::vector<std::pair<size_t, CString> > namedLabels;   ///< named labels
     std::vector<CString> relSymbols;    ///< symbols used by relocations
@@ -110,12 +112,16 @@ public:
     virtual ~ISADisassembler();
     
     /// set input code
-    void setInput(size_t inputSize, const cxbyte* input)
+    void setInput(size_t inputSize, const cxbyte* input, size_t startOffset = 0)
     {
         this->inputSize = inputSize;
         this->input = input;
+        this->startOffset = startOffset;
     }
-
+    
+    void setDontPrintLabels(bool after)
+    { dontPrintLabelsAfterCode = after; }
+    
     /// makes some things before disassemblying
     virtual void beforeDisassemble() = 0;
     /// disassembles input code

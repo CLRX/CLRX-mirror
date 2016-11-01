@@ -540,7 +540,7 @@ static void decodeGCNVRegOperand(cxuint op, cxuint vregNum, char*& bufPtr)
 void GCNDisasmUtils::printLiteral(GCNDisassembler& dasm, size_t codePos,
           RelocIter& relocIter, uint32_t literal, FloatLitType floatLit, bool optional)
 {
-    if (dasm.writeRelocation((codePos<<2)-4, relocIter))
+    if (dasm.writeRelocation(dasm.startOffset + (codePos<<2)-4, relocIter))
         return;
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(50);
@@ -815,7 +815,7 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     {
         case GCN_IMM_REL:
         {
-            const size_t branchPos = (pos + int16_t(imm16))<<2;
+            const size_t branchPos = dasm.startOffset + ((pos + int16_t(imm16))<<2);
             addSpaces(bufPtr, spacesToAdd);
             output.forward(bufPtr-bufStart);
             dasm.writeLocation(branchPos);
@@ -1029,7 +1029,7 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
     const cxuint imm16 = insnCode&0xffff;
     if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL)
     {
-        const size_t branchPos = (codePos + int16_t(imm16))<<2;
+        const size_t branchPos = dasm.startOffset + ((codePos + int16_t(imm16))<<2);
         output.forward(bufPtr-bufStart);
         dasm.writeLocation(branchPos);
         bufPtr = bufStart = output.reserve(60);
@@ -2434,9 +2434,16 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm ,cxuint spacesToAd
 
 void GCNDisassembler::disassemble()
 {
-    LabelIter curLabel = labels.begin();
-    RelocIter curReloc = relocations.begin();
-    NamedLabelIter curNamedLabel = namedLabels.begin();
+    LabelIter curLabel = std::lower_bound(labels.begin(), labels.end(), startOffset);
+    RelocIter curReloc = std::lower_bound(relocations.begin(), relocations.end(),
+        std::make_pair(startOffset, Relocation()),
+          [](const std::pair<size_t,Relocation>& a, const std::pair<size_t, Relocation>& b)
+          { return a.first < b.first; });
+    NamedLabelIter curNamedLabel = std::lower_bound(namedLabels.begin(), namedLabels.end(),
+        std::make_pair(startOffset, CString()),
+          [](const std::pair<size_t,CString>& a, const std::pair<size_t, CString>& b)
+          { return a.first < b.first; });
+    
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
 
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
@@ -2777,8 +2784,11 @@ void GCNDisassembler::disassemble()
         }
         output.put('\n');
     }
-    writeLabelsToEnd(codeWordsNum<<2, curLabel, curNamedLabel);
-    output.flush();
+    if (dontPrintLabelsAfterCode)
+    {
+        writeLabelsToEnd(codeWordsNum<<2, curLabel, curNamedLabel);
+        output.flush();
+    }
     disassembler.getOutput().flush();
     labels.clear(); // free labels
 }
