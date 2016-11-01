@@ -39,18 +39,18 @@ namespace CLRX
 {
 
 enum : Flags {
-    ROCMBIN_CREATE_KERNELMAP = 0x10,    ///< create kernel setups map
+    ROCMBIN_CREATE_REGIONMAP = 0x10,    ///< create region map
     
     ROCMBIN_CREATE_ALL = ELF_CREATE_ALL | 0xfff0 ///< all ROCm binaries flags
 };
 
-/// ROCm GPU metadata for kernel
-struct ROCmKernel
+/// ROCm data region
+struct ROCmRegion
 {
-    CString kernelName; ///< kernel name
-    uint64_t setupOffset;      ///< setup data
-    size_t codeSize;    ///< code size
-    uint64_t codeOffset;     ///< code
+    CString regionName; ///< region name
+    size_t size;    ///< data size
+    uint64_t offset;     ///< data
+    bool isKernel;
 };
 
 /// ROCm main binary for GPU for 64-bit mode
@@ -60,11 +60,11 @@ struct ROCmKernel
 class ROCmBinary : public ElfBinary64, public NonCopyableAndNonMovable
 {
 public:
-    typedef Array<std::pair<CString, size_t> > KernelMap;
+    typedef Array<std::pair<CString, size_t> > RegionMap;
 private:
-    size_t kernelsNum;
-    std::unique_ptr<ROCmKernel[]> kernels;  ///< AMD metadatas
-    KernelMap kernelsMap;
+    size_t regionsNum;
+    std::unique_ptr<ROCmRegion[]> regions;  ///< AMD metadatas
+    RegionMap regionsMap;
     size_t codeSize;
     cxbyte* code;
 public:
@@ -72,15 +72,16 @@ public:
             Flags creationFlags = ROCMBIN_CREATE_ALL);
     ~ROCmBinary() = default;
     
-    size_t getKernelsNum() const
-    { return kernelsNum; }
+    /// get regions number
+    size_t getRegionsNum() const
+    { return regionsNum; }
     
-    /// get kernel by index
-    const ROCmKernel& getKernel(size_t index) const
-    { return kernels[index]; }
+    /// get region by index
+    const ROCmRegion& getRegion(size_t index) const
+    { return regions[index]; }
     
-    /// get kernel by name
-    const ROCmKernel& getKernel(const char* name) const;
+    /// get region by name
+    const ROCmRegion& getRegion(const char* name) const;
     
     /// get code size
     size_t getCodeSize() const
@@ -88,9 +89,10 @@ public:
     /// get code
     const cxbyte* getCode() const
     { return code; }
+    
     /// returns true if kernel map exists
-    bool hasKernelMap() const
-    { return (creationFlags & ROCMBIN_CREATE_KERNELMAP) != 0; };
+    bool hasRegionMap() const
+    { return (creationFlags & ROCMBIN_CREATE_REGIONMAP) != 0; };
 };
 
 /// check whether is Amd OpenCL 2.0 binary

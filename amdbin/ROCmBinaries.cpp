@@ -29,7 +29,7 @@ using namespace CLRX;
 
 ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags)
         : ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
-          kernelsNum(0), codeSize(0), code(nullptr)
+          regionsNum(0), codeSize(0), code(nullptr)
 {
     cxuint textIndex = SHN_UNDEF;
     try
@@ -45,25 +45,22 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         codeOffset = ULEV(textShdr.sh_offset);
     }
     
-    kernelsNum = 0;
-    size_t symsNum = 0;
+    regionsNum = 0;
     const size_t symbolsNum = getSymbolsNum();
     for (size_t i = 0; i < symbolsNum; i++)
     {
         const Elf64_Sym& sym = getSymbol(i);
-        if (sym.st_shndx==textIndex)
-        {
-            if (ELF64_ST_TYPE(sym.st_info)==STT_GNU_IFUNC)
-                kernelsNum++;
-            symsNum++;
-        }
+        const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
+        if (sym.st_shndx==textIndex &&
+            (symType==STT_GNU_IFUNC || symType==STT_OBJECT))
+            regionsNum++;
     }
-    if (code==nullptr && kernelsNum!=0)
-        throw Exception("No code if kernels number is not zero");
-    kernels.reset(new ROCmKernel[kernelsNum]);
-    size_t j = 0, k = 0;
-    typedef std::pair<uint64_t, size_t> KernelOffsetEntry;
-    std::unique_ptr<KernelOffsetEntry[]> symOffsets(new KernelOffsetEntry[symsNum]);
+    if (code==nullptr && regionsNum!=0)
+        throw Exception("No code if regions number is not zero");
+    regions.reset(new ROCmRegion[regionsNum]);
+    size_t j = 0;
+    typedef std::pair<uint64_t, size_t> RegionOffsetEntry;
+    std::unique_ptr<RegionOffsetEntry[]> symOffsets(new RegionOffsetEntry[regionsNum]);
     
     for (size_t i = 0; i < symbolsNum; i++)
     {
@@ -72,56 +69,52 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             continue;
         const size_t value = ULEV(sym.st_value);
         if (value < codeOffset)
-            throw Exception("Kernel offset is too small!");
+            throw Exception("Region offset is too small!");
         const size_t size = ULEV(sym.st_size);
-        if (ELF64_ST_TYPE(sym.st_info)!=STT_GNU_IFUNC)
-        {
-            symOffsets[k++] = std::make_pair(value, SIZE_MAX);
-            continue;
-        }
-        else // if kernel symbol
-            symOffsets[k++] = std::make_pair(value, j);
         
-        if (value+0x100 > codeOffset+codeSize)
+        const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
+        const bool isKernel = (symType==STT_GNU_IFUNC);
+        if (symType==STT_GNU_IFUNC || symType==STT_OBJECT)
+            symOffsets[j] = std::make_pair(value, j);
+        
+        if (isKernel && value+0x100 > codeOffset+codeSize)
             throw Exception("Kernel offset is too big!");
-        kernels[j++] = { getSymbolName(i), value, (size>=0x100) ? size-0x100 : 0,
-            value+0x100 };
+        regions[j++] = { getSymbolName(i), size, value, isKernel };
     }
-    std::sort(symOffsets.get(), symOffsets.get()+symsNum,
-            [](const KernelOffsetEntry& a, const KernelOffsetEntry& b)
+    std::sort(symOffsets.get(), symOffsets.get()+regionsNum,
+            [](const RegionOffsetEntry& a, const RegionOffsetEntry& b)
             { return a.first < b.first; });
-    // checking distance between kernels
-    for (size_t i = 1; i <= symsNum; i++)
+    // checking distance between regions
+    for (size_t i = 1; i <= regionsNum; i++)
     {
-        if (symOffsets[i-1].second==SIZE_MAX)
-            continue;   // if not kernel symbol
-        size_t end = (i<symsNum) ? symOffsets[i].first : codeOffset+codeSize;
-        if (symOffsets[i-1].first+0x100 > end)
+        size_t end = (i<regionsNum) ? symOffsets[i].first : codeOffset+codeSize;
+        ROCmRegion& region = regions[symOffsets[i-1].second];
+        if (region.isKernel && symOffsets[i-1].first+0x100 > end)
             throw Exception("Kernel size is too small!");
-        ROCmKernel& kernel = kernels[symOffsets[i-1].second];
-        uint64_t kcodeSize = end - (symOffsets[i-1].first+0x100);
-        if (kernel.codeSize==0)
-            kernel.codeSize = kcodeSize;
+        
+        const uint64_t regSize = end - symOffsets[i-1].first;
+        if (region.size==0)
+            region.size = regSize;
         else
-            kernel.codeSize = std::min(kcodeSize, kernel.codeSize);
+            region.size = std::min(regSize, region.size);
     }
     
-    if (hasKernelMap())
-    {   // create kernels map
-        kernelsMap.resize(kernelsNum);
-        for (size_t i = 0; i < kernelsNum; i++)
-            kernelsMap[i] = std::make_pair(kernels[i].kernelName, i);
-        mapSort(kernelsMap.begin(), kernelsMap.end());
+    if (hasRegionMap())
+    {   // create region map
+        regionsMap.resize(regionsNum);
+        for (size_t i = 0; i < regionsNum; i++)
+            regionsMap[i] = std::make_pair(regions[i].regionName, i);
+        mapSort(regionsMap.begin(), regionsMap.end());
     }
 }
 
-const ROCmKernel& ROCmBinary::getKernel(const char* name) const
+const ROCmRegion& ROCmBinary::getRegion(const char* name) const
 {
-    KernelMap::const_iterator it = binaryMapFind(kernelsMap.begin(),
-                             kernelsMap.end(), name);
-    if (it == kernelsMap.end())
-        throw Exception("Can't find kernel name");
-    return kernels[it->second];
+    RegionMap::const_iterator it = binaryMapFind(regionsMap.begin(),
+                             regionsMap.end(), name);
+    if (it == regionsMap.end())
+        throw Exception("Can't find region name");
+    return regions[it->second];
 }
 
 bool CLRX::isROCmBinary(size_t binarySize, const cxbyte* binary)
