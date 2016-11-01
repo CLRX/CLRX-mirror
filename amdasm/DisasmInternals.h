@@ -70,7 +70,7 @@ extern CLRX_INTERNAL AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
             const AmdCL2MainGPUBinary& binary);
 
 extern CLRX_INTERNAL ROCmDisasmInput* getROCmDisasmInputFromBinary(
-            GPUDeviceType deviceType, const ROCmBinary& binary, Flags flags);
+            const ROCmBinary& binary);
 
 extern CLRX_INTERNAL GalliumDisasmInput* getGalliumDisasmInputFromBinary(
             GPUDeviceType deviceType, const GalliumBinary& binary);

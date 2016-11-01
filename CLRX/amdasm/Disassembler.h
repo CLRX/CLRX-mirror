@@ -32,6 +32,7 @@
 #include <memory>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/AmdCL2Binaries.h>
+#include <CLRX/amdbin/ROCmBinaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdbin/AmdBinGen.h>
 #include <CLRX/amdasm/Commons.h>
@@ -256,12 +257,22 @@ struct ROCmDisasmKernelInput
     size_t offset;
 };
 
+struct ROCmDisasmRegion
+{
+    size_t size;
+    size_t offset;
+    size_t kernelIndex;
+};
+
 struct ROCmDisasmInput
 {
     GPUDeviceType deviceType;   ///< GPU device type
     uint32_t archMinor;     ///< GPU arch minor
     uint32_t archStepping;     ///< GPU arch stepping
     std::vector<ROCmDisasmKernelInput> kernels;    ///< kernel inputs
+    std::vector<ROCmDisasmRegion> regions;  ///< regions
+    size_t codeSize;    ///< code size
+    const cxbyte* code; ///< code
 };
 
 /// disasm kernel info structure (Gallium binaries)
@@ -305,6 +316,7 @@ private:
         const AmdDisasmInput* amdInput;
         const AmdCL2DisasmInput* amdCL2Input;
         const GalliumDisasmInput* galliumInput;
+        const ROCmDisasmInput* rocmInput;
         const RawCodeInput* rawInput;
     };
     std::ostream& output;
@@ -335,6 +347,13 @@ public:
      */
     Disassembler(const AmdCL2MainGPUBinary& binary, std::ostream& output,
                  Flags flags = 0);
+    /// constructor for ROCm GPU binary
+    /**
+     * \param binary main GPU binary
+     * \param output output stream
+     * \param flags flags for disassembler
+     */
+    Disassembler(const ROCmBinary& binary, std::ostream& output, Flags flags = 0);
     /// constructor for AMD disassembler input
     /**
      * \param disasmInput disassembler input object
@@ -350,6 +369,14 @@ public:
      * \param flags flags for disassembler
      */
     Disassembler(const AmdCL2DisasmInput* disasmInput, std::ostream& output,
+                 Flags flags = 0);
+    /// constructor for ROCMm disassembler input
+    /**
+     * \param disasmInput disassembler input object
+     * \param output output stream
+     * \param flags flags for disassembler
+     */
+    Disassembler(const ROCmDisasmInput* disasmInput, std::ostream& output,
                  Flags flags = 0);
     
     /// constructor for bit GPU binary from Gallium

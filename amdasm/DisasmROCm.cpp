@@ -66,11 +66,12 @@ static const AMDGPUArchValues amdGpuArchValuesTbl[] =
     { 8, 0, 4 } // GPUDeviceType::BAFFIN
 };
 
-ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(GPUDeviceType deviceType,
-           const ROCmBinary& binary, Flags flags)
+ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
 {
     std::unique_ptr<ROCmDisasmInput> input(new ROCmDisasmInput);
     uint32_t archMajor = 0;
+    const uint16_t textIndex = binary.getSectionIndex(".text");
+    
     {
         const cxbyte* noteContent = binary.getSectionContent(".note");
         size_t notesSize = binary.getSectionHeader(".note").sh_size;
@@ -106,6 +107,9 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(GPUDeviceType deviceType,
     if (deviceNumber > cxuint(GPUDeviceType::GPUDEVICE_MAX))
         throw Exception("Can't determine device type from arch values!");
     input->deviceType = GPUDeviceType(deviceNumber);
+    
+    input->code = binary.getSectionContent(textIndex);
+    input->codeSize = ULEV(binary.getSectionHeader(textIndex).sh_size);
     return input.release();
 }
 

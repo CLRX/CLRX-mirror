@@ -267,6 +267,14 @@ Disassembler::Disassembler(const AmdCL2MainGPUBinary& binary, std::ostream& _out
     amdCL2Input = getAmdCL2DisasmInputFromBinary(binary);
 }
 
+Disassembler::Disassembler(const ROCmBinary& binary, std::ostream& _output, Flags _flags)
+         : fromBinary(true), binaryFormat(BinaryFormat::ROCM),
+           rocmInput(nullptr), output(_output), flags(_flags), sectionCount(0)
+{
+    isaDisassembler.reset(new GCNDisassembler(*this));
+    rocmInput = getROCmDisasmInputFromBinary(binary);
+}
+
 Disassembler::Disassembler(const AmdDisasmInput* disasmInput, std::ostream& _output,
             Flags _flags) : fromBinary(false), binaryFormat(BinaryFormat::AMD),
             amdInput(disasmInput), output(_output), flags(_flags), sectionCount(0)
@@ -277,6 +285,13 @@ Disassembler::Disassembler(const AmdDisasmInput* disasmInput, std::ostream& _out
 Disassembler::Disassembler(const AmdCL2DisasmInput* disasmInput, std::ostream& _output,
             Flags _flags) : fromBinary(false), binaryFormat(BinaryFormat::AMDCL2),
             amdCL2Input(disasmInput), output(_output), flags(_flags), sectionCount(0)
+{
+    isaDisassembler.reset(new GCNDisassembler(*this));
+}
+
+Disassembler::Disassembler(const ROCmDisasmInput* disasmInput, std::ostream& _output,
+                 Flags _flags) : fromBinary(false), binaryFormat(BinaryFormat::ROCM),
+            rocmInput(disasmInput), output(_output), flags(_flags), sectionCount(0)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
 }
@@ -310,27 +325,41 @@ Disassembler::~Disassembler()
 {
     if (fromBinary)
     {
-        if (binaryFormat == BinaryFormat::AMD)
-            delete amdInput;
-        else if (binaryFormat == BinaryFormat::GALLIUM)
-            delete galliumInput;
-        else if (binaryFormat == BinaryFormat::AMDCL2)
-            delete amdCL2Input;
-        else // raw code input
-            delete rawInput;
+        switch(binaryFormat)
+        {
+            case BinaryFormat::AMD:
+                delete amdInput;
+                break;
+            case BinaryFormat::GALLIUM:
+                delete galliumInput;
+                break;
+            case BinaryFormat::ROCM:
+                delete rocmInput;
+                break;
+            case BinaryFormat::AMDCL2:
+                delete amdCL2Input;
+                break;
+            default:
+                delete rawInput;
+        }
     }
 }
 
 GPUDeviceType Disassembler::getDeviceType() const
 {
-    if (binaryFormat == BinaryFormat::AMD)
-        return amdInput->deviceType;
-    else if (binaryFormat == BinaryFormat::AMDCL2)
-        return amdCL2Input->deviceType;
-    else if (binaryFormat == BinaryFormat::GALLIUM)
-        return galliumInput->deviceType;
-    else // rawcode
-        return rawInput->deviceType;
+    switch(binaryFormat)
+    {
+        case BinaryFormat::AMD:
+            return amdInput->deviceType;
+        case BinaryFormat::AMDCL2:
+            return amdCL2Input->deviceType;
+        case BinaryFormat::ROCM:
+            return rocmInput->deviceType;
+        case BinaryFormat::GALLIUM:
+            return galliumInput->deviceType;
+        default:
+            return rawInput->deviceType;
+    }
 }
 
 extern void CLRX::printDisasmData(size_t size, const cxbyte* data, std::ostream& output,
@@ -503,14 +532,23 @@ void Disassembler::disassemble()
     output.exceptions(std::ios::failbit | std::ios::badbit);
     try
     {
-    if (binaryFormat == BinaryFormat::AMD)
-        output.write(".amd\n", 5);
-    else if (binaryFormat == BinaryFormat::AMDCL2)
-        output.write(".amdcl2\n", 8);
-    else if (binaryFormat == BinaryFormat::GALLIUM) // Gallium
-        output.write(".gallium\n", 9);
-    else // raw code
-        output.write(".rawcode\n", 9);
+    switch(binaryFormat)
+    {
+        case BinaryFormat::AMD:
+            output.write(".amd\n", 5);
+            break;
+        case BinaryFormat::AMDCL2:
+            output.write(".amdcl2\n", 8);
+            break;
+        case BinaryFormat::ROCM:
+            output.write(".rocm\n", 6);
+            break;
+        case BinaryFormat::GALLIUM: // Gallium
+            output.write(".gallium\n", 9);
+            break;
+        default:
+            output.write(".rawcode\n", 9);
+    }
     
     const GPUDeviceType deviceType = getDeviceType();
     output.write(".gpu ", 5);
@@ -518,15 +556,27 @@ void Disassembler::disassemble()
     output.write(gpuName, ::strlen(gpuName));
     output.put('\n');
     
-    if (binaryFormat == BinaryFormat::AMD)
-        disassembleAmd(output, amdInput, isaDisassembler.get(), sectionCount, flags);
-    else if (binaryFormat == BinaryFormat::AMDCL2)
-        disassembleAmdCL2(output, amdCL2Input, isaDisassembler.get(), sectionCount, flags);
-    else if (binaryFormat == BinaryFormat::GALLIUM) // Gallium
-        disassembleGallium(output, galliumInput, isaDisassembler.get(),
-                   sectionCount, flags);
-    else // raw code input
-        disassembleRawCode(output, rawInput, isaDisassembler.get(), sectionCount, flags);
+    switch(binaryFormat)
+    {
+        case BinaryFormat::AMD:
+            disassembleAmd(output, amdInput, isaDisassembler.get(), sectionCount, flags);
+            break;
+        case BinaryFormat::AMDCL2:
+            disassembleAmdCL2(output, amdCL2Input, isaDisassembler.get(),
+                              sectionCount, flags);
+            break;
+        case BinaryFormat::ROCM:
+            disassembleROCm(output, rocmInput, isaDisassembler.get(),
+                              sectionCount, flags);
+            break;
+        case BinaryFormat::GALLIUM: // Gallium
+            disassembleGallium(output, galliumInput, isaDisassembler.get(),
+                           sectionCount, flags);
+            break;
+        default:
+            disassembleRawCode(output, rawInput, isaDisassembler.get(),
+                           sectionCount, flags);
+    }
     output.flush();
     } /* try catch */
     catch(...)
