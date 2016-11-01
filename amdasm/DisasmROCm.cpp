@@ -21,6 +21,7 @@
 #include <iostream>
 #include <cstdint>
 #include <cstdio>
+#include <inttypes.h>
 #include <string>
 #include <ostream>
 #include <memory>
@@ -123,6 +124,238 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
     return input.release();
 }
 
+static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
+             GPUArchitecture arch, const ROCmKernelConfig& config)
+{
+    output.write("    .config\n", 12);
+    size_t bufSize;
+    char buf[100];
+    const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
+    const uint32_t pgmRsrc1 = config.computePgmRsrc1;
+    const uint32_t pgmRsrc2 = config.computePgmRsrc2;
+    
+    const cxuint dimMask = (pgmRsrc2 >> 7) & 7;
+    strcpy(buf, "        .dims ");
+    bufSize = 14;
+    if ((dimMask & 1) != 0)
+        buf[bufSize++] = 'x';
+    if ((dimMask & 2) != 0)
+        buf[bufSize++] = 'y';
+    if ((dimMask & 4) != 0)
+        buf[bufSize++] = 'z';
+    buf[bufSize++] = '\n';
+    output.write(buf, bufSize);
+    
+    bufSize = snprintf(buf, 100, "        .sgprsnum %u\n",
+              std::min((((pgmRsrc1>>6) & 0xf)<<3)+8, maxSgprsNum));
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", ((pgmRsrc1 & 0x3f)<<2)+4);
+    output.write(buf, bufSize);
+    output.write(buf, bufSize);
+    if ((pgmRsrc1 & (1U<<20)) != 0)
+        output.write("        .privmode\n", 18);
+    if ((pgmRsrc1 & (1U<<22)) != 0)
+        output.write("        .debugmode\n", 19);
+    if ((pgmRsrc1 & (1U<<21)) != 0)
+        output.write("        .dx10clamp\n", 19);
+    if ((pgmRsrc1 & (1U<<23)) != 0)
+        output.write("        .ieeemode\n", 18);
+    if ((pgmRsrc2 & 0x400) != 0)
+        output.write("        .tgsize\n", 16);
+    
+    bufSize = snprintf(buf, 100, "        .floatmode 0x%02x\n", (pgmRsrc1>>12) & 0xff);
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .priority %u\n", (pgmRsrc1>>10) & 3);
+    output.write(buf, bufSize);
+    if (((pgmRsrc1>>24) & 0x7f) != 0)
+    {
+        bufSize = snprintf(buf, 100, "        .exceptions 0x%02x\n",
+                   (pgmRsrc1>>24) & 0x7f);
+        output.write(buf, bufSize);
+    }
+    const cxuint localSize = ((pgmRsrc2>>15) & 0x1ff) << ldsShift;
+    if (localSize!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .localsize %u\n", localSize);
+        output.write(buf, bufSize);
+    }
+    bufSize = snprintf(buf, 100, "        .userdatanum %u\n", (pgmRsrc2>>1) & 0x1f);
+    output.write(buf, bufSize);
+    
+    bufSize = snprintf(buf, 100, "        .pgmrsrc1 0x%08x\n", pgmRsrc1);
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", pgmRsrc2);
+    output.write(buf, bufSize);
+    
+    bufSize = snprintf(buf, 100, "        .codeversion %u, %u\n",
+                   config.amdCodeVersionMajor, config.amdCodeVersionMinor);
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .machine %hu, %hu, %hu, %hu\n",
+                   config.amdMachineKind, config.amdMachineMajor,
+                   config.amdMachineMinor, config.amdMachineStepping);
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .kernel_code_entry_offset 0x%" PRIx64 "\n",
+                       config.kernelCodeEntryOffset);
+    output.write(buf, bufSize);
+    if (config.kernelCodePrefetchOffset!=0)
+    {
+        bufSize = snprintf(buf, 100,
+                   "        .kernel_code_prefetch_offset 0x%" PRIx64 "\n",
+                           config.kernelCodePrefetchOffset);
+        output.write(buf, bufSize);
+    }
+    if (config.kernelCodePrefetchSize!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .kernel_code_prefetch_size %" PRIu64 "\n",
+                           config.kernelCodePrefetchSize);
+        output.write(buf, bufSize);
+    }
+    if (config.maxScrachBackingMemorySize!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .max_scratch_backing_memory %" PRIu64 "\n",
+                           config.maxScrachBackingMemorySize);
+        output.write(buf, bufSize);
+    }
+    
+    const uint16_t sgprFlags = config.enableSpgrRegisterFlags;
+    if ((sgprFlags&1) != 0)
+        output.write("        .use_private_segment_buffer\n", 36);
+    if ((sgprFlags&2) != 0)
+        output.write("        .use_dispatch_ptr\n", 26);
+    if ((sgprFlags&4) != 0)
+        output.write("        .use_queue_ptr\n", 24);
+    if ((sgprFlags&8) != 0)
+        output.write("        .use_kernarg_segment_ptr\n", 33);
+    if ((sgprFlags&16) != 0)
+        output.write("        .use_dispatch_id\n", 25);
+    if ((sgprFlags&32) != 0)
+        output.write("        .use_flat_scratch_init\n", 31);
+    if ((sgprFlags&64) != 0)
+        output.write("        .use_private_segment_size\n", 34);
+    if ((sgprFlags&128) != 0)
+        output.write("        .use_grid_workgroup_count_x\n", 36);
+    if ((sgprFlags&256) != 0)
+        output.write("        .use_grid_workgroup_count_y\n", 36);
+    if ((sgprFlags&512) != 0)
+        output.write("        .use_grid_workgroup_count_z\n", 36);
+    const uint16_t featureFlags = config.enableFeatureFlags;
+    if ((featureFlags&1) != 0)
+        output.write("        .use_ordered_append_gds\n", 32);
+    bufSize = snprintf(buf, 100, "        .private_elem_size %u\n",
+                       2U<<((featureFlags>>1)&3));
+    output.write(buf, bufSize);
+    if ((featureFlags&8) != 0)
+        output.write("        .use_ptr64\n", 19);
+    if ((featureFlags&16) != 0)
+        output.write("        .use_dynamic_call_stack\n", 32);
+    if ((featureFlags&32) != 0)
+        output.write("        .use_debug_enabled\n", 27);
+    if ((featureFlags&64) != 0)
+        output.write("        .use_xnack_enabled\n", 27);
+    
+    if (config.workitemPrivateSegmentSize!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .workitem_private_segment_size %u\n",
+                         config.workitemPrivateSegmentSize);
+        output.write(buf, bufSize);
+    }
+    if (config.workgroupGroupSegmentSize!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .workgroup_group_segment_size %u\n",
+                         config.workgroupGroupSegmentSize);
+        output.write(buf, bufSize);
+    }
+    if (config.gdsSegmentSize!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .gds_segment_size %u\n",
+                         config.gdsSegmentSize);
+        output.write(buf, bufSize);
+    }
+    if (config.kernargSegmentSize!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .kernarg_segment_size %" PRIu64 "\n",
+                         config.kernargSegmentSize);
+        output.write(buf, bufSize);
+    }
+    if (config.workgroupFbarrierCount!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .workgroup_fbarrier_count %u\n",
+                         config.workgroupFbarrierCount);
+        output.write(buf, bufSize);
+    }
+    if (config.wavefrontSgprCount!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .wavefront_sgpr_count %hu\n",
+                         config.wavefrontSgprCount);
+        output.write(buf, bufSize);
+    }
+    if (config.workitemVgprCount!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .workitem_vgpr_count %hu\n",
+                         config.workitemVgprCount);
+        output.write(buf, bufSize);
+    }
+    if (config.reservedVgprFirst!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .reserved_vgpr_first %hu\n",
+                         config.reservedVgprFirst);
+        output.write(buf, bufSize);
+    }
+    if (config.reservedVgprCount!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .reserved_vgpr_count %hu\n",
+                         config.reservedVgprCount);
+        output.write(buf, bufSize);
+    }
+    if (config.reservedSgprFirst!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .reserved_sgpr_first %hu\n",
+                         config.reservedSgprFirst);
+        output.write(buf, bufSize);
+    }
+    if (config.reservedSgprCount!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .reserved_sgpr_count %hu\n",
+                         config.reservedSgprCount);
+        output.write(buf, bufSize);
+    }
+    if (config.debugWavefrontPrivateSegmentOffsetSgpr!=0)
+    {
+        bufSize = snprintf(buf, 100, "        "
+                        ".debug_wavefront_private_segment_offset_sgpr %hu\n",
+                         config.debugWavefrontPrivateSegmentOffsetSgpr);
+        output.write(buf, bufSize);
+    }
+    if (config.debugPrivateSegmentBufferSgpr!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .debug_private_segment_buffer_sgpr %hu\n",
+                         config.debugPrivateSegmentBufferSgpr);
+        output.write(buf, bufSize);
+    }
+    bufSize = snprintf(buf, 100, "        .kernarg_segment_align %u\n",
+                     1U<<(config.kernargSegmentAlignment));
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .group_segment_align %u\n",
+                     1U<<(config.groupSegmentAlignment));
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .private_segment_align %u\n",
+                     1U<<(config.privateSegmentAlignment));
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .wavefront_size %u\n",
+                     1U<<(config.wavefrontSize));
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .call_convention 0x%x\n",
+                     config.callConvention);
+    output.write(buf, bufSize);
+    if (config.runtimeLoaderKernelSymbol!=0)
+    {
+        bufSize = snprintf(buf, 100,
+                   "        .runtime_loader_kernel_symbol 0x%" PRIx64 "\n",
+                         config.runtimeLoaderKernelSymbol);
+        output.write(buf, bufSize);
+    }
+}
+
 void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInput,
            ISADisassembler* isaDisassembler, size_t& sectionCount, Flags flags)
 {
@@ -131,16 +364,20 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
     const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
     
-    for (cxuint i = 0; i < rocmInput->regions.size(); i++)
-    {
-        const ROCmDisasmRegionInput& rinput = rocmInput->regions[i];
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(rocmInput->deviceType);
+    const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    
+    for (const ROCmDisasmRegionInput& rinput: rocmInput->regions)
         if (rinput.isKernel)
         {
             output.write(".kernel ", 8);
             output.write(rinput.regionName.c_str(), rinput.regionName.size());
             output.put('\n');
+            if (doMetadata && doDumpConfig)
+                dumpKernelConfig(output, maxSgprsNum, arch,
+                     *reinterpret_cast<const ROCmKernelConfig*>(
+                             rocmInput->code + rinput.offset));
         }
-    }
     
     const size_t regionsNum = rocmInput->regions.size();
     typedef std::pair<size_t, size_t> SortEntry;
@@ -160,8 +397,13 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
             output.write(":\n", 2);
             if (region.isKernel)
             {
-                if (doMetadata && !doDumpConfig)
-                    printDisasmData(0x100, code + region.offset, output, true);
+                if (doMetadata)
+                {
+                    if (!doDumpConfig)
+                        printDisasmData(0x100, code + region.offset, output, true);
+                    else
+                        output.write(".skip 256\n", 10);
+                }
                 if (doDumpCode)
                 {
                     isaDisassembler->setInput(region.size-256, code + region.offset+256,

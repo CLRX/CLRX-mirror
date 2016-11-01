@@ -73,7 +73,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         const size_t size = ULEV(sym.st_size);
         
         const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
-        if ((symType==STT_GNU_IFUNC || symType==STT_OBJECT))
+        if (symType==STT_GNU_IFUNC || symType==STT_OBJECT)
         {
             const bool isKernel = (symType==STT_GNU_IFUNC);
             symOffsets[j] = std::make_pair(value, j);

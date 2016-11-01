@@ -95,6 +95,46 @@ public:
     { return (creationFlags & ROCMBIN_CREATE_REGIONMAP) != 0; };
 };
 
+/// ROCm kernel configuration structure
+struct ROCmKernelConfig
+{
+    uint32_t amdCodeVersionMajor;
+    uint32_t amdCodeVersionMinor;
+    uint16_t amdMachineKind;
+    uint16_t amdMachineMajor;
+    uint16_t amdMachineMinor;
+    uint16_t amdMachineStepping;
+    uint64_t kernelCodeEntryOffset;
+    uint64_t kernelCodePrefetchOffset;
+    uint64_t kernelCodePrefetchSize;
+    uint64_t maxScrachBackingMemorySize;
+    uint32_t computePgmRsrc1;
+    uint32_t computePgmRsrc2;
+    uint16_t enableSpgrRegisterFlags;
+    uint16_t enableFeatureFlags;
+    uint32_t workitemPrivateSegmentSize;
+    uint32_t workgroupGroupSegmentSize;
+    uint32_t gdsSegmentSize;
+    uint64_t kernargSegmentSize;
+    uint32_t workgroupFbarrierCount;
+    uint16_t wavefrontSgprCount;
+    uint16_t workitemVgprCount;
+    uint16_t reservedVgprFirst;
+    uint16_t reservedVgprCount;
+    uint16_t reservedSgprFirst;
+    uint16_t reservedSgprCount;
+    uint16_t debugWavefrontPrivateSegmentOffsetSgpr;
+    uint16_t debugPrivateSegmentBufferSgpr;
+    cxbyte kernargSegmentAlignment;
+    cxbyte groupSegmentAlignment;
+    cxbyte privateSegmentAlignment;
+    cxbyte wavefrontSize;
+    uint32_t callConvention;
+    uint32_t reserved1[3];
+    uint64_t runtimeLoaderKernelSymbol;
+    cxbyte controlDirective[128];
+};
+
 /// check whether is Amd OpenCL 2.0 binary
 extern bool isROCmBinary(size_t binarySize, const cxbyte* binary);
 
