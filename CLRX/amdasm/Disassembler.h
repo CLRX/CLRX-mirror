@@ -253,7 +253,7 @@ struct ROCmDisasmKernelInput
     CString kernelName; ///< kernel name
     const cxbyte* setup;
     size_t codeSize;
-    const cxbyte* code;
+    size_t offset;
 };
 
 struct ROCmDisasmInput
@@ -261,7 +261,6 @@ struct ROCmDisasmInput
     GPUDeviceType deviceType;   ///< GPU device type
     uint32_t archMinor;     ///< GPU arch minor
     uint32_t archStepping;     ///< GPU arch stepping
-    
     std::vector<ROCmDisasmKernelInput> kernels;    ///< kernel inputs
 };
 

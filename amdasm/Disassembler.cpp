@@ -287,7 +287,7 @@ Disassembler::Disassembler(GPUDeviceType deviceType, const GalliumBinary& binary
            galliumInput(nullptr), output(_output), flags(_flags), sectionCount(0)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
-    galliumInput = getGalliumDisasmInputFromBinary(deviceType, binary, flags);
+    galliumInput = getGalliumDisasmInputFromBinary(deviceType, binary);
 }
 
 Disassembler::Disassembler(const GalliumDisasmInput* disasmInput, std::ostream& _output,

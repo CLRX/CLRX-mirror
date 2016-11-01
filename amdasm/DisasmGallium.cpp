@@ -36,7 +36,7 @@ using namespace CLRX;
 
 template<typename GalliumElfBinary>
 static void getGalliumDisasmInputFromBinaryBase(const GalliumBinary& binary,
-            const GalliumElfBinary& elfBin, Flags flags, GalliumDisasmInput* input)
+            const GalliumElfBinary& elfBin, GalliumDisasmInput* input)
 {
     uint16_t rodataIndex = SHN_UNDEF;
     try
@@ -76,21 +76,19 @@ static void getGalliumDisasmInputFromBinaryBase(const GalliumBinary& binary,
 }
 
 GalliumDisasmInput* CLRX::getGalliumDisasmInputFromBinary(GPUDeviceType deviceType,
-           const GalliumBinary& binary, Flags flags)
+           const GalliumBinary& binary)
 {
     std::unique_ptr<GalliumDisasmInput> input(new GalliumDisasmInput);
     input->deviceType = deviceType;
     if (!binary.is64BitElfBinary())
     {
         input->is64BitMode = false;
-        getGalliumDisasmInputFromBinaryBase(binary, binary.getElfBinary32(),
-                                flags, input.get());
+        getGalliumDisasmInputFromBinaryBase(binary, binary.getElfBinary32(), input.get());
     }
     else // 64-bit
     {
         input->is64BitMode = true;
-        getGalliumDisasmInputFromBinaryBase(binary, binary.getElfBinary64(),
-                                flags, input.get());
+        getGalliumDisasmInputFromBinaryBase(binary, binary.getElfBinary64(), input.get());
     }
     return input.release();
 }

@@ -1680,7 +1680,6 @@ struct AMDGPUArchValues
     uint32_t stepping;
 };
 
-
 static const AMDGPUArchValues amdGpuArchValuesTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE

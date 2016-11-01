@@ -53,7 +53,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         const Elf64_Sym& sym = getSymbol(i);
         if (sym.st_shndx==textIndex)
         {
-            if (ELF64_ST_TYPE(sym.st_info)==10)
+            if (ELF64_ST_TYPE(sym.st_info)==STT_GNU_IFUNC)
                 kernelsNum++;
             symsNum++;
         }
@@ -74,7 +74,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         if (value < codeOffset)
             throw Exception("Kernel offset is too small!");
         const size_t size = ULEV(sym.st_size);
-        if (ELF64_ST_TYPE(sym.st_info)!=10)
+        if (ELF64_ST_TYPE(sym.st_info)!=STT_GNU_IFUNC)
         {
             symOffsets[k++] = std::make_pair(value, SIZE_MAX);
             continue;

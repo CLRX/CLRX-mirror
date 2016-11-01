@@ -73,7 +73,7 @@ extern CLRX_INTERNAL ROCmDisasmInput* getROCmDisasmInputFromBinary(
             GPUDeviceType deviceType, const ROCmBinary& binary, Flags flags);
 
 extern CLRX_INTERNAL GalliumDisasmInput* getGalliumDisasmInputFromBinary(
-            GPUDeviceType deviceType, const GalliumBinary& binary, Flags flags);
+            GPUDeviceType deviceType, const GalliumBinary& binary);
 
 extern CLRX_INTERNAL const std::pair<const char*, KernelArgType> disasmArgTypeNameMap[74];
 
