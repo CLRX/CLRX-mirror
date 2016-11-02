@@ -18,7 +18,6 @@
  */
 
 #include <CLRX/Config.h>
-#include <iostream>
 #include <cstdint>
 #include <cstdio>
 #include <inttypes.h>
@@ -354,6 +353,9 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
                          config.runtimeLoaderKernelSymbol);
         output.write(buf, bufSize);
     }
+    
+    output.write("    .control_directive\n", 23);
+    printDisasmData(sizeof config.controlDirective, config.controlDirective, output, true);
 }
 
 void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInput,
@@ -366,6 +368,14 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(rocmInput->deviceType);
     const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    
+    {
+        char buf[40];
+        size_t size = snprintf(buf, 40, ".arch_minor %u\n", rocmInput->archMinor);
+        output.write(buf, size);
+        size = snprintf(buf, 40, ".arch_stepping %u\n", rocmInput->archStepping);
+        output.write(buf, size);
+    }
     
     for (const ROCmDisasmRegionInput& rinput: rocmInput->regions)
         if (rinput.isKernel)
