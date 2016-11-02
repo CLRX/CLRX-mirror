@@ -127,11 +127,43 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
              GPUArchitecture arch, const ROCmKernelConfig& config)
 {
     output.write("    .config\n", 12);
+    
+    uint32_t amdCodeVersionMajor = ULEV(config.amdCodeVersionMajor);
+    uint32_t amdCodeVersionMinor = ULEV(config.amdCodeVersionMinor);
+    uint16_t amdMachineKind = ULEV(config.amdMachineKind);
+    uint16_t amdMachineMajor = ULEV(config.amdMachineMajor);
+    uint16_t amdMachineMinor = ULEV(config.amdMachineMinor);
+    uint16_t amdMachineStepping = ULEV(config.amdMachineStepping);
+    uint64_t kernelCodeEntryOffset = ULEV(config.kernelCodeEntryOffset);
+    uint64_t kernelCodePrefetchOffset = ULEV(config.kernelCodePrefetchOffset);
+    uint64_t kernelCodePrefetchSize = ULEV(config.kernelCodePrefetchSize);
+    uint64_t maxScrachBackingMemorySize = ULEV(config.maxScrachBackingMemorySize);
+    uint32_t computePgmRsrc1 = ULEV(config.computePgmRsrc1);
+    uint32_t computePgmRsrc2 = ULEV(config.computePgmRsrc2);
+    uint16_t enableSpgrRegisterFlags = ULEV(config.enableSpgrRegisterFlags);
+    uint16_t enableFeatureFlags = ULEV(config.enableFeatureFlags);
+    uint32_t workitemPrivateSegmentSize = ULEV(config.workitemPrivateSegmentSize);
+    uint32_t workgroupGroupSegmentSize = ULEV(config.workgroupGroupSegmentSize);
+    uint32_t gdsSegmentSize = ULEV(config.gdsSegmentSize);
+    uint64_t kernargSegmentSize = ULEV(config.kernargSegmentSize);
+    uint32_t workgroupFbarrierCount = ULEV(config.workgroupFbarrierCount);
+    uint16_t wavefrontSgprCount = ULEV(config.wavefrontSgprCount);
+    uint16_t workitemVgprCount = ULEV(config.workitemVgprCount);
+    uint16_t reservedVgprFirst = ULEV(config.reservedVgprFirst);
+    uint16_t reservedVgprCount = ULEV(config.reservedVgprCount);
+    uint16_t reservedSgprFirst = ULEV(config.reservedSgprFirst);
+    uint16_t reservedSgprCount = ULEV(config.reservedSgprCount);
+    uint16_t debugWavefrontPrivateSegmentOffsetSgpr =
+            ULEV(config.debugWavefrontPrivateSegmentOffsetSgpr);
+    uint16_t debugPrivateSegmentBufferSgpr = ULEV(config.debugPrivateSegmentBufferSgpr);
+    uint32_t callConvention = ULEV(config.callConvention);
+    uint64_t runtimeLoaderKernelSymbol = ULEV(config.runtimeLoaderKernelSymbol);
+    
     size_t bufSize;
     char buf[100];
     const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
-    const uint32_t pgmRsrc1 = config.computePgmRsrc1;
-    const uint32_t pgmRsrc2 = config.computePgmRsrc2;
+    const uint32_t pgmRsrc1 = computePgmRsrc1;
+    const uint32_t pgmRsrc2 = computePgmRsrc2;
     
     const cxuint dimMask = (pgmRsrc2 >> 7) & 7;
     strcpy(buf, "        .dims ");
@@ -187,36 +219,36 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     output.write(buf, bufSize);
     
     bufSize = snprintf(buf, 100, "        .codeversion %u, %u\n",
-                   config.amdCodeVersionMajor, config.amdCodeVersionMinor);
+                   amdCodeVersionMajor, amdCodeVersionMinor);
     output.write(buf, bufSize);
     bufSize = snprintf(buf, 100, "        .machine %hu, %hu, %hu, %hu\n",
-                   config.amdMachineKind, config.amdMachineMajor,
-                   config.amdMachineMinor, config.amdMachineStepping);
+                   amdMachineKind, amdMachineMajor,
+                   amdMachineMinor, amdMachineStepping);
     output.write(buf, bufSize);
     bufSize = snprintf(buf, 100, "        .kernel_code_entry_offset 0x%" PRIx64 "\n",
-                       config.kernelCodeEntryOffset);
+                       kernelCodeEntryOffset);
     output.write(buf, bufSize);
-    if (config.kernelCodePrefetchOffset!=0)
+    if (kernelCodePrefetchOffset!=0)
     {
         bufSize = snprintf(buf, 100,
                    "        .kernel_code_prefetch_offset 0x%" PRIx64 "\n",
-                           config.kernelCodePrefetchOffset);
+                           kernelCodePrefetchOffset);
         output.write(buf, bufSize);
     }
-    if (config.kernelCodePrefetchSize!=0)
+    if (kernelCodePrefetchSize!=0)
     {
         bufSize = snprintf(buf, 100, "        .kernel_code_prefetch_size %" PRIu64 "\n",
-                           config.kernelCodePrefetchSize);
+                           kernelCodePrefetchSize);
         output.write(buf, bufSize);
     }
-    if (config.maxScrachBackingMemorySize!=0)
+    if (maxScrachBackingMemorySize!=0)
     {
         bufSize = snprintf(buf, 100, "        .max_scratch_backing_memory %" PRIu64 "\n",
-                           config.maxScrachBackingMemorySize);
+                           maxScrachBackingMemorySize);
         output.write(buf, bufSize);
     }
     
-    const uint16_t sgprFlags = config.enableSpgrRegisterFlags;
+    const uint16_t sgprFlags = enableSpgrRegisterFlags;
     if ((sgprFlags&1) != 0)
         output.write("        .use_private_segment_buffer\n", 36);
     if ((sgprFlags&2) != 0)
@@ -237,7 +269,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
         output.write("        .use_grid_workgroup_count_y\n", 36);
     if ((sgprFlags&512) != 0)
         output.write("        .use_grid_workgroup_count_z\n", 36);
-    const uint16_t featureFlags = config.enableFeatureFlags;
+    const uint16_t featureFlags = enableFeatureFlags;
     if ((featureFlags&1) != 0)
         output.write("        .use_ordered_append_gds\n", 32);
     bufSize = snprintf(buf, 100, "        .private_elem_size %u\n",
@@ -252,83 +284,83 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     if ((featureFlags&64) != 0)
         output.write("        .use_xnack_enabled\n", 27);
     
-    if (config.workitemPrivateSegmentSize!=0)
+    if (workitemPrivateSegmentSize!=0)
     {
         bufSize = snprintf(buf, 100, "        .workitem_private_segment_size %u\n",
-                         config.workitemPrivateSegmentSize);
+                         workitemPrivateSegmentSize);
         output.write(buf, bufSize);
     }
-    if (config.workgroupGroupSegmentSize!=0)
+    if (workgroupGroupSegmentSize!=0)
     {
         bufSize = snprintf(buf, 100, "        .workgroup_group_segment_size %u\n",
-                         config.workgroupGroupSegmentSize);
+                         workgroupGroupSegmentSize);
         output.write(buf, bufSize);
     }
-    if (config.gdsSegmentSize!=0)
+    if (gdsSegmentSize!=0)
     {
         bufSize = snprintf(buf, 100, "        .gds_segment_size %u\n",
-                         config.gdsSegmentSize);
+                         gdsSegmentSize);
         output.write(buf, bufSize);
     }
-    if (config.kernargSegmentSize!=0)
+    if (kernargSegmentSize!=0)
     {
         bufSize = snprintf(buf, 100, "        .kernarg_segment_size %" PRIu64 "\n",
-                         config.kernargSegmentSize);
+                         kernargSegmentSize);
         output.write(buf, bufSize);
     }
-    if (config.workgroupFbarrierCount!=0)
+    if (workgroupFbarrierCount!=0)
     {
         bufSize = snprintf(buf, 100, "        .workgroup_fbarrier_count %u\n",
-                         config.workgroupFbarrierCount);
+                         workgroupFbarrierCount);
         output.write(buf, bufSize);
     }
-    if (config.wavefrontSgprCount!=0)
+    if (wavefrontSgprCount!=0)
     {
         bufSize = snprintf(buf, 100, "        .wavefront_sgpr_count %hu\n",
-                         config.wavefrontSgprCount);
+                         wavefrontSgprCount);
         output.write(buf, bufSize);
     }
-    if (config.workitemVgprCount!=0)
+    if (workitemVgprCount!=0)
     {
         bufSize = snprintf(buf, 100, "        .workitem_vgpr_count %hu\n",
-                         config.workitemVgprCount);
+                         workitemVgprCount);
         output.write(buf, bufSize);
     }
-    if (config.reservedVgprFirst!=0)
+    if (reservedVgprFirst!=0)
     {
         bufSize = snprintf(buf, 100, "        .reserved_vgpr_first %hu\n",
-                         config.reservedVgprFirst);
+                         reservedVgprFirst);
         output.write(buf, bufSize);
     }
-    if (config.reservedVgprCount!=0)
+    if (reservedVgprCount!=0)
     {
         bufSize = snprintf(buf, 100, "        .reserved_vgpr_count %hu\n",
-                         config.reservedVgprCount);
+                         reservedVgprCount);
         output.write(buf, bufSize);
     }
-    if (config.reservedSgprFirst!=0)
+    if (reservedSgprFirst!=0)
     {
         bufSize = snprintf(buf, 100, "        .reserved_sgpr_first %hu\n",
-                         config.reservedSgprFirst);
+                         reservedSgprFirst);
         output.write(buf, bufSize);
     }
-    if (config.reservedSgprCount!=0)
+    if (reservedSgprCount!=0)
     {
         bufSize = snprintf(buf, 100, "        .reserved_sgpr_count %hu\n",
-                         config.reservedSgprCount);
+                         reservedSgprCount);
         output.write(buf, bufSize);
     }
-    if (config.debugWavefrontPrivateSegmentOffsetSgpr!=0)
+    if (debugWavefrontPrivateSegmentOffsetSgpr!=0)
     {
         bufSize = snprintf(buf, 100, "        "
                         ".debug_wavefront_private_segment_offset_sgpr %hu\n",
-                         config.debugWavefrontPrivateSegmentOffsetSgpr);
+                         debugWavefrontPrivateSegmentOffsetSgpr);
         output.write(buf, bufSize);
     }
-    if (config.debugPrivateSegmentBufferSgpr!=0)
+    if (debugPrivateSegmentBufferSgpr!=0)
     {
         bufSize = snprintf(buf, 100, "        .debug_private_segment_buffer_sgpr %hu\n",
-                         config.debugPrivateSegmentBufferSgpr);
+                         debugPrivateSegmentBufferSgpr);
         output.write(buf, bufSize);
     }
     bufSize = snprintf(buf, 100, "        .kernarg_segment_align %u\n",
@@ -344,13 +376,13 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
                      1U<<(config.wavefrontSize));
     output.write(buf, bufSize);
     bufSize = snprintf(buf, 100, "        .call_convention 0x%x\n",
-                     config.callConvention);
+                     callConvention);
     output.write(buf, bufSize);
-    if (config.runtimeLoaderKernelSymbol!=0)
+    if (runtimeLoaderKernelSymbol!=0)
     {
         bufSize = snprintf(buf, 100,
                    "        .runtime_loader_kernel_symbol 0x%" PRIx64 "\n",
-                         config.runtimeLoaderKernelSymbol);
+                         runtimeLoaderKernelSymbol);
         output.write(buf, bufSize);
     }
     
