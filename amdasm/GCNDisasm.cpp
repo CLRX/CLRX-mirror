@@ -266,10 +266,8 @@ static const bool gcnSize12Table[16] =
     false // GCNENC_NONE   // 1111 - illegal
 };
 
-void GCNDisassembler::beforeDisassemble()
+void GCNDisassembler::analyzeBeforeDisassemble()
 {
-    labels.clear();
-    
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     const size_t codeWordsNum = (inputSize>>2);
 
@@ -306,14 +304,16 @@ void GCNDisassembler::beforeDisassemble()
                             // GCN1.1 and GCN1.2 opcodes
                             ((isGCN11 || isGCN12) &&
                                     (opcode >= 23 && opcode <= 26))) // if jump
-                            labels.push_back((pos+int16_t(insnCode&0xffff)+1)<<2);
+                            labels.push_back(startOffset +
+                                    ((pos+int16_t(insnCode&0xffff)+1)<<2));
                     }
                     else
                     {   // SOPK
                         const cxuint opcode = (insnCode>>23)&0x1f;
                         if ((!isGCN12 && opcode == 17) ||
                             (isGCN12 && opcode == 16)) // if branch fork
-                            labels.push_back((pos+int16_t(insnCode&0xffff)+1)<<2);
+                            labels.push_back(startOffset +
+                                    ((pos+int16_t(insnCode&0xffff)+1)<<2));
                         else if ((!isGCN12 && opcode == 21) ||
                             (isGCN12 && opcode == 20))
                             pos++; // additional literal
@@ -365,12 +365,6 @@ void GCNDisassembler::beforeDisassemble()
     }
     
     instrOutOfCode = (pos != codeWordsNum);
-    
-    std::sort(labels.begin(), labels.end());
-    const auto newEnd = std::unique(labels.begin(), labels.end());
-    labels.resize(newEnd-labels.begin());
-    mapSort(namedLabels.begin(), namedLabels.end());
-    mapSort(relocations.begin(), relocations.end());
 }
 
 static const cxbyte gcnEncoding11Table[16] =

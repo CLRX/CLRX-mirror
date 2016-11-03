@@ -108,6 +108,7 @@ protected:
     void writeLocation(size_t pos);
     /// write relocation to current place in instruction
     bool writeRelocation(size_t pos, RelocIter& relocIter);
+    
 public:
     virtual ~ISADisassembler();
     
@@ -122,8 +123,15 @@ public:
     void setDontPrintLabels(bool after)
     { dontPrintLabelsAfterCode = after; }
     
+    /// analyze code before disassemblying
+    virtual void analyzeBeforeDisassemble() = 0;
+    
+    /// first part before disassemble - clear numbered labels
+    void clearNumberedLabels();
+    /// last part before disassemble - prepare labels (sorting) 
+    void prepareLabelsAndRelocations();
     /// makes some things before disassemblying
-    virtual void beforeDisassemble() = 0;
+    void beforeDisassemble();
     /// disassembles input code
     virtual void disassemble() = 0;
 
@@ -165,8 +173,8 @@ public:
     /// destructor
     ~GCNDisassembler();
     
-    /// routine called before main disassemblying
-    void beforeDisassemble();
+    /// analyze code before disassemblying
+    void analyzeBeforeDisassemble();
     /// disassemble code
     void disassemble();
 };

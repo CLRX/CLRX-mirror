@@ -245,6 +245,27 @@ bool ISADisassembler::writeRelocation(size_t pos, RelocIter& relocIter)
     return true;
 }
 
+void ISADisassembler::clearNumberedLabels()
+{
+    labels.clear();
+}
+
+void ISADisassembler::prepareLabelsAndRelocations()
+{
+    std::sort(labels.begin(), labels.end());
+    const auto newEnd = std::unique(labels.begin(), labels.end());
+    labels.resize(newEnd-labels.begin());
+    mapSort(namedLabels.begin(), namedLabels.end());
+    mapSort(relocations.begin(), relocations.end());
+}
+
+void ISADisassembler::beforeDisassemble()
+{
+    clearNumberedLabels();
+    analyzeBeforeDisassemble();
+    prepareLabelsAndRelocations();
+}
+
 Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _output,
             Flags _flags) : fromBinary(true), binaryFormat(BinaryFormat::AMD),
             amdInput(nullptr), output(_output), flags(_flags), sectionCount(0)
