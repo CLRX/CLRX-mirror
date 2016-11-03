@@ -2428,13 +2428,13 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm ,cxuint spacesToAd
 
 void GCNDisassembler::disassemble()
 {
-    LabelIter curLabel = std::lower_bound(labels.begin(), labels.end(), startOffset);
+    LabelIter curLabel = std::lower_bound(labels.begin(), labels.end(), labelStartOffset);
     RelocIter curReloc = std::lower_bound(relocations.begin(), relocations.end(),
         std::make_pair(startOffset, Relocation()),
           [](const std::pair<size_t,Relocation>& a, const std::pair<size_t, Relocation>& b)
           { return a.first < b.first; });
     NamedLabelIter curNamedLabel = std::lower_bound(namedLabels.begin(), namedLabels.end(),
-        std::make_pair(startOffset, CString()),
+        std::make_pair(labelStartOffset, CString()),
           [](const std::pair<size_t,CString>& a, const std::pair<size_t, CString>& b)
           { return a.first < b.first; });
     
@@ -2778,11 +2778,8 @@ void GCNDisassembler::disassemble()
         }
         output.put('\n');
     }
-    if (dontPrintLabelsAfterCode)
-    {
+    if (!dontPrintLabelsAfterCode)
         writeLabelsToEnd(codeWordsNum<<2, curLabel, curNamedLabel);
-        output.flush();
-    }
+    output.flush();
     disassembler.getOutput().flush();
-    labels.clear(); // free labels
 }

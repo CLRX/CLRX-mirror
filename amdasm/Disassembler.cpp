@@ -36,8 +36,8 @@
 using namespace CLRX;
 
 ISADisassembler::ISADisassembler(Disassembler& _disassembler, cxuint outBufSize)
-        : disassembler(_disassembler), startOffset(0),
-          dontPrintLabelsAfterCode(true), output(outBufSize, _disassembler.getOutput())
+        : disassembler(_disassembler), startOffset(0), labelStartOffset(0),
+          dontPrintLabelsAfterCode(false), output(outBufSize, _disassembler.getOutput())
 { }
 
 ISADisassembler::~ISADisassembler()

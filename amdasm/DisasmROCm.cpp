@@ -432,11 +432,47 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     {
         const cxbyte* code = rocmInput->code;
         output.write(".text\n", 6);
+        // clear labels
+        isaDisassembler->clearNumberedLabels();
+        
+        /// analyze code with collecting labels
         for (size_t i = 0; i < regionsNum; i++)
         {
             const ROCmDisasmRegionInput& region = rocmInput->regions[sorted[i].second];
-            output.write(region.regionName.c_str(), region.regionName.size());
-            output.write(":\n", 2);
+            if (region.isKernel && doDumpCode)
+            {
+                isaDisassembler->setInput(region.size-256, code + region.offset+256,
+                                    region.offset+256);
+                isaDisassembler->analyzeBeforeDisassemble();
+            }
+            isaDisassembler->addNamedLabel(region.offset, region.regionName);
+        }
+        isaDisassembler->prepareLabelsAndRelocations();
+        
+        ISADisassembler::LabelIter curLabel;
+        ISADisassembler::NamedLabelIter curNamedLabel;
+        const auto& labels = isaDisassembler->getLabels();
+        const auto& namedLabels = isaDisassembler->getNamedLabels();
+        // real disassemble
+        size_t prevRegionEnd = 0;
+        bool prevIsKernel = false;
+        for (size_t i = 0; i < regionsNum; i++)
+        {
+            const ROCmDisasmRegionInput& region = rocmInput->regions[sorted[i].second];
+            
+            if (prevIsKernel)
+                prevRegionEnd++;
+            isaDisassembler->setInput(prevRegionEnd, code + region.offset,
+                                    region.offset, prevRegionEnd);
+            curLabel = std::lower_bound(labels.begin(), labels.end(), prevRegionEnd);
+            curNamedLabel = std::lower_bound(namedLabels.begin(), namedLabels.end(),
+                std::make_pair(prevRegionEnd, CString()),
+                  [](const std::pair<size_t,CString>& a,
+                                 const std::pair<size_t, CString>& b)
+                  { return a.first < b.first; });
+            isaDisassembler->writeLabelsToPosition(0, curLabel, curNamedLabel);
+            isaDisassembler->flushOutput();
+            
             if (region.isKernel)
             {
                 if (doMetadata)
@@ -446,12 +482,12 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                     else
                         output.write(".skip 256\n", 10);
                 }
+                
                 if (doDumpCode)
                 {
                     isaDisassembler->setInput(region.size-256, code + region.offset+256,
-                                    region.offset+256);
+                                    region.offset+256, region.offset+1);
                     isaDisassembler->setDontPrintLabels(i+1<regionsNum);
-                    isaDisassembler->beforeDisassemble();
                     isaDisassembler->disassemble();
                 }
             }
@@ -462,6 +498,8 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                 output.write("\n", 1);
                 printDisasmData(region.size, code + region.offset, output, true);
             }
+            prevRegionEnd = region.offset + region.size;
+            prevIsKernel = region.isKernel;
         }
     }
 }

@@ -68,6 +68,11 @@ class ISADisassembler: public NonCopyableAndNonMovable
 {
 private:
     friend struct GCNDisasmUtils; // INTERNAL LOGIC
+public:
+    typedef std::vector<size_t>::const_iterator LabelIter;  ///< label iterator
+    
+    /// named label iterator
+    typedef std::vector<std::pair<size_t, CString> >::const_iterator NamedLabelIter;
 protected:
     /// internal relocation structure
     struct Relocation
@@ -77,16 +82,12 @@ protected:
         int64_t addend; ///< relocation addend
     };
     
-    typedef std::vector<size_t>::const_iterator LabelIter;  ///< label iterator
-    
     /// relocation iterator
     typedef std::vector<std::pair<size_t, Relocation> >::const_iterator RelocIter;
     
-    /// named label iterator
-    typedef std::vector<std::pair<size_t, CString> >::const_iterator NamedLabelIter;
-    
     Disassembler& disassembler; ///< disassembler instance
     size_t startOffset; ///< start offset
+    size_t labelStartOffset; /// < start offset of labels
     size_t inputSize;   ///< size of input
     const cxbyte* input;    ///< input code
     bool dontPrintLabelsAfterCode;
@@ -99,11 +100,6 @@ protected:
     /// constructor
     explicit ISADisassembler(Disassembler& disassembler, cxuint outBufSize = 500);
     
-    /// write all labels before specified position
-    void writeLabelsToPosition(size_t pos, LabelIter& labelIter,
-               NamedLabelIter& namedLabelIter);
-    /// write all labels to end
-    void writeLabelsToEnd(size_t start, LabelIter labelIter, NamedLabelIter namedLabelIter);
     /// write location in the code
     void writeLocation(size_t pos);
     /// write relocation to current place in instruction
@@ -112,12 +108,20 @@ protected:
 public:
     virtual ~ISADisassembler();
     
+    /// write all labels before specified position
+    void writeLabelsToPosition(size_t pos, LabelIter& labelIter,
+               NamedLabelIter& namedLabelIter);
+    /// write all labels to end
+    void writeLabelsToEnd(size_t start, LabelIter labelIter, NamedLabelIter namedLabelIter);
+    
     /// set input code
-    void setInput(size_t inputSize, const cxbyte* input, size_t startOffset = 0)
+    void setInput(size_t inputSize, const cxbyte* input, size_t startOffset = 0,
+        size_t labelStartOffset = 0)
     {
         this->inputSize = inputSize;
         this->input = input;
         this->startOffset = startOffset;
+        this->labelStartOffset = labelStartOffset;
     }
     
     void setDontPrintLabels(bool after)
@@ -158,6 +162,14 @@ public:
         relSymbols.clear();
         relocations.clear();
     }
+    
+    const std::vector<size_t>& getLabels() const
+    { return labels; }
+    const std::vector<std::pair<size_t, CString> >& getNamedLabels() const
+    { return namedLabels; }
+    
+    void flushOutput()
+    { return output.flush(); }
 };
 
 /// GCN architectur dissassembler
