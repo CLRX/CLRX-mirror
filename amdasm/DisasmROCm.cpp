@@ -127,7 +127,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
              GPUArchitecture arch, const ROCmKernelConfig& config)
 {
     output.write("    .config\n", 12);
-    
+    // convert to native-endian
     uint32_t amdCodeVersionMajor = ULEV(config.amdCodeVersionMajor);
     uint32_t amdCodeVersionMinor = ULEV(config.amdCodeVersionMinor);
     uint16_t amdMachineKind = ULEV(config.amdMachineKind);
@@ -385,7 +385,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
                          runtimeLoaderKernelSymbol);
         output.write(buf, bufSize);
     }
-    
+    // new section, control_directive, outside .config
     output.write("    .control_directive\n", 23);
     printDisasmData(sizeof config.controlDirective, config.controlDirective, output, true);
 }
@@ -458,7 +458,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
         for (size_t i = 0; i < regionsNum; i++)
         {
             const ROCmDisasmRegionInput& region = rocmInput->regions[sorted[i].second];
-            
+            // set labelIters to previous position
             isaDisassembler->setInput(prevRegionPos, code + region.offset,
                                     region.offset, prevRegionPos);
             curLabel = std::lower_bound(labels.begin(), labels.end(), prevRegionPos);
@@ -476,7 +476,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                 {
                     if (!doDumpConfig)
                         printDisasmData(0x100, code + region.offset, output, true);
-                    else
+                    else    // skip, config was dumped in kernel configuration
                         output.write(".skip 256\n", 10);
                 }
                 
@@ -487,6 +487,8 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                     isaDisassembler->setDontPrintLabels(i+1<regionsNum);
                     isaDisassembler->disassemble();
                 }
+                /* previous position 1 byte after kernel region
+                 * labels at end will be printed by 'disassemble' */
                 prevRegionPos = region.offset + region.size + 1;
             }
             else if (doDumpData)
@@ -495,12 +497,12 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                 output.write(region.regionName.c_str(), region.regionName.size());
                 output.write("\n", 1);
                 printDisasmData(region.size, code + region.offset, output, true);
-                prevRegionPos = region.offset+1;
+                prevRegionPos = region.offset+1; // previous position byte after region
             }
         }
         
         if (regionsNum!=0 && !rocmInput->regions[sorted[regionsNum-1].second].isKernel)
-        {
+        {   // if last region is kernel, then print labels after last region
             const ROCmDisasmRegionInput& region =
                         rocmInput->regions[sorted[regionsNum-1].second];
             isaDisassembler->writeLabelsToEnd(region.size, curLabel, curNamedLabel);
