@@ -48,11 +48,12 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     regionsNum = 0;
     const size_t symbolsNum = getSymbolsNum();
     for (size_t i = 0; i < symbolsNum; i++)
-    {
+    {   // count regions number
         const Elf64_Sym& sym = getSymbol(i);
         const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
+        const cxbyte bind = ELF64_ST_BIND(sym.st_info);
         if (sym.st_shndx==textIndex &&
-            (symType==STT_GNU_IFUNC || symType==STT_OBJECT))
+            (symType==STT_GNU_IFUNC || (bind==STB_GLOBAL && symType==STT_OBJECT)))
             regionsNum++;
     }
     if (code==nullptr && regionsNum!=0)
@@ -66,14 +67,15 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     {
         const Elf64_Sym& sym = getSymbol(i);
         if (sym.st_shndx!=textIndex)
-            continue;
+            continue;   // if not in '.text' section
         const size_t value = ULEV(sym.st_value);
         if (value < codeOffset)
             throw Exception("Region offset is too small!");
         const size_t size = ULEV(sym.st_size);
         
         const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
-        if (symType==STT_GNU_IFUNC || symType==STT_OBJECT)
+        const cxbyte bind = ELF64_ST_BIND(sym.st_info);
+        if (symType==STT_GNU_IFUNC || (bind==STB_GLOBAL && symType==STT_OBJECT))
         {
             const bool isKernel = (symType==STT_GNU_IFUNC);
             symOffsets[j] = std::make_pair(value, j);
