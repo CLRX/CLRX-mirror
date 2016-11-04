@@ -498,5 +498,13 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                 prevRegionPos = region.offset+1;
             }
         }
+        
+        if (regionsNum!=0 && !rocmInput->regions[sorted[regionsNum-1].second].isKernel)
+        {
+            const ROCmDisasmRegionInput& region =
+                        rocmInput->regions[sorted[regionsNum-1].second];
+            isaDisassembler->writeLabelsToEnd(region.size, curLabel, curNamedLabel);
+            isaDisassembler->flushOutput();
+        }
     }
 }
