@@ -19,10 +19,13 @@
 
 #include <CLRX/Config.h>
 #include <cstdint>
+#include <algorithm>
 #include <utility>
-#include <CLRX/amdbin/Elf.h>
+#include <CLRX/amdbin/ElfBinaries.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
+#include <CLRX/utils/InputOutput.h>
+#include <CLRX/utils/Containers.h>
 #include <CLRX/amdbin/ROCmBinaries.h>
 
 using namespace CLRX;
@@ -130,4 +133,106 @@ bool CLRX::isROCmBinary(size_t binarySize, const cxbyte* binary)
     if (ULEV(ehdr->e_machine) != 0xe0 || ULEV(ehdr->e_flags)!=0)
         return false;
     return true;
+}
+
+/*
+ * ROCm Binary Generator
+ */
+
+ROCmBinGenerator::ROCmBinGenerator() : manageable(false), input(nullptr)
+{ }
+
+ROCmBinGenerator::ROCmBinGenerator(const ROCmInput* rocmInput)
+        : manageable(false), input(rocmInput)
+{ }
+
+ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
+        uint32_t archMinor, uint32_t archStepping, size_t codeSize, const cxbyte* code,
+        const std::vector<ROCmSymbolInput>& symbols)
+{
+    input = new ROCmInput{ deviceType, archMinor, archStepping, symbols, codeSize, code };
+}
+
+ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
+        uint32_t archMinor, uint32_t archStepping, size_t codeSize, const cxbyte* code,
+        std::vector<ROCmSymbolInput>&& symbols)
+{
+    input = new ROCmInput{ deviceType, archMinor, archStepping, std::move(symbols),
+                codeSize, code };
+}
+
+ROCmBinGenerator::~ROCmBinGenerator()
+{
+    if (manageable)
+        delete input;
+}
+
+void ROCmBinGenerator::setInput(const ROCmInput* input)
+{
+    if (manageable)
+        delete input;
+    manageable = false;
+    this->input = input;
+}
+
+void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
+             Array<cxbyte>* aPtr) const
+{
+    ElfBinaryGen64 elfBinGen64;
+    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
+                ".dynsym", SHT_DYNSYM, SHF_ALLOC, 3, 1));
+    
+    size_t binarySize;
+    /****
+     * prepare for write binary to output
+     ****/
+    std::unique_ptr<std::ostream> outStreamHolder;
+    std::ostream* os = nullptr;
+    if (aPtr != nullptr)
+    {
+        aPtr->resize(binarySize);
+        outStreamHolder.reset(
+                new ArrayOStream(binarySize, reinterpret_cast<char*>(aPtr->data())));
+        os = outStreamHolder.get();
+    }
+    else if (vPtr != nullptr)
+    {
+        vPtr->resize(binarySize);
+        outStreamHolder.reset(new VectorOStream(*vPtr));
+        os = outStreamHolder.get();
+    }
+    else // from argument
+        os = osPtr;
+    
+    const std::ios::iostate oldExceptions = os->exceptions();
+    try
+    {
+    os->exceptions(std::ios::failbit | std::ios::badbit);
+    /****
+     * write binary to output
+     ****/
+    //elfBinGen64->generate(bos);
+    //assert(bos.getWritten() == binarySize);
+    }
+    catch(...)
+    {
+        os->exceptions(oldExceptions);
+        throw;
+    }
+    os->exceptions(oldExceptions);
+}
+
+void ROCmBinGenerator::generate(Array<cxbyte>& array) const
+{
+    generateInternal(nullptr, nullptr, &array);
+}
+
+void ROCmBinGenerator::generate(std::ostream& os) const
+{
+    generateInternal(&os, nullptr, nullptr);
+}
+
+void ROCmBinGenerator::generate(std::vector<char>& v) const
+{
+    generateInternal(nullptr, &v, nullptr);
 }

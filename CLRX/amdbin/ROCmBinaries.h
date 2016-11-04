@@ -33,6 +33,8 @@
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/GPUId.h>
+#include <CLRX/utils/InputOutput.h>
 
 /// main namespace
 namespace CLRX
@@ -137,6 +139,71 @@ struct ROCmKernelConfig
 
 /// check whether is Amd OpenCL 2.0 binary
 extern bool isROCmBinary(size_t binarySize, const cxbyte* binary);
+
+/*
+ * ROCm Binary Generator
+ */
+
+/// ROCm binary symbol input
+struct ROCmSymbolInput
+{
+    CString symbolName; ///< symbol name
+    size_t offset;  ///< offset in code
+    size_t size;    ///< size of symbol
+    bool isKernel;  ///< true if kernel
+};
+
+struct ROCmInput
+{
+    GPUDeviceType deviceType;   ///< GPU device type
+    uint32_t archMinor;         ///< GPU arch minor
+    uint32_t archStepping;      ///< GPU arch stepping
+    std::vector<ROCmSymbolInput> symbols;   ///< symbols
+    size_t codeSize;        ///< code size
+    const cxbyte* code;     ///< code
+    
+    std::vector<BinSection> extraSections;  ///< extra sections
+    std::vector<BinSymbol> extraSymbols;    ///< extra symbols
+};
+
+class ROCmBinGenerator: public NonCopyableAndNonMovable
+{
+private:
+    private:
+    bool manageable;
+    const ROCmInput* input;
+    
+    void generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
+             Array<cxbyte>* aPtr) const;
+public:
+    ROCmBinGenerator();
+    /// constructor with ROCm input
+    ROCmBinGenerator(const ROCmInput* rocmInput);
+    
+    ROCmBinGenerator(GPUDeviceType deviceType, uint32_t archMinor, uint32_t archStepping,
+            size_t codeSize, const cxbyte* code,
+            const std::vector<ROCmSymbolInput>& symbols);
+    ROCmBinGenerator(GPUDeviceType deviceType, uint32_t archMinor, uint32_t archStepping,
+            size_t codeSize, const cxbyte* code,
+            std::vector<ROCmSymbolInput>&& symbols);
+    ~ROCmBinGenerator();
+    
+    /// get input
+    const ROCmInput* getInput() const
+    { return input; }
+    
+    /// set input
+    void setInput(const ROCmInput* input);
+    
+    /// generates binary to array of bytes
+    void generate(Array<cxbyte>& array) const;
+    
+    /// generates binary to output stream
+    void generate(std::ostream& os) const;
+    
+    /// generates binary to vector of char
+    void generate(std::vector<char>& vector) const;
+};
 
 };
 
