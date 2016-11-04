@@ -454,19 +454,16 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
         const auto& labels = isaDisassembler->getLabels();
         const auto& namedLabels = isaDisassembler->getNamedLabels();
         // real disassemble
-        size_t prevRegionEnd = 0;
-        bool prevIsKernel = false;
+        size_t prevRegionPos = 0;
         for (size_t i = 0; i < regionsNum; i++)
         {
             const ROCmDisasmRegionInput& region = rocmInput->regions[sorted[i].second];
             
-            if (prevIsKernel)
-                prevRegionEnd++;
-            isaDisassembler->setInput(prevRegionEnd, code + region.offset,
-                                    region.offset, prevRegionEnd);
-            curLabel = std::lower_bound(labels.begin(), labels.end(), prevRegionEnd);
+            isaDisassembler->setInput(prevRegionPos, code + region.offset,
+                                    region.offset, prevRegionPos);
+            curLabel = std::lower_bound(labels.begin(), labels.end(), prevRegionPos);
             curNamedLabel = std::lower_bound(namedLabels.begin(), namedLabels.end(),
-                std::make_pair(prevRegionEnd, CString()),
+                std::make_pair(prevRegionPos, CString()),
                   [](const std::pair<size_t,CString>& a,
                                  const std::pair<size_t, CString>& b)
                   { return a.first < b.first; });
@@ -490,6 +487,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                     isaDisassembler->setDontPrintLabels(i+1<regionsNum);
                     isaDisassembler->disassemble();
                 }
+                prevRegionPos = region.offset + region.size + 1;
             }
             else if (doDumpData)
             {
@@ -497,9 +495,8 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                 output.write(region.regionName.c_str(), region.regionName.size());
                 output.write("\n", 1);
                 printDisasmData(region.size, code + region.offset, output, true);
+                prevRegionPos = region.offset+1;
             }
-            prevRegionEnd = region.offset + region.size;
-            prevIsKernel = region.isKernel;
         }
     }
 }
