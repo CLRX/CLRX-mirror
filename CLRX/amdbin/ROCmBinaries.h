@@ -48,8 +48,8 @@ enum : Flags {
 struct ROCmRegion
 {
     CString regionName; ///< region name
-    uint64_t size;    ///< data size
-    uint64_t offset;     ///< data
+    size_t size;    ///< data size
+    size_t offset;     ///< data
     bool isKernel;
 };
 

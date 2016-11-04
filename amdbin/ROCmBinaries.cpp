@@ -95,7 +95,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         if (region.isKernel && symOffsets[i-1].first+0x100 > end)
             throw Exception("Kernel size is too small!");
         
-        const uint64_t regSize = end - symOffsets[i-1].first;
+        const size_t regSize = end - symOffsets[i-1].first;
         if (region.size==0)
             region.size = regSize;
         else

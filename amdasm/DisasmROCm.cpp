@@ -115,7 +115,7 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
     {
         const ROCmRegion& region = binary.getRegion(i);
         input->regions[i] = { region.regionName, size_t(region.size),
-            region.offset - codeOffset, region.isKernel };
+            size_t(region.offset - codeOffset), region.isKernel };
     }
     
     input->code = binary.getCode();
