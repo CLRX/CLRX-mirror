@@ -511,8 +511,8 @@ static void putSectionsAndSymbols(ElfBinaryGenTemplate<Types>& elfBinGen,
       const GalliumInput* input, const Array<uint32_t>& kernelsOrder,
       const AmdGpuConfigContent& amdGpuConfigContent)
 {
-    uint32_t commentSize = 28;
-    const char* comment = "CLRX GalliumBinGenerator 0.1";
+    const char* comment = "CLRX GalliumBinGenerator " CLRX_VERSION;
+    uint32_t commentSize = ::strlen(comment);
     
     typedef ElfRegionTemplate<Types> ElfRegion;
     typedef ElfSymbolTemplate<Types> ElfSymbol;

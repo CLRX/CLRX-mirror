@@ -161,7 +161,8 @@ struct ROCmInput
     std::vector<ROCmSymbolInput> symbols;   ///< symbols
     size_t codeSize;        ///< code size
     const cxbyte* code;     ///< code
-    
+    size_t commentSize; ///< comment size (can be null)
+    const char* comment; ///< comment
     std::vector<BinSection> extraSections;  ///< extra sections
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
 };

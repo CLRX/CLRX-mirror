@@ -30,6 +30,8 @@
 
 using namespace CLRX;
 
+/* TODO: add support for various kernel code offset (now only 256 is supported) */
+
 ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags)
         : ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
           regionsNum(0), codeSize(0), code(nullptr)
@@ -179,8 +181,33 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
              Array<cxbyte>* aPtr) const
 {
     ElfBinaryGen64 elfBinGen64;
-    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
-                ".dynsym", SHT_DYNSYM, SHF_ALLOC, 3, 1));
+    
+    const char* comment = "CLRX ROCmBinGenerator " CLRX_VERSION;
+    uint32_t commentSize = ::strlen(comment);
+    if (input->comment!=nullptr)
+    {   // if comment, store comment section
+        comment = input->comment;
+        commentSize = input->commentSize;
+        if (commentSize==0)
+            commentSize = ::strlen(comment);
+    }
+    
+    elfBinGen64.addRegion(ElfRegion64::programHeaderTable());
+    elfBinGen64.addRegion(ElfRegion64::dynsymSection());
+    elfBinGen64.addRegion(ElfRegion64::dynstrSection());
+    elfBinGen64.addRegion(ElfRegion64(input->codeSize, (const cxbyte*)input->code, 
+              0x1000, ".text", SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR, 0, 0, 0, 0,
+              false, 256));
+    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 0x1000, ".dynamic",
+              SHT_DYNAMIC, SHF_ALLOC|SHF_WRITE, 2, 0, 0, 0, false, 8));
+    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 4, ".note",
+              SHT_NOTE, 0));
+    elfBinGen64.addRegion(ElfRegion64(commentSize, (const cxbyte*)comment, 1, ".comment",
+              SHT_PROGBITS, SHF_MERGE|SHF_STRINGS));
+    elfBinGen64.addRegion(ElfRegion64::symtabSection());
+    elfBinGen64.addRegion(ElfRegion64::shstrtabSection());
+    elfBinGen64.addRegion(ElfRegion64::strtabSection());
+    elfBinGen64.addRegion(ElfRegion64::sectionHeaderTable());
     
     size_t binarySize;
     /****
