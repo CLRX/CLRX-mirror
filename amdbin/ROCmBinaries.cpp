@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+#include <cassert>
 #include <cstdint>
 #include <algorithm>
 #include <utility>
@@ -180,8 +181,6 @@ void ROCmBinGenerator::setInput(const ROCmInput* input)
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
 {
-    ElfBinaryGen64 elfBinGen64;
-    
     const char* comment = "CLRX ROCmBinGenerator " CLRX_VERSION;
     uint32_t commentSize = ::strlen(comment);
     if (input->comment!=nullptr)
@@ -192,6 +191,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
             commentSize = ::strlen(comment);
     }
     
+    ElfBinaryGen64 elfBinGen64;
     elfBinGen64.addRegion(ElfRegion64::programHeaderTable());
     elfBinGen64.addRegion(ElfRegion64::dynsymSection());
     elfBinGen64.addRegion(ElfRegion64::dynstrSection());
@@ -209,7 +209,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     elfBinGen64.addRegion(ElfRegion64::strtabSection());
     elfBinGen64.addRegion(ElfRegion64::sectionHeaderTable());
     
-    size_t binarySize;
+    size_t binarySize = elfBinGen64.countSize();
     /****
      * prepare for write binary to output
      ****/
@@ -238,8 +238,9 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     /****
      * write binary to output
      ****/
-    //elfBinGen64->generate(bos);
-    //assert(bos.getWritten() == binarySize);
+    FastOutputBuffer bos(256, *os);
+    elfBinGen64.generate(bos);
+    assert(bos.getWritten() == binarySize);
     }
     catch(...)
     {
