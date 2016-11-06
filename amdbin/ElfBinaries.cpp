@@ -449,7 +449,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     
     sectionRegions.reset(new cxuint[sectionsNum+1]);
     sectionRegions[0] = UINT_MAX;
-    cxuint sectionCount = 1;
+    cxuint sectionCount = addNullSection;
     typename Types::Word address = 0;
     
     for (const auto& sym: symbols)
@@ -864,7 +864,8 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         if (!inSym.valueIsAddr)
                             SLEV(sym.st_value, inSym.value);
                         // if not use conversion to address with section addrBase
-                        else if (inSym.sectionIndex != 0 && regions[sectionRegions[
+                        else if ((inSym.sectionIndex != 0 || !addNullSection) &&
+                                regions[sectionRegions[
                                     inSym.sectionIndex]].section.addrBase != 0)
                             SLEV(sym.st_value, inSym.value + regionOffsets[
                                     sectionRegions[inSym.sectionIndex]] +
