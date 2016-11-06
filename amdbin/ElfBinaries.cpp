@@ -509,6 +509,59 @@ uint64_t ElfBinaryGenTemplate<Types>::countSize()
 }
 
 template<typename Types>
+static std::unique_ptr<uint32_t[]> calculateHashValuesForSymbols(bool addNullSymbol,
+            const std::vector<ElfSymbolTemplate<Types> >& symbols)
+{
+    const size_t symsNum = symbols.size() + addNullSymbol;
+    std::unique_ptr<uint32_t[]> hashCodes(new uint32_t[symsNum]);
+    if (addNullSymbol)
+        hashCodes[0] = 0;
+    for (size_t i = 0; i < symbols.size(); i++)
+    {
+        uint32_t h = 0, g;
+        const cxbyte* name = reinterpret_cast<const cxbyte*>(symbols[i].name);
+        while(*name!=0)
+        {
+            h = (h<<4) + *name++;
+            g = h & 0xf0000000U;
+            if (g) h ^= g>>24;
+            h &= ~g;
+        }
+        hashCodes[i+addNullSymbol] = h;
+    }
+    return hashCodes;
+}
+
+/// return bucket number
+static uint32_t optimizeHashBucketsNum(uint32_t hashNum, const uint32_t* hashCodes)
+{
+    uint32_t bestBucketNum = 0;
+    uint64_t bestValue = UINT64_MAX;
+    uint64_t maxSteps = (uint64_t(hashNum)<<1) - (hashNum>>2) + 1;
+    const uint32_t steps = (maxSteps<=1000U) ? hashNum : hashNum<<((32-CLZ32(hashNum))>>1);
+    
+    std::unique_ptr<uint32_t[]> chainLengths(new uint32_t[maxSteps]);
+    const uint32_t stepSize = maxSteps / steps;
+    for (uint32_t buckets = hashNum>>2; buckets < (hashNum<<1); buckets += stepSize)
+    {   //
+        std::fill(chainLengths.get(), chainLengths.get() + buckets, 0U);
+        // calculate chain lengths
+        for (size_t i = 0; i < hashNum; i++)
+            chainLengths[hashCodes[i] % buckets]++;
+        /// value, smaller is better
+        uint64_t value = uint64_t(buckets)*4;
+        for (uint32_t i = 0; i < buckets; i++)
+            value += chainLengths[i]*chainLengths[i];
+        if (value < bestValue)
+        {
+            bestBucketNum = buckets;
+            bestValue = value;
+        }
+    }
+    return bestBucketNum;
+}
+
+template<typename Types>
 void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
 {
     computeSize();
@@ -791,6 +844,11 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                             nameOffset += ::strlen(inSym.name)+1;
                         fob.writeObject(sym);
                     }
+                }
+                else if (region.section.type == SHT_HASH)
+                {
+                    if (::strcmp(region.section.name, ".hash") != 0)
+                        continue;
                 }
                 else if (region.section.type == SHT_STRTAB)
                 {

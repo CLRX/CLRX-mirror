@@ -606,8 +606,13 @@ struct ElfRegionTemplate
     
     /// get dynsym section
     static ElfRegionTemplate dynsymSection()
-    { return ElfRegionTemplate(0, (const cxbyte*)nullptr,  sizeof(typename Types::Word),
-                ".dynsym", SHT_DYNSYM, 0); }
+    { return ElfRegionTemplate(0, (const cxbyte*)nullptr, sizeof(typename Types::Word),
+                ".dynsym", SHT_DYNSYM, SHF_ALLOC); }
+    
+    /// get hash section
+    static ElfRegionTemplate hashSection()
+    { return ElfRegionTemplate(0, (const cxbyte*)nullptr, sizeof(typename Types::Word),
+                ".hash", SHT_HASH, SHF_ALLOC); }
 };
 
 /// 32-bit region (for 32-bit elf)
