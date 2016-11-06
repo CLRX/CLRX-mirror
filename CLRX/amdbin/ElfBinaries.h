@@ -705,6 +705,8 @@ private:
     std::vector<ElfProgramHeaderTemplate<Types> > progHeaders;
     std::vector<ElfSymbolTemplate<Types> > symbols;
     std::vector<ElfSymbolTemplate<Types> > dynSymbols;
+    uint32_t bucketsNum;
+    std::unique_ptr<uint32_t> hashCodes;
     
     void computeSize();
 public:

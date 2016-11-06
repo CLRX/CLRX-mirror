@@ -350,10 +350,65 @@ ElfRegionContent::~ElfRegionContent()
 { }
 
 template<typename Types>
+static std::unique_ptr<uint32_t[]> calculateHashValuesForSymbols(bool addNullSymbol,
+            const std::vector<ElfSymbolTemplate<Types> >& symbols)
+{
+    const size_t symsNum = symbols.size() + addNullSymbol;
+    std::unique_ptr<uint32_t[]> hashCodes(new uint32_t[symsNum]);
+    if (addNullSymbol)
+        hashCodes[0] = 0;
+    for (size_t i = 0; i < symbols.size(); i++)
+    {
+        uint32_t h = 0, g;
+        const cxbyte* name = reinterpret_cast<const cxbyte*>(symbols[i].name);
+        while(*name!=0)
+        {
+            h = (h<<4) + *name++;
+            g = h & 0xf0000000U;
+            if (g) h ^= g>>24;
+            h &= ~g;
+        }
+        hashCodes[i+addNullSymbol] = h;
+    }
+    return hashCodes;
+}
+
+/// return bucket number
+static uint32_t optimizeHashBucketsNum(uint32_t hashNum, bool skipFirst,
+                           const uint32_t* hashCodes)
+{
+    uint32_t bestBucketNum = 0;
+    uint64_t bestValue = UINT64_MAX;
+    uint32_t firstStep = std::max(uint32_t(hashNum>>2), 1U);
+    uint64_t maxSteps = (uint64_t(hashNum)<<1) - (firstStep) + 1;
+    const uint32_t steps = (maxSteps<=1000U) ? hashNum : hashNum<<((32-CLZ32(hashNum))>>1);
+    
+    std::unique_ptr<uint32_t[]> chainLengths(new uint32_t[(hashNum<<2)+1]);
+    const uint32_t stepSize = maxSteps / steps;
+    for (uint32_t buckets = firstStep; buckets <= (hashNum<<1); buckets += stepSize)
+    {   //
+        std::fill(chainLengths.get(), chainLengths.get() + buckets, 0U);
+        // calculate chain lengths
+        for (size_t i = skipFirst; i < hashNum; i++)
+            chainLengths[hashCodes[i] % buckets]++;
+        /// value, smaller is better
+        uint64_t value = uint64_t(buckets);
+        for (uint32_t i = 0; i < buckets; i++)
+            value += chainLengths[i]*chainLengths[i];
+        if (value < bestValue)
+        {
+            bestBucketNum = buckets;
+            bestValue = value;
+        }
+    }
+    return bestBucketNum;
+}
+
+template<typename Types>
 ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate()
         : sizeComputed(false), addNullSym(true), addNullDynSym(true), addNullSection(true),
           addrStartRegion(0), shStrTab(0), strTab(0), dynStr(0), shdrTabRegion(0),
-          phdrTabRegion(0)
+          phdrTabRegion(0), bucketsNum(0)
 { }
 
 template<typename Types>
@@ -363,7 +418,7 @@ ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>
         : sizeComputed(false), addNullSym(_addNullSym), addNullDynSym(_addNullDynSym),
           addNullSection(_addNullSection),  addrStartRegion(addrCountingFromRegion),
           shStrTab(0), strTab(0), dynStr(0), shdrTabRegion(0), phdrTabRegion(0),
-          header(_header)
+          header(_header), bucketsNum(0)
 { }
 
 template<typename Types>
@@ -391,6 +446,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     for (const auto& region: regions)
         if (region.type == ElfRegionType::SECTION)
             sectionsNum++;
+    
     sectionRegions.reset(new cxuint[sectionsNum+1]);
     sectionRegions[0] = UINT_MAX;
     cxuint sectionCount = 1;
@@ -453,6 +509,11 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                 else if (region.section.type == SHT_DYNSYM)
                     size += uint64_t(dynSymbols.size()+addNullDynSym)*
                                 sizeof(typename Types::Sym);
+                else if (region.section.type == SHT_HASH)
+                {
+                    sectionRegions.
+                    calculateHashValuesForSymbols<>()
+                }
                 else if (region.section.type == SHT_STRTAB)
                 {
                     if (::strcmp(region.section.name, ".strtab") == 0)
@@ -506,61 +567,6 @@ uint64_t ElfBinaryGenTemplate<Types>::countSize()
 {
     computeSize();
     return size;
-}
-
-template<typename Types>
-static std::unique_ptr<uint32_t[]> calculateHashValuesForSymbols(bool addNullSymbol,
-            const std::vector<ElfSymbolTemplate<Types> >& symbols)
-{
-    const size_t symsNum = symbols.size() + addNullSymbol;
-    std::unique_ptr<uint32_t[]> hashCodes(new uint32_t[symsNum]);
-    if (addNullSymbol)
-        hashCodes[0] = 0;
-    for (size_t i = 0; i < symbols.size(); i++)
-    {
-        uint32_t h = 0, g;
-        const cxbyte* name = reinterpret_cast<const cxbyte*>(symbols[i].name);
-        while(*name!=0)
-        {
-            h = (h<<4) + *name++;
-            g = h & 0xf0000000U;
-            if (g) h ^= g>>24;
-            h &= ~g;
-        }
-        hashCodes[i+addNullSymbol] = h;
-    }
-    return hashCodes;
-}
-
-/// return bucket number
-static uint32_t optimizeHashBucketsNum(uint32_t hashNum, bool skipFirst,
-                           const uint32_t* hashCodes)
-{
-    uint32_t bestBucketNum = 0;
-    uint64_t bestValue = UINT64_MAX;
-    uint32_t firstStep = std::max(uint32_t(hashNum>>2), 1U);
-    uint64_t maxSteps = (uint64_t(hashNum)<<1) - (firstStep) + 1;
-    const uint32_t steps = (maxSteps<=1000U) ? hashNum : hashNum<<((32-CLZ32(hashNum))>>1);
-    
-    std::unique_ptr<uint32_t[]> chainLengths(new uint32_t[(hashNum<<2)+1]);
-    const uint32_t stepSize = maxSteps / steps;
-    for (uint32_t buckets = firstStep; buckets <= (hashNum<<1); buckets += stepSize)
-    {   //
-        std::fill(chainLengths.get(), chainLengths.get() + buckets, 0U);
-        // calculate chain lengths
-        for (size_t i = skipFirst; i < hashNum; i++)
-            chainLengths[hashCodes[i] % buckets]++;
-        /// value, smaller is better
-        uint64_t value = uint64_t(buckets);
-        for (uint32_t i = 0; i < buckets; i++)
-            value += chainLengths[i]*chainLengths[i];
-        if (value < bestValue)
-        {
-            bestBucketNum = buckets;
-            bestValue = value;
-        }
-    }
-    return bestBucketNum;
 }
 
 static void createHashTable(uint32_t bucketsNum, uint32_t hashNum, bool skipFirst,
