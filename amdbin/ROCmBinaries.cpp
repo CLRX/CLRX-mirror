@@ -192,6 +192,24 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     }
     
     ElfBinaryGen64 elfBinGen64;
+    // add symbols
+    elfBinGen64.addDynSymbol(ElfSymbol64("_DYNAMIC", 5,
+                  ELF64_ST_INFO(STB_LOCAL, STT_NOTYPE), STV_HIDDEN, true, 0, 0));
+    for (const ROCmSymbolInput& symbol: input->symbols)
+    {
+        ElfSymbol64 elfsym;
+        if (symbol.isKernel)
+            elfsym = ElfSymbol64(symbol.symbolName.c_str(), 4,
+                  ELF64_ST_INFO(STB_GLOBAL, STT_GNU_IFUNC), 0, true,
+                  symbol.offset, symbol.size);
+        else
+            elfsym = ElfSymbol64(symbol.symbolName.c_str(), 4,
+                  ELF64_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0, true,
+                  symbol.offset, symbol.size);
+        elfBinGen64.addSymbol(elfsym);
+        elfBinGen64.addDynSymbol(elfsym);
+    }
+    
     elfBinGen64.addRegion(ElfRegion64::programHeaderTable());
     elfBinGen64.addRegion(ElfRegion64::dynsymSection());
     elfBinGen64.addRegion(ElfRegion64::hashSection(1));

@@ -502,6 +502,9 @@ struct ElfRegionTemplate
         typename Types::Word align;
     } section;  ///< section structure
     
+    ElfRegionTemplate() : type(ElfRegionType::USER), dataFromPointer(false), size(0),
+              align(0), data(0)
+    { }
     /// constructor for user region
     ElfRegionTemplate(typename Types::Word _size,
               const cxbyte* _data, typename Types::Word _align)
@@ -650,6 +653,10 @@ struct ElfSymbolTemplate
     bool valueIsAddr;   ///< true if value should be treats as address
     typename Types::Word value;  ///< symbol value
     typename Types::Word size;   ///< symbol size
+    
+    ElfSymbolTemplate() : name(nullptr), sectionIndex(0), info(0), other(0),
+          valueIsAddr(false), value(0), size(0)
+    { }
     
     /// constructor (to replace initializer list construction)
     ElfSymbolTemplate(const char* _name, uint16_t _sectionIndex,
