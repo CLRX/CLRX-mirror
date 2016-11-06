@@ -706,7 +706,8 @@ private:
     std::vector<ElfSymbolTemplate<Types> > symbols;
     std::vector<ElfSymbolTemplate<Types> > dynSymbols;
     uint32_t bucketsNum;
-    std::unique_ptr<uint32_t> hashCodes;
+    std::unique_ptr<uint32_t[]> hashCodes;
+    bool isHashDynSym;
     
     void computeSize();
 public:

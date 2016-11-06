@@ -408,7 +408,7 @@ template<typename Types>
 ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate()
         : sizeComputed(false), addNullSym(true), addNullDynSym(true), addNullSection(true),
           addrStartRegion(0), shStrTab(0), strTab(0), dynStr(0), shdrTabRegion(0),
-          phdrTabRegion(0), bucketsNum(0)
+          phdrTabRegion(0), bucketsNum(0), isHashDynSym(false)
 { }
 
 template<typename Types>
@@ -418,7 +418,7 @@ ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>
         : sizeComputed(false), addNullSym(_addNullSym), addNullDynSym(_addNullDynSym),
           addNullSection(_addNullSection),  addrStartRegion(addrCountingFromRegion),
           shStrTab(0), strTab(0), dynStr(0), shdrTabRegion(0), phdrTabRegion(0),
-          header(_header), bucketsNum(0)
+          header(_header), bucketsNum(0), isHashDynSym(false)
 { }
 
 template<typename Types>
@@ -443,13 +443,49 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     regionAddresses.reset(new typename Types::Word[regions.size()]);
     size = sizeof(typename Types::Ehdr);
     sectionsNum = addNullSection; // if add null section
+    cxuint hashSymSectionIdx = UINT_MAX;
     for (const auto& region: regions)
         if (region.type == ElfRegionType::SECTION)
+        {
+            if (region.section.type==SHT_HASH &&
+                ::strcmp(region.section.name, ".hash")==0)
+                hashSymSectionIdx = region.section.link;
             sectionsNum++;
+        }
+    
+    /// determine symbol name
+    cxuint sectionCount = addNullSection;
+    isHashDynSym = false;
+    if (hashSymSectionIdx!=UINT_MAX)
+    {
+        bool hashSymDetected = false;
+        for (const auto& region: regions)
+            if (region.type == ElfRegionType::SECTION)
+            {
+                if (hashSymSectionIdx==sectionCount)
+                {   // get smybol section
+                    if (region.section.type==SHT_SYMTAB)
+                    {
+                        isHashDynSym = false;
+                        hashSymDetected = true;
+                    }
+                    else if (region.section.type==SHT_DYNSYM)
+                    {
+                        isHashDynSym = true;
+                        hashSymDetected = true;
+                    }
+                    else
+                        throw Exception("Wrong Hash Sym section!");
+                }
+                sectionCount++;
+            }
+        if (!hashSymDetected)
+            throw Exception("Wrong Hash Sym is not detected!");
+    }
     
     sectionRegions.reset(new cxuint[sectionsNum+1]);
     sectionRegions[0] = UINT_MAX;
-    cxuint sectionCount = addNullSection;
+    sectionCount = addNullSection;
     typename Types::Word address = 0;
     
     for (const auto& sym: symbols)
@@ -511,7 +547,13 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                                 sizeof(typename Types::Sym);
                 else if (region.section.type == SHT_HASH)
                 {
-                    //calculateHashValuesForSymbols<>()
+                    const std::vector<ElfSymbolTemplate<Types> >& hashSymbols = 
+                        (isHashDynSym) ? dynSymbols : symbols;
+                    bool addNullHashSym = (isHashDynSym) ? addNullDynSym : addNullSym;
+                    hashCodes = calculateHashValuesForSymbols(addNullDynSym, hashSymbols);
+                    bucketsNum = optimizeHashBucketsNum(hashSymbols.size()+addNullHashSym,
+                           addNullHashSym, hashCodes.get());
+                    size += 4*(bucketsNum + hashSymbols.size()+addNullHashSym + 2);
                 }
                 else if (region.section.type == SHT_STRTAB)
                 {
@@ -571,8 +613,8 @@ uint64_t ElfBinaryGenTemplate<Types>::countSize()
 static void createHashTable(uint32_t bucketsNum, uint32_t hashNum, bool skipFirst,
                            const uint32_t* hashCodes, uint32_t* output)
 {
-    SULEV(output[0], bucketsNum);
-    SULEV(output[1], hashNum);
+    SLEV(output[0], bucketsNum);
+    SLEV(output[1], hashNum);
     uint32_t* buckets = output + 2;
     uint32_t* chains = output + bucketsNum + 2;
     std::fill(buckets, buckets + bucketsNum, 0U);
@@ -585,12 +627,12 @@ static void createHashTable(uint32_t bucketsNum, uint32_t hashNum, bool skipFirs
         const uint32_t bucket = hashCodes[i] % bucketsNum;
         if (lastNodes[bucket] == UINT32_MAX)
         {   // first entry of chain
-            SULEV(buckets[bucket], i);
+            SLEV(buckets[bucket], i);
             lastNodes[bucket] = i;
         }
         else
         {
-            SULEV(chains[lastNodes[bucket]], i);
+            SLEV(chains[lastNodes[bucket]], i);
             lastNodes[bucket] = i;
         }
     }
@@ -885,6 +927,14 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 {
                     if (::strcmp(region.section.name, ".hash") != 0)
                         continue;
+                    
+                    const std::vector<ElfSymbolTemplate<Types> >& hashSymbols = 
+                        (isHashDynSym) ? dynSymbols : symbols;
+                    bool addNullHashSym = (isHashDynSym) ? addNullDynSym : addNullSym;
+                    Array<uint32_t> hashTable(2 + hashSymbols.size() + addNullHashSym);
+                    createHashTable(bucketsNum, hashSymbols.size()+addNullHashSym,
+                                addNullHashSym, hashCodes.get(), hashTable.data());
+                    fob.writeArray(hashTable.size(), hashTable.data());
                 }
                 else if (region.section.type == SHT_STRTAB)
                 {
