@@ -194,7 +194,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     ElfBinaryGen64 elfBinGen64;
     elfBinGen64.addRegion(ElfRegion64::programHeaderTable());
     elfBinGen64.addRegion(ElfRegion64::dynsymSection());
-    elfBinGen64.addRegion(ElfRegion64::hashSection());
+    elfBinGen64.addRegion(ElfRegion64::hashSection(1));
     elfBinGen64.addRegion(ElfRegion64::dynstrSection());
     elfBinGen64.addRegion(ElfRegion64(input->codeSize, (const cxbyte*)input->code, 
               0x1000, ".text", SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR, 0, 0, 0, 0,

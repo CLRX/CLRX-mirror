@@ -537,19 +537,20 @@ static uint32_t optimizeHashBucketsNum(uint32_t hashNum, const uint32_t* hashCod
 {
     uint32_t bestBucketNum = 0;
     uint64_t bestValue = UINT64_MAX;
-    uint64_t maxSteps = (uint64_t(hashNum)<<1) - (hashNum>>2) + 1;
+    uint32_t firstStep = std::max(uint32_t(hashNum>>2), 1U);
+    uint64_t maxSteps = (uint64_t(hashNum)<<1) - (firstStep) + 1;
     const uint32_t steps = (maxSteps<=1000U) ? hashNum : hashNum<<((32-CLZ32(hashNum))>>1);
     
-    std::unique_ptr<uint32_t[]> chainLengths(new uint32_t[maxSteps]);
+    std::unique_ptr<uint32_t[]> chainLengths(new uint32_t[(hashNum<<2)+1]);
     const uint32_t stepSize = maxSteps / steps;
-    for (uint32_t buckets = hashNum>>2; buckets < (hashNum<<1); buckets += stepSize)
+    for (uint32_t buckets = firstStep; buckets <= (hashNum<<1); buckets += stepSize)
     {   //
         std::fill(chainLengths.get(), chainLengths.get() + buckets, 0U);
         // calculate chain lengths
         for (size_t i = 0; i < hashNum; i++)
             chainLengths[hashCodes[i] % buckets]++;
         /// value, smaller is better
-        uint64_t value = uint64_t(buckets)*4;
+        uint64_t value = uint64_t(buckets);
         for (uint32_t i = 0; i < buckets; i++)
             value += chainLengths[i]*chainLengths[i];
         if (value < bestValue)
@@ -559,6 +560,34 @@ static uint32_t optimizeHashBucketsNum(uint32_t hashNum, const uint32_t* hashCod
         }
     }
     return bestBucketNum;
+}
+
+static void createHashTable(uint32_t bucketsNum, uint32_t hashNum,
+                           const uint32_t* hashCodes, uint32_t* output)
+{
+    SULEV(output[0], bucketsNum);
+    SULEV(output[1], hashNum);
+    uint32_t* buckets = output + 2;
+    uint32_t* chains = output + bucketsNum + 2;
+    std::fill(buckets, buckets + bucketsNum, 0U);
+    std::fill(chains, chains + hashNum, STN_UNDEF);
+    
+    std::unique_ptr<uint32_t[]> lastNodes(new uint32_t[bucketsNum]);
+    std::fill(lastNodes.get(), lastNodes.get() + bucketsNum, UINT32_MAX);
+    for (uint32_t i = 0; i < hashNum; i++)
+    {
+        const uint32_t bucket = hashCodes[i] % bucketsNum;
+        if (lastNodes[bucket] == UINT32_MAX)
+        {   // first entry of chain
+            SULEV(buckets[bucket], i);
+            lastNodes[bucket] = i;
+        }
+        else
+        {
+            chains[lastNodes[bucket]] = i;
+            lastNodes[bucket] = i;
+        }
+    }
 }
 
 template<typename Types>

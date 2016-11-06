@@ -610,9 +610,9 @@ struct ElfRegionTemplate
                 ".dynsym", SHT_DYNSYM, SHF_ALLOC); }
     
     /// get hash section
-    static ElfRegionTemplate hashSection()
+    static ElfRegionTemplate hashSection(uint16_t link)
     { return ElfRegionTemplate(0, (const cxbyte*)nullptr, sizeof(typename Types::Word),
-                ".hash", SHT_HASH, SHF_ALLOC); }
+                ".hash", SHT_HASH, SHF_ALLOC, link); }
 };
 
 /// 32-bit region (for 32-bit elf)
