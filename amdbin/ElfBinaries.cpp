@@ -511,8 +511,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                                 sizeof(typename Types::Sym);
                 else if (region.section.type == SHT_HASH)
                 {
-                    sectionRegions.
-                    calculateHashValuesForSymbols<>()
+                    //calculateHashValuesForSymbols<>()
                 }
                 else if (region.section.type == SHT_STRTAB)
                 {
