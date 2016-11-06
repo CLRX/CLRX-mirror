@@ -584,7 +584,7 @@ static void createHashTable(uint32_t bucketsNum, uint32_t hashNum,
         }
         else
         {
-            chains[lastNodes[bucket]] = i;
+            SULEV(chains[lastNodes[bucket]], i);
             lastNodes[bucket] = i;
         }
     }
