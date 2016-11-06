@@ -533,7 +533,8 @@ static std::unique_ptr<uint32_t[]> calculateHashValuesForSymbols(bool addNullSym
 }
 
 /// return bucket number
-static uint32_t optimizeHashBucketsNum(uint32_t hashNum, const uint32_t* hashCodes)
+static uint32_t optimizeHashBucketsNum(uint32_t hashNum, bool skipFirst,
+                           const uint32_t* hashCodes)
 {
     uint32_t bestBucketNum = 0;
     uint64_t bestValue = UINT64_MAX;
@@ -547,7 +548,7 @@ static uint32_t optimizeHashBucketsNum(uint32_t hashNum, const uint32_t* hashCod
     {   //
         std::fill(chainLengths.get(), chainLengths.get() + buckets, 0U);
         // calculate chain lengths
-        for (size_t i = 0; i < hashNum; i++)
+        for (size_t i = skipFirst; i < hashNum; i++)
             chainLengths[hashCodes[i] % buckets]++;
         /// value, smaller is better
         uint64_t value = uint64_t(buckets);
@@ -562,7 +563,7 @@ static uint32_t optimizeHashBucketsNum(uint32_t hashNum, const uint32_t* hashCod
     return bestBucketNum;
 }
 
-static void createHashTable(uint32_t bucketsNum, uint32_t hashNum,
+static void createHashTable(uint32_t bucketsNum, uint32_t hashNum, bool skipFirst,
                            const uint32_t* hashCodes, uint32_t* output)
 {
     SULEV(output[0], bucketsNum);
@@ -574,7 +575,7 @@ static void createHashTable(uint32_t bucketsNum, uint32_t hashNum,
     
     std::unique_ptr<uint32_t[]> lastNodes(new uint32_t[bucketsNum]);
     std::fill(lastNodes.get(), lastNodes.get() + bucketsNum, UINT32_MAX);
-    for (uint32_t i = 0; i < hashNum; i++)
+    for (uint32_t i = skipFirst; i < hashNum; i++)
     {
         const uint32_t bucket = hashCodes[i] % bucketsNum;
         if (lastNodes[bucket] == UINT32_MAX)
