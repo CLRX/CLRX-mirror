@@ -67,8 +67,10 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
     input->archStepping = 0;
     
     {
-        const cxbyte* noteContent = binary.getSectionContent(".note");
-        size_t notesSize = binary.getSectionHeader(".note").sh_size;
+        const cxbyte* noteContent = (const cxbyte*)binary.getNotes();
+        if (noteContent==nullptr)
+            throw Exception("Missing notes in inner binary!");
+        size_t notesSize = binary.getNotesSize();
         // find note about AMDGPU
         for (size_t offset = 0; offset < notesSize; )
         {
