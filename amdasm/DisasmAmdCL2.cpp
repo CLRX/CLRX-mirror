@@ -183,8 +183,10 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
         input->bssSize = innerBin.getBssSize();
         
         {
-            const cxbyte* noteContent = innerBin.getSectionContent(".note");
-            size_t notesSize = innerBin.getSectionHeader(".note").sh_size;
+            const cxbyte* noteContent = (const cxbyte*)innerBin.getNotes();
+            if (noteContent==nullptr)
+                throw Exception("Missing notes in inner binary!");
+            size_t notesSize = innerBin.getNotesSize();
             // find note about AMDGPU
             for (size_t offset = 0; offset < notesSize; )
             {
