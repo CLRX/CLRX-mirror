@@ -631,6 +631,18 @@ struct ElfRegionTemplate
     static ElfRegionTemplate hashSection(uint16_t link)
     { return ElfRegionTemplate(0, (const cxbyte*)nullptr, sizeof(typename Types::Word),
                 ".hash", SHT_HASH, SHF_ALLOC, link); }
+    
+    /// get note section
+    static ElfRegionTemplate noteSection()
+    { return ElfRegionTemplate(0, (const cxbyte*)nullptr, 4, ".note", SHT_NOTE, 0); }
+};
+
+struct ElfNote
+{
+    const char* name;
+    size_t descSize;
+    const cxbyte* desc;
+    uint32_t type;
 };
 
 /// 32-bit region (for 32-bit elf)
@@ -727,6 +739,7 @@ private:
     std::vector<ElfProgramHeaderTemplate<Types> > progHeaders;
     std::vector<ElfSymbolTemplate<Types> > symbols;
     std::vector<ElfSymbolTemplate<Types> > dynSymbols;
+    std::vector<ElfNote> notes;
     uint32_t bucketsNum;
     std::unique_ptr<uint32_t[]> hashCodes;
     bool isHashDynSym;
@@ -761,7 +774,9 @@ public:
     /// add dynamic symbol
     void addDynSymbol(const ElfSymbolTemplate<Types>& symbol)
     { dynSymbols.push_back(symbol); }
-    
+    /// add note
+    void addNote(const ElfNote& note)
+    { notes.push_back(note); }
     /// count size of binary
     uint64_t countSize();
     

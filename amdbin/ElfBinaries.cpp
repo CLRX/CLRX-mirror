@@ -564,6 +564,19 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                            addNullHashSym, hashCodes.get());
                     size += 4*(bucketsNum + hashSymbols.size()+addNullHashSym + 2);
                 }
+                else if (region.section.type == SHT_NOTE)
+                {
+                    for (const ElfNote& note: notes)
+                    {   // note size with data
+                        size_t nameSize = ::strlen(note.name)+1;
+                        if ((nameSize&3)!=0)
+                            nameSize += 4 - (nameSize&3);
+                        size_t descSize = note.descSize;
+                        if ((descSize&3)!=0)
+                            descSize += 4 - (descSize&3);
+                        size += sizeof(typename Types::Nhdr) + nameSize + descSize;
+                    }
+                }
                 else if (region.section.type == SHT_STRTAB)
                 {
                     if (::strcmp(region.section.name, ".strtab") == 0)
@@ -944,6 +957,25 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                     createHashTable(bucketsNum, hashSymbols.size()+addNullHashSym,
                                 addNullHashSym, hashCodes.get(), hashTable.data());
                     fob.writeArray(hashTable.size(), hashTable.data());
+                }
+                else if (region.section.type == SHT_NOTE)
+                {
+                    for (const ElfNote& note: notes)
+                    {
+                        typename Types::Nhdr nhdr;
+                        size_t nameSize = ::strlen(note.name)+1;
+                        size_t descSize = note.descSize;
+                        SLEV(nhdr.n_namesz, nameSize);
+                        SLEV(nhdr.n_descsz, descSize);
+                        SLEV(nhdr.n_type, note.type);
+                        fob.writeObject(nhdr);
+                        fob.writeString(note.name);
+                        if ((nameSize&3) != 0)
+                            fob.fill(4 - (nameSize&3), 0);
+                        fob.writeArray(descSize, note.desc);
+                        if ((descSize&3) != 0)
+                            fob.fill(4 - (descSize&3), 0);
+                    }
                 }
                 else if (region.section.type == SHT_STRTAB)
                 {
