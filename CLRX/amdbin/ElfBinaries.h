@@ -634,7 +634,8 @@ struct ElfRegionTemplate
     
     /// get note section
     static ElfRegionTemplate noteSection()
-    { return ElfRegionTemplate(0, (const cxbyte*)nullptr, 4, ".note", SHT_NOTE, 0); }
+    { return ElfRegionTemplate(0, (const cxbyte*)nullptr, sizeof(typename Types::Word),
+                ".note", SHT_NOTE, 0); }
 };
 
 struct ElfNote

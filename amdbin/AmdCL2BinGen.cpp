@@ -1680,6 +1680,7 @@ struct AMDGPUArchValues
     uint32_t stepping;
 };
 
+/* TODO: add gpu values tables for various driver version */
 static const AMDGPUArchValues amdGpuArchValuesTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
@@ -1980,6 +1981,14 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             noteBuf.reset(new cxbyte[sizeof(noteSectionData16_3)]);
             ::memcpy(noteBuf.get(), noteSectionData16_3, sizeof(noteSectionData16_3));
             // set AMDGPU type
+            /*
+             * AMD - 1 - 00000001 00000000
+             * AMD - 2 - 00000001 00000000 00010101
+             * AMD - 3 - size=0x1a, 00070004 major minor stepping AMD\0 AMDGPU\0
+             * AMD - 4 - size=0x29 00000019 00000001 00000000 
+             *      "AMD HSA Runtime Finalizer" 00000000
+             * AMD - 5 - size=0x19 \x16\000-hsa_call_convention=\0\0
+             */
             SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset_16_3),
                   amdGpuArchValues.major);
             SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset_16_3 + 4),
@@ -2056,6 +2065,12 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         
         if (!is16_3Ver)
         {   /* this order of section for 1912.05 driver version */
+            /* AMD - 1 - 00000001 00000000
+             * AMD - 2 - 00000001 00000000 00010101
+             * AMD - 5 - size=0x19 \x16\000-hsa_call_convention=\0\0
+             * AMD - 3 - size=0x1e, 00070004 major minor stepping AMD\0 AMDGPU\0 00000000
+             * AMD - 4 - size=8 random values 0x7ffXXXXXXXX
+             */
             noteBuf.reset(new cxbyte[sizeof(noteSectionData)]);
             ::memcpy(noteBuf.get(), noteSectionData, sizeof(noteSectionData));
             // set AMDGPU type
