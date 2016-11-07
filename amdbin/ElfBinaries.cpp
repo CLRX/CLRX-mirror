@@ -69,7 +69,7 @@ template<typename Types>
 ElfBinaryTemplate<Types>::ElfBinaryTemplate() : binaryCodeSize(0), binaryCode(nullptr),
         sectionStringTable(nullptr), symbolStringTable(nullptr),
         symbolTable(nullptr), dynSymStringTable(nullptr), dynSymTable(nullptr),
-        symbolsNum(0), dynSymbolsNum(0),
+        noteTable(nullptr), noteTableSize(0), symbolsNum(0), dynSymbolsNum(0),
         symbolEntSize(0), dynSymEntSize(0)
 { }
 
@@ -83,6 +83,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
         binaryCodeSize(_binaryCodeSize), binaryCode(_binaryCode),
         sectionStringTable(nullptr), symbolStringTable(nullptr),
         symbolTable(nullptr), dynSymStringTable(nullptr), dynSymTable(nullptr),
+        noteTable(nullptr), noteTableSize(0),
         symbolsNum(0), dynSymbolsNum(0), symbolEntSize(0), dynSymEntSize(0)        
 {
     if (binaryCodeSize < sizeof(typename Types::Ehdr))
@@ -141,6 +142,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
         
         const typename Types::Shdr* symTableHdr = nullptr;
         const typename Types::Shdr* dynSymTableHdr = nullptr;
+        const typename Types::Shdr* noteTableHdr = nullptr;
         
         cxuint shnum = ULEV(ehdr->e_shnum);
         if ((creationFlags & ELF_CREATE_SECTIONMAP) != 0)
@@ -174,6 +176,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
                 symTableHdr = &shdr;
             if (ULEV(shdr.sh_type) == SHT_DYNSYM)
                 dynSymTableHdr = &shdr;
+            if (ULEV(shdr.sh_type) == SHT_NOTE)
+                noteTableHdr = &shdr;
         }
         if ((creationFlags & ELF_CREATE_SECTIONMAP) != 0)
             mapSort(sectionIndexMap.begin(), sectionIndexMap.end(), CStringLess());
@@ -255,6 +259,11 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
             }
             if ((creationFlags & ELF_CREATE_DYNSYMMAP) != 0)
                 mapSort(dynSymIndexMap.begin(), dynSymIndexMap.end(), CStringLess());
+        }
+        if (noteTableHdr != nullptr)
+        {
+            noteTable = binaryCode + ULEV(noteTableHdr->sh_offset);
+            noteTableSize = ULEV(noteTableHdr->sh_size);
         }
     }
 }

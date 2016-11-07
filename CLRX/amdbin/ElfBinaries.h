@@ -69,6 +69,7 @@ struct Elf32Types
     typedef Elf32_Shdr Shdr;    ///< Section header
     typedef Elf32_Phdr Phdr;    ///< program header
     typedef Elf32_Sym Sym;      ///< symbol header
+    typedef Elf32_Nhdr Nhdr;    ///< note header
     static const cxbyte ELFCLASS;   ///< ELF class
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name
@@ -85,6 +86,7 @@ struct Elf64Types
     typedef Elf64_Shdr Shdr;    ///< Section header
     typedef Elf64_Phdr Phdr;    ///< program header
     typedef Elf64_Sym Sym;      ///< symbol header
+    typedef Elf64_Nhdr Nhdr;    ///< note header
     static const cxbyte ELFCLASS;   ///< ELF class
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name
@@ -112,6 +114,8 @@ protected:
     cxbyte* symbolTable;          ///< pointer to symbol table
     cxbyte* dynSymStringTable;    ///< pointer to dynamic symbol's string table
     cxbyte* dynSymTable;          ///< pointer to dynamic symbol table
+    cxbyte* noteTable;            ///< pointer to note table
+    typename Types::Size noteTableSize;        ///< size of note table
     SectionIndexMap sectionIndexMap;    ///< section's index map
     SymbolIndexMap symbolIndexMap;      ///< symbol's index map
     SymbolIndexMap dynSymIndexMap;      ///< dynamic symbol's index map
@@ -346,6 +350,17 @@ public:
     /// get dynamic symbol with specified name (requires dynamic symbol index map)
     typename Types::Sym& getDynSymbol(const char* name)
     { return getDynSymbol(getDynSymbolIndex(name)); }
+    
+    /// get note table
+    const typename Types::Nhdr* getNotes() const
+    { return reinterpret_cast<typename Types::Nhdr*>(noteTable); }
+    
+    /// get note table
+    typename Types::Nhdr* getNotes()
+    { return reinterpret_cast<typename Types::Nhdr*>(noteTable); }
+    
+    typename Types::Size getNotesSize() const
+    { return noteTableSize; }
     
     /// get section content pointer
     const cxbyte* getSectionContent(uint16_t index) const
