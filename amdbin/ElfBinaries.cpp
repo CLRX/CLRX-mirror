@@ -969,7 +969,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         SLEV(nhdr.n_descsz, descSize);
                         SLEV(nhdr.n_type, note.type);
                         fob.writeObject(nhdr);
-                        fob.writeString(note.name);
+                        fob.write(nameSize, note.name);
                         if ((nameSize&3) != 0)
                             fob.fill(4 - (nameSize&3), 0);
                         fob.writeArray(descSize, note.desc);

@@ -644,6 +644,12 @@ struct ElfNote
     size_t descSize;
     const cxbyte* desc;
     uint32_t type;
+    
+    ElfNote() : name(nullptr), descSize(0), desc(nullptr), type(0)
+    { }
+    ElfNote(const char* _name, size_t _descSize, const cxbyte* _desc, uint32_t _type)
+        : name(_name), descSize(_descSize), desc(_desc), type(_type)
+    { }
 };
 
 /// 32-bit region (for 32-bit elf)

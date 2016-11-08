@@ -1640,6 +1640,27 @@ static const cxbyte noteSectionData[168] =
     0xf0, 0x83, 0x17, 0xfb, 0xfc, 0x7f, 0x00, 0x00
 };
 
+static const cxbyte noteDescType1[8] = { 1, 0, 0, 0, 0, 0, 0, 0 };
+static const cxbyte noteDescType2[12] = { 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0 };
+static const cxbyte noteDescType3[30] =
+{ 4, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  'A', 'M', 'D', 0, 'A', 'M', 'D', 'G', 'P', 'U', 0, 0, 0, 0  };
+static const cxbyte noteDescType4[8] =
+{ 0xf0, 0x83, 0x17, 0xfb, 0xfc, 0x7f, 0x00, 0x00 };
+static const cxbyte noteDescType4_16_3[0x29] =
+{ 0x19, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 'A', 'M', 'D', ' ', 'H', 'S', 'A', ' ',
+  'R', 'u', 'n', 't', 'i', 'm', 'e', ' ',
+  'F', 'i', 'n', 'a', 'l', 'i', 'z', 'e', 'r', 0, 0, 0, 0  };
+static const cxbyte noteDescType5[25] =
+{ 0x16, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
+    'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=', 0, 0 };
+static const cxbyte noteDescType5_16_3[26] =
+{ 0x16, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
+    'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=', '0', 0, 0 };
+static const cxbyte noteDescType5_gpupro[26] =
+{ 0x16, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
+    'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=', '0', 0, 't' };
+
 static const size_t noteAMDGPUTypeOffset = 0x74;
 
 static const cxbyte noteSectionData16_3[200] =
@@ -1978,8 +1999,6 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                                   SHT_STRTAB, SHF_STRINGS, 0, 0));
             innerBinSectionTable[ELFSECTID_STRTAB-ELFSECTID_START] = extraSectionIndex++;
             
-            noteBuf.reset(new cxbyte[sizeof(noteSectionData16_3)]);
-            ::memcpy(noteBuf.get(), noteSectionData16_3, sizeof(noteSectionData16_3));
             // set AMDGPU type
             /*
              * AMD - 1 - 00000001 00000000
@@ -1989,17 +2008,24 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
              *      "AMD HSA Runtime Finalizer" 00000000
              * AMD - 5 - size=0x19 \x16\000-hsa_call_convention=\0\0
              */
-            SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset_16_3),
-                  amdGpuArchValues.major);
-            SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset_16_3 + 4),
-                  amdGpuArchValues.minor);
-            SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset_16_3 + 8),
-                  amdGpuArchValues.stepping);
+            innerBinGen->addNote(ElfNote("AMD", sizeof noteDescType1, noteDescType1, 1U));
+            innerBinGen->addNote(ElfNote("AMD", sizeof noteDescType2, noteDescType2, 2U));
+            noteBuf.reset(new cxbyte[0x1a]);
+            ::memcpy(noteBuf.get(), noteDescType3, 0x1a);
+            SULEV(*(uint32_t*)(noteBuf.get()+4), amdGpuArchValues.major);
+            SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
+            SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);
+            innerBinGen->addNote(ElfNote("AMD", 0x1a, noteBuf.get(), 3U));
+            innerBinGen->addNote(ElfNote("AMD",
+                         sizeof noteDescType4_16_3, noteDescType4_16_3, 4U));
+            if (!gpuProDriver)
+                innerBinGen->addNote(ElfNote("AMD",
+                             sizeof noteDescType5_16_3, noteDescType5_16_3, 5U));
+            else
+                innerBinGen->addNote(ElfNote("AMD",
+                             sizeof noteDescType5_gpupro, noteDescType5_gpupro, 5U));
             
-            if (gpuProDriver)
-                noteBuf[197] = 't';
-            innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData16_3),
-                       noteBuf.get(), 8, ".note", SHT_NOTE, 0));
+            innerBinGen->addRegion(ElfRegion64::noteSection());
             innerBinSectionTable[AMDCL2SECTID_NOTE-ELFSECTID_START] = extraSectionIndex++;
         }
         if (hasRWData)
@@ -2071,17 +2097,18 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
              * AMD - 3 - size=0x1e, 00070004 major minor stepping AMD\0 AMDGPU\0 00000000
              * AMD - 4 - size=8 random values 0x7ffXXXXXXXX
              */
-            noteBuf.reset(new cxbyte[sizeof(noteSectionData)]);
-            ::memcpy(noteBuf.get(), noteSectionData, sizeof(noteSectionData));
-            // set AMDGPU type
-            SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset),
-                  amdGpuArchValues.major);
-            SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset + 4),
-                  amdGpuArchValues.minor);
-            SULEV(*(uint32_t*)(noteBuf.get()+noteAMDGPUTypeOffset + 8),
-                  amdGpuArchValues.stepping);
-            innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData),
-                       noteBuf.get(), 8, ".note", SHT_NOTE, 0));
+            innerBinGen->addNote(ElfNote("AMD", sizeof noteDescType1, noteDescType1, 1U));
+            innerBinGen->addNote(ElfNote("AMD", sizeof noteDescType2, noteDescType2, 2U));
+            innerBinGen->addNote(ElfNote("AMD", sizeof noteDescType5, noteDescType5, 5U));
+            noteBuf.reset(new cxbyte[0x1e]);
+            ::memcpy(noteBuf.get(), noteDescType3, 0x1e);
+            SULEV(*(uint32_t*)(noteBuf.get()+4), amdGpuArchValues.major);
+            SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
+            SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);
+            innerBinGen->addNote(ElfNote("AMD", 0x1e, noteBuf.get(), 3U));
+            innerBinGen->addNote(ElfNote("AMD", sizeof noteDescType4, noteDescType4, 4U));
+            
+            innerBinGen->addRegion(ElfRegion64::noteSection());
             
             innerBinSectionTable[AMDCL2SECTID_NOTE-ELFSECTID_START] = extraSectionIndex++;
             innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".strtab",
