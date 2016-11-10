@@ -184,7 +184,6 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     output.write(buf, bufSize);
     bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", ((pgmRsrc1 & 0x3f)<<2)+4);
     output.write(buf, bufSize);
-    output.write(buf, bufSize);
     if ((pgmRsrc1 & (1U<<20)) != 0)
         output.write("        .privmode\n", 18);
     if ((pgmRsrc1 & (1U<<22)) != 0)
@@ -482,16 +481,22 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                         output.write(".skip 256\n", 10);
                 }
                 
+                const ROCmDisasmRegionInput& newRegion =
+                        rocmInput->regions[sorted[i+1].second];
+                const size_t disasmSize = (i+1 < regionsNum) ?
+                        newRegion.offset - region.offset-256 :
+                        rocmInput->codeSize - region.offset-256;
+                
                 if (doDumpCode)
                 {
-                    isaDisassembler->setInput(region.size-256, code + region.offset+256,
+                    isaDisassembler->setInput(disasmSize, code + region.offset+256,
                                     region.offset+256, region.offset+1);
                     isaDisassembler->setDontPrintLabels(i+1<regionsNum);
                     isaDisassembler->disassemble();
                 }
                 /* previous position 1 byte after kernel region
                  * labels at end will be printed by 'disassemble' */
-                prevRegionPos = region.offset + region.size + 1;
+                prevRegionPos = region.offset + disasmSize + 256 + 1;
             }
             else if (doDumpData)
             {
