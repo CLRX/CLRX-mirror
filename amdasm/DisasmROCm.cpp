@@ -481,11 +481,13 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                         output.write(".skip 256\n", 10);
                 }
                 
-                const ROCmDisasmRegionInput& newRegion =
-                        rocmInput->regions[sorted[i+1].second];
-                const size_t disasmSize = (i+1 < regionsNum) ?
-                        newRegion.offset - region.offset-256 :
-                        rocmInput->codeSize - region.offset-256;
+                size_t disasmSize = rocmInput->codeSize - region.offset-256;
+                if (i+1<regionsNum)
+                {
+                    const ROCmDisasmRegionInput& newRegion =
+                            rocmInput->regions[sorted[i+1].second];
+                    disasmSize = newRegion.offset - region.offset-256;
+                }
                 
                 if (doDumpCode)
                 {
