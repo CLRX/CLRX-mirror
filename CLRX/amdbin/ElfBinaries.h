@@ -70,6 +70,7 @@ struct Elf32Types
     typedef Elf32_Phdr Phdr;    ///< program header
     typedef Elf32_Sym Sym;      ///< symbol header
     typedef Elf32_Nhdr Nhdr;    ///< note header
+    typedef Elf32_Dyn Dyn;      ///< dynamic entry
     static const cxbyte ELFCLASS;   ///< ELF class
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name
@@ -87,6 +88,7 @@ struct Elf64Types
     typedef Elf64_Phdr Phdr;    ///< program header
     typedef Elf64_Sym Sym;      ///< symbol header
     typedef Elf64_Nhdr Nhdr;    ///< note header
+    typedef Elf64_Dyn Dyn;      ///< dynamic entry
     static const cxbyte ELFCLASS;   ///< ELF class
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name
@@ -115,15 +117,18 @@ protected:
     cxbyte* dynSymStringTable;    ///< pointer to dynamic symbol's string table
     cxbyte* dynSymTable;          ///< pointer to dynamic symbol table
     cxbyte* noteTable;            ///< pointer to note table
-    typename Types::Size noteTableSize;        ///< size of note table
+    cxbyte* dynamicTable;         ///< pointer to dynamic table
     SectionIndexMap sectionIndexMap;    ///< section's index map
     SymbolIndexMap symbolIndexMap;      ///< symbol's index map
     SymbolIndexMap dynSymIndexMap;      ///< dynamic symbol's index map
     
     typename Types::Size symbolsNum;    ///< symbols number
     typename Types::Size dynSymbolsNum; ///< dynamic symbols number
+    typename Types::Size noteTableSize;        ///< size of note table
+    typename Types::Size dynamicsNum;   ///< get dynamic entries number
     uint16_t symbolEntSize; ///< symbol entry size in a symbol's table
     uint16_t dynSymEntSize; ///< dynamic symbol entry size in a dynamic symbol's table
+    typename Types::Size dynamicEntSize; ///< get dynamic entry size
     
 public:
     ElfBinaryTemplate();
@@ -361,6 +366,22 @@ public:
     
     typename Types::Size getNotesSize() const
     { return noteTableSize; }
+    
+    /// get dynamic entries number
+    const typename Types::Size getDynamicsNum() const
+    { return dynamicsNum; }
+    
+    /// get dynamic entries size
+    const typename Types::Size getDynamicEntrySize() const
+    { return dynamicEntSize; }
+    
+    /// get dynamic table
+    const typename Types::Dyn* getDynamicTable() const
+    { return reinterpret_cast<const typename Types::Dyn*>(dynamicTable); }
+    
+    /// get dynamic table
+    typename Types::Dyn* getDynamicTable()
+    { return reinterpret_cast<typename Types::Dyn*>(dynamicTable); }
     
     /// get section content pointer
     const cxbyte* getSectionContent(uint16_t index) const

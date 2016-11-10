@@ -69,8 +69,9 @@ template<typename Types>
 ElfBinaryTemplate<Types>::ElfBinaryTemplate() : binaryCodeSize(0), binaryCode(nullptr),
         sectionStringTable(nullptr), symbolStringTable(nullptr),
         symbolTable(nullptr), dynSymStringTable(nullptr), dynSymTable(nullptr),
-        noteTable(nullptr), noteTableSize(0), symbolsNum(0), dynSymbolsNum(0),
-        symbolEntSize(0), dynSymEntSize(0)
+        noteTable(nullptr), symbolsNum(0), dynSymbolsNum(0),
+        noteTableSize(0), dynamicsNum(0), symbolEntSize(0), dynSymEntSize(0),
+        dynamicEntSize(0)
 { }
 
 template<typename Types>
@@ -83,8 +84,9 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
         binaryCodeSize(_binaryCodeSize), binaryCode(_binaryCode),
         sectionStringTable(nullptr), symbolStringTable(nullptr),
         symbolTable(nullptr), dynSymStringTable(nullptr), dynSymTable(nullptr),
-        noteTable(nullptr), noteTableSize(0),
-        symbolsNum(0), dynSymbolsNum(0), symbolEntSize(0), dynSymEntSize(0)        
+        noteTable(nullptr), symbolsNum(0), dynSymbolsNum(0),
+        noteTableSize(0), dynamicsNum(0), symbolEntSize(0), dynSymEntSize(0),
+        dynamicEntSize(0)     
 {
     if (binaryCodeSize < sizeof(typename Types::Ehdr))
         throw Exception("Binary is too small!!!");
@@ -143,6 +145,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
         const typename Types::Shdr* symTableHdr = nullptr;
         const typename Types::Shdr* dynSymTableHdr = nullptr;
         const typename Types::Shdr* noteTableHdr = nullptr;
+        const typename Types::Shdr* dynamicTableHdr = nullptr;
         
         cxuint shnum = ULEV(ehdr->e_shnum);
         if ((creationFlags & ELF_CREATE_SECTIONMAP) != 0)
@@ -178,6 +181,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
                 dynSymTableHdr = &shdr;
             if (ULEV(shdr.sh_type) == SHT_NOTE)
                 noteTableHdr = &shdr;
+            if (ULEV(shdr.sh_type) == SHT_DYNAMIC)
+                dynamicTableHdr = &shdr;
         }
         if ((creationFlags & ELF_CREATE_SECTIONMAP) != 0)
             mapSort(sectionIndexMap.begin(), sectionIndexMap.end(), CStringLess());
@@ -264,6 +269,18 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
         {
             noteTable = binaryCode + ULEV(noteTableHdr->sh_offset);
             noteTableSize = ULEV(noteTableHdr->sh_size);
+        }
+        if (dynamicTableHdr != nullptr)
+        {
+            dynamicTable = binaryCode + ULEV(dynamicTableHdr->sh_offset);
+            const typename Types::Size entSize = ULEV(dynamicTableHdr->sh_entsize);
+            const typename Types::Size size = ULEV(dynamicTableHdr->sh_size);
+            if (entSize < sizeof(typename Types::Dyn))
+                throw Exception("Size of dynamic entry is too small!");
+            if (size % entSize != 0)
+                throw Exception("Size of dynamic section is not match!");
+            dynamicsNum = entSize / size;
+            dynamicEntSize = entSize;
         }
     }
 }
