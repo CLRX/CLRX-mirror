@@ -221,13 +221,13 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
         DT_SYMTAB, DT_SYMENT, DT_STRTAB, DT_STRSZ, DT_HASH };
     elfBinGen64.addDynamics(sizeof(dynTags)/sizeof(int32_t), dynTags);
     
-    elfBinGen64.addNote(ElfNote("AMD", sizeof noteDescType1, noteDescType1, 1U));
+    elfBinGen64.addNote(ElfNote{"AMD", sizeof noteDescType1, noteDescType1, 1U});
     std::unique_ptr<cxbyte[]> noteBuf(new cxbyte[0x1b]);
     ::memcpy(noteBuf.get(), noteDescType3, 0x1e);
     //SULEV(*(uint32_t*)(noteBuf.get()+4), amdGpuArchValues.major);
     //SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
     //SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);
-    elfBinGen64.addNote(ElfNote("AMD", 0x1b, noteBuf.get(), 3U));
+    elfBinGen64.addNote(ElfNote{"AMD", 0x1b, noteBuf.get(), 3U});
     
     elfBinGen64.addRegion(ElfRegion64::programHeaderTable());
     elfBinGen64.addRegion(ElfRegion64::dynsymSection());
