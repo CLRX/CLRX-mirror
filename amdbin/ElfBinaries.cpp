@@ -458,6 +458,23 @@ void ElfBinaryGenTemplate<Types>::addProgramHeader(
 
 static const size_t dynTableSize = DT_NUM;
 
+
+template<typename Types>
+static inline typename Types::Word resolveSectionAddress(
+        const ElfHeaderTemplate<Types>& header, const ElfRegionTemplate<Types>& region2,
+        typename Types::Word regionAddr)
+{   /* addrBase is base address of first section. if not defined
+     * use address base as virtual address base from elf header */
+    if (region2.section.addrBase==Types::nobase)
+        return regionAddr;
+    else if (region2.section.addrBase != 0)
+        return region2.section.addrBase+regionAddr;
+    else if (header.vaddrBase != 0)
+        return header.vaddrBase+regionAddr;
+    else
+        return 0;
+}
+
 template<typename Types>
 void ElfBinaryGenTemplate<Types>::computeSize()
 {
@@ -576,15 +593,18 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                 switch(region.section.type)
                 {
                     case SHT_DYNSYM:
-                        dynValTable[DT_SYMTAB] = regionAddresses[i];
+                        dynValTable[DT_SYMTAB] = resolveSectionAddress(header, region,
+                                   regionAddresses[i]);
                         dynValTable[DT_SYMENT] = sizeof(typename Types::Sym);
                         break;
                     case SHT_STRTAB:
                         if (::strcmp(region.section.name, ".dynstr")==0)
-                            dynValTable[DT_STRTAB] = regionAddresses[i];
+                            dynValTable[DT_STRTAB] = resolveSectionAddress(header, region,
+                                   regionAddresses[i]);
                         break;
                     case SHT_HASH:
-                        dynValTable[DT_HASH] = regionAddresses[i];
+                        dynValTable[DT_HASH] = resolveSectionAddress(header, region,
+                                 regionAddresses[i]);
                         break;
                 }
             }
@@ -906,16 +926,8 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                     SLEV(shdr.sh_flags, region2.section.flags);
                     SLEV(shdr.sh_offset, (!region2.section.zeroOffset) ?
                                 regionOffsets[j] : 0);
-                    /* addrBase is base address of first section. if not defined
-                     * use address base as virtual address base from elf header */
-                    if (region2.section.addrBase==Types::nobase)
-                        SLEV(shdr.sh_addr, regionAddresses[j]);
-                    else if (region2.section.addrBase != 0)
-                        SLEV(shdr.sh_addr, region2.section.addrBase+regionAddresses[j]);
-                    else if (header.vaddrBase != 0)
-                        SLEV(shdr.sh_addr, header.vaddrBase+regionAddresses[j]);
-                    else
-                        SLEV(shdr.sh_addr, 0);
+                    SLEV(shdr.sh_addr, resolveSectionAddress(header, region2,
+                                     regionAddresses[j]));
                     
                     if (region2.align != 0 || j+1 >= regions.size() ||
                         regionOffsets[j]+region2.size == regionOffsets[j+1])
