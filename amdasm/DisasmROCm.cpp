@@ -471,6 +471,13 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
             isaDisassembler->writeLabelsToPosition(0, curLabel, curNamedLabel);
             isaDisassembler->flushOutput();
             
+            size_t dataSize = rocmInput->codeSize - region.offset;
+            if (i+1<regionsNum)
+            {
+                const ROCmDisasmRegionInput& newRegion =
+                        rocmInput->regions[sorted[i+1].second];
+                dataSize = newRegion.offset - region.offset;
+            }
             if (region.isKernel)
             {
                 if (doMetadata)
@@ -481,32 +488,22 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                         output.write(".skip 256\n", 10);
                 }
                 
-                size_t disasmSize = rocmInput->codeSize - region.offset-256;
-                if (i+1<regionsNum)
-                {
-                    const ROCmDisasmRegionInput& newRegion =
-                            rocmInput->regions[sorted[i+1].second];
-                    disasmSize = newRegion.offset - region.offset-256;
-                }
-                
                 if (doDumpCode)
                 {
-                    isaDisassembler->setInput(disasmSize, code + region.offset+256,
+                    isaDisassembler->setInput(dataSize-256, code + region.offset+256,
                                     region.offset+256, region.offset+1);
                     isaDisassembler->setDontPrintLabels(i+1<regionsNum);
                     isaDisassembler->disassemble();
                 }
-                /* previous position 1 byte after kernel region
-                 * labels at end will be printed by 'disassemble' */
-                prevRegionPos = region.offset + disasmSize + 256 + 1;
+                prevRegionPos = region.offset + dataSize + 1;
             }
             else if (doDumpData)
             {
                 output.write(".global ", 8);
                 output.write(region.regionName.c_str(), region.regionName.size());
                 output.write("\n", 1);
-                printDisasmData(region.size, code + region.offset, output, true);
-                prevRegionPos = region.offset+1; // previous position byte after region
+                printDisasmData(dataSize, code + region.offset, output, true);
+                prevRegionPos = region.offset + dataSize;
             }
         }
         
