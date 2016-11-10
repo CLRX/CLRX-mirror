@@ -223,7 +223,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     
     elfBinGen64.addNote(ElfNote{"AMD", sizeof noteDescType1, noteDescType1, 1U});
     std::unique_ptr<cxbyte[]> noteBuf(new cxbyte[0x1b]);
-    ::memcpy(noteBuf.get(), noteDescType3, 0x1e);
+    ::memcpy(noteBuf.get(), noteDescType3, 0x1b);
     //SULEV(*(uint32_t*)(noteBuf.get()+4), amdGpuArchValues.major);
     //SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
     //SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);

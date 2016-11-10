@@ -456,7 +456,7 @@ void ElfBinaryGenTemplate<Types>::addProgramHeader(
             const ElfProgramHeaderTemplate<Types>& progHeader)
 { progHeaders.push_back(progHeader); }
 
-static const size_t dynTableSize = DT_NUM;
+static const int32_t dynTableSize = DT_NUM;
 
 
 template<typename Types>
