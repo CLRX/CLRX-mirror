@@ -657,6 +657,11 @@ struct ElfRegionTemplate
     static ElfRegionTemplate noteSection()
     { return ElfRegionTemplate(0, (const cxbyte*)nullptr, sizeof(typename Types::Word),
                 ".note", SHT_NOTE, 0); }
+    
+    /// get dynamic
+    static ElfRegionTemplate dynamicSection(uint16_t link)
+    { return ElfRegionTemplate(0, (const cxbyte*)nullptr, sizeof(typename Types::Word),
+                ".dynamic", SHT_DYNAMIC, SHF_ALLOC|SHF_WRITE, link); }
 };
 
 struct ElfNote
@@ -768,6 +773,8 @@ private:
     std::vector<ElfSymbolTemplate<Types> > symbols;
     std::vector<ElfSymbolTemplate<Types> > dynSymbols;
     std::vector<ElfNote> notes;
+    std::vector<int32_t> dynamics;
+    std::unique_ptr<typename Types::Word[]> dynamicValues;
     uint32_t bucketsNum;
     std::unique_ptr<uint32_t[]> hashCodes;
     bool isHashDynSym;
@@ -805,6 +812,13 @@ public:
     /// add note
     void addNote(const ElfNote& note)
     { notes.push_back(note); }
+    /// add dynamic
+    void addDynamic(int32_t dynamicTag)
+    { dynamics.push_back(dynamicTag); }
+    /// add dynamic
+    void addDynamics(size_t dynamicsNum, const int32_t* dynTags)
+    { dynamics.insert(dynamics.end(), dynTags, dynTags + dynamicsNum); }
+    
     /// count size of binary
     uint64_t countSize();
     

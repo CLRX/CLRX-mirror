@@ -456,6 +456,8 @@ void ElfBinaryGenTemplate<Types>::addProgramHeader(
             const ElfProgramHeaderTemplate<Types>& progHeader)
 { progHeaders.push_back(progHeader); }
 
+static const size_t dynTableSize = DT_NUM;
+
 template<typename Types>
 void ElfBinaryGenTemplate<Types>::computeSize()
 {
@@ -470,12 +472,14 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     size = sizeof(typename Types::Ehdr);
     sectionsNum = addNullSection; // if add null section
     cxuint hashSymSectionIdx = UINT_MAX;
+    bool haveDynamic = false;
     for (const auto& region: regions)
         if (region.type == ElfRegionType::SECTION)
         {
-            if (region.section.type==SHT_HASH &&
-                ::strcmp(region.section.name, ".hash")==0)
+            if (region.section.type==SHT_HASH)
                 hashSymSectionIdx = region.section.link;
+            else if (region.section.type==SHT_DYNAMIC)
+                haveDynamic = true;
             sectionsNum++;
         }
     
@@ -513,6 +517,12 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     sectionRegions[0] = UINT_MAX;
     sectionCount = addNullSection;
     typename Types::Word address = 0;
+    std::unique_ptr<typename Types::Word[]> dynValTable;
+    if (haveDynamic)
+    {   // prepare dynamic structures
+        dynamicValues.reset(new typename Types::Word[dynamics.size()]);
+        dynValTable.reset(new typename Types::Word[dynTableSize]);
+    }
     
     for (const auto& sym: symbols)
         if (sym.sectionIndex >= sectionsNum)
@@ -561,6 +571,24 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             if (region.section.link >= sectionsNum)
                 throw Exception("Section link out of range");
             
+            if (haveDynamic)
+            {
+                switch(region.section.type)
+                {
+                    case SHT_DYNSYM:
+                        dynValTable[DT_SYMTAB] = regionAddresses[i];
+                        dynValTable[DT_SYMENT] = sizeof(typename Types::Sym);
+                        break;
+                    case SHT_STRTAB:
+                        if (::strcmp(region.section.name, ".dynstr")==0)
+                            dynValTable[DT_STRTAB] = regionAddresses[i];
+                        break;
+                    case SHT_HASH:
+                        dynValTable[DT_HASH] = regionAddresses[i];
+                        break;
+                }
+            }
+            
             if (region.section.type != SHT_NOBITS && region.size != 0)
                 size += region.size;
             else // otherwise get default size for symtab, dynsym, strtab, dynstr
@@ -581,6 +609,8 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                            addNullHashSym, hashCodes.get());
                     size += 4*(bucketsNum + hashSymbols.size()+addNullHashSym + 2);
                 }
+                else if (region.section.type == SHT_DYNAMIC)
+                    size += (dynamics.size()+1) * sizeof(typename Types::Dyn);
                 else if (region.section.type == SHT_NOTE)
                 {
                     for (const ElfNote& note: notes)
@@ -628,6 +658,12 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             if (i >= addrStartRegion) // begin counting address from that region
                 address += region.size;
             
+            if (haveDynamic)
+            {
+                if (region.section.type == SHT_STRTAB)
+                    dynValTable[DT_STRSZ] = region.size;
+            }
+            
             if (::strcmp(region.section.name, ".strtab") == 0)
                 strTab = sectionCount;
             else if (::strcmp(region.section.name, ".dynstr") == 0)
@@ -637,6 +673,13 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             sectionRegions[sectionCount] = i;
             sectionCount++;
         }
+    }
+    
+    if (haveDynamic)
+    {   // set dynamic values
+        for (size_t i = 0; i < dynamics.size(); i++)
+            if (dynamics[i] >= 0 && dynamics[i] < dynTableSize)
+                dynamicValues[i] = dynValTable[dynamics[i]];
     }
     
     sizeComputed = true;
@@ -896,6 +939,8 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                     if (region2.section.type == SHT_SYMTAB ||
                         region2.section.type == SHT_DYNSYM)
                         SLEV(shdr.sh_entsize, sizeof(typename Types::Sym));
+                    else if (region2.section.type == SHT_DYNAMIC)
+                        SLEV(shdr.sh_entsize, sizeof(typename Types::Dyn));
                     else
                         SLEV(shdr.sh_entsize, region2.section.entSize);
                     if (region2.section.name!=nullptr && region2.section.name[0]!=0)
@@ -962,11 +1007,21 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         fob.writeObject(sym);
                     }
                 }
+                else if (region.section.type == SHT_DYNAMIC)
+                {   // dynamic table
+                    typename Types::Dyn dyn;
+                    for (size_t k = 0; k < dynamics.size(); k++)
+                    {
+                        SLEV(dyn.d_tag, dynamics[k]);
+                        SLEV(dyn.d_un.d_val, dynamicValues[k]);
+                        fob.writeObject(dyn);
+                    }
+                    SLEV(dyn.d_tag, DT_NULL);
+                    SLEV(dyn.d_un.d_val, 0U);
+                    fob.writeObject(dyn);
+                }
                 else if (region.section.type == SHT_HASH)
                 {
-                    if (::strcmp(region.section.name, ".hash") != 0)
-                        continue;
-                    
                     const std::vector<ElfSymbolTemplate<Types> >& hashSymbols = 
                         (isHashDynSym) ? dynSymbols : symbols;
                     bool addNullHashSym = (isHashDynSym) ? addNullDynSym : addNullSym;
