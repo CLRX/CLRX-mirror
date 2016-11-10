@@ -178,6 +178,13 @@ void ROCmBinGenerator::setInput(const ROCmInput* input)
     this->input = input;
 }
 
+static const cxbyte noteDescType1[8] =
+{ 2, 0, 0, 0, 1, 0, 0, 0 };
+
+static const cxbyte noteDescType3[27] =
+{ 4, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  'A', 'M', 'D', 0, 'A', 'M', 'D', 'G', 'P', 'U', 0 };
+
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
 {
@@ -210,6 +217,18 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
         elfBinGen64.addDynSymbol(elfsym);
     }
     
+    static const int32_t dynTags[] = {
+        DT_SYMTAB, DT_SYMENT, DT_STRTAB, DT_STRSZ, DT_HASH };
+    elfBinGen64.addDynamics(sizeof(dynTags)/sizeof(int32_t), dynTags);
+    
+    elfBinGen64.addNote(ElfNote("AMD", sizeof noteDescType1, noteDescType1, 1U));
+    std::unique_ptr<cxbyte[]> noteBuf(new cxbyte[0x1b]);
+    ::memcpy(noteBuf.get(), noteDescType3, 0x1e);
+    //SULEV(*(uint32_t*)(noteBuf.get()+4), amdGpuArchValues.major);
+    //SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
+    //SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);
+    elfBinGen64.addNote(ElfNote("AMD", 0x1b, noteBuf.get(), 3U));
+    
     elfBinGen64.addRegion(ElfRegion64::programHeaderTable());
     elfBinGen64.addRegion(ElfRegion64::dynsymSection());
     elfBinGen64.addRegion(ElfRegion64::hashSection(1));
@@ -217,10 +236,8 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     elfBinGen64.addRegion(ElfRegion64(input->codeSize, (const cxbyte*)input->code, 
               0x1000, ".text", SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR, 0, 0, 0, 0,
               false, 256));
-    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 0x1000, ".dynamic",
-              SHT_DYNAMIC, SHF_ALLOC|SHF_WRITE, 2, 0, 0, 0, false, 8));
-    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 4, ".note",
-              SHT_NOTE, 0));
+    elfBinGen64.addRegion(ElfRegion64::dynamicSection(3));
+    elfBinGen64.addRegion(ElfRegion64::noteSection());
     elfBinGen64.addRegion(ElfRegion64(commentSize, (const cxbyte*)comment, 1, ".comment",
               SHT_PROGBITS, SHF_MERGE|SHF_STRINGS));
     elfBinGen64.addRegion(ElfRegion64::symtabSection());
