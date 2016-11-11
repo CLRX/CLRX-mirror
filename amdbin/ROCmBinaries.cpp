@@ -185,9 +185,52 @@ static const cxbyte noteDescType3[27] =
 { 4, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   'A', 'M', 'D', 0, 'A', 'M', 'D', 'G', 'P', 'U', 0 };
 
+struct AMDGPUArchValues
+{
+    uint32_t major;
+    uint32_t minor;
+    uint32_t stepping;
+};
+
+static const AMDGPUArchValues amdGpuArchValuesTbl[] =
+{
+    { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
+    { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
+    { 0, 0, 0 }, // GPUDeviceType::TAHITI
+    { 0, 0, 0 }, // GPUDeviceType::OLAND
+    { 7, 0, 0 }, // GPUDeviceType::BONAIRE
+    { 7, 0, 0 }, // GPUDeviceType::SPECTRE
+    { 7, 0, 0 }, // GPUDeviceType::SPOOKY
+    { 7, 0, 0 }, // GPUDeviceType::KALINDI
+    { 0, 0, 0 }, // GPUDeviceType::HAINAN
+    { 7, 0, 1 }, // GPUDeviceType::HAWAII
+    { 8, 0, 0 }, // GPUDeviceType::ICELAND
+    { 8, 0, 0 }, // GPUDeviceType::TONGA
+    { 7, 0, 0 }, // GPUDeviceType::MULLINS
+    { 8, 0, 3 }, // GPUDeviceType::FIJI
+    { 8, 0, 1 }, // GPUDeviceType::CARRIZO
+    { 0, 0, 0 }, // GPUDeviceType::DUMMY
+    { 0, 0, 0 }, // GPUDeviceType::GOOSE
+    { 0, 0, 0 }, // GPUDeviceType::HORSE
+    { 8, 0, 1 }, // GPUDeviceType::STONEY
+    { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
+    { 8, 0, 4 } // GPUDeviceType::BAFFIN
+};
+
+
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
 {
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
+    if (arch == GPUArchitecture::GCN1_0)
+        throw Exception("OpenCL 2.0 supported only for GCN1.1 or later");
+    
+    AMDGPUArchValues amdGpuArchValues = amdGpuArchValuesTbl[cxuint(input->deviceType)];
+    if (input->archMinor!=UINT32_MAX)
+        amdGpuArchValues.minor = input->archMinor;
+    if (input->archStepping!=UINT32_MAX)
+        amdGpuArchValues.stepping = input->archStepping;
+    
     const char* comment = "CLRX ROCmBinGenerator " CLRX_VERSION;
     uint32_t commentSize = ::strlen(comment);
     if (input->comment!=nullptr)
@@ -198,7 +241,8 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
             commentSize = ::strlen(comment);
     }
     
-    ElfBinaryGen64 elfBinGen64;
+    ElfBinaryGen64 elfBinGen64({ 0U, 0U, 0x40, EV_CURRENT, ET_DYN,
+        0xe0, EV_CURRENT, 0, 0, 0 });
     // add symbols
     elfBinGen64.addDynSymbol(ElfSymbol64("_DYNAMIC", 5,
                   ELF64_ST_INFO(STB_LOCAL, STT_NOTYPE), STV_HIDDEN, true, 0, 0));
@@ -220,15 +264,26 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     static const int32_t dynTags[] = {
         DT_SYMTAB, DT_SYMENT, DT_STRTAB, DT_STRSZ, DT_HASH };
     elfBinGen64.addDynamics(sizeof(dynTags)/sizeof(int32_t), dynTags);
+    // elf program headers
+    elfBinGen64.addProgramHeader({ PT_PHDR, PF_R, 0, 1, true, 0, 0, 0 });
+    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R, PHREGION_FILESTART, 4,
+                    true, 0, 0, 0, 0x1000 });
+    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_X, 4, 1, true, 0, 0, 0 });
+    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_W, 5, 1, true, 0, 0, 0 });
+    elfBinGen64.addProgramHeader({ PT_DYNAMIC, PF_R|PF_W, 5, 1, true, 0, 0, 0, 8 });
+    elfBinGen64.addProgramHeader({ PT_GNU_RELRO, PF_R, 5, 1, true, 0, 0, 0, 1 });
+    elfBinGen64.addProgramHeader({ PT_GNU_STACK, PF_R|PF_W, 0, 0, true, 0, 0, 0 });
     
-    elfBinGen64.addNote(ElfNote{"AMD", sizeof noteDescType1, noteDescType1, 1U});
+    // elf notes
+    elfBinGen64.addNote({"AMD", sizeof noteDescType1, noteDescType1, 1U});
     std::unique_ptr<cxbyte[]> noteBuf(new cxbyte[0x1b]);
     ::memcpy(noteBuf.get(), noteDescType3, 0x1b);
-    //SULEV(*(uint32_t*)(noteBuf.get()+4), amdGpuArchValues.major);
-    //SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
-    //SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);
-    elfBinGen64.addNote(ElfNote{"AMD", 0x1b, noteBuf.get(), 3U});
+    SULEV(*(uint32_t*)(noteBuf.get()+4), amdGpuArchValues.major);
+    SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
+    SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);
+    elfBinGen64.addNote({"AMD", 0x1b, noteBuf.get(), 3U});
     
+    /// region and sections
     elfBinGen64.addRegion(ElfRegion64::programHeaderTable());
     elfBinGen64.addRegion(ElfRegion64::dynsymSection());
     elfBinGen64.addRegion(ElfRegion64::hashSection(1));

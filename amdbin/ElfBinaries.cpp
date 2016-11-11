@@ -849,10 +849,15 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         sregion.section.zeroOffset;
                 SLEV(phdr.p_offset, !zeroOffset ?
                         regionOffsets[progHeader.regionStart] : 0);
-                typename Types::Word align = (sregion.type==ElfRegionType::SECTION) ?
-                        sregion.section.align : 0;
-                align = std::max(sregion.align, align);
-                SLEV(phdr.p_align, align);
+                if (progHeader.align==0)
+                {
+                    typename Types::Word align = (sregion.type==ElfRegionType::SECTION) ?
+                            sregion.section.align : 0;
+                    align = std::max(sregion.align, align);
+                    SLEV(phdr.p_align, align);
+                }
+                else
+                    SLEV(phdr.p_align, progHeader.align);
                 
                 /* paddrBase and vaddrBase is base to program header virtual and physical
                  * addresses for program header. if not defined then get address base

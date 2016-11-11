@@ -676,6 +676,9 @@ typedef ElfRegionTemplate<Elf32Types> ElfRegion32;
 /// 64-bit region (for 64-bit elf)
 typedef ElfRegionTemplate<Elf64Types> ElfRegion64;
 
+enum {
+    PHREGION_FILESTART = UINT_MAX
+};
 /// template of ELF program header
 template<typename Types>
 struct ElfProgramHeaderTemplate
@@ -688,6 +691,7 @@ struct ElfProgramHeaderTemplate
     typename Types::Word paddrBase;  ///< paddr base
     typename Types::Word vaddrBase;  ///< vaddr base
     typename Types::Word memSize;    ///< size in memory
+    typename Types::Word align;      ///< alignment
 };
 
 /// 32-bit elf program header
