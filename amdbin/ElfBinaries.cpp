@@ -844,7 +844,12 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 typename Types::Phdr phdr;
                 SLEV(phdr.p_type, progHeader.type);
                 SLEV(phdr.p_flags, progHeader.flags);
-                const ElfRegionTemplate<Types>& sregion = regions[progHeader.regionStart];
+                const ElfRegionTemplate<Types> startRegion(sizeof(typename Types::Ehdr),
+                        (const cxbyte*)nullptr, sizeof(typename Types::Word));
+                
+                const ElfRegionTemplate<Types>& sregion = 
+                        (progHeader.regionStart==PHREGION_FILESTART) ? startRegion :
+                        regions[progHeader.regionStart];
                 bool zeroOffset = sregion.type == ElfRegionType::SECTION &&
                         sregion.section.zeroOffset;
                 SLEV(phdr.p_offset, !zeroOffset ?
