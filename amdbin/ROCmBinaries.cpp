@@ -265,13 +265,18 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
         DT_SYMTAB, DT_SYMENT, DT_STRTAB, DT_STRSZ, DT_HASH };
     elfBinGen64.addDynamics(sizeof(dynTags)/sizeof(int32_t), dynTags);
     // elf program headers
-    elfBinGen64.addProgramHeader({ PT_PHDR, PF_R, 0, 1, true, 0, 0, 0 });
+    elfBinGen64.addProgramHeader({ PT_PHDR, PF_R, 0, 1,
+                    true, Elf64Types::nobase, Elf64Types::nobase, 0 });
     elfBinGen64.addProgramHeader({ PT_LOAD, PF_R, PHREGION_FILESTART, 4,
-                    true, 0, 0, 0, 0x1000 });
-    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_X, 4, 1, true, 0, 0, 0 });
-    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_W, 5, 1, true, 0, 0, 0 });
-    elfBinGen64.addProgramHeader({ PT_DYNAMIC, PF_R|PF_W, 5, 1, true, 0, 0, 0, 8 });
-    elfBinGen64.addProgramHeader({ PT_GNU_RELRO, PF_R, 5, 1, true, 0, 0, 0, 1 });
+                    true, Elf64Types::nobase, Elf64Types::nobase, 0, 0x1000 });
+    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_X, 4, 1,
+                    true, Elf64Types::nobase, Elf64Types::nobase, 0 });
+    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_W, 5, 1,
+                    true, Elf64Types::nobase, Elf64Types::nobase, 0 });
+    elfBinGen64.addProgramHeader({ PT_DYNAMIC, PF_R|PF_W, 5, 1,
+                    true, Elf64Types::nobase, Elf64Types::nobase, 0, 8 });
+    elfBinGen64.addProgramHeader({ PT_GNU_RELRO, PF_R, 5, 1,
+                    true, Elf64Types::nobase, Elf64Types::nobase, 0, 1 });
     elfBinGen64.addProgramHeader({ PT_GNU_STACK, PF_R|PF_W, PHREGION_FILESTART, 0,
                     true, 0, 0, 0 });
     
