@@ -255,7 +255,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
                   symbol.offset, symbol.size);
         else
             elfsym = ElfSymbol64(symbol.symbolName.c_str(), 4,
-                  ELF64_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0, true,
+                  ELF64_ST_INFO(STB_GLOBAL, STT_OBJECT), 0, true,
                   symbol.offset, symbol.size);
         elfBinGen64.addSymbol(elfsym);
         elfBinGen64.addDynSymbol(elfsym);
