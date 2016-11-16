@@ -144,6 +144,14 @@ extern bool isROCmBinary(size_t binarySize, const cxbyte* binary);
  * ROCm Binary Generator
  */
 
+enum: cxuint {
+    ROCMSECTID_HASH = ELFSECTID_OTHER_BUILTIN,
+    ROCMSECTID_DYNAMIC,
+    ROCMSECTID_NOTE,
+    ROCMSECTID_GPUCONFIG,
+    ROCMSECTID_MAX = ROCMSECTID_GPUCONFIG
+};
+
 /// ROCm binary symbol input
 struct ROCmSymbolInput
 {

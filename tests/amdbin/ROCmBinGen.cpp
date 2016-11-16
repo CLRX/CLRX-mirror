@@ -101,7 +101,6 @@ static ROCmInput genROCmInput(const ROCmBinary& binary)
 static void testOrigBinary(cxuint testCase, const char* origBinaryFilename)
 {
     Array<cxbyte> inputData;
-    
     Array<cxbyte> output;
     std::string origBinFilenameStr(origBinaryFilename);
     filesystemPath(origBinFilenameStr); // convert to system path (native separators)

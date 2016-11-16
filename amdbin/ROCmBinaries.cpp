@@ -192,6 +192,25 @@ struct AMDGPUArchValues
     uint32_t stepping;
 };
 
+// section index for symbol binding
+static const uint16_t mainBuiltinSectionTable[] =
+{
+    10, // ELFSECTID_SHSTRTAB
+    11, // ELFSECTID_STRTAB
+    9, // ELFSECTID_SYMTAB
+    3, // ELFSECTID_DYNSTR
+    1, // ELFSECTID_DYNSYM
+    4, // ELFSECTID_TEXT
+    SHN_UNDEF, // ELFSECTID_RODATA
+    SHN_UNDEF, // ELFSECTID_DATA
+    SHN_UNDEF, // ELFSECTID_BSS
+    8, // ELFSECTID_COMMENT
+    2, // ROCMSECTID_HASH
+    5, // ROCMSECTID_DYNAMIC
+    6, // ROCMSECTID_NOTE
+    7 // ROCMSECTID_GPUCONFIG
+};
+
 static const AMDGPUArchValues amdGpuArchValuesTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
@@ -216,7 +235,6 @@ static const AMDGPUArchValues amdGpuArchValuesTbl[] =
     { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
     { 8, 0, 4 } // GPUDeviceType::BAFFIN
 };
-
 
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
@@ -309,6 +327,15 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     elfBinGen64.addRegion(ElfRegion64::shstrtabSection());
     elfBinGen64.addRegion(ElfRegion64::strtabSection());
     elfBinGen64.addRegion(ElfRegion64::sectionHeaderTable());
+    
+    /* extra sections */
+    for (const BinSection& section: input->extraSections)
+        elfBinGen64.addRegion(ElfRegion64(section, mainBuiltinSectionTable,
+                         ROCMSECTID_MAX, 12));
+    /* extra symbols */
+    for (const BinSymbol& symbol: input->extraSymbols)
+        elfBinGen64.addSymbol(ElfSymbol64(symbol, mainBuiltinSectionTable,
+                         ROCMSECTID_MAX, 12));
     
     size_t binarySize = elfBinGen64.countSize();
     /****
