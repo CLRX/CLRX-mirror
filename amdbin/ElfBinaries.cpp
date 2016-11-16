@@ -569,9 +569,13 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             phdrTabRegion = i;
             for (const auto& progHdr: progHeaders)
             {
-                if (progHdr.regionStart >= regions.size())
+                if (progHdr.regionStart!=PHREGION_FILESTART &&
+                            progHdr.regionStart >= regions.size())
                     throw Exception("Region start out of range");
-                if (uint64_t(progHdr.regionStart) + progHdr.regionsNum > regions.size())
+                if ((progHdr.regionStart==PHREGION_FILESTART &&
+                     progHdr.regionsNum > regions.size()) ||
+                    (progHdr.regionStart!=PHREGION_FILESTART &&
+                     uint64_t(progHdr.regionStart) + progHdr.regionsNum > regions.size()))
                     throw Exception("Region end out of range");
             }
         }
@@ -850,10 +854,18 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 const ElfRegionTemplate<Types>& sregion = 
                         (progHeader.regionStart==PHREGION_FILESTART) ? startRegion :
                         regions[progHeader.regionStart];
+                const cxuint rstart = (progHeader.regionStart!=PHREGION_FILESTART) ?
+                            progHeader.regionStart : 0;
+                const typename Types::Word sroffset =
+                        (progHeader.regionStart!=PHREGION_FILESTART) ?
+                            regionOffsets[progHeader.regionStart] : 0;
+                const typename Types::Word sraddress =
+                        (progHeader.regionStart!=PHREGION_FILESTART) ?
+                            regionAddresses[progHeader.regionStart] : 0;
+                
                 bool zeroOffset = sregion.type == ElfRegionType::SECTION &&
                         sregion.section.zeroOffset;
-                SLEV(phdr.p_offset, !zeroOffset ?
-                        regionOffsets[progHeader.regionStart] : 0);
+                SLEV(phdr.p_offset, !zeroOffset ? sroffset : 0);
                 if (progHeader.align==0)
                 {
                     typename Types::Word align = (sregion.type==ElfRegionType::SECTION) ?
@@ -868,52 +880,52 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                  * addresses for program header. if not defined then get address base
                  * from ELF header */
                 if (progHeader.paddrBase == Types::nobase)
-                    SLEV(phdr.p_paddr, regionAddresses[progHeader.regionStart]);
+                    SLEV(phdr.p_paddr, sraddress);
                 else if (progHeader.paddrBase != 0)
-                    SLEV(phdr.p_paddr, progHeader.paddrBase +
-                                regionAddresses[progHeader.regionStart]);
+                    SLEV(phdr.p_paddr, progHeader.paddrBase + sraddress);
                 else if (header.paddrBase != 0)
-                    SLEV(phdr.p_paddr, header.paddrBase +
-                                regionAddresses[progHeader.regionStart]);
+                    SLEV(phdr.p_paddr, header.paddrBase + sraddress);
                 else
                     SLEV(phdr.p_paddr, 0);
                 
                 if (progHeader.vaddrBase == Types::nobase)
-                    SLEV(phdr.p_vaddr, regionAddresses[progHeader.regionStart]);
+                    SLEV(phdr.p_vaddr, sraddress);
                 else if (progHeader.vaddrBase != 0)
-                    SLEV(phdr.p_vaddr, progHeader.vaddrBase +
-                                regionAddresses[progHeader.regionStart]);
+                    SLEV(phdr.p_vaddr, progHeader.vaddrBase + sraddress);
                 else if (header.vaddrBase != 0)
-                    SLEV(phdr.p_vaddr, header.vaddrBase +
-                                regionAddresses[progHeader.regionStart]);
+                    SLEV(phdr.p_vaddr, header.vaddrBase + sraddress);
                 else
                     SLEV(phdr.p_vaddr, 0);
                 
                 // last region size for file - if nobits section then we assume zero size
-                const auto& lastReg = regions[progHeader.regionStart+
-                            progHeader.regionsNum-1];
-                uint64_t fileLastRegSize =(lastReg.type!=ElfRegionType::SECTION ||
-                    lastReg.section.type!=SHT_NOBITS) ? lastReg.size : 0;
-                /// fileSize - add offset of first region to simulate region alignment
-                const typename Types::Word fileSize = regionOffsets[progHeader.regionStart+
-                        progHeader.regionsNum-1] + fileLastRegSize -
-                        regionOffsets[progHeader.regionStart];
-                const typename Types::Word phSize = regionAddresses[progHeader.regionStart+
-                        progHeader.regionsNum-1]+regions[progHeader.regionStart+
-                        progHeader.regionsNum-1].size -
-                        regionAddresses[progHeader.regionStart];
-                SLEV(phdr.p_filesz, phSize);
-                
-                if (progHeader.haveMemSize)
+                if (progHeader.regionsNum!=0)
                 {
-                    if (progHeader.memSize != 0)
-                        SLEV(phdr.p_memsz, progHeader.memSize);
+                    const auto& lastReg = regions[rstart + progHeader.regionsNum-1];
+                    uint64_t fileLastRegSize =(lastReg.type!=ElfRegionType::SECTION ||
+                        lastReg.section.type!=SHT_NOBITS) ? lastReg.size : 0;
+                    /// fileSize - add offset of first region to simulate region alignment
+                    const typename Types::Word fileSize = regionOffsets[rstart+
+                            progHeader.regionsNum-1] + fileLastRegSize - sroffset;
+                    const typename Types::Word phSize = regionAddresses[rstart+
+                            progHeader.regionsNum-1]+regions[rstart+
+                            progHeader.regionsNum-1].size - sraddress;
+                    
+                    if (progHeader.haveMemSize)
+                    {
+                        if (progHeader.memSize != 0)
+                            SLEV(phdr.p_memsz, progHeader.memSize);
+                        else
+                            SLEV(phdr.p_memsz, phSize);
+                    }
                     else
-                        SLEV(phdr.p_memsz, phSize);
+                        SLEV(phdr.p_memsz, 0);
+                    SLEV(phdr.p_filesz, fileSize);
                 }
                 else
+                {
                     SLEV(phdr.p_memsz, 0);
-                SLEV(phdr.p_filesz, fileSize);
+                    SLEV(phdr.p_filesz, 0);
+                }
                 fob.writeObject(phdr);
             }
         }
@@ -1047,7 +1059,8 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                     const std::vector<ElfSymbolTemplate<Types> >& hashSymbols = 
                         (isHashDynSym) ? dynSymbols : symbols;
                     bool addNullHashSym = (isHashDynSym) ? addNullDynSym : addNullSym;
-                    Array<uint32_t> hashTable(2 + hashSymbols.size() + addNullHashSym);
+                    Array<uint32_t> hashTable(2 + hashSymbols.size() + addNullHashSym +
+                                bucketsNum);
                     createHashTable(bucketsNum, hashSymbols.size()+addNullHashSym,
                                 addNullHashSym, hashCodes.get(), hashTable.data());
                     fob.writeArray(hashTable.size(), hashTable.data());
