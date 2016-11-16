@@ -879,7 +879,9 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 bool zeroOffset = sregion.type == ElfRegionType::SECTION &&
                         sregion.section.zeroOffset;
                 SLEV(phdr.p_offset, !zeroOffset ? sroffset : 0);
-                if (progHeader.align==0)
+                if (progHeader.align==0 && progHeader.regionsNum==0)
+                    SLEV(phdr.p_align, 0);
+                else if (progHeader.align==0)
                 {
                     typename Types::Word align = (sregion.type==ElfRegionType::SECTION) ?
                             sregion.section.align : 0;
