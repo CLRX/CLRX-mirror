@@ -1439,8 +1439,7 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
         }
         else if (isROCmBinary(binaryData.size(), binaryData.data()))
         {
-            ROCmBinary rocmBin(binaryData.size(), binaryData.data(),
-                               ROCMBIN_CREATE_REGIONMAP);
+            ROCmBinary rocmBin(binaryData.size(), binaryData.data(), 0);
             Disassembler disasm(rocmBin, disasmOss, disasmFlags);
             disasm.disassemble();
             resultStr = disasmOss.str();
