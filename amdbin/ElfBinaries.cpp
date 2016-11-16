@@ -696,7 +696,8 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             
             if (haveDynamic)
             {
-                if (region.section.type == SHT_STRTAB)
+                if (region.section.type == SHT_STRTAB &&
+                    ::strcmp(region.section.name, ".dynstr") == 0)
                     dynValTable[DT_STRSZ] = region.size;
             }
             

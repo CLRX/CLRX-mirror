@@ -300,6 +300,8 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
                 ".dynamic", SHT_DYNAMIC, SHF_ALLOC|SHF_WRITE, 3, 0,
                 Elf64Types::nobase, 0, false, 8));
     elfBinGen64.addRegion(ElfRegion64::noteSection());
+    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1,
+                ".AMDGPU.config", SHT_PROGBITS, 0));
     elfBinGen64.addRegion(ElfRegion64(commentSize, (const cxbyte*)comment, 1, ".comment",
               SHT_PROGBITS, SHF_MERGE|SHF_STRINGS, 0, 0, 0, 1));
     elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
