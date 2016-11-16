@@ -1039,13 +1039,18 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         else if ((inSym.sectionIndex != 0 || !addNullSection) &&
                                 regions[sectionRegions[
                                     inSym.sectionIndex]].section.addrBase != 0)
+                        {
+                            typename Types::Word addrBase = regions[sectionRegions[
+                                    inSym.sectionIndex]].section.addrBase;
                             SLEV(sym.st_value, inSym.value + regionOffsets[
                                     sectionRegions[inSym.sectionIndex]] +
-                                    regions[sectionRegions[inSym.sectionIndex]].
-                                            section.addrBase);
-                        else // use elf headerf virtual address base
+                                    (addrBase!=Types::nobase ? addrBase : 0));
+                        }
+                        else if (header.vaddrBase!=Types::nobase)
+                            // use elf headerf virtual address base
                             SLEV(sym.st_value, inSym.value + regionOffsets[
-                                sectionRegions[inSym.sectionIndex]] + header.vaddrBase);
+                                sectionRegions[inSym.sectionIndex]] +
+                                (header.vaddrBase!=Types::nobase ? header.vaddrBase : 0));
                         sym.st_other = inSym.other;
                         sym.st_info = inSym.info;
                         if (inSym.name != nullptr && inSym.name[0] != 0)

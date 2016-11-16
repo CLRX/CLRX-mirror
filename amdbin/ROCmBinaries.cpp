@@ -244,7 +244,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     ElfBinaryGen64 elfBinGen64({ 0U, 0U, 0x40, 0, ET_DYN,
         0xe0, EV_CURRENT, UINT_MAX, 0, 0 }, true, true, true, PHREGION_FILESTART);
     // add symbols
-    elfBinGen64.addDynSymbol(ElfSymbol64("_DYNAMIC", 5,
+    elfBinGen64.addSymbol(ElfSymbol64("_DYNAMIC", 5,
                   ELF64_ST_INFO(STB_LOCAL, STT_NOTYPE), STV_HIDDEN, true, 0, 0));
     for (const ROCmSymbolInput& symbol: input->symbols)
     {
