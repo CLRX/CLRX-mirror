@@ -221,7 +221,6 @@ static const AMDGPUArchValues amdGpuArchValuesTbl[] =
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
 {
-    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
     AMDGPUArchValues amdGpuArchValues = amdGpuArchValuesTbl[cxuint(input->deviceType)];
     if (input->archMinor!=UINT32_MAX)
         amdGpuArchValues.minor = input->archMinor;
