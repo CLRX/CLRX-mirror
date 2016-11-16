@@ -222,9 +222,6 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
              Array<cxbyte>* aPtr) const
 {
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
-    if (arch == GPUArchitecture::GCN1_0)
-        throw Exception("OpenCL 2.0 supported only for GCN1.1 or later");
-    
     AMDGPUArchValues amdGpuArchValues = amdGpuArchValuesTbl[cxuint(input->deviceType)];
     if (input->archMinor!=UINT32_MAX)
         amdGpuArchValues.minor = input->archMinor;
