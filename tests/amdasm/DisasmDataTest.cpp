@@ -1240,6 +1240,150 @@ one1:
 /*7e000301         */ v_mov_b32       v0, v1
 /*7e000303         */ v_mov_b32       v0, v3
 )ffDXD", true
+    },
+    /* rocm config */
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/rocm-fiji.hsaco",
+        R"ffDXD(.rocm
+.gpu Fiji
+.arch_minor 0
+.arch_stepping 3
+.kernel test1
+    .config
+        .dims x
+        .sgprsnum 16
+        .vgprsnum 8
+        .dx10clamp
+        .floatmode 0xc0
+        .priority 0
+        .userdatanum 8
+        .pgmrsrc1 0x002c0041
+        .pgmrsrc2 0x00000090
+        .codeversion 1, 0
+        .machine 1, 8, 0, 3
+        .kernel_code_entry_offset 0x100
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .kernarg_segment_size 8
+        .wavefront_sgpr_count 15
+        .workitem_vgpr_count 7
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+        .wavefront_size 64
+        .call_convention 0x0
+    .control_directive
+        .fill 128, 1, 0x00
+.kernel test2
+    .config
+        .dims x
+        .sgprsnum 16
+        .vgprsnum 8
+        .dx10clamp
+        .floatmode 0xc0
+        .priority 0
+        .userdatanum 8
+        .pgmrsrc1 0x002c0041
+        .pgmrsrc2 0x00000090
+        .codeversion 1, 0
+        .machine 1, 8, 0, 3
+        .kernel_code_entry_offset 0x100
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .kernarg_segment_size 8
+        .wavefront_sgpr_count 15
+        .workitem_vgpr_count 7
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+        .wavefront_size 64
+        .call_convention 0x0
+    .control_directive
+        .fill 128, 1, 0x00
+.text
+test1:
+.skip 256
+/*c0020082 00000004*/ s_load_dword    s2, s[4:5], 0x4
+/*c0060003 00000000*/ s_load_dwordx2  s[0:1], s[6:7], 0x0
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*8602ff02 0000ffff*/ s_and_b32       s2, s2, 0xffff
+/*92020802         */ s_mul_i32       s2, s2, s8
+/*32000002         */ v_add_u32       v0, vcc, s2, v0
+/*2202009f         */ v_ashrrev_i32   v1, 31, v0
+/*d28f0001 00020082*/ v_lshlrev_b64   v[1:2], 2, v[0:1]
+/*32060200         */ v_add_u32       v3, vcc, s0, v1
+/*7e020201         */ v_mov_b32       v1, s1
+/*38080302         */ v_addc_u32      v4, vcc, v2, v1, vcc
+/*2600008f         */ v_and_b32       v0, 15, v0
+/*7e020280         */ v_mov_b32       v1, 0
+/*dc500000 02000003*/ flat_load_dword v2, v[3:4]
+/*d28f0000 00020082*/ v_lshlrev_b64   v[0:1], 2, v[0:1]
+/*be801c00         */ s_getpc_b64     s[0:1]
+/*8000ff00 00000234*/ s_add_u32       s0, s0, 0x234
+/*82018001         */ s_addc_u32      s1, s1, 0
+/*320a0000         */ v_add_u32       v5, vcc, s0, v0
+/*7e000201         */ v_mov_b32       v0, s1
+/*380c0101         */ v_addc_u32      v6, vcc, v1, v0, vcc
+/*dc500000 00000005*/ flat_load_dword v0, v[5:6]
+/*bf8c0070         */ s_waitcnt       vmcnt(0) & lgkmcnt(0)
+/*0a000500         */ v_mul_f32       v0, v0, v2
+/*dc700000 00000003*/ flat_store_dword v[3:4], v0
+/*bf810000         */ s_endpgm
+.fill 29, 4, 0
+test2:
+.skip 256
+/*c0020082 00000004*/ s_load_dword    s2, s[4:5], 0x4
+/*c0060003 00000000*/ s_load_dwordx2  s[0:1], s[6:7], 0x0
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*8602ff02 0000ffff*/ s_and_b32       s2, s2, 0xffff
+/*92020802         */ s_mul_i32       s2, s2, s8
+/*32000002         */ v_add_u32       v0, vcc, s2, v0
+/*2202009f         */ v_ashrrev_i32   v1, 31, v0
+/*d28f0001 00020082*/ v_lshlrev_b64   v[1:2], 2, v[0:1]
+/*32060200         */ v_add_u32       v3, vcc, s0, v1
+/*7e020201         */ v_mov_b32       v1, s1
+/*38080302         */ v_addc_u32      v4, vcc, v2, v1, vcc
+/*2600008f         */ v_and_b32       v0, 15, v0
+/*7e020280         */ v_mov_b32       v1, 0
+/*dc500000 02000003*/ flat_load_dword v2, v[3:4]
+/*d28f0000 00020082*/ v_lshlrev_b64   v[0:1], 2, v[0:1]
+/*be801c00         */ s_getpc_b64     s[0:1]
+/*8000ff00 00000074*/ s_add_u32       s0, s0, 0x74
+/*82018001         */ s_addc_u32      s1, s1, 0
+/*320a0000         */ v_add_u32       v5, vcc, s0, v0
+/*7e000201         */ v_mov_b32       v0, s1
+/*380c0101         */ v_addc_u32      v6, vcc, v1, v0, vcc
+/*dc500000 00000005*/ flat_load_dword v0, v[5:6]
+/*bf8c0070         */ s_waitcnt       vmcnt(0) & lgkmcnt(0)
+/*02000500         */ v_add_f32       v0, v0, v2
+/*dc700000 00000003*/ flat_store_dword v[3:4], v0
+/*bf810000         */ s_endpgm
+data1:
+.global data1
+        .byte 0xcd, 0xcc, 0x8c, 0x3f, 0x33, 0x33, 0x13, 0x40
+        .byte 0x33, 0x33, 0x93, 0x40, 0x33, 0x33, 0xa3, 0x40
+        .byte 0x85, 0xeb, 0x91, 0xbf, 0x3d, 0x0a, 0x27, 0xc0
+        .byte 0x0a, 0xd7, 0x93, 0xc0, 0xb8, 0x1e, 0xa5, 0xc0
+        .byte 0x9a, 0x99, 0x49, 0x41, 0xcd, 0xcc, 0xac, 0x40
+        .byte 0x0a, 0xd7, 0x13, 0x40, 0xd7, 0xa3, 0x98, 0x40
+        .byte 0x9a, 0x99, 0x49, 0xc1, 0xcd, 0xcc, 0xac, 0xc0
+        .byte 0x0a, 0xd7, 0x13, 0xc0, 0xd7, 0xa3, 0x98, 0xc0
+data2:
+.global data2
+        .byte 0xcd, 0x8c, 0xaa, 0x43, 0x33, 0x33, 0x13, 0x40
+        .byte 0x33, 0x33, 0x93, 0x40, 0x52, 0xb8, 0xe6, 0x40
+        .byte 0xb8, 0x1e, 0x81, 0xc1, 0x3d, 0x0a, 0x27, 0xc0
+        .byte 0x85, 0xeb, 0x09, 0xc1, 0xb8, 0x1e, 0xa5, 0xc0
+        .byte 0x9a, 0x99, 0x49, 0x41, 0xcd, 0xcc, 0xaa, 0x42
+        .byte 0x0a, 0xd7, 0x33, 0x40, 0xd7, 0xa3, 0x98, 0x40
+        .byte 0xcd, 0xcc, 0x94, 0xc1, 0x33, 0x33, 0xb3, 0xc0
+        .byte 0x0a, 0xd7, 0x13, 0xc0, 0xd7, 0xa3, 0x98, 0xc0
+)ffDXD", true
     }
 };
 
@@ -1290,6 +1434,14 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
                 AMDBIN_CREATE_INFOSTRINGS | AMDCL2BIN_INNER_CREATE_KERNELDATA |
                 AMDCL2BIN_INNER_CREATE_KERNELDATAMAP | AMDCL2BIN_INNER_CREATE_KERNELSTUBS);
             Disassembler disasm(amdBin, disasmOss, disasmFlags);
+            disasm.disassemble();
+            resultStr = disasmOss.str();
+        }
+        else if (isROCmBinary(binaryData.size(), binaryData.data()))
+        {
+            ROCmBinary rocmBin(binaryData.size(), binaryData.data(),
+                               ROCMBIN_CREATE_REGIONMAP);
+            Disassembler disasm(rocmBin, disasmOss, disasmFlags);
             disasm.disassemble();
             resultStr = disasmOss.str();
         }

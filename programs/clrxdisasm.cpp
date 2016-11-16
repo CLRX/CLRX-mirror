@@ -141,7 +141,7 @@ try
                 }
                 else if (isROCmBinary(binaryData.size(), binaryData.data()))
                 {   // ROCm binary
-                    binFlags |= ROCMBIN_CREATE_REGIONMAP;
+                    binFlags = ROCMBIN_CREATE_REGIONMAP;
                     ROCmBinary rocmBin(binaryData.size(), binaryData.data(), binFlags);
                     Disassembler disasm(rocmBin, std::cout, disasmFlags);
                     disasm.disassemble();

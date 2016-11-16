@@ -145,6 +145,7 @@ tests/amdasm/GCNDisasmOpcodes.cpp -text
 tests/amdasm/amdbins/amd1.clo -text svneol=unset#application/x-executable
 tests/amdasm/amdbins/amdcl2.clo -text svneol=unset#application/x-executable
 tests/amdasm/amdbins/gallium1.clo -text
+tests/amdasm/amdbins/rocm-fiji.hsaco -text svneol=unset#application/x-sharedlib
 tests/amdasm/amdbins/samplekernels.cl -text
 tests/amdasm/amdbins/samplekernels.clo -text svneol=unset#application/x-executable
 tests/amdasm/amdbins/samplekernels_64.clo -text svneol=unset#application/x-executable
