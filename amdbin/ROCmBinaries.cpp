@@ -241,8 +241,8 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
             commentSize = ::strlen(comment);
     }
     
-    ElfBinaryGen64 elfBinGen64({ 0U, 0U, 0x40, EV_CURRENT, ET_DYN,
-        0xe0, EV_CURRENT, 0, 0, 0 });
+    ElfBinaryGen64 elfBinGen64({ 0U, 0U, 0x40, 0, ET_DYN,
+        0xe0, EV_CURRENT, UINT_MAX, 0, 0 }, true, true, true, PHREGION_FILESTART);
     // add symbols
     elfBinGen64.addDynSymbol(ElfSymbol64("_DYNAMIC", 5,
                   ELF64_ST_INFO(STB_LOCAL, STT_NOTYPE), STV_HIDDEN, true, 0, 0));
@@ -272,7 +272,8 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_W, 5, 1, true, 0, 0, 0 });
     elfBinGen64.addProgramHeader({ PT_DYNAMIC, PF_R|PF_W, 5, 1, true, 0, 0, 0, 8 });
     elfBinGen64.addProgramHeader({ PT_GNU_RELRO, PF_R, 5, 1, true, 0, 0, 0, 1 });
-    elfBinGen64.addProgramHeader({ PT_GNU_STACK, PF_R|PF_W, 0, 0, true, 0, 0, 0 });
+    elfBinGen64.addProgramHeader({ PT_GNU_STACK, PF_R|PF_W, PHREGION_FILESTART, 0,
+                    true, 0, 0, 0 });
     
     // elf notes
     elfBinGen64.addNote({"AMD", sizeof noteDescType1, noteDescType1, 1U});
@@ -285,17 +286,23 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     
     /// region and sections
     elfBinGen64.addRegion(ElfRegion64::programHeaderTable());
-    elfBinGen64.addRegion(ElfRegion64::dynsymSection());
-    elfBinGen64.addRegion(ElfRegion64::hashSection(1));
-    elfBinGen64.addRegion(ElfRegion64::dynstrSection());
+    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
+                ".dynsym", SHT_DYNSYM, SHF_ALLOC, 0, 1, Elf64Types::nobase));
+    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 4,
+                ".hash", SHT_HASH, SHF_ALLOC, 1, 0, Elf64Types::nobase));
+    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".dynstr", SHT_STRTAB,
+                SHF_ALLOC, 0, 0, Elf64Types::nobase));
     elfBinGen64.addRegion(ElfRegion64(input->codeSize, (const cxbyte*)input->code, 
-              0x1000, ".text", SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR, 0, 0, 0, 0,
-              false, 256));
-    elfBinGen64.addRegion(ElfRegion64::dynamicSection(3));
+              0x1000, ".text", SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR, 0, 0,
+              Elf64Types::nobase, 0, false, 256));
+    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 0x1000,
+                ".dynamic", SHT_DYNAMIC, SHF_ALLOC|SHF_WRITE, 3, 0,
+                Elf64Types::nobase, 0, false, 8));
     elfBinGen64.addRegion(ElfRegion64::noteSection());
     elfBinGen64.addRegion(ElfRegion64(commentSize, (const cxbyte*)comment, 1, ".comment",
-              SHT_PROGBITS, SHF_MERGE|SHF_STRINGS));
-    elfBinGen64.addRegion(ElfRegion64::symtabSection());
+              SHT_PROGBITS, SHF_MERGE|SHF_STRINGS, 0, 0, 0, 1));
+    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
+                ".symtab", SHT_SYMTAB, 0, 0, 1));
     elfBinGen64.addRegion(ElfRegion64::shstrtabSection());
     elfBinGen64.addRegion(ElfRegion64::strtabSection());
     elfBinGen64.addRegion(ElfRegion64::sectionHeaderTable());

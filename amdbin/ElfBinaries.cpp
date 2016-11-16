@@ -533,7 +533,8 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     sectionRegions.reset(new cxuint[sectionsNum+1]);
     sectionRegions[0] = UINT_MAX;
     sectionCount = addNullSection;
-    typename Types::Word address = 0;
+    typename Types::Word address = (addrStartRegion==PHREGION_FILESTART) ? size : 0;
+    
     std::unique_ptr<typename Types::Word[]> dynValTable;
     if (haveDynamic)
     {   // prepare dynamic structures
@@ -578,15 +579,23 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                      uint64_t(progHdr.regionStart) + progHdr.regionsNum > regions.size()))
                     throw Exception("Region end out of range");
             }
+            if (addrStartRegion==PHREGION_FILESTART)
+                address = size;
         }
         else if (region.type == ElfRegionType::SHDR_TABLE)
         {
             size += uint64_t(sectionsNum)*sizeof(typename Types::Shdr);
             region.size = size-regionOffsets[i];
             shdrTabRegion = i;
+            if (addrStartRegion==PHREGION_FILESTART)
+                address = size;
         }
         else if (region.type == ElfRegionType::USER)
+        {
+            if (addrStartRegion==PHREGION_FILESTART)
+                address = size;
             size += region.size;
+        }
         else if (region.type == ElfRegionType::SECTION)
         {   // if section
             if (region.section.link >= sectionsNum)
@@ -679,7 +688,9 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                 if (region.section.type != SHT_NOBITS)
                     region.size = size-regionOffsets[i];
             }
-            if (i >= addrStartRegion) // begin counting address from that region
+            if (addrStartRegion==PHREGION_FILESTART)
+                address = size;
+            else if (i >= addrStartRegion) // begin counting address from that region
                 address += region.size;
             
             if (haveDynamic)
@@ -957,7 +968,8 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                     else
                         SLEV(shdr.sh_size, regionOffsets[j+1]-regionOffsets[j]);
                     SLEV(shdr.sh_info, region2.section.info);
-                    SLEV(shdr.sh_addralign, region2.align);
+                    SLEV(shdr.sh_addralign, (region2.section.align==0) ?
+                            region2.align : region2.section.align);
                     if (region2.section.link == 0)
                     {
                         if (::strcmp(region2.section.name, ".symtab") == 0)
