@@ -160,6 +160,7 @@ tests/amdbin/AmdBinLoading.cpp -text
 tests/amdbin/AmdCL2BinGen.cpp -text
 tests/amdbin/CMakeLists.txt -text svneol=unset#text/plain
 tests/amdbin/GalliumBinGen.cpp -text
+tests/amdbin/ROCmBinGen.cpp -text
 tests/amdbin/amdbins/alltypes-15_11.clo -text svneol=unset#application/x-executable
 tests/amdbin/amdbins/alltypes-15_7.clo -text svneol=unset#application/x-executable
 tests/amdbin/amdbins/alltypes.cl -text
@@ -313,6 +314,7 @@ tests/amdbin/galliumbins/BlackScholes.0.reconf.orig -text
 tests/amdbin/galliumbins/DCT.0.reconf.orig -text
 tests/amdbin/galliumbins/MatrixMultiplication.0.reconf.orig -text
 tests/amdbin/galliumbins/vectoradd-64bit.clo.reconf -text
+tests/amdbin/rocmbins/consttest1-kaveri.hsaco.regen -text svneol=unset#application/x-sharedlib
 tests/utils/CLIParser.cpp -text
 tests/utils/CMakeLists.txt -text svneol=unset#text/plain
 tests/utils/cstrtofXTest.cpp -text
