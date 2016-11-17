@@ -44,7 +44,7 @@ static ROCmInput genROCmInput(const ROCmBinary& binary)
     catch(...)
     {
         rocmInput.commentSize = 0;
-        rocmInput.comment = NULL;
+        rocmInput.comment = nullptr;
     }
     rocmInput.archMinor = 0;
     rocmInput.archStepping = 0;
