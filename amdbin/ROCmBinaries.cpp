@@ -58,7 +58,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         const Elf64_Sym& sym = getSymbol(i);
         const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
         const cxbyte bind = ELF64_ST_BIND(sym.st_info);
-        if (sym.st_shndx==textIndex &&
+        if (ULEV(sym.st_shndx)==textIndex &&
             (symType==STT_GNU_IFUNC || (bind==STB_GLOBAL && symType==STT_OBJECT)))
             regionsNum++;
     }
@@ -72,7 +72,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     for (size_t i = 0; i < symbolsNum; i++)
     {
         const Elf64_Sym& sym = getSymbol(i);
-        if (sym.st_shndx!=textIndex)
+        if (ULEV(sym.st_shndx)!=textIndex)
             continue;   // if not in '.text' section
         const size_t value = ULEV(sym.st_value);
         if (value < codeOffset)
