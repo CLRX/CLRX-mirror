@@ -676,7 +676,7 @@ typedef ElfRegionTemplate<Elf32Types> ElfRegion32;
 /// 64-bit region (for 64-bit elf)
 typedef ElfRegionTemplate<Elf64Types> ElfRegion64;
 
-enum {
+enum: cxuint {
     PHREGION_FILESTART = UINT_MAX
 };
 /// template of ELF program header
