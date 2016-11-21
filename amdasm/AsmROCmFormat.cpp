@@ -103,6 +103,12 @@ AsmROCmHandler::AsmROCmHandler(Assembler& assembler): AsmFormatHandler(assembler
     savedSection = 0;
 }
 
+AsmROCmHandler::~AsmROCmHandler()
+{
+    for (Kernel* kernel: kernelStates)
+        delete kernel;
+}
+
 cxuint AsmROCmHandler::addKernel(const char* kernelName)
 {
     cxuint thisKernel = output.symbols.size();
@@ -110,7 +116,7 @@ cxuint AsmROCmHandler::addKernel(const char* kernelName)
     output.addEmptyKernel(kernelName);
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
-    kernelStates.push_back({ thisSection, nullptr, ASMSECT_NONE, thisSection });
+    kernelStates.push_back(new Kernel{ thisSection, nullptr, ASMSECT_NONE, thisSection });
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
@@ -185,11 +191,11 @@ void AsmROCmHandler::setCurrentKernel(cxuint kernel)
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
     else // if kernel
-        kernelStates[assembler.currentKernel].savedSection = assembler.currentSection;
+        kernelStates[assembler.currentKernel]->savedSection = assembler.currentSection;
     
     assembler.currentKernel = kernel;
     if (kernel != ASMKERN_GLOBAL)
-        assembler.currentSection = kernelStates[kernel].savedSection;
+        assembler.currentSection = kernelStates[kernel]->savedSection;
     else // default main section
         assembler.currentSection = savedSection;
 }
@@ -202,7 +208,7 @@ void AsmROCmHandler::setCurrentSection(cxuint sectionId)
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
     else // if kernel
-        kernelStates[assembler.currentKernel].savedSection = assembler.currentSection;
+        kernelStates[assembler.currentKernel]->savedSection = assembler.currentSection;
     
     assembler.currentSection = sectionId;
     assembler.currentKernel = sections[sectionId].kernelId;
@@ -230,7 +236,7 @@ void AsmROCmHandler::restoreKcodeCurrentAllocRegs()
 {
     if (currentKcodeKernel != ASMKERN_GLOBAL)
     {
-        Kernel& newKernel = kernelStates[currentKcodeKernel];
+        Kernel& newKernel = *kernelStates[currentKcodeKernel];
         assembler.isaAssembler->setAllocatedRegisters(newKernel.allocRegs,
                             newKernel.allocRegFlags);
     }
@@ -241,7 +247,7 @@ void AsmROCmHandler::saveKcodeCurrentAllocRegs()
     if (currentKcodeKernel != ASMKERN_GLOBAL)
     {   // save other state
         size_t regTypesNum;
-        Kernel& oldKernel = kernelStates[currentKcodeKernel];
+        Kernel& oldKernel = *kernelStates[currentKcodeKernel];
         const cxuint* regs = assembler.isaAssembler->getAllocatedRegisters(
                             regTypesNum, oldKernel.allocRegFlags);
         std::copy(regs, regs+2, oldKernel.allocRegs);
@@ -269,8 +275,8 @@ void AsmROCmHandler::Kernel::initializeKernelConfig()
 {
     if (!config)
     {
-        config.reset(new ROCmKernelConfig{});
-        ::memset(config.get(), 0, sizeof(ROCmKernelConfig));
+        config.reset(new AsmROCmKernelConfig{});
+        ::memset(config.get(), 0, sizeof(AsmROCmKernelConfig));
     }
 }
 
@@ -306,7 +312,7 @@ void AsmROCmPseudoOps::doConfig(AsmROCmHandler& handler, const char* pseudoOpPla
     skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    handler.kernelStates[asmr.currentKernel].initializeKernelConfig();
+    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
 }
 
 void AsmROCmPseudoOps::doControlDirective(AsmROCmHandler& handler,
@@ -324,7 +330,7 @@ void AsmROCmPseudoOps::doControlDirective(AsmROCmHandler& handler,
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    AsmROCmHandler::Kernel& kernel = handler.kernelStates[asmr.currentKernel];
+    AsmROCmHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.ctrlDirSection == ASMSECT_NONE)
     {
         cxuint thisSection = handler.sections.size();
@@ -334,12 +340,209 @@ void AsmROCmPseudoOps::doControlDirective(AsmROCmHandler& handler,
         kernel.ctrlDirSection = thisSection;
     }
     asmr.goToSection(pseudoOpPlace, kernel.ctrlDirSection);
-    handler.kernelStates[asmr.currentKernel].initializeKernelConfig();
+    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
 }
 
 void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseudoOpPlace,
                   const char* linePtr, ROCmConfigValueTarget target)
 {
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    const char* valuePlace = linePtr;
+    uint64_t value = BINGEN_NOTSUPPLIED;
+    bool good = getAbsoluteValueArg(asmr, value, linePtr, true);
+    /* ranges checking */
+    if (good)
+    {
+        switch(target)
+        {
+            case ROCMCVAL_SGPRSNUM:
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+                if (value > maxSGPRsNum)
+                {
+                    char buf[64];
+                    snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
+                    asmr.printError(valuePlace, buf);
+                    good = false;
+                }
+                break;
+            }
+            case ROCMCVAL_VGPRSNUM:
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                cxuint maxVGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
+                if (value > maxVGPRsNum)
+                {
+                    char buf[64];
+                    snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
+                    asmr.printError(valuePlace, buf);
+                    good = false;
+                }
+                break;
+            }
+            case ROCMCVAL_EXCEPTIONS:
+                asmr.printWarningForRange(7, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                value &= 0x7f;
+                break;
+            case ROCMCVAL_FLOATMODE:
+                asmr.printWarningForRange(8, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                value &= 0xff;
+                break;
+            case ROCMCVAL_PRIORITY:
+                asmr.printWarningForRange(2, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                value &= 3;
+                break;
+            case ROCMCVAL_LOCALSIZE:
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                const cxuint maxLocalSize = getGPUMaxLocalSize(arch);
+                if (value > maxLocalSize)
+                {
+                    char buf[64];
+                    snprintf(buf, 64, "LocalSize out of range (0-%u)", maxLocalSize);
+                    asmr.printError(valuePlace, buf);
+                    good = false;
+                }
+                break;
+            }
+            case ROCMCVAL_USERDATANUM:
+                if (value > 16)
+                {
+                    asmr.printError(valuePlace, "UserDataNum out of range (0-16)");
+                    good = false;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
+    // set value
+    switch(target)
+    {
+        case ROCMCVAL_SGPRSNUM:
+            config.usedSGPRsNum = value;
+            break;
+        case ROCMCVAL_VGPRSNUM:
+            config.usedVGPRsNum = value;
+            break;
+        case ROCMCVAL_PGMRSRC1:
+            config.computePgmRsrc1 = value;
+            break;
+        case ROCMCVAL_PGMRSRC2:
+            config.computePgmRsrc2 = value;
+            break;
+        case ROCMCVAL_FLOATMODE:
+            config.floatMode = value;
+            break;
+        case ROCMCVAL_LOCALSIZE:
+            config.localSize = value;
+            break;
+        case ROCMCVAL_SCRATCHBUFFER:
+            config.scratchBufferSize = value;
+            break;
+        case ROCMCVAL_PRIORITY:
+            config.priority = value;
+            break;
+        case ROCMCVAL_USERDATANUM:
+            config.userDataNum = value;
+            break;
+        case ROCMCVAL_EXCEPTIONS:
+            config.exceptions = value;
+            break;
+        case ROCMCVAL_KERNEL_CODE_ENTRY_OFFSET:
+            config.kernelCodeEntryOffset = value;
+            break;
+        case ROCMCVAL_KERNEL_CODE_PREFETCH_OFFSET:
+            config.kernelCodePrefetchOffset = value;
+            break;
+        case ROCMCVAL_KERNEL_CODE_PREFETCH_SIZE:
+            config.kernelCodePrefetchSize = value;
+            break;
+        case ROCMCVAL_MAX_SCRATCH_BACKING_MEMORY:
+            config.maxScrachBackingMemorySize = value;
+            break;
+        case ROCMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
+            config.workitemPrivateSegmentSize = value;
+            break;
+        case ROCMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE:
+            config.workgroupGroupSegmentSize = value;
+            break;
+        case ROCMCVAL_GDS_SEGMENT_SIZE:
+            config.gdsSegmentSize = value;
+            break;
+        case ROCMCVAL_KERNARG_SEGMENT_SIZE:
+            config.kernargSegmentSize = value;
+            break;
+        case ROCMCVAL_WORKGROUP_FBARRIER_COUNT:
+            config.workgroupFbarrierCount = value;
+            break;
+        case ROCMCVAL_WAVEFRONT_SGPR_COUNT:
+            config.wavefrontSgprCount = value;
+            break;
+        case ROCMCVAL_WORKITEM_VGPR_COUNT:
+            config.workitemVgprCount = value;
+            break;
+        case ROCMCVAL_RESERVED_VGPR_FIRST:
+            config.reservedVgprFirst = value;
+            break;
+        case ROCMCVAL_RESERVED_VGPR_COUNT:
+            config.reservedVgprCount = value;
+            break;
+        case ROCMCVAL_RESERVED_SGPR_FIRST:
+            config.reservedSgprFirst = value;
+            break;
+        case ROCMCVAL_RESERVED_SGPR_COUNT:
+            config.reservedSgprCount = value;
+            break;
+        case ROCMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
+            config.debugWavefrontPrivateSegmentOffsetSgpr = value;
+            break;
+        case ROCMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
+            config.debugPrivateSegmentBufferSgpr = value;
+            break;
+        case ROCMCVAL_KERNARG_SEGMENT_ALIGN:
+            config.kernargSegmentAlignment = value;
+            break;
+        case ROCMCVAL_GROUP_SEGMENT_ALIGN:
+            config.groupSegmentAlignment = value;
+            break;
+        case ROCMCVAL_PRIVATE_SEGMENT_ALIGN:
+            config.privateSegmentAlignment = value;
+            break;
+        case ROCMCVAL_WAVEFRONT_SIZE:
+            config.wavefrontSize = value;
+            break;
+        case ROCMCVAL_CALL_CONVENTION:
+            config.callConvention = value;
+            break;
+        case ROCMCVAL_RUNTIME_LOADER_KERNEL_SYMBOL:
+            config.runtimeLoaderKernelSymbol = value;
+            break;
+        default:
+            break;
+    }
 }
 
 void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,

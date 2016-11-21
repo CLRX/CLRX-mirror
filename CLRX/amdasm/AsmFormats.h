@@ -417,6 +417,24 @@ public:
     { return &output; }
 };
 
+struct AsmROCmKernelConfig: ROCmKernelConfig
+{
+    cxuint dimMask;    ///< mask of dimension (bits: 0 - X, 1 - Y, 2 - Z)
+    cxuint usedVGPRsNum;  ///< number of used VGPRs
+    cxuint usedSGPRsNum;  ///< number of used SGPRs
+    cxbyte userDataNum;   ///< number of user data
+    bool ieeeMode;  ///< IEEE mode
+    cxbyte floatMode; ///< float mode
+    cxbyte priority;    ///< priority
+    cxbyte exceptions;      ///< enabled exceptions
+    bool tgSize;        ///< enable TG_SIZE_EN bit
+    bool debugMode;     ///< debug mode
+    bool privilegedMode;   ///< prvileged mode
+    bool dx10Clamp;     ///< DX10 CLAMP mode
+    size_t localSize; ///< used local size (not local defined in kernel arguments)
+    uint32_t scratchBufferSize; ///< size of scratch buffer
+};
+
 /// handles ROCM binary format
 class AsmROCmHandler: public AsmFormatHandler
 {
@@ -434,7 +452,7 @@ private:
     struct Kernel
     {
         cxuint configSection;
-        std::unique_ptr<ROCmKernelConfig> config;
+        std::unique_ptr<AsmROCmKernelConfig> config;
         cxuint ctrlDirSection;
         cxuint savedSection;
         Flags allocRegFlags;
@@ -442,7 +460,7 @@ private:
         
         void initializeKernelConfig();
     };
-    std::vector<Kernel> kernelStates;
+    std::vector<Kernel*> kernelStates;
     std::vector<Section> sections;
     std::vector<cxuint> kcodeSelection; // kcode
     std::stack<std::vector<cxuint> > kcodeSelStack;
@@ -461,7 +479,7 @@ public:
     /// construcror
     explicit AsmROCmHandler(Assembler& assembler);
     /// destructor
-    ~AsmROCmHandler() = default;
+    ~AsmROCmHandler();
     
     cxuint addKernel(const char* kernelName);
     cxuint addSection(const char* sectionName, cxuint kernelId);
