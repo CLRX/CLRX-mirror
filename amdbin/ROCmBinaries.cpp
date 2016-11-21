@@ -138,6 +138,11 @@ bool CLRX::isROCmBinary(size_t binarySize, const cxbyte* binary)
     return true;
 }
 
+
+void ROCmInput::addEmptyKernel(const char* kernelName)
+{
+    symbols.push_back({ kernelName, 0, 0, true });
+}
 /*
  * ROCm Binary Generator
  */

@@ -665,6 +665,7 @@ private:
     friend class AsmAmdHandler;
     friend class AsmAmdCL2Handler;
     friend class AsmGalliumHandler;
+    friend class AsmROCmHandler;
     friend class ISAAssembler;
     
     friend struct AsmParseUtils; // INTERNAL LOGIC

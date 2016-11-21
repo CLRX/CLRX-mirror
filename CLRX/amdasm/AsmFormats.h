@@ -64,6 +64,7 @@ enum class AsmSectionType: cxbyte
     GALLIUM_COMMENT = LAST_COMMON+1,    ///< gallium comment section
     
     ROCM_COMMENT = LAST_COMMON+1,        ///< ROCm comment section
+    ROCM_CONFIG_CTRL_DIRECTIVE,
     
     EXTRA_FIRST = 0xfc,
     EXTRA_PROGBITS = 0xfc,

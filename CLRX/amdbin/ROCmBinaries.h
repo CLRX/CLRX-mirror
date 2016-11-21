@@ -173,6 +173,8 @@ struct ROCmInput
     const char* comment; ///< comment
     std::vector<BinSection> extraSections;  ///< extra sections
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
+    
+    void addEmptyKernel(const char* kernelName);
 };
 
 class ROCmBinGenerator: public NonCopyableAndNonMovable

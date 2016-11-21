@@ -1798,7 +1798,7 @@ void Assembler::initializeOutputFormat()
             formatHandler = new AsmGalliumHandler(*this);
             break;
         case BinaryFormat::ROCM:
-            //formatHandler = new AsmROCmHandler(*this);
+            formatHandler = new AsmROCmHandler(*this);
             break;
         default:
             formatHandler = new AsmRawCodeHandler(*this);
