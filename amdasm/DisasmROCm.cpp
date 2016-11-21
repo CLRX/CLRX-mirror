@@ -264,12 +264,21 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
         output.write("        .use_flat_scratch_init\n", 31);
     if ((sgprFlags&64) != 0)
         output.write("        .use_private_segment_size\n", 34);
-    if ((sgprFlags&128) != 0)
-        output.write("        .use_grid_workgroup_count_x\n", 36);
-    if ((sgprFlags&256) != 0)
-        output.write("        .use_grid_workgroup_count_y\n", 36);
-    if ((sgprFlags&512) != 0)
-        output.write("        .use_grid_workgroup_count_z\n", 36);
+    
+    if ((sgprFlags&(7U<<7)) != 0)
+    {
+        strcpy(buf, "        .use_grid_workgroup_count ");
+        bufSize = 34;
+        if ((sgprFlags&128) != 0)
+            buf[bufSize++] = 'x';
+        if ((sgprFlags&256) != 0)
+            buf[bufSize++] = 'y';
+        if ((sgprFlags&512) != 0)
+            buf[bufSize++] = 'z';
+        buf[bufSize++] = '\n';
+        output.write(buf, bufSize);
+    }
+    
     const uint16_t featureFlags = enableFeatureFlags;
     if ((featureFlags&1) != 0)
         output.write("        .use_ordered_append_gds\n", 32);

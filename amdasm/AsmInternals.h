@@ -530,6 +530,9 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     static void doConfig(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    static void doControlDirective(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
     static void setConfigValue(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, ROCmConfigValueTarget target);
     
