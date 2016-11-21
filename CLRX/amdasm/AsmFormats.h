@@ -435,7 +435,7 @@ private:
     {
         cxuint defaultSection;
         Flags allocRegFlags;
-        bool useConfig;
+        std::unique_ptr<ROCmKernelConfig> config;
         cxuint ctrlDirSection;
         cxuint savedSection;
         cxuint allocRegs[2];

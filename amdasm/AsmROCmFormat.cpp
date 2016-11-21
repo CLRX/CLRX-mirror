@@ -63,7 +63,7 @@ cxuint AsmROCmHandler::addKernel(const char* kernelName)
     output.addEmptyKernel(kernelName);
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
-    kernelStates.push_back({ thisSection, 0, false, ASMSECT_NONE, thisSection });
+    kernelStates.push_back({ thisSection, 0, nullptr, ASMSECT_NONE, thisSection });
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;

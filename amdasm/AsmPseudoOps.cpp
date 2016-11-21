@@ -114,7 +114,7 @@ static const char* pseudoOpNamesTbl[] =
     "macro", "main", "noaltmacro",
     "nobuggyfplit", "octa", "offset", "org",
     "p2align", "print", "purgem", "quad",
-    "rawcode", "reg", "rept", "rodata",
+    "rawcode", "reg", "rept", "rocm", "rodata",
     "sbttl", "section", "set",
     "short", "single", "size", "skip",
     "space", "string", "string16", "string32",
@@ -150,7 +150,7 @@ enum
     ASMOP_MACRO, ASMOP_MAIN, ASMOP_NOALTMACRO,
     ASMOP_NOBUGGYFPLIT, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
-    ASMOP_RAWCODE, ASMOP_REG, ASMOP_REPT, ASMOP_RODATA,
+    ASMOP_RAWCODE, ASMOP_REG, ASMOP_REPT, ASMOP_ROCM, ASMOP_RODATA,
     ASMOP_SBTTL, ASMOP_SECTION, ASMOP_SET,
     ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
@@ -190,6 +190,8 @@ bool AsmPseudoOps::parseFormat(Assembler& asmr, const char* linePtr, BinaryForma
         format = BinaryFormat::AMDCL2;
     else if (::strcmp(formatName, "gallium")==0)
         format = BinaryFormat::GALLIUM;
+    else if (::strcmp(formatName, "rocm")==0)
+        format = BinaryFormat::ROCM;
     else if (::strcmp(formatName, "raw")==0)
         format = BinaryFormat::RAWCODE;
     else
@@ -2069,6 +2071,10 @@ bool AsmPseudoOps::checkPseudoOpName(const CString& string)
         return true;
     if (AsmAmdPseudoOps::checkPseudoOpName(string))
         return true;
+    if (AsmAmdCL2PseudoOps::checkPseudoOpName(string))
+        return true;
+    if (AsmROCmPseudoOps::checkPseudoOpName(string))
+        return true;
     return false;
 }
 
@@ -2125,6 +2131,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_AMDCL2:
         case ASMOP_RAWCODE:
         case ASMOP_GALLIUM:
+        case ASMOP_ROCM:
             if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
             {
                 if (formatHandler!=nullptr)
@@ -2133,6 +2140,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
                     format = (pseudoOp == ASMOP_GALLIUM) ? BinaryFormat::GALLIUM :
                         (pseudoOp == ASMOP_AMD) ? BinaryFormat::AMD :
                         (pseudoOp == ASMOP_AMDCL2) ? BinaryFormat::AMDCL2 :
+                        (pseudoOp == ASMOP_ROCM) ? BinaryFormat::ROCM :
                         BinaryFormat::RAWCODE;
             }
             break;
@@ -2494,6 +2502,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             bool isGalliumPseudoOp = AsmGalliumPseudoOps::checkPseudoOpName(firstName);
             bool isAmdPseudoOp = AsmAmdPseudoOps::checkPseudoOpName(firstName);
             bool isAmdCL2PseudoOp = AsmAmdCL2PseudoOps::checkPseudoOpName(firstName);
+            bool isROCmPseudoOp = AsmROCmPseudoOps::checkPseudoOpName(firstName);
             if (isGalliumPseudoOp || isAmdPseudoOp || isAmdCL2PseudoOp)
             {   // initialize only if gallium pseudo-op or AMD pseudo-op
                 initializeOutputFormat();
@@ -2524,6 +2533,15 @@ void Assembler::parsePseudoOps(const CString& firstName,
                         {
                             printError(stmtPlace, "AMDCL2 pseudo-op can be defined only in "
                                     "AMDCL2 format code");
+                            break;
+                        }
+                    }
+                    if (format != BinaryFormat::ROCM)
+                    {   // check rocm pseudo-op
+                        if (isROCmPseudoOp)
+                        {
+                            printError(stmtPlace, "ROCm pseudo-op can be defined "
+                                    "only in ROCm format code");
                             break;
                         }
                     }
