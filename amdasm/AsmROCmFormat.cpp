@@ -267,8 +267,11 @@ void AsmROCmHandler::handleLabel(const CString& label)
 
 void AsmROCmHandler::Kernel::initializeKernelConfig()
 {
-    config.reset(new ROCmKernelConfig{});
-    ::memset(config.get(), 0, sizeof(ROCmKernelConfig));
+    if (!config)
+    {
+        config.reset(new ROCmKernelConfig{});
+        ::memset(config.get(), 0, sizeof(ROCmKernelConfig));
+    }
 }
 
 namespace CLRX
@@ -376,6 +379,8 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
     switch(pseudoOp)
     {
         case ROCMOP_CALL_CONVENTION:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_CALL_CONVENTION);
             break;
         case ROCMOP_CODEVERSION:
             break;
@@ -384,112 +389,206 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
         case ROCMOP_CONTROL_DIRECTIVE:
             break;
         case ROCMOP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR);
             break;
         case ROCMOP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                         ROCMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR);
             break;
         case ROCMOP_DEBUGMODE:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_DEBUGMODE);
             break;
         case ROCMOP_DIMS:
             break;
         case ROCMOP_DX10CLAMP:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_DX10CLAMP);
             break;
         case ROCMOP_EXCEPTIONS:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_EXCEPTIONS);
             break;
         case ROCMOP_FLOATMODE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_FLOATMODE);
             break;
         case ROCMOP_GDS_SEGMENT_SIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_GDS_SEGMENT_SIZE);
             break;
         case ROCMOP_GROUP_SEGMENT_ALIGN:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_GROUP_SEGMENT_ALIGN);
             break;
         case ROCMOP_IEEEMODE:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_IEEEMODE);
             break;
         case ROCMOP_KCODE:
             break;
         case ROCMOP_KCODEEND:
             break;
         case ROCMOP_KERNARG_SEGMENT_ALIGN:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_KERNARG_SEGMENT_ALIGN);
             break;
         case ROCMOP_KERNARG_SEGMENT_SIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_KERNARG_SEGMENT_SIZE);
             break;
         case ROCMOP_KERNEL_CODE_ENTRY_OFFSET:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_KERNEL_CODE_ENTRY_OFFSET);
             break;
         case ROCMOP_KERNEL_CODE_PREFETCH_OFFSET:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_KERNEL_CODE_PREFETCH_OFFSET);
             break;
         case ROCMOP_KERNEL_CODE_PREFETCH_SIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_KERNEL_CODE_PREFETCH_SIZE);
             break;
         case ROCMOP_LOCALSIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_LOCALSIZE);
             break;
         case ROCMOP_MACHINE:
             break;
         case ROCMOP_MAX_SCRATCH_BACKING_MEMORY:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_MAX_SCRATCH_BACKING_MEMORY);
             break;
         case ROCMOP_PGMRSRC1:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_PGMRSRC1);
             break;
         case ROCMOP_PGMRSRC2:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_PGMRSRC2);
             break;
         case ROCMOP_PRIORITY:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_PRIORITY);
             break;
         case ROCMOP_PRIVATE_SEGMENT_ALIGN:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_PRIVATE_SEGMENT_ALIGN);
             break;
         case ROCMOP_PRIVMODE:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_PRIVMODE);
             break;
         case ROCMOP_RESERVED_SGPR_COUNT:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_RESERVED_SGPR_COUNT);
             break;
         case ROCMOP_RESERVED_SGPR_FIRST:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_RESERVED_SGPR_FIRST);
             break;
         case ROCMOP_RESERVED_VGPR_COUNT:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_RESERVED_VGPR_COUNT);
             break;
         case ROCMOP_RESERVED_VGPR_FIRST:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_RESERVED_VGPR_FIRST);
             break;
         case ROCMOP_RUNTIME_LOADER_KERNEL_SYMBOL:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_RUNTIME_LOADER_KERNEL_SYMBOL);
             break;
         case ROCMOP_SCRATCHBUFFER:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_SCRATCHBUFFER);
             break;
         case ROCMOP_SGPRSNUM:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_SGPRSNUM);
             break;
         case ROCMOP_TGSIZE:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_TGSIZE);
             break;
         case ROCMOP_USE_DEBUG_ENABLED:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_DEBUG_ENABLED);
             break;
         case ROCMOP_USE_DISPATCH_ID:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_DISPATCH_ID);
             break;
         case ROCMOP_USE_DISPATCH_PTR:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_DISPATCH_PTR);
             break;
         case ROCMOP_USE_DYNAMIC_CALL_STACK:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_DYNAMIC_CALL_STACK);
             break;
         case ROCMOP_USE_FLAT_SCRATCH_INIT:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_FLAT_SCRATCH_INIT);
             break;
         case ROCMOP_USE_GRID_WORKGROUP_COUNT:
             break;
         case ROCMOP_USE_KERNARG_SEGMENT_PTR:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_KERNARG_SEGMENT_PTR);
             break;
         case ROCMOP_USE_ORDERED_APPEND_GDS:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_ORDERED_APPEND_GDS);
             break;
         case ROCMOP_USE_PRIVATE_SEGMENT_SIZE:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_PRIVATE_SEGMENT_SIZE);
             break;
         case ROCMOP_USE_PTR64:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_PTR64);
             break;
         case ROCMOP_USE_QUEUE_PTR:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_QUEUE_PTR);
             break;
         case ROCMOP_USE_PRIVATE_SEGMENT_BUFFER:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_PRIVATE_SEGMENT_BUFFER);
             break;
         case ROCMOP_USE_XNACK_ENABLED:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_XNACK_ENABLED);
             break;
         case ROCMOP_USERDATANUM:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USERDATANUM);
             break;
         case ROCMOP_VGPRSNUM:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_VGPRSNUM);
             break;
         case ROCMOP_WAVEFRONT_SGPR_COUNT:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_WAVEFRONT_SGPR_COUNT);
             break;
         case ROCMOP_WAVEFRONT_SIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_WAVEFRONT_SIZE);
             break;
         case ROCMOP_WORKITEM_VGPR_COUNT:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_WORKITEM_VGPR_COUNT);
             break;
         case ROCMOP_WORKGROUP_FBARRIER_COUNT:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_WORKGROUP_FBARRIER_COUNT);
             break;
         case ROCMOP_WORKGROUP_GROUP_SEGMENT_SIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE);
             break;
         case ROCMOP_WORKITEM_PRIVATE_SEGMENT_SIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE);
             break;
         default:
             return false;
