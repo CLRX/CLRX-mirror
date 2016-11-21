@@ -110,7 +110,7 @@ cxuint AsmROCmHandler::addKernel(const char* kernelName)
     output.addEmptyKernel(kernelName);
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
-    kernelStates.push_back({ thisSection, 0, nullptr, ASMSECT_NONE, thisSection });
+    kernelStates.push_back({ thisSection, nullptr, ASMSECT_NONE, thisSection });
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
@@ -124,21 +124,7 @@ cxuint AsmROCmHandler::addSection(const char* sectionName, cxuint kernelId)
 {
     const cxuint thisSection = sections.size();
     Section section;
-    if (::strcmp(sectionName, ".control_directive") == 0)
-    {
-        if (kernelId == ASMKERN_GLOBAL)
-            throw AsmFormatException(".control_directive section must be "
-                        "defined inside kernel");
-        if (kernelStates[kernelId].ctrlDirSection != ASMSECT_NONE)
-            throw AsmFormatException("Only one section "
-                        "'.control_directive' can be in kernel");
-        kernelStates[kernelId].ctrlDirSection = thisSection;
-        section.type = AsmSectionType::ROCM_CONFIG_CTRL_DIRECTIVE;
-        section.elfBinSectId = ELFSECTID_TEXT; // . in text
-        section.name = ".control_directive";
-    }
-    else // otherwise
-        section.kernelId = ASMKERN_GLOBAL;  // we ignore input kernelId, we go to main
+    section.kernelId = ASMKERN_GLOBAL;  // we ignore input kernelId, we go to main
         
     if (::strcmp(sectionName, ".text") == 0) // code
     {
@@ -182,9 +168,6 @@ cxuint AsmROCmHandler::getSectionId(const char* sectionName) const
         return codeSection;
     else if (::strcmp(sectionName, ".comment") == 0) // comment
         return commentSection;
-    else if (assembler.currentKernel != ASMKERN_GLOBAL &&
-        ::strcmp(sectionName, ".control_directive") == 0) // code
-        return kernelStates[assembler.currentKernel].ctrlDirSection;
     else
     {
         SectionMap::const_iterator it = extraSectionMap.find(sectionName);
@@ -282,6 +265,12 @@ void AsmROCmHandler::handleLabel(const CString& label)
     restoreKcodeCurrentAllocRegs();
 }
 
+void AsmROCmHandler::Kernel::initializeKernelConfig()
+{
+    config.reset(new ROCmKernelConfig{});
+    ::memset(config.get(), 0, sizeof(ROCmKernelConfig));
+}
+
 namespace CLRX
 {
 
@@ -314,11 +303,35 @@ void AsmROCmPseudoOps::doConfig(AsmROCmHandler& handler, const char* pseudoOpPla
     skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
+    handler.kernelStates[asmr.currentKernel].initializeKernelConfig();
 }
 
 void AsmROCmPseudoOps::doControlDirective(AsmROCmHandler& handler,
               const char* pseudoOpPlace, const char* linePtr)
 {
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL)
+    {
+        asmr.printError(pseudoOpPlace, "Kernel control directive can be defined "
+                    "only inside kernel");
+        return;
+    }
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    AsmROCmHandler::Kernel& kernel = handler.kernelStates[asmr.currentKernel];
+    if (kernel.ctrlDirSection == ASMSECT_NONE)
+    {
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ asmr.currentKernel,
+            AsmSectionType::ROCM_CONFIG_CTRL_DIRECTIVE,
+            ELFSECTID_UNDEF, nullptr });
+        kernel.ctrlDirSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, kernel.ctrlDirSection);
+    handler.kernelStates[asmr.currentKernel].initializeKernelConfig();
 }
 
 void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseudoOpPlace,

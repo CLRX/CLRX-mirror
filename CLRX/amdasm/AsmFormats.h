@@ -433,12 +433,14 @@ private:
     };
     struct Kernel
     {
-        cxuint defaultSection;
-        Flags allocRegFlags;
+        cxuint configSection;
         std::unique_ptr<ROCmKernelConfig> config;
         cxuint ctrlDirSection;
         cxuint savedSection;
+        Flags allocRegFlags;
         cxuint allocRegs[2];
+        
+        void initializeKernelConfig();
     };
     std::vector<Kernel> kernelStates;
     std::vector<Section> sections;
@@ -453,6 +455,8 @@ private:
     
     void restoreKcodeCurrentAllocRegs();
     void saveKcodeCurrentAllocRegs();
+    
+    
 public:
     /// construcror
     explicit AsmROCmHandler(Assembler& assembler);
