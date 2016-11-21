@@ -29,6 +29,17 @@
 
 using namespace CLRX;
 
+static const char* rocmPseudoOpNamesTbl[] =
+{
+    "config", "debugmode", "dims", "dx10clamp",
+    "exceptions", "floatmode",
+    "ieeemode", "kcode", "kcodeend",
+    "localsize", "pgmrsrc1", "pgmrsrc2", "priority",
+    "privmode", "scratchbuffer", "sgprsnum", "tgsize",
+    "userdatanum", "vgprsnum"
+};
+
+
 /*
  * ROCm format handler
  */
@@ -52,7 +63,7 @@ cxuint AsmROCmHandler::addKernel(const char* kernelName)
     output.addEmptyKernel(kernelName);
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
-    kernelStates.push_back({ thisSection, false, 0 });
+    kernelStates.push_back({ thisSection, 0, false, ASMSECT_NONE, thisSection });
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
@@ -66,8 +77,22 @@ cxuint AsmROCmHandler::addSection(const char* sectionName, cxuint kernelId)
 {
     const cxuint thisSection = sections.size();
     Section section;
-    section.kernelId = ASMKERN_GLOBAL;  // we ignore input kernelId, we go to main
-    
+    if (::strcmp(sectionName, ".control_directive") == 0)
+    {
+        if (kernelId == ASMKERN_GLOBAL)
+            throw AsmFormatException(".control_directive section must be "
+                        "defined inside kernel");
+        if (kernelStates[kernelId].ctrlDirSection != ASMSECT_NONE)
+            throw AsmFormatException("Only one section "
+                        "'.control_directive' can be in kernel");
+        kernelStates[kernelId].ctrlDirSection = thisSection;
+        section.type = AsmSectionType::ROCM_CONFIG_CTRL_DIRECTIVE;
+        section.elfBinSectId = ELFSECTID_TEXT; // . in text
+        section.name = ".control_directive";
+    }
+    else // otherwise
+        section.kernelId = ASMKERN_GLOBAL;  // we ignore input kernelId, we go to main
+        
     if (::strcmp(sectionName, ".text") == 0) // code
     {
         if (codeSection!=ASMSECT_NONE)
@@ -110,6 +135,9 @@ cxuint AsmROCmHandler::getSectionId(const char* sectionName) const
         return codeSection;
     else if (::strcmp(sectionName, ".comment") == 0) // comment
         return commentSection;
+    else if (assembler.currentKernel != ASMKERN_GLOBAL &&
+        ::strcmp(sectionName, ".control_directive") == 0) // code
+        return kernelStates[assembler.currentKernel].ctrlDirSection;
     else
     {
         SectionMap::const_iterator it = extraSectionMap.find(sectionName);
@@ -126,10 +154,12 @@ void AsmROCmHandler::setCurrentKernel(cxuint kernel)
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
+    else // if kernel
+        kernelStates[assembler.currentKernel].savedSection = assembler.currentSection;
     
     assembler.currentKernel = kernel;
     if (kernel != ASMKERN_GLOBAL)
-        assembler.currentSection = kernelStates[kernel].defaultSection;
+        assembler.currentSection = kernelStates[kernel].savedSection;
     else // default main section
         assembler.currentSection = savedSection;
 }
@@ -141,6 +171,8 @@ void AsmROCmHandler::setCurrentSection(cxuint sectionId)
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
+    else // if kernel
+        kernelStates[assembler.currentKernel].savedSection = assembler.currentSection;
     
     assembler.currentSection = sectionId;
     assembler.currentKernel = sections[sectionId].kernelId;
@@ -209,6 +241,51 @@ void AsmROCmHandler::handleLabel(const CString& label)
     restoreKcodeCurrentAllocRegs();
 }
 
+namespace CLRX
+{
+
+bool AsmROCmPseudoOps::checkPseudoOpName(const CString& string)
+{
+    return false;
+}
+    
+/* user configuration pseudo-ops */
+void AsmROCmPseudoOps::doConfig(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                  const char* linePtr)
+{
+}
+
+void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                  const char* linePtr, ROCmConfigValueTarget target)
+{
+}
+
+void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,
+          const char* pseudoOpPlace, const char* linePtr, ROCmConfigValueTarget target)
+{
+}
+
+void AsmROCmPseudoOps::setDimensions(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                  const char* linePtr)
+{
+}
+
+void AsmROCmPseudoOps::doKCode(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                  const char* linePtr)
+{
+}
+
+void AsmROCmPseudoOps::doKCodeEnd(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                  const char* linePtr)
+{
+}
+
+void AsmROCmPseudoOps::updateKCodeSel(AsmROCmHandler& handler,
+                  const std::vector<cxuint>& oldset)
+{
+}
+
+}
 
 bool AsmROCmHandler::prepareBinary()
 {

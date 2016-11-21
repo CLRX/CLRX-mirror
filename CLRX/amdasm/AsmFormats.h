@@ -434,8 +434,11 @@ private:
     struct Kernel
     {
         cxuint defaultSection;
-        cxuint allocRegs[2];
         Flags allocRegFlags;
+        bool useConfig;
+        cxuint ctrlDirSection;
+        cxuint savedSection;
+        cxuint allocRegs[2];
     };
     std::vector<Kernel> kernelStates;
     std::vector<Section> sections;

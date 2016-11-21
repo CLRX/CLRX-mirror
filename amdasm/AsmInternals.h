@@ -518,6 +518,35 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
                       const char* linePtr);
 };
 
+enum ROCmConfigValueTarget
+{
+};
+
+struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
+{
+    static bool checkPseudoOpName(const CString& string);
+    
+    /* user configuration pseudo-ops */
+    static void doConfig(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void setConfigValue(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, ROCmConfigValueTarget target);
+    
+    static void setConfigBoolValue(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, ROCmConfigValueTarget target);
+    
+    static void setDimensions(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void doKCode(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void doKCodeEnd(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void updateKCodeSel(AsmROCmHandler& handler,
+                      const std::vector<cxuint>& oldset);
+};
+
 extern CLRX_INTERNAL cxbyte cstrtobyte(const char*& str, const char* end);
 
 extern const cxbyte tokenCharTable[96] CLRX_INTERNAL;

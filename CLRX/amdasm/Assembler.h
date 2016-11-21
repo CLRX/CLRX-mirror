@@ -673,6 +673,7 @@ private:
     friend struct AsmGalliumPseudoOps; // INTERNAL LOGIC
     friend struct AsmAmdPseudoOps; // INTERNAL LOGIC
     friend struct AsmAmdCL2PseudoOps; // INTERNAL LOGIC
+    friend struct AsmROCmPseudoOps; // INTERNAL LOGIC
     friend struct GCNAsmUtils; // INTERNAL LOGIC
 
     Array<CString> filenames;
