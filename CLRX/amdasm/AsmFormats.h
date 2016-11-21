@@ -34,6 +34,7 @@
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdbin/AmdBinGen.h>
 #include <CLRX/amdbin/AmdCL2BinGen.h>
+#include <CLRX/amdbin/ROCmBinaries.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Commons.h>
 
@@ -61,6 +62,9 @@ enum class AsmSectionType: cxbyte
     AMDCL2_ISAMETADATA,
     
     GALLIUM_COMMENT = LAST_COMMON+1,    ///< gallium comment section
+    
+    ROCM_COMMENT = LAST_COMMON+1,        ///< ROCm comment section
+    
     EXTRA_FIRST = 0xfc,
     EXTRA_PROGBITS = 0xfc,
     EXTRA_NOBITS = 0xfd,
@@ -409,6 +413,65 @@ public:
     void writeBinary(Array<cxbyte>& array) const;
     /// get output object (input for bingenerator)
     const GalliumInput* getOutput() const
+    { return &output; }
+};
+
+/// handles ROCM binary format
+class AsmROCmHandler: public AsmFormatHandler
+{
+private:
+    typedef std::unordered_map<CString, cxuint> SectionMap;
+    friend struct AsmROCmPseudoOps;
+    ROCmInput output;
+    struct Section
+    {
+        cxuint kernelId;
+        AsmSectionType type;
+        cxuint elfBinSectId;
+        const char* name;    // must be available by whole lifecycle
+    };
+    struct Kernel
+    {
+        cxuint defaultSection;
+        cxuint allocRegs[2];
+        Flags allocRegFlags;
+    };
+    std::vector<Kernel> kernelStates;
+    std::vector<Section> sections;
+    std::vector<cxuint> kcodeSelection; // kcode
+    std::stack<std::vector<cxuint> > kcodeSelStack;
+    cxuint currentKcodeKernel;
+    SectionMap extraSectionMap;
+    cxuint codeSection;
+    cxuint commentSection;
+    cxuint savedSection;
+    cxuint extraSectionCount;
+    
+    void restoreKcodeCurrentAllocRegs();
+    void saveKcodeCurrentAllocRegs();
+public:
+    /// construcror
+    explicit AsmROCmHandler(Assembler& assembler);
+    /// destructor
+    ~AsmROCmHandler() = default;
+    
+    cxuint addKernel(const char* kernelName);
+    cxuint addSection(const char* sectionName, cxuint kernelId);
+    
+    cxuint getSectionId(const char* sectionName) const;
+    void setCurrentKernel(cxuint kernel);
+    void setCurrentSection(cxuint sectionId);
+    
+    SectionInfo getSectionInfo(cxuint sectionId) const;
+    bool parsePseudoOp(const CString& firstName,
+           const char* stmtPlace, const char* linePtr);
+    void handleLabel(const CString& label);
+    
+    bool prepareBinary();
+    void writeBinary(std::ostream& os) const;
+    void writeBinary(Array<cxbyte>& array) const;
+    /// get output object (input for bingenerator)
+    const ROCmInput* getOutput() const
     { return &output; }
 };
 

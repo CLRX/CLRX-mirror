@@ -26,6 +26,7 @@ SET(LIBAMDASMSRC
         AsmFormats.cpp
         AsmGalliumFormat.cpp
         AsmPseudoOps.cpp
+        AsmROCmFormat.cpp
         AsmSource.cpp
         Assembler.cpp
         Disassembler.cpp

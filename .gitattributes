@@ -40,6 +40,7 @@ amdasm/AsmFormats.cpp -text
 amdasm/AsmGalliumFormat.cpp -text
 amdasm/AsmInternals.h -text
 amdasm/AsmPseudoOps.cpp -text
+amdasm/AsmROCmFormat.cpp -text
 amdasm/AsmSource.cpp -text
 amdasm/Assembler.cpp -text
 amdasm/CMakeLists.txt -text svneol=unset#text/plain
