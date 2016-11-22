@@ -51,6 +51,11 @@ enum: cxuint {
     BINGEN_NOTSUPPLIED  = UINT_MAX-1 ///< if set in field then field has been ignored
 };
 
+enum: uint64_t {
+    BINGEN64_DEFAULT = UINT64_MAX,    ///< if set in field then field has been filled later
+    BINGEN64_NOTSUPPLIED  = UINT64_MAX-1 ///< if set in field then field has been ignored
+};
+
 
 enum : Flags {
     ELF_CREATE_SECTIONMAP = 1,  ///< create map of sections
