@@ -358,7 +358,7 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
-    uint64_t value = BINGEN_NOTSUPPLIED;
+    uint64_t value = BINGEN64_NOTSUPPLIED;
     bool good = getAbsoluteValueArg(asmr, value, linePtr, true);
     /* ranges checking */
     if (good)
@@ -548,6 +548,79 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
 void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,
           const char* pseudoOpPlace, const char* linePtr, ROCmConfigValueTarget target)
 {
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
+    
+    switch(target)
+    {
+        case ROCMCVAL_PRIVMODE:
+            config.privilegedMode = true;
+            break;
+        case ROCMCVAL_DEBUGMODE:
+            config.debugMode = true;
+            break;
+        case ROCMCVAL_DX10CLAMP:
+            config.dx10Clamp = true;
+            break;
+        case ROCMCVAL_IEEEMODE:
+            config.ieeeMode = true;
+            break;
+        case ROCMCVAL_TGSIZE:
+            config.tgSize = true;
+            break;
+        case ROCMCVAL_USE_PRIVATE_SEGMENT_BUFFER:
+            config.enableSpgrRegisterFlags |= 1;
+            break;
+        case ROCMCVAL_USE_DISPATCH_PTR:
+            config.enableSpgrRegisterFlags |= 2;
+            break;
+        case ROCMCVAL_USE_QUEUE_PTR:
+            config.enableSpgrRegisterFlags |= 4;
+            break;
+        case ROCMCVAL_USE_KERNARG_SEGMENT_PTR:
+            config.enableSpgrRegisterFlags |= 8;
+            break;
+        case ROCMCVAL_USE_DISPATCH_ID:
+            config.enableSpgrRegisterFlags |= 16;
+            break;
+        case ROCMCVAL_USE_FLAT_SCRATCH_INIT:
+            config.enableSpgrRegisterFlags |= 32;
+            break;
+        case ROCMCVAL_USE_PRIVATE_SEGMENT_SIZE:
+            config.enableSpgrRegisterFlags |= 64;
+            break;
+        case ROCMCVAL_USE_ORDERED_APPEND_GDS:
+            config.enableFeatureFlags |= 1;
+            break;
+        case ROCMCVAL_USE_PTR64:
+            config.enableFeatureFlags |= 8;
+            break;
+        case ROCMCVAL_USE_DYNAMIC_CALL_STACK:
+            config.enableFeatureFlags |= 16;
+            break;
+        case ROCMCVAL_USE_DEBUG_ENABLED:
+            config.enableFeatureFlags |= 32;
+            break;
+        case ROCMCVAL_USE_XNACK_ENABLED:
+            config.enableFeatureFlags |= 64;
+            break;
+        default:
+            break;
+    }
 }
 
 void AsmROCmPseudoOps::setDimensions(AsmROCmHandler& handler, const char* pseudoOpPlace,
