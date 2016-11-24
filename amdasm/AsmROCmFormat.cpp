@@ -626,21 +626,148 @@ void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,
 void AsmROCmPseudoOps::setDimensions(AsmROCmHandler& handler, const char* pseudoOpPlace,
                   const char* linePtr)
 {
-}
-
-void AsmROCmPseudoOps::doKCode(AsmROCmHandler& handler, const char* pseudoOpPlace,
-                  const char* linePtr)
-{
-}
-
-void AsmROCmPseudoOps::doKCodeEnd(AsmROCmHandler& handler, const char* pseudoOpPlace,
-                  const char* linePtr)
-{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    skipSpacesToEnd(linePtr, end);
+    const char* dimPlace = linePtr;
+    char buf[10];
+    cxuint dimMask = 0;
+    if (getNameArg(asmr, 10, buf, linePtr, "dimension set", false))
+    {
+        toLowerString(buf);
+        for (cxuint i = 0; buf[i]!=0; i++)
+            if (buf[i]=='x')
+                dimMask |= 1;
+            else if (buf[i]=='y')
+                dimMask |= 2;
+            else if (buf[i]=='z')
+                dimMask |= 4;
+            else
+            {
+                asmr.printError(dimPlace, "Unknown dimension type");
+                return;
+            }
+    }
+    else // error
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    handler.kernelStates[asmr.currentKernel]->config->dimMask = dimMask;
 }
 
 void AsmROCmPseudoOps::updateKCodeSel(AsmROCmHandler& handler,
                   const std::vector<cxuint>& oldset)
 {
+    Assembler& asmr = handler.assembler;
+    // old elements - join current regstate with all them
+    size_t regTypesNum;
+    for (auto it = oldset.begin(); it != oldset.end(); ++it)
+    {
+        Flags curAllocRegFlags;
+        const cxuint* curAllocRegs = asmr.isaAssembler->getAllocatedRegisters(regTypesNum,
+                               curAllocRegFlags);
+        cxuint newAllocRegs[2];
+        AsmROCmHandler::Kernel& kernel = *(handler.kernelStates[*it]);
+        newAllocRegs[0] = std::max(curAllocRegs[0], kernel.allocRegs[0]);
+        newAllocRegs[1] = std::max(curAllocRegs[1], kernel.allocRegs[1]);
+        kernel.allocRegFlags |= curAllocRegFlags;
+        std::copy(newAllocRegs, newAllocRegs+2, kernel.allocRegs);
+    }
+    asmr.isaAssembler->setAllocatedRegisters();
+}
+
+void AsmROCmPseudoOps::doKCode(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                  const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    bool good = true;
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr==end)
+        return;
+    std::unordered_set<cxuint> newSel(handler.kcodeSelection.begin(),
+                          handler.kcodeSelection.end());
+    do {
+        CString kname;
+        const char* knamePlace = linePtr;
+        skipSpacesToEnd(linePtr, end);
+        bool removeKernel = false;
+        if (linePtr!=end && *linePtr=='-')
+        {   // '-' - remove this kernel from current kernel selection
+            removeKernel = true;
+            linePtr++;
+        }
+        else if (linePtr!=end && *linePtr=='+')
+        {
+            linePtr++;
+            skipSpacesToEnd(linePtr, end);
+            if (linePtr==end)
+            {   // add all kernels
+                for (cxuint k = 0; k < handler.kernelStates.size(); k++)
+                    newSel.insert(k);
+                break;
+            }
+        }
+        
+        if (!getNameArg(asmr, kname, linePtr, "kernel"))
+        { good = false; continue; }
+        auto kit = asmr.kernelMap.find(kname);
+        if (kit == asmr.kernelMap.end())
+        {
+            asmr.printError(knamePlace, "Kernel not found");
+            continue;
+        }
+        if (!removeKernel)
+            newSel.insert(kit->second);
+        else // remove kernel
+            newSel.erase(kit->second);
+    } while (skipCommaForMultipleArgs(asmr, linePtr));
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (handler.sections[asmr.currentSection].type != AsmSectionType::CODE)
+    {
+        asmr.printError(pseudoOpPlace, "KCode outside code");
+        return;
+    }
+    if (handler.kcodeSelStack.empty())
+        handler.saveKcodeCurrentAllocRegs();
+    // push to stack
+    handler.kcodeSelStack.push(handler.kcodeSelection);
+    // set current sel
+    handler.kcodeSelection.assign(newSel.begin(), newSel.end());
+    
+    std::sort(handler.kcodeSelection.begin(), handler.kcodeSelection.end());
+    updateKCodeSel(handler, handler.kcodeSelStack.top());
+}
+
+void AsmROCmPseudoOps::doKCodeEnd(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                  const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (handler.sections[asmr.currentSection].type != AsmSectionType::CODE)
+    {
+        asmr.printError(pseudoOpPlace, "KCodeEnd outside code");
+        return;
+    }
+    if (handler.kcodeSelStack.empty())
+    {
+        asmr.printError(pseudoOpPlace, "'.kcodeend' without '.kcode'");
+        return;
+    }
+    updateKCodeSel(handler, handler.kcodeSelection);
+    handler.kcodeSelection = handler.kcodeSelStack.top();
+    handler.kcodeSelStack.pop();
+    if (handler.kcodeSelStack.empty())
+        handler.restoreKcodeCurrentAllocRegs();
 }
 
 }
