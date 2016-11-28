@@ -792,6 +792,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::doConfig(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_CONTROL_DIRECTIVE:
+            AsmROCmPseudoOps::doControlDirective(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
