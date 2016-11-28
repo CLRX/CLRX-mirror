@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+#include <cstdio>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -1078,13 +1079,188 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
 
 bool AsmROCmHandler::prepareBinary()
 {
-    return false;
+    bool good = true;
+    size_t sectionsNum = sections.size();
+    size_t kernelsNum = kernelStates.size();
+    output.deviceType = assembler.getDeviceType();
+    
+    if (assembler.isaAssembler!=nullptr)
+    {   // make last kernel registers pool updates
+        if (kcodeSelStack.empty())
+            saveKcodeCurrentAllocRegs();
+        else
+            while (!kcodeSelStack.empty())
+            {   // pop from kcode stack and apply changes
+                AsmROCmPseudoOps::updateKCodeSel(*this, kcodeSelection);
+                kcodeSelection = kcodeSelStack.top();
+                kcodeSelStack.pop();
+            }
+    }
+    
+    for (size_t i = 0; i < sectionsNum; i++)
+    {
+        const AsmSection& asmSection = assembler.sections[i];
+        const Section& section = sections[i];
+        const size_t sectionSize = asmSection.getSize();
+        const cxbyte* sectionData = (!asmSection.content.empty()) ?
+                asmSection.content.data() : (const cxbyte*)"";
+        switch(asmSection.type)
+        {
+            case AsmSectionType::CODE:
+                output.codeSize = sectionSize;
+                output.code = sectionData;
+                break;
+            case AsmSectionType::EXTRA_PROGBITS:
+            case AsmSectionType::EXTRA_NOTE:
+            case AsmSectionType::EXTRA_NOBITS:
+            case AsmSectionType::EXTRA_SECTION:
+            {
+                uint32_t elfSectType =
+                       (asmSection.type==AsmSectionType::EXTRA_NOTE) ? SHT_NOTE :
+                       (asmSection.type==AsmSectionType::EXTRA_NOBITS) ? SHT_NOBITS :
+                             SHT_PROGBITS;
+                uint32_t elfSectFlags = 
+                    ((asmSection.flags&ASMELFSECT_ALLOCATABLE) ? SHF_ALLOC : 0) |
+                    ((asmSection.flags&ASMELFSECT_WRITEABLE) ? SHF_WRITE : 0) |
+                    ((asmSection.flags&ASMELFSECT_EXECUTABLE) ? SHF_EXECINSTR : 0);
+                output.extraSections.push_back({section.name, sectionSize, sectionData,
+                    asmSection.alignment!=0?asmSection.alignment:1, elfSectType,
+                    elfSectFlags, ELFSECTID_NULL, 0, 0 });
+                break;
+            }
+            case AsmSectionType::ROCM_CONFIG_CTRL_DIRECTIVE:
+                if (sectionSize != 128)
+                    assembler.printError(AsmSourcePos(),
+                         (std::string("Section '.control_directive' for kernel '")+
+                          assembler.kernels[section.kernelId].name+
+                          "' have wrong size").c_str());
+                break;
+            case AsmSectionType::ROCM_COMMENT:
+                output.commentSize = sectionSize;
+                output.comment = (const char*)sectionData;
+                break;
+            default:
+                break;
+        }
+    }
+    
+    GPUArchitecture arch = getGPUArchitectureFromDeviceType(assembler.deviceType);
+    // set up number of the allocated SGPRs and VGPRs for kernel
+    cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    // prepare kernels configuration
+    for (size_t i = 0; i < kernelStates.size(); i++)
+    {
+        const Kernel* kernel = kernelStates[i];
+        if (kernel->config.get() == nullptr)
+            continue;
+        const CString& kernelName = assembler.kernels[i].name;
+        AsmROCmKernelConfig& config = *kernel->config.get();
+        // setup config
+        cxuint userSGPRsNum = 4;
+        /* include userData sgprs */
+        cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
+                ((config.computePgmRsrc2>>7)&7);
+        // extra sgprs for dimensions
+        cxuint minRegsNum[2];
+        getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,
+                   ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |
+                   ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
+        
+        if (config.usedSGPRsNum!=BINGEN_DEFAULT && maxSGPRsNum < config.usedSGPRsNum)
+        {   // check only if sgprsnum set explicitly
+            char numBuf[64];
+            snprintf(numBuf, 64, "(max %u)", maxSGPRsNum);
+            assembler.printError(assembler.kernels[i].sourcePos, (std::string(
+                    "Number of total SGPRs for kernel '")+
+                    kernelName.c_str()+"' is too high "+numBuf).c_str());
+            good = false;
+        }
+        
+        if (config.usedSGPRsNum==BINGEN_DEFAULT)
+        {
+            config.usedSGPRsNum = std::min(
+                std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]) +
+                    getGPUExtraRegsNum(arch, REGTYPE_SGPR, kernelStates[i]->allocRegFlags),
+                    maxSGPRsNum); // include all extra sgprs
+        }
+        if (config.usedVGPRsNum==BINGEN_DEFAULT)
+            config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i]->allocRegs[1]);
+        // to little endian
+        SLEV(config.amdCodeVersionMajor, config.amdCodeVersionMajor);
+        SLEV(config.amdCodeVersionMinor, config.amdCodeVersionMinor);
+        SLEV(config.amdMachineKind, config.amdMachineKind);
+        SLEV(config.amdMachineMajor, config.amdMachineMajor);
+        SLEV(config.amdMachineMinor, config.amdMachineMinor);
+        SLEV(config.amdMachineStepping, config.amdMachineStepping);
+        SLEV(config.kernelCodeEntryOffset, config.kernelCodeEntryOffset);
+        SLEV(config.kernelCodePrefetchOffset, config.kernelCodePrefetchOffset);
+        SLEV(config.kernelCodePrefetchSize, config.kernelCodePrefetchSize);
+        SLEV(config.maxScrachBackingMemorySize, config.maxScrachBackingMemorySize);
+        SLEV(config.computePgmRsrc1, config.computePgmRsrc1);
+        SLEV(config.computePgmRsrc2, config.computePgmRsrc2);
+        SLEV(config.enableSpgrRegisterFlags, config.enableSpgrRegisterFlags);
+        SLEV(config.enableFeatureFlags, config.enableFeatureFlags);
+        SLEV(config.workitemPrivateSegmentSize, config.workitemPrivateSegmentSize);
+        SLEV(config.workgroupGroupSegmentSize, config.workgroupGroupSegmentSize);
+        SLEV(config.gdsSegmentSize, config.gdsSegmentSize);
+        SLEV(config.kernargSegmentSize, config.kernargSegmentSize);
+        SLEV(config.workgroupFbarrierCount, config.workgroupFbarrierCount);
+        SLEV(config.wavefrontSgprCount, config.wavefrontSgprCount);
+        SLEV(config.workitemVgprCount, config.workitemVgprCount);
+        SLEV(config.reservedVgprFirst, config.reservedVgprFirst);
+        SLEV(config.reservedVgprCount, config.reservedVgprCount);
+        SLEV(config.reservedSgprFirst, config.reservedSgprFirst);
+        SLEV(config.reservedSgprCount, config.reservedSgprCount);
+        SLEV(config.debugWavefrontPrivateSegmentOffsetSgpr,
+             config.debugWavefrontPrivateSegmentOffsetSgpr);
+        SLEV(config.debugPrivateSegmentBufferSgpr, config.debugPrivateSegmentBufferSgpr);
+        SLEV(config.callConvention, config.callConvention);
+        SLEV(config.runtimeLoaderKernelSymbol, config.runtimeLoaderKernelSymbol);
+    }
+    
+    const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
+    for (size_t ki = 0; ki < output.symbols.size(); ki++)
+    {
+        ROCmSymbolInput& kinput = output.symbols[ki];
+        auto it = symbolMap.find(kinput.symbolName);
+        if (it == symbolMap.end() || !it->second.isDefined())
+        {   // error, undefined
+            assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
+                        "Symbol for kernel '")+kinput.symbolName.c_str()+
+                        "' is undefined").c_str());
+            good = false;
+            continue;
+        }
+        const AsmSymbol& symbol = it->second;
+        if (!symbol.hasValue)
+        {   // error, unresolved
+            assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
+                    "Symbol for kernel '") + kinput.symbolName.c_str() +
+                    "' is not resolved").c_str());
+            good = false;
+            continue;
+        }
+        if (symbol.sectionId != codeSection)
+        {   /// error, wrong section
+            assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
+                    "Symbol for kernel '")+kinput.symbolName.c_str()+
+                    "' is defined for section other than '.text'").c_str());
+            good = false;
+            continue;
+        }
+        kinput.offset = symbol.value;
+    }
+    return good;
 }
 
 void AsmROCmHandler::writeBinary(std::ostream& os) const
 {
+    ROCmBinGenerator binGenerator(&output);
+    binGenerator.generate(os);
 }
 
 void AsmROCmHandler::writeBinary(Array<cxbyte>& array) const
 {
+    ROCmBinGenerator binGenerator(&output);
+    binGenerator.generate(array);
 }
