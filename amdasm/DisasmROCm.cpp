@@ -255,7 +255,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     if ((sgprFlags&2) != 0)
         output.write("        .use_dispatch_ptr\n", 26);
     if ((sgprFlags&4) != 0)
-        output.write("        .use_queue_ptr\n", 24);
+        output.write("        .use_queue_ptr\n", 23);
     if ((sgprFlags&8) != 0)
         output.write("        .use_kernarg_segment_ptr\n", 33);
     if ((sgprFlags&16) != 0)
