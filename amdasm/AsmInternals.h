@@ -140,6 +140,8 @@ struct CLRX_INTERNAL AsmParseUtils
     
     // skip comma for multiple argument pseudo-ops
     static bool skipCommaForMultipleArgs(Assembler& asmr, const char*& linePtr);
+    
+    static bool parseDimensions(Assembler& asmr, const char*& linePtr, cxuint& dimMask);
 };
 
 struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
