@@ -642,6 +642,27 @@ void AsmROCmPseudoOps::setDimensions(AsmROCmHandler& handler, const char* pseudo
     handler.kernelStates[asmr.currentKernel]->config->dimMask = dimMask;
 }
 
+void AsmROCmPseudoOps::setUseGridWorkGroupCount(AsmROCmHandler& handler,
+                   const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    cxuint dimMask = 0;
+    if (!parseDimensions(asmr, linePtr, dimMask))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    uint16_t& flags = handler.kernelStates[asmr.currentKernel]->config->
+                enableSpgrRegisterFlags;
+    flags = (flags & ~(7<<7)) | dimMask<<7;
+}
+
 void AsmROCmPseudoOps::updateKCodeSel(AsmROCmHandler& handler,
                   const std::vector<cxuint>& oldset)
 {
@@ -768,6 +789,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
         case ROCMOP_CODEVERSION:
             break;
         case ROCMOP_CONFIG:
+            AsmROCmPseudoOps::doConfig(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_CONTROL_DIRECTIVE:
             break;
@@ -784,6 +806,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
                              ROCMCVAL_DEBUGMODE);
             break;
         case ROCMOP_DIMS:
+            AsmROCmPseudoOps::setDimensions(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_DX10CLAMP:
             AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
@@ -810,8 +833,10 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
                              ROCMCVAL_IEEEMODE);
             break;
         case ROCMOP_KCODE:
+            AsmROCmPseudoOps::doKCode(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_KCODEEND:
+            AsmROCmPseudoOps::doKCodeEnd(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_KERNARG_SEGMENT_ALIGN:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
@@ -913,6 +938,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
                              ROCMCVAL_USE_FLAT_SCRATCH_INIT);
             break;
         case ROCMOP_USE_GRID_WORKGROUP_COUNT:
+            AsmROCmPseudoOps::setUseGridWorkGroupCount(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_USE_KERNARG_SEGMENT_PTR:
             AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,

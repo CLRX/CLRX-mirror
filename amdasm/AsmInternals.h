@@ -595,6 +595,9 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     static void setDimensions(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    static void setUseGridWorkGroupCount(AsmROCmHandler& handler,
+                      const char* pseudoOpPlace, const char* linePtr);
+    
     static void doKCode(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     static void doKCodeEnd(AsmROCmHandler& handler, const char* pseudoOpPlace,
