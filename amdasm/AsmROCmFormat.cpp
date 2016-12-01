@@ -36,7 +36,7 @@ static const char* rocmPseudoOpNamesTbl[] =
     "control_directive", "debug_private_segment_buffer_sgpr",
     "debug_wavefront_private_segment_offset_sgpr",
     "debugmode", "dims", "dx10clamp",
-    "exceptions", "floatmode", "gds_segment_size",
+    "exceptions", "fkernel", "floatmode", "gds_segment_size",
     "group_segment_align", "ieeemode", "kcode",
     "kcodeend", "kernarg_segment_align",
     "kernarg_segment_size", "kernel_code_entry_offset",
@@ -65,7 +65,7 @@ enum
     ROCMOP_CONTROL_DIRECTIVE, ROCMOP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR,
     ROCMOP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
     ROCMOP_DEBUGMODE, ROCMOP_DIMS, ROCMOP_DX10CLAMP,
-    ROCMOP_EXCEPTIONS, ROCMOP_FLOATMODE, ROCMOP_GDS_SEGMENT_SIZE,
+    ROCMOP_EXCEPTIONS, ROCMOP_FKERNEL, ROCMOP_FLOATMODE, ROCMOP_GDS_SEGMENT_SIZE,
     ROCMOP_GROUP_SEGMENT_ALIGN, ROCMOP_IEEEMODE, ROCMOP_KCODE,
     ROCMOP_KCODEEND, ROCMOP_KERNARG_SEGMENT_ALIGN,
     ROCMOP_KERNARG_SEGMENT_SIZE, ROCMOP_KERNEL_CODE_ENTRY_OFFSET,
@@ -117,7 +117,8 @@ cxuint AsmROCmHandler::addKernel(const char* kernelName)
     output.addEmptyKernel(kernelName);
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
-    kernelStates.push_back(new Kernel{ thisSection, nullptr, ASMSECT_NONE, thisSection });
+    kernelStates.push_back(
+        new Kernel{ thisSection, nullptr, false, ASMSECT_NONE, thisSection });
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
@@ -320,14 +321,12 @@ void AsmROCmPseudoOps::doControlDirective(AsmROCmHandler& handler,
               const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     if (asmr.currentKernel==ASMKERN_GLOBAL)
     {
         asmr.printError(pseudoOpPlace, "Kernel control directive can be defined "
                     "only inside kernel");
         return;
     }
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -342,6 +341,20 @@ void AsmROCmPseudoOps::doControlDirective(AsmROCmHandler& handler,
     }
     asmr.goToSection(pseudoOpPlace, kernel.ctrlDirSection);
     handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+}
+
+void AsmROCmPseudoOps::doFKernel(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL)
+    {
+        asmr.printError(pseudoOpPlace, ".fkernel can be only inside kernel");
+        return;
+    }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.kernelStates[asmr.currentKernel]->isFKernel = true;
 }
 
 void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseudoOpPlace,
@@ -887,6 +900,9 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_EXCEPTIONS);
             break;
+        case ROCMOP_FKERNEL:
+            AsmROCmPseudoOps::doFKernel(*this, stmtPlace, linePtr);
+            break;
         case ROCMOP_FLOATMODE:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_FLOATMODE);
@@ -1249,6 +1265,9 @@ bool AsmROCmHandler::prepareBinary()
             continue;
         }
         kinput.offset = symbol.value;
+        // set symbol type
+        kinput.type = kernelStates[ki]->isFKernel ? ROCmRegionType::FKERNEL :
+                ROCmRegionType::KERNEL;
     }
     return good;
 }

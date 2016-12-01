@@ -453,6 +453,7 @@ private:
     {
         cxuint configSection;
         std::unique_ptr<AsmROCmKernelConfig> config;
+        bool isFKernel;
         cxuint ctrlDirSection;
         cxuint savedSection;
         Flags allocRegFlags;

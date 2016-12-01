@@ -426,7 +426,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
             output.write(rinput.regionName.c_str(), rinput.regionName.size());
             output.put('\n');
             if (rinput.type == ROCmRegionType::FKERNEL)
-                output.write("    .kfunction\n", 15);
+                output.write("    .fkernel\n", 13);
             if (doMetadata && doDumpConfig)
                 dumpKernelConfig(output, maxSgprsNum, arch,
                      *reinterpret_cast<const ROCmKernelConfig*>(
