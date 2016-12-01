@@ -1630,13 +1630,6 @@ static const cxbyte noteDescType5_gpupro[26] =
 { 0x16, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
     'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=', '0', 0, 't' };
 
-struct AMDGPUArchValues
-{
-    uint32_t major;
-    uint32_t minor;
-    uint32_t stepping;
-};
-
 /* TODO: add gpu values tables for various driver version */
 static const AMDGPUArchValues amdGpuArchValuesTbl[] =
 {

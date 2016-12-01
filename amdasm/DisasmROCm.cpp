@@ -35,7 +35,7 @@
 
 using namespace CLRX;
 
-struct AMDGPUArchValues
+struct AMDGPUArchValuesEntry
 {
     uint32_t major;
     uint32_t minor;
@@ -43,7 +43,7 @@ struct AMDGPUArchValues
     GPUDeviceType deviceType;
 };
 
-static const AMDGPUArchValues amdGpuArchValuesTbl[] =
+static const AMDGPUArchValuesEntry amdGpuArchValuesTbl[] =
 {
     { 0, 0, 0, GPUDeviceType::CAPE_VERDE },
     { 7, 0, 0, GPUDeviceType::BONAIRE },

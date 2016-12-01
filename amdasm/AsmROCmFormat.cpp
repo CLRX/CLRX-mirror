@@ -278,9 +278,27 @@ void AsmROCmHandler::Kernel::initializeKernelConfig()
     if (!config)
     {
         config.reset(new AsmROCmKernelConfig{});
-        ::memset(config.get(), 0, sizeof(AsmROCmKernelConfig));
-        config->amdCodeVersionMajor = BINGEN_DEFAULT;
-        config->amdCodeVersionMinor = BINGEN_DEFAULT;
+        // set default values to kernel config
+        ::memset(config.get(), 0xff, 128);
+        ::memset(config->controlDirective, 0xff, 128);
+        config->computePgmRsrc1 = config->computePgmRsrc2 = 0;
+        config->enableSpgrRegisterFlags = 0;
+        config->enableFeatureFlags = 0;
+        config->reserved1[0] = config->reserved1[1] = config->reserved1[2] = 0;
+        config->dimMask = 0;
+        config->usedVGPRsNum = BINGEN_DEFAULT;
+        config->usedSGPRsNum = BINGEN_DEFAULT;
+        config->userDataNum = BINGEN8_DEFAULT;
+        config->ieeeMode = false;
+        config->floatMode = 0xc0;
+        config->priority = 0;
+        config->exceptions = 0;
+        config->tgSize = false;
+        config->debugMode = false;
+        config->privilegedMode = false;
+        config->dx10Clamp = false;
+        config->localSize = BINGEN_DEFAULT;
+        config->scratchBufferSize = BINGEN_DEFAULT;
     }
 }
 
@@ -445,6 +463,27 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
                     good = false;
                 }
                 break;
+            case ROCMCVAL_KERNARG_SEGMENT_ALIGN:
+            case ROCMCVAL_GROUP_SEGMENT_ALIGN:
+            case ROCMCVAL_PRIVATE_SEGMENT_ALIGN:
+                if (1ULL<<(63-CLZ64(value)) != value)
+                {
+                    asmr.printError(valuePlace, "Alignment must be power of two");
+                    good = false;
+                }
+                else if (value < 16)
+                {
+                    asmr.printError(valuePlace, "Alignment must be not smaller than 16");
+                    good = false;
+                }
+                break;
+            case ROCMCVAL_WAVEFRONT_SIZE:
+                if (1ULL<<(63-CLZ64(value)) != value)
+                {
+                    asmr.printError(valuePlace, "Wavefront size must be power of two");
+                    good = false;
+                }
+                break;
             default:
                 break;
         }
@@ -539,16 +578,16 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
             config.debugPrivateSegmentBufferSgpr = value;
             break;
         case ROCMCVAL_KERNARG_SEGMENT_ALIGN:
-            config.kernargSegmentAlignment = value;
+            config.kernargSegmentAlignment = 63-CLZ64(value);
             break;
         case ROCMCVAL_GROUP_SEGMENT_ALIGN:
-            config.groupSegmentAlignment = value;
+            config.groupSegmentAlignment = 63-CLZ64(value);
             break;
         case ROCMCVAL_PRIVATE_SEGMENT_ALIGN:
-            config.privateSegmentAlignment = value;
+            config.privateSegmentAlignment = 63-CLZ64(value);
             break;
         case ROCMCVAL_WAVEFRONT_SIZE:
-            config.wavefrontSize = value;
+            config.wavefrontSize = 63-CLZ64(value);
             break;
         case ROCMCVAL_CALL_CONVENTION:
             config.callConvention = value;
@@ -1095,11 +1134,15 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
     return true;
 }
 
+namespace CLRX
+{
+extern const AMDGPUArchValues rocmAmdGpuArchValuesTbl[];
+}
+
 bool AsmROCmHandler::prepareBinary()
 {
     bool good = true;
     size_t sectionsNum = sections.size();
-    size_t kernelsNum = kernelStates.size();
     output.deviceType = assembler.getDeviceType();
     
     if (assembler.isaAssembler!=nullptr)
@@ -1165,6 +1208,16 @@ bool AsmROCmHandler::prepareBinary()
     GPUArchitecture arch = getGPUArchitectureFromDeviceType(assembler.deviceType);
     // set up number of the allocated SGPRs and VGPRs for kernel
     cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    
+    AMDGPUArchValues amdGpuArchValues = rocmAmdGpuArchValuesTbl[
+                    cxuint(assembler.deviceType)];
+    if (output.archMinor!=UINT32_MAX)
+        amdGpuArchValues.minor = output.archMinor;
+    if (output.archStepping!=UINT32_MAX)
+        amdGpuArchValues.stepping = output.archStepping;
+    
+    const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
+    const uint32_t ldsMask = (1U<<ldsShift)-1U;
     // prepare kernels configuration
     for (size_t i = 0; i < kernelStates.size(); i++)
     {
@@ -1174,8 +1227,79 @@ bool AsmROCmHandler::prepareBinary()
         const CString& kernelName = assembler.kernels[i].name;
         AsmROCmKernelConfig& config = *kernel.config.get();
         // setup config
-        //config.enableSpgrRegisterFlags = (config.enableSpgrRegisterFlags&~64) |
-        cxuint userSGPRsNum = config.userDataNum;
+        // fill default values
+        if (config.amdCodeVersionMajor == BINGEN_DEFAULT)
+            config.amdCodeVersionMajor = 1;
+        if (config.amdCodeVersionMinor == BINGEN_DEFAULT)
+            config.amdCodeVersionMinor = 0;
+        if (config.amdMachineKind == BINGEN_DEFAULT)
+            config.amdMachineKind = 1;
+        if (config.amdMachineMajor == BINGEN16_DEFAULT)
+            config.amdMachineMajor = amdGpuArchValues.major;
+        if (config.amdMachineMinor == BINGEN16_DEFAULT)
+            config.amdMachineMinor = amdGpuArchValues.minor;
+        if (config.amdMachineStepping == BINGEN16_DEFAULT)
+            config.amdMachineStepping = amdGpuArchValues.stepping;
+        if (config.kernelCodeEntryOffset == BINGEN64_DEFAULT)
+            config.kernelCodeEntryOffset = 256;
+        if (config.kernelCodePrefetchOffset == BINGEN64_DEFAULT)
+            config.kernelCodePrefetchOffset = 0;
+        if (config.kernelCodePrefetchSize == BINGEN64_DEFAULT)
+            config.kernelCodePrefetchSize = 0;
+        if (config.maxScrachBackingMemorySize == BINGEN64_DEFAULT) // ??
+            config.maxScrachBackingMemorySize = 0;
+        
+        if (config.scratchBufferSize == BINGEN_DEFAULT)
+            config.scratchBufferSize = 0;
+        if (config.workitemPrivateSegmentSize == BINGEN_DEFAULT)
+            config.workitemPrivateSegmentSize = config.scratchBufferSize;
+        if (config.localSize == BINGEN_DEFAULT)
+            config.localSize = 0;
+        if (config.workgroupGroupSegmentSize == BINGEN_DEFAULT)
+            config.workgroupGroupSegmentSize = config.localSize;
+        if (config.gdsSegmentSize == BINGEN_DEFAULT)
+            config.gdsSegmentSize = 0;
+        if (config.kernargSegmentSize == BINGEN64_DEFAULT)
+            config.kernargSegmentSize = 0;
+        if (config.workgroupFbarrierCount == BINGEN_DEFAULT)
+            config.workgroupFbarrierCount = 0;
+        if (config.reservedVgprFirst == BINGEN_DEFAULT)
+            config.reservedVgprFirst = 0;
+        if (config.reservedVgprCount == BINGEN_DEFAULT)
+            config.reservedVgprCount = 0;
+        if (config.reservedSgprFirst == BINGEN_DEFAULT)
+            config.reservedSgprFirst = 0;
+        if (config.reservedSgprCount == BINGEN_DEFAULT)
+            config.reservedSgprCount = 0;
+        if (config.debugWavefrontPrivateSegmentOffsetSgpr == BINGEN16_DEFAULT)
+            config.debugWavefrontPrivateSegmentOffsetSgpr = 0;
+        if (config.debugPrivateSegmentBufferSgpr == BINGEN16_DEFAULT)
+            config.debugPrivateSegmentBufferSgpr = 0;
+        if (config.kernargSegmentAlignment == BINGEN8_DEFAULT)
+            config.kernargSegmentAlignment = 4; // 16 bytes
+        if (config.groupSegmentAlignment == BINGEN8_DEFAULT)
+            config.groupSegmentAlignment = 4; // 16 bytes
+        if (config.privateSegmentAlignment == BINGEN8_DEFAULT)
+            config.privateSegmentAlignment = 4; // 16 bytes
+        
+        cxuint userSGPRsNum = 0;
+        if (config.userDataNum == BINGEN8_DEFAULT)
+        {   // calcuate userSGPRs
+            const uint16_t sgprFlags = config.enableSpgrRegisterFlags;
+            userSGPRsNum =
+                ((sgprFlags&1)!=0 ? 4 : 0) + /* use_private_segment_buffer */
+                ((sgprFlags&2)!=0 ? 2 : 0) + /* use_dispatch_ptr */
+                ((sgprFlags&4)!=0 ? 2 : 0) + /* use_queue_ptr */
+                ((sgprFlags&8)!=0 ? 2 : 0) + /* use_kernarg_segment_ptr */
+                ((sgprFlags&16)!=0 ? 2 : 0) + /* use_dispatch_id */
+                ((sgprFlags&32)!=0 ? 2 : 0) + /* use_flat_scratch_init */
+                ((sgprFlags&64)!=0) + /* use_private_segment_size */
+                /* use_grid_workgroup_count */
+                ((sgprFlags&128)!=0) + ((sgprFlags&256)!=0) + ((sgprFlags&128)!=0);
+        }
+        else // default
+            userSGPRsNum = config.userDataNum;
+        
         /* include userData sgprs */
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
                 ((config.computePgmRsrc2>>7)&7);
@@ -1194,7 +1318,7 @@ bool AsmROCmHandler::prepareBinary()
                     kernelName.c_str()+"' is too high "+numBuf).c_str());
             good = false;
         }
-        
+        // set usedSGPRsNum
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
         {
             config.usedSGPRsNum = std::min(
@@ -1202,8 +1326,42 @@ bool AsmROCmHandler::prepareBinary()
                     getGPUExtraRegsNum(arch, REGTYPE_SGPR, kernelStates[i]->allocRegFlags),
                     maxSGPRsNum); // include all extra sgprs
         }
+        // set usedVGPRsNum
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
             config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i]->allocRegs[1]);
+        
+        cxuint sgprsNum = std::max(config.usedSGPRsNum, 1U);
+        cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
+        // computePGMRSRC1
+        config.computePgmRsrc1 |= ((vgprsNum-1)>>2) |
+                (((sgprsNum-1)>>3)<<6) | ((uint32_t(config.floatMode)&0xff)<<12) |
+                (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10) |
+                (config.privilegedMode?1U<<20:0) | (config.dx10Clamp?1U<<21:0) |
+                (config.debugMode?1U<<22:0);
+                
+        uint32_t dimValues = 0;
+        if (config.dimMask != BINGEN_DEFAULT)
+            dimValues = ((config.dimMask&7)<<7) |
+                    (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+        else
+            dimValues |= (config.computePgmRsrc2 & 0x1b80U);
+        // computePGMRSRC2
+        config.computePgmRsrc2 = (config.computePgmRsrc2 & 0xffffe440U) |
+                        (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |
+                        ((config.scratchBufferSize)?1:0) | dimValues |
+                        (((config.localSize+ldsMask)>>ldsShift)<<15) |
+                        ((uint32_t(config.exceptions)&0x7f)<<24);
+        
+        if (config.wavefrontSgprCount == BINGEN16_DEFAULT)
+            config.wavefrontSgprCount = sgprsNum;
+        if (config.workitemVgprCount == BINGEN16_DEFAULT)
+            config.workitemVgprCount = vgprsNum;
+        
+        if (config.callConvention == BINGEN_DEFAULT)
+            config.callConvention = 0;
+        if (config.runtimeLoaderKernelSymbol == BINGEN64_DEFAULT)
+            config.runtimeLoaderKernelSymbol = 0;
+        
         // to little endian
         SLEV(config.amdCodeVersionMajor, config.amdCodeVersionMajor);
         SLEV(config.amdCodeVersionMinor, config.amdCodeVersionMinor);
@@ -1240,6 +1398,31 @@ bool AsmROCmHandler::prepareBinary()
             ::memcpy(config.controlDirective, 
                  assembler.sections[kernel.ctrlDirSection].content.data(), 128);
     }
+    
+    // if set adds symbols to binary
+    if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
+        for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
+        {
+            if (!symEntry.second.hasValue)
+                continue; // unresolved
+            if (ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
+                continue; // local
+            if (ELF32_ST_BIND(symEntry.second.info) == STB_GLOBAL)
+            {
+                assembler.printError(AsmSourcePos(), (std::string("Added symbol '")+
+                    symEntry.first.c_str()+"' must not be a global").c_str());
+                good = false;
+                continue; // local
+            }
+            if (assembler.kernelMap.find(symEntry.first.c_str())!=assembler.kernelMap.end())
+                continue; // if kernel name
+            cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
+                    sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
+            
+            output.extraSymbols.push_back({ symEntry.first, symEntry.second.value,
+                    symEntry.second.size, binSectId, false, symEntry.second.info,
+                    symEntry.second.other });
+        }
     
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
     for (size_t ki = 0; ki < output.symbols.size(); ki++)

@@ -197,13 +197,6 @@ static const cxbyte noteDescType3[27] =
 { 4, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   'A', 'M', 'D', 0, 'A', 'M', 'D', 'G', 'P', 'U', 0 };
 
-struct AMDGPUArchValues
-{
-    uint32_t major;
-    uint32_t minor;
-    uint32_t stepping;
-};
-
 // section index for symbol binding
 static const uint16_t mainBuiltinSectionTable[] =
 {
@@ -223,7 +216,12 @@ static const uint16_t mainBuiltinSectionTable[] =
     7 // ROCMSECTID_GPUCONFIG
 };
 
-static const AMDGPUArchValues amdGpuArchValuesTbl[] =
+namespace CLRX
+{
+extern const AMDGPUArchValues rocmAmdGpuArchValuesTbl[];
+}
+
+const AMDGPUArchValues CLRX::rocmAmdGpuArchValuesTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
     { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
@@ -251,7 +249,7 @@ static const AMDGPUArchValues amdGpuArchValuesTbl[] =
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
 {
-    AMDGPUArchValues amdGpuArchValues = amdGpuArchValuesTbl[cxuint(input->deviceType)];
+    AMDGPUArchValues amdGpuArchValues = rocmAmdGpuArchValuesTbl[cxuint(input->deviceType)];
     if (input->archMinor!=UINT32_MAX)
         amdGpuArchValues.minor = input->archMinor;
     if (input->archStepping!=UINT32_MAX)
