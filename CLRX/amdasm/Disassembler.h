@@ -289,7 +289,7 @@ struct ROCmDisasmRegionInput
     CString regionName; ///< region name
     size_t size;    ///< region size
     size_t offset;  ///< region offset in code
-    bool isKernel;  ///< true if kernel
+    ROCmRegionType type ;  ///< type
 };
 
 struct ROCmDisasmInput

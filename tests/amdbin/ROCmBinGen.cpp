@@ -93,7 +93,7 @@ static ROCmInput genROCmInput(const ROCmBinary& binary)
     {
         const ROCmRegion& region = binary.getRegion(i);
         rocmInput.symbols.push_back({region.regionName, region.offset-codeOffset,
-                    region.size, region.isKernel});
+                    region.size, region.type});
     }
     return rocmInput;
 }

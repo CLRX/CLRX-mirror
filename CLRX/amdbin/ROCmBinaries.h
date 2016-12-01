@@ -46,13 +46,20 @@ enum : Flags {
     ROCMBIN_CREATE_ALL = ELF_CREATE_ALL | 0xfff0 ///< all ROCm binaries flags
 };
 
+enum ROCmRegionType: uint8_t
+{
+    DATA,
+    CODE,
+    KERNEL
+};
+
 /// ROCm data region
 struct ROCmRegion
 {
     CString regionName; ///< region name
     size_t size;    ///< data size
     size_t offset;     ///< data
-    bool isKernel;
+    ROCmRegionType type;
 };
 
 /// ROCm main binary for GPU for 64-bit mode
@@ -158,7 +165,7 @@ struct ROCmSymbolInput
     CString symbolName; ///< symbol name
     size_t offset;  ///< offset in code
     size_t size;    ///< size of symbol
-    bool isKernel;  ///< true if kernel
+    ROCmRegionType type;  ///< type
 };
 
 struct ROCmInput

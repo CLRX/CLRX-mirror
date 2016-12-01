@@ -117,7 +117,7 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
     {
         const ROCmRegion& region = binary.getRegion(i);
         input->regions[i] = { region.regionName, size_t(region.size),
-            size_t(region.offset - codeOffset), region.isKernel };
+            size_t(region.offset - codeOffset), region.type };
     }
     
     input->code = binary.getCode();
@@ -420,7 +420,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     }
     
     for (const ROCmDisasmRegionInput& rinput: rocmInput->regions)
-        if (rinput.isKernel)
+        if (rinput.type != ROCmRegionType::DATA)
         {
             output.write(".kernel ", 8);
             output.write(rinput.regionName.c_str(), rinput.regionName.size());
@@ -449,10 +449,16 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
         for (size_t i = 0; i < regionsNum; i++)
         {
             const ROCmDisasmRegionInput& region = rocmInput->regions[sorted[i].second];
-            if (region.isKernel && doDumpCode)
-            {
+            if (region.type==ROCmRegionType::KERNEL && doDumpCode)
+            {   // kernel code
                 isaDisassembler->setInput(region.size-256, code + region.offset+256,
                                     region.offset+256);
+                isaDisassembler->analyzeBeforeDisassemble();
+            }
+            else if (region.type==ROCmRegionType::CODE && doDumpCode)
+            {   // function code
+                isaDisassembler->setInput(region.size, code + region.offset,
+                                    region.offset);
                 isaDisassembler->analyzeBeforeDisassemble();
             }
             isaDisassembler->addNamedLabel(region.offset, region.regionName);
@@ -487,7 +493,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                         rocmInput->regions[sorted[i+1].second];
                 dataSize = newRegion.offset - region.offset;
             }
-            if (region.isKernel)
+            if (region.type!=ROCmRegionType::DATA)
             {
                 if (doMetadata)
                 {
@@ -516,7 +522,8 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
             }
         }
         
-        if (regionsNum!=0 && !rocmInput->regions[sorted[regionsNum-1].second].isKernel)
+        if (regionsNum!=0 &&
+            !rocmInput->regions[sorted[regionsNum-1].second].type!=ROCmRegionType::DATA)
         {   // if last region is kernel, then print labels after last region
             const ROCmDisasmRegionInput& region =
                         rocmInput->regions[sorted[regionsNum-1].second];

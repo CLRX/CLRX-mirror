@@ -32,6 +32,7 @@
 using namespace CLRX;
 
 /* TODO: add support for various kernel code offset (now only 256 is supported) */
+/* TODO: handle non-kernel functions (for Gallium also?) */
 
 ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags)
         : ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
@@ -59,7 +60,8 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
         const cxbyte bind = ELF64_ST_BIND(sym.st_info);
         if (ULEV(sym.st_shndx)==textIndex &&
-            (symType==STT_GNU_IFUNC || (bind==STB_GLOBAL && symType==STT_OBJECT)))
+            (symType==STT_GNU_IFUNC || symType==STT_FUNC ||
+                (bind==STB_GLOBAL && symType==STT_OBJECT)))
             regionsNum++;
     }
     if (code==nullptr && regionsNum!=0)
@@ -81,13 +83,18 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         
         const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
         const cxbyte bind = ELF64_ST_BIND(sym.st_info);
-        if (symType==STT_GNU_IFUNC || (bind==STB_GLOBAL && symType==STT_OBJECT))
+        if (symType==STT_GNU_IFUNC || symType==STT_FUNC ||
+                (bind==STB_GLOBAL && symType==STT_OBJECT))
         {
-            const bool isKernel = (symType==STT_GNU_IFUNC);
+            ROCmRegionType type = ROCmRegionType::DATA;
+            if (symType==STT_GNU_IFUNC) 
+                type = ROCmRegionType::KERNEL;
+            else if (symType==STT_FUNC)
+                type = ROCmRegionType::CODE;
             symOffsets[j] = std::make_pair(value, j);
-            if (isKernel && value+0x100 > codeOffset+codeSize)
-                throw Exception("Kernel offset is too big!");
-            regions[j++] = { getSymbolName(i), size, value, isKernel };
+            if (type!=ROCmRegionType::DATA && value+0x100 > codeOffset+codeSize)
+                throw Exception("Kernel or code offset is too big!");
+            regions[j++] = { getSymbolName(i), size, value, type };
         }
     }
     std::sort(symOffsets.get(), symOffsets.get()+regionsNum,
@@ -98,7 +105,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     {
         size_t end = (i<regionsNum) ? symOffsets[i].first : codeOffset+codeSize;
         ROCmRegion& region = regions[symOffsets[i-1].second];
-        if (region.isKernel && symOffsets[i-1].first+0x100 > end)
+        if (region.type==ROCmRegionType::KERNEL && symOffsets[i-1].first+0x100 > end)
             throw Exception("Kernel size is too small!");
         
         const size_t regSize = end - symOffsets[i-1].first;
@@ -141,7 +148,7 @@ bool CLRX::isROCmBinary(size_t binarySize, const cxbyte* binary)
 
 void ROCmInput::addEmptyKernel(const char* kernelName)
 {
-    symbols.push_back({ kernelName, 0, 0, true });
+    symbols.push_back({ kernelName, 0, 0, ROCmRegionType::KERNEL });
 }
 /*
  * ROCm Binary Generator
@@ -268,14 +275,26 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     for (const ROCmSymbolInput& symbol: input->symbols)
     {
         ElfSymbol64 elfsym;
-        if (symbol.isKernel)
-            elfsym = ElfSymbol64(symbol.symbolName.c_str(), 4,
-                  ELF64_ST_INFO(STB_GLOBAL, STT_GNU_IFUNC), 0, true,
-                  symbol.offset, symbol.size);
-        else
-            elfsym = ElfSymbol64(symbol.symbolName.c_str(), 4,
-                  ELF64_ST_INFO(STB_GLOBAL, STT_OBJECT), 0, true,
-                  symbol.offset, symbol.size);
+        switch (symbol.type)
+        {
+            case ROCmRegionType::KERNEL:
+                elfsym = ElfSymbol64(symbol.symbolName.c_str(), 4,
+                      ELF64_ST_INFO(STB_GLOBAL, STT_GNU_IFUNC), 0, true,
+                      symbol.offset, symbol.size);
+                break;
+            case ROCmRegionType::CODE:
+                elfsym = ElfSymbol64(symbol.symbolName.c_str(), 4,
+                      ELF64_ST_INFO(STB_GLOBAL, STT_FUNC), 0, true,
+                      symbol.offset, symbol.size);
+                break;
+            case ROCmRegionType::DATA:
+                elfsym = ElfSymbol64(symbol.symbolName.c_str(), 4,
+                      ELF64_ST_INFO(STB_GLOBAL, STT_OBJECT), 0, true,
+                      symbol.offset, symbol.size);
+                break;
+            default:
+                break;
+        }
         elfBinGen64.addSymbol(elfsym);
         elfBinGen64.addDynSymbol(elfsym);
     }
