@@ -56,6 +56,15 @@ enum: uint64_t {
     BINGEN64_NOTSUPPLIED  = UINT64_MAX-1 ///< if set in field then field has been ignored
 };
 
+enum: uint16_t {
+    BINGEN16_DEFAULT = UINT16_MAX,    ///< if set in field then field has been filled later
+    BINGEN16_NOTSUPPLIED  = UINT16_MAX-1 ///< if set in field then field has been ignored
+};
+
+enum: uint8_t {
+    BINGEN8_DEFAULT = UINT8_MAX,    ///< if set in field then field has been filled later
+    BINGEN8_NOTSUPPLIED  = UINT8_MAX-1 ///< if set in field then field has been ignored
+};
 
 enum : Flags {
     ELF_CREATE_SECTIONMAP = 1,  ///< create map of sections

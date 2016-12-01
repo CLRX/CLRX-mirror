@@ -279,6 +279,8 @@ void AsmROCmHandler::Kernel::initializeKernelConfig()
     {
         config.reset(new AsmROCmKernelConfig{});
         ::memset(config.get(), 0, sizeof(AsmROCmKernelConfig));
+        config->amdCodeVersionMajor = BINGEN_DEFAULT;
+        config->amdCodeVersionMinor = BINGEN_DEFAULT;
     }
 }
 
@@ -1166,13 +1168,14 @@ bool AsmROCmHandler::prepareBinary()
     // prepare kernels configuration
     for (size_t i = 0; i < kernelStates.size(); i++)
     {
-        const Kernel* kernel = kernelStates[i];
-        if (kernel->config.get() == nullptr)
+        const Kernel& kernel = *kernelStates[i];
+        if (kernel.config.get() == nullptr)
             continue;
         const CString& kernelName = assembler.kernels[i].name;
-        AsmROCmKernelConfig& config = *kernel->config.get();
+        AsmROCmKernelConfig& config = *kernel.config.get();
         // setup config
-        cxuint userSGPRsNum = 4;
+        //config.enableSpgrRegisterFlags = (config.enableSpgrRegisterFlags&~64) |
+        cxuint userSGPRsNum = config.userDataNum;
         /* include userData sgprs */
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
                 ((config.computePgmRsrc2>>7)&7);
@@ -1232,6 +1235,10 @@ bool AsmROCmHandler::prepareBinary()
         SLEV(config.debugPrivateSegmentBufferSgpr, config.debugPrivateSegmentBufferSgpr);
         SLEV(config.callConvention, config.callConvention);
         SLEV(config.runtimeLoaderKernelSymbol, config.runtimeLoaderKernelSymbol);
+        // put control directive section to config
+        if (kernel.ctrlDirSection!=ASMSECT_NONE)
+            ::memcpy(config.controlDirective, 
+                 assembler.sections[kernel.ctrlDirSection].content.data(), 128);
     }
     
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
@@ -1264,10 +1271,13 @@ bool AsmROCmHandler::prepareBinary()
             good = false;
             continue;
         }
+        const Kernel& kernel = *kernelStates[ki];
         kinput.offset = symbol.value;
+        if (kernel.config!=nullptr) // put config to code section
+            ::memcpy(assembler.sections[codeSection].content.data() + symbol.value,
+                     kernel.config.get(), sizeof(ROCmKernelConfig));
         // set symbol type
-        kinput.type = kernelStates[ki]->isFKernel ? ROCmRegionType::FKERNEL :
-                ROCmRegionType::KERNEL;
+        kinput.type = kernel.isFKernel ? ROCmRegionType::FKERNEL : ROCmRegionType::KERNEL;
     }
     return good;
 }
