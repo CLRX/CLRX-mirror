@@ -26,9 +26,10 @@
 
 using namespace CLRX;
 
-static const char* origBinaryFiles[1] =
+static const char* origBinaryFiles[2] =
 {
-    CLRX_SOURCE_DIR "/tests/amdbin/rocmbins/consttest1-kaveri.hsaco.regen"
+    CLRX_SOURCE_DIR "/tests/amdbin/rocmbins/consttest1-kaveri.hsaco.regen",
+    CLRX_SOURCE_DIR "/tests/amdbin/rocmbins/rijndael.hsaco.regen"
 };
 
 static ROCmInput genROCmInput(const ROCmBinary& binary)

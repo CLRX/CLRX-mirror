@@ -316,6 +316,7 @@ tests/amdbin/galliumbins/DCT.0.reconf.orig -text
 tests/amdbin/galliumbins/MatrixMultiplication.0.reconf.orig -text
 tests/amdbin/galliumbins/vectoradd-64bit.clo.reconf -text
 tests/amdbin/rocmbins/consttest1-kaveri.hsaco.regen -text svneol=unset#application/x-sharedlib
+tests/amdbin/rocmbins/rijndael.hsaco.regen -text svneol=unset#application/x-sharedlib
 tests/utils/CLIParser.cpp -text
 tests/utils/CMakeLists.txt -text svneol=unset#text/plain
 tests/utils/cstrtofXTest.cpp -text
