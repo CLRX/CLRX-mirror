@@ -46,11 +46,12 @@ enum : Flags {
     ROCMBIN_CREATE_ALL = ELF_CREATE_ALL | 0xfff0 ///< all ROCm binaries flags
 };
 
+/// ROCm region/symbol type
 enum ROCmRegionType: uint8_t
 {
-    DATA,
-    CODE,
-    KERNEL
+    DATA,   ///< data object
+    FKERNEL,   ///< function kernel (code)
+    KERNEL  ///< OpenCL kernel to call ??
 };
 
 /// ROCm data region

@@ -90,7 +90,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             if (symType==STT_GNU_IFUNC) 
                 type = ROCmRegionType::KERNEL;
             else if (symType==STT_FUNC)
-                type = ROCmRegionType::CODE;
+                type = ROCmRegionType::FKERNEL;
             symOffsets[j] = std::make_pair(value, j);
             if (type!=ROCmRegionType::DATA && value+0x100 > codeOffset+codeSize)
                 throw Exception("Kernel or code offset is too big!");
@@ -282,7 +282,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
                       ELF64_ST_INFO(STB_GLOBAL, STT_GNU_IFUNC), 0, true,
                       symbol.offset, symbol.size);
                 break;
-            case ROCmRegionType::CODE:
+            case ROCmRegionType::FKERNEL:
                 elfsym = ElfSymbol64(symbol.symbolName.c_str(), 4,
                       ELF64_ST_INFO(STB_GLOBAL, STT_FUNC), 0, true,
                       symbol.offset, symbol.size);

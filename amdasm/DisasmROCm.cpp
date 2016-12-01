@@ -425,6 +425,8 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
             output.write(".kernel ", 8);
             output.write(rinput.regionName.c_str(), rinput.regionName.size());
             output.put('\n');
+            if (rinput.type == ROCmRegionType::FKERNEL)
+                output.write("    .kfunction\n", 15);
             if (doMetadata && doDumpConfig)
                 dumpKernelConfig(output, maxSgprsNum, arch,
                      *reinterpret_cast<const ROCmKernelConfig*>(
@@ -455,7 +457,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                                     region.offset+256);
                 isaDisassembler->analyzeBeforeDisassemble();
             }
-            else if (region.type==ROCmRegionType::CODE && doDumpCode)
+            else if (region.type==ROCmRegionType::FKERNEL && doDumpCode)
             {   // function code
                 isaDisassembler->setInput(region.size, code + region.offset,
                                     region.offset);
