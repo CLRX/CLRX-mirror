@@ -1420,8 +1420,8 @@ bool AsmROCmHandler::prepareBinary()
             
             if (symEntry.second.sectionId==codeSection)
             {   // put data objects
-                dataSymbols.push_back({symEntry.first, symEntry.second.value, 
-                    symEntry.second.size, ROCmRegionType::DATA});
+                dataSymbols.push_back({symEntry.first, size_t(symEntry.second.value),
+                    size_t(symEntry.second.size), ROCmRegionType::DATA});
                 continue;
             }
             
