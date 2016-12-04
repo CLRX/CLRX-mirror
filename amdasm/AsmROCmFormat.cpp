@@ -1400,6 +1400,7 @@ bool AsmROCmHandler::prepareBinary()
     }
     
     // if set adds symbols to binary
+    std::vector<ROCmSymbolInput> dataSymbols;
     if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
         for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
         {
@@ -1416,6 +1417,14 @@ bool AsmROCmHandler::prepareBinary()
             }
             if (assembler.kernelMap.find(symEntry.first.c_str())!=assembler.kernelMap.end())
                 continue; // if kernel name
+            
+            if (symEntry.second.sectionId==codeSection)
+            {   // put data objects
+                dataSymbols.push_back({symEntry.first, symEntry.second.value, 
+                    symEntry.second.size, ROCmRegionType::DATA});
+                continue;
+            }
+            
             cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
             
@@ -1462,6 +1471,10 @@ bool AsmROCmHandler::prepareBinary()
         // set symbol type
         kinput.type = kernel.isFKernel ? ROCmRegionType::FKERNEL : ROCmRegionType::KERNEL;
     }
+    
+    // put data objects
+    dataSymbols.insert(dataSymbols.end(), output.symbols.begin(), output.symbols.end());
+    output.symbols = std::move(dataSymbols);
     return good;
 }
 
