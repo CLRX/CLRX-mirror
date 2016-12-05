@@ -280,7 +280,7 @@ void AsmROCmHandler::Kernel::initializeKernelConfig()
         config.reset(new AsmROCmKernelConfig{});
         // set default values to kernel config
         ::memset(config.get(), 0xff, 128);
-        ::memset(config->controlDirective, 0xff, 128);
+        ::memset(config->controlDirective, 0, 128);
         config->computePgmRsrc1 = config->computePgmRsrc2 = 0;
         config->enableSpgrRegisterFlags = 0;
         config->enableFeatureFlags = 0;
@@ -1281,6 +1281,8 @@ bool AsmROCmHandler::prepareBinary()
             config.groupSegmentAlignment = 4; // 16 bytes
         if (config.privateSegmentAlignment == BINGEN8_DEFAULT)
             config.privateSegmentAlignment = 4; // 16 bytes
+        if (config.wavefrontSize == BINGEN8_DEFAULT)
+            config.wavefrontSize = 6; // 64 threads
         
         cxuint userSGPRsNum = 0;
         if (config.userDataNum == BINGEN8_DEFAULT)

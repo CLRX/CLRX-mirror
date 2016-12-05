@@ -2508,7 +2508,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             bool isAmdPseudoOp = AsmAmdPseudoOps::checkPseudoOpName(firstName);
             bool isAmdCL2PseudoOp = AsmAmdCL2PseudoOps::checkPseudoOpName(firstName);
             bool isROCmPseudoOp = AsmROCmPseudoOps::checkPseudoOpName(firstName);
-            if (isGalliumPseudoOp || isAmdPseudoOp || isAmdCL2PseudoOp)
+            if (isGalliumPseudoOp || isAmdPseudoOp || isAmdCL2PseudoOp || isROCmPseudoOp)
             {   // initialize only if gallium pseudo-op or AMD pseudo-op
                 initializeOutputFormat();
                 /// try to parse
