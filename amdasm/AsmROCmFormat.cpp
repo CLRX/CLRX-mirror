@@ -496,6 +496,16 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
                     good = false;
                 }
                 break;
+            case ROCMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
+            case ROCMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE:
+            case ROCMCVAL_GDS_SEGMENT_SIZE:
+            case ROCMCVAL_WORKGROUP_FBARRIER_COUNT:
+            case ROCMCVAL_CALL_CONVENTION:
+            case ROCMCVAL_PGMRSRC1:
+            case ROCMCVAL_PGMRSRC2:
+                asmr.printWarningForRange(32, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                break;
             default:
                 break;
         }
@@ -730,16 +740,28 @@ void AsmROCmPseudoOps::setMachine(AsmROCmHandler& handler, const char* pseudoOpP
     uint64_t majorValue = BINGEN_NOTSUPPLIED;
     uint64_t minorValue = BINGEN_NOTSUPPLIED;
     uint64_t steppingValue = BINGEN_NOTSUPPLIED;
+    const char* valuePlace = linePtr;
     bool good = getAbsoluteValueArg(asmr, kindValue, linePtr, true);
+    asmr.printWarningForRange(16, kindValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!skipRequiredComma(asmr, linePtr))
         return;
+    
+    valuePlace = linePtr;
     good &= getAbsoluteValueArg(asmr, majorValue, linePtr, true);
+    asmr.printWarningForRange(16, majorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!skipRequiredComma(asmr, linePtr))
         return;
+    
+    valuePlace = linePtr;
     good &= getAbsoluteValueArg(asmr, minorValue, linePtr, true);
+    asmr.printWarningForRange(16, minorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!skipRequiredComma(asmr, linePtr))
         return;
+    
+    valuePlace = linePtr;
     good &= getAbsoluteValueArg(asmr, steppingValue, linePtr, true);
+    asmr.printWarningForRange(16, steppingValue,
+                      asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -767,10 +789,15 @@ void AsmROCmPseudoOps::setCodeVersion(AsmROCmHandler& handler, const char* pseud
     skipSpacesToEnd(linePtr, end);
     uint64_t majorValue = BINGEN_NOTSUPPLIED;
     uint64_t minorValue = BINGEN_NOTSUPPLIED;
+    const char* valuePlace = linePtr;
     bool good = getAbsoluteValueArg(asmr, majorValue, linePtr, true);
+    asmr.printWarningForRange(32, majorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!skipRequiredComma(asmr, linePtr))
         return;
+    
+    valuePlace = linePtr;
     good &= getAbsoluteValueArg(asmr, minorValue, linePtr, true);
+    asmr.printWarningForRange(32, minorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
