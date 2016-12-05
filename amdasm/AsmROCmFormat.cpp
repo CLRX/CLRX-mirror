@@ -1419,7 +1419,8 @@ bool AsmROCmHandler::prepareBinary()
         SLEV(config.callConvention, config.callConvention);
         SLEV(config.runtimeLoaderKernelSymbol, config.runtimeLoaderKernelSymbol);
         // put control directive section to config
-        if (kernel.ctrlDirSection!=ASMSECT_NONE)
+        if (kernel.ctrlDirSection!=ASMSECT_NONE &&
+            assembler.sections[kernel.ctrlDirSection].content.size()==128)
             ::memcpy(config.controlDirective, 
                  assembler.sections[kernel.ctrlDirSection].content.data(), 128);
     }
