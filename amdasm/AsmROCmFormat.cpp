@@ -664,40 +664,40 @@ void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,
             config.tgSize = true;
             break;
         case ROCMCVAL_USE_PRIVATE_SEGMENT_BUFFER:
-            config.enableSpgrRegisterFlags |= 1;
+            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER;
             break;
         case ROCMCVAL_USE_DISPATCH_PTR:
-            config.enableSpgrRegisterFlags |= 2;
+            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_DISPATCH_PTR;
             break;
         case ROCMCVAL_USE_QUEUE_PTR:
-            config.enableSpgrRegisterFlags |= 4;
+            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_QUEUE_PTR;
             break;
         case ROCMCVAL_USE_KERNARG_SEGMENT_PTR:
-            config.enableSpgrRegisterFlags |= 8;
+            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_KERNARG_SEGMENT_PTR;
             break;
         case ROCMCVAL_USE_DISPATCH_ID:
-            config.enableSpgrRegisterFlags |= 16;
+            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_DISPATCH_ID;
             break;
         case ROCMCVAL_USE_FLAT_SCRATCH_INIT:
-            config.enableSpgrRegisterFlags |= 32;
+            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_FLAT_SCRATCH_INIT;
             break;
         case ROCMCVAL_USE_PRIVATE_SEGMENT_SIZE:
-            config.enableSpgrRegisterFlags |= 64;
+            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_PRIVATE_SEGMENT_SIZE;
             break;
         case ROCMCVAL_USE_ORDERED_APPEND_GDS:
-            config.enableFeatureFlags |= 1;
+            config.enableFeatureFlags |= ROCMFLAG_USE_ORDERED_APPEND_GDS;
             break;
         case ROCMCVAL_USE_PTR64:
-            config.enableFeatureFlags |= 8;
+            config.enableFeatureFlags |= ROCMFLAG_USE_PTR64;
             break;
         case ROCMCVAL_USE_DYNAMIC_CALL_STACK:
-            config.enableFeatureFlags |= 16;
+            config.enableFeatureFlags |= ROCMFLAG_USE_DYNAMIC_CALL_STACK;
             break;
         case ROCMCVAL_USE_DEBUG_ENABLED:
-            config.enableFeatureFlags |= 32;
+            config.enableFeatureFlags |= ROCMFLAG_USE_DEBUG_ENABLED;
             break;
         case ROCMCVAL_USE_XNACK_ENABLED:
-            config.enableFeatureFlags |= 64;
+            config.enableFeatureFlags |= ROCMFLAG_USE_XNACK_ENABLED;
             break;
         default:
             break;
@@ -826,7 +826,8 @@ void AsmROCmPseudoOps::setUseGridWorkGroupCount(AsmROCmHandler& handler,
     handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     uint16_t& flags = handler.kernelStates[asmr.currentKernel]->config->
                 enableSpgrRegisterFlags;
-    flags = (flags & ~(7<<7)) | dimMask<<7;
+    flags = (flags & ~(7<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT)) |
+            (dimMask<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT);
 }
 
 void AsmROCmPseudoOps::updateKCodeSel(AsmROCmHandler& handler,
@@ -1336,15 +1337,17 @@ bool AsmROCmHandler::prepareBinary()
         {   // calcuate userSGPRs
             const uint16_t sgprFlags = config.enableSpgrRegisterFlags;
             userSGPRsNum =
-                ((sgprFlags&1)!=0 ? 4 : 0) + /* use_private_segment_buffer */
-                ((sgprFlags&2)!=0 ? 2 : 0) + /* use_dispatch_ptr */
-                ((sgprFlags&4)!=0 ? 2 : 0) + /* use_queue_ptr */
-                ((sgprFlags&8)!=0 ? 2 : 0) + /* use_kernarg_segment_ptr */
-                ((sgprFlags&16)!=0 ? 2 : 0) + /* use_dispatch_id */
-                ((sgprFlags&32)!=0 ? 2 : 0) + /* use_flat_scratch_init */
-                ((sgprFlags&64)!=0) + /* use_private_segment_size */
+                ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER)!=0 ? 4 : 0) +
+                ((sgprFlags&ROCMFLAG_USE_DISPATCH_PTR)!=0 ? 2 : 0) +
+                ((sgprFlags&ROCMFLAG_USE_QUEUE_PTR)!=0 ? 2 : 0) +
+                ((sgprFlags&ROCMFLAG_USE_KERNARG_SEGMENT_PTR)!=0 ? 2 : 0) +
+                ((sgprFlags&ROCMFLAG_USE_DISPATCH_ID)!=0 ? 2 : 0) +
+                ((sgprFlags&ROCMFLAG_USE_FLAT_SCRATCH_INIT)!=0 ? 2 : 0) +
+                ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_SIZE)!=0) +
                 /* use_grid_workgroup_count */
-                ((sgprFlags&128)!=0) + ((sgprFlags&256)!=0) + ((sgprFlags&128)!=0);
+                ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_X)!=0) +
+                ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_Y)!=0) +
+                ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_Z)!=0);
         }
         else // default
             userSGPRsNum = config.userDataNum;
@@ -1370,9 +1373,15 @@ bool AsmROCmHandler::prepareBinary()
         // set usedSGPRsNum
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
         {
+            cxuint flags = kernelStates[i]->allocRegFlags |
+                // flat_scratch_init
+                ((config.enableSpgrRegisterFlags&ROCMFLAG_USE_FLAT_SCRATCH_INIT)!=0?
+                            GCN_FLAT : 0) |
+                // enable_xnack
+                ((config.enableFeatureFlags&ROCMFLAG_USE_XNACK_ENABLED)!=0 ? GCN_FLAT : 0);
             config.usedSGPRsNum = std::min(
                 std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]) +
-                    getGPUExtraRegsNum(arch, REGTYPE_SGPR, kernelStates[i]->allocRegFlags),
+                    getGPUExtraRegsNum(arch, REGTYPE_SGPR, flags),
                     maxSGPRsNum); // include all extra sgprs
         }
         // set usedVGPRsNum

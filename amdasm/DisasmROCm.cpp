@@ -250,48 +250,48 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     }
     
     const uint16_t sgprFlags = enableSpgrRegisterFlags;
-    if ((sgprFlags&1) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER) != 0)
         output.write("        .use_private_segment_buffer\n", 36);
-    if ((sgprFlags&2) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_DISPATCH_PTR) != 0)
         output.write("        .use_dispatch_ptr\n", 26);
-    if ((sgprFlags&4) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_QUEUE_PTR) != 0)
         output.write("        .use_queue_ptr\n", 23);
-    if ((sgprFlags&8) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_KERNARG_SEGMENT_PTR) != 0)
         output.write("        .use_kernarg_segment_ptr\n", 33);
-    if ((sgprFlags&16) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_DISPATCH_ID) != 0)
         output.write("        .use_dispatch_id\n", 25);
-    if ((sgprFlags&32) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_FLAT_SCRATCH_INIT) != 0)
         output.write("        .use_flat_scratch_init\n", 31);
-    if ((sgprFlags&64) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_SIZE) != 0)
         output.write("        .use_private_segment_size\n", 34);
     
-    if ((sgprFlags&(7U<<7)) != 0)
+    if ((sgprFlags&(7U<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT)) != 0)
     {
         strcpy(buf, "        .use_grid_workgroup_count ");
         bufSize = 34;
-        if ((sgprFlags&128) != 0)
+        if ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_X) != 0)
             buf[bufSize++] = 'x';
-        if ((sgprFlags&256) != 0)
+        if ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_Y) != 0)
             buf[bufSize++] = 'y';
-        if ((sgprFlags&512) != 0)
+        if ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_Z) != 0)
             buf[bufSize++] = 'z';
         buf[bufSize++] = '\n';
         output.write(buf, bufSize);
     }
     
     const uint16_t featureFlags = enableFeatureFlags;
-    if ((featureFlags&1) != 0)
+    if ((featureFlags&ROCMFLAG_USE_ORDERED_APPEND_GDS) != 0)
         output.write("        .use_ordered_append_gds\n", 32);
     bufSize = snprintf(buf, 100, "        .private_elem_size %u\n",
-                       2U<<((featureFlags>>1)&3));
+                       2U<<((featureFlags>>ROCMFLAG_PRIVATE_ELEM_SIZE_BIT)&3));
     output.write(buf, bufSize);
-    if ((featureFlags&8) != 0)
+    if ((featureFlags&ROCMFLAG_USE_PTR64) != 0)
         output.write("        .use_ptr64\n", 19);
-    if ((featureFlags&16) != 0)
+    if ((featureFlags&ROCMFLAG_USE_DYNAMIC_CALL_STACK) != 0)
         output.write("        .use_dynamic_call_stack\n", 32);
-    if ((featureFlags&32) != 0)
+    if ((featureFlags&ROCMFLAG_USE_DEBUG_ENABLED) != 0)
         output.write("        .use_debug_enabled\n", 27);
-    if ((featureFlags&64) != 0)
+    if ((featureFlags&ROCMFLAG_USE_XNACK_ENABLED) != 0)
         output.write("        .use_xnack_enabled\n", 27);
     
     if (workitemPrivateSegmentSize!=0)
