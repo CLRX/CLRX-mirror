@@ -51,12 +51,12 @@ static const char* rocmPseudoOpNamesTbl[] =
     "use_dispatch_ptr", "use_dynamic_call_stack",
     "use_flat_scratch_init", "use_grid_workgroup_count",
     "use_kernarg_segment_ptr", "use_ordered_append_gds",
-    "use_private_segment_size", "use_ptr64", "use_queue_ptr",
-    "use_private_segment_buffer", "use_xnack_enabled",
+    "use_private_segment_buffer", "use_private_segment_size",
+    "use_ptr64", "use_queue_ptr", "use_xnack_enabled",
     "userdatanum", "vgprsnum", "wavefront_sgpr_count",
-    "wavefront_size", "workitem_vgpr_count",
-    "workgroup_fbarrier_count", "workgroup_group_segment_size",
-    "workitem_private_segment_size"
+    "wavefront_size",  "workgroup_fbarrier_count",
+    "workgroup_group_segment_size", "workitem_private_segment_size",
+    "workitem_vgpr_count"
 };
 
 enum
@@ -80,12 +80,12 @@ enum
     ROCMOP_USE_DISPATCH_PTR, ROCMOP_USE_DYNAMIC_CALL_STACK,
     ROCMOP_USE_FLAT_SCRATCH_INIT, ROCMOP_USE_GRID_WORKGROUP_COUNT,
     ROCMOP_USE_KERNARG_SEGMENT_PTR, ROCMOP_USE_ORDERED_APPEND_GDS,
-    ROCMOP_USE_PRIVATE_SEGMENT_SIZE, ROCMOP_USE_PTR64, ROCMOP_USE_QUEUE_PTR,
-    ROCMOP_USE_PRIVATE_SEGMENT_BUFFER, ROCMOP_USE_XNACK_ENABLED,
+    ROCMOP_USE_PRIVATE_SEGMENT_BUFFER, ROCMOP_USE_PRIVATE_SEGMENT_SIZE,
+    ROCMOP_USE_PTR64, ROCMOP_USE_QUEUE_PTR, ROCMOP_USE_XNACK_ENABLED,
     ROCMOP_USERDATANUM, ROCMOP_VGPRSNUM, ROCMOP_WAVEFRONT_SGPR_COUNT,
-    ROCMOP_WAVEFRONT_SIZE, ROCMOP_WORKITEM_VGPR_COUNT,
-    ROCMOP_WORKGROUP_FBARRIER_COUNT, ROCMOP_WORKGROUP_GROUP_SEGMENT_SIZE,
-    ROCMOP_WORKITEM_PRIVATE_SEGMENT_SIZE
+    ROCMOP_WAVEFRONT_SIZE, ROCMOP_WORKGROUP_FBARRIER_COUNT,
+    ROCMOP_WORKGROUP_GROUP_SEGMENT_SIZE, ROCMOP_WORKITEM_PRIVATE_SEGMENT_SIZE,
+    ROCMOP_WORKITEM_VGPR_COUNT
 };
 
 /*
@@ -1232,7 +1232,7 @@ bool AsmROCmHandler::prepareBinary()
             config.amdCodeVersionMajor = 1;
         if (config.amdCodeVersionMinor == BINGEN_DEFAULT)
             config.amdCodeVersionMinor = 0;
-        if (config.amdMachineKind == BINGEN_DEFAULT)
+        if (config.amdMachineKind == BINGEN16_DEFAULT)
             config.amdMachineKind = 1;
         if (config.amdMachineMajor == BINGEN16_DEFAULT)
             config.amdMachineMajor = amdGpuArchValues.major;
@@ -1263,13 +1263,13 @@ bool AsmROCmHandler::prepareBinary()
             config.kernargSegmentSize = 0;
         if (config.workgroupFbarrierCount == BINGEN_DEFAULT)
             config.workgroupFbarrierCount = 0;
-        if (config.reservedVgprFirst == BINGEN_DEFAULT)
+        if (config.reservedVgprFirst == BINGEN16_DEFAULT)
             config.reservedVgprFirst = 0;
-        if (config.reservedVgprCount == BINGEN_DEFAULT)
+        if (config.reservedVgprCount == BINGEN16_DEFAULT)
             config.reservedVgprCount = 0;
-        if (config.reservedSgprFirst == BINGEN_DEFAULT)
+        if (config.reservedSgprFirst == BINGEN16_DEFAULT)
             config.reservedSgprFirst = 0;
-        if (config.reservedSgprCount == BINGEN_DEFAULT)
+        if (config.reservedSgprCount == BINGEN16_DEFAULT)
             config.reservedSgprCount = 0;
         if (config.debugWavefrontPrivateSegmentOffsetSgpr == BINGEN16_DEFAULT)
             config.debugWavefrontPrivateSegmentOffsetSgpr = 0;
