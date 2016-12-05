@@ -42,7 +42,8 @@ static const char* rocmPseudoOpNamesTbl[] =
     "kernarg_segment_size", "kernel_code_entry_offset",
     "kernel_code_prefetch_offset", "kernel_code_prefetch_size",
     "localsize", "machine", "max_scratch_backing_memory",
-    "pgmrsrc1", "pgmrsrc2", "priority", "private_segment_align",
+    "pgmrsrc1", "pgmrsrc2", "priority",
+    "private_elem_size", "private_segment_align",
     "privmode", "reserved_sgpr_count", "reserved_sgpr_first",
     "reserved_vgpr_count", "reserved_vgpr_first",
     "runtime_loader_kernel_symbol",
@@ -71,7 +72,8 @@ enum
     ROCMOP_KERNARG_SEGMENT_SIZE, ROCMOP_KERNEL_CODE_ENTRY_OFFSET,
     ROCMOP_KERNEL_CODE_PREFETCH_OFFSET, ROCMOP_KERNEL_CODE_PREFETCH_SIZE,
     ROCMOP_LOCALSIZE, ROCMOP_MACHINE, ROCMOP_MAX_SCRATCH_BACKING_MEMORY,
-    ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PRIORITY, ROCMOP_PRIVATE_SEGMENT_ALIGN,
+    ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PRIORITY,
+    ROCMOP_PRIVATE_ELEM_SIZE, ROCMOP_PRIVATE_SEGMENT_ALIGN,
     ROCMOP_PRIVMODE, ROCMOP_RESERVED_SGPR_COUNT, ROCMOP_RESERVED_SGPR_FIRST,
     ROCMOP_RESERVED_VGPR_COUNT, ROCMOP_RESERVED_VGPR_FIRST,
     ROCMOP_RUNTIME_LOADER_KERNEL_SYMBOL,
@@ -463,6 +465,19 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
                     good = false;
                 }
                 break;
+            case ROCMCVAL_PRIVATE_ELEM_SIZE:
+                if (1ULL<<(63-CLZ64(value)) != value)
+                {
+                    asmr.printError(valuePlace,
+                                    "Private element size must be power of two");
+                    good = false;
+                }
+                else if (value < 2 || value > 16)
+                {
+                    asmr.printError(valuePlace, "Private element size out of range");
+                    good = false;
+                }
+                break;
             case ROCMCVAL_KERNARG_SEGMENT_ALIGN:
             case ROCMCVAL_GROUP_SEGMENT_ALIGN:
             case ROCMCVAL_PRIVATE_SEGMENT_ALIGN:
@@ -576,6 +591,10 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
             break;
         case ROCMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
             config.debugPrivateSegmentBufferSgpr = value;
+            break;
+        case ROCMCVAL_PRIVATE_ELEM_SIZE:
+            config.enableFeatureFlags = (config.enableFeatureFlags & ~6) |
+                    ((63-CLZ64(value)-1)<<1);
             break;
         case ROCMCVAL_KERNARG_SEGMENT_ALIGN:
             config.kernargSegmentAlignment = 63-CLZ64(value);
@@ -1005,6 +1024,10 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             break;
         case ROCMOP_PRIORITY:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_PRIORITY);
+            break;
+        case ROCMOP_PRIVATE_ELEM_SIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_PRIVATE_ELEM_SIZE);
             break;
         case ROCMOP_PRIVATE_SEGMENT_ALIGN:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
