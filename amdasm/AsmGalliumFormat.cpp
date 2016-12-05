@@ -397,6 +397,11 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                     good = false;
                 }
                 break;
+            case GALLIUMCVAL_PGMRSRC1:
+            case GALLIUMCVAL_PGMRSRC2:
+                asmr.printWarningForRange(32, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                break;
             default:
                 break;
         }

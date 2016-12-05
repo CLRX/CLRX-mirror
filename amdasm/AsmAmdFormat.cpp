@@ -822,6 +822,13 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                     good = false;
                 }
                 break;
+            case AMDCVAL_CONDOUT:
+            case AMDCVAL_EARLYEXIT:
+            case AMDCVAL_HWREGION:
+            case AMDCVAL_PGMRSRC2:
+                asmr.printWarningForRange(32, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                break;
             default:
                 asmr.printWarningForRange(32, value, asmr.getSourcePos(valuePlace));
                 break;

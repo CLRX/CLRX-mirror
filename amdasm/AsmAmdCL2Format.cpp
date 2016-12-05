@@ -777,6 +777,11 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                 }
                 break;
             }
+            case AMDCL2CVAL_PGMRSRC1:
+            case AMDCL2CVAL_PGMRSRC2:
+                asmr.printWarningForRange(32, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                break;
             default:
                 break;
         }
