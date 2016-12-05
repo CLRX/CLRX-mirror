@@ -328,15 +328,12 @@ void AsmROCmPseudoOps::doConfig(AsmROCmHandler& handler, const char* pseudoOpPla
         return;
     }
     
-    if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Configuration outside kernel definition");
-        return;
-    }
     skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    AsmROCmHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
+    asmr.goToSection(pseudoOpPlace, kernel.configSection);
+    kernel.initializeKernelConfig();
 }
 
 void AsmROCmPseudoOps::doControlDirective(AsmROCmHandler& handler,
