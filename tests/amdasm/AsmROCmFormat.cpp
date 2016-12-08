@@ -164,14 +164,11 @@ static const AsmTestCase asmTestCases1Tbl[] =
         .exceptions 10
         .private_segment_align 128
         .privmode
-        .reserved_sgpr_first 10
-        .reserved_sgpr_count 5
+        .reserved_sgprs 5,14
         .runtime_loader_kernel_symbol 0x4dc98b3a
         .scratchbuffer 77222
-        .reserved_sgpr_count 4
-        .reserved_sgpr_first 9
-        .reserved_vgpr_count 11
-        .reserved_vgpr_first 7
+        .reserved_sgprs 9,12
+        .reserved_vgprs 7,17
         .private_elem_size 16
     .control_directive
         .int 1,2,3
@@ -342,10 +339,8 @@ kxx2:
         .priority 2
         .private_elem_size 8
         .private_segment_align 32
-        .reserved_sgpr_count 8
-        .reserved_sgpr_first 12
-        .reserved_vgpr_count 23
-        .reserved_vgpr_first 26
+        .reserved_sgprs 12,19
+        .reserved_vgprs 26,48
         .runtime_loader_kernel_symbol 0x3eda1
         .scratchbuffer 2330
         .use_debug_enabled

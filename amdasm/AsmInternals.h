@@ -561,10 +561,6 @@ enum ROCmConfigValueTarget
     ROCMCVAL_WORKGROUP_FBARRIER_COUNT,
     ROCMCVAL_WAVEFRONT_SGPR_COUNT,
     ROCMCVAL_WORKITEM_VGPR_COUNT,
-    ROCMCVAL_RESERVED_VGPR_FIRST,
-    ROCMCVAL_RESERVED_VGPR_COUNT,
-    ROCMCVAL_RESERVED_SGPR_FIRST,
-    ROCMCVAL_RESERVED_SGPR_COUNT,
     ROCMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
     ROCMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR,
     ROCMCVAL_KERNARG_SEGMENT_ALIGN,
@@ -605,6 +601,12 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
                       const char* linePtr);
     
     static void setCodeVersion(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void setReservedVgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void setReservedSgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
     static void setUseGridWorkGroupCount(AsmROCmHandler& handler,
