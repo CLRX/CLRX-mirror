@@ -1523,13 +1523,6 @@ bool AsmROCmHandler::prepareBinary()
                 continue; // unresolved
             if (ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
                 continue; // local
-            if (ELF32_ST_BIND(symEntry.second.info) == STB_GLOBAL)
-            {
-                assembler.printError(AsmSourcePos(), (std::string("Added symbol '")+
-                    symEntry.first.c_str()+"' must not be a global").c_str());
-                good = false;
-                continue; // local
-            }
             if (assembler.kernelMap.find(symEntry.first.c_str())!=assembler.kernelMap.end())
                 continue; // if kernel name
             
