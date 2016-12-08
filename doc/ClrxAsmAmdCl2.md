@@ -176,7 +176,7 @@ Set reqd_work_group_size hint for this kernel.
 ### .debugmode
 
 This pseudo-operation must be inside kernel configuration.
-Enable usage of the DEBUG_MODE. Should be set.
+Enable usage of the DEBUG_MODE.
 
 ### .dims
 
@@ -195,7 +195,7 @@ This pseudo-op replaces driver info.
 ### .dx10clamp
 
 This pseudo-operation must be inside kernel configuration.
-Enable usage of the DX10_CLAMP. Should be set.
+Enable usage of the DX10_CLAMP.
 
 ### .exceptions
 
@@ -263,7 +263,7 @@ This pseudo-operation must be inside kernel. Defines priority (0-3).
 ### .privmode
 
 This pseudo-operation must be inside kernel.
-Enable usage of the PRIV (privileged mode). Should be set.
+Enable usage of the PRIV (privileged mode).
 
 ### .rwdata
 
