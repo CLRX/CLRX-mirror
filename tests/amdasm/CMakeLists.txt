@@ -46,6 +46,10 @@ ADD_EXECUTABLE(AsmFormats AsmFormats.cpp)
 TEST_LINK_LIBRARIES(AsmFormats CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AsmFormats AsmFormats)
 
+ADD_EXECUTABLE(AsmGalliumFormat AsmGalliumFormat.cpp)
+TEST_LINK_LIBRARIES(AsmGalliumFormat CLRXAmdAsm CLRXAmdBin CLRXUtils)
+ADD_TEST(AsmGalliumFormat AsmGalliumFormat)
+
 ADD_EXECUTABLE(GCNAsmOpcodes
         GCNAsmOpcodes.cpp
         GCNAsmOpc11.cpp
