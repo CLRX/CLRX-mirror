@@ -50,19 +50,33 @@ Set call convention for kernel.
 
 ### .codeversion
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax .codeversion MAJOR, MINOR
+
+This pseudo-op must be inside kernel configuration (`.config`). Set AMD code version.
 
 ### .config
 
+Open kernel configuration. Must be inside kernel.
+
 ### .control_directive
+
+Open control directive section. This section must be 128 bytes. The content of this
+section will be stored in control_directive field in kernel configuration.
+Must be defined inside kernel.
 
 ### .debug_private_segment_buffer_sgpr
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .debug_private_segment_buffer_sgpr SGPRREG
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`debug_private_segment_buffer_sgpr` field in kernel configuration.
 
 ### .debug_wavefront_private_segment_offset_sgpr
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .debug_wavefront_private_segment_offset_sgpr SGPRREG
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`debug_wavefront_private_segment_offset_sgpr` field in kernel configuration.
 
 ### .debugmode
 
@@ -83,13 +97,21 @@ Enable usage of the DX10_CLAMP.
 
 ### .exceptions
 
+Syntax: .exceptions EXCPMASK
+
 This pseudo-op must be inside kernel configuration (`.config`).
+Set exception mask in PGMRSRC2 register value. Value should be 7-bit.
 
 ### .fkernel
 
+Mark given kernel as function in ROCm. Must be inside kernel.
+
 ### .floatmode
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .floatmode BYTE-VALUE
+
+This pseudo-op must be inside kernel configuration (`.config`). Defines float-mode.
+Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register). Default value is 0xc0.
 
 ### .gds_segment_size
 
@@ -97,176 +119,301 @@ This pseudo-op must be inside kernel configuration (`.config`).
 
 ### .group_segment_align
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`gds_segment_byte_size` field in kernel configuration.
 
 ### .ieeemode
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .ieeemode
+
+This pseudo-op must be inside kernel configuration (`.config`). Set ieee-mode.
 
 ### .kcode
 
+Syntax: .kcode KERNEL1,....  
+Syntax: .kcode +
+
+Open code that will be belonging to specified kernels. By default any code between
+two consecutive kernel labels belongs to the kernel with first label name.
+This pseudo-operation can change membership of the code to specified kernels.
+You can nest this `.kcode` any times. Just next .kcode adds or remove membership code
+to kernels. The most important reason why this feature has been added is register usage
+calculation. Any kernel given in this pseudo-operation must be already defined.
+
+Sample usage:
+
+```
+.kcode + # this code belongs to all kernels
+.kcodeend
+.kcode kernel1, kernel2 #  this code belongs to kernel1, kernel2
+    .kcode -kernel1 #  this code belongs only to kernel2 (kernel1 removed)
+    .kcodeend
+.kcodeend
+```
+
 ### .kcodeend
+
+Close `.kcode` clause. Refer to `.kcode`.
 
 ### .kernarg_segment_align
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .kernarg_segment_align ALIGN
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`kernarg_segment_alignment` field in kernel configuration. Value must be a power of two.
 
 ### .kernarg_segment_size
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .kernarg_segment_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`kernarg_segment_byte_size` field in kernel configuration.
 
 ### .kernel_code_entry_offset
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .kernel_code_entry_offset OFFSET
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`kernel_code_entry_byte_offset` field in kernel configuration. This field
+store offset between configuration and kernel code. By default is 256.
 
 ### .kernel_code_prefetch_offset
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .kernel_code_prefetch_offset OFFSET
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`kernel_code_prefetch_byte_offset` field in kernel configuration.
 
 ### .kernel_code_prefetch_size
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .kernel_code_prefetch_size OFFSET
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`kernel_code_prefetch_byte_size` field in kernel configuration.
 
 ### .localsize
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .localsize SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`). Defines initial
+local memory size used by kernel.
 
 ### .machine
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .machine KIND, MAJOR, MINOR, STEPPING
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+machine version fields in kernel configuration.
 
 ### .max_scratch_backing_memory
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .max_scratch_backing_memory SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`max_scratch_backing_memory_byte_size` field in kernel configuration.
 
 ### .pgmrsrc1
 
+Syntax: .pgmrsrc1 VALUE
+
 This pseudo-op must be inside kernel configuration (`.config`).
+Defines value of the PGMRSRC1.
 
 ### .pgmrsrc2
 
+Syntax: .pgmrsrc2 VALUE
+
 This pseudo-op must be inside kernel configuration (`.config`).
+Defines value of the PGMRSRC2. If dimensions is set then bits that controls dimension setup
+will be ignored. SCRATCH_EN bit will be ignored.
 
 ### .priority
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .priority PRIORITY
+
+This pseudo-op must be inside kernel configuration (`.config`). Defines priority (0-3).
 
 ### .private_elem_size
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .private_elem_size ELEMSIZE
+
+This pseudo-op must be inside kernel configuration (`.config`). Set `private_element_size`
+field in kernel configuration. Must be a power of two between 2 and 16.
 
 ### .private_segment_align
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .private_segment ALIGN
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`private_segment_alignment` field in kernel configuration. Value must be a power of two.
 
 ### .privmode
 
 This pseudo-op must be inside kernel configuration (`.config`).
+Enable usage of the PRIV (privileged mode).
 
 ### .reserved_sgprs
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .reserved_sgprs FIRSTREG, LASTREG
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`reserved_sgpr_first` and `reserved_sgpr_count` fields in kernel configuration.
+`reserved_sgpr_count` filled by number of registers (LASTREG-FIRSTREG+1).
 
 ### .reserved_vgprs
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .reserved_vgprs FIRSTREG, LASTREG
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`reserved_vgpr_first` and `reserved_vgpr_count` fields in kernel configuration.
+`reserved_vgpr_count` filled by number of registers (LASTREG-FIRSTREG+1).
 
 ### .runtime_loader_kernel_symbol
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .runtime_loader_kernel_symbol ADDRESS
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`runtime_loader_kernel_symbol` field in kernel configuration.
 
 ### .scratchbuffer
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .scratchbuffer SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`). Defines scratchbuffer size.
 
 ### .sgprsnum
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .sgprsnum REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`). Set number of scalar
+registers which can be used during kernel execution.
 
 ### .tgsize
 
 This pseudo-op must be inside kernel configuration (`.config`).
+Enable usage of the TG_SIZE_EN.
 
 ### .use_debug_enabled
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Enable `is_debug_enabled`
+field in kernel configuration.
 
 ### .use_dispatch_id
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Enable
+`enable_sgpr_dispatch_id` field in kernel configuration.
 
 ### .use_dispatch_ptr
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Enable
+`enable_sgpr_dispatch_ptr` field in kernel configuration.
 
 ### .use_dynamic_call_stack
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Enable
+`is_dynamic_call_stack` field in kernel configuration.
 
 ### .use_flat_scratch_init
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Enable
+`enable_sgpr_flat_scratch_init` field in kernel configuration.
 
 ### .use_grid_workgroup_count
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .use_grid_workgroup_count DIMENSIONS
+
+This pseudo-op must be inside kernel configuration (`.config`). Enable
+`enable_sgpr_grid_workgroup_count_X`, `enable_sgpr_grid_workgroup_count_Y`
+and `enable_sgpr_grid_workgroup_count_Z` fields in kernel configuration,
+respectively by given dimensions.
 
 ### .use_kernarg_segment_ptr
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Enable
+`enable_sgpr_kernarg_segment_ptr` field in kernel configuration.
 
 ### .use_ordered_append_gds
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Enable
+`enable_ordered_append_gds` field in kernel configuration.
 
 ### .use_private_segment_buffer
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Enable
+`enable_sgpr_private_segment_buffer` field in kernel configuration.
 
 ### .use_private_segment_size
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Enable
+`enable_sgpr_private_segment_size` field in kernel configuration.
 
 ### .use_ptr64
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Enable `is_ptr64` field
+in kernel configuration.
 
 ### .use_queue_ptr
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Enable
+`enable_sgpr_queue_ptr` field in kernel configuration.
 
 ### .use_xnack_enabled
 
-This pseudo-op must be inside kernel configuration (`.config`).
+This pseudo-op must be inside kernel configuration (`.config`). Enable
+`is_xnack_enabled` field in kernel configuration.
 
 ### .userdatanum
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .userdatanum NUMBER
+
+This pseudo-op must be inside kernel configuration (`.config`). Set number of
+registers for USERDATA.
 
 ### .vgprsnum
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .vgprsnum REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`). Set number of vector
+registers which can be used during kernel execution.
 
 ### .wavefront_sgpr_count
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .wavefront_sgpr_count REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`wavefront_sgpr_count` field in kernel configuration.
 
 ### .wavefront_size
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .wavefront_size POWEROFTWO
+
+This pseudo-op must be inside kernel configuration (`.config`). Set `wavefront_size`
+field in kernel configuration. Value must be a power of two.
 
 ### .workgroup_fbarrier_count
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .workgroup_fbarrier_count COUNT
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`workgroup_fbarrier_count` field in kernel configuration.
 
 ### .workgroup_group_segment_size
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .workgroup_group_segment_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`workgroup_group_segment_byte_size` in kernel configuration.
 
 ### .workitem_private_segment_size
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .workitem_private_segment_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`workitem_private_segment_byte_size` field in kernel configuration.
 
 ### .workitem_vgpr_count
 
-This pseudo-op must be inside kernel configuration (`.config`).
+Syntax: .workitem_vgpr_count REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`workitem_vgpr_count` field in kernel configuration.
