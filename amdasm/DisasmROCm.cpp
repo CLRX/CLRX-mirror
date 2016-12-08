@@ -525,7 +525,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
         }
         
         if (regionsNum!=0 &&
-            !rocmInput->regions[sorted[regionsNum-1].second].type!=ROCmRegionType::DATA)
+            rocmInput->regions[sorted[regionsNum-1].second].type==ROCmRegionType::DATA)
         {   // if last region is kernel, then print labels after last region
             const ROCmDisasmRegionInput& region =
                         rocmInput->regions[sorted[regionsNum-1].second];
