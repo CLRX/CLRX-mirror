@@ -47,7 +47,7 @@ Set output file name. By default assembler write output to the 'a.out' file.
 =item B<-b BINFORMAT>, B<--binaryFormat=BINFORMAT>
 
 Set output binary format. This settings can be overriden in source code.
-Assembler accepts following formats: 'amd', 'amdcl2', 'gallium', 'rawcode'.
+Assembler accepts following formats: 'amd', 'amdcl2', 'gallium', 'rocm', 'rawcode'.
 
 =item B<-6>, B<--64bit>
 
