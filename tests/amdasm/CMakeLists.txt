@@ -42,9 +42,9 @@ ADD_EXECUTABLE(AssemblerBasics AssemblerBasics.cpp)
 TEST_LINK_LIBRARIES(AssemblerBasics CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AssemblerBasics AssemblerBasics)
 
-ADD_EXECUTABLE(AsmFormats AsmFormats.cpp)
-TEST_LINK_LIBRARIES(AsmFormats CLRXAmdAsm CLRXAmdBin CLRXUtils)
-ADD_TEST(AsmFormats AsmFormats)
+ADD_EXECUTABLE(AsmAmdFormat AsmAmdFormat.cpp)
+TEST_LINK_LIBRARIES(AsmAmdFormat CLRXAmdAsm CLRXAmdBin CLRXUtils)
+ADD_TEST(AsmAmdFormat AsmAmdFormat)
 
 ADD_EXECUTABLE(AsmAmdCL2Format AsmAmdCL2Format.cpp)
 TEST_LINK_LIBRARIES(AsmAmdCL2Format CLRXAmdAsm CLRXAmdBin CLRXUtils)
