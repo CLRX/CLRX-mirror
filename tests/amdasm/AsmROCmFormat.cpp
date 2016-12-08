@@ -60,7 +60,7 @@ static void printROCmOutput(std::ostream& os, const ROCmInput* output)
     for (const ROCmSymbolInput& symbol: output->symbols)
     {
         os << "  ROCmSymbol: name=" << symbol.symbolName << ", " <<
-                "offset=" << symbol.offset << "size=" << symbol.size << ", type=" <<
+                "offset=" << symbol.offset << ", size=" << symbol.size << ", type=" <<
                 rocmRegionTypeNames[cxuint(symbol.type)] << "\n";
         if (symbol.type == ROCmRegionType::DATA)
             continue;
@@ -211,7 +211,7 @@ kxx2:
 )ffDXD",
         /* dump */
         R"ffDXD(ROCmBinDump:
-  ROCmSymbol: name=kxx1, offset=0size=0, type=fkernel
+  ROCmSymbol: name=kxx1, offset=0, size=0, type=fkernel
     Config:
       amdCodeVersion=1.1
       amdMachine=1:8:0:0
@@ -247,7 +247,7 @@ kxx2:
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
-  ROCmSymbol: name=kxx2, offset=512size=0, type=kernel
+  ROCmSymbol: name=kxx2, offset=512, size=0, type=kernel
     Config:
       amdCodeVersion=1.1
       amdMachine=1:8:0:0
@@ -315,6 +315,108 @@ kxx2:
         /* warning/errors */
         "",
         true
+    },
+    {
+        R"ffDXD(        .rocm
+        .gpu Fiji
+.kernel someKernelX
+    .config
+        .dims xz
+        .call_convention 331
+        .codeversion 1,0
+        .machine 8,0,1,2
+        .debug_private_segment_buffer_sgpr 10
+        .debug_wavefront_private_segment_offset_sgpr 31
+        .exceptions 0x3e
+        .floatmode 0xc3
+        .gds_segment_size 105
+        .group_segment_align 128
+        .kernarg_segment_align 64
+        .kernarg_segment_size 228
+        .kernel_code_entry_offset 256
+        .kernel_code_prefetch_offset 1002
+        .kernel_code_prefetch_size 13431
+        .max_scratch_backing_memory 4212
+        .pgmrsrc1 0xa0000000
+        .pgmrsrc2 0xd00000
+        .priority 2
+        .private_elem_size 8
+        .private_segment_align 32
+        .reserved_sgpr_count 8
+        .reserved_sgpr_first 12
+        .reserved_vgpr_count 23
+        .reserved_vgpr_first 26
+        .runtime_loader_kernel_symbol 0x3eda1
+        .scratchbuffer 2330
+        .use_debug_enabled
+        .use_flat_scratch_init
+        .use_grid_workgroup_count xz
+        .use_private_segment_buffer
+        .use_ptr64
+        .use_xnack_enabled
+        .wavefront_size 256
+        .workgroup_fbarrier_count 69
+        .workgroup_group_segment_size 324
+        .workitem_private_segment_size 33
+        .vgprsnum 211
+        .sgprsnum 85
+.text
+someKernelX:
+        .skip 256
+        s_endpgm)ffDXD",
+        R"ffDXD(ROCmBinDump:
+  ROCmSymbol: name=someKernelX, offset=0, size=0, type=kernel
+    Config:
+      amdCodeVersion=1.1
+      amdMachine=8:0:1:2
+      kernelCodeEntryOffset=256
+      kernelCodePrefetchOffset=1002
+      kernelCodePrefetchSize=13431
+      maxScrachBackingMemorySize=4212
+      computePgmRsrc1=0xa00c3ab4
+      computePgmRsrc2=0x3ed01291
+      enableSpgrRegisterFlags=0x2a1
+      enableFeatureFlags=0x6c
+      workitemPrivateSegmentSize=33
+      workgroupGroupSegmentSize=324
+      gdsSegmentSize=105
+      kernargSegmentSize=228
+      workgroupFbarrierCount=69
+      wavefrontSgprCount=85
+      workitemVgprCount=211
+      reservedVgprFirst=26
+      reservedVgprCount=23
+      reservedSgprFirst=12
+      reservedSgprCount=8
+      debugWavefrontPrivateSegmentOffsetSgpr=31
+      debugPrivateSegmentBufferSgpr=10
+      kernargSegmentAlignment=6
+      groupSegmentAlignment=7
+      privateSegmentAlignment=5
+      wavefrontSize=8
+      callConvention=0x14b
+      runtimeLoaderKernelSymbol=0x3eda1
+      ControlDirective:
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+  Comment:
+  nullptr
+  Code:
+  010000000000000008000000010002000001000000000000ea03000000000000
+  77340000000000007410000000000000b43a0ca09112d03ea1026c0021000000
+  4401000069000000e400000000000000450000005500d3001a0017000c000800
+  1f000a00060705084b010000000000000000000000000000a1ed030000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  000081bf
+)ffDXD",
+        /* warning/errors */
+        "",
+        true
     }
 };
 
@@ -355,5 +457,3 @@ int main(int argc, const char** argv)
         }
     return retVal;
 }
-
-
