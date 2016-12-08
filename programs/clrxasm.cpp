@@ -92,6 +92,8 @@ try
             binFormat = BinaryFormat::GALLIUM;
         else if (::strcasecmp(binFmtName, "amdcl2")==0)
             binFormat = BinaryFormat::AMDCL2;
+        else if (::strcasecmp(binFmtName, "rocm")==0)
+            binFormat = BinaryFormat::ROCM;
         else if (::strcasecmp(binFmtName, "amd")!=0 &&
                  ::strcasecmp(binFmtName, "catalyst")!=0)
             throw Exception("Unknown binary format");
