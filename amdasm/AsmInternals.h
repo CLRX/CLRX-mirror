@@ -579,6 +579,9 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
 {
     static bool checkPseudoOpName(const CString& string);
     
+    static void setArchMinor(AsmROCmHandler& handler, const char* linePtr);
+    static void setArchStepping(AsmROCmHandler& handler, const char* linePtr);
+    
     /* user configuration pseudo-ops */
     static void doConfig(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);

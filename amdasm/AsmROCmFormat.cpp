@@ -32,6 +32,7 @@ using namespace CLRX;
 
 static const char* rocmPseudoOpNamesTbl[] =
 {
+    "arch_minor", "arch_stepping",
     "call_convention", "codeversion", "config",
     "control_directive", "debug_private_segment_buffer_sgpr",
     "debug_wavefront_private_segment_offset_sgpr",
@@ -62,6 +63,7 @@ static const char* rocmPseudoOpNamesTbl[] =
 
 enum
 {
+    ROCMOP_ARCH_MINOR, ROCMOP_ARCH_STEPPING,
     ROCMOP_CALL_CONVENTION, ROCMOP_CODEVERSION, ROCMOP_CONFIG,
     ROCMOP_CONTROL_DIRECTIVE, ROCMOP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR,
     ROCMOP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
@@ -98,6 +100,7 @@ AsmROCmHandler::AsmROCmHandler(Assembler& assembler): AsmFormatHandler(assembler
              output{}, codeSection(0), commentSection(ASMSECT_NONE),
              extraSectionCount(0)
 {
+    output.archMinor = output.archStepping = UINT32_MAX;
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::CODE,
@@ -316,6 +319,39 @@ bool AsmROCmPseudoOps::checkPseudoOpName(const CString& string)
                CStringLess()) - rocmPseudoOpNamesTbl;
     return pseudoOp < sizeof(rocmPseudoOpNamesTbl)/sizeof(char*);
 }
+
+void AsmROCmPseudoOps::setArchMinor(AsmROCmHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value;
+    const char* valuePlace = linePtr;
+    if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+        return;
+    asmr.printWarningForRange(sizeof(cxuint)<<3, value,
+                 asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.archMinor = value;
+}
+
+void AsmROCmPseudoOps::setArchStepping(AsmROCmHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value;
+    const char* valuePlace = linePtr;
+    if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+        return;
+    asmr.printWarningForRange(sizeof(cxuint)<<3, value,
+                 asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.archStepping = value;
+}
+
     
 void AsmROCmPseudoOps::doConfig(AsmROCmHandler& handler, const char* pseudoOpPlace,
                   const char* linePtr)
@@ -962,6 +998,12 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
     
     switch(pseudoOp)
     {
+        case ROCMOP_ARCH_MINOR:
+            AsmROCmPseudoOps::setArchMinor(*this, linePtr);
+            break;
+        case ROCMOP_ARCH_STEPPING:
+            AsmROCmPseudoOps::setArchStepping(*this, linePtr);
+            break;
         case ROCMOP_CALL_CONVENTION:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_CALL_CONVENTION);
