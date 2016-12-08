@@ -151,6 +151,7 @@ static const AsmTestCase asmTestCases1Tbl[] =
 .kernel kxx1
     .fkernel
     .config
+        .dims x
         .codeversion 1,0
         .call_convention 0x34dac
         .debug_private_segment_buffer_sgpr 98
@@ -177,6 +178,7 @@ static const AsmTestCase asmTestCases1Tbl[] =
         .fill 116,1,0
 .kernel kxx2
     .config
+        .dims x
         .codeversion 1,0
         .call_convention 0x112223
 .kernel kxx1
@@ -218,7 +220,7 @@ kxx2:
       kernelCodePrefetchSize=0
       maxScrachBackingMemorySize=0
       computePgmRsrc1=0x3c0000
-      computePgmRsrc2=0xa0001ff
+      computePgmRsrc2=0xa000081
       enableSpgrRegisterFlags=0x0
       enableFeatureFlags=0x6
       workitemPrivateSegmentSize=111
@@ -254,7 +256,7 @@ kxx2:
       kernelCodePrefetchSize=0
       maxScrachBackingMemorySize=0
       computePgmRsrc1=0xc0000
-      computePgmRsrc2=0x1fe
+      computePgmRsrc2=0x84
       enableSpgrRegisterFlags=0x8
       enableFeatureFlags=0x0
       workitemPrivateSegmentSize=0
@@ -262,7 +264,7 @@ kxx2:
       gdsSegmentSize=0
       kernargSegmentSize=0
       workgroupFbarrierCount=0
-      wavefrontSgprCount=2
+      wavefrontSgprCount=3
       workitemVgprCount=1
       reservedVgprFirst=0
       reservedVgprCount=0
@@ -285,7 +287,7 @@ kxx2:
   736f6d6520636f6d6d656e7420666f7220796f75
   Code:
   0100000000000000010008000000000000010000000000000000000000000000
-  0000000000000000000000000000000000003c00ff01000a000006006f000000
+  0000000000000000000000000000000000003c008100000a000006006f000000
   16000000640000000000000000000000fc0c00000800010007000b0009000400
   6000620005040706ac4d03000000000000000000000000003a8bc94d00000000
   0100000002000000030000000000000000000000000000000000000000000000
@@ -301,8 +303,8 @@ kxx2:
   000080bf000080bf000080bf000080bf000080bf000080bf000080bf000080bf
   000080bf000080bf000080bf000080bf000080bf000080bf000080bf000080bf
   0100000000000000010008000000000000010000000000000000000000000000
-  0000000000000000000000000000000000000c00fe0100000800000000000000
-  0000000000000000000000000000000000000000020001000000000000000000
+  0000000000000000000000000000000000000c00840000000800000000000000
+  0000000000000000000000000000000000000000030001000000000000000000
   0000000004040406342211010000000000000000000000000000000000000000
   dededededededededededededededededededededededededededededededede
   dededededededededededededededededededededededededededededededede

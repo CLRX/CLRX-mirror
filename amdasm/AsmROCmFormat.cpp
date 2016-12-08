@@ -1361,6 +1361,7 @@ bool AsmROCmHandler::prepareBinary()
                 ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_X)!=0) +
                 ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_Y)!=0) +
                 ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_Z)!=0);
+           userSGPRsNum = std::min(16U, userSGPRsNum);
         }
         else // default
             userSGPRsNum = config.userDataNum;
@@ -1418,7 +1419,7 @@ bool AsmROCmHandler::prepareBinary()
             dimValues |= (config.computePgmRsrc2 & 0x1b80U);
         // computePGMRSRC2
         config.computePgmRsrc2 = (config.computePgmRsrc2 & 0xffffe440U) |
-                        (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |
+                        (userSGPRsNum<<1) | ((config.tgSize) ? 0x400 : 0) |
                         ((config.scratchBufferSize)?1:0) | dimValues |
                         (((config.localSize+ldsMask)>>ldsShift)<<15) |
                         ((uint32_t(config.exceptions)&0x7f)<<24);
