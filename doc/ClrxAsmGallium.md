@@ -18,7 +18,7 @@ The assembler source code divided to three parts:
 
 * kernel configuration
 * kernel constant data (in `.rodata` section)
-* kernel code (in `.text` section`)
+* kernel code (in `.text` section)
 
 Order of these parts doesn't matter.
 
@@ -117,7 +117,7 @@ Example configuration:
 ### .debugmode
 
 This pseudo-op must be inside kernel configuration (`.config`).
-Enable usage of the DEBUG_MODE. Should be set.
+Enable usage of the DEBUG_MODE.
 
 ### .dims
 
@@ -129,7 +129,7 @@ This pseudo-op must be inside kernel configuration (`.config`). Defines what dim
 ### .dx10clamp
 
 This pseudo-op must be inside kernel configuration (`.config`).
-Enable usage of the DX10_CLAMP. Should be set.
+Enable usage of the DX10_CLAMP.
 
 ### .entry
 
@@ -226,7 +226,7 @@ This pseudo-op must be inside kernel configuration (`.config`). Defines priority
 ### .privmode
 
 This pseudo-op must be inside kernel configuration (`.config`).
-Enable usage of the PRIV (privileged mode). Should be set.
+Enable usage of the PRIV (privileged mode).
 
 ### .proginfo
 
