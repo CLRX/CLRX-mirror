@@ -153,8 +153,8 @@ static const AsmTestCase asmTestCases1Tbl[] =
     .config
         .codeversion 1,0
         .call_convention 0x34dac
-        .debug_private_segment_buffer_sgpr 123834
-        .debug_wavefront_private_segment_offset_sgpr 129
+        .debug_private_segment_buffer_sgpr 98
+        .debug_wavefront_private_segment_offset_sgpr 96
         .gds_segment_size 100
         .kernarg_segment_align 32
         .workgroup_group_segment_size 22
@@ -232,8 +232,8 @@ kxx2:
       reservedVgprCount=11
       reservedSgprFirst=9
       reservedSgprCount=4
-      debugWavefrontPrivateSegmentOffsetSgpr=129
-      debugPrivateSegmentBufferSgpr=58298
+      debugWavefrontPrivateSegmentOffsetSgpr=96
+      debugPrivateSegmentBufferSgpr=98
       kernargSegmentAlignment=5
       groupSegmentAlignment=4
       privateSegmentAlignment=7
@@ -287,7 +287,7 @@ kxx2:
   0100000000000000010008000000000000010000000000000000000000000000
   0000000000000000000000000000000000003c00ff01000a000006006f000000
   16000000640000000000000000000000fc0c00000800010007000b0009000400
-  8100bae305040706ac4d03000000000000000000000000003a8bc94d00000000
+  6000620005040706ac4d03000000000000000000000000003a8bc94d00000000
   0100000002000000030000000000000000000000000000000000000000000000
   0000000000000000000000000000000000000000000000000000000000000000
   0000000000000000000000000000000000000000000000000000000000000000

@@ -506,6 +506,19 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
                 asmr.printWarningForRange(32, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 break;
+            case ROCMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
+            case ROCMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+                if (value >= maxSGPRsNum)
+                {
+                    asmr.printError(valuePlace, "SGPR register out of range");
+                    good = false;
+                }
+                break;
+            }
             default:
                 break;
         }
