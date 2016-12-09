@@ -53,6 +53,6 @@ Copyright (c)  2015-2016  Mateusz Szpakowski.
     * [MTBUF instructions](GcnInstrsMtbuf)
     * [MIMG instructions](GcnInstrsMimg)
     * [FLAT instructions](GcnInstrsFlat)
-    * [GCN Instruction Timimgs](GcnTimings)
+    * [GCN Instruction Timings](GcnTimings)
 
 ---
