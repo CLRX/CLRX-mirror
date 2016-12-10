@@ -1440,6 +1440,8 @@ bool AsmROCmHandler::prepareBinary()
             config.scratchBufferSize = 0;
         if (config.workitemPrivateSegmentSize == BINGEN_DEFAULT)
             config.workitemPrivateSegmentSize = config.scratchBufferSize;
+        else // use scratch buffer from workitemPrivateSegmentSize for pgmrsrc2
+            config.scratchBufferSize = config.workitemPrivateSegmentSize;
         if (config.localSize == BINGEN_DEFAULT)
             config.localSize = 0;
         if (config.workgroupGroupSegmentSize == BINGEN_DEFAULT)
