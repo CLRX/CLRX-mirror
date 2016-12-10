@@ -1446,6 +1446,8 @@ bool AsmROCmHandler::prepareBinary()
             config.localSize = 0;
         if (config.workgroupGroupSegmentSize == BINGEN_DEFAULT)
             config.workgroupGroupSegmentSize = config.localSize;
+        else // from 
+            config.localSize = config.workgroupGroupSegmentSize;
         if (config.gdsSegmentSize == BINGEN_DEFAULT)
             config.gdsSegmentSize = 0;
         if (config.kernargSegmentSize == BINGEN64_DEFAULT)
