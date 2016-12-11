@@ -300,8 +300,6 @@ void AsmROCmHandler::Kernel::initializeKernelConfig()
         config->debugMode = false;
         config->privilegedMode = false;
         config->dx10Clamp = false;
-        config->localSize = BINGEN_DEFAULT;
-        config->scratchBufferSize = BINGEN_DEFAULT;
     }
 }
 
@@ -475,8 +473,11 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 value &= 3;
                 break;
-            case ROCMCVAL_LOCALSIZE:
+            case ROCMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE: // local size
             {
+                asmr.printWarningForRange(32, value,
+                          asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                
                 const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
                             asmr.deviceType);
                 const cxuint maxLocalSize = getGPUMaxLocalSize(arch);
@@ -531,7 +532,6 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
                 }
                 break;
             case ROCMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
-            case ROCMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE:
             case ROCMCVAL_GDS_SEGMENT_SIZE:
             case ROCMCVAL_WORKGROUP_FBARRIER_COUNT:
             case ROCMCVAL_CALL_CONVENTION:
@@ -579,12 +579,6 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
             break;
         case ROCMCVAL_FLOATMODE:
             config.floatMode = value;
-            break;
-        case ROCMCVAL_LOCALSIZE:
-            config.localSize = value;
-            break;
-        case ROCMCVAL_SCRATCHBUFFER:
-            config.scratchBufferSize = value;
             break;
         case ROCMCVAL_PRIORITY:
             config.priority = value;
@@ -1181,7 +1175,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             break;
         case ROCMOP_LOCALSIZE:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
-                             ROCMCVAL_LOCALSIZE);
+                             ROCMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE);
             break;
         case ROCMOP_MACHINE:
             AsmROCmPseudoOps::setMachine(*this, stmtPlace, linePtr);
@@ -1223,7 +1217,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             break;
         case ROCMOP_SCRATCHBUFFER:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
-                             ROCMCVAL_SCRATCHBUFFER);
+                             ROCMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE);
             break;
         case ROCMOP_SGPRSNUM:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
@@ -1436,18 +1430,10 @@ bool AsmROCmHandler::prepareBinary()
         if (config.maxScrachBackingMemorySize == BINGEN64_DEFAULT) // ??
             config.maxScrachBackingMemorySize = 0;
         
-        if (config.scratchBufferSize == BINGEN_DEFAULT)
-            config.scratchBufferSize = 0;
-        if (config.workitemPrivateSegmentSize == BINGEN_DEFAULT)
-            config.workitemPrivateSegmentSize = config.scratchBufferSize;
-        else // use scratch buffer from workitemPrivateSegmentSize for pgmrsrc2
-            config.scratchBufferSize = config.workitemPrivateSegmentSize;
-        if (config.localSize == BINGEN_DEFAULT)
-            config.localSize = 0;
-        if (config.workgroupGroupSegmentSize == BINGEN_DEFAULT)
-            config.workgroupGroupSegmentSize = config.localSize;
-        else // from 
-            config.localSize = config.workgroupGroupSegmentSize;
+        if (config.workitemPrivateSegmentSize == BINGEN_DEFAULT) // scratch buffer
+            config.workitemPrivateSegmentSize =  0;
+        if (config.workgroupGroupSegmentSize == BINGEN_DEFAULT) // local size
+            config.workgroupGroupSegmentSize = 0;
         if (config.gdsSegmentSize == BINGEN_DEFAULT)
             config.gdsSegmentSize = 0;
         if (config.kernargSegmentSize == BINGEN64_DEFAULT)
@@ -1503,7 +1489,8 @@ bool AsmROCmHandler::prepareBinary()
         cxuint minRegsNum[2];
         getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,
                    ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |
-                   ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
+                   ((config.workitemPrivateSegmentSize!=0) ?
+                           GPUSETUP_SCRATCH_EN : 0), minRegsNum);
         
         if (config.usedSGPRsNum!=BINGEN_DEFAULT && maxSGPRsNum < config.usedSGPRsNum)
         {   // check only if sgprsnum set explicitly
@@ -1550,8 +1537,8 @@ bool AsmROCmHandler::prepareBinary()
         // computePGMRSRC2
         config.computePgmRsrc2 = (config.computePgmRsrc2 & 0xffffe440U) |
                         (userSGPRsNum<<1) | ((config.tgSize) ? 0x400 : 0) |
-                        ((config.scratchBufferSize)?1:0) | dimValues |
-                        (((config.localSize+ldsMask)>>ldsShift)<<15) |
+                        ((config.workitemPrivateSegmentSize)?1:0) | dimValues |
+                        (((config.workgroupGroupSegmentSize+ldsMask)>>ldsShift)<<15) |
                         ((uint32_t(config.exceptions)&0x7f)<<24);
         
         if (config.wavefrontSgprCount == BINGEN16_DEFAULT)

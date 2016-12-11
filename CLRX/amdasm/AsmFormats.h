@@ -431,8 +431,6 @@ struct AsmROCmKernelConfig: ROCmKernelConfig
     bool debugMode;     ///< debug mode
     bool privilegedMode;   ///< prvileged mode
     bool dx10Clamp;     ///< DX10 CLAMP mode
-    size_t localSize; ///< used local size (not local defined in kernel arguments)
-    uint32_t scratchBufferSize; ///< size of scratch buffer
 };
 
 /// handles ROCM binary format
