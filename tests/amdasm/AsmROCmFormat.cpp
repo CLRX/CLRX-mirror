@@ -412,6 +412,19 @@ someKernelX:
         /* warning/errors */
         "",
         true
+    },
+    {
+        R"ffDXD(        .rocm
+        .gpu Fiji
+.kernel someKernelX
+    .config
+        .dims xz
+        .reserved_vgprs 0, 11
+.text
+someKernelX:
+        s_endpgm)ffDXD",
+        "", "test.s:3:1: Error: "
+        "Code for kernel 'someKernelX' is too small for configuration\n", false
     }
 };
 

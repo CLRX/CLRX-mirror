@@ -882,6 +882,12 @@ void AsmROCmPseudoOps::setReservedXgprs(AsmROCmHandler& handler, const char* pse
         asmr.printError(valuePlace, buf);
         good = false;
     }
+    if (haveFirstReg && haveLastReg && firstReg > lastReg)
+    {
+        asmr.printError(valuePlace, "Wrong regsister range");
+        good = false;
+    }
+        
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1573,6 +1579,7 @@ bool AsmROCmHandler::prepareBinary()
                     symEntry.second.other });
         }
     
+    AsmSection& asmCSection = assembler.sections[codeSection];
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
     for (size_t ki = 0; ki < output.symbols.size(); ki++)
     {
@@ -1605,8 +1612,17 @@ bool AsmROCmHandler::prepareBinary()
         }
         const Kernel& kernel = *kernelStates[ki];
         kinput.offset = symbol.value;
-        if (kernel.config!=nullptr) // put config to code section
-            ::memcpy(assembler.sections[codeSection].content.data() + symbol.value,
+        
+        if (asmCSection.content.size() < symbol.value + sizeof(ROCmKernelConfig))
+        {
+            assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
+                "Code for kernel '")+kinput.symbolName.c_str()+
+                "' is too small for configuration").c_str());
+            good = false;
+            continue;
+        }
+        else if (kernel.config!=nullptr) // put config to code section
+            ::memcpy(asmCSection.content.data() + symbol.value,
                      kernel.config.get(), sizeof(ROCmKernelConfig));
         // set symbol type
         kinput.type = kernel.isFKernel ? ROCmRegionType::FKERNEL : ROCmRegionType::KERNEL;

@@ -323,29 +323,37 @@ kx7: s_mov_b32 s23, s0
             .config
             .text
 .p2align 8
+kx0:
 .skip 256
-kx0: s_mov_b32 s10, s0
+s_mov_b32 s10, s0
 .p2align 8
+kx1:
 .skip 256
-kx1: s_mov_b32 s14, s0
+s_mov_b32 s14, s0
 .p2align 8
+kx2:
 .skip 256
-kx2: s_mov_b32 s19, s0
+s_mov_b32 s19, s0
 .p2align 8
+kx3:
 .skip 256
-kx3: s_mov_b32 s16, s0
+s_mov_b32 s16, s0
 .p2align 8
+kx4:
 .skip 256
-kx4: s_mov_b32 s8, s0
+s_mov_b32 s8, s0
 .p2align 8
+kx5:
 .skip 256
-kx5: s_mov_b32 s11, s0
+s_mov_b32 s11, s0
 .p2align 8
+kx6:
 .skip 256
-kx6: s_mov_b32 s21, s0
+s_mov_b32 s21, s0
 .p2align 8
+kx7:
 .skip 256
-kx7: s_mov_b32 s23, s0
+s_mov_b32 s23, s0
 
 .kcode kx1,kx3
             v_and_b32 v41,v2,v1
