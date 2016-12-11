@@ -425,6 +425,52 @@ someKernelX:
         s_endpgm)ffDXD",
         "", "test.s:3:1: Error: "
         "Code for kernel 'someKernelX' is too small for configuration\n", false
+    },
+    {
+        R"ffDXD(        .rocm
+        .gpu Fiji
+.kernel someKernelX
+    .config
+        .dims xz
+        .reserved_vgprs 12,11
+        .reserved_sgprs 17,11
+        .reserved_vgprs 256,257
+        .reserved_sgprs 112,113
+        .debug_private_segment_buffer_sgpr 123
+        .debug_wavefront_private_segment_offset_sgpr 108
+        .private_elem_size 6
+        .private_elem_size 1
+        .private_elem_size 32
+        .kernarg_segment_align 56
+        .kernarg_segment_align 8
+        .private_segment_align 56
+        .private_segment_align 8
+        .wavefront_size 157
+        .wavefront_size 512
+        .pgmrsrc2 0xaa1fd3da2313
+.text
+someKernelX:
+        .skip 256
+        s_endpgm)ffDXD",
+        "", R"ffDXD(test.s:6:28: Error: Wrong regsister range
+test.s:7:28: Error: Wrong regsister range
+test.s:8:25: Error: First reserved VGPR register out of range (0-255)
+test.s:8:29: Error: Last reserved VGPR register out of range (0-255)
+test.s:9:25: Error: First reserved SGPR register out of range (0-101)
+test.s:9:29: Error: Last reserved SGPR register out of range (0-101)
+test.s:10:44: Error: SGPR register out of range
+test.s:11:54: Error: SGPR register out of range
+test.s:12:28: Error: Private element size must be power of two
+test.s:13:28: Error: Private element size out of range
+test.s:14:28: Error: Private element size out of range
+test.s:15:32: Error: Alignment must be power of two
+test.s:16:32: Error: Alignment must be not smaller than 16
+test.s:17:32: Error: Alignment must be power of two
+test.s:18:32: Error: Alignment must be not smaller than 16
+test.s:19:25: Error: Wavefront size must be power of two
+test.s:20:25: Error: Wavefront size must be not greater than 256
+test.s:21:19: Warning: Value 0xaa1fd3da2313 truncated to 0xd3da2313
+)ffDXD", false
     }
 };
 

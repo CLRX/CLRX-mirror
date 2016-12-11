@@ -530,6 +530,12 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
                     asmr.printError(valuePlace, "Wavefront size must be power of two");
                     good = false;
                 }
+                else if (value > 256)
+                {
+                    asmr.printError(valuePlace,
+                                "Wavefront size must be not greater than 256");
+                    good = false;
+                }
                 break;
             case ROCMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
             case ROCMCVAL_GDS_SEGMENT_SIZE:
