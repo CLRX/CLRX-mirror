@@ -498,7 +498,7 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
                 }
                 break;
             case ROCMCVAL_PRIVATE_ELEM_SIZE:
-                if (1ULL<<(63-CLZ64(value)) != value)
+                if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
                 {
                     asmr.printError(valuePlace,
                                     "Private element size must be power of two");
@@ -513,7 +513,7 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
             case ROCMCVAL_KERNARG_SEGMENT_ALIGN:
             case ROCMCVAL_GROUP_SEGMENT_ALIGN:
             case ROCMCVAL_PRIVATE_SEGMENT_ALIGN:
-                if (1ULL<<(63-CLZ64(value)) != value)
+                if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
                 {
                     asmr.printError(valuePlace, "Alignment must be power of two");
                     good = false;
@@ -525,7 +525,7 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
                 }
                 break;
             case ROCMCVAL_WAVEFRONT_SIZE:
-                if (1ULL<<(63-CLZ64(value)) != value)
+                if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
                 {
                     asmr.printError(valuePlace, "Wavefront size must be power of two");
                     good = false;
