@@ -837,8 +837,8 @@ void AsmROCmPseudoOps::setCodeVersion(AsmROCmHandler& handler, const char* pseud
     config->amdCodeVersionMinor = minorValue;
 }
 
-void AsmROCmPseudoOps::setReservedVgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr)
+void AsmROCmPseudoOps::setReservedXgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, bool inVgpr)
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
@@ -850,8 +850,9 @@ void AsmROCmPseudoOps::setReservedVgprs(AsmROCmHandler& handler, const char* pse
     }
     
     skipSpacesToEnd(linePtr, end);
-    const GPUArchitecture arch = getGPUArchitectureFromDeviceType( asmr.deviceType);
-    cxuint maxVGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(asmr.deviceType);
+    cxuint maxGPRsNum = getGPUMaxRegistersNum(arch,
+                       inVgpr ? REGTYPE_VGPR : REGTYPE_SGPR, 0);
     
     uint64_t firstReg = BINGEN_NOTSUPPLIED;
     uint64_t lastReg = BINGEN_NOTSUPPLIED;
@@ -859,11 +860,11 @@ void AsmROCmPseudoOps::setReservedVgprs(AsmROCmHandler& handler, const char* pse
     bool haveFirstReg;
     bool good = getAbsoluteValueArg(asmr, firstReg, linePtr, true);
     haveFirstReg = good;
-    if (haveFirstReg && firstReg > maxVGPRsNum-1)
+    if (haveFirstReg && firstReg > maxGPRsNum-1)
     {
         char buf[64];
-        snprintf(buf, 64, "First reserved VGPR register out of range (0-%u)",
-                 maxVGPRsNum-1);
+        snprintf(buf, 64, "First reserved %s register out of range (0-%u)",
+                 inVgpr ? "VGPR" : "SGPR",  maxGPRsNum-1);
         asmr.printError(valuePlace, buf);
         good = false;
     }
@@ -873,11 +874,11 @@ void AsmROCmPseudoOps::setReservedVgprs(AsmROCmHandler& handler, const char* pse
     valuePlace = linePtr;
     bool haveLastReg = getAbsoluteValueArg(asmr, lastReg, linePtr, true);
     good &= haveLastReg;
-    if (haveLastReg && lastReg > maxVGPRsNum-1)
+    if (haveLastReg && lastReg > maxGPRsNum-1)
     {
         char buf[64];
-        snprintf(buf, 64, "Last reserved VGPR register out of range (0-%u)",
-                 maxVGPRsNum-1);
+        snprintf(buf, 64, "Last reserved %s register out of range (0-%u)",
+                 inVgpr ? "VGPR" : "SGPR", maxGPRsNum-1);
         asmr.printError(valuePlace, buf);
         good = false;
     }
@@ -887,63 +888,18 @@ void AsmROCmPseudoOps::setReservedVgprs(AsmROCmHandler& handler, const char* pse
     
     handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     AsmROCmKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
-    config->reservedVgprFirst = firstReg;
-    config->reservedVgprCount = lastReg-firstReg+1;
+    if (inVgpr)
+    {
+        config->reservedVgprFirst = firstReg;
+        config->reservedVgprCount = lastReg-firstReg+1;
+    }
+    else
+    {
+        config->reservedSgprFirst = firstReg;
+        config->reservedSgprCount = lastReg-firstReg+1;
+    }
 }
-    
-void AsmROCmPseudoOps::setReservedSgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr)
-{
-    Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
-    
-    skipSpacesToEnd(linePtr, end);
-    const GPUArchitecture arch = getGPUArchitectureFromDeviceType( asmr.deviceType);
-    cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
-    
-    uint64_t firstReg = BINGEN_NOTSUPPLIED;
-    uint64_t lastReg = BINGEN_NOTSUPPLIED;
-    const char* valuePlace = linePtr;
-    bool haveFirstReg;
-    bool good = getAbsoluteValueArg(asmr, firstReg, linePtr, true);
-    haveFirstReg = good;
-    if (haveFirstReg && firstReg > maxSGPRsNum-1)
-    {
-        char buf[64];
-        snprintf(buf, 64, "First reserved SGPR register out of range (0-%u)",
-                 maxSGPRsNum-1);
-        asmr.printError(valuePlace, buf);
-        good = false;
-    }
-    if (!skipRequiredComma(asmr, linePtr))
-        return;
-    
-    valuePlace = linePtr;
-    bool haveLastReg = getAbsoluteValueArg(asmr, lastReg, linePtr, true);
-    good &= haveLastReg;
-    if (haveLastReg && lastReg > maxSGPRsNum-1)
-    {
-        char buf[64];
-        snprintf(buf, 64, "Last reserved SGPR register out of range (0-%u)",
-                 maxSGPRsNum-1);
-        asmr.printError(valuePlace, buf);
-        good = false;
-    }
-    
-    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
-        return;
-    
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
-    AsmROCmKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
-    config->reservedSgprFirst = firstReg;
-    config->reservedSgprCount = lastReg-firstReg+1;
-}
+
 
 void AsmROCmPseudoOps::setUseGridWorkGroupCount(AsmROCmHandler& handler,
                    const char* pseudoOpPlace, const char* linePtr)
@@ -1206,10 +1162,10 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
                              ROCMCVAL_PRIVMODE);
             break;
         case ROCMOP_RESERVED_SGPRS:
-            AsmROCmPseudoOps::setReservedSgprs(*this, stmtPlace, linePtr);
+            AsmROCmPseudoOps::setReservedXgprs(*this, stmtPlace, linePtr, false);
             break;
         case ROCMOP_RESERVED_VGPRS:
-            AsmROCmPseudoOps::setReservedVgprs(*this, stmtPlace, linePtr);
+            AsmROCmPseudoOps::setReservedXgprs(*this, stmtPlace, linePtr, true);
             break;
         case ROCMOP_RUNTIME_LOADER_KERNEL_SYMBOL:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,

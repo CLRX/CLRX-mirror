@@ -601,11 +601,8 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     static void setCodeVersion(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
-    static void setReservedVgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    
-    static void setReservedSgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
+    static void setReservedXgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, bool inVgpr);
     
     static void setUseGridWorkGroupCount(AsmROCmHandler& handler,
                       const char* pseudoOpPlace, const char* linePtr);
