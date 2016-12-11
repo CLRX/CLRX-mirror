@@ -1509,7 +1509,8 @@ bool AsmROCmHandler::prepareBinary()
                 ((config.enableSpgrRegisterFlags&ROCMFLAG_USE_FLAT_SCRATCH_INIT)!=0?
                             GCN_FLAT : 0) |
                 // enable_xnack
-                ((config.enableFeatureFlags&ROCMFLAG_USE_XNACK_ENABLED)!=0 ? GCN_FLAT : 0);
+                ((config.enableFeatureFlags&ROCMFLAG_USE_XNACK_ENABLED)!=0 ?
+                            GCN_XNACK : 0);
             config.usedSGPRsNum = std::min(
                 std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]) +
                     getGPUExtraRegsNum(arch, REGTYPE_SGPR, flags),
