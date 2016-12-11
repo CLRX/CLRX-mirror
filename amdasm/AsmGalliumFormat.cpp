@@ -623,7 +623,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                 if (targetAlign > UINT32_MAX || targetAlign == 0)
                     asmr.printWarning(targetAlignPlace,
                                       "Target alignment of argument out of range");
-                if (targetAlign != (1ULL<<(63-CLZ64(targetAlign))))
+                if (targetAlign==0 || targetAlign != (1ULL<<(63-CLZ64(targetAlign))))
                 {
                     asmr.printError(targetAlignPlace, "Target alignment is not power of 2");
                     good = false;
