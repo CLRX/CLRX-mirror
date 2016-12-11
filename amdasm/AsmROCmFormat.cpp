@@ -1283,10 +1283,30 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
     return true;
 }
 
-namespace CLRX
+static const AMDGPUArchValues rocmAmdGpuArchValuesTbl[] =
 {
-extern const AMDGPUArchValues rocmAmdGpuArchValuesTbl[];
-}
+    { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
+    { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
+    { 0, 0, 0 }, // GPUDeviceType::TAHITI
+    { 0, 0, 0 }, // GPUDeviceType::OLAND
+    { 7, 0, 0 }, // GPUDeviceType::BONAIRE
+    { 7, 0, 0 }, // GPUDeviceType::SPECTRE
+    { 7, 0, 0 }, // GPUDeviceType::SPOOKY
+    { 7, 0, 0 }, // GPUDeviceType::KALINDI
+    { 0, 0, 0 }, // GPUDeviceType::HAINAN
+    { 7, 0, 1 }, // GPUDeviceType::HAWAII
+    { 8, 0, 0 }, // GPUDeviceType::ICELAND
+    { 8, 0, 0 }, // GPUDeviceType::TONGA
+    { 7, 0, 0 }, // GPUDeviceType::MULLINS
+    { 8, 0, 3 }, // GPUDeviceType::FIJI
+    { 8, 0, 1 }, // GPUDeviceType::CARRIZO
+    { 0, 0, 0 }, // GPUDeviceType::DUMMY
+    { 0, 0, 0 }, // GPUDeviceType::GOOSE
+    { 0, 0, 0 }, // GPUDeviceType::HORSE
+    { 8, 0, 1 }, // GPUDeviceType::STONEY
+    { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
+    { 8, 0, 4 } // GPUDeviceType::BAFFIN
+};
 
 bool AsmROCmHandler::prepareBinary()
 {

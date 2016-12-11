@@ -216,12 +216,7 @@ static const uint16_t mainBuiltinSectionTable[] =
     7 // ROCMSECTID_GPUCONFIG
 };
 
-namespace CLRX
-{
-extern const AMDGPUArchValues rocmAmdGpuArchValuesTbl[];
-}
-
-const AMDGPUArchValues CLRX::rocmAmdGpuArchValuesTbl[] =
+static const AMDGPUArchValues rocmAmdGpuArchValuesTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
     { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
