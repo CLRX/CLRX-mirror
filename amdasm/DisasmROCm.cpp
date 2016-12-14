@@ -57,7 +57,7 @@ static const AMDGPUArchValuesEntry amdGpuArchValuesTbl[] =
 };
 
 static const size_t amdGpuArchValuesNum = sizeof(amdGpuArchValuesTbl) /
-                sizeof(AMDGPUArchValues);
+                sizeof(AMDGPUArchValuesEntry);
 
 ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
 {
