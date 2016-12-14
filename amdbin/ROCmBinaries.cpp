@@ -32,7 +32,6 @@
 using namespace CLRX;
 
 /* TODO: add support for various kernel code offset (now only 256 is supported) */
-/* TODO: handle non-kernel functions (for Gallium also?) */
 
 ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags)
         : ElfBinary64(binaryCodeSize, binaryCode, creationFlags),

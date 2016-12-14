@@ -1095,6 +1095,8 @@ bool AsmGalliumHandler::prepareBinary()
                 continue; // if kernel name
             cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
+            if (binSectId==ELFSECTID_UNDEF)
+                continue; // no section
             
             output.extraSymbols.push_back({ symEntry.first, symEntry.second.value,
                     symEntry.second.size, binSectId, false, symEntry.second.info,
