@@ -685,6 +685,11 @@ v_nop
 v_nop
 ```
 
+### .rocm
+
+This pseudo-operation should to be at begin of source.
+Choose ROCm program binary format.
+
 ### .rodata
 
 Go to `.rodata` section. If this section doesn't exist assembler create it.
