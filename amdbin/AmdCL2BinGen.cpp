@@ -263,6 +263,20 @@ static const uint16_t mainBuiltinSectionTable[] =
     4 // ELFSECTID_COMMENT
 };
 
+static const uint16_t mainBuiltinSectionTable2[] =
+{
+    1, // ELFSECTID_SHSTRTAB
+    2, // ELFSECTID_STRTAB
+    3, // ELFSECTID_SYMTAB
+    SHN_UNDEF, // ELFSECTID_DYNSTR
+    SHN_UNDEF, // ELFSECTID_DYNSYM
+    SHN_UNDEF, // ELFSECTID_TEXT
+    5, // ELFSECTID_RODATA
+    SHN_UNDEF, // ELFSECTID_DATA
+    SHN_UNDEF, // ELFSECTID_BSS
+    4 // ELFSECTID_COMMENT
+};
+
 static const cxbyte kernelIsaMetadata[] =
 {
     0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -527,13 +541,16 @@ private:
     uint16_t brigIndex;
     const Array<TempAmdCL2KernelData>& tempDatas;
     const CString& aclVersion;
+    const uint16_t* mainSectTable;
     cxuint extraSectionIndex;
 public:
     CL2MainSymTabGen(const AmdCL2Input* _input,
              const Array<TempAmdCL2KernelData>& _tempDatas,
-             const CString& _aclVersion, cxuint _extraSectionIndex)
+             const CString& _aclVersion, const uint16_t* _mainSectTable,
+             cxuint _extraSectionIndex)
              : input(_input), withBrig(false), tempDatas(_tempDatas),
-               aclVersion(_aclVersion), extraSectionIndex(_extraSectionIndex)
+               aclVersion(_aclVersion), mainSectTable(_mainSectTable),
+               extraSectionIndex(_extraSectionIndex)
     {
         for (brigIndex = 0; brigIndex < input->extraSections.size(); brigIndex++)
         {
@@ -640,7 +657,7 @@ public:
         for (const BinSymbol& symbol: input->extraSymbols)
         {
             SLEV(sym.st_name, nameOffset);
-            SLEV(sym.st_shndx, convertSectionId(symbol.sectionId, mainBuiltinSectionTable,
+            SLEV(sym.st_shndx, convertSectionId(symbol.sectionId, mainSectTable,
                             ELFSECTID_STD_MAX, extraSectionIndex));
             SLEV(sym.st_size, symbol.size);
             SLEV(sym.st_value, symbol.value);
@@ -1855,8 +1872,11 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                    symbol.sectionId==ELFSECTID_BSS; });
     
     cxuint mainExtraSectionIndex = 6 + (kernelsNum != 0 || newBinaries);
+    const uint16_t* mainSectTable = (kernelsNum != 0 || newBinaries) ?
+            mainBuiltinSectionTable : mainBuiltinSectionTable2;
     CL2MainStrTabGen mainStrTabGen(input);
-    CL2MainSymTabGen mainSymTabGen(input, tempDatas, aclVersion, mainExtraSectionIndex);
+    CL2MainSymTabGen mainSymTabGen(input, tempDatas, aclVersion, mainSectTable,
+                    mainExtraSectionIndex);
     CL2MainCommentGen mainCommentGen(input, aclVersion);
     CL2MainRodataGen mainRodataGen(input, tempDatas);
     CL2InnerTextGen innerTextGen(input, tempDatas);
@@ -2102,8 +2122,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                     SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR));
     
     for (const BinSection& section: input->extraSections)
-            elfBinGen.addRegion(ElfRegion64(section, mainBuiltinSectionTable,
-                         ELFSECTID_STD_MAX, mainExtraSectionIndex));
+        elfBinGen.addRegion(ElfRegion64(section, mainSectTable,
+                     ELFSECTID_STD_MAX, mainExtraSectionIndex));
     elfBinGen.addRegion(ElfRegion64::sectionHeaderTable());
     
     const uint64_t binarySize = elfBinGen.countSize();
