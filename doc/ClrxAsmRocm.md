@@ -417,3 +417,84 @@ Syntax: .workitem_vgpr_count REGNUM
 
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `workitem_vgpr_count` field in kernel configuration.
+
+## Sample code
+
+This is sample example of the kernel setup:
+
+```
+.rocm
+.gpu Carrizo
+.arch_minor 0
+.arch_stepping 1
+.kernel test1
+.kernel test2
+.text
+test1:
+        .byte 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        .byte 0x01, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00
+        .byte 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        .fill 24, 1, 0x00
+        .byte 0x41, 0x00, 0x2c, 0x00, 0x90, 0x00, 0x00, 0x00
+        .byte 0x0b, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00
+        .fill 8, 1, 0x00
+        .byte 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        .byte 0x00, 0x00, 0x00, 0x00, 0x0f, 0x00, 0x07, 0x00
+        .fill 8, 1, 0x00
+        .byte 0x00, 0x00, 0x00, 0x00, 0x04, 0x04, 0x04, 0x06
+        .fill 152, 1, 0x00
+/*c0020082 00000004*/ s_load_dword    s2, s[4:5], 0x4
+/*c0060003 00000000*/ s_load_dwordx2  s[0:1], s[6:7], 0x0
+....
+```
+
+with kernel configuration:
+
+```
+.rocm
+.gpu Carrizo
+.arch_minor 0
+.arch_stepping 1
+.kernel test1
+    .config
+        .dims x
+        .sgprsnum 16
+        .vgprsnum 8
+        .dx10clamp
+        .floatmode 0xc0
+        .priority 0
+        .userdatanum 8
+        .pgmrsrc1 0x002c0041
+        .pgmrsrc2 0x00000090
+        .codeversion 1, 0
+        .machine 1, 8, 0, 1
+        .kernel_code_entry_offset 0x100
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .kernarg_segment_size 8
+        .wavefront_sgpr_count 15
+        .workitem_vgpr_count 7
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+        .wavefront_size 64
+        .call_convention 0x0
+    .control_directive          # optional
+        .fill 128, 1, 0x00
+.text
+test1:
+.skip 256           # skip ROCm kernel configuration (required)
+/*c0020082 00000004*/ s_load_dword    s2, s[4:5], 0x4
+/*c0060003 00000000*/ s_load_dwordx2  s[0:1], s[6:7], 0x0
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*8602ff02 0000ffff*/ s_and_b32       s2, s2, 0xffff
+/*92020802         */ s_mul_i32       s2, s2, s8
+/*32000002         */ v_add_u32       v0, vcc, s2, v0
+/*2202009f         */ v_ashrrev_i32   v1, 31, v0
+/*d28f0001 00020082*/ v_lshlrev_b64   v[1:2], 2, v[0:1]
+/*32060200         */ v_add_u32       v3, vcc, s0, v1
+...
+```
