@@ -508,15 +508,27 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                 output.write(region.regionName.c_str(), region.regionName.size());
                 output.write("\n", 1);
                 printDisasmData(dataSize, code + region.offset, output, true);
-                prevRegionPos = region.offset + dataSize;
+                prevRegionPos = region.offset+1;
             }
         }
         
         if (regionsNum!=0 &&
             rocmInput->regions[sorted[regionsNum-1].second].type==ROCmRegionType::DATA)
-        {   // if last region is kernel, then print labels after last region
+        {
             const ROCmDisasmRegionInput& region =
-                        rocmInput->regions[sorted[regionsNum-1].second];
+                    rocmInput->regions[sorted[regionsNum-1].second];
+            // set labelIters to previous position
+            isaDisassembler->setInput(prevRegionPos, code + region.offset+region.size,
+                                    region.offset+region.size, prevRegionPos);
+            curLabel = std::lower_bound(labels.begin(), labels.end(), prevRegionPos);
+            curNamedLabel = std::lower_bound(namedLabels.begin(), namedLabels.end(),
+                std::make_pair(prevRegionPos, CString()),
+                  [](const std::pair<size_t,CString>& a,
+                                 const std::pair<size_t, CString>& b)
+                  { return a.first < b.first; });
+            isaDisassembler->writeLabelsToPosition(0, curLabel, curNamedLabel);
+            isaDisassembler->flushOutput();
+            // if last region is not kernel, then print labels after last region
             isaDisassembler->writeLabelsToEnd(region.size, curLabel, curNamedLabel);
             isaDisassembler->flushOutput();
         }
