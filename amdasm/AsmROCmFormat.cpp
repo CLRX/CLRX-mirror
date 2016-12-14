@@ -151,7 +151,7 @@ cxuint AsmROCmHandler::addSection(const char* sectionName, cxuint kernelId)
         if (commentSection!=ASMSECT_NONE)
             throw AsmFormatException("Only one section '.comment' can be in binary");
         commentSection = thisSection;
-        section.type = AsmSectionType::GALLIUM_COMMENT;
+        section.type = AsmSectionType::ROCM_COMMENT;
         section.elfBinSectId = ELFSECTID_COMMENT;
         section.name = ".comment"; // set static name (available by whole lifecycle)
     }
