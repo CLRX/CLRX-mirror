@@ -152,7 +152,7 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     // set bitnesss
     static void setBitness(Assembler& asmr, const char* linePtr, bool _64Bit);
     
-    static bool parseFormat(Assembler& asmr, const char* linePtr, BinaryFormat& format);
+    static bool parseFormat(Assembler& asmr, const char*& linePtr, BinaryFormat& format);
     // set output format
     static void setOutFormat(Assembler& asmr, const char* linePtr);
     // set GPU architecture type

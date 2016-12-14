@@ -179,7 +179,7 @@ void AsmPseudoOps::setBitness(Assembler& asmr, const char* linePtr, bool _64Bit)
         asmr._64bit = (_64Bit);
 }
 
-bool AsmPseudoOps::parseFormat(Assembler& asmr, const char* linePtr, BinaryFormat& format)
+bool AsmPseudoOps::parseFormat(Assembler& asmr, const char*& linePtr, BinaryFormat& format)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
