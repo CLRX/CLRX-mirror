@@ -1647,7 +1647,6 @@ static const cxbyte noteDescType5_gpupro[26] =
 { 0x16, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
     'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=', '0', 0, 't' };
 
-/* TODO: add gpu values tables for various driver version */
 static const AMDGPUArchValues amdGpuArchValuesTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
