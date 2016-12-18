@@ -1673,6 +1673,32 @@ static const AMDGPUArchValues amdGpuArchValuesTbl[] =
     { 8, 0, 4 } // GPUDeviceType::BAFFIN
 };
 
+// GPU Arch values for 1912.05 driver
+static const AMDGPUArchValues oldAmdGpuArchValuesTbl[] =
+{
+    { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
+    { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
+    { 0, 0, 0 }, // GPUDeviceType::TAHITI
+    { 0, 0, 0 }, // GPUDeviceType::OLAND
+    { 7, 0, 0 }, // GPUDeviceType::BONAIRE
+    { 7, 0, 0 }, // GPUDeviceType::SPECTRE
+    { 7, 0, 0 }, // GPUDeviceType::SPOOKY
+    { 7, 0, 0 }, // GPUDeviceType::KALINDI
+    { 0, 0, 0 }, // GPUDeviceType::HAINAN
+    { 7, 0, 1 }, // GPUDeviceType::HAWAII
+    { 8, 0, 0 }, // GPUDeviceType::ICELAND
+    { 8, 0, 0 }, // GPUDeviceType::TONGA
+    { 7, 0, 0 }, // GPUDeviceType::MULLINS
+    { 8, 0, 1 }, // GPUDeviceType::FIJI
+    { 8, 0, 1 }, // GPUDeviceType::CARRIZO
+    { 0, 0, 0 }, // GPUDeviceType::DUMMY
+    { 0, 0, 0 }, // GPUDeviceType::GOOSE
+    { 0, 0, 0 }, // GPUDeviceType::HORSE
+    { 8, 1, 0 }, // GPUDeviceType::STONEY
+    { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
+    { 8, 0, 4 } // GPUDeviceType::BAFFIN
+};
+
 static CString constructName(size_t prefixSize, const char* prefix, const CString& name,
                  size_t suffixSize, const char* suffix)
 {
@@ -1806,7 +1832,10 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     if (arch == GPUArchitecture::GCN1_0)
         throw Exception("OpenCL 2.0 supported only for GCN1.1 or later");
     
-    AMDGPUArchValues amdGpuArchValues = amdGpuArchValuesTbl[cxuint(input->deviceType)];
+    const bool is16_3Ver = (input->driverVersion>=200406);
+    AMDGPUArchValues amdGpuArchValues = (is16_3Ver) ? 
+            amdGpuArchValuesTbl[cxuint(input->deviceType)] :
+            oldAmdGpuArchValuesTbl[cxuint(input->deviceType)];
     if (input->archMinor!=UINT32_MAX)
         amdGpuArchValues.minor = input->archMinor;
     if (input->archStepping!=UINT32_MAX)
@@ -1903,7 +1932,6 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     std::unique_ptr<cxbyte[]> noteBuf;
     if (newBinaries)
     {   // new binaries - .text holds inner ELF binaries
-        bool is16_3Ver = (input->driverVersion>=200406);
         uint16_t innerBinSectionTable[innerBinSectonTableLen];
         cxuint extraSectionIndex = 1;
         /* check kernel text relocations */
