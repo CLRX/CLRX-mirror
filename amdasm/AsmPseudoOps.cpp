@@ -23,8 +23,6 @@
 #include <cassert>
 #include <fstream>
 #include <vector>
-#include <stack>
-#include <set>
 #include <utility>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>

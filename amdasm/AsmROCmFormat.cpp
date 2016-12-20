@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
+#include <CLRX/amdasm/AsmFormats.h>
 #include "AsmInternals.h"
 
 using namespace CLRX;
