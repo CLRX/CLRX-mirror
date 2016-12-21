@@ -339,13 +339,13 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     if (reservedVgprCount!=0)
     {
         bufSize = snprintf(buf, 100, "        .reserved_vgprs %hu, %hu\n",
-                         reservedVgprFirst, reservedVgprFirst+reservedVgprCount-1);
+                     reservedVgprFirst, uint16_t(reservedVgprFirst+reservedVgprCount-1));
         output.write(buf, bufSize);
     }
     if (reservedSgprCount!=0)
     {
         bufSize = snprintf(buf, 100, "        .reserved_sgprs %hu, %hu\n",
-                         reservedSgprFirst, reservedSgprFirst+reservedSgprCount-1);
+                     reservedSgprFirst, uint16_t(reservedSgprFirst+reservedSgprCount-1));
         output.write(buf, bufSize);
     }
     if (debugWavefrontPrivateSegmentOffsetSgpr!=0)

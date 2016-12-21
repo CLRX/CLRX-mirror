@@ -60,36 +60,40 @@ public:
     /// construct array of elements in begin and end
     template<typename It>
     Array(It b, It e)
-    try
     {
-        ptr = nullptr;
-        const size_t N = e-b;
-        if (N != 0)
-            ptr = new T[N];
-        ptrEnd = ptr+N;
-        std::copy(b, e, ptr);
-    }
-    catch(...)
-    { 
-        delete[] ptr;
-        throw;
+        try
+        {
+            ptr = nullptr;
+            const size_t N = e-b;
+            if (N != 0)
+                ptr = new T[N];
+            ptrEnd = ptr+N;
+            std::copy(b, e, ptr);
+        }
+        catch(...)
+        {
+            delete[] ptr;
+            throw;
+        }
     }
     
     /// copy constructor
     Array(const Array& cp)
-    try
     {
-        ptr = ptrEnd = nullptr;
-        const size_t N = cp.size();
-        if (N != 0)
-            ptr = new T[N];
-        ptrEnd = ptr+N;
-        std::copy(cp.ptr, cp.ptrEnd, ptr);
-    }
-    catch(...)
-    {
-        delete[] ptr;
-        throw;
+        try
+        {
+            ptr = ptrEnd = nullptr;
+            const size_t N = cp.size();
+            if (N != 0)
+                ptr = new T[N];
+            ptrEnd = ptr+N;
+            std::copy(cp.ptr, cp.ptrEnd, ptr);
+        }
+        catch(...)
+        {
+            delete[] ptr;
+            throw;
+        }
     }
     
     /// move constructor
@@ -102,19 +106,21 @@ public:
     
     /// constructor with initializer list
     Array(std::initializer_list<T> list)
-    try
     {
-        ptr = nullptr;
-        const size_t N = list.size();
-        if (N != 0)
-            ptr = new T[N];
-        ptrEnd = ptr+N;
-        std::copy(list.begin(), list.end(), ptr);
-    }
-    catch(...)
-    {
-        delete[] ptr;
-        throw;
+        try
+        {
+            ptr = nullptr;
+            const size_t N = list.size();
+            if (N != 0)
+                ptr = new T[N];
+            ptrEnd = ptr+N;
+            std::copy(list.begin(), list.end(), ptr);
+        }
+        catch(...)
+        {
+            delete[] ptr;
+            throw;
+        }
     }
     
     /// destructor
