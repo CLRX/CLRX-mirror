@@ -28,6 +28,7 @@ CLRX/utils/Utilities.h -text
 /COPYING -text
 /COPYING.DOC -text
 /COPYING.LIB -text
+/ChangeLog -text
 /Doxyfile.in -text
 /INSTALL -text
 /Int128Detect.c -text
