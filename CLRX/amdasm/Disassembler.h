@@ -372,7 +372,7 @@ public:
      * \param output output stream
      * \param flags flags for disassembler
      */
-    Disassembler(const AmdCL2MainGPUBinary& binary, std::ostream& output,
+    Disassembler(const AmdCL2MainGPUBinary64& binary, std::ostream& output,
                  Flags flags = 0);
     /// constructor for ROCm GPU binary
     /**

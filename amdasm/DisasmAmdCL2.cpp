@@ -110,7 +110,7 @@ static const CL2GPUDeviceCodeEntry cl2GPUPROGpuDeviceCodeTable[] =
     { 15, GPUDeviceType::STONEY }
 };
 
-AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinary& binary)
+AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinary64& binary)
 {
     std::unique_ptr<AmdCL2DisasmInput> input(new AmdCL2DisasmInput);
     const uint32_t elfFlags = ULEV(binary.getHeader().e_flags);

@@ -47,7 +47,7 @@ const AmdCL2GPUKernel& AmdCL2InnerGPUBinaryBase::getKernelData(const char* name)
 
 /* AmdCL2OldInnerGPUBinary */
 
-AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary,
+AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary64* mainBinary,
             size_t binaryCodeSize, cxbyte* binaryCode, Flags _creationFlags)
         : creationFlags(_creationFlags), binarySize(binaryCodeSize), binary(binaryCode)
 {
@@ -267,7 +267,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
     { }
 }
 
-/* AmdCL2MainGPUBinary */
+/* AmdCL2MainGPUBinary64 */
 
 static const KernelArgType cl20ArgTypeVectorTable[] =
 {
@@ -486,7 +486,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     }
 }
 
-AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
+AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_CL2_BINARY),
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
             driverVersion(180005), kernelsNum(0)
@@ -674,7 +674,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
     }
 }
 
-const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinary::getMetadataEntry(
+const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinary64::getMetadataEntry(
                     const char* name) const
 {
     auto it = binaryMapFind(kernelInfosMap.begin(), kernelInfosMap.end(), name);
@@ -683,7 +683,7 @@ const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinary::getMetadataEntry(
     return metadatas[it->second];
 }
 
-const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinary::getISAMetadataEntry(
+const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinary64::getISAMetadataEntry(
                     const char* name) const
 {
     auto it = binaryMapFind(isaMetadataMap.begin(), isaMetadataMap.end(), name);

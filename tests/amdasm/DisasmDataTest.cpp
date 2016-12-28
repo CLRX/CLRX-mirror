@@ -1427,7 +1427,7 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
         }
         else if (isAmdCL2Binary(binaryData.size(), binaryData.data()))
         {
-            AmdCL2MainGPUBinary amdBin(binaryData.size(), binaryData.data(),
+            AmdCL2MainGPUBinary64 amdBin(binaryData.size(), binaryData.data(),
                 AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                 AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
                 AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_INNER_CREATE_CALNOTES |

@@ -134,7 +134,7 @@ try
                     binFlags |= AMDCL2BIN_INNER_CREATE_KERNELDATA |
                                 AMDCL2BIN_INNER_CREATE_KERNELDATAMAP |
                                 AMDCL2BIN_INNER_CREATE_KERNELSTUBS;
-                    AmdCL2MainGPUBinary amdBin(binaryData.size(),
+                    AmdCL2MainGPUBinary64 amdBin(binaryData.size(),
                                        binaryData.data(), binFlags);
                     Disassembler disasm(amdBin, std::cout, disasmFlags);
                     disasm.disassemble();

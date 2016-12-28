@@ -282,7 +282,7 @@ Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _outp
     amdInput = getAmdDisasmInputFromBinary64(binary, flags);
 }
 
-Disassembler::Disassembler(const AmdCL2MainGPUBinary& binary, std::ostream& _output,
+Disassembler::Disassembler(const AmdCL2MainGPUBinary64& binary, std::ostream& _output,
            Flags _flags) : fromBinary(true), binaryFormat(BinaryFormat::AMDCL2),
             amdCL2Input(nullptr), output(_output), flags(_flags), sectionCount(0)
 {

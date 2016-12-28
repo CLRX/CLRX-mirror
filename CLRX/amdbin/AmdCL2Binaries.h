@@ -65,7 +65,7 @@ struct AmdCL2GPUKernelStub
     cxbyte* data;      ///< setup data
 };
 
-class AmdCL2MainGPUBinary;
+class AmdCL2MainGPUBinary64;
 
 /// AMD OpenCL 2.0 inner binary base class
 class AmdCL2InnerGPUBinaryBase
@@ -113,7 +113,7 @@ public:
      * \param binaryCode inner binary code
      * \param creationFlags creation's flags
      */
-    AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary, size_t binaryCodeSize,
+    AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary64* mainBinary, size_t binaryCodeSize,
             cxbyte* binaryCode, Flags creationFlags = AMDBIN_CREATE_ALL);
     /// destructor
     ~AmdCL2OldInnerGPUBinary() = default;
@@ -311,7 +311,7 @@ struct AmdCL2GPUKernelArgEntry
 /** This object doesn't copy binary code content.
  * Only it takes and uses a binary code.
  */
-class AmdCL2MainGPUBinary: public AmdMainBinaryBase, public ElfBinary64
+class AmdCL2MainGPUBinary64: public AmdMainBinaryBase, public ElfBinary64
 {
 public:
     typedef Array<std::pair<CString, size_t> > MetadataMap;
@@ -326,9 +326,9 @@ protected:
     CString aclVersionString; ///< acl version string
     std::unique_ptr<AmdCL2InnerGPUBinaryBase> innerBinary;
 public:
-    AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
+    AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags = AMDBIN_CREATE_ALL);
-    ~AmdCL2MainGPUBinary() = default;
+    ~AmdCL2MainGPUBinary64() = default;
     
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const

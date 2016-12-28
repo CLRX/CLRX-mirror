@@ -472,7 +472,7 @@ static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[11] =
     { 15, GPUDeviceType::DUMMY }
 };
 
-static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& binary,
+static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary64& binary,
             bool addBrig, bool samplerConfig)
 {
     AmdCL2Input amdCL2Input{ };
@@ -678,7 +678,7 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
     inputData = loadDataFromFile(origBinaryFilename);
     if (!isAmdCL2Binary(inputData.size(), inputData.data()))
         throw Exception("This is not AMD OpenCL2.0 binary");
-    AmdCL2MainGPUBinary amdCL2GpuBin(inputData.size(), inputData.data(), 
+    AmdCL2MainGPUBinary64 amdCL2GpuBin(inputData.size(), inputData.data(), 
                 AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                 AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
                 AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_CREATE_INFOSTRINGS |
