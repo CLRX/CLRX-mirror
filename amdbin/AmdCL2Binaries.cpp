@@ -47,7 +47,8 @@ const AmdCL2GPUKernel& AmdCL2InnerGPUBinaryBase::getKernelData(const char* name)
 
 /* AmdCL2OldInnerGPUBinary */
 
-AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary64* mainBinary,
+template<typename Types>
+AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(ElfBinaryTemplate<Types>* mainBinary,
             size_t binaryCodeSize, cxbyte* binaryCode, Flags _creationFlags)
         : creationFlags(_creationFlags), binarySize(binaryCodeSize), binary(binaryCode)
 {
@@ -82,7 +83,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary64* mainBina
     // main loop for kernel data and stub getting
     for (size_t index: choosenSyms)
     {
-        const Elf64_Sym& sym = mainBinary->getSymbol(index);
+        const typename Types::Sym& sym = mainBinary->getSymbol(index);
         const char* symName = mainBinary->getSymbolName(index);
         const size_t binOffset = ULEV(sym.st_value);
         const size_t binSize = ULEV(sym.st_size);
@@ -486,28 +487,55 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     }
 }
 
-AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
-            Flags creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_CL2_BINARY),
-            ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
-            driverVersion(180005), kernelsNum(0)
+/* AMD CL2 GPU Binary base class */
+
+AmdCL2MainGPUBinaryBase::AmdCL2MainGPUBinaryBase()
+        : AmdMainBinaryBase(AmdMainType::GPU_CL2_BINARY), driverVersion(180005),
+          kernelsNum(0)
+{ }
+
+const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinaryBase::getMetadataEntry(
+                    const char* name) const
+{
+    auto it = binaryMapFind(kernelInfosMap.begin(), kernelInfosMap.end(), name);
+    if (it == kernelInfosMap.end())
+        throw Exception("Can't find kernel metadata by name");
+    return metadatas[it->second];
+}
+
+const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinaryBase::getISAMetadataEntry(
+                    const char* name) const
+{
+    auto it = binaryMapFind(isaMetadataMap.begin(), isaMetadataMap.end(), name);
+    if (it == isaMetadataMap.end())
+        throw Exception("Can't find kernel ISA metadata by name");
+    return isaMetadatas[it->second];
+}
+
+template<typename Types>
+void AmdCL2MainGPUBinaryBase::initMainGPUBinary(ElfBinaryTemplate<Types>& elfBin)
 {
     std::vector<size_t> choosenMetadataSyms;
     std::vector<size_t> choosenISAMetadataSyms;
     std::vector<size_t> choosenBinSyms;
     
-    const size_t symbolsNum = getSymbolsNum();
+    Flags creationFlags = elfBin.getCreationFlags();
+    cxbyte* binaryCode = elfBin.getBinaryCode();
     
-    if (hasInfoStrings())
+    const size_t symbolsNum = elfBin.getSymbolsNum();
+    
+    if ((creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0)
         /// get info strings if needed
         for (size_t i = 0; i < symbolsNum; i++)
         {
-            const char* symName = getSymbolName(i);
+            const char* symName = elfBin.getSymbolName(i);
             if (::strcmp(symName, "__OpenCL_compiler_options")==0)
             {   // compile options
-                const Elf64_Sym& sym = getSymbol(i);
-                if (ULEV(sym.st_shndx) >= getSectionHeadersNum())
+                const typename Types::Sym& sym = elfBin.getSymbol(i);
+                if (ULEV(sym.st_shndx) >= elfBin.getSectionHeadersNum())
                     throw Exception("Compiler options section header out of range");
-                const Elf64_Shdr& shdr = getSectionHeader(ULEV(sym.st_shndx));
+                const typename Types::Shdr& shdr =
+                            elfBin.getSectionHeader(ULEV(sym.st_shndx));
                 const size_t coOffset = ULEV(sym.st_value);
                 const size_t coSize = ULEV(sym.st_size);
                 if (coOffset >= ULEV(shdr.sh_size))
@@ -521,10 +549,11 @@ AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* bina
             }
             else if (::strcmp(symName, "acl_version_string")==0)
             {   // acl version string
-                const Elf64_Sym& sym = getSymbol(i);
-                if (ULEV(sym.st_shndx) >= getSectionHeadersNum())
+                const typename Types::Sym& sym = elfBin.getSymbol(i);
+                if (ULEV(sym.st_shndx) >= elfBin.getSectionHeadersNum())
                     throw Exception("AclVersionString section header out of range");
-                const Elf64_Shdr& shdr = getSectionHeader(ULEV(sym.st_shndx));
+                const typename Types::Shdr& shdr =
+                        elfBin.getSectionHeader(ULEV(sym.st_shndx));
                 const size_t aclOffset = ULEV(sym.st_value);
                 const size_t aclSize = ULEV(sym.st_size);
                 if (aclOffset >= ULEV(shdr.sh_size))
@@ -541,7 +570,7 @@ AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* bina
     // find symbol of kernel metadata, ISA metadata and binary
     for (size_t i = 0; i < symbolsNum; i++)
     {
-        const char* symName = getSymbolName(i);
+        const char* symName = elfBin.getSymbolName(i);
         const size_t len = ::strlen(symName);
         if (len >= 35 && (::strncmp(symName, "__OpenCL_&__OpenCL_", 19) == 0 &&
                 ::strcmp(symName+len-16, "_kernel_metadata") == 0)) // if metadata
@@ -559,7 +588,7 @@ AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* bina
     uint16_t textIndex = SHN_UNDEF;
     driverVersion = newInnerBinary ? 191205: 180005;
     try
-    { textIndex = getSectionIndex(".text"); }
+    { textIndex = elfBin.getSectionIndex(".text"); }
     catch(const Exception& ex)
     {
         if (!choosenMetadataSyms.empty())
@@ -569,7 +598,7 @@ AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* bina
     }
     if (textIndex != SHN_UNDEF)
     {
-        const Elf64_Shdr& textShdr = getSectionHeader(textIndex);
+        const typename Types::Shdr& textShdr = elfBin.getSectionHeader(textIndex);
         if (newInnerBinary)
         {
             innerBinary.reset(new AmdCL2InnerGPUBinary(ULEV(textShdr.sh_size),
@@ -591,17 +620,17 @@ AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* bina
             { }
         }
         else // old driver
-            innerBinary.reset(new AmdCL2OldInnerGPUBinary(this, ULEV(textShdr.sh_size),
+            innerBinary.reset(new AmdCL2OldInnerGPUBinary(&elfBin, ULEV(textShdr.sh_size),
                            binaryCode + ULEV(textShdr.sh_offset),
                            creationFlags >> AMDBIN_INNER_SHIFT));
     }
     
     // get metadata
-    if (hasKernelInfo())
+    if ((creationFlags & AMDBIN_CREATE_KERNELINFO) != 0)
     {
         kernelInfos.resize(choosenMetadataSyms.size());
         kernelHeaders.reset(new AmdGPUKernelHeader[choosenMetadataSyms.size()]);
-        if (hasKernelInfoMap())
+        if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
         {
             kernelInfosMap.resize(choosenMetadataSyms.size());
             isaMetadataMap.resize(choosenISAMetadataSyms.size());
@@ -612,11 +641,12 @@ AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* bina
         // main loop
         for (size_t index: choosenMetadataSyms)
         {
-            const Elf64_Sym& mtsym = getSymbol(index);
-            const char* mtName = getSymbolName(index);
-            if (ULEV(mtsym.st_shndx) >= getSectionHeadersNum())
+            const typename Types::Sym& mtsym = elfBin.getSymbol(index);
+            const char* mtName = elfBin.getSymbolName(index);
+            if (ULEV(mtsym.st_shndx) >= elfBin.getSectionHeadersNum())
                 throw Exception("Kernel Metadata section header out of range");
-            const Elf64_Shdr& shdr = getSectionHeader(ULEV(mtsym.st_shndx));
+            const typename Types::Shdr& shdr =
+                    elfBin.getSectionHeader(ULEV(mtsym.st_shndx));
             const size_t mtOffset = ULEV(mtsym.st_value);
             const size_t mtSize = ULEV(mtsym.st_size);
             /// offset and size verifying
@@ -633,7 +663,7 @@ AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* bina
             // set kernel name from symbol name (__OpenCL_&__OpenCL_[name]_kernel_metadata)
             kernelHeaders[ki].kernelName = kernelInfos[ki].kernelName =
                         CString(mtName+19, mtName+len-16);
-            if (hasKernelInfoMap())
+            if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
                 kernelInfosMap[ki] = std::make_pair(kernelInfos[ki].kernelName, ki);
             metadatas[ki] = { kernelInfos[ki].kernelName, mtSize, metadata };
             ki++;
@@ -644,11 +674,12 @@ AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* bina
         ki = 0;
         for (size_t index: choosenISAMetadataSyms)
         {
-            const Elf64_Sym& mtsym = getSymbol(index);
-            const char* mtName = getSymbolName(index);
-            if (ULEV(mtsym.st_shndx) >= getSectionHeadersNum())
+            const typename Types::Sym& mtsym = elfBin.getSymbol(index);
+            const char* mtName = elfBin.getSymbolName(index);
+            if (ULEV(mtsym.st_shndx) >= elfBin.getSectionHeadersNum())
                 throw Exception("Kernel ISAMetadata section header out of range");
-            const Elf64_Shdr& shdr = getSectionHeader(ULEV(mtsym.st_shndx));
+            const typename Types::Shdr& shdr =
+                        elfBin.getSectionHeader(ULEV(mtsym.st_shndx));
             const size_t mtOffset = ULEV(mtsym.st_value);
             const size_t mtSize = ULEV(mtsym.st_size);
             /// offset and size verifying
@@ -661,12 +692,12 @@ AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* bina
             size_t len = ::strlen(mtName);
             CString kernelName = CString(mtName+16, mtName+len-16);
             isaMetadatas[ki] = { kernelName, mtSize, metadata };
-            if (hasKernelInfoMap())
+            if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
                 isaMetadataMap[ki] = std::make_pair(kernelName, ki);
             ki++;
         }
         
-        if (hasKernelInfoMap())
+        if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
         {
             mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
             mapSort(isaMetadataMap.begin(), isaMetadataMap.end());
@@ -674,22 +705,22 @@ AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* bina
     }
 }
 
-const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinary64::getMetadataEntry(
-                    const char* name) const
+/* AMD CL2 32-bit */
+
+AmdCL2MainGPUBinary32::AmdCL2MainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
+            Flags creationFlags) : AmdCL2MainGPUBinaryBase(),
+            ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
 {
-    auto it = binaryMapFind(kernelInfosMap.begin(), kernelInfosMap.end(), name);
-    if (it == kernelInfosMap.end())
-        throw Exception("Can't find kernel metadata by name");
-    return metadatas[it->second];
+    initMainGPUBinary<Elf32Types>(*this);
 }
 
-const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinary64::getISAMetadataEntry(
-                    const char* name) const
+/* AMD CL2 64-bit */
+
+AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
+            Flags creationFlags) : AmdCL2MainGPUBinaryBase(),
+            ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
-    auto it = binaryMapFind(isaMetadataMap.begin(), isaMetadataMap.end(), name);
-    if (it == isaMetadataMap.end())
-        throw Exception("Can't find kernel ISA metadata by name");
-    return isaMetadatas[it->second];
+    initMainGPUBinary<Elf64Types>(*this);
 }
 
 bool CLRX::isAmdCL2Binary(size_t binarySize, const cxbyte* binary)
