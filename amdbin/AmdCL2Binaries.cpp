@@ -327,12 +327,12 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     if (metadataSize < 8+32+32)
         throw Exception("Kernel metadata is too short");
     
-    const AmdCL2GPUMetadataHeader* hdrStruc =
-            reinterpret_cast<const AmdCL2GPUMetadataHeader*>(metadata);
+    const AmdCL2GPUMetadataHeader64* hdrStruc =
+            reinterpret_cast<const AmdCL2GPUMetadataHeader64*>(metadata);
     kernelHeader.size = ULEV(hdrStruc->size);
     if (kernelHeader.size >= metadataSize)
         throw Exception("Metadata header size out of range");
-    if (kernelHeader.size < sizeof(AmdCL2GPUMetadataHeader))
+    if (kernelHeader.size < sizeof(AmdCL2GPUMetadataHeader64))
         throw Exception("Metadata header is too short");
     kernelHeader.data = metadata;
     const uint32_t argsNum = ULEV(hdrStruc->argsNum);
@@ -349,20 +349,20 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
         crimson16 = true;
         argOffset++;
     }
-    const AmdCL2GPUKernelArgEntry* argPtr = reinterpret_cast<
-            const AmdCL2GPUKernelArgEntry*>(metadata + argOffset);
+    const AmdCL2GPUKernelArgEntry64* argPtr = reinterpret_cast<
+            const AmdCL2GPUKernelArgEntry64*>(metadata + argOffset);
     
-    if(usumGt(argOffset, sizeof(AmdCL2GPUKernelArgEntry)*argsNum, metadataSize))
+    if(usumGt(argOffset, sizeof(AmdCL2GPUKernelArgEntry64)*argsNum, metadataSize))
         throw Exception("Number of arguments out of range");
     
     const char* strBase = (const char*)metadata;
-    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry)*(argsNum+1);
+    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry64)*(argsNum+1);
     
     kernelInfo.argInfos.resize(argsNum);
     for (uint32_t i = 0; i < argsNum; i++, argPtr++)
     {
         AmdKernelArg& arg = kernelInfo.argInfos[i];
-        if (ULEV(argPtr->size)!=sizeof(AmdCL2GPUKernelArgEntry))
+        if (ULEV(argPtr->size)!=sizeof(AmdCL2GPUKernelArgEntry64))
             throw Exception("Kernel ArgEntry size doesn't match");
         // get name of argument
         size_t nameSize = ULEV(argPtr->argNameSize);

@@ -260,7 +260,28 @@ struct AmdCL2GPUKernelMetadata
 };
 
 /// header for metadata
-struct AmdCL2GPUMetadataHeader
+struct AmdCL2GPUMetadataHeader32
+{
+    uint32_t size;      ///< size
+    uint32_t metadataSize;  /// metadata size
+    uint32_t unknown1[3];
+    uint32_t options;
+    uint16_t kernelId;  ///< kernel id
+    uint16_t unknownx;
+    uint32_t unknowny;
+    uint64_t unknown2[2];
+    uint32_t reqdWorkGroupSize[3];  ///< reqd work group size
+    uint32_t unknown3[3];
+    uint32_t firstNameLength;   ///< first name length
+    uint32_t secondNameLength;  ///< second name length
+    uint32_t unknown4[3];
+    uint32_t pipesUsage;
+    uint32_t unknown5[2];
+    uint32_t argsNum;       ///< number of arguments
+};
+
+/// header for metadata
+struct AmdCL2GPUMetadataHeader64
 {
     uint64_t size;      ///< size
     uint64_t metadataSize;  /// metadata size
@@ -281,7 +302,34 @@ struct AmdCL2GPUMetadataHeader
 };
 
 /// GPU kernel argument entry
-struct AmdCL2GPUKernelArgEntry
+struct AmdCL2GPUKernelArgEntry32
+{
+    uint32_t size;      ///< entry size
+    uint32_t argNameSize;   ///< argument name size
+    uint32_t typeNameSize;  ///< type name size
+    uint32_t unknown1, unknown2;
+    union {
+        uint32_t vectorLength;  ///< vector length (for old drivers not aligned)
+        uint32_t resId;     ///< resource id
+        uint32_t structSize;
+    };
+    uint32_t unknown3;
+    uint32_t argOffset; ///< virtual argument offset
+    uint32_t argType;   ///< argument type
+    uint32_t ptrAlignment; ///< pointer alignment
+    uint32_t ptrType;   ///< pointer type
+    uint32_t ptrSpace;  ///< pointer space
+    uint32_t isPointerOrPipe;   /// nonzero if pointer or pipe
+    cxbyte isVolatile;  ///< if pointer is volatile
+    cxbyte isRestrict;  ///< if pointer is restrict
+    cxbyte isPipe;      ///< if pipe
+    cxbyte unknown4;
+    uint32_t kindOfType;    ///< kind of type
+    uint32_t isConst;   ///< is const pointer
+};
+
+/// GPU kernel argument entry
+struct AmdCL2GPUKernelArgEntry64
 {
     uint64_t size;      ///< entry size
     uint64_t argNameSize;   ///< argument name size

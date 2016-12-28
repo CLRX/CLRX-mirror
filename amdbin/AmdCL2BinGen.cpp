@@ -723,7 +723,7 @@ public:
     {
         const bool newBinaries = input->driverVersion >= 191205;
         const bool is16_3Ver = input->driverVersion >= 200406;
-        AmdCL2GPUMetadataHeader header;
+        AmdCL2GPUMetadataHeader64 header;
         cxuint argsNum = config.args.size();
         
         SLEV(header.size, (newBinaries) ? (is16_3Ver ? 0x110 : 0xe0) : 0xd8);
@@ -782,7 +782,7 @@ public:
         for (cxuint i = 0; i < argsNum; i++)
         {   //
             const AmdKernelArgInput& arg = config.args[i];
-            AmdCL2GPUKernelArgEntry argEntry;
+            AmdCL2GPUKernelArgEntry64 argEntry;
             SLEV(argEntry.size, 88);
             SLEV(argEntry.argNameSize, arg.argName.size());
             SLEV(argEntry.typeNameSize, arg.typeName.size());

@@ -491,8 +491,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
         const std::vector<AmdCL2RelaEntry>& textRelocs)
 {
     AmdCL2KernelConfig config{};
-    const AmdCL2GPUMetadataHeader* mdHdr =
-            reinterpret_cast<const AmdCL2GPUMetadataHeader*>(metadata);
+    const AmdCL2GPUMetadataHeader64* mdHdr =
+            reinterpret_cast<const AmdCL2GPUMetadataHeader64*>(metadata);
     size_t headerSize = ULEV(mdHdr->size);
     for (size_t i = 0; i < 3; i++)
         config.reqdWorkGroupSize[i] = ULEV(mdHdr->reqdWorkGroupSize[i]);
@@ -540,11 +540,11 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             ULEV(mdHdr->secondNameLength)+2;
     if (ULEV(*((const uint32_t*)(metadata+argOffset))) == 0x5800)
         argOffset++;    // fix for AMD GPUPRO driver (2036.03) */
-    const AmdCL2GPUKernelArgEntry* argPtr = reinterpret_cast<
-            const AmdCL2GPUKernelArgEntry*>(metadata + argOffset);
+    const AmdCL2GPUKernelArgEntry64* argPtr = reinterpret_cast<
+            const AmdCL2GPUKernelArgEntry64*>(metadata + argOffset);
     const uint32_t argsNum = ULEV(mdHdr->argsNum);
     const char* strBase = (const char*)metadata;
-    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry)*(argsNum+1);
+    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry64)*(argsNum+1);
     
     for (uint32_t i = 0; i < argsNum; i++, argPtr++)
     {
