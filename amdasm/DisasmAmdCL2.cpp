@@ -113,11 +113,15 @@ static const CL2GPUDeviceCodeEntry cl2GPUPROGpuDeviceCodeTable[] =
 struct CLRX_INTERNAL AmdCL2Types32: Elf32Types
 {
     typedef AmdCL2MainGPUBinary32 AmdCL2MainBinary;
+    typedef AmdCL2GPUMetadataHeader32 MetadataHeader;
+    typedef AmdCL2GPUKernelArgEntry32 KernelArgEntry;
 };
 
 struct CLRX_INTERNAL AmdCL2Types64: Elf64Types
 {
     typedef AmdCL2MainGPUBinary64 AmdCL2MainBinary;
+    typedef AmdCL2GPUMetadataHeader64 MetadataHeader;
+    typedef AmdCL2GPUKernelArgEntry64 KernelArgEntry;
 };
 
 template<typename AmdCL2Types>
@@ -486,13 +490,14 @@ static const cxuint vectorIdTable[17] =
 { UINT_MAX, 0, 1, 2, 3, UINT_MAX, UINT_MAX, UINT_MAX, 4,
   UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };
 
+template<typename Types>
 static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* metadata,
         size_t setupSize, const cxbyte* setup, const std::vector<size_t> samplerOffsets,
         const std::vector<AmdCL2RelaEntry>& textRelocs)
 {
     AmdCL2KernelConfig config{};
-    const AmdCL2GPUMetadataHeader64* mdHdr =
-            reinterpret_cast<const AmdCL2GPUMetadataHeader64*>(metadata);
+    const typename Types::MetadataHeader* mdHdr =
+            reinterpret_cast<const typename Types::MetadataHeader*>(metadata);
     size_t headerSize = ULEV(mdHdr->size);
     for (size_t i = 0; i < 3; i++)
         config.reqdWorkGroupSize[i] = ULEV(mdHdr->reqdWorkGroupSize[i]);
@@ -538,13 +543,14 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     // get kernel args
     size_t argOffset = headerSize + ULEV(mdHdr->firstNameLength) + 
             ULEV(mdHdr->secondNameLength)+2;
-    if (ULEV(*((const uint32_t*)(metadata+argOffset))) == 0x5800)
+    if (ULEV(*(const uint32_t*)(metadata+argOffset)) ==
+                (sizeof(typename Types::KernelArgEntry)<<8))
         argOffset++;    // fix for AMD GPUPRO driver (2036.03) */
-    const AmdCL2GPUKernelArgEntry64* argPtr = reinterpret_cast<
-            const AmdCL2GPUKernelArgEntry64*>(metadata + argOffset);
+    const typename Types::KernelArgEntry* argPtr = reinterpret_cast<
+            const typename Types::KernelArgEntry*>(metadata + argOffset);
     const uint32_t argsNum = ULEV(mdHdr->argsNum);
     const char* strBase = (const char*)metadata;
-    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry64)*(argsNum+1);
+    size_t strOffset = argOffset + sizeof(typename Types::KernelArgEntry)*(argsNum+1);
     
     for (uint32_t i = 0; i < argsNum; i++, argPtr++)
     {
@@ -974,9 +980,15 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         
         if (doDumpConfig)
         {
-            const AmdCL2KernelConfig config = genKernelConfig(kinput.metadataSize,
-                    kinput.metadata, kinput.setupSize, kinput.setup, samplerOffsets,
-                    kinput.textRelocs);
+            AmdCL2KernelConfig config;
+            if (amdCL2Input->is64BitMode)
+                config = genKernelConfig<AmdCL2Types64>(kinput.metadataSize,
+                        kinput.metadata, kinput.setupSize, kinput.setup, samplerOffsets,
+                        kinput.textRelocs);
+            else
+                config = genKernelConfig<AmdCL2Types32>(kinput.metadataSize,
+                        kinput.metadata, kinput.setupSize, kinput.setup, samplerOffsets,
+                        kinput.textRelocs);
             dumpAmdCL2KernelConfig(output, config);
         }
         

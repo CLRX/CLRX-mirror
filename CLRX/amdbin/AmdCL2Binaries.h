@@ -372,7 +372,7 @@ protected:
     std::unique_ptr<AmdCL2InnerGPUBinaryBase> innerBinary;
     
     template<typename Types>
-    void initMainGPUBinary(ElfBinaryTemplate<Types>& elfBin);
+    void initMainGPUBinary(typename Types::ElfBinary& elfBin);
     
 public:
     explicit AmdCL2MainGPUBinaryBase(AmdMainType amdMainType);

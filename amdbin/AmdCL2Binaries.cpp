@@ -320,6 +320,7 @@ static const cxuint vectorIdTable[17] =
 { UINT_MAX, 0, 1, 2, 3, UINT_MAX, UINT_MAX, UINT_MAX, 4,
   UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };
 
+template<typename Types>
 static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
              KernelInfo& kernelInfo, AmdGPUKernelHeader& kernelHeader, bool& crimson16)
 {
@@ -327,12 +328,12 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     if (metadataSize < 8+32+32)
         throw Exception("Kernel metadata is too short");
     
-    const AmdCL2GPUMetadataHeader64* hdrStruc =
-            reinterpret_cast<const AmdCL2GPUMetadataHeader64*>(metadata);
+    const typename Types::MetadataHeader* hdrStruc =
+            reinterpret_cast<const typename Types::MetadataHeader*>(metadata);
     kernelHeader.size = ULEV(hdrStruc->size);
     if (kernelHeader.size >= metadataSize)
         throw Exception("Metadata header size out of range");
-    if (kernelHeader.size < sizeof(AmdCL2GPUMetadataHeader64))
+    if (kernelHeader.size < sizeof(typename Types::MetadataHeader))
         throw Exception("Metadata header is too short");
     kernelHeader.data = metadata;
     const uint32_t argsNum = ULEV(hdrStruc->argsNum);
@@ -344,25 +345,26 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     size_t argOffset = kernelHeader.size +
             ULEV(hdrStruc->firstNameLength)+ULEV(hdrStruc->secondNameLength)+2;
     // fix for latest Crimson drivers
-    if (ULEV(*(const uint32_t*)(metadata+argOffset)) == 0x5800)
+    if (ULEV(*(const uint32_t*)(metadata+argOffset)) ==
+                (sizeof(typename Types::KernelArgEntry)<<8))
     {
         crimson16 = true;
         argOffset++;
     }
-    const AmdCL2GPUKernelArgEntry64* argPtr = reinterpret_cast<
-            const AmdCL2GPUKernelArgEntry64*>(metadata + argOffset);
+    const typename Types::KernelArgEntry* argPtr = reinterpret_cast<
+            const typename Types::KernelArgEntry*>(metadata + argOffset);
     
-    if(usumGt(argOffset, sizeof(AmdCL2GPUKernelArgEntry64)*argsNum, metadataSize))
+    if(usumGt(argOffset, sizeof(typename Types::KernelArgEntry)*argsNum, metadataSize))
         throw Exception("Number of arguments out of range");
     
     const char* strBase = (const char*)metadata;
-    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry64)*(argsNum+1);
+    size_t strOffset = argOffset + sizeof(typename Types::KernelArgEntry)*(argsNum+1);
     
     kernelInfo.argInfos.resize(argsNum);
     for (uint32_t i = 0; i < argsNum; i++, argPtr++)
     {
         AmdKernelArg& arg = kernelInfo.argInfos[i];
-        if (ULEV(argPtr->size)!=sizeof(AmdCL2GPUKernelArgEntry64))
+        if (ULEV(argPtr->size)!=sizeof(typename Types::KernelArgEntry))
             throw Exception("Kernel ArgEntry size doesn't match");
         // get name of argument
         size_t nameSize = ULEV(argPtr->argNameSize);
@@ -487,6 +489,20 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     }
 }
 
+struct CLRX_INTERNAL AmdCL2Types32 : Elf32Types
+{
+    typedef ElfBinary32 ElfBinary;
+    typedef AmdCL2GPUMetadataHeader32 MetadataHeader;
+    typedef AmdCL2GPUKernelArgEntry32 KernelArgEntry;
+};
+
+struct CLRX_INTERNAL AmdCL2Types64 : Elf64Types
+{
+    typedef ElfBinary64 ElfBinary;
+    typedef AmdCL2GPUMetadataHeader64 MetadataHeader;
+    typedef AmdCL2GPUKernelArgEntry64 KernelArgEntry;
+};
+
 /* AMD CL2 GPU Binary base class */
 
 AmdCL2MainGPUBinaryBase::AmdCL2MainGPUBinaryBase(AmdMainType mainType)
@@ -513,7 +529,7 @@ const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinaryBase::getISAMetadataEntry(
 }
 
 template<typename Types>
-void AmdCL2MainGPUBinaryBase::initMainGPUBinary(ElfBinaryTemplate<Types>& elfBin)
+void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBin)
 {
     std::vector<size_t> choosenMetadataSyms;
     std::vector<size_t> choosenISAMetadataSyms;
@@ -657,8 +673,8 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(ElfBinaryTemplate<Types>& elfBin
             
             cxbyte* metadata = binaryCode + ULEV(shdr.sh_offset) + mtOffset;
             bool crimson16 = false;
-            getCL2KernelInfo(mtSize, metadata, kernelInfos[ki], kernelHeaders[ki],
-                             crimson16);
+            getCL2KernelInfo<Types>(mtSize, metadata, kernelInfos[ki],
+                                        kernelHeaders[ki], crimson16);
             size_t len = ::strlen(mtName);
             // set kernel name from symbol name (__OpenCL_&__OpenCL_[name]_kernel_metadata)
             kernelHeaders[ki].kernelName = kernelInfos[ki].kernelName =
@@ -711,7 +727,7 @@ AmdCL2MainGPUBinary32::AmdCL2MainGPUBinary32(size_t binaryCodeSize, cxbyte* bina
             Flags creationFlags) : AmdCL2MainGPUBinaryBase(AmdMainType::GPU_CL2_BINARY),
             ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
 {
-    initMainGPUBinary<Elf32Types>(*this);
+    initMainGPUBinary<AmdCL2Types32>(*this);
 }
 
 /* AMD CL2 64-bit */
@@ -720,7 +736,7 @@ AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* bina
             Flags creationFlags) : AmdCL2MainGPUBinaryBase(AmdMainType::GPU_CL2_64_BINARY),
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
-    initMainGPUBinary<Elf64Types>(*this);
+    initMainGPUBinary<AmdCL2Types64>(*this);
 }
 
 AmdCL2MainGPUBinaryBase* CLRX::createAmdCL2BinaryFromCode(
