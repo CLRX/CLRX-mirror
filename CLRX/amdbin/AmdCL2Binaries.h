@@ -327,7 +327,7 @@ protected:
     void initMainGPUBinary(ElfBinaryTemplate<Types>& elfBin);
     
 public:
-    explicit AmdCL2MainGPUBinaryBase();
+    explicit AmdCL2MainGPUBinaryBase(AmdMainType amdMainType);
     ~AmdCL2MainGPUBinaryBase() = default;
     
     // returns true if inner binary exists
@@ -460,6 +460,17 @@ public:
     bool hasInfoStrings() const
     { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
 };
+
+/// create AMD binary object from binary code
+/**
+ * \param binaryCodeSize binary code size
+ * \param binaryCode pointer to binary code
+ * \param creationFlags flags that specified what will be created during creation
+ * \return binary object
+ */
+extern AmdCL2MainGPUBinaryBase* createAmdCL2BinaryFromCode(
+            size_t binaryCodeSize, cxbyte* binaryCode,
+            Flags creationFlags = AMDBIN_CREATE_ALL);
 
 /// check whether is Amd OpenCL 2.0 binary
 extern bool isAmdCL2Binary(size_t binarySize, const cxbyte* binary);

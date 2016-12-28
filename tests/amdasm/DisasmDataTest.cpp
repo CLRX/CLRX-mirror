@@ -1085,6 +1085,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amdcl2.clo",
         R"ffDXD(.amdcl2
 .gpu Bonaire
+.64bit
 .arch_minor 0
 .arch_stepping 0
 .driver_version 191205

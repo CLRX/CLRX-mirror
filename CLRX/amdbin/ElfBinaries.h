@@ -85,6 +85,8 @@ struct Elf32Types
     typedef Elf32_Sym Sym;      ///< symbol header
     typedef Elf32_Nhdr Nhdr;    ///< note header
     typedef Elf32_Dyn Dyn;      ///< dynamic entry
+    typedef Elf32_Rel Rel;    ///< relocation
+    typedef Elf32_Rela Rela;    ///< relocation with addend
     static const cxbyte ELFCLASS;   ///< ELF class
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name
@@ -103,6 +105,8 @@ struct Elf64Types
     typedef Elf64_Sym Sym;      ///< symbol header
     typedef Elf64_Nhdr Nhdr;    ///< note header
     typedef Elf64_Dyn Dyn;      ///< dynamic entry
+    typedef Elf64_Rel Rel;    ///< relocation
+    typedef Elf64_Rela Rela;    ///< relocation with addend
     static const cxbyte ELFCLASS;   ///< ELF class
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name

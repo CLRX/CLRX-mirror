@@ -392,7 +392,8 @@ enum class AmdMainType
     GPU_64_BINARY, ///< binary for GPU with 64-bit memory model
     X86_BINARY, ///< binary for x86 systems
     X86_64_BINARY, ///< binary for x86-64 systems
-    GPU_CL2_BINARY // OpenCL 2.0 binary type (64-bit)
+    GPU_CL2_BINARY, ///< OpenCL 2.0 binary type (32-bit)
+    GPU_CL2_64_BINARY ///< OpenCL 2.0 binary type (64-bit)
 };
 
 /// main AMD binary base class

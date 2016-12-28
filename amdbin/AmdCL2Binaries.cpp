@@ -489,8 +489,8 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
 
 /* AMD CL2 GPU Binary base class */
 
-AmdCL2MainGPUBinaryBase::AmdCL2MainGPUBinaryBase()
-        : AmdMainBinaryBase(AmdMainType::GPU_CL2_BINARY), driverVersion(180005),
+AmdCL2MainGPUBinaryBase::AmdCL2MainGPUBinaryBase(AmdMainType mainType)
+        : AmdMainBinaryBase(mainType), driverVersion(180005),
           kernelsNum(0)
 { }
 
@@ -708,7 +708,7 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(ElfBinaryTemplate<Types>& elfBin
 /* AMD CL2 32-bit */
 
 AmdCL2MainGPUBinary32::AmdCL2MainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
-            Flags creationFlags) : AmdCL2MainGPUBinaryBase(),
+            Flags creationFlags) : AmdCL2MainGPUBinaryBase(AmdMainType::GPU_CL2_BINARY),
             ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
 {
     initMainGPUBinary<Elf32Types>(*this);
@@ -717,20 +717,36 @@ AmdCL2MainGPUBinary32::AmdCL2MainGPUBinary32(size_t binaryCodeSize, cxbyte* bina
 /* AMD CL2 64-bit */
 
 AmdCL2MainGPUBinary64::AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
-            Flags creationFlags) : AmdCL2MainGPUBinaryBase(),
+            Flags creationFlags) : AmdCL2MainGPUBinaryBase(AmdMainType::GPU_CL2_64_BINARY),
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
     initMainGPUBinary<Elf64Types>(*this);
+}
+
+AmdCL2MainGPUBinaryBase* CLRX::createAmdCL2BinaryFromCode(
+            size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags)
+{
+    if (binaryCode[EI_CLASS] == ELFCLASS32)
+        return new AmdCL2MainGPUBinary32(binaryCodeSize, binaryCode, creationFlags);
+    else
+        return new AmdCL2MainGPUBinary64(binaryCodeSize, binaryCode, creationFlags);
 }
 
 bool CLRX::isAmdCL2Binary(size_t binarySize, const cxbyte* binary)
 {
     if (!isElfBinary(binarySize, binary))
         return false;
-    if (binary[EI_CLASS] != ELFCLASS64)
-        return false;
-    const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr*>(binary);
-    if (ULEV(ehdr->e_machine) != 0xaf5b || ULEV(ehdr->e_flags)==0)
-        return false;
+    if (binary[EI_CLASS] == ELFCLASS32)
+    {
+        const Elf32_Ehdr* ehdr = reinterpret_cast<const Elf32_Ehdr*>(binary);
+        if (ULEV(ehdr->e_machine) != 0xaf5a || ULEV(ehdr->e_flags)==0)
+            return false;
+    }
+    else
+    {
+        const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr*>(binary);
+        if (ULEV(ehdr->e_machine) != 0xaf5b || ULEV(ehdr->e_flags)==0)
+            return false;
+    }
     return true;
 }

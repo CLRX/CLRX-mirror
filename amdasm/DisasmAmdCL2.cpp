@@ -110,10 +110,23 @@ static const CL2GPUDeviceCodeEntry cl2GPUPROGpuDeviceCodeTable[] =
     { 15, GPUDeviceType::STONEY }
 };
 
-AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinary64& binary)
+struct CLRX_INTERNAL AmdCL2Types32: Elf32Types
+{
+    typedef AmdCL2MainGPUBinary32 AmdCL2MainBinary;
+};
+
+struct CLRX_INTERNAL AmdCL2Types64: Elf64Types
+{
+    typedef AmdCL2MainGPUBinary64 AmdCL2MainBinary;
+};
+
+template<typename AmdCL2Types>
+static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
+            const typename AmdCL2Types::AmdCL2MainBinary& binary)
 {
     std::unique_ptr<AmdCL2DisasmInput> input(new AmdCL2DisasmInput);
     const uint32_t elfFlags = ULEV(binary.getHeader().e_flags);
+    input->is64BitMode = (binary.getHeader().e_ident[EI_CLASS] == ELFCLASS64);
     // detect GPU device from elfMachine field from ELF header
     cxuint entriesNum = 0;
     const CL2GPUDeviceCodeEntry* gpuCodeTable = nullptr;
@@ -190,16 +203,18 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
             // find note about AMDGPU
             for (size_t offset = 0; offset < notesSize; )
             {
-                const Elf64_Nhdr* nhdr = (const Elf64_Nhdr*)(noteContent + offset);
+                const typename AmdCL2Types::Nhdr* nhdr =
+                            (const typename AmdCL2Types::Nhdr*)(noteContent + offset);
                 size_t namesz = ULEV(nhdr->n_namesz);
                 size_t descsz = ULEV(nhdr->n_descsz);
                 if (usumGt(offset, namesz+descsz, notesSize))
                     throw Exception("Note offset+size out of range");
                 if (ULEV(nhdr->n_type) == 0x3 && namesz==4 && descsz>=0x1a &&
-                    ::strcmp((const char*)noteContent+offset+sizeof(Elf64_Nhdr), "AMD")==0)
+                    ::strcmp((const char*)noteContent+offset+
+                                sizeof(typename AmdCL2Types::Nhdr), "AMD")==0)
                 {    // AMDGPU type
                     const uint32_t* content = (const uint32_t*)
-                            (noteContent+offset+sizeof(Elf64_Nhdr) + 4);
+                            (noteContent+offset+sizeof(typename AmdCL2Types::Nhdr) + 4);
                     uint32_t major = ULEV(content[1]);
                     if ((arch==GPUArchitecture::GCN1_2 && major!=8) ||
                         (arch==GPUArchitecture::GCN1_1 && major!=7))
@@ -208,7 +223,7 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
                     input->archStepping = ULEV(content[3]);
                 }
                 size_t align = (((namesz+descsz)&3)!=0) ? 4-((namesz+descsz)&3) : 0;
-                offset += sizeof(Elf64_Nhdr) + namesz + descsz + align;
+                offset += sizeof(typename AmdCL2Types::Nhdr) + namesz + descsz + align;
             }
         }
         
@@ -385,6 +400,18 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
     if (sortedRelocIter != sortedRelocs.end())
         throw Exception("Code relocation offset outside kernel code");
     return input.release();
+}
+
+AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary32(
+                const AmdCL2MainGPUBinary32& binary)
+{
+    return getAmdCL2DisasmInputFromBinary<AmdCL2Types32>(binary);
+}
+
+AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary64(
+                const AmdCL2MainGPUBinary64& binary)
+{
+    return getAmdCL2DisasmInputFromBinary<AmdCL2Types64>(binary);
 }
 
 struct CLRX_INTERNAL IntAmdCL2SetupData
@@ -811,6 +838,11 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
     const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
     const bool doSetup = ((flags & DISASM_SETUP) != 0);
+    
+    if (amdCL2Input->is64BitMode)
+        output.write(".64bit\n", 7);
+    else
+        output.write(".32bit\n", 7);
     
     {
         char buf[40];
