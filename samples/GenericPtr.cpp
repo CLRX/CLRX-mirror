@@ -26,6 +26,9 @@
 using namespace CLRX;
 
 static const char* genericPtrSource = R"ffDXD(
+.ifarch gcn1.0
+    .error "Unsupported GCN1.0 architecture"
+.endif
 .ifarch gcn1.2
     .error "Unsupported GCN1.2 architecture"
 .endif
