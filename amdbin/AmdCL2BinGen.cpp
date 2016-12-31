@@ -830,7 +830,9 @@ public:
             
             const bool isImage = isKernelArgImage(arg.argType);
             
-            const ArgTypeSizes& argTypeSizes = argTypeSizesTable[cxuint(arg.argType)];
+            ArgTypeSizes argTypeSizes = argTypeSizesTable[cxuint(arg.argType)];
+            if (!input->is64Bit && arg.argType==KernelArgType::POINTER)
+                argTypeSizes.elemSize = 4; // fix for 32-bit for pointer
             cxuint vectorLength = argTypeSizes.vectorSize;
             if (newBinaries && vectorLength==3)
                 vectorLength = 4;
