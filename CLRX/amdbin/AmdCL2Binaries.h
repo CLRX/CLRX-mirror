@@ -277,7 +277,7 @@ struct AmdCL2GPUMetadataHeader32
     uint32_t unknown4[3];
     uint32_t pipesUsage;
     uint32_t unknown5[2];
-    uint32_t argsNum;       ///< number of arguments
+    uint64_t argsNum;       ///< number of arguments
 };
 
 /// header for metadata
@@ -352,8 +352,7 @@ struct AmdCL2GPUKernelArgEntry64
     cxbyte isPipe;      ///< if pipe
     cxbyte unknown4;
     uint32_t kindOfType;    ///< kind of type
-    uint32_t isConst;   ///< is const pointer
-    uint32_t unknown5;
+    uint64_t isConst;   ///< is const pointer
 };
 
 class AmdCL2MainGPUBinaryBase: public AmdMainBinaryBase

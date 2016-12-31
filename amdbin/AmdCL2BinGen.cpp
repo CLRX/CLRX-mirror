@@ -323,11 +323,23 @@ static void prepareKernelTempData(const AmdCL2Input* input,
         else
         {   // if kernel configuration present
             const cxuint argsNum = kernel.config.args.size();
-            size_t out = ((newBinaries) ? ((is16_3Ver) ? 303 : 254) : 246) +
-                        (argsNum + 1)*88;
-            for (const AmdKernelArgInput& arg: kernel.config.args)
+            size_t out;
+            if (input->is64Bit)
+            {
+                out = ((newBinaries) ? ((is16_3Ver) ? 303 : 254) : 246) +
+                            (argsNum + 1)*sizeof(AmdCL2GPUKernelArgEntry64);
+                for (const AmdKernelArgInput& arg: kernel.config.args)
                     out += arg.argName.size() + arg.typeName.size() + 2;
-            out += 48;
+                out += 48;
+            }
+            else
+            {
+                out = ((newBinaries) ? ((is16_3Ver) ? 195 : 174) : 166) +
+                            (argsNum + 1)*sizeof(AmdCL2GPUKernelArgEntry32);
+                for (const AmdKernelArgInput& arg: kernel.config.args)
+                    out += arg.argName.size() + arg.typeName.size() + 2;
+                out += 24;
+            }
             
             /// if kernels uses locals
             tempData.pipesUsed = 0;
@@ -533,6 +545,7 @@ public:
 };
 
 // fast and memory efficient symbol table generator for main binary
+template<typename Types>
 class CLRX_INTERNAL CL2MainSymTabGen: public ElfRegionContent
 {
 private:
@@ -566,7 +579,7 @@ public:
     size_t size() const
     {
         const bool newBinaries = input->driverVersion >= 191205;
-        return sizeof(Elf64_Sym)*(1 + (!input->compileOptions.empty()) +
+        return sizeof(typename Types::Sym)*(1 + (!input->compileOptions.empty()) +
             input->kernels.size()*(newBinaries ? 1 : 3) +
             (withBrig) + 1 /* acl_version */ + input->extraSymbols.size());
     }
@@ -574,8 +587,8 @@ public:
     void operator()(FastOutputBuffer& fob) const
     {
         const bool newBinaries = input->driverVersion >= 191205;
-        fob.fill(sizeof(Elf64_Sym), 0);
-        Elf64_Sym sym;
+        fob.fill(sizeof(typename Types::Sym), 0);
+        typename Types::Sym sym;
         size_t nameOffset = 1;
         if (!input->compileOptions.empty())
         {
@@ -694,6 +707,31 @@ struct CLRX_INTERNAL TypeNameVecSize
 
 static const uint32_t ptrSpacesTable[4] = { 0, 3, 5, 4 };
 
+struct CLRX_INTERNAL AmdCL2Types32
+{
+    typedef AmdCL2GPUMetadataHeader32 MetadataHeader;
+    typedef AmdCL2GPUKernelArgEntry32 KernelArgEntry;
+    static const size_t headerSize16_3Ver = 0xa4;
+    static const size_t headerSizeNewBinaries = 0x90;
+    static const size_t headerSizeOldBinaries = 0x88;
+    static const size_t endSize = 24;
+    static const size_t headerEndSize = 20;
+    static const size_t middleHeaderSize = 16;
+};
+
+struct CLRX_INTERNAL AmdCL2Types64
+{
+    typedef AmdCL2GPUMetadataHeader64 MetadataHeader;
+    typedef AmdCL2GPUKernelArgEntry64 KernelArgEntry;
+    static const size_t headerSize16_3Ver = 0x110;
+    static const size_t headerSizeNewBinaries = 0xe0;
+    static const size_t headerSizeOldBinaries = 0xd8;
+    static const size_t endSize = 48;
+    static const size_t headerEndSize = 44;
+    static const size_t middleHeaderSize = 40;
+};
+
+template<typename Types>
 class CLRX_INTERNAL CL2MainRodataGen: public ElfRegionContent
 {
 private:
@@ -723,10 +761,11 @@ public:
     {
         const bool newBinaries = input->driverVersion >= 191205;
         const bool is16_3Ver = input->driverVersion >= 200406;
-        AmdCL2GPUMetadataHeader64 header;
+        typename Types::MetadataHeader header;
         cxuint argsNum = config.args.size();
         
-        SLEV(header.size, (newBinaries) ? (is16_3Ver ? 0x110 : 0xe0) : 0xd8);
+        SLEV(header.size, (newBinaries) ? (is16_3Ver ? Types::headerSize16_3Ver :
+                Types::headerSizeNewBinaries) : Types::headerSizeOldBinaries);
         SLEV(header.metadataSize, tempData.metadataSize);
         SLEV(header.unknown1[0], 0x3);
         SLEV(header.unknown1[1], 0x1);
@@ -758,19 +797,19 @@ public:
         header.unknown5[0] = header.unknown5[1] = 0;
         SLEV(header.argsNum, argsNum);
         fob.writeObject(header);
-        fob.fill(40, 0); // fill up
+        fob.fill(Types::middleHeaderSize, 0); // fill up
         fob.writeObject(LEV(uint32_t(config.useEnqueue?1:0)));
         fob.writeObject(LEV(uint32_t(kernelId)));
         if (newBinaries) // additional data
         {
             fob.writeObject(LEV(uint32_t(0x00000006U)));
-            if (is16_3Ver)
+            if (is16_3Ver && input->is64Bit)
                 fob.writeObject(uint32_t(0));
             fob.writeObject(LEV(uint32_t(
                         tempData.pipesUsed==0 && !config.useEnqueue ? 0xffffffffU : 0)));
         }
         if (is16_3Ver)
-            fob.fill(44, 0);
+            fob.fill(Types::headerEndSize, 0);
         // two null terminated strings
         fob.writeArray(22, "__OpenCL_dummy_kernel");
         fob.writeArray(8, "generic");
@@ -782,8 +821,8 @@ public:
         for (cxuint i = 0; i < argsNum; i++)
         {   //
             const AmdKernelArgInput& arg = config.args[i];
-            AmdCL2GPUKernelArgEntry64 argEntry;
-            SLEV(argEntry.size, 88);
+            typename Types::KernelArgEntry argEntry;
+            SLEV(argEntry.size, sizeof(typename Types::KernelArgEntry));
             SLEV(argEntry.argNameSize, arg.argName.size());
             SLEV(argEntry.typeNameSize, arg.typeName.size());
             argEntry.unknown1 = 0;
@@ -903,10 +942,9 @@ public:
             else // otherwise
                 kindOfType = 4;
             SLEV(argEntry.kindOfType, kindOfType);
-            SLEV(argEntry.unknown5, 0);
             fob.writeObject(argEntry);
         }
-        fob.fill(88, 0); // NULL arg
+        fob.fill(sizeof(typename Types::KernelArgEntry), 0); // NULL arg
         
         // arg names and type names
         for (const AmdKernelArgInput& arg: config.args)
@@ -914,7 +952,7 @@ public:
             fob.writeArray(arg.argName.size()+1, arg.argName.c_str());
             fob.writeArray(arg.typeName.size()+1, arg.typeName.c_str());
         }
-        fob.fill(48, 0);
+        fob.fill(Types::endSize, 0);
     }
     
     void operator()(FastOutputBuffer& fob) const
@@ -1854,8 +1892,15 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     if (deviceCodeTable[cxuint(input->deviceType)] == UINT_MAX)
         throw Exception("Unsupported GPU device type by driver version");
     
-    ElfBinaryGen64 elfBinGen({ 0, 0, ELFOSABI_SYSV, 0, ET_EXEC, 0xaf5b, EV_CURRENT,
-                UINT_MAX, 0, deviceCodeTable[cxuint(input->deviceType)] });
+    std::unique_ptr<ElfBinaryGen32> elfBinGen32;
+    std::unique_ptr<ElfBinaryGen64> elfBinGen64;
+    
+    if (input->is64Bit)
+        elfBinGen64.reset(new ElfBinaryGen64({ 0, 0, ELFOSABI_SYSV, 0, ET_EXEC, 0xaf5b,
+                EV_CURRENT, UINT_MAX, 0, deviceCodeTable[cxuint(input->deviceType)] }));
+    else
+        elfBinGen32.reset(new ElfBinaryGen32({ 0, 0, ELFOSABI_SYSV, 0, ET_EXEC, 0xaf5a,
+                EV_CURRENT, UINT_MAX, 0, deviceCodeTable[cxuint(input->deviceType)] }));
     
     CString aclVersion = input->aclVersion;
     if (aclVersion.empty())
@@ -1878,10 +1923,13 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     const uint16_t* mainSectTable = (kernelsNum != 0 || newBinaries) ?
             mainBuiltinSectionTable : mainBuiltinSectionTable2;
     CL2MainStrTabGen mainStrTabGen(input);
-    CL2MainSymTabGen mainSymTabGen(input, tempDatas, aclVersion, mainSectTable,
-                    mainExtraSectionIndex);
+    CL2MainSymTabGen<Elf32Types> mainSymTabGen32(input, tempDatas, aclVersion,
+                     mainSectTable, mainExtraSectionIndex);
+    CL2MainSymTabGen<Elf64Types> mainSymTabGen64(input, tempDatas, aclVersion,
+                     mainSectTable, mainExtraSectionIndex);
     CL2MainCommentGen mainCommentGen(input, aclVersion);
-    CL2MainRodataGen mainRodataGen(input, tempDatas);
+    CL2MainRodataGen<AmdCL2Types32> mainRodataGen32(input, tempDatas);
+    CL2MainRodataGen<AmdCL2Types64> mainRodataGen64(input, tempDatas);
     CL2InnerTextGen innerTextGen(input, tempDatas);
     CL2InnerGlobalDataGen innerGDataGen(input);
     CL2InnerSamplerInitGen innerSamplerInitGen(input);
@@ -1889,17 +1937,34 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     CL2InnerGlobalDataRelsGen innerGDataRels(input, dataSymbolsNum);
     
     // main section of main binary
-    elfBinGen.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
-                    SHT_STRTAB, SHF_STRINGS));
-    elfBinGen.addRegion(ElfRegion64(mainStrTabGen.size(), &mainStrTabGen, 1, ".strtab",
-                    SHT_STRTAB, SHF_STRINGS));
-    elfBinGen.addRegion(ElfRegion64(mainSymTabGen.size(), &mainSymTabGen, 8, ".symtab",
-                    SHT_SYMTAB, 0));
-    elfBinGen.addRegion(ElfRegion64(input->compileOptions.size()+aclVersion.size(),
-                    &mainCommentGen, 1, ".comment", SHT_PROGBITS, 0));
-    if (kernelsNum != 0)
-        elfBinGen.addRegion(ElfRegion64(mainRodataGen.size(), &mainRodataGen, 1, ".rodata",
-                    SHT_PROGBITS, SHF_ALLOC));
+    if (input->is64Bit)
+    {
+        elfBinGen64->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
+                        SHT_STRTAB, SHF_STRINGS));
+        elfBinGen64->addRegion(ElfRegion64(mainStrTabGen.size(), &mainStrTabGen,
+                      1, ".strtab", SHT_STRTAB, SHF_STRINGS));
+        elfBinGen64->addRegion(ElfRegion64(mainSymTabGen64.size(), &mainSymTabGen64,
+                      8, ".symtab", SHT_SYMTAB, 0));
+        elfBinGen64->addRegion(ElfRegion64(input->compileOptions.size()+aclVersion.size(),
+                        &mainCommentGen, 1, ".comment", SHT_PROGBITS, 0));
+        if (kernelsNum != 0)
+            elfBinGen64->addRegion(ElfRegion64(mainRodataGen64.size(), &mainRodataGen64,
+                        1, ".rodata", SHT_PROGBITS, SHF_ALLOC));
+    }
+    else
+    {
+        elfBinGen32->addRegion(ElfRegion32(0, (const cxbyte*)nullptr, 1, ".shstrtab",
+                        SHT_STRTAB, SHF_STRINGS));
+        elfBinGen32->addRegion(ElfRegion32(mainStrTabGen.size(), &mainStrTabGen,
+                      1, ".strtab", SHT_STRTAB, SHF_STRINGS));
+        elfBinGen32->addRegion(ElfRegion32(mainSymTabGen32.size(), &mainSymTabGen32,
+                      8, ".symtab", SHT_SYMTAB, 0));
+        elfBinGen32->addRegion(ElfRegion32(input->compileOptions.size()+aclVersion.size(),
+                        &mainCommentGen, 1, ".comment", SHT_PROGBITS, 0));
+        if (kernelsNum != 0)
+            elfBinGen32->addRegion(ElfRegion32(mainRodataGen32.size(), &mainRodataGen32,
+                        1, ".rodata", SHT_PROGBITS, SHF_ALLOC));
+    }
     
     std::unique_ptr<ElfBinaryGen64> innerBinGen;
     std::vector<CString> symbolNamePool;
@@ -2119,16 +2184,32 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     }
     
     CL2MainTextGen mainTextGen(input, tempDatas, innerBinGen.get());
-    if (kernelsNum != 0 || newBinaries)
-        elfBinGen.addRegion(ElfRegion64(mainTextGen.size(), &mainTextGen, 1, ".text",
-                    SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR));
+    uint64_t binarySize;
+    if (input->is64Bit)
+    {
+        if (kernelsNum != 0 || newBinaries)
+            elfBinGen64->addRegion(ElfRegion64(mainTextGen.size(), &mainTextGen,
+                       1, ".text", SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR));
+        
+        for (const BinSection& section: input->extraSections)
+            elfBinGen64->addRegion(ElfRegion64(section, mainSectTable,
+                         ELFSECTID_STD_MAX, mainExtraSectionIndex));
+        elfBinGen64->addRegion(ElfRegion64::sectionHeaderTable());
+        binarySize = elfBinGen64->countSize();
+    }
+    else
+    {
+        if (kernelsNum != 0 || newBinaries)
+            elfBinGen32->addRegion(ElfRegion32(mainTextGen.size(), &mainTextGen,
+                       1, ".text", SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR));
+        
+        for (const BinSection& section: input->extraSections)
+            elfBinGen32->addRegion(ElfRegion32(section, mainSectTable,
+                         ELFSECTID_STD_MAX, mainExtraSectionIndex));
+        elfBinGen32->addRegion(ElfRegion32::sectionHeaderTable());
+        binarySize = elfBinGen32->countSize();
+    }
     
-    for (const BinSection& section: input->extraSections)
-        elfBinGen.addRegion(ElfRegion64(section, mainSectTable,
-                     ELFSECTID_STD_MAX, mainExtraSectionIndex));
-    elfBinGen.addRegion(ElfRegion64::sectionHeaderTable());
-    
-    const uint64_t binarySize = elfBinGen.countSize();
     /****
      * prepare for write binary to output
      ****/
@@ -2155,7 +2236,10 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     try
     {
         os->exceptions(std::ios::failbit | std::ios::badbit);
-        elfBinGen.generate(fob);
+        if (input->is64Bit)
+            elfBinGen64->generate(fob);
+        else
+            elfBinGen32->generate(fob);
     }
     catch(...)
     {
