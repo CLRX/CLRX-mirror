@@ -117,7 +117,7 @@ static const ArgTypeSizes argTypeSizesTable[] =
     { 6, 1, 1 /*void */ },
     { 6, 1, 1 /*uchar*/ }, { 6, 1, 1, /*char*/ },
     { 7, 2, 1, /*ushort*/ }, { 7, 2, 1, /*short*/ },
-    { 8, 4, 1, /*uint*/ }, { 8, 4, 1, /*INT*/ },
+    { 8, 4, 1, /*uint*/ }, { 8, 4, 1, /*int*/ },
     { 9, 8, 1, /*ulong*/ }, { 9, 8, 1, /*long*/ },
     { 11, 4, 1, /*float*/ }, { 12, 8, 1, /*double*/ },
     { 7, 8, 1, /*pointer*/ },
