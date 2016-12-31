@@ -54,26 +54,26 @@ AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(const AmdCL2Input* amdInput)
         : manageable(false), input(amdInput)
 { }
 
-AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
-       uint32_t archMinor, uint32_t archStepping,
+AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(bool _64bitMode,
+       GPUDeviceType deviceType, uint32_t archMinor, uint32_t archStepping,
        uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData,
        size_t rwDataSize, const cxbyte* rwData, 
        const std::vector<AmdCL2KernelInput>& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    input = new AmdCL2Input{deviceType, archMinor, archStepping,
+    input = new AmdCL2Input{_64bitMode, deviceType, archMinor, archStepping,
                 globalDataSize, globalData, rwDataSize, rwData, 0, 0, 0,
                 nullptr, false, { }, { }, driverVersion, "", "", kernelInputs };
 }
 
-AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
-       uint32_t archMinor, uint32_t archStepping,
+AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(bool _64bitMode,
+       GPUDeviceType deviceType, uint32_t archMinor, uint32_t archStepping,
        uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData,
        size_t rwDataSize, const cxbyte* rwData,
        std::vector<AmdCL2KernelInput>&& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    input = new AmdCL2Input{deviceType, archMinor, archStepping,
+    input = new AmdCL2Input{_64bitMode, deviceType, archMinor, archStepping,
                 globalDataSize, globalData, rwDataSize, rwData, 0, 0, 0,
                 nullptr, false, { }, { }, driverVersion, "", "",
                 std::move(kernelInputs) };

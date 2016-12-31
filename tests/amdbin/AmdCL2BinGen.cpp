@@ -482,6 +482,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary64& b
         if (cl2GpuDeviceCodeTable[index].elfFlags == elfFlags)
             break;
     
+    amdCL2Input.is64Bit = true;
     amdCL2Input.deviceType = cl2GpuDeviceCodeTable[index].deviceType;
     amdCL2Input.aclVersion = binary.getAclVersionString();
     //std::cout << "BinCompOptions: " << binary.getCompileOptions() << std::endl;
