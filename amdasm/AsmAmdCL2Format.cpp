@@ -1332,7 +1332,7 @@ bool AsmAmdCL2Handler::prepareBinary()
     if (assembler.isaAssembler!=nullptr)
         saveCurrentAllocRegs(); // save last kernel allocated registers to kernel state
     
-    output.is64Bit = assembler.is64Bit();
+    output.is64Bit = /*assembler.is64Bit()*/true;
     output.deviceType = assembler.getDeviceType();
     /* initialize sections */
     const size_t sectionsNum = sections.size();
