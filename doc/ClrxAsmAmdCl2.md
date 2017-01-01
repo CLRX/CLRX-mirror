@@ -351,6 +351,7 @@ This is sample example of the kernel setup:
 
 ```
 .amdcl2
+.64bit
 .gpu Bonaire
 .driver_version 191205
 .compile_options "-I ./ -cl-std=CL2.0"
@@ -373,6 +374,7 @@ This is sample of the kernel with configuration:
 
 ```
 .amdcl2
+.64bit
 .gpu Bonaire
 .driver_version 191205
 .compile_options "-I ./ -cl-std=CL2.0"
