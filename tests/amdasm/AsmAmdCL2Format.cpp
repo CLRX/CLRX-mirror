@@ -212,6 +212,7 @@ static const AsmTestCase asmTestCases1Tbl[] =
 /* AMD CL2 (no config) */
     {
 R"ffDXD(            .amdcl2
+            .64bit
             .gpu Bonaire
             .driver_version 191205
             .kernel aaa1
@@ -301,6 +302,7 @@ R"ffDXD(            .amdcl2
     /* AMD CL2 (old format, no config) */
     {
         R"ffDXD(.amdcl2
+.64bit
 .gpu Bonaire
 .driver_version 180005
 .kernel aaa1
@@ -356,6 +358,7 @@ R"ffDXD(            .amdcl2
     /* AMDCL2 with configs */
     {
         R"ffDXD(.amdcl2
+.64bit
 .gpu Bonaire
 .driver_version 191205
 .kernel aaa1
@@ -491,6 +494,7 @@ R"ffDXD(            .amdcl2
     /* AMDCL2 - relocations */
     {
         R"ffDXD(.amdcl2
+.64bit
 .gpu Bonaire
 .driver_version 191205
 .globaldata

@@ -951,7 +951,7 @@ struct CLRX_INTERNAL IntAmdCL2KernelArg
     cxbyte used;
 };
 
-static const IntAmdCL2KernelArg setupArgsTable[] =
+static const IntAmdCL2KernelArg setupArgsTable64[] =
 {
     { "_.global_offset_0", "size_t", KernelArgType::LONG, KernelArgType::VOID,
         KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 },
@@ -966,6 +966,23 @@ static const IntAmdCL2KernelArg setupArgsTable[] =
     { "_.aqlwrap_pointer", "size_t", KernelArgType::LONG, KernelArgType::VOID,
         KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 }
 };
+
+static const IntAmdCL2KernelArg setupArgsTable32[] =
+{
+    { "_.global_offset_0", "size_t", KernelArgType::INT, KernelArgType::VOID,
+        KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 },
+    { "_.global_offset_1", "size_t", KernelArgType::INT, KernelArgType::VOID,
+        KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 },
+    { "_.global_offset_2", "size_t", KernelArgType::INT, KernelArgType::VOID,
+        KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 },
+    { "_.printf_buffer", "size_t", KernelArgType::POINTER, KernelArgType::VOID,
+        KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, AMDCL2_ARGUSED_READ_WRITE },
+    { "_.vqueue_pointer", "size_t", KernelArgType::INT, KernelArgType::VOID,
+        KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 },
+    { "_.aqlwrap_pointer", "size_t", KernelArgType::INT, KernelArgType::VOID,
+        KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 }
+};
+
 
 void AsmAmdCL2PseudoOps::doSetupArgs(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                        const char* linePtr)
@@ -986,8 +1003,10 @@ void AsmAmdCL2PseudoOps::doSetupArgs(AsmAmdCL2Handler& handler, const char* pseu
     }
     
     AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
-    for (const IntAmdCL2KernelArg& arg: setupArgsTable)
+    const IntAmdCL2KernelArg* argTable = asmr._64bit ? setupArgsTable64 : setupArgsTable32;
+    for (size_t i = 0; i < 6; i++)
     {
+        const IntAmdCL2KernelArg& arg = argTable[i];
         kernelState.argNamesSet.insert(arg.argName);
         config.args.push_back({arg.argName, arg.typeName, arg.argType, arg.pointerType,
                 arg.ptrSpace, arg.ptrAccess, arg.used });
@@ -1332,7 +1351,7 @@ bool AsmAmdCL2Handler::prepareBinary()
     if (assembler.isaAssembler!=nullptr)
         saveCurrentAllocRegs(); // save last kernel allocated registers to kernel state
     
-    output.is64Bit = /*assembler.is64Bit()*/true;
+    output.is64Bit = assembler.is64Bit();
     output.deviceType = assembler.getDeviceType();
     /* initialize sections */
     const size_t sectionsNum = sections.size();

@@ -165,12 +165,13 @@ void AsmPseudoOps::setBitness(Assembler& asmr, const char* linePtr, bool _64Bit)
         return;
     if (asmr.formatHandler != nullptr)
         asmr.printError(linePtr, "Bitness is already defined");
-    else if (asmr.format == BinaryFormat::AMDCL2 && asmr.format == BinaryFormat::ROCM)
+    else if (asmr.format == BinaryFormat::ROCM)
     {
         if (!_64Bit)
-            asmr.printWarning(linePtr, "For AmdCL2 and ROCm bitness is always 64bit");
+            asmr.printWarning(linePtr, "For ROCm bitness is always 64bit");
     }
-    else if (asmr.format != BinaryFormat::AMD && asmr.format != BinaryFormat::GALLIUM)
+    else if (asmr.format != BinaryFormat::AMD && asmr.format != BinaryFormat::GALLIUM &&
+        asmr.format != BinaryFormat::AMDCL2)
         asmr.printWarning(linePtr, "Bitness ignored for other formats than "
                 "AMD Catalyst, ROCm and GalliumCompute");
     else
