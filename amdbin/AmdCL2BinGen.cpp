@@ -770,7 +770,8 @@ public:
         SLEV(header.unknown1[0], 0x3);
         SLEV(header.unknown1[1], 0x1);
         SLEV(header.unknown1[2], 0x68);
-        uint32_t options = config.reqdWorkGroupSize[0]!=0 ? 0x24 : 0x20;
+        uint32_t options = config.reqdWorkGroupSize[0]!=0 ? 0x04 : 0x00;
+        options |= input->is64Bit ? 0x20 : 0x00;
         if (((config.useEnqueue || config.localSize!=0 || tempData.pipesUsed!=0 ||
                 config.scratchBufferSize!=0) && !newBinaries))
             options |= 0x100U;
