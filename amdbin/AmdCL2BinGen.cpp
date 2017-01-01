@@ -1038,7 +1038,8 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
 }
 
 static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& config,
-                FastOutputBuffer& fob, bool newBinaries, bool useLocals, bool usePipes)
+                FastOutputBuffer& fob, bool newBinaries, bool useLocals, bool usePipes,
+                bool is64Bit)
 {
     fob.writeObject<uint64_t>(LEV(uint64_t(newBinaries ? 0x100000001ULL : 1ULL)));
     fob.writeArray(40, kernelSetupBytesAfter8);
@@ -1069,7 +1070,9 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     SLEV(setupData.pgmRSRC2, calculatePgmRSRC2(config));
     
     SLEV(setupData.setup1, setup1);
-    SLEV(setupData.archInd, (arch==GPUArchitecture::GCN1_2 && newBinaries) ? 0x4a : 0x0a);
+    uint16_t archInd = (is64Bit) ? 0xa : 0x2;
+    SLEV(setupData.archInd, (arch==GPUArchitecture::GCN1_2 && newBinaries) ?
+                    0x40 : archInd);
     SLEV(setupData.scratchBufferSize, config.scratchBufferSize);
     SLEV(setupData.localSize, config.localSize);
     setupData.zero1 = 0;
@@ -1086,9 +1089,10 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
             arg.argType == KernelArgType::CMDQUEUE ||
             arg.argType == KernelArgType::SAMPLER || isKernelArgImage(arg.argType))
         {
-            if ((kernelArgSize&7)!=0)    // alignment
-                kernelArgSize += 8-(kernelArgSize&7);
-            kernelArgSize += 8;
+            cxuint size = (is64Bit) ? 8 : 4;
+            if ((kernelArgSize&(size-1))!=0)    // alignment
+                kernelArgSize += size-(kernelArgSize&(size-1));
+            kernelArgSize += size;
         }
         else
         {   // scalar
@@ -1445,7 +1449,7 @@ public:
                     generateKernelStub(arch, kernel.config, fob, tempData.codeSize,
                                kernel.code, tempData.useLocals, tempData.pipesUsed!=0);
                     generateKernelSetup(arch, kernel.config, fob, false,
-                                tempData.useLocals, tempData.pipesUsed!=0);
+                                tempData.useLocals, tempData.pipesUsed!=0, input->is64Bit);
                 }
                 fob.writeArray(kernel.codeSize, kernel.code);
             }
@@ -1494,7 +1498,7 @@ public:
                 fob.writeArray(tempData.setupSize, kernel.setup);
             else
                 generateKernelSetup(arch, kernel.config, fob, true, tempData.useLocals,
-                            tempData.pipesUsed!=0);
+                            tempData.pipesUsed!=0, input->is64Bit);
             fob.writeArray(tempData.codeSize, kernel.code);
             outSize += tempData.setupSize + tempData.codeSize;
         }
