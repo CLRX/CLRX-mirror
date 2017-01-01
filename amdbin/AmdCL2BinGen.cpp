@@ -2246,6 +2246,12 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         binarySize = elfBinGen32->countSize();
     }
     
+    if (
+#ifdef HAVE_64BIT
+        !input->is64Bit &&
+#endif
+        binarySize > UINT32_MAX)
+        throw Exception("Binary size is too big!");
     /****
      * prepare for write binary to output
      ****/
