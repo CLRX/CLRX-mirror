@@ -783,8 +783,7 @@ public:
         SLEV(header.reqdWorkGroupSize[0], config.reqdWorkGroupSize[0]);
         SLEV(header.reqdWorkGroupSize[1], config.reqdWorkGroupSize[1]);
         SLEV(header.reqdWorkGroupSize[2], config.reqdWorkGroupSize[2]);
-        header.unknown3[0] = 0;
-        header.unknown3[1] = 0;
+        ::memset(header.unknown3, 0, sizeof header.unknown3);
         SLEV(header.firstNameLength, 0x15);
         SLEV(header.secondNameLength, 0x7);
         for (cxuint i = 0; i < 3; i++)
