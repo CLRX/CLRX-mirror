@@ -1677,6 +1677,8 @@ static const cxbyte noteDescType3[30] =
   'A', 'M', 'D', 0, 'A', 'M', 'D', 'G', 'P', 'U', 0, 0, 0, 0  };
 static const cxbyte noteDescType4[8] =
 { 0xf0, 0x83, 0x17, 0xfb, 0xfc, 0x7f, 0x00, 0x00 };
+static const cxbyte noteDescType4_32bit[4] =
+{ 0xb0, 0xa6, 0xf2, 0x00 };
 static const cxbyte noteDescType4_16_3[0x29] =
 { 0x19, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 'A', 'M', 'D', ' ', 'H', 'S', 'A', ' ',
   'R', 'u', 'n', 't', 'i', 'm', 'e', ' ',
@@ -1690,6 +1692,16 @@ static const cxbyte noteDescType5_16_3[26] =
 static const cxbyte noteDescType5_gpupro[26] =
 { 0x16, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
     'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=', '0', 0, 't' };
+static const cxbyte noteDescType5_16_3_32bit[54] =
+{ 0x32, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
+    'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=', '0', ' ',
+    '-', 'u', 's', 'e', '-', 'b', 'u', 'f', 'f', 'e', 'r', '-', 'f', 'o', 'r',
+    '-', 'h', 's', 'a', '-', 'g', 'l', 'o', 'b', 'a', 'l', ' ', 0, 'R' };
+static const cxbyte noteDescType5_32bit[52] =
+{ 0x31, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
+    'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=',  '0', ' ',
+    '-', 'u', 's', 'e', '-', 'b', 'u', 'f', 'f', 'e', 'r', '-', 'f', 'o', 'r',
+    '-', 'h', 's', 'a', '-', 'g', 'l', 'o', 'b', 'a' };
 
 static const AMDGPUArchValues amdGpuArchValuesTbl[] =
 {
@@ -2042,8 +2054,14 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinGen->addNote({"AMD",
                          sizeof noteDescType4_16_3, noteDescType4_16_3, 4U});
             if (!gpuProDriver)
-                innerBinGen->addNote({"AMD",
-                             sizeof noteDescType5_16_3, noteDescType5_16_3, 5U});
+            {
+                if (input->is64Bit)
+                    innerBinGen->addNote({"AMD",
+                                 sizeof noteDescType5_16_3, noteDescType5_16_3, 5U});
+                else // 32-bit
+                    innerBinGen->addNote({"AMD", sizeof noteDescType5_16_3_32bit,
+                                 noteDescType5_16_3_32bit, 5U});
+            }
             else
                 innerBinGen->addNote({"AMD",
                              sizeof noteDescType5_gpupro, noteDescType5_gpupro, 5U});
@@ -2124,14 +2142,23 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinGen->addNote({"AMD", sizeof noteDescType1, noteDescType1, 1U});
             innerBinGen->addNote({"AMD", sizeof noteDescType2,
                         (input->is64Bit) ? noteDescType2 : noteDescType2_32, 2U});
-            innerBinGen->addNote({"AMD", sizeof noteDescType5, noteDescType5, 5U});
+            if (input->is64Bit)
+                innerBinGen->addNote({"AMD", sizeof noteDescType5, noteDescType5, 5U});
+            else // 32bit
+                innerBinGen->addNote({"AMD", sizeof noteDescType5_32bit,
+                            noteDescType5_32bit, 5U});
+            
             noteBuf.reset(new cxbyte[0x1e]);
             ::memcpy(noteBuf.get(), noteDescType3, 0x1e);
             SULEV(*(uint32_t*)(noteBuf.get()+4), amdGpuArchValues.major);
             SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
             SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);
             innerBinGen->addNote({"AMD", 0x1e, noteBuf.get(), 3U});
-            innerBinGen->addNote({"AMD", sizeof noteDescType4, noteDescType4, 4U});
+            if (input->is64Bit)
+                innerBinGen->addNote({"AMD", sizeof noteDescType4, noteDescType4, 4U});
+            else // 32-bit
+                innerBinGen->addNote({"AMD", sizeof noteDescType4_32bit,
+                            noteDescType4_32bit, 4U});
             
             innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
                                    ".note", SHT_NOTE, 0));
