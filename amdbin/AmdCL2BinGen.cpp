@@ -1668,6 +1668,7 @@ public:
 
 static const cxbyte noteDescType1[8] = { 1, 0, 0, 0, 0, 0, 0, 0 };
 static const cxbyte noteDescType2[12] = { 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0 };
+static const cxbyte noteDescType2_32[12] = { 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0 };
 static const cxbyte noteDescType3[30] =
 { 4, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   'A', 'M', 'D', 0, 'A', 'M', 'D', 'G', 'P', 'U', 0, 0, 0, 0  };
@@ -2027,7 +2028,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
              * AMD - 5 - size=0x19 \x16\000-hsa_call_convention=\0\0
              */
             innerBinGen->addNote({"AMD", sizeof noteDescType1, noteDescType1, 1U});
-            innerBinGen->addNote({"AMD", sizeof noteDescType2, noteDescType2, 2U});
+            innerBinGen->addNote({"AMD", sizeof noteDescType2,
+                        (input->is64Bit) ? noteDescType2 : noteDescType2_32, 2U});
             noteBuf.reset(new cxbyte[0x1a]);
             ::memcpy(noteBuf.get(), noteDescType3, 0x1a);
             SULEV(*(uint32_t*)(noteBuf.get()+4), amdGpuArchValues.major);
@@ -2117,7 +2119,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
              * AMD - 4 - size=8 random values 0x7ffXXXXXXXX
              */
             innerBinGen->addNote({"AMD", sizeof noteDescType1, noteDescType1, 1U});
-            innerBinGen->addNote({"AMD", sizeof noteDescType2, noteDescType2, 2U});
+            innerBinGen->addNote({"AMD", sizeof noteDescType2,
+                        (input->is64Bit) ? noteDescType2 : noteDescType2_32, 2U});
             innerBinGen->addNote({"AMD", sizeof noteDescType5, noteDescType5, 5U});
             noteBuf.reset(new cxbyte[0x1e]);
             ::memcpy(noteBuf.get(), noteDescType3, 0x1e);
