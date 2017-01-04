@@ -45,6 +45,9 @@ static const char* genericPtrSource = R"ffDXD(
         .localsize 400      # local size
         .scratchbuffer 180   # define scratch buffer
     .text
+    .if32
+        .error "this example doesn't work in 32-bit OpenCL 2.0!"
+    .endif
         # initialize flat_scratch
         s_add_u32 s5, s10, s13      # flat scratch offset
         s_lshr_b32 s5, s5, 8        # for bitfield
