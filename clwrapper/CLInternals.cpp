@@ -1233,7 +1233,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
             bool binCL20 = false;
             if (isAmdCL2Binary(binarySizes[i], binaries[i].get()))
             {
-                amdBin.reset(new AmdCL2MainGPUBinary64(binarySizes[i], binaries[i].get(),
+                amdBin.reset(createAmdCL2BinaryFromCode(binarySizes[i], binaries[i].get(),
                              AMDBIN_CREATE_KERNELINFO));
                 binCL20 = true;
             }
