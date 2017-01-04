@@ -52,6 +52,8 @@ command queue, image, sampler, structure tooks 8 bytes (64-bit pointer).
 Smaller types likes (char, short) tooks 1-3 bytes. Alignment depends on same type
 or type of element (for vectors).
 
+For 32-bit AMD OpenCL 2.0 all setup arguments are 32-bit.
+
 ### Image arguments
 
 An images are passed via pointers to argument's buffer. An image pointers points to
