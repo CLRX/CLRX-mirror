@@ -148,19 +148,23 @@ LineCol AsmInputFilter::translatePos(size_t position) const
 static const size_t AsmParserLineMaxSize = 100;
 
 AsmStreamInputFilter::AsmStreamInputFilter(const CString& filename)
-try : AsmInputFilter(AsmInputFilterType::STREAM), managed(true),
+    : AsmInputFilter(AsmInputFilterType::STREAM), managed(true),
         stream(nullptr), mode(LineMode::NORMAL), stmtPos(0)
 {
-    source = RefPtr<const AsmSource>(new AsmFile(filename));
-    stream = new std::ifstream(filename.c_str(), std::ios::binary);
-    if (!*stream)
-        throw Exception(std::string("Can't open source file '")+filename.c_str()+"'");
-    stream->exceptions(std::ios::badbit);
-    buffer.reserve(AsmParserLineMaxSize);
-}
-catch(...)
-{
-    delete stream;
+    try
+    {
+        source = RefPtr<const AsmSource>(new AsmFile(filename));
+        stream = new std::ifstream(filename.c_str(), std::ios::binary);
+        if (!*stream)
+            throw Exception(std::string("Can't open source file '")+filename.c_str()+"'");
+        stream->exceptions(std::ios::badbit);
+        buffer.reserve(AsmParserLineMaxSize);
+    }
+    catch(...)
+    {
+        delete stream;
+        throw;
+    }
 }
 
 AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is, const CString& filename)
@@ -174,26 +178,30 @@ AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is, const CString& file
 
 AsmStreamInputFilter::AsmStreamInputFilter(const AsmSourcePos& pos,
            const CString& filename)
-try : AsmInputFilter(AsmInputFilterType::STREAM),
+    : AsmInputFilter(AsmInputFilterType::STREAM),
       managed(true), stream(nullptr), mode(LineMode::NORMAL), stmtPos(0)
 {
-    if (!pos.macro)
-        source = RefPtr<const AsmSource>(new AsmFile(pos.source, pos.lineNo,
-                         pos.colNo, filename));
-    else // if inside macro
-        source = RefPtr<const AsmSource>(new AsmFile(
-            RefPtr<const AsmSource>(new AsmMacroSource(pos.macro, pos.source)),
-                 pos.lineNo, pos.colNo, filename));
-    
-    stream = new std::ifstream(filename.c_str(), std::ios::binary);
-    if (!*stream)
-        throw Exception(std::string("Can't open source file '")+filename.c_str()+"'");
-    stream->exceptions(std::ios::badbit);
-    buffer.reserve(AsmParserLineMaxSize);
-}
-catch(...)
-{
-    delete stream;
+    try
+    {
+        if (!pos.macro)
+            source = RefPtr<const AsmSource>(new AsmFile(pos.source, pos.lineNo,
+                             pos.colNo, filename));
+        else // if inside macro
+            source = RefPtr<const AsmSource>(new AsmFile(
+                RefPtr<const AsmSource>(new AsmMacroSource(pos.macro, pos.source)),
+                     pos.lineNo, pos.colNo, filename));
+        
+        stream = new std::ifstream(filename.c_str(), std::ios::binary);
+        if (!*stream)
+            throw Exception(std::string("Can't open source file '")+filename.c_str()+"'");
+        stream->exceptions(std::ios::badbit);
+        buffer.reserve(AsmParserLineMaxSize);
+    }
+    catch(...)
+    {
+        delete stream;
+        throw;
+    }
 }
 
 AsmStreamInputFilter::AsmStreamInputFilter(const AsmSourcePos& pos, std::istream& is,

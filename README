@@ -15,7 +15,8 @@ for Radeon graphics cards, because delivers standalone utilities.
 
 2. Support and license
 
-Text of the license is in the COPYING file and this is LGPLv2.0.
+Text of the license is in the COPYING, COPYING.LIB and COPYING.DOC files
+(GPLv2, LGPLv2 and GFDL).
 
 3. Utilities
 

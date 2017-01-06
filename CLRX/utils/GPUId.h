@@ -134,6 +134,13 @@ extern size_t getGPUMaxLocalSize(GPUArchitecture architecture);
 extern cxuint getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType,
               Flags flags);
 
+struct AMDGPUArchValues
+{
+    uint32_t major;
+    uint32_t minor;
+    uint32_t stepping;
+};
+
 };
 
 #endif

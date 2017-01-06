@@ -134,10 +134,24 @@ try
                     binFlags |= AMDCL2BIN_INNER_CREATE_KERNELDATA |
                                 AMDCL2BIN_INNER_CREATE_KERNELDATAMAP |
                                 AMDCL2BIN_INNER_CREATE_KERNELSTUBS;
-                    AmdCL2MainGPUBinary amdBin(binaryData.size(),
-                                       binaryData.data(), binFlags);
-                    Disassembler disasm(amdBin, std::cout, disasmFlags);
-                    disasm.disassemble();
+                    base.reset(createAmdCL2BinaryFromCode(binaryData.size(),
+                                           binaryData.data(), binFlags));
+                    if (base->getType() == AmdMainType::GPU_CL2_BINARY)
+                    {
+                        AmdCL2MainGPUBinary32* amdGpuBin =
+                                static_cast<AmdCL2MainGPUBinary32*>(base.get());
+                        Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
+                        disasm.disassemble();
+                    }
+                    else if (base->getType() == AmdMainType::GPU_CL2_64_BINARY)
+                    {
+                        AmdCL2MainGPUBinary64* amdGpuBin =
+                                static_cast<AmdCL2MainGPUBinary64*>(base.get());
+                        Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
+                        disasm.disassemble();
+                    }
+                    else
+                        throw Exception("This is not AMDGPU binary file!");
                 }
                 else if (isROCmBinary(binaryData.size(), binaryData.data()))
                 {   // ROCm binary

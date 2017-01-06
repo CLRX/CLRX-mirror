@@ -373,6 +373,34 @@ bool AsmParseUtils::getEnumeration(Assembler& asmr, const char*& linePtr,
     return false;
 }
 
+bool AsmParseUtils::parseDimensions(Assembler& asmr, const char*& linePtr, cxuint& dimMask)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    const char* dimPlace = linePtr;
+    char buf[10];
+    dimMask = 0;
+    if (getNameArg(asmr, 10, buf, linePtr, "dimension set", false))
+    {
+        toLowerString(buf);
+        for (cxuint i = 0; buf[i]!=0; i++)
+            if (buf[i]=='x')
+                dimMask |= 1;
+            else if (buf[i]=='y')
+                dimMask |= 2;
+            else if (buf[i]=='z')
+                dimMask |= 4;
+            else
+            {
+                asmr.printError(dimPlace, "Unknown dimension type");
+                return false;
+            }
+    }
+    else // error
+        return false;
+    return true;
+}
+
 ISAAssembler::ISAAssembler(Assembler& _assembler) : assembler(_assembler)
 { }
 
@@ -1796,6 +1824,9 @@ void Assembler::initializeOutputFormat()
             break;
         case BinaryFormat::GALLIUM:
             formatHandler = new AsmGalliumHandler(*this);
+            break;
+        case BinaryFormat::ROCM:
+            formatHandler = new AsmROCmHandler(*this);
             break;
         default:
             formatHandler = new AsmRawCodeHandler(*this);

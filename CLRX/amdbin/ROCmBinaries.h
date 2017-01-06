@@ -46,13 +46,21 @@ enum : Flags {
     ROCMBIN_CREATE_ALL = ELF_CREATE_ALL | 0xfff0 ///< all ROCm binaries flags
 };
 
+/// ROCm region/symbol type
+enum ROCmRegionType: uint8_t
+{
+    DATA,   ///< data object
+    FKERNEL,   ///< function kernel (code)
+    KERNEL  ///< OpenCL kernel to call ??
+};
+
 /// ROCm data region
 struct ROCmRegion
 {
     CString regionName; ///< region name
     size_t size;    ///< data size
     size_t offset;     ///< data
-    bool isKernel;
+    ROCmRegionType type;
 };
 
 /// ROCm main binary for GPU for 64-bit mode
@@ -95,6 +103,27 @@ public:
     /// returns true if kernel map exists
     bool hasRegionMap() const
     { return (creationFlags & ROCMBIN_CREATE_REGIONMAP) != 0; };
+};
+
+enum {
+    ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER = 1,
+    ROCMFLAG_USE_DISPATCH_PTR = 2,
+    ROCMFLAG_USE_QUEUE_PTR = 4,
+    ROCMFLAG_USE_KERNARG_SEGMENT_PTR = 8,
+    ROCMFLAG_USE_DISPATCH_ID = 16,
+    ROCMFLAG_USE_FLAT_SCRATCH_INIT = 32,
+    ROCMFLAG_USE_PRIVATE_SEGMENT_SIZE = 64,
+    ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT = 7,
+    ROCMFLAG_USE_GRID_WORKGROUP_COUNT_X = 128,
+    ROCMFLAG_USE_GRID_WORKGROUP_COUNT_Y = 256,
+    ROCMFLAG_USE_GRID_WORKGROUP_COUNT_Z = 512,
+    
+    ROCMFLAG_USE_ORDERED_APPEND_GDS = 1,
+    ROCMFLAG_PRIVATE_ELEM_SIZE_BIT = 1,
+    ROCMFLAG_USE_PTR64 = 8,
+    ROCMFLAG_USE_DYNAMIC_CALL_STACK = 16,
+    ROCMFLAG_USE_DEBUG_ENABLED = 32,
+    ROCMFLAG_USE_XNACK_ENABLED = 64
 };
 
 /// ROCm kernel configuration structure
@@ -158,7 +187,7 @@ struct ROCmSymbolInput
     CString symbolName; ///< symbol name
     size_t offset;  ///< offset in code
     size_t size;    ///< size of symbol
-    bool isKernel;  ///< true if kernel
+    ROCmRegionType type;  ///< type
 };
 
 struct ROCmInput
@@ -173,6 +202,8 @@ struct ROCmInput
     const char* comment; ///< comment
     std::vector<BinSection> extraSections;  ///< extra sections
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
+    
+    void addEmptyKernel(const char* kernelName);
 };
 
 class ROCmBinGenerator: public NonCopyableAndNonMovable

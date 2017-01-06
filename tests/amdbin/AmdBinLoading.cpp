@@ -462,7 +462,7 @@ static void testKernelArgs(const char* filename, const char* kernelName,
     Array<cxbyte> data = loadDataFromFile(filename);
     std::unique_ptr<AmdMainBinaryBase> base;
     if (isAmdCL2Binary(data.size(), data.data()))
-        base.reset(new AmdCL2MainGPUBinary(data.size(), data.data()));
+        base.reset(new AmdCL2MainGPUBinary64(data.size(), data.data()));
     else // old Amd CL1.1/1.2 binary
         base.reset(createAmdBinaryFromCode(data.size(), data.data()));
     

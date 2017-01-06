@@ -1085,6 +1085,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amdcl2.clo",
         R"ffDXD(.amdcl2
 .gpu Bonaire
+.64bit
 .arch_minor 0
 .arch_stepping 0
 .driver_version 191205
@@ -1427,7 +1428,7 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
         }
         else if (isAmdCL2Binary(binaryData.size(), binaryData.data()))
         {
-            AmdCL2MainGPUBinary amdBin(binaryData.size(), binaryData.data(),
+            AmdCL2MainGPUBinary64 amdBin(binaryData.size(), binaryData.data(),
                 AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                 AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
                 AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_INNER_CREATE_CALNOTES |

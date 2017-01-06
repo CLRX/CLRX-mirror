@@ -51,6 +51,20 @@ enum: cxuint {
     BINGEN_NOTSUPPLIED  = UINT_MAX-1 ///< if set in field then field has been ignored
 };
 
+enum: uint64_t {
+    BINGEN64_DEFAULT = UINT64_MAX,    ///< if set in field then field has been filled later
+    BINGEN64_NOTSUPPLIED  = UINT64_MAX-1 ///< if set in field then field has been ignored
+};
+
+enum: uint16_t {
+    BINGEN16_DEFAULT = UINT16_MAX,    ///< if set in field then field has been filled later
+    BINGEN16_NOTSUPPLIED  = UINT16_MAX-1 ///< if set in field then field has been ignored
+};
+
+enum: uint8_t {
+    BINGEN8_DEFAULT = UINT8_MAX,    ///< if set in field then field has been filled later
+    BINGEN8_NOTSUPPLIED  = UINT8_MAX-1 ///< if set in field then field has been ignored
+};
 
 enum : Flags {
     ELF_CREATE_SECTIONMAP = 1,  ///< create map of sections
@@ -71,6 +85,8 @@ struct Elf32Types
     typedef Elf32_Sym Sym;      ///< symbol header
     typedef Elf32_Nhdr Nhdr;    ///< note header
     typedef Elf32_Dyn Dyn;      ///< dynamic entry
+    typedef Elf32_Rel Rel;    ///< relocation
+    typedef Elf32_Rela Rela;    ///< relocation with addend
     static const cxbyte ELFCLASS;   ///< ELF class
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name
@@ -89,6 +105,8 @@ struct Elf64Types
     typedef Elf64_Sym Sym;      ///< symbol header
     typedef Elf64_Nhdr Nhdr;    ///< note header
     typedef Elf64_Dyn Dyn;      ///< dynamic entry
+    typedef Elf64_Rel Rel;    ///< relocation
+    typedef Elf64_Rela Rela;    ///< relocation with addend
     static const cxbyte ELFCLASS;   ///< ELF class
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name

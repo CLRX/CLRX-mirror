@@ -471,7 +471,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             loHiRegSuffix = 3;
             loHiReg = 106;
         }
-        else if (::memcmp(regName, "exec", 4)==0)
+        else if (::strncmp(regName, "exec", 4)==0)
         {   /* exec* */
             loHiRegSuffix = 4;
             loHiReg = 126;
@@ -501,12 +501,12 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         }
         else if (arch&ARCH_GCN_1_1_2)
         {
-            if (::memcmp(regName, "flat_scratch", 12)==0)
+            if (::strncmp(regName, "flat_scratch", 12)==0)
             {   // flat
                 loHiRegSuffix = 12;
                 loHiReg = (arch&ARCH_RX3X0)?102:104;
             }
-            else if ((arch&ARCH_RX3X0)!=0 && ::memcmp(regName, "xnack_mask", 10)==0)
+            else if ((arch&ARCH_RX3X0)!=0 && ::strncmp(regName, "xnack_mask", 10)==0)
             {   // xnack
                 loHiRegSuffix = 10;
                 loHiReg = 104;
@@ -1860,7 +1860,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             asmr.printWarning(modPlace, "DppCtrl is already defined");
                         haveDppCtrl = true;
                     }
-                    else if (::memcmp(mod, "row_bcast", 9)==0 && (
+                    else if (::strncmp(mod, "row_bcast", 9)==0 && (
                         (mod[9]=='1' && mod[10]=='5' && mod[11]==0) ||
                         (mod[9]=='3' && mod[10]=='1' && mod[11]==0) || mod[9]==0))
                     {
@@ -1988,7 +1988,7 @@ bool GCNAsmUtils::parseVINTRPAttr(Assembler& asmr, const char*& linePtr, cxbyte&
     if (goodAttr)
     {
         std::transform(linePtr, linePtr+4, buf, toLower);
-        if (::memcmp(buf, "attr", 4)!=0)
+        if (::strncmp(buf, "attr", 4)!=0)
         {
             while (linePtr!=end && *linePtr!=' ') linePtr++;
             asmr.printError(attrPlace, "Expected 'attr' keyword");

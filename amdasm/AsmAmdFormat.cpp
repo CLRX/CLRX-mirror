@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
+#include <CLRX/amdasm/AsmFormats.h>
 #include "AsmInternals.h"
 
 using namespace CLRX;
@@ -822,6 +823,13 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                     good = false;
                 }
                 break;
+            case AMDCVAL_CONDOUT:
+            case AMDCVAL_EARLYEXIT:
+            case AMDCVAL_HWREGION:
+            case AMDCVAL_PGMRSRC2:
+                asmr.printWarningForRange(32, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                break;
             default:
                 asmr.printWarningForRange(32, value, asmr.getSourcePos(valuePlace));
                 break;
@@ -1096,34 +1104,14 @@ void AsmAmdPseudoOps::setDimensions(AsmAmdHandler& handler, const char* pseudoOp
                       const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
     }
-    skipSpacesToEnd(linePtr, end);
-    const char* dimPlace = linePtr;
-    char buf[10];
     cxuint dimMask = 0;
-    if (getNameArg(asmr, 10, buf, linePtr, "dimension set", false))
-    {
-        toLowerString(buf);
-        for (cxuint i = 0; buf[i]!=0; i++)
-            if (buf[i]=='x')
-                dimMask |= 1;
-            else if (buf[i]=='y')
-                dimMask |= 2;
-            else if (buf[i]=='z')
-                dimMask |= 4;
-            else
-            {
-                asmr.printError(dimPlace, "Unknown dimension type");
-                return;
-            }
-    }
-    else // error
+    if (!parseDimensions(asmr, linePtr, dimMask))
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;

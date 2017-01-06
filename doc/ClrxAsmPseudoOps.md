@@ -302,6 +302,7 @@ Choose binary format. Binary can be one of following list:
 * `amd`, `catalyst` - AMD Catalyst OpenCL 1.2 binary format
 * `amdcl2` - AMD Catalyst OpenCL 2.0 binary format
 * `gallium` - the GalliumCompute binary format
+* `rocm` - the ROCm binary format
 * `raw` - rawcode (raw program instructions)
 
 ### .gallium
@@ -684,6 +685,11 @@ v_nop
 v_nop
 v_nop
 ```
+
+### .rocm
+
+This pseudo-operation should to be at begin of source.
+Choose ROCm program binary format.
 
 ### .rodata
 

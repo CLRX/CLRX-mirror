@@ -66,8 +66,11 @@ extern CLRX_INTERNAL AmdDisasmInput* getAmdDisasmInputFromBinary32(
 extern CLRX_INTERNAL AmdDisasmInput* getAmdDisasmInputFromBinary64(
             const AmdMainGPUBinary64& binary, Flags flags);
 
-extern CLRX_INTERNAL AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
-            const AmdCL2MainGPUBinary& binary);
+extern CLRX_INTERNAL AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary32(
+            const AmdCL2MainGPUBinary32& binary);
+
+extern CLRX_INTERNAL AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary64(
+            const AmdCL2MainGPUBinary64& binary);
 
 extern CLRX_INTERNAL ROCmDisasmInput* getROCmDisasmInputFromBinary(
             const ROCmBinary& binary);

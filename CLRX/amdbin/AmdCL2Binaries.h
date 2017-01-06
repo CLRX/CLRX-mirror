@@ -65,7 +65,7 @@ struct AmdCL2GPUKernelStub
     cxbyte* data;      ///< setup data
 };
 
-class AmdCL2MainGPUBinary;
+class AmdCL2MainGPUBinary64;
 
 /// AMD OpenCL 2.0 inner binary base class
 class AmdCL2InnerGPUBinaryBase
@@ -113,7 +113,8 @@ public:
      * \param binaryCode inner binary code
      * \param creationFlags creation's flags
      */
-    AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary, size_t binaryCodeSize,
+    template<typename Types>
+    AmdCL2OldInnerGPUBinary(ElfBinaryTemplate<Types>* mainBinary, size_t binaryCodeSize,
             cxbyte* binaryCode, Flags creationFlags = AMDBIN_CREATE_ALL);
     /// destructor
     ~AmdCL2OldInnerGPUBinary() = default;
@@ -259,7 +260,28 @@ struct AmdCL2GPUKernelMetadata
 };
 
 /// header for metadata
-struct AmdCL2GPUMetadataHeader
+struct AmdCL2GPUMetadataHeader32
+{
+    uint32_t size;      ///< size
+    uint32_t metadataSize;  /// metadata size
+    uint32_t unknown1[3];
+    uint32_t options;
+    uint16_t kernelId;  ///< kernel id
+    uint16_t unknownx;
+    uint32_t unknowny;
+    uint64_t unknown2[2];
+    uint32_t reqdWorkGroupSize[3];  ///< reqd work group size
+    uint32_t unknown3[3];
+    uint32_t firstNameLength;   ///< first name length
+    uint32_t secondNameLength;  ///< second name length
+    uint32_t unknown4[3];
+    uint32_t pipesUsage;
+    uint32_t unknown5[2];
+    uint32_t argsNum;       ///< number of arguments
+};
+
+/// header for metadata
+struct AmdCL2GPUMetadataHeader64
 {
     uint64_t size;      ///< size
     uint64_t metadataSize;  /// metadata size
@@ -280,7 +302,34 @@ struct AmdCL2GPUMetadataHeader
 };
 
 /// GPU kernel argument entry
-struct AmdCL2GPUKernelArgEntry
+struct AmdCL2GPUKernelArgEntry32
+{
+    uint32_t size;      ///< entry size
+    uint32_t argNameSize;   ///< argument name size
+    uint32_t typeNameSize;  ///< type name size
+    uint32_t unknown1, unknown2;
+    union {
+        uint32_t vectorLength;  ///< vector length (for old drivers not aligned)
+        uint32_t resId;     ///< resource id
+        uint32_t structSize;
+    };
+    uint32_t unknown3;
+    uint32_t argOffset; ///< virtual argument offset
+    uint32_t argType;   ///< argument type
+    uint32_t ptrAlignment; ///< pointer alignment
+    uint32_t ptrType;   ///< pointer type
+    uint32_t ptrSpace;  ///< pointer space
+    uint32_t isPointerOrPipe;   /// nonzero if pointer or pipe
+    cxbyte isVolatile;  ///< if pointer is volatile
+    cxbyte isRestrict;  ///< if pointer is restrict
+    cxbyte isPipe;      ///< if pipe
+    cxbyte unknown4;
+    uint32_t kindOfType;    ///< kind of type
+    uint32_t isConst;   ///< is const pointer
+};
+
+/// GPU kernel argument entry
+struct AmdCL2GPUKernelArgEntry64
 {
     uint64_t size;      ///< entry size
     uint64_t argNameSize;   ///< argument name size
@@ -307,11 +356,7 @@ struct AmdCL2GPUKernelArgEntry
     uint32_t unknown5;
 };
 
-/// AMD OpenCL 2.0 main binary for GPU for 64-bit mode
-/** This object doesn't copy binary code content.
- * Only it takes and uses a binary code.
- */
-class AmdCL2MainGPUBinary: public AmdMainBinaryBase, public ElfBinary64
+class AmdCL2MainGPUBinaryBase: public AmdMainBinaryBase
 {
 public:
     typedef Array<std::pair<CString, size_t> > MetadataMap;
@@ -325,22 +370,13 @@ protected:
     
     CString aclVersionString; ///< acl version string
     std::unique_ptr<AmdCL2InnerGPUBinaryBase> innerBinary;
+    
+    template<typename Types>
+    void initMainGPUBinary(typename Types::ElfBinary& elfBin);
+    
 public:
-    AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
-            Flags creationFlags = AMDBIN_CREATE_ALL);
-    ~AmdCL2MainGPUBinary() = default;
-    
-    /// returns true if binary has kernel informations
-    bool hasKernelInfo() const
-    { return (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0; }
-    
-    /// returns true if binary has kernel informations map
-    bool hasKernelInfoMap() const
-    { return (creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0; }
-    
-    /// returns true if binary has info strings
-    bool hasInfoStrings() const
-    { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
+    explicit AmdCL2MainGPUBinaryBase(AmdMainType amdMainType);
+    ~AmdCL2MainGPUBinaryBase() = default;
     
     // returns true if inner binary exists
     bool hasInnerBinary() const
@@ -424,6 +460,65 @@ public:
     const CString& getAclVersionString() const
     { return aclVersionString; }
 };
+
+/// AMD OpenCL 2.0 main binary for GPU for 32-bit mode
+/** This object doesn't copy binary code content.
+ * Only it takes and uses a binary code.
+ */
+class AmdCL2MainGPUBinary32: public AmdCL2MainGPUBinaryBase, public ElfBinary32
+{
+public:
+    AmdCL2MainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
+            Flags creationFlags = AMDBIN_CREATE_ALL);
+    ~AmdCL2MainGPUBinary32() = default;
+    
+    /// returns true if binary has kernel informations
+    bool hasKernelInfo() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0; }
+    
+    /// returns true if binary has kernel informations map
+    bool hasKernelInfoMap() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0; }
+    
+    /// returns true if binary has info strings
+    bool hasInfoStrings() const
+    { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
+};
+
+/// AMD OpenCL 2.0 main binary for GPU for 64-bit mode
+/** This object doesn't copy binary code content.
+ * Only it takes and uses a binary code.
+ */
+class AmdCL2MainGPUBinary64: public AmdCL2MainGPUBinaryBase, public ElfBinary64
+{
+public:
+    AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
+            Flags creationFlags = AMDBIN_CREATE_ALL);
+    ~AmdCL2MainGPUBinary64() = default;
+    
+    /// returns true if binary has kernel informations
+    bool hasKernelInfo() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0; }
+    
+    /// returns true if binary has kernel informations map
+    bool hasKernelInfoMap() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0; }
+    
+    /// returns true if binary has info strings
+    bool hasInfoStrings() const
+    { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
+};
+
+/// create AMD binary object from binary code
+/**
+ * \param binaryCodeSize binary code size
+ * \param binaryCode pointer to binary code
+ * \param creationFlags flags that specified what will be created during creation
+ * \return binary object
+ */
+extern AmdCL2MainGPUBinaryBase* createAmdCL2BinaryFromCode(
+            size_t binaryCodeSize, cxbyte* binaryCode,
+            Flags creationFlags = AMDBIN_CREATE_ALL);
 
 /// check whether is Amd OpenCL 2.0 binary
 extern bool isAmdCL2Binary(size_t binarySize, const cxbyte* binary);

@@ -303,6 +303,20 @@ static const uint16_t mainBuiltinSectionTable[] =
     6 // ELFSECTID_COMMENT
 };
 
+static const uint16_t emptyMainBuiltinSectionTable[] =
+{
+    1, // ELFSECTID_SHSTRTAB
+    2, // ELFSECTID_STRTAB
+    3, // ELFSECTID_SYMTAB
+    SHN_UNDEF, // ELFSECTID_DYNSTR
+    SHN_UNDEF, // ELFSECTID_DYNSYM
+    SHN_UNDEF, // ELFSECTID_TEXT
+    SHN_UNDEF, // ELFSECTID_RODATA
+    SHN_UNDEF, // ELFSECTID_DATA
+    SHN_UNDEF, // ELFSECTID_BSS
+    4 // ELFSECTID_COMMENT
+};
+
 static const uint16_t kernelBuiltinSectionTable[] =
 {
     1, // ELFSECTID_SHSTRTAB
@@ -454,6 +468,10 @@ public:
     
     void operator()(FastOutputBuffer& fob) const
     {
+        const uint16_t* mainSectTable = input->kernels.empty() ?
+                emptyMainBuiltinSectionTable : mainBuiltinSectionTable;
+        const cxuint extraSectId = input->kernels.empty() ? 5 : 7;
+        
         fob.fill(sizeof(typename Types::Sym), 0);
         typename Types::Sym sym;
         size_t nameOffset = 1;
@@ -524,8 +542,8 @@ public:
         for (const BinSymbol& symbol: input->extraSymbols)
         {
             SLEV(sym.st_name, nameOffset);
-            SLEV(sym.st_shndx, convertSectionId(symbol.sectionId, mainBuiltinSectionTable,
-                            ELFSECTID_STD_MAX, 7));
+            SLEV(sym.st_shndx, convertSectionId(symbol.sectionId, mainSectTable,
+                            ELFSECTID_STD_MAX, extraSectId));
             SLEV(sym.st_size, symbol.size);
             SLEV(sym.st_value, symbol.value);
             sym.st_info = symbol.info;
@@ -606,6 +624,10 @@ static void putMainSections(ElfBinaryGenTemplate<Types>& elfBinGen, cxuint drive
         const CL1MainCommentGen& commentGen, const CL1MainStrTabGen& mainStrGen,
         const CL1MainSymTabGen<Types>& mainSymGen)
 {
+    const uint16_t* mainSectTable = input->kernels.empty() ?
+            emptyMainBuiltinSectionTable : mainBuiltinSectionTable;
+    const cxuint extraSectId = input->kernels.empty() ? 5 : 7;
+    
     elfBinGen.addRegion(ElfRegionTemplate<Types>(0, (const cxbyte*)nullptr, 1,
                  ".shstrtab", SHT_STRTAB, SHF_STRINGS));
     elfBinGen.addRegion(ElfRegionTemplate<Types>(mainStrGen.size(), &mainStrGen, 1,
@@ -624,8 +646,8 @@ static void putMainSections(ElfBinaryGenTemplate<Types>& elfBinGen, cxuint drive
                 input->compileOptions.size()+driverInfo.size(), &commentGen, 1,
                 ".comment", SHT_PROGBITS, 0));
     for (const BinSection& section: input->extraSections)
-        elfBinGen.addRegion(ElfRegionTemplate<Types>(section, mainBuiltinSectionTable,
-                         ELFSECTID_STD_MAX, 7));
+        elfBinGen.addRegion(ElfRegionTemplate<Types>(section, mainSectTable,
+                         ELFSECTID_STD_MAX, extraSectId));
     elfBinGen.addRegion(ElfRegionTemplate<Types>::sectionHeaderTable());
 }
 

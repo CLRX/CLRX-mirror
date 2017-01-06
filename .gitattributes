@@ -28,6 +28,7 @@ CLRX/utils/Utilities.h -text
 /COPYING -text
 /COPYING.DOC -text
 /COPYING.LIB -text
+/ChangeLog -text
 /Doxyfile.in -text
 /INSTALL -text
 /Int128Detect.c -text
@@ -40,6 +41,7 @@ amdasm/AsmFormats.cpp -text
 amdasm/AsmGalliumFormat.cpp -text
 amdasm/AsmInternals.h -text
 amdasm/AsmPseudoOps.cpp -text
+amdasm/AsmROCmFormat.cpp -text
 amdasm/AsmSource.cpp -text
 amdasm/Assembler.cpp -text
 amdasm/CMakeLists.txt -text svneol=unset#text/plain
@@ -81,6 +83,7 @@ doc/ClrxAsmAmdCl2.md -text
 doc/ClrxAsmGallium.md -text
 doc/ClrxAsmInvoke.md -text
 doc/ClrxAsmPseudoOps.md -text
+doc/ClrxAsmRocm.md -text
 doc/ClrxAsmSyntax.md -text
 doc/ClrxDisasm.md -text
 doc/ClrxToc.md -text
@@ -127,8 +130,11 @@ samples/image1.png -text svneol=unset#image/png
 samples/image2.png -text svneol=unset#image/png
 tests/CMakeLists.txt -text svneol=unset#text/plain
 tests/TestUtils.h -text
+tests/amdasm/AsmAmdCL2Format.cpp -text
+tests/amdasm/AsmAmdFormat.cpp -text
 tests/amdasm/AsmExprParse.cpp -text
-tests/amdasm/AsmFormats.cpp -text
+tests/amdasm/AsmGalliumFormat.cpp -text
+tests/amdasm/AsmROCmFormat.cpp -text
 tests/amdasm/AsmRegPool.cpp -text
 tests/amdasm/AssemblerBasics.cpp -text
 tests/amdasm/CMakeLists.txt -text svneol=unset#text/plain
@@ -315,6 +321,7 @@ tests/amdbin/galliumbins/DCT.0.reconf.orig -text
 tests/amdbin/galliumbins/MatrixMultiplication.0.reconf.orig -text
 tests/amdbin/galliumbins/vectoradd-64bit.clo.reconf -text
 tests/amdbin/rocmbins/consttest1-kaveri.hsaco.regen -text svneol=unset#application/x-sharedlib
+tests/amdbin/rocmbins/rijndael.hsaco.regen -text svneol=unset#application/x-sharedlib
 tests/utils/CLIParser.cpp -text
 tests/utils/CMakeLists.txt -text svneol=unset#text/plain
 tests/utils/cstrtofXTest.cpp -text

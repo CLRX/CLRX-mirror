@@ -258,6 +258,7 @@ struct AmdCL2DisasmInput
     GPUDeviceType deviceType;   ///< GPU device type
     uint32_t archMinor;     ///< GPU arch minor
     uint32_t archStepping;     ///< GPU arch stepping
+    bool is64BitMode;       ///< true if 64-bit mode of addressing
     cxuint driverVersion; ///< driver version
     CString compileOptions; ///< compile options which used by in clBuildProgram
     CString aclVersionString; ///< acl version string
@@ -289,7 +290,7 @@ struct ROCmDisasmRegionInput
     CString regionName; ///< region name
     size_t size;    ///< region size
     size_t offset;  ///< region offset in code
-    bool isKernel;  ///< true if kernel
+    ROCmRegionType type ;  ///< type
 };
 
 struct ROCmDisasmInput
@@ -366,13 +367,21 @@ public:
      */
     Disassembler(const AmdMainGPUBinary64& binary, std::ostream& output,
                  Flags flags = 0);
-    /// constructor for AMD OpenCL 2.0 GPU binary
+    /// constructor for AMD OpenCL 2.0 GPU binary 32-bit
     /**
      * \param binary main GPU binary
      * \param output output stream
      * \param flags flags for disassembler
      */
-    Disassembler(const AmdCL2MainGPUBinary& binary, std::ostream& output,
+    Disassembler(const AmdCL2MainGPUBinary32& binary, std::ostream& output,
+                 Flags flags = 0);
+    /// constructor for AMD OpenCL 2.0 GPU binary 64-bit
+    /**
+     * \param binary main GPU binary
+     * \param output output stream
+     * \param flags flags for disassembler
+     */
+    Disassembler(const AmdCL2MainGPUBinary64& binary, std::ostream& output,
                  Flags flags = 0);
     /// constructor for ROCm GPU binary
     /**

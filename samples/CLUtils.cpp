@@ -145,6 +145,7 @@ static const char* binaryFormatNamesTbl[] =
 
 CLFacade::CLFacade(cl_uint deviceIndex, const char* sourceCode, const char* kernelNames,
             bool useCL2)
+{
 try
 {
     context = nullptr;
@@ -367,6 +368,7 @@ catch(...)
     if (context!=nullptr)
         clReleaseContext(context);
     throw;
+}
 }
 
 CLFacade::~CLFacade()

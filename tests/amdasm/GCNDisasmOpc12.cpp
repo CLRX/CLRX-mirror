@@ -244,7 +244,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
         "vmcnt(14) & expcnt(3) & lgkmcnt(13)\n" },
     { 0xbf8c0d7eU, 0, false, "        s_waitcnt       vmcnt(14) & lgkmcnt(13)\n" },
     { 0xbf8c0f7eU, 0, false, "        s_waitcnt       vmcnt(14)\n" },
-    { 0xbf8c0f7fU, 0, false, "        s_waitcnt       0xf7f\n" },
+    { 0xbf8c0f7fU, 0, false, "        s_waitcnt       "
+        "vmcnt(15) & expcnt(7) & lgkmcnt(15)\n" },
     { 0xbf8cad36U, 0, false, "        s_waitcnt       "
         "vmcnt(6) & expcnt(3) & lgkmcnt(13) :0xad36\n" },
     { 0xbf8c0536U, 0, false, "        s_waitcnt       "

@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
+#include <CLRX/amdasm/AsmFormats.h>
 #include "AsmInternals.h"
 
 using namespace CLRX;
@@ -131,7 +132,7 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
             throw AsmFormatException("Section already exists");
         section.type = AsmSectionType::EXTRA_SECTION;
         section.elfBinSectId = extraSectionCount++;
-        /// referfence entry is available and unchangeable by whole lifecycle of section map
+        /// reference entry is available and unchangeable by whole lifecycle of section map
         section.name = out.first->first.c_str();
     }
     sections.push_back(section);
@@ -297,34 +298,14 @@ void AsmGalliumPseudoOps::setDimensions(AsmGalliumHandler& handler,
                     const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         handler.inside != AsmGalliumHandler::Inside::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
     }
-    skipSpacesToEnd(linePtr, end);
-    const char* dimPlace = linePtr;
-    char buf[10];
     cxuint dimMask = 0;
-    if (getNameArg(asmr, 10, buf, linePtr, "dimension set", false))
-    {
-        toLowerString(buf);
-        for (cxuint i = 0; buf[i]!=0; i++)
-            if (buf[i]=='x')
-                dimMask |= 1;
-            else if (buf[i]=='y')
-                dimMask |= 2;
-            else if (buf[i]=='z')
-                dimMask |= 4;
-            else
-            {
-                asmr.printError(dimPlace, "Unknown dimension type");
-                return;
-            }
-    }
-    else // error
+    if (!parseDimensions(asmr, linePtr, dimMask))
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -416,6 +397,11 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                     asmr.printError(valuePlace, "UserDataNum out of range (0-16)");
                     good = false;
                 }
+                break;
+            case GALLIUMCVAL_PGMRSRC1:
+            case GALLIUMCVAL_PGMRSRC2:
+                asmr.printWarningForRange(32, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 break;
             default:
                 break;
@@ -638,7 +624,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                 if (targetAlign > UINT32_MAX || targetAlign == 0)
                     asmr.printWarning(targetAlignPlace,
                                       "Target alignment of argument out of range");
-                if (targetAlign != (1ULL<<(63-CLZ64(targetAlign))))
+                if (targetAlign==0 || targetAlign != (1ULL<<(63-CLZ64(targetAlign))))
                 {
                     asmr.printError(targetAlignPlace, "Target alignment is not power of 2");
                     good = false;
@@ -1110,6 +1096,8 @@ bool AsmGalliumHandler::prepareBinary()
                 continue; // if kernel name
             cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
+            if (binSectId==ELFSECTID_UNDEF)
+                continue; // no section
             
             output.extraSymbols.push_back({ symEntry.first, symEntry.second.value,
                     symEntry.second.size, binSectId, false, symEntry.second.info,

@@ -110,10 +110,27 @@ static const CL2GPUDeviceCodeEntry cl2GPUPROGpuDeviceCodeTable[] =
     { 15, GPUDeviceType::STONEY }
 };
 
-AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinary& binary)
+struct CLRX_INTERNAL AmdCL2Types32: Elf32Types
+{
+    typedef AmdCL2MainGPUBinary32 AmdCL2MainBinary;
+    typedef AmdCL2GPUMetadataHeader32 MetadataHeader;
+    typedef AmdCL2GPUKernelArgEntry32 KernelArgEntry;
+};
+
+struct CLRX_INTERNAL AmdCL2Types64: Elf64Types
+{
+    typedef AmdCL2MainGPUBinary64 AmdCL2MainBinary;
+    typedef AmdCL2GPUMetadataHeader64 MetadataHeader;
+    typedef AmdCL2GPUKernelArgEntry64 KernelArgEntry;
+};
+
+template<typename AmdCL2Types>
+static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
+            const typename AmdCL2Types::AmdCL2MainBinary& binary)
 {
     std::unique_ptr<AmdCL2DisasmInput> input(new AmdCL2DisasmInput);
     const uint32_t elfFlags = ULEV(binary.getHeader().e_flags);
+    input->is64BitMode = (binary.getHeader().e_ident[EI_CLASS] == ELFCLASS64);
     // detect GPU device from elfMachine field from ELF header
     cxuint entriesNum = 0;
     const CL2GPUDeviceCodeEntry* gpuCodeTable = nullptr;
@@ -190,16 +207,18 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
             // find note about AMDGPU
             for (size_t offset = 0; offset < notesSize; )
             {
-                const Elf64_Nhdr* nhdr = (const Elf64_Nhdr*)(noteContent + offset);
+                const typename AmdCL2Types::Nhdr* nhdr =
+                            (const typename AmdCL2Types::Nhdr*)(noteContent + offset);
                 size_t namesz = ULEV(nhdr->n_namesz);
                 size_t descsz = ULEV(nhdr->n_descsz);
                 if (usumGt(offset, namesz+descsz, notesSize))
                     throw Exception("Note offset+size out of range");
                 if (ULEV(nhdr->n_type) == 0x3 && namesz==4 && descsz>=0x1a &&
-                    ::strcmp((const char*)noteContent+offset+sizeof(Elf64_Nhdr), "AMD")==0)
+                    ::strcmp((const char*)noteContent+offset+
+                                sizeof(typename AmdCL2Types::Nhdr), "AMD")==0)
                 {    // AMDGPU type
                     const uint32_t* content = (const uint32_t*)
-                            (noteContent+offset+sizeof(Elf64_Nhdr) + 4);
+                            (noteContent+offset+sizeof(typename AmdCL2Types::Nhdr) + 4);
                     uint32_t major = ULEV(content[1]);
                     if ((arch==GPUArchitecture::GCN1_2 && major!=8) ||
                         (arch==GPUArchitecture::GCN1_1 && major!=7))
@@ -208,7 +227,7 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
                     input->archStepping = ULEV(content[3]);
                 }
                 size_t align = (((namesz+descsz)&3)!=0) ? 4-((namesz+descsz)&3) : 0;
-                offset += sizeof(Elf64_Nhdr) + namesz + descsz + align;
+                offset += sizeof(typename AmdCL2Types::Nhdr) + namesz + descsz + align;
             }
         }
         
@@ -387,6 +406,18 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
     return input.release();
 }
 
+AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary32(
+                const AmdCL2MainGPUBinary32& binary)
+{
+    return getAmdCL2DisasmInputFromBinary<AmdCL2Types32>(binary);
+}
+
+AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary64(
+                const AmdCL2MainGPUBinary64& binary)
+{
+    return getAmdCL2DisasmInputFromBinary<AmdCL2Types64>(binary);
+}
+
 struct CLRX_INTERNAL IntAmdCL2SetupData
 {
     uint32_t pgmRSRC1;
@@ -459,13 +490,14 @@ static const cxuint vectorIdTable[17] =
 { UINT_MAX, 0, 1, 2, 3, UINT_MAX, UINT_MAX, UINT_MAX, 4,
   UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };
 
+template<typename Types>
 static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* metadata,
         size_t setupSize, const cxbyte* setup, const std::vector<size_t> samplerOffsets,
         const std::vector<AmdCL2RelaEntry>& textRelocs)
 {
     AmdCL2KernelConfig config{};
-    const AmdCL2GPUMetadataHeader* mdHdr =
-            reinterpret_cast<const AmdCL2GPUMetadataHeader*>(metadata);
+    const typename Types::MetadataHeader* mdHdr =
+            reinterpret_cast<const typename Types::MetadataHeader*>(metadata);
     size_t headerSize = ULEV(mdHdr->size);
     for (size_t i = 0; i < 3; i++)
         config.reqdWorkGroupSize[i] = ULEV(mdHdr->reqdWorkGroupSize[i]);
@@ -511,13 +543,14 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     // get kernel args
     size_t argOffset = headerSize + ULEV(mdHdr->firstNameLength) + 
             ULEV(mdHdr->secondNameLength)+2;
-    if (ULEV(*((const uint32_t*)(metadata+argOffset))) == 0x5800)
+    if (ULEV(*(const uint32_t*)(metadata+argOffset)) ==
+                (sizeof(typename Types::KernelArgEntry)<<8))
         argOffset++;    // fix for AMD GPUPRO driver (2036.03) */
-    const AmdCL2GPUKernelArgEntry* argPtr = reinterpret_cast<
-            const AmdCL2GPUKernelArgEntry*>(metadata + argOffset);
+    const typename Types::KernelArgEntry* argPtr = reinterpret_cast<
+            const typename Types::KernelArgEntry*>(metadata + argOffset);
     const uint32_t argsNum = ULEV(mdHdr->argsNum);
     const char* strBase = (const char*)metadata;
-    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry)*(argsNum+1);
+    size_t strOffset = argOffset + sizeof(typename Types::KernelArgEntry)*(argsNum+1);
     
     for (uint32_t i = 0; i < argsNum; i++, argPtr++)
     {
@@ -812,6 +845,11 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
     const bool doSetup = ((flags & DISASM_SETUP) != 0);
     
+    if (amdCL2Input->is64BitMode)
+        output.write(".64bit\n", 7);
+    else
+        output.write(".32bit\n", 7);
+    
     {
         char buf[40];
         size_t size = snprintf(buf, 40, ".arch_minor %u\n", amdCL2Input->archMinor);
@@ -942,9 +980,15 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         
         if (doDumpConfig)
         {
-            const AmdCL2KernelConfig config = genKernelConfig(kinput.metadataSize,
-                    kinput.metadata, kinput.setupSize, kinput.setup, samplerOffsets,
-                    kinput.textRelocs);
+            AmdCL2KernelConfig config;
+            if (amdCL2Input->is64BitMode)
+                config = genKernelConfig<AmdCL2Types64>(kinput.metadataSize,
+                        kinput.metadata, kinput.setupSize, kinput.setup, samplerOffsets,
+                        kinput.textRelocs);
+            else
+                config = genKernelConfig<AmdCL2Types32>(kinput.metadataSize,
+                        kinput.metadata, kinput.setupSize, kinput.setup, samplerOffsets,
+                        kinput.textRelocs);
             dumpAmdCL2KernelConfig(output, config);
         }
         

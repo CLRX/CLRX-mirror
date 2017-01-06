@@ -263,6 +263,20 @@ static const uint16_t mainBuiltinSectionTable[] =
     4 // ELFSECTID_COMMENT
 };
 
+static const uint16_t mainBuiltinSectionTable2[] =
+{
+    1, // ELFSECTID_SHSTRTAB
+    2, // ELFSECTID_STRTAB
+    3, // ELFSECTID_SYMTAB
+    SHN_UNDEF, // ELFSECTID_DYNSTR
+    SHN_UNDEF, // ELFSECTID_DYNSYM
+    SHN_UNDEF, // ELFSECTID_TEXT
+    5, // ELFSECTID_RODATA
+    SHN_UNDEF, // ELFSECTID_DATA
+    SHN_UNDEF, // ELFSECTID_BSS
+    4 // ELFSECTID_COMMENT
+};
+
 static const cxbyte kernelIsaMetadata[] =
 {
     0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -527,13 +541,16 @@ private:
     uint16_t brigIndex;
     const Array<TempAmdCL2KernelData>& tempDatas;
     const CString& aclVersion;
+    const uint16_t* mainSectTable;
     cxuint extraSectionIndex;
 public:
     CL2MainSymTabGen(const AmdCL2Input* _input,
              const Array<TempAmdCL2KernelData>& _tempDatas,
-             const CString& _aclVersion, cxuint _extraSectionIndex)
+             const CString& _aclVersion, const uint16_t* _mainSectTable,
+             cxuint _extraSectionIndex)
              : input(_input), withBrig(false), tempDatas(_tempDatas),
-               aclVersion(_aclVersion), extraSectionIndex(_extraSectionIndex)
+               aclVersion(_aclVersion), mainSectTable(_mainSectTable),
+               extraSectionIndex(_extraSectionIndex)
     {
         for (brigIndex = 0; brigIndex < input->extraSections.size(); brigIndex++)
         {
@@ -640,7 +657,7 @@ public:
         for (const BinSymbol& symbol: input->extraSymbols)
         {
             SLEV(sym.st_name, nameOffset);
-            SLEV(sym.st_shndx, convertSectionId(symbol.sectionId, mainBuiltinSectionTable,
+            SLEV(sym.st_shndx, convertSectionId(symbol.sectionId, mainSectTable,
                             ELFSECTID_STD_MAX, extraSectionIndex));
             SLEV(sym.st_size, symbol.size);
             SLEV(sym.st_value, symbol.value);
@@ -706,7 +723,7 @@ public:
     {
         const bool newBinaries = input->driverVersion >= 191205;
         const bool is16_3Ver = input->driverVersion >= 200406;
-        AmdCL2GPUMetadataHeader header;
+        AmdCL2GPUMetadataHeader64 header;
         cxuint argsNum = config.args.size();
         
         SLEV(header.size, (newBinaries) ? (is16_3Ver ? 0x110 : 0xe0) : 0xd8);
@@ -765,7 +782,7 @@ public:
         for (cxuint i = 0; i < argsNum; i++)
         {   //
             const AmdKernelArgInput& arg = config.args[i];
-            AmdCL2GPUKernelArgEntry argEntry;
+            AmdCL2GPUKernelArgEntry64 argEntry;
             SLEV(argEntry.size, 88);
             SLEV(argEntry.argNameSize, arg.argName.size());
             SLEV(argEntry.typeNameSize, arg.typeName.size());
@@ -1630,14 +1647,6 @@ static const cxbyte noteDescType5_gpupro[26] =
 { 0x16, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
     'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=', '0', 0, 't' };
 
-struct AMDGPUArchValues
-{
-    uint32_t major;
-    uint32_t minor;
-    uint32_t stepping;
-};
-
-/* TODO: add gpu values tables for various driver version */
 static const AMDGPUArchValues amdGpuArchValuesTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
@@ -1796,7 +1805,11 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     if (arch == GPUArchitecture::GCN1_0)
         throw Exception("OpenCL 2.0 supported only for GCN1.1 or later");
     
+    const bool is16_3Ver = (input->driverVersion>=200406);
     AMDGPUArchValues amdGpuArchValues = amdGpuArchValuesTbl[cxuint(input->deviceType)];
+    // fix for old drivers (1912.05)
+    if (!is16_3Ver && input->deviceType==GPUDeviceType::FIJI)
+        amdGpuArchValues.stepping = 1;
     if (input->archMinor!=UINT32_MAX)
         amdGpuArchValues.minor = input->archMinor;
     if (input->archStepping!=UINT32_MAX)
@@ -1862,8 +1875,11 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                    symbol.sectionId==ELFSECTID_BSS; });
     
     cxuint mainExtraSectionIndex = 6 + (kernelsNum != 0 || newBinaries);
+    const uint16_t* mainSectTable = (kernelsNum != 0 || newBinaries) ?
+            mainBuiltinSectionTable : mainBuiltinSectionTable2;
     CL2MainStrTabGen mainStrTabGen(input);
-    CL2MainSymTabGen mainSymTabGen(input, tempDatas, aclVersion, mainExtraSectionIndex);
+    CL2MainSymTabGen mainSymTabGen(input, tempDatas, aclVersion, mainSectTable,
+                    mainExtraSectionIndex);
     CL2MainCommentGen mainCommentGen(input, aclVersion);
     CL2MainRodataGen mainRodataGen(input, tempDatas);
     CL2InnerTextGen innerTextGen(input, tempDatas);
@@ -1890,7 +1906,6 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     std::unique_ptr<cxbyte[]> noteBuf;
     if (newBinaries)
     {   // new binaries - .text holds inner ELF binaries
-        bool is16_3Ver = (input->driverVersion>=200406);
         uint16_t innerBinSectionTable[innerBinSectonTableLen];
         cxuint extraSectionIndex = 1;
         /* check kernel text relocations */
@@ -2109,8 +2124,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                     SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR));
     
     for (const BinSection& section: input->extraSections)
-            elfBinGen.addRegion(ElfRegion64(section, mainBuiltinSectionTable,
-                         ELFSECTID_STD_MAX, mainExtraSectionIndex));
+        elfBinGen.addRegion(ElfRegion64(section, mainSectTable,
+                     ELFSECTID_STD_MAX, mainExtraSectionIndex));
     elfBinGen.addRegion(ElfRegion64::sectionHeaderTable());
     
     const uint64_t binarySize = elfBinGen.countSize();

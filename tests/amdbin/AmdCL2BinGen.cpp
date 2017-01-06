@@ -217,8 +217,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
         const std::vector<AmdCL2RelInput>& textRelocs)
 {
     AmdCL2KernelConfig config;
-    const AmdCL2GPUMetadataHeader* mdHdr =
-            reinterpret_cast<const AmdCL2GPUMetadataHeader*>(metadata);
+    const AmdCL2GPUMetadataHeader64* mdHdr =
+            reinterpret_cast<const AmdCL2GPUMetadataHeader64*>(metadata);
     size_t headerSize = ULEV(mdHdr->size);
     for (size_t i = 0; i < 3; i++)
         config.reqdWorkGroupSize[i] = ULEV(mdHdr->reqdWorkGroupSize[i]);
@@ -265,11 +265,11 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             ULEV(mdHdr->secondNameLength)+2;
     if (ULEV(*((const uint32_t*)(metadata+argOffset))) == 0x5800)
         argOffset++;
-    const AmdCL2GPUKernelArgEntry* argPtr = reinterpret_cast<
-            const AmdCL2GPUKernelArgEntry*>(metadata + argOffset);
+    const AmdCL2GPUKernelArgEntry64* argPtr = reinterpret_cast<
+            const AmdCL2GPUKernelArgEntry64*>(metadata + argOffset);
     const uint32_t argsNum = ULEV(mdHdr->argsNum);
     const char* strBase = (const char*)metadata;
-    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry)*(argsNum+1);
+    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry64)*(argsNum+1);
     
     for (uint32_t i = 0; i < argsNum; i++, argPtr++)
     {
@@ -472,7 +472,7 @@ static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[11] =
     { 15, GPUDeviceType::DUMMY }
 };
 
-static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& binary,
+static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary64& binary,
             bool addBrig, bool samplerConfig)
 {
     AmdCL2Input amdCL2Input{ };
@@ -678,7 +678,7 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
     inputData = loadDataFromFile(origBinaryFilename);
     if (!isAmdCL2Binary(inputData.size(), inputData.data()))
         throw Exception("This is not AMD OpenCL2.0 binary");
-    AmdCL2MainGPUBinary amdCL2GpuBin(inputData.size(), inputData.data(), 
+    AmdCL2MainGPUBinary64 amdCL2GpuBin(inputData.size(), inputData.data(), 
                 AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                 AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
                 AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_CREATE_INFOSTRINGS |

@@ -819,7 +819,8 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         {
             bool prevLock = false;
             addSpaces(bufPtr, spacesToAdd);
-            if ((imm16&15) != 15)
+            const bool isf7f = (imm16==0xf7f);
+            if ((imm16&15) != 15 || isf7f)
             {
                 const cxuint lockCnt = imm16&15;
                 putChars(bufPtr, "vmcnt(", 6);
@@ -829,7 +830,7 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                 *bufPtr++ = ')';
                 prevLock = true;
             }
-            if (((imm16>>4)&7) != 7)
+            if (((imm16>>4)&7) != 7 || isf7f)
             {
                 if (prevLock)
                 {
@@ -842,7 +843,7 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                 *bufPtr++ = ')';
                 prevLock = true;
             }
-            if (((imm16>>8)&15) != 15)
+            if (((imm16>>8)&15) != 15 || isf7f)
             {   /* LGKMCNT bits is 4 (5????) */
                 const cxuint lockCnt = (imm16>>8)&15;
                 if (prevLock)
@@ -859,7 +860,7 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                 *bufPtr++ = ')';
                 prevLock = true;
             }
-            if ((imm16&0xf080) != 0 || (imm16==0xf7f))
+            if ((imm16&0xf080) != 0)
             {   /* additional info about imm16 */
                 if (prevLock)
                 {

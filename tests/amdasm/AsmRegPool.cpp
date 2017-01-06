@@ -300,6 +300,85 @@ kx7: s_mov_b32 s23, s0
 .kcodeend)ffDXD",
         { { "kx0", 11, 25 }, { "kx1", 15, 42 }, { "kx2", 20, 16 }, { "kx3", 17, 42 },
           { "kx4", 9, 19 }, { "kx5", 12, 25 }, { "kx6", 22, 18 }, { "kx7", 24, 35 } }
+    },
+    
+    /* rocm kcode test */
+    {
+        R"ffDXD(            .rocm; .gpu pitcairn
+            .kernel kx0
+            .config
+            .kernel kx1
+            .config
+            .kernel kx2
+            .config
+            .kernel kx3
+            .config
+            .kernel kx4
+            .config
+            .kernel kx5
+            .config
+            .kernel kx6
+            .config
+            .kernel kx7
+            .config
+            .text
+.p2align 8
+kx0:
+.skip 256
+s_mov_b32 s10, s0
+.p2align 8
+kx1:
+.skip 256
+s_mov_b32 s14, s0
+.p2align 8
+kx2:
+.skip 256
+s_mov_b32 s19, s0
+.p2align 8
+kx3:
+.skip 256
+s_mov_b32 s16, s0
+.p2align 8
+kx4:
+.skip 256
+s_mov_b32 s8, s0
+.p2align 8
+kx5:
+.skip 256
+s_mov_b32 s11, s0
+.p2align 8
+kx6:
+.skip 256
+s_mov_b32 s21, s0
+.p2align 8
+kx7:
+.skip 256
+s_mov_b32 s23, s0
+
+.kcode kx1,kx3
+            v_and_b32 v41,v2,v1
+    .kcode kx5
+            v_and_b32 v22,v2,v1
+        .kcode kx0
+            v_and_b32 v24,v2,v1
+        .kcodeend
+    .kcodeend
+    .kcode kx4
+            v_and_b32 v18,v2,v1
+        .kcode kx2
+            v_and_b32 v15,v2,v1
+        .kcodeend
+    .kcodeend
+    .kcode kx7
+            v_and_b32 v33,v2,v1
+        .kcode kx6
+            v_and_b32 v17,v2,v1
+        .kcodeend
+            v_and_b32 v34,v2,v1
+    .kcodeend
+.kcodeend)ffDXD",
+        { { "kx0", 11, 25 }, { "kx1", 15, 42 }, { "kx2", 20, 16 }, { "kx3", 17, 42 },
+          { "kx4", 9, 19 }, { "kx5", 12, 25 }, { "kx6", 22, 18 }, { "kx7", 24, 35 } }
     }
 };
 
@@ -356,6 +435,30 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
                         kinput.config.usedSGPRsNum);
             assertValue(testName, caseName+"vgprsNum", regPool.vgprsNum,
                         kinput.config.usedVGPRsNum);
+        }
+    }
+    else if (assembler.getBinaryFormat()==BinaryFormat::ROCM)
+    {   // ROCmCompute
+        const ROCmInput* input = static_cast<const AsmROCmHandler*>(
+                    assembler.getFormatHandler())->getOutput();
+        assertTrue(testName, "input!=nullptr", input!=nullptr);
+        assertValue(testName, "kernels.length", testCase.regPools.size(),
+                    input->symbols.size());
+        char buf[32];
+        for (cxuint i = 0; i < input->symbols.size(); i++)
+        {
+            const ROCmSymbolInput& kinput = input->symbols[i];
+            const KernelRegPool& regPool = testCase.regPools[i];
+            snprintf(buf, 32, "Kernel=%u.", i);
+            std::string caseName(buf);
+            assertString(testName, caseName+"name", regPool.kernelName, kinput.symbolName);
+            assertTrue(testName, caseName+"useConfig", true);
+            const ROCmKernelConfig* config = reinterpret_cast<const ROCmKernelConfig*>(
+                            input->code + kinput.offset);
+            assertValue(testName, caseName+"sgprsNum", regPool.sgprsNum,
+                        cxuint(ULEV(config->wavefrontSgprCount)));
+            assertValue(testName, caseName+"vgprsNum", regPool.vgprsNum,
+                        cxuint(ULEV(config->workitemVgprCount)));
         }
     }
     else

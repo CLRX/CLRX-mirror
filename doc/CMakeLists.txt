@@ -28,6 +28,7 @@ IF(BUILD_CLRXDOC)
           "${PROJECT_SOURCE_DIR}/doc/ClrxAsmAmd.md"
           "${PROJECT_SOURCE_DIR}/doc/ClrxAsmAmdCl2.md"
           "${PROJECT_SOURCE_DIR}/doc/ClrxAsmGallium.md"
+          "${PROJECT_SOURCE_DIR}/doc/ClrxAsmRocm.md"
           "${PROJECT_SOURCE_DIR}/doc/ClrxAsmInvoke.md"
           "${PROJECT_SOURCE_DIR}/doc/ClrxAsmPseudoOps.md"
           "${PROJECT_SOURCE_DIR}/doc/ClrxAsmSyntax.md"

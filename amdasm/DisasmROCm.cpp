@@ -35,7 +35,7 @@
 
 using namespace CLRX;
 
-struct AMDGPUArchValues
+struct AMDGPUArchValuesEntry
 {
     uint32_t major;
     uint32_t minor;
@@ -43,7 +43,7 @@ struct AMDGPUArchValues
     GPUDeviceType deviceType;
 };
 
-static const AMDGPUArchValues amdGpuArchValuesTbl[] =
+static const AMDGPUArchValuesEntry amdGpuArchValuesTbl[] =
 {
     { 0, 0, 0, GPUDeviceType::CAPE_VERDE },
     { 7, 0, 0, GPUDeviceType::BONAIRE },
@@ -57,7 +57,7 @@ static const AMDGPUArchValues amdGpuArchValuesTbl[] =
 };
 
 static const size_t amdGpuArchValuesNum = sizeof(amdGpuArchValuesTbl) /
-                sizeof(AMDGPUArchValues);
+                sizeof(AMDGPUArchValuesEntry);
 
 ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
 {
@@ -117,7 +117,7 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
     {
         const ROCmRegion& region = binary.getRegion(i);
         input->regions[i] = { region.regionName, size_t(region.size),
-            size_t(region.offset - codeOffset), region.isKernel };
+            size_t(region.offset - codeOffset), region.type };
     }
     
     input->code = binary.getCode();
@@ -250,39 +250,48 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     }
     
     const uint16_t sgprFlags = enableSpgrRegisterFlags;
-    if ((sgprFlags&1) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER) != 0)
         output.write("        .use_private_segment_buffer\n", 36);
-    if ((sgprFlags&2) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_DISPATCH_PTR) != 0)
         output.write("        .use_dispatch_ptr\n", 26);
-    if ((sgprFlags&4) != 0)
-        output.write("        .use_queue_ptr\n", 24);
-    if ((sgprFlags&8) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_QUEUE_PTR) != 0)
+        output.write("        .use_queue_ptr\n", 23);
+    if ((sgprFlags&ROCMFLAG_USE_KERNARG_SEGMENT_PTR) != 0)
         output.write("        .use_kernarg_segment_ptr\n", 33);
-    if ((sgprFlags&16) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_DISPATCH_ID) != 0)
         output.write("        .use_dispatch_id\n", 25);
-    if ((sgprFlags&32) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_FLAT_SCRATCH_INIT) != 0)
         output.write("        .use_flat_scratch_init\n", 31);
-    if ((sgprFlags&64) != 0)
+    if ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_SIZE) != 0)
         output.write("        .use_private_segment_size\n", 34);
-    if ((sgprFlags&128) != 0)
-        output.write("        .use_grid_workgroup_count_x\n", 36);
-    if ((sgprFlags&256) != 0)
-        output.write("        .use_grid_workgroup_count_y\n", 36);
-    if ((sgprFlags&512) != 0)
-        output.write("        .use_grid_workgroup_count_z\n", 36);
+    
+    if ((sgprFlags&(7U<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT)) != 0)
+    {
+        strcpy(buf, "        .use_grid_workgroup_count ");
+        bufSize = 34;
+        if ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_X) != 0)
+            buf[bufSize++] = 'x';
+        if ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_Y) != 0)
+            buf[bufSize++] = 'y';
+        if ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_Z) != 0)
+            buf[bufSize++] = 'z';
+        buf[bufSize++] = '\n';
+        output.write(buf, bufSize);
+    }
+    
     const uint16_t featureFlags = enableFeatureFlags;
-    if ((featureFlags&1) != 0)
+    if ((featureFlags&ROCMFLAG_USE_ORDERED_APPEND_GDS) != 0)
         output.write("        .use_ordered_append_gds\n", 32);
     bufSize = snprintf(buf, 100, "        .private_elem_size %u\n",
-                       2U<<((featureFlags>>1)&3));
+                       2U<<((featureFlags>>ROCMFLAG_PRIVATE_ELEM_SIZE_BIT)&3));
     output.write(buf, bufSize);
-    if ((featureFlags&8) != 0)
+    if ((featureFlags&ROCMFLAG_USE_PTR64) != 0)
         output.write("        .use_ptr64\n", 19);
-    if ((featureFlags&16) != 0)
+    if ((featureFlags&ROCMFLAG_USE_DYNAMIC_CALL_STACK) != 0)
         output.write("        .use_dynamic_call_stack\n", 32);
-    if ((featureFlags&32) != 0)
+    if ((featureFlags&ROCMFLAG_USE_DEBUG_ENABLED) != 0)
         output.write("        .use_debug_enabled\n", 27);
-    if ((featureFlags&64) != 0)
+    if ((featureFlags&ROCMFLAG_USE_XNACK_ENABLED) != 0)
         output.write("        .use_xnack_enabled\n", 27);
     
     if (workitemPrivateSegmentSize!=0)
@@ -327,28 +336,16 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
                          workitemVgprCount);
         output.write(buf, bufSize);
     }
-    if (reservedVgprFirst!=0)
-    {
-        bufSize = snprintf(buf, 100, "        .reserved_vgpr_first %hu\n",
-                         reservedVgprFirst);
-        output.write(buf, bufSize);
-    }
     if (reservedVgprCount!=0)
     {
-        bufSize = snprintf(buf, 100, "        .reserved_vgpr_count %hu\n",
-                         reservedVgprCount);
-        output.write(buf, bufSize);
-    }
-    if (reservedSgprFirst!=0)
-    {
-        bufSize = snprintf(buf, 100, "        .reserved_sgpr_first %hu\n",
-                         reservedSgprFirst);
+        bufSize = snprintf(buf, 100, "        .reserved_vgprs %hu, %hu\n",
+                     reservedVgprFirst, uint16_t(reservedVgprFirst+reservedVgprCount-1));
         output.write(buf, bufSize);
     }
     if (reservedSgprCount!=0)
     {
-        bufSize = snprintf(buf, 100, "        .reserved_sgpr_count %hu\n",
-                         reservedSgprCount);
+        bufSize = snprintf(buf, 100, "        .reserved_sgprs %hu, %hu\n",
+                     reservedSgprFirst, uint16_t(reservedSgprFirst+reservedSgprCount-1));
         output.write(buf, bufSize);
     }
     if (debugWavefrontPrivateSegmentOffsetSgpr!=0)
@@ -411,11 +408,13 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     }
     
     for (const ROCmDisasmRegionInput& rinput: rocmInput->regions)
-        if (rinput.isKernel)
+        if (rinput.type != ROCmRegionType::DATA)
         {
             output.write(".kernel ", 8);
             output.write(rinput.regionName.c_str(), rinput.regionName.size());
             output.put('\n');
+            if (rinput.type == ROCmRegionType::FKERNEL)
+                output.write("    .fkernel\n", 13);
             if (doMetadata && doDumpConfig)
                 dumpKernelConfig(output, maxSgprsNum, arch,
                      *reinterpret_cast<const ROCmKernelConfig*>(
@@ -440,10 +439,16 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
         for (size_t i = 0; i < regionsNum; i++)
         {
             const ROCmDisasmRegionInput& region = rocmInput->regions[sorted[i].second];
-            if (region.isKernel && doDumpCode)
-            {
+            if (region.type==ROCmRegionType::KERNEL && doDumpCode)
+            {   // kernel code
                 isaDisassembler->setInput(region.size-256, code + region.offset+256,
                                     region.offset+256);
+                isaDisassembler->analyzeBeforeDisassemble();
+            }
+            else if (region.type==ROCmRegionType::FKERNEL && doDumpCode)
+            {   // function code
+                isaDisassembler->setInput(region.size, code + region.offset,
+                                    region.offset);
                 isaDisassembler->analyzeBeforeDisassemble();
             }
             isaDisassembler->addNamedLabel(region.offset, region.regionName);
@@ -478,7 +483,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                         rocmInput->regions[sorted[i+1].second];
                 dataSize = newRegion.offset - region.offset;
             }
-            if (region.isKernel)
+            if (region.type!=ROCmRegionType::DATA)
             {
                 if (doMetadata)
                 {
@@ -503,14 +508,27 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                 output.write(region.regionName.c_str(), region.regionName.size());
                 output.write("\n", 1);
                 printDisasmData(dataSize, code + region.offset, output, true);
-                prevRegionPos = region.offset + dataSize;
+                prevRegionPos = region.offset+1;
             }
         }
         
-        if (regionsNum!=0 && !rocmInput->regions[sorted[regionsNum-1].second].isKernel)
-        {   // if last region is kernel, then print labels after last region
+        if (regionsNum!=0 &&
+            rocmInput->regions[sorted[regionsNum-1].second].type==ROCmRegionType::DATA)
+        {
             const ROCmDisasmRegionInput& region =
-                        rocmInput->regions[sorted[regionsNum-1].second];
+                    rocmInput->regions[sorted[regionsNum-1].second];
+            // set labelIters to previous position
+            isaDisassembler->setInput(prevRegionPos, code + region.offset+region.size,
+                                    region.offset+region.size, prevRegionPos);
+            curLabel = std::lower_bound(labels.begin(), labels.end(), prevRegionPos);
+            curNamedLabel = std::lower_bound(namedLabels.begin(), namedLabels.end(),
+                std::make_pair(prevRegionPos, CString()),
+                  [](const std::pair<size_t,CString>& a,
+                                 const std::pair<size_t, CString>& b)
+                  { return a.first < b.first; });
+            isaDisassembler->writeLabelsToPosition(0, curLabel, curNamedLabel);
+            isaDisassembler->flushOutput();
+            // if last region is not kernel, then print labels after last region
             isaDisassembler->writeLabelsToEnd(region.size, curLabel, curNamedLabel);
             isaDisassembler->flushOutput();
         }
