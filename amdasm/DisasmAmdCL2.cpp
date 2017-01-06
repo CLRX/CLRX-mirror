@@ -105,9 +105,9 @@ static const CL2GPUDeviceCodeEntry cl2GPUPROGpuDeviceCodeTable[] =
     { 4, GPUDeviceType::MULLINS },
     { 14, GPUDeviceType::FIJI },
     { 13, GPUDeviceType::CARRIZO },
-    { 17, GPUDeviceType::ELLESMERE },
+    { 15, GPUDeviceType::ELLESMERE },
     { 16, GPUDeviceType::BAFFIN },
-    { 15, GPUDeviceType::STONEY }
+    { 17, GPUDeviceType::STONEY }
 };
 
 struct CLRX_INTERNAL AmdCL2Types32: Elf32Types

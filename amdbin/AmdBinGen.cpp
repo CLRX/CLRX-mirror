@@ -94,7 +94,7 @@ static const uint16_t gpuDeviceCodeTable[21] =
     0xffff,
     0xffff,
     0xffff,
-    0xffff,
+    0x40e, // GPUDeviceType::ELLESMERE
     0xffff
 };
 
@@ -120,7 +120,7 @@ static const uint32_t gpuDeviceInnerCodeTable[21] =
     UINT_MAX,
     UINT_MAX,
     UINT_MAX,
-    UINT_MAX,
+	0x2f, // GPUDeviceType::ELLESMERE
     UINT_MAX
 };
 
@@ -1564,8 +1564,10 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
     std::unique_ptr<ElfBinaryGen32> elfBinGen32;
     std::unique_ptr<ElfBinaryGen64> elfBinGen64;
     
-    if (gpuDeviceCodeTable[cxuint(input->deviceType)] == 0xffff)
-        throw Exception("Unsupported GPU device type by OpenCL 1.2 binary format");
+	if (gpuDeviceCodeTable[cxuint(input->deviceType)] == 0xffff) {
+		fprintf(stderr, "cxuint(input->deviceType): %u\n", cxuint(input->deviceType));
+		throw Exception("Unsupported GPU device type by OpenCL 1.2 binary format");
+	}
     
     if (input->is64Bit)
         elfBinGen64.reset(new ElfBinaryGen64({ 0, 0, ELFOSABI_SYSV, 0, ET_EXEC, 
