@@ -33,6 +33,7 @@
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/GPUId.h>
 
 /// main namespace
 namespace CLRX
@@ -373,6 +374,10 @@ protected:
     template<typename Types>
     void initMainGPUBinary(typename Types::ElfBinary& elfBin);
     
+    template<typename Types>
+    GPUDeviceType determineGPUDeviceTypeInt(const typename Types::ElfBinary& elfBin,
+                uint32_t& archMinor, uint32_t& archStepping, cxuint driverVersion) const;
+    
 public:
     explicit AmdCL2MainGPUBinaryBase(AmdMainType amdMainType);
     ~AmdCL2MainGPUBinaryBase() = default;
@@ -471,6 +476,16 @@ public:
             Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdCL2MainGPUBinary32() = default;
     
+    /// determine GPU device from this binary
+    /**
+     * \param archMinor output architecture minor
+     * \param archStepping output architecture stepping
+     * \param driverVersion specified driver version (zero detected by loader)
+     * \return device type
+     */
+    GPUDeviceType determineGPUDeviceType(uint32_t& archMinor, uint32_t& archStepping,
+                cxuint driverVersion = 0) const;
+    
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const
     { return (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0; }
@@ -494,6 +509,16 @@ public:
     AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdCL2MainGPUBinary64() = default;
+    
+    /// determine GPU device from this binary
+    /**
+     * \param archMinor output architecture minor
+     * \param archStepping output architecture stepping
+     * \param driverVersion specified driver version (zero detected by loader)
+     * \return device type
+     */
+    GPUDeviceType determineGPUDeviceType(uint32_t& archMinor, uint32_t& archStepping,
+                cxuint driverVersion = 0) const;
     
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const
