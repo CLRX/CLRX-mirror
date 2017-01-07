@@ -185,14 +185,20 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
     }
     //const cxuint entriesNum = sizeof(cl2GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
     cxuint index;
+    bool knownGPUType = false;
     for (index = 0; index < entriesNum; index++)
         if (gpuCodeTable[index].elfFlags == elfFlags)
+        {
+            knownGPUType = true;
             break;
-    if (entriesNum == index)
-        throw Exception("Can't determine GPU device type");
+        }
     
-    input->deviceType = gpuCodeTable[index].deviceType;
-    GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
+    GPUArchitecture arch = GPUArchitecture::GCN1_1;
+    if (knownGPUType)
+    {
+        input->deviceType = gpuCodeTable[index].deviceType;
+        arch = getGPUArchitectureFromDeviceType(input->deviceType);
+    }
     input->archMinor = 0;
     input->archStepping = 0;
     input->compileOptions = binary.getCompileOptions();
@@ -248,9 +254,22 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
                     const uint32_t* content = (const uint32_t*)
                             (noteContent+offset+sizeof(typename AmdCL2Types::Nhdr) + 4);
                     uint32_t major = ULEV(content[1]);
-                    if ((arch==GPUArchitecture::GCN1_2 && major!=8) ||
-                        (arch==GPUArchitecture::GCN1_1 && major!=7))
-                        throw Exception("Wrong arch major for GPU architecture");
+                    if (knownGPUType)
+                    {
+                        if ((arch==GPUArchitecture::GCN1_2 && major!=8) ||
+                            (arch==GPUArchitecture::GCN1_1 && major!=7))
+                            throw Exception("Wrong arch major for GPU architecture");
+                    }
+                    else if (major != 8 && major != 7)
+                        throw Exception("Unknown arch major");
+                        
+                    if (!knownGPUType)
+                    {
+                        arch = (major == 7) ? GPUArchitecture::GCN1_1 :
+                                GPUArchitecture::GCN1_2;
+                        input->deviceType = getLowestGPUDeviceTypeFromArchitecture(arch);
+                        knownGPUType = true;
+                    }
                     input->archMinor = ULEV(content[2]);
                     input->archStepping = ULEV(content[3]);
                 }
@@ -258,6 +277,9 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
                 offset += sizeof(typename AmdCL2Types::Nhdr) + namesz + descsz + align;
             }
         }
+        
+        if (!knownGPUType)
+            throw Exception("Unknown GPU type");
         
         // if no kernels and data
         if (kernelInfosNum==0)
