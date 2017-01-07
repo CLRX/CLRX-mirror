@@ -45,7 +45,7 @@ struct CLRX_INTERNAL GPUDeviceCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceCodeEntry gpuDeviceCodeTable[16] =
+static const GPUDeviceCodeEntry gpuDeviceCodeTable[17] =
 {
     { 0x3fd, GPUDeviceType::TAHITI },
     { 0x3fe, GPUDeviceType::PITCAIRN },
@@ -62,6 +62,7 @@ static const GPUDeviceCodeEntry gpuDeviceCodeTable[16] =
     { 0x40b, GPUDeviceType::MULLINS },
     { 0x40c, GPUDeviceType::FIJI },
     { 0x40d, GPUDeviceType::CARRIZO },
+    { 0x40e, GPUDeviceType::ELLESMERE },
     { 0x411, GPUDeviceType::DUMMY }
 };
 
@@ -71,7 +72,7 @@ struct CLRX_INTERNAL GPUDeviceInnerCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[16] =
+static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[17] =
 {
     { 0x1a, GPUDeviceType::TAHITI },
     { 0x1b, GPUDeviceType::PITCAIRN },
@@ -88,6 +89,7 @@ static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[16] =
     { 0x2b, GPUDeviceType::MULLINS },
     { 0x2d, GPUDeviceType::FIJI },
     { 0x2e, GPUDeviceType::CARRIZO },
+    { 0x2f, GPUDeviceType::ELLESMERE },
     { 0x31, GPUDeviceType::DUMMY }
 };
 

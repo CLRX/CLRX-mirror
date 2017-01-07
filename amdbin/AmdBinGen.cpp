@@ -94,7 +94,7 @@ static const uint16_t gpuDeviceCodeTable[21] =
     0xffff,
     0xffff,
     0xffff,
-    0xffff,
+    0x40e, // GPUDeviceType::ELLESMERE
     0xffff
 };
 
@@ -120,7 +120,7 @@ static const uint32_t gpuDeviceInnerCodeTable[21] =
     UINT_MAX,
     UINT_MAX,
     UINT_MAX,
-    UINT_MAX,
+    0x2f, // GPUDeviceType::ELLESMERE
     UINT_MAX
 };
 
