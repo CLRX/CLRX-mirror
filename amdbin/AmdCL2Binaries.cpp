@@ -865,8 +865,7 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
             knownGPUType = true;
             break;
         }
-    GPUDeviceType deviceType;
-    
+    GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE;
     GPUArchitecture arch = GPUArchitecture::GCN1_1;
     if (knownGPUType)
     {
