@@ -722,7 +722,7 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBi
     }
 }
 
-/* helpers for main Disassembler class */
+/* helpers for determing gpu device type */
 
 struct CLRX_INTERNAL CL2GPUDeviceCodeEntry
 {
@@ -881,51 +881,48 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
     {
         const AmdCL2InnerGPUBinary& innerBin = getInnerBinary();
         
+        const cxbyte* noteContent = (const cxbyte*)innerBin.getNotes();
+        if (noteContent==nullptr)
+            throw Exception("Missing notes in inner binary!");
+        size_t notesSize = innerBin.getNotesSize();
+        // find note about AMDGPU
+        for (size_t offset = 0; offset < notesSize; )
         {
-            const cxbyte* noteContent = (const cxbyte*)innerBin.getNotes();
-            if (noteContent==nullptr)
-                throw Exception("Missing notes in inner binary!");
-            size_t notesSize = innerBin.getNotesSize();
-            // find note about AMDGPU
-            for (size_t offset = 0; offset < notesSize; )
-            {
-                const typename Types::Nhdr* nhdr =
-                            (const typename Types::Nhdr*)(noteContent + offset);
-                size_t namesz = ULEV(nhdr->n_namesz);
-                size_t descsz = ULEV(nhdr->n_descsz);
-                if (usumGt(offset, namesz+descsz, notesSize))
-                    throw Exception("Note offset+size out of range");
-                if (ULEV(nhdr->n_type) == 0x3 && namesz==4 && descsz>=0x1a &&
-                    ::strcmp((const char*)noteContent+offset+
-                                sizeof(typename Types::Nhdr), "AMD")==0)
-                {    // AMDGPU type
-                    const uint32_t* content = (const uint32_t*)
-                            (noteContent+offset+sizeof(typename Types::Nhdr) + 4);
-                    uint32_t major = ULEV(content[1]);
-                    if (knownGPUType)
-                    {
-                        if ((arch==GPUArchitecture::GCN1_2 && major!=8) ||
-                            (arch==GPUArchitecture::GCN1_1 && major!=7))
-                            throw Exception("Wrong arch major for GPU architecture");
-                    }
-                    else if (major != 8 && major != 7)
-                        throw Exception("Unknown arch major");
-                        
-                    if (!knownGPUType)
-                    {
-                        arch = (major == 7) ? GPUArchitecture::GCN1_1 :
-                                GPUArchitecture::GCN1_2;
-                        deviceType = getLowestGPUDeviceTypeFromArchitecture(arch);
-                        knownGPUType = true;
-                    }
-                    archMinor = ULEV(content[2]);
-                    archStepping = ULEV(content[3]);
+            const typename Types::Nhdr* nhdr =
+                        (const typename Types::Nhdr*)(noteContent + offset);
+            size_t namesz = ULEV(nhdr->n_namesz);
+            size_t descsz = ULEV(nhdr->n_descsz);
+            if (usumGt(offset, namesz+descsz, notesSize))
+                throw Exception("Note offset+size out of range");
+            if (ULEV(nhdr->n_type) == 0x3 && namesz==4 && descsz>=0x1a &&
+                ::strcmp((const char*)noteContent+offset+
+                            sizeof(typename Types::Nhdr), "AMD")==0)
+            {    // AMDGPU type
+                const uint32_t* content = (const uint32_t*)
+                        (noteContent+offset+sizeof(typename Types::Nhdr) + 4);
+                uint32_t major = ULEV(content[1]);
+                if (knownGPUType)
+                {
+                    if ((arch==GPUArchitecture::GCN1_2 && major!=8) ||
+                        (arch==GPUArchitecture::GCN1_1 && major!=7))
+                        throw Exception("Wrong arch major for GPU architecture");
                 }
-                size_t align = (((namesz+descsz)&3)!=0) ? 4-((namesz+descsz)&3) : 0;
-                offset += sizeof(typename Types::Nhdr) + namesz + descsz + align;
+                else if (major != 8 && major != 7)
+                    throw Exception("Unknown arch major");
+                    
+                if (!knownGPUType)
+                {
+                    arch = (major == 7) ? GPUArchitecture::GCN1_1 :
+                            GPUArchitecture::GCN1_2;
+                    deviceType = getLowestGPUDeviceTypeFromArchitecture(arch);
+                    knownGPUType = true;
+                }
+                archMinor = ULEV(content[2]);
+                archStepping = ULEV(content[3]);
             }
+            size_t align = (((namesz+descsz)&3)!=0) ? 4-((namesz+descsz)&3) : 0;
+            offset += sizeof(typename Types::Nhdr) + namesz + descsz + align;
         }
-        
     }
     
     if (!knownGPUType)
