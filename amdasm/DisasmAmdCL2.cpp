@@ -278,9 +278,6 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
             }
         }
         
-        if (!knownGPUType)
-            throw Exception("Unknown GPU type");
-        
         // if no kernels and data
         if (kernelInfosNum==0)
             return input.release();
@@ -336,6 +333,9 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
     }
     else if (kernelInfosNum==0)
         return input.release();
+    
+    if (!knownGPUType)
+        throw Exception("Unknown GPU type");
     
     input->kernels.resize(kernelInfosNum);
     auto sortedRelocIter = sortedRelocs.begin();
