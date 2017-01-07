@@ -91,11 +91,11 @@ static const uint16_t gpuDeviceCodeTable[21] =
     0x40c, // GPUDeviceType::FIJI
     0x40d, // GPUDeviceType::CARRIZO
     0x411, // GPUDeviceType::DUMMY
-    0xffff,
-    0xffff,
-    0xffff,
+    0x40f, // GPUDeviceType::GOOSE
+    0x40e, // GPUDeviceType::HORSE
+    0x411, // GPUDeviceType::STONEY
     0x40e, // GPUDeviceType::ELLESMERE
-    0xffff
+    0x40f  // GPUDeviceType::BAFFIN
 };
 
 /// CALNoteEntry (32-bit)
@@ -117,11 +117,11 @@ static const uint32_t gpuDeviceInnerCodeTable[21] =
     0x2d, // GPUDeviceType::FIJI
     0x2e, // GPUDeviceType::CARRIZO
     0x31, // GPUDeviceType::DUMMY
-    UINT_MAX,
-    UINT_MAX,
-    UINT_MAX,
+    0x2c, // GPUDeviceType::GOOSE
+    0x2f, // GPUDeviceType::HORSE
+    0x31, // GPUDeviceType::STONEY
     0x2f, // GPUDeviceType::ELLESMERE
-    UINT_MAX
+    0x2c  // GPUDeviceType::BAFFIN
 };
 
 void AmdInput::addKernel(const AmdKernelInput& kernelInput)
