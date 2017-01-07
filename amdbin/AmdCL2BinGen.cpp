@@ -249,6 +249,31 @@ static const uint32_t gpuDeviceCodeTableGPUPRO[21] =
     16 // GPUDeviceType::BAFFIN
 };
 
+static const uint32_t gpuDeviceCodeTable2236[21] =
+{
+    UINT_MAX, // GPUDeviceType::CAPE_VERDE
+    UINT_MAX, // GPUDeviceType::PITCAIRN
+    UINT_MAX, // GPUDeviceType::TAHITI
+    UINT_MAX, // GPUDeviceType::OLAND
+    6, // GPUDeviceType::BONAIRE
+    1, // GPUDeviceType::SPECTRE
+    2, // GPUDeviceType::SPOOKY
+    3, // GPUDeviceType::KALINDI
+    UINT_MAX, // GPUDeviceType::HAINAN
+    7, // GPUDeviceType::HAWAII
+    8, // GPUDeviceType::ICELAND
+    9, // GPUDeviceType::TONGA
+    4, // GPUDeviceType::MULLINS
+    13, // GPUDeviceType::FIJI
+    12, // GPUDeviceType::CARRIZO
+    UINT_MAX, // GPUDeviceType::DUMMY
+    UINT_MAX, // GPUDeviceType::GOOSE
+    UINT_MAX, // GPUDeviceType::HORSE
+    14, // GPUDeviceType::STONEY
+    16, // GPUDeviceType::ELLESMERE
+    15 // GPUDeviceType::BAFFIN
+};
+
 static const uint16_t mainBuiltinSectionTable[] =
 {
     1, // ELFSECTID_SHSTRTAB
@@ -1905,8 +1930,11 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         deviceCodeTable = gpuDeviceCodeTable;
     else if (input->driverVersion < 203603)
         deviceCodeTable = gpuDeviceCodeTable16_3;
-    else // AMD GPUPRO driver and later
+    else if (input->driverVersion < 223600)
+        // AMD GPUPRO driver and later
         deviceCodeTable = gpuDeviceCodeTableGPUPRO;
+    else // newest driver
+        deviceCodeTable = gpuDeviceCodeTable2236;
     // if GPU type is not supported by driver version
     if (deviceCodeTable[cxuint(input->deviceType)] == UINT_MAX)
         throw Exception("Unsupported GPU device type by driver version");
