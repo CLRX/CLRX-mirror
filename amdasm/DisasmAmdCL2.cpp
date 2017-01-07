@@ -110,6 +110,25 @@ static const CL2GPUDeviceCodeEntry cl2GPUPROGpuDeviceCodeTable[] =
     { 15, GPUDeviceType::STONEY }
 };
 
+/* driver version: 2036.3 */
+static const CL2GPUDeviceCodeEntry cl2_2236GpuDeviceCodeTable[] =
+{
+    { 6, GPUDeviceType::BONAIRE },
+    { 1, GPUDeviceType::SPECTRE },
+    { 2, GPUDeviceType::SPOOKY },
+    { 3, GPUDeviceType::KALINDI },
+    { 7, GPUDeviceType::HAWAII },
+    { 8, GPUDeviceType::ICELAND },
+    { 9, GPUDeviceType::TONGA },
+    { 4, GPUDeviceType::MULLINS },
+    { 13, GPUDeviceType::FIJI },
+    { 12, GPUDeviceType::CARRIZO },
+    { 16, GPUDeviceType::ELLESMERE },
+    { 15, GPUDeviceType::BAFFIN },
+    { 14, GPUDeviceType::STONEY }
+};
+
+
 struct CLRX_INTERNAL AmdCL2Types32: Elf32Types
 {
     typedef AmdCL2MainGPUBinary32 AmdCL2MainBinary;
@@ -126,7 +145,7 @@ struct CLRX_INTERNAL AmdCL2Types64: Elf64Types
 
 template<typename AmdCL2Types>
 static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
-            const typename AmdCL2Types::AmdCL2MainBinary& binary)
+            const typename AmdCL2Types::AmdCL2MainBinary& binary, cxuint driverVersion)
 {
     std::unique_ptr<AmdCL2DisasmInput> input(new AmdCL2DisasmInput);
     const uint32_t elfFlags = ULEV(binary.getHeader().e_flags);
@@ -134,7 +153,11 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
     // detect GPU device from elfMachine field from ELF header
     cxuint entriesNum = 0;
     const CL2GPUDeviceCodeEntry* gpuCodeTable = nullptr;
-    input->driverVersion = binary.getDriverVersion();
+    if (driverVersion == 0)
+        input->driverVersion = binary.getDriverVersion();
+    else
+        input->driverVersion = driverVersion;
+    
     if (input->driverVersion < 191205)
     {
         gpuCodeTable = cl2_15_7GpuDeviceCodeTable;
@@ -150,10 +173,15 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         gpuCodeTable = cl2_16_3GpuDeviceCodeTable;
         entriesNum = sizeof(cl2_16_3GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
     }
-    else
+    else if (input->driverVersion < 223600)
     {
         gpuCodeTable = cl2GPUPROGpuDeviceCodeTable;
         entriesNum = sizeof(cl2GPUPROGpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
+    }
+    else
+    {
+        gpuCodeTable = cl2_2236GpuDeviceCodeTable;
+        entriesNum = sizeof(cl2_2236GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
     }
     //const cxuint entriesNum = sizeof(cl2GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
     cxuint index;
@@ -407,15 +435,15 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
 }
 
 AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary32(
-                const AmdCL2MainGPUBinary32& binary)
+                const AmdCL2MainGPUBinary32& binary, cxuint driverVersion)
 {
-    return getAmdCL2DisasmInputFromBinary<AmdCL2Types32>(binary);
+    return getAmdCL2DisasmInputFromBinary<AmdCL2Types32>(binary, driverVersion);
 }
 
 AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary64(
-                const AmdCL2MainGPUBinary64& binary)
+                const AmdCL2MainGPUBinary64& binary, cxuint driverVersion)
 {
-    return getAmdCL2DisasmInputFromBinary<AmdCL2Types64>(binary);
+    return getAmdCL2DisasmInputFromBinary<AmdCL2Types64>(binary, driverVersion);
 }
 
 struct CLRX_INTERNAL IntAmdCL2SetupData

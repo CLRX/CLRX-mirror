@@ -283,19 +283,21 @@ Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _outp
 }
 
 Disassembler::Disassembler(const AmdCL2MainGPUBinary32& binary, std::ostream& _output,
-           Flags _flags) : fromBinary(true), binaryFormat(BinaryFormat::AMDCL2),
-            amdCL2Input(nullptr), output(_output), flags(_flags), sectionCount(0)
+           Flags _flags, cxuint driverVersion) : fromBinary(true),
+            binaryFormat(BinaryFormat::AMDCL2), amdCL2Input(nullptr), output(_output),
+            flags(_flags), sectionCount(0)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
-    amdCL2Input = getAmdCL2DisasmInputFromBinary32(binary);
+    amdCL2Input = getAmdCL2DisasmInputFromBinary32(binary, driverVersion);
 }
 
 Disassembler::Disassembler(const AmdCL2MainGPUBinary64& binary, std::ostream& _output,
-           Flags _flags) : fromBinary(true), binaryFormat(BinaryFormat::AMDCL2),
-            amdCL2Input(nullptr), output(_output), flags(_flags), sectionCount(0)
+           Flags _flags, cxuint driverVersion) : fromBinary(true),
+            binaryFormat(BinaryFormat::AMDCL2), amdCL2Input(nullptr), output(_output),
+            flags(_flags), sectionCount(0)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
-    amdCL2Input = getAmdCL2DisasmInputFromBinary64(binary);
+    amdCL2Input = getAmdCL2DisasmInputFromBinary64(binary, driverVersion);
 }
 
 Disassembler::Disassembler(const ROCmBinary& binary, std::ostream& _output, Flags _flags)

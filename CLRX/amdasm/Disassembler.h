@@ -372,17 +372,19 @@ public:
      * \param binary main GPU binary
      * \param output output stream
      * \param flags flags for disassembler
+     * \param driverVersion driverVersion (0 - detected by disassembler)
      */
     Disassembler(const AmdCL2MainGPUBinary32& binary, std::ostream& output,
-                 Flags flags = 0);
+                 Flags flags = 0, cxuint driverVersion = 0);
     /// constructor for AMD OpenCL 2.0 GPU binary 64-bit
     /**
      * \param binary main GPU binary
      * \param output output stream
      * \param flags flags for disassembler
+     * \param driverVersion driverVersion (0 - detected by disassembler)
      */
     Disassembler(const AmdCL2MainGPUBinary64& binary, std::ostream& output,
-                 Flags flags = 0);
+                 Flags flags = 0, cxuint driverVersion = 0);
     /// constructor for ROCm GPU binary
     /**
      * \param binary main GPU binary
