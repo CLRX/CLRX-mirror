@@ -17,6 +17,8 @@ Both tools can operate on two binary formats:
 
 * the AMD Catalyst OpenCL program binaries
 * the GalliumCompute (Mesa) program binaries
+* the AMD Catalyst OpenCL 2.0 program binaries
+* the ROCm (RadeonOpenCompute) program binaries
 
 CLRadeonExtender not only provides basic tools to low-level development, but also
 allow to embed own assembler with AMD Catalyst driver through CLwrapper.
