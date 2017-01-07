@@ -216,12 +216,12 @@ static const uint32_t gpuDeviceCodeTable16_3[21] =
     4, // GPUDeviceType::MULLINS
     16, // GPUDeviceType::FIJI
     15, // GPUDeviceType::CARRIZO
-    UINT_MAX, // GPUDeviceType::DUMMY
+    17, // GPUDeviceType::DUMMY
     13, // GPUDeviceType::GOOSE
     12, // GPUDeviceType::HORSE
     17, // GPUDeviceType::STONEY
-    UINT_MAX, // GPUDeviceType::ELLESMERE
-    UINT_MAX  // GPUDeviceType::BAFFIN
+    12, // GPUDeviceType::ELLESMERE
+    13  // GPUDeviceType::BAFFIN
 };
 
 static const uint32_t gpuDeviceCodeTableGPUPRO[21] =
@@ -241,9 +241,9 @@ static const uint32_t gpuDeviceCodeTableGPUPRO[21] =
     4, // GPUDeviceType::MULLINS
     14, // GPUDeviceType::FIJI
     13, // GPUDeviceType::CARRIZO
-    UINT_MAX, // GPUDeviceType::DUMMY
-    UINT_MAX, // GPUDeviceType::GOOSE
-    UINT_MAX, // GPUDeviceType::HORSE
+    15, // GPUDeviceType::DUMMY
+    16, // GPUDeviceType::GOOSE
+    17, // GPUDeviceType::HORSE
     15, // GPUDeviceType::STONEY
     17, // GPUDeviceType::ELLESMERE
     16 // GPUDeviceType::BAFFIN
@@ -266,9 +266,9 @@ static const uint32_t gpuDeviceCodeTable2236[21] =
     4, // GPUDeviceType::MULLINS
     13, // GPUDeviceType::FIJI
     12, // GPUDeviceType::CARRIZO
-    UINT_MAX, // GPUDeviceType::DUMMY
-    UINT_MAX, // GPUDeviceType::GOOSE
-    UINT_MAX, // GPUDeviceType::HORSE
+    14, // GPUDeviceType::DUMMY
+    15, // GPUDeviceType::GOOSE
+    16, // GPUDeviceType::HORSE
     14, // GPUDeviceType::STONEY
     16, // GPUDeviceType::ELLESMERE
     15 // GPUDeviceType::BAFFIN
@@ -1746,9 +1746,9 @@ static const AMDGPUArchValues amdGpuArchValuesTbl[] =
     { 7, 0, 0 }, // GPUDeviceType::MULLINS
     { 8, 0, 4 }, // GPUDeviceType::FIJI
     { 8, 0, 1 }, // GPUDeviceType::CARRIZO
-    { 0, 0, 0 }, // GPUDeviceType::DUMMY
-    { 0, 0, 0 }, // GPUDeviceType::GOOSE
-    { 0, 0, 0 }, // GPUDeviceType::HORSE
+    { 8, 0, 1 }, // GPUDeviceType::DUMMY
+    { 8, 0, 4 }, // GPUDeviceType::GOOSE
+    { 8, 0, 4 }, // GPUDeviceType::HORSE
     { 8, 1, 0 }, // GPUDeviceType::STONEY
     { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
     { 8, 0, 4 } // GPUDeviceType::BAFFIN
