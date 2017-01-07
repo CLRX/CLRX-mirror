@@ -114,6 +114,7 @@ Useful options:
 * -g DEVICETYPE - device type ('pitcairn', 'bonaire'...)
 * -A ARCH - architecture ('gcn1.0', 'gcn1.1' or 'gcn1.2')
 * -b BINFMT - binary format ('amd', 'amdcl2', 'gallium', 'rocm', 'rawcode')
+* -t VERSION - driver version for which a binary will be generated
 * -w - suppress warnings
 
 Usage of the clrxdisasm:
@@ -132,5 +133,6 @@ Useful options for clrxdisasm:
 * -C - print configuration dump instead metadatas, CALnotes and setup data
 * -g DEVICETYPE - device type ('pitcairn', 'bonaire'...)
 * -A ARCH - architecture ('gcn1.0', 'gcn1.1' or 'gcn1.2')
+* -t VERSION - driver version for which a binary was generated
 
 A CLRX assembler accepts source from disassembler.
