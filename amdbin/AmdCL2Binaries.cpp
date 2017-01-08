@@ -733,86 +733,86 @@ struct CLRX_INTERNAL CL2GPUDeviceCodeEntry
 /* 1912.05 driver device table list */
 static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[] =
 {
-    { 6, GPUDeviceType::BONAIRE },
     { 1, GPUDeviceType::SPECTRE },
     { 2, GPUDeviceType::SPOOKY },
     { 3, GPUDeviceType::KALINDI },
+    { 4, GPUDeviceType::MULLINS },
+    { 6, GPUDeviceType::BONAIRE },
     { 7, GPUDeviceType::HAWAII },
     { 8, GPUDeviceType::ICELAND },
     { 9, GPUDeviceType::TONGA },
-    { 4, GPUDeviceType::MULLINS },
-    { 17, GPUDeviceType::FIJI },
+    { 15, GPUDeviceType::DUMMY },
     { 16, GPUDeviceType::CARRIZO },
-    { 15, GPUDeviceType::DUMMY }
+    { 17, GPUDeviceType::FIJI }
 };
 
 /* 2004.06 driver device table list */
 static const CL2GPUDeviceCodeEntry cl2_16_3GpuDeviceCodeTable[] =
 {
-    { 6, GPUDeviceType::BONAIRE },
     { 1, GPUDeviceType::SPECTRE },
     { 2, GPUDeviceType::SPOOKY },
     { 3, GPUDeviceType::KALINDI },
+    { 4, GPUDeviceType::MULLINS },
+    { 6, GPUDeviceType::BONAIRE },
     { 7, GPUDeviceType::HAWAII },
     { 8, GPUDeviceType::ICELAND },
     { 9, GPUDeviceType::TONGA },
-    { 4, GPUDeviceType::MULLINS },
-    { 16, GPUDeviceType::FIJI },
-    { 15, GPUDeviceType::CARRIZO },
-    { 13, GPUDeviceType::GOOSE },
     { 12, GPUDeviceType::HORSE },
+    { 13, GPUDeviceType::GOOSE },
+    { 15, GPUDeviceType::CARRIZO },
+    { 16, GPUDeviceType::FIJI },
     { 17, GPUDeviceType::STONEY }
 };
 
 /* 1801.05 driver device table list */
 static const CL2GPUDeviceCodeEntry cl2_15_7GpuDeviceCodeTable[] =
 {
-    { 6, GPUDeviceType::BONAIRE },
     { 1, GPUDeviceType::SPECTRE },
     { 2, GPUDeviceType::SPOOKY },
     { 3, GPUDeviceType::KALINDI },
+    { 4, GPUDeviceType::MULLINS },
+    { 6, GPUDeviceType::BONAIRE },
     { 7, GPUDeviceType::HAWAII },
     { 8, GPUDeviceType::ICELAND },
     { 9, GPUDeviceType::TONGA },
-    { 4, GPUDeviceType::MULLINS },
-    { 16, GPUDeviceType::FIJI },
-    { 15, GPUDeviceType::CARRIZO }
+    { 15, GPUDeviceType::CARRIZO },
+    { 16, GPUDeviceType::FIJI }
 };
 
 /* driver version: 2036.3 */
 static const CL2GPUDeviceCodeEntry cl2GPUPROGpuDeviceCodeTable[] =
 {
-    { 6, GPUDeviceType::BONAIRE },
     { 1, GPUDeviceType::SPECTRE },
     { 2, GPUDeviceType::SPOOKY },
     { 3, GPUDeviceType::KALINDI },
+    { 4, GPUDeviceType::MULLINS },
+    { 6, GPUDeviceType::BONAIRE },
     { 7, GPUDeviceType::HAWAII },
     { 8, GPUDeviceType::ICELAND },
     { 9, GPUDeviceType::TONGA },
-    { 4, GPUDeviceType::MULLINS },
-    { 14, GPUDeviceType::FIJI },
     { 13, GPUDeviceType::CARRIZO },
-    { 17, GPUDeviceType::ELLESMERE },
+    { 14, GPUDeviceType::FIJI },
+    { 15, GPUDeviceType::STONEY },
     { 16, GPUDeviceType::BAFFIN },
-    { 15, GPUDeviceType::STONEY }
+    { 17, GPUDeviceType::ELLESMERE }
 };
 
 /* driver version: 2036.3 */
 static const CL2GPUDeviceCodeEntry cl2_2236GpuDeviceCodeTable[] =
 {
-    { 6, GPUDeviceType::BONAIRE },
     { 1, GPUDeviceType::SPECTRE },
     { 2, GPUDeviceType::SPOOKY },
     { 3, GPUDeviceType::KALINDI },
+    { 4, GPUDeviceType::MULLINS },
+    { 6, GPUDeviceType::BONAIRE },
     { 7, GPUDeviceType::HAWAII },
     { 8, GPUDeviceType::ICELAND },
     { 9, GPUDeviceType::TONGA },
-    { 4, GPUDeviceType::MULLINS },
-    { 13, GPUDeviceType::FIJI },
     { 12, GPUDeviceType::CARRIZO },
-    { 16, GPUDeviceType::ELLESMERE },
+    { 13, GPUDeviceType::FIJI },
+    { 14, GPUDeviceType::STONEY },
     { 15, GPUDeviceType::BAFFIN },
-    { 14, GPUDeviceType::STONEY }
+    { 16, GPUDeviceType::ELLESMERE }
 };
 
 template<typename Types>
@@ -826,7 +826,7 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
     cxuint entriesNum = 0;
     const CL2GPUDeviceCodeEntry* gpuCodeTable = nullptr;
     cxuint inputDriverVersion = 0;
-    if (driverVersion == 0)
+    if (inDriverVersion == 0)
         inputDriverVersion = this->driverVersion;
     else
         inputDriverVersion = inDriverVersion;
@@ -857,14 +857,11 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
         entriesNum = sizeof(cl2_2236GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
     }
     
-    cxuint index;
-    bool knownGPUType = false;
-    for (index = 0; index < entriesNum; index++)
-        if (gpuCodeTable[index].elfFlags == elfFlags)
-        {
-            knownGPUType = true;
-            break;
-        }
+    cxuint index = binaryFind(gpuCodeTable, gpuCodeTable + entriesNum, { elfFlags },
+              [] (const CL2GPUDeviceCodeEntry& l, const CL2GPUDeviceCodeEntry& r)
+              { return l.elfFlags < r.elfFlags; }) - gpuCodeTable;
+    bool knownGPUType = index != entriesNum;
+    
     GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE;
     GPUArchitecture arch = GPUArchitecture::GCN1_1;
     if (knownGPUType)
