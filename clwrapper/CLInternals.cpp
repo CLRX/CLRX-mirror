@@ -1513,6 +1513,7 @@ try
     bool nextIsDefSym = false;
     bool nextIsLang = false;
     bool useCL20Std = false;
+    bool useLegacy = false;
     // drivers since 200406 version uses AmdCL2 binary format by default for >=GCN1.1
     bool useCL2StdForGCN11 = detectAmdDriverVersion() >= 200406;
     
@@ -1544,7 +1545,10 @@ try
             if (word == "-w")
                 asmFlags &= ~ASM_WARNINGS;
             else if (word == "-legacy")
+            {
                 useCL2StdForGCN11 = false;
+                useLegacy = true;
+            }
             else if (word == "-forceAddSymbols")
                 asmFlags |= ASM_FORCE_ADD_SYMBOLS;
             else if (word == "-buggyFPLit")
@@ -1771,7 +1775,8 @@ try
         }
         /// and build (errorLast holds last error to be returned)
         errorLast = amdp->dispatch->clBuildProgram(newAmdAsmP, compiledNum,
-              amdDevices.get(), (useCL20Std) ? "-cl-std=CL2.0" : "", nullptr, nullptr);
+              amdDevices.get(), (useCL20Std) ? "-cl-std=CL2.0" :
+                      ((useLegacy) ? "-legacy" : ""), nullptr, nullptr);
     }
     
     if (errorLast == CL_SUCCESS)
