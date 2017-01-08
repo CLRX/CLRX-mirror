@@ -282,22 +282,23 @@ static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[18] =
     { 0x31, GPUDeviceType::DUMMY }
 };
 
+static const cxuint gpuDeviceInnerCodeTableSize = sizeof(gpuDeviceInnerCodeTable)/
+            sizeof(GPUDeviceInnerCodeEntry);
+
 cxuint AmdInnerGPUBinary32::findCALEncodingEntryIndex(GPUDeviceType deviceType) const
 {
-    const cxuint entriesNum = sizeof(gpuDeviceInnerCodeTable)/
-            sizeof(GPUDeviceInnerCodeEntry);
     cxuint encEntryIndex = 0;
     for (encEntryIndex = 0; encEntryIndex < encodingEntriesNum; encEntryIndex++)
     {
         const CALEncodingEntry& encEntry = encodingEntries[encEntryIndex];
         /* check gpuDeviceType */
         const uint32_t dMachine = ULEV(encEntry.machine);
-        cxuint index;
         // detect GPU device from machine field from CAL encoding entry
-        for (index = 0; index < entriesNum; index++)
-            if (gpuDeviceInnerCodeTable[index].dMachine == dMachine)
-                break;
-        if (entriesNum != index &&
+        cxuint index = binaryFind(gpuDeviceInnerCodeTable,
+                  gpuDeviceInnerCodeTable + gpuDeviceInnerCodeTableSize, { dMachine }, 
+                  [] (const GPUDeviceInnerCodeEntry& l, const GPUDeviceInnerCodeEntry& r)
+                  { return l.dMachine < r.dMachine; }) - gpuDeviceInnerCodeTable;
+        if (gpuDeviceInnerCodeTableSize != index &&
             gpuDeviceInnerCodeTable[index].deviceType == deviceType)
             break; // if found
     }
@@ -1338,18 +1339,23 @@ static const GPUDeviceCodeEntry gpuDeviceCodeTable[18] =
     { 0x411, GPUDeviceType::DUMMY }
 };
 
-GPUDeviceType AmdMainGPUBinary32::determineGPUDeviceType() const
+static const cxuint gpuDeviceCodeTableSize =
+            sizeof(gpuDeviceCodeTable)/sizeof(GPUDeviceCodeEntry);
+
+static GPUDeviceType findGPUDeviceType(uint16_t elfMachine)
 {
-    cxuint index;
-    const uint16_t elfMachine = ULEV(getHeader().e_machine);
-    const cxuint entriesNum = sizeof(gpuDeviceCodeTable)/sizeof(GPUDeviceCodeEntry);
-    // detect GPU device from elfMachine field from ELF header
-    for (index = 0; index < entriesNum; index++)
-        if (gpuDeviceCodeTable[index].elfMachine == elfMachine)
-            break;
-    if (entriesNum == index)
+    cxuint index = binaryFind(gpuDeviceCodeTable,
+        gpuDeviceCodeTable+gpuDeviceCodeTableSize, { elfMachine },
+        [] (const GPUDeviceCodeEntry& l, const GPUDeviceCodeEntry& r) -> bool
+        { return l.elfMachine < r.elfMachine;}) - gpuDeviceCodeTable;
+    if (gpuDeviceCodeTableSize == index)
         throw Exception("Can't determine GPU device type");
     return gpuDeviceCodeTable[index].deviceType;
+}
+
+GPUDeviceType AmdMainGPUBinary32::determineGPUDeviceType() const
+{
+    return findGPUDeviceType(ULEV(getHeader().e_machine));
 }
 
 /* AmdMainGPUBinary64 */
@@ -1363,16 +1369,7 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
 
 GPUDeviceType AmdMainGPUBinary64::determineGPUDeviceType() const
 {
-    cxuint index;
-    const uint16_t elfMachine = ULEV(getHeader().e_machine);
-    const cxuint entriesNum = sizeof(gpuDeviceCodeTable)/sizeof(GPUDeviceCodeEntry);
-    // detect GPU device from elfMachine field from ELF header
-    for (index = 0; index < entriesNum; index++)
-        if (gpuDeviceCodeTable[index].elfMachine == elfMachine)
-            break;
-    if (entriesNum == index)
-        throw Exception("Can't determine GPU device type");
-    return gpuDeviceCodeTable[index].deviceType;
+    return findGPUDeviceType(ULEV(getHeader().e_machine));
 }
 
 /* AmdMainX86Binary32 */
