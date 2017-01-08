@@ -1543,6 +1543,8 @@ try
         {   // if option
             if (word == "-w")
                 asmFlags &= ~ASM_WARNINGS;
+            else if (word == "-legacy")
+                useCL2StdForGCN11 = false;
             else if (word == "-forceAddSymbols")
                 asmFlags |= ASM_FORCE_ADD_SYMBOLS;
             else if (word == "-buggyFPLit")
