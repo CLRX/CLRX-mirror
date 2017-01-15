@@ -34,18 +34,6 @@
 
 using namespace CLRX;
 
-bool AsmSection::addRegVar(const CString& name, const AsmRegVar& var)
-{ return regVars.insert(std::make_pair(name, var)).second; }
-
-bool AsmSection::getRegVar(const CString& name, const AsmRegVar*& regVar) const
-{ 
-    auto it = regVars.find(name);
-    if (it==regVars.end())
-        return false;
-    regVar = &it->second;
-    return true;
-}
-
 const cxbyte CLRX::tokenCharTable[96] =
 {
     //' '   '!'   '"'   '#'   '$'   '%'   '&'   '''
@@ -1837,6 +1825,18 @@ void Assembler::initializeOutputFormat()
     auto info = formatHandler->getSectionInfo(currentSection);
     sections.push_back({ info.name, currentKernel, info.type, info.flags, 0 });
     currentOutPos = 0;
+}
+
+bool Assembler::addRegVar(const CString& name, const AsmRegVar& var)
+{ return regVars.insert(std::make_pair(name, var)).second; }
+
+bool Assembler::getRegVar(const CString& name, const AsmRegVar*& regVar) const
+{ 
+    auto it = regVars.find(name);
+    if (it==regVars.end())
+        return false;
+    regVar = &it->second;
+    return true;
 }
 
 bool Assembler::assemble()

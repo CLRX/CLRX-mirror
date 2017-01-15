@@ -90,7 +90,7 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
     bool regVarFound = false;
     AsmSection& section = asmr.sections[asmr.currentSection];
     if (!name.empty())
-        regVarFound = section.getRegVar(name, regVar);
+        regVarFound = asmr.getRegVar(name, regVar);
     if (regVarFound)
     {
         cxuint rstart = 0;

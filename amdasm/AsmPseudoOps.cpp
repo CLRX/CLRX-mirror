@@ -1981,14 +1981,6 @@ void AsmPseudoOps::doDefRegVar(Assembler& asmr, const char* pseudoOpPlace,
     const char* end = asmr.line+asmr.lineSize;
     asmr.initializeOutputFormat();
     
-    if (!asmr.isWriteableSection() || !asmr.isAddressableSection())
-    {
-        asmr.printError(pseudoOpPlace, "RegVar definition can be in "
-                    "writable and addressable section");
-        return;
-    }
-    AsmSection& section = asmr.sections[asmr.currentSection];
-    
     do {
         skipSpacesToEnd(linePtr, end);
         const char* regNamePlace = linePtr;
@@ -2044,7 +2036,7 @@ void AsmPseudoOps::doDefRegVar(Assembler& asmr, const char* pseudoOpPlace,
         if (!good)
             continue;
         
-        if (!section.addRegVar(name, var))
+        if (!asmr.addRegVar(name, var))
             asmr.printError(regNamePlace, (std::string("Reg-var '")+name.c_str()+
                         "' was already defined").c_str());
         

@@ -603,14 +603,8 @@ struct AsmSection
     uint64_t size;  ///< section size
     std::vector<cxbyte> content;    ///< content of section
     
-    /// register variables
-    std::unordered_map<CString, AsmRegVar> regVars;
     /// reg-var usage in section
     std::vector<AsmVarUsage> regVarUsages;
-    
-    bool addRegVar(const CString& name, const AsmRegVar& var);
-    
-    bool getRegVar(const CString& name, const AsmRegVar*& regVar) const;
     
     void addVarUsage(const AsmVarUsage& varUsage)
     { regVarUsages.push_back(varUsage); }
@@ -693,6 +687,8 @@ private:
     MacroMap macroMap;
     KernelMap kernelMap;
     std::vector<AsmKernel> kernels;
+    /// register variables
+    std::unordered_map<CString, AsmRegVar> regVars;
     Flags flags;
     uint64_t macroCount;
     uint64_t localCount; // macro's local count
@@ -939,6 +935,10 @@ public:
     /// get kernels
     const std::vector<AsmKernel>& getKernels() const
     { return kernels; }
+    
+    bool addRegVar(const CString& name, const AsmRegVar& var);
+    
+    bool getRegVar(const CString& name, const AsmRegVar*& regVar) const;
     
     /// returns true if symbol contains absolute value
     bool isAbsoluteSymbol(const AsmSymbol& symbol) const;
