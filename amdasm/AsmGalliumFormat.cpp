@@ -218,9 +218,15 @@ void AsmGalliumHandler::handleLabel(const CString& label)
         return; // do not change if inside kcode
     // save other state
     saveKcodeCurrentAllocRegs();
+    if (currentKcodeKernel != ASMKERN_GLOBAL)
+        assembler.kernels[currentKcodeKernel].closeCodeRegion(
+                        assembler.sections[codeSection].content.size());
     // restore this state
     currentKcodeKernel = kit->second;
     restoreKcodeCurrentAllocRegs();
+    if (currentKcodeKernel != ASMKERN_GLOBAL)
+        assembler.kernels[currentKcodeKernel].openCodeRegion(
+                        assembler.sections[codeSection].content.size());
 }
 
 void AsmGalliumHandler::restoreKcodeCurrentAllocRegs()
@@ -842,8 +848,20 @@ void AsmGalliumPseudoOps::doKCode(AsmGalliumHandler& handler, const char* pseudo
     handler.kcodeSelStack.push(handler.kcodeSelection);
     // set current sel
     handler.kcodeSelection.assign(newSel.begin(), newSel.end());
-    
     std::sort(handler.kcodeSelection.begin(), handler.kcodeSelection.end());
+    
+    /*const std::vector<cxuint>& oldKCodeSel = handler.kcodeSelStack.top();
+    if (!oldKCodeSel.empty())
+        asmr.handleRegionsOnKernels(handler.kcodeSelection, oldKCodeSel,
+                            handler.codeSection);
+    else if (handler.currentKcodeKernel != ASMKERN_GLOBAL)
+    {
+        std::vector<cxuint> tempKCodeSel;
+        tempKCodeSel.push_back(handler.currentKcodeKernel);
+        asmr.handleRegionsOnKernels(handler.kcodeSelection, tempKCodeSel,
+                            handler.codeSection);
+    }*/
+    
     updateKCodeSel(handler, handler.kcodeSelStack.top());
 }
 
@@ -862,7 +880,18 @@ void AsmGalliumPseudoOps::doKCodeEnd(AsmGalliumHandler& handler, const char* pse
         return;
     }
     updateKCodeSel(handler, handler.kcodeSelection);
+    std::vector<cxuint> oldKCodeSel = handler.kcodeSelection;
     handler.kcodeSelection = handler.kcodeSelStack.top();
+    
+    /*if (!handler.kcodeSelection.empty())
+        asmr.handleRegionsOnKernels(handler.kcodeSelection, oldKCodeSel,
+                        handler.codeSection);
+    else if (handler.currentKcodeKernel != ASMKERN_GLOBAL)
+    {   // if choosen current kernel
+        oldKCodeSel.push_back(handler.currentKcodeKernel);
+        asmr.handleRegionsOnKernels(oldKCodeSel, oldKCodeSel, handler.codeSection);
+    }*/
+    
     handler.kcodeSelStack.pop();
     if (handler.kcodeSelStack.empty())
         handler.restoreKcodeCurrentAllocRegs();

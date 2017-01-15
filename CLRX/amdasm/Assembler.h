@@ -848,6 +848,9 @@ private:
                 (sections[sectionId].flags & ASMSECT_UNRESOLVABLE) == 0;
     }
     
+    void handleRegionsOnKernels(const std::vector<cxuint>& newKernels,
+                const std::vector<cxuint>& oldKernels, cxuint codeSection);
+    
 protected:    
     /// helper for testing
     bool readLine();

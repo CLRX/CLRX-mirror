@@ -1860,6 +1860,34 @@ bool Assembler::getRegVar(const CString& name, const AsmRegVar*& regVar) const
     return true;
 }
 
+void Assembler::handleRegionsOnKernels(const std::vector<cxuint>& newKernels,
+                const std::vector<cxuint>& oldKernels, cxuint codeSection)
+{
+    auto oldit = oldKernels.begin();
+    auto newit = newKernels.begin();
+    auto olditend = oldKernels.end();
+    auto newitend = newKernels.end();
+    
+    while (oldit != olditend && newit != newitend)
+    {
+        if (newit == newitend || *oldit < *newit)
+        {   // no kernel in new set (close this region)
+            kernels[*newit].closeCodeRegion(sections[codeSection].content.size());
+            ++oldit;
+        }
+        else if (oldit == olditend && *newit < *oldit)
+        {
+            kernels[*newit].openCodeRegion(sections[codeSection].content.size());
+            ++newit;
+        }
+        else
+        {   // this same kernel in kernel, no changes
+            ++oldit;
+            ++newit;
+        }
+    }
+}
+
 bool Assembler::assemble()
 {
     resolvingRelocs = false;
