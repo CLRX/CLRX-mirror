@@ -38,7 +38,8 @@ void AsmKernel::openCodeRegion(size_t offset)
 {
     if (!codeRegions.empty() && codeRegions.back().second == SIZE_MAX)
         codeRegions.back().second = offset;
-    codeRegions.push_back({ offset, SIZE_MAX });
+    if (codeRegions.empty() || codeRegions.back().first != offset)
+        codeRegions.push_back({ offset, SIZE_MAX });
 }
 
 void AsmKernel::closeCodeRegion(size_t offset)
