@@ -174,6 +174,8 @@ public:
     virtual void writeBinary(std::ostream& os) const = 0;
     /// write binary to array
     virtual void writeBinary(Array<cxbyte>& array) const = 0;
+    /// get active kernel (ids) set in current position
+    virtual const cxuint* getCurrentKernels(cxuint& kernelsNum) const = 0;
 };
 
 /// handles raw code format
@@ -200,6 +202,7 @@ public:
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;
     void writeBinary(Array<cxbyte>& array) const;
+    const cxuint* getCurrentKernels(cxuint& kernelsNum) const;
 };
 
 /// handles AMD Catalyst format
@@ -263,6 +266,7 @@ public:
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;
     void writeBinary(Array<cxbyte>& array) const;
+    const cxuint* getCurrentKernels(cxuint& kernelsNum) const;
     /// get output structure pointer
     const AmdInput* getOutput() const
     { return &output; }
@@ -345,6 +349,7 @@ public:
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;
     void writeBinary(Array<cxbyte>& array) const;
+    const cxuint* getCurrentKernels(cxuint& kernelsNum) const;
     /// get output structure pointer
     const AmdCL2Input* getOutput() const
     { return &output; }
@@ -412,6 +417,7 @@ public:
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;
     void writeBinary(Array<cxbyte>& array) const;
+    const cxuint* getCurrentKernels(cxuint& kernelsNum) const;
     /// get output object (input for bingenerator)
     const GalliumInput* getOutput() const
     { return &output; }
@@ -473,7 +479,6 @@ private:
     void restoreKcodeCurrentAllocRegs();
     void saveKcodeCurrentAllocRegs();
     
-    
 public:
     /// construcror
     explicit AsmROCmHandler(Assembler& assembler);
@@ -495,6 +500,7 @@ public:
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;
     void writeBinary(Array<cxbyte>& array) const;
+    const cxuint* getCurrentKernels(cxuint& kernelsNum) const;
     /// get output object (input for bingenerator)
     const ROCmInput* getOutput() const
     { return &output; }
