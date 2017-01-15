@@ -2068,7 +2068,21 @@ bool Assembler::assemble()
                         "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
     
     if (good && formatHandler!=nullptr)
+    {   // code opened regions for kernels
+        for (cxuint i = 0; i < kernels.size(); i++)
+        {
+            currentKernel = i;
+            cxuint sectionId = formatHandler->getSectionId(".text");
+            if (sectionId == ASMSECT_NONE)
+            {
+                currentKernel = ASMKERN_GLOBAL;
+                sectionId = formatHandler->getSectionId(".text");
+            }
+            kernels[i].closeCodeRegion(sections[sectionId].content.size());
+        }
+        // prepare binary
         formatHandler->prepareBinary();
+    }
     return good;
 }
 

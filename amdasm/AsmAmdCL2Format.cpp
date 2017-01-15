@@ -242,7 +242,7 @@ cxuint AsmAmdCL2Handler::getSectionId(const char* sectionName) const
             return it->second;
         return ASMSECT_NONE;
     }
-    else 
+    else
     {
         if (assembler.currentKernel != ASMKERN_INNER)
         {
