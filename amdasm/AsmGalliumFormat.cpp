@@ -850,7 +850,7 @@ void AsmGalliumPseudoOps::doKCode(AsmGalliumHandler& handler, const char* pseudo
     handler.kcodeSelection.assign(newSel.begin(), newSel.end());
     std::sort(handler.kcodeSelection.begin(), handler.kcodeSelection.end());
     
-    /*const std::vector<cxuint>& oldKCodeSel = handler.kcodeSelStack.top();
+    const std::vector<cxuint>& oldKCodeSel = handler.kcodeSelStack.top();
     if (!oldKCodeSel.empty())
         asmr.handleRegionsOnKernels(handler.kcodeSelection, oldKCodeSel,
                             handler.codeSection);
@@ -860,7 +860,7 @@ void AsmGalliumPseudoOps::doKCode(AsmGalliumHandler& handler, const char* pseudo
         tempKCodeSel.push_back(handler.currentKcodeKernel);
         asmr.handleRegionsOnKernels(handler.kcodeSelection, tempKCodeSel,
                             handler.codeSection);
-    }*/
+    }
     
     updateKCodeSel(handler, handler.kcodeSelStack.top());
 }
@@ -883,14 +883,14 @@ void AsmGalliumPseudoOps::doKCodeEnd(AsmGalliumHandler& handler, const char* pse
     std::vector<cxuint> oldKCodeSel = handler.kcodeSelection;
     handler.kcodeSelection = handler.kcodeSelStack.top();
     
-    /*if (!handler.kcodeSelection.empty())
+    if (!handler.kcodeSelection.empty())
         asmr.handleRegionsOnKernels(handler.kcodeSelection, oldKCodeSel,
                         handler.codeSection);
     else if (handler.currentKcodeKernel != ASMKERN_GLOBAL)
     {   // if choosen current kernel
         oldKCodeSel.push_back(handler.currentKcodeKernel);
         asmr.handleRegionsOnKernels(oldKCodeSel, oldKCodeSel, handler.codeSection);
-    }*/
+    }
     
     handler.kcodeSelStack.pop();
     if (handler.kcodeSelStack.empty())

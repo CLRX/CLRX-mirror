@@ -1868,15 +1868,15 @@ void Assembler::handleRegionsOnKernels(const std::vector<cxuint>& newKernels,
     auto olditend = oldKernels.end();
     auto newitend = newKernels.end();
     
-    while (oldit != olditend && newit != newitend)
+    while (oldit != olditend || newit != newitend)
     {
-        if (newit == newitend || *oldit < *newit)
+        if (newit == newitend || (oldit != olditend &&  *oldit < *newit))
         {   // no kernel in new set (close this region)
-            kernels[*newit].closeCodeRegion(sections[codeSection].content.size());
+            kernels[*oldit].closeCodeRegion(sections[codeSection].content.size());
             ++oldit;
         }
-        else if (oldit == olditend && *newit < *oldit)
-        {
+        else if (oldit == olditend || (newit != newitend && *newit < *oldit))
+        {   // kernel in new set but not in old (open this region)
             kernels[*newit].openCodeRegion(sections[codeSection].content.size());
             ++newit;
         }
