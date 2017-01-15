@@ -34,6 +34,21 @@
 
 using namespace CLRX;
 
+void AsmKernel::openCodeRegion(size_t offset)
+{
+    if (!codeRegions.empty() && codeRegions.back().second == SIZE_MAX)
+        codeRegions.back().second = offset;
+    codeRegions.push_back({ offset, SIZE_MAX });
+}
+
+void AsmKernel::closeCodeRegion(size_t offset)
+{
+    if (codeRegions.empty())
+        codeRegions.push_back({ size_t(0), SIZE_MAX });
+    else
+        codeRegions.back().second = offset;
+}
+
 const cxbyte CLRX::tokenCharTable[96] =
 {
     //' '   '!'   '"'   '#'   '$'   '%'   '&'   '''

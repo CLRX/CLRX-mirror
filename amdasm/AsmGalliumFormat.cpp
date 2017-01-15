@@ -1151,19 +1151,3 @@ void AsmGalliumHandler::writeBinary(Array<cxbyte>& array) const
     GalliumBinGenerator binGenerator(&output);
     binGenerator.generate(array);
 }
-
-const cxuint* AsmGalliumHandler::getCurrentKernels(cxuint& kernelsNum) const
-{
-    if (assembler.currentSection != codeSection)
-    {
-        kernelsNum = 0;
-        return nullptr;
-    }
-    if (!kcodeSelection.empty())
-    {
-        kernelsNum = kcodeSelection.size();
-        return kcodeSelection.data();
-    }
-    kernelsNum = (currentKcodeKernel != ASMKERN_GLOBAL);
-    return (currentKcodeKernel != ASMKERN_GLOBAL) ? &currentKcodeKernel : nullptr;
-}

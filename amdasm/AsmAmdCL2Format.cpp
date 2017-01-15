@@ -1669,15 +1669,3 @@ void AsmAmdCL2Handler::writeBinary(Array<cxbyte>& array) const
     AmdCL2GPUBinGenerator binGenerator(&output);
     binGenerator.generate(array);
 }
-
-const cxuint* AsmAmdCL2Handler::getCurrentKernels(cxuint& kernelsNum) const
-{
-    if (assembler.currentKernel == ASMKERN_GLOBAL ||
-        assembler.currentSection != kernelStates[assembler.currentKernel]->codeSection)
-    {
-        kernelsNum = 0;
-        return nullptr;
-    }
-    kernelsNum = 1;
-    return &assembler.currentKernel;
-}

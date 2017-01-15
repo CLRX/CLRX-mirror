@@ -119,11 +119,3 @@ void AsmRawCodeHandler::writeBinary(Array<cxbyte>& array) const
     const AsmSection& section = assembler.getSections()[0];
     array.assign(section.content.begin(), section.content.end());
 }
-
-static const cxuint singleKernel = 0;
-
-const cxuint* AsmRawCodeHandler::getCurrentKernels(cxuint& kernelsNum) const
-{
-    kernelsNum = 1;
-    return &singleKernel;
-}

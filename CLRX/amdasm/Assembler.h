@@ -629,6 +629,12 @@ struct AsmKernel
 {
     const char* name;   ///< name of kernel
     AsmSourcePos sourcePos; ///< source position of definition
+    std::vector<std::pair<size_t, size_t> > codeRegions;
+    
+    /// open kernel region in code
+    void openCodeRegion(size_t offset);
+    /// close kernel region in code
+    void closeCodeRegion(size_t offset);
 };
 
 /// assembler's clause (if,else,macro,rept)
