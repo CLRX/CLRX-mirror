@@ -25,6 +25,9 @@
 
 using namespace CLRX;
 
+/* TODO: add routines to calculate pgmRSRCs and localsize.
+ * use this in code */
+
 static const size_t gpuDeviceTableSize = 21;
 
 static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
@@ -170,7 +173,7 @@ cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
 {
     if (architecture > GPUArchitecture::GPUARCH_MAX)
         throw Exception("Unknown GPU architecture");
-    if (regType == 1)
+    if (regType == REGTYPE_VGPR)
         return 256; // VGPRS
     cxuint maxSpgrs = (architecture==GPUArchitecture::GCN1_2) ? 102 : 104;
     if ((flags & REGCOUNT_NO_FLAT)!=0 && (architecture>GPUArchitecture::GCN1_0))
@@ -180,6 +183,14 @@ cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
     else if ((flags & REGCOUNT_NO_VCC)!=0)
         maxSpgrs -= 2;
     return maxSpgrs;
+}
+
+cxuint CLRX::getGPUMaxRegsNumByArchMask(uint16_t archMask, cxuint regType)
+{
+    if (regType == REGTYPE_VGPR)
+        return 256;
+    else
+        return (archMask&(1U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
 }
 
 void CLRX::getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,

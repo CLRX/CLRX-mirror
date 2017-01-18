@@ -173,6 +173,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
         skipCharAndSpacesToEnd(linePtr, end);
     
     const char *regTypeName = (flags&INSTROP_VREGS) ? "vector" : "scalar";
+    const cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
     
     if (asmr.parseSymbol(linePtr, symEntry, false, true)==
         Assembler::ParseState::PARSED && symEntry!=nullptr &&
@@ -234,7 +235,6 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                 printXRegistersRequired(asmr, regRangePlace, regTypeName, regsNum);
                 return false;
             }
-            const cxuint maxSGPRsNum = (arch&ARCH_RX3X0) ? 102 : 104;
             /// check aligned for scalar registers
             if ((flags & INSTROP_UNALIGNED) == 0 && rstart<maxSGPRsNum)
                 if ((rend-rstart==2 && (rstart&1)!=0) || (rend-rstart>2 && (rstart&3)!=0))
@@ -405,7 +405,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
     }
     
     /* parse single SGPR */
-    const cxuint maxSGPRsNum = (arch&ARCH_RX3X0) ? 102 : 104;
+    const cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
     if (singleSorTtmp)
     {
         if (isDigit(*linePtr))

@@ -123,6 +123,9 @@ enum: Flags {
 extern cxuint getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
                          Flags flags = 0);
 
+/// get maximum available registers for GPU (type: 0 - scalar, 1 - vector)
+extern cxuint getGPUMaxRegsNumByArchMask(uint16_t archMask, cxuint regType);
+
 /// get minimal number of required registers
 extern void getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,
                cxuint userDataNum, Flags flags, cxuint* gprsOut);
