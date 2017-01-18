@@ -650,6 +650,11 @@ struct AsmClause
     AsmSourcePos prevIfPos; ///< position of previous if-clause
 };
 
+/// regvar map
+typedef std::unordered_map<CString, AsmRegVar> AsmRegVarMap;
+/// regvar entry
+typedef AsmRegVarMap::value_type AsmRegVarEntry;
+
 /// main class of assembler
 class Assembler: public NonCopyableAndNonMovable
 {
@@ -698,7 +703,7 @@ private:
     KernelMap kernelMap;
     std::vector<AsmKernel> kernels;
     /// register variables
-    std::unordered_map<CString, AsmRegVar> regVars;
+    AsmRegVarMap regVarMap;
     Flags flags;
     uint64_t macroCount;
     uint64_t localCount; // macro's local count
@@ -949,9 +954,12 @@ public:
     /// get kernels
     const std::vector<AsmKernel>& getKernels() const
     { return kernels; }
-    
+    /// get regvar map
+    const AsmRegVarMap& getRegVarMap() const
+    { return regVarMap; }
+    /// add regvar
     bool addRegVar(const CString& name, const AsmRegVar& var);
-    
+    // get regvar by name
     bool getRegVar(const CString& name, const AsmRegVar*& regVar) const;
     
     /// returns true if symbol contains absolute value
