@@ -301,7 +301,7 @@ static inline void updateSGPRsNum(cxuint& sgprsNum, cxuint sgpr, uint16_t arch)
 {
     cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
     if (sgpr < maxSGPRsNum) /* sgpr=-1 does not change sgprsNum */
-        sgprsNum = std::min(std::max(sgprsNum, sgpr+1), arch&ARCH_RX3X0 ? 100U: 102U);
+        sgprsNum = std::min(std::max(sgprsNum, sgpr+1), maxSGPRsNum-2);
 }
 
 static inline void updateRegFlags(Flags& regFlags, cxuint reg, uint16_t arch)
