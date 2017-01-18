@@ -112,7 +112,7 @@ static const char* pseudoOpNamesTbl[] =
     "macro", "main", "noaltmacro",
     "nobuggyfplit", "octa", "offset", "org",
     "p2align", "print", "purgem", "quad",
-    "rawcode", "register", "rept", "rocm", "rodata",
+    "rawcode", "regvar", "rept", "rocm", "rodata",
     "sbttl", "section", "set",
     "short", "single", "size", "skip",
     "space", "string", "string16", "string32",
@@ -148,7 +148,7 @@ enum
     ASMOP_MACRO, ASMOP_MAIN, ASMOP_NOALTMACRO,
     ASMOP_NOBUGGYFPLIT, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
-    ASMOP_RAWCODE, ASMOP_REGISTER, ASMOP_REPT, ASMOP_ROCM, ASMOP_RODATA,
+    ASMOP_RAWCODE, ASMOP_REGVAR, ASMOP_REPT, ASMOP_ROCM, ASMOP_RODATA,
     ASMOP_SBTTL, ASMOP_SECTION, ASMOP_SET,
     ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
@@ -2433,7 +2433,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_QUAD:
             AsmPseudoOps::putIntegers<uint64_t>(*this, stmtPlace, linePtr);
             break;
-        case ASMOP_REGISTER:
+        case ASMOP_REGVAR:
             AsmPseudoOps::doDefRegVar(*this, stmtPlace, linePtr);
             break;
         case ASMOP_REPT:
