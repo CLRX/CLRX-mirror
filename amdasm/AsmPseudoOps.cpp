@@ -1393,8 +1393,7 @@ void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoOpPlace, const cha
     const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
             AsmClauseType::IF;
     bool included;
-    const bool symDefined = (entry!=nullptr && (entry->second.hasValue ||
-                entry->second.expression!=nullptr));
+    const bool symDefined = (entry!=nullptr && entry->second.isDefined());
     bool satisfied = (!negation) ?  symDefined : !symDefined;
     if (asmr.pushClause(pseudoOpPlace, clauseType, satisfied, included))
     {   // 
@@ -1952,8 +1951,7 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
         return;
     
     auto it = asmr.symbolMap.find(symName);
-    if (it == asmr.symbolMap.end() ||
-        (!it->second.hasValue && it->second.expression==nullptr))
+    if (it == asmr.symbolMap.end() || !it->second.isDefined())
         asmr.printWarning(symNamePlace, (std::string("Symbol '") + symName.c_str() +
                 "' already doesn't exist").c_str());
     else if (it->second.occurrencesInExprs.empty())

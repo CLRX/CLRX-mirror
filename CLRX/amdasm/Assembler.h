@@ -258,7 +258,7 @@ struct AsmSymbol
     uint64_t size;          ///< size of symbol
     union {
         AsmExpression* expression;      ///< expression of symbol (if not resolved)
-        AsmRegVar* var;
+        const AsmRegVar* regVar;
     };
     
     /** list of occurrences in expressions */

@@ -448,8 +448,11 @@ void AsmSymbol::undefine()
 {
     hasValue = false;
     base = false;
-    delete expression;
-    expression = nullptr;
+    if (!regRange)
+    {
+        delete expression;
+        expression = nullptr;
+    }
     onceDefined = false;
 }
 
@@ -1016,7 +1019,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     {    // resolve symbol
                         AsmSymbolEntry& curSymEntry = *target.symbol;
                         if (!curSymEntry.second.resolving &&
-                            curSymEntry.second.expression==expr)
+                            (!curSymEntry.second.regRange &&
+                             curSymEntry.second.expression==expr))
                         {
                             curSymEntry.second.value = value;
                             curSymEntry.second.sectionId = sectionId;
@@ -1178,6 +1182,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         // setup symbol entry (required)
         AsmSymbolEntry& symEntry = *res.first;
         symEntry.second.expression = nullptr;
+        symEntry.second.regVar = regVar;
         symEntry.second.onceDefined = !reassign;
         symEntry.second.base = false;
         symEntry.second.sectionId = ASMSECT_ABS;

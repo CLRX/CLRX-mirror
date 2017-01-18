@@ -3020,6 +3020,7 @@ bool GCNAssembler::parseRegisterRange(const char*& linePtr, cxuint& regStart,
           cxuint& regEnd, const AsmRegVar*& regVar)
 {
     GCNOperand operand;
+    regVar = nullptr;
     if (!GCNAsmUtils::parseOperand(assembler, linePtr, operand, nullptr, curArchMask, 0,
                 INSTROP_SREGS|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_UNALIGNED))
         return false;
