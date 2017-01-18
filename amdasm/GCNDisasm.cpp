@@ -566,7 +566,8 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
            cxuint regNum, char*& bufPtr, uint16_t arch, FloatLitType floatLit)
 {
     const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
-    if ((!isGCN12 && op < 104) || (isGCN12 && op < 102) || (op >= 256 && op < 512))
+    const cxuint maxSgprsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
+    if ((op < maxSgprsNum) || (op >= 256 && op < 512))
     {   // scalar
         if (op >= 256)
         {
