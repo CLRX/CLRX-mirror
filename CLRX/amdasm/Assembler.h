@@ -581,15 +581,19 @@ struct AsmRegVar
     uint16_t size;  // in regs
 };
 
+enum : cxbyte {
+    ASMVARUS_READ = 1,
+    ASMVARUS_WRITE = 2
+};
+
 struct AsmVarUsage
 {
     size_t offset;
-    AsmRegField regField;   ///< place in instruction
-    uint16_t rstart, rend;
-    bool read;
-    bool write;
-    cxbyte align;   /// register alignment
     const AsmRegVar* regVar;    // if null, then usage of called register
+    uint16_t rstart, rend;
+    AsmRegField regField;   ///< place in instruction
+    cxbyte rwFlags;  ///< 1 - read, 2 - write
+    cxbyte align;   ///< register alignment
 };
 
 /// assembler section
@@ -848,6 +852,7 @@ private:
                 (sections[sectionId].flags & ASMSECT_UNRESOLVABLE) == 0;
     }
     
+    // oldKernels and newKernels must be sorted
     void handleRegionsOnKernels(const std::vector<cxuint>& newKernels,
                 const std::vector<cxuint>& oldKernels, cxuint codeSection);
     

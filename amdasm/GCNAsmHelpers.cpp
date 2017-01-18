@@ -147,9 +147,10 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
             }
             
             if (regField!=ASMFIELD_NONE)
-                section.addVarUsage({ size_t(asmr.currentOutPos), regField,
-                    uint16_t(rstart), uint16_t(rend), (flags & INSTROP_READ)!=0,
-                    (flags & INSTROP_WRITE)!=0, 0, regVar });
+                section.addVarUsage({ size_t(asmr.currentOutPos), regVar,
+                    uint16_t(rstart), uint16_t(rend), regField,
+                    cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
+                    ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
             return true;
         }
     }
