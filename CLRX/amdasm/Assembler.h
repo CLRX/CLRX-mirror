@@ -68,6 +68,7 @@ enum : AsmExprTargetType
     ASMXTGT_DATA16,     ///< target is 16-bit word
     ASMXTGT_DATA32,     ///< target is 32-bit word
     ASMXTGT_DATA64,     ///< target is 64-bit word
+    ASMXTGT_CODEFLOW,    ///< code flow entry
     
     GCNTGT_LITIMM = 16,
     GCNTGT_SOPKSIMM16,
@@ -588,7 +589,8 @@ enum : cxbyte {
     ASMVARUS_WRITE = 2
 };
 
-struct AsmVarUsage
+/// regvar usage in code
+struct AsmRegVarUsage
 {
     size_t offset;
     const AsmRegVar* regVar;    // if null, then usage of called register
@@ -596,6 +598,23 @@ struct AsmVarUsage
     AsmRegField regField;   ///< place in instruction
     cxbyte rwFlags;  ///< 1 - read, 2 - write
     cxbyte align;   ///< register alignment
+};
+
+enum AsmCodeFlowType
+{
+    JUMP = 0,
+    CALL,
+    RETURN,
+    START,
+    END     ///< code end
+};
+
+/// code flow entry
+struct AsmCodeFlowEntry
+{
+    size_t offset;
+    AsmCodeFlowType type;
+    Array<size_t> targets;      // target jump addreses
 };
 
 /// assembler section
@@ -610,10 +629,15 @@ struct AsmSection
     std::vector<cxbyte> content;    ///< content of section
     
     /// reg-var usage in section
-    std::vector<AsmVarUsage> regVarUsages;
+    std::vector<AsmRegVarUsage> regVarUsages;
+    /// code flow info
+    std::vector<AsmCodeFlowEntry> codeFlow;
     
-    void addVarUsage(const AsmVarUsage& varUsage)
+    void addVarUsage(const AsmRegVarUsage& varUsage)
     { regVarUsages.push_back(varUsage); }
+    
+    void addCodeFlowEntry(const AsmCodeFlowEntry& entry)
+    { codeFlow.push_back(entry); }
     
     /// get section's size
     size_t getSize() const
