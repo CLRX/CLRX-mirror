@@ -314,7 +314,10 @@ struct AsmExprTarget
         AsmSymbolEntry* symbol; ///< symbol entry (if ASMXTGT_SYMBOL)
         struct {
             cxuint sectionId;   ///< section id of destination
-            size_t offset;      ///< offset of destination
+            union {
+                size_t offset;      ///< offset of destination
+                size_t cflowId;     ///< cflow index of destination
+            };
         };
     };
     /// empty constructor
@@ -610,27 +613,11 @@ enum AsmCodeFlowType
 };
 
 /// code flow entry
-struct AsmCodeFlowJump
+struct AsmCodeFlowEntry
 {
     size_t offset;
+    size_t target;      // target jump addreses
     AsmCodeFlowType type;
-    Array<size_t> targets;      // target jump addreses
-};
-
-struct AsmCodeFlowMark
-{
-    size_t offset;
-    AsmCodeFlowType type;
-};
-
-struct AsmRegVarInfo
-{
-    /// reg-var usage in section
-    std::vector<AsmRegVarUsage> regVarUsages;
-    /// code flow info
-    std::vector<AsmCodeFlowJump> codeFlowJumps;
-    /// code flow info
-    std::vector<AsmCodeFlowMark> codeFlowMarks;
 };
 
 /// assembler section
@@ -644,36 +631,16 @@ struct AsmSection
     uint64_t size;  ///< section size
     std::vector<cxbyte> content;    ///< content of section
     
-    std::unique_ptr<AsmRegVarInfo> regVarInfo;
-    
-    AsmSection(const AsmSection& section);
-    AsmSection(const char* _name, cxuint _kernelId, AsmSectionType _type,
-            Flags _flags, uint64_t _alignment, uint64_t _size = 0)
-        : name(_name), kernelId(_kernelId), type(_type), flags(_flags),
-          alignment(_alignment), size(_size)
-    { }
-    AsmSection& operator=(const AsmSection& section);
+    /// reg-var usage in section
+    std::vector<AsmRegVarUsage> regVarUsages;
+    /// code flow info
+    std::vector<AsmCodeFlowEntry> codeFlow;
     
     void addVarUsage(const AsmRegVarUsage& varUsage)
-    {
-        if (!regVarInfo)
-            regVarInfo.reset(new AsmRegVarInfo);
-        regVarInfo->regVarUsages.push_back(varUsage);
-    }
+    { regVarUsages.push_back(varUsage); }
     
-    void addCodeFlowJump(const AsmCodeFlowJump& entry)
-    {
-        if (!regVarInfo)
-            regVarInfo.reset(new AsmRegVarInfo);
-        regVarInfo->codeFlowJumps.push_back(entry);
-    }
-    
-    void addCodeFlowMark(const AsmCodeFlowMark& entry)
-    {
-        if (!regVarInfo)
-            regVarInfo.reset(new AsmRegVarInfo);
-        regVarInfo->codeFlowMarks.push_back(entry);
-    }
+    void addCodeFlowEntry(const AsmCodeFlowEntry& entry)
+    { codeFlow.push_back(entry); }
     
     /// get section's size
     size_t getSize() const
