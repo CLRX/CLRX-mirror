@@ -667,6 +667,12 @@ stores 0 and warns about empty expression.
 This pseudo-operation should to be at begin of source.
 Choose raw code (same processor's instructions).
 
+### .regvar
+
+Syntax: .regvar REGVAR:REGTYPE:REGSNUM, ...
+
+Define new register variable (UNIMPLEMENTED).
+
 ### .rept
 
 Syntax: .rept ABS-EXPR
