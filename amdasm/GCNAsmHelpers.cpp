@@ -240,7 +240,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                     asmr.printError(regRangePlace, "Unaligned scalar register range");
                     return false;
                 }
-            regPair = { rstart, rend };
+            regPair = { rstart, rend, symEntry->second.regVar };
             return true;
         }
     }

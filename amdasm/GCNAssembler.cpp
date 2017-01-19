@@ -3040,6 +3040,7 @@ bool GCNAssembler::parseRegisterRange(const char*& linePtr, cxuint& regStart,
         return false;
     regStart = operand.range.start;
     regEnd = operand.range.end;
+    regVar = operand.range.regVar;
     return true;
 }
 
