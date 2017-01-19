@@ -145,7 +145,11 @@ public:
     
     /// copy-assignment
     CString& operator=(const CString& cstr)
-    { return assign(cstr.ptr); }
+    {
+        if (this==&cstr)
+            return *this;
+        return assign(cstr.ptr);
+    }
     
     /// assignment
     CString& operator=(const std::string& str)
