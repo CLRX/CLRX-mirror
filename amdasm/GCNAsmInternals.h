@@ -80,10 +80,14 @@ enum: cxbyte {
 struct CLRX_INTERNAL RegRange
 {
     uint16_t start, end;
+    const AsmRegVar* regVar;
     
-    RegRange(): start(0), end(0) { }
+    RegRange(): start(0), end(0), regVar(nullptr)
+    { }
     template<typename U1, typename U2>
-    RegRange(U1 t1, U2 t2 = 0) : start(t1), end(t2) { }
+    RegRange(U1 t1, U2 t2 = 0, const AsmRegVar* rv = nullptr)
+            : start(t1), end(t2), regVar(rv)
+    { }
     
     bool operator!() const
     { return start==0 && end==0; }
@@ -139,8 +143,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                const char* regPoolName, cxuint requiredRegsNum);
     
     static bool parseRegVarRange(Assembler& asmr, const char*& linePtr,
-             RegRange& regPair, const AsmRegVar*& regVar, uint16_t arch,
-             cxuint regsNum, Flags flags, AsmRegField regField, bool required = true);
+                 RegRange& regPair, uint16_t arch, cxuint regsNum, Flags flags,
+                 AsmRegField regField, bool required = true);
     
     static bool parseSymRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
                  uint16_t arch, cxuint regsNum, Flags flags, bool required = true);

@@ -76,8 +76,8 @@ struct CLRX_INTERNAL GCNPlaceInfo
 };
 
 bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
-                 RegRange& regPair, const AsmRegVar*& regVar, uint16_t arch, cxuint regsNum,
-                 Flags flags, AsmRegField regField, bool required)
+                 RegRange& regPair, uint16_t arch, cxuint regsNum, Flags flags,
+                 AsmRegField regField, bool required)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
@@ -90,13 +90,13 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
     bool regVarFound = false;
     AsmSection& section = asmr.sections[asmr.currentSection];
     if (!name.empty())
-        regVarFound = asmr.getRegVar(name, regVar);
+        regVarFound = asmr.getRegVar(name, regPair.regVar);
     if (regVarFound)
     {
         cxuint rstart = 0;
-        cxuint rend = regVar->size;
-        if (((flags & INSTROP_VREGS)!=0 && regVar->type==REGTYPE_VGPR) ||
-            ((flags & INSTROP_SREGS)!=0 && regVar->type==REGTYPE_SGPR))
+        cxuint rend = regPair.regVar->size;
+        if (((flags & INSTROP_VREGS)!=0 && regPair.regVar->type==REGTYPE_VGPR) ||
+            ((flags & INSTROP_SREGS)!=0 && regPair.regVar->type==REGTYPE_SGPR))
         {
             skipSpacesToEnd(linePtr, end);
             if (*linePtr == '[')
@@ -147,7 +147,7 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
             }
             
             if (regField!=ASMFIELD_NONE)
-                section.addVarUsage({ size_t(asmr.currentOutPos), regVar,
+                section.addVarUsage({ size_t(asmr.currentOutPos), regPair.regVar,
                     uint16_t(rstart), uint16_t(rend), regField,
                     cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
                     ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
