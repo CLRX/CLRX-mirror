@@ -69,12 +69,6 @@ void GCNAsmUtils::printXRegistersRequired(Assembler& asmr, const char* linePtr,
     asmr.printError(linePtr, buf);
 }
 
-struct CLRX_INTERNAL GCNPlaceInfo
-{
-    bool read, write;
-    bool scalar, vector;
-};
-
 bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
                  RegRange& regPair, uint16_t arch, cxuint regsNum, AsmRegField regField,
                  Flags flags, bool required)
