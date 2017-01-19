@@ -76,8 +76,8 @@ struct CLRX_INTERNAL GCNPlaceInfo
 };
 
 bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
-                 RegRange& regPair, uint16_t arch, cxuint regsNum, Flags flags,
-                 AsmRegField regField, bool required)
+                 RegRange& regPair, uint16_t arch, cxuint regsNum, AsmRegField regField,
+                 Flags flags, bool required)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
@@ -161,7 +161,8 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
 }
 
 bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
-            RegRange& regPair, uint16_t arch, cxuint regsNum, Flags flags, bool required)
+            RegRange& regPair, uint16_t arch, cxuint regsNum, AsmRegField regField,
+            Flags flags, bool required)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
@@ -254,7 +255,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
 }
 
 bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
-                    cxuint regsNum, bool required, Flags flags)
+                    cxuint regsNum, AsmRegField regField, bool required, Flags flags)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
@@ -300,7 +301,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
         linePtr = oldLinePtr;
         if ((flags&INSTROP_SYMREGRANGE) != 0)
             return parseSymRegRange(asmr, linePtr, regPair, 0, regsNum,
-                            INSTROP_VREGS, required);
+                            regField, INSTROP_VREGS, required);
         if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
             return false;
         regPair = { 0, 0 }; // no range
@@ -370,7 +371,8 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
 }
 
 bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
-                    uint16_t arch, cxuint regsNum, bool required, Flags flags)
+                    uint16_t arch, cxuint regsNum, AsmRegField regField,
+                    bool required, Flags flags)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
@@ -556,7 +558,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             linePtr = oldLinePtr;
             if ((flags&INSTROP_SYMREGRANGE) != 0)
                 return parseSymRegRange(asmr, linePtr, regPair, arch, regsNum,
-                                INSTROP_SREGS | (flags & INSTROP_UNALIGNED), required);
+                        regField, INSTROP_SREGS | (flags & INSTROP_UNALIGNED), required);
             if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar",
                             regsNum, required))
                 return false;
@@ -865,7 +867,7 @@ bool GCNAsmUtils::parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_
 
 bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
              std::unique_ptr<AsmExpression>* outTargetExpr, uint16_t arch,
-             cxuint regsNum, Flags instrOpMask)
+             cxuint regsNum, Flags instrOpMask, AsmRegField regField)
 {
     if (outTargetExpr!=nullptr)
         outTargetExpr->reset();
@@ -876,10 +878,10 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     
     const cxuint alignFlags = (instrOpMask&INSTROP_UNALIGNED);
     if ((instrOpMask&~INSTROP_UNALIGNED) == INSTROP_SREGS)
-        return parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, true,
+        return parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, regField, true,
                               INSTROP_SYMREGRANGE | alignFlags);
     else if ((instrOpMask&~INSTROP_UNALIGNED) == INSTROP_VREGS)
-        return parseVRegRange(asmr, linePtr, operand.range, regsNum, true,
+        return parseVRegRange(asmr, linePtr, operand.range, regsNum, regField, true,
                               INSTROP_SYMREGRANGE | alignFlags);
     
     const char* end = asmr.line+asmr.lineSize;
@@ -889,7 +891,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         skipSpacesToEnd(linePtr, end);
         if (linePtr!=end && *linePtr=='@') // treat this operand as expression
             return parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
-                             instrOpMask & ~INSTROP_VOP3MODS);
+                             instrOpMask & ~INSTROP_VOP3MODS, regField);
         
         if ((arch & ARCH_RX3X0) && linePtr+4 <= end && toLower(linePtr[0])=='s' &&
             toLower(linePtr[1])=='e' && toLower(linePtr[2])=='x' &&
@@ -943,12 +945,12 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         bool good;
         if ((operand.vopMods&(VOPOP_NEG|VOPOP_ABS)) != VOPOP_NEG)
             good = parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
-                                     instrOpMask & ~INSTROP_VOP3MODS);
+                                     instrOpMask & ~INSTROP_VOP3MODS, regField);
         else //
         {
             linePtr = negPlace;
             good = parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
-                             (instrOpMask & ~INSTROP_VOP3MODS) | INSTROP_PARSEWITHNEG);
+                     (instrOpMask & ~INSTROP_VOP3MODS) | INSTROP_PARSEWITHNEG, regField);
         }
         
         if (operand.vopMods & VOPOP_ABS)
@@ -993,22 +995,24 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     // otherwise
     if (instrOpMask & INSTROP_SREGS)
     {
-        if (!parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, false, alignFlags))
+        if (!parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, regField,
+                        false, alignFlags))
             return false;
         if (operand)
             return true;
     }
     if (instrOpMask & INSTROP_VREGS)
     {
-        if (!parseVRegRange(asmr, linePtr, operand.range, regsNum, false, alignFlags))
+        if (!parseVRegRange(asmr, linePtr, operand.range, regsNum, regField,
+                        false, alignFlags))
             return false;
         if (operand)
             return true;
     }
     if (instrOpMask & (INSTROP_SREGS|INSTROP_VREGS))
     {
-        if (!parseSymRegRange(asmr, linePtr, operand.range, arch, regsNum,
-                (instrOpMask&((INSTROP_SREGS|INSTROP_VREGS|INSTROP_SSOURCE))) |
+        if (!parseSymRegRange(asmr, linePtr, operand.range, arch, regsNum, regField,
+                  (instrOpMask&((INSTROP_SREGS|INSTROP_VREGS|INSTROP_SSOURCE))) |
                     alignFlags, false))
             return false;
         if (operand)

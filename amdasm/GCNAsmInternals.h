@@ -143,18 +143,20 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                const char* regPoolName, cxuint requiredRegsNum);
     
     static bool parseRegVarRange(Assembler& asmr, const char*& linePtr,
-                 RegRange& regPair, uint16_t arch, cxuint regsNum, Flags flags,
-                 AsmRegField regField, bool required = true);
+                 RegRange& regPair, uint16_t arch, cxuint regsNum, AsmRegField regField,
+                 Flags flags, bool required = true);
     
     static bool parseSymRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
-                 uint16_t arch, cxuint regsNum, Flags flags, bool required = true);
+                 uint16_t arch, cxuint regsNum, AsmRegField regField, Flags flags,
+                 bool required = true);
     /* return true if no error */
     static bool parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
-                   cxuint regsNum, bool required = true, Flags flags = INSTROP_SYMREGRANGE);
+                   cxuint regsNum, AsmRegField regField, bool required = true,
+                   Flags flags = INSTROP_SYMREGRANGE);
     /* return true if no error */
     static bool parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
-                   uint16_t arch, cxuint regsNum, bool required = true,
-                   Flags flags = INSTROP_SYMREGRANGE);
+                   uint16_t arch, cxuint regsNum, AsmRegField regField,
+                   bool required = true, Flags flags = INSTROP_SYMREGRANGE);
     
     /* return true if no error */
     static bool parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& value,
@@ -185,7 +187,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     
     static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
                std::unique_ptr<AsmExpression>* outTargetExpr, uint16_t arch,
-               cxuint regsNum, Flags instrOpMask);
+               cxuint regsNum, Flags instrOpMask, AsmRegField regField);
     
     template<typename T>
     static bool parseModImm(Assembler& asmr, const char*& linePtr, T& value,

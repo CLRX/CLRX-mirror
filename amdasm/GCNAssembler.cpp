@@ -159,7 +159,7 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
-                   (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SDST);
         if (!skipRequiredComma(asmr, linePtr))
             return;
     }
@@ -167,13 +167,14 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
     GCNOperand src0Op{};
     good &= parseOperand(asmr, linePtr, src0Op, &src0Expr, arch,
-             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
+             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS,
+                         GCNFIELD_SSRC0);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     GCNOperand src1Op{};
     good &= parseOperand(asmr, linePtr, src1Op, &src1Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
-             (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
+             (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0), GCNFIELD_SSRC1);
     
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -233,7 +234,7 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
-                       (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SDST);
         if ((gcnInsn.mode & GCN_MASK1) != GCN_SRC_NONE)
             if (!skipRequiredComma(asmr, linePtr))
                 return;
@@ -243,7 +244,8 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> src0Expr;
     if ((gcnInsn.mode & GCN_MASK1) != GCN_SRC_NONE)
         good &= parseOperand(asmr, linePtr, src0Op, &src0Expr, arch,
-                 (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
+                 (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS,
+                             GCNFIELD_SSRC0);
     
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -315,7 +317,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if ((gcnInsn.mode & GCN_IMM_DST) == 0)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
-                   (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SDST);
         if (!skipRequiredComma(asmr, linePtr))
             return;
     }
@@ -413,7 +415,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             good &= parseImm(asmr, linePtr, imm32, &imm32Expr);
         else
             good &= parseSRegRange(asmr, linePtr, dstReg, arch,
-                   (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SDST); // new field!
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -458,14 +460,16 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
     GCNOperand src0Op{};
     good &= parseOperand(asmr, linePtr, src0Op, &src0Expr, arch,
-             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
+             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS,
+                     GCNFIELD_SSRC0);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     GCNOperand src1Op{};
     if ((gcnInsn.mode & GCN_SRC1_IMM) == 0)
         good &= parseOperand(asmr, linePtr, src1Op, &src1Expr, arch,
                  (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
-                 (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
+                 (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0),
+                         GCNFIELD_SSRC1);
     else // immediate
         good &= parseImm(asmr, linePtr, src1Op.range.start, &src1Expr, 8);
     
@@ -787,22 +791,23 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     if (mode1 == GCN_SMRD_ONLYDST)
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
-                       (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SMRD_SDST);
     else if (mode1 != GCN_ARG_NONE)
     {
         const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
-        good &= parseSRegRange(asmr, linePtr, dstReg, arch, dregsNum);
+        good &= parseSRegRange(asmr, linePtr, dstReg, arch, dregsNum, GCNFIELD_SMRD_SDST);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
         good &= parseSRegRange(asmr, linePtr, sbaseReg, arch,
-                   (gcnInsn.mode&GCN_SBASE4)?4:2);
+                   (gcnInsn.mode&GCN_SBASE4)?4:2, GCNFIELD_SMRD_SBASE);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!='@')
-            good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1, false);
+            good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1,
+                               GCNFIELD_SMRD_SOFFSET, false);
         else // '@' prefix
             skipCharAndSpacesToEnd(linePtr, end);
         
@@ -856,25 +861,27 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     if (mode1 == GCN_SMRD_ONLYDST)
         good &= parseSRegRange(asmr, linePtr, dataReg, arch,
-                       (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SMRD_SDST);
     else if (mode1 != GCN_ARG_NONE)
     {
         const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
         if ((mode1 & GCN_SMEM_SDATA_IMM)==0)
-            good &= parseSRegRange(asmr, linePtr, dataReg, arch, dregsNum);
+            good &= parseSRegRange(asmr, linePtr, dataReg, arch, dregsNum,
+                        GCNFIELD_SMRD_SDST);
         else
             good &= parseImm(asmr, linePtr, dataReg.start, &simm7Expr, 7);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
         good &= parseSRegRange(asmr, linePtr, sbaseReg, arch,
-                   (gcnInsn.mode&GCN_SBASE4)?4:2);
+                   (gcnInsn.mode&GCN_SBASE4)?4:2, GCNFIELD_SMRD_SBASE);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!='@')
-            good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1, false);
+            good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1,
+                                   GCNFIELD_SMRD_SOFFSET, false);
         else // '@' prefix
             skipCharAndSpacesToEnd(linePtr, end);
         
@@ -961,10 +968,11 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     RegRange srcCCReg(0, 0);
     if (mode1 == GCN_DS1_SGPR) // if SGPRS as destination
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
-                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, true,
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP_VDST, true,
                        INSTROP_SYMREGRANGE|INSTROP_UNALIGNED);
     else // if VGPRS as destination
-        good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+        good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
+                        GCNFIELD_VOP_VDST);
     
     const bool haveDstCC = mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC;
     const bool haveSrcCC = mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC;
@@ -972,7 +980,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         if (!skipRequiredComma(asmr, linePtr))
             return;
-        good &= parseSRegRange(asmr, linePtr, dstCCReg, arch, 2, true,
+        good &= parseSRegRange(asmr, linePtr, dstCCReg, arch, 2, GCNFIELD_VOP3_SDST, true,
                                INSTROP_SYMREGRANGE|INSTROP_UNALIGNED);
     }
     
@@ -988,7 +996,8 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     cxuint regsNum = (gcnInsn.mode&GCN_REG_SRC0_64)?2:1;
     good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch, regsNum,
             correctOpType(regsNum, literalConstsFlags) | vopOpModFlags |
-            INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS);
+            INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS,
+            GCNFIELD_VOP_SRC0);
     
     uint32_t immValue = 0;
     std::unique_ptr<AsmExpression> immExpr;
@@ -1008,7 +1017,8 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch, regsNum,
             correctOpType(regsNum, literalConstsFlags) | vopOpModFlags |
             (!sgprRegInSrc1 ? INSTROP_VREGS : 0)|INSTROP_SSOURCE|INSTROP_SREGS|
-            INSTROP_UNALIGNED | (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
+            INSTROP_UNALIGNED | (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0),
+            GCNFIELD_VOP_SRC1);
     
     if (mode1 == GCN_ARG2_IMM)
     {
@@ -1020,7 +1030,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         if (!skipRequiredComma(asmr, linePtr))
             return;
-        good &= parseSRegRange(asmr, linePtr, srcCCReg, arch, 2, true,
+        good &= parseSRegRange(asmr, linePtr, srcCCReg, arch, 2, GCNFIELD_VOP3_SSRC, true,
                                INSTROP_SYMREGRANGE|INSTROP_UNALIGNED);
     }
     
@@ -1207,11 +1217,11 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         if (mode1 == GCN_DST_SGPR) // if SGPRS as destination
             good &= parseSRegRange(asmr, linePtr, dstReg, arch,
-                           (gcnInsn.mode&GCN_REG_DST_64)?2:1, true,
+                           (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP_VDST, true,
                            INSTROP_SYMREGRANGE|INSTROP_UNALIGNED);
         else // if VGPRS as destination
             good &= parseVRegRange(asmr, linePtr, dstReg,
-                           (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP_VDST);
         
         const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
                 (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
@@ -1222,7 +1232,7 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch, regsNum,
                     correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
                     INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
-                    INSTROP_VOP3MODS);
+                    INSTROP_VOP3MODS, GCNFIELD_VOP_SRC0);
     }
     // modifiers
     VOPExtraModifiers extraMods{};
@@ -1341,7 +1351,7 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> src1OpExpr;
     cxbyte modifiers = 0;
     
-    good &= parseSRegRange(asmr, linePtr, dstReg, arch, 2, true,
+    good &= parseSRegRange(asmr, linePtr, dstReg, arch, 2, GCNFIELD_VOPC_SDST, true,
                            INSTROP_SYMREGRANGE|INSTROP_UNALIGNED);
     if (!skipRequiredComma(asmr, linePtr))
         return;
@@ -1352,7 +1362,7 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch, regsNum,
                     correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
                     INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
-                    INSTROP_VOP3MODS);
+                    INSTROP_VOP3MODS, GCNFIELD_VOP_SRC0);
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
@@ -1360,7 +1370,8 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch, regsNum,
                 correctOpType(regsNum, literalConstsFlags) | INSTROP_VOP3MODS|
                 INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
-                (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
+                (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0),
+                GCNFIELD_VOP_SRC1);
     // modifiers
     VOPExtraModifiers extraMods{};
     good &= parseVOPModifiers(asmr, linePtr, modifiers, (isGCN12)?&extraMods:nullptr, true);
@@ -1512,10 +1523,11 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         if ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)
             good &= parseVRegRange(asmr, linePtr, dstReg,
-                       (is128Ops) ? 4 : ((gcnInsn.mode&GCN_REG_DST_64)?2:1));
+                       (is128Ops) ? 4 : ((gcnInsn.mode&GCN_REG_DST_64)?2:1),
+                       GCNFIELD_VOP3_VDST);
         else // SGPRS as dest
             good &= parseSRegRange(asmr, linePtr, dstReg, arch,
-                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, true,
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP3_VDST, true,
                        INSTROP_SYMREGRANGE|INSTROP_UNALIGNED);
         if (!skipRequiredComma(asmr, linePtr))
             return;
@@ -1524,7 +1536,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC || mode1 == GCN_DST_VCC_VSRC2 ||
              mode1 == GCN_S0EQS12)) /* VOP3b */
         {
-            good &= parseSRegRange(asmr, linePtr, sdstReg, arch, 2);
+            good &= parseSRegRange(asmr, linePtr, sdstReg, arch, 2, GCNFIELD_VOP3_SDST);
             if (!skipRequiredComma(asmr, linePtr))
                 return;
         }
@@ -1538,13 +1550,13 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             good &= parseOperand(asmr, linePtr, src0Op, nullptr, arch, regsNum,
                     correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
                     INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|vop3Mods|
-                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
+                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR, GCNFIELD_VOP3_VSRC0);
         }
         
         if (mode2 == GCN_VOP3_VINTRP)
         {
             if (mode1 != GCN_P0_P10_P20)
-                good &= parseVRegRange(asmr, linePtr, src1Op.range, 1);
+                good &= parseVRegRange(asmr, linePtr, src1Op.range, 1, GCNFIELD_VOP3_SRC1);
             else /* P0_P10_P20 */
                 good &= parseVINTRP0P10P20(asmr, linePtr, src1Op.range);
             
@@ -1562,7 +1574,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                     return;
                 good &= parseOperand(asmr, linePtr, src2Op, nullptr, arch,
                     (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, INSTROP_UNALIGNED|INSTROP_VREGS|
-                    INSTROP_SREGS);
+                    INSTROP_SREGS, GCNFIELD_VOP3_SRC2);
             }
             // high and vop3
             const char* end = asmr.line+asmr.lineSize;
@@ -1599,7 +1611,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             good &= parseOperand(asmr, linePtr, src1Op, nullptr, arch, regsNum,
                     correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
                     INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
-                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
+                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR, GCNFIELD_VOP3_SRC1);
          
             if (mode1 != GCN_SRC2_NONE && mode1 != GCN_DST_VCC)
             {
@@ -1610,7 +1622,8 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                         is128Ops ? 4 : regsNum,
                         correctOpType(regsNum, literalConstsFlags)|INSTROP_UNALIGNED|
                         INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
-                        vop3Mods|INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
+                        vop3Mods|INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR,
+                        GCNFIELD_VOP3_SRC2);
             }
         }
     }
@@ -1735,14 +1748,14 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
         return;
     }
     
-    good &= parseVRegRange(asmr, linePtr, dstReg, 1);
+    good &= parseVRegRange(asmr, linePtr, dstReg, 1, GCNFIELD_VINTRP_VDST);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     
     if ((gcnInsn.mode & GCN_MASK1) == GCN_P0_P10_P20)
         good &= parseVINTRP0P10P20(asmr, linePtr, srcReg);
     else // regular vector register
-        good &= parseVRegRange(asmr, linePtr, srcReg, 1);
+        good &= parseVRegRange(asmr, linePtr, srcReg, 1, GCNFIELD_VINTRP_VSRC0);
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
@@ -1788,7 +1801,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
             regsNum = 3;
         if ((gcnInsn.mode&GCN_DS_128) != 0 || (gcnInsn.mode&GCN_DST128) != 0)
             regsNum = 4;
-        good &= parseVRegRange(asmr, linePtr, dstReg, regsNum);
+        good &= parseVRegRange(asmr, linePtr, dstReg, regsNum, GCNFIELD_DS_VDST);
         vdstUsed = beforeData = true;
     }
     
@@ -1797,7 +1810,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         if (vdstUsed)
             if (!skipRequiredComma(asmr, linePtr))
                 return;
-        good &= parseVRegRange(asmr, linePtr, addrReg, 1);
+        good &= parseVRegRange(asmr, linePtr, addrReg, 1, GCNFIELD_DS_ADDR);
         beforeData = true;
     }
     
@@ -1815,13 +1828,13 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
             regsNum = 3;
         if ((gcnInsn.mode&GCN_DS_128) != 0)
             regsNum = 4;
-        good &= parseVRegRange(asmr, linePtr, data0Reg, regsNum);
+        good &= parseVRegRange(asmr, linePtr, data0Reg, regsNum, GCNFIELD_DS_DATA0);
         if (srcMode == GCN_2SRCS)
         {
             if (!skipRequiredComma(asmr, linePtr))
                 return;
             good &= parseVRegRange(asmr, linePtr, data1Reg,
-                       (gcnInsn.mode&GCN_REG_SRC1_64)?2:1);
+                       (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, GCNFIELD_DS_DATA1);
         }
     }
     
@@ -2007,13 +2020,13 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     {
         if (mode1 != GCN_MUBUF_NOVAD)
         {
-            good &= parseVRegRange(asmr, linePtr, vdataReg, 0);
+            good &= parseVRegRange(asmr, linePtr, vdataReg, 0, GCNFIELD_M_VDATA);
             if (!skipRequiredComma(asmr, linePtr))
                 return;
             
             skipSpacesToEnd(linePtr, end);
             vaddrPlace = linePtr;
-            if (!parseVRegRange(asmr, linePtr, vaddrReg, 0, false))
+            if (!parseVRegRange(asmr, linePtr, vaddrReg, 0, GCNFIELD_M_VADDR, false))
                 good = false;
             if (vaddrReg) // only if vaddr is
             {
@@ -2033,12 +2046,12 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 vaddrReg = {256, 257};
             }
         }
-        good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 4);
+        good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 4, GCNFIELD_M_SRSRC);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         good &= parseOperand(asmr, linePtr, soffsetOp, nullptr, arch, 1,
                  INSTROP_SREGS|INSTROP_SSOURCE|INSTROP_ONLYINLINECONSTS|
-                 INSTROP_NOLITERALERRORMUBUF);
+                 INSTROP_NOLITERALERRORMUBUF, GCNFIELD_M_SOFFSET);
     }
     
     bool haveOffset = false, haveFormat = false;
@@ -2287,13 +2300,13 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     skipSpacesToEnd(linePtr, end);
     const char* vdataPlace = linePtr;
-    good &= parseVRegRange(asmr, linePtr, vdataReg, 0);
+    good &= parseVRegRange(asmr, linePtr, vdataReg, 0, GCNFIELD_M_VDATA);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     
     skipSpacesToEnd(linePtr, end);
     const char* vaddrPlace = linePtr;
-    good &= parseVRegRange(asmr, linePtr, vaddrReg, 0);
+    good &= parseVRegRange(asmr, linePtr, vaddrReg, 0, GCNFIELD_M_VADDR);
     cxuint geRegRequired = (gcnInsn.mode&GCN_MIMG_VA_MASK)+1;
     cxuint vaddrRegsNum = vaddrReg.end-vaddrReg.start;
     cxuint vaddrMaxExtraRegs = (gcnInsn.mode&GCN_MIMG_VADERIV) ? 7 : 3;
@@ -2310,13 +2323,13 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     skipSpacesToEnd(linePtr, end);
     const char* srsrcPlace = linePtr;
-    good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 0);
+    good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 0, GCNFIELD_M_SRSRC);
     
     if ((gcnInsn.mode & GCN_MIMG_SAMPLE) != 0)
     {
         if (!skipRequiredComma(asmr, linePtr))
             return;
-        good &= parseSRegRange(asmr, linePtr, ssampReg, arch, 4);
+        good &= parseSRegRange(asmr, linePtr, ssampReg, arch, 4, GCNFIELD_MIMG_SSAMP);
     }
     
     bool haveTfe = false, haveSlc = false, haveGlc = false;
@@ -2548,7 +2561,7 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
         vsrcPlaces[i] = linePtr;
         if (linePtr+2>=end || toLower(linePtr[0])!='o' || toLower(linePtr[1])!='f' ||
             toLower(linePtr[2])!='f' || (linePtr+3!=end && isAlnum(linePtr[3])))
-            good &= parseVRegRange(asmr, linePtr, vsrcsReg[i], 1);
+            good &= parseVRegRange(asmr, linePtr, vsrcsReg[i], 1, GCNFIELD_EXP_VSRC0+i);
         else
         {   // if vsrcX is off
             enMask &= ~(1U<<i);
@@ -2639,21 +2652,21 @@ void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
         vdstPlace = linePtr;
-        good &= parseVRegRange(asmr, linePtr, vdstReg, 0);
+        good &= parseVRegRange(asmr, linePtr, vdstReg, 0, GCNFIELD_FLAT_VDST);
         if (!skipRequiredComma(asmr, linePtr))
             return;
-        good &= parseVRegRange(asmr, linePtr, vaddrReg, 2);
+        good &= parseVRegRange(asmr, linePtr, vaddrReg, 2, GCNFIELD_FLAT_ADDR);
     }
     else
     {
-        good &= parseVRegRange(asmr, linePtr, vaddrReg, 2);
+        good &= parseVRegRange(asmr, linePtr, vaddrReg, 2, GCNFIELD_FLAT_ADDR);
         if ((gcnInsn.mode & GCN_FLAT_NODST) == 0)
         {
             if (!skipRequiredComma(asmr, linePtr))
                 return;
             skipSpacesToEnd(linePtr, end);
             vdstPlace = linePtr;
-            good &= parseVRegRange(asmr, linePtr, vdstReg, 0);
+            good &= parseVRegRange(asmr, linePtr, vdstReg, 0, GCNFIELD_FLAT_VDST);
         }
     }
     
@@ -2661,7 +2674,7 @@ void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         if (!skipRequiredComma(asmr, linePtr))
             return;
-        good &= parseVRegRange(asmr, linePtr, vdataReg, dregsNum);
+        good &= parseVRegRange(asmr, linePtr, vdataReg, dregsNum, GCNFIELD_FLAT_DATA);
     }
     
     bool haveTfe = false, haveSlc = false, haveGlc = false;
@@ -3022,7 +3035,8 @@ bool GCNAssembler::parseRegisterRange(const char*& linePtr, cxuint& regStart,
     GCNOperand operand;
     regVar = nullptr;
     if (!GCNAsmUtils::parseOperand(assembler, linePtr, operand, nullptr, curArchMask, 0,
-                INSTROP_SREGS|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_UNALIGNED))
+                INSTROP_SREGS|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_UNALIGNED,
+                ASMFIELD_NONE))
         return false;
     regStart = operand.range.start;
     regEnd = operand.range.end;
