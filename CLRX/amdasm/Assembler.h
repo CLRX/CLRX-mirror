@@ -610,11 +610,27 @@ enum AsmCodeFlowType
 };
 
 /// code flow entry
-struct AsmCodeFlowEntry
+struct AsmCodeFlowJump
 {
     size_t offset;
     AsmCodeFlowType type;
     Array<size_t> targets;      // target jump addreses
+};
+
+struct AsmCodeFlowMark
+{
+    size_t offset;
+    AsmCodeFlowType type;
+};
+
+struct AsmRegVarInfo
+{
+    /// reg-var usage in section
+    std::vector<AsmRegVarUsage> regVarUsages;
+    /// code flow info
+    std::vector<AsmCodeFlowJump> codeFlowJumps;
+    /// code flow info
+    std::vector<AsmCodeFlowMark> codeFlowMarks;
 };
 
 /// assembler section
@@ -628,16 +644,36 @@ struct AsmSection
     uint64_t size;  ///< section size
     std::vector<cxbyte> content;    ///< content of section
     
-    /// reg-var usage in section
-    std::vector<AsmRegVarUsage> regVarUsages;
-    /// code flow info
-    std::vector<AsmCodeFlowEntry> codeFlow;
+    std::unique_ptr<AsmRegVarInfo> regVarInfo;
+    
+    AsmSection(const AsmSection& section);
+    AsmSection(const char* _name, cxuint _kernelId, AsmSectionType _type,
+            Flags _flags, uint64_t _alignment, uint64_t _size = 0)
+        : name(_name), kernelId(_kernelId), type(_type), flags(_flags),
+          alignment(_alignment), size(_size)
+    { }
+    AsmSection& operator=(const AsmSection& section);
     
     void addVarUsage(const AsmRegVarUsage& varUsage)
-    { regVarUsages.push_back(varUsage); }
+    {
+        if (!regVarInfo)
+            regVarInfo.reset(new AsmRegVarInfo);
+        regVarInfo->regVarUsages.push_back(varUsage);
+    }
     
-    void addCodeFlowEntry(const AsmCodeFlowEntry& entry)
-    { codeFlow.push_back(entry); }
+    void addCodeFlowJump(const AsmCodeFlowJump& entry)
+    {
+        if (!regVarInfo)
+            regVarInfo.reset(new AsmRegVarInfo);
+        regVarInfo->codeFlowJumps.push_back(entry);
+    }
+    
+    void addCodeFlowMark(const AsmCodeFlowMark& entry)
+    {
+        if (!regVarInfo)
+            regVarInfo.reset(new AsmRegVarInfo);
+        regVarInfo->codeFlowMarks.push_back(entry);
+    }
     
     /// get section's size
     size_t getSize() const
