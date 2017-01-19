@@ -283,6 +283,9 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     static void doDefRegVar(Assembler& asmr, const char* pseudoOpPlace,
                     const char* linePtr);
     
+    static void addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace,
+                     const char* linePtr, AsmCodeFlowType type);
+    
     static void setAbsoluteOffset(Assembler& asmr, const char* linePtr);
     
     static void ignoreString(Assembler& asmr, const char* linePtr);

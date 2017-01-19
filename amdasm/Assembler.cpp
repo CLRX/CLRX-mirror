@@ -1087,6 +1087,10 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                             SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
                                     .content.data() + target.offset), uint64_t(value));
                         break;
+                    case ASMXTGT_CODEFLOW:
+                        sections[target.sectionId].
+                                codeFlow[target.cflowId].target = value;
+                        break;
                     default: // ISA assembler resolves this dependency
                         if (!isaAssembler->resolveCode(expr->getSourcePos(),
                                 target.sectionId, sections[target.sectionId].content.data(),

@@ -337,6 +337,15 @@ struct AsmExprTarget
         return target;
     }
     
+    static AsmExprTarget codeFlowTarget(cxuint sectionId, size_t cflowIndex)
+    {
+        AsmExprTarget target;
+        target.type = ASMXTGT_CODEFLOW;
+        target.sectionId = sectionId;
+        target.cflowId = cflowIndex;
+        return target;
+    }
+    
     /// make n-bit word target for expression
     template<typename T>
     static AsmExprTarget dataTarget(cxuint sectionId, size_t offset)

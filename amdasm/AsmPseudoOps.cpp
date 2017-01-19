@@ -89,6 +89,7 @@ static const char* pseudoOpNamesTbl[] =
     "32bit", "64bit", "abort", "align", "altmacro",
     "amd", "amdcl2", "arch", "ascii", "asciz",
     "balign", "balignl", "balignw", "buggyfplit", "byte",
+    "cf_call", "cf_end", "cf_jump", "cf_ret", "cf_start",
     "data", "double", "else",
     "elseif", "elseif32", "elseif64",
     "elseifarch", "elseifb", "elseifc", "elseifdef",
@@ -125,6 +126,7 @@ enum
     ASMOP_32BIT = 0, ASMOP_64BIT, ASMOP_ABORT, ASMOP_ALIGN, ASMOP_ALTMACRO,
     ASMOP_AMD, ASMOP_AMDCL2, ASMOP_ARCH, ASMOP_ASCII, ASMOP_ASCIZ,
     ASMOP_BALIGN, ASMOP_BALIGNL, ASMOP_BALIGNW, ASMOP_BUGGYFPLIT, ASMOP_BYTE,
+    ASMOP_CF_CALL, ASMOP_CF_END, ASMOP_CF_JUMP, ASMOP_CF_RET, ASMOP_CF_START,
     ASMOP_DATA, ASMOP_DOUBLE, ASMOP_ELSE,
     ASMOP_ELSEIF, ASMOP_ELSEIF32, ASMOP_ELSEIF64,
     ASMOP_ELSEIFARCH, ASMOP_ELSEIFB, ASMOP_ELSEIFC, ASMOP_ELSEIFDEF,
@@ -2043,6 +2045,38 @@ void AsmPseudoOps::doDefRegVar(Assembler& asmr, const char* pseudoOpPlace,
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
+void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace,
+                     const char* linePtr, AsmCodeFlowType type)
+{
+    const bool acceptArgs = (type==AsmCodeFlowType::JUMP || type==AsmCodeFlowType::CALL);
+    asmr.initializeOutputFormat();
+    const char* end = asmr.line+asmr.lineSize;
+    if (acceptArgs)
+    {   // multiple entries
+        do {
+            bool good = true;
+            skipSpacesToEnd(linePtr, end);
+            if (!good)
+                continue;
+            std::unique_ptr<AsmExpression> expr;
+            uint64_t target;
+            if (!getJumpValueArg(asmr, target, expr, linePtr))
+                continue;
+            asmr.sections[asmr.currentSection].addCodeFlowEntry({ 
+                    asmr.currentOutPos, target, type });
+            if (expr)
+                expr->setTarget(AsmExprTarget::codeFlowTarget(asmr.currentSection,
+                        asmr.sections[asmr.currentSection].codeFlow.size()-1));
+            
+        } while (skipCommaForMultipleArgs(asmr, linePtr));
+    }
+    else // single entry without target
+        asmr.sections[asmr.currentSection].addCodeFlowEntry({ 
+                    asmr.currentOutPos, 0, type });
+    
+    checkGarbagesAtEnd(asmr, linePtr);
+}
+
 void AsmPseudoOps::ignoreString(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
@@ -2137,6 +2171,26 @@ void Assembler::parsePseudoOps(const CString& firstName,
                         (pseudoOp == ASMOP_ROCM) ? BinaryFormat::ROCM :
                         BinaryFormat::RAWCODE;
             }
+            break;
+        case ASMOP_CF_CALL:
+            AsmPseudoOps::addCodeFlowEntries(*this, stmtPlace, linePtr,
+                                  AsmCodeFlowType::CALL);
+            break;
+        case ASMOP_CF_END:
+            AsmPseudoOps::addCodeFlowEntries(*this, stmtPlace, linePtr,
+                                  AsmCodeFlowType::END);
+            break;
+        case ASMOP_CF_JUMP:
+            AsmPseudoOps::addCodeFlowEntries(*this, stmtPlace, linePtr,
+                                  AsmCodeFlowType::JUMP);
+            break;
+        case ASMOP_CF_RET:
+            AsmPseudoOps::addCodeFlowEntries(*this, stmtPlace, linePtr,
+                                  AsmCodeFlowType::RETURN);
+            break;
+        case ASMOP_CF_START:
+            AsmPseudoOps::addCodeFlowEntries(*this, stmtPlace, linePtr,
+                                  AsmCodeFlowType::START);
             break;
         case ASMOP_DATA:
             AsmPseudoOps::goToSection(*this, stmtPlace, stmtPlace, true);
