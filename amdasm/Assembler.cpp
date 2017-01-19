@@ -52,6 +52,8 @@ AsmSection::AsmSection(const AsmSection& section)
 
 AsmSection& AsmSection::operator=(const AsmSection& section)
 {
+    if (this == &section)
+        return *this;
     name = section.name;
     kernelId = section.kernelId;
     type = section.type;
