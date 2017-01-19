@@ -2050,6 +2050,14 @@ void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace
 {
     const bool acceptArgs = (type==AsmCodeFlowType::JUMP || type==AsmCodeFlowType::CALL);
     asmr.initializeOutputFormat();
+    
+    if (!asmr.isWriteableSection())
+    {
+        asmr.printError(pseudoOpPlace,
+                        "Defining codeflow in non-writeable section is illegal");
+        return;
+    }
+    
     const char* end = asmr.line+asmr.lineSize;
     if (acceptArgs)
     {   // multiple entries

@@ -1088,8 +1088,14 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                                     .content.data() + target.offset), uint64_t(value));
                         break;
                     case ASMXTGT_CODEFLOW:
-                        sections[target.sectionId].
-                                codeFlow[target.cflowId].target = value;
+                        if (target.sectionId != sectionId)
+                        {
+                            printError(expr->getSourcePos(), "Jump over current section!");
+                            good = false;
+                        }
+                        else
+                            sections[target.sectionId].
+                                    codeFlow[target.cflowId].target = value;
                         break;
                     default: // ISA assembler resolves this dependency
                         if (!isaAssembler->resolveCode(expr->getSourcePos(),
