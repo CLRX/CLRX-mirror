@@ -133,7 +133,7 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
                 }
                 if (value2 >= rend || value1 >= rend)
                 {
-                    asmr.printError(regVarPlace, "Register range out of range");
+                    asmr.printError(regVarPlace, "Regvar range out of range");
                     return false;
                 }
                 rend = value2+1;
@@ -151,11 +151,13 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
                     uint16_t(rstart), uint16_t(rend), regField,
                     cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
                     ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
+            regPair = { rstart, rend };
             return true;
         }
     }
     if (printRegisterRangeExpected(asmr, regVarPlace, regTypeName, regsNum, required))
         return false;
+    regPair = { 0, 0 };
     linePtr = oldLinePtr; // revert current line pointer
     return true;
 }
@@ -299,9 +301,17 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
     if (!isRange)
     {
         linePtr = oldLinePtr;
-        if ((flags&INSTROP_SYMREGRANGE) != 0)
+        if (!parseRegVarRange(asmr, linePtr, regPair, 0, regsNum, regField,
+                    INSTROP_VREGS, false))
+            return false;
+        if (!regPair && (flags&INSTROP_SYMREGRANGE) != 0)
+        {
+            linePtr = oldLinePtr;
             return parseSymRegRange(asmr, linePtr, regPair, 0, regsNum,
                             regField, INSTROP_VREGS, required);
+        }
+        else if (regPair)
+            return true;
         if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
             return false;
         regPair = { 0, 0 }; // no range
@@ -556,9 +566,17 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         else
         {   // otherwise
             linePtr = oldLinePtr;
-            if ((flags&INSTROP_SYMREGRANGE) != 0)
+            if (!parseRegVarRange(asmr, linePtr, regPair, 0, regsNum, regField,
+                    INSTROP_SREGS, false))
+                return false;
+            if (!regPair && (flags&INSTROP_SYMREGRANGE) != 0)
+            {
+                linePtr = oldLinePtr;
                 return parseSymRegRange(asmr, linePtr, regPair, arch, regsNum,
                         regField, INSTROP_SREGS | (flags & INSTROP_UNALIGNED), required);
+            }
+            else if (regPair)
+                return true;
             if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar",
                             regsNum, required))
                 return false;
