@@ -1,6 +1,6 @@
 /*
  *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
- *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *  Copyright (C) 2014-2017 Mateusz Szpakowski
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,7 @@
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/GPUId.h>
 
 /// main namespace
 namespace CLRX
@@ -277,7 +278,7 @@ struct AmdCL2GPUMetadataHeader32
     uint32_t unknown4[3];
     uint32_t pipesUsage;
     uint32_t unknown5[2];
-    uint32_t argsNum;       ///< number of arguments
+    uint64_t argsNum;       ///< number of arguments
 };
 
 /// header for metadata
@@ -352,8 +353,7 @@ struct AmdCL2GPUKernelArgEntry64
     cxbyte isPipe;      ///< if pipe
     cxbyte unknown4;
     uint32_t kindOfType;    ///< kind of type
-    uint32_t isConst;   ///< is const pointer
-    uint32_t unknown5;
+    uint64_t isConst;   ///< is const pointer
 };
 
 class AmdCL2MainGPUBinaryBase: public AmdMainBinaryBase
@@ -373,6 +373,10 @@ protected:
     
     template<typename Types>
     void initMainGPUBinary(typename Types::ElfBinary& elfBin);
+    
+    template<typename Types>
+    GPUDeviceType determineGPUDeviceTypeInt(const typename Types::ElfBinary& elfBin,
+                uint32_t& archMinor, uint32_t& archStepping, cxuint driverVersion) const;
     
 public:
     explicit AmdCL2MainGPUBinaryBase(AmdMainType amdMainType);
@@ -472,6 +476,16 @@ public:
             Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdCL2MainGPUBinary32() = default;
     
+    /// determine GPU device from this binary
+    /**
+     * \param archMinor output architecture minor
+     * \param archStepping output architecture stepping
+     * \param driverVersion specified driver version (zero detected by loader)
+     * \return device type
+     */
+    GPUDeviceType determineGPUDeviceType(uint32_t& archMinor, uint32_t& archStepping,
+                cxuint driverVersion = 0) const;
+    
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const
     { return (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0; }
@@ -495,6 +509,16 @@ public:
     AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdCL2MainGPUBinary64() = default;
+    
+    /// determine GPU device from this binary
+    /**
+     * \param archMinor output architecture minor
+     * \param archStepping output architecture stepping
+     * \param driverVersion specified driver version (zero detected by loader)
+     * \return device type
+     */
+    GPUDeviceType determineGPUDeviceType(uint32_t& archMinor, uint32_t& archStepping,
+                cxuint driverVersion = 0) const;
     
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const

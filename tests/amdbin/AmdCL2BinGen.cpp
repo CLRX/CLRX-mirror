@@ -1,6 +1,6 @@
 /*
  *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
- *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *  Copyright (C) 2014-2017 Mateusz Szpakowski
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -40,6 +40,7 @@ static const char* origBinaryFiles[] =
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/BinarySearchDeviceSideEnqueue_Kernels.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/enqueue-15_7.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/enqueue.clo",
+    CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/enqueue.32.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/ExtractPrimes_Kernels.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/ksetup1-15_7.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/ksetup1.clo",
@@ -47,14 +48,17 @@ static const char* origBinaryFiles[] =
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/ksetup2.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/locals-15_7.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/locals.clo",
+    CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/locals.32.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/nokernels-15_7.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/nokernels.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/piper-15_7.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/piper.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/piper-16_4.clo",
+    CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/piper2.32.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/RegionGrowingSegmentation.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/samplers2.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/samplers4.clo",
+    CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/samplers4.32.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/samplers4-gpupro.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/scratch-15_7.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/scratch.clo",
@@ -212,13 +216,30 @@ static const cxuint vectorIdTable[17] =
 { UINT_MAX, 0, 1, 2, 3, UINT_MAX, UINT_MAX, UINT_MAX, 4,
   UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };
 
+struct CLRX_INTERNAL AmdCL2Types32 : Elf32Types
+{
+    typedef AmdCL2MainGPUBinary32 MainBinary;
+    typedef AmdCL2GPUMetadataHeader32 MetadataHeader;
+    typedef AmdCL2GPUKernelArgEntry32 KernelArgEntry;
+    static const KernelArgType wordType = KernelArgType::INT;
+};
+
+struct CLRX_INTERNAL AmdCL2Types64 : Elf64Types
+{
+    typedef AmdCL2MainGPUBinary64 MainBinary;
+    typedef AmdCL2GPUMetadataHeader64 MetadataHeader;
+    typedef AmdCL2GPUKernelArgEntry64 KernelArgEntry;
+    static const KernelArgType wordType = KernelArgType::LONG;
+};
+
+template<typename Types>
 static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* metadata,
         size_t setupSize, const cxbyte* setup, const std::vector<size_t> samplerOffsets,
         const std::vector<AmdCL2RelInput>& textRelocs)
 {
     AmdCL2KernelConfig config;
-    const AmdCL2GPUMetadataHeader64* mdHdr =
-            reinterpret_cast<const AmdCL2GPUMetadataHeader64*>(metadata);
+    const typename Types::MetadataHeader* mdHdr =
+            reinterpret_cast<const typename Types::MetadataHeader*>(metadata);
     size_t headerSize = ULEV(mdHdr->size);
     for (size_t i = 0; i < 3; i++)
         config.reqdWorkGroupSize[i] = ULEV(mdHdr->reqdWorkGroupSize[i]);
@@ -263,13 +284,14 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     // get kernel args
     size_t argOffset = headerSize + ULEV(mdHdr->firstNameLength) + 
             ULEV(mdHdr->secondNameLength)+2;
-    if (ULEV(*((const uint32_t*)(metadata+argOffset))) == 0x5800)
+    if (ULEV(*((const uint32_t*)(metadata+argOffset))) ==
+            (sizeof(typename Types::KernelArgEntry)<<8))
         argOffset++;
-    const AmdCL2GPUKernelArgEntry64* argPtr = reinterpret_cast<
-            const AmdCL2GPUKernelArgEntry64*>(metadata + argOffset);
+    const typename Types::KernelArgEntry* argPtr = reinterpret_cast<
+            const typename Types::KernelArgEntry*>(metadata + argOffset);
     const uint32_t argsNum = ULEV(mdHdr->argsNum);
     const char* strBase = (const char*)metadata;
-    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry64)*(argsNum+1);
+    size_t strOffset = argOffset + sizeof(typename Types::KernelArgEntry)*(argsNum+1);
     
     for (uint32_t i = 0; i < argsNum; i++, argPtr++)
     {
@@ -362,7 +384,12 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                         cl20ArgNameTypeTable + cl20ArgNameTypeTableSize,
                         arg.typeName.c_str(), CStringLess());
             if (it != cl20ArgNameTypeTable + cl20ArgNameTypeTableSize) // if found
-                arg.argType = it->second;
+            {
+                if (::strcmp(it->first,"size_t")==0)
+                    arg.argType = Types::wordType;
+                else
+                    arg.argType = it->second;
+            }
             
             if (arg.argType == KernelArgType::STRUCTURE)
                 arg.structSize = ULEV(argPtr->structSize);
@@ -428,8 +455,12 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                                     cl20ArgNameTypeTable + cl20ArgNameTypeTableSize,
                                     ptrTypeName.c_str(), CStringLess());
                         if (it != cl20ArgNameTypeTable + cl20ArgNameTypeTableSize)
-                            // if found
-                            arg.pointerType = it->second;
+                        {// if found
+                            if (::strcmp(it->first,"size_t")==0)
+                                arg.pointerType = Types::wordType;
+                            else
+                                arg.pointerType = it->second;
+                        }
                         else // otherwise structure
                             arg.pointerType = KernelArgType::STRUCTURE;
                     }
@@ -472,7 +503,8 @@ static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[11] =
     { 15, GPUDeviceType::DUMMY }
 };
 
-static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary64& binary,
+template<typename Types>
+static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBinary& binary,
             bool addBrig, bool samplerConfig)
 {
     AmdCL2Input amdCL2Input{ };
@@ -482,6 +514,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary64& b
         if (cl2GpuDeviceCodeTable[index].elfFlags == elfFlags)
             break;
     
+    amdCL2Input.is64Bit = binary.getType()==AmdMainType::GPU_CL2_64_BINARY;
     amdCL2Input.deviceType = cl2GpuDeviceCodeTable[index].deviceType;
     amdCL2Input.aclVersion = binary.getAclVersionString();
     //std::cout << "BinCompOptions: " << binary.getCompileOptions() << std::endl;
@@ -648,7 +681,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary64& b
     if (useConfig)
         for (AmdCL2KernelInput& kernel: amdCL2Input.kernels)
         {
-            kernel.config = genKernelConfig(kernel.metadataSize, kernel.metadata,
+            kernel.config = genKernelConfig<Types>(kernel.metadataSize, kernel.metadata,
                         kernel.setupSize, kernel.setup, amdCL2Input.samplerOffsets,
                         kernel.relocations);
             /* zeroing obsolete fields */
@@ -660,7 +693,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary64& b
     
     // add brig
     uint16_t brigIndex = binary.getSectionIndex(".brig");
-    const Elf64_Shdr& brigShdr = binary.getSectionHeader(brigIndex);
+    const typename Types::Shdr& brigShdr = binary.getSectionHeader(brigIndex);
     const cxbyte* brigContent = binary.getSectionContent(brigIndex);
     amdCL2Input.extraSections.push_back(BinSection{".brig", size_t(ULEV(brigShdr.sh_size)),
             brigContent, size_t(ULEV(brigShdr.sh_addralign)), ULEV(brigShdr.sh_type),
@@ -678,14 +711,26 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
     inputData = loadDataFromFile(origBinaryFilename);
     if (!isAmdCL2Binary(inputData.size(), inputData.data()))
         throw Exception("This is not AMD OpenCL2.0 binary");
-    AmdCL2MainGPUBinary64 amdCL2GpuBin(inputData.size(), inputData.data(), 
+    std::unique_ptr<AmdCL2MainGPUBinaryBase> amdCL2GpuBin(
+            createAmdCL2BinaryFromCode(inputData.size(), inputData.data(), 
                 AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                 AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
                 AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_CREATE_INFOSTRINGS |
                 AMDCL2BIN_INNER_CREATE_KERNELDATA | AMDCL2BIN_INNER_CREATE_KERNELDATAMAP |
-                AMDCL2BIN_INNER_CREATE_KERNELSTUBS);
+                AMDCL2BIN_INNER_CREATE_KERNELSTUBS));
     
-    amdCL2Input = genAmdCL2Input(reconf, amdCL2GpuBin, false, false);
+    if (amdCL2GpuBin->getType()==AmdMainType::GPU_CL2_64_BINARY)
+    {
+        const AmdCL2MainGPUBinary64& binary = *reinterpret_cast<
+                        const AmdCL2MainGPUBinary64*>(amdCL2GpuBin.get());
+        amdCL2Input = genAmdCL2Input<AmdCL2Types64>(reconf, binary, false, false);
+    }
+    else // 32-bit
+    {
+        const AmdCL2MainGPUBinary32& binary = *reinterpret_cast<
+                        const AmdCL2MainGPUBinary32*>(amdCL2GpuBin.get());
+        amdCL2Input = genAmdCL2Input<AmdCL2Types32>(reconf, binary, false, false);
+    }
     
     AmdCL2GPUBinGenerator binGen(&amdCL2Input);
     binGen.generate(output);

@@ -25,12 +25,12 @@ CLRadeonExtender provides two tools:
 * clrxasm - an GCN assembler (compatible with GNU as).
 * clrxdisasm - an GCN disassembler
 
-Currently, these tools can handle the AMD Catalyst OpenCL binaries and
-the GalliumCompute binaries.
+Currently, these tools can handle the AMD Catalyst OpenCL binaries,
+the GalliumCompute binaries, AMD OpenCL 2.0 binaries and ROCm binaries.
 
 4. Documentation
 
-Currently, only the Doxygen documentation available.
+Currently, the Doxygen documentation and onlint CLRX documentation available.
 
 5. Installation
 

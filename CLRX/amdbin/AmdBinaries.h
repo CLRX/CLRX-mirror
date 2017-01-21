@@ -1,6 +1,6 @@
 /*
  *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
- *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *  Copyright (C) 2014-2017 Mateusz Szpakowski
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,7 @@
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/GPUId.h>
 
 /// main namespace
 namespace CLRX
@@ -344,6 +345,13 @@ public:
     /// get all CALNotes for encoding index
     Array<CALNote>& getCALNotes(cxuint encodingIndex)
     { return calNotesTable[encodingIndex]; }
+    
+    /// find CAL encoding entry for specified device type
+    /**
+     * \param deviceType specified device type
+     * \return CAL Encoding Entry index
+     */
+    cxuint findCALEncodingEntryIndex(GPUDeviceType deviceType) const;
 };
 
 /// AMD inner X86 binary
@@ -564,6 +572,9 @@ public:
             Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdMainGPUBinary32() = default;
     
+    // determine GPU device type from this binary
+    GPUDeviceType determineGPUDeviceType() const;
+    
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const
     { return (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0; }
@@ -604,6 +615,9 @@ public:
     AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdMainGPUBinary64() = default;
+    
+    // determine GPU device type from this binary
+    GPUDeviceType determineGPUDeviceType() const;
     
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const

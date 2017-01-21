@@ -1,6 +1,6 @@
 /*
  *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
- *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *  Copyright (C) 2014-2017 Mateusz Szpakowski
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -81,6 +81,10 @@ public:
     ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags = ROCMBIN_CREATE_ALL);
     ~ROCmBinary() = default;
+    
+    /// determine GPU device type from this binary
+    GPUDeviceType determineGPUDeviceType(uint32_t& archMinor,
+                     uint32_t& archStepping) const;
     
     /// get regions number
     size_t getRegionsNum() const

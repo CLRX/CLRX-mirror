@@ -1,6 +1,6 @@
 /*
  *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
- *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *  Copyright (C) 2014-2017 Mateusz Szpakowski
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -39,62 +39,9 @@
 
 using namespace CLRX;
 
-struct CLRX_INTERNAL GPUDeviceCodeEntry
-{
-    uint16_t elfMachine;
-    GPUDeviceType deviceType;
-};
-
-static const GPUDeviceCodeEntry gpuDeviceCodeTable[16] =
-{
-    { 0x3fd, GPUDeviceType::TAHITI },
-    { 0x3fe, GPUDeviceType::PITCAIRN },
-    { 0x3ff, GPUDeviceType::CAPE_VERDE },
-    { 0x402, GPUDeviceType::OLAND },
-    { 0x403, GPUDeviceType::BONAIRE },
-    { 0x404, GPUDeviceType::SPECTRE },
-    { 0x405, GPUDeviceType::SPOOKY },
-    { 0x406, GPUDeviceType::KALINDI },
-    { 0x407, GPUDeviceType::HAINAN },
-    { 0x408, GPUDeviceType::HAWAII },
-    { 0x409, GPUDeviceType::ICELAND },
-    { 0x40a, GPUDeviceType::TONGA },
-    { 0x40b, GPUDeviceType::MULLINS },
-    { 0x40c, GPUDeviceType::FIJI },
-    { 0x40d, GPUDeviceType::CARRIZO },
-    { 0x411, GPUDeviceType::DUMMY }
-};
-
-struct CLRX_INTERNAL GPUDeviceInnerCodeEntry
-{
-    uint32_t dMachine;
-    GPUDeviceType deviceType;
-};
-
-static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[16] =
-{
-    { 0x1a, GPUDeviceType::TAHITI },
-    { 0x1b, GPUDeviceType::PITCAIRN },
-    { 0x1c, GPUDeviceType::CAPE_VERDE },
-    { 0x20, GPUDeviceType::OLAND },
-    { 0x21, GPUDeviceType::BONAIRE },
-    { 0x22, GPUDeviceType::SPECTRE },
-    { 0x23, GPUDeviceType::SPOOKY },
-    { 0x24, GPUDeviceType::KALINDI },
-    { 0x25, GPUDeviceType::HAINAN },
-    { 0x27, GPUDeviceType::HAWAII },
-    { 0x29, GPUDeviceType::ICELAND },
-    { 0x2a, GPUDeviceType::TONGA },
-    { 0x2b, GPUDeviceType::MULLINS },
-    { 0x2d, GPUDeviceType::FIJI },
-    { 0x2e, GPUDeviceType::CARRIZO },
-    { 0x31, GPUDeviceType::DUMMY }
-};
-
 static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
         AmdDisasmKernelInput& kernelInput, Flags flags, GPUDeviceType inputDeviceType)
 {
-    const cxuint entriesNum = sizeof(gpuDeviceCodeTable)/sizeof(GPUDeviceCodeEntry);
     kernelInput.codeSize = kernelInput.dataSize = 0;
     kernelInput.code = kernelInput.data = nullptr;
     
@@ -102,27 +49,8 @@ static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBi
     {   // if innerBinary exists
         bool codeFound = false;
         bool dataFound = false;
-        cxuint encEntryIndex = 0;
-        for (encEntryIndex = 0; encEntryIndex < innerBin->getCALEncodingEntriesNum();
-             encEntryIndex++)
-        {
-            const CALEncodingEntry& encEntry =
-                    innerBin->getCALEncodingEntry(encEntryIndex);
-            /* check gpuDeviceType */
-            const uint32_t dMachine = ULEV(encEntry.machine);
-            cxuint index;
-            // detect GPU device from machine field from CAL encoding entry
-            for (index = 0; index < entriesNum; index++)
-                if (gpuDeviceInnerCodeTable[index].dMachine == dMachine)
-                    break;
-            if (entriesNum != index &&
-                gpuDeviceInnerCodeTable[index].deviceType == inputDeviceType)
-                break; // if found
-        }
-        if (encEntryIndex == innerBin->getCALEncodingEntriesNum())
-            throw Exception("Can't find suitable CALEncodingEntry!");
-        const CALEncodingEntry& encEntry =
-                    innerBin->getCALEncodingEntry(encEntryIndex);
+        cxuint encEntryIndex = innerBin->findCALEncodingEntryIndex(inputDeviceType);
+        const CALEncodingEntry& encEntry = innerBin->getCALEncodingEntry(encEntryIndex);
         const size_t encEntryOffset = ULEV(encEntry.offset);
         const size_t encEntrySize = ULEV(encEntry.size);
         /* find suitable sections */
@@ -176,18 +104,9 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
            Flags flags)
 {
     std::unique_ptr<AmdDisasmInput> input(new AmdDisasmInput);
-    cxuint index = 0;
-    const uint16_t elfMachine = ULEV(binary.getHeader().e_machine);
     input->is64BitMode = (binary.getHeader().e_ident[EI_CLASS] == ELFCLASS64);
-    const cxuint entriesNum = sizeof(gpuDeviceCodeTable)/sizeof(GPUDeviceCodeEntry);
-    // detect GPU device from elfMachine field from ELF header
-    for (index = 0; index < entriesNum; index++)
-        if (gpuDeviceCodeTable[index].elfMachine == elfMachine)
-            break;
-    if (entriesNum == index)
-        throw Exception("Can't determine GPU device type");
     
-    input->deviceType = gpuDeviceCodeTable[index].deviceType;
+    input->deviceType = binary.determineGPUDeviceType();
     input->compileOptions = binary.getCompileOptions();
     input->driverInfo = binary.getDriverInfo();
     input->globalDataSize = binary.getGlobalDataSize();

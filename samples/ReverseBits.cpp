@@ -1,6 +1,6 @@
 /*
  *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
- *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *  Copyright (C) 2014-2017 Mateusz Szpakowski
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -147,6 +147,34 @@ end:
         .arg input, uchar*, global, const   # const global uint* input
         .arg output, uchar*, global         # global uint* output
     .text
+    .if32 # 32-bit
+        s_load_dwordx2 s[0:1], s[6:7], 7        # get input and output pointers
+        s_load_dword s4, s[4:5], 1              # get local info dword
+        s_load_dword s2, s[6:7], 0              # get global offset (32-bit)
+        s_load_dword s3, s[6:7], 6              # get n - number of elems
+        s_waitcnt lgkmcnt(0)        # wait
+        s_and_b32 s4, s4, 0xffff            # only first localsize(0)
+        s_mul_i32 s4, s8, s4                # localsize*groupId
+        s_add_u32 s4, s2, s4                # localsize*groupId+offset
+        v_add_i32 v0, vcc, s4, v0           # final global_id
+        v_cmp_gt_u32 vcc, s3, v0            # global_id(0) < n
+        s_and_saveexec_b64 s[4:5], vcc          # lock all threads with id>=n
+        s_cbranch_execz end                     # no active threads, we jump to end
+        s_movk_i32 s8, 0                        # memory buffer (base=0)
+        s_movk_i32 s9, 0
+        s_movk_i32 s10, 0xffff                  # infinite number of records
+        s_mov_b32 s11, 0x8027fac                # set dstsel, nfmt and dfmt
+        v_add_i32 v1, vcc, s0, v0           # input+global_id(0)
+        buffer_load_ubyte v2, v1, s[8:11], 0 offen   # load byte
+        s_waitcnt vmcnt(0)
+        v_mov_b32 v1, revTable&0xffffffff       # get revTable
+        v_add_i32 v1, vcc, v1, v2               # revTable+v
+        buffer_load_ubyte v2, v1, s[8:11], 0 offen   # revTable[v] converted byte
+        s_waitcnt vmcnt(0)
+        v_add_i32 v1, vcc, s1, v0               # output+global_id(0)
+        buffer_store_byte v2, v1, s[8:11], 0 offen
+        
+    .else # 64-bit
         s_load_dwordx4 s[0:3], s[6:7], 14       # get input and output pointers
         s_load_dword s4, s[4:5], 1              # get local info dword
         s_load_dword s9, s[6:7], 0              # get global offset (32-bit)
@@ -174,6 +202,7 @@ end:
         v_mov_b32 v2, s3
         v_addc_u32 v2, vcc, 0, v2, vcc      # higher part
         flat_store_byte v[1:2], v3          # store converted byte to output
+    .endif
 end:
         s_endpgm
 .else   # GalliumCompute code

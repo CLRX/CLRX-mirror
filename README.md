@@ -17,6 +17,8 @@ Both tools can operate on two binary formats:
 
 * the AMD Catalyst OpenCL program binaries
 * the GalliumCompute (Mesa) program binaries
+* the AMD Catalyst OpenCL 2.0 program binaries
+* the ROCm (RadeonOpenCompute) program binaries
 
 CLRadeonExtender not only provides basic tools to low-level development, but also
 allow to embed own assembler with AMD Catalyst driver through CLwrapper.
@@ -114,6 +116,7 @@ Useful options:
 * -g DEVICETYPE - device type ('pitcairn', 'bonaire'...)
 * -A ARCH - architecture ('gcn1.0', 'gcn1.1' or 'gcn1.2')
 * -b BINFMT - binary format ('amd', 'amdcl2', 'gallium', 'rocm', 'rawcode')
+* -t VERSION - driver version for which a binary will be generated
 * -w - suppress warnings
 
 Usage of the clrxdisasm:
@@ -132,5 +135,6 @@ Useful options for clrxdisasm:
 * -C - print configuration dump instead metadatas, CALnotes and setup data
 * -g DEVICETYPE - device type ('pitcairn', 'bonaire'...)
 * -A ARCH - architecture ('gcn1.0', 'gcn1.1' or 'gcn1.2')
+* -t VERSION - driver version for which a binary was generated
 
 A CLRX assembler accepts source from disassembler.

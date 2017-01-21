@@ -1,6 +1,6 @@
 /*
  *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
- *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *  Copyright (C) 2014-2017 Mateusz Szpakowski
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -114,10 +114,42 @@ end:
         .arg bBuf, float*, global, const    # argument const float* bBuf
         .arg cBuf, float*, global           # argument float* cBuf
     .text
+    .if32 # 32-bit
+        s_load_dwordx2 s[0:1], s[6:7], 7        # get aBuf and bBuf pointers
+        s_load_dword s4, s[4:5], 1              # get local info dword
+        s_load_dword s2, s[6:7], 0              # get global offset (32-bit)
+        s_load_dword s3, s[6:7], 6              # get n - number of elems
+        s_waitcnt lgkmcnt(0)                    # wait for data
+        s_and_b32 s4, s4, 0xffff            # only first localsize(0)
+        s_mul_i32 s4, s8, s4                # localsize*groupId
+        s_add_u32 s4, s2, s4                # localsize*groupId+offset
+        v_add_i32 v0, vcc, s4, v0           # final global_id
+        v_cmp_gt_u32 vcc, s3, v0            # global_id(0) < n
+        s_and_saveexec_b64 s[4:5], vcc          # lock all threads with id>=n
+        s_cbranch_execz end                     # no active threads, we jump to end
+        
+        s_movk_i32 s8, 0                        # memory buffer (base=0)
+        s_movk_i32 s9, 0
+        s_movk_i32 s10, 0xffff                  # infinite number of records
+        s_mov_b32 s11, 0x8027fac                # set dstsel, nfmt and dfmt
+        
+        v_lshlrev_b32 v0, 2, v0                 # v0 - global_id(0)*4
+        v_add_i32 v1, vcc, s0, v0               # aBuf+get_global_id(0)
+        v_add_i32 v2, vcc, s1, v0               # bBuf+get_global_id(0)
+        buffer_load_dword v1, v1, s[8:11], 0 offen # load value from aBuf
+        buffer_load_dword v2, v2, s[8:11], 0 offen # load value from bBuf
+        s_waitcnt vmcnt(0)                      # wait for data
+        v_add_f32 v1, v1, v2                    # add values
+        s_load_dword s0, s[6:7], 9              # get cBuf pointer
+        s_waitcnt lgkmcnt(0)                    # wait for data
+        v_add_i32 v2, vcc, s0, v0               # cBuf+get_global_id(0)
+        buffer_store_dword v1, v2, s[8:11], 0 offen # store value to cBuf
+        
+    .else # 64-bit
         s_load_dwordx4 s[0:3], s[6:7], 14       # get aBuf and bBuf pointers
         s_load_dword s4, s[4:5], 1              # get local info dword
         s_load_dword s9, s[6:7], 0              # get global offset (32-bit)
-        s_load_dword s5, s[6:7], 12            # get n - number of elems
+        s_load_dword s5, s[6:7], 12             # get n - number of elems
         s_waitcnt lgkmcnt(0)                    # wait for data
         s_and_b32 s4, s4, 0xffff            # only first localsize(0)
         s_mul_i32 s4, s8, s4                # localsize*groupId
@@ -146,6 +178,7 @@ end:
         v_mov_b32 v3, s1
         v_addc_u32 v1, vcc, 0, v3, vcc      # cBuf+get_global_id(0) - higher part
         flat_store_dword v[0:1], v2         # store value to cBuf
+    .endif
 end:
         s_endpgm
 .else   # GalliumCompute code

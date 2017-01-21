@@ -13,9 +13,10 @@ can be used as input to the CLRX assembler if option '--all' will be used.
 
 The `clrxdisasm` can be invoked in following way:
 
-clrxdisasm [-mdcCfhar?] [-g GPUDEVICE] [-a ARCH] [--metadata] [--data] [--calNotes]
-[--config] [--floats] [--hexcode] [--all] [--raw] [--gpuType=GPUDEVICE] [--arch=ARCH]
-[--buggyFPLit] [--help] [--usage] [--version] [file...]
+clrxdisasm [-mdcCfhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
+[--calNotes] [--config] [--floats] [--hexcode] [--all] [--raw] [--gpuType=GPUDEVICE]
+[--arch=ARCH] [--driverVersion=VERSION] [--buggyFPLit] [--help] [--usage] [--version]
+[file...]
 
 ### Program Options
 
@@ -73,6 +74,13 @@ Ellesmere, and Baffin.
     Choose device architecture. Architecture name is case-insensitive.
 List of supported architectures:
 GCN1.0, GCN1.1 and GCN1.2.
+
+* **-t VERSION**, **--driverVersion=VERSION**
+
+    Choose AMD Catalyst OpenCL driver version for which binaries are generated. 
+Version can retrieved from clinfo program that display field 'Driver version'
+where version is. Version is number in that form: MajorVersion*100 + MinorVersion.
+Used for AMD OpenCL 2.0 binaries.
 
 * **--buggyFPLit**
 

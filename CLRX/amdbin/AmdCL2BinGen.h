@@ -1,6 +1,6 @@
 /*
  *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
- *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *  Copyright (C) 2014-2017 Mateusz Szpakowski
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -111,6 +111,7 @@ struct AmdCL2KernelInput
 /// main Input for AmdCL2GPUBinGenerator
 struct AmdCL2Input
 {
+    bool is64Bit;           ///< if binary is 64-bit
     GPUDeviceType deviceType;   ///< GPU device type
     uint32_t archMinor;            /// arch minor
     uint32_t archStepping;         /// arch stepping
@@ -154,6 +155,7 @@ public:
     AmdCL2GPUBinGenerator(const AmdCL2Input* amdInput);
     /// constructor
     /**
+     * \param _64bitMode true if binary will be 64-bit
      * \param deviceType GPU device type
      * \param archMinor architecture minor
      * \param archStepping architecture minor
@@ -164,13 +166,13 @@ public:
      * \param rwData rw global data
      * \param kernelInputs array of kernel inputs
      */
-    AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
+    AmdCL2GPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
            uint32_t archMinor, uint32_t archStepping, uint32_t driverVersion,
            size_t globalDataSize, const cxbyte* globalData,
            size_t rwDataSize, const cxbyte* rwData,
            const std::vector<AmdCL2KernelInput>& kernelInputs);
     /// constructor
-    AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
+    AmdCL2GPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
            uint32_t archMinor, uint32_t archStepping, uint32_t driverVersion,
            size_t globalDataSize, const cxbyte* globalData,
            size_t rwDataSize, const cxbyte* rwData,

@@ -1,6 +1,6 @@
 /*
  *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
- *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *  Copyright (C) 2014-2017 Mateusz Szpakowski
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -47,6 +47,8 @@ static const CLIOption programOptions[] =
         "set GPU type for Gallium/raw binaries", "DEVICE" },
     { "arch", 'A', CLIArgType::TRIMMED_STRING, false, false,
         "set GPU architecture for Gallium/raw binaries", "ARCH" },
+    { "driverVersion", 't', CLIArgType::UINT, false, false,
+        "set driver version (for AmdCL2)", nullptr },
     { "buggyFPLit", 0, CLIArgType::NONE, false, false,
         "use old and buggy fplit rules", nullptr },
     CLRX_CLI_AUTOHELP
@@ -87,6 +89,10 @@ try
     else if (cli.hasShortOption('A'))
         gpuDeviceType = getLowestGPUDeviceTypeFromArchitecture(
                     getGPUArchitectureFromName(cli.getShortOptArg<const char*>('A')));
+    
+    cxuint driverVersion = 0;
+    if (cli.hasShortOption('t'))
+        driverVersion = cli.getShortOptArg<cxuint>('t');
     
     int ret = 0;
     for (const char* const* args = cli.getArgs();*args != nullptr; args++)
@@ -140,14 +146,16 @@ try
                     {
                         AmdCL2MainGPUBinary32* amdGpuBin =
                                 static_cast<AmdCL2MainGPUBinary32*>(base.get());
-                        Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
+                        Disassembler disasm(*amdGpuBin, std::cout, disasmFlags,
+                                            driverVersion);
                         disasm.disassemble();
                     }
                     else if (base->getType() == AmdMainType::GPU_CL2_64_BINARY)
                     {
                         AmdCL2MainGPUBinary64* amdGpuBin =
                                 static_cast<AmdCL2MainGPUBinary64*>(base.get());
-                        Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
+                        Disassembler disasm(*amdGpuBin, std::cout, disasmFlags,
+                                            driverVersion);
                         disasm.disassemble();
                     }
                     else

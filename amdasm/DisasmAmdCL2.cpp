@@ -1,6 +1,6 @@
 /*
  *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
- *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *  Copyright (C) 2014-2017 Mateusz Szpakowski
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -35,81 +35,6 @@
 
 using namespace CLRX;
 
-/* helpers for main Disassembler class */
-
-struct CLRX_INTERNAL CL2GPUDeviceCodeEntry
-{
-    uint32_t elfFlags;
-    GPUDeviceType deviceType;
-};
-
-/* 1912.05 driver device table list */
-static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[] =
-{
-    { 6, GPUDeviceType::BONAIRE },
-    { 1, GPUDeviceType::SPECTRE },
-    { 2, GPUDeviceType::SPOOKY },
-    { 3, GPUDeviceType::KALINDI },
-    { 7, GPUDeviceType::HAWAII },
-    { 8, GPUDeviceType::ICELAND },
-    { 9, GPUDeviceType::TONGA },
-    { 4, GPUDeviceType::MULLINS },
-    { 17, GPUDeviceType::FIJI },
-    { 16, GPUDeviceType::CARRIZO },
-    { 15, GPUDeviceType::DUMMY }
-};
-
-/* 2004.06 driver device table list */
-static const CL2GPUDeviceCodeEntry cl2_16_3GpuDeviceCodeTable[] =
-{
-    { 6, GPUDeviceType::BONAIRE },
-    { 1, GPUDeviceType::SPECTRE },
-    { 2, GPUDeviceType::SPOOKY },
-    { 3, GPUDeviceType::KALINDI },
-    { 7, GPUDeviceType::HAWAII },
-    { 8, GPUDeviceType::ICELAND },
-    { 9, GPUDeviceType::TONGA },
-    { 4, GPUDeviceType::MULLINS },
-    { 16, GPUDeviceType::FIJI },
-    { 15, GPUDeviceType::CARRIZO },
-    { 13, GPUDeviceType::GOOSE },
-    { 12, GPUDeviceType::HORSE },
-    { 17, GPUDeviceType::STONEY }
-};
-
-/* 1801.05 driver device table list */
-static const CL2GPUDeviceCodeEntry cl2_15_7GpuDeviceCodeTable[] =
-{
-    { 6, GPUDeviceType::BONAIRE },
-    { 1, GPUDeviceType::SPECTRE },
-    { 2, GPUDeviceType::SPOOKY },
-    { 3, GPUDeviceType::KALINDI },
-    { 7, GPUDeviceType::HAWAII },
-    { 8, GPUDeviceType::ICELAND },
-    { 9, GPUDeviceType::TONGA },
-    { 4, GPUDeviceType::MULLINS },
-    { 16, GPUDeviceType::FIJI },
-    { 15, GPUDeviceType::CARRIZO }
-};
-
-/* driver version: 2036.3 */
-static const CL2GPUDeviceCodeEntry cl2GPUPROGpuDeviceCodeTable[] =
-{
-    { 6, GPUDeviceType::BONAIRE },
-    { 1, GPUDeviceType::SPECTRE },
-    { 2, GPUDeviceType::SPOOKY },
-    { 3, GPUDeviceType::KALINDI },
-    { 7, GPUDeviceType::HAWAII },
-    { 8, GPUDeviceType::ICELAND },
-    { 9, GPUDeviceType::TONGA },
-    { 4, GPUDeviceType::MULLINS },
-    { 14, GPUDeviceType::FIJI },
-    { 13, GPUDeviceType::CARRIZO },
-    { 17, GPUDeviceType::ELLESMERE },
-    { 16, GPUDeviceType::BAFFIN },
-    { 15, GPUDeviceType::STONEY }
-};
-
 struct CLRX_INTERNAL AmdCL2Types32: Elf32Types
 {
     typedef AmdCL2MainGPUBinary32 AmdCL2MainBinary;
@@ -126,47 +51,18 @@ struct CLRX_INTERNAL AmdCL2Types64: Elf64Types
 
 template<typename AmdCL2Types>
 static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
-            const typename AmdCL2Types::AmdCL2MainBinary& binary)
+            const typename AmdCL2Types::AmdCL2MainBinary& binary, cxuint driverVersion)
 {
     std::unique_ptr<AmdCL2DisasmInput> input(new AmdCL2DisasmInput);
-    const uint32_t elfFlags = ULEV(binary.getHeader().e_flags);
     input->is64BitMode = (binary.getHeader().e_ident[EI_CLASS] == ELFCLASS64);
-    // detect GPU device from elfMachine field from ELF header
-    cxuint entriesNum = 0;
-    const CL2GPUDeviceCodeEntry* gpuCodeTable = nullptr;
-    input->driverVersion = binary.getDriverVersion();
-    if (input->driverVersion < 191205)
-    {
-        gpuCodeTable = cl2_15_7GpuDeviceCodeTable;
-        entriesNum = sizeof(cl2_15_7GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
-    }
-    else if (input->driverVersion < 200406)
-    {
-        gpuCodeTable = cl2GpuDeviceCodeTable;
-        entriesNum = sizeof(cl2GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
-    }
-    else if (input->driverVersion < 203603)
-    {
-        gpuCodeTable = cl2_16_3GpuDeviceCodeTable;
-        entriesNum = sizeof(cl2_16_3GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
-    }
-    else
-    {
-        gpuCodeTable = cl2GPUPROGpuDeviceCodeTable;
-        entriesNum = sizeof(cl2GPUPROGpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
-    }
-    //const cxuint entriesNum = sizeof(cl2GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
-    cxuint index;
-    for (index = 0; index < entriesNum; index++)
-        if (gpuCodeTable[index].elfFlags == elfFlags)
-            break;
-    if (entriesNum == index)
-        throw Exception("Can't determine GPU device type");
     
-    input->deviceType = gpuCodeTable[index].deviceType;
-    GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
-    input->archMinor = 0;
-    input->archStepping = 0;
+    input->deviceType = binary.determineGPUDeviceType(input->archMinor,
+                  input->archStepping, driverVersion);
+    if (driverVersion == 0)
+        input->driverVersion = binary.getDriverVersion();
+    else
+        input->driverVersion = driverVersion;
+    
     input->compileOptions = binary.getCompileOptions();
     input->aclVersionString = binary.getAclVersionString();
     bool isInnerNewBinary = binary.hasInnerBinary() &&
@@ -198,38 +94,6 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         input->samplerInit = innerBin.getSamplerInit();
         input->bssAlignment = innerBin.getBssAlignment();
         input->bssSize = innerBin.getBssSize();
-        
-        {
-            const cxbyte* noteContent = (const cxbyte*)innerBin.getNotes();
-            if (noteContent==nullptr)
-                throw Exception("Missing notes in inner binary!");
-            size_t notesSize = innerBin.getNotesSize();
-            // find note about AMDGPU
-            for (size_t offset = 0; offset < notesSize; )
-            {
-                const typename AmdCL2Types::Nhdr* nhdr =
-                            (const typename AmdCL2Types::Nhdr*)(noteContent + offset);
-                size_t namesz = ULEV(nhdr->n_namesz);
-                size_t descsz = ULEV(nhdr->n_descsz);
-                if (usumGt(offset, namesz+descsz, notesSize))
-                    throw Exception("Note offset+size out of range");
-                if (ULEV(nhdr->n_type) == 0x3 && namesz==4 && descsz>=0x1a &&
-                    ::strcmp((const char*)noteContent+offset+
-                                sizeof(typename AmdCL2Types::Nhdr), "AMD")==0)
-                {    // AMDGPU type
-                    const uint32_t* content = (const uint32_t*)
-                            (noteContent+offset+sizeof(typename AmdCL2Types::Nhdr) + 4);
-                    uint32_t major = ULEV(content[1]);
-                    if ((arch==GPUArchitecture::GCN1_2 && major!=8) ||
-                        (arch==GPUArchitecture::GCN1_1 && major!=7))
-                        throw Exception("Wrong arch major for GPU architecture");
-                    input->archMinor = ULEV(content[2]);
-                    input->archStepping = ULEV(content[3]);
-                }
-                size_t align = (((namesz+descsz)&3)!=0) ? 4-((namesz+descsz)&3) : 0;
-                offset += sizeof(typename AmdCL2Types::Nhdr) + namesz + descsz + align;
-            }
-        }
         
         // if no kernels and data
         if (kernelInfosNum==0)
@@ -407,15 +271,15 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
 }
 
 AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary32(
-                const AmdCL2MainGPUBinary32& binary)
+                const AmdCL2MainGPUBinary32& binary, cxuint driverVersion)
 {
-    return getAmdCL2DisasmInputFromBinary<AmdCL2Types32>(binary);
+    return getAmdCL2DisasmInputFromBinary<AmdCL2Types32>(binary, driverVersion);
 }
 
 AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary64(
-                const AmdCL2MainGPUBinary64& binary)
+                const AmdCL2MainGPUBinary64& binary, cxuint driverVersion)
 {
-    return getAmdCL2DisasmInputFromBinary<AmdCL2Types64>(binary);
+    return getAmdCL2DisasmInputFromBinary<AmdCL2Types64>(binary, driverVersion);
 }
 
 struct CLRX_INTERNAL IntAmdCL2SetupData

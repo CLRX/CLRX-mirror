@@ -1,6 +1,6 @@
 ####
 #  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
-#  Copyright (C) 2014-2016 Mateusz Szpakowski
+#  Copyright (C) 2014-2017 Mateusz Szpakowski
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -166,6 +166,7 @@ INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}")
 INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
 
 OPTION(NO_OPENCL "Do not use OpenCL" OFF)
+OPTION(NO_CLWRAPPER "Do not enable CLRXWrapper" OFF)
 
 ####
 # OpenCL find
@@ -287,9 +288,9 @@ LINK_DIRECTORIES("${OPENCL_LIBRARY_DIRS}")
 
 ADD_SUBDIRECTORY(CLRX)
 ADD_SUBDIRECTORY(utils)
-IF(HAVE_OPENCL)
+IF(HAVE_OPENCL AND NOT NO_CLWRAPPER)
     ADD_SUBDIRECTORY(clwrapper)
-ENDIF(HAVE_OPENCL)
+ENDIF(HAVE_OPENCL AND NOT NO_CLWRAPPER)
 ADD_SUBDIRECTORY(amdbin)
 ADD_SUBDIRECTORY(amdasm)
 IF (BUILD_TESTS)
@@ -297,9 +298,9 @@ IF (BUILD_TESTS)
 ENDIF(BUILD_TESTS)
 
 ADD_SUBDIRECTORY(programs)
-IF (BUILD_SAMPLES)
+IF (BUILD_SAMPLES AND HAVE_OPENCL)
     ADD_SUBDIRECTORY(samples)
-ENDIF(BUILD_SAMPLES)
+ENDIF(BUILD_SAMPLES AND HAVE_OPENCL)
 
 ADD_SUBDIRECTORY(doc)
 

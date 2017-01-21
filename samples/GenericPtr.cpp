@@ -1,6 +1,6 @@
 /*
  *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
- *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *  Copyright (C) 2014-2017 Mateusz Szpakowski
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,6 +26,9 @@
 using namespace CLRX;
 
 static const char* genericPtrSource = R"ffDXD(
+.ifarch gcn1.0
+    .error "Unsupported GCN1.0 architecture"
+.endif
 .ifarch gcn1.2
     .error "Unsupported GCN1.2 architecture"
 .endif
@@ -42,6 +45,9 @@ static const char* genericPtrSource = R"ffDXD(
         .localsize 400      # local size
         .scratchbuffer 180   # define scratch buffer
     .text
+    .if32
+        .error "this example doesn't work in 32-bit OpenCL 2.0!"
+    .endif
         # initialize flat_scratch
         s_add_u32 s5, s10, s13      # flat scratch offset
         s_lshr_b32 s5, s5, 8        # for bitfield
@@ -50,7 +56,11 @@ static const char* genericPtrSource = R"ffDXD(
         s_mov_b64 flat_scratch, s[10:11]    # store to flat_scratch
         
         s_load_dwordx2 s[10:11], s[6:7], 16     # load localptr base and scratchptr base
+    .if32
+        s_load_dword s8, s[8:9], 6   # load output buffer pointer
+    .else
         s_load_dwordx2 s[8:9], s[8:9], 12   # load output buffer pointer
+    .endif
         s_waitcnt lgkmcnt(0)        # wait for data
         # write to LDS
         s_mov_b32 m0, 0x8000            # needed by local access
@@ -62,6 +72,12 @@ static const char* genericPtrSource = R"ffDXD(
         v_mov_b32 v3, 15321         # value to write
         buffer_store_dword v3, v0, s[0:3], s13 offset:76    # store to scratch buffer
         s_waitcnt vmcnt(0)
+    .if32
+        s_movk_i32 s12, 0                        # memory buffer (base=0)
+        s_movk_i32 s13, 0
+        s_movk_i32 s14, 0xffff                  # infinite number of records
+        s_mov_b32 s15, 0x8027fac                # set dstsel, nfmt and dfmt
+    .endif
         
         # load valuefrom LDS via flat
         v_mov_b32 v1, s10       # local ptr base
@@ -69,9 +85,13 @@ static const char* genericPtrSource = R"ffDXD(
         flat_load_dword v2, v[0:1]
         s_waitcnt lgkmcnt(0) & vmcnt(0)     # wait
         # store to entry in output buffer
+    .if32
+        buffer_store_dword v2, v0, s[12:15], s8         # store value
+    .else
         v_mov_b32 v3, s8    # output buffer pointer
         v_mov_b32 v4, s9
         flat_store_dword v[3:4], v2     # store value
+    .endif
         
         # load value from scratch via flat
         v_mov_b32 v1, s11       # scratch ptr base
@@ -79,9 +99,13 @@ static const char* genericPtrSource = R"ffDXD(
         flat_load_dword v2, v[0:1]      # load
         s_waitcnt lgkmcnt(0) & vmcnt(0) #wait
         # store to next entry in output buffer
+    .if32
+        buffer_store_dword v2, v0, s[12:15], s8 offset:4 # store value
+    .else
         v_add_i32 v3, vcc, 4, v3        # next entry in output buffer
         v_addc_u32 v4, vcc, 0, v4, vcc
         flat_store_dword v[3:4], v2     # store value
+    .endif
         s_endpgm
 )ffDXD";
 

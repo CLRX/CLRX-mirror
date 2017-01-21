@@ -1,6 +1,6 @@
 /*
  *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
- *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *  Copyright (C) 2014-2017 Mateusz Szpakowski
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,7 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/amdbin/AmdBinaries.h>
+#include <CLRX/utils/GPUId.h>
 
 /* INFO: in this file is used ULEV function for conversion
  * from LittleEndian and unaligned access to other memory access policy and endianness
@@ -251,6 +252,59 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const CString& _kernelName,
             }
         }
     }
+}
+
+struct CLRX_INTERNAL GPUDeviceInnerCodeEntry
+{
+    uint32_t dMachine;
+    GPUDeviceType deviceType;
+};
+
+static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[18] =
+{
+    { 0x1a, GPUDeviceType::TAHITI },
+    { 0x1b, GPUDeviceType::PITCAIRN },
+    { 0x1c, GPUDeviceType::CAPE_VERDE },
+    { 0x20, GPUDeviceType::OLAND },
+    { 0x21, GPUDeviceType::BONAIRE },
+    { 0x22, GPUDeviceType::SPECTRE },
+    { 0x23, GPUDeviceType::SPOOKY },
+    { 0x24, GPUDeviceType::KALINDI },
+    { 0x25, GPUDeviceType::HAINAN },
+    { 0x27, GPUDeviceType::HAWAII },
+    { 0x29, GPUDeviceType::ICELAND },
+    { 0x2a, GPUDeviceType::TONGA },
+    { 0x2b, GPUDeviceType::MULLINS },
+    { 0x2c, GPUDeviceType::BAFFIN },
+    { 0x2d, GPUDeviceType::FIJI },
+    { 0x2e, GPUDeviceType::CARRIZO },
+    { 0x2f, GPUDeviceType::ELLESMERE },
+    { 0x31, GPUDeviceType::DUMMY }
+};
+
+static const cxuint gpuDeviceInnerCodeTableSize = sizeof(gpuDeviceInnerCodeTable)/
+            sizeof(GPUDeviceInnerCodeEntry);
+
+cxuint AmdInnerGPUBinary32::findCALEncodingEntryIndex(GPUDeviceType deviceType) const
+{
+    cxuint encEntryIndex = 0;
+    for (encEntryIndex = 0; encEntryIndex < encodingEntriesNum; encEntryIndex++)
+    {
+        const CALEncodingEntry& encEntry = encodingEntries[encEntryIndex];
+        /* check gpuDeviceType */
+        const uint32_t dMachine = ULEV(encEntry.machine);
+        // detect GPU device from machine field from CAL encoding entry
+        cxuint index = binaryFind(gpuDeviceInnerCodeTable,
+                  gpuDeviceInnerCodeTable + gpuDeviceInnerCodeTableSize, { dMachine }, 
+                  [] (const GPUDeviceInnerCodeEntry& l, const GPUDeviceInnerCodeEntry& r)
+                  { return l.dMachine < r.dMachine; }) - gpuDeviceInnerCodeTable;
+        if (gpuDeviceInnerCodeTableSize != index &&
+            gpuDeviceInnerCodeTable[index].deviceType == deviceType)
+            break; // if found
+    }
+    if (encEntryIndex == encodingEntriesNum)
+        throw Exception("Can't find suitable CALEncodingEntry!");
+    return encEntryIndex;
 }
 
 template<typename ArgSym>
@@ -1257,6 +1311,53 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
     initMainGPUBinary<AmdGPU32Types>(*this);
 }
 
+struct CLRX_INTERNAL GPUDeviceCodeEntry
+{
+    uint16_t elfMachine;
+    GPUDeviceType deviceType;
+};
+
+static const GPUDeviceCodeEntry gpuDeviceCodeTable[18] =
+{
+    { 0x3fd, GPUDeviceType::TAHITI },
+    { 0x3fe, GPUDeviceType::PITCAIRN },
+    { 0x3ff, GPUDeviceType::CAPE_VERDE },
+    { 0x402, GPUDeviceType::OLAND },
+    { 0x403, GPUDeviceType::BONAIRE },
+    { 0x404, GPUDeviceType::SPECTRE },
+    { 0x405, GPUDeviceType::SPOOKY },
+    { 0x406, GPUDeviceType::KALINDI },
+    { 0x407, GPUDeviceType::HAINAN },
+    { 0x408, GPUDeviceType::HAWAII },
+    { 0x409, GPUDeviceType::ICELAND },
+    { 0x40a, GPUDeviceType::TONGA },
+    { 0x40b, GPUDeviceType::MULLINS },
+    { 0x40c, GPUDeviceType::FIJI },
+    { 0x40d, GPUDeviceType::CARRIZO },
+    { 0x40e, GPUDeviceType::ELLESMERE },
+    { 0x40f, GPUDeviceType::BAFFIN },
+    { 0x411, GPUDeviceType::DUMMY }
+};
+
+static const cxuint gpuDeviceCodeTableSize =
+            sizeof(gpuDeviceCodeTable)/sizeof(GPUDeviceCodeEntry);
+
+static GPUDeviceType findGPUDeviceType(uint16_t elfMachine)
+{
+    cxuint index = binaryFind(gpuDeviceCodeTable,
+        gpuDeviceCodeTable+gpuDeviceCodeTableSize, { elfMachine },
+        [] (const GPUDeviceCodeEntry& l, const GPUDeviceCodeEntry& r) -> bool
+        { return l.elfMachine < r.elfMachine;}) - gpuDeviceCodeTable;
+    if (gpuDeviceCodeTableSize == index)
+        throw Exception("Can't determine GPU device type");
+    return gpuDeviceCodeTable[index].deviceType;
+}
+
+GPUDeviceType AmdMainGPUBinary32::determineGPUDeviceType() const
+{
+    return findGPUDeviceType(ULEV(getHeader().e_machine));
+}
+
 /* AmdMainGPUBinary64 */
 
 AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
@@ -1264,6 +1365,11 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
           ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
     initMainGPUBinary<AmdGPU64Types>(*this);
+}
+
+GPUDeviceType AmdMainGPUBinary64::determineGPUDeviceType() const
+{
+    return findGPUDeviceType(ULEV(getHeader().e_machine));
 }
 
 /* AmdMainX86Binary32 */
