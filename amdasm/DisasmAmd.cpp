@@ -45,7 +45,7 @@ struct CLRX_INTERNAL GPUDeviceCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceCodeEntry gpuDeviceCodeTable[20] =
+static const GPUDeviceCodeEntry gpuDeviceCodeTable[16] =
 {
     { 0x3fd, GPUDeviceType::TAHITI },
     { 0x3fe, GPUDeviceType::PITCAIRN },
@@ -61,12 +61,8 @@ static const GPUDeviceCodeEntry gpuDeviceCodeTable[20] =
     { 0x40a, GPUDeviceType::TONGA },
     { 0x40b, GPUDeviceType::MULLINS },
     { 0x40c, GPUDeviceType::FIJI },
-	{ 0x40d, GPUDeviceType::CARRIZO },
-	{ 0x411, GPUDeviceType::DUMMY },
-	{ 0x411, GPUDeviceType::DUMMY },
-	{ 0x411, GPUDeviceType::DUMMY },
-	{ 0x411, GPUDeviceType::DUMMY },
-	{ 0x40e, GPUDeviceType::ELLESMERE },
+    { 0x40d, GPUDeviceType::CARRIZO },
+    { 0x411, GPUDeviceType::DUMMY }
 };
 
 struct CLRX_INTERNAL GPUDeviceInnerCodeEntry
@@ -75,7 +71,7 @@ struct CLRX_INTERNAL GPUDeviceInnerCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[20] =
+static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[16] =
 {
     { 0x1a, GPUDeviceType::TAHITI },
     { 0x1b, GPUDeviceType::PITCAIRN },
@@ -91,12 +87,8 @@ static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[20] =
     { 0x2a, GPUDeviceType::TONGA },
     { 0x2b, GPUDeviceType::MULLINS },
     { 0x2d, GPUDeviceType::FIJI },
-	{ 0x2e, GPUDeviceType::CARRIZO },
-    { 0x31, GPUDeviceType::DUMMY },
-	{ 0x31, GPUDeviceType::DUMMY },
-	{ 0x31, GPUDeviceType::DUMMY },
-	{ 0x31, GPUDeviceType::DUMMY },
-	{ 0x2f, GPUDeviceType::ELLESMERE },
+    { 0x2e, GPUDeviceType::CARRIZO },
+    { 0x31, GPUDeviceType::DUMMY }
 };
 
 static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
@@ -111,14 +103,13 @@ static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBi
         bool codeFound = false;
         bool dataFound = false;
         cxuint encEntryIndex = 0;
-		uint32_t dMachine;
-		for (encEntryIndex = 0; encEntryIndex < innerBin->getCALEncodingEntriesNum();
+        for (encEntryIndex = 0; encEntryIndex < innerBin->getCALEncodingEntriesNum();
              encEntryIndex++)
         {
             const CALEncodingEntry& encEntry =
                     innerBin->getCALEncodingEntry(encEntryIndex);
             /* check gpuDeviceType */
-            uint32_t dMachine = ULEV(encEntry.machine);
+            const uint32_t dMachine = ULEV(encEntry.machine);
             cxuint index;
             // detect GPU device from machine field from CAL encoding entry
             for (index = 0; index < entriesNum; index++)
@@ -128,11 +119,8 @@ static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBi
                 gpuDeviceInnerCodeTable[index].deviceType == inputDeviceType)
                 break; // if found
         }
-		if (encEntryIndex == innerBin->getCALEncodingEntriesNum()) {
-			fprintf(stderr, "dMachine:        0x%08x\n", dMachine);
-			fprintf(stderr, "inputDeviceType: 0x%08x\n", inputDeviceType);
-			throw Exception("Can't find suitable CALEncodingEntry!");
-		}
+        if (encEntryIndex == innerBin->getCALEncodingEntriesNum())
+            throw Exception("Can't find suitable CALEncodingEntry!");
         const CALEncodingEntry& encEntry =
                     innerBin->getCALEncodingEntry(encEntryIndex);
         const size_t encEntryOffset = ULEV(encEntry.offset);
@@ -196,10 +184,8 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
     for (index = 0; index < entriesNum; index++)
         if (gpuDeviceCodeTable[index].elfMachine == elfMachine)
             break;
-	if (entriesNum == index) {
-		fprintf(stderr, "elfMachine: 0x%08x\n", elfMachine);
-		throw Exception("Can't determine GPU device type");
-	}
+    if (entriesNum == index)
+        throw Exception("Can't determine GPU device type");
     
     input->deviceType = gpuDeviceCodeTable[index].deviceType;
     input->compileOptions = binary.getCompileOptions();
