@@ -67,6 +67,7 @@ struct AmdCL2KernelConfig
     uint32_t floatMode; ///< float mode
     uint32_t priority;  ///< priority
     size_t localSize; ///< used local size (not local defined in kernel arguments)
+    uint32_t gdsSize;
     uint32_t scratchBufferSize; ///< size of scratch buffer
     bool ieeeMode;  ///< IEEE mode
     cxbyte exceptions;  ///< enabled exception handling
