@@ -1021,7 +1021,7 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
     uint16_t archInd;
     uint32_t scratchBufferSize;
     uint32_t localSize; // in bytes
-    uint32_t zero1;
+    uint32_t gdsSize;
     uint32_t kernelArgsSize;
     uint32_t zeroes[2];
     uint16_t sgprsNumAll;
@@ -1101,7 +1101,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
                     0x40 : archInd);
     SLEV(setupData.scratchBufferSize, config.scratchBufferSize);
     SLEV(setupData.localSize, config.localSize);
-    setupData.zero1 = 0;
+    SLEV(setupData.gdsSize, config.gdsSize);
     setupData.zeroes[0] = setupData.zeroes[1] = 0;
     setupData.zero3 = 0;
     

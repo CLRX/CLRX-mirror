@@ -37,7 +37,8 @@ static const char* amdCL2PseudoOpNamesTbl[] =
     "acl_version", "arch_minor", "arch_stepping",
     "arg", "bssdata", "compile_options", "config",
     "cws", "debugmode", "dims", "driver_version", "dx10clamp", "exceptions",
-    "floatmode", "get_driver_version", "globaldata", "ieeemode", "inner",
+    "floatmode", "gdssize", "get_driver_version",
+    "globaldata", "ieeemode", "inner",
     "isametadata", "localsize", "metadata", "pgmrsrc1", "pgmrsrc2",
     "priority", "privmode", "rwdata", "sampler",
     "samplerinit", "samplerreloc", "scratchbuffer", "setup",
@@ -51,7 +52,7 @@ enum
     AMDCL2OP_ARG, AMDCL2OP_BSSDATA, AMDCL2OP_COMPILE_OPTIONS,
     AMDCL2OP_CONFIG, AMDCL2OP_CWS, AMDCL2OP_DEBUGMODE, AMDCL2OP_DIMS,
     AMDCL2OP_DRIVER_VERSION, AMDCL2OP_DX10CLAMP, AMDCL2OP_EXCEPTIONS,
-    AMDCL2OP_FLOATMODE, AMDCL2OP_GET_DRIVER_VERSION, AMDCL2OP_GLOBALDATA,
+    AMDCL2OP_FLOATMODE, AMDCL2OP_GDSSIZE, AMDCL2OP_GET_DRIVER_VERSION, AMDCL2OP_GLOBALDATA,
     AMDCL2OP_IEEEMODE, AMDCL2OP_INNER, AMDCL2OP_ISAMETADATA, AMDCL2OP_LOCALSIZE,
     AMDCL2OP_METADATA, AMDCL2OP_PGMRSRC1, AMDCL2OP_PGMRSRC2, AMDCL2OP_PRIORITY,
     AMDCL2OP_PRIVMODE, AMDCL2OP_RWDATA, AMDCL2OP_SAMPLER, AMDCL2OP_SAMPLERINIT,
@@ -778,6 +779,17 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                 }
                 break;
             }
+            case AMDCL2CVAL_GDSSIZE:
+            {
+                if (value > 32768)
+                {
+                    char buf[64];
+                    snprintf(buf, 64, "GDSSize out of range (0-%u)", 32768);
+                    asmr.printError(valuePlace, buf);
+                    good = false;
+                }
+                break;
+            }
             case AMDCL2CVAL_PGMRSRC1:
             case AMDCL2CVAL_PGMRSRC2:
                 asmr.printWarningForRange(32, value,
@@ -812,6 +824,9 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
             break;
         case AMDCL2CVAL_LOCALSIZE:
             config.localSize = value;
+            break;
+        case AMDCL2CVAL_GDSSIZE:
+            config.gdsSize = value;
             break;
         case AMDCL2CVAL_SCRATCHBUFFER:
             config.scratchBufferSize = value;
@@ -1246,6 +1261,10 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
         case AMDCL2OP_FLOATMODE:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_FLOATMODE);
+            break;
+        case AMDCL2OP_GDSSIZE:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_GDSSIZE);
             break;
         case AMDCL2OP_GET_DRIVER_VERSION:
             AsmAmdCL2PseudoOps::getDriverVersion(*this, linePtr);

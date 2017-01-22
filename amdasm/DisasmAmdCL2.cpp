@@ -290,7 +290,7 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
     uint16_t archInd;
     uint32_t scratchBufferSize;
     uint32_t localSize; // in bytes
-    uint32_t zero1;
+    uint32_t gdsSize;   // in bytes
     uint32_t kernelArgsSize;
     uint32_t zeroes[2];
     uint16_t sgprsNumAll;
@@ -385,6 +385,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     config.usedSGPRsNum = ULEV(setupData->sgprsNum);
     config.scratchBufferSize = ULEV(setupData->scratchBufferSize);
     config.localSize = ULEV(setupData->localSize);
+    config.gdsSize = ULEV(setupData->gdsSize);
     uint16_t ksetup1 = ULEV(setupData->setup1);
     config.useSetup = (ksetup1&2)!=0;
     config.useArgs = (ksetup1&8)!=0;
@@ -649,6 +650,12 @@ static void dumpAmdCL2KernelConfig(std::ostream& output, const AmdCL2KernelConfi
     {
         bufSize = snprintf(buf, 100, "        .localsize %llu\n",
                        cxullong(config.localSize));
+        output.write(buf, bufSize);
+    }
+    if (config.gdsSize!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .gdssize %llu\n",
+                       cxullong(config.gdsSize));
         output.write(buf, bufSize);
     }
     bufSize = snprintf(buf, 100, "        .floatmode 0x%02x\n", config.floatMode);
