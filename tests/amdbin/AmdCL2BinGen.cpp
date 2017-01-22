@@ -74,7 +74,7 @@ struct IntAmdCL2SetupData
     uint16_t archInd;
     uint32_t scratchBufferSize;
     uint32_t localSize; // in bytes
-    uint32_t zero1;
+    uint32_t gdsSize;
     uint32_t kernelArgsSize;
     uint32_t zeroes[2];
     uint16_t sgprsNumAll;
@@ -262,6 +262,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     config.usedSGPRsNum = ULEV(setupData->sgprsNum);
     config.scratchBufferSize = ULEV(setupData->scratchBufferSize);
     config.localSize = ULEV(setupData->localSize);
+    config.gdsSize = ULEV(setupData->gdsSize);
     uint16_t ksetup1 = ULEV(setupData->setup1);
     config.useSetup = (ksetup1&2)!=0;
     config.useArgs = (ksetup1&8)!=0;
