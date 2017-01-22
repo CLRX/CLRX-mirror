@@ -204,6 +204,13 @@ Syntax: .exceptions EXCPMASK
 This pseudo-operation must be inside kernel configuration.
 Set exception mask in PGMRSRC2 register value. Value should be 7-bit.
 
+### .gdssize
+
+Syntax: .gdssize SIZE
+
+This pseudo-operation must be inside kernel configuration. Set the GDS
+(global data share) size.
+
 ### .get_driver_version
 
 Syntax: .get_driver_version SYMBOL
