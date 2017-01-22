@@ -781,10 +781,13 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
             }
             case AMDCL2CVAL_GDSSIZE:
             {
-                if (value > 32768)
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                const cxuint maxGDSSize = getGPUMaxGDSSize(arch);
+                if (value > maxGDSSize)
                 {
                     char buf[64];
-                    snprintf(buf, 64, "GDSSize out of range (0-%u)", 32768);
+                    snprintf(buf, 64, "GDSSize out of range (0-%u)", maxGDSSize);
                     asmr.printError(valuePlace, buf);
                     good = false;
                 }

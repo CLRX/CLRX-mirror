@@ -133,6 +133,9 @@ extern void getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimM
 /// get maximum local size for GPU architecture
 extern size_t getGPUMaxLocalSize(GPUArchitecture architecture);
 
+/// get maximum GDS size for GPU architecture
+extern size_t getGPUMaxGDSSize(GPUArchitecture architecture);
+
 /// get extra registers (like VCC,FLAT_SCRATCH)
 extern cxuint getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType,
               Flags flags);

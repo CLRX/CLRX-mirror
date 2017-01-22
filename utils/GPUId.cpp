@@ -209,6 +209,11 @@ size_t CLRX::getGPUMaxLocalSize(GPUArchitecture architecture)
     return 32768;
 }
 
+size_t CLRX::getGPUMaxGDSSize(GPUArchitecture architecture)
+{
+    return 65536;
+}
+
 cxuint CLRX::getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType, Flags flags)
 {
     if (regType == 1)
