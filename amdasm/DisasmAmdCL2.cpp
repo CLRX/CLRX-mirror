@@ -654,8 +654,7 @@ static void dumpAmdCL2KernelConfig(std::ostream& output, const AmdCL2KernelConfi
     }
     if (config.gdsSize!=0)
     {
-        bufSize = snprintf(buf, 100, "        .gdssize %llu\n",
-                       cxullong(config.gdsSize));
+        bufSize = snprintf(buf, 100, "        .gdssize %u\n", config.gdsSize);
         output.write(buf, bufSize);
     }
     bufSize = snprintf(buf, 100, "        .floatmode 0x%02x\n", config.floatMode);
