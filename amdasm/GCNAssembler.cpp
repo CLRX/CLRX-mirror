@@ -168,14 +168,15 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
     GCNOperand src0Op{};
     good &= parseOperand(asmr, linePtr, src0Op, &src0Expr, arch,
-             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS,
-                         GCNFIELD_SSRC0);
+             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
+                         INSTROP_READ, GCNFIELD_SSRC0);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     GCNOperand src1Op{};
     good &= parseOperand(asmr, linePtr, src1Op, &src1Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
-             (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0), GCNFIELD_SSRC1);
+             (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0)|INSTROP_READ,
+             GCNFIELD_SSRC1);
     
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -462,15 +463,15 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
     GCNOperand src0Op{};
     good &= parseOperand(asmr, linePtr, src0Op, &src0Expr, arch,
-             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS,
-                     GCNFIELD_SSRC0);
+             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
+                     INSTROP_READ, GCNFIELD_SSRC0);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     GCNOperand src1Op{};
     if ((gcnInsn.mode & GCN_SRC1_IMM) == 0)
         good &= parseOperand(asmr, linePtr, src1Op, &src1Expr, arch,
                  (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
-                 (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0),
+                 (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0)|INSTROP_READ,
                          GCNFIELD_SSRC1);
     else // immediate
         good &= parseImm(asmr, linePtr, src1Op.range.start, &src1Expr, 8);

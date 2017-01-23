@@ -48,7 +48,7 @@ struct GCNRegVarUsageCase
 
 static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
 {
-    {
+    {   /* SOP1 encoding */
         ".regvar rax:s, rbx:s\n"
         ".regvar rax4:s:4, rbx5:s:4\n"
         "s_mov_b32 rax,rbx\n"
@@ -86,8 +86,51 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 32, "rax", 0, 1, GCNFIELD_SDST, ASMVARUS_WRITE, 1 },
             { 32, "rbx", 0, 1, GCNFIELD_SSRC0, ASMVARUS_READ, 1 }
         },
-        true,
-        ""
+        true, ""
+    },
+    {   /* SOP2 encoding */
+        ".regvar rax:s, rbx:s, rdx:s\n"
+        ".regvar rax4:s:4, rbx5:s:4, rcx3:s:6\n"
+        "s_and_b32 rdx, rax, rbx\n"
+        "s_or_b32 rdx, s11, rbx\n"
+        "s_xor_b64 rcx3[4:5], rax4[0:1], rbx5[2:3]\n"
+        "s_cbranch_g_fork  rcx3[0:1], rax4[1:2]\n",
+        {
+            // s_and_b32 rdx, rax, rbx
+            { 0, "rdx", 0, 1, GCNFIELD_SDST, ASMVARUS_WRITE, 1 },
+            { 0, "rax", 0, 1, GCNFIELD_SSRC0, ASMVARUS_READ, 1 },
+            { 0, "rbx", 0, 1, GCNFIELD_SSRC1, ASMVARUS_READ, 1 },
+            // s_or_b32 rdx, s11, rbx
+            { 4, "rdx", 0, 1, GCNFIELD_SDST, ASMVARUS_WRITE, 1 },
+            { 4, "rbx", 0, 1, GCNFIELD_SSRC1, ASMVARUS_READ, 1 },
+            // s_xor_b64 rcx3[4:5], rax4[0:1], rbx5[2:3]
+            { 8, "rcx3", 4, 6, GCNFIELD_SDST, ASMVARUS_WRITE, 2 },
+            { 8, "rax4", 0, 2, GCNFIELD_SSRC0, ASMVARUS_READ, 2 },
+            { 8, "rbx5", 2, 4, GCNFIELD_SSRC1, ASMVARUS_READ, 2 },
+            // s_cbranch_g_fork  rcx3[0:1], rax4[1:2]
+            { 12, "rcx3", 0, 2, GCNFIELD_SSRC0, ASMVARUS_READ, 2 },
+            { 12, "rax4", 1, 3, GCNFIELD_SSRC1, ASMVARUS_READ, 2 }
+        },
+        true, ""
+    },
+    {   /* SOPC encoding */
+        ".regvar rax:s, rbx:s\n"
+        ".regvar rax4:s:4, rbx5:s:4\n"
+        "s_cmp_ge_i32  rax, rbx\n"
+        "s_bitcmp0_b64  rbx5[2:3], rax4[3]\n"
+        "s_setvskip  rax, rbx5[2]\n",
+        {
+            // s_cmp_ge_i32  rax, rbx
+            { 0, "rax", 0, 1, GCNFIELD_SSRC0, ASMVARUS_READ, 1 },
+            { 0, "rbx", 0, 1, GCNFIELD_SSRC1, ASMVARUS_READ, 1 },
+            // s_bitcmp0_b64  rbx5[2:3], rax[3]
+            { 4, "rbx5", 2, 4, GCNFIELD_SSRC0, ASMVARUS_READ, 2 },
+            { 4, "rax4", 3, 4, GCNFIELD_SSRC1, ASMVARUS_READ, 1 },
+            // s_set_vskip  rax, rbx5[2]
+            { 8, "rax", 0, 1, GCNFIELD_SSRC0, ASMVARUS_READ, 1 },
+            { 8, "rbx5", 2, 3, GCNFIELD_SSRC1, ASMVARUS_READ, 1 }
+        },
+        true, ""
     }
 };
 
