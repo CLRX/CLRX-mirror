@@ -146,7 +146,7 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
             {
                 cxbyte align = 1;
                 if ((flags & INSTROP_UNALIGNED) == 0 && regVar->type==GCNREGTYPE_SGPR)
-                    align = regVar->size==2 ? 2 : (regVar->size>=3) ? 4 : 0;
+                    align = regVar->size==2 ? 2 : (regVar->size>=3) ? 4 : 1;
                 section.addVarUsage({ size_t(asmr.currentOutPos), regVarEntry,
                     uint16_t(rstart), uint16_t(rend), regField,
                     cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
@@ -303,7 +303,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
     {
         linePtr = oldLinePtr;
         if (!parseRegVarRange(asmr, linePtr, regPair, 0, regsNum, regField,
-                    INSTROP_VREGS, false))
+                    INSTROP_VREGS | (flags&INSTROP_ACCESS_MASK), false))
             return false;
         if (!regPair && (flags&INSTROP_SYMREGRANGE) != 0)
         {
@@ -568,7 +568,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         {   // otherwise
             linePtr = oldLinePtr;
             if (!parseRegVarRange(asmr, linePtr, regPair, 0, regsNum, regField,
-                    INSTROP_SREGS, false))
+                    INSTROP_SREGS | (flags&INSTROP_ACCESS_MASK), false))
                 return false;
             if (!regPair && (flags&INSTROP_SYMREGRANGE) != 0)
             {
@@ -895,13 +895,13 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         // buggy fplit does not accept 64-bit values (high 32-bits)
         instrOpMask = (instrOpMask&~INSTROP_TYPE_MASK) | INSTROP_INT;
     
-    const cxuint alignFlags = (instrOpMask&INSTROP_UNALIGNED);
+    const cxuint optionFlags = (instrOpMask & (INSTROP_UNALIGNED|INSTROP_ACCESS_MASK));
     if ((instrOpMask&~INSTROP_UNALIGNED) == INSTROP_SREGS)
         return parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, regField, true,
-                              INSTROP_SYMREGRANGE | alignFlags);
+                              INSTROP_SYMREGRANGE | optionFlags);
     else if ((instrOpMask&~INSTROP_UNALIGNED) == INSTROP_VREGS)
         return parseVRegRange(asmr, linePtr, operand.range, regsNum, regField, true,
-                              INSTROP_SYMREGRANGE | alignFlags);
+                              INSTROP_SYMREGRANGE | optionFlags);
     
     const char* end = asmr.line+asmr.lineSize;
     if (instrOpMask & INSTROP_VOP3MODS)
@@ -1015,7 +1015,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     if (instrOpMask & INSTROP_SREGS)
     {
         if (!parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, regField,
-                        false, alignFlags))
+                        false, optionFlags))
             return false;
         if (operand)
             return true;
@@ -1023,7 +1023,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     if (instrOpMask & INSTROP_VREGS)
     {
         if (!parseVRegRange(asmr, linePtr, operand.range, regsNum, regField,
-                        false, alignFlags))
+                        false, optionFlags))
             return false;
         if (operand)
             return true;
@@ -1032,7 +1032,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     {
         if (!parseSymRegRange(asmr, linePtr, operand.range, arch, regsNum, regField,
                   (instrOpMask&((INSTROP_SREGS|INSTROP_VREGS|INSTROP_SSOURCE))) |
-                    alignFlags, false))
+                    optionFlags, false))
             return false;
         if (operand)
             return true;
