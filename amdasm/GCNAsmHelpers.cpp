@@ -146,7 +146,7 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
             {
                 cxbyte align = 1;
                 if ((flags & INSTROP_UNALIGNED) == 0 && regVar->type==GCNREGTYPE_SGPR)
-                    align = regVar->size==2 ? 2 : (regVar->size>=3) ? 4 : 1;
+                    align = regsNum==2 ? 2 : regsNum>=3 ? 4 : 1;
                 section.addVarUsage({ size_t(asmr.currentOutPos), regVarEntry,
                     uint16_t(rstart), uint16_t(rend), regField,
                     cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |

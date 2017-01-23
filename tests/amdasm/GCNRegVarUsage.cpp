@@ -50,10 +50,14 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
 {
     {
         ".regvar rax:s, rbx:s\n"
-        "s_mov_b32 rax,rbx\n",
+        ".regvar rax4:s:4, rbx5:s:4\n"
+        "s_mov_b32 rax,rbx\n"
+        "s_mov_b32 rax4[2],rbx4[1]\n",
         {
             { 0, "rax", 0, 1, GCNFIELD_SDST, ASMVARUS_WRITE, 1 },
-            { 0, "rbx", 0, 1, GCNFIELD_SSRC0, ASMVARUS_READ, 1 }
+            { 0, "rbx", 0, 1, GCNFIELD_SSRC0, ASMVARUS_READ, 1 },
+            { 4, "rax4", 2, 3, GCNFIELD_SDST, ASMVARUS_WRITE, 1 },
+            { 4, "rbx4", 1, 2, GCNFIELD_SSRC0, ASMVARUS_READ, 1 }
         },
         true,
         ""
