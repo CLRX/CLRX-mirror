@@ -2,6 +2,7 @@
 /AUTHORS -text
 CLRX/CMakeLists.txt -text svneol=unset#text/plain
 CLRX/Config.h.in -text
+CLRX/amdasm/AsmDefs.h -text
 CLRX/amdasm/AsmFormats.h -text
 CLRX/amdasm/AsmSource.h -text
 CLRX/amdasm/Assembler.h -text
