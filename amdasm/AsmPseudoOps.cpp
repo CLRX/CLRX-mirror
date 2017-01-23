@@ -2051,10 +2051,11 @@ void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace
     const bool acceptArgs = (type==AsmCodeFlowType::JUMP || type==AsmCodeFlowType::CALL);
     asmr.initializeOutputFormat();
     
-    if (!asmr.isWriteableSection())
+    if (asmr.currentSection==ASMSECT_ABS ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CODE)
     {
         asmr.printError(pseudoOpPlace,
-                        "Defining codeflow in non-writeable section is illegal");
+                        "Defining codeflow in non-code section is illegal");
         return;
     }
     
