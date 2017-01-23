@@ -490,6 +490,11 @@ struct AsmRegVar
     uint16_t size;  // in regs
 };
 
+/// regvar map
+typedef std::unordered_map<CString, AsmRegVar> AsmRegVarMap;
+/// regvar entry
+typedef AsmRegVarMap::value_type AsmRegVarEntry;
+
 enum : cxbyte {
     ASMVARUS_READ = 1,
     ASMVARUS_WRITE = 2
@@ -499,7 +504,7 @@ enum : cxbyte {
 struct AsmRegVarUsage
 {
     size_t offset;
-    const AsmRegVar* regVar;    // if null, then usage of called register
+    const AsmRegVarEntry* regVar;    // if null, then usage of called register
     uint16_t rstart, rend;
     AsmRegField regField;   ///< place in instruction
     cxbyte rwFlags;  ///< 1 - read, 2 - write

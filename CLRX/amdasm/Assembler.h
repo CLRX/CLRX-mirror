@@ -163,11 +163,6 @@ struct AsmClause
     AsmSourcePos prevIfPos; ///< position of previous if-clause
 };
 
-/// regvar map
-typedef std::unordered_map<CString, AsmRegVar> AsmRegVarMap;
-/// regvar entry
-typedef AsmRegVarMap::value_type AsmRegVarEntry;
-
 /// main class of assembler
 class Assembler: public NonCopyableAndNonMovable
 {
@@ -473,7 +468,7 @@ public:
     /// add regvar
     bool addRegVar(const CString& name, const AsmRegVar& var);
     // get regvar by name
-    bool getRegVar(const CString& name, const AsmRegVar*& regVar) const;
+    bool getRegVarEntry(const CString& name, const AsmRegVarEntry*& regVarEntry) const;
     
     /// returns true if symbol contains absolute value
     bool isAbsoluteSymbol(const AsmSymbol& symbol) const;

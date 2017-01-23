@@ -22,8 +22,19 @@
 #include <sstream>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
+#include "../TestUtils.h"
 
 using namespace CLRX;
+
+struct AsmRegVarUsageData
+{
+    size_t offset;
+    const char* regVarName;
+    uint16_t rstart, rend;
+    AsmRegField regField;
+    cxbyte rwFlags;
+    cxbyte align;
+};
 
 struct GCNAsmRegVarUsageCase
 {
@@ -42,6 +53,26 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmRegVarUsageCase& testCase,
     Assembler assembler("test.s", input, ASM_ALL&~ASM_ALTMACRO,
                     BinaryFormat::GALLIUM, deviceType, errorStream);
     bool good = assembler.assemble();
+    std::ostringstream oss;
+    oss << getGPUDeviceTypeName(deviceType) << " regVarUsageGCNCase#" << i;
+    const std::string testCaseName = oss.str();
+    assertValue<bool>("testRegVarUsageGCNOpcodes", testCaseName+".good",
+                      testCase.good, good);
+    if (assembler.getSections().size()<1)
+    {
+        std::ostringstream oss;
+        oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<
+            " regVarUsageGCNCase#" << i;
+        throw Exception(oss.str());
+    }
+    const AsmSection& section = assembler.getSections()[0];
+    assertValue<size_t>("testRegVarUsageGCNOpcodes", testCaseName+".size",
+                    testCase.regVarUsages.size(), section.regVarUsages.size());
+    for (size_t i = 0; i < section.regVarUsages.size(); i++)
+    {
+    }
+    assertString("testRegVarUsageGCNOpcodes", testCaseName+".errorMessages",
+              testCase.errorMessages, errorStream.str());
 }
 
 int main(int argc, const char** argv)

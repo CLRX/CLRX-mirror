@@ -1866,12 +1866,14 @@ void Assembler::initializeOutputFormat()
 bool Assembler::addRegVar(const CString& name, const AsmRegVar& var)
 { return regVarMap.insert(std::make_pair(name, var)).second; }
 
-bool Assembler::getRegVar(const CString& name, const AsmRegVar*& regVar) const
+bool Assembler::getRegVarEntry(const CString& name,
+                       const AsmRegVarEntry*& regVarEntry) const
 { 
+    regVarEntry = nullptr;
     auto it = regVarMap.find(name);
     if (it == regVarMap.end())
         return false;
-    regVar = &it->second;
+    regVarEntry = &*it;
     return true;
 }
 
