@@ -81,7 +81,8 @@ public:
     
     /// assemble single line
     virtual void assemble(const CString& mnemonic, const char* mnemPlace,
-              const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output) = 0;
+              const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output,
+              std::vector<AsmRegVarUsage>& regVarUsages) = 0;
     /// resolve code with location, target and value
     virtual bool resolveCode(const AsmSourcePos& sourcePos, cxuint targetSectionId,
                  cxbyte* sectionData, size_t offset, AsmExprTargetType targetType,
@@ -117,11 +118,32 @@ public:
         Flags regFlags; ///< define what extra register must be included
     };
 private:
+    friend struct GCNAsmUtils; // INTERNAL LOGIC
     union {
         Regs regs;
         cxuint regTable[2];
     };
     uint16_t curArchMask;
+    cxbyte currentRVUIndex;
+    AsmRegVarUsage instrRVUs[5];
+    
+    void resetInstrRVUs()
+    {
+        for (size_t i = 0; i < 5; i++)
+            instrRVUs[i].regField = ASMFIELD_NONE;
+    }
+    void setCurrentRVU(cxbyte idx)
+    { currentRVUIndex = idx; }
+    
+    void setRegVarUsage(const AsmRegVarUsage& rvu)
+    { instrRVUs[currentRVUIndex] = rvu; }
+    
+    void flushInstrRVUs(std::vector<AsmRegVarUsage>& regVarUsages)
+    {
+        for (const AsmRegVarUsage& rvu: instrRVUs)
+            if (rvu.regField != ASMFIELD_NONE)
+                regVarUsages.push_back(rvu);
+    }
 public:
     /// constructor
     explicit GCNAssembler(Assembler& assembler);
@@ -129,7 +151,8 @@ public:
     ~GCNAssembler();
     
     void assemble(const CString& mnemonic, const char* mnemPlace, const char* linePtr,
-                  const char* lineEnd, std::vector<cxbyte>& output);
+                  const char* lineEnd, std::vector<cxbyte>& output,
+                  std::vector<AsmRegVarUsage>& regVarUsages);
     bool resolveCode(const AsmSourcePos& sourcePos, cxuint targetSectionId,
                  cxbyte* sectionData, size_t offset, AsmExprTargetType targetType,
                  cxuint sectionId, uint64_t value);

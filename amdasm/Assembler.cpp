@@ -2066,7 +2066,8 @@ bool Assembler::assemble()
                     continue;
                 }
                 isaAssembler->assemble(firstName, stmtPlace, linePtr, end,
-                           sections[currentSection].content);
+                           sections[currentSection].content,
+                           sections[currentSection].regVarUsages);
                 currentOutPos = sections[currentSection].getSize();
             }
         }

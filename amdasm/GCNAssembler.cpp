@@ -156,8 +156,11 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 {
     bool good = true;
     RegRange dstReg(0, 0);
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
+    
     if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
     {
+        gcnAsm->setCurrentRVU(0);
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                    (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SDST, true,
                    INSTROP_SYMREGRANGE|INSTROP_WRITE);
@@ -167,12 +170,14 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
     GCNOperand src0Op{};
+    gcnAsm->setCurrentRVU(1);
     good &= parseOperand(asmr, linePtr, src0Op, &src0Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
                          INSTROP_READ, GCNFIELD_SSRC0);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     GCNOperand src1Op{};
+    gcnAsm->setCurrentRVU(2);
     good &= parseOperand(asmr, linePtr, src1Op, &src1Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
              (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0)|INSTROP_READ,
@@ -232,9 +237,12 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                   GCNEncSize gcnEncSize)
 {
     bool good = true;
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     RegRange dstReg(0, 0);
+    
     if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
     {
+        gcnAsm->setCurrentRVU(0);
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                        (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SDST, true,
                        INSTROP_SYMREGRANGE|INSTROP_WRITE);
@@ -246,9 +254,12 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     GCNOperand src0Op{};
     std::unique_ptr<AsmExpression> src0Expr;
     if ((gcnInsn.mode & GCN_MASK1) != GCN_SRC_NONE)
+    {
+        gcnAsm->setCurrentRVU(1);
         good &= parseOperand(asmr, linePtr, src0Op, &src0Expr, arch,
                  (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
                          INSTROP_READ, GCNFIELD_SSRC0);
+    }
     
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -461,7 +472,9 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 {
     bool good = true;
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     GCNOperand src0Op{};
+    gcnAsm->setCurrentRVU(0);
     good &= parseOperand(asmr, linePtr, src0Op, &src0Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
                      INSTROP_READ, GCNFIELD_SSRC0);
@@ -469,10 +482,13 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     GCNOperand src1Op{};
     if ((gcnInsn.mode & GCN_SRC1_IMM) == 0)
+    {
+        gcnAsm->setCurrentRVU(1);
         good &= parseOperand(asmr, linePtr, src1Op, &src1Expr, arch,
                  (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
                  (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0)|INSTROP_READ,
                          GCNFIELD_SSRC1);
+    }
     else // immediate
         good &= parseImm(asmr, linePtr, src1Op.range.start, &src1Expr, 8);
     
@@ -2739,7 +2755,8 @@ void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 };
 
 void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
-            const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output)
+            const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output,
+            std::vector<AsmRegVarUsage>& regVarUsages)
 {
     CString mnemonic;
     size_t inMnemLen = inMnemonic.size();
@@ -2788,6 +2805,8 @@ void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
         return;
     }
     
+    resetInstrRVUs();
+    setCurrentRVU(0);
     /* decode instruction line */
     switch(it->encoding)
     {
@@ -2864,6 +2883,7 @@ void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
         default:
             break;
     }
+    flushInstrRVUs(regVarUsages);
 }
 
 bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSectionId,

@@ -82,7 +82,8 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
     
     const CString name = extractSymName(linePtr, end, false);
     bool regVarFound = false;
-    AsmSection& section = asmr.sections[asmr.currentSection];
+    //AsmSection& section = asmr.sections[asmr.currentSection];
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     const AsmRegVarEntry* regVarEntry;
     if (!name.empty())
         regVarFound = asmr.getRegVarEntry(name, regVarEntry);
@@ -147,7 +148,7 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
                 cxbyte align = 1;
                 if ((flags & INSTROP_UNALIGNED) == 0 && regVar->type==GCNREGTYPE_SGPR)
                     align = regsNum==2 ? 2 : regsNum>=3 ? 4 : 1;
-                section.addVarUsage({ size_t(asmr.currentOutPos), regVarEntry,
+                gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), regVarEntry,
                     uint16_t(rstart), uint16_t(rend), regField,
                     cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
                     ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), align });

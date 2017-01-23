@@ -544,8 +544,8 @@ struct AsmSection
     /// code flow info
     std::vector<AsmCodeFlowEntry> codeFlow;
     
-    void addVarUsage(const AsmRegVarUsage& varUsage)
-    { regVarUsages.push_back(varUsage); }
+    void addRegVarUsage(const AsmRegVarUsage& regVarUsage)
+    { regVarUsages.push_back(regVarUsage); }
     
     void addCodeFlowEntry(const AsmCodeFlowEntry& entry)
     { codeFlow.push_back(entry); }
