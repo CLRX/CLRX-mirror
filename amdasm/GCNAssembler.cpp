@@ -827,7 +827,7 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     uint32_t word;
     SLEV(word, 0xc0000000U | (uint32_t(gcnInsn.code1)<<22) | (uint32_t(dstReg.start)<<15) |
-            ((sbaseReg.start<<8)&~1) | ((soffsetReg.start==255) ? 0x100 : 0) |
+            ((sbaseReg.start&~1U)<<8) | ((soffsetReg.start==255) ? 0x100 : 0) |
             ((soffsetReg.start==255) ? soffsetVal : soffsetReg.start));
     output.insert(output.end(), reinterpret_cast<cxbyte*>(&word), 
             reinterpret_cast<cxbyte*>(&word)+4);
