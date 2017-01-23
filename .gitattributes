@@ -149,6 +149,7 @@ tests/amdasm/GCNDisasmOpc.h -text
 tests/amdasm/GCNDisasmOpc11.cpp -text
 tests/amdasm/GCNDisasmOpc12.cpp -text
 tests/amdasm/GCNDisasmOpcodes.cpp -text
+tests/amdasm/GCNRegVarUsage.cpp -text
 tests/amdasm/amdbins/amd1.clo -text svneol=unset#application/x-executable
 tests/amdasm/amdbins/amdcl2.clo -text svneol=unset#application/x-executable
 tests/amdasm/amdbins/gallium1.clo -text

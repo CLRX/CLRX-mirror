@@ -68,3 +68,7 @@ ADD_TEST(GCNAsmOpcodes GCNAsmOpcodes)
 ADD_EXECUTABLE(AsmRegPool AsmRegPool.cpp)
 TEST_LINK_LIBRARIES(AsmRegPool CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AsmRegPool AsmRegPool)
+
+ADD_EXECUTABLE(GCNRegVarUsage GCNRegVarUsage.cpp)
+TEST_LINK_LIBRARIES(GCNRegVarUsage CLRXAmdAsm CLRXAmdBin CLRXUtils)
+ADD_TEST(GCNRegVarUsage GCNRegVarUsage)
