@@ -328,10 +328,17 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
     RegRange dstReg(0, 0);
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
+    
+    gcnAsm->setCurrentRVU(0);
+    bool doWrite = (gcnInsn.mode&GCN_MASK1) != GCN_DST_SRC &&
+            ((gcnInsn.mode&GCN_MASK1) != GCN_IMM_REL);
     if ((gcnInsn.mode & GCN_IMM_DST) == 0)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
-                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SDST);
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SDST, true,
+                   INSTROP_SYMREGRANGE|
+                   (doWrite ? INSTROP_WRITE : INSTROP_READ));
         if (!skipRequiredComma(asmr, linePtr))
             return;
     }
@@ -429,7 +436,8 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             good &= parseImm(asmr, linePtr, imm32, &imm32Expr);
         else
             good &= parseSRegRange(asmr, linePtr, dstReg, arch,
-                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SDST); // new field!
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SDST, true,
+                   INSTROP_SYMREGRANGE|INSTROP_READ); // new field!
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -457,8 +465,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     imm32Expr.release();
     imm16Expr.release();
-    if (dstReg && (gcnInsn.mode&GCN_MASK1)!=GCN_DST_SRC && 
-                (gcnInsn.mode & GCN_IMM_DST)==0)
+    if (dstReg && doWrite && (gcnInsn.mode & GCN_IMM_DST)==0)
     {
         updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
         updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);

@@ -75,7 +75,7 @@ Operation:
 UINT64 passes = (EXEC & SSRC0)
 UINT64 failures = (EXEC & ~SSRC0)
 if (passes == EXEC)
-    PC = SSRC1
+    PC = RELADDR
 else if (failures == EXEC)
     PC += 4
 else if (BITCOUNT(failures) < BITCOUNT(passes)) {

@@ -131,10 +131,32 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 8, "rbx5", 2, 3, GCNFIELD_SSRC1, ASMVARUS_READ, 1 }
         },
         true, ""
+    },
+    {   /* SOPK */
+        ".regvar rax:s, rbx:s\n"
+        ".regvar rax4:s:4, rbx5:s:4\n"
+        "s_cmpk_eq_i32  rbx, 0xd3b9\n"
+        "s_addk_i32  rax, 0xd3b9\n"
+        "s_cbranch_i_fork rbx5[2:3], xxxx-8\nxxxx:\n"
+        "s_getreg_b32 rbx, hwreg(trapsts, 0, 1)\n"
+        "s_setreg_b32  hwreg(trapsts, 3, 10), rax\n",
+        {
+            // s_cmpk_eq_i32  rbx, 0xd3b9
+            { 0, "rbx", 0, 1, GCNFIELD_SDST, ASMVARUS_READ, 1 },
+            // s_addk_i32  rax, 0xd3b9
+            { 4, "rax", 0, 1, GCNFIELD_SDST, ASMVARUS_WRITE, 1 },
+            // s_cbranch_i_fork rbx5[2:3], xxxx-8
+            { 8, "rbx5", 2, 4, GCNFIELD_SDST, ASMVARUS_READ, 2 },
+            // s_getreg_b32 rbx, hwreg(trapsts, 0, 1)
+            { 12, "rbx", 0, 1, GCNFIELD_SDST, ASMVARUS_WRITE, 1 },
+            // s_setreg_b32  hwreg(trapsts, 3, 10), rax
+            { 16, "rax", 0, 1, GCNFIELD_SDST, ASMVARUS_READ, 1 }
+        },
+        true, ""
     }
 };
 
-static void testEncGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
+static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
 {
     std::istringstream input(testCase.input);
     std::ostringstream errorStream;
@@ -188,7 +210,7 @@ int main(int argc, const char** argv)
     int retVal = 0;
     for (size_t i = 0; i < sizeof(gcnRvuTestCases1Tbl)/sizeof(GCNRegVarUsageCase); i++)
         try
-        { testEncGCNRegVarUsages(i, gcnRvuTestCases1Tbl[i]); }
+        { testGCNRegVarUsages(i, gcnRvuTestCases1Tbl[i]); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;
