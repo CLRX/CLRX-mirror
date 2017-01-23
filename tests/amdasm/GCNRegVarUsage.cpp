@@ -52,12 +52,39 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         ".regvar rax:s, rbx:s\n"
         ".regvar rax4:s:4, rbx5:s:4\n"
         "s_mov_b32 rax,rbx\n"
-        "s_mov_b32 rax4[2],rbx4[1]\n",
+        "s_mov_b32 rax4[2],rbx5[1]\n"
+        "s_mov_b64 rax4[2:3],rbx5[1:2]\n"
+        "s_ff1_i32_b64 rbx, rbx5[1:2]\n"
+        "s_bitset0_b64 rbx5[2:3],rax\n"
+        "s_getpc_b64 rax4[0:1]\n"
+        "s_setpc_b64 rax4[2:3]\n"
+        "s_cbranch_join rax4[2]\n"
+        "s_movrels_b32 rax,rbx\n",
         {
+            // s_mov_b32 rax,rbx
             { 0, "rax", 0, 1, GCNFIELD_SDST, ASMVARUS_WRITE, 1 },
             { 0, "rbx", 0, 1, GCNFIELD_SSRC0, ASMVARUS_READ, 1 },
+            // s_mov_b32 rax4[2],rbx5[1]
             { 4, "rax4", 2, 3, GCNFIELD_SDST, ASMVARUS_WRITE, 1 },
-            { 4, "rbx4", 1, 2, GCNFIELD_SSRC0, ASMVARUS_READ, 1 }
+            { 4, "rbx5", 1, 2, GCNFIELD_SSRC0, ASMVARUS_READ, 1 },
+            // s_mov_b64 rax4[2:3],rbx5[1:2]
+            { 8, "rax4", 2, 4, GCNFIELD_SDST, ASMVARUS_WRITE, 2 },
+            { 8, "rbx5", 1, 3, GCNFIELD_SSRC0, ASMVARUS_READ, 2 },
+            // s_ff1_i32_b64 rbx, rbx5[1:2]
+            { 12, "rbx", 0, 1, GCNFIELD_SDST, ASMVARUS_WRITE, 1 },
+            { 12, "rbx5", 1, 3, GCNFIELD_SSRC0, ASMVARUS_READ, 2 },
+            // s_bitset0_b64 rbx5[2:3],rax
+            { 16, "rbx5", 2, 4, GCNFIELD_SDST, ASMVARUS_WRITE, 2 },
+            { 16, "rax", 0, 1, GCNFIELD_SSRC0, ASMVARUS_READ, 1 },
+            // s_getpc_b64 rax4[0:1]
+            { 20, "rax4", 0, 2, GCNFIELD_SDST, ASMVARUS_WRITE, 2 },
+            // s_setpc_b64 rax4[2:3]
+            { 24, "rax4", 2, 4, GCNFIELD_SSRC0, ASMVARUS_READ, 2 },
+            // s_cbranch_join rax4[2]
+            { 28, "rax4", 2, 3, GCNFIELD_SSRC0, ASMVARUS_READ, 1 },
+            // s_movrels_b32 rax,rbx
+            { 32, "rax", 0, 1, GCNFIELD_SDST, ASMVARUS_WRITE, 1 },
+            { 32, "rbx", 0, 1, GCNFIELD_SSRC0, ASMVARUS_READ, 1 }
         },
         true,
         ""
