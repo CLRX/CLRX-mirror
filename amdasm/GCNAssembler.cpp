@@ -220,14 +220,14 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     // prevent freeing expressions
     src0Expr.release();
     src1Expr.release();
-    if (dstReg)
+    if (dstReg && !dstReg.isRegVar())
     {
         updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
         updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
     }
-    if (src0Op.range)
+    if (src0Op.range && !src0Op.range.isRegVar())
         updateRegFlags(gcnRegs.regFlags, src0Op.range.start, arch);
-    if (src1Op.range)
+    if (src1Op.range && !src1Op.range.isRegVar())
         updateRegFlags(gcnRegs.regFlags, src1Op.range.start, arch);
 }
 
@@ -292,12 +292,12 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     // prevent freeing expressions
     src0Expr.release();
     
-    if (dstReg)
+    if (dstReg && !dstReg.isRegVar())
     {
         updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
         updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
     }
-    if (src0Op.range)
+    if (src0Op.range && !src0Op.range.isRegVar())
         updateRegFlags(gcnRegs.regFlags, src0Op.range.start, arch);
 }
 
@@ -465,11 +465,10 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     imm32Expr.release();
     imm16Expr.release();
-    if (dstReg && doWrite && (gcnInsn.mode & GCN_IMM_DST)==0)
-    {
+    if (dstReg && !dstReg.isRegVar() && doWrite && (gcnInsn.mode & GCN_IMM_DST)==0)
         updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+    if (dstReg && !dstReg.isRegVar())
         updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
-    }
 }
 
 void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -539,8 +538,10 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     src0Expr.release();
     src1Expr.release();
     
-    updateRegFlags(gcnRegs.regFlags, src0Op.range.start, arch);
-    updateRegFlags(gcnRegs.regFlags, src1Op.range.start, arch);
+    if (src0Op.range && !src0Op.range.isRegVar())
+        updateRegFlags(gcnRegs.regFlags, src0Op.range.start, arch);
+    if (src1Op.range && !src1Op.range.isRegVar())
+        updateRegFlags(gcnRegs.regFlags, src1Op.range.start, arch);
 }
 
 static const std::pair<const char*, uint16_t> sendMessageNamesMap[] =

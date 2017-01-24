@@ -93,6 +93,9 @@ struct CLRX_INTERNAL RegRange
     { return start==0 && end==0; }
     operator bool() const
     { return start!=0 || end!=0; }
+    
+    bool isRegVar() const
+    { return regVar!=nullptr; }
 };
 
 struct CLRX_INTERNAL GCNOperand
