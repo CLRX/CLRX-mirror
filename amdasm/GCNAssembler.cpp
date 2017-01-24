@@ -895,6 +895,8 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         asmr.printError(instrPlace, "Only 64-bit size for SMEM encoding");
         return;
     }
+    
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     RegRange dataReg(0, 0);
     RegRange sbaseReg(0, 0);
     RegRange soffsetReg(0, 0);
@@ -903,28 +905,39 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> simm7Expr;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     if (mode1 == GCN_SMRD_ONLYDST)
+    {
+        gcnAsm->setCurrentRVU(0);
         good &= parseSRegRange(asmr, linePtr, dataReg, arch,
-                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SMRD_SDST);
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SMRD_SDST, true,
+                       INSTROP_SYMREGRANGE|INSTROP_WRITE);
+    }
     else if (mode1 != GCN_ARG_NONE)
     {
         const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
+        gcnAsm->setCurrentRVU(0);
         if ((mode1 & GCN_SMEM_SDATA_IMM)==0)
             good &= parseSRegRange(asmr, linePtr, dataReg, arch, dregsNum,
-                        GCNFIELD_SMRD_SDST);
+                    GCNFIELD_SMRD_SDST, true, INSTROP_SYMREGRANGE|
+                    ((gcnInsn.mode & GCN_MLOAD) != 0 ? INSTROP_WRITE : INSTROP_READ));
         else
             good &= parseImm(asmr, linePtr, dataReg.start, &simm7Expr, 7);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
+        gcnAsm->setCurrentRVU(1);
         good &= parseSRegRange(asmr, linePtr, sbaseReg, arch,
-                   (gcnInsn.mode&GCN_SBASE4)?4:2, GCNFIELD_SMRD_SBASE);
+                   (gcnInsn.mode&GCN_SBASE4)?4:2, GCNFIELD_SMRD_SBASE, true,
+                   INSTROP_SYMREGRANGE|INSTROP_READ);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!='@')
+        {
+            gcnAsm->setCurrentRVU(2);
             good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1,
-                                   GCNFIELD_SMRD_SOFFSET, false);
+                       GCNFIELD_SMRD_SOFFSET, false, INSTROP_SYMREGRANGE|INSTROP_READ);
+        }
         else // '@' prefix
             skipCharAndSpacesToEnd(linePtr, end);
         

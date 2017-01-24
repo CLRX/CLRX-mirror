@@ -193,6 +193,57 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 28, "rax4", 2, 4, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 2 }
         },
         true, ""
+    },
+    {   /* SMEM */
+        ".gpu Fiji\n"
+        ".regvar rax:s, rbx:s\n"
+        ".regvar rax4:s:20, rbx5:s:16\n"
+        "s_load_dword rbx, rbx5[2:3], 0x5b\n"
+        "s_load_dwordx2 rax4[0:1], rbx5[4:5], 0x5b\n"
+        "s_load_dwordx4 rax4[0:3], rbx5[6:7], 0x5b\n"
+        "s_load_dwordx8 rax4[0:7], rbx5[8:9], 0x5b\n"
+        "s_load_dwordx16 rax4[4:19], rbx5[10:11], 0x5b\n"
+        "s_load_dword rbx, rbx5[2:3], rbx5[6]\n"
+        "s_buffer_load_dwordx4 rax4[0:3], rbx5[8:11], 0x5b\n"
+        "s_memtime  rax4[2:3]\n"
+        "s_dcache_inv\n"
+        "s_store_dword rbx, rbx5[2:3], 0x5b\n"
+        "s_atc_probe  0x32, rax4[12:13], 0xfff5b\n"
+        "s_atc_probe_buffer  0x32, rax4[12:15], 0xfff5b\n",
+        {
+            // s_load_dword rbx, rbx5[2:3], 0x5b
+            { 0, "rbx", 0, 1, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 1 },
+            { 0, "rbx5", 2, 4, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 2 },
+            // s_load_dwordx2 rax4[0:1], rbx5[4:5], 0x5b
+            { 8, "rax4", 0, 2, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 2 },
+            { 8, "rbx5", 4, 6, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 2 },
+            // s_load_dwordx4 rax4[0:3], rbx5[4:5], 0x5b
+            { 16, "rax4", 0, 4, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 4 },
+            { 16, "rbx5", 6, 8, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 2 },
+            // s_load_dwordx8 rax4[0:7], rbx5[4:5], 0x5b
+            { 24, "rax4", 0, 8, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 4 },
+            { 24, "rbx5", 8, 10, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 2 },
+            // s_load_dwordx16 rax4[4:19], rbx5[4:5], 0x5b
+            { 32, "rax4", 4, 20, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 4 },
+            { 32, "rbx5", 10, 12, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 2 },
+            // s_load_dword rbx, rbx5[2:3], rbx5[6]
+            { 40, "rbx", 0, 1, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 1 },
+            { 40, "rbx5", 2, 4, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 2 },
+            { 40, "rbx5", 6, 7, GCNFIELD_SMRD_SOFFSET, ASMVARUS_READ, 1 },
+            // s_buffer_load_dwordx4 rax4[0:3], rbx5[8:11], 0x5b
+            { 48, "rax4", 0, 4, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 4 },
+            { 48, "rbx5", 8, 12, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 4 },
+            // s_memtime  rax4[2:3]
+            { 56, "rax4", 2, 4, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 2 },
+            // s_store_dword rbx, rbx5[2:3], 0x5b\n
+            { 72, "rbx", 0, 1, GCNFIELD_SMRD_SDST, ASMVARUS_READ, 1 },
+            { 72, "rbx5", 2, 4, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 2 },
+            // s_atc_probe  0x32, rax4[12:13], 0xfff5b
+            { 80, "rax4", 12, 14, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 2 },
+            // s_atc_probe_buffer 0x32, rax4[12:13], 0xfff5b
+            { 88, "rax4", 12, 16, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 4 }
+        },
+        true, ""
     }
 };
 
