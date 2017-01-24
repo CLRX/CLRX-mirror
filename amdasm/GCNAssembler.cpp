@@ -1812,7 +1812,8 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
     output.insert(output.end(), reinterpret_cast<cxbyte*>(&word),
             reinterpret_cast<cxbyte*>(&word)+4);
     
-    updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
+    if (!dstReg.isRegVar())
+        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
 }
 
 void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -1999,7 +2000,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     offsetExpr.release();
     offset2Expr.release();
     // update register pool
-    if (dstReg)
+    if (dstReg && !dstReg.isRegVar())
         updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
 }
 
@@ -2314,10 +2315,10 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     
     offsetExpr.release();
     // update register pool (instr loads or save old value) */
-    if (vdataReg && ((gcnInsn.mode&GCN_MLOAD) != 0 ||
+    if (vdataReg && !vdataReg.isRegVar() && ((gcnInsn.mode&GCN_MLOAD) != 0 ||
                 ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc)))
         updateVGPRsNum(gcnRegs.vgprsNum, vdataReg.end-257);
-    if (soffsetOp.range)
+    if (soffsetOp.range && !soffsetOp.range.isRegVar())
         updateRegFlags(gcnRegs.regFlags, soffsetOp.range.start, arch);
 }
 
@@ -2503,7 +2504,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             reinterpret_cast<cxbyte*>(words + 2));
     
     // update register pool (instr loads or save old value) */
-    if (vdataReg && ((gcnInsn.mode&GCN_MLOAD) != 0 ||
+    if (vdataReg && !vdataReg.isRegVar() && ((gcnInsn.mode&GCN_MLOAD) != 0 ||
                 ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc)))
         updateVGPRsNum(gcnRegs.vgprsNum, vdataReg.end-257);
 }
@@ -2769,7 +2770,7 @@ void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + 2));
     // update register pool
-    if (vdstReg)
+    if (vdstReg && !vdstReg.isRegVar())
         updateVGPRsNum(gcnRegs.vgprsNum, vdstReg.end-257);
 }
 
