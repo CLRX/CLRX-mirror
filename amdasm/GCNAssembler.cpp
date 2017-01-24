@@ -888,7 +888,7 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool good = true;
     if (gcnEncSize==GCNEncSize::BIT32)
     {
-        asmr.printError(instrPlace, "Only 64-bit size for SMRD encoding");
+        asmr.printError(instrPlace, "Only 64-bit size for SMEM encoding");
         return;
     }
     RegRange dataReg(0, 0);
