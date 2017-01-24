@@ -102,6 +102,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 0, "rbx", 0, 1, GCNFIELD_SSRC1, ASMVARUS_READ, 1 },
             // s_or_b32 rdx, s11, rbx
             { 4, "rdx", 0, 1, GCNFIELD_SDST, ASMVARUS_WRITE, 1 },
+            { 4, nullptr, 11, 12, GCNFIELD_SSRC0, ASMVARUS_READ, 0 },
             { 4, "rbx", 0, 1, GCNFIELD_SSRC1, ASMVARUS_READ, 1 },
             // s_xor_b64 rcx3[4:5], rax4[0:1], rbx5[2:3]
             { 8, "rcx3", 4, 6, GCNFIELD_SDST, ASMVARUS_WRITE, 2 },
@@ -297,8 +298,12 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
         const AsmRegVarUsage& resultRvu = section.regVarUsages[j];
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"offset",
                     expectedRvu.offset, resultRvu.offset);
-        assertString("testGCNRegVarUsages", testCaseName+rvuName+"regVarName",
-                    expectedRvu.regVarName, resultRvu.regVar->first);
+        if (expectedRvu.regVarName==nullptr)
+            assertTrue("testGCNRegVarUsages", testCaseName+rvuName+"regVarName",
+                       resultRvu.regVar==nullptr);
+        else // otherwise
+            assertString("testGCNRegVarUsages", testCaseName+rvuName+"regVarName",
+                        expectedRvu.regVarName, resultRvu.regVar->first);
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"rstart",
                     expectedRvu.rstart, resultRvu.rstart);
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"rend",

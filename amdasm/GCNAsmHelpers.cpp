@@ -179,6 +179,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
     
     const char *regTypeName = (flags&INSTROP_VREGS) ? "vector" : "scalar";
     const cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     if (asmr.parseSymbol(linePtr, symEntry, false, true)==
         Assembler::ParseState::PARSED && symEntry!=nullptr &&
@@ -247,6 +248,13 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                     asmr.printError(regRangePlace, "Unaligned scalar register range");
                     return false;
                 }
+            
+            if (regField != ASMFIELD_NONE)
+                gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                    uint16_t(rstart), uint16_t(rend), regField,
+                    cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
+                    ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
+            
             regPair = { rstart, rend, symEntry->second.regVar };
             return true;
         }
@@ -265,6 +273,8 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* vgprRangePlace = linePtr;
+    
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     bool isRange = false;
     try /* for handling parse exception */
@@ -286,6 +296,13 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
                         return false;
                     }
                     regPair = { 256+value, 256+value+1 };
+                    
+                    if (regField != ASMFIELD_NONE)
+                        gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                            regPair.start, regPair.end, regField,
+                            cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
+                            ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
+                    
                     return true;
                 }
                 else // if not register name
@@ -368,6 +385,12 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
             return false;
         }
         regPair = { 256+value1, 256+value2+1 };
+        
+        if (regField != ASMFIELD_NONE)
+            gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                regPair.start, regPair.end, regField,
+                cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
+                ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
         return true;
     } catch(const ParseException& ex)
     {
@@ -399,6 +422,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         return true;
     }
     
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     bool isRange = false;
     bool ttmpReg = false;
     bool singleSorTtmp = false;
@@ -452,7 +476,14 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                     return false;
                 }
                 if (!ttmpReg)
+                {
                     regPair = { value, value+1 };
+                    if (regField != ASMFIELD_NONE)
+                        gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                            regPair.start, regPair.end, regField,
+                            cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
+                            ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
+                }
                 else
                     regPair = { 112+value, 112+value+1 };
                 return true;
@@ -662,7 +693,14 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                 return false;
             }
         if (!ttmpReg)
+        {
             regPair = { value1, uint16_t(value2)+1 };
+            if (regField != ASMFIELD_NONE)
+                gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                    regPair.start, regPair.end, regField,
+                    cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
+                    ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
+        }
         else
             regPair = { 112+value1, 112+uint16_t(value2)+1 };
         return true;
