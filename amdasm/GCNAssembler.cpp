@@ -818,8 +818,12 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> soffsetExpr;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     if (mode1 == GCN_SMRD_ONLYDST)
+    {
+        gcnAsm->setCurrentRVU(0);
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
-                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SMRD_SDST);
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_SMRD_SDST, true,
+                       INSTROP_SYMREGRANGE|INSTROP_WRITE);
+    }
     else if (mode1 != GCN_ARG_NONE)
     {
         const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);

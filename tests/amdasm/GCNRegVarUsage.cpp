@@ -161,7 +161,11 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "s_load_dwordx2 rax4[0:1], rbx5[4:5], 0x5b\n"
         "s_load_dwordx4 rax4[0:3], rbx5[6:7], 0x5b\n"
         "s_load_dwordx8 rax4[0:7], rbx5[8:9], 0x5b\n"
-        "s_load_dwordx16 rax4[4:19], rbx5[10:11], 0x5b\n",
+        "s_load_dwordx16 rax4[4:19], rbx5[10:11], 0x5b\n"
+        "s_load_dword rbx, rbx5[2:3], rbx5[6]\n"
+        "s_buffer_load_dwordx4 rax4[0:3], rbx5[8:11], 0x5b\n"
+        "s_memtime  rax4[2:3]\n"
+        "s_dcache_inv\n",
         {
             // s_load_dword rbx, rbx5[2:3], 0x5b
             { 0, "rbx", 0, 1, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 1 },
@@ -177,7 +181,16 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 12, "rbx5", 8, 10, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 2 },
             // s_load_dwordx16 rax4[4:19], rbx5[4:5], 0x5b
             { 16, "rax4", 4, 20, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 4 },
-            { 16, "rbx5", 10, 12, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 2 }
+            { 16, "rbx5", 10, 12, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 2 },
+            // s_load_dword rbx, rbx5[2:3], rbx5[6]
+            { 20, "rbx", 0, 1, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 1 },
+            { 20, "rbx5", 2, 4, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 2 },
+            { 20, "rbx5", 6, 7, GCNFIELD_SMRD_SOFFSET, ASMVARUS_READ, 1 },
+            // s_buffer_load_dwordx4 rax4[0:3], rbx5[8:11], 0x5b
+            { 24, "rax4", 0, 4, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 4 },
+            { 24, "rbx5", 8, 12, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 4 },
+            // s_memtime  rax4[2:3]
+            { 28, "rax4", 2, 4, GCNFIELD_SMRD_SDST, ASMVARUS_WRITE, 2 }
         },
         true, ""
     }
