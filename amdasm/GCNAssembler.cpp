@@ -804,11 +804,12 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 {
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
-    if (gcnEncSize==GCNEncSize::BIT32)
+    if (gcnEncSize==GCNEncSize::BIT64)
     {
-        asmr.printError(instrPlace, "Only 64-bit size for SMRD encoding");
+        asmr.printError(instrPlace, "Only 32-bit size for SMRD encoding");
         return;
     }
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     RegRange dstReg(0, 0);
     RegRange sbaseReg(0, 0);
@@ -822,19 +823,26 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     else if (mode1 != GCN_ARG_NONE)
     {
         const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
-        good &= parseSRegRange(asmr, linePtr, dstReg, arch, dregsNum, GCNFIELD_SMRD_SDST);
+        gcnAsm->setCurrentRVU(0);
+        good &= parseSRegRange(asmr, linePtr, dstReg, arch, dregsNum,
+                   GCNFIELD_SMRD_SDST, true, INSTROP_SYMREGRANGE|INSTROP_WRITE);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
+        gcnAsm->setCurrentRVU(1);
         good &= parseSRegRange(asmr, linePtr, sbaseReg, arch,
-                   (gcnInsn.mode&GCN_SBASE4)?4:2, GCNFIELD_SMRD_SBASE);
+                   (gcnInsn.mode&GCN_SBASE4)?4:2, GCNFIELD_SMRD_SBASE, true,
+                   INSTROP_SYMREGRANGE|INSTROP_READ);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!='@')
+        {
+            gcnAsm->setCurrentRVU(2);
             good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1,
-                               GCNFIELD_SMRD_SOFFSET, false);
+                       GCNFIELD_SMRD_SOFFSET, false, INSTROP_SYMREGRANGE|INSTROP_READ);
+        }
         else // '@' prefix
             skipCharAndSpacesToEnd(linePtr, end);
         
