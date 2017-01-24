@@ -2019,15 +2019,14 @@ void AsmPseudoOps::doDefRegVar(Assembler& asmr, const char* pseudoOpPlace,
             uint64_t regSize;
             if (!getAbsoluteValueArg(asmr, regSize, linePtr, true))
                 continue;
-            GPUArchitecture arch = getGPUArchitectureFromDeviceType(asmr.deviceType);
             if (regSize==0)
             {
                 asmr.printError(linePtr, "Size of reg-var is zero");
                 good = false;
             }
-            if (regSize>getGPUMaxRegistersNum(arch, regSize, 0))
+            if (regSize>UINT16_MAX)
             {
-                asmr.printError(linePtr, "Size of reg-var out of max number of registers");
+                asmr.printError(linePtr, "Size of reg-var out of range");
                 good = false;
             }
             var.size = regSize;
