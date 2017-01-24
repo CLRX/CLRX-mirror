@@ -94,10 +94,13 @@ struct CLRX_INTERNAL RegRange
     operator bool() const
     { return start!=0 || end!=0; }
     
+    uint16_t bstart() const
+    { return (regVar==nullptr) ? start : 0; }
+    
     bool isRegVar() const
     { return regVar!=nullptr; }
     
-    bool isReg(uint16_t reg)
+    bool isVal(uint16_t reg) const
     { return (regVar==nullptr && start==reg); }
     
     bool isSGPR() const
