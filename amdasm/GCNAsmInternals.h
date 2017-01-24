@@ -96,6 +96,19 @@ struct CLRX_INTERNAL RegRange
     
     bool isRegVar() const
     { return regVar!=nullptr; }
+    
+    bool isReg(uint16_t reg)
+    { return (regVar==nullptr && start==reg); }
+    
+    bool isSGPR() const
+    { return (regVar==nullptr && start<108) || (regVar!=nullptr &&
+                regVar->type==REGTYPE_SGPR); }
+    bool isNonVGPR() const
+    { return (regVar==nullptr && start<256) || (regVar!=nullptr &&
+                regVar->type==REGTYPE_SGPR); }
+    bool isVGPR() const
+    { return (regVar==nullptr && start>=256) || (regVar!=nullptr &&
+                regVar->type==REGTYPE_VGPR); }
 };
 
 struct CLRX_INTERNAL GCNOperand

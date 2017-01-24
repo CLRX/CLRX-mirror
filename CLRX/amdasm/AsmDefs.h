@@ -478,12 +478,6 @@ enum : AsmRegField
     ASMFIELD_NONE = 255
 };
 
-enum : cxbyte
-{
-    GCNREGTYPE_SGPR,
-    GCNREGTYPE_VGPR
-};
-
 struct AsmRegVar
 {
     cxuint type;    // scalar/vector/other

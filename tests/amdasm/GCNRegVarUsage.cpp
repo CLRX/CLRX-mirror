@@ -244,6 +244,24 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 88, "rax4", 12, 16, GCNFIELD_SMRD_SBASE, ASMVARUS_READ, 4 }
         },
         true, ""
+    },
+    {   /* VOP2 */
+        ".regvar rax:v, rbx:v, rex:v\n"
+        ".regvar rax2:v:8, rbx4:v:8, rex5:v:10\n"
+        ".regvar srex:s, srdx3:s:6\n"
+        "v_sub_f32  rex, rax, rbx\n"
+        "v_sub_f32  rex, srex, rbx\n",
+        {
+            // v_sub_f32  rex, rax, rbx
+            { 0, "rex", 0, 1, GCNFIELD_VOP_VDST, ASMVARUS_WRITE, 1 },
+            { 0, "rax", 0, 1, GCNFIELD_VOP_SRC0, ASMVARUS_READ, 1 },
+            { 0, "rbx", 0, 1, GCNFIELD_VOP_SRC1, ASMVARUS_READ, 1 },
+            // v_sub_f32  rex, srex, rbx
+            { 4, "rex", 0, 1, GCNFIELD_VOP_VDST, ASMVARUS_WRITE, 1 },
+            { 4, "srex", 0, 1, GCNFIELD_VOP_SRC0, ASMVARUS_READ, 1 },
+            { 4, "rbx", 0, 1, GCNFIELD_VOP_SRC1, ASMVARUS_READ, 1 },
+        },
+        true, ""
     }
 };
 

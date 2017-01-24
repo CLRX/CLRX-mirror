@@ -125,12 +125,12 @@ private:
     };
     uint16_t curArchMask;
     cxbyte currentRVUIndex;
-    AsmRegVarUsage instrRVUs[5];
+    AsmRegVarUsage instrRVUs[6];
     
     void resetInstrRVUs()
     {
-        for (size_t i = 0; i < 5; i++)
-            instrRVUs[i].regField = ASMFIELD_NONE;
+        for (AsmRegVarUsage& rvu: instrRVUs)
+            rvu.regField = ASMFIELD_NONE;
     }
     void setCurrentRVU(cxbyte idx)
     { currentRVUIndex = idx; }

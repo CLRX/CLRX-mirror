@@ -135,14 +135,15 @@ static const uint32_t constImmFloatLiterals[9] =
 
 static void tryPromoteConstImmToLiteral(GCNOperand& src0Op, uint16_t arch)
 {
-    if (src0Op.range.start>=128 && src0Op.range.start<=208)
+    if (!src0Op.range.isRegVar() && src0Op.range.start>=128 && src0Op.range.start<=208)
     {
         src0Op.value = src0Op.range.start<193? src0Op.range.start-128 :
                 192-src0Op.range.start;
         src0Op.range.start = 255;
     }
-    else if ((src0Op.range.start>=240 && src0Op.range.start<248) ||
-            ((arch&ARCH_RX3X0)!=0 && src0Op.range.start==248))
+    else if (!src0Op.range.isRegVar() &&
+            ((src0Op.range.start>=240 && src0Op.range.start<248) ||
+             ((arch&ARCH_RX3X0)!=0 && src0Op.range.start==248)))
     {
         src0Op.value = constImmFloatLiterals[src0Op.range.start-240];
         src0Op.range.start = 255;
@@ -180,7 +181,7 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     gcnAsm->setCurrentRVU(2);
     good &= parseOperand(asmr, linePtr, src1Op, &src1Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
-             (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0)|INSTROP_READ,
+             (src0Op.range.isReg(255) ? INSTROP_ONLYINLINECONSTS : 0)|INSTROP_READ,
              GCNFIELD_SSRC1);
     
     /// if errors
@@ -197,10 +198,10 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t words[2];
     SLEV(words[0], 0x80000000U | (uint32_t(gcnInsn.code1)<<23) | src0Op.range.start |
             (src1Op.range.start<<8) | uint32_t(dstReg.start)<<16);
-    if (src0Op.range.start==255 || src1Op.range.start==255)
+    if (src0Op.range.isReg(255) || src1Op.range.isReg(255))
     {
         if (src0Expr==nullptr && src1Expr==nullptr)
-            SLEV(words[1], src0Op.range.start==255 ? src0Op.value : src1Op.value);
+            SLEV(words[1], src0Op.range.isReg(255) ? src0Op.value : src1Op.value);
         else    // zero if unresolved value
             SLEV(words[1], 0);
         wordsNum++;
@@ -1019,17 +1020,19 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     RegRange dstReg(0, 0);
     RegRange dstCCReg(0, 0);
     RegRange srcCCReg(0, 0);
+    gcnAsm->setCurrentRVU(0);
     if (mode1 == GCN_DS1_SGPR) // if SGPRS as destination
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                        (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP_SDST, true,
-                       INSTROP_SYMREGRANGE|INSTROP_UNALIGNED);
+                       INSTROP_SYMREGRANGE|INSTROP_UNALIGNED|INSTROP_WRITE);
     else // if VGPRS as destination
         good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
-                        GCNFIELD_VOP_VDST);
+                        GCNFIELD_VOP_VDST, true, INSTROP_SYMREGRANGE|INSTROP_WRITE);
     
     const bool haveDstCC = mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC;
     const bool haveSrcCC = mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC;
@@ -1037,8 +1040,9 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         if (!skipRequiredComma(asmr, linePtr))
             return;
+        gcnAsm->setCurrentRVU(1);
         good &= parseSRegRange(asmr, linePtr, dstCCReg, arch, 2, GCNFIELD_VOP3_SDST1, true,
-                               INSTROP_SYMREGRANGE|INSTROP_UNALIGNED);
+                               INSTROP_SYMREGRANGE|INSTROP_UNALIGNED|INSTROP_WRITE);
     }
     
     GCNOperand src0Op{}, src1Op{};
@@ -1051,10 +1055,11 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!skipRequiredComma(asmr, linePtr))
         return;
     cxuint regsNum = (gcnInsn.mode&GCN_REG_SRC0_64)?2:1;
+    gcnAsm->setCurrentRVU(2);
     good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch, regsNum,
             correctOpType(regsNum, literalConstsFlags) | vopOpModFlags |
-            INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS,
-            GCNFIELD_VOP_SRC0);
+            INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
+            INSTROP_READ, GCNFIELD_VOP_SRC0);
     
     uint32_t immValue = 0;
     std::unique_ptr<AsmExpression> immExpr;
@@ -1071,11 +1076,12 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool sgprRegInSrc1 = mode1 == GCN_DS1_SGPR || mode1 == GCN_SRC1_SGPR;
     skipSpacesToEnd(linePtr, end);
     regsNum = (gcnInsn.mode&GCN_REG_SRC1_64)?2:1;
+    gcnAsm->setCurrentRVU(3);
     good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch, regsNum,
             correctOpType(regsNum, literalConstsFlags) | vopOpModFlags |
             (!sgprRegInSrc1 ? INSTROP_VREGS : 0)|INSTROP_SSOURCE|INSTROP_SREGS|
-            INSTROP_UNALIGNED | (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0),
-            GCNFIELD_VOP_SRC1);
+            INSTROP_UNALIGNED | (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0)|
+            INSTROP_READ, GCNFIELD_VOP_SRC1);
     
     if (mode1 == GCN_ARG2_IMM)
     {
@@ -1087,6 +1093,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         if (!skipRequiredComma(asmr, linePtr))
             return;
+        gcnAsm->setCurrentRVU(4);
         good &= parseSRegRange(asmr, linePtr, srcCCReg, arch, 2, GCNFIELD_VOP3_SSRC, true,
                                INSTROP_SYMREGRANGE|INSTROP_UNALIGNED);
     }
@@ -1100,25 +1107,30 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     
     bool vop3 = /* src1=sgprs and not (DS1_SGPR|src1_SGPR) */
-        ((src1Op.range.start<256) ^ sgprRegInSrc1) ||
+        //((src1Op.range.start<256) ^ sgprRegInSrc1) ||
+        (src1Op.range.isNonVGPR() ^ sgprRegInSrc1) ||
         (!isGCN12 && (src0Op.vopMods!=0 || src1Op.vopMods!=0)) ||
         (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0 ||
         /* srcCC!=VCC or dstCC!=VCC */
-        (haveDstCC && dstCCReg.start!=106) || (haveSrcCC && srcCCReg.start!=106) ||
+        //(haveDstCC && dstCCReg.start!=106) || (haveSrcCC && srcCCReg.start!=106) ||
+        (haveDstCC && !dstCCReg.isReg(106)) || (haveSrcCC && !srcCCReg.isReg(106)) ||
         (gcnEncSize==GCNEncSize::BIT64);
     
-    if ((src0Op.range.start==255 || src1Op.range.start==255) &&
+    /*if ((src0Op.range.start==255 || src1Op.range.start==255) &&
         (src0Op.range.start<108 || src0Op.range.start==124 ||
-         src1Op.range.start<108 || src1Op.range.start==124))
+         src1Op.range.start<108 || src1Op.range.start==124))*/
+    if ((src0Op.range.isReg(255) || src1Op.range.isReg(255)) &&
+        (src0Op.range.isSGPR() || src0Op.range.isReg(124) ||
+         src1Op.range.isSGPR() || src1Op.range.isReg(124)))
     {
         asmr.printError(instrPlace, "Literal with SGPR or M0 is illegal");
         return;
     }
     
     cxuint sgprsReaded = 0;
-    if (src0Op.range.start<108)
+    if (src0Op.range.isSGPR())
         sgprsReaded++;
-    if (src1Op.range.start<108 && src0Op.range.start!=src1Op.range.start)
+    if (src1Op.range.isSGPR() && src0Op.range.start!=src1Op.range.start)
         sgprsReaded++;
     if (haveSrcCC && src1Op.range.start!=srcCCReg.start &&
                 src0Op.range.start!=srcCCReg.start)

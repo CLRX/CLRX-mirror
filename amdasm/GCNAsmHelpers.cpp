@@ -146,7 +146,7 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
             if (regField!=ASMFIELD_NONE)
             {
                 cxbyte align = 1;
-                if ((flags & INSTROP_UNALIGNED) == 0 && regVar->type==GCNREGTYPE_SGPR)
+                if ((flags & INSTROP_UNALIGNED) == 0 && regVar->type==REGTYPE_SGPR)
                     align = regsNum==2 ? 2 : regsNum>=3 ? 4 : 1;
                 gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), regVarEntry,
                     uint16_t(rstart), uint16_t(rend), regField,
