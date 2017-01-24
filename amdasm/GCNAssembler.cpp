@@ -860,10 +860,14 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             reinterpret_cast<cxbyte*>(&word)+4);
     /// prevent freeing expression
     soffsetExpr.release();
-    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
-    updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
-    updateRegFlags(gcnRegs.regFlags, sbaseReg.start, arch);
-    if (soffsetReg)
+    if (dstReg && !dstReg.isRegVar())
+    {
+        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+        updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
+    }
+    if (sbaseReg && !sbaseReg.isRegVar())
+        updateRegFlags(gcnRegs.regFlags, sbaseReg.start, arch);
+    if (soffsetReg && !soffsetReg.isRegVar())
         updateRegFlags(gcnRegs.regFlags, soffsetReg.start, arch);
 }
 
@@ -963,13 +967,14 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     soffsetExpr.release();
     simm7Expr.release();
-    if (gcnInsn.mode & GCN_MLOAD)
+    if ((gcnInsn.mode & GCN_MLOAD) != 0 && dataReg && !dataReg.isRegVar())
     {
         updateSGPRsNum(gcnRegs.sgprsNum, dataReg.end-1, arch);
         updateRegFlags(gcnRegs.regFlags, dataReg.start, arch);
     }
-    updateRegFlags(gcnRegs.regFlags, sbaseReg.start, arch);
-    if (soffsetReg)
+    if (sbaseReg && !sbaseReg.isRegVar())
+        updateRegFlags(gcnRegs.regFlags, sbaseReg.start, arch);
+    if (soffsetReg && !soffsetReg.isRegVar())
         updateRegFlags(gcnRegs.regFlags, soffsetReg.start, arch);
 }
 
