@@ -410,6 +410,47 @@ bool AsmParseUtils::parseDimensions(Assembler& asmr, const char*& linePtr, cxuin
     return true;
 }
 
+ISAUsageHandler::ISAUsageHandler() : lastOffset(0), instrStructPos(0), regUsagesPos(0),
+            regVarUsagesPos(0), argPos(0), isNext(false)
+{ }
+
+ISAUsageHandler::~ISAUsageHandler()
+{ }
+
+void ISAUsageHandler::pushInstrStruct(size_t offset, cxbyte args)
+{
+    if (lastOffset != offset || instrStruct.empty())
+    {
+        if (!instrStruct.empty() && offset-lastOffset<defaultInstrSize)
+            throw Exception("Offset between previous instruction");
+        size_t toSkip = !instrStruct.empty() ? 
+                offset - lastOffset - defaultInstrSize : offset;
+        while (toSkip > 0)
+        {
+            size_t skipped = std::min(toSkip, size_t(0x7f));
+            instrStruct.push_back(skipped | 0x80);
+            toSkip -= skipped;
+        }
+        lastOffset = offset;
+        instrStruct.push_back(args);
+    }
+    else // set in this position
+        instrStruct.back() = args;
+}
+
+void ISAUsageHandler::pushRegVarUsage(const AsmRegVarUsage& rvu)
+{
+    regVarUsages.push_back({ rvu.regVar, rvu.rstart, rvu.rend, rvu.regField,
+                rvu.rwFlags, rvu.align });
+}
+
+void ISAUsageHandler::rewind()
+{
+    instrStructPos = regUsagesPos = regVarUsagesPos = 0;
+    argPos = 0;
+    isNext = !instrStruct.empty();
+}
+
 ISAAssembler::ISAAssembler(Assembler& _assembler) : assembler(_assembler)
 { }
 

@@ -114,6 +114,29 @@ static void initializeGCNAssembler()
                 instr.code2 << std::dec << ", " << instr.archMask << " }" << std::endl;*/
 }
 
+// GCN Usage handler
+
+GCNUsageHandler::GCNUsageHandler()
+{
+    defaultInstrSize = 4;
+}
+GCNUsageHandler::~GCNUsageHandler()
+{ }
+
+void GCNUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
+{
+    //pushInstrStruct(rvu.offset);
+}
+
+AsmRegVarUsage GCNUsageHandler::nextUsage() const
+{
+    return { };
+}
+
+/*
+ * GCN Assembler
+ */
+
 GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
         regs({0, 0}), curArchMask(1U<<cxuint(
                     getGPUArchitectureFromDeviceType(assembler.getDeviceType())))

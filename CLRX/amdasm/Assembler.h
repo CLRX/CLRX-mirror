@@ -56,6 +56,46 @@ enum: Flags
 
 struct AsmRegVar;
 
+/// ISA (register and regvar) Usage handler
+class ISAUsageHandler
+{
+protected:
+    std::vector<cxbyte> instrStruct;
+    std::vector<cxbyte> regUsages;
+    std::vector<AsmRegVarUsageInt> regVarUsages;
+    size_t lastOffset;
+    size_t instrStructPos;
+    size_t regUsagesPos;
+    size_t regVarUsagesPos;
+    cxbyte argPos;
+    cxbyte defaultInstrSize;
+    bool isNext;
+    
+    void pushInstrStruct(size_t offset, cxbyte args);
+    void pushRegVarUsage(const AsmRegVarUsage& rvu);
+    
+    explicit ISAUsageHandler();
+public:
+    virtual ~ISAUsageHandler();
+    
+    virtual void pushUsage(const AsmRegVarUsage& rvu) = 0;
+    void rewind();
+    bool hasNext() const
+    { return isNext; }
+    virtual AsmRegVarUsage nextUsage() const = 0;
+};
+
+/// GCN (register and regvar) Usage handler
+class GCNUsageHandler: public ISAUsageHandler
+{
+public:
+    GCNUsageHandler();
+    ~GCNUsageHandler();
+    
+    void pushUsage(const AsmRegVarUsage& rvu);
+    AsmRegVarUsage nextUsage() const;
+};
+
 /// ISA assembler class
 class ISAAssembler: public NonCopyableAndNonMovable
 {

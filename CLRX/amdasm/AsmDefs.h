@@ -505,6 +505,16 @@ struct AsmRegVarUsage
     cxbyte align;   ///< register alignment
 };
 
+/// regvar usage (internal)
+struct AsmRegVarUsageInt
+{
+    const AsmRegVarEntry* regVar;    // if null, then usage of called register
+    uint16_t rstart, rend;
+    AsmRegField regField;   ///< place in instruction
+    cxbyte rwFlags;  ///< 1 - read, 2 - write
+    cxbyte align;   ///< register alignment
+};
+
 enum AsmCodeFlowType
 {
     JUMP = 0,
