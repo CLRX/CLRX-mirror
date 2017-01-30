@@ -491,7 +491,11 @@ typedef AsmRegVarMap::value_type AsmRegVarEntry;
 
 enum : cxbyte {
     ASMVARUS_READ = 1,
-    ASMVARUS_WRITE = 2
+    ASMVARUS_WRITE = 2,
+    ASMVARUS_ACCESS_MASK = 3,
+    ASMVARUS_REGTYPE_MASK = 4,
+    ASMVARUS_REGSIZE_SHIFT = 3,
+    ASMVARUS_REGSIZE_MASK = 0x78
 };
 
 /// regvar usage in code
@@ -513,6 +517,12 @@ struct AsmRegVarUsageInt
     AsmRegField regField;   ///< place in instruction
     cxbyte rwFlags;  ///< 1 - read, 2 - write
     cxbyte align;   ///< register alignment
+};
+
+struct AsmRegUsageInt
+{
+    AsmRegField regField;
+    cxbyte rwFlags;
 };
 
 enum AsmCodeFlowType

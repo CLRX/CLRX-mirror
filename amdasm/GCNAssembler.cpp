@@ -123,14 +123,100 @@ GCNUsageHandler::GCNUsageHandler()
 GCNUsageHandler::~GCNUsageHandler()
 { }
 
-void GCNUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
+cxbyte GCNUsageHandler::getRwFlags(AsmRegField regFied,
+           uint16_t rstart, uint16_t rend) const
 {
-    //pushInstrStruct(rvu.offset);
+    return 0;
 }
 
-AsmRegVarUsage GCNUsageHandler::nextUsage() const
+std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
+                 cxbyte rwFlags, uint32_t instrCode1, uint32_t instrCode2) const
 {
-    return { };
+    cxbyte regSize = (rwFlags >> ASMVARUS_REGSIZE_SHIFT) & 15;
+    uint16_t rstart;
+    switch(regField)
+    {
+        case GCNFIELD_SSRC0:
+            rstart = instrCode1&0xff;
+            break;
+        case GCNFIELD_SSRC1:
+            rstart = (instrCode1>>8)&0xff;
+            break;
+        case GCNFIELD_SDST:
+            rstart = (instrCode1>>16)&0x7f;
+            break;
+        case GCNFIELD_SMRD_SBASE:
+            break;
+        case GCNFIELD_SMRD_SDST:
+            break;
+        case GCNFIELD_SMRD_SOFFSET:
+            break;
+        case GCNFIELD_VOP_SRC0:
+            break;
+        case GCNFIELD_VOP_SRC1:
+            break;
+        case GCNFIELD_VOP_VDST:
+            break;
+        case GCNFIELD_VOP_SDST:
+            break;
+        case GCNFIELD_VOPC_SDST:
+            break;
+        case GCNFIELD_VOP3_VSRC0:
+            break;
+        case GCNFIELD_VOP3_SRC1:
+            break;
+        case GCNFIELD_VOP3_SRC2:
+            break;
+        case GCNFIELD_VOP3_VDST:
+            break;
+        case GCNFIELD_VOP3_VDST0:
+            break;
+        case GCNFIELD_VOP3_SSRC:
+            break;
+        case GCNFIELD_VOP3_SDST1:
+            break;
+        case GCNFIELD_VINTRP_VSRC0:
+            break;
+        case GCNFIELD_VINTRP_VDST:
+            break;
+        case GCNFIELD_DS_ADDR:
+            break;
+        case GCNFIELD_DS_DATA0:
+            break;
+        case GCNFIELD_DS_DATA1:
+            break;
+        case GCNFIELD_DS_VDST:
+            break;
+        case GCNFIELD_M_VADDR:
+            break;
+        case GCNFIELD_M_VDATA:
+            break;
+        case GCNFIELD_M_SRSRC:
+            break;
+        case GCNFIELD_MIMG_SSAMP:
+            break;
+        case GCNFIELD_M_SOFFSET:
+            break;
+        case GCNFIELD_EXP_VSRC0:
+            break;
+        case GCNFIELD_EXP_VSRC1:
+            break;
+        case GCNFIELD_EXP_VSRC2:
+            break;
+        case GCNFIELD_EXP_VSRC3:
+            break;
+        case GCNFIELD_FLAT_ADDR:
+            break;
+        case GCNFIELD_FLAT_DATA:
+            break;
+        case GCNFIELD_FLAT_VDST:
+            break;
+        case GCNFIELD_DPPSDWA_SRC0:
+            break;
+        default:
+            break;
+    }
+    return { rstart, rstart+regSize };
 }
 
 /*

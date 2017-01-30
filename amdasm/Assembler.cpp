@@ -410,8 +410,9 @@ bool AsmParseUtils::parseDimensions(Assembler& asmr, const char*& linePtr, cxuin
     return true;
 }
 
-ISAUsageHandler::ISAUsageHandler() : lastOffset(0), instrStructPos(0), regUsagesPos(0),
-            regVarUsagesPos(0), argPos(0), isNext(false)
+ISAUsageHandler::ISAUsageHandler() : lastOffset(0), readOffset(0),
+            instrStructPos(0), regUsagesPos(0), regVarUsagesPos(0),
+            pushedArgs(0), argPos(0), argFlags(0), isNext(false)
 { }
 
 ISAUsageHandler::~ISAUsageHandler()
@@ -421,6 +422,8 @@ void ISAUsageHandler::pushInstrStruct(size_t offset, cxbyte args)
 {
     if (lastOffset != offset || instrStruct.empty())
     {
+        if (lastOffset>offset)
+            throw Exception("Offset before previous instruction");
         if (!instrStruct.empty() && offset-lastOffset<defaultInstrSize)
             throw Exception("Offset between previous instruction");
         size_t toSkip = !instrStruct.empty() ? 
@@ -446,9 +449,92 @@ void ISAUsageHandler::pushRegVarUsage(const AsmRegVarUsage& rvu)
 
 void ISAUsageHandler::rewind()
 {
-    instrStructPos = regUsagesPos = regVarUsagesPos = 0;
+    readOffset = instrStructPos = 0;
+    regUsagesPos = regVarUsagesPos = 0;
+    skipBytesInInstrStruct();
+}
+
+void ISAUsageHandler::skipBytesInInstrStruct()
+{
     argPos = 0;
-    isNext = !instrStruct.empty();
+    while ((instrStruct[instrStructPos]&0x80) != 0)
+    {
+        if (instrStructPos != 0)
+            readOffset += defaultInstrSize;
+        readOffset += (instrStruct[instrStructPos] & 0x7f);
+    }
+    isNext = (instrStructPos != instrStruct.size());
+}
+
+void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
+{
+    if (rvu.regVar != nullptr)
+    {
+        argFlags |= (1U<<pushedArgs);
+        regVarUsages.push_back({ rvu.regVar, rvu.rstart, rvu.rend, rvu.regField,
+            rvu.rwFlags, rvu.align });
+    }
+    else // reg usages
+        regUsages.push_back({ rvu.regField,cxbyte(rvu.rwFlags |
+                    getRwFlags(rvu.regField, rvu.rstart, rvu.rend)) });
+    pushedArgs++;
+    
+    if (lastOffset != rvu.offset)
+    {
+        if ((argFlags & (1U<<(pushedArgs-1))) != 0)
+            regVarUsages.back().rwFlags |= 0x80;
+        else // reg usages
+            regUsages.back().rwFlags |= 0x80;
+        
+        if (!regVarUsages.empty() && (regVarUsages.back().rwFlags&0x80))
+            pushInstrStruct(rvu.offset, argFlags);
+        argFlags = 0;
+        pushedArgs = 0;
+    }
+}
+
+AsmRegVarUsage ISAUsageHandler::nextUsage(const std::vector<cxbyte>& content)
+{
+    if (!isNext)
+        throw Exception("No reg usage in this code");
+    AsmRegVarUsage rvu;
+    // get regvarusage
+    bool lastRegUsage = false;
+    rvu.offset = readOffset;
+    if ((instrStruct[instrStructPos] & (1U<<argPos)) != 0)
+    {   // regvar usage
+        const AsmRegVarUsageInt& inRVU = regVarUsages[regVarUsagesPos++];
+        rvu.regVar = inRVU.regVar;
+        rvu.rstart = inRVU.rstart;
+        rvu.rend = inRVU.rend;
+        rvu.regField = inRVU.regField;
+        rvu.rwFlags = inRVU.rwFlags&0x7f;
+        rvu.align = inRVU.align;
+        lastRegUsage = ((inRVU.rwFlags&0x80) != 0);
+    }
+    else
+    {   // simple reg usage
+        const AsmRegUsageInt& inRU = regUsages[regUsagesPos++];
+        rvu.regVar = nullptr;
+        uint32_t code1 = 0, code2 = 0;
+        if (readOffset+4 <= content.size())
+            code1 = ULEV(*reinterpret_cast<const uint32_t*>(content.data()));
+        if (readOffset+8 <= content.size())
+            code2 = ULEV(*reinterpret_cast<const uint32_t*>(content.data()+4));
+        const std::pair<uint16_t, uint16_t> regPair =
+                    getRegPair(inRU.regField, inRU.rwFlags, code1, code2);
+        rvu.rstart = regPair.first;
+        rvu.rend = regPair.second;
+        rvu.rwFlags = (inRU.rwFlags & ASMVARUS_ACCESS_MASK);
+        rvu.regField = inRU.regField;
+        rvu.align = 1;
+        lastRegUsage = ((inRU.rwFlags&0x80) != 0);
+    }
+    argPos++;
+    // after instr
+    if (lastRegUsage)
+        skipBytesInInstrStruct();
+    return rvu;
 }
 
 ISAAssembler::ISAAssembler(Assembler& _assembler) : assembler(_assembler)
