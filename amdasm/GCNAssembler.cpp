@@ -116,7 +116,7 @@ static void initializeGCNAssembler()
 
 // GCN Usage handler
 
-GCNUsageHandler::GCNUsageHandler()
+GCNUsageHandler::GCNUsageHandler(uint16_t _archMask) : archMask(_archMask)
 {
     defaultInstrSize = 4;
 }
@@ -130,88 +130,121 @@ cxbyte GCNUsageHandler::getRwFlags(AsmRegField regFied,
 }
 
 std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
-                 cxbyte rwFlags, uint32_t instrCode1, uint32_t instrCode2) const
+                 cxbyte rwFlags, const std::vector<cxbyte>& content) const
 {
-    cxbyte regSize = (rwFlags >> ASMVARUS_REGSIZE_SHIFT) & 15;
+    cxbyte regSize = ((rwFlags >> ASMVARUS_REGSIZE_SHIFT) & 15) + 1;
     uint16_t rstart;
+    uint32_t code1 = 0, code2 = 0;
+    if (readOffset+4 <= content.size())
+        code1 = ULEV(*reinterpret_cast<const uint32_t*>(content.data()));
+    if (readOffset+8 <= content.size())
+        code2 = ULEV(*reinterpret_cast<const uint32_t*>(content.data()+4));
+    
+    const bool isGCN12 = (archMask & ARCH_RX3X0)!=0;
+    
     switch(regField)
     {
         case GCNFIELD_SSRC0:
-            rstart = instrCode1&0xff;
+            rstart = code1&0xff;
             break;
         case GCNFIELD_SSRC1:
-            rstart = (instrCode1>>8)&0xff;
+            rstart = (code1>>8)&0xff;
             break;
         case GCNFIELD_SDST:
-            rstart = (instrCode1>>16)&0x7f;
+            rstart = (code1>>16)&0x7f;
             break;
         case GCNFIELD_SMRD_SBASE:
+            if (isGCN12)
+                rstart = (code1<<1) & 0x7f;
+            else
+                rstart = (code1>>8) & 0x7e;
+            regSize<<=1; // 2 or 4
             break;
         case GCNFIELD_SMRD_SDST:
+            if (isGCN12)
+                rstart = (code1>>6) & 0x7f;
+            else
+                rstart = (code1>>15) & 0x7f;
+            regSize = 1U<<(regSize-1);
             break;
         case GCNFIELD_SMRD_SOFFSET:
+            if (isGCN12)
+                rstart = (code2&0x7f);
+            else
+                rstart = (code1&0x7f);
             break;
         case GCNFIELD_VOP_SRC0:
+            rstart = code1&0x1ff;
             break;
         case GCNFIELD_VOP_SRC1:
+            rstart = ((code1>>9) & 0xff);
             break;
         case GCNFIELD_VOP_VDST:
+            rstart = ((code1>>17) & 0xff) + 256;
             break;
         case GCNFIELD_VOP_SDST:
+            rstart = ((code1>>17) & 0xff);
             break;
         case GCNFIELD_VOPC_SDST:
+            rstart = code1&0x7f;
             break;
-        case GCNFIELD_VOP3_VSRC0:
+        case GCNFIELD_VOP3_SRC0:
+            rstart = code2&0x1ff;
             break;
         case GCNFIELD_VOP3_SRC1:
+            rstart = (code2>>9) & 0x1ff;
             break;
         case GCNFIELD_VOP3_SRC2:
+            rstart = (code2>>18) & 0x1ff;
             break;
         case GCNFIELD_VOP3_VDST:
+        case GCNFIELD_VINTRP_VSRC0:
+            rstart = (code1&0xff) + 256;
             break;
-        case GCNFIELD_VOP3_VDST0:
+        case GCNFIELD_VOP3_SDST0:
+            rstart = (code1&0xff);
             break;
         case GCNFIELD_VOP3_SSRC:
+            rstart = (code2>>18)&0xff;
             break;
         case GCNFIELD_VOP3_SDST1:
-            break;
-        case GCNFIELD_VINTRP_VSRC0:
+            rstart = (code1>>8)&0xff;
             break;
         case GCNFIELD_VINTRP_VDST:
-            break;
-        case GCNFIELD_DS_ADDR:
-            break;
-        case GCNFIELD_DS_DATA0:
-            break;
-        case GCNFIELD_DS_DATA1:
-            break;
-        case GCNFIELD_DS_VDST:
-            break;
-        case GCNFIELD_M_VADDR:
-            break;
-        case GCNFIELD_M_VDATA:
-            break;
-        case GCNFIELD_M_SRSRC:
-            break;
-        case GCNFIELD_MIMG_SSAMP:
-            break;
-        case GCNFIELD_M_SOFFSET:
-            break;
-        case GCNFIELD_EXP_VSRC0:
-            break;
-        case GCNFIELD_EXP_VSRC1:
-            break;
-        case GCNFIELD_EXP_VSRC2:
-            break;
-        case GCNFIELD_EXP_VSRC3:
-            break;
-        case GCNFIELD_FLAT_ADDR:
-            break;
-        case GCNFIELD_FLAT_DATA:
-            break;
-        case GCNFIELD_FLAT_VDST:
+            rstart = ((code1>>18) & 0xff) + 256;
             break;
         case GCNFIELD_DPPSDWA_SRC0:
+        case GCNFIELD_FLAT_ADDR:
+        case GCNFIELD_DS_ADDR:
+        case GCNFIELD_EXP_VSRC0:
+        case GCNFIELD_M_VADDR:
+            rstart = (code2&0xff) + 256;
+            break;
+        case GCNFIELD_FLAT_DATA:
+        case GCNFIELD_DS_DATA0:
+        case GCNFIELD_EXP_VSRC1:
+        case GCNFIELD_M_VDATA:
+            rstart = ((code2>>8)&0xff) + 256;
+            break;
+        case GCNFIELD_DS_DATA1:
+        case GCNFIELD_EXP_VSRC2:
+            rstart = ((code2>>16)&0xff) + 256;
+            break;
+        case GCNFIELD_DS_VDST:
+        case GCNFIELD_FLAT_VDST:
+        case GCNFIELD_EXP_VSRC3:
+            rstart = (code2>>24) + 256;
+            break;
+        case GCNFIELD_M_SRSRC:
+            rstart = (code2>>14)&0x7c;
+            regSize<<=2; // 4 or 8
+            break;
+        case GCNFIELD_MIMG_SSAMP:
+            rstart = (code2>>19)&0x7c;
+            regSize<<=2; // 4
+            break;
+        case GCNFIELD_M_SOFFSET:
+            rstart = (code2>>24)&0xff;
             break;
         default:
             break;
@@ -1715,7 +1748,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                        GCNFIELD_VOP3_VDST);
         else // SGPRS as dest
             good &= parseSRegRange(asmr, linePtr, dstReg, arch,
-                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP3_VDST0, true,
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP3_SDST0, true,
                        INSTROP_SYMREGRANGE|INSTROP_UNALIGNED);
         if (!skipRequiredComma(asmr, linePtr))
             return;
@@ -1738,7 +1771,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             good &= parseOperand(asmr, linePtr, src0Op, nullptr, arch, regsNum,
                     correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
                     INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|vop3Mods|
-                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR, GCNFIELD_VOP3_VSRC0);
+                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR, GCNFIELD_VOP3_SRC0);
         }
         
         if (mode2 == GCN_VOP3_VINTRP)

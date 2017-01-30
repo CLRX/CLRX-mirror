@@ -91,19 +91,21 @@ public:
     virtual cxbyte getRwFlags(AsmRegField regFied, uint16_t rstart,
                       uint16_t rend) const = 0;
     virtual std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField,
-                    cxbyte rwFlags, uint32_t instrCode1, uint32_t instrCode2) const = 0;
+                    cxbyte rwFlags, const std::vector<cxbyte>& content) const = 0;
 };
 
 /// GCN (register and regvar) Usage handler
 class GCNUsageHandler: public ISAUsageHandler
 {
+private:
+    uint16_t archMask;
 public:
-    GCNUsageHandler();
+    GCNUsageHandler(uint16_t archMask);
     ~GCNUsageHandler();
     
     cxbyte getRwFlags(AsmRegField regFied, uint16_t rstart, uint16_t rend) const;
     std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField, cxbyte rwFlags,
-                    uint32_t instrCode1, uint32_t instrCode2) const;
+                    const std::vector<cxbyte>& content) const;
 };
 
 /// ISA assembler class

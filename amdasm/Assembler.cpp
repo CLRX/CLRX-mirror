@@ -516,13 +516,8 @@ AsmRegVarUsage ISAUsageHandler::nextUsage(const std::vector<cxbyte>& content)
     {   // simple reg usage
         const AsmRegUsageInt& inRU = regUsages[regUsagesPos++];
         rvu.regVar = nullptr;
-        uint32_t code1 = 0, code2 = 0;
-        if (readOffset+4 <= content.size())
-            code1 = ULEV(*reinterpret_cast<const uint32_t*>(content.data()));
-        if (readOffset+8 <= content.size())
-            code2 = ULEV(*reinterpret_cast<const uint32_t*>(content.data()+4));
         const std::pair<uint16_t, uint16_t> regPair =
-                    getRegPair(inRU.regField, inRU.rwFlags, code1, code2);
+                    getRegPair(inRU.regField, inRU.rwFlags, content);
         rvu.rstart = regPair.first;
         rvu.rend = regPair.second;
         rvu.rwFlags = (inRU.rwFlags & ASMVARUS_ACCESS_MASK);
