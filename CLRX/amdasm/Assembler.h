@@ -75,8 +75,6 @@ protected:
     cxbyte defaultInstrSize;
     bool isNext;
     
-    void pushInstrStruct(size_t offset, cxbyte args);
-    void pushRegVarUsage(const AsmRegVarUsage& rvu);
     void skipBytesInInstrStruct();
     
     explicit ISAUsageHandler(const std::vector<cxbyte>& content);

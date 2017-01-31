@@ -419,35 +419,6 @@ ISAUsageHandler::ISAUsageHandler(const std::vector<cxbyte>& _content) :
 ISAUsageHandler::~ISAUsageHandler()
 { }
 
-void ISAUsageHandler::pushInstrStruct(size_t offset, cxbyte args)
-{
-    if (lastOffset != offset || instrStruct.empty())
-    {
-        if (lastOffset>offset)
-            throw Exception("Offset before previous instruction");
-        if (!instrStruct.empty() && offset-lastOffset<defaultInstrSize)
-            throw Exception("Offset between previous instruction");
-        size_t toSkip = !instrStruct.empty() ? 
-                offset - lastOffset - defaultInstrSize : offset;
-        while (toSkip > 0)
-        {
-            size_t skipped = std::min(toSkip, size_t(0x7f));
-            instrStruct.push_back(skipped | 0x80);
-            toSkip -= skipped;
-        }
-        lastOffset = offset;
-        instrStruct.push_back(args);
-    }
-    else // set in this position
-        instrStruct.back() = args;
-}
-
-void ISAUsageHandler::pushRegVarUsage(const AsmRegVarUsage& rvu)
-{
-    regVarUsages.push_back({ rvu.regVar, rvu.rstart, rvu.rend, rvu.regField,
-                rvu.rwFlags, rvu.align });
-}
-
 void ISAUsageHandler::rewind()
 {
     readOffset = instrStructPos = 0;
@@ -488,7 +459,27 @@ void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
             regUsages.back().rwFlags |= 0x80;
         
         if (!regVarUsages.empty() && (regVarUsages.back().rwFlags&0x80))
-            pushInstrStruct(rvu.offset, argFlags);
+        {
+            if (lastOffset != rvu.offset || instrStruct.empty())
+            {
+                if (lastOffset>rvu.offset)
+                    throw Exception("Offset before previous instruction");
+                if (!instrStruct.empty() && rvu.offset - lastOffset < defaultInstrSize)
+                    throw Exception("Offset between previous instruction");
+                size_t toSkip = !instrStruct.empty() ? 
+                        rvu.offset - lastOffset - defaultInstrSize : rvu.offset;
+                while (toSkip > 0)
+                {
+                    size_t skipped = std::min(toSkip, size_t(0x7f));
+                    instrStruct.push_back(skipped | 0x80);
+                    toSkip -= skipped;
+                }
+                lastOffset = rvu.offset;
+                instrStruct.push_back(argFlags);
+            }
+            else // set in this position
+                instrStruct.back() = argFlags;
+        }
         argFlags = 0;
         pushedArgs = 0;
     }
