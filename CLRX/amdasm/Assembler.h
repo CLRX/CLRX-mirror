@@ -88,7 +88,7 @@ public:
     { return isNext; }
     AsmRegVarUsage nextUsage(const std::vector<cxbyte>& content);
     
-    virtual cxbyte getRwFlags(AsmRegField regFied, uint16_t rstart,
+    virtual cxbyte getRwFlags(AsmRegField regField, uint16_t rstart,
                       uint16_t rend) const = 0;
     virtual std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField,
                     cxbyte rwFlags, const std::vector<cxbyte>& content) const = 0;

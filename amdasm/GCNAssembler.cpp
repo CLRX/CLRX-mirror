@@ -123,10 +123,32 @@ GCNUsageHandler::GCNUsageHandler(uint16_t _archMask) : archMask(_archMask)
 GCNUsageHandler::~GCNUsageHandler()
 { }
 
-cxbyte GCNUsageHandler::getRwFlags(AsmRegField regFied,
-           uint16_t rstart, uint16_t rend) const
+cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
+                   uint16_t rstart, uint16_t rend) const
 {
-    return 0;
+    uint16_t regSize = rend-rstart;
+    cxbyte flags;
+    switch (regField)
+    {
+        case GCNFIELD_SMRD_SBASE:
+            flags = (regSize>>1)<<ASMVARUS_REGSIZE_SHIFT;
+            break;
+        case GCNFIELD_SMRD_SDST:
+        {
+            cxbyte out = 0;
+            for (uint16_t v = 1; v < regSize; v<<=1, out++);
+            flags = out<<ASMVARUS_REGSIZE_SHIFT;
+            break;
+        }
+        case GCNFIELD_M_SRSRC:
+        case GCNFIELD_MIMG_SSAMP:
+            flags = (regSize>>2)<<ASMVARUS_REGSIZE_SHIFT; // 4
+            break;
+        default:
+            flags = regSize<<ASMVARUS_REGSIZE_SHIFT;
+            break;
+    }
+    return flags;
 }
 
 std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
