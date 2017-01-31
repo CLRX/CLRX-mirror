@@ -4,8 +4,6 @@
 
 1. About project.
 
-This project is in experimental stage of the development.
-
 Currently, main goal is low-level development tools for Radeon GPU's based on
 the GCN 1.0/1.1/1.2 architecture likes assembler, disassembler, optionally
 linker. These utilities will be designed to be compatible with AMD Catalyst
