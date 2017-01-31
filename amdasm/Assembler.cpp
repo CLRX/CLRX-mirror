@@ -481,24 +481,21 @@ void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
                 regUsages.back().rwFlags |= 0x80;
         }
         
-        if (!regVarUsages.empty() && (regVarUsages.back().rwFlags&0x80))
+        if (lastOffset != rvu.offset || instrStruct.empty())
         {
-            if (lastOffset != rvu.offset || instrStruct.empty())
+            if (lastOffset>rvu.offset)
+                throw Exception("Offset before previous instruction");
+            if (!instrStruct.empty() && rvu.offset - lastOffset < defaultInstrSize)
+                throw Exception("Offset between previous instruction");
+            size_t toSkip = !instrStruct.empty() ? 
+                    rvu.offset - lastOffset - defaultInstrSize : rvu.offset;
+            while (toSkip > 0)
             {
-                if (lastOffset>rvu.offset)
-                    throw Exception("Offset before previous instruction");
-                if (!instrStruct.empty() && rvu.offset - lastOffset < defaultInstrSize)
-                    throw Exception("Offset between previous instruction");
-                size_t toSkip = !instrStruct.empty() ? 
-                        rvu.offset - lastOffset - defaultInstrSize : rvu.offset;
-                while (toSkip > 0)
-                {
-                    size_t skipped = std::min(toSkip, size_t(0x7f));
-                    instrStruct.push_back(skipped | 0x80);
-                    toSkip -= skipped;
-                }
-                lastOffset = rvu.offset;
+                size_t skipped = std::min(toSkip, size_t(0x7f));
+                instrStruct.push_back(skipped | 0x80);
+                toSkip -= skipped;
             }
+            lastOffset = rvu.offset;
         }
         argFlags = 0;
         pushedArgs = 0;

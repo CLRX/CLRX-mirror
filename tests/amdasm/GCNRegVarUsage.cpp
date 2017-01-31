@@ -52,6 +52,49 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         ".regvar rax:s, rbx:s\n"
         ".regvar rax4:s:6, rbx5:s:8\n"
         "s_mov_b32 rax,rbx\n"
+        ".space 12\n"
+        "s_mov_b32 rax4[2],rbx5[1]\n"
+        ".space 134\n"
+        "s_mov_b64 rax4[2:3],rbx5[1:2]\n",
+        {
+            // s_mov_b32 rax,rbx
+            { 0, "rax", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
+            { 0, "rbx", 0, 1, GCNFIELD_SSRC0, ASMRVU_READ, 1 },
+            // s_mov_b32 rax4[2],rbx5[1]
+            { 16, "rax4", 2, 3, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
+            { 16, "rbx5", 1, 2, GCNFIELD_SSRC0, ASMRVU_READ, 1 },
+            // s_mov_b64 rax4[2:3],rbx5[1:2]
+            { 154, "rax4", 2, 4, GCNFIELD_SDST, ASMRVU_WRITE, 2 },
+            { 154, "rbx5", 1, 3, GCNFIELD_SSRC0, ASMRVU_READ, 2 },
+        },
+        true, ""
+    },
+    {   /* SOP1 encoding */
+        ".regvar rax:s, rbx:s\n"
+        ".regvar rax4:s:6, rbx5:s:8\n"
+        ".space 200\n"
+        "s_mov_b32 rax,rbx\n"
+        ".space 12\n"
+        "s_mov_b32 rax4[2],rbx5[1]\n"
+        ".space 134\n"
+        "s_mov_b64 rax4[2:3],rbx5[1:2]\n",
+        {
+            // s_mov_b32 rax,rbx
+            { 200, "rax", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
+            { 200, "rbx", 0, 1, GCNFIELD_SSRC0, ASMRVU_READ, 1 },
+            // s_mov_b32 rax4[2],rbx5[1]
+            { 216, "rax4", 2, 3, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
+            { 216, "rbx5", 1, 2, GCNFIELD_SSRC0, ASMRVU_READ, 1 },
+            // s_mov_b64 rax4[2:3],rbx5[1:2]
+            { 354, "rax4", 2, 4, GCNFIELD_SDST, ASMRVU_WRITE, 2 },
+            { 354, "rbx5", 1, 3, GCNFIELD_SSRC0, ASMRVU_READ, 2 },
+        },
+        true, ""
+    },
+    {   /* SOP1 encoding */
+        ".regvar rax:s, rbx:s\n"
+        ".regvar rax4:s:6, rbx5:s:8\n"
+        "s_mov_b32 rax,rbx\n"
         "s_mov_b32 rax4[2],rbx5[1]\n"
         "s_mov_b64 rax4[2:3],rbx5[1:2]\n"
         "s_ff1_i32_b64 rbx, rbx5[1:2]\n"
