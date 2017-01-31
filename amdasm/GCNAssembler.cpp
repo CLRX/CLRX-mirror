@@ -116,7 +116,8 @@ static void initializeGCNAssembler()
 
 // GCN Usage handler
 
-GCNUsageHandler::GCNUsageHandler(uint16_t _archMask) : archMask(_archMask)
+GCNUsageHandler::GCNUsageHandler(const std::vector<cxbyte>& content,
+                 uint16_t _archMask) : ISAUsageHandler(content), archMask(_archMask)
 {
     defaultInstrSize = 4;
 }
@@ -152,7 +153,7 @@ cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
 }
 
 std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
-                 cxbyte rwFlags, const std::vector<cxbyte>& content) const
+                 cxbyte rwFlags) const
 {
     cxbyte regSize = ((rwFlags >> ASMVARUS_REGSIZE_SHIFT) & 15) + 1;
     uint16_t rstart;

@@ -63,6 +63,7 @@ protected:
     std::vector<cxbyte> instrStruct;
     std::vector<AsmRegUsageInt> regUsages;
     std::vector<AsmRegVarUsageInt> regVarUsages;
+    const std::vector<cxbyte>& content;
     size_t lastOffset;
     size_t readOffset;
     size_t instrStructPos;
@@ -78,7 +79,7 @@ protected:
     void pushRegVarUsage(const AsmRegVarUsage& rvu);
     void skipBytesInInstrStruct();
     
-    explicit ISAUsageHandler();
+    explicit ISAUsageHandler(const std::vector<cxbyte>& content);
 public:
     virtual ~ISAUsageHandler();
     
@@ -86,12 +87,12 @@ public:
     void rewind();
     bool hasNext() const
     { return isNext; }
-    AsmRegVarUsage nextUsage(const std::vector<cxbyte>& content);
+    AsmRegVarUsage nextUsage();
     
     virtual cxbyte getRwFlags(AsmRegField regField, uint16_t rstart,
                       uint16_t rend) const = 0;
     virtual std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField,
-                    cxbyte rwFlags, const std::vector<cxbyte>& content) const = 0;
+                    cxbyte rwFlags) const = 0;
 };
 
 /// GCN (register and regvar) Usage handler
@@ -100,12 +101,11 @@ class GCNUsageHandler: public ISAUsageHandler
 private:
     uint16_t archMask;
 public:
-    GCNUsageHandler(uint16_t archMask);
+    GCNUsageHandler(const std::vector<cxbyte>& content, uint16_t archMask);
     ~GCNUsageHandler();
     
     cxbyte getRwFlags(AsmRegField regFied, uint16_t rstart, uint16_t rend) const;
-    std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField, cxbyte rwFlags,
-                    const std::vector<cxbyte>& content) const;
+    std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField, cxbyte rwFlags) const;
 };
 
 /// ISA assembler class

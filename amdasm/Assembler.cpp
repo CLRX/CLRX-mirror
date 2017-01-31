@@ -410,7 +410,8 @@ bool AsmParseUtils::parseDimensions(Assembler& asmr, const char*& linePtr, cxuin
     return true;
 }
 
-ISAUsageHandler::ISAUsageHandler() : lastOffset(0), readOffset(0),
+ISAUsageHandler::ISAUsageHandler(const std::vector<cxbyte>& _content) :
+            content(_content), lastOffset(0), readOffset(0),
             instrStructPos(0), regUsagesPos(0), regVarUsagesPos(0),
             pushedArgs(0), argPos(0), argFlags(0), isNext(false)
 { }
@@ -493,7 +494,7 @@ void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
     }
 }
 
-AsmRegVarUsage ISAUsageHandler::nextUsage(const std::vector<cxbyte>& content)
+AsmRegVarUsage ISAUsageHandler::nextUsage()
 {
     if (!isNext)
         throw Exception("No reg usage in this code");
@@ -517,7 +518,7 @@ AsmRegVarUsage ISAUsageHandler::nextUsage(const std::vector<cxbyte>& content)
         const AsmRegUsageInt& inRU = regUsages[regUsagesPos++];
         rvu.regVar = nullptr;
         const std::pair<uint16_t, uint16_t> regPair =
-                    getRegPair(inRU.regField, inRU.rwFlags, content);
+                    getRegPair(inRU.regField, inRU.rwFlags);
         rvu.rstart = regPair.first;
         rvu.rend = regPair.second;
         rvu.rwFlags = (inRU.rwFlags & ASMVARUS_ACCESS_MASK);
