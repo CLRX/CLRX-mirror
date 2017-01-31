@@ -508,7 +508,7 @@ AsmRegVarUsage ISAUsageHandler::nextUsage(const std::vector<cxbyte>& content)
         rvu.rstart = inRVU.rstart;
         rvu.rend = inRVU.rend;
         rvu.regField = inRVU.regField;
-        rvu.rwFlags = inRVU.rwFlags&0x7f;
+        rvu.rwFlags = inRVU.rwFlags & ASMVARUS_ACCESS_MASK;
         rvu.align = inRVU.align;
         lastRegUsage = ((inRVU.rwFlags&0x80) != 0);
     }
