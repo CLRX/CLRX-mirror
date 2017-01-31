@@ -205,7 +205,10 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
         case GCNFIELD_VOP_SRC0:
             rstart = code1&0x1ff;
             break;
-        case GCNFIELD_VOP_SRC1:
+        case GCNFIELD_VOP_VSRC1:
+            rstart = ((code1>>9) & 0xff) + 256;
+            break;
+        case GCNFIELD_VOP_SSRC1:
             rstart = ((code1>>9) & 0xff);
             break;
         case GCNFIELD_VOP_VDST:
@@ -1253,7 +1256,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             correctOpType(regsNum, literalConstsFlags) | vopOpModFlags |
             (!sgprRegInSrc1 ? INSTROP_VREGS : 0)|INSTROP_SSOURCE|INSTROP_SREGS|
             INSTROP_UNALIGNED | (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0)|
-            INSTROP_READ, GCNFIELD_VOP_SRC1);
+            INSTROP_READ, (!sgprRegInSrc1) ? GCNFIELD_VOP_VSRC1 : GCNFIELD_VOP_SSRC1);
     
     if (mode1 == GCN_ARG2_IMM)
     {
@@ -1267,7 +1270,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             return;
         gcnAsm->setCurrentRVU(4);
         good &= parseSRegRange(asmr, linePtr, srcCCReg, arch, 2, GCNFIELD_VOP3_SSRC, true,
-                               INSTROP_SYMREGRANGE|INSTROP_UNALIGNED);
+                       INSTROP_SYMREGRANGE|INSTROP_UNALIGNED|INSTROP_READ);
     }
     
     // modifiers
@@ -1297,6 +1300,17 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         asmr.printError(instrPlace, "Literal with SGPR or M0 is illegal");
         return;
+    }
+    
+    if (vop3) // modify fields in reg usage
+    {
+        AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
+        rvus[0].regField = (rvus[0].regField==GCNFIELD_VOP_VDST) ? GCNFIELD_VOP3_VDST :
+                        GCNFIELD_VOP3_SDST0;
+        if (rvus[2].regField != ASMFIELD_NONE)
+            rvus[2].regField = GCNFIELD_VOP3_SRC0;
+        if (rvus[3].regField != ASMFIELD_NONE)
+            rvus[3].regField = GCNFIELD_VOP3_SRC1;
     }
     
     cxuint sgprsReaded = 0;
@@ -1616,7 +1630,7 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 correctOpType(regsNum, literalConstsFlags) | INSTROP_VOP3MODS|
                 INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
                 (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0),
-                GCNFIELD_VOP_SRC1);
+                GCNFIELD_VOP_VSRC1);
     // modifiers
     VOPExtraModifiers extraMods{};
     good &= parseVOPModifiers(asmr, linePtr, modifiers, (isGCN12)?&extraMods:nullptr, true);
