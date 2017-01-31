@@ -217,9 +217,6 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
         case GCNFIELD_VOP_SDST:
             rstart = ((code1>>17) & 0xff);
             break;
-        case GCNFIELD_VOPC_SDST:
-            rstart = code1&0x7f;
-            break;
         case GCNFIELD_VOP3_SRC0:
             rstart = code2&0x1ff;
             break;
@@ -1617,6 +1614,7 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
     
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     RegRange dstReg(0, 0);
     GCNOperand src0Op{};
     std::unique_ptr<AsmExpression> src0OpExpr;
@@ -1624,26 +1622,29 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> src1OpExpr;
     cxbyte modifiers = 0;
     
-    good &= parseSRegRange(asmr, linePtr, dstReg, arch, 2, GCNFIELD_VOPC_SDST, true,
-                           INSTROP_SYMREGRANGE|INSTROP_UNALIGNED);
+    gcnAsm->setCurrentRVU(0);
+    good &= parseSRegRange(asmr, linePtr, dstReg, arch, 2, GCNFIELD_VOP3_SDST0, true,
+                           INSTROP_SYMREGRANGE|INSTROP_UNALIGNED|INSTROP_WRITE);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     
     const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
                 (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
     cxuint regsNum = (gcnInsn.mode&GCN_REG_SRC0_64)?2:1;
+    gcnAsm->setCurrentRVU(1);
     good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch, regsNum,
                     correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
                     INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
-                    INSTROP_VOP3MODS, GCNFIELD_VOP_SRC0);
+                    INSTROP_VOP3MODS|INSTROP_READ, GCNFIELD_VOP_SRC0);
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
     regsNum = (gcnInsn.mode&GCN_REG_SRC1_64)?2:1;
+    gcnAsm->setCurrentRVU(2);
     good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch, regsNum,
                 correctOpType(regsNum, literalConstsFlags) | INSTROP_VOP3MODS|
                 INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
-                (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0),
+                INSTROP_READ| (src0Op.range.isVal(255) ? INSTROP_ONLYINLINECONSTS : 0),
                 GCNFIELD_VOP_VSRC1);
     // modifiers
     VOPExtraModifiers extraMods{};
@@ -1651,23 +1652,33 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    bool vop3 = (dstReg.start!=106) || (src1Op.range.start<256) ||
+    bool vop3 = //(dstReg.start!=106) || (src1Op.range.start<256) ||
+        (!dstReg.isVal(106)) || (src1Op.range.isNonVGPR()) ||
         (!isGCN12 && (src0Op.vopMods!=0 || src1Op.vopMods!=0)) ||
         (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0 ||
         (gcnEncSize==GCNEncSize::BIT64);
     
-    if ((src0Op.range.start==255 || src1Op.range.start==255) &&
-        (src0Op.range.start<108 || src0Op.range.start==124 ||
-         src1Op.range.start<108|| src1Op.range.start==124))
+    if ((src0Op.range.isVal(255) || src1Op.range.isVal(255)) &&
+        (src0Op.range.isSGPR() || src0Op.range.isVal(124) ||
+         src1Op.range.isSGPR() || src1Op.range.isVal(124)))
     {
         asmr.printError(instrPlace, "Literal with SGPR or M0 is illegal");
         return;
     }
-    if (src0Op.range.start<108 && src1Op.range.start<108 &&
-        src0Op.range.start!=src1Op.range.start)
+    if (src0Op.range.isSGPR() && src1Op.range.isSGPR() &&
+        src0Op.range.bstart()!=src1Op.range.bstart())
     {   /* include VCCs (???) */
         asmr.printError(instrPlace, "More than one SGPR to read in instruction");
         return;
+    }
+    
+    if (vop3) // modify fields in reg usage
+    {
+        AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
+        if (rvus[1].regField != ASMFIELD_NONE)
+            rvus[1].regField = GCNFIELD_VOP3_SRC0;
+        if (rvus[2].regField != ASMFIELD_NONE)
+            rvus[2].regField = GCNFIELD_VOP3_SRC1;
     }
     
     const bool needImm = src0Op.range.start==255 || src1Op.range.start==255;
@@ -1684,7 +1695,7 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
         vop3 = true;
     
-    if (vop3 && (src0Op.range.start==255 || src1Op.range.start==255))
+    if (vop3 && (src0Op.range.isVal(255) || src1Op.range.isVal(255)))
     {
         asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
         return;
