@@ -80,6 +80,7 @@ protected:
     explicit ISAUsageHandler(const std::vector<cxbyte>& content);
 public:
     virtual ~ISAUsageHandler();
+    virtual ISAUsageHandler* copy() const = 0;
     
     void pushUsage(const AsmRegVarUsage& rvu);
     void rewind();
@@ -101,6 +102,8 @@ private:
 public:
     GCNUsageHandler(const std::vector<cxbyte>& content, uint16_t archMask);
     ~GCNUsageHandler();
+    
+    ISAUsageHandler* copy() const;
     
     cxbyte getRwFlags(AsmRegField regFied, uint16_t rstart, uint16_t rend) const;
     std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField, cxbyte rwFlags) const;

@@ -152,6 +152,12 @@ cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
     return flags;
 }
 
+ISAUsageHandler* GCNUsageHandler::copy() const
+{
+    std::unique_ptr<ISAUsageHandler> newPtr(new GCNUsageHandler(*this));
+    return newPtr.release();
+}
+
 std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
                  cxbyte rwFlags) const
 {

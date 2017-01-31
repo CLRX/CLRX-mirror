@@ -34,6 +34,39 @@
 
 using namespace CLRX;
 
+AsmSection::AsmSection(const AsmSection& section)
+{
+    name = section.name;
+    kernelId = section.kernelId;
+    type = section.type;
+    flags = section.flags;
+    alignment = section.alignment;
+    size = section.size;
+    content = section.content;
+    
+    if (section.usageHandler!=nullptr)
+        usageHandler.reset(section.usageHandler->copy());
+    regVarUsages = section.regVarUsages;
+    codeFlow = section.codeFlow;
+}
+
+AsmSection& AsmSection::operator=(const AsmSection& section)
+{
+    name = section.name;
+    kernelId = section.kernelId;
+    type = section.type;
+    flags = section.flags;
+    alignment = section.alignment;
+    size = section.size;
+    content = section.content;
+    
+    if (section.usageHandler!=nullptr)
+        usageHandler.reset(section.usageHandler->copy());
+    regVarUsages = section.regVarUsages;
+    codeFlow = section.codeFlow;
+    return *this;
+}
+
 void AsmKernel::openCodeRegion(size_t offset)
 {
     if (!codeRegions.empty() && codeRegions.back().second == SIZE_MAX)

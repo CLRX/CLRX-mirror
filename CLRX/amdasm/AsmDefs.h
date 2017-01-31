@@ -542,6 +542,8 @@ struct AsmCodeFlowEntry
     AsmCodeFlowType type;
 };
 
+class ISAUsageHandler;
+
 /// assembler section
 struct AsmSection
 {
@@ -553,10 +555,21 @@ struct AsmSection
     uint64_t size;  ///< section size
     std::vector<cxbyte> content;    ///< content of section
     
+    std::unique_ptr<ISAUsageHandler> usageHandler;
     /// reg-var usage in section
     std::vector<AsmRegVarUsage> regVarUsages;
     /// code flow info
     std::vector<AsmCodeFlowEntry> codeFlow;
+    
+    AsmSection();
+    AsmSection(const char* _name, cxuint _kernelId, AsmSectionType _type,
+            Flags _flags, uint64_t _alignment, uint64_t _size = 0)
+            : name(_name), kernelId(_kernelId), type(_type), flags(_flags),
+              alignment(_alignment), size(_size)
+    { }
+    
+    AsmSection(const AsmSection& section);
+    AsmSection& operator=(const AsmSection& section);
     
     void addRegVarUsage(const AsmRegVarUsage& regVarUsage)
     { regVarUsages.push_back(regVarUsage); }
