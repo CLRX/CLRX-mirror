@@ -124,6 +124,11 @@ GCNUsageHandler::GCNUsageHandler(const std::vector<cxbyte>& content,
 GCNUsageHandler::~GCNUsageHandler()
 { }
 
+ISAUsageHandler* GCNUsageHandler::copy() const
+{
+    return new GCNUsageHandler(*this);
+}
+
 cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
                    uint16_t rstart, uint16_t rend) const
 {
@@ -151,11 +156,6 @@ cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
             break;
     }
     return flags;
-}
-
-ISAUsageHandler* GCNUsageHandler::copy() const
-{
-    return new GCNUsageHandler(*this);
 }
 
 std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
@@ -276,7 +276,7 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
             rstart = (code2>>24)&0xff;
             break;
         default:
-            break;
+            throw Exception("Unknown GCNField");
     }
     return { rstart, rstart+regSize };
 }
