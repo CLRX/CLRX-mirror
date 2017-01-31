@@ -429,13 +429,14 @@ void ISAUsageHandler::rewind()
 void ISAUsageHandler::skipBytesInInstrStruct()
 {
     argPos = 0;
-    while ((instrStruct[instrStructPos]&0x80) != 0)
+    while (instrStructPos < instrStruct.size() &&
+        (instrStruct[instrStructPos]&0x80) != 0)
     {
         if (instrStructPos != 0)
             readOffset += defaultInstrSize;
         readOffset += (instrStruct[instrStructPos] & 0x7f);
     }
-    isNext = (instrStructPos != instrStruct.size());
+    isNext = (instrStructPos < instrStruct.size());
 }
 
 void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
