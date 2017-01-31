@@ -127,7 +127,7 @@ GCNUsageHandler::~GCNUsageHandler()
 cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
                    uint16_t rstart, uint16_t rend) const
 {
-    uint16_t regSize = rend-rstart;
+    uint16_t regSize = rend-rstart-1;
     cxbyte flags;
     switch (regField)
     {
@@ -154,8 +154,7 @@ cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
 
 ISAUsageHandler* GCNUsageHandler::copy() const
 {
-    std::unique_ptr<ISAUsageHandler> newPtr(new GCNUsageHandler(*this));
-    return newPtr.release();
+    return new GCNUsageHandler(*this);
 }
 
 std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
@@ -165,9 +164,9 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
     uint16_t rstart;
     uint32_t code1 = 0, code2 = 0;
     if (readOffset+4 <= content.size())
-        code1 = ULEV(*reinterpret_cast<const uint32_t*>(content.data()));
+        code1 = ULEV(*reinterpret_cast<const uint32_t*>(content.data()+readOffset));
     if (readOffset+8 <= content.size())
-        code2 = ULEV(*reinterpret_cast<const uint32_t*>(content.data()+4));
+        code2 = ULEV(*reinterpret_cast<const uint32_t*>(content.data()+readOffset+4));
     
     const bool isGCN12 = (archMask & ARCH_RX3X0)!=0;
     
@@ -2986,9 +2985,14 @@ void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 };
 
+ISAUsageHandler* GCNAssembler::createUsageHandler(std::vector<cxbyte>& content) const
+{
+    return new GCNUsageHandler(content, curArchMask);
+}
+
 void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
             const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output,
-            std::vector<AsmRegVarUsage>& regVarUsages)
+            ISAUsageHandler* usageHandler)
 {
     CString mnemonic;
     size_t inMnemLen = inMnemonic.size();
@@ -3115,7 +3119,7 @@ void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
         default:
             break;
     }
-    flushInstrRVUs(regVarUsages);
+    flushInstrRVUs(usageHandler);
 }
 
 bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSectionId,

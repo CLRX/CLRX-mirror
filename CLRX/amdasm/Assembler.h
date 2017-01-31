@@ -84,6 +84,7 @@ public:
     
     void pushUsage(const AsmRegVarUsage& rvu);
     void rewind();
+    void flush();
     bool hasNext() const
     { return isNext; }
     AsmRegVarUsage nextUsage();
@@ -132,10 +133,12 @@ public:
     /// destructor
     virtual ~ISAAssembler();
     
+    virtual ISAUsageHandler* createUsageHandler(std::vector<cxbyte>& content) const = 0;
+    
     /// assemble single line
     virtual void assemble(const CString& mnemonic, const char* mnemPlace,
               const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output,
-              std::vector<AsmRegVarUsage>& regVarUsages) = 0;
+              ISAUsageHandler* usageHandler) = 0;
     /// resolve code with location, target and value
     virtual bool resolveCode(const AsmSourcePos& sourcePos, cxuint targetSectionId,
                  cxbyte* sectionData, size_t offset, AsmExprTargetType targetType,
@@ -191,11 +194,11 @@ private:
     void setRegVarUsage(const AsmRegVarUsage& rvu)
     { instrRVUs[currentRVUIndex] = rvu; }
     
-    void flushInstrRVUs(std::vector<AsmRegVarUsage>& regVarUsages)
+    void flushInstrRVUs(ISAUsageHandler* usageHandler)
     {
         for (const AsmRegVarUsage& rvu: instrRVUs)
             if (rvu.regField != ASMFIELD_NONE)
-                regVarUsages.push_back(rvu);
+                usageHandler->pushUsage(rvu);
     }
 public:
     /// constructor
@@ -203,9 +206,11 @@ public:
     /// destructor
     ~GCNAssembler();
     
+    ISAUsageHandler* createUsageHandler(std::vector<cxbyte>& content) const;
+    
     void assemble(const CString& mnemonic, const char* mnemPlace, const char* linePtr,
                   const char* lineEnd, std::vector<cxbyte>& output,
-                  std::vector<AsmRegVarUsage>& regVarUsages);
+                  ISAUsageHandler* usageHandler);
     bool resolveCode(const AsmSourcePos& sourcePos, cxuint targetSectionId,
                  cxbyte* sectionData, size_t offset, AsmExprTargetType targetType,
                  cxuint sectionId, uint64_t value);

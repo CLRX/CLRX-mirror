@@ -285,17 +285,18 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
         oss << "FAILED for " << " regVarUsageGCNCase#" << i;
         throw Exception(oss.str());
     }
-    const AsmSection& section = assembler.getSections()[0];
-    assertValue("testGCNRegVarUsages", testCaseName+".size",
-                    testCase.regVarUsages.size(), section.regVarUsages.size());
-    for (size_t j = 0; j < section.regVarUsages.size(); j++)
+    /*assertValue("testGCNRegVarUsages", testCaseName+".size",
+                    testCase.regVarUsages.size(), section.regVarUsages.size());*/
+    ISAUsageHandler* usageHandler = assembler.getSections()[0].usageHandler.get();
+    usageHandler->rewind();
+    for (size_t j = 0; usageHandler->hasNext(); j++)
     {
+        const AsmRegVarUsage resultRvu = usageHandler->nextUsage();
         std::ostringstream rvuOss;
         rvuOss << ".regVarUsage#" << j << ".";
         rvuOss.flush();
         std::string rvuName(rvuOss.str());
         const AsmRegVarUsageData& expectedRvu = testCase.regVarUsages[j];
-        const AsmRegVarUsage& resultRvu = section.regVarUsages[j];
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"offset",
                     expectedRvu.offset, resultRvu.offset);
         if (expectedRvu.regVarName==nullptr)

@@ -556,8 +556,6 @@ struct AsmSection
     std::vector<cxbyte> content;    ///< content of section
     
     std::unique_ptr<ISAUsageHandler> usageHandler;
-    /// reg-var usage in section
-    std::vector<AsmRegVarUsage> regVarUsages;
     /// code flow info
     std::vector<AsmCodeFlowEntry> codeFlow;
     
@@ -570,9 +568,6 @@ struct AsmSection
     
     AsmSection(const AsmSection& section);
     AsmSection& operator=(const AsmSection& section);
-    
-    void addRegVarUsage(const AsmRegVarUsage& regVarUsage)
-    { regVarUsages.push_back(regVarUsage); }
     
     void addCodeFlowEntry(const AsmCodeFlowEntry& entry)
     { codeFlow.push_back(entry); }

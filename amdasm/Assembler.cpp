@@ -46,7 +46,6 @@ AsmSection::AsmSection(const AsmSection& section)
     
     if (section.usageHandler!=nullptr)
         usageHandler.reset(section.usageHandler->copy());
-    regVarUsages = section.regVarUsages;
     codeFlow = section.codeFlow;
 }
 
@@ -62,7 +61,6 @@ AsmSection& AsmSection::operator=(const AsmSection& section)
     
     if (section.usageHandler!=nullptr)
         usageHandler.reset(section.usageHandler->copy());
-    regVarUsages = section.regVarUsages;
     codeFlow = section.codeFlow;
     return *this;
 }
@@ -461,36 +459,27 @@ void ISAUsageHandler::rewind()
 
 void ISAUsageHandler::skipBytesInInstrStruct()
 {
+    if (instrStructPos != 0 || argPos != 0)
+        readOffset += defaultInstrSize;
     argPos = 0;
-    while (instrStructPos < instrStruct.size() &&
-        (instrStruct[instrStructPos]&0x80) != 0)
-    {
-        if (instrStructPos != 0)
-            readOffset += defaultInstrSize;
+    for (;instrStructPos < instrStruct.size() &&
+        (instrStruct[instrStructPos]&0x80) != 0; instrStructPos++)
         readOffset += (instrStruct[instrStructPos] & 0x7f);
-    }
     isNext = (instrStructPos < instrStruct.size());
 }
 
 void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
 {
-    if (rvu.regVar != nullptr)
-    {
-        argFlags |= (1U<<pushedArgs);
-        regVarUsages.push_back({ rvu.regVar, rvu.rstart, rvu.rend, rvu.regField,
-            rvu.rwFlags, rvu.align });
-    }
-    else // reg usages
-        regUsages.push_back({ rvu.regField,cxbyte(rvu.rwFlags |
-                    getRwFlags(rvu.regField, rvu.rstart, rvu.rend)) });
-    pushedArgs++;
-    
     if (lastOffset != rvu.offset)
     {
-        if ((argFlags & (1U<<(pushedArgs-1))) != 0)
-            regVarUsages.back().rwFlags |= 0x80;
-        else // reg usages
-            regUsages.back().rwFlags |= 0x80;
+        if (pushedArgs != 0)
+        {
+            instrStruct.push_back(argFlags);
+            if ((argFlags & (1U<<(pushedArgs-1))) != 0)
+                regVarUsages.back().rwFlags |= 0x80;
+            else // reg usages
+                regUsages.back().rwFlags |= 0x80;
+        }
         
         if (!regVarUsages.empty() && (regVarUsages.back().rwFlags&0x80))
         {
@@ -509,13 +498,32 @@ void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
                     toSkip -= skipped;
                 }
                 lastOffset = rvu.offset;
-                instrStruct.push_back(argFlags);
             }
-            else // set in this position
-                instrStruct.back() = argFlags;
         }
         argFlags = 0;
         pushedArgs = 0;
+    }
+    if (rvu.regVar != nullptr)
+    {
+        argFlags |= (1U<<pushedArgs);
+        regVarUsages.push_back({ rvu.regVar, rvu.rstart, rvu.rend, rvu.regField,
+            rvu.rwFlags, rvu.align });
+    }
+    else // reg usages
+        regUsages.push_back({ rvu.regField,cxbyte(rvu.rwFlags |
+                    getRwFlags(rvu.regField, rvu.rstart, rvu.rend)) });
+    pushedArgs++;
+}
+
+void ISAUsageHandler::flush()
+{
+    if (pushedArgs != 0)
+    {
+        instrStruct.push_back(argFlags);
+        if ((argFlags & (1U<<(pushedArgs-1))) != 0)
+            regVarUsages.back().rwFlags |= 0x80;
+        else // reg usages
+            regUsages.back().rwFlags |= 0x80;
     }
 }
 
@@ -548,13 +556,16 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
         rvu.rend = regPair.second;
         rvu.rwFlags = (inRU.rwFlags & ASMRVU_ACCESS_MASK);
         rvu.regField = inRU.regField;
-        rvu.align = 1;
+        rvu.align = 0;
         lastRegUsage = ((inRU.rwFlags&0x80) != 0);
     }
     argPos++;
     // after instr
     if (lastRegUsage)
+    {
+        instrStructPos++;
         skipBytesInInstrStruct();
+    }
     return rvu;
 }
 
@@ -2213,9 +2224,15 @@ bool Assembler::assemble()
                        "Writing data into non-writeable section is illegal");
                     continue;
                 }
+                
+                if (sections[currentSection].usageHandler == nullptr)
+                    sections[currentSection].usageHandler.reset(
+                            isaAssembler->createUsageHandler(
+                                    sections[currentSection].content));
+                
                 isaAssembler->assemble(firstName, stmtPlace, linePtr, end,
                            sections[currentSection].content,
-                           sections[currentSection].regVarUsages);
+                           sections[currentSection].usageHandler.get());
                 currentOutPos = sections[currentSection].getSize();
             }
         }
@@ -2247,6 +2264,10 @@ bool Assembler::assemble()
         }
         clauses.pop();
     }
+    
+    for(AsmSection& section: sections)
+        if (section.usageHandler!=nullptr)
+            section.usageHandler->flush();
     
     resolvingRelocs = true;
     for (AsmSymbolEntry& symEntry: symbolMap)
