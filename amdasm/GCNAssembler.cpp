@@ -137,6 +137,7 @@ cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
         case GCNFIELD_SMRD_SDST:
         {
             cxbyte out = 0;
+            regSize += 1;
             for (uint16_t v = 1; v < regSize; v<<=1, out++);
             flags = out<<ASMRVU_REGSIZE_SHIFT;
             break;
