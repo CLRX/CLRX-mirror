@@ -11,7 +11,7 @@ that software:
 * clrxasm - the GCN assembler
 * clrxdisasm - the GCN disassembler
 
-Both tools can operate on two binary formats:
+Both tools can operate on four binary formats:
 
 * the AMD Catalyst OpenCL program binaries
 * the GalliumCompute (Mesa) program binaries
