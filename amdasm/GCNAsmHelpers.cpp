@@ -150,8 +150,8 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
                     align = regsNum==2 ? 2 : regsNum>=3 ? 4 : 1;
                 gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), regVarEntry,
                     uint16_t(rstart), uint16_t(rend), regField,
-                    cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
-                    ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), align });
+                    cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
+                    ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), align });
             }
             regPair = { rstart, rend, regVar };
             return true;
@@ -252,8 +252,8 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
             if (regField != ASMFIELD_NONE)
                 gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
                     uint16_t(rstart), uint16_t(rend), regField,
-                    cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
-                    ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
+                    cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
+                    ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
             
             regPair = { rstart, rend, symEntry->second.regVar };
             return true;
@@ -300,8 +300,8 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
                     if (regField != ASMFIELD_NONE)
                         gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
                             regPair.start, regPair.end, regField,
-                            cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
-                            ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
+                            cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
+                            ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
                     
                     return true;
                 }
@@ -389,8 +389,8 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
         if (regField != ASMFIELD_NONE)
             gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
                 regPair.start, regPair.end, regField,
-                cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
-                ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
+                cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
+                ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
         return true;
     } catch(const ParseException& ex)
     {
@@ -481,8 +481,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                     if (regField != ASMFIELD_NONE)
                         gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
                             regPair.start, regPair.end, regField,
-                            cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
-                            ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
+                            cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
+                            ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
                 }
                 else
                     regPair = { 112+value, 112+value+1 };
@@ -698,8 +698,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             if (regField != ASMFIELD_NONE)
                 gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
                     regPair.start, regPair.end, regField,
-                    cxbyte(((flags & INSTROP_READ)!=0 ? ASMVARUS_READ: 0) |
-                    ((flags & INSTROP_WRITE)!=0 ? ASMVARUS_WRITE : 0)), 0 });
+                    cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
+                    ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
         }
         else
             regPair = { 112+value1, 112+uint16_t(value2)+1 };

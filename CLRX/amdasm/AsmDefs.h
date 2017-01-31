@@ -490,12 +490,12 @@ typedef std::unordered_map<CString, AsmRegVar> AsmRegVarMap;
 typedef AsmRegVarMap::value_type AsmRegVarEntry;
 
 enum : cxbyte {
-    ASMVARUS_READ = 1,
-    ASMVARUS_WRITE = 2,
-    ASMVARUS_ACCESS_MASK = 3,
-    ASMVARUS_REGTYPE_MASK = 4,
-    ASMVARUS_REGSIZE_SHIFT = 3,
-    ASMVARUS_REGSIZE_MASK = 0x78
+    ASMRVU_READ = 1,
+    ASMRVU_WRITE = 2,
+    ASMRVU_ACCESS_MASK = 3,
+    ASMRVU_REGTYPE_MASK = 4,
+    ASMRVU_REGSIZE_SHIFT = 3,
+    ASMRVU_REGSIZE_MASK = 0x78
 };
 
 /// regvar usage in code

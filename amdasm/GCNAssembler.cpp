@@ -132,21 +132,21 @@ cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
     switch (regField)
     {
         case GCNFIELD_SMRD_SBASE:
-            flags = (regSize>>1)<<ASMVARUS_REGSIZE_SHIFT;
+            flags = (regSize>>1)<<ASMRVU_REGSIZE_SHIFT;
             break;
         case GCNFIELD_SMRD_SDST:
         {
             cxbyte out = 0;
             for (uint16_t v = 1; v < regSize; v<<=1, out++);
-            flags = out<<ASMVARUS_REGSIZE_SHIFT;
+            flags = out<<ASMRVU_REGSIZE_SHIFT;
             break;
         }
         case GCNFIELD_M_SRSRC:
         case GCNFIELD_MIMG_SSAMP:
-            flags = (regSize>>2)<<ASMVARUS_REGSIZE_SHIFT; // 4
+            flags = (regSize>>2)<<ASMRVU_REGSIZE_SHIFT; // 4
             break;
         default:
-            flags = regSize<<ASMVARUS_REGSIZE_SHIFT;
+            flags = regSize<<ASMRVU_REGSIZE_SHIFT;
             break;
     }
     return flags;
@@ -155,7 +155,7 @@ cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
 std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
                  cxbyte rwFlags) const
 {
-    cxbyte regSize = ((rwFlags >> ASMVARUS_REGSIZE_SHIFT) & 15) + 1;
+    cxbyte regSize = ((rwFlags >> ASMRVU_REGSIZE_SHIFT) & 15) + 1;
     uint16_t rstart;
     uint32_t code1 = 0, code2 = 0;
     if (readOffset+4 <= content.size())

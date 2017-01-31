@@ -509,7 +509,7 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
         rvu.rstart = inRVU.rstart;
         rvu.rend = inRVU.rend;
         rvu.regField = inRVU.regField;
-        rvu.rwFlags = inRVU.rwFlags & ASMVARUS_ACCESS_MASK;
+        rvu.rwFlags = inRVU.rwFlags & ASMRVU_ACCESS_MASK;
         rvu.align = inRVU.align;
         lastRegUsage = ((inRVU.rwFlags&0x80) != 0);
     }
@@ -521,7 +521,7 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
                     getRegPair(inRU.regField, inRU.rwFlags);
         rvu.rstart = regPair.first;
         rvu.rend = regPair.second;
-        rvu.rwFlags = (inRU.rwFlags & ASMVARUS_ACCESS_MASK);
+        rvu.rwFlags = (inRU.rwFlags & ASMRVU_ACCESS_MASK);
         rvu.regField = inRU.regField;
         rvu.align = 1;
         lastRegUsage = ((inRU.rwFlags&0x80) != 0);
