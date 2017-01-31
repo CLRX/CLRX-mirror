@@ -600,7 +600,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         {   // otherwise
             linePtr = oldLinePtr;
             if (!parseRegVarRange(asmr, linePtr, regPair, 0, regsNum, regField,
-                    INSTROP_SREGS | (flags&INSTROP_ACCESS_MASK), false))
+                    INSTROP_SREGS|(flags&(INSTROP_ACCESS_MASK|INSTROP_UNALIGNED)), false))
                 return false;
             if (!regPair && (flags&INSTROP_SYMREGRANGE) != 0)
             {
