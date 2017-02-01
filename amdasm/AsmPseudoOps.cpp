@@ -2071,7 +2071,7 @@ void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace
             if (!getJumpValueArg(asmr, target, expr, linePtr))
                 continue;
             asmr.sections[asmr.currentSection].addCodeFlowEntry({ 
-                    size_t(asmr.currentOutPos), target, type });
+                    size_t(asmr.currentOutPos), size_t(target), type });
             if (expr)
                 expr->setTarget(AsmExprTarget::codeFlowTarget(asmr.currentSection,
                         asmr.sections[asmr.currentSection].codeFlow.size()-1));
