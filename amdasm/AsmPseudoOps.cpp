@@ -2071,7 +2071,7 @@ void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace
             if (!getJumpValueArg(asmr, target, expr, linePtr))
                 continue;
             asmr.sections[asmr.currentSection].addCodeFlowEntry({ 
-                    asmr.currentOutPos, target, type });
+                    size_t(asmr.currentOutPos), target, type });
             if (expr)
                 expr->setTarget(AsmExprTarget::codeFlowTarget(asmr.currentSection,
                         asmr.sections[asmr.currentSection].codeFlow.size()-1));
@@ -2080,7 +2080,7 @@ void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace
     }
     else // single entry without target
         asmr.sections[asmr.currentSection].addCodeFlowEntry({ 
-                    asmr.currentOutPos, 0, type });
+                    size_t(asmr.currentOutPos), 0, type });
     
     checkGarbagesAtEnd(asmr, linePtr);
 }
