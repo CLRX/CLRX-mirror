@@ -20,6 +20,7 @@
 #include <CLRX/Config.h>
 #include <cstdint>
 #include <string>
+#include <inttypes.h>
 #include <ostream>
 #include <cstdio>
 #include <memory>
@@ -648,8 +649,8 @@ static void dumpAmdCL2KernelConfig(std::ostream& output, const AmdCL2KernelConfi
     
     if (config.localSize!=0)
     {
-        bufSize = snprintf(buf, 100, "        .localsize %llu\n",
-                       cxullong(config.localSize));
+        bufSize = snprintf(buf, 100, "        .localsize %" PRIu64 "\n",
+                       uint64_t(config.localSize));
         output.write(buf, bufSize);
     }
     if (config.gdsSize!=0)

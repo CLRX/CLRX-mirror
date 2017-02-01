@@ -23,6 +23,7 @@
 #include <string>
 #include <ostream>
 #include <memory>
+#include <inttypes.h>
 #include <unordered_map>
 #include <cstring>
 #include <vector>
@@ -1269,7 +1270,7 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
             output.write(", ", 2);
         if (arg.ptrSpace==KernelPtrSpace::CONSTANT && !cl20)
         {   // constant size
-            bufSize = snprintf(buf, 100, ", %llu", cxullong(arg.constSpaceSize));
+            bufSize = snprintf(buf, 100, ", %" PRIu64, uint64_t(arg.constSpaceSize));
             output.write(buf, bufSize);
         }
         if (arg.ptrSpace!=KernelPtrSpace::LOCAL && !cl20)
@@ -1331,8 +1332,8 @@ static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& con
     }
     if (config.hwLocalSize!=0)
     {
-        bufSize = snprintf(buf, 100, "        .hwlocal %llu\n",
-                       cxullong(config.hwLocalSize));
+        bufSize = snprintf(buf, 100, "        .hwlocal %" PRIu64 "\n",
+                       uint64_t(config.hwLocalSize));
         output.write(buf, bufSize);
     }
     bufSize = snprintf(buf, 100, "        .floatmode 0x%02x\n", config.floatMode);
