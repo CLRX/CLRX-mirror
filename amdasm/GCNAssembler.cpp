@@ -1939,14 +1939,14 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         cxuint numSgprToRead = 0;
         //if (src0Op.range.start<108)
-        if (src0Op.range.isNonVGPR())
+        if (src0Op.range.isSGPR())
             numSgprToRead++;
         //if (src1Op && src1Op.range.start<108 &&
-        if (src1Op && src1Op.range.isNonVGPR() &&
+        if (src1Op && src1Op.range.isSGPR() &&
                     src0Op.range.start!=src1Op.range.start)
             numSgprToRead++;
         //if (src2Op && src2Op.range.start<108 &&
-        if (src2Op && src2Op.range.isNonVGPR() &&
+        if (src2Op && src2Op.range.isSGPR() &&
                 src0Op.range.start!=src2Op.range.start &&
                 src1Op.range.start!=src2Op.range.start)
             numSgprToRead++;
