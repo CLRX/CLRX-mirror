@@ -1673,8 +1673,6 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:37: Error: Required 2 vector registers\n" },
     { "   v_fma_f64  v[55:56], s[79:80], v[166:167], s[29:30]", 0, 0, false, false,
         "test.s:1:4: Error: More than one SGPR to read in instruction\n" },
-    { "   v_div_scale_f32  v55, s[37:38], v79, v166, v79", 0, 0, false, false,
-        "test.s:1:26: Error: Unaligned scalar register range\n" },
     { "   v_div_scale_f32  v55, s[36:37], v79, v166, v79 clamp", 0, 0, false, false,
         "test.s:1:51: Error: Modifier CLAMP in VOP3B is illegal\n" },
     { "   v_div_scale_f32  v55, s[36:37], abs(v79), v166, v79", 0, 0, false, false,

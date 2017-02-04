@@ -1829,7 +1829,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             gcnAsm->setCurrentRVU(1);
             good &= parseSRegRange(asmr, linePtr, sdstReg, arch, 2, GCNFIELD_VOP3_SDST1,
-                                   true, INSTROP_SYMREGRANGE|INSTROP_WRITE);
+                       true, INSTROP_SYMREGRANGE|INSTROP_WRITE|INSTROP_UNALIGNED);
             if (!skipRequiredComma(asmr, linePtr))
                 return;
         }

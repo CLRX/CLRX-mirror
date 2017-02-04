@@ -560,7 +560,11 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         ".regvar srex:s, srdx3:s:6, srbx:s\n"
         "v_mad_f32 rex, rax, rbx, rcx\n"
         "v_fma_f64 rex5[3:4], rax2[4:5], rbx4[6:7], rcx4[7:8]\n"
-        "v_lshl_b64 rex5[2:3], rbx4[1:2], rcx4[6]\n",
+        "v_lshl_b64 rex5[2:3], rbx4[1:2], rcx4[6]\n"
+        "v_mad_f32 rex, srbx, rbx, rcx\n"
+        "v_mad_f32 rex, rax, srbx, rcx\n"
+        "v_mad_f32 rex, rax, rbx, srdx3[4]\n"
+        "v_fma_f64 rex5[3:4], rax2[4:5], srdx3[3:4], rcx4[7:8]\n",
         {
             // v_mad_f32 rex, rax, rbx, rcx
             { 0, "rex", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
@@ -576,6 +580,26 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 16, "rex5", 2, 4, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
             { 16, "rbx4", 1, 3, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
             { 16, "rcx4", 6, 7, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            // v_mad_f32 rex, srbx, rbx, rcx
+            { 24, "rex", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 24, "srbx", 0, 1, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 24, "rbx", 0, 1, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            { 24, "rcx", 0, 1, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 1 },
+            // v_mad_f32 rex, rax, srbx, rcx
+            { 32, "rex", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 32, "rax", 0, 1, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 32, "srbx", 0, 1, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            { 32, "rcx", 0, 1, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 1 },
+            // v_mad_f32 rex, rax, rbx, srdx[4]
+            { 40, "rex", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 40, "rax", 0, 1, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 40, "rbx", 0, 1, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            { 40, "srdx3", 4, 5, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 1 },
+            // v_fma_f64 rex5[3:4], rax2[4:5], srdx3[3:4], rcx4[7:8]
+            { 48, "rex5", 3, 5, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 48, "rax2", 4, 6, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 48, "srdx3", 3, 5, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            { 48, "rcx4", 7, 9, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 1 },
         },
         true, ""
     }
