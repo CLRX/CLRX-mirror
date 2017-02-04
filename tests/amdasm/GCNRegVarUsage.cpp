@@ -48,7 +48,7 @@ struct GCNRegVarUsageCase
 
 static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
 {
-    {   /* SOP1 encoding */
+    {   /* 0: skipping test 1 */
         ".regvar rax:s, rbx:s\n"
         ".regvar rax4:s:6, rbx5:s:8\n"
         "s_mov_b32 rax,rbx\n"
@@ -69,7 +69,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* SOP1 encoding */
+    {   /* 1: skipping test 2 */
         ".regvar rax:s, rbx:s\n"
         ".regvar rax4:s:6, rbx5:s:8\n"
         ".space 200\n"
@@ -91,7 +91,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* SOP1 encoding */
+    {   /* 2: SOP1 encoding */
         ".regvar rax:s, rbx:s\n"
         ".regvar rax4:s:6, rbx5:s:8\n"
         "s_mov_b32 rax,rbx\n"
@@ -139,7 +139,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* SOP2 encoding */
+    {   /* 3: SOP2 encoding */
         ".regvar rax:s, rbx:s, rdx:s\n"
         ".regvar rax4:s:8, rbx5:s:8, rcx3:s:6\n"
         "s_and_b32 rdx, rax, rbx\n"
@@ -175,7 +175,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* SOPC encoding */
+    {   /* 4: SOPC encoding */
         ".regvar rax:s, rbx:s\n"
         ".regvar rax4:s:4, rbx5:s:4\n"
         "s_cmp_ge_i32  rax, rbx\n"
@@ -198,7 +198,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* SOPK */
+    {   /* 5: SOPK */
         ".regvar rax:s, rbx:s\n"
         ".regvar rax4:s:4, rbx5:s:4\n"
         "s_cmpk_eq_i32  rbx, 0xd3b9\n"
@@ -223,7 +223,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* SMRD */
+    {   /* 6: SMRD */
         ".regvar rax:s, rbx:s\n"
         ".regvar rax4:s:20, rbx5:s:16\n"
         "s_load_dword rbx, rbx5[2:3], 0x5b\n"
@@ -271,7 +271,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* SMEM */
+    {   /* 7: SMEM */
         ".gpu Fiji\n"
         ".regvar rax:s, rbx:s\n"
         ".regvar rax4:s:20, rbx5:s:16\n"
@@ -330,7 +330,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* VOP2 */
+    {   /* 8: VOP2 */
         ".regvar rax:v, rbx:v, rex:v\n"
         ".regvar rax2:v:8, rbx4:v:8, rex5:v:10\n"
         ".regvar srex:s, srdx3:s:6, srbx:s\n"
@@ -423,7 +423,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* VOP1 */
+    {   /* 9: VOP1 */
         ".regvar rax:v, rbx:v, rex:v\n"
         ".regvar rax2:v:8, rbx4:v:8, rex5:v:10\n"
         ".regvar srex:s, srdx3:s:6, srbx:s\n"
@@ -500,11 +500,11 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 88, nullptr, 256+87, 256+89, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 0 },
             // v_cvt_f32_i32 v43, v147
             { 96, nullptr, 256+43, 256+44, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 0 },
-            { 96, nullptr, 256+147, 256+148, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 0 },
+            { 96, nullptr, 256+147, 256+148, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 0 }
         },
         true, ""
     },
-    {   /* VOPC */
+    {   /* 10: VOPC */
         ".regvar rax:v, rbx:v, rex:v\n"
         ".regvar rax2:v:8, rbx4:v:8, rex5:v:10\n"
         ".regvar srex:s, srdx3:s:6, srbx:s\n"
@@ -550,7 +550,32 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 40, nullptr, 256+29, 256+31, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 0 },
             // v_cmp_gt_u32 vcc, v72, s41
             { 48, nullptr, 256+72, 256+73, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 0 },
-            { 48, nullptr, 41, 42, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 0 },
+            { 48, nullptr, 41, 42, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 0 }
+        },
+        true, ""
+    },
+    {   /* 11: VOP3 */
+        ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
+        ".regvar rax2:v:8, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
+        ".regvar srex:s, srdx3:s:6, srbx:s\n"
+        "v_mad_f32 rex, rax, rbx, rcx\n"
+        "v_fma_f64 rex5[3:4], rax2[4:5], rbx4[6:7], rcx4[7:8]\n"
+        "v_lshl_b64 rex5[2:3], rbx4[1:2], rcx4[6]\n",
+        {
+            // v_mad_f32 rex, rax, rbx, rcx
+            { 0, "rex", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 0, "rax", 0, 1, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 0, "rbx", 0, 1, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            { 0, "rcx", 0, 1, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 1 },
+            // v_fma_f64 rex5[3:4], rax2[4:5], rbx4[6:7], rcx4[7:8]
+            { 8, "rex5", 3, 5, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 8, "rax2", 4, 6, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 8, "rbx4", 6, 8, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            { 8, "rcx4", 7, 9, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 1 },
+            // v_lshl_b64 rex5[2:3], rbx4[1:2], rcx4[6]
+            { 16, "rex5", 2, 4, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 16, "rbx4", 1, 3, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 16, "rcx4", 6, 7, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
         },
         true, ""
     }

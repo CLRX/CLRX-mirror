@@ -2259,10 +2259,6 @@ bool Assembler::assemble()
         clauses.pop();
     }
     
-    for(AsmSection& section: sections)
-        if (section.usageHandler!=nullptr)
-            section.usageHandler->flush();
-    
     resolvingRelocs = true;
     for (AsmSymbolEntry& symEntry: symbolMap)
         if (!symEntry.second.occurrencesInExprs.empty() || 
@@ -2283,7 +2279,12 @@ bool Assembler::assemble()
                         "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
     
     if (good && formatHandler!=nullptr)
-    {   // code opened regions for kernels
+    {  
+        for(AsmSection& section: sections)
+            if (section.usageHandler!=nullptr)
+                section.usageHandler->flush();
+        
+        // code opened regions for kernels
         for (cxuint i = 0; i < kernels.size(); i++)
         {
             currentKernel = i;
