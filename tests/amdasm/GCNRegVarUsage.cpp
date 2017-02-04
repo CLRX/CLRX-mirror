@@ -763,7 +763,20 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
         ".regvar rax2:v:8, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
         "ds_inc_u32 rbx, rex offset:52583\n"
-        "ds_or_rtn_b32 rcx, rbx, rex offset:52583\n",
+        "ds_or_rtn_b32 rcx, rbx, rex offset:52583\n"
+        "ds_inc_u64 rbx4[1], rex5[6:7] offset:52583\n"
+        "ds_or_rtn_b64 rcx4[3:4], rbx4[1], rex5[6:7] offset:52583\n"
+        "ds_read_b32 rax, rbx offset:431\n"
+        "ds_write_b32 rax, rbx offset:431\n"
+        "ds_wrxchg2st64_rtn_b32 rax2[4:5], rax, rbx, rex offset0:103 offset1:205\n"
+        "ds_consume rbx4[5] offset:421\n"
+        "ds_wrxchg2st64_rtn_b64 rax2[4:7], rax, rbx4[4:5], rex5[8:9] "
+                "offset0:103 offset1:205\n"
+        "ds_inc_u32 v52, v85 offset:52583\n"
+        "ds_or_rtn_b64 v[76:77], v63, v[15:16] offset:52583\n"
+        "ds_wrxchg2st64_rtn_b32 v[41:42], v95, v173, v31 offset0:103 offset1:205\n"
+        "ds_wrxchg2st64_rtn_b64 v[46:49], v53, v[121:122], v[83:84] "
+                "offset0:103 offset1:205\n",
         {
             // ds_inc_u32 rbx, rex offset:52583
             { 0, "rbx", 0, 1, GCNFIELD_DS_ADDR, ASMRVU_READ, 1 },
@@ -772,6 +785,50 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 8, "rcx", 0, 1, GCNFIELD_DS_VDST, ASMRVU_WRITE, 1 },
             { 8, "rbx", 0, 1, GCNFIELD_DS_ADDR, ASMRVU_READ, 1 },
             { 8, "rex", 0, 1, GCNFIELD_DS_DATA0, ASMRVU_READ, 1 },
+            // ds_inc_u64 rbx4[1:2], rex5[6:7] offset:52583
+            { 16, "rbx4", 1, 2, GCNFIELD_DS_ADDR, ASMRVU_READ, 1 },
+            { 16, "rex5", 6, 8, GCNFIELD_DS_DATA0, ASMRVU_READ, 1 },
+            // ds_or_rtn_b64 rcx4[3:4], rbx4[1:2], rex5[6:7] offset:52583
+            { 24, "rcx4", 3, 5, GCNFIELD_DS_VDST, ASMRVU_WRITE, 1 },
+            { 24, "rbx4", 1, 2, GCNFIELD_DS_ADDR, ASMRVU_READ, 1 },
+            { 24, "rex5", 6, 8, GCNFIELD_DS_DATA0, ASMRVU_READ, 1 },
+            // ds_read_b32 rax, rbx offset:431
+            { 32, "rax", 0, 1, GCNFIELD_DS_VDST, ASMRVU_WRITE, 1 },
+            { 32, "rbx", 0, 1, GCNFIELD_DS_ADDR, ASMRVU_READ, 1 },
+            // ds_write_b32 rax, rbx offset:431
+            { 40, "rax", 0, 1, GCNFIELD_DS_ADDR, ASMRVU_READ, 1 },
+            { 40, "rbx", 0, 1, GCNFIELD_DS_DATA0, ASMRVU_READ, 1 },
+            // ds_wrxchg2st64_rtn_b32  rax2[4:5], rax, rbx, rex offset0:103 offset1:205
+            { 48, "rax2", 4, 6, GCNFIELD_DS_VDST, ASMRVU_WRITE, 1 },
+            { 48, "rax", 0, 1, GCNFIELD_DS_ADDR, ASMRVU_READ, 1 },
+            { 48, "rbx", 0, 1, GCNFIELD_DS_DATA0, ASMRVU_READ, 1 },
+            { 48, "rex", 0, 1, GCNFIELD_DS_DATA1, ASMRVU_READ, 1 },
+            // ds_consume rbx4[5] offset:421
+            { 56, "rbx4", 5, 6, GCNFIELD_DS_VDST, ASMRVU_WRITE, 1 },
+            /* ds_wrxchg2st64_rtn_b64 rax2[4:7], rax, rbx4[4:5], rex5[8:9] 
+             * offset0:103 offset1:205 */
+            { 64, "rax2", 4, 8, GCNFIELD_DS_VDST, ASMRVU_WRITE, 1 },
+            { 64, "rax", 0, 1, GCNFIELD_DS_ADDR, ASMRVU_READ, 1 },
+            { 64, "rbx4", 4, 6, GCNFIELD_DS_DATA0, ASMRVU_READ, 1 },
+            { 64, "rex5", 8, 10, GCNFIELD_DS_DATA1, ASMRVU_READ, 1 },
+            // ds_inc_u32 v52, v85 offset:52583
+            { 72, nullptr, 256+52, 256+53, GCNFIELD_DS_ADDR, ASMRVU_READ, 0 },
+            { 72, nullptr, 256+85, 256+86, GCNFIELD_DS_DATA0, ASMRVU_READ, 0 },
+            // ds_or_rtn_b64 v[76:77], v63, v[15:16] offset:52583
+            { 80, nullptr, 256+76, 256+78, GCNFIELD_DS_VDST, ASMRVU_WRITE, 0 },
+            { 80, nullptr, 256+63, 256+64, GCNFIELD_DS_ADDR, ASMRVU_READ, 0 },
+            { 80, nullptr, 256+15, 256+17, GCNFIELD_DS_DATA0, ASMRVU_READ, 0 },
+            // ds_wrxchg2st64_rtn_b32 v[41:42], v95, v173, v31 offset0:103 offset1:205
+            { 88, nullptr, 256+41, 256+43, GCNFIELD_DS_VDST, ASMRVU_WRITE, 0 },
+            { 88, nullptr, 256+95, 256+96, GCNFIELD_DS_ADDR, ASMRVU_READ, 0 },
+            { 88, nullptr, 256+173, 256+174, GCNFIELD_DS_DATA0, ASMRVU_READ, 0 },
+            { 88, nullptr, 256+31, 256+32, GCNFIELD_DS_DATA1, ASMRVU_READ, 0 },
+            /* ds_wrxchg2st64_rtn_b64 v[46:49], v53, v[121:122], v[83:84] "
+                "offset0:103 offset1:205 */
+            { 96, nullptr, 256+46, 256+50, GCNFIELD_DS_VDST, ASMRVU_WRITE, 0 },
+            { 96, nullptr, 256+53, 256+54, GCNFIELD_DS_ADDR, ASMRVU_READ, 0 },
+            { 96, nullptr, 256+121, 256+123, GCNFIELD_DS_DATA0, ASMRVU_READ, 0 },
+            { 96, nullptr, 256+83, 256+85, GCNFIELD_DS_DATA1, ASMRVU_READ, 0 }
         },
         true, ""
     }
