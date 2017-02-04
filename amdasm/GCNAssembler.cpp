@@ -1203,8 +1203,12 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                        (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP_SDST, true,
                        INSTROP_SYMREGRANGE|INSTROP_UNALIGNED|INSTROP_WRITE);
     else // if VGPRS as destination
+    {
+        bool v_mac = ::strncmp(gcnInsn.mnemonic, "v_mac_", 6)==0;
         good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
-                        GCNFIELD_VOP_VDST, true, INSTROP_SYMREGRANGE|INSTROP_WRITE);
+                        GCNFIELD_VOP_VDST, true, INSTROP_SYMREGRANGE|INSTROP_WRITE|
+                              (v_mac?INSTROP_READ:0));
+    }
     
     const bool haveDstCC = mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC;
     const bool haveSrcCC = mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC;
@@ -2107,6 +2111,8 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     bool beforeData = false;
     bool vdstUsed = false;
     
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
+    
     if ((gcnInsn.mode & GCN_ADDR_SRC) != 0 || (gcnInsn.mode & GCN_ONLYDST) != 0)
     {   /* vdst is dst */
         cxuint regsNum = (gcnInsn.mode&GCN_REG_DST_64)?2:1;
@@ -2114,7 +2120,9 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
             regsNum = 3;
         if ((gcnInsn.mode&GCN_DS_128) != 0 || (gcnInsn.mode&GCN_DST128) != 0)
             regsNum = 4;
-        good &= parseVRegRange(asmr, linePtr, dstReg, regsNum, GCNFIELD_DS_VDST);
+        gcnAsm->setCurrentRVU(0);
+        good &= parseVRegRange(asmr, linePtr, dstReg, regsNum, GCNFIELD_DS_VDST, true,
+                    INSTROP_SYMREGRANGE|INSTROP_WRITE);
         vdstUsed = beforeData = true;
     }
     
@@ -2123,7 +2131,9 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         if (vdstUsed)
             if (!skipRequiredComma(asmr, linePtr))
                 return;
-        good &= parseVRegRange(asmr, linePtr, addrReg, 1, GCNFIELD_DS_ADDR);
+        gcnAsm->setCurrentRVU(1);
+        good &= parseVRegRange(asmr, linePtr, addrReg, 1, GCNFIELD_DS_ADDR, true,
+                    INSTROP_SYMREGRANGE|INSTROP_READ);
         beforeData = true;
     }
     
@@ -2141,13 +2151,17 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
             regsNum = 3;
         if ((gcnInsn.mode&GCN_DS_128) != 0)
             regsNum = 4;
-        good &= parseVRegRange(asmr, linePtr, data0Reg, regsNum, GCNFIELD_DS_DATA0);
+        gcnAsm->setCurrentRVU(2);
+        good &= parseVRegRange(asmr, linePtr, data0Reg, regsNum, GCNFIELD_DS_DATA0, true,
+                    INSTROP_SYMREGRANGE|INSTROP_READ);
         if (srcMode == GCN_2SRCS)
         {
             if (!skipRequiredComma(asmr, linePtr))
                 return;
+            gcnAsm->setCurrentRVU(3);
             good &= parseVRegRange(asmr, linePtr, data1Reg,
-                       (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, GCNFIELD_DS_DATA1);
+                       (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, GCNFIELD_DS_DATA1, true,
+                               INSTROP_SYMREGRANGE|INSTROP_READ);
         }
     }
     
