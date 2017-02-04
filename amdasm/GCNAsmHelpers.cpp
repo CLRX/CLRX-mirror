@@ -77,7 +77,6 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* regVarPlace = linePtr;
-    linePtr = oldLinePtr; // revert current line pointer
     const char *regTypeName = (flags&INSTROP_VREGS) ? "vector" : "scalar";
     
     const CString name = extractSymName(linePtr, end, false);

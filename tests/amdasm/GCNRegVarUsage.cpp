@@ -659,6 +659,31 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             
         },
         true, ""
+    },
+    {   /* 12: VOP3 - Fiji */
+        ".gpu Fiji\n"
+        ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
+        ".regvar rax2:v:8, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
+        ".regvar srex:s, srdx3:s:6, srbx:s\n"
+        "v_mqsad_pk_u16_u8 rax2[1:2], rbx4[3:4], rex5[8], rcx4[4:5]\n"
+        "v_mqsad_u32_u8 rax2[1:4], rbx4[3:4], rex5[8], rcx4[4:7]\n"
+        "v_interp_p1_f32 rax, rcx, attr39.z vop3\n",
+        {
+            // v_mqsad_pk_u16_u8 rax2[1:2], rbx4[3:4], rex5[8], rcx4[4:5]
+            { 0, "rax2", 1, 3, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 0, "rbx4", 3, 5, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 0, "rex5", 8, 9, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            { 0, "rcx4", 4, 6, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 1 },
+            // v_mqsad_u32_u8 rax2[1:4], rbx4[3:4], rex5[8], rcx4[4:7]
+            { 8, "rax2", 1, 5, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 8, "rbx4", 3, 5, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 8, "rex5", 8, 9, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            { 8, "rcx4", 4, 8, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 1 },
+            // v_interp_p1_f32 rax, rcx, attr39.z vop3
+            { 16, "rax", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 16, "rcx", 0, 1, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+        },
+        true, ""
     }
 };
 
