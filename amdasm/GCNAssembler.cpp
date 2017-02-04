@@ -2052,14 +2052,22 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
         return;
     }
     
-    good &= parseVRegRange(asmr, linePtr, dstReg, 1, GCNFIELD_VINTRP_VDST);
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
+    
+    gcnAsm->setCurrentRVU(0);
+    good &= parseVRegRange(asmr, linePtr, dstReg, 1, GCNFIELD_VINTRP_VDST, true,
+                        INSTROP_SYMREGRANGE|INSTROP_WRITE);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     
     if ((gcnInsn.mode & GCN_MASK1) == GCN_P0_P10_P20)
         good &= parseVINTRP0P10P20(asmr, linePtr, srcReg);
     else // regular vector register
-        good &= parseVRegRange(asmr, linePtr, srcReg, 1, GCNFIELD_VINTRP_VSRC0);
+    {
+        gcnAsm->setCurrentRVU(1);
+        good &= parseVRegRange(asmr, linePtr, srcReg, 1, GCNFIELD_VINTRP_VSRC0, true,
+                        INSTROP_SYMREGRANGE|INSTROP_READ);
+    }
     
     if (!skipRequiredComma(asmr, linePtr))
         return;

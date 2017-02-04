@@ -2838,6 +2838,8 @@ const GCNAsmOpcodeCase encGCN11OpcodeCases[] =
         0xd2e60037U, 0x07974d4fU, true, true, "" },
     { "    v_mqsad_u32_u8  v[55:58], v[79:80], v166, v[229:232]",
         0xd2ea0037U, 0x07974d4fU, true, true, "" },
+    { "    v_mqsad_u32_u8  v[55:58], v[79:80], v166, s[29:32]",
+        0xd2ea0037U, 0x00774d4fU, true, true, "" },
     { "    v_mad_u64_u32  v[55:56], s[46:47], v79, v166, v[229:230]",
         0xd2ec2e37U, 0x07974d4fU, true, true, "" },
     { "    v_mad_i64_i32  v[55:56], s[46:47], v79, v166, v[229:230]",

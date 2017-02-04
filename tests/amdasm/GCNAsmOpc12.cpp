@@ -1044,6 +1044,8 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         0xd274002aU, 0x00022ca7U, true, true, "" },
     { "    v_interp_p1lv_f16 v42, v22, attr39.z, s29",
         0xd275002aU, 0x00762ca7, true, true, "" },
+    { "    v_interp_p1lv_f16 v42, v22, attr39.z, v29",
+        0xd275002aU, 0x04762ca7, true, true, "" },
     { "    v_interp_p1lv_f16 v42, v22, attr39.z, s29 high  ",
         0xd275002aU, 0x00762da7, true, true, "" },
     { "    v_interp_p2_f16 v42, v22, attr39.z, s29",

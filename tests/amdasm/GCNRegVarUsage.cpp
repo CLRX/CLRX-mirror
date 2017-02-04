@@ -667,7 +667,13 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         ".regvar srex:s, srdx3:s:6, srbx:s\n"
         "v_mqsad_pk_u16_u8 rax2[1:2], rbx4[3:4], rex5[8], rcx4[4:5]\n"
         "v_mqsad_u32_u8 rax2[1:4], rbx4[3:4], rex5[8], rcx4[4:7]\n"
-        "v_interp_p1_f32 rax, rcx, attr39.z vop3\n",
+        "v_interp_p1_f32 rax, rcx, attr39.z vop3\n"
+        "v_interp_mov_f32 rax, p20, attr39.z vop3\n"
+        "v_interp_p1lv_f16 rax, rbx, attr39.z, srex\n"
+        "v_interp_p1lv_f16 rax, rbx, attr39.z, rex\n"
+        "v_mqsad_pk_u16_u8 v[51:52], v[74:75], v163, v[82:83]\n"
+        "v_mqsad_u32_u8 v[17:20], v[67:68], v117, v[93:96]\n"
+        "v_interp_p1lv_f16 v215, v69, attr39.z, s41\n",
         {
             // v_mqsad_pk_u16_u8 rax2[1:2], rbx4[3:4], rex5[8], rcx4[4:5]
             { 0, "rax2", 1, 3, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
@@ -682,6 +688,52 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             // v_interp_p1_f32 rax, rcx, attr39.z vop3
             { 16, "rax", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
             { 16, "rcx", 0, 1, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            // v_interp_mov_f32 rax, p20, attr39.z vop3
+            { 24, "rax", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            // v_interp_p1lv_f16 rax, rbx, attr39.z, srex
+            { 32, "rax", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 32, "rbx", 0, 1, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            { 32, "srex", 0, 1, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 1 },
+            // v_interp_p1lv_f16 rax, rbx, attr39.z, rex
+            { 40, "rax", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 40, "rbx", 0, 1, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            { 40, "rex", 0, 1, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 1 },
+            // v_mqsad_pk_u16_u8 v[51:52], v[74:75], v163, v[82:83]
+            { 48, nullptr, 256+51, 256+53, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 0 },
+            { 48, nullptr, 256+74, 256+76, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 0 },
+            { 48, nullptr, 256+163, 256+164, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 0 },
+            { 48, nullptr, 256+82, 256+84, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 0 },
+            // v_mqsad_u32_u8 v[17:20], v[67:68], v117, v[93:96]
+            { 56, nullptr, 256+17, 256+21, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 0 },
+            { 56, nullptr, 256+67, 256+69, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 0 },
+            { 56, nullptr, 256+117, 256+118, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 0 },
+            { 56, nullptr, 256+93, 256+97, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 0 },
+            // v_interp_p1lv_f16 v215, v69, attr39.z, s41
+            { 64, nullptr, 256+215, 256+216, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 0 },
+            { 64, nullptr, 256+69, 256+70, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 0 },
+            { 64, nullptr, 41, 42, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 0 }
+        },
+        true, ""
+    },
+    {   /* 13: VINTRP */
+        ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
+        ".regvar rax2:v:8, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
+        ".regvar srex:s, srdx3:s:6, srbx:s\n"
+        "v_interp_p1_f32 rbx, rcx, attr26.w\n"
+        "v_interp_mov_f32 rcx4[6], p10, attr26.w\n"
+        "v_interp_p1_f32 v85, v24, attr26.w\n"
+        "v_interp_mov_f32 v147, p10, attr26.w\n",
+        {
+            // v_interp_p1_f32 rbx, rcx, attr26.w
+            { 0, "rbx", 0, 1, GCNFIELD_VINTRP_VDST, ASMRVU_WRITE, 1 },
+            { 0, "rcx", 0, 1, GCNFIELD_VINTRP_VSRC0, ASMRVU_READ, 1 },
+            // v_interp_mov_f32 rcx[6], p10, attr26.w
+            { 4, "rcx4", 6, 7, GCNFIELD_VINTRP_VDST, ASMRVU_WRITE, 1 },
+            // v_interp_p1_f32 v85, v24, attr26.w
+            { 8, nullptr, 256+85, 256+86, GCNFIELD_VINTRP_VDST, ASMRVU_WRITE, 0 },
+            { 8, nullptr, 256+24, 256+25, GCNFIELD_VINTRP_VSRC0, ASMRVU_READ, 0 },
+            // v_interp_mov_f32 v147, p10, attr26.w
+            { 12, nullptr, 256+147, 256+148, GCNFIELD_VINTRP_VDST, ASMRVU_WRITE, 0 }
         },
         true, ""
     }
