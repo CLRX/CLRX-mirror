@@ -1739,6 +1739,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   v_mul_hi_i32  v55, v79, v166", 0xd2d80037U, 0x00034d4fU, true, true, "" },
     { "   v_div_scale_f32  v55, s[38:39], v79, v166, v79",
         0xd2da2637U, 0x053f4d4fU, true, true, "" },
+    { "   v_div_scale_f32  v55, s[39:40], v79, v166, v79",
+        0xd2da2737U, 0x053f4d4fU, true, true, "" },
     { "   v_div_scale_f32  v55, s[38:39], v79, v79, v229",
         0xd2da2637U, 0x07969f4fU, true, true, "" },
     { "   v_div_scale_f64 v[55:56], s[38:39], v[79:80], v[166:167], v[79:80]",
