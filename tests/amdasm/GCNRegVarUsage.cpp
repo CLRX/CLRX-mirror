@@ -1040,7 +1040,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* 15: MIMG encoding */
+    {   /* 16: MIMG encoding */
         ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
         ".regvar rax2:v:10, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
         ".regvar srex:s, srdx3:s:8, srbx:s, srcx5:s:8\n"
@@ -1207,6 +1207,33 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 208, "rcx4", 1, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
             { 208, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
             { 208, "rax2", 6, 7, GCNFIELD_M_VDATAH, ASMRVU_READ, 1 },
+        },
+        true, ""
+    },
+    {   /* 17: EXP encoding */
+        ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
+        ".regvar rax2:v:10, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
+        "exp  param5, rax, rbx, rcx, rbx4[5] done vm\n"
+        "exp  param5, off, rcx4[2], off, rbx4[6] done vm\n"
+        "exp  param5, v54, v28, v83, v161 done vm\n"
+        "exp  param5, off, v42, off, v97 done vm\n",
+        {
+            // exp  param5, rax, rbx, rcx, rbx4[5] done vm
+            { 0, "rax", 0, 1, GCNFIELD_EXP_VSRC0, ASMRVU_READ, 1 },
+            { 0, "rbx", 0, 1, GCNFIELD_EXP_VSRC1, ASMRVU_READ, 1 },
+            { 0, "rcx", 0, 1, GCNFIELD_EXP_VSRC2, ASMRVU_READ, 1 },
+            { 0, "rbx4", 5, 6, GCNFIELD_EXP_VSRC3, ASMRVU_READ, 1 },
+            // exp  param5, off, rcx4[2], off, rbx4[65] done vm
+            { 8, "rcx4", 2, 3, GCNFIELD_EXP_VSRC1, ASMRVU_READ, 1 },
+            { 8, "rbx4", 6, 7, GCNFIELD_EXP_VSRC3, ASMRVU_READ, 1 },
+            // exp  param5, v54, v28, v83, v161 done vm
+            { 16, nullptr, 256+54, 256+55, GCNFIELD_EXP_VSRC0, ASMRVU_READ, 0 },
+            { 16, nullptr, 256+28, 256+29, GCNFIELD_EXP_VSRC1, ASMRVU_READ, 0 },
+            { 16, nullptr, 256+83, 256+84, GCNFIELD_EXP_VSRC2, ASMRVU_READ, 0 },
+            { 16, nullptr, 256+161, 256+162, GCNFIELD_EXP_VSRC3, ASMRVU_READ, 0 },
+            // exp  param5, off, v42, off, v97 done vm
+            { 24, nullptr, 256+42, 256+43, GCNFIELD_EXP_VSRC1, ASMRVU_READ, 0 },
+            { 24, nullptr, 256+97, 256+98, GCNFIELD_EXP_VSRC3, ASMRVU_READ, 0 }
         },
         true, ""
     }

@@ -2948,6 +2948,8 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
     RegRange vsrcsReg[4];
     const char* vsrcPlaces[4];
     
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
+    
     char name[20];
     skipSpacesToEnd(linePtr, end);
     const char* targetPlace = linePtr;
@@ -3024,7 +3026,11 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
         vsrcPlaces[i] = linePtr;
         if (linePtr+2>=end || toLower(linePtr[0])!='o' || toLower(linePtr[1])!='f' ||
             toLower(linePtr[2])!='f' || (linePtr+3!=end && isAlnum(linePtr[3])))
-            good &= parseVRegRange(asmr, linePtr, vsrcsReg[i], 1, GCNFIELD_EXP_VSRC0+i);
+        {
+            gcnAsm->setCurrentRVU(i);
+            good &= parseVRegRange(asmr, linePtr, vsrcsReg[i], 1, GCNFIELD_EXP_VSRC0+i,
+                        true, INSTROP_SYMREGRANGE|INSTROP_READ);
+        }
         else
         {   // if vsrcX is off
             enMask &= ~(1U<<i);
@@ -3063,7 +3069,8 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     
-    if (haveCompr)
+    if (haveCompr && !vsrcsReg[0].isRegVar() && !vsrcsReg[1].isRegVar() &&
+            !vsrcsReg[0].isRegVar() && !vsrcsReg[1].isRegVar())
     {
         if (vsrcsReg[0].start!=vsrcsReg[1].start && (enMask&3)==3)
         {   // error (vsrc1!=vsrc0)
