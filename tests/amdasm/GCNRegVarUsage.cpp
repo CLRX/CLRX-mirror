@@ -1042,7 +1042,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
     },
     {   /* 15: MIMG encoding */
         ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
-        ".regvar rax2:v:8, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
+        ".regvar rax2:v:10, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
         ".regvar srex:s, srdx3:s:8, srbx:s, srcx5:s:8\n"
         "image_load rax, rcx4[1:4], srdx3[0:3] dmask:1 unorm r128\n"
         "image_load rax, rcx4[1:4], srdx3[0:7] dmask:1 unorm\n"
@@ -1053,7 +1053,30 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "image_atomic_add rax2[5:6], rcx4[1:4], srdx3[0:3] dmask:5 unorm r128\n"
         "image_atomic_add rax2[5:6], rcx4[1:4], srdx3[0:3] dmask:5 unorm glc r128\n"
         "image_atomic_cmpswap rax2[5:6], rcx4[1:4], srdx3[0:3] dmask:5 unorm glc r128\n"
-        "image_atomic_cmpswap rax2[4:7], rcx4[1:4], srdx3[0:7] dmask:15 unorm glc\n",
+        "image_atomic_cmpswap rax2[4:7], rcx4[1:4], srdx3[0:7] dmask:15 unorm glc\n"
+        "image_atomic_cmpswap rax2[4:7], rcx4[1:4], srdx3[0:7] dmask:15 unorm\n"
+        "image_gather4_b_cl rax2[1:4], rcx4[1:4], srdx3[0:7], srcx5[4:7] dmask:13 unorm\n"
+        // tfe
+        "image_load rax2[1:4], rcx4[1:4], srdx3[0:7] dmask:13 unorm tfe\n"
+        "image_atomic_cmpswap rax2[4:8], rcx4[1:4], srdx3[0:7] dmask:15 unorm glc tfe\n"
+        "image_atomic_add rax2[5:7], rcx4[1:4], srdx3[0:3] dmask:5 unorm glc r128 tfe\n"
+        "image_atomic_add rax2[5:7], rcx4[1:4], srdx3[0:3] dmask:5 unorm r128 tfe\n"
+        // regusage
+        "image_load v76, v[121:124], s[24:27] dmask:1 unorm r128\n"
+        "image_sample_c_cd_cl_o v[73:75], v[66:71], s[44:51], s[36:39] dmask:13 unorm\n"
+        "image_atomic_add v[15:16], v[57:60], s[52:55] dmask:5 unorm glc r128\n"
+        "image_atomic_add v[15:16], v[57:60], s[52:55] dmask:5 unorm r128\n"
+        "image_atomic_cmpswap v[5:8], v[11:14], s[8:11] dmask:15 unorm glc r128\n"
+        // tfe
+        "image_load v[75:78], v[92:95], s[20:27] dmask:13 unorm tfe\n"
+        "image_atomic_cmpswap v[62:66], v[35:38], s[20:27] dmask:15 unorm glc tfe\n"
+        "image_atomic_add v[87:89], v[24:27], s[28:31] dmask:5 unorm glc r128 tfe\n"
+        "image_atomic_add v[87:89], v[24:27], s[28:31] dmask:5 unorm r128 tfe\n"
+        // resinfo
+        "image_get_resinfo rax, rcx4[1:4], srdx3[0:3] dmask:1 unorm r128\n"
+        "image_get_lod rax, rcx4[1:4], srdx3[0:3], srcx5[4:7] dmask:1 unorm r128\n"
+        // fcmpswap
+        "image_atomic_fcmpswap rax2[5:6], rcx4[1:4], srdx3[0:3] dmask:5 unorm glc r128\n",
         {
             // image_load rax, rcx4[1:4], srdx3[0:3] dmask:1 unorm r128
             { 0, "rax", 0, 1, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
@@ -1089,11 +1112,101 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 56, "rcx4", 1, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
             { 56, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
             { 56, "rax2", 6, 7, GCNFIELD_M_VDATAH, ASMRVU_READ, 1 },
-            // image_atomic_cmpswap rax2[5:8], rcx4[1:4], srdx3[0:7] dmask:15 unorm glc
+            // image_atomic_cmpswap rax2[4:7], rcx4[1:4], srdx3[0:7] dmask:15 unorm glc
             { 64, "rax2", 4, 6, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 1 },
             { 64, "rcx4", 1, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
             { 64, "srdx3", 0, 8, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
             { 64, "rax2", 6, 8, GCNFIELD_M_VDATAH, ASMRVU_READ, 1 },
+            // image_atomic_cmpswap rax2[4:7], rcx4[1:4], srdx3[0:7] dmask:15 unorm
+            { 72, "rax2", 4, 8, GCNFIELD_M_VDATA, ASMRVU_READ, 1 },
+            { 72, "rcx4", 1, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 72, "srdx3", 0, 8, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            /* image_gather4_b_cl rax2[1:4], rcx4[1:4], srdx3[0:7],
+             * srcx5[4:7] dmask:13 unorm */
+            { 80, "rax2", 1, 5, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
+            { 80, "rcx4", 1, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 80, "srdx3", 0, 8, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 80, "srcx5", 4, 8, GCNFIELD_MIMG_SSAMP, ASMRVU_READ, 4 },
+            // image_load rax2[1:4], rcx4[1:4], srdx3[0:7] dmask:13 unorm tfe
+            { 88, "rax2", 1, 4, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
+            { 88, "rcx4", 1, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 88, "srdx3", 0, 8, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 88, "rax2", 4, 5, GCNFIELD_M_VDATALAST, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            // image_atomic_cmpswap rax2[4:8], rcx4[1:4], srdx3[0:7] dmask:15 unorm glc tfe
+            { 96, "rax2", 4, 6, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            { 96, "rcx4", 1, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 96, "srdx3", 0, 8, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 96, "rax2", 6, 8, GCNFIELD_M_VDATAH, ASMRVU_READ, 1 },
+            { 96, "rax2", 8, 9, GCNFIELD_M_VDATALAST, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            // image_atomic_add rax2[5:7], rcx4[1:4], srdx3[0:3] dmask:5 unorm glc r128 tfe
+            { 104, "rax2", 5, 8, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            { 104, "rcx4", 1, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 104, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            // image_atomic_add rax2[5:7], rcx4[1:4], srdx3[0:3] dmask:5 unorm r128 tfe
+            { 112, "rax2", 5, 7, GCNFIELD_M_VDATA, ASMRVU_READ, 1 },
+            { 112, "rcx4", 1, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 112, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 112, "rax2", 7, 8, GCNFIELD_M_VDATALAST, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            // image_load v76, v[121:124], s[24:27] dmask:1 unorm r128
+            { 120, nullptr, 256+76, 256+77, GCNFIELD_M_VDATA, ASMRVU_WRITE, 0 },
+            { 120, nullptr, 256+121, 256+125, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 120, nullptr, 24, 28, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            // image_sample_c_cd_cl_o v[73:75], v[66:71], s[44:51], s[36:39] dmask:13 unorm
+            { 128, nullptr, 256+73, 256+76, GCNFIELD_M_VDATA, ASMRVU_WRITE, 0 },
+            { 128, nullptr, 256+66, 256+72, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 128, nullptr, 44, 52, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 128, nullptr, 36, 40, GCNFIELD_MIMG_SSAMP, ASMRVU_READ, 0 },
+            // image_atomic_add v[15:16], v[57:60], s[52:55] dmask:5 unorm glc r128
+            { 136, nullptr, 256+15, 256+17, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 136, nullptr, 256+57, 256+61, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 136, nullptr, 52, 56, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            // image_atomic_add v[15:16], v[57:60], s[52:55] dmask:5 unorm r128
+            { 144, nullptr, 256+15, 256+17, GCNFIELD_M_VDATA, ASMRVU_READ, 0 },
+            { 144, nullptr, 256+57, 256+61, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 144, nullptr, 52, 56, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            // image_atomic_cmpswap v[5:8], v[11:14], s[8:11] dmask:15 unorm glc r128
+            { 152, nullptr, 256+5, 256+7, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 152, nullptr, 256+11, 256+15, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 152, nullptr, 8, 12, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 152, nullptr, 256+7, 256+9, GCNFIELD_M_VDATAH, ASMRVU_READ, 0 },
+            // image_load v[75:78], v[92:95], s[20:27] dmask:13 unorm tfe
+            { 160, nullptr, 256+75, 256+78, GCNFIELD_M_VDATA, ASMRVU_WRITE, 0 },
+            { 160, nullptr, 256+92, 256+96, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 160, nullptr, 20, 28, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 160, nullptr, 256+78, 256+79, GCNFIELD_M_VDATALAST,
+                    ASMRVU_READ|ASMRVU_WRITE, 0 },
+            // image_atomic_cmpswap v[62:66], v[35:38], s[20:27] dmask:15 unorm glc tfe
+            { 168, nullptr, 256+62, 256+64, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 168, nullptr, 256+35, 256+39, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 168, nullptr, 20, 28, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 168, nullptr, 256+64, 256+66, GCNFIELD_M_VDATAH, ASMRVU_READ, 0 },
+            { 168, nullptr, 256+66, 256+67, GCNFIELD_M_VDATALAST,
+                    ASMRVU_READ|ASMRVU_WRITE, 0 },
+            // image_atomic_add v[87:89], v[24:27], s[28:31] dmask:5 unorm glc r128 tfe
+            { 176, nullptr, 256+87, 256+90, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 176, nullptr, 256+24, 256+28, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 176, nullptr, 28, 32, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            // image_atomic_add v[87:89], v[24:27], s[28:31] dmask:5 unorm r128 tfe
+            { 184, nullptr, 256+87, 256+89, GCNFIELD_M_VDATA, ASMRVU_READ, 0 },
+            { 184, nullptr, 256+24, 256+28, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 184, nullptr, 28, 32, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 184, nullptr, 256+89, 256+90, GCNFIELD_M_VDATALAST,
+                    ASMRVU_READ|ASMRVU_WRITE, 0 },
+            // image_get_resinfo rax, rcx4[1:4], srdx3[0:3] dmask:1 unorm r128
+            { 192, "rax", 0, 1, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
+            { 192, "rcx4", 1, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 192, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            // image_get_lod rax, rcx4[1:4], srdx3[0:3], srcx5[4:7] dmask:1 unorm r128
+            { 200, "rax", 0, 1, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
+            { 200, "rcx4", 1, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 200, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 200, "srcx5", 4, 8, GCNFIELD_MIMG_SSAMP, ASMRVU_READ, 4 },
+            /* image_atomic_fcmpswap rax2[5:6], rcx4[1:4], srdx3[0:3]
+             * dmask:5 unorm glc r128 */
+            { 208, "rax2", 5, 6, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            { 208, "rcx4", 1, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 208, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 208, "rax2", 6, 7, GCNFIELD_M_VDATAH, ASMRVU_READ, 1 },
         },
         true, ""
     }
