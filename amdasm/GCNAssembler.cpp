@@ -2338,6 +2338,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     GCNOperand soffsetOp{};
     RegRange srsrcReg(0, 0);
     const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     skipSpacesToEnd(linePtr, end);
     const char* vdataPlace = linePtr;
@@ -2347,13 +2348,17 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     {
         if (mode1 != GCN_MUBUF_NOVAD)
         {
-            good &= parseVRegRange(asmr, linePtr, vdataReg, 0, GCNFIELD_M_VDATA);
+            gcnAsm->setCurrentRVU(0);
+            good &= parseVRegRange(asmr, linePtr, vdataReg, 0, GCNFIELD_M_VDATA, true,
+                        INSTROP_SYMREGRANGE|INSTROP_READ);
             if (!skipRequiredComma(asmr, linePtr))
                 return;
             
             skipSpacesToEnd(linePtr, end);
             vaddrPlace = linePtr;
-            if (!parseVRegRange(asmr, linePtr, vaddrReg, 0, GCNFIELD_M_VADDR, false))
+            gcnAsm->setCurrentRVU(1);
+            if (!parseVRegRange(asmr, linePtr, vaddrReg, 0, GCNFIELD_M_VADDR, false,
+                        INSTROP_SYMREGRANGE|INSTROP_READ))
                 good = false;
             if (vaddrReg) // only if vaddr is
             {
@@ -2373,11 +2378,14 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 vaddrReg = {256, 257};
             }
         }
-        good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 4, GCNFIELD_M_SRSRC);
+        gcnAsm->setCurrentRVU(2);
+        good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 4, GCNFIELD_M_SRSRC, true,
+                        INSTROP_SYMREGRANGE|INSTROP_READ);
         if (!skipRequiredComma(asmr, linePtr))
             return;
+        gcnAsm->setCurrentRVU(3);
         good &= parseOperand(asmr, linePtr, soffsetOp, nullptr, arch, 1,
-                 INSTROP_SREGS|INSTROP_SSOURCE|INSTROP_ONLYINLINECONSTS|
+                 INSTROP_SREGS|INSTROP_SSOURCE|INSTROP_ONLYINLINECONSTS|INSTROP_READ|
                  INSTROP_NOLITERALERRORMUBUF, GCNFIELD_M_SOFFSET);
     }
     
@@ -2524,8 +2532,14 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     }
     
     /* checking addr range and vdata range */
+    bool vdataToRead = false;
+    bool vdataToWrite = false;
     if (vdataReg)
     {
+        vdataToWrite = ((gcnInsn.mode&GCN_MLOAD) != 0 ||
+                ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc));
+        vdataToRead = (gcnInsn.mode&GCN_MLOAD)==0 ||
+                (gcnInsn.mode&GCN_MATOMIC)!=0;
         cxuint dregsNum = (((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1) + (haveTfe);
         if (!isXRegRange(vdataReg, dregsNum))
         {
@@ -2554,6 +2568,22 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 good = false;
             }
         }
+    }
+    // fix access for VDATA field
+    gcnAsm->instrRVUs[0].rwFlags = (vdataToWrite ? ASMRVU_WRITE : 0) |
+            (vdataToRead ? ASMRVU_READ : 0);
+    // check fcmpswap
+    if (strlen(gcnInsn.mnemonic)>14 && (::strncmp(gcnInsn.mnemonic+14, "cmpswap", 7)==0 ||
+            ::strncmp(gcnInsn.mnemonic+15, "cmpswap", 7)==0) && vdataToWrite)
+    {   // fix access
+        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
+        uint16_t size = rvu.rend-rvu.rstart;
+        rvu.rend = rvu.rstart + (size>>1);
+        AsmRegVarUsage& nextRvu = gcnAsm->instrRVUs[4];
+        nextRvu = rvu;
+        nextRvu.rstart += (size>>1);
+        nextRvu.rend = rvu.rstart + size;
+        nextRvu.rwFlags = ASMRVU_READ;
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -2601,8 +2631,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     
     offsetExpr.release();
     // update register pool (instr loads or save old value) */
-    if (vdataReg && !vdataReg.isRegVar() && ((gcnInsn.mode&GCN_MLOAD) != 0 ||
-                ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc)))
+    if (vdataReg && !vdataReg.isRegVar() && vdataToWrite)
         updateVGPRsNum(gcnRegs.vgprsNum, vdataReg.end-257);
     if (soffsetOp.range && !soffsetOp.range.isRegVar())
         updateRegFlags(gcnRegs.regFlags, soffsetOp.range.start, arch);

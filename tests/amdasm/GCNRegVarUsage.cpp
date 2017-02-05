@@ -831,6 +831,51 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 96, nullptr, 256+83, 256+85, GCNFIELD_DS_DATA1, ASMRVU_READ, 0 }
         },
         true, ""
+    },
+    {   /* 15: MUBUF encoding */
+        ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
+        ".regvar rax2:v:8, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
+        ".regvar srex:s, srdx3:s:6, srbx:s\n"
+        "buffer_load_dword rbx, rex, srdx3[0:3], srbx idxen offset:603\n"
+        "buffer_store_dword rbx, rex, srdx3[0:3], srbx idxen offset:603\n"
+        "buffer_atomic_add rbx, rex, srdx3[0:3], srbx idxen offset:603\n"
+        "buffer_atomic_add rbx, rex, srdx3[0:3], srbx idxen offset:603 glc\n"
+        "buffer_atomic_add_x2 rbx4[3:4], rex, srdx3[0:3], srbx idxen offset:603 glc\n"
+        "buffer_atomic_cmpswap rcx4[1:2], rex, srdx3[0:3], srbx idxen offset:603 glc\n",
+        {
+            // buffer_load_dword rbx, rex, srdx3[0:3], srbx idxen offset:603
+            { 0, "rbx", 0, 1, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
+            { 0, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 0, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 0, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            // buffer_store_dword rbx, rex, srdx3[0:3], srbx idxen offset:603
+            { 8, "rbx", 0, 1, GCNFIELD_M_VDATA, ASMRVU_READ, 1 },
+            { 8, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 8, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 8, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            // buffer_atomic_add rbx, rex, srdx3[0:3], srbx idxen offset:603
+            { 16, "rbx", 0, 1, GCNFIELD_M_VDATA, ASMRVU_READ, 1 },
+            { 16, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 16, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 16, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            // buffer_atomic_add rbx, rex, srdx3[0:3], srbx idxen offset:603 glc
+            { 24, "rbx", 0, 1, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            { 24, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 24, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 24, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            // buffer_atomic_add_x2 rbx4[3:4], rex, srdx3[0:3], srbx idxen offset:603 glc
+            { 32, "rbx4", 3, 5, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            { 32, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 32, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 32, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            // buffer_atomic_cmpswap rcx4[1:2], rex, srdx3[0:3], srbx idxen offset:603 glc
+            { 40, "rcx4", 1, 2, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            { 40, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 40, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 40, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            { 40, "rcx4", 2, 3, GCNFIELD_M_VDATA, ASMRVU_READ, 1 },
+        },
+        true, ""
     }
 };
 
@@ -857,8 +902,11 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
                     testCase.regVarUsages.size(), section.regVarUsages.size());*/
     ISAUsageHandler* usageHandler = assembler.getSections()[0].usageHandler.get();
     usageHandler->rewind();
-    for (size_t j = 0; usageHandler->hasNext(); j++)
+    size_t j;
+    for (j = 0; usageHandler->hasNext(); j++)
     {
+        assertTrue("testGCNRegVarUsages", testCaseName+"length",
+                   j < testCase.regVarUsages.size());
         const AsmRegVarUsage resultRvu = usageHandler->nextUsage();
         std::ostringstream rvuOss;
         rvuOss << ".regVarUsage#" << j << ".";
@@ -884,6 +932,8 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"align",
                     cxuint(expectedRvu.align), cxuint(resultRvu.align));
     }
+    assertTrue("testGCNRegVarUsages", testCaseName+"length",
+                   j == testCase.regVarUsages.size());
     assertString("testGCNRegVarUsages", testCaseName+".errorMessages",
               testCase.errorMessages, errorStream.str());
 }
