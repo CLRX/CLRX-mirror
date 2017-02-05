@@ -1254,7 +1254,16 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "flat_load_dword rbx4[6:7], rcx4[3:4] tfe\n"
         "flat_load_dwordx4 rbx4[1:5], rcx4[3:4] tfe\n"
         "flat_atomic_add_x2 rex5[5:7], rcx4[3:4], rbx4[1:2] tfe\n"
-        "flat_atomic_add_x2 rex5[5:7], rcx4[3:4], rbx4[1:2] tfe glc\n",
+        "flat_atomic_add_x2 rex5[5:7], rcx4[3:4], rbx4[1:2] tfe glc\n"
+        // regusage
+        "flat_atomic_add v57, v[36:37], v73 glc\n"
+        "flat_atomic_add_x2 v[57:58], v[36:37], v[73:74] glc\n"
+        "flat_atomic_add_x2 v[57:58], v[36:37], v[73:74]\n"
+        "flat_load_dwordx4 v[68:71], v[71:72]\n"
+        // tfe
+        "flat_load_dword v[26:27], v[53:54] tfe\n"
+        "flat_load_dwordx4 v[31:35], v[73:74] tfe\n"
+        "flat_atomic_add_x2 v[39:41], v[91:92], v[14:15] tfe\n",
         {
             // flat_load_dword  rbx, rcx4[3:4]
             { 0, "rbx", 0, 1, GCNFIELD_FLAT_VDST, ASMRVU_WRITE, 1 },
@@ -1303,6 +1312,35 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 96, "rcx4", 3, 5, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 1 },
             { 96, "rbx4", 1, 3, GCNFIELD_FLAT_DATA, ASMRVU_READ, 1 },
             { 96, "rex5", 7, 8, GCNFIELD_FLAT_VDSTLAST, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            // flat_atomic_add v57, v[36:37], v73 glc
+            { 104, nullptr, 256+57, 256+58, GCNFIELD_FLAT_VDST, ASMRVU_WRITE, 0 },
+            { 104, nullptr, 256+36, 256+38, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 0 },
+            { 104, nullptr, 256+73, 256+74, GCNFIELD_FLAT_DATA, ASMRVU_READ, 0 },
+            // flat_atomic_add_x2 v[57:58], v[36:37], v[73:74] glc
+            { 112, nullptr, 256+57, 256+59, GCNFIELD_FLAT_VDST, ASMRVU_WRITE, 0 },
+            { 112, nullptr, 256+36, 256+38, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 0 },
+            { 112, nullptr, 256+73, 256+75, GCNFIELD_FLAT_DATA, ASMRVU_READ, 0 },
+            // flat_atomic_add_x2 v[57:58], v[36:37], v[73:74]
+            { 120, nullptr, 256+36, 256+38, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 0 },
+            { 120, nullptr, 256+73, 256+75, GCNFIELD_FLAT_DATA, ASMRVU_READ, 0 },
+            // flat_load_dwordx4 v[68:71], v[71:72]
+            { 128, nullptr, 256+68, 256+72, GCNFIELD_FLAT_VDST, ASMRVU_WRITE, 0 },
+            { 128, nullptr, 256+71, 256+73, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 0 },
+            // flat_load_dword v[26:27], v[53:54] tfe
+            { 136, nullptr, 256+26, 256+27, GCNFIELD_FLAT_VDST, ASMRVU_WRITE, 0 },
+            { 136, nullptr, 256+53, 256+55, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 0 },
+            { 136, nullptr, 256+27, 256+28, GCNFIELD_FLAT_VDSTLAST,
+                        ASMRVU_READ|ASMRVU_WRITE, 0 },
+            // flat_load_dwordx4 v[31:35], v[73:74] tfe
+            { 144, nullptr, 256+31, 256+35, GCNFIELD_FLAT_VDST, ASMRVU_WRITE, 0 },
+            { 144, nullptr, 256+73, 256+75, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 0 },
+            { 144, nullptr, 256+35, 256+36, GCNFIELD_FLAT_VDSTLAST,
+                        ASMRVU_READ|ASMRVU_WRITE, 0 },
+            // flat_atomic_add_x2 v[39:41], v[91:92], v[14:15] tfe
+            { 152, nullptr, 256+91, 256+93, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 0 },
+            { 152, nullptr, 256+14, 256+16, GCNFIELD_FLAT_DATA, ASMRVU_READ, 0 },
+            { 152, nullptr, 256+41, 256+42, GCNFIELD_FLAT_VDSTLAST,
+                        ASMRVU_READ|ASMRVU_WRITE, 0 },
         },
         true, ""
     }

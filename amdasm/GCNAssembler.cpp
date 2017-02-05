@@ -272,6 +272,11 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
         case GCNFIELD_EXP_VSRC3:
             rstart = (code2>>24) + 256;
             break;
+        case GCNFIELD_FLAT_VDSTLAST:
+            // regSize stored by fix for regusage (regvar==nullptr)
+            rstart = (code2>>24) + 256 + regSize;
+            return { rstart, rstart+1 };
+            break;
         case GCNFIELD_M_SRSRC:
             rstart = (code2>>14)&0x7c;
             regSize<<=2; // 4 or 8
@@ -3210,7 +3215,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         lastRvu.rwFlags = ASMRVU_READ|ASMRVU_WRITE;
         lastRvu.regField = GCNFIELD_FLAT_VDSTLAST;
         if (lastRvu.regVar==nullptr) // fix for regusage
-        {   // to save register size for VDATALAST
+        {   // to save register size for VDSTLAST
             lastRvu.rstart = rvu.rstart;
             lastRvu.rend--;
         }
