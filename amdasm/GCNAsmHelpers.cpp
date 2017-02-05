@@ -2192,7 +2192,7 @@ bool GCNAsmUtils::checkGCNVOPExtraModifers(Assembler& asmr, bool needImm, bool s
         asmr.printError(instrPlace, "Literal with SDWA or DPP word is illegal");
         return false;
     }
-    if (src0Op.range.start < 256)
+    if (!src0Op.range.isVGPR())
     {
         asmr.printError(instrPlace, "SRC0 must be a vector register with "
                     "SDWA or DPP word");

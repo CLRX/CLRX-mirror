@@ -1358,6 +1358,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!checkGCNVOPExtraModifers(asmr, needImm, sextFlags, vop3, gcnVOPEnc, src0Op,
                     extraMods, instrPlace))
             return false;
+        gcnAsm->instrRVUs[2].regField = GCNFIELD_DPPSDWA_SRC0;
     }
     else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
@@ -1548,6 +1549,7 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!checkGCNVOPExtraModifers(asmr, needImm, sextFlags, vop3, gcnVOPEnc, src0Op,
                     extraMods, instrPlace))
             return false;
+        gcnAsm->instrRVUs[1].regField = GCNFIELD_DPPSDWA_SRC0;
     }
     else if (isGCN12 && (src0Op.vopMods & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
@@ -1716,6 +1718,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!checkGCNVOPExtraModifers(asmr, needImm, sextFlags, vop3, gcnVOPEnc, src0Op,
                     extraMods, instrPlace))
             return false;
+        gcnAsm->instrRVUs[1].regField = GCNFIELD_DPPSDWA_SRC0;
     }
     else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()

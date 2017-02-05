@@ -1343,6 +1343,67 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
                         ASMRVU_READ|ASMRVU_WRITE, 0 },
         },
         true, ""
+    },
+    {   /* 19: DPP/SDWA encoding */
+        ".gpu Tonga\n"
+        ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
+        ".regvar rax2:v:10, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
+        "v_add_f32 rax, rbx, rcx dst_sel:w1 src0_sel:word0\n"
+        "v_add_f32 rax, rbx, rcx quad_perm:[2,1,0,3]\n"
+        "v_mov_b32 rax, rbx dst_sel:w1 src0_sel:b2\n"
+        "v_mov_b32 rax, rbx quad_perm:[2,1,0,3]\n"
+        "v_cmp_le_u32 vcc, rbx, rcx dst_sel:w1 src0_sel:b2\n"
+        "v_cmp_le_u32 vcc, rbx, rcx quad_perm:[2,1,0,3]\n"
+        // reguse
+        "v_add_f32 v57, v12, v85 dst_sel:w1 src0_sel:word0\n"
+        "v_add_f32 v57, v12, v85 quad_perm:[2,1,0,3]\n"
+        "v_mov_b32 v25, v76 dst_sel:w1 src0_sel:b2\n"
+        "v_mov_b32 v25, v76 quad_perm:[2,1,0,3]\n"
+        "v_cmp_le_u32 vcc, v167, v143 dst_sel:w1 src0_sel:b2\n"
+        "v_cmp_le_u32 vcc, v167, v143 quad_perm:[2,1,0,3]\n",
+        {
+            // v_add_f32 rax, rbx, rcx dst_sel:w1 src0_sel:word0
+            { 0, "rax", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 0, "rbx", 0, 1, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 1 },
+            { 0, "rcx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_add_f32 rax, rbx, rcx quad_perm:[2,1,0,3]
+            { 8, "rax", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 8, "rbx", 0, 1, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 1 },
+            { 8, "rcx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_mov_b32 rax, rbx dst_sel:w1 src0_sel:b2
+            { 16, "rax", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 16, "rbx", 0, 1, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 1 },
+            // v_mov_b32 rax, rbx quad_perm:[2,1,0,3]
+            { 24, "rax", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 24, "rbx", 0, 1, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 1 },
+            // v_cmp_le_u32 vcc, rbx, rcx dst_sel:w1 src0_sel:b2
+            { 32, "rbx", 0, 1, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 1 },
+            { 32, "rcx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_cmp_le_u32 vcc, rbx, rcx quad_perm:[2,1,0,3]
+            { 40, "rbx", 0, 1, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 1 },
+            { 40, "rcx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_add_f32 v57, v12, v85 dst_sel:w1 src0_sel:word0
+            { 48, nullptr, 256+57, 256+58, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 0 },
+            { 48, nullptr, 256+12, 256+13, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 0 },
+            { 48, nullptr, 256+85, 256+86, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 },
+            // v_add_f32 v57, v12, v85 quad_perm:[2,1,0,3]
+            { 56, nullptr, 256+57, 256+58, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 0 },
+            { 56, nullptr, 256+12, 256+13, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 0 },
+            { 56, nullptr, 256+85, 256+86, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 },
+            // v_mov_b32 v25, v76 dst_sel:w1 src0_sel:b2
+            { 64, nullptr, 256+25, 256+26, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 0 },
+            { 64, nullptr, 256+76, 256+77, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 0 },
+            // v_mov_b32 v25, v76 quad_perm:[2,1,0,3]
+            { 72, nullptr, 256+25, 256+26, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 0 },
+            { 72, nullptr, 256+76, 256+77, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 0 },
+            // v_cmp_le_u32 vcc, v167, v143 dst_sel:w1 src0_sel:b2
+            { 80, nullptr, 256+167, 256+168, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 0 },
+            { 80, nullptr, 256+143, 256+144, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 },
+            // v_cmp_le_u32 vcc, v167, v143 dst_sel:w1 src0_sel:b2
+            { 88, nullptr, 256+167, 256+168, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 0 },
+            { 88, nullptr, 256+143, 256+144, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 },
+        },
+        true, ""
     }
 };
 
