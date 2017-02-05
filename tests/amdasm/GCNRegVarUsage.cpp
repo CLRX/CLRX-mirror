@@ -871,7 +871,10 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "buffer_atomic_cmpswap_x2 v[46:50], v83, s[24:27], s73 idxen offset:603 glc tfe\n"
         "buffer_load_dwordx4 v[11:15], v67, s[20:23], s91 idxen offset:603 tfe\n"
         // other regusage
-        "tbuffer_load_format_xyz v[55:57], v76, s[44:47], s61 idxen offset:603\n",
+        "tbuffer_load_format_xyz v[55:57], v76, s[44:47], s61 idxen offset:603\n"
+        // have LDS
+        "buffer_load_dword rbx, rex, srdx3[0:3], srbx idxen lds offset:603\n"
+        "buffer_load_dword v45, v21, s[12:15], s52 idxen lds offset:603\n",
         {
             // buffer_load_dword rbx, rex, srdx3[0:3], srbx idxen offset:603
             { 0, "rbx", 0, 1, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
@@ -1025,7 +1028,15 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 224, nullptr, 256+55, 256+58, GCNFIELD_M_VDATA, ASMRVU_WRITE, 0 },
             { 224, nullptr, 256+76, 256+77, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
             { 224, nullptr, 44, 48, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
-            { 224, nullptr, 61, 62, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 }
+            { 224, nullptr, 61, 62, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
+            // buffer_load_dword rbx, rex, srdx3[0:3], srbx idxen lds offset:603
+            { 232, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 232, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 232, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            // buffer_load_dword v45, v21, s[12:15], s52 idxen lds offset:603
+            { 240, nullptr, 256+21, 256+22, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 240, nullptr, 12, 16, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 240, nullptr, 52, 53, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
         },
         true, ""
     }

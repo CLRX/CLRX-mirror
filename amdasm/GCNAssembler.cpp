@@ -2583,7 +2583,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     // check fcmpswap
     bool vdataDivided = false;
     if (strlen(gcnInsn.mnemonic)>14 && (::strncmp(gcnInsn.mnemonic+14, "cmpswap", 7)==0 ||
-            ::strncmp(gcnInsn.mnemonic+15, "cmpswap", 7)==0) && vdataToWrite)
+            ::strncmp(gcnInsn.mnemonic+15, "cmpswap", 7)==0) && vdataToWrite && !haveLds)
     {   // fix access
         AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
         uint16_t size = rvu.rend-rvu.rstart;
@@ -2596,25 +2596,6 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         nextRvu.rwFlags = ASMRVU_READ;
         vdataDivided = true;
     }
-    
-    if (haveTfe && (vdataDivided ||
-            gcnAsm->instrRVUs[0].rwFlags!=(ASMRVU_READ|ASMRVU_WRITE)))
-    {   // fix for tfe
-        const cxuint rvuId = (vdataDivided ? 4 : 0);
-        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[rvuId];
-        AsmRegVarUsage& lastRvu = gcnAsm->instrRVUs[5];
-        lastRvu = rvu;
-        lastRvu.rstart = lastRvu.rend-1;
-        lastRvu.rwFlags = ASMRVU_READ|ASMRVU_WRITE;
-        lastRvu.regField = GCNFIELD_M_VDATALAST;
-        if (lastRvu.regVar==nullptr) // fix for regusage
-        {   // to save register size for VDATALAST
-            lastRvu.rstart = gcnAsm->instrRVUs[0].rstart;
-            lastRvu.rend--;
-        }
-        rvu.rend--;
-    }
-    
     // do not read vaddr if no offen and idxen and no addr64
     if (!haveAddr64 && !haveOffen && !haveIdxen)
         gcnAsm->instrRVUs[1].regField = ASMFIELD_NONE; // ignore this
@@ -2632,6 +2613,28 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     {
         asmr.printError(instrPlace, "Both LDS and TFE is illegal");
         return;
+    }
+    
+    // ignore vdata if LDS
+    if (haveLds)
+        gcnAsm->instrRVUs[0].regField = ASMFIELD_NONE;
+    
+    if (haveTfe && (vdataDivided ||
+            gcnAsm->instrRVUs[0].rwFlags!=(ASMRVU_READ|ASMRVU_WRITE)))
+    {   // fix for tfe
+        const cxuint rvuId = (vdataDivided ? 4 : 0);
+        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[rvuId];
+        AsmRegVarUsage& lastRvu = gcnAsm->instrRVUs[5];
+        lastRvu = rvu;
+        lastRvu.rstart = lastRvu.rend-1;
+        lastRvu.rwFlags = ASMRVU_READ|ASMRVU_WRITE;
+        lastRvu.regField = GCNFIELD_M_VDATALAST;
+        if (lastRvu.regVar==nullptr) // fix for regusage
+        {   // to save register size for VDATALAST
+            lastRvu.rstart = gcnAsm->instrRVUs[0].rstart;
+            lastRvu.rend--;
+        }
+        rvu.rend--;
     }
     
     if (offsetExpr!=nullptr)
@@ -2664,7 +2667,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     
     offsetExpr.release();
     // update register pool (instr loads or save old value) */
-    if (vdataReg && !vdataReg.isRegVar() && vdataToWrite)
+    if (vdataReg && !vdataReg.isRegVar() && vdataToWrite && !haveLds)
         updateVGPRsNum(gcnRegs.vgprsNum, vdataReg.end-257);
     if (soffsetOp.range && !soffsetOp.range.isRegVar())
         updateRegFlags(gcnRegs.regFlags, soffsetOp.range.start, arch);
