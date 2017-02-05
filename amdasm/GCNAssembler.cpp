@@ -2684,7 +2684,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     
     offsetExpr.release();
     // update register pool (instr loads or save old value) */
-    if (vdataReg && !vdataReg.isRegVar() && vdataToWrite && !haveLds)
+    if (vdataReg && !vdataReg.isRegVar() && (vdataToWrite || haveTfe) && !haveLds)
         updateVGPRsNum(gcnRegs.vgprsNum, vdataReg.end-257);
     if (soffsetOp.range && !soffsetOp.range.isRegVar())
         updateRegFlags(gcnRegs.regFlags, soffsetOp.range.start, arch);
@@ -2928,8 +2928,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             reinterpret_cast<cxbyte*>(words + 2));
     
     // update register pool (instr loads or save old value) */
-    if (vdataReg && !vdataReg.isRegVar() && ((gcnInsn.mode&GCN_MLOAD) != 0 ||
-                ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc)))
+    if (vdataReg && !vdataReg.isRegVar() && (vdataToWrite || haveTfe))
         updateVGPRsNum(gcnRegs.vgprsNum, vdataReg.end-257);
     return true;
 }
@@ -3234,7 +3233,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + 2));
     // update register pool
-    if (vdstReg && !vdstReg.isRegVar() && dstToWrite)
+    if (vdstReg && !vdstReg.isRegVar() && (dstToWrite || haveTfe))
         updateVGPRsNum(gcnRegs.vgprsNum, vdstReg.end-257);
     return true;
 }
