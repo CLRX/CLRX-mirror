@@ -3201,7 +3201,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             gcnAsm->instrRVUs[0].regField = ASMFIELD_NONE;
     }
     
-    if (haveTfe)
+    if (haveTfe && vdstReg)
     {   // fix for tfe
         AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
         AsmRegVarUsage& lastRvu = gcnAsm->instrRVUs[3];
