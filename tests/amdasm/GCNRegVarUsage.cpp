@@ -848,8 +848,30 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "tbuffer_load_format_xyz rex5[5:7], rex, srdx3[4:7], srbx idxen offset:603\n"
         "buffer_load_format_xyz rex5[5:7], rex, srdx3[4:7], srbx idxen offset:603\n"
         "buffer_wbinvl1\n"
+        // regusage
         "buffer_load_dword v45, v21, s[12:15], s52 idxen offset:603\n"
-        "buffer_atomic_cmpswap_x2 v[71:74], v41, s[16:19], s43 idxen offset:603 glc\n",
+        "buffer_atomic_cmpswap_x2 v[71:74], v41, s[16:19], s43 idxen offset:603 glc\n"
+        "buffer_atomic_cmpswap v[64:65], v88, s[12:15], s78 idxen offset:603\n"
+        "buffer_atomic_add v59, v13, s[20:23], s74 idxen offset:603 glc\n"
+        // various addressing
+        "buffer_atomic_add rbx, rex5[3:4], srdx3[0:3], srbx idxen offen offset:603\n"
+        "buffer_atomic_add rbx, rex5[4:5], srdx3[4:7], srbx addr64 offset:603\n"
+        "buffer_atomic_add rbx, rex, srdx3[0:3], srbx offset:603\n"
+        // tfe flag
+        "buffer_atomic_add_x2 rbx4[3:5], rex, srdx3[0:3], srbx idxen offset:603 glc tfe\n"
+        "buffer_atomic_cmpswap_x2 rcx4[3:7], rex, srdx3[4:7], srbx "
+                "idxen offset:603 glc tfe\n"
+        "buffer_load_dwordx4 rbx4[1:5], rex, srdx3[0:3], srbx idxen offset:603 tfe\n"
+        // regusage (various addressing)
+        "buffer_atomic_add v58, v[7:8], s[12:15], s62 idxen offen offset:603\n"
+        "buffer_atomic_add v58, v[7], s[12:15], s62 offset:603\n"
+        "buffer_atomic_add v58, v[7:8], s[12:15], s62 addr64 offset:603\n"
+        // regusage (tfe flag)
+        "buffer_atomic_add_x2 v[61:63], v34, s[28:31], s26 idxen offset:603 glc tfe\n"
+        "buffer_atomic_cmpswap_x2 v[46:50], v83, s[24:27], s73 idxen offset:603 glc tfe\n"
+        "buffer_load_dwordx4 v[11:15], v67, s[20:23], s91 idxen offset:603 tfe\n"
+        // other regusage
+        "tbuffer_load_format_xyz v[55:57], v76, s[44:47], s61 idxen offset:603\n",
         {
             // buffer_load_dword rbx, rex, srdx3[0:3], srbx idxen offset:603
             { 0, "rbx", 0, 1, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
@@ -920,6 +942,90 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 104, nullptr, 16, 20, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
             { 104, nullptr, 43, 44, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
             { 104, nullptr, 256+73, 256+75, GCNFIELD_M_VDATAH, ASMRVU_READ, 0 },
+            // buffer_atomic_cmpswap v[64:65], v88, s[12:15], s78 idxen offset:603
+            { 112, nullptr, 256+64, 256+66, GCNFIELD_M_VDATA, ASMRVU_READ, 0 },
+            { 112, nullptr, 256+88, 256+89, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 112, nullptr, 12, 16, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 112, nullptr, 78, 79, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
+            // buffer_atomic_add v59, v13, s[20:23], s74 idxen offset:603 glc
+            { 120, nullptr, 256+59, 256+60, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 120, nullptr, 256+13, 256+14, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 120, nullptr, 20, 24, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 120, nullptr, 74, 75, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
+            // buffer_atomic_add rbx, rex5[3:4], srdx3[0:3], srbx idxen offen offset:603
+            { 128, "rbx", 0, 1, GCNFIELD_M_VDATA, ASMRVU_READ, 1 },
+            { 128, "rex5", 3, 5, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 128, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 128, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            // buffer_atomic_add rbx, rex5[4:5], srdx3[4:7], srbx addr64 offset:603
+            { 136, "rbx", 0, 1, GCNFIELD_M_VDATA, ASMRVU_READ, 1 },
+            { 136, "rex5", 4, 6, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 136, "srdx3", 4, 8, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 136, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            // buffer_atomic_add rbx, rex, srdx3[0:3], srbx offset:603
+            { 144, "rbx", 0, 1, GCNFIELD_M_VDATA, ASMRVU_READ, 1 },
+            { 144, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 144, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            /* buffer_atomic_add_x2 rbx4[3:4], rex, srdx3[0:3], srbx
+             *      idxen offset:603 glc tfe */
+            { 152, "rbx4", 3, 6, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            { 152, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 152, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 152, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            /* buffer_atomic_cmpswap_x2 rcx4[3:6], rex, srdx3[4:7], srbx
+                idxen offset:603 glc tfe */
+            { 160, "rcx4", 3, 5, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            { 160, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 160, "srdx3", 4, 8, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 160, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            { 160, "rcx4", 5, 7, GCNFIELD_M_VDATAH, ASMRVU_READ, 1 },
+            { 160, "rcx4", 7, 8, GCNFIELD_M_VDATALAST, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            // buffer_load_dwordx4 rbx4[1:5], rex, srdx3[0:3], srbx idxen offset:603 tfe
+            { 168, "rbx4", 1, 5, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
+            { 168, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 168, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 168, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            { 168, "rbx4", 5, 6, GCNFIELD_M_VDATALAST, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            // buffer_atomic_add v58, v[7:8], s[12:15], s62 idxen offen offset:603
+            { 176, nullptr, 256+58, 256+59, GCNFIELD_M_VDATA, ASMRVU_READ, 0 },
+            { 176, nullptr, 256+7, 256+9, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 176, nullptr, 12, 16, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 176, nullptr, 62, 63, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
+            // buffer_atomic_add v58, v[7:8], s[12:15], s62 offset:603
+            { 184, nullptr, 256+58, 256+59, GCNFIELD_M_VDATA, ASMRVU_READ, 0 },
+            { 184, nullptr, 12, 16, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 184, nullptr, 62, 63, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
+            // buffer_atomic_add v58, v[7:8], s[12:15], s62 addr64 offset:603
+            { 192, nullptr, 256+58, 256+59, GCNFIELD_M_VDATA, ASMRVU_READ, 0 },
+            { 192, nullptr, 256+7, 256+9, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 192, nullptr, 12, 16, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 192, nullptr, 62, 63, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
+            // buffer_atomic_add_x2 v[61:63], v34, s[28:31], s26 idxen offset:603 glc tfe
+            { 200, nullptr, 256+61, 256+64, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 200, nullptr, 256+34, 256+35, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 200, nullptr, 28, 32, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 200, nullptr, 26, 27, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
+            /* buffer_atomic_cmpswap_x2 v[46:50], v83, s[24:27], s73 
+                 idxen offset:603 glc tfe */
+            { 208, nullptr, 256+46, 256+48, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 208, nullptr, 256+83, 256+84, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 208, nullptr, 24, 28, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 208, nullptr, 73, 74, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
+            { 208, nullptr, 256+48, 256+50, GCNFIELD_M_VDATAH, ASMRVU_READ, 0 },
+            { 208, nullptr, 256+50, 256+51, GCNFIELD_M_VDATALAST,
+                ASMRVU_READ|ASMRVU_WRITE, 0 },
+            // buffer_load_dwordx4 v[11:15], v67, s[20:23], s91 idxen offset:603 tfe
+            { 216, nullptr, 256+11, 256+15, GCNFIELD_M_VDATA, ASMRVU_WRITE, 0 },
+            { 216, nullptr, 256+67, 256+68, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 216, nullptr, 20, 24, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 216, nullptr, 91, 92, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
+            { 216, nullptr, 256+15, 256+16, GCNFIELD_M_VDATALAST,
+                ASMRVU_READ|ASMRVU_WRITE, 0 },
+            // tbuffer_load_format_xyz v[55:57], v76, s[44:47], s61 idxen offset:603
+            { 224, nullptr, 256+55, 256+58, GCNFIELD_M_VDATA, ASMRVU_WRITE, 0 },
+            { 224, nullptr, 256+76, 256+77, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 224, nullptr, 44, 48, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 224, nullptr, 61, 62, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 }
         },
         true, ""
     }

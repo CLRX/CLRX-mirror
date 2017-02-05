@@ -258,6 +258,11 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
         case GCNFIELD_M_VDATAH:
             rstart = ((code2>>8)&0xff) + 256 + regSize;
             break;
+        case GCNFIELD_M_VDATALAST:
+            // regSize stored by fix for regusage (regvar==nullptr)
+            rstart = ((code2>>8)&0xff) + 256 + regSize;
+            return { rstart, rstart+1 };
+            break;
         case GCNFIELD_DS_DATA1:
         case GCNFIELD_EXP_VSRC2:
             rstart = ((code2>>16)&0xff) + 256;
@@ -2576,6 +2581,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     gcnAsm->instrRVUs[0].rwFlags = (vdataToWrite ? ASMRVU_WRITE : 0) |
             (vdataToRead ? ASMRVU_READ : 0);
     // check fcmpswap
+    bool vdataDivided = false;
     if (strlen(gcnInsn.mnemonic)>14 && (::strncmp(gcnInsn.mnemonic+14, "cmpswap", 7)==0 ||
             ::strncmp(gcnInsn.mnemonic+15, "cmpswap", 7)==0) && vdataToWrite)
     {   // fix access
@@ -2588,7 +2594,30 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         nextRvu.rstart += (size>>1);
         nextRvu.rend = rvu.rstart + size;
         nextRvu.rwFlags = ASMRVU_READ;
+        vdataDivided = true;
     }
+    
+    if (haveTfe && (vdataDivided ||
+            gcnAsm->instrRVUs[0].rwFlags!=(ASMRVU_READ|ASMRVU_WRITE)))
+    {   // fix for tfe
+        const cxuint rvuId = (vdataDivided ? 4 : 0);
+        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[rvuId];
+        AsmRegVarUsage& lastRvu = gcnAsm->instrRVUs[5];
+        lastRvu = rvu;
+        lastRvu.rstart = lastRvu.rend-1;
+        lastRvu.rwFlags = ASMRVU_READ|ASMRVU_WRITE;
+        lastRvu.regField = GCNFIELD_M_VDATALAST;
+        if (lastRvu.regVar==nullptr) // fix for regusage
+        {   // to save register size for VDATALAST
+            lastRvu.rstart = gcnAsm->instrRVUs[0].rstart;
+            lastRvu.rend--;
+        }
+        rvu.rend--;
+    }
+    
+    // do not read vaddr if no offen and idxen and no addr64
+    if (!haveAddr64 && !haveOffen && !haveIdxen)
+        gcnAsm->instrRVUs[1].regField = ASMFIELD_NONE; // ignore this
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
