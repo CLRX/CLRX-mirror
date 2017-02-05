@@ -1236,6 +1236,30 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 24, nullptr, 256+97, 256+98, GCNFIELD_EXP_VSRC3, ASMRVU_READ, 0 }
         },
         true, ""
+    },
+    {   /* 18: FLAT encoding */
+        ".gpu Bonaire\n"
+        ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
+        ".regvar rax2:v:10, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
+        "flat_load_dword rbx, rcx4[3:4]\n"
+        "flat_load_dwordx4 rax2[2:5], rcx4[3:4]\n"
+        "flat_store_dword rcx4[3:4], rbx\n"
+        "flat_store_dwordx4 rcx4[3:4], rax2[2:5]\n",
+        {
+            // flat_load_dword  rbx, rcx4[3:4]
+            { 0, "rbx", 0, 1, GCNFIELD_FLAT_VDST, ASMRVU_WRITE, 1 },
+            { 0, "rcx4", 3, 5, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 1 },
+            // flat_load_dwordx4 rax2[2:5], rcx4[3:4]
+            { 8, "rax2", 2, 6, GCNFIELD_FLAT_VDST, ASMRVU_WRITE, 1 },
+            { 8, "rcx4", 3, 5, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 1 },
+            // flat_store_dword rcx4[3:4], rbx
+            { 16, "rcx4", 3, 5, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 1 },
+            { 16, "rbx", 0, 1, GCNFIELD_FLAT_DATA, ASMRVU_READ, 1 },
+            // flat_load_dwordx4 rax2[2:5], rcx4[3:4]
+            { 24, "rcx4", 3, 5, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 1 },
+            { 24, "rax2", 2, 6, GCNFIELD_FLAT_DATA, ASMRVU_READ, 1 },
+        },
+        true, ""
     }
 };
 

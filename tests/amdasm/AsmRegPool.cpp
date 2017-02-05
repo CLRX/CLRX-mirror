@@ -103,7 +103,7 @@ static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
     { ".amd;.arch gcn1.1;.kernel xx;.config;.tgsize;.text;flat_store_dwordx2 v[47:48], "
         "v[187:188]", { { "xx", 1, 0 } } },
     { ".amd;.arch gcn1.1;.kernel xx;.config;.tgsize;.text;flat_atomic_inc v47, "
-        "v[187:188], v65", { { "xx", 1, 48 } } }, // ???? only if glc
+        "v[187:188], v65 glc", { { "xx", 1, 48 } } }, // ???? only if glc
     /* gcn1.2 asm test cases - vop3 vintrp */
     { ".amd;.arch gcn1.2;.kernel xx;.config;.tgsize;.text;v_interp_p1_f32 v42, v16, "
         "attr39.z vop3", { { "xx", 1, 43 } } },

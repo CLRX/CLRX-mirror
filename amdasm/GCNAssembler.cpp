@@ -2945,7 +2945,6 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
     cxbyte target = 0;
     RegRange vsrcsReg[4];
     const char* vsrcPlaces[4];
-    
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     char name[20];
@@ -3113,6 +3112,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     RegRange vaddrReg(0, 0);
     RegRange vdstReg(0, 0);
     RegRange vdataReg(0, 0);
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     skipSpacesToEnd(linePtr, end);
     const char* vdstPlace = nullptr;
@@ -3121,21 +3121,30 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
         vdstPlace = linePtr;
-        good &= parseVRegRange(asmr, linePtr, vdstReg, 0, GCNFIELD_FLAT_VDST);
+        
+        gcnAsm->setCurrentRVU(0);
+        good &= parseVRegRange(asmr, linePtr, vdstReg, 0, GCNFIELD_FLAT_VDST, true,
+                        INSTROP_SYMREGRANGE|INSTROP_WRITE);
         if (!skipRequiredComma(asmr, linePtr))
             return false;
-        good &= parseVRegRange(asmr, linePtr, vaddrReg, 2, GCNFIELD_FLAT_ADDR);
+        gcnAsm->setCurrentRVU(1);
+        good &= parseVRegRange(asmr, linePtr, vaddrReg, 2, GCNFIELD_FLAT_ADDR, true,
+                        INSTROP_SYMREGRANGE|INSTROP_READ);
     }
     else
     {
-        good &= parseVRegRange(asmr, linePtr, vaddrReg, 2, GCNFIELD_FLAT_ADDR);
+        gcnAsm->setCurrentRVU(1);
+        good &= parseVRegRange(asmr, linePtr, vaddrReg, 2, GCNFIELD_FLAT_ADDR, true,
+                        INSTROP_SYMREGRANGE|INSTROP_READ);
         if ((gcnInsn.mode & GCN_FLAT_NODST) == 0)
         {
             if (!skipRequiredComma(asmr, linePtr))
                 return false;
             skipSpacesToEnd(linePtr, end);
             vdstPlace = linePtr;
-            good &= parseVRegRange(asmr, linePtr, vdstReg, 0, GCNFIELD_FLAT_VDST);
+            gcnAsm->setCurrentRVU(0);
+            good &= parseVRegRange(asmr, linePtr, vdstReg, 0, GCNFIELD_FLAT_VDST, true,
+                        INSTROP_SYMREGRANGE|INSTROP_WRITE);
         }
     }
     
@@ -3143,7 +3152,9 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         if (!skipRequiredComma(asmr, linePtr))
             return false;
-        good &= parseVRegRange(asmr, linePtr, vdataReg, dregsNum, GCNFIELD_FLAT_DATA);
+        gcnAsm->setCurrentRVU(2);
+        good &= parseVRegRange(asmr, linePtr, vdataReg, dregsNum, GCNFIELD_FLAT_DATA,
+                               true, INSTROP_SYMREGRANGE|INSTROP_READ);
     }
     
     bool haveTfe = false, haveSlc = false, haveGlc = false;
@@ -3172,6 +3183,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
     }
     /* check register ranges */
+    bool dstToWrite = vdstReg && ((gcnInsn.mode & GCN_MATOMIC)==0 || haveGlc);
     if (vdstReg)
     {
         cxuint dstRegsNum = ((gcnInsn.mode & GCN_CMPSWAP)!=0) ? (dregsNum>>1) : dregsNum;
@@ -3184,6 +3196,25 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             asmr.printError(vdstPlace, errorMsg);
             good = false;
         }
+        
+        if (!dstToWrite)
+            gcnAsm->instrRVUs[0].regField = ASMFIELD_NONE;
+    }
+    
+    if (haveTfe)
+    {   // fix for tfe
+        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
+        AsmRegVarUsage& lastRvu = gcnAsm->instrRVUs[3];
+        lastRvu = rvu;
+        lastRvu.rstart = lastRvu.rend-1;
+        lastRvu.rwFlags = ASMRVU_READ|ASMRVU_WRITE;
+        lastRvu.regField = GCNFIELD_FLAT_VDSTLAST;
+        if (lastRvu.regVar==nullptr) // fix for regusage
+        {   // to save register size for VDATALAST
+            lastRvu.rstart = rvu.rstart;
+            lastRvu.rend--;
+        }
+        rvu.rend--;
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -3198,7 +3229,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + 2));
     // update register pool
-    if (vdstReg && !vdstReg.isRegVar())
+    if (vdstReg && !vdstReg.isRegVar() && dstToWrite)
         updateVGPRsNum(gcnRegs.vgprsNum, vdstReg.end-257);
     return true;
 }
