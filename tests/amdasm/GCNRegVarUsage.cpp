@@ -832,16 +832,24 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* 15: MUBUF encoding */
+    {   /* 15: MUBUF/MTBUF encoding */
         ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
         ".regvar rax2:v:8, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
-        ".regvar srex:s, srdx3:s:6, srbx:s\n"
+        ".regvar srex:s, srdx3:s:8, srbx:s\n"
         "buffer_load_dword rbx, rex, srdx3[0:3], srbx idxen offset:603\n"
         "buffer_store_dword rbx, rex, srdx3[0:3], srbx idxen offset:603\n"
         "buffer_atomic_add rbx, rex, srdx3[0:3], srbx idxen offset:603\n"
         "buffer_atomic_add rbx, rex, srdx3[0:3], srbx idxen offset:603 glc\n"
         "buffer_atomic_add_x2 rbx4[3:4], rex, srdx3[0:3], srbx idxen offset:603 glc\n"
-        "buffer_atomic_cmpswap rcx4[1:2], rex, srdx3[0:3], srbx idxen offset:603 glc\n",
+        "buffer_atomic_cmpswap rcx4[1:2], rex, srdx3[4:7], srbx idxen offset:603 glc\n"
+        "buffer_atomic_cmpswap rcx4[1:2], rex, srdx3[0:3], srbx idxen offset:603\n"
+        "buffer_atomic_cmpswap_x2 rcx4[3:6], rex, srdx3[4:7], srbx idxen offset:603 glc\n"
+        "buffer_load_dwordx4 rex5[5:8], rex, srdx3[0:3], srbx idxen offset:603\n"
+        "tbuffer_load_format_xyz rex5[5:7], rex, srdx3[4:7], srbx idxen offset:603\n"
+        "buffer_load_format_xyz rex5[5:7], rex, srdx3[4:7], srbx idxen offset:603\n"
+        "buffer_wbinvl1\n"
+        "buffer_load_dword v45, v21, s[12:15], s52 idxen offset:603\n"
+        "buffer_atomic_cmpswap_x2 v[71:74], v41, s[16:19], s43 idxen offset:603 glc\n",
         {
             // buffer_load_dword rbx, rex, srdx3[0:3], srbx idxen offset:603
             { 0, "rbx", 0, 1, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
@@ -871,9 +879,47 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             // buffer_atomic_cmpswap rcx4[1:2], rex, srdx3[0:3], srbx idxen offset:603 glc
             { 40, "rcx4", 1, 2, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 1 },
             { 40, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
-            { 40, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 40, "srdx3", 4, 8, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
             { 40, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
-            { 40, "rcx4", 2, 3, GCNFIELD_M_VDATA, ASMRVU_READ, 1 },
+            { 40, "rcx4", 2, 3, GCNFIELD_M_VDATAH, ASMRVU_READ, 1 },
+            // buffer_atomic_cmpswap rcx4[1:2], rex, srdx3[0:3], srbx idxen offset:603
+            { 48, "rcx4", 1, 3, GCNFIELD_M_VDATA, ASMRVU_READ, 1 },
+            { 48, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 48, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 48, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            /* buffer_atomic_cmpswap_x2 rcx4[3:6], rex, srdx3[0:3],
+                srbx idxen offset:603 glc */
+            { 56, "rcx4", 3, 5, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            { 56, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 56, "srdx3", 4, 8, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 56, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            { 56, "rcx4", 5, 7, GCNFIELD_M_VDATAH, ASMRVU_READ, 1 },
+            // buffer_load_dwordx4 rex5[5:8], rex, srdx3[0:3], srbx idxen offset:603
+            { 64, "rex5", 5, 9, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
+            { 64, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 64, "srdx3", 0, 4, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 64, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            // tbuffer_load_format_xyz rex5[5:7], rex, srdx3[0:3], srbx idxen offset:603
+            { 72, "rex5", 5, 8, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
+            { 72, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 72, "srdx3", 4, 8, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 72, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            // buffer_load_format_xyz rex5[5:7], rex, srdx3[0:3], srbx idxen offset:603
+            { 80, "rex5", 5, 8, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
+            { 80, "rex", 0, 1, GCNFIELD_M_VADDR, ASMRVU_READ, 1 },
+            { 80, "srdx3", 4, 8, GCNFIELD_M_SRSRC, ASMRVU_READ, 4 },
+            { 80, "srbx", 0, 1, GCNFIELD_M_SOFFSET, ASMRVU_READ, 1 },
+            // buffer_load_dword v45, v21, s[12:15], s52 idxen offset:603
+            { 96, nullptr, 256+45, 256+46, GCNFIELD_M_VDATA, ASMRVU_WRITE, 0 },
+            { 96, nullptr, 256+21, 256+22, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 96, nullptr, 12, 16, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 96, nullptr, 52, 53, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
+            // buffer_atomic_cmpswap_x2 v[71:74], v41, s[16:19], s43 idxen offset:603 glc
+            { 104, nullptr, 256+71, 256+73, GCNFIELD_M_VDATA, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 104, nullptr, 256+41, 256+42, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 104, nullptr, 16, 20, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 104, nullptr, 43, 44, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
+            { 104, nullptr, 256+73, 256+75, GCNFIELD_M_VDATAH, ASMRVU_READ, 0 },
         },
         true, ""
     }

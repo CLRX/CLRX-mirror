@@ -255,6 +255,9 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
         case GCNFIELD_M_VDATA:
             rstart = ((code2>>8)&0xff) + 256;
             break;
+        case GCNFIELD_M_VDATAH:
+            rstart = ((code2>>8)&0xff) + 256 + regSize;
+            break;
         case GCNFIELD_DS_DATA1:
         case GCNFIELD_EXP_VSRC2:
             rstart = ((code2>>16)&0xff) + 256;
@@ -2581,6 +2584,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         rvu.rend = rvu.rstart + (size>>1);
         AsmRegVarUsage& nextRvu = gcnAsm->instrRVUs[4];
         nextRvu = rvu;
+        nextRvu.regField = GCNFIELD_M_VDATAH;
         nextRvu.rstart += (size>>1);
         nextRvu.rend = rvu.rstart + size;
         nextRvu.rwFlags = ASMRVU_READ;
