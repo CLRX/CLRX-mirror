@@ -2275,7 +2275,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "flat_load_dwordx3",   GCNENC_FLAT,   GCN_MUBUF_MX3|GCN_FLAT_NODATA, 22,   ARCH_RX3X0  },
     { "flat_load_dwordx4",   GCNENC_FLAT,   GCN_MUBUF_MX4|GCN_FLAT_NODATA, 23,   ARCH_RX3X0  },
     { "flat_atomic_swap",    GCNENC_FLAT,   GCN_MUBUF_MX1,            64,   ARCH_RX3X0  },
-    { "flat_atomic_cmpswap", GCNENC_FLAT,   GCN_MUBUF_MX2|GCN_MCMPSWAP|GCN_CMPSWAP, 65,   ARCH_RX3X0  },
+    { "flat_atomic_cmpswap", GCNENC_FLAT,   GCN_MUBUF_MX2|GCN_CMPSWAP, 65,   ARCH_RX3X0  },
     { "flat_atomic_add",     GCNENC_FLAT,   GCN_MUBUF_MX1,            66,   ARCH_RX3X0  },
     { "flat_atomic_sub",     GCNENC_FLAT,   GCN_MUBUF_MX1,            67,   ARCH_RX3X0  },
     { "flat_atomic_smin",    GCNENC_FLAT,   GCN_MUBUF_MX1,            68,   ARCH_RX3X0  },

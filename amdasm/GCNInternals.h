@@ -188,7 +188,7 @@ enum : uint16_t
     GCN_FLAT_NODATA = 0x20, /// omit DATA
     GCN_FLAT_NODST = 0x40,  /// omit DST
     GCN_FLAT_STORE = 0x50,  /// store instruction
-    GCN_CMPSWAP =  0x80|0x4000,    /// ???
+    GCN_CMPSWAP =  0x80,    /// ???
     GCN_MASK1 = 0xf0,
     GCN_MASK2 = 0xf00,
     GCN_DSIZE_MASK = 0x700, /// dsize mask
