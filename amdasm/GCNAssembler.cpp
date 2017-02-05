@@ -2595,8 +2595,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             (vdataToRead ? ASMRVU_READ : 0);
     // check fcmpswap
     bool vdataDivided = false;
-    if (strlen(gcnInsn.mnemonic)>14 && (::strncmp(gcnInsn.mnemonic+14, "cmpswap", 7)==0 ||
-            ::strncmp(gcnInsn.mnemonic+15, "cmpswap", 7)==0) && vdataToWrite && !haveLds)
+    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && vdataToWrite && !haveLds)
     {   // fix access
         AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
         uint16_t size = rvu.rend-rvu.rstart;
@@ -2870,8 +2869,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     // check fcmpswap
     bool vdataDivided = false;
-    if (strlen(gcnInsn.mnemonic)>13 && (::strncmp(gcnInsn.mnemonic+13, "cmpswap", 7)==0 ||
-            ::strncmp(gcnInsn.mnemonic+14, "cmpswap", 7)==0) && vdataToWrite)
+    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && vdataToWrite)
     {   // fix access
         AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
         uint16_t size = rvu.rend-rvu.rstart;
