@@ -438,7 +438,8 @@ typedef cxbyte AsmRegField;
 
 enum : AsmRegField
 {
-    GCNFIELD_SSRC0 = 0,
+    ASMFIELD_NONE = 0,
+    GCNFIELD_SSRC0,
     GCNFIELD_SSRC1,
     GCNFIELD_SDST,
     GCNFIELD_SMRD_SBASE,
@@ -476,8 +477,7 @@ enum : AsmRegField
     GCNFIELD_FLAT_ADDR,
     GCNFIELD_FLAT_DATA,
     GCNFIELD_FLAT_VDST,
-    GCNFIELD_DPPSDWA_SRC0,
-    ASMFIELD_NONE = 255
+    GCNFIELD_DPPSDWA_SRC0
 };
 
 struct AsmRegVar

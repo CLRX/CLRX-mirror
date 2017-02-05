@@ -56,6 +56,8 @@ enum: Flags
 
 struct AsmRegVar;
 
+/* TODO: add some mechanism to resolve dependencies between register in single instruction
+ * like, the same SGPR register, this same register in two fields, etc */
 /// ISA (register and regvar) Usage handler
 class ISAUsageHandler
 {
