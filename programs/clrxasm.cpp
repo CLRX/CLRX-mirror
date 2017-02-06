@@ -54,7 +54,7 @@ static const CLIOption programOptions[] =
     { "buggyFPLit", 0, CLIArgType::NONE, false, false,
         "use old and buggy fplit rules", nullptr },
     { "noMacroCase", 'm', CLIArgType::NONE, false, false,
-        "disable case-insensitive macro names", nullptr },
+        "do not ignore letter's case in macro names", nullptr },
     { "noWarnings", 'w', CLIArgType::NONE, false, false, "disable warnings", nullptr },
     CLRX_CLI_AUTOHELP
     { nullptr, 0 }
