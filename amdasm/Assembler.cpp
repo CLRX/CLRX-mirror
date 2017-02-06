@@ -634,6 +634,7 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
     filenameIndex = 0;
     alternateMacro = (flags & ASM_ALTMACRO)!=0;
     buggyFPLit = (flags & ASM_BUGGYFPLIT)!=0;
+    macroCase = (flags & ASM_MACRONOCASE)==0;
     localCount = macroCount = inclusionLevel = 0;
     macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;
@@ -669,6 +670,7 @@ Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
     filenames = _filenames;
     alternateMacro = (flags & ASM_ALTMACRO)!=0;
     buggyFPLit = (flags & ASM_BUGGYFPLIT)!=0;
+    macroCase = (flags & ASM_MACRONOCASE)==0;
     localCount = macroCount = inclusionLevel = 0;
     macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;
@@ -1673,7 +1675,8 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
     CString macroName = extractSymName(linePtr, end, false);
     if (macroName.empty())
         return ParseState::MISSING;
-    toLowerString(macroName);
+    if (macroCase)
+        toLowerString(macroName);
     MacroMap::const_iterator it = macroMap.find(macroName);
     if (it == macroMap.end())
         return ParseState::MISSING; // macro not found

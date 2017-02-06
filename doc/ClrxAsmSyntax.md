@@ -24,7 +24,8 @@ Statement can be separated in single line by semicolon `;`. Like that:
 Single comment begins from `#`. Multiline comment is same as in C/C++ language:
 begins from `/*` and terminates at `*/`.
 
-Names of pseudo-operations, macro names, processors instructions and other names
+Names of pseudo-operations, macro names (if option macrocase enabled),
+processors instructions and other names
 (for example: argument type, gpu device type) are case-insensitive. Symbol names,
 kernel names, and section names are case-sensitive.
 

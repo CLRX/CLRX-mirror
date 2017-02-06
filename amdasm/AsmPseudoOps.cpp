@@ -110,8 +110,8 @@ static const char* pseudoOpNamesTbl[] =
     "ifne", "ifnes", "ifnfmt", "ifngpu", "ifnotdef", "incbin",
     "include", "int", "irp", "irpc", "kernel", "lflags",
     "line", "ln", "local", "long",
-    "macro", "main", "noaltmacro",
-    "nobuggyfplit", "octa", "offset", "org",
+    "macro", "macrocase", "main", "noaltmacro",
+    "nobuggyfplit", "nomacrocase", "octa", "offset", "org",
     "p2align", "print", "purgem", "quad",
     "rawcode", "regvar", "rept", "rocm", "rodata",
     "sbttl", "section", "set",
@@ -147,8 +147,8 @@ enum
     ASMOP_IFNE, ASMOP_IFNES, ASMOP_IFNFMT, ASMOP_IFNGPU, ASMOP_IFNOTDEF, ASMOP_INCBIN,
     ASMOP_INCLUDE, ASMOP_INT, ASMOP_IRP, ASMOP_IRPC, ASMOP_KERNEL, ASMOP_LFLAGS,
     ASMOP_LINE, ASMOP_LN, ASMOP_LOCAL, ASMOP_LONG,
-    ASMOP_MACRO, ASMOP_MAIN, ASMOP_NOALTMACRO,
-    ASMOP_NOBUGGYFPLIT, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
+    ASMOP_MACRO, ASMOP_MACROCASE, ASMOP_MAIN, ASMOP_NOALTMACRO,
+    ASMOP_NOBUGGYFPLIT, ASMOP_NOMACROCASE, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
     ASMOP_RAWCODE, ASMOP_REGVAR, ASMOP_REPT, ASMOP_ROCM, ASMOP_RODATA,
     ASMOP_SBTTL, ASMOP_SECTION, ASMOP_SET,
@@ -1694,7 +1694,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         asmr.printError(macroNamePlace, "Expected macro name");
         return;
     }
-    toLowerString(macroName);
+    if (asmr.macroCase)
+        toLowerString(macroName);
     /* parse args */
     std::vector<AsmMacroArg> args;
     
@@ -1926,7 +1927,9 @@ void AsmPseudoOps::purgeMacro(Assembler& asmr, const char* linePtr)
     }
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
-    toLowerString(macroName); // macro name is lowered
+    if (asmr.macroCase)
+        toLowerString(macroName); // macro name is lowered
+    
     if (!asmr.macroMap.erase(macroName))
         asmr.printWarning(macroNamePlace, (std::string("Macro '")+macroName.c_str()+
                 "' already doesn't exist").c_str());
@@ -2461,6 +2464,10 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_MACRO:
             AsmPseudoOps::doMacro(*this, stmtPlace, linePtr);
             break;
+        case ASMOP_MACROCASE:
+            if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+                macroCase = true;
+            break;
         case ASMOP_MAIN:
             AsmPseudoOps::goToMain(*this, stmtPlace, linePtr);
             break;
@@ -2471,6 +2478,10 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_NOBUGGYFPLIT:
             if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
                 buggyFPLit = false;
+            break;
+        case ASMOP_NOMACROCASE:
+            if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+                macroCase = false;
             break;
         case ASMOP_OCTA:
             AsmPseudoOps::putUInt128s(*this, stmtPlace, linePtr);

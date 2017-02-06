@@ -53,6 +53,8 @@ static const CLIOption programOptions[] =
         "enable alternate macro mode", nullptr }, 
     { "buggyFPLit", 0, CLIArgType::NONE, false, false,
         "use old and buggy fplit rules", nullptr },
+    { "noMacroCase", 'm', CLIArgType::NONE, false, false,
+        "enable case-insensitive macro names", nullptr },
     { "noWarnings", 'w', CLIArgType::NONE, false, false, "disable warnings", nullptr },
     CLRX_CLI_AUTOHELP
     { nullptr, 0 }
@@ -115,6 +117,8 @@ try
         flags |= ASM_ALTMACRO;
     if (cli.hasLongOption("buggyFPLit"))
         flags |= ASM_BUGGYFPLIT;
+    if (cli.hasShortOption('m'))
+        flags |= ASM_MACRONOCASE;
     
     cxuint argsNum = cli.getArgsNum();
     Array<CString> filenames(argsNum);

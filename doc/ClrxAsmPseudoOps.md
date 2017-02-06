@@ -601,6 +601,10 @@ If macro argument starts with '\%' then rest of macro argument will be evaluated
 expression and its results will be stored in string form (likewise '%EXPR' evaluation if
 alternate macro syntax is enabled).
 
+### .macrocase
+
+Enable ignoring letter's case in macro names (default behaviour).
+
 ### .main
 
 Go to main binary over binary of the kernel.
@@ -612,6 +616,10 @@ Disables alternate macro syntax.
 ### .nobuggyfplit
 
 Disable old and buggy behavior for floating point literals and constants.
+
+### .nomacrocase
+
+Disable ignoring letter's case in macro names (default behaviour).
 
 ### .octa
 

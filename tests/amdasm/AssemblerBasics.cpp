@@ -3626,7 +3626,32 @@ loop:   .rept 10
             { "cloopc", 44U, 0, 0U, true, true, false, 0, 0 }
         },
         true, "", ""
-    }
+    },
+    /* macro name case sensitives */
+    {   R"ffDXD(.macrocase
+            .macro one1
+            .byte 2
+            .endm
+            one1
+            ONE1
+            .nomacrocase
+            .macro one2
+            .byte 4
+            .endm
+            .macro ONE2
+            .byte 5
+            .endm
+            one2
+            ONE2
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            {
+                2, 2, 4, 5
+            } } },
+        { { ".", 4U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
+    },
 };
 
 static void testAssembler(cxuint testId, const AsmTestCase& testCase)

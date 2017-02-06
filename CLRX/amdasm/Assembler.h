@@ -50,8 +50,9 @@ enum: Flags
     ASM_FORCE_ADD_SYMBOLS = 2,
     ASM_ALTMACRO = 4,
     ASM_BUGGYFPLIT = 8, // buggy handling of fpliterals (including fp constants)
+    ASM_MACRONOCASE = 16, // disable case-insensitive naming (default)
     ASM_TESTRUN = (1U<<31), ///< only for running tests
-    ASM_ALL = FLAGS_ALL&~(ASM_TESTRUN|ASM_BUGGYFPLIT)  ///< all flags
+    ASM_ALL = FLAGS_ALL&~(ASM_TESTRUN|ASM_BUGGYFPLIT|ASM_MACRONOCASE)  ///< all flags
 };
 
 struct AsmRegVar;
@@ -300,6 +301,7 @@ private:
     uint64_t localCount; // macro's local count
     bool alternateMacro;
     bool buggyFPLit;
+    bool macroCase;
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;

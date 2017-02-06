@@ -6,11 +6,11 @@ clrxasm - assemble program to binaries code
 
 =head1 SYNOPSIS
 
-clrxasm [-6Swa?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
+clrxasm [-6Swam?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
 [-g GPUDEVICE] [-A ARCH] [-t VERSION] [--defsym=SYM[=VALUE]] [--includePath=PATH]
 [--output OUTFILE] [--binaryFormat=BINFORMAT] [--64bit] [--gpuType=GPUDEVICE]
 [--arch=ARCH] [--driverVersion=VERSION] [--forceAddSymbols] [--noWarnings]
-[--alternate] [--buggyFPLit] [--help] [--usage] [--version] [file...]
+[--alternate] [--buggyFPLit] [--noMacroCase] [--help] [--usage] [--version] [file...]
 
 =head1 DESCRIPTION
 
@@ -89,6 +89,10 @@ Enable alternate macro syntax.
 =item B<--buggyFPLit>
 
 Choose old and buggy floating point literals rules (to 0.1.2 version) for compatibility.
+
+=item B<-m>, B<--noMacroCase>
+
+Do not ignore letter case in macro names (by default is ignored).
 
 =item B<-?>, B<--help>
 
