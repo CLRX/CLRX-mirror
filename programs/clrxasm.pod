@@ -92,7 +92,7 @@ Choose old and buggy floating point literals rules (to 0.1.2 version) for compat
 
 =item B<-m>, B<--noMacroCase>
 
-Do not ignore letter case in macro names (by default is ignored).
+Do not ignore letter's case in macro names (by default is ignored).
 
 =item B<-?>, B<--help>
 

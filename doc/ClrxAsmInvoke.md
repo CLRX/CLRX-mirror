@@ -89,7 +89,7 @@ for compatibility.
 
 * **-m**, **--noMacroCase**
 
-    Do not ignore letter case in macro names (by default is ignored).
+    Do not ignore letter's case in macro names (by default is ignored).
     
 * **-?**, **--help**
 
