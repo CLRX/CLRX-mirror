@@ -520,6 +520,7 @@ struct AsmRegVarUsageInt
     AsmRegField regField;   ///< place in instruction
     cxbyte rwFlags;  ///< 1 - read, 2 - write
     cxbyte align;   ///< register alignment
+    cxbyte nextDependency;
 };
 
 struct AsmRegUsageInt
