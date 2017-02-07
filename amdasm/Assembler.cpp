@@ -2122,21 +2122,21 @@ bool Assembler::assemble()
                 }
                 /* prevLRes - iterator to previous instance of local label (with 'b)
                  * nextLRes - iterator to next instance of local label (with 'f) */
-                std::pair<AsmSymbolMap::iterator, bool> prevLRes =
-                        symbolMap.insert(std::make_pair(
-                            std::string(firstName.c_str())+"b", AsmSymbol()));
-                std::pair<AsmSymbolMap::iterator, bool> nextLRes =
-                        symbolMap.insert(std::make_pair(
-                            std::string(firstName.c_str())+"f", AsmSymbol()));
+                AsmSymbolEntry& prevLRes =
+                        *symbolMap.insert(std::make_pair(
+                            std::string(firstName.c_str())+"b", AsmSymbol())).first;
+                AsmSymbolEntry& nextLRes =
+                        *symbolMap.insert(std::make_pair(
+                            std::string(firstName.c_str())+"f", AsmSymbol())).first;
                 /* resolve forward symbol of label now */
-                assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
+                assert(setSymbol(nextLRes, currentOutPos, currentSection));
                 // move symbol value from next local label into previous local label
                 // clearOccurrences - obsolete - back local labels are undefined!
-                prevLRes.first->second.value = nextLRes.first->second.value;
-                prevLRes.first->second.hasValue = isResolvableSection();
-                prevLRes.first->second.sectionId = currentSection;
+                prevLRes.second.value = nextLRes.second.value;
+                prevLRes.second.hasValue = isResolvableSection();
+                prevLRes.second.sectionId = currentSection;
                 /// make forward symbol of label as undefined
-                nextLRes.first->second.hasValue = false;
+                nextLRes.second.hasValue = false;
             }
             else
             {   // regular labels
