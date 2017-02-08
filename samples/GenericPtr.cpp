@@ -29,8 +29,9 @@ static const char* genericPtrSource = R"ffDXD(
 .ifarch gcn1.0
     .error "Unsupported GCN1.0 architecture"
 .endif
+SMUL = 1
 .ifarch gcn1.2
-    .error "Unsupported GCN1.2 architecture"
+    SMUL = 4
 .endif
 .ifnfmt amdcl2  # AMD OpenCL 2.0 code
     .error "Only AMD OpenCL 2.0 binary format is supported"
@@ -55,11 +56,11 @@ static const char* genericPtrSource = R"ffDXD(
         s_mov_b32 s11, s5
         s_mov_b64 flat_scratch, s[10:11]    # store to flat_scratch
         
-        s_load_dwordx2 s[10:11], s[6:7], 16     # load localptr base and scratchptr base
+        s_load_dwordx2 s[10:11], s[6:7], 16*SMUL # load localptr base and scratchptr base
     .if32
-        s_load_dword s8, s[8:9], 6   # load output buffer pointer
+        s_load_dword s8, s[8:9], 6*SMUL   # load output buffer pointer
     .else
-        s_load_dwordx2 s[8:9], s[8:9], 12   # load output buffer pointer
+        s_load_dwordx2 s[8:9], s[8:9], 12*SMUL   # load output buffer pointer
     .endif
         s_waitcnt lgkmcnt(0)        # wait for data
         # write to LDS
