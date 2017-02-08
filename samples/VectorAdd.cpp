@@ -26,8 +26,9 @@
 using namespace CLRX;
 
 static const char* vectorAddSource = R"ffDXD(# VectorAdd example
-.ifarch gcn1.2
-    .error "Unsupported GCN1.2 architecture"
+SMUL = 1
+.ifarch GCN1.2
+    SMUL = 4
 .endif
 .iffmt amd    # if AMD Catalyst
 .kernel vectorAdd
@@ -44,19 +45,27 @@ static const char* vectorAddSource = R"ffDXD(# VectorAdd example
         .userdata imm_const_buffer, 0, 4, 4     # s[4:7] - kernel setup const buffer
         .userdata imm_const_buffer, 1, 8, 4     # s[8:11] - put kernel argument const buffer
     .text
-        s_buffer_load_dword s0, s[4:7], 4       # s0 - local_size(0)
-        s_buffer_load_dword s1, s[4:7], 24      # s1 - global_offset(0)
+    GCN12And64Bit = 0
+    .ifarch GCN1.2
+        .if64
+            GCN12And64Bit = 1
+        .endif
+    .endif
+    
+    .ifeq GCN12And64Bit # if not GCN 1.2 or not 64-bit
+        s_buffer_load_dword s0, s[4:7], 4*SMUL       # s0 - local_size(0)
+        s_buffer_load_dword s1, s[4:7], 24*SMUL      # s1 - global_offset(0)
         s_buffer_load_dword s4, s[8:11], 0      # s4 - n
     .if32
         # 32-bit addressing
-        s_buffer_load_dword s5, s[8:11], 4      # s5 - aBuffer offset
-        s_buffer_load_dword s6, s[8:11], 8      # s6 - bBuffer offset
-        s_buffer_load_dword s7, s[8:11], 12     # s7 - cBuffer offset
+        s_buffer_load_dword s5, s[8:11], 4*SMUL      # s5 - aBuffer offset
+        s_buffer_load_dword s6, s[8:11], 8*SMUL      # s6 - bBuffer offset
+        s_buffer_load_dword s7, s[8:11], 12*SMUL     # s7 - cBuffer offset
     .else
         # 64-bit addressing
-        s_buffer_load_dwordx2 s[16:17], s[8:11], 4      # s[16:17] - aBuffer offset
-        s_buffer_load_dwordx2 s[18:19], s[8:11], 8      # s[18:19] - bBuffer offset
-        s_buffer_load_dwordx2 s[6:7], s[8:11], 12       # s[6:7] - cBuffer offset
+        s_buffer_load_dwordx2 s[16:17], s[8:11], 4*SMUL      # s[16:17] - aBuffer offset
+        s_buffer_load_dwordx2 s[18:19], s[8:11], 8*SMUL      # s[18:19] - bBuffer offset
+        s_buffer_load_dwordx2 s[6:7], s[8:11], 12*SMUL       # s[6:7] - cBuffer offset
     .endif
         s_waitcnt lgkmcnt(0)                    # wait for results
         s_mul_i32 s0, s0, s12            # s0 - local_size(0)*group_id(0) (s12)
@@ -65,8 +74,8 @@ static const char* vectorAddSource = R"ffDXD(# VectorAdd example
         v_cmp_gt_u32 vcc, s4, v0         # global_id(0) < n
         s_and_saveexec_b64 s[0:1], vcc          # lock all threads with id>=n
         s_cbranch_execz end                     # no active threads, we jump to end
-        s_load_dwordx4 s[8:11], s[2:3], 12*8    # s[8:11] - aBuffer descriptor
-        s_load_dwordx4 s[12:15], s[2:3], 13*8   # s[4:7] - bBuffer descriptor
+        s_load_dwordx4 s[8:11], s[2:3], 12*8*SMUL    # s[8:11] - aBuffer descriptor
+        s_load_dwordx4 s[12:15], s[2:3], 13*8*SMUL   # s[12:15] - bBuffer descriptor
     .if32
         v_lshlrev_b32 v0, 2, v0                 # v0 - global_id(0)*4
         s_waitcnt lgkmcnt(0)                    # wait for results
@@ -86,7 +95,7 @@ static const char* vectorAddSource = R"ffDXD(# VectorAdd example
         buffer_load_dword v2, v[2:3], s[8:11], 0 addr64     # value from aBuf
         buffer_load_dword v3, v[4:5], s[12:15], 0 addr64    # value from bBuf
     .endif
-        s_load_dwordx4 s[8:11], s[2:3], 14*8     # s[4:7] - cBuffer descriptor
+        s_load_dwordx4 s[8:11], s[2:3], 14*8*SMUL     # s[8:11] - cBuffer descriptor
         s_waitcnt vmcnt(0)
     .if32
         v_add_f32 v1, v1, v2        # add two values
@@ -99,6 +108,54 @@ static const char* vectorAddSource = R"ffDXD(# VectorAdd example
         v_addc_u32 v1,vcc,v3,v1,vcc             # v_addc_u32 with only vector regs
         s_waitcnt lgkmcnt(0)         # wait for cBuf descriptor and offset
         buffer_store_dword v2, v[0:1], s[8:11], 0 addr64    # value to cBuf
+    .endif
+    
+    .else # GCN 1.2 and 64-bit (use FLAT model)
+        s_buffer_load_dword s0, s[4:7], 4*SMUL       # s0 - local_size(0)
+        s_buffer_load_dword s1, s[4:7], 24*SMUL      # s1 - global_offset(0)
+        s_buffer_load_dword s4, s[8:11], 0      # s4 - n
+        s_buffer_load_dwordx2 s[16:17], s[8:11], 4*SMUL      # s[16:17] - aBuffer offset
+        s_buffer_load_dwordx2 s[18:19], s[8:11], 8*SMUL      # s[18:19] - bBuffer offset
+        s_buffer_load_dwordx2 s[6:7], s[8:11], 12*SMUL       # s[6:7] - cBuffer offset
+        s_waitcnt lgkmcnt(0)                    # wait for results
+        
+        s_mul_i32 s0, s0, s12            # s0 - local_size(0)*group_id(0) (s12)
+        s_add_u32 s0, s0, s1             # s0 - local_size(0)*group_id(0)+global_offset(0)
+        v_add_i32 v0, vcc, s0, v0        # v0 - s0+local_id(0) -> global_id(0)
+        v_cmp_gt_u32 vcc, s4, v0         # global_id(0) < n
+        s_and_saveexec_b64 s[0:1], vcc          # lock all threads with id>=n
+        s_cbranch_execz end                     # no active threads, we jump to end
+        s_load_dwordx4 s[8:11], s[2:3], 12*8*SMUL    # s[8:11] - aBuffer descriptor
+        s_load_dwordx4 s[12:15], s[2:3], 13*8*SMUL   # s[12:15] - bBuffer descriptor
+        v_lshrrev_b32 v1, 30, v0
+        v_lshlrev_b32 v0, 2, v0                 # v[0:1] - global_id(0)*4
+        s_waitcnt lgkmcnt(0)                    # wait for results
+        s_and_b32 s9, s9, 0xffff        # extract 48-bit address from buffer desc
+        s_and_b32 s13, s13, 0xffff        # extract 48-bit address from buffer desc
+        s_add_u32 s8, s8, s16       # s[8:9] - aBuffer base + aBuffer offset
+        s_addc_u32 s9, s9, s17
+        v_mov_b32 v3, s9            # v[2:3] - s[8:9] + global_id(0)*4
+        v_add_u32 v2, vcc, s8, v0
+        v_addc_u32 v3, vcc, v3, v1, vcc
+        s_add_u32 s12, s12, s18       # s[12:13] - bBuffer base + bBuffer offset
+        s_addc_u32 s13, s13, s19
+        v_mov_b32 v5, s13            # v[4:5] - s[12:13] + global_id(0)*4
+        v_add_u32 v4, vcc, s12, v0
+        v_addc_u32 v5, vcc, v5, v1, vcc
+        flat_load_dword v6, v[2:3]      # load a[i]
+        flat_load_dword v7, v[4:5]      # load b[i]
+        s_waitcnt vmcnt(0)                      # wait for data
+        
+        v_add_f32 v6, v6, v7                # add values
+        
+        s_load_dwordx4 s[8:11], s[2:3], 14*8*SMUL    # s[8:11] - cBuffer descriptor
+        s_waitcnt lgkmcnt(0)                    # wait for results
+        s_add_u32 s8, s8, s6         # s[12:13] - cBuffer base + cBuffer offset
+        s_addc_u32 s9, s9, s7
+        v_mov_b32 v3, s9             # v[4:5] - s[12:13] + global_id(0)*4
+        v_add_u32 v2, vcc, s8, v0
+        v_addc_u32 v3, vcc, v3, v1, vcc
+        flat_store_dword v[2:3], v6
     .endif
 end:
         s_endpgm
@@ -115,10 +172,10 @@ end:
         .arg cBuf, float*, global           # argument float* cBuf
     .text
     .if32 # 32-bit
-        s_load_dwordx2 s[0:1], s[6:7], 7        # get aBuf and bBuf pointers
-        s_load_dword s4, s[4:5], 1              # get local info dword
+        s_load_dwordx2 s[0:1], s[6:7], 7*SMUL   # get aBuf and bBuf pointers
+        s_load_dword s4, s[4:5], 1*SMUL         # get local info dword
         s_load_dword s2, s[6:7], 0              # get global offset (32-bit)
-        s_load_dword s3, s[6:7], 6              # get n - number of elems
+        s_load_dword s3, s[6:7], 6*SMUL         # get n - number of elems
         s_waitcnt lgkmcnt(0)                    # wait for data
         s_and_b32 s4, s4, 0xffff            # only first localsize(0)
         s_mul_i32 s4, s8, s4                # localsize*groupId
@@ -140,16 +197,16 @@ end:
         buffer_load_dword v2, v2, s[8:11], 0 offen # load value from bBuf
         s_waitcnt vmcnt(0)                      # wait for data
         v_add_f32 v1, v1, v2                    # add values
-        s_load_dword s0, s[6:7], 9              # get cBuf pointer
+        s_load_dword s0, s[6:7], 9*SMUL         # get cBuf pointer
         s_waitcnt lgkmcnt(0)                    # wait for data
         v_add_i32 v2, vcc, s0, v0               # cBuf+get_global_id(0)
         buffer_store_dword v1, v2, s[8:11], 0 offen # store value to cBuf
         
     .else # 64-bit
-        s_load_dwordx4 s[0:3], s[6:7], 14       # get aBuf and bBuf pointers
-        s_load_dword s4, s[4:5], 1              # get local info dword
+        s_load_dwordx4 s[0:3], s[6:7], 14*SMUL  # get aBuf and bBuf pointers
+        s_load_dword s4, s[4:5], 1*SMUL         # get local info dword
         s_load_dword s9, s[6:7], 0              # get global offset (32-bit)
-        s_load_dword s5, s[6:7], 12             # get n - number of elems
+        s_load_dword s5, s[6:7], 12*SMUL        # get n - number of elems
         s_waitcnt lgkmcnt(0)                    # wait for data
         s_and_b32 s4, s4, 0xffff            # only first localsize(0)
         s_mul_i32 s4, s8, s4                # localsize*groupId
@@ -172,7 +229,7 @@ end:
         s_waitcnt vmcnt(0) & lgkmcnt(0)     # wait for data
         v_add_f32 v2, v2, v4                # add values
         
-        s_load_dwordx2 s[0:1], s[6:7], 18       # get cBuf pointer
+        s_load_dwordx2 s[0:1], s[6:7], 18*SMUL  # get cBuf pointer
         s_waitcnt lgkmcnt(0)
         v_add_i32 v0, vcc, s0, v0           # cBuf+get_global_id(0)
         v_mov_b32 v3, s1
@@ -181,7 +238,7 @@ end:
     .endif
 end:
         s_endpgm
-.else   # GalliumCompute code
+.elseiffmt gallium   # GalliumCompute code
 .kernel vectorAdd
     .args
         .arg scalar,4       # uint n
@@ -197,12 +254,12 @@ end:
         # 9 - n, 11 - abuf, 13 - bbuf, 15 - cbuf, 17 - griddim, 18 - gridoffset
 .text
 vectorAdd:
-        s_load_dword s2, s[0:1], 6              # s2 - local_size(0)
-        s_load_dword s3, s[0:1], 9              # s3 - n
-        s_load_dword s1, s[0:1], 18             # s1 - global_offset(0)
-        s_load_dwordx2 s[8:9], s[0:1], 11       # s[8:9] - aBuffer pointer
-        s_load_dwordx2 s[12:13], s[0:1], 13     # s[12:13] - bBuffer pointer
-        s_load_dwordx2 s[6:7], s[0:1], 15       # s[6:7] - cBuffer pointer
+        s_load_dword s2, s[0:1], 6*SMUL         # s2 - local_size(0)
+        s_load_dword s3, s[0:1], 9*SMUL         # s3 - n
+        s_load_dword s1, s[0:1], 18*SMUL        # s1 - global_offset(0)
+        s_load_dwordx2 s[8:9], s[0:1], 11*SMUL       # s[8:9] - aBuffer pointer
+        s_load_dwordx2 s[12:13], s[0:1], 13*SMUL     # s[12:13] - bBuffer pointer
+        s_load_dwordx2 s[6:7], s[0:1], 15*SMUL       # s[6:7] - cBuffer pointer
         s_waitcnt lgkmcnt(0)            # wait for results
         s_mul_i32 s0, s2, s4            # s0 - local_size(0)*group_id(0)
         s_add_u32 s0, s0, s1            # s0 - local_size(0)*group_id(0)+global_offset(0)
@@ -210,6 +267,7 @@ vectorAdd:
         v_cmp_gt_u32 vcc, s3, v0                # global_id(0) < n
         s_and_saveexec_b64 s[0:1], vcc          # lock all threads with id>=n
         s_cbranch_execz end                     # no active threads, we jump to end
+    .ifnarch GCN1.2
         # generate buffer descriptors
         s_mov_b32 s4, s6            # cbuffer - s[4:7]
         s_mov_b32 s5, s7
@@ -226,8 +284,28 @@ vectorAdd:
         s_waitcnt vmcnt(0)          # wait for data from aBuffer and bBuffer
         v_add_f32 v2, v2, v3        # add two floats
         buffer_store_dword v2, v[0:1], s[4:7], 0 addr64     # store result
+    .else # GCN 1.2
+        v_lshrrev_b32 v1, 30, v0    # v[0:1] - global_id(0)*2
+        v_lshlrev_b32 v0, 2, v0
+        v_mov_b32 v3, s9
+        v_add_u32 v2, vcc, s8, v0           # add gid*4 to aBuffer pointer
+        v_addc_u32 v3, vcc, v3, v1, vcc
+        v_mov_b32 v5, s13
+        v_add_u32 v4, vcc, s12, v0           # add gid*4 to bBuffer pointer
+        v_addc_u32 v5, vcc, v5, v1, vcc
+        flat_load_dword v6, v[2:3]          # load value from aBuffer
+        flat_load_dword v7, v[4:5]          # load value from bBuffer
+        s_waitcnt vmcnt(0)
+        v_add_f32 v6, v6, v7                # add values
+        v_mov_b32 v3, s7
+        v_add_u32 v2, vcc, s6, v0           # add gid*4 to cBuffer pointer
+        v_addc_u32 v3, vcc, v3, v1, vcc
+        flat_store_dword v[2:3], v6
+    .endif
 end:
         s_endpgm
+.else
+        .error "Unsupported binary format"
 .endif
 )ffDXD";
 
