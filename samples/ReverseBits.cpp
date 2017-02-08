@@ -26,8 +26,9 @@
 using namespace CLRX;
 
 static const char* reverseBitsSource = R"ffDXD(# ReverseBits example
+SMUL = 1
 .ifarch gcn1.2
-    .error "Unsupported GCN1.2 architecture"
+    SMUL = 4
 .endif
 .globaldata     # const data (conversion table)
 revTable:
@@ -77,12 +78,12 @@ revTable:
         .useconstdata                       # use global const buffer (const data)
     .text
     .if32 # 32-bit addressing
-        s_buffer_load_dword s0, s[4:7], 4           # local_size(0)
-        s_buffer_load_dword s1, s[4:7], 0x18        # global_offset(0)
-        s_buffer_load_dword s7, s[4:7], 0x20        # constant buffer offset
+        s_buffer_load_dword s0, s[4:7], 4*SMUL      # local_size(0)
+        s_buffer_load_dword s1, s[4:7], 0x18*SMUL   # global_offset(0)
+        s_buffer_load_dword s7, s[4:7], 0x20*SMUL   # constant buffer offset
         s_buffer_load_dword s4, s[8:11], 0          # n
-        s_buffer_load_dword s5, s[8:11], 4          # input buffer offset
-        s_buffer_load_dword s6, s[8:11], 8          # output buffer offset
+        s_buffer_load_dword s5, s[8:11], 4*SMUL     # input buffer offset
+        s_buffer_load_dword s6, s[8:11], 8*SMUL     # output buffer offset
         s_waitcnt  lgkmcnt(0)
         s_mul_i32  s0, s0, s12              # local_size(0)*group_id(0)
         s_add_u32  s0, s1, s0               # + global_offset(0)
@@ -90,20 +91,20 @@ revTable:
         v_cmp_gt_u32  vcc, s4, v0           # n<global_id(0)
         s_and_saveexec_b64  s[0:1], vcc     # deactive thread with id(0)>=n
         s_cbranch_execz  end                # skip if no active thread
-        s_load_dwordx4 s[8:11], s[2:3], 0x60        # load input buffer descriptor
-        s_load_dwordx4 s[12:15], s[2:3], 0x50       # load constant buffer descriptor
+        s_load_dwordx4 s[8:11], s[2:3], 0x60*SMUL   # load input buffer descriptor
+        s_load_dwordx4 s[12:15], s[2:3], 0x50*SMUL  # load constant buffer descriptor
         s_waitcnt  lgkmcnt(0)
         buffer_load_ubyte  v1, v0, s[8:11], s5 offen    # load ubyte from input
         s_waitcnt  vmcnt(0)
-        s_load_dwordx4 s[8:11], s[2:3], 0x68        # load output buffer
+        s_load_dwordx4 s[8:11], s[2:3], 0x68*SMUL   # load output buffer
         # convert byte (convert table in global const buffer)
         buffer_load_ubyte  v1, v1, s[12:15], s7 offen
         s_waitcnt  vmcnt(0) & lgkmcnt(0)            # wait for result and descriptor
         buffer_store_byte  v1, v0, s[8:11], s6 offen  # write byte to output
     .else # 64-bit addressing mode
-        s_buffer_load_dword s0, s[4:7], 4           # local_size(0)
-        s_buffer_load_dword s1, s[4:7], 0x18        # global_offset(0)
-        s_buffer_load_dwordx2 s[6:7], s[4:7], 0x20  # constant buffer offset
+        s_buffer_load_dword s0, s[4:7], 4*SMUL           # local_size(0)
+        s_buffer_load_dword s1, s[4:7], 0x18*SMUL        # global_offset(0)
+        s_buffer_load_dwordx2 s[6:7], s[4:7], 0x20*SMUL  # constant buffer offset
         s_buffer_load_dword s4, s[8:11], 0          # n
         s_waitcnt  lgkmcnt(0)
         s_mul_i32  s0, s0, s12              # local_size(0)*group_id(0)
@@ -112,6 +113,7 @@ revTable:
         v_cmp_gt_u32  vcc, s4, v0           # n<global_id(0)
         s_and_saveexec_b64  s[0:1], vcc     # deactive thread with id(0)>=n
         s_cbranch_execz  end                # skip if no active thread
+    .ifnarch GCN1.2
         s_load_dwordx4 s[12:15], s[2:3], 0x50       # load constant buffer descriptor
         s_buffer_load_dwordx2 s[0:1], s[8:11], 4  # input buffer offset
         s_buffer_load_dwordx2 s[4:5], s[8:11], 8  # output buffer offset
@@ -133,6 +135,38 @@ revTable:
         v_addc_u32  v3, vcc, v3, 0, vcc     # v_addc_u32 with only vector regs
         s_waitcnt  vmcnt(0) & lgkmcnt(0)            # wait for result and descriptor
         buffer_store_byte  v1, v[2:3], s[8:11], 0 addr64 # write byte to output
+    .else # GCN1.2
+        s_load_dwordx4 s[12:15], s[2:3], 0x50*SMUL       # load constant buffer descriptor
+        s_buffer_load_dwordx2 s[0:1], s[8:11], 4*SMUL  # input buffer offset
+        s_buffer_load_dwordx2 s[4:5], s[8:11], 8*SMUL  # output buffer offset
+        s_load_dwordx4 s[8:11], s[2:3], 0x60*SMUL        # load input buffer descriptor
+        s_waitcnt  lgkmcnt(0)
+        s_and_b32 s13, s13, 0xffff           # extract 48-bit constant base pointer
+        s_and_b32 s9, s9, 0xffff            # extract 48-bit input base pointer
+        s_add_u32 s8, s8, s0            # add offset to input base pointer
+        s_addc_u32 s9, s9, s1
+        s_add_u32 s12, s12, s6          # add offset to constant base pointer
+        s_addc_u32 s13, s13, s7
+        v_mov_b32 v3, s9
+        v_add_u32 v2, vcc, s8, v0       # add gid(0) to input pointer
+        v_addc_u32 v3, vcc, 0, v3, vcc
+        flat_load_ubyte v1, v[2:3]      # load input byte
+        s_waitcnt vmcnt(0)
+        v_mov_b32 v3, s13
+        v_add_u32 v2, vcc, s12, v0      # add input byte to constant pointer
+        v_addc_u32 v3, vcc, 0, v3, vcc
+        flat_load_ubyte v1, v[2:3]      # load constantData[byte]
+        s_waitcnt vmcnt(0)
+        s_load_dwordx4 s[8:11], s[2:3], 0x68*SMUL    # load output buffer
+        s_waitcnt lgkmcnt(0)
+        s_and_b32 s9, s9, 0xffff            # extract 48-bit output base pointer
+        s_add_u32 s8, s8, s4            # add offset to output base pointer
+        s_addc_u32 s9, s9, s5
+        v_mov_b32 v3, s9
+        v_add_u32 v2, vcc, s8, v0       # add gid(0) to output pointer
+        v_addc_u32 v3, vcc, 0, v3, vcc
+        flat_store_byte v[2:3], v1      # store converted byte
+    .endif
     .endif
 end:
         s_endpgm
@@ -148,10 +182,10 @@ end:
         .arg output, uchar*, global         # global uint* output
     .text
     .if32 # 32-bit
-        s_load_dwordx2 s[0:1], s[6:7], 7        # get input and output pointers
-        s_load_dword s4, s[4:5], 1              # get local info dword
+        s_load_dwordx2 s[0:1], s[6:7], 7*SMUL   # get input and output pointers
+        s_load_dword s4, s[4:5], 1*SMUL         # get local info dword
         s_load_dword s2, s[6:7], 0              # get global offset (32-bit)
-        s_load_dword s3, s[6:7], 6              # get n - number of elems
+        s_load_dword s3, s[6:7], 6*SMUL         # get n - number of elems
         s_waitcnt lgkmcnt(0)        # wait
         s_and_b32 s4, s4, 0xffff            # only first localsize(0)
         s_mul_i32 s4, s8, s4                # localsize*groupId
@@ -175,10 +209,10 @@ end:
         buffer_store_byte v2, v1, s[8:11], 0 offen
         
     .else # 64-bit
-        s_load_dwordx4 s[0:3], s[6:7], 14       # get input and output pointers
-        s_load_dword s4, s[4:5], 1              # get local info dword
+        s_load_dwordx4 s[0:3], s[6:7], 14*SMUL  # get input and output pointers
+        s_load_dword s4, s[4:5], 1*SMUL         # get local info dword
         s_load_dword s9, s[6:7], 0              # get global offset (32-bit)
-        s_load_dword s5, s[6:7], 12             # get n - number of elems
+        s_load_dword s5, s[6:7], 12*SMUL        # get n - number of elems
         s_waitcnt lgkmcnt(0)        # wait
         s_and_b32 s4, s4, 0xffff            # only first localsize(0)
         s_mul_i32 s4, s8, s4                # localsize*groupId
@@ -220,11 +254,11 @@ end:
         # 9 - n, 11 - abuf, 13 - bbuf, 15 - griddim, 16 - gridoffset
 .text
 reverseBits:
-        s_load_dword s2, s[0:1], 6              # s2 - local_size(0)
-        s_load_dword s3, s[0:1], 9              # s3 - n
-        s_load_dword s1, s[0:1], 16             # s1 - global_offset(0)
-        s_load_dwordx2 s[8:9], s[0:1], 11       # s[8:9] - input pointer
-        s_load_dwordx2 s[6:7], s[0:1], 13       # s[6:7] - output pointer
+        s_load_dword s2, s[0:1], 6*SMUL         # s2 - local_size(0)
+        s_load_dword s3, s[0:1], 9*SMUL         # s3 - n
+        s_load_dword s1, s[0:1], 16*SMUL        # s1 - global_offset(0)
+        s_load_dwordx2 s[8:9], s[0:1], 11*SMUL  # s[8:9] - input pointer
+        s_load_dwordx2 s[6:7], s[0:1], 13*SMUL  # s[6:7] - output pointer
         s_waitcnt lgkmcnt(0)            # wait for results
         s_mul_i32 s0, s2, s4            # s0 - local_size(0)*group_id(0)
         s_add_u32 s0, s0, s1            # s0 - local_size(0)*group_id(0)+global_offset(0)
@@ -232,6 +266,7 @@ reverseBits:
         v_cmp_gt_u32 vcc, s3, v0                # global_id(0) < n
         s_and_saveexec_b64 s[0:1], vcc          # lock all threads with id>=n
         s_cbranch_execz end                     # no active threads, we jump to end
+    .ifnarch GCN1.2
         s_mov_b32 s4, s6
         s_mov_b32 s5, s7
         v_mov_b32 v1, 0                 # zeroing high bits global_id(0)
@@ -250,6 +285,25 @@ reverseBits:
         buffer_load_ubyte v2, v[2:3], s[0:3], 0 addr64     # convert
         s_waitcnt vmcnt(0)
         buffer_store_byte v2, v[0:1], s[4:7], 0 addr64    # store byte to output
+    .else # GCN1.2
+        s_getpc_b64  s[0:1]             # const data in this
+        s_add_u32  s0, s0, constData-.  # 
+        s_addc_u32 s1, s1, 0        # should be always zero
+        v_mov_b32 v3, s9
+        v_add_u32 v2, vcc, s8, v0       # input pointer + gid(0)
+        v_addc_u32 v3, vcc, 0, v3, vcc
+        flat_load_ubyte v1, v[2:3]            # load input byte
+        s_waitcnt vmcnt(0)
+        v_mov_b32 v3, s1
+        v_add_u32 v2, vcc, s0, v1           # constant buffer + byte
+        v_addc_u32 v3, vcc, 0, v3, vcc
+        flat_load_ubyte v1, v[2:3]          # load revBits[byte]
+        s_waitcnt vmcnt(0)
+        v_mov_b32 v3, s7
+        v_add_u32 v2, vcc, s6, v0          # output pointer + gid(0)
+        v_addc_u32 v3, vcc, 0, v3, vcc
+        flat_store_byte v[2:3], v1          # store byte to output buffer
+    .endif
 end:
         s_endpgm
         .p2align 8   # alignment for const data
