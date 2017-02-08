@@ -239,7 +239,7 @@ end:
     .endif
 end:
         s_endpgm
-.else   # GalliumCompute code
+.elseiffmt gallium   # GalliumCompute code
 .kernel reverseBits
     .args
         .arg scalar, 4
@@ -308,6 +308,8 @@ end:
         s_endpgm
         .p2align 8   # alignment for const data
 constData:
+.else
+        .error "Unsupported binary format"
 .endif
 )ffDXD";
 
