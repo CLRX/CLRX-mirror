@@ -30,8 +30,9 @@
 using namespace CLRX;
 
 static const char* imageMixSource = R"ffDXD(# ImageMix example
-.ifarch gcn1.2
-    .error "Unsupported GCN1.2 architecture"
+SMUL = 1
+.ifarch GCN1.2
+    SMUL = 4
 .endif
 .iffmt amd    # if AMD Catalyst
 .kernel imageMix
@@ -46,8 +47,8 @@ static const char* imageMixSource = R"ffDXD(# ImageMix example
         .userdata imm_const_buffer, 0, 8, 4     # s[8:11] - kernel args const buffer
         .userdata ptr_uav_table, 0, 12, 2       # s[12:13] - uav table for write only images
     .text
-        s_buffer_load_dwordx2 s[0:1], s[4:7], 0x4   # s[0:1] - local_size(0,1)
-        s_buffer_load_dwordx2 s[4:5], s[4:7], 0x18  # s[4:5] - global_offset(0,1)
+        s_buffer_load_dwordx2 s[0:1], s[4:7], 0x4*SMUL   # s[0:1] - local_size(0,1)
+        s_buffer_load_dwordx2 s[4:5], s[4:7], 0x18*SMUL  # s[4:5] - global_offset(0,1)
         s_buffer_load_dwordx2 s[6:7], s[8:11], 0x0  # s[6:7] - img1 width and height
         s_waitcnt  lgkmcnt(0)           # wait for results
         s_mul_i32  s0, s14, s0          # s[0:1] - local_size(0,1)*group_id(0,1)
@@ -62,7 +63,7 @@ static const char* imageMixSource = R"ffDXD(# ImageMix example
         s_and_saveexec_b64 s[0:1], vcc      # deactivate obsolete threads
         s_cbranch_execz end                 # skip to end
         s_load_dwordx8  s[4:11], s[2:3], 0x0       # load img1 descriptor
-        s_load_dwordx8  s[16:23], s[2:3], 0x8        # load img2 descriptor
+        s_load_dwordx8  s[16:23], s[2:3], 0x8*SMUL        # load img2 descriptor
         s_load_dwordx8  s[24:31], s[12:13], 0x0     # load outimg descriptor
         s_waitcnt       lgkmcnt(0)      # wait for descriptors
         image_load  v[5:8], v[0:1], s[4:11] dmask:15 unorm    # load pixel from img1
@@ -90,10 +91,10 @@ end:
         .arg img2, image, read_only     # read_only image2d_t img2
         .arg outimg, image, write_only    # write_only image2d_t outimg
     .text
-        s_load_dwordx2 s[0:1], s[6:7], 12   # load img1
+        s_load_dwordx2 s[0:1], s[6:7], 12*SMUL   # load img1
         s_load_dword s2, s[6:7], 0          # global_offset(0)
-        s_load_dword s3, s[6:7], 2          # global_offset(1)
-        s_load_dword s4, s[4:5], 1          # localSizes dword
+        s_load_dword s3, s[6:7], 2*SMUL          # global_offset(1)
+        s_load_dword s4, s[4:5], 1*SMUL          # localSizes dword
         s_waitcnt lgkmcnt(0)
         s_lshr_b32 s5, s4, 16               # localsize(1)
         s_and_b32 s4, s4, 0xffff            # localsize(0)
@@ -115,7 +116,7 @@ end:
         s_and_saveexec_b64 s[2:3], vcc      # deactivate obsolete threads
         s_cbranch_execz end                 # skip to end
         
-        s_load_dwordx4 s[4:7], s[6:7], 14   # load img2,outimg pointers
+        s_load_dwordx4 s[4:7], s[6:7], 14*SMUL   # load img2,outimg pointers
         s_waitcnt lgkmcnt(0)                # wait
         s_load_dwordx8 s[8:15], s[0:1], 0   # load first img desc
         s_load_dwordx8 s[16:23], s[4:5], 0  # load second img desc
