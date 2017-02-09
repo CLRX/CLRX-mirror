@@ -1016,7 +1016,7 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
                 AsmSymbolEntry*& entry, bool localLabel, bool dontCreateSymbol)
 {
     const char* startPlace = linePtr;
-    const CString symName = extractSymName(linePtr, line+lineSize, localLabel);
+    const CString symName = extractScopedSymName(linePtr, line+lineSize, localLabel);
     if (symName.empty())
     {   // this is not symbol or a missing symbol
         while (linePtr != line+lineSize && !isSpace(*linePtr) && *linePtr != ',')
@@ -1029,18 +1029,22 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
     
     Assembler::ParseState state = Assembler::ParseState::PARSED;
     bool symHasValue;
-    if (!dontCreateSymbol)
+    AsmScope* outScope;
+    CString sameSymName;
+    entry = findSymbolInScope(symName, outScope, sameSymName);
+    if (!dontCreateSymbol && entry==nullptr)
     {   // create symbol if not found
         std::pair<AsmSymbolMap::iterator, bool> res =
-                globalScope.symbolMap.insert(std::make_pair(symName, AsmSymbol()));
+                outScope->symbolMap.insert(std::make_pair(sameSymName, AsmSymbol()));
         entry = &*res.first;
         symHasValue = res.first->second.hasValue;
     }
     else
     {   // only find symbol and set isDefined and entry
-        AsmSymbolMap::iterator it = globalScope.symbolMap.find(symName);
+        /*AsmSymbolMap::iterator it = globalScope.symbolMap.find(symName);
         entry = (it != globalScope.symbolMap.end()) ? &*it : nullptr;
-        symHasValue = (it != globalScope.symbolMap.end() && it->second.hasValue);
+        symHasValue = (it != globalScope.symbolMap.end() && it->second.hasValue);*/
+        symHasValue = (entry != nullptr && entry->second.hasValue);
     }
     if (isDigit(symName.front()) && symName[linePtr-startPlace-1] == 'b' && !symHasValue)
     {   // failed at finding
@@ -1342,7 +1346,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         }
         
         std::pair<AsmSymbolMap::iterator, bool> res =
-                globalScope.symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
+                currentScope->symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
         if (!res.second && ((res.first->second.onceDefined || !reassign) &&
             res.first->second.isDefined()))
         {   // found and can be only once defined
@@ -1428,7 +1432,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     }
     
     std::pair<AsmSymbolMap::iterator, bool> res =
-            globalScope.symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
+            currentScope->symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
     if (!res.second && ((res.first->second.onceDefined || !reassign) &&
         res.first->second.isDefined()))
     {   // found and can be only once defined
@@ -1811,11 +1815,12 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
     return ParseState::PARSED;
 }
 
-AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast)
+AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast,
+                    const char** lastStep)
 {
     AsmScope* scope = currentScope;
     const char* str = scopePlace.c_str();
-    std::cout << "recurscope: " << scopePlace << std::endl;
+    //std::cout << "recurscope: " << scopePlace << std::endl;
     if (*str==':' && str[1]==':')
     {   // choose global scope
         scope = &globalScope;
@@ -1823,6 +1828,7 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast)
     }
     
     std::vector<CString> scopeTrack;
+    const char* lastStepCur = str;
     while (*str != 0)
     {
         const char* scopeNameStr = str;
@@ -1832,14 +1838,17 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast)
         scopeTrack.push_back(CString(scopeNameStr, str));
         if (*str==':' && str[1]==':')
             str += 2;
+        lastStepCur = str;
     }
-    if (scope==&globalScope && scopeTrack.empty())
+    if (lastStep != nullptr)
+        *lastStep = lastStepCur;
+    if (scopeTrack.empty()) // no scope path
         return scope;
     
     bool found = false;
     for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
     {  // find this scope
-        std::cout << "finding scope in parent: " << scope2 << std::endl;
+        //std::cout << "finding scope in parent: " << scope2 << std::endl;
         auto it = scope2->scopeMap.find(scopeTrack[0]);
         if (it != scope2->scopeMap.end())
         {   // is found in scope
@@ -1851,7 +1860,7 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast)
         if (!found)
             for (AsmScope* rootScope: scope2->usedScopes)
             {
-                std::cout << "finding scope in used: " << rootScope << std::endl;
+                //std::cout << "finding scope in used: " << rootScope << std::endl;
                 auto it = rootScope->scopeMap.find(scopeTrack[0]);
                 if (it != rootScope->scopeMap.end())
                 { scope = rootScope; break; }
@@ -1863,9 +1872,39 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast)
     for (const CString& name: scopeTrack)
     {
         getScope(scope, name, scope);
-        std::cout << "getscope: " << name << ": " << scope << std::endl;
+        //std::cout << "getscope: " << name << ": " << scope << std::endl;
     }
     return scope;
+}
+
+AsmSymbolEntry* Assembler::findSymbolInScope(const CString& symName, AsmScope*& scope,
+            CString& sameSymName)
+{
+    const char* lastStep = false;
+    scope = getRecurScope(symName, true, &lastStep);
+    auto it = scope->symbolMap.find(lastStep);
+    if (it != scope->symbolMap.end())
+        return &*it;
+    sameSymName = lastStep;
+    if (lastStep != symName)
+        return nullptr;
+    // otherwise is symName is not normal symName
+    scope = currentScope;
+    
+    for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
+    {  // find this scope
+        auto it = scope2->symbolMap.find(sameSymName);
+        if (it != scope2->symbolMap.end()) // is found in scope
+            return &*it;
+        // find in used scopes
+        for (AsmScope* rootScope: scope2->usedScopes)
+        {
+            auto it = rootScope->symbolMap.find(sameSymName);
+            if (it != rootScope->symbolMap.end())
+                return &*it;
+        }
+    }
+    return nullptr;
 }
 
 bool Assembler::getScope(AsmScope* parent, const CString& scopeName, AsmScope*& scope)
@@ -1877,7 +1916,7 @@ bool Assembler::getScope(AsmScope* parent, const CString& scopeName, AsmScope*& 
     else // if new
     {
         scope = newScope.release();
-        std::cout << "newscope: " << parent << ": " << scopeName << ":" << scope << "\n";
+        //std::cout << "newscope: " << parent << ": " << scopeName << ":" << scope << "\n";
     }
     return res.second;
 }
@@ -2280,7 +2319,7 @@ bool Assembler::assemble()
             else
             {   // regular labels
                 std::pair<AsmSymbolMap::iterator, bool> res = 
-                        globalScope.symbolMap.insert(
+                        currentScope->symbolMap.insert(
                             std::make_pair(firstName, AsmSymbol()));
                 if (!res.second)
                 {   // found

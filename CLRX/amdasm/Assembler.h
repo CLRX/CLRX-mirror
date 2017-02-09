@@ -403,7 +403,12 @@ private:
     bool popClause(const char* string, AsmClauseType clauseType);
     
     // find scope by identifier
-    AsmScope* getRecurScope(const CString& scopePlace, bool ignoreLast = false);
+    AsmScope* getRecurScope(const CString& scopePlace, bool ignoreLast = false,
+                    const char** lastStep = nullptr);
+    // find symbol in scopes
+    // scope - return scope from scoped name
+    AsmSymbolEntry* findSymbolInScope(const CString& symName, AsmScope*& scope,
+                      CString& sameSymName);
     // create scope
     bool getScope(AsmScope* parent, const CString& scopeName, AsmScope*& scope);
     // push new scope level

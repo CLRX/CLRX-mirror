@@ -1286,9 +1286,13 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                 linePtr++;
                 break;
             case ':':
-                op = AsmExprOp::CHOICE;
-                linePtr++;
-                break;
+                if (linePtr+1==end || linePtr[1]!=':')
+                {
+                    op = AsmExprOp::CHOICE;
+                    linePtr++;
+                    break;
+                }
+                // otherwise try parse symbol
             default: // parse symbol or value
                 if (expectedToken != XT_OP)
                 {

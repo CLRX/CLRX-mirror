@@ -429,8 +429,8 @@ void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char*
         return;
     
     cxuint driverVersion = handler.getDriverVersion();
-    std::pair<AsmSymbolMap::iterator, bool> res = asmr.globalScope.symbolMap.insert(
-                std::make_pair(symName, AsmSymbol(&asmr.globalScope,
+    std::pair<AsmSymbolMap::iterator, bool> res = asmr.currentScope->symbolMap.insert(
+                std::make_pair(symName, AsmSymbol(asmr.currentScope,
                                       ASMSECT_ABS, driverVersion)));
     if (!res.second)
     {   // found

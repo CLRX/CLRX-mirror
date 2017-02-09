@@ -2028,12 +2028,12 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    auto it = asmr.globalScope.symbolMap.find(symName);
-    if (it == asmr.globalScope.symbolMap.end() || !it->second.isDefined())
+    auto it = asmr.currentScope->symbolMap.find(symName);
+    if (it == asmr.currentScope->symbolMap.end() || !it->second.isDefined())
         asmr.printWarning(symNamePlace, (std::string("Symbol '") + symName.c_str() +
                 "' already doesn't exist").c_str());
     else if (it->second.occurrencesInExprs.empty())
-        asmr.globalScope.symbolMap.erase(it);
+        asmr.currentScope->symbolMap.erase(it);
     else
         it->second.undefine();
 }

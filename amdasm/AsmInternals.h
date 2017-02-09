@@ -64,10 +64,22 @@ static inline CString extractSymName(const char*& string, const char* end,
     return CString(startString, string);
 }
 
-static inline CString extractScopedSymName(const char*& string, const char* end)
+static inline CString extractScopedSymName(const char*& string, const char* end,
+           bool localLabelSymName = false)
 {
     const char* startString = string;
     const char* lastString = string;
+    if (localLabelSymName && isDigit(*string)) // local label
+    {
+        for (string++; string!=end && isDigit(*string); string++);
+        // check whether is local forward or backward label
+        string = (string != end && (*string == 'f' || *string == 'b')) ?
+                string+1 : startString;
+        // if not part of binary number or illegal bin number
+        if (startString != string && (string!=end && (isAlnum(*string))))
+            string = startString;
+        return CString(startString, string);
+    }
     while (string != end)
     {
         if (*string==':' && string+1!=end && string[1]==':')
