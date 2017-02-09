@@ -1955,12 +1955,12 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    auto it = asmr.symbolMap.find(symName);
-    if (it == asmr.symbolMap.end() || !it->second.isDefined())
+    auto it = asmr.globalScope.symbolMap.find(symName);
+    if (it == asmr.globalScope.symbolMap.end() || !it->second.isDefined())
         asmr.printWarning(symNamePlace, (std::string("Symbol '") + symName.c_str() +
                 "' already doesn't exist").c_str());
     else if (it->second.occurrencesInExprs.empty())
-        asmr.symbolMap.erase(it);
+        asmr.globalScope.symbolMap.erase(it);
     else
         it->second.undefine();
 }
@@ -2002,7 +2002,7 @@ void AsmPseudoOps::doDefRegVar(Assembler& asmr, const char* pseudoOpPlace,
         }
         linePtr++;
         skipSpacesToEnd(linePtr, end);
-        AsmRegVar var = { 0, 1 };
+        AsmRegVar var = { &(asmr.globalScope), 0, 1 };
         if (!asmr.isaAssembler->parseRegisterType(linePtr, end, var.type))
         {
             asmr.printError(linePtr, "Expected name of register type");

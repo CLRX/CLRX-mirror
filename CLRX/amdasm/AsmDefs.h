@@ -136,10 +136,12 @@ struct AsmExprSymbolOccurrence
 };
 
 struct AsmRegVar;
+struct AsmScope;
 
 /// assembler symbol structure
 struct AsmSymbol
 {
+    AsmScope* scope;
     cxuint refCount;    ///< reference counter (for internal use only)
     cxuint sectionId;       ///< section id
     cxbyte info;           ///< ELF symbol info
@@ -481,8 +483,11 @@ enum : AsmRegField
     GCNFIELD_DPPSDWA_SRC0
 };
 
+struct AsmScope;
+
 struct AsmRegVar
 {
+    AsmScope* scope;
     cxuint type;    // scalar/vector/other
     uint16_t size;  // in regs
 };
@@ -544,6 +549,28 @@ struct AsmCodeFlowEntry
     size_t offset;
     size_t target;      // target jump addreses
     AsmCodeFlowType type;
+};
+
+/// assembler macro map
+typedef std::unordered_map<CString, RefPtr<const AsmMacro> > AsmMacroMap;
+
+struct AsmScope;
+
+typedef std::unordered_map<CString, AsmScope*> AsmScopeMap;
+
+/// assembler scope for symbol, macros, regvars
+struct AsmScope
+{
+    AsmScope* parent;
+    AsmSymbolMap symbolMap;
+    AsmRegVarMap regVarMap;
+    AsmScopeMap scopeMap;
+    
+    ~AsmScope()
+    {
+        for (const auto& entry: scopeMap)
+            delete entry.second;
+    }
 };
 
 class ISAUsageHandler;

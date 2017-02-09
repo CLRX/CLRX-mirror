@@ -621,15 +621,15 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
           driverVersion(0),
           _64bit(false),
           isaAssembler(nullptr),
-          symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
+          globalScope({nullptr,{std::make_pair(".", AsmSymbol(0, uint64_t(0)))}}),
           flags(_flags), 
           lineSize(0), line(nullptr),
           endOfAssembly(false),
           messageStream(msgStream),
           printStream(_printStream),
           // value reference and section reference from first symbol: '.'
-          currentSection(symbolMap.begin()->second.sectionId),
-          currentOutPos(symbolMap.begin()->second.value)
+          currentSection(globalScope.symbolMap.begin()->second.sectionId),
+          currentOutPos(globalScope.symbolMap.begin()->second.value)
 {
     filenameIndex = 0;
     alternateMacro = (flags & ASM_ALTMACRO)!=0;
@@ -656,15 +656,15 @@ Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
           driverVersion(0),
           _64bit(false),
           isaAssembler(nullptr),
-          symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
+          globalScope({nullptr,{std::make_pair(".", AsmSymbol(0, uint64_t(0)))}}),
           flags(_flags), 
           lineSize(0), line(nullptr),
           endOfAssembly(false),
           messageStream(msgStream),
           printStream(_printStream),
           // value reference and section reference from first symbol: '.'
-          currentSection(symbolMap.begin()->second.sectionId),
-          currentOutPos(symbolMap.begin()->second.value)
+          currentSection(globalScope.symbolMap.begin()->second.sectionId),
+          currentOutPos(globalScope.symbolMap.begin()->second.value)
 {
     filenameIndex = 0;
     filenames = _filenames;
@@ -695,7 +695,7 @@ Assembler::~Assembler()
     }
     
     /// remove expressions before symbol map deletion
-    for (auto& entry: symbolMap)
+    for (auto& entry: globalScope.symbolMap)
         entry.second.clearOccurrencesInExpr();
     /// remove expressions before symbol snapshots
     for (auto& entry: symbolSnapshots)
@@ -994,15 +994,15 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
     if (!dontCreateSymbol)
     {   // create symbol if not found
         std::pair<AsmSymbolMap::iterator, bool> res =
-                symbolMap.insert(std::make_pair(symName, AsmSymbol()));
+                globalScope.symbolMap.insert(std::make_pair(symName, AsmSymbol()));
         entry = &*res.first;
         symHasValue = res.first->second.hasValue;
     }
     else
     {   // only find symbol and set isDefined and entry
-        AsmSymbolMap::iterator it = symbolMap.find(symName);
-        entry = (it != symbolMap.end()) ? &*it : nullptr;
-        symHasValue = (it != symbolMap.end() && it->second.hasValue);
+        AsmSymbolMap::iterator it = globalScope.symbolMap.find(symName);
+        entry = (it != globalScope.symbolMap.end()) ? &*it : nullptr;
+        symHasValue = (it != globalScope.symbolMap.end() && it->second.hasValue);
     }
     if (isDigit(symName.front()) && symName[linePtr-startPlace-1] == 'b' && !symHasValue)
     {   // failed at finding
@@ -1304,7 +1304,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         }
         
         std::pair<AsmSymbolMap::iterator, bool> res =
-                symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
+                globalScope.symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
         if (!res.second && ((res.first->second.onceDefined || !reassign) &&
             res.first->second.isDefined()))
         {   // found and can be only once defined
@@ -1390,7 +1390,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     }
     
     std::pair<AsmSymbolMap::iterator, bool> res =
-            symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
+            globalScope.symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
     if (!res.second && ((res.first->second.onceDefined || !reassign) &&
         res.first->second.isDefined()))
     {   // found and can be only once defined
@@ -1677,7 +1677,7 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
         return ParseState::MISSING;
     if (macroCase)
         toLowerString(macroName);
-    MacroMap::const_iterator it = macroMap.find(macroName);
+    AsmMacroMap::const_iterator it = macroMap.find(macroName);
     if (it == macroMap.end())
         return ParseState::MISSING; // macro not found
     
@@ -2020,14 +2020,14 @@ void Assembler::initializeOutputFormat()
 }
 
 bool Assembler::addRegVar(const CString& name, const AsmRegVar& var)
-{ return regVarMap.insert(std::make_pair(name, var)).second; }
+{ return globalScope.regVarMap.insert(std::make_pair(name, var)).second; }
 
 bool Assembler::getRegVarEntry(const CString& name,
                        const AsmRegVarEntry*& regVarEntry) const
 { 
     regVarEntry = nullptr;
-    auto it = regVarMap.find(name);
-    if (it == regVarMap.end())
+    auto it = globalScope.regVarMap.find(name);
+    if (it == globalScope.regVarMap.end())
         return false;
     regVarEntry = &*it;
     return true;
@@ -2067,7 +2067,7 @@ bool Assembler::assemble()
     
     for (const DefSym& defSym: defSyms)
         if (defSym.first!=".")
-            symbolMap[defSym.first] = AsmSymbol(ASMSECT_ABS, defSym.second);
+            globalScope.symbolMap[defSym.first] = AsmSymbol(ASMSECT_ABS, defSym.second);
         else if ((flags & ASM_WARNINGS) != 0)// ignore for '.'
             messageStream << "<command-line>: Warning: Definition for symbol '.' "
                     "was ignored" << std::endl;
@@ -2123,10 +2123,10 @@ bool Assembler::assemble()
                 /* prevLRes - iterator to previous instance of local label (with 'b)
                  * nextLRes - iterator to next instance of local label (with 'f) */
                 AsmSymbolEntry& prevLRes =
-                        *symbolMap.insert(std::make_pair(
+                        *globalScope.symbolMap.insert(std::make_pair(
                             std::string(firstName.c_str())+"b", AsmSymbol())).first;
                 AsmSymbolEntry& nextLRes =
-                        *symbolMap.insert(std::make_pair(
+                        *globalScope.symbolMap.insert(std::make_pair(
                             std::string(firstName.c_str())+"f", AsmSymbol())).first;
                 /* resolve forward symbol of label now */
                 assert(setSymbol(nextLRes, currentOutPos, currentSection));
@@ -2141,7 +2141,8 @@ bool Assembler::assemble()
             else
             {   // regular labels
                 std::pair<AsmSymbolMap::iterator, bool> res = 
-                        symbolMap.insert(std::make_pair(firstName, AsmSymbol()));
+                        globalScope.symbolMap.insert(
+                            std::make_pair(firstName, AsmSymbol()));
                 if (!res.second)
                 {   // found
                     if (res.first->second.onceDefined && res.first->second.isDefined())
@@ -2263,7 +2264,7 @@ bool Assembler::assemble()
     }
     
     resolvingRelocs = true;
-    for (AsmSymbolEntry& symEntry: symbolMap)
+    for (AsmSymbolEntry& symEntry: globalScope.symbolMap)
         if (!symEntry.second.occurrencesInExprs.empty() || 
             (symEntry.first!="."  && !isResolvableSection(symEntry.second.sectionId)))
         {   // try to resolve symbols
@@ -2275,7 +2276,7 @@ bool Assembler::assemble()
         }
     
     if ((flags&ASM_TESTRUN) == 0)
-        for (AsmSymbolEntry& symEntry: symbolMap)
+        for (AsmSymbolEntry& symEntry: globalScope.symbolMap)
             if (!symEntry.second.occurrencesInExprs.empty())
                 for (AsmExprSymbolOccurrence occur: symEntry.second.occurrencesInExprs)
                     printError(occur.expression->getSourcePos(),(std::string(

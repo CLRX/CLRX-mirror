@@ -1611,7 +1611,7 @@ bool AsmROCmHandler::prepareBinary()
     // if set adds symbols to binary
     std::vector<ROCmSymbolInput> dataSymbols;
     if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
-        for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
+        for (const AsmSymbolEntry& symEntry: assembler.globalScope.symbolMap)
         {
             if (!symEntry.second.hasValue)
                 continue; // unresolved

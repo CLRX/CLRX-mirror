@@ -253,8 +253,6 @@ class Assembler: public NonCopyableAndNonMovable
 public:
     /// defined symbol entry
     typedef std::pair<CString, uint64_t> DefSym;
-    /// macro map type
-    typedef std::unordered_map<CString, RefPtr<const AsmMacro> > MacroMap;
     /// kernel map type
     typedef std::unordered_map<CString, cxuint> KernelMap;
 private:
@@ -288,14 +286,15 @@ private:
     std::vector<DefSym> defSyms;
     std::vector<CString> includeDirs;
     std::vector<AsmSection> sections;
-    AsmSymbolMap symbolMap;
     std::unordered_set<AsmSymbolEntry*> symbolSnapshots;
     std::vector<AsmRelocation> relocations;
-    MacroMap macroMap;
+    AsmScope globalScope;
+    AsmMacroMap macroMap;
+    std::stack<AsmScope*> scopeStack;
+    std::vector<AsmScope*> usedScopes;
     KernelMap kernelMap;
     std::vector<AsmKernel> kernels;
     /// register variables
-    AsmRegVarMap regVarMap;
     Flags flags;
     uint64_t macroCount;
     uint64_t localCount; // macro's local count
@@ -537,7 +536,7 @@ public:
     void addIncludeDir(const CString& includeDir);
     /// get symbols map
     const AsmSymbolMap& getSymbolMap() const
-    { return symbolMap; }
+    { return globalScope.symbolMap; }
     /// get sections
     const std::vector<AsmSection>& getSections() const
     { return sections; }
@@ -549,7 +548,7 @@ public:
     { return kernels; }
     /// get regvar map
     const AsmRegVarMap& getRegVarMap() const
-    { return regVarMap; }
+    { return globalScope.regVarMap; }
     /// add regvar
     bool addRegVar(const CString& name, const AsmRegVar& var);
     // get regvar by name

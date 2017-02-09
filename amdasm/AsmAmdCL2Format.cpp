@@ -429,7 +429,7 @@ void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char*
         return;
     
     cxuint driverVersion = handler.getDriverVersion();
-    std::pair<AsmSymbolMap::iterator, bool> res = asmr.symbolMap.insert(
+    std::pair<AsmSymbolMap::iterator, bool> res = asmr.globalScope.symbolMap.insert(
                 std::make_pair(symName, AsmSymbol(ASMSECT_ABS, driverVersion)));
     if (!res.second)
     {   // found
@@ -1532,7 +1532,7 @@ bool AsmAmdCL2Handler::prepareBinary()
             codeOffset += (kernel.codeSize+255)&~size_t(255);
         }
         
-        for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
+        for (const AsmSymbolEntry& symEntry: assembler.globalScope.symbolMap)
         {
             if (!symEntry.second.hasValue ||
                 ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)

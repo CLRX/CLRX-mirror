@@ -336,7 +336,7 @@ void AsmAmdPseudoOps::getDriverVersion(AsmAmdHandler& handler, const char* lineP
     else
         driverVersion = handler.output.driverVersion;
     
-    std::pair<AsmSymbolMap::iterator, bool> res = asmr.symbolMap.insert(
+    std::pair<AsmSymbolMap::iterator, bool> res = asmr.globalScope.symbolMap.insert(
                 std::make_pair(symName, AsmSymbol(ASMSECT_ABS, driverVersion)));
     if (!res.second)
     {   // found
@@ -1888,7 +1888,7 @@ bool AsmAmdHandler::prepareBinary()
     
     /* put extra symbols */
     if (assembler.flags & ASM_FORCE_ADD_SYMBOLS)
-        for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
+        for (const AsmSymbolEntry& symEntry: assembler.globalScope.symbolMap)
         {
             if (!symEntry.second.hasValue ||
                 ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)

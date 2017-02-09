@@ -178,6 +178,8 @@ struct AsmMacroArg
     bool required;      ///< is required
 };
 
+struct AsmScope;
+
 /// assembler macro
 class AsmMacro: public FastRefCountable, public NonCopyableAndNonMovable
 {
@@ -189,6 +191,7 @@ public:
         RefPtr<const AsmSource> source; ///< source
     };
 private:
+    AsmScope* scope;
     LineNo contentLineNo;
     AsmSourcePos sourcePos;
     Array<AsmMacroArg> args;
