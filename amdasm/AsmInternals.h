@@ -64,6 +64,31 @@ static inline CString extractSymName(const char*& string, const char* end,
     return CString(startString, string);
 }
 
+static inline CString extractScopedSymName(const char*& string, const char* end)
+{
+    const char* startString = string;
+    const char* lastString = string;
+    while (string != end)
+    {
+        if (*string==':' && string+1!=end && string[1]==':')
+            string += 2;
+        else if (string != startString) // if not start
+            break;
+        // skip string
+        const char* scopeName = string;
+        if (string != end)
+        {
+            if(isAlpha(*string) || *string == '_' || *string == '.' || *string == '$')
+                for (string++; string != end && (isAlnum(*string) || *string == '_' ||
+                     *string == '.' || *string == '$') ; string++);
+        }
+        if (scopeName==string) // is not scope name
+            break;
+        lastString = string;
+    }
+    return CString(startString, lastString);
+}
+
 static inline CString extractLabelName(const char*& string, const char* end)
 {
     if (string != end && isDigit(*string))
@@ -277,6 +302,16 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     // do IRP
     static void doIRP(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                       bool perChar = false);
+    // do open scope
+    static void openScope(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
+    // do close scope
+    static void closeScope(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
+    // start using scope
+    static void startUsing(Assembler& asmr, const char* pseudoOpPlace,
+                        const char* linePtr);
+    static void stopUsing(Assembler& asmr, const char* pseudoOpPlace,
+                        const char* linePtr);
+    // stop using scope
     
     static void undefSymbol(Assembler& asmr, const char* linePtr);
     

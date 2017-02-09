@@ -32,6 +32,7 @@
 #include <vector>
 #include <utility>
 #include <stack>
+#include <list>
 #include <unordered_set>
 #include <unordered_map>
 #include <CLRX/utils/Utilities.h>
@@ -290,8 +291,11 @@ private:
     std::vector<AsmRelocation> relocations;
     AsmScope globalScope;
     AsmMacroMap macroMap;
+    std::vector<AsmScope*> localScopes;
     std::stack<AsmScope*> scopeStack;
-    std::vector<AsmScope*> usedScopes;
+    std::list<AsmScope*> usedScopes;
+    std::unordered_map<AsmScope*, std::list<AsmScope*>::iterator> usedScopesSet;
+    AsmScope* currentScope;
     KernelMap kernelMap;
     std::vector<AsmKernel> kernels;
     /// register variables
@@ -400,6 +404,14 @@ private:
      // return false when failed (for example no clauses)
     bool popClause(const char* string, AsmClauseType clauseType);
     
+    // find scope by identifier
+    AsmScope* getRecurScope(const CString& scopePlace, bool ignoreLast = false);
+    // create scope
+    bool getScope(AsmScope* parent, const CString& scopeName, AsmScope*& scope);
+    // push new scope level
+    bool pushScope(const CString& scopeName);
+    bool popScope();
+    
     /// returns false when includeLevel is too deep, throw error if failed a file opening
     bool includeFile(const char* pseudoOpPlace, const std::string& filename);
     
@@ -413,7 +425,7 @@ private:
         section.content.insert(section.content.end(), data, data+size);
         currentOutPos += size;
     }
-
+    
     cxbyte* reserveData(size_t size, cxbyte fillValue = 0);
     
     void goToMain(const char* pseudoOpPlace);

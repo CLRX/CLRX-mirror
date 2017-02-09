@@ -100,7 +100,8 @@ static const char* pseudoOpNamesTbl[] =
     "elseifnc", "elseifndef", "elseifne", "elseifnes",
     "elseifnfmt", "elseifngpu", "elseifnotdef",
     "end", "endif", "endm", "endmacro",
-    "endr", "endrept", "equ", "equiv", "eqv",
+    "endr", "endrept", "ends", "endscope",
+    "equ", "equiv", "eqv",
     "err", "error", "exitm", "extern",
     "fail", "file", "fill", "fillq",
     "float", "format", "gallium", "global",
@@ -115,11 +116,12 @@ static const char* pseudoOpNamesTbl[] =
     "nobuggyfplit", "nomacrocase", "octa", "offset", "org",
     "p2align", "print", "purgem", "quad",
     "rawcode", "regvar", "rept", "rocm", "rodata",
-    "sbttl", "section", "set",
+    "sbttl", "scope", "section", "set",
     "short", "single", "size", "skip",
     "space", "string", "string16", "string32",
     "string64", "struct", "text", "title",
-    "undef", "version", "warning", "weak", "word"
+    "undef", "unusing", "using", "version",
+    "warning", "weak", "word"
 };
 
 enum
@@ -137,7 +139,8 @@ enum
     ASMOP_ELSEIFNC, ASMOP_ELSEIFNDEF, ASMOP_ELSEIFNE, ASMOP_ELSEIFNES,
     ASMOP_ELSEIFNFMT, ASMOP_ELSEIFNGPU, ASMOP_ELSEIFNOTDEF,
     ASMOP_END, ASMOP_ENDIF, ASMOP_ENDM, ASMOP_ENDMACRO,
-    ASMOP_ENDR, ASMOP_ENDREPT, ASMOP_EQU, ASMOP_EQUIV, ASMOP_EQV,
+    ASMOP_ENDR, ASMOP_ENDREPT, ASMOP_ENDS, ASMOP_ENDSCOPE,
+    ASMOP_EQU, ASMOP_EQUIV, ASMOP_EQV,
     ASMOP_ERR, ASMOP_ERROR, ASMOP_EXITM, ASMOP_EXTERN,
     ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FILLQ,
     ASMOP_FLOAT, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GLOBAL,
@@ -152,11 +155,12 @@ enum
     ASMOP_NOBUGGYFPLIT, ASMOP_NOMACROCASE, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
     ASMOP_RAWCODE, ASMOP_REGVAR, ASMOP_REPT, ASMOP_ROCM, ASMOP_RODATA,
-    ASMOP_SBTTL, ASMOP_SECTION, ASMOP_SET,
+    ASMOP_SBTTL, ASMOP_SCOPE, ASMOP_SECTION, ASMOP_SET,
     ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
     ASMOP_STRING64, ASMOP_STRUCT, ASMOP_TEXT, ASMOP_TITLE,
-    ASMOP_UNDEF, ASMOP_VERSION, ASMOP_WARNING, ASMOP_WEAK, ASMOP_WORD
+    ASMOP_UNDEF, ASMOP_UNUSING, ASMOP_USING, ASMOP_VERSION,
+    ASMOP_WARNING, ASMOP_WEAK, ASMOP_WORD
 };
 
 namespace CLRX
@@ -1936,6 +1940,89 @@ void AsmPseudoOps::purgeMacro(Assembler& asmr, const char* linePtr)
                 "' already doesn't exist").c_str());
 }
 
+void AsmPseudoOps::openScope(Assembler& asmr, const char* pseudoOpPlace,
+                     const char* linePtr)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    CString scopeName = extractSymName(linePtr, end, false);
+    bool good = true;
+    if (!scopeName.empty() && asmr.currentScope->local)
+    {
+        asmr.printError(pseudoOpPlace, "Opening named scopes in local scope is illegal");
+        good = false;
+    }
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    asmr.pushScope(scopeName);
+}
+
+void AsmPseudoOps::closeScope(Assembler& asmr, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    bool good = true;
+    if (asmr.scopeStack.empty())
+    {
+        asmr.printError(pseudoOpPlace, "Closing global scope is illegal");
+        good = false;
+    }
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    asmr.popScope();
+}
+
+void AsmPseudoOps::startUsing(Assembler& asmr, const char* pseudoOpPlace,
+                    const char* linePtr)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    const char* scopePathPlace = linePtr;
+    CString scopePath = extractScopedSymName(linePtr, end);
+    bool good = true;
+    if (scopePath.empty() || scopePath == "::")
+    {
+        asmr.printError(scopePathPlace, "Expected scope path");
+        good = false;
+    }
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    AsmScope* scope = asmr.getRecurScope(scopePath);
+    // do add this
+    auto res = asmr.usedScopesSet.insert({scope, asmr.usedScopes.end()});
+    if (res.second)
+    {   // if added, do add to list
+        asmr.usedScopes.push_front(scope);
+        res.first->second = asmr.usedScopes.begin();
+    }
+}
+
+void AsmPseudoOps::stopUsing(Assembler& asmr, const char* pseudoOpPlace,
+                    const char* linePtr)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    const char* scopePathPlace = linePtr;
+    CString scopePath = extractScopedSymName(linePtr, end);
+    bool good = true;
+    if (scopePath.empty() || scopePath == "::")
+    {
+        asmr.printError(scopePathPlace, "Expected scope path");
+        good = false;
+    }
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    AsmScope* scope = asmr.getRecurScope(scopePath);
+    auto it = asmr.usedScopesSet.find(scope);
+    if (it != asmr.usedScopesSet.end()) // do erase from list
+    {
+        asmr.usedScopes.erase(it->second);
+        asmr.usedScopesSet.erase(it);
+    }
+}
+
 void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
@@ -2305,6 +2392,11 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_ENDREPT:
             AsmPseudoOps::endRepeat(*this, stmtPlace, linePtr);
             break;
+        case ASMOP_ENDS:
+        case ASMOP_ENDSCOPE:
+            AsmPseudoOps::closeScope(*this, stmtPlace, linePtr);
+            break;
+            break;
         case ASMOP_EQU:
         case ASMOP_SET:
             AsmPseudoOps::setSymbol(*this, linePtr);
@@ -2516,6 +2608,9 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_RODATA:
             AsmPseudoOps::goToSection(*this, stmtPlace, stmtPlace, true);
             break;
+        case ASMOP_SCOPE:
+            AsmPseudoOps::openScope(*this, stmtPlace, linePtr);
+            break;
         case ASMOP_SECTION:
             AsmPseudoOps::goToSection(*this, stmtPlace, linePtr);
             break;
@@ -2557,6 +2652,12 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_UNDEF:
             AsmPseudoOps::undefSymbol(*this, linePtr);
+            break;
+        case ASMOP_UNUSING:
+            AsmPseudoOps::stopUsing(*this, stmtPlace, linePtr);
+            break;
+        case ASMOP_USING:
+            AsmPseudoOps::startUsing(*this, stmtPlace, linePtr);
             break;
         case ASMOP_WARNING:
             AsmPseudoOps::doWarning(*this, stmtPlace, linePtr);

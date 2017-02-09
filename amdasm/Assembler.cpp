@@ -609,6 +609,15 @@ void AsmSymbol::undefine()
     onceDefined = false;
 }
 
+AsmScope::~AsmScope()
+{
+    for (const auto& entry: scopeMap)
+        delete entry.second;
+    /// remove expressions before symbol map deletion
+    for (auto& entry: symbolMap)
+        entry.second.clearOccurrencesInExpr();
+}
+
 /*
  * Assembler
  */
@@ -623,6 +632,7 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
           isaAssembler(nullptr),
           globalScope({nullptr,{std::make_pair(".",
                   AsmSymbol(&globalScope, 0, uint64_t(0)))}}),
+          currentScope(&globalScope),
           flags(_flags), 
           lineSize(0), line(nullptr),
           endOfAssembly(false),
@@ -659,6 +669,7 @@ Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
           isaAssembler(nullptr),
           globalScope({nullptr,{std::make_pair(".",
                   AsmSymbol(&globalScope, 0, uint64_t(0)))}}),
+          currentScope(&globalScope),
           flags(_flags), 
           lineSize(0), line(nullptr),
           endOfAssembly(false),
@@ -699,6 +710,11 @@ Assembler::~Assembler()
     /// remove expressions before symbol map deletion
     for (auto& entry: globalScope.symbolMap)
         entry.second.clearOccurrencesInExpr();
+    for (AsmScope* scope: localScopes)
+        delete scope;
+    for (const auto& entry: globalScope.scopeMap)
+        delete entry.second;
+    globalScope.scopeMap.clear();
     /// remove expressions before symbol snapshots
     for (auto& entry: symbolSnapshots)
         entry->second.clearOccurrencesInExpr();
@@ -1775,6 +1791,108 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
     return ParseState::PARSED;
 }
 
+AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast)
+{
+    AsmScope* scope = currentScope;
+    const char* str = scopePlace.c_str();
+    //std::cout << "recurscope: " << scopePlace << std::endl;
+    if (*str==':' && str[1]==':')
+    {   // choose global scope
+        scope = &globalScope;
+        str += 2;
+    }
+    else // to back to non-local scope
+        while (scope->local) scope = scope->parent;
+    
+    std::vector<CString> scopeTrack;
+    while (*str != 0)
+    {
+        const char* scopeNameStr = str;
+        while (*str!=':' && *str!=0) str++;
+        if (*str==0 && ignoreLast) // ignore last
+            break;
+        scopeTrack.push_back(CString(scopeNameStr, str));
+        if (*str==':' && str[1]==':')
+            str += 2;
+    }
+    if (scope==&globalScope && scopeTrack.empty())
+        return scope;
+    
+    bool found = false;
+    if (scope!=&globalScope)
+    {
+        for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
+        {  // find this scope
+            //std::cout << "finding in parent: " << scope2 << std::endl;
+            auto it = scope2->scopeMap.find(scopeTrack[0]);
+            if (it != scope2->scopeMap.end())
+            {   // is found in scope
+                scope = scope2;
+                found = true;
+                break;
+            }
+        }
+    }
+    // find in used scopes
+    if (!found)
+        for (AsmScope* rootScope: usedScopes)
+        {
+            //std::cout << "finding in used: " << rootScope << std::endl;
+            auto it = rootScope->scopeMap.find(scopeTrack[0]);
+            if (it != rootScope->scopeMap.end())
+            { scope = rootScope; break; }
+        }
+    // otherwise create in current/global scope
+    for (const CString& name: scopeTrack)
+    {
+        getScope(scope, name, scope);
+        std::cout << "get: " << name << ": " << scope << std::endl;
+    }
+    return scope;
+}
+
+bool Assembler::getScope(AsmScope* parent, const CString& scopeName, AsmScope*& scope)
+{
+    std::unique_ptr<AsmScope> newScope(new AsmScope(parent));
+    auto res = parent->scopeMap.insert(std::make_pair(scopeName, newScope.get()));
+    if (!res.second) // not added
+        scope = res.first->second;
+    else // if new
+    {
+        scope = newScope.release();
+        std::cout << "new: " << parent << ": " << scopeName << ":" << scope << "\n";
+    }
+    return res.second;
+}
+
+bool Assembler::pushScope(const CString& scopeName)
+{
+    if (scopeName.empty())
+    {   // local scope
+        std::unique_ptr<AsmScope> newScope(new AsmScope(currentScope, true));
+        localScopes.push_back(newScope.get());
+        currentScope = newScope.release();
+    }
+    else
+        getScope(currentScope, scopeName, currentScope);
+    scopeStack.push(currentScope);
+    return true; // always good even if scope exists
+}
+
+bool Assembler::popScope()
+{
+    if (scopeStack.empty())
+        return false; // can't pop scope
+    if (currentScope->local) // maybe dangerous!!
+    {   // delete scope
+        delete currentScope;
+        localScopes.pop_back();
+    }
+    scopeStack.pop();
+    currentScope = (!scopeStack.empty()) ? scopeStack.top() : &globalScope;
+    return true;
+}
+
 bool Assembler::includeFile(const char* pseudoOpPlace, const std::string& filename)
 {
     if (inclusionLevel == 500)
@@ -2103,7 +2221,8 @@ bool Assembler::assemble()
         skipSpacesToEnd(linePtr, end);
         
         bool doNextLine = false;
-        while (!firstName.empty() && linePtr != end && *linePtr == ':')
+        while (!firstName.empty() && linePtr != end && *linePtr == ':' &&
+                    (linePtr+1==end || linePtr[1]!=':'))
         {   // labels
             linePtr++;
             skipSpacesToEnd(linePtr, end);

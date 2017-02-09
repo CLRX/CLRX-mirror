@@ -567,12 +567,16 @@ struct AsmScope
     AsmSymbolMap symbolMap;
     AsmRegVarMap regVarMap;
     AsmScopeMap scopeMap;
+    bool local;
     
-    ~AsmScope()
-    {
-        for (const auto& entry: scopeMap)
-            delete entry.second;
-    }
+    AsmScope(AsmScope* _parent, const AsmSymbolMap& _symbolMap,
+                     bool _local = false)
+            : parent(_parent), symbolMap(_symbolMap), local(_local)
+    { }
+    AsmScope(AsmScope* _parent = nullptr, bool _local = false)
+            : parent(_parent), local(_local)
+    { }
+    ~AsmScope();
 };
 
 class ISAUsageHandler;
