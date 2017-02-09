@@ -849,7 +849,7 @@ static inline AsmSymbolEntry* createSymbolEntryForSnapshot(const AsmSymbolEntry&
             symEntry.second.expression->createForSnapshot(exprSourcePos));
     
     std::unique_ptr<AsmSymbolEntry> newSymEntry(new AsmSymbolEntry{
-            symEntry.first, AsmSymbol(expr.get(), false, false)});
+            symEntry.first, AsmSymbol(symEntry.second.scope, expr.get(), false, false)});
     
     expr->setTarget(AsmExprTarget::symbolTarget(newSymEntry.get()));
     expr.release();

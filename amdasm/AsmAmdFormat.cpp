@@ -337,7 +337,8 @@ void AsmAmdPseudoOps::getDriverVersion(AsmAmdHandler& handler, const char* lineP
         driverVersion = handler.output.driverVersion;
     
     std::pair<AsmSymbolMap::iterator, bool> res = asmr.globalScope.symbolMap.insert(
-                std::make_pair(symName, AsmSymbol(ASMSECT_ABS, driverVersion)));
+                std::make_pair(symName, AsmSymbol(&asmr.globalScope,
+                              ASMSECT_ABS, driverVersion)));
     if (!res.second)
     {   // found
         if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
