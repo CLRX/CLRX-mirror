@@ -46,7 +46,7 @@ static const char* offlinePseudoOpNamesTbl[] =
     "elseifle", "elseiflt", "elseifnarch", "elseifnb", "elseifnc",
     "elseifndef", "elseifne", "elseifnes",
     "elseifnfmt", "elseifngpu", "elseifnotdef",
-    "endif", "endm", "endr",
+    "endif", "endm", "endmacro", "endr", "endrept",
     "if", "if32", "if64", "ifarch", "ifb", "ifc", "ifdef", "ifeq",
     "ifeqs", "iffmt", "ifge", "ifgpu", "ifgt", "ifle",
     "iflt", "ifnarch", "ifnb", "ifnc", "ifndef",
@@ -57,7 +57,7 @@ static const char* offlinePseudoOpNamesTbl[] =
 /// pseudo-ops not ignored while putting macro content
 static const char* macroRepeatPseudoOpNamesTbl[] =
 {
-    "endm", "endr", "irp", "irpc", "macro", "rept"
+    "endm", "endmacro", "endr", "endrept", "irp", "irpc", "macro", "rept"
 };
 
 // pseudo-ops used while skipping clauses
@@ -70,7 +70,7 @@ enum
     ASMCOP_ELSEIFLE, ASMCOP_ELSEIFLT, ASMCOP_ELSEIFNARCH, ASMCOP_ELSEIFNB, ASMCOP_ELSEIFNC,
     ASMCOP_ELSEIFNDEF, ASMCOP_ELSEIFNE, ASMCOP_ELSEIFNES,
     ASMCOP_ELSEIFNFMT, ASMCOP_ELSEIFNGPU, ASMCOP_ELSEIFNOTDEF,
-    ASMCOP_ENDIF, ASMCOP_ENDM, ASMCOP_ENDR,
+    ASMCOP_ENDIF, ASMCOP_ENDM, ASMCOP_ENDMACRO, ASMCOP_ENDR, ASMCOP_ENDREPT,
     ASMCOP_IF, ASMCOP_IF32, ASMCOP_IF64, ASMCOP_IFARCH, ASMCOP_IFB,
     ASMCOP_IFC, ASMCOP_IFDEF, ASMCOP_IFEQ,
     ASMCOP_IFEQS, ASMCOP_IFFMT, ASMCOP_IFGE, ASMCOP_IFGPU, ASMCOP_IFGT, ASMCOP_IFLE,
@@ -81,7 +81,8 @@ enum
 
 /// pseudo-ops not ignored while putting macro content
 enum
-{ ASMMROP_ENDM = 0, ASMMROP_ENDR, ASMMROP_IRP, ASMMROP_IRPC, ASMMROP_MACRO, ASMMROP_REPT };
+{ ASMMROP_ENDM = 0, ASMMROP_ENDMACRO, ASMMROP_ENDR, ASMMROP_ENDREPT,
+    ASMMROP_IRP, ASMMROP_IRPC, ASMMROP_MACRO, ASMMROP_REPT };
 
 /// all main pseudo-ops
 static const char* pseudoOpNamesTbl[] =
@@ -98,8 +99,8 @@ static const char* pseudoOpNamesTbl[] =
     "elseifle", "elseiflt", "elseifnarch", "elseifnb",
     "elseifnc", "elseifndef", "elseifne", "elseifnes",
     "elseifnfmt", "elseifngpu", "elseifnotdef",
-    "end", "endif", "endm",
-    "endr", "equ", "equiv", "eqv",
+    "end", "endif", "endm", "endmacro",
+    "endr", "endrept", "equ", "equiv", "eqv",
     "err", "error", "exitm", "extern",
     "fail", "file", "fill", "fillq",
     "float", "format", "gallium", "global",
@@ -135,8 +136,8 @@ enum
     ASMOP_ELSEIFLE, ASMOP_ELSEIFLT, ASMOP_ELSEIFNARCH, ASMOP_ELSEIFNB,
     ASMOP_ELSEIFNC, ASMOP_ELSEIFNDEF, ASMOP_ELSEIFNE, ASMOP_ELSEIFNES,
     ASMOP_ELSEIFNFMT, ASMOP_ELSEIFNGPU, ASMOP_ELSEIFNOTDEF,
-    ASMOP_END, ASMOP_ENDIF, ASMOP_ENDM,
-    ASMOP_ENDR, ASMOP_EQU, ASMOP_EQUIV, ASMOP_EQV,
+    ASMOP_END, ASMOP_ENDIF, ASMOP_ENDM, ASMOP_ENDMACRO,
+    ASMOP_ENDR, ASMOP_ENDREPT, ASMOP_EQU, ASMOP_EQUIV, ASMOP_EQV,
     ASMOP_ERR, ASMOP_ERROR, ASMOP_EXITM, ASMOP_EXTERN,
     ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FILLQ,
     ASMOP_FLOAT, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GLOBAL,
@@ -2297,9 +2298,11 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::endIf(*this, stmtPlace, linePtr);
             break;
         case ASMOP_ENDM:
+        case ASMOP_ENDMACRO:
             AsmPseudoOps::endMacro(*this, stmtPlace, linePtr);
             break;
         case ASMOP_ENDR:
+        case ASMOP_ENDREPT:
             AsmPseudoOps::endRepeat(*this, stmtPlace, linePtr);
             break;
         case ASMOP_EQU:
@@ -2670,12 +2673,14 @@ bool Assembler::skipClauses(bool exitm)
                         good = false;
                 break;
             case ASMCOP_ENDM:
+            case ASMCOP_ENDMACRO:
                 if (!AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
                     good = false;   // if .endm have garbages
                 else if (!popClause(stmtPlace, AsmClauseType::MACRO))
                     good = false;
                 break;
             case ASMCOP_ENDR:
+            case ASMCOP_ENDREPT:
                 if (!AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
                     good = false;   // if .endr have garbages
                 else if (!popClause(stmtPlace, AsmClauseType::REPEAT))
@@ -2803,10 +2808,12 @@ bool Assembler::putMacroContent(RefPtr<AsmMacro> macro)
         switch(pseudoOp)
         {
             case ASMMROP_ENDM:
+            case ASMMROP_ENDMACRO:
                 if (!popClause(stmtPlace, AsmClauseType::MACRO))
                     good = false;
                 break;
             case ASMMROP_ENDR:
+            case ASMMROP_ENDREPT:
                 if (!popClause(stmtPlace, AsmClauseType::REPEAT))
                     good = false;
                 break;

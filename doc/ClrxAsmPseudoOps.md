@@ -195,11 +195,11 @@ Ends source code compilation at this point.
 
 Finish if-endif clause.
 
-### .endm
+### .endm, .endmacro
 
 Finish macro definition
 
-### .endr
+### .endr, .endrept
 
 Finish code of repetition.
 
