@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <vector>
 #include <utility>
+#include <list>
 #include <unordered_map>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Commons.h>
@@ -568,6 +569,8 @@ struct AsmScope
     AsmRegVarMap regVarMap;
     AsmScopeMap scopeMap;
     bool local;
+    std::list<AsmScope*> usedScopes;
+    std::unordered_map<AsmScope*, std::list<AsmScope*>::iterator> usedScopesSet;
     
     AsmScope(AsmScope* _parent, const AsmSymbolMap& _symbolMap,
                      bool _local = false)
@@ -577,6 +580,9 @@ struct AsmScope
             : parent(_parent), local(_local)
     { }
     ~AsmScope();
+    
+    void startUsingScope(AsmScope* scope);
+    void stopUsingScope(AsmScope* scope);
 };
 
 class ISAUsageHandler;

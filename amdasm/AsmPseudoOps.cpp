@@ -1947,11 +1947,6 @@ void AsmPseudoOps::openScope(Assembler& asmr, const char* pseudoOpPlace,
     skipSpacesToEnd(linePtr, end);
     CString scopeName = extractSymName(linePtr, end, false);
     bool good = true;
-    if (!scopeName.empty() && asmr.currentScope->local)
-    {
-        asmr.printError(pseudoOpPlace, "Opening named scopes in local scope is illegal");
-        good = false;
-    }
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1991,12 +1986,7 @@ void AsmPseudoOps::startUsing(Assembler& asmr, const char* pseudoOpPlace,
         return;
     AsmScope* scope = asmr.getRecurScope(scopePath);
     // do add this
-    auto res = asmr.usedScopesSet.insert({scope, asmr.usedScopes.end()});
-    if (res.second)
-    {   // if added, do add to list
-        asmr.usedScopes.push_front(scope);
-        res.first->second = asmr.usedScopes.begin();
-    }
+    asmr.currentScope->startUsingScope(scope);
 }
 
 void AsmPseudoOps::stopUsing(Assembler& asmr, const char* pseudoOpPlace,
@@ -2015,12 +2005,7 @@ void AsmPseudoOps::stopUsing(Assembler& asmr, const char* pseudoOpPlace,
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     AsmScope* scope = asmr.getRecurScope(scopePath);
-    auto it = asmr.usedScopesSet.find(scope);
-    if (it != asmr.usedScopesSet.end()) // do erase from list
-    {
-        asmr.usedScopes.erase(it->second);
-        asmr.usedScopesSet.erase(it);
-    }
+    asmr.currentScope->stopUsingScope(scope);
 }
 
 void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)

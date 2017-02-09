@@ -618,6 +618,26 @@ AsmScope::~AsmScope()
         entry.second.clearOccurrencesInExpr();
 }
 
+void AsmScope::startUsingScope(AsmScope* scope)
+{   // do add this
+    auto res = usedScopesSet.insert({scope, usedScopes.end()});
+    if (res.second)
+    {   // if added, do add to list
+        usedScopes.push_front(scope);
+        res.first->second = usedScopes.begin();
+    }
+}
+
+void AsmScope::stopUsingScope(AsmScope* scope)
+{
+    auto it = usedScopesSet.find(scope);
+    if (it != usedScopesSet.end()) // do erase from list
+    {
+        usedScopes.erase(it->second);
+        usedScopesSet.erase(it);
+    }
+}
+
 /*
  * Assembler
  */
@@ -1795,14 +1815,12 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast)
 {
     AsmScope* scope = currentScope;
     const char* str = scopePlace.c_str();
-    //std::cout << "recurscope: " << scopePlace << std::endl;
+    std::cout << "recurscope: " << scopePlace << std::endl;
     if (*str==':' && str[1]==':')
     {   // choose global scope
         scope = &globalScope;
         str += 2;
     }
-    else // to back to non-local scope
-        while (scope->local) scope = scope->parent;
     
     std::vector<CString> scopeTrack;
     while (*str != 0)
@@ -1819,34 +1837,33 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast)
         return scope;
     
     bool found = false;
-    if (scope!=&globalScope)
-    {
-        for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
-        {  // find this scope
-            //std::cout << "finding in parent: " << scope2 << std::endl;
-            auto it = scope2->scopeMap.find(scopeTrack[0]);
-            if (it != scope2->scopeMap.end())
-            {   // is found in scope
-                scope = scope2;
-                found = true;
-                break;
+    for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
+    {  // find this scope
+        std::cout << "finding scope in parent: " << scope2 << std::endl;
+        auto it = scope2->scopeMap.find(scopeTrack[0]);
+        if (it != scope2->scopeMap.end())
+        {   // is found in scope
+            scope = scope2;
+            found = true;
+            break;
+        }
+        // find in used scopes
+        if (!found)
+            for (AsmScope* rootScope: scope2->usedScopes)
+            {
+                std::cout << "finding scope in used: " << rootScope << std::endl;
+                auto it = rootScope->scopeMap.find(scopeTrack[0]);
+                if (it != rootScope->scopeMap.end())
+                { scope = rootScope; break; }
             }
-        }
+        if(found) break;
     }
-    // find in used scopes
-    if (!found)
-        for (AsmScope* rootScope: usedScopes)
-        {
-            //std::cout << "finding in used: " << rootScope << std::endl;
-            auto it = rootScope->scopeMap.find(scopeTrack[0]);
-            if (it != rootScope->scopeMap.end())
-            { scope = rootScope; break; }
-        }
+    
     // otherwise create in current/global scope
     for (const CString& name: scopeTrack)
     {
         getScope(scope, name, scope);
-        std::cout << "get: " << name << ": " << scope << std::endl;
+        std::cout << "getscope: " << name << ": " << scope << std::endl;
     }
     return scope;
 }
@@ -1860,7 +1877,7 @@ bool Assembler::getScope(AsmScope* parent, const CString& scopeName, AsmScope*& 
     else // if new
     {
         scope = newScope.release();
-        std::cout << "new: " << parent << ": " << scopeName << ":" << scope << "\n";
+        std::cout << "newscope: " << parent << ": " << scopeName << ":" << scope << "\n";
     }
     return res.second;
 }

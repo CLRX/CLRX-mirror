@@ -293,8 +293,6 @@ private:
     AsmMacroMap macroMap;
     std::vector<AsmScope*> localScopes;
     std::stack<AsmScope*> scopeStack;
-    std::list<AsmScope*> usedScopes;
-    std::unordered_map<AsmScope*, std::list<AsmScope*>::iterator> usedScopesSet;
     AsmScope* currentScope;
     KernelMap kernelMap;
     std::vector<AsmKernel> kernels;
