@@ -114,6 +114,67 @@ const cxbyte CLRX::tokenCharTable[96] =
     0x90, 0x90, 0x90, 0x97, 0x18, 0x99, 0x1a, 0x1b
 };
 
+ CString CLRX::extractSymName(const char*& string, const char* end,
+           bool localLabelSymName)
+{
+    const char* startString = string;
+    if (string != end)
+    {
+        if(isAlpha(*string) || *string == '_' || *string == '.' || *string == '$')
+            for (string++; string != end && (isAlnum(*string) || *string == '_' ||
+                 *string == '.' || *string == '$') ; string++);
+        else if (localLabelSymName && isDigit(*string)) // local label
+        {
+            for (string++; string!=end && isDigit(*string); string++);
+            // check whether is local forward or backward label
+            string = (string != end && (*string == 'f' || *string == 'b')) ?
+                    string+1 : startString;
+            // if not part of binary number or illegal bin number
+            if (startString != string && (string!=end && (isAlnum(*string))))
+                string = startString;
+        }
+    }
+    return CString(startString, string);
+}
+
+CString CLRX::extractScopedSymName(const char*& string, const char* end,
+           bool localLabelSymName)
+{
+    const char* startString = string;
+    const char* lastString = string;
+    if (localLabelSymName && isDigit(*string)) // local label
+    {
+        for (string++; string!=end && isDigit(*string); string++);
+        // check whether is local forward or backward label
+        string = (string != end && (*string == 'f' || *string == 'b')) ?
+                string+1 : startString;
+        // if not part of binary number or illegal bin number
+        if (startString != string && (string!=end && (isAlnum(*string))))
+            string = startString;
+        return CString(startString, string);
+    }
+    while (string != end)
+    {
+        if (*string==':' && string+1!=end && string[1]==':')
+            string += 2;
+        else if (string != startString) // if not start
+            break;
+        // skip string
+        const char* scopeName = string;
+        if (string != end)
+        {
+            if(isAlpha(*string) || *string == '_' || *string == '.' || *string == '$')
+                for (string++; string != end && (isAlnum(*string) || *string == '_' ||
+                     *string == '.' || *string == '$') ; string++);
+        }
+        if (scopeName==string) // is not scope name
+            break;
+        lastString = string;
+    }
+    return CString(startString, lastString);
+}
+
+
 void CLRX::skipSpacesAndLabels(const char*& linePtr, const char* end)
 {
     const char* stmtStart;
