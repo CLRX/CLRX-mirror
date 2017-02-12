@@ -2441,24 +2441,73 @@ bool Assembler::assemble()
         clauses.pop();
     }
     
+    struct ScopeStackElem
+    {
+        AsmScope* scope;
+        AsmScopeMap::iterator childIt;
+    };
+    
     resolvingRelocs = true;
-    for (AsmSymbolEntry& symEntry: globalScope.symbolMap)
-        if (!symEntry.second.occurrencesInExprs.empty() || 
-            (symEntry.first!="."  && !isResolvableSection(symEntry.second.sectionId)))
-        {   // try to resolve symbols
-            uint64_t value;
-            cxuint sectionId;
-            if (formatHandler!=nullptr &&
-                formatHandler->resolveSymbol(symEntry.second, value, sectionId))
-                setSymbol(symEntry, value, sectionId);
+    std::stack<ScopeStackElem> scopeStack;
+    scopeStack.push({&globalScope, globalScope.scopeMap.begin()});
+    
+    while (!scopeStack.empty())
+    {
+        ScopeStackElem& elem = scopeStack.top();
+        if (elem.childIt == elem.scope->scopeMap.begin())
+        {   // first we check symbol of current scope
+            AsmScope* curScope = elem.scope;
+            for (AsmSymbolEntry& symEntry: curScope->symbolMap)
+                if (!symEntry.second.occurrencesInExprs.empty() || 
+                    (symEntry.first!="."  &&
+                            !isResolvableSection(symEntry.second.sectionId)))
+                {   // try to resolve symbols
+                    uint64_t value;
+                    cxuint sectionId;
+                    if (formatHandler!=nullptr &&
+                        formatHandler->resolveSymbol(symEntry.second, value, sectionId))
+                        setSymbol(symEntry, value, sectionId);
+                }
         }
+        // next, we travere on children
+        if (elem.childIt != elem.scope->scopeMap.end())
+        {
+            scopeStack.push({ elem.childIt->second,
+                        elem.childIt->second->scopeMap.begin() });
+            ++elem.childIt;
+        }
+        else // if end, we pop from stack
+            scopeStack.pop();
+    }
     
     if ((flags&ASM_TESTRUN) == 0)
-        for (AsmSymbolEntry& symEntry: globalScope.symbolMap)
-            if (!symEntry.second.occurrencesInExprs.empty())
-                for (AsmExprSymbolOccurrence occur: symEntry.second.occurrencesInExprs)
-                    printError(occur.expression->getSourcePos(),(std::string(
-                        "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
+    {
+        scopeStack.push({&globalScope, globalScope.scopeMap.begin()});
+        
+        while (!scopeStack.empty())
+        {
+            ScopeStackElem& elem = scopeStack.top();
+            if (elem.childIt == elem.scope->scopeMap.begin())
+            {   // first we check symbol of current scope
+                AsmScope* curScope = elem.scope;
+                for (AsmSymbolEntry& symEntry: curScope->symbolMap)
+                    if (!symEntry.second.occurrencesInExprs.empty())
+                        for (AsmExprSymbolOccurrence occur:
+                                symEntry.second.occurrencesInExprs)
+                            printError(occur.expression->getSourcePos(),(std::string(
+                                "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
+            }
+            // next, we travere on children
+            if (elem.childIt != elem.scope->scopeMap.end())
+            {
+                scopeStack.push({ elem.childIt->second,
+                            elem.childIt->second->scopeMap.begin() });
+                ++elem.childIt;
+            }
+            else // if end, we pop from stack
+                scopeStack.pop();
+        }
+    }
     
     if (good && formatHandler!=nullptr)
     {  
