@@ -1966,6 +1966,66 @@ AsmSymbolEntry* Assembler::findSymbolInScope(const CString& symName, AsmScope*& 
     return nullptr;
 }
 
+std::pair<AsmSymbolEntry*, bool> Assembler::insertSymbolInScope(const CString& symName,
+                 const AsmSymbol& symbol)
+{
+    AsmScope* outScope;
+    CString sameSymName;
+    AsmSymbolEntry* symEntry = findSymbolInScope(symName, outScope, sameSymName);
+    if (symEntry==nullptr)
+    {
+        auto res = outScope->symbolMap.insert({ sameSymName, symbol });
+        res.first->second.scope = outScope;
+        return std::make_pair(&*res.first, res.second);
+    }
+    return std::make_pair(symEntry, false);
+}
+
+AsmRegVarEntry* Assembler::findRegVarInScope(const CString& rvName, AsmScope*& scope,
+                      CString& sameRvName)
+{
+    const char* lastStep = nullptr;
+    scope = getRecurScope(rvName, true, &lastStep);
+    auto it = scope->regVarMap.find(lastStep);
+    sameRvName = lastStep;
+    if (it != scope->regVarMap.end())
+        return &*it;
+    if (lastStep != rvName)
+        return nullptr;
+    // otherwise is rvName is not normal rvName
+    scope = currentScope;
+    
+    for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
+    {  // find this scope
+        auto it = scope2->regVarMap.find(sameRvName);
+        if (it != scope2->regVarMap.end()) // is found in scope
+            return &*it;
+        // find in used scopes
+        for (AsmScope* rootScope: scope2->usedScopes)
+        {
+            auto it = rootScope->regVarMap.find(sameRvName);
+            if (it != rootScope->regVarMap.end())
+                return &*it;
+        }
+    }
+    return nullptr;
+}
+
+std::pair<AsmRegVarEntry*, bool> Assembler::insertRegVarInScope(const CString& rvName,
+                 const AsmRegVar& regVar)
+{
+    AsmScope* outScope;
+    CString sameRvName;
+    AsmRegVarEntry* rvEntry = findRegVarInScope(rvName, outScope, sameRvName);
+    if (rvEntry==nullptr)
+    {
+        auto res = outScope->regVarMap.insert({ sameRvName, regVar });
+        res.first->second.scope = outScope;
+        return std::make_pair(&*res.first, res.second);
+    }
+    return std::make_pair(rvEntry, false);
+}
+
 bool Assembler::getScope(AsmScope* parent, const CString& scopeName, AsmScope*& scope)
 {
     std::unique_ptr<AsmScope> newScope(new AsmScope(parent));
@@ -2254,15 +2314,14 @@ void Assembler::initializeOutputFormat()
     currentOutPos = 0;
 }
 
-bool Assembler::addRegVar(const CString& name, const AsmRegVar& var)
-{ return globalScope.regVarMap.insert(std::make_pair(name, var)).second; }
-
 bool Assembler::getRegVarEntry(const CString& name,
-                       const AsmRegVarEntry*& regVarEntry) const
+                       const AsmRegVarEntry*& regVarEntry)
 { 
     regVarEntry = nullptr;
-    auto it = globalScope.regVarMap.find(name);
-    if (it == globalScope.regVarMap.end())
+    CString sameRvName;
+    AsmScope* scope;
+    auto it = findRegVarInScope(name, scope, sameRvName);
+    if (it == nullptr)
         return false;
     regVarEntry = &*it;
     return true;

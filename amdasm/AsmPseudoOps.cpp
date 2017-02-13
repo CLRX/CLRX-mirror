@@ -2063,7 +2063,7 @@ void AsmPseudoOps::doDefRegVar(Assembler& asmr, const char* pseudoOpPlace,
     do {
         skipSpacesToEnd(linePtr, end);
         const char* regNamePlace = linePtr;
-        CString name = extractSymName(linePtr, end, false);
+        CString name = extractScopedSymName(linePtr, end, false);
         bool good = true;
         if (name.empty())
         {

@@ -79,7 +79,7 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
     const char* regVarPlace = linePtr;
     const char *regTypeName = (flags&INSTROP_VREGS) ? "vector" : "scalar";
     
-    const CString name = extractSymName(linePtr, end, false);
+    const CString name = extractScopedSymName(linePtr, end, false);
     bool regVarFound = false;
     //AsmSection& section = asmr.sections[asmr.currentSection];
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);

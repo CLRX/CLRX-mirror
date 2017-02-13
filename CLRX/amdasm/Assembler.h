@@ -408,21 +408,15 @@ private:
     // scope - return scope from scoped name
     AsmSymbolEntry* findSymbolInScope(const CString& symName, AsmScope*& scope,
                       CString& sameSymName);
-    // similar to map::insert, but returns pointer, and insert empty symbol
+    // similar to map::insert, but returns pointer
     std::pair<AsmSymbolEntry*, bool> insertSymbolInScope(const CString& symName,
-                 const AsmSymbol& symbol)
-    {
-        AsmScope* outScope;
-        CString sameSymName;
-        AsmSymbolEntry* symEntry = findSymbolInScope(symName, outScope, sameSymName);
-        if (symEntry==nullptr)
-        {
-            auto res = outScope->symbolMap.insert({ sameSymName, symbol });
-            res.first->second.scope = outScope;
-            return std::make_pair(&*res.first, res.second);
-        }
-        return std::make_pair(symEntry, false);
-    }
+                 const AsmSymbol& symbol);
+    // scope - return scope from scoped name
+    AsmRegVarEntry* findRegVarInScope(const CString& rvName, AsmScope*& scope,
+                      CString& sameRvName);
+    // similar to map::insert, but returns pointer
+    std::pair<AsmRegVarEntry*, bool> insertRegVarInScope(const CString& rvName,
+                 const AsmRegVar& regVar);
     
     // create scope
     bool getScope(AsmScope* parent, const CString& scopeName, AsmScope*& scope);
@@ -580,9 +574,10 @@ public:
     const AsmRegVarMap& getRegVarMap() const
     { return globalScope.regVarMap; }
     /// add regvar
-    bool addRegVar(const CString& name, const AsmRegVar& var);
+    bool addRegVar(const CString& name, const AsmRegVar& var)
+    { return insertRegVarInScope(name, var).second; }
     // get regvar by name
-    bool getRegVarEntry(const CString& name, const AsmRegVarEntry*& regVarEntry) const;
+    bool getRegVarEntry(const CString& name, const AsmRegVarEntry*& regVarEntry);
     
     /// returns true if symbol contains absolute value
     bool isAbsoluteSymbol(const AsmSymbol& symbol) const;
