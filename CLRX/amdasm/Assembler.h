@@ -291,7 +291,6 @@ private:
     std::vector<AsmRelocation> relocations;
     AsmScope globalScope;
     AsmMacroMap macroMap;
-    std::vector<AsmScope*> localScopes;
     std::stack<AsmScope*> scopeStack;
     AsmScope* currentScope;
     KernelMap kernelMap;

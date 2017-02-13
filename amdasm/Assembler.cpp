@@ -23,6 +23,7 @@
 #include <fstream>
 #include <vector>
 #include <stack>
+#include <deque>
 #include <unordered_set>
 #include <utility>
 #include <algorithm>
@@ -791,8 +792,6 @@ Assembler::~Assembler()
     /// remove expressions before symbol map deletion
     for (auto& entry: globalScope.symbolMap)
         entry.second.clearOccurrencesInExpr();
-    for (AsmScope* scope: localScopes)
-        delete scope;
     for (const auto& entry: globalScope.scopeMap)
         delete entry.second;
     globalScope.scopeMap.clear();
@@ -1987,7 +1986,7 @@ bool Assembler::pushScope(const CString& scopeName)
     if (scopeName.empty())
     {   // local scope
         std::unique_ptr<AsmScope> newScope(new AsmScope(currentScope, true));
-        localScopes.push_back(newScope.get());
+        currentScope->scopeMap.insert(std::make_pair("", newScope.get()));
         currentScope = newScope.release();
     }
     else
@@ -2002,8 +2001,8 @@ bool Assembler::popScope()
         return false; // can't pop scope
     if (currentScope->local) // maybe dangerous!!
     {   // delete scope
+        currentScope->parent->scopeMap.erase("");
         delete currentScope;
-        localScopes.pop_back();
     }
     scopeStack.pop();
     currentScope = (!scopeStack.empty()) ? scopeStack.top() : &globalScope;
@@ -2504,20 +2503,21 @@ bool Assembler::assemble()
     
     struct ScopeStackElem
     {
-        AsmScope* scope;
+        std::pair<CString, AsmScope*> scope;
         AsmScopeMap::iterator childIt;
     };
     
     resolvingRelocs = true;
-    std::stack<ScopeStackElem> scopeStack;
-    scopeStack.push({&globalScope, globalScope.scopeMap.begin()});
+    std::deque<ScopeStackElem> scopeStack;
+    std::pair<CString, AsmScope*> globalScopeEntry = { "", &globalScope };
+    scopeStack.push_back({ globalScopeEntry, globalScope.scopeMap.begin() });
     
     while (!scopeStack.empty())
     {
-        ScopeStackElem& elem = scopeStack.top();
-        if (elem.childIt == elem.scope->scopeMap.begin())
+        ScopeStackElem& elem = scopeStack.back();
+        if (elem.childIt == elem.scope.second->scopeMap.begin())
         {   // first we check symbol of current scope
-            AsmScope* curScope = elem.scope;
+            AsmScope* curScope = elem.scope.second;
             for (AsmSymbolEntry& symEntry: curScope->symbolMap)
                 if (!symEntry.second.occurrencesInExprs.empty() || 
                     (symEntry.first!="."  &&
@@ -2531,42 +2531,52 @@ bool Assembler::assemble()
                 }
         }
         // next, we travere on children
-        if (elem.childIt != elem.scope->scopeMap.end())
+        if (elem.childIt != elem.scope.second->scopeMap.end())
         {
-            scopeStack.push({ elem.childIt->second,
+            scopeStack.push_back({ *elem.childIt,
                         elem.childIt->second->scopeMap.begin() });
             ++elem.childIt;
         }
         else // if end, we pop from stack
-            scopeStack.pop();
+            scopeStack.pop_back();
     }
     
     if ((flags&ASM_TESTRUN) == 0)
     {
-        scopeStack.push({&globalScope, globalScope.scopeMap.begin()});
+        scopeStack.push_back({ globalScopeEntry, globalScope.scopeMap.begin() });
         
         while (!scopeStack.empty())
         {
-            ScopeStackElem& elem = scopeStack.top();
-            if (elem.childIt == elem.scope->scopeMap.begin())
+            ScopeStackElem& elem = scopeStack.back();
+            if (elem.childIt == elem.scope.second->scopeMap.begin())
             {   // first we check symbol of current scope
-                AsmScope* curScope = elem.scope;
+                AsmScope* curScope = elem.scope.second;
                 for (AsmSymbolEntry& symEntry: curScope->symbolMap)
                     if (!symEntry.second.occurrencesInExprs.empty())
                         for (AsmExprSymbolOccurrence occur:
                                 symEntry.second.occurrencesInExprs)
+                        {
+                            std::string scopePath;
+                            auto it = scopeStack.begin();
+                            for (++it; it != scopeStack.end(); ++it)
+                            {
+                                scopePath += it->scope.first.c_str();
+                                scopePath += "::";
+                            }
                             printError(occur.expression->getSourcePos(),(std::string(
-                                "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
+                                "Unresolved symbol '")+scopePath+
+                                symEntry.first.c_str()+"'").c_str());
+                        }
             }
             // next, we travere on children
-            if (elem.childIt != elem.scope->scopeMap.end())
+            if (elem.childIt != elem.scope.second->scopeMap.end())
             {
-                scopeStack.push({ elem.childIt->second,
+                scopeStack.push_back({ *elem.childIt,
                             elem.childIt->second->scopeMap.begin() });
                 ++elem.childIt;
             }
             else // if end, we pop from stack
-                scopeStack.pop();
+                scopeStack.pop_back();
         }
     }
     
