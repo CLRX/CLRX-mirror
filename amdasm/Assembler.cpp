@@ -1405,8 +1405,8 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
             return false;
         }
         
-        std::pair<AsmSymbolMap::iterator, bool> res =
-                currentScope->symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
+        std::pair<AsmSymbolEntry*, bool> res =
+                insertSymbolInScope(symbolName, AsmSymbol());
         if (!res.second && ((res.first->second.onceDefined || !reassign) &&
             res.first->second.isDefined()))
         {   // found and can be only once defined
@@ -1491,8 +1491,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         }
     }
     
-    std::pair<AsmSymbolMap::iterator, bool> res =
-            currentScope->symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
+    std::pair<AsmSymbolEntry*, bool> res = insertSymbolInScope(symbolName, AsmSymbol());
     if (!res.second && ((res.first->second.onceDefined || !reassign) &&
         res.first->second.isDefined()))
     {   // found and can be only once defined
@@ -1940,12 +1939,12 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast,
 AsmSymbolEntry* Assembler::findSymbolInScope(const CString& symName, AsmScope*& scope,
             CString& sameSymName)
 {
-    const char* lastStep = false;
+    const char* lastStep = nullptr;
     scope = getRecurScope(symName, true, &lastStep);
     auto it = scope->symbolMap.find(lastStep);
+    sameSymName = lastStep;
     if (it != scope->symbolMap.end())
         return &*it;
-    sameSymName = lastStep;
     if (lastStep != symName)
         return nullptr;
     // otherwise is symName is not normal symName
@@ -2557,12 +2556,13 @@ bool Assembler::assemble()
                                 symEntry.second.occurrencesInExprs)
                         {
                             std::string scopePath;
-                            auto it = scopeStack.begin();
+                            auto it = scopeStack.begin(); // skip global scope
                             for (++it; it != scopeStack.end(); ++it)
-                            {
+                            {   // generate scope path
                                 scopePath += it->scope.first.c_str();
                                 scopePath += "::";
                             }
+                            // print error, if symbol is unresolved
                             printError(occur.expression->getSourcePos(),(std::string(
                                 "Unresolved symbol '")+scopePath+
                                 symEntry.first.c_str()+"'").c_str());

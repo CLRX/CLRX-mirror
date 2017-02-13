@@ -891,7 +891,7 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char* linePtr, bool reassign
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* strAtSymName = linePtr;
-    CString symName = extractSymName(linePtr, end, false);
+    CString symName = extractScopedSymName(linePtr, end, false);
     bool good = true;
     if (symName.empty())
     {
@@ -2028,12 +2028,15 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    auto it = asmr.currentScope->symbolMap.find(symName);
-    if (it == asmr.currentScope->symbolMap.end() || !it->second.isDefined())
+    //auto it = asmr.currentScope->symbolMap.find(symName);
+    CString sameSymName;
+    AsmScope* outScope;
+    AsmSymbolEntry* it = asmr.findSymbolInScope(symName, outScope, sameSymName);
+    if (it == nullptr || !it->second.isDefined())
         asmr.printWarning(symNamePlace, (std::string("Symbol '") + symName.c_str() +
                 "' already doesn't exist").c_str());
     else if (it->second.occurrencesInExprs.empty())
-        asmr.currentScope->symbolMap.erase(it);
+        outScope->symbolMap.erase(sameSymName);
     else
         it->second.undefine();
 }

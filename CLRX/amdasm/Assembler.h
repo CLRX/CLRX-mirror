@@ -408,6 +408,21 @@ private:
     // scope - return scope from scoped name
     AsmSymbolEntry* findSymbolInScope(const CString& symName, AsmScope*& scope,
                       CString& sameSymName);
+    // similar to map::insert, but returns pointer, and insert empty symbol
+    std::pair<AsmSymbolEntry*, bool> insertSymbolInScope(const CString& symName,
+                 const AsmSymbol& symbol)
+    {
+        AsmScope* outScope;
+        CString sameSymName;
+        AsmSymbolEntry* symEntry = findSymbolInScope(symName, outScope, sameSymName);
+        if (symEntry==nullptr)
+        {
+            auto res = outScope->symbolMap.insert({ sameSymName, symbol });
+            return std::make_pair(&*res.first, res.second);
+        }
+        return std::make_pair(symEntry, false);
+    }
+    
     // create scope
     bool getScope(AsmScope* parent, const CString& scopeName, AsmScope*& scope);
     // push new scope level
