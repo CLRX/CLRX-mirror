@@ -2377,9 +2377,11 @@ bool Assembler::assemble()
             }
             else
             {   // regular labels
-                std::pair<AsmSymbolMap::iterator, bool> res = 
+                /*std::pair<AsmSymbolMap::iterator, bool> res = 
                         currentScope->symbolMap.insert(
-                            std::make_pair(firstName, AsmSymbol()));
+                            std::make_pair(firstName, AsmSymbol()));*/
+                std::pair<AsmSymbolEntry*, bool> res =
+                            insertSymbolInScope(firstName, AsmSymbol());
                 if (!res.second)
                 {   // found
                     if (res.first->second.onceDefined && res.first->second.isDefined())

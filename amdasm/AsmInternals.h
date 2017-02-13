@@ -54,7 +54,7 @@ static inline CString extractLabelName(const char*& string, const char* end)
         while (string != end && isDigit(*string)) string++;
         return CString(startString, string);
     }
-    return extractSymName(string, end, false);
+    return extractScopedSymName(string, end, false);
 }
 
 void skipSpacesAndLabels(const char*& linePtr, const char* end);
