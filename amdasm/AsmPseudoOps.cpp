@@ -2054,7 +2054,7 @@ void AsmPseudoOps::setAbsoluteOffset(Assembler& asmr, const char* linePtr)
     asmr.currentOutPos = value;
 }
 
-void AsmPseudoOps::doDefRegVar(Assembler& asmr, const char* pseudoOpPlace,
+void AsmPseudoOps::defRegVar(Assembler& asmr, const char* pseudoOpPlace,
                        const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
@@ -2588,7 +2588,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::putIntegers<uint64_t>(*this, stmtPlace, linePtr);
             break;
         case ASMOP_REGVAR:
-            AsmPseudoOps::doDefRegVar(*this, stmtPlace, linePtr);
+            AsmPseudoOps::defRegVar(*this, stmtPlace, linePtr);
             break;
         case ASMOP_REPT:
             AsmPseudoOps::doRepeat(*this, stmtPlace, linePtr);

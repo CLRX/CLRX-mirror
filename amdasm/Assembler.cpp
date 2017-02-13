@@ -2436,6 +2436,11 @@ bool Assembler::assemble()
             }
             else
             {   // regular labels
+                if (firstName==".")
+                {
+                    printError(stmtPlace, "Symbol '.' can't be a label");
+                    break;
+                }
                 /*std::pair<AsmSymbolMap::iterator, bool> res = 
                         currentScope->symbolMap.insert(
                             std::make_pair(firstName, AsmSymbol()));*/
