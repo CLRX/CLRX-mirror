@@ -2013,7 +2013,7 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* symNamePlace = linePtr;
-    CString symName = extractSymName(linePtr, end, false);
+    CString symName = extractScopedSymName(linePtr, end, false);
     bool good = true;
     if (symName.empty())
     {
