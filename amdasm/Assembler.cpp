@@ -1093,28 +1093,43 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
     
     Assembler::ParseState state = Assembler::ParseState::PARSED;
     bool symHasValue;
-    AsmScope* outScope;
-    CString sameSymName;
-    entry = findSymbolInScope(symName, outScope, sameSymName);
-    if (sameSymName == ".")
-    {   // illegal name of symbol (must be in global)
-        printError(startPlace, "Symbol '.' can be only in global scope");
-        return Assembler::ParseState::FAILED;
-    }
-    if (!dontCreateSymbol && entry==nullptr)
-    {   // create symbol if not found
-        std::pair<AsmSymbolMap::iterator, bool> res =
-                outScope->symbolMap.insert(std::make_pair(sameSymName, AsmSymbol()));
-        entry = &*res.first;
-        symHasValue = res.first->second.hasValue;
+    if (!isDigit(symName.front()))
+    {
+        AsmScope* outScope;
+        CString sameSymName;
+        entry = findSymbolInScope(symName, outScope, sameSymName);
+        if (sameSymName == ".")
+        {   // illegal name of symbol (must be in global)
+            printError(startPlace, "Symbol '.' can be only in global scope");
+            return Assembler::ParseState::FAILED;
+        }
+        if (!dontCreateSymbol && entry==nullptr)
+        {   // create symbol if not found
+            std::pair<AsmSymbolMap::iterator, bool> res =
+                    outScope->symbolMap.insert(std::make_pair(sameSymName, AsmSymbol()));
+            entry = &*res.first;
+            symHasValue = res.first->second.hasValue;
+        }
+        else // only find symbol and set isDefined and entry
+            symHasValue = (entry != nullptr && entry->second.hasValue);
     }
     else
-    {   // only find symbol and set isDefined and entry
-        /*AsmSymbolMap::iterator it = globalScope.symbolMap.find(symName);
-        entry = (it != globalScope.symbolMap.end()) ? &*it : nullptr;
-        symHasValue = (it != globalScope.symbolMap.end() && it->second.hasValue);*/
-        symHasValue = (entry != nullptr && entry->second.hasValue);
+    {   // local labels is in global scope
+        if (!dontCreateSymbol)
+        {   // create symbol if not found
+            std::pair<AsmSymbolMap::iterator, bool> res =
+                    globalScope.symbolMap.insert(std::make_pair(symName, AsmSymbol()));
+            entry = &*res.first;
+            symHasValue = res.first->second.hasValue;
+        }
+        else
+        {   // only find symbol and set isDefined and entry
+            AsmSymbolMap::iterator it = globalScope.symbolMap.find(symName);
+            entry = (it != globalScope.symbolMap.end()) ? &*it : nullptr;
+            symHasValue = (it != globalScope.symbolMap.end() && it->second.hasValue);
+        }
     }
+    
     if (isDigit(symName.front()) && symName[linePtr-startPlace-1] == 'b' && !symHasValue)
     {   // failed at finding
         std::string error = "Undefined previous local label '";
