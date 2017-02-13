@@ -1085,13 +1085,22 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
         return Assembler::ParseState::MISSING;
     }
     if (symName == ".") // any usage of '.' causes format initialization
+    {   // special case ('.' - always global)
         initializeOutputFormat();
+        entry = &*globalScope.symbolMap.find(".");
+        return Assembler::ParseState::PARSED;
+    }
     
     Assembler::ParseState state = Assembler::ParseState::PARSED;
     bool symHasValue;
     AsmScope* outScope;
     CString sameSymName;
     entry = findSymbolInScope(symName, outScope, sameSymName);
+    if (sameSymName == ".")
+    {   // illegal name of symbol (must be in global)
+        printError(startPlace, "Symbol '.' can be only in global scope");
+        return Assembler::ParseState::FAILED;
+    }
     if (!dontCreateSymbol && entry==nullptr)
     {   // create symbol if not found
         std::pair<AsmSymbolMap::iterator, bool> res =
@@ -1111,7 +1120,7 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
         std::string error = "Undefined previous local label '";
         error.append(symName.begin(), linePtr-startPlace);
         error += "'";
-        printError(linePtr, error.c_str());
+        printError(startPlace, error.c_str());
         state = Assembler::ParseState::FAILED;
     }
     
@@ -1385,6 +1394,13 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
              const char* linePtr, bool reassign, bool baseExpr)
 {
     skipSpacesToEnd(linePtr, line+lineSize);
+    size_t symNameLength = symbolName.size();
+    if (symNameLength >= 3 && symbolName.compare(symNameLength-3, 3, "::.")==0)
+    {
+        printError(symbolPlace, "Symbol '.' can be only in global scope");
+        return false;
+    }
+    
     if (linePtr!=line+lineSize && *linePtr=='%')
     {
         if (symbolName == ".")
