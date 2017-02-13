@@ -1806,10 +1806,6 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
             asmr.skipClauses();
             return;
         }
-        if (asmr.checkReservedName(macroName))
-            asmr.printWarning(pseudoOpPlace, (std::string(
-                    "Attempt to redefine instruction or prefix '")+macroName.c_str()+
-                    "' as macro.").c_str());
         // create a macro
         RefPtr<const AsmMacro> macro(new AsmMacro(asmr.getSourcePos(pseudoOpPlace),
                         Array<AsmMacroArg>(args.begin(), args.end())));

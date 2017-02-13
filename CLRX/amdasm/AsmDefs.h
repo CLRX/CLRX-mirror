@@ -583,6 +583,7 @@ struct AsmScope
     
     void startUsingScope(AsmScope* scope);
     void stopUsingScope(AsmScope* scope);
+    void deleteSymbolsRecursively();
 };
 
 class ISAUsageHandler;

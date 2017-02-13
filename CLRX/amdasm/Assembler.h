@@ -292,6 +292,7 @@ private:
     AsmScope globalScope;
     AsmMacroMap macroMap;
     std::stack<AsmScope*> scopeStack;
+    std::vector<AsmScope*> abandonedScopes;
     AsmScope* currentScope;
     KernelMap kernelMap;
     std::vector<AsmKernel> kernels;
@@ -450,8 +451,6 @@ private:
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
                   cxbyte signess = WS_BOTH);
     
-    bool checkReservedName(const CString& name);
-    
     bool isAddressableSection() const
     {
         return currentSection==ASMSECT_ABS ||
@@ -477,7 +476,10 @@ private:
     void handleRegionsOnKernels(const std::vector<cxuint>& newKernels,
                 const std::vector<cxuint>& oldKernels, cxuint codeSection);
     
-protected:    
+    void tryToResolveSymbols(AsmScope* scope);
+    void printUnresolvedSymbols(AsmScope* scope);
+    
+protected:
     /// helper for testing
     bool readLine();
 public:
