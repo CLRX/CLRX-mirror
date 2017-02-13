@@ -425,6 +425,12 @@ void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char*
         asmr.printError(symNamePlace, "Illegal symbol name");
         return;
     }
+    size_t symNameLength = symName.size();
+    if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
+    {
+        asmr.printError(symNamePlace, "Symbol '.' can be only in global scope");
+        return;
+    }
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
