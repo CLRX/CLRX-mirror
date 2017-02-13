@@ -418,6 +418,7 @@ private:
         if (symEntry==nullptr)
         {
             auto res = outScope->symbolMap.insert({ sameSymName, symbol });
+            res.first->second.scope = outScope;
             return std::make_pair(&*res.first, res.second);
         }
         return std::make_pair(symEntry, false);

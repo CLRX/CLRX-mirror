@@ -419,7 +419,7 @@ void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char*
     skipSpacesToEnd(linePtr, end);
     
     const char* symNamePlace = linePtr;
-    const CString symName = extractSymName(linePtr, end, false);
+    const CString symName = extractScopedSymName(linePtr, end, false);
     if (symName.empty())
     {
         asmr.printError(symNamePlace, "Illegal symbol name");
@@ -429,9 +429,8 @@ void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char*
         return;
     
     cxuint driverVersion = handler.getDriverVersion();
-    std::pair<AsmSymbolMap::iterator, bool> res = asmr.currentScope->symbolMap.insert(
-                std::make_pair(symName, AsmSymbol(asmr.currentScope,
-                                      ASMSECT_ABS, driverVersion)));
+    std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
+                AsmSymbol(asmr.currentScope, ASMSECT_ABS, driverVersion));
     if (!res.second)
     {   // found
         if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
