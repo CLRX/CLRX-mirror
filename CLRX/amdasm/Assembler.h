@@ -578,8 +578,12 @@ public:
     /// add regvar
     bool addRegVar(const CString& name, const AsmRegVar& var)
     { return insertRegVarInScope(name, var).second; }
-    // get regvar by name
+    /// get regvar by name
     bool getRegVarEntry(const CString& name, const AsmRegVarEntry*& regVarEntry);
+    
+    /// get global scope
+    const AsmScope& getGlobalScope() const
+    { return globalScope; }
     
     /// returns true if symbol contains absolute value
     bool isAbsoluteSymbol(const AsmSymbol& symbol) const;

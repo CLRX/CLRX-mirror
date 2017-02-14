@@ -1943,6 +1943,11 @@ void AsmPseudoOps::openScope(Assembler& asmr, const char* pseudoOpPlace,
     skipSpacesToEnd(linePtr, end);
     CString scopeName = extractSymName(linePtr, end, false);
     bool good = true;
+    if (asmr.scopeStack.size() == 1000)
+    {
+        asmr.printError(pseudoOpPlace, "Scope level is greater than 1000");
+        good = false;
+    }
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     

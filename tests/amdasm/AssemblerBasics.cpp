@@ -88,7 +88,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     assertValue(testName, "symbols.length", testCase.symbols.size(), resSymbolMap.size());
     
     std::vector<const AsmSymbolEntry*> symEntries;
-    for (const AsmSymbolEntry& symEntry: assembler.getSymbolMap())
+    for (const AsmSymbolEntry& symEntry: resSymbolMap)
         symEntries.push_back(&symEntry);
     std::sort(symEntries.begin(), symEntries.end(),
                 [](const AsmSymbolEntry* s1, const AsmSymbolEntry* s2)
