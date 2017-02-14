@@ -29,6 +29,24 @@
 
 using namespace CLRX;
 
+typedef std::pair<CString, const AsmSymbol*> AsmSymbolEntryC;
+
+static void pushSymbolsFromScopes(const AsmScope& scope,
+            std::vector<AsmSymbolEntryC>& symEntries, const std::string& prefix)
+{
+    for (const AsmSymbolEntry& symEntry: scope.symbolMap)
+    {
+        std::string symName = prefix+symEntry.first.c_str();
+        symEntries.push_back(AsmSymbolEntryC(CString(symName.c_str()), &symEntry.second));
+    }
+    
+    for (const auto& scopeEntry: scope.scopeMap)
+    {
+        std::string newPrefix = prefix+scopeEntry.first.c_str()+"::";
+        pushSymbolsFromScopes(*scopeEntry.second, symEntries, newPrefix);
+    }
+}
+
 static void testAssembler(cxuint testId, const AsmTestCase& testCase)
 {
     std::istringstream input(testCase.input);
@@ -84,15 +102,13 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
                     resSection.content);
     }
     // check symbols
-    const AsmSymbolMap& resSymbolMap = assembler.getSymbolMap();
-    assertValue(testName, "symbols.length", testCase.symbols.size(), resSymbolMap.size());
-    
-    std::vector<const AsmSymbolEntry*> symEntries;
-    for (const AsmSymbolEntry& symEntry: resSymbolMap)
-        symEntries.push_back(&symEntry);
+    std::vector<AsmSymbolEntryC> symEntries;
+    pushSymbolsFromScopes(assembler.getGlobalScope(), symEntries, "");
     std::sort(symEntries.begin(), symEntries.end(),
-                [](const AsmSymbolEntry* s1, const AsmSymbolEntry* s2)
-                { return s1->first < s2->first; });
+                [](const AsmSymbolEntryC& s1, const AsmSymbolEntryC& s2)
+                { return s1.first < s2.first; });
+    
+    assertValue(testName, "symbols.length", testCase.symbols.size(), symEntries.size());
     
     for (cxuint i = 0; i < testCase.symbols.size(); i++)
     {
@@ -101,25 +117,25 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
         snprintf(buf, 32, "Symbol#%u.", i);
         std::string caseName(buf);
         
-        const AsmSymbolEntry& resSymbol = *(symEntries[i]);
+        const AsmSymbolEntryC& resSymbol = symEntries[i];
         const SymEntry& expSymbol = testCase.symbols[i];
         assertString(testName,caseName+"name", expSymbol.name, resSymbol.first);
-        assertValue(testName,caseName+"value", expSymbol.value, resSymbol.second.value);
+        assertValue(testName,caseName+"value", expSymbol.value, resSymbol.second->value);
         assertValue(testName,caseName+"sectId", expSymbol.sectionId,
-                     resSymbol.second.sectionId);
-        assertValue(testName,caseName+"size", expSymbol.size, resSymbol.second.size);
+                     resSymbol.second->sectionId);
+        assertValue(testName,caseName+"size", expSymbol.size, resSymbol.second->size);
         assertValue(testName,caseName+"isDefined", int(expSymbol.hasValue),
-                    int(resSymbol.second.hasValue));
+                    int(resSymbol.second->hasValue));
         assertValue(testName,caseName+"onceDefined", int(expSymbol.onceDefined),
-                    int(resSymbol.second.onceDefined));
+                    int(resSymbol.second->onceDefined));
         assertValue(testName,caseName+"base", int(expSymbol.base),
-                    int(resSymbol.second.base));
+                    int(resSymbol.second->base));
         assertValue(testName,caseName+"info", int(expSymbol.info),
-                    int(resSymbol.second.info));
+                    int(resSymbol.second->info));
         assertValue(testName,caseName+"other", int(expSymbol.other),
-                    int(resSymbol.second.other));
+                    int(resSymbol.second->other));
         assertValue(testName,caseName+"regRange", int(expSymbol.regRange),
-                    int(resSymbol.second.regRange));
+                    int(resSymbol.second->regRange));
     }
     errorStream.flush();
     printStream.flush();

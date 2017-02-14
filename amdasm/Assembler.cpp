@@ -1969,7 +1969,7 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast,
 }
 
 AsmSymbolEntry* Assembler::findSymbolInScope(const CString& symName, AsmScope*& scope,
-            CString& sameSymName)
+            CString& sameSymName, bool insertMode)
 {
     const char* lastStep = nullptr;
     scope = getRecurScope(symName, true, &lastStep);
@@ -1981,6 +1981,8 @@ AsmSymbolEntry* Assembler::findSymbolInScope(const CString& symName, AsmScope*& 
         return nullptr;
     // otherwise is symName is not normal symName
     scope = currentScope;
+    if (insertMode)
+        return nullptr;
     
     for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
     {  // find this scope
@@ -2003,7 +2005,7 @@ std::pair<AsmSymbolEntry*, bool> Assembler::insertSymbolInScope(const CString& s
 {
     AsmScope* outScope;
     CString sameSymName;
-    AsmSymbolEntry* symEntry = findSymbolInScope(symName, outScope, sameSymName);
+    AsmSymbolEntry* symEntry = findSymbolInScope(symName, outScope, sameSymName, true);
     if (symEntry==nullptr)
     {
         auto res = outScope->symbolMap.insert({ sameSymName, symbol });
@@ -2013,7 +2015,7 @@ std::pair<AsmSymbolEntry*, bool> Assembler::insertSymbolInScope(const CString& s
 }
 
 AsmRegVarEntry* Assembler::findRegVarInScope(const CString& rvName, AsmScope*& scope,
-                      CString& sameRvName)
+                      CString& sameRvName, bool insertMode)
 {
     const char* lastStep = nullptr;
     scope = getRecurScope(rvName, true, &lastStep);
@@ -2025,6 +2027,8 @@ AsmRegVarEntry* Assembler::findRegVarInScope(const CString& rvName, AsmScope*& s
         return nullptr;
     // otherwise is rvName is not normal rvName
     scope = currentScope;
+    if (insertMode)
+        return nullptr;
     
     for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
     {  // find this scope
@@ -2047,7 +2051,7 @@ std::pair<AsmRegVarEntry*, bool> Assembler::insertRegVarInScope(const CString& r
 {
     AsmScope* outScope;
     CString sameRvName;
-    AsmRegVarEntry* rvEntry = findRegVarInScope(rvName, outScope, sameRvName);
+    AsmRegVarEntry* rvEntry = findRegVarInScope(rvName, outScope, sameRvName, true);
     if (rvEntry==nullptr)
     {
         auto res = outScope->regVarMap.insert({ sameRvName, regVar });

@@ -1209,5 +1209,98 @@ loop:   .rept 10
         { { ".", 4U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
+    /*
+     * Scopes tests
+     */
+    /* 1 standard symbol assignment */
+    {   R"ffDXD(sym1 = 7
+        .scope ala
+        sym2 = 81
+        sym3 = ::beata::sym7*sym4
+        sym4 = ::beata::sym5*::beata::sym6+::beata::sym7 - sym1
+        .ends
+        .scope beata
+        sym5 = 17
+        sym6 = 43
+        sym7 = 91
+        .ends)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { }, { },
+        {
+            { ".", 0, 0, 0, true, false, false, 0, 0 },
+            { "ala::sym2", 81, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::sym3", 91*(17*43+91-7), ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::sym4", 17*43+91-7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beata::sym5", 17, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beata::sym6", 43, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beata::sym7", 91, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym1", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
+    /* 1 standard symbol assignment 2 */
+    {   R"ffDXD(sym1 = 7
+        .scope beata
+        sym5 = 17
+        sym6 = 43
+        sym7 = 91
+        .ends
+        .scope ala
+        sym2 = 81
+        sym3 = beata::sym7*sym4
+        sym4 = beata::sym5*beata::sym6+beata::sym7 - sym1
+        .ends
+        )ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { }, { },
+        {
+            { ".", 0, 0, 0, true, false, false, 0, 0 },
+            { "ala::sym2", 81, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::sym3", 91*(17*43+91-7), ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::sym4", 17*43+91-7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beata::sym5", 17, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beata::sym6", 43, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beata::sym7", 91, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym1", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
+    /* 2 - visibility */
+    {
+        R"ffDXD(.rawcode
+            .byte 0
+            sym1 = 5
+            .byte sym1
+            .scope
+                sym1 = 7
+                .byte sym1
+                .scope
+                    sym1 = 9
+                    .byte sym1
+                .ends
+                .byte sym1
+            .ends
+            .byte sym1
+            
+            sym1 = 15
+            .byte sym1
+            .scope ala
+                sym1 = 17
+                .byte sym1
+                .scope beta
+                    sym1 = 19
+                    .byte sym1
+                .ends
+                .byte sym1
+            .ends
+            .byte sym1
+            .byte ala::beta::sym1
+        )ffDXD",
+        BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
+            { 0, 5, 7, 9, 7, 5, 15, 17, 19, 17, 15, 19 } } },
+        {
+            { ".", 12, 0, 0, true, false, false, 0, 0 },
+            { "ala::beta::sym1", 19, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::sym1", 17, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym1", 15, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+        }, true, "", ""
+    },
     { nullptr }
 };

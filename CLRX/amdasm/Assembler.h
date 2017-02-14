@@ -408,13 +408,13 @@ private:
     // find symbol in scopes
     // scope - return scope from scoped name
     AsmSymbolEntry* findSymbolInScope(const CString& symName, AsmScope*& scope,
-                      CString& sameSymName);
+                      CString& sameSymName, bool insertMode = false);
     // similar to map::insert, but returns pointer
     std::pair<AsmSymbolEntry*, bool> insertSymbolInScope(const CString& symName,
                  const AsmSymbol& symbol);
     // scope - return scope from scoped name
     AsmRegVarEntry* findRegVarInScope(const CString& rvName, AsmScope*& scope,
-                      CString& sameRvName);
+                      CString& sameRvName, bool insertMode = false);
     // similar to map::insert, but returns pointer
     std::pair<AsmRegVarEntry*, bool> insertRegVarInScope(const CString& rvName,
                  const AsmRegVar& regVar);
