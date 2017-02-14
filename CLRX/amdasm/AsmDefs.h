@@ -142,7 +142,6 @@ struct AsmScope;
 /// assembler symbol structure
 struct AsmSymbol
 {
-    const AsmScope* scope;
     cxuint refCount;    ///< reference counter (for internal use only)
     cxuint sectionId;       ///< section id
     cxbyte info;           ///< ELF symbol info
@@ -164,24 +163,22 @@ struct AsmSymbol
     std::vector<AsmExprSymbolOccurrence> occurrencesInExprs;
     
     /// empty constructor
-    explicit AsmSymbol(bool _onceDefined = false) : scope(nullptr),
+    explicit AsmSymbol(bool _onceDefined = false) :
             refCount(1), sectionId(ASMSECT_ABS), info(0), other(0), hasValue(false),
             onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
             regRange(false), value(0), size(0), expression(nullptr)
     { }
     /// constructor with expression
-    explicit AsmSymbol(const AsmScope* _scope, AsmExpression* expr,
-                       bool _onceDefined = false, bool _base = false) :
-            scope(_scope), refCount(1), sectionId(ASMSECT_ABS), info(0), other(0),
-            hasValue(false), onceDefined(_onceDefined), resolving(false), base(_base),
+    explicit AsmSymbol(AsmExpression* expr, bool _onceDefined = false, bool _base = false) :
+            refCount(1), sectionId(ASMSECT_ABS), info(0), other(0), hasValue(false),
+            onceDefined(_onceDefined), resolving(false), base(_base),
             snapshot(false), regRange(false), value(0), size(0), expression(expr)
     { }
     /// constructor with value and section id
-    explicit AsmSymbol(const AsmScope* _scope, cxuint _sectionId, uint64_t _value,
-                       bool _onceDefined = false) :
-            scope(_scope), refCount(1), sectionId(_sectionId), info(0), other(0),
-            hasValue(true), onceDefined(_onceDefined), resolving(false), base(false),
-            snapshot(false), regRange(false), value(_value), size(0), expression(nullptr)
+    explicit AsmSymbol(cxuint _sectionId, uint64_t _value, bool _onceDefined = false) :
+            refCount(1), sectionId(_sectionId), info(0), other(0), hasValue(true),
+            onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
+            regRange(false), value(_value), size(0), expression(nullptr)
     { }
     /// destructor
     ~AsmSymbol();
@@ -490,7 +487,6 @@ struct AsmScope;
 
 struct AsmRegVar
 {
-    const AsmScope* scope;
     cxuint type;    // scalar/vector/other
     uint16_t size;  // in regs
 };

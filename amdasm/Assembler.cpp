@@ -24,7 +24,6 @@
 #include <vector>
 #include <stack>
 #include <deque>
-#include <unordered_set>
 #include <utility>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
@@ -719,8 +718,7 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
           driverVersion(0),
           _64bit(false),
           isaAssembler(nullptr),
-          globalScope({nullptr,{std::make_pair(".",
-                  AsmSymbol(&globalScope, 0, uint64_t(0)))}}),
+          globalScope({nullptr,{std::make_pair(".", AsmSymbol(0, uint64_t(0)))}}),
           currentScope(&globalScope),
           flags(_flags), 
           lineSize(0), line(nullptr),
@@ -756,8 +754,7 @@ Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
           driverVersion(0),
           _64bit(false),
           isaAssembler(nullptr),
-          globalScope({nullptr,{std::make_pair(".",
-                  AsmSymbol(&globalScope, 0, uint64_t(0)))}}),
+          globalScope({nullptr,{std::make_pair(".", AsmSymbol(0, uint64_t(0)))}}),
           currentScope(&globalScope),
           flags(_flags), 
           lineSize(0), line(nullptr),
@@ -2010,7 +2007,6 @@ std::pair<AsmSymbolEntry*, bool> Assembler::insertSymbolInScope(const CString& s
     if (symEntry==nullptr)
     {
         auto res = outScope->symbolMap.insert({ sameSymName, symbol });
-        res.first->second.scope = outScope;
         return std::make_pair(&*res.first, res.second);
     }
     return std::make_pair(symEntry, false);
@@ -2055,7 +2051,6 @@ std::pair<AsmRegVarEntry*, bool> Assembler::insertRegVarInScope(const CString& r
     if (rvEntry==nullptr)
     {
         auto res = outScope->regVarMap.insert({ sameRvName, regVar });
-        res.first->second.scope = outScope;
         return std::make_pair(&*res.first, res.second);
     }
     return std::make_pair(rvEntry, false);
@@ -2483,8 +2478,7 @@ bool Assembler::assemble()
     
     for (const DefSym& defSym: defSyms)
         if (defSym.first!=".")
-            globalScope.symbolMap[defSym.first] =
-                    AsmSymbol(&globalScope, ASMSECT_ABS, defSym.second);
+            globalScope.symbolMap[defSym.first] = AsmSymbol(ASMSECT_ABS, defSym.second);
         else if ((flags & ASM_WARNINGS) != 0)// ignore for '.'
             messageStream << "<command-line>: Warning: Definition for symbol '.' "
                     "was ignored" << std::endl;
