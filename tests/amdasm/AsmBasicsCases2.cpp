@@ -1302,5 +1302,139 @@ loop:   .rept 10
             { "sym1", 15, ASMSECT_ABS, 0, true, false, false, 0, 0 },
         }, true, "", ""
     },
+    /* 2 - visibility 2 */
+    {
+        R"ffDXD(.rawcode
+            .byte 0
+            sym1 = 1
+            sym2 = 2
+            sym3 = 3
+            sym4 = 4
+            .scope ala
+                .scope x1
+                    sym1 = 9
+                    sym4 = 10
+                    sym8 = 25
+                    sym9 = 30
+                .ends
+                .scope x2
+                    sym2 = 8
+                    sym3 = 11
+                    sym8 = 26
+                    sym9 = 31
+                .ends
+                sym1 = 6
+                sym3 = 7
+            .ends
+            .scope beta
+                sym2 = 12
+                .scope x1
+                    sym1 = 14
+                    sym4 = 15
+                    sym8 = 27
+                .ends
+                .scope x2
+                    sym2 = 16
+                    sym3 = 17
+                .ends
+                .scope y2
+                    sym2 = 19
+                    sym3 = 20
+                    sym4 = 22
+                .ends
+                sym3 = 13
+            .ends
+            .byte sym1,sym2,sym3,sym4
+            .scope ala
+                .byte sym1,sym2,sym3,sym4
+                .scope x1
+                    .byte sym1,sym2,sym3,sym4
+                .ends
+                .scope x2
+                    .byte sym1,sym2,sym3,sym4
+                .ends
+            .ends
+            .scope beta
+                .byte sym1,sym2,sym3,sym4
+                .scope x1
+                    .byte sym1,sym2,sym3,sym4
+                .ends
+                .scope x2
+                    .byte sym1,sym2,sym3,sym4
+                .ends
+                .scope y2
+                    .byte sym1,sym2,sym3,sym4
+                .ends
+            .ends
+            # using
+            .using ::ala::x1
+            .byte sym1,sym2,sym3,sym4,sym8
+            .using ::ala::x2
+            .byte sym1,sym2,sym3,sym4,sym8
+            .unusing ::ala::x2
+            .byte sym1,sym2,sym3,sym4,sym8
+            .unusing ::ala::x1
+            .using ::ala::x2
+            .byte sym1,sym2,sym3,sym4,sym8
+            .using ::ala::x1
+            .byte sym1,sym2,sym3,sym4,sym8
+            .using ::beta::x1
+            .scope ala
+                .using x2
+                .byte sym1,sym2,sym3,sym4,sym8
+                .using x1
+                .byte sym1,sym2,sym3,sym4,sym8
+            .ends
+            .byte sym1,sym2,sym3,sym4,sym8
+            .byte sym1,sym2,sym3,sym4,sym8,sym9
+        )ffDXD",
+        BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
+            { 0, 1, 2, 3, 4,
+                6, 2, 7, 4,
+                9, 2, 7, 10,
+                6, 8, 11, 4,
+                1, 12, 13, 4,
+                14, 12, 13, 15,
+                1, 16, 17, 4,
+                1, 19, 20, 22,
+                1, 2, 3, 4, 25,
+                1, 2, 3, 4, 26,
+                1, 2, 3, 4, 25,
+                1, 2, 3, 4, 26,
+                1, 2, 3, 4, 25,
+                6, 8, 7, 4, 26,
+                6, 8, 7, 10, 25,
+                1, 2, 3, 4, 27,
+                1, 2, 3, 4, 27, 30,
+            } } },
+        {
+            { ".", 79, 0, 0, true, false, false, 0, 0 },
+            { "ala::sym1", 6, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::sym3", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::x1::sym1", 9, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::x1::sym4", 10, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::x1::sym8", 25, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::x1::sym9", 30, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::x2::sym2", 8, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::x2::sym3", 11, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::x2::sym8", 26, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::x2::sym9", 31, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beta::sym2", 12, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beta::sym3", 13, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beta::x1::sym1", 14, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beta::x1::sym4", 15, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beta::x1::sym8", 27, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beta::x2::sym2", 16, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beta::x2::sym3", 17, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beta::y2::sym2", 19, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beta::y2::sym3", 20, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "beta::y2::sym4", 22, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym1", 1, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym2", 2, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym3", 3, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym4", 4, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
     { nullptr }
 };
