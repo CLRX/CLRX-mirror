@@ -38,7 +38,9 @@ ADD_EXECUTABLE(AsmExprParse AsmExprParse.cpp)
 TEST_LINK_LIBRARIES(AsmExprParse CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AsmExprParse AsmExprParse)
 
-ADD_EXECUTABLE(AssemblerBasics AssemblerBasics.cpp)
+ADD_EXECUTABLE(AssemblerBasics AssemblerBasics.cpp
+        AsmBasicsCases1.cpp
+        AsmBasicsCases2.cpp)
 TEST_LINK_LIBRARIES(AssemblerBasics CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AssemblerBasics AssemblerBasics)
 

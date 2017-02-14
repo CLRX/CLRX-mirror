@@ -133,6 +133,9 @@ tests/CMakeLists.txt -text svneol=unset#text/plain
 tests/TestUtils.h -text
 tests/amdasm/AsmAmdCL2Format.cpp -text
 tests/amdasm/AsmAmdFormat.cpp -text
+tests/amdasm/AsmBasics.h -text
+tests/amdasm/AsmBasicsCases1.cpp -text
+tests/amdasm/AsmBasicsCases2.cpp -text
 tests/amdasm/AsmExprParse.cpp -text
 tests/amdasm/AsmGalliumFormat.cpp -text
 tests/amdasm/AsmROCmFormat.cpp -text
