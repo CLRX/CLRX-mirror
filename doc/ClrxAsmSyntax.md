@@ -91,7 +91,13 @@ Absolute section is only addressable section. It can be used for defining struct
 In absolute section output counter can be moved backward (this is special exception
 for absolute section).
 
-Any symbol that refer to some code place refer to sections.
+Any symbol that refer to some code place refer to sections. Between switching kernels or
+global layout, the last used sections are stored. Next usage of kernel or global layout
+causes switching to this last section.
+
+Special type of sections is configuragle sections. These section does not hold any
+content (bytes), instead they stores configuration of the kernel or program which
+is defined by specific pseudo operations. Any putting data to these sections is illegal.
 
 ### Literals
 
