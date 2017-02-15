@@ -2095,8 +2095,11 @@ bool Assembler::popScope()
     if (currentScope->local)
     {   // delete scope
         currentScope->parent->scopeMap.erase("");
+        const bool oldResolvingRelocs = resolvingRelocs;
+        resolvingRelocs = true; // allow to resolve relocations
         tryToResolveSymbols(currentScope);
         printUnresolvedSymbols(currentScope);
+        resolvingRelocs = oldResolvingRelocs;
         currentScope->deleteSymbolsRecursively();
         abandonedScopes.push_back(currentScope);
     }
