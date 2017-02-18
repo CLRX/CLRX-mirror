@@ -1330,8 +1330,7 @@ loop:   .rept 10
         }, true, "", ""
     },
     /* 59 - visibility 2 */
-    {
-        R"ffDXD(.rawcode
+    {   R"ffDXD(.rawcode
             .byte 0
             sym1 = 1
             sym2 = 2
@@ -1462,6 +1461,93 @@ loop:   .rept 10
             { "sym2", 2, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "sym3", 3, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "sym4", 4, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
+    /* 60 - scope finding */
+    {   R"ffDXD(.rawcode
+        .byte 0
+        obj = 1
+        .scope ala
+            obj = 2
+            .scope beta
+                obj = 3
+                .scope ala
+                    obj = 4
+                .ends
+                .scope ceta
+                    obj = 5
+                .ends
+            .ends
+            .scope ceta
+                obj = 6
+                .scope beta
+                    obj = 7
+                .ends
+                .scope ceta
+                    obj = 8
+                .ends
+                .scope buru
+                    obj = 9
+                .ends
+            .ends
+            .scope linux
+                obj = 10
+                .scope wifi
+                    obj = 11
+                .ends
+                .scope ala
+                    obj = 12
+                .ends
+            .ends
+        .ends
+        .byte obj, ala::obj, ala::beta::obj, ala::beta::ala::obj, ala::beta::ceta::obj
+        .byte ala::ceta::obj, ala::ceta::beta::obj, ala::ceta::ceta::obj
+        .byte ala::ceta::buru::obj, ala::linux::obj, ala::linux::wifi::obj
+        .byte ala::linux::ala::obj
+        # inside scopes
+        .scope ala
+            .scope beta
+                # linux::beta::obj created because not scope found by first scope name
+                .byte ala::obj, beta::obj, ceta::obj, ceta::beta::obj, linux::ala::obj
+                .byte ::ala::obj, ::obj
+            .ends
+            .scope ceta
+                # linux::beta::obj created because not scope found by first scope name
+                # from current scope
+                .byte ala::obj, beta::obj, ceta::obj, ceta::beta::obj, ceta::ceta::obj
+            .ends
+            .scope new
+                .byte ala::obj, beta::obj, ceta::obj, ceta::beta::obj, ceta::ceta::obj
+            .ends
+            .scope
+                .byte ala::obj, beta::obj, ceta::obj, ceta::beta::obj, ceta::ceta::obj
+                .byte ::ala::obj, linux::wifi::obj
+            .ends
+        .ends
+        )ffDXD",
+        BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
+            { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+              4, 3, 5, 0, 12, 2, 1, 2, 7, 8, 0, 0,
+              2, 3, 6, 7, 8, 2, 3, 6, 7, 8, 2, 11
+            } } },
+        {
+            { ".", 37, 0, 0, true, false, false, 0, 0 },
+            { "ala::beta::ala::obj", 4, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::beta::ceta::beta::obj", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
+            { "ala::beta::ceta::obj", 5, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::beta::obj", 3, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::ceta::beta::obj", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::ceta::buru::obj", 9, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::ceta::ceta::beta::obj", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
+            { "ala::ceta::ceta::ceta::obj", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
+            { "ala::ceta::ceta::obj", 8, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::ceta::obj", 6, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::linux::ala::obj", 12, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::linux::obj", 10, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::linux::wifi::obj", 11, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::obj", 2, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "obj", 1, ASMSECT_ABS, 0, true, false, false, 0, 0 }
         }, true, "", ""
     },
     { nullptr }
