@@ -1446,6 +1446,10 @@ loop:   .rept 10
                 .using xela::x2
                 .byte sym8, sym9
             .ends
+            .scope looper
+                .using ::looper # !!!
+                .byte somebody
+            .ends
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
         { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
@@ -1470,10 +1474,10 @@ loop:   .rept 10
                 1, 2, 3, 4, 0, 0,
                 // recursive using
                 26, 31, 26, 31, 26, 31,
-                25, 30, 26, 31
+                25, 30, 26, 31, 0
             } } },
         {
-            { ".", 95, 0, 0, true, false, false, 0, 0 },
+            { ".", 96, 0, 0, true, false, false, 0, 0 },
             { "ala::sym1", 6, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::sym3", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::x1::sym1", 9, ASMSECT_ABS, 0, true, false, false, 0, 0 },
@@ -1494,6 +1498,7 @@ loop:   .rept 10
             { "beta::y2::sym2", 19, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "beta::y2::sym3", 20, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "beta::y2::sym4", 22, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "looper::somebody", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
             { "sym1", 1, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "sym2", 2, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "sym3", 3, ASMSECT_ABS, 0, true, false, false, 0, 0 },

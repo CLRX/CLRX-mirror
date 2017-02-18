@@ -1906,14 +1906,17 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
     return ParseState::PARSED;
 }
 
-AsmScope* Assembler::findScopeInScope(AsmScope* scope, const CString& scopeName)
+AsmScope* Assembler::findScopeInScope(AsmScope* scope, const CString& scopeName,
+                  std::unordered_set<AsmScope*>& scopeSet)
 {
+    if (!scopeSet.insert(scope).second)
+        return nullptr; // if already exist, we do not search
     auto it = scope->scopeMap.find(scopeName);
     if (it != scope->scopeMap.end())
         return it->second;
     for (AsmScope* rootScope: scope->usedScopes)
     {
-        AsmScope* result = findScopeInScope(rootScope, scopeName);
+        AsmScope* result = findScopeInScope(rootScope, scopeName, scopeSet);
         if (result != nullptr)
             return result;
     }
@@ -1949,9 +1952,10 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast,
     if (scopeTrack.empty()) // no scope path
         return scope;
     
+    std::unordered_set<AsmScope*> scopeSet;
     for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
     {  // find this scope
-        AsmScope* newScope = findScopeInScope(scope2, scopeTrack[0]);
+        AsmScope* newScope = findScopeInScope(scope2, scopeTrack[0], scopeSet);
         if (newScope != nullptr)
         {
             scope = newScope->parent;
@@ -1966,14 +1970,16 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast,
 }
 
 AsmSymbolEntry* Assembler::findSymbolInScopeInt(AsmScope* scope,
-                    const CString& symName)
+                    const CString& symName, std::unordered_set<AsmScope*>& scopeSet)
 {
+    if (!scopeSet.insert(scope).second)
+        return nullptr; // if already exist, we do not search
     AsmSymbolMap::iterator it = scope->symbolMap.find(symName);
     if (it != scope->symbolMap.end())
         return &*it;
     for (AsmScope* rootScope: scope->usedScopes)
     {
-        AsmSymbolEntry* result = findSymbolInScopeInt(rootScope, symName);
+        AsmSymbolEntry* result = findSymbolInScopeInt(rootScope, symName, scopeSet);
         if (result != nullptr)
             return result;
     }
@@ -1985,7 +1991,8 @@ AsmSymbolEntry* Assembler::findSymbolInScope(const CString& symName, AsmScope*& 
 {
     const char* lastStep = nullptr;
     scope = getRecurScope(symName, true, &lastStep);
-    AsmSymbolEntry* foundSym = findSymbolInScopeInt(scope, lastStep);
+    std::unordered_set<AsmScope*> scopeSet;
+    AsmSymbolEntry* foundSym = findSymbolInScopeInt(scope, lastStep, scopeSet);
     sameSymName = lastStep;
     if (foundSym != nullptr)
         return foundSym;
@@ -1998,7 +2005,7 @@ AsmSymbolEntry* Assembler::findSymbolInScope(const CString& symName, AsmScope*& 
     
     for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
     {  // find this scope
-        foundSym = findSymbolInScopeInt(scope2, lastStep);
+        foundSym = findSymbolInScopeInt(scope2, lastStep, scopeSet);
         if (foundSym != nullptr)
             return foundSym;
     }
@@ -2019,14 +2026,17 @@ std::pair<AsmSymbolEntry*, bool> Assembler::insertSymbolInScope(const CString& s
     return std::make_pair(symEntry, false);
 }
 
-AsmRegVarEntry* Assembler::findRegVarInScopeInt(AsmScope* scope, const CString& rvName)
+AsmRegVarEntry* Assembler::findRegVarInScopeInt(AsmScope* scope, const CString& rvName,
+                std::unordered_set<AsmScope*>& scopeSet)
 {
+    if (!scopeSet.insert(scope).second)
+        return nullptr; // if already exist, we do not search
     AsmRegVarMap::iterator it = scope->regVarMap.find(rvName);
     if (it != scope->regVarMap.end())
         return &*it;
     for (AsmScope* rootScope: scope->usedScopes)
     {
-        AsmRegVarEntry* result = findRegVarInScopeInt(rootScope, rvName);
+        AsmRegVarEntry* result = findRegVarInScopeInt(rootScope, rvName, scopeSet);
         if (result != nullptr)
             return result;
     }
@@ -2038,7 +2048,8 @@ AsmRegVarEntry* Assembler::findRegVarInScope(const CString& rvName, AsmScope*& s
 {
     const char* lastStep = nullptr;
     scope = getRecurScope(rvName, true, &lastStep);
-    AsmRegVarEntry* foundRv = findRegVarInScopeInt(scope, lastStep);
+    std::unordered_set<AsmScope*> scopeSet;
+    AsmRegVarEntry* foundRv = findRegVarInScopeInt(scope, lastStep, scopeSet);
     sameRvName = lastStep;
     if (foundRv != nullptr)
         return foundRv;
@@ -2051,7 +2062,7 @@ AsmRegVarEntry* Assembler::findRegVarInScope(const CString& rvName, AsmScope*& s
     
     for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
     {  // find this scope
-        foundRv = findRegVarInScopeInt(scope2, lastStep);
+        foundRv = findRegVarInScopeInt(scope2, lastStep, scopeSet);
         if (foundRv != nullptr)
             return foundRv;
     }
@@ -2074,7 +2085,8 @@ std::pair<AsmRegVarEntry*, bool> Assembler::insertRegVarInScope(const CString& r
 
 bool Assembler::getScope(AsmScope* parent, const CString& scopeName, AsmScope*& scope)
 {
-    AsmScope* foundScope = findScopeInScope(parent, scopeName);
+    std::unordered_set<AsmScope*> scopeSet;
+    AsmScope* foundScope = findScopeInScope(parent, scopeName, scopeSet);
     if (foundScope != nullptr)
     {
         scope = foundScope;

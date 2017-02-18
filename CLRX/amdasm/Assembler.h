@@ -403,13 +403,15 @@ private:
     bool popClause(const char* string, AsmClauseType clauseType);
     
     // recursive function to find scope in scope
-    AsmScope* findScopeInScope(AsmScope* scope, const CString& scopeName);
+    AsmScope* findScopeInScope(AsmScope* scope, const CString& scopeName,
+                    std::unordered_set<AsmScope*>& scopeSet);
     // find scope by identifier
     AsmScope* getRecurScope(const CString& scopePlace, bool ignoreLast = false,
                     const char** lastStep = nullptr);
     // find symbol in scopes
     // internal recursive function to find symbol in scope
-    AsmSymbolEntry* findSymbolInScopeInt(AsmScope* scope, const CString& symName);
+    AsmSymbolEntry* findSymbolInScopeInt(AsmScope* scope, const CString& symName,
+                    std::unordered_set<AsmScope*>& scopeSet);
     // scope - return scope from scoped name
     AsmSymbolEntry* findSymbolInScope(const CString& symName, AsmScope*& scope,
                       CString& sameSymName, bool insertMode = false);
@@ -418,7 +420,8 @@ private:
                  const AsmSymbol& symbol);
     
     // internal recursive function to find symbol in scope
-    AsmRegVarEntry* findRegVarInScopeInt(AsmScope* scope, const CString& rvName);
+    AsmRegVarEntry* findRegVarInScopeInt(AsmScope* scope, const CString& rvName,
+                    std::unordered_set<AsmScope*>& scopeSet);
     // scope - return scope from scoped name
     AsmRegVarEntry* findRegVarInScope(const CString& rvName, AsmScope*& scope,
                       CString& sameRvName, bool insertMode = false);
