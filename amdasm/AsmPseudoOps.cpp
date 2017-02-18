@@ -1998,7 +1998,7 @@ void AsmPseudoOps::stopUsing(Assembler& asmr, const char* pseudoOpPlace,
     const char* scopePathPlace = linePtr;
     CString scopePath = extractScopedSymName(linePtr, end);
     bool good = true;
-    if (scopePath.empty() || scopePath == "::")
+    if (scopePath == "::")
     {
         asmr.printError(scopePathPlace, "Expected scope path");
         good = false;
@@ -2006,7 +2006,10 @@ void AsmPseudoOps::stopUsing(Assembler& asmr, const char* pseudoOpPlace,
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     AsmScope* scope = asmr.getRecurScope(scopePath);
-    asmr.currentScope->stopUsingScope(scope);
+    if (!scopePath.empty())
+        asmr.currentScope->stopUsingScope(scope);
+    else // stop using all scopes
+        asmr.currentScope->stopUsingScopes();
 }
 
 void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)

@@ -579,6 +579,11 @@ struct AsmScope
     
     void startUsingScope(AsmScope* scope);
     void stopUsingScope(AsmScope* scope);
+    void stopUsingScopes()
+    {
+        usedScopes.clear();
+        usedScopesSet.clear();
+    }
     void deleteSymbolsRecursively();
 };
 

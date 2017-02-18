@@ -1413,6 +1413,8 @@ loop:   .rept 10
             .ends
             .byte sym1,sym2,sym3,sym4,sym8
             .byte sym1,sym2,sym3,sym4,sym8,sym9
+            .unusing
+            .byte sym1,sym2,sym3,sym4,sym8,sym9
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
         { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
@@ -1434,9 +1436,10 @@ loop:   .rept 10
                 6, 8, 7, 10, 25,
                 1, 2, 3, 4, 27,
                 1, 2, 3, 4, 27, 30,
+                1, 2, 3, 4, 0, 0,
             } } },
         {
-            { ".", 79, 0, 0, true, false, false, 0, 0 },
+            { ".", 85, 0, 0, true, false, false, 0, 0 },
             { "ala::sym1", 6, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::sym3", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::x1::sym1", 9, ASMSECT_ABS, 0, true, false, false, 0, 0 },
@@ -1460,7 +1463,9 @@ loop:   .rept 10
             { "sym1", 1, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "sym2", 2, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "sym3", 3, ASMSECT_ABS, 0, true, false, false, 0, 0 },
-            { "sym4", 4, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+            { "sym4", 4, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym8", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
+            { "sym9", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 }
         }, true, "", ""
     },
     /* 60 - scope finding */
@@ -1471,20 +1476,25 @@ loop:   .rept 10
             obj = 2
             .scope beta
                 obj = 3
+                obj4 = 28
                 .scope ala
                     obj = 4
                 .ends
                 .scope ceta
                     obj = 5
+                    obj4 = 26
                 .ends
             .ends
             .scope ceta
                 obj = 6
+                obj2 = 23
                 .scope beta
                     obj = 7
+                    obj4 = 27
                 .ends
                 .scope ceta
                     obj = 8
+                    obj2 = 24
                 .ends
                 .scope buru
                     obj = 9
@@ -1494,8 +1504,11 @@ loop:   .rept 10
                 obj = 10
                 .scope wifi
                     obj = 11
+                    obj1 = 22
+                    obj5 = 30
                 .ends
                 .scope ala
+                    obj3 = 25
                     obj = 12
                 .ends
             .ends
@@ -1524,28 +1537,68 @@ loop:   .rept 10
                 .byte ::ala::obj, linux::wifi::obj
             .ends
         .ends
+        # with using
+        .using ala::linux::wifi
+        .byte obj1
+        .scope new
+            .using ala::ceta
+            .byte obj2
+            .using ala::ceta::ceta
+            .byte obj2
+            .scope
+                .using ala::ceta::ceta
+                .using ala::ceta
+                .byte obj2
+            .ends
+            .scope
+                .using ala::ceta::beta
+                .using ala::beta::ceta
+                .using ala::linux::ala
+                .byte obj3, obj2, obj4, obj5
+            .ends
+        .ends
+        .scope ala
+            .using beta
+            .byte obj4
+            .scope ceta
+                .using beta
+                .byte obj4
+                .unusing
+                .byte obj4
+            .ends
+        .ends
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
         { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
             { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
               4, 3, 5, 0, 12, 2, 1, 2, 7, 8, 0, 0,
-              2, 3, 6, 7, 8, 2, 3, 6, 7, 8, 2, 11
+              2, 3, 6, 7, 8, 2, 3, 6, 7, 8, 2, 11,
+              22, 23, 24, 23, 25, 24, 26, 30,
+              28, 27, 28
             } } },
         {
-            { ".", 37, 0, 0, true, false, false, 0, 0 },
+            { ".", 48, 0, 0, true, false, false, 0, 0 },
             { "ala::beta::ala::obj", 4, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::beta::ceta::beta::obj", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
             { "ala::beta::ceta::obj", 5, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::beta::ceta::obj4", 26, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::beta::obj", 3, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::beta::obj4", 28, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::ceta::beta::obj", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::ceta::beta::obj4", 27, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::ceta::buru::obj", 9, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::ceta::ceta::beta::obj", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
             { "ala::ceta::ceta::ceta::obj", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
             { "ala::ceta::ceta::obj", 8, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::ceta::ceta::obj2", 24, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::ceta::obj", 6, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::ceta::obj2", 23, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::linux::ala::obj", 12, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::linux::ala::obj3", 25, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::linux::obj", 10, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::linux::wifi::obj", 11, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::linux::wifi::obj1", 22, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "ala::linux::wifi::obj5", 30, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::obj", 2, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "obj", 1, ASMSECT_ABS, 0, true, false, false, 0, 0 }
         }, true, "", ""
