@@ -1727,5 +1727,161 @@ loop:   .rept 10
             { "sym5", 31, ASMSECT_ABS, 0, true, true, false, 0, 0 }
         }, true, "", ""
     },
+    /* 62 - local labels and counter */
+    {   R"ffDXD(.rawcode
+            start: .int 3,5,6
+label1: vx0 = start
+        vx2 = label1+6
+        vx3 = label2+8
+        .int 1,2,3,4
+label2: .int 3,6,7
+        vx4 = 2f
+.scope ala
+2:      .int 11
+.ends
+        vx5 = 2b
+        vx6 = 2f
+        vx7 = 3f
+.scope ela
+2:      .int 12
+.ends
+.scope cola
+3:
+.ends
+        vx8 = 3b
+        # program counter
+.scope aaa
+        .int .-start
+.ends
+.scope bbb
+        . = 60
+.ends
+        )ffDXD",
+        BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
+            { 3, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0,
+              3, 0, 0 ,0, 4, 0, 0, 0, 3, 0, 0, 0, 6, 0, 0, 0, 7, 0, 0, 0,
+              11, 0, 0, 0, 12, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } } },
+        {
+            { ".", 60, 0, 0, true, false, false, 0, 0 },
+            { "2b", 44, 0, 0, true, false, false, 0, 0 },
+            { "2f", 44, 0, 0, false, false, false, 0, 0 },
+            { "3b", 48, 0, 0, true, false, false, 0, 0 },
+            { "3f", 48, 0, 0, false, false, false, 0, 0 },
+            { "label1", 12, 0, 0, true, true, false, 0, 0 },
+            { "label2", 28, 0, 0, true, true, false, 0, 0 },
+            { "start", 0, 0, 0, true, true, false, 0, 0 },
+            { "vx0", 0, 0, 0, true, false, false, 0, 0 },
+            { "vx2", 18, 0, 0, true, false, false, 0, 0 },
+            { "vx3", 36, 0, 0, true, false, false, 0, 0 },
+            { "vx4", 40, 0, 0, true, false, false, 0, 0 },
+            { "vx5", 40, 0, 0, true, false, false, 0, 0 },
+            { "vx6", 44, 0, 0, true, false, false, 0, 0 },
+            { "vx7", 48, 0, 0, true, false, false, 0, 0 },
+            { "vx8", 48, 0, 0, true, false, false, 0, 0 },
+        }, true, "", ""
+    },
+    /* 63 - get_version (AMD) */
+    {   R"ffDXD(            .amd
+            .kernel a
+            .driver_version 200206
+            .get_driver_version alaver
+.scope Vx
+            .get_driver_version alaver
+.ends
+.scope tx
+            totver = 65
+            blaver = 112
+            .get_driver_version totver
+.ends
+            .get_driver_version tx::blaver
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { "a" },
+        {
+            { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } },
+            { ".text", 0, AsmSectionType::CODE,
+                {  } }
+        },
+        {
+            { ".", 0U, 1, 0U, true, false, false, 0, 0 },
+            { "Vx::alaver", 200206U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "alaver", 200206U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "tx::blaver", 200206U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "tx::totver", 200206U, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+        },
+        true, "", ""
+    },
+    /* 64 - get_version (AMDCL2) */
+    {   R"ffDXD(            .amdcl2
+            .kernel a
+            .driver_version 200206
+            .get_driver_version alaver
+.scope Vx
+            .get_driver_version alaver
+.ends
+.scope tx
+            totver = 65
+            blaver = 112
+            .get_driver_version totver
+.ends
+            .get_driver_version tx::blaver
+)ffDXD",
+        BinaryFormat::AMDCL2, GPUDeviceType::CAPE_VERDE, false, { "a" },
+        {
+            { ".rodata", ASMKERN_GLOBAL, AsmSectionType::DATA, { } },
+            { ".text", 0, AsmSectionType::CODE,
+                {  } }
+        },
+        {
+            { ".", 0U, 1, 0U, true, false, false, 0, 0 },
+            { "Vx::alaver", 200206U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "alaver", 200206U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "tx::blaver", 200206U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "tx::totver", 200206U, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+        },
+        true, "", ""
+    },
+    /* 65 - register ranges */
+    {   R"ffDXD(
+        .scope ala
+            sym1 = 123
+            sym1 = %v[12:15]
+            .scope bela
+                sym2 = ::x*21
+                sym2 = %v[120:125]
+                sym3 = %sym2[1:3]
+            .ends
+            sym4 = %v[120:125]
+            sym4 = 12
+        .ends
+        .scope black
+            .set sym5, %v[120:125]
+            .equiv sym6, %v[120:125]
+        .ends
+        sym8 = %v[ala::sym4:ala::sym4+4]
+        sym9 = %::black::sym5[1:2]
+        x=43)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA } },
+        {
+            { ".", 0, 0, 0, true, false, false, 0, 0 },
+            { "ala::bela::sym2", (256+120) | ((256+126ULL)<<32), ASMSECT_ABS, 0,
+                true, false, false, 0, 0, true },
+            { "ala::bela::sym3", (256+121) | ((256+124ULL)<<32), ASMSECT_ABS, 0,
+                true, false, false, 0, 0, true },
+            { "ala::sym1", (256+12) | ((256+16ULL)<<32), ASMSECT_ABS, 0,
+                true, false, false, 0, 0, true },
+            { "ala::sym4", 12, ASMSECT_ABS, 0, true, false, 0, 0 },
+            { "black::sym5", (256+120) | ((256+126ULL)<<32), ASMSECT_ABS, 0,
+                true, false, false, 0, 0, true },
+            { "black::sym6", (256+120) | ((256+126ULL)<<32), ASMSECT_ABS, 0,
+                true, true, false, 0, 0, true },
+            { "sym8", (256+12) | ((256+17ULL)<<32), ASMSECT_ABS, 0,
+                true, false, false, 0, 0, true },
+            { "sym9", (256+121) | ((256+123ULL)<<32), ASMSECT_ABS, 0,
+                true, false, false, 0, 0, true },
+            { "x", 43, ASMSECT_ABS, 0, true, false, 0, 0 }
+        }, true, "", ""
+    },
     { nullptr }
 };
