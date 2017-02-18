@@ -1410,11 +1410,26 @@ loop:   .rept 10
                 .byte sym1,sym2,sym3,sym4,sym8
                 .using x1
                 .byte sym1,sym2,sym3,sym4,sym8
+                .unusing
             .ends
             .byte sym1,sym2,sym3,sym4,sym8
             .byte sym1,sym2,sym3,sym4,sym8,sym9
             .unusing
             .byte sym1,sym2,sym3,sym4,sym8,sym9
+            
+            # recursive finding by usings
+            .scope ela
+                .using ala::x1
+                .using ala::x2
+            .ends
+            .scope newscope
+                .using ela
+            .ends
+            .byte newscope::sym8, newscope::sym9
+            .scope newscope
+                .byte sym8, sym9
+            .ends
+            .byte ::newscope::sym8, ::newscope::sym9
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
         { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
@@ -1437,9 +1452,11 @@ loop:   .rept 10
                 1, 2, 3, 4, 27,
                 1, 2, 3, 4, 27, 30,
                 1, 2, 3, 4, 0, 0,
+                // recursive using
+                26, 31, 26, 31, 26, 31
             } } },
         {
-            { ".", 85, 0, 0, true, false, false, 0, 0 },
+            { ".", 91, 0, 0, true, false, false, 0, 0 },
             { "ala::sym1", 6, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::sym3", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::x1::sym1", 9, ASMSECT_ABS, 0, true, false, false, 0, 0 },

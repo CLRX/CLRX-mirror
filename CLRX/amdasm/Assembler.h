@@ -402,16 +402,23 @@ private:
      // return false when failed (for example no clauses)
     bool popClause(const char* string, AsmClauseType clauseType);
     
+    // recursive function to find scope in scope
+    AsmScope* findScopeInScope(AsmScope* scope, const CString& scopeName);
     // find scope by identifier
     AsmScope* getRecurScope(const CString& scopePlace, bool ignoreLast = false,
                     const char** lastStep = nullptr);
     // find symbol in scopes
+    // internal recursive function to find symbol in scope
+    AsmSymbolEntry* findSymbolInScopeInt(AsmScope* scope, const CString& symName);
     // scope - return scope from scoped name
     AsmSymbolEntry* findSymbolInScope(const CString& symName, AsmScope*& scope,
                       CString& sameSymName, bool insertMode = false);
     // similar to map::insert, but returns pointer
     std::pair<AsmSymbolEntry*, bool> insertSymbolInScope(const CString& symName,
                  const AsmSymbol& symbol);
+    
+    // internal recursive function to find symbol in scope
+    AsmRegVarEntry* findRegVarInScopeInt(AsmScope* scope, const CString& rvName);
     // scope - return scope from scoped name
     AsmRegVarEntry* findRegVarInScope(const CString& rvName, AsmScope*& scope,
                       CString& sameRvName, bool insertMode = false);

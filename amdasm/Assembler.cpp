@@ -1906,12 +1906,25 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
     return ParseState::PARSED;
 }
 
+AsmScope* Assembler::findScopeInScope(AsmScope* scope, const CString& scopeName)
+{
+    auto it = scope->scopeMap.find(scopeName);
+    if (it != scope->scopeMap.end())
+        return it->second;
+    for (AsmScope* rootScope: scope->usedScopes)
+    {
+        AsmScope* result = findScopeInScope(rootScope, scopeName);
+        if (result != nullptr)
+            return result;
+    }
+    return nullptr;
+}
+
 AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast,
                     const char** lastStep)
 {
     AsmScope* scope = currentScope;
     const char* str = scopePlace.c_str();
-    //std::cout << "recurscope: " << scopePlace << std::endl;
     if (*str==':' && str[1]==':')
     {   // choose global scope
         scope = &globalScope;
@@ -1936,36 +1949,35 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast,
     if (scopeTrack.empty()) // no scope path
         return scope;
     
-    bool found = false;
     for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
     {  // find this scope
-        //std::cout << "finding scope in parent: " << scope2 << std::endl;
-        auto it = scope2->scopeMap.find(scopeTrack[0]);
-        if (it != scope2->scopeMap.end())
-        {   // is found in scope
-            scope = scope2;
-            found = true;
+        AsmScope* newScope = findScopeInScope(scope2, scopeTrack[0]);
+        if (newScope != nullptr)
+        {
+            scope = newScope->parent;
             break;
         }
-        // find in used scopes
-        if (!found)
-            for (AsmScope* rootScope: scope2->usedScopes)
-            {
-                //std::cout << "finding scope in used: " << rootScope << std::endl;
-                auto it = rootScope->scopeMap.find(scopeTrack[0]);
-                if (it != rootScope->scopeMap.end())
-                { scope = rootScope; break; }
-            }
-        if(found) break;
     }
     
     // otherwise create in current/global scope
     for (const CString& name: scopeTrack)
-    {
         getScope(scope, name, scope);
-        //std::cout << "getscope: " << name << ": " << scope << std::endl;
-    }
     return scope;
+}
+
+AsmSymbolEntry* Assembler::findSymbolInScopeInt(AsmScope* scope,
+                    const CString& symName)
+{
+    AsmSymbolMap::iterator it = scope->symbolMap.find(symName);
+    if (it != scope->symbolMap.end())
+        return &*it;
+    for (AsmScope* rootScope: scope->usedScopes)
+    {
+        AsmSymbolEntry* result = findSymbolInScopeInt(rootScope, symName);
+        if (result != nullptr)
+            return result;
+    }
+    return nullptr;
 }
 
 AsmSymbolEntry* Assembler::findSymbolInScope(const CString& symName, AsmScope*& scope,
@@ -1973,10 +1985,10 @@ AsmSymbolEntry* Assembler::findSymbolInScope(const CString& symName, AsmScope*& 
 {
     const char* lastStep = nullptr;
     scope = getRecurScope(symName, true, &lastStep);
-    auto it = scope->symbolMap.find(lastStep);
+    AsmSymbolEntry* foundSym = findSymbolInScopeInt(scope, lastStep);
     sameSymName = lastStep;
-    if (it != scope->symbolMap.end())
-        return &*it;
+    if (foundSym != nullptr)
+        return foundSym;
     if (lastStep != symName)
         return nullptr;
     // otherwise is symName is not normal symName
@@ -1986,16 +1998,9 @@ AsmSymbolEntry* Assembler::findSymbolInScope(const CString& symName, AsmScope*& 
     
     for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
     {  // find this scope
-        auto it = scope2->symbolMap.find(sameSymName);
-        if (it != scope2->symbolMap.end()) // is found in scope
-            return &*it;
-        // find in used scopes
-        for (AsmScope* rootScope: scope2->usedScopes)
-        {
-            auto it = rootScope->symbolMap.find(sameSymName);
-            if (it != rootScope->symbolMap.end())
-                return &*it;
-        }
+        foundSym = findSymbolInScopeInt(scope2, lastStep);
+        if (foundSym != nullptr)
+            return foundSym;
     }
     return nullptr;
 }
@@ -2014,15 +2019,29 @@ std::pair<AsmSymbolEntry*, bool> Assembler::insertSymbolInScope(const CString& s
     return std::make_pair(symEntry, false);
 }
 
+AsmRegVarEntry* Assembler::findRegVarInScopeInt(AsmScope* scope, const CString& rvName)
+{
+    AsmRegVarMap::iterator it = scope->regVarMap.find(rvName);
+    if (it != scope->regVarMap.end())
+        return &*it;
+    for (AsmScope* rootScope: scope->usedScopes)
+    {
+        AsmRegVarEntry* result = findRegVarInScopeInt(rootScope, rvName);
+        if (result != nullptr)
+            return result;
+    }
+    return nullptr;
+}
+
 AsmRegVarEntry* Assembler::findRegVarInScope(const CString& rvName, AsmScope*& scope,
                       CString& sameRvName, bool insertMode)
 {
     const char* lastStep = nullptr;
     scope = getRecurScope(rvName, true, &lastStep);
-    auto it = scope->regVarMap.find(lastStep);
+    AsmRegVarEntry* foundRv = findRegVarInScopeInt(scope, lastStep);
     sameRvName = lastStep;
-    if (it != scope->regVarMap.end())
-        return &*it;
+    if (foundRv != nullptr)
+        return foundRv;
     if (lastStep != rvName)
         return nullptr;
     // otherwise is rvName is not normal rvName
@@ -2032,16 +2051,9 @@ AsmRegVarEntry* Assembler::findRegVarInScope(const CString& rvName, AsmScope*& s
     
     for (AsmScope* scope2 = scope; scope2 != nullptr; scope2 = scope2->parent)
     {  // find this scope
-        auto it = scope2->regVarMap.find(sameRvName);
-        if (it != scope2->regVarMap.end()) // is found in scope
-            return &*it;
-        // find in used scopes
-        for (AsmScope* rootScope: scope2->usedScopes)
-        {
-            auto it = rootScope->regVarMap.find(sameRvName);
-            if (it != rootScope->regVarMap.end())
-                return &*it;
-        }
+        foundRv = findRegVarInScopeInt(scope2, lastStep);
+        if (foundRv != nullptr)
+            return foundRv;
     }
     return nullptr;
 }
