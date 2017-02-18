@@ -1450,6 +1450,13 @@ loop:   .rept 10
                 .using ::looper # !!!
                 .byte somebody
             .ends
+            .scope looper3
+                .using ::looper2
+            .ends
+            .scope looper2
+                .using ::looper3 # !!!
+                .byte somebody2
+            .ends
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
         { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
@@ -1474,10 +1481,10 @@ loop:   .rept 10
                 1, 2, 3, 4, 0, 0,
                 // recursive using
                 26, 31, 26, 31, 26, 31,
-                25, 30, 26, 31, 0
+                25, 30, 26, 31, 0, 0
             } } },
         {
-            { ".", 96, 0, 0, true, false, false, 0, 0 },
+            { ".", 97, 0, 0, true, false, false, 0, 0 },
             { "ala::sym1", 6, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::sym3", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::x1::sym1", 9, ASMSECT_ABS, 0, true, false, false, 0, 0 },
@@ -1498,6 +1505,7 @@ loop:   .rept 10
             { "beta::y2::sym2", 19, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "beta::y2::sym3", 20, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "beta::y2::sym4", 22, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "looper2::somebody2", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
             { "looper::somebody", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
             { "sym1", 1, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "sym2", 2, ASMSECT_ABS, 0, true, false, false, 0, 0 },
@@ -1574,6 +1582,15 @@ loop:   .rept 10
             .scope
                 .byte ala::obj, beta::obj, ceta::obj, ceta::beta::obj, ceta::ceta::obj
                 .byte ::ala::obj, linux::wifi::obj
+                .scope ala
+                    obj = 66
+                    .byte obj
+                .ends
+            .ends
+            .scope
+                .scope ala
+                    .byte obj
+                .ends
             .ends
         .ends
         # with using
@@ -1611,12 +1628,13 @@ loop:   .rept 10
         { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
             { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
               4, 3, 5, 0, 12, 2, 1, 2, 7, 8, 0, 0,
-              2, 3, 6, 7, 8, 2, 3, 6, 7, 8, 2, 11,
+              2, 3, 6, 7, 8, 2, 3, 6, 7, 8, 2, 11, 66, 2,
+              // using
               22, 23, 24, 23, 25, 24, 26, 30,
               28, 27, 28
             } } },
         {
-            { ".", 48, 0, 0, true, false, false, 0, 0 },
+            { ".", 50, 0, 0, true, false, false, 0, 0 },
             { "ala::beta::ala::obj", 4, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::beta::ceta::beta::obj", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
             { "ala::beta::ceta::obj", 5, ASMSECT_ABS, 0, true, false, false, 0, 0 },
@@ -1640,6 +1658,73 @@ loop:   .rept 10
             { "ala::linux::wifi::obj5", 30, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::obj", 2, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "obj", 1, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
+    /* 61 - creating symbols, labels */
+    {   R"ffDXD(.rawcode
+        .byte 0
+        sym1 = 25
+        .set sym2, 27
+        .equ sym3, 28
+        .equiv sym4, 29
+        .eqv sym5, 31
+        label1:
+        .scope creta
+            .byte sym1, sym2, sym3, sym4, sym5, sym6
+            sym1 = 15
+            .set sym2, 17
+            .equ sym3, 18
+            .equiv sym4, 19
+            .eqv sym5, 21
+            sym6 = 16
+            label1:
+            .scope ula
+                .byte sym1, sym2, sym3, sym4, sym5, sym6, sym7
+                sym1 = 5
+                .set sym2, 7
+                .equ sym3, 8
+                .equiv sym4, 9
+                .eqv sym5, 11
+                sym6 = 6
+                sym7 = 106
+                label1:
+            .ends
+        .ends
+        .byte creta::sym2, creta::ula::sym7
+        creta::ula::label2:
+        .scope creta
+            .scope ula
+                .byte label2-label1
+            .ends
+        .ends
+        )ffDXD",
+        BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
+            { 0, 25, 27, 28, 29, 31, 16, 15, 17, 18, 19, 21, 16, 106, 17, 106, 2 } } },
+        {
+            { ".", 17, 0, 0, true, false, false, 0, 0 },
+            { "creta::label1", 7, 0, 0, true, true, false, 0, 0 },
+            { "creta::sym1", 15, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "creta::sym2", 17, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "creta::sym3", 18, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "creta::sym4", 19, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "creta::sym5", 21, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "creta::sym6", 16, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "creta::ula::label1", 14, 0, 0, true, true, false, 0, 0 },
+            { "creta::ula::label2", 16, 0, 0, true, true, false, 0, 0 },
+            { "creta::ula::sym1", 5, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "creta::ula::sym2", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "creta::ula::sym3", 8, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "creta::ula::sym4", 9, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "creta::ula::sym5", 11, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "creta::ula::sym6", 6, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "creta::ula::sym7", 106, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "label1", 1, 0, 0, true, true, false, 0, 0 },
+            { "sym1", 25, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym2", 27, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym3", 28, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym4", 29, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "sym5", 31, ASMSECT_ABS, 0, true, true, false, 0, 0 }
         }, true, "", ""
     },
     { nullptr }
