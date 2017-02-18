@@ -28,7 +28,7 @@ using namespace CLRX;
 
 const AsmTestCase asmTestCases2Tbl[] =
 {
-    /* 66 - undef test */
+    /* 0 - undef test */
     {   R"ffDXD(.eqv xz, a*b
         .int xz+xz*7
         .eqv ulu,xz*xz
@@ -71,7 +71,7 @@ const AsmTestCase asmTestCases2Tbl[] =
         },
         true, "test.s:21:16: Warning: Symbol 'xz2' already doesn't exist\n", ""
     },
-    /* 67 - include test 1 */
+    /* 1 - include test 1 */
     {   R"ffDXD(            .include "inc1.s"
             .include "inc2.s"
             .include "inc3.s")ffDXD",
@@ -82,7 +82,7 @@ const AsmTestCase asmTestCases2Tbl[] =
         true, "", "",
         { CLRX_SOURCE_DIR "/tests/amdasm/incdir0", CLRX_SOURCE_DIR "/tests/amdasm/incdir1" }
     },
-    /* 68 - include test 2 */
+    /* 2 - include test 2 */
     {   R"ffDXD(            .include "incdir0\\inc1.s"
             .include "incdir0/inc2.s"
             .include "incdir1\\inc3.s")ffDXD",
@@ -93,7 +93,7 @@ const AsmTestCase asmTestCases2Tbl[] =
         true, "", "",
         { CLRX_SOURCE_DIR "/tests/amdasm" }
     },
-    /* 69 - failed include */
+    /* 3 - failed include */
     {   R"ffDXD(            .include "incdir0\\incx.s"
             .include "xxxx.s"
             .include "xxxa.s")ffDXD",
@@ -108,7 +108,7 @@ const AsmTestCase asmTestCases2Tbl[] =
         "not found or unavailable in any directory\n", "",
         { CLRX_SOURCE_DIR "/tests/amdasm" }
     },
-    /* 70 - incbin */
+    /* 4 - incbin */
     {   R"ffDXD(            .incbin "incbin1"
             .incbin "incbin2"
             .incbin "incbin3")ffDXD",
@@ -127,7 +127,7 @@ const AsmTestCase asmTestCases2Tbl[] =
         true, "", "",
         { CLRX_SOURCE_DIR "/tests/amdasm/incdir0", CLRX_SOURCE_DIR "/tests/amdasm/incdir1" }
     },
-    /* 71 - incbin (choose offset and size) */
+    /* 5 - incbin (choose offset and size) */
     {   R"ffDXD(            .incbin "incbin1",3,4
             .incbin "incbin2",2
             .incbin "incbin3", 0, 9)ffDXD",
@@ -143,7 +143,7 @@ const AsmTestCase asmTestCases2Tbl[] =
         true, "", "",
         { CLRX_SOURCE_DIR "/tests/amdasm/incdir0", CLRX_SOURCE_DIR "/tests/amdasm/incdir1" }
     },
-    /* 72 - failed incbin */
+    /* 6 - failed incbin */
     {   R"ffDXD(            .incbin "incdir0\\incbinx"
             .incbin "xxxx.bin"
             .incbin "xxxa.bin")ffDXD",
@@ -158,7 +158,7 @@ const AsmTestCase asmTestCases2Tbl[] =
         "not found or unavailable in any directory\n", "",
         { CLRX_SOURCE_DIR "/tests/amdasm" }
     },
-    /* 73 - absolute section and errors */
+    /* 7 - absolute section and errors */
     {   R"ffDXD(        .struct 6
 label1:
         .struct 7
@@ -178,7 +178,7 @@ label4:)ffDXD",
         },
         true, "test.s:5:14: Warning: Fill value is ignored inside absolute section\n", ""
     },
-    /* 74 */
+    /* 8 */
     {   R"ffDXD(        .struct 6
 label1:
         .struct 7
@@ -230,7 +230,7 @@ test.s:23:17: Error: Expected primary expression before operator
 test.s:23:19: Error: Expected primary expression before operator
 )ffDXD", ""
     },
-    /* 75 - empty lines inside macro,repeats */
+    /* 9 - empty lines inside macro,repeats */
     {   R"ffDXD(            .rept 1
 
 .error "111"
@@ -291,7 +291,7 @@ In macro substituted from test.s:27:13:
 test.s:25:1: Error: uurggg
 )ffDXD", ""
     },
-    /* 76 - IRP and IRPC */
+    /* 10 - IRP and IRPC */
     {   R"ffDXD(        .irp Xv, aa , cv  ,  dd,  12AA,  ff
         .string "::\Xv\()__"
         .endr
@@ -335,7 +335,7 @@ test.s:25:1: Error: uurggg
         { { ".", 150U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
-    /* 77 - section arithmetics */
+    /* 11 - section arithmetics */
     {   R"ffDXD(            .amd
             .kernel a
 al:         .ascii "aaabbcc"
@@ -368,7 +368,7 @@ be:
         },
         true, "", ""
     },
-    /* 78 - next test of sections' arithmetics */
+    /* 12 - next test of sections' arithmetics */
     {   R"ffDXD(.amd
             .kernel a
             .ascii "xx1"
@@ -472,7 +472,7 @@ ce:
             { "z0", 5U, 2, 0U, true, false, false, 0, 0 }
         }, true, "", ""
     },
-    /* 79 - error of section arithmetics */
+    /* 13 - error of section arithmetics */
     {   R"ffDXD(            .amd
             .kernel a
             .ascii "xx1"
@@ -565,7 +565,7 @@ test.s:39:18: Error: For comparisons two values must have this same relatives!
 test.s:40:18: Error: Choice is not allowed for first relative value
 )ffDXD", ""
     },
-    /* 80 - relatives inside '.eqv' expressions */
+    /* 14 - relatives inside '.eqv' expressions */
     {   R"ffDXD(            .amd
             .kernel a
             .ascii "xx1"
@@ -611,7 +611,7 @@ ce:
             { "x1", 11U, 2, 0U, true, false, false, 0, 0 }
         }, true, "", ""
     },
-    /* 81 - raw code section tests */
+    /* 15 - raw code section tests */
     {   R"ffDXD(            .rawcode
             .text
             .byte 1,2,2,3,4
@@ -625,7 +625,7 @@ ce:
         { { ".", 10U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
-    /* 82 - raw code section tests (errors) */
+    /* 16 - raw code section tests (errors) */
     {   R"ffDXD(            .rawcode
             .data
             .rodata
@@ -640,7 +640,7 @@ ce:
         "test.s:4:13: Error: Only section '.text' can be in raw code\n"
         "test.s:5:13: Error: In rawcode defining kernels is not allowed\n", ""
     },
-    /* 83 - Gallium format (sections) */
+    /* 17 - Gallium format (sections) */
     {   R"ffDXD(            .gallium
             .ascii "some text"
             .main
@@ -702,7 +702,7 @@ aa1: bb2:   # kernel labels
         },
         true, "", ""
     },
-    /* 84 - Gallium format (sections, errors) */
+    /* 18 - Gallium format (sections, errors) */
     {   R"ffDXD(            .gallium
             .kernel aa22
             .int 24,5,6
@@ -719,7 +719,7 @@ aa1: bb2:   # kernel labels
         "test.s:5:13: Error: Change output counter inside non-addressable "
         "section is illegal\n", ""
     },
-    /* AmdFormat (sections) */
+    /* 19 - AmdFormat (sections) */
     {   R"ffDXD(            .amd
             .globaldata
             .ascii "aaabbb"
@@ -791,113 +791,132 @@ aa1: bb2:   # kernel labels
         { { ".", 13U, 7, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
-    /* .gpu/.arch tests */
+    /* 20 - .gpu/.arch tests */
     {   ".amd\n.gpu Tahiti\n",
         BinaryFormat::AMD, GPUDeviceType::TAHITI, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 21 - .gpu/.arch tests */
     {   ".amd\n.gpu CapeVerde\n",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 22 - .gpu/.arch tests */
     {   ".amd\n.gpu Bonaire\n",
         BinaryFormat::AMD, GPUDeviceType::BONAIRE, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 23 - .gpu/.arch tests */
     {   ".amd\n.gpu Mullins\n",
         BinaryFormat::AMD, GPUDeviceType::MULLINS, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 24 - .gpu/.arch tests */
     {   ".amd\n.gpu Hainan\n",
         BinaryFormat::AMD, GPUDeviceType::HAINAN, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 25 - .gpu/.arch tests */
     {   ".amd\n.gpu Iceland\n",
         BinaryFormat::AMD, GPUDeviceType::ICELAND, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 26 - .gpu/.arch tests */
     {   ".amd\n.arch GCN1.0\n",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 27 - .gpu/.arch tests */
     {   ".amd\n.arch GCN1.1\n",
         BinaryFormat::AMD, GPUDeviceType::BONAIRE, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 28 - .gpu/.arch tests */
     {   ".amd\n.arch GCN1.2\n",
         BinaryFormat::AMD, GPUDeviceType::TONGA, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
-    /* arch gpu conditionals */
+    /* 29 - arch gpu conditionals */
     {   ".amd\n.gpu Tahiti\n.ifarch GCN1.0\n.print \"GCN1.0\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::TAHITI, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "GCN1.0\n",
     },
+    /* 30 - arch gpu conditionals */
     {   ".amd\n.gpu Hawaii\n.ifarch GCN1.0\n.print \"GCN1.0\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::HAWAII, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 31 - arch gpu conditionals */
     {   ".amd\n.gpu Tonga\n.ifarch GCN1.2\n.print \"GCN1.2\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::TONGA, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "GCN1.2\n",
     },
+    /* 32 - arch gpu conditionals */
     {   ".amd\n.gpu Bonaire\n.ifnarch GCN1.2\n.print \"notGCN1.2\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::BONAIRE, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "notGCN1.2\n",
     },
-    /* gpu conditionals */
+    /* 33 - gpu conditionals */
     {   ".amd\n.gpu Pitcairn\n.ifgpu Pitcairn\n.print \"pitcairn\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::PITCAIRN, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "pitcairn\n",
     },
+    /* 34 - gpu conditionals */
     {   ".amd\n.gpu Iceland\n.ifgpu Pitcairn\n.print \"pitcairn\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::ICELAND, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 35 - gpu conditionals */
     {   ".amd\n.gpu Iceland\n.ifngpu Pitcairn\n.print \"notpitcairn\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::ICELAND, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } },
         true, "", "notpitcairn\n",
     },
-    /* formats */
+    /* 36 - formats */
     {   ".amd\n.iffmt catalyst\n.print \"catalystfmt\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } },
         true, "", "catalystfmt\n",
     },
+    /* 37 - formats */
     {   ".format amd\n.iffmt catalyst\n.print \"catalystfmt\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } },
         true, "", "catalystfmt\n",
     },
+    /* 38 - formats */
     {   ".gallium\n.iffmt catalyst\n.print \"catalystfmt\"\n.endif\n",
         BinaryFormat::GALLIUM, GPUDeviceType::CAPE_VERDE, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 39 - formats */
     {   ".format gallium\n.iffmt catalyst\n.print \"catalystfmt\"\n.endif\n",
         BinaryFormat::GALLIUM, GPUDeviceType::CAPE_VERDE, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 40 - formats */
     {   ".amd\n.ifnfmt catalyst\n.print \"notcatalystfmt\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
+    /* 41 - formats */
     {   ".gallium\n.ifnfmt catalyst\n.print \"notcatalystfmt\"\n.endif\n",
         BinaryFormat::GALLIUM, GPUDeviceType::CAPE_VERDE, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } },
         true, "", "notcatalystfmt\n",
     },
-    /* bitness conditional */
+    /* 42 - bitness conditional */
     {   ".amd\n.32bit\n.if32\n.print \"is32bit\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } },
         true, "", "is32bit\n",
     },
+    /* 43 - bitness conditional */
     {   ".amd\n.64bit\n.if32\n.print \"is32bit\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, true,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
-    /* unresolved expression and resolved expression */
+    /* 44 - unresolved expression and resolved expression */
     {   R"ffDXD(sym3 = sym7*sym4
         sym3 = 17
         sym7 = 1
@@ -910,7 +929,7 @@ aa1: bb2:   # kernel labels
             { "sym7", 1, ASMSECT_ABS, 0, true, false, false, 0, 0 }
         }, true, "", ""
     },
-    /* register ranges assignment */
+    /* 45 - register ranges assignment */
     {   R"ffDXD(sym1 = 123
         sym1 = %v[12:15]
         sym2 = x*21
@@ -939,6 +958,7 @@ aa1: bb2:   # kernel labels
             { "x", 43, ASMSECT_ABS, 0, true, false, 0, 0 }
         }, true, "", ""
     },
+    /* 46 */
     {   R"ffDXD(. = %s3 # error
         .equiv sym6, %v[120:125]
         .equiv sym6, %v[120:125] # error
@@ -969,7 +989,7 @@ test.s:9:15: Error: Symbol must not be register symbol
 test.s:9:21: Error: Symbol must not be register symbol
 )ffDXD", ""
     },
-    /* altmacro */
+    /* 47 - altmacro */
     {   R"ffDXD(.altmacro
         .macro test a,b,c
         .byte a,b,c,a+b
@@ -991,6 +1011,7 @@ test.s:9:21: Error: Symbol must not be register symbol
         },
         true, "", ""
     },
+    /* 48 - altmacro */
     {   R"ffDXD(.altmacro
         .macro test a,b,c
         local al,bl,cl,dl
@@ -1024,6 +1045,7 @@ dl:     .byte a+b
         },
         true, "", ""
     },
+    /* 49 - altmacro */
     {
         R"ffDXD(.altmacro
 .macro test1 v1 v2
@@ -1049,6 +1071,7 @@ someval = 221
         },
         true, "", ""
     },
+    /* 50 - altmacro */
     {   R"ffDXD(.altmacro
         .macro test a$xx,_b.,$$c
         .byte a$xx,_b.,$\
@@ -1072,6 +1095,7 @@ x+_b.
         },
         true, "", ""
     },
+    /* 51 - altmacro */
     {
         R"ffDXD(.altmacro
         .macro test v1
@@ -1096,6 +1120,7 @@ In macro substituted from test.s:7:9:
 test.s:5:4: Error: Name 'a' was already used by local or macro argument
 )ffDXD", ""
     },
+    /* 52 - altmacro */
     {
         R"ffDXD(.altmacro
 .macro testw vx
@@ -1129,6 +1154,7 @@ Local sx
         },
         true, "", ""
     },
+    /* 53 - altmacro */
     {   R"ffDXD(.rept 1
         .int 0xaaddd
 loop:   .rept 10
@@ -1155,6 +1181,7 @@ loop:   .rept 10
         },
         true, "", ""
     },
+    /* 54 - altmacro */
     {   R"ffDXD(.irpc x, "abc"
         .int 0xaaddd
 \x\()loop\x: .rept 3
@@ -1184,7 +1211,7 @@ loop:   .rept 10
         },
         true, "", ""
     },
-    /* macro name case sensitives */
+    /* 55 - macro name case sensitives */
     {   R"ffDXD(.macrocase
             .macro one1
             .byte 2
@@ -1212,7 +1239,7 @@ loop:   .rept 10
     /*
      * Scopes tests
      */
-    /* 1 standard symbol assignment */
+    /* 56 - standard symbol assignment */
     {   R"ffDXD(sym1 = 7
         .scope ala
         sym2 = 81
@@ -1236,7 +1263,7 @@ loop:   .rept 10
             { "sym1", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 }
         }, true, "", ""
     },
-    /* 1 standard symbol assignment 2 */
+    /* 57 - standard symbol assignment 2 */
     {   R"ffDXD(sym1 = 7
         .scope beata
         sym5 = 17
@@ -1261,7 +1288,7 @@ loop:   .rept 10
             { "sym1", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 }
         }, true, "", ""
     },
-    /* 2 - visibility */
+    /* 58 - visibility */
     {
         R"ffDXD(.rawcode
             .byte 0
@@ -1302,7 +1329,7 @@ loop:   .rept 10
             { "sym1", 15, ASMSECT_ABS, 0, true, false, false, 0, 0 },
         }, true, "", ""
     },
-    /* 2 - visibility 2 */
+    /* 59 - visibility 2 */
     {
         R"ffDXD(.rawcode
             .byte 0
@@ -1398,6 +1425,7 @@ loop:   .rept 10
                 14, 12, 13, 15,
                 1, 16, 17, 4,
                 1, 19, 20, 22,
+                // using
                 1, 2, 3, 4, 25,
                 1, 2, 3, 4, 26,
                 1, 2, 3, 4, 25,

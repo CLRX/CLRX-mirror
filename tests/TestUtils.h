@@ -99,6 +99,15 @@ static inline void assertString(const std::string& testName, const std::string& 
              const char* expected, const CString& result)
 { assertString(testName, caseName, expected, result.c_str()); }
 
+template<typename T>
+static inline const T& printForTests(const T& v)
+{ return v; }
+
+static inline const int printForTests(const cxbyte v)
+{ return int(v); }
+
+static inline const int printForTests(const cxchar v)
+{ return int(v); }
 
 template<typename T>
 static void assertArray(const std::string& testName, const std::string& caseName,
@@ -129,7 +138,8 @@ static void assertArray(const std::string& testName, const std::string& caseName
         {
             std::ostringstream oss;
             oss << "Failed " << testName << ":" << caseName << " \n" <<
-                "Elem #" << i << ": " << *it << "!=" << result[i];
+                "Elem #" << i << ": " << printForTests(*it) << "!=" <<
+                    printForTests(result[i]);
             oss.flush();
             throw Exception(oss.str());
         }
