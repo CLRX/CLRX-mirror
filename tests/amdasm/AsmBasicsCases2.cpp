@@ -1430,6 +1430,22 @@ loop:   .rept 10
                 .byte sym8, sym9
             .ends
             .byte ::newscope::sym8, ::newscope::sym9
+            # recursive finding scopes through using
+            .scope jula
+                .using ::ala
+            .ends
+            .scope xela
+                .using ::jula
+            .ends
+            .unusing
+            .scope
+                .using jula::x1
+                .byte sym8, sym9
+            .ends
+            .scope
+                .using xela::x2
+                .byte sym8, sym9
+            .ends
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
         { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
@@ -1453,10 +1469,11 @@ loop:   .rept 10
                 1, 2, 3, 4, 27, 30,
                 1, 2, 3, 4, 0, 0,
                 // recursive using
-                26, 31, 26, 31, 26, 31
+                26, 31, 26, 31, 26, 31,
+                25, 30, 26, 31
             } } },
         {
-            { ".", 91, 0, 0, true, false, false, 0, 0 },
+            { ".", 95, 0, 0, true, false, false, 0, 0 },
             { "ala::sym1", 6, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::sym3", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::x1::sym1", 9, ASMSECT_ABS, 0, true, false, false, 0, 0 },

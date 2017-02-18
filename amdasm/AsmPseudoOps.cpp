@@ -2032,7 +2032,6 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    //auto it = asmr.currentScope->symbolMap.find(symName);
     CString sameSymName;
     AsmScope* outScope;
     AsmSymbolEntry* it = asmr.findSymbolInScope(symName, outScope, sameSymName);

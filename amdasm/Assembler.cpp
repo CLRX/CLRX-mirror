@@ -2074,15 +2074,15 @@ std::pair<AsmRegVarEntry*, bool> Assembler::insertRegVarInScope(const CString& r
 
 bool Assembler::getScope(AsmScope* parent, const CString& scopeName, AsmScope*& scope)
 {
+    AsmScope* foundScope = findScopeInScope(parent, scopeName);
+    if (foundScope != nullptr)
+    {
+        scope = foundScope;
+        return false;
+    }
     std::unique_ptr<AsmScope> newScope(new AsmScope(parent));
     auto res = parent->scopeMap.insert(std::make_pair(scopeName, newScope.get()));
-    if (!res.second) // not added
-        scope = res.first->second;
-    else // if new
-    {
-        scope = newScope.release();
-        //std::cout << "newscope: " << parent << ": " << scopeName << ":" << scope << "\n";
-    }
+    scope = newScope.release();
     return res.second;
 }
 
