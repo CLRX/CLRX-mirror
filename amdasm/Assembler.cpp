@@ -2463,6 +2463,9 @@ void Assembler::tryToResolveSymbols(AsmScope* thisScope)
 
 void Assembler::printUnresolvedSymbols(AsmScope* thisScope)
 {
+    if ((flags&ASM_TESTRUN) != 0)
+        return;
+    
     std::deque<ScopeStackElem> scopeStack;
     std::pair<CString, AsmScope*> globalScopeEntry = { "", thisScope };
     scopeStack.push_back({ globalScopeEntry, thisScope->scopeMap.begin() });
@@ -2715,9 +2718,7 @@ bool Assembler::assemble()
     
     resolvingRelocs = true;
     tryToResolveSymbols(&globalScope);
-    
-    if ((flags&ASM_TESTRUN) == 0)
-        printUnresolvedSymbols(&globalScope);
+    printUnresolvedSymbols(&globalScope);
     
     if (good && formatHandler!=nullptr)
     {  

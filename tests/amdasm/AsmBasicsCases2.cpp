@@ -1883,5 +1883,21 @@ label2: .int 3,6,7
             { "x", 43, ASMSECT_ABS, 0, true, false, 0, 0 }
         }, true, "", ""
     },
+    /* 66 - scope errors */
+    {   R"ffDXD(.rawcode
+            ala::bx::. = 7
+            .byte 1
+            .int tlx::blx::.
+            .using  
+        )ffDXD",
+        BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE, { 1 } } },
+        {
+            { ".", 1, 0, 0, true, false, false, 0, 0 }
+        }, false, "test.s:2:13: Error: Symbol '.' can be only in global scope\n"
+        "test.s:4:18: Error: Symbol '.' can be only in global scope\n"
+        "test.s:4:18: Error: Expression have unresolved symbol 'tlx::blx::.'\n"
+        "test.s:5:21: Error: Expected scope path\n", ""
+    },
     { nullptr }
 };
