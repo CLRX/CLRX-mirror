@@ -203,6 +203,10 @@ Finish macro definition
 
 Finish code of repetition.
 
+#### .ends, .endscope
+
+Close visibility's scope.
+
 ### .equ, .set
 
 Syntax: .equ SYMBOL, EXPR  
@@ -719,6 +723,17 @@ Syntax: .version "STRING"
 
 These pseudo-operations are ignored by CLRX assembler.
 
+### .scope
+
+Syntax .scope [SCOPENAME]
+
+Open visbility's scope (if no name specified, then local scope).
+The labels (except local labels), symbols, scopes and regvars are defined
+inside scopes and visible inside them. The assembler create always global scope at begin.
+If scope doesn't exists then will be created. The scopes are organized in tree form.
+The opened scope have parent that is previous scope. Local scopes exists only to 
+the close.
+
 ### .section
 
 Syntax: .section SECTIONNAME[, "FLAGS"[, @TYPE]] [align=ALIGN]
@@ -780,6 +795,23 @@ Go to `.text` section. If this section doesn't exist assembler create it.
 Syntax: .undef SYMBOL
 
 Undefine symbol. If symbol already doesn't exist then assembler warns about that.
+
+### .unusing
+
+Syntax: .unusing [SCOPEPATH]
+
+Stop using all objects (labels, symbols, regvar) in the specified scope or all
+previously used scopes (by '.using').
+
+### .using
+
+Syntax: .using SCOPEPATH
+
+Start use all objects (labels, symbols, scopes, regvar) in the specified scope.
+All objects (if they names is not hidden by object in current scope) will be visible
+directly including usings from specified scope. Searching object in current level of
+scope's stack is recursive and it traverse through 'usings' until object will be found.
+Assembler start searching object begins from the last declared 'using' to first 'using'.
 
 ### .warning
 

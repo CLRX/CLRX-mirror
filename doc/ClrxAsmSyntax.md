@@ -78,6 +78,99 @@ s_add_u32 s1,s2,lit(4)      # encode 4 as literal (two 32-bit words)
 s_add_u32 s1,s2,lit(4.0)    # encode 4.0 as literal (two 32-bit words)
 ```
 
+### Scopes
+
+New feature is the visibility's scopes. The scope concern's symbols, labels
+(except local labels), regvars.  At start, the assembler create the global scope, that
+is root of next defined scopes. The scope can be opened by using `.scope` pseudo-op and
+they can be closed by using `.ends` or `.endscope`. We distinguish scope to two types:
+normal and local scopes.
+The local scopes doesn't have name and they exists only to first close.
+The scopes are organized in tree where
+global scope is root of tree. During searching object, an assembler begins from
+top (current) scope and ends at global scope. In every scope, it is possible to
+start using object from other scopes (by `.using` pseudo-op).
+While searching at scope stack level, an assembler firstly search that scope and
+if not found then search object through 'usings'.
+
+Example of using scopes:
+
+```
+.scope ala  # open scope 'ala', parent is global scope
+    sym1 = 4
+    .byte sym1 # put 4
+    .scope child   # open scope child, parent is 'ala'
+        sym1 = 5
+        .byte sym1 # put 5
+    .ends
+    .scope      # open local scope
+        sym1 = 8
+        .byte sym1 # put 8
+    .ends       # close scope, now is doesn't exists
+    .byte sym1 # put 4
+.ends       # close scope 'ala'
+```
+
+Example of 'usings':
+
+```
+.scope ala  # open scope 'ala', parent is global scope
+    sym2 = 4
+.ends
+.scope another  # open scope 'ala', parent is global scope
+    sym2 = 6
+.ends
+.using ala      # start using 'ala'
+.byte sym2      # put 4, sym1 from scope 'ala'
+.scope ula
+    .using another  # start using 'another'
+    .byte sym2  # put 6, sym1 from scope 'another'
+.ends
+.byte sym2      # put 4, sym1 from scope 'ala'
+.scope ula
+    .using ala # start using 'ala'
+    .byte sym2  # put 4, sym1 from scope 'ala', because 'ala' is last declared
+.ends
+```
+
+The names of the object can have the scope path. Scope path is way to particular scope in
+tree. If searching scope should start from global scope, an scope path should be begins
+from `::`. The `::` is separator (likes `/` in file system path) for path elements.
+
+```
+sym1 = 9
+.scope ala  # open scope 'ala', parent is global scope
+    sym1 = 4
+    .scope child   # open scope child, parent is 'ala'
+        sym1 = 7
+    .ends
+.ends
+.byte ala::sym1   # put 4, symbol from 'ala' scope
+.byte ala::child::sym1   # put 7, symbol from 'child' scope in 'ala' scope
+.scope ala
+    .byte ::sym1        # put 9, sym1 from global scope
+.ends
+```
+
+The setting symbols, labels, if simple name is given (without scope path) always
+create object in the current scope. Any call of object (even if not defined) always
+start searching through scope tree.
+
+The algorithm of searching the object is bit sophisticated:
+
+1. Search scope.  
+1.1. If simple name is given the begin at current scope of tree.  
+1.2. If scope path is only `::`, then search only at global scope  
+1.3. If scope begins from `::`, then first scope element in global scope  
+1.4. Otherwise, find scope element begins from current scope going to shallower
+level of tree (finally to global scope).  
+1.5. If scope is not found, then create at global scope (if scope path begins `::`) or
+  current scope.  
+2. Find object in that scope, if not found:  
+2.1. Find in 'usings' begins from last and ends at first.  
+3. Go to parent scope if not global scope and no scope path.
+If global scope the end searching.
+
 ### Sections
 
 Section is some part of the binary that contains some data. Type of the data depends on
