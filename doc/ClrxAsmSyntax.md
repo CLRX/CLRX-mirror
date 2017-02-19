@@ -103,10 +103,12 @@ Example of using scopes:
 ```
 .scope ala  # open scope 'ala', parent is global scope
     sym1 = 4
+    sym2 = 11
     .byte sym1 # put 4
     .scope child   # open scope child, parent is 'ala'
         sym1 = 5
         .byte sym1 # put 5
+        .byte sym2 # put 11, sym2 in global scope
     .ends
     .scope      # open local scope
         sym1 = 8
@@ -124,17 +126,19 @@ Example of 'usings':
 .ends
 .scope another  # open scope 'ala', parent is global scope
     sym2 = 6
+    sym3 = 15
 .ends
 .using ala      # start using 'ala'
-.byte sym2      # put 4, sym1 from scope 'ala'
+.byte sym2      # put 4, sym2 from scope 'ala'
 .scope ula
     .using another  # start using 'another'
-    .byte sym2  # put 6, sym1 from scope 'another'
+    .byte sym2  # put 6, sym2 from scope 'another'
 .ends
 .byte sym2      # put 4, sym1 from scope 'ala'
 .scope ula
     .using ala # start using 'ala'
-    .byte sym2  # put 4, sym1 from scope 'ala', because 'ala' is last declared
+    .byte sym2  # put 4, sym2 from scope 'ala', because 'ala' is last declared
+    .byte sym3  # put 11, sym3 from scope 'another'
 .ends
 ```
 
