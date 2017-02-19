@@ -133,6 +133,6 @@ Useful options for clrxdisasm:
 * -C - print configuration dump instead metadatas, CALnotes and setup data
 * -g DEVICETYPE - device type ('pitcairn', 'bonaire'...)
 * -A ARCH - architecture ('gcn1.0', 'gcn1.1' or 'gcn1.2')
-* -t VERSION - driver version for which a binary was generated
+* -t VERSION - driver version for which a binary will be generated
 
 A CLRX assembler accepts source from disassembler.
