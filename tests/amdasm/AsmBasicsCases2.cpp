@@ -1623,6 +1623,11 @@ loop:   .rept 10
                 .byte obj4
             .ends
         .ends
+        .unusing
+        .using ::ala::beta::ceta
+        .using ::ala::ceta::beta
+        .using ::ala::beta::ceta
+        .byte obj4
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
         { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
@@ -1631,10 +1636,10 @@ loop:   .rept 10
               2, 3, 6, 7, 8, 2, 3, 6, 7, 8, 2, 11, 66, 2,
               // using
               22, 23, 24, 23, 25, 24, 26, 30,
-              28, 27, 28
+              28, 27, 28, 26
             } } },
         {
-            { ".", 50, 0, 0, true, false, false, 0, 0 },
+            { ".", 51, 0, 0, true, false, false, 0, 0 },
             { "ala::beta::ala::obj", 4, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "ala::beta::ceta::beta::obj", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
             { "ala::beta::ceta::obj", 5, ASMSECT_ABS, 0, true, false, false, 0, 0 },

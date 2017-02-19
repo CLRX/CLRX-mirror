@@ -689,11 +689,10 @@ void AsmScope::deleteSymbolsRecursively()
 void AsmScope::startUsingScope(AsmScope* scope)
 {   // do add this
     auto res = usedScopesSet.insert({scope, usedScopes.end()});
-    if (res.second)
-    {   // if added, do add to list
-        usedScopes.push_front(scope);
-        res.first->second = usedScopes.begin();
-    }
+    usedScopes.push_front(scope);
+    if (!res.second)
+        usedScopes.erase(res.first->second);
+    res.first->second = usedScopes.begin();
 }
 
 void AsmScope::stopUsingScope(AsmScope* scope)
