@@ -86,8 +86,13 @@ is root of next defined scopes. The scope can be opened by using `.scope` pseudo
 they can be closed by using `.ends` or `.endscope`. We distinguish scope to two types:
 normal and local scopes.
 The local scopes doesn't have name and they exists only to first close.
-The scopes are organized in tree where
-global scope is root of tree. During searching object, an assembler begins from
+
+If scope will be opened, any object in this scope will directly available (by simple name).
+Next available object is in used scopes (declared by `.using` pseudo-op)
+begins from last 'using' to 'first'.
+
+The scopes are organized in tree where global scope is root of tree.
+During searching object, an assembler begins from
 top (current) scope and ends at global scope. In every scope, it is possible to
 start using object from other scopes (by `.using` pseudo-op).
 While searching at scope stack level, an assembler firstly search that scope and
