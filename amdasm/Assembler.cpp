@@ -1906,19 +1906,39 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
     return ParseState::PARSED;
 }
 
+struct ScopeUsingStackElem
+{
+    AsmScope* scope;
+    std::list<AsmScope*>::iterator usingIt;
+};
+
 AsmScope* Assembler::findScopeInScope(AsmScope* scope, const CString& scopeName,
                   std::unordered_set<AsmScope*>& scopeSet)
 {
     if (!scopeSet.insert(scope).second)
-        return nullptr; // if already exist, we do not search
-    auto it = scope->scopeMap.find(scopeName);
-    if (it != scope->scopeMap.end())
-        return it->second;
-    for (AsmScope* rootScope: scope->usedScopes)
+        return nullptr;
+    std::stack<ScopeUsingStackElem> usingStack;
+    usingStack.push(ScopeUsingStackElem{ scope, scope->usedScopes.begin() });
+    while (!usingStack.empty())
     {
-        AsmScope* result = findScopeInScope(rootScope, scopeName, scopeSet);
-        if (result != nullptr)
-            return result;
+        ScopeUsingStackElem& current = usingStack.top();
+        AsmScope* curScope = current.scope;
+        if (current.usingIt == curScope->usedScopes.begin())
+        {   // first we found in this scope
+            auto it = curScope->scopeMap.find(scopeName);
+            if (it != curScope->scopeMap.end())
+                return it->second;
+        }
+        // next we find in used children
+        if (current.usingIt != curScope->usedScopes.end())
+        {
+            AsmScope* child = *current.usingIt;
+            if (scopeSet.insert(child).second) // we insert, new
+                usingStack.push(ScopeUsingStackElem{ child, child->usedScopes.begin() });
+            ++current.usingIt; // next
+        }
+        else // back
+            usingStack.pop();
     }
     return nullptr;
 }
@@ -1973,15 +1993,29 @@ AsmSymbolEntry* Assembler::findSymbolInScopeInt(AsmScope* scope,
                     const CString& symName, std::unordered_set<AsmScope*>& scopeSet)
 {
     if (!scopeSet.insert(scope).second)
-        return nullptr; // if already exist, we do not search
-    AsmSymbolMap::iterator it = scope->symbolMap.find(symName);
-    if (it != scope->symbolMap.end())
-        return &*it;
-    for (AsmScope* rootScope: scope->usedScopes)
+        return nullptr;
+    std::stack<ScopeUsingStackElem> usingStack;
+    usingStack.push(ScopeUsingStackElem{ scope, scope->usedScopes.begin() });
+    while (!usingStack.empty())
     {
-        AsmSymbolEntry* result = findSymbolInScopeInt(rootScope, symName, scopeSet);
-        if (result != nullptr)
-            return result;
+        ScopeUsingStackElem& current = usingStack.top();
+        AsmScope* curScope = current.scope;
+        if (current.usingIt == curScope->usedScopes.begin())
+        {   // first we found in this scope
+            AsmSymbolMap::iterator it = curScope->symbolMap.find(symName);
+            if (it != curScope->symbolMap.end())
+                return &*it;
+        }
+        // next we find in used children
+        if (current.usingIt != curScope->usedScopes.end())
+        {
+            AsmScope* child = *current.usingIt;
+            if (scopeSet.insert(child).second) // we insert, new
+                usingStack.push(ScopeUsingStackElem{ child, child->usedScopes.begin() });
+            ++current.usingIt; // next
+        }
+        else // back
+            usingStack.pop();
     }
     return nullptr;
 }
@@ -2030,15 +2064,29 @@ AsmRegVarEntry* Assembler::findRegVarInScopeInt(AsmScope* scope, const CString& 
                 std::unordered_set<AsmScope*>& scopeSet)
 {
     if (!scopeSet.insert(scope).second)
-        return nullptr; // if already exist, we do not search
-    AsmRegVarMap::iterator it = scope->regVarMap.find(rvName);
-    if (it != scope->regVarMap.end())
-        return &*it;
-    for (AsmScope* rootScope: scope->usedScopes)
+        return nullptr;
+    std::stack<ScopeUsingStackElem> usingStack;
+    usingStack.push(ScopeUsingStackElem{ scope, scope->usedScopes.begin() });
+    while (!usingStack.empty())
     {
-        AsmRegVarEntry* result = findRegVarInScopeInt(rootScope, rvName, scopeSet);
-        if (result != nullptr)
-            return result;
+        ScopeUsingStackElem& current = usingStack.top();
+        AsmScope* curScope = current.scope;
+        if (current.usingIt == curScope->usedScopes.begin())
+        {   // first we found in this scope
+            AsmRegVarMap::iterator it = scope->regVarMap.find(rvName);
+            if (it != scope->regVarMap.end())
+                return &*it;
+        }
+        // next we find in used children
+        if (current.usingIt != curScope->usedScopes.end())
+        {
+            AsmScope* child = *current.usingIt;
+            if (scopeSet.insert(child).second) // we insert, new
+                usingStack.push(ScopeUsingStackElem{ child, child->usedScopes.begin() });
+            ++current.usingIt; // next
+        }
+        else // back
+            usingStack.pop();
     }
     return nullptr;
 }
