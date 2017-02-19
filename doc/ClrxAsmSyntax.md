@@ -140,6 +140,7 @@ Example of 'usings':
     .byte sym2  # put 4, sym2 from scope 'ala', because 'ala' is last declared
     .byte sym3  # put 11, sym3 from scope 'another'
 .ends
+::ala::sym2 = 7 # redefine sym2 in scope 'ala'
 ```
 
 The names of the object can have the scope path. Scope path is way to particular scope in
@@ -163,7 +164,9 @@ sym1 = 9
 
 The setting symbols, labels, if simple name is given (without scope path) always
 create object in the current scope. Any call of object (even if not defined) always
-start searching through scope tree.
+start searching through scope tree. It is possible to call to symbols
+in scope which doesn't already exists (just they will be created with object while calling).
+After that call, symbol can be defined.
 
 The algorithm of searching the object is bit sophisticated:
 
@@ -173,12 +176,15 @@ The algorithm of searching the object is bit sophisticated:
 1.3. If scope begins from `::`, then first scope element in global scope  
 1.4. Otherwise, find scope element begins from current scope going to shallower
 level of tree (finally to global scope).  
-1.5. If scope is not found, then create at global scope (if scope path begins `::`) or
-  current scope.  
+1.5. If scopes are not found, then create then at global scope (if scope path begins `::`)
+or current scope.  
 2. Find object in that scope, if not found:  
 2.1. Find in 'usings' begins from last and ends at first.  
 3. Go to parent scope if not global scope and no scope path.
 If global scope the end searching.
+
+The special symbol `.` is always global. Any `.` in any place always calls this
+same counter.
 
 ### Sections
 
