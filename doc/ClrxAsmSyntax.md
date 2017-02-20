@@ -205,7 +205,7 @@ Any symbol that refer to some code place refer to sections. Between switching ke
 global layout, the last used sections are stored. Next usage of kernel or global layout
 causes switching to this last section.
 
-Special type of sections is configuration's sections. These section does not hold any
+Special type of sections are configuration's sections. These section does not hold any
 content (bytes), instead they stores configuration of the kernel or program which
 is defined by specific pseudo operations. Any putting data to these sections is illegal.
 
