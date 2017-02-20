@@ -12,7 +12,7 @@ statements. Statement can be the symbol's assignment, assembler's pseudo-operati
 Pseudo-operations begins from `.` character. Symbol assignment is in following form:
 `symbolName=expression`.
 
-If line is too long, it can be splitted into small parts by using `\` at end of line,
+If line is too long, it can be splitted into smaller parts by using `\` at end of line,
 likewise as in C/C++ language. 
 
 Statement can be separated in single line by semicolon `;`. Like that:
