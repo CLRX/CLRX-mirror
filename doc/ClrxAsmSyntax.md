@@ -108,7 +108,7 @@ Example of using scopes:
     .scope child   # open scope child, parent is 'ala'
         sym1 = 5
         .byte sym1 # put 5
-        .byte sym2 # put 11, sym2 in global scope
+        .byte sym2 # put 11, sym2 in 'ala' scope
     .ends
     .scope      # open local scope
         sym1 = 8
