@@ -80,8 +80,9 @@ s_add_u32 s1,s2,lit(4.0)    # encode 4.0 as literal (two 32-bit words)
 
 ### Scopes
 
-New feature is the visibility's scopes. The scope concern's symbols, labels
-(except local labels), regvars.  At start, the assembler create the global scope, that
+New feature is the visibility's scopes. The scopes concerns symbols, labels
+(except local labels), regvars. The macros, kernels and sections are still global.
+ At start, the assembler create the global scope, that
 is root of next defined scopes. The scope can be opened by using `.scope` pseudo-op and
 they can be closed by using `.ends` or `.endscope`. We distinguish scope to two types:
 normal and local scopes.
