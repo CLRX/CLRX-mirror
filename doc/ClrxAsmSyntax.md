@@ -124,7 +124,7 @@ Example of 'usings':
 .scope ala  # open scope 'ala', parent is global scope
     sym2 = 4
 .ends
-.scope another  # open scope 'ala', parent is global scope
+.scope another  # open scope 'another', parent is global scope
     sym2 = 6
     sym3 = 15
 .ends
