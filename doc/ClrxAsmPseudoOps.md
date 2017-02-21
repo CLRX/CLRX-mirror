@@ -730,7 +730,7 @@ Syntax .scope [SCOPENAME]
 Open visbility's scope (if no name specified, then local scope).
 The labels (except local labels), symbols, scopes and regvars are defined
 inside scopes and visible inside them. The assembler create always global scope at begin.
-If scope doesn't exists then will be created. The nested scopes is allowed even
+If scope doesn't exists then will be created. The nested scopes are allowed even
 if parent scope is local scope. The opened scope have parent that is previous scope.
 Local scopes exists until first close.
 
