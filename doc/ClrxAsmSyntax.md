@@ -87,7 +87,7 @@ New feature is the visibility's scopes. The scopes concerns symbols, labels
 is root of next defined scopes. The scope can be opened by using `.scope` pseudo-op and
 they can be closed by using `.ends` or `.endscope`. We distinguish scope to two types:
 normal and local scopes.
-The local scopes doesn't have name and they exists only to first close.
+The local scopes doesn't have name and they exists until first close.
 
 If scope will be opened, any object in this scope will directly available (by simple name).
 Next available object is in used scopes (declared by `.using` pseudo-op)
