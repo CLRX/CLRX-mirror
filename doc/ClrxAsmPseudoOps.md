@@ -623,7 +623,7 @@ Disable old and buggy behavior for floating point literals and constants.
 
 ### .nomacrocase
 
-Disable ignoring letter's case in macro names (default behaviour).
+Disable ignoring letter's case in macro names.
 
 ### .octa
 
