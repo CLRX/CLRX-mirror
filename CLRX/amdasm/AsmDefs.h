@@ -564,16 +564,16 @@ struct AsmScope
     AsmSymbolMap symbolMap;
     AsmRegVarMap regVarMap;
     AsmScopeMap scopeMap;
-    bool local;
+    bool temporary;
     std::list<AsmScope*> usedScopes;
     std::unordered_map<AsmScope*, std::list<AsmScope*>::iterator> usedScopesSet;
     
     AsmScope(AsmScope* _parent, const AsmSymbolMap& _symbolMap,
-                     bool _local = false)
-            : parent(_parent), symbolMap(_symbolMap), local(_local)
+                     bool _temporary = false)
+            : parent(_parent), symbolMap(_symbolMap), temporary(_temporary)
     { }
-    AsmScope(AsmScope* _parent = nullptr, bool _local = false)
-            : parent(_parent), local(_local)
+    AsmScope(AsmScope* _parent = nullptr, bool _temporary= false)
+            : parent(_parent), temporary(_temporary)
     { }
     ~AsmScope();
     

@@ -2163,7 +2163,7 @@ bool Assembler::popScope()
 {
     if (scopeStack.empty())
         return false; // can't pop scope
-    if (currentScope->local)
+    if (currentScope->temporary)
     {   // delete scope
         currentScope->parent->scopeMap.erase("");
         const bool oldResolvingRelocs = resolvingRelocs;

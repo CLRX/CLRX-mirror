@@ -86,15 +86,15 @@ New feature is the visibility's scopes. The scopes concerns symbols, labels
  At start, the assembler create the global scope, that
 is root of next defined scopes. The scope can be opened by using `.scope` pseudo-op and
 they can be closed by using `.ends` or `.endscope`. We distinguish scope to two types:
-normal and local scopes.
-The local scopes doesn't have name and they exists until first close.
+normal and temporary scopes.
+The temporary scopes doesn't have name and they exists until first close.
 
 If scope will be opened, any object in this scope will directly available (by simple name).
 Next available object is in used scopes (declared by `.using` pseudo-op)
 begins from last 'using' to 'first'.
 
 The scopes are organized in tree where global scope is root of tree.
-This feature, allow to nest scopes (even named scopes inside local scopes).
+This feature, allow to nest scopes (even named scopes inside temporary scopes).
 During searching object, an assembler begins from
 top (current) scope and ends at global scope. In every scope, it is possible to
 start using object from other scopes (by `.using` pseudo-op).
@@ -113,7 +113,7 @@ Example of using scopes:
         .byte sym1 # put 5
         .byte sym2 # put 11, sym2 in 'ala' scope
     .ends
-    .scope      # open local scope
+    .scope      # open temporary scope
         sym1 = 8
         .byte sym1 # put 8
     .ends       # close scope, now is doesn't exists
