@@ -727,7 +727,7 @@ These pseudo-operations are ignored by CLRX assembler.
 
 Syntax .scope [SCOPENAME]
 
-<!-- Open visbility's scope (if no name specified, then temporary scope). -->
+Open visbility's scope (if no name specified, then temporary scope).
 The labels (except local labels), symbols, scopes and regvars are defined
 inside scopes and visible inside them. The assembler create always global scope at begin.
 If scope doesn't exists then will be created. The nested scopes are allowed even
