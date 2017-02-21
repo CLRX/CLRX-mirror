@@ -141,7 +141,7 @@ Example of 'usings':
 .scope ula
     .using ala # start using 'ala'
     .byte sym2  # put 4, sym2 from scope 'ala', because 'ala' is last declared
-    .byte sym3  # put 11, sym3 from scope 'another'
+    .byte sym3  # put 15, sym3 from scope 'another'
 .ends
 ::ala::sym2 = 7 # redefine sym2 in scope 'ala'
 ```
