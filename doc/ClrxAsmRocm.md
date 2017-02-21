@@ -4,6 +4,9 @@ The ROCm platform is new an open-source  environment created by AMD for Radeon G
 (especially designed for HPC and their proffesional products). This platform uses HSACO
 binary object file format to store compiled code for GPU's.
 
+The ROCm binary format implementation and this documentation based on source:
+[ROCm-ComputeABI-Doc](https://github.com/RadeonOpenCompute/ROCm-ComputeABI-Doc).
+
 ## Binary format
 
 The binary file is stored in ELF file. The symbol table holds kernels and data's symbols.

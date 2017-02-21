@@ -3,7 +3,7 @@
 import sys,os,re
 
 if __name__=="__main__":
-    linkSubstRe=re.compile(r'([^\\!]|^)(\[[^[\]()]*\]\([^[\]()]*)\)')
+    linkSubstRe=re.compile(r'([^\\!]|^)(\[[^[\]()]*\]\((?!https?://|\\.)[^[\]()]*)\)')
     
     fi = sys.stdin
     fo = sys.stdout
