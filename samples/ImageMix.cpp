@@ -91,9 +91,17 @@ end:
         .arg img2, image, read_only     # read_only image2d_t img2
         .arg outimg, image, write_only    # write_only image2d_t outimg
     .text
+    .if32
+        s_load_dwordx2 s[0:1], s[6:7], 6*SMUL   # load img1
+    .else
         s_load_dwordx2 s[0:1], s[6:7], 12*SMUL   # load img1
+    .endif
         s_load_dword s2, s[6:7], 0          # global_offset(0)
+    .if32
+        s_load_dword s3, s[6:7], 1*SMUL          # global_offset(1)
+    .else
         s_load_dword s3, s[6:7], 2*SMUL          # global_offset(1)
+    .endif
         s_load_dword s4, s[4:5], 1*SMUL          # localSizes dword
         s_waitcnt lgkmcnt(0)
         s_lshr_b32 s5, s4, 16               # localsize(1)
@@ -116,7 +124,11 @@ end:
         s_and_saveexec_b64 s[2:3], vcc      # deactivate obsolete threads
         s_cbranch_execz end                 # skip to end
         
+    .if32
+        s_load_dwordx4 s[4:7], s[6:7], 8*SMUL   # load img2,outimg pointers
+    .else
         s_load_dwordx4 s[4:7], s[6:7], 14*SMUL   # load img2,outimg pointers
+    .endif
         s_waitcnt lgkmcnt(0)                # wait
         s_load_dwordx8 s[8:15], s[0:1], 0   # load first img desc
         s_load_dwordx8 s[16:23], s[4:5], 0  # load second img desc
