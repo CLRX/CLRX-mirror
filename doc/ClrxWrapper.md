@@ -53,7 +53,7 @@ to keep compatibility with original format.
     Choose old and buggy floating point literals rules (to 0.1.2 version)
 for compatibility.
 
-* **-macroNoCase**
+* **-noMacroCase**
     Do not ignore letter's case in macro names (by default is ignored).
 
 * **-w**
