@@ -319,14 +319,14 @@ private:
     const Array<cxbyte>& inData;
     cl_mem input, output;
 public:
-    ReverseBits(cl_uint deviceIndex, bool useCL2, const Array<cxbyte>& input);
+    ReverseBits(cl_uint deviceIndex, cxuint useCL, const Array<cxbyte>& input);
     ~ReverseBits() = default;
     
     void run();
 };
 
-ReverseBits::ReverseBits(cl_uint deviceIndex, bool useCL2, const Array<cxbyte>& _inData)
-            : CLFacade(deviceIndex, reverseBitsSource, "reverseBits", useCL2),
+ReverseBits::ReverseBits(cl_uint deviceIndex, cxuint useCL, const Array<cxbyte>& _inData)
+            : CLFacade(deviceIndex, reverseBitsSource, "reverseBits", useCL),
               inData(_inData)
 {
     cl_int error;
@@ -404,8 +404,8 @@ int main(int argc, const char** argv)
 try
 {
     cl_uint deviceIndex = 0;
-    bool useCL2 = false;
-    if (CLFacade::parseArgs("ReverseBits", "[INPUTFILE]", argc, argv, deviceIndex, useCL2))
+    cxuint useCL = 0;
+    if (CLFacade::parseArgs("ReverseBits", "[INPUTFILE]", argc, argv, deviceIndex, useCL))
         return 0;
     Array<cxbyte> data;
     if (argc >= 3)
@@ -413,7 +413,7 @@ try
     else
         data = loadDataFromFile("input");
     
-    ReverseBits reverseBits(deviceIndex, useCL2, data);
+    ReverseBits reverseBits(deviceIndex, useCL, data);
     reverseBits.run();
     return 0;
 }

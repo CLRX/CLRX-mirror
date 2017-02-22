@@ -122,7 +122,7 @@ public:
 };
 
 GenericPtr::GenericPtr(cl_uint deviceIndex)
-            : CLFacade(deviceIndex, genericPtrSource, "genericPtr", true)
+            : CLFacade(deviceIndex, genericPtrSource, "genericPtr", 2)
 {   // creating buffers: two for read-only, one for output
     cl_int error;
     outBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(cl_uint)*2,
@@ -167,8 +167,8 @@ int main(int argc, const char** argv)
 try
 {
     cl_uint deviceIndex = 0;
-    bool useCL2;
-    if (CLFacade::parseArgs("GenericPtr", "", argc, argv, deviceIndex, useCL2))
+    cxuint useCL = 0;
+    if (CLFacade::parseArgs("GenericPtr", "", argc, argv, deviceIndex, useCL))
         return 0;
     GenericPtr genericPtr(deviceIndex);
     genericPtr.run();

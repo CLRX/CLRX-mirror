@@ -156,7 +156,7 @@ private:
     
     void loadImageInt(const char* inFilename);
 public:
-    ImageMix(cl_uint deviceIndex, bool useCL2, const char* imgFileName1,
+    ImageMix(cl_uint deviceIndex, cxuint useCL, const char* imgFileName1,
              const char* imgFileName2, const char* outFileName);
     ~ImageMix() = default;
     
@@ -164,9 +164,9 @@ public:
     void saveImage();
 };
 
-ImageMix::ImageMix(cl_uint deviceIndex, bool useCL2, const char* imgFileName1,
+ImageMix::ImageMix(cl_uint deviceIndex, cxuint useCL, const char* imgFileName1,
              const char* imgFileName2, const char* _outFileName)
-             : CLFacade(deviceIndex, imageMixSource, "imageMix", useCL2),
+             : CLFacade(deviceIndex, imageMixSource, "imageMix", useCL),
                width(0), height(0), outFileName(_outFileName)
 {
     loadImageInt(imgFileName1);
@@ -359,9 +359,9 @@ int main(int argc, const char** argv)
 try
 {
     cl_uint deviceIndex = 0;
-    bool useCL2 = false;
+    cxuint useCL = 0;
     if (CLFacade::parseArgs("ImageMix", "[IMAGE1] [IMAGE2] [OUTIMAGE]",
-                argc, argv, deviceIndex, useCL2))
+                argc, argv, deviceIndex, useCL))
         return 0;
     const char* inFileName1 = "image1.png";
     const char* inFileName2 = "image2.png";
@@ -374,7 +374,7 @@ try
     if (argc >= 5)
         outFileName = argv[4];
     
-    ImageMix imageMix(deviceIndex, useCL2, inFileName1, inFileName2, outFileName);
+    ImageMix imageMix(deviceIndex, useCL, inFileName1, inFileName2, outFileName);
     imageMix.run();
     return 0;
 }

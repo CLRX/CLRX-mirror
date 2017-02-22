@@ -43,7 +43,7 @@ static char* stripCString(char* str)
 }
 
 bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
-                  const char** argv, cl_uint& deviceIndex, bool& useCL2)
+                  const char** argv, cl_uint& deviceIndex, cxuint& useCL)
 {
     if (argc >= 2 && ::strcmp(argv[1], "-?")==0)
     {
@@ -130,10 +130,12 @@ bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
     else if (argc >= 2)
     {
         const char* end;
-        useCL2 = false;
+        useCL = 0;
         deviceIndex = cstrtovCStyle<cl_uint>(argv[1], nullptr, end);
         if (strcasecmp(end, "cl2")==0)
-            useCL2 = true;
+            useCL = 2;
+        else if (strcasecmp(end, "cl1")==0 || strcasecmp(end, "old")==0)
+            useCL = 1;
     }
     return false;
 }
@@ -144,7 +146,7 @@ static const char* binaryFormatNamesTbl[] =
 };
 
 CLFacade::CLFacade(cl_uint deviceIndex, const char* sourceCode, const char* kernelNames,
-            bool useCL2)
+            cxuint useCL)
 {
 try
 {
@@ -188,7 +190,7 @@ try
             choosenPlatform = platforms[i];
             binaryFormat = ::strcmp(platformName.get(), "Clover")==0 ?
                     BinaryFormat::GALLIUM : BinaryFormat::AMD;
-            if (binaryFormat == BinaryFormat::AMD && useCL2)
+            if (binaryFormat == BinaryFormat::AMD && useCL==2)
                 binaryFormat = BinaryFormat::AMDCL2;
             if (binaryFormat == BinaryFormat::AMD && detectAmdDriverVersion() >= 200406)
                 defaultCL2ForDriver = true;
@@ -287,9 +289,15 @@ try
     const GPUDeviceType devType = getGPUDeviceTypeFromName(devNamePtr);
     /* change binary format to AMDCL2 if default for this driver version and 
      * architecture >= GCN 1.1 */
+    bool useLegacy = false;
     if (defaultCL2ForDriver &&
         getGPUArchitectureFromDeviceType(devType) >= GPUArchitecture::GCN1_1)
-        binaryFormat = BinaryFormat::AMDCL2;
+    {
+        if (useCL!=1) // if not cl1/old
+            binaryFormat = BinaryFormat::AMDCL2;
+        else // use legacy
+            useLegacy = true;
+    }
 
     std::cout << "BinaryFormat: " << binaryFormatNamesTbl[cxuint(binaryFormat)] << "\n"
         "Bitness: " << bits << std::endl;
@@ -318,7 +326,8 @@ try
         throw CLError(error, "clCreateProgramWithBinary");
     // build program
     error = clBuildProgram(program, 1, &device,
-               (binaryFormat==BinaryFormat::AMDCL2) ? "-cl-std=CL2.0" : "",
+               (binaryFormat==BinaryFormat::AMDCL2) ? "-cl-std=CL2.0" :
+               (useLegacy ? "-legacy" : ""),
                nullptr, nullptr);
     if (error != CL_SUCCESS)
     {   /* get build logs */
