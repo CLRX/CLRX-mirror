@@ -1544,7 +1544,7 @@ try
         {   // if option
             if (word == "-w")
                 asmFlags &= ~ASM_WARNINGS;
-            else if (word == "-m")
+            else if (word == "-macroNoCase")
                 asmFlags |= ASM_MACRONOCASE;
             else if (word == "-legacy")
             {
