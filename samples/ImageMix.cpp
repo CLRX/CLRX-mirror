@@ -96,10 +96,10 @@ end:
     .else
         s_load_dwordx2 s[0:1], s[6:7], 12*SMUL   # load img1
     .endif
-        s_load_dword s2, s[6:7], 0          # global_offset(0)
     .if32
-        s_load_dword s3, s[6:7], 1*SMUL          # global_offset(1)
+        s_load_dwordx2 s2, s[6:7], 0          # global_offset(0,1)
     .else
+        s_load_dword s2, s[6:7], 0          # global_offset(0)
         s_load_dword s3, s[6:7], 2*SMUL          # global_offset(1)
     .endif
         s_load_dword s4, s[4:5], 1*SMUL          # localSizes dword
