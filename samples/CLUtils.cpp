@@ -47,10 +47,12 @@ bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
 {
     if (argc >= 2 && ::strcmp(argv[1], "-?")==0)
     {
-        std::cout << "Usage: " << progName << " [DEVICE_INDEX[cl2]] " << usagePart << "\n"
-                "Print device list: " << progName << " -L" << "\n"
+        std::cout << "Usage: " << progName << " [DEVICE_INDEX[cl1|old|cl2]] " <<
+                usagePart << "\n" "Print device list: " << progName << " -L" << "\n"
                 "Print help: " << progName << " -?\n"
-                "'cl2' after DEVICE_INDEX enables AMD OpenCL 2.0 mode" << std::endl;
+                "'cl2' after DEVICE_INDEX enables AMD OpenCL 2.0 mode\n"
+                "'cl1' or 'old' after DEVICE_INDEX force old AMD OpenCL 1.2 mode"
+                << std::endl;
         return true;
     }
     
