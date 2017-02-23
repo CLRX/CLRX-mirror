@@ -64,10 +64,10 @@ struct AsmRegVar;
 class ISAUsageHandler
 {
 protected:
-    std::vector<cxbyte> instrStruct;
-    std::vector<AsmRegUsageInt> regUsages;
-    std::vector<AsmRegVarUsageInt> regVarUsages;
-    const std::vector<cxbyte>& content;
+    std::vector<cxbyte> instrStruct;    ///< structure of register usage
+    std::vector<AsmRegUsageInt> regUsages;  ///< register usage
+    std::vector<AsmRegVarUsageInt> regVarUsages;    ///< regvar usage
+    const std::vector<cxbyte>& content; ///< code content
     size_t lastOffset;
     size_t readOffset;
     size_t instrStructPos;
@@ -81,20 +81,28 @@ protected:
     
     void skipBytesInInstrStruct();
     
+    /// constructor
     explicit ISAUsageHandler(const std::vector<cxbyte>& content);
 public:
     virtual ~ISAUsageHandler();
     virtual ISAUsageHandler* copy() const = 0;
     
+    /// push regvar or register usage
     void pushUsage(const AsmRegVarUsage& rvu);
+    /// rewind to start for reading
     void rewind();
+    /// flush last pending register usages
     void flush();
+    /// has next regvar usage
     bool hasNext() const
     { return isNext; }
+    /// get next usage
     AsmRegVarUsage nextUsage();
     
+    /// get RW flags (used by assembler)
     virtual cxbyte getRwFlags(AsmRegField regField, uint16_t rstart,
                       uint16_t rend) const = 0;
+    /// get reg pair (used by assembler)
     virtual std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField,
                     cxbyte rwFlags) const = 0;
 };
@@ -105,9 +113,12 @@ class GCNUsageHandler: public ISAUsageHandler
 private:
     uint16_t archMask;
 public:
+    /// constructor
     GCNUsageHandler(const std::vector<cxbyte>& content, uint16_t archMask);
+    /// destructor
     ~GCNUsageHandler();
     
+    /// copy this usage handler
     ISAUsageHandler* copy() const;
     
     cxbyte getRwFlags(AsmRegField regFied, uint16_t rstart, uint16_t rend) const;

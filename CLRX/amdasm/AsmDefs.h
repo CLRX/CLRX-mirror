@@ -485,10 +485,11 @@ enum : AsmRegField
 
 struct AsmScope;
 
+/// Regvar info structure
 struct AsmRegVar
 {
-    cxuint type;    // scalar/vector/other
-    uint16_t size;  // in regs
+    cxuint type;    ///< scalar/vector/other
+    uint16_t size;  ///< in regs
 };
 
 /// regvar map
@@ -497,20 +498,21 @@ typedef std::unordered_map<CString, AsmRegVar> AsmRegVarMap;
 typedef AsmRegVarMap::value_type AsmRegVarEntry;
 
 enum : cxbyte {
-    ASMRVU_READ = 1,
-    ASMRVU_WRITE = 2,
-    ASMRVU_ACCESS_MASK = 3,
-    ASMRVU_REGTYPE_MASK = 4,
-    ASMRVU_REGSIZE_SHIFT = 3,
-    ASMRVU_REGSIZE_MASK = 0x78
+    ASMRVU_READ = 1,        ///< register will be read
+    ASMRVU_WRITE = 2,       ///< register will be written
+    ASMRVU_ACCESS_MASK = 3, ///< access mask
+    ASMRVU_REGTYPE_MASK = 4,    ///< for internal usage (regtype)
+    ASMRVU_REGSIZE_SHIFT = 3,   ///< for internal usage
+    ASMRVU_REGSIZE_MASK = 0x78  ///< for internal usage
 };
 
 /// regvar usage in code
 struct AsmRegVarUsage
 {
-    size_t offset;
+    size_t offset;  ///< offset in section
     const AsmRegVarEntry* regVar;    // if null, then usage of called register
-    uint16_t rstart, rend;
+    uint16_t rstart; ///< register start
+    uint16_t rend;  ///< register end
     AsmRegField regField;   ///< place in instruction
     cxbyte rwFlags;  ///< 1 - read, 2 - write
     cxbyte align;   ///< register alignment
@@ -524,21 +526,23 @@ struct AsmRegVarUsageInt
     AsmRegField regField;   ///< place in instruction
     cxbyte rwFlags;  ///< 1 - read, 2 - write
     cxbyte align;   ///< register alignment
-    cxbyte nextDependency;
+    cxbyte nextDependency;  ///< next dependency flags
 };
 
 struct AsmRegUsageInt
 {
-    AsmRegField regField;
-    cxbyte rwFlags;
+    AsmRegField regField;   ///< place in instruction
+    cxbyte rwFlags;     ///< 1 - read, 2 - write, other flags
 };
 
+/// code flow type
 enum AsmCodeFlowType
 {
-    JUMP = 0,
-    CALL,
-    RETURN,
-    START,
+    JUMP = 0,   ///< jump
+    CJUMP,   ///< conditional jump
+    CALL,   ///< call of procedure
+    RETURN, ///< return from procedure
+    START,  ///< code start
     END     ///< code end
 };
 
@@ -560,25 +564,31 @@ typedef std::unordered_map<CString, AsmScope*> AsmScopeMap;
 /// assembler scope for symbol, macros, regvars
 struct AsmScope
 {
-    AsmScope* parent;
-    AsmSymbolMap symbolMap;
-    AsmRegVarMap regVarMap;
-    AsmScopeMap scopeMap;
-    bool temporary;
+    AsmScope* parent;   ///< parent scope
+    AsmSymbolMap symbolMap; ///< symbol map
+    AsmRegVarMap regVarMap; ///< regvar map
+    AsmScopeMap scopeMap;   ///< scope map
+    bool temporary; ///< true if temporary
     std::list<AsmScope*> usedScopes;
     std::unordered_map<AsmScope*, std::list<AsmScope*>::iterator> usedScopesSet;
     
+    /// constructor
     AsmScope(AsmScope* _parent, const AsmSymbolMap& _symbolMap,
                      bool _temporary = false)
             : parent(_parent), symbolMap(_symbolMap), temporary(_temporary)
     { }
+    /// constructor
     AsmScope(AsmScope* _parent = nullptr, bool _temporary= false)
             : parent(_parent), temporary(_temporary)
     { }
+    /// destructor
     ~AsmScope();
     
+    /// start using scope in this scope
     void startUsingScope(AsmScope* scope);
+    /// stop using scope in this scope
     void stopUsingScope(AsmScope* scope);
+    /// remove all usings
     void stopUsingScopes()
     {
         usedScopes.clear();
