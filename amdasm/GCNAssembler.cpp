@@ -18,7 +18,6 @@
  */
 
 #include <CLRX/Config.h>
-//#include <iostream>
 #include <cstdio>
 #include <vector>
 #include <memory>
@@ -108,10 +107,6 @@ static void initializeGCNAssembler()
         }
     }
     gcnInstrSortedTable.resize(j); // final size
-    /*for (const GCNAsmInstruction& instr: gcnInstrSortedTable)
-        std::cout << "{ " << instr.mnemonic << ", " << cxuint(instr.encoding) <<
-                std::hex << ", 0x" << instr.mode << ", 0x" << instr.code1 << ", 0x" <<
-                instr.code2 << std::dec << ", " << instr.archMask << " }" << std::endl;*/
 }
 
 // GCN Usage handler
