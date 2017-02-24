@@ -305,10 +305,11 @@ void GCNUsageHandler::getUsageDependencies(size_t offset, const AsmRegVarUsage* 
             {   // if SGPR
                 if ((rvus[i].regVar==nullptr && rvus[i].rstart<108) ||
                      rvus[i].regVar->second.type == REGTYPE_SGPR)
-                    equalToDeps[1 + count++] = i;
+                    equalToDeps[2 + count++] = i;
             }
         }
-        equalToDeps[0] = (count>=2) ? count : 0;
+        equalToDeps[1] = (count >= 2) ? count : 0;
+        equalToDeps[0] = (equalToDeps[1] != 0);
     }
     // linear dependencies (join fields)
     count = 0;
@@ -318,9 +319,10 @@ void GCNUsageHandler::getUsageDependencies(size_t offset, const AsmRegVarUsage* 
         if (rf == GCNFIELD_M_VDATA || rf == GCNFIELD_M_VDATAH ||
             rf == GCNFIELD_M_VDATALAST ||
             rf == GCNFIELD_FLAT_VDST || rf == GCNFIELD_FLAT_VDSTLAST)
-            linearDeps[1 + count++] = i;
+            linearDeps[2 + count++] = i;
     }
-    linearDeps[0] = (count>=2) ? count : 0;
+    linearDeps[1] = (count >= 2) ? count : 0;
+    linearDeps[0] = (linearDeps[1] != 0);
 }
 
 /*
