@@ -1307,9 +1307,6 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         (haveDstCC && !dstCCReg.isVal(106)) || (haveSrcCC && !srcCCReg.isVal(106)) ||
         (gcnEncSize==GCNEncSize::BIT64);
     
-    /*if ((src0Op.range.start==255 || src1Op.range.start==255) &&
-        (src0Op.range.start<108 || src0Op.range.start==124 ||
-         src1Op.range.start<108 || src1Op.range.start==124))*/
     if ((src0Op.range.isVal(255) || src1Op.range.isVal(255)) &&
         (src0Op.range.isSGPR() || src0Op.range.isVal(124) ||
          src1Op.range.isSGPR() || src1Op.range.isVal(124)))
@@ -1330,13 +1327,20 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     
     cxuint sgprsReaded = 0;
-    if (src0Op.range.isSGPR())
-        sgprsReaded++;
-    if (src1Op.range.isSGPR() && src0Op.range.start!=src1Op.range.start)
-        sgprsReaded++;
-    if (haveSrcCC && src1Op.range.start!=srcCCReg.start &&
-                src0Op.range.start!=srcCCReg.start)
-        sgprsReaded++;
+    if (!src0Op.range.isRegVar())
+    {
+        if (src0Op.range.isSGPR())
+            sgprsReaded++;
+        if (!src1Op.range.isRegVar() && src1Op.range.isSGPR() &&
+                src0Op.range.start!=src1Op.range.start)
+            sgprsReaded++;
+    }
+    if (haveSrcCC && !srcCCReg.isRegVar())
+    {
+        if ((!src1Op.range.isRegVar() && src1Op.range.start!=srcCCReg.start) &&
+                (!src0Op.range.isRegVar() && src0Op.range.start!=srcCCReg.start))
+            sgprsReaded++;
+    }
     
     if (sgprsReaded >= 2)
     {   /* include VCCs (???) */
@@ -1688,7 +1692,8 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         asmr.printError(instrPlace, "Literal with SGPR or M0 is illegal");
         return false;
     }
-    if (src0Op.range.isSGPR() && src1Op.range.isSGPR() &&
+    if (!src0Op.range.isRegVar() && !src1Op.range.isRegVar() &&
+        src0Op.range.isSGPR() && src1Op.range.isSGPR() &&
         src0Op.range.bstart()!=src1Op.range.bstart())
     {   /* include VCCs (???) */
         asmr.printError(instrPlace, "More than one SGPR to read in instruction");
@@ -1964,17 +1969,22 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         cxuint numSgprToRead = 0;
         //if (src0Op.range.start<108)
-        if (src0Op.range.isSGPR())
-            numSgprToRead++;
-        //if (src1Op && src1Op.range.start<108 &&
-        if (src1Op && src1Op.range.isSGPR() &&
-                    src0Op.range.start!=src1Op.range.start)
-            numSgprToRead++;
+        if (!src0Op.range.isRegVar())
+        {
+            if (src0Op.range.isSGPR())
+                numSgprToRead++;
+            //if (src1Op && src1Op.range.start<108 &&
+            if (src1Op && !src1Op.range.isRegVar() && src1Op.range.isSGPR() &&
+                        src0Op.range.start!=src1Op.range.start)
+                numSgprToRead++;
+        }
         //if (src2Op && src2Op.range.start<108 &&
-        if (src2Op && src2Op.range.isSGPR() &&
-                src0Op.range.start!=src2Op.range.start &&
-                src1Op.range.start!=src2Op.range.start)
-            numSgprToRead++;
+        if (src2Op && !src2Op.range.isRegVar() && src2Op.range.isSGPR())
+        {
+            if((!src0Op.range.isRegVar() && src0Op.range.start!=src2Op.range.start) &&
+                (!src1Op.range.isRegVar() && src1Op.range.start!=src2Op.range.start))
+                numSgprToRead++;
+        }
         
         if (numSgprToRead>=2)
         {
