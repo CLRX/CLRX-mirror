@@ -289,6 +289,40 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
     return { rstart, rstart+regSize };
 }
 
+void GCNUsageHandler::getUsageDependencies(size_t offset, const AsmRegVarUsage* rvus,
+                cxbyte* linearDeps, cxbyte* equalToDeps) const
+{
+    cxuint count = 0;
+    if (rvus[0].regField>=GCNFIELD_VOP_SRC0 && rvus[0].regField<=GCNFIELD_VOP3_SDST1)
+    {   // if VOPx instructions, equalTo deps for rule (only one SGPR in source)
+        for (cxuint i = 0; i < 6; i++)
+        {
+            const AsmRegField rf = rvus[i].regField;
+            if (rf == GCNFIELD_VOP_SRC0 || rf == GCNFIELD_VOP_VSRC1 ||
+                rf == GCNFIELD_VOP_SSRC1 || rf == GCNFIELD_VOP3_SRC0 ||
+                rf == GCNFIELD_VOP3_SRC1 || rf == GCNFIELD_VOP3_SRC2 ||
+                rf == GCNFIELD_VOP3_SSRC || rf == GCNFIELD_DPPSDWA_SRC0)
+            {   // if SGPR
+                if ((rvus[i].regVar==nullptr && rvus[i].rstart<108) ||
+                     rvus[i].regVar->second.type == REGTYPE_SGPR)
+                    equalToDeps[1 + count++] = i;
+            }
+        }
+        equalToDeps[0] = (count>=2) ? count : 0;
+    }
+    // linear dependencies (join fields)
+    count = 0;
+    for (cxuint i = 0; i < 6; i++)
+    {
+        const AsmRegField rf = rvus[i].regField;
+        if (rf == GCNFIELD_M_VDATA || rf == GCNFIELD_M_VDATAH ||
+            rf == GCNFIELD_M_VDATALAST ||
+            rf == GCNFIELD_FLAT_VDST || rf == GCNFIELD_FLAT_VDSTLAST)
+            linearDeps[1 + count++] = i;
+    }
+    linearDeps[0] = (count>=2) ? count : 0;
+}
+
 /*
  * GCN Assembler
  */

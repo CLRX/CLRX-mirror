@@ -105,6 +105,9 @@ public:
     /// get reg pair (used by assembler)
     virtual std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField,
                     cxbyte rwFlags) const = 0;
+    // get usage dependencies around single instruction
+    virtual void getUsageDependencies(size_t offset, const AsmRegVarUsage* rvus,
+                cxbyte* linearDeps, cxbyte* equalToDeps) const = 0;
 };
 
 /// GCN (register and regvar) Usage handler
@@ -123,6 +126,8 @@ public:
     
     cxbyte getRwFlags(AsmRegField regFied, uint16_t rstart, uint16_t rend) const;
     std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField, cxbyte rwFlags) const;
+    void getUsageDependencies(size_t offset, const AsmRegVarUsage* rvus,
+                cxbyte* linearDeps, cxbyte* equalToDeps) const;
 };
 
 /// ISA assembler class
