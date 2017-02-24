@@ -147,7 +147,10 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "s_xor_b64 rcx3[4:5], rax4[0:1], rbx5[2:3]\n"
         "s_cbranch_g_fork  rcx3[0:1], rax4[2:3]\n"
         "s_and_b32 s46, s21, s62\n"
-        "s_xor_b64 s[26:27], s[38:39], s[12:13]\n",
+        "s_xor_b64 s[26:27], s[38:39], s[12:13]\n"
+        "s_xor_b64 rcx3[4:5], 5411, rbx5[2:3]\n"
+        "s_xor_b64 rcx3[4:5], 14, rbx5[2:3]\n"
+        "s_xor_b64 rcx3[4:5], rax4[0:1], s[12:13]\n",
         {
             // s_and_b32 rdx, rax, rbx
             { 0, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
@@ -171,7 +174,17 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             // s_xor_b64 s[26:27], s[38:39], s[12:13]
             { 20, nullptr, 26, 28, GCNFIELD_SDST, ASMRVU_WRITE, 0 },
             { 20, nullptr, 38, 40, GCNFIELD_SSRC0, ASMRVU_READ, 0 },
-            { 20, nullptr, 12, 14, GCNFIELD_SSRC1, ASMRVU_READ, 0 }
+            { 20, nullptr, 12, 14, GCNFIELD_SSRC1, ASMRVU_READ, 0 },
+            // s_xor_b64 rcx3[4:5], 5411, rbx5[2:3]
+            { 24, "rcx3", 4, 6, GCNFIELD_SDST, ASMRVU_WRITE, 2 },
+            { 24, "rbx5", 2, 4, GCNFIELD_SSRC1, ASMRVU_READ, 2 },
+            // s_xor_b64 rcx3[4:5], 14, rbx5[2:3]
+            { 32, "rcx3", 4, 6, GCNFIELD_SDST, ASMRVU_WRITE, 2 },
+            { 32, "rbx5", 2, 4, GCNFIELD_SSRC1, ASMRVU_READ, 2 },
+            // s_xor_b64 rcx3[4:5], rax4[0:1], s[12:13]
+            { 36, "rcx3", 4, 6, GCNFIELD_SDST, ASMRVU_WRITE, 2 },
+            { 36, "rax4", 0, 2, GCNFIELD_SSRC0, ASMRVU_READ, 2 },
+            { 36, nullptr, 12, 14, GCNFIELD_SSRC1, ASMRVU_READ, 0 }
         },
         true, ""
     },
@@ -354,7 +367,9 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "v_mac_f32  rex, rax, rbx\n"
         "v_mac_legacy_f32  rex, rax, rbx\n"
         "v_mac_f32  rex, rax, rbx vop3\n"
-        "v_mac_f32  v46, v42, v22\n",
+        "v_mac_f32  v46, v42, v22\n"
+        "v_sub_f32  rex, 87.0, rbx\n"
+        "v_sub_f32  v46, -61.5, v22\n",
         {
             // v_sub_f32  rex, rax, rbx
             { 0, "rex", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
@@ -441,7 +456,13 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 104, nullptr, 256+46, 256+47, GCNFIELD_VOP_VDST,
                         ASMRVU_WRITE|ASMRVU_READ, 0 },
             { 104, nullptr, 256+42, 256+43, GCNFIELD_VOP_SRC0, ASMRVU_READ, 0 },
-            { 104, nullptr, 256+22, 256+23, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 }
+            { 104, nullptr, 256+22, 256+23, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 },
+            // v_sub_f32  rex, 87.0, rbx
+            { 108, "rex", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 108, "rbx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_sub_f32  v46, -61.5, v22
+            { 116, nullptr, 256+46, 256+47, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 0 },
+            { 116, nullptr, 256+22, 256+23, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 }
         },
         true, ""
     },
