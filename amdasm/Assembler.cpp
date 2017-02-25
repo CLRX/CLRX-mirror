@@ -585,12 +585,13 @@ void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
     useRegMode = true;
     if (pushedArgs == 0)
     {
+        argFlags = 0;
         instrStruct.push_back(0x80); // sign of regvarusage from usereg
         instrStruct.push_back(0);
     }
     if (rvu.regVar != nullptr)
     {
-        argFlags |= (1U<<pushedArgs);
+        argFlags |= (1U<<(pushedArgs & 7));
         regVarUsages.push_back({ rvu.regVar, rvu.rstart, rvu.rend, rvu.regField,
             rvu.rwFlags, rvu.align });
     }
@@ -601,6 +602,7 @@ void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
     {
         instrStruct.push_back(argFlags);
         instrStruct[instrStruct.size() - ((pushedArgs+7) >> 3) - 1] = pushedArgs;
+        argFlags = 0;
     }
 }
 
@@ -639,7 +641,7 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
         argFlags = instrStruct[instrStructPos];
     }
     
-    if ((instrStruct[instrStructPos] & (1U<<argPos)) != 0)
+    if ((instrStruct[instrStructPos] & (1U << (argPos&7))) != 0)
     {   // regvar usage
         const AsmRegVarUsageInt& inRVU = regVarUsages[regVarUsagesPos++];
         rvu.regVar = inRVU.regVar;
