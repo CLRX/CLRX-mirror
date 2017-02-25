@@ -266,9 +266,10 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     // start using scope
     static void startUsing(Assembler& asmr, const char* pseudoOpPlace,
                         const char* linePtr);
+    // stop using scope
     static void stopUsing(Assembler& asmr, const char* pseudoOpPlace,
                         const char* linePtr);
-    // stop using scope
+    static void doUseReg(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
     
     static void undefSymbol(Assembler& asmr, const char* linePtr);
     

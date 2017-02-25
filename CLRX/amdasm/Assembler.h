@@ -99,6 +99,8 @@ public:
     /// get next usage
     AsmRegVarUsage nextUsage();
     
+    void pushUseRegUsage(const AsmRegVarUsage& rvu);
+    
     /// get RW flags (used by assembler)
     virtual cxbyte getRwFlags(AsmRegField regField, uint16_t rstart,
                       uint16_t rend) const = 0;

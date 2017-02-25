@@ -120,7 +120,7 @@ static const char* pseudoOpNamesTbl[] =
     "short", "single", "size", "skip",
     "space", "string", "string16", "string32",
     "string64", "struct", "text", "title",
-    "undef", "unusing", "using", "version",
+    "undef", "unusing", "usereg", "using", "version",
     "warning", "weak", "word"
 };
 
@@ -159,7 +159,7 @@ enum
     ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
     ASMOP_STRING64, ASMOP_STRUCT, ASMOP_TEXT, ASMOP_TITLE,
-    ASMOP_UNDEF, ASMOP_UNUSING, ASMOP_USING, ASMOP_VERSION,
+    ASMOP_UNDEF, ASMOP_UNUSING, ASMOP_USEREG, ASMOP_USING, ASMOP_VERSION,
     ASMOP_WARNING, ASMOP_WEAK, ASMOP_WORD
 };
 
@@ -1990,6 +1990,52 @@ void AsmPseudoOps::startUsing(Assembler& asmr, const char* pseudoOpPlace,
     asmr.currentScope->startUsingScope(scope);
 }
 
+void AsmPseudoOps::doUseReg(Assembler& asmr, const char* pseudoOpPlace,
+                    const char* linePtr)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    asmr.initializeOutputFormat();
+    
+    do {
+        skipSpacesToEnd(linePtr, end);
+        bool good = true;
+        cxuint regStart, regEnd;
+        const AsmRegVar* regVar;
+        good = asmr.isaAssembler->parseRegisterRange(linePtr, regStart, regEnd, regVar);
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr==end || *linePtr!=':')
+        {
+            asmr.printError(linePtr, "Expected colon after register");
+            continue;
+        }
+        skipCharAndSpacesToEnd(linePtr, end);
+        
+        cxbyte rwFlags = 0;
+        while (linePtr != end)
+        {
+            char c = toLower(*linePtr);
+            if (c!='r' && c!='w')
+                break;
+            rwFlags |= (c=='r') ? ASMRVU_READ : ASMRVU_WRITE;
+        }
+        
+        if (good) // if good
+        {   // create usageHandler if needed
+            if (asmr.sections[asmr.currentSection].usageHandler == nullptr)
+                    asmr.sections[asmr.currentSection].usageHandler.reset(
+                            asmr.isaAssembler->createUsageHandler(
+                                    asmr.sections[asmr.currentSection].content));
+            // put regVar usage
+            /*asmr.sections[asmr.currentSection].usageHandler->pushUseRegUsage(
+                    AsmRegVarUsage{ asmr.currentOutPos, regVar, regStart, regEnd,
+                            ASMFIELD_NONE, rwFlags, 0 });*/
+        }
+        
+    } while(skipCommaForMultipleArgs(asmr, linePtr));
+    
+    checkGarbagesAtEnd(asmr, linePtr);
+}
+
 void AsmPseudoOps::stopUsing(Assembler& asmr, const char* pseudoOpPlace,
                     const char* linePtr)
 {
@@ -2079,8 +2125,7 @@ void AsmPseudoOps::defRegVar(Assembler& asmr, const char* pseudoOpPlace,
             asmr.printError(linePtr, "Expected colon after reg-var");
             continue;
         }
-        linePtr++;
-        skipSpacesToEnd(linePtr, end);
+        skipCharAndSpacesToEnd(linePtr, end);
         AsmRegVar var = { 0, 1 };
         if (!asmr.isaAssembler->parseRegisterType(linePtr, end, var.type))
         {
@@ -2646,6 +2691,9 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_UNUSING:
             AsmPseudoOps::stopUsing(*this, stmtPlace, linePtr);
+            break;
+        case ASMOP_USEREG:
+            AsmPseudoOps::doUseReg(*this, stmtPlace, linePtr);
             break;
         case ASMOP_USING:
             AsmPseudoOps::startUsing(*this, stmtPlace, linePtr);
