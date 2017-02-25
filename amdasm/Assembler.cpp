@@ -672,6 +672,7 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
         if (argPos == pushedArgs)
         {
             instrStructPos++; // end
+            useRegMode = false;
             skipBytesInInstrStruct();
         }
         else if ((argPos & 7) == 0) // fetch new flag
