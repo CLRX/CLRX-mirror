@@ -2011,12 +2011,17 @@ void AsmPseudoOps::doUseReg(Assembler& asmr, const char* pseudoOpPlace,
         skipCharAndSpacesToEnd(linePtr, end);
         
         cxbyte rwFlags = 0;
-        while (linePtr != end)
+        for (; linePtr != end; linePtr++)
         {
             char c = toLower(*linePtr);
             if (c!='r' && c!='w')
                 break;
             rwFlags |= (c=='r') ? ASMRVU_READ : ASMRVU_WRITE;
+        }
+        if (rwFlags==0) // not parsed
+        {
+            asmr.printError(linePtr, "Expected access mask");
+            continue;
         }
         
         if (good) // if good

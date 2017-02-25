@@ -522,7 +522,8 @@ void ISAUsageHandler::rewind()
 
 void ISAUsageHandler::skipBytesInInstrStruct()
 {
-    if (instrStructPos != 0 || argPos != 0)
+    // do not add instruction size if usereg (usereg immediately before instr regusages)
+    if ((instrStructPos != 0 || argPos != 0) && !useRegMode)
         readOffset += defaultInstrSize;
     argPos = 0;
     for (;instrStructPos < instrStruct.size() &&
@@ -536,7 +537,8 @@ void ISAUsageHandler::putSpace(size_t offset)
     if (lastOffset != offset)
     {
         flush(); // flush before new instruction
-        
+        // useReg immediately before instruction regusages
+        size_t defaultInstrSize = (!useRegMode ? this->defaultInstrSize : 0);
         if (lastOffset > offset)
             throw Exception("Offset before previous instruction");
         if (!instrStruct.empty() && offset - lastOffset < defaultInstrSize)
@@ -552,12 +554,15 @@ void ISAUsageHandler::putSpace(size_t offset)
         lastOffset = offset;
         argFlags = 0;
         pushedArgs = 0;
-    }
+    } 
 }
 
 void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
 {
-    putSpace(rvu.offset);
+    if (lastOffset == rvu.offset && useRegMode)
+        flush();
+    else // otherwise
+        putSpace(rvu.offset);
     useRegMode = false;
     if (rvu.regVar != nullptr)
     {
@@ -573,7 +578,10 @@ void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
 
 void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
 {
-    putSpace(rvu.offset);
+    if (lastOffset == rvu.offset && !useRegMode)
+        flush();
+    else // otherwise
+        putSpace(rvu.offset);
     useRegMode = true;
     if (pushedArgs == 0)
     {
@@ -592,7 +600,7 @@ void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
     if ((pushedArgs & 7) == 0) // just flush per 8 bit
     {
         instrStruct.push_back(argFlags);
-        instrStruct[instrStruct.size() - ((pushedArgs+7) >> 3)] = pushedArgs;
+        instrStruct[instrStruct.size() - ((pushedArgs+7) >> 3) - 1] = pushedArgs;
     }
 }
 
@@ -609,7 +617,7 @@ void ISAUsageHandler::flush()
                 regUsages.back().rwFlags |= 0x80;
         }
         else // use reg regvarusages
-            instrStruct[instrStruct.size() - ((pushedArgs+7) >> 3)] = pushedArgs;
+            instrStruct[instrStruct.size() - ((pushedArgs+7) >> 3) - 1] = pushedArgs;
     }
 }
 
@@ -672,8 +680,8 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
         if (argPos == pushedArgs)
         {
             instrStructPos++; // end
-            useRegMode = false;
             skipBytesInInstrStruct();
+            useRegMode = false;
         }
         else if ((argPos & 7) == 0) // fetch new flag
         {
