@@ -99,6 +99,7 @@ public:
     /// get next usage
     AsmRegVarUsage nextUsage();
     
+    // push regvar or register from usereg pseudo-op
     void pushUseRegUsage(const AsmRegVarUsage& rvu);
     
     /// get RW flags (used by assembler)
@@ -607,7 +608,7 @@ public:
     bool addRegVar(const CString& name, const AsmRegVar& var)
     { return insertRegVarInScope(name, var).second; }
     /// get regvar by name
-    bool getRegVarEntry(const CString& name, const AsmRegVarEntry*& regVarEntry);
+    bool getRegVar(const CString& name, const AsmRegVar*& regVar);
     
     /// get global scope
     const AsmScope& getGlobalScope() const

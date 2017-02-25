@@ -304,7 +304,7 @@ void GCNUsageHandler::getUsageDependencies(size_t offset, const AsmRegVarUsage* 
                 rf == GCNFIELD_VOP3_SSRC || rf == GCNFIELD_DPPSDWA_SRC0)
             {   // if SGPR
                 if ((rvus[i].regVar==nullptr && rvus[i].rstart<108) ||
-                     rvus[i].regVar->second.type == REGTYPE_SGPR)
+                     rvus[i].regVar->type == REGTYPE_SGPR)
                     equalToDeps[2 + count++] = i;
             }
         }

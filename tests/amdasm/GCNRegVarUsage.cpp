@@ -1447,6 +1447,10 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
         oss << "FAILED for " << " regVarUsageGCNCase#" << i;
         throw Exception(oss.str());
     }
+    
+    std::unordered_map<const AsmRegVar*, CString> regVarNamesMap;
+    for (const auto& entry: assembler.getRegVarMap())
+        regVarNamesMap.insert(std::make_pair(&entry.second, entry.first));
     /*assertValue("testGCNRegVarUsages", testCaseName+".size",
                     testCase.regVarUsages.size(), section.regVarUsages.size());*/
     ISAUsageHandler* usageHandler = assembler.getSections()[0].usageHandler.get();
@@ -1469,7 +1473,7 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
                        resultRvu.regVar==nullptr);
         else // otherwise
             assertString("testGCNRegVarUsages", testCaseName+rvuName+"regVarName",
-                        expectedRvu.regVarName, resultRvu.regVar->first);
+                    expectedRvu.regVarName, regVarNamesMap.find(resultRvu.regVar)->second);
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"rstart",
                     expectedRvu.rstart, resultRvu.rstart);
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"rend",

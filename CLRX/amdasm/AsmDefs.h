@@ -510,7 +510,7 @@ enum : cxbyte {
 struct AsmRegVarUsage
 {
     size_t offset;  ///< offset in section
-    const AsmRegVarEntry* regVar;    // if null, then usage of called register
+    const AsmRegVar* regVar;    // if null, then usage of called register
     uint16_t rstart; ///< register start
     uint16_t rend;  ///< register end
     AsmRegField regField;   ///< place in instruction
@@ -521,7 +521,7 @@ struct AsmRegVarUsage
 /// regvar usage (internal)
 struct AsmRegVarUsageInt
 {
-    const AsmRegVarEntry* regVar;    // if null, then usage of called register
+    const AsmRegVar* regVar;    // if null, then usage of called register
     uint16_t rstart, rend;
     AsmRegField regField;   ///< place in instruction
     cxbyte rwFlags;  ///< 1 - read, 2 - write

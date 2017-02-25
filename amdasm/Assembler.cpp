@@ -570,6 +570,9 @@ void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
     pushedArgs++;
 }
 
+void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
+{ }
+
 void ISAUsageHandler::flush()
 {
     if (pushedArgs != 0)
@@ -2425,16 +2428,15 @@ void Assembler::initializeOutputFormat()
     currentOutPos = 0;
 }
 
-bool Assembler::getRegVarEntry(const CString& name,
-                       const AsmRegVarEntry*& regVarEntry)
+bool Assembler::getRegVar(const CString& name, const AsmRegVar*& regVar)
 { 
-    regVarEntry = nullptr;
+    regVar = nullptr;
     CString sameRvName;
     AsmScope* scope;
     auto it = findRegVarInScope(name, scope, sameRvName);
     if (it == nullptr)
         return false;
-    regVarEntry = &*it;
+    regVar = &it->second;
     return true;
 }
 
