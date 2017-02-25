@@ -1730,7 +1730,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     if (!src0Op.range.isRegVar() && !src1Op.range.isRegVar() &&
         src0Op.range.isSGPR() && src1Op.range.isSGPR() &&
-        src0Op.range.bstart()!=src1Op.range.bstart())
+        src0Op.range.start!=src1Op.range.start)
     {   /* include VCCs (???) */
         asmr.printError(instrPlace, "More than one SGPR to read in instruction");
         return false;
