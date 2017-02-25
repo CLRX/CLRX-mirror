@@ -503,9 +503,9 @@ bool AsmParseUtils::parseDimensions(Assembler& asmr, const char*& linePtr, cxuin
 }
 
 ISAUsageHandler::ISAUsageHandler(const std::vector<cxbyte>& _content) :
-            content(_content), lastOffset(0), readOffset(0),
-            instrStructPos(0), regUsagesPos(0), regVarUsagesPos(0),
-            pushedArgs(0), argPos(0), argFlags(0), isNext(false)
+            content(_content), lastOffset(0), readOffset(0), instrStructPos(0),
+            regUsagesPos(0), regUsages2Pos(0), regVarUsagesPos(0),
+            pushedArgs(0), argPos(0), argFlags(0), isNext(false), useRegMode(false)
 { }
 
 ISAUsageHandler::~ISAUsageHandler()
@@ -514,7 +514,9 @@ ISAUsageHandler::~ISAUsageHandler()
 void ISAUsageHandler::rewind()
 {
     readOffset = instrStructPos = 0;
-    regUsagesPos = regVarUsagesPos = 0;
+    regUsagesPos = regUsages2Pos = regVarUsagesPos = 0;
+    useRegMode = false;
+    pushedArgs = 0;
     skipBytesInInstrStruct();
 }
 
@@ -524,40 +526,39 @@ void ISAUsageHandler::skipBytesInInstrStruct()
         readOffset += defaultInstrSize;
     argPos = 0;
     for (;instrStructPos < instrStruct.size() &&
-        (instrStruct[instrStructPos]&0x80) != 0; instrStructPos++)
+        instrStruct[instrStructPos] > 0x80; instrStructPos++)
         readOffset += (instrStruct[instrStructPos] & 0x7f);
     isNext = (instrStructPos < instrStruct.size());
 }
 
-void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
+void ISAUsageHandler::putSpace(size_t offset)
 {
-    if (lastOffset != rvu.offset)
+    if (lastOffset != offset)
     {
-        if (pushedArgs != 0)
-        {
-            instrStruct.push_back(argFlags);
-            if ((argFlags & (1U<<(pushedArgs-1))) != 0)
-                regVarUsages.back().rwFlags |= 0x80;
-            else // reg usages
-                regUsages.back().rwFlags |= 0x80;
-        }
+        flush(); // flush before new instruction
         
-        if (lastOffset>rvu.offset)
+        if (lastOffset > offset)
             throw Exception("Offset before previous instruction");
-        if (!instrStruct.empty() && rvu.offset - lastOffset < defaultInstrSize)
+        if (!instrStruct.empty() && offset - lastOffset < defaultInstrSize)
             throw Exception("Offset between previous instruction");
         size_t toSkip = !instrStruct.empty() ? 
-                rvu.offset - lastOffset - defaultInstrSize : rvu.offset;
+                offset - lastOffset - defaultInstrSize : offset;
         while (toSkip > 0)
         {
             size_t skipped = std::min(toSkip, size_t(0x7f));
             instrStruct.push_back(skipped | 0x80);
             toSkip -= skipped;
         }
-        lastOffset = rvu.offset;
+        lastOffset = offset;
         argFlags = 0;
         pushedArgs = 0;
     }
+}
+
+void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
+{
+    putSpace(rvu.offset);
+    useRegMode = false;
     if (rvu.regVar != nullptr)
     {
         argFlags |= (1U<<pushedArgs);
@@ -571,17 +572,44 @@ void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
 }
 
 void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
-{ }
+{
+    putSpace(rvu.offset);
+    useRegMode = true;
+    if (pushedArgs == 0)
+    {
+        instrStruct.push_back(0x80); // sign of regvarusage from usereg
+        instrStruct.push_back(0);
+    }
+    if (rvu.regVar != nullptr)
+    {
+        argFlags |= (1U<<pushedArgs);
+        regVarUsages.push_back({ rvu.regVar, rvu.rstart, rvu.rend, rvu.regField,
+            rvu.rwFlags, rvu.align });
+    }
+    else // reg usages
+        regUsages2.push_back({ rvu.rstart, rvu.rend, rvu.rwFlags });
+    pushedArgs++;
+    if ((pushedArgs & 7) == 0) // just flush per 8 bit
+    {
+        instrStruct.push_back(argFlags);
+        instrStruct[instrStruct.size() - ((pushedArgs+7) >> 3)] = pushedArgs;
+    }
+}
 
 void ISAUsageHandler::flush()
 {
     if (pushedArgs != 0)
     {
         instrStruct.push_back(argFlags);
-        if ((argFlags & (1U<<(pushedArgs-1))) != 0)
-            regVarUsages.back().rwFlags |= 0x80;
-        else // reg usages
-            regUsages.back().rwFlags |= 0x80;
+        if (!useRegMode)
+        {   // normal regvarusages
+            if ((argFlags & (1U<<(pushedArgs-1))) != 0)
+                regVarUsages.back().rwFlags |= 0x80;
+            else // reg usages
+                regUsages.back().rwFlags |= 0x80;
+        }
+        else // use reg regvarusages
+            instrStruct[instrStruct.size() - ((pushedArgs+7) >> 3)] = pushedArgs;
     }
 }
 
@@ -593,6 +621,16 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
     // get regvarusage
     bool lastRegUsage = false;
     rvu.offset = readOffset;
+    if (!useRegMode && instrStruct[instrStructPos] == 0x80)
+    {   // useRegMode (begin fetching useregs)
+        useRegMode = true;
+        argPos = 0;
+        instrStructPos++;
+        // pushedArgs - numer of useregs, 0 - 256 useregs
+        pushedArgs = instrStruct[instrStructPos++];
+        argFlags = instrStruct[instrStructPos];
+    }
+    
     if ((instrStruct[instrStructPos] & (1U<<argPos)) != 0)
     {   // regvar usage
         const AsmRegVarUsageInt& inRVU = regVarUsages[regVarUsagesPos++];
@@ -602,9 +640,10 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
         rvu.regField = inRVU.regField;
         rvu.rwFlags = inRVU.rwFlags & ASMRVU_ACCESS_MASK;
         rvu.align = inRVU.align;
-        lastRegUsage = ((inRVU.rwFlags&0x80) != 0);
+        if (!useRegMode)
+            lastRegUsage = ((inRVU.rwFlags&0x80) != 0);
     }
-    else
+    else if (!useRegMode)
     {   // simple reg usage
         const AsmRegUsageInt& inRU = regUsages[regUsagesPos++];
         rvu.regVar = nullptr;
@@ -617,7 +656,30 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
         rvu.align = 0;
         lastRegUsage = ((inRU.rwFlags&0x80) != 0);
     }
+    else
+    {   // use reg (simple reg usage, second structure)
+        const AsmRegUsage2Int& inRU = regUsages2[regUsages2Pos++];
+        rvu.regVar = nullptr;
+        rvu.rstart = inRU.rstart;
+        rvu.rend = inRU.rend;
+        rvu.rwFlags = inRU.rwFlags;
+        rvu.regField = ASMFIELD_NONE;
+        rvu.align = 0;
+    }
     argPos++;
+    if (useRegMode)
+    {   // if inside useregs
+        if (argPos == pushedArgs)
+        {
+            instrStructPos++; // end
+            skipBytesInInstrStruct();
+        }
+        else if ((argPos & 7) == 0) // fetch new flag
+        {
+            instrStructPos++;
+            argFlags = instrStruct[instrStructPos];
+        }
+    }
     // after instr
     if (lastRegUsage)
     {

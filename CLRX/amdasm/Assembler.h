@@ -66,20 +66,24 @@ class ISAUsageHandler
 protected:
     std::vector<cxbyte> instrStruct;    ///< structure of register usage
     std::vector<AsmRegUsageInt> regUsages;  ///< register usage
+    std::vector<AsmRegUsage2Int> regUsages2;  ///< register usage (by .usereg)
     std::vector<AsmRegVarUsageInt> regVarUsages;    ///< regvar usage
     const std::vector<cxbyte>& content; ///< code content
     size_t lastOffset;
     size_t readOffset;
     size_t instrStructPos;
     size_t regUsagesPos;
+    size_t regUsages2Pos;
     size_t regVarUsagesPos;
     cxbyte pushedArgs;
     cxbyte argPos;
     cxbyte argFlags;
     cxbyte defaultInstrSize;
     bool isNext;
+    bool useRegMode;
     
     void skipBytesInInstrStruct();
+    void putSpace(size_t offset);
     
     /// constructor
     explicit ISAUsageHandler(const std::vector<cxbyte>& content);

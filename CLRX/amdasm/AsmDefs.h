@@ -526,13 +526,18 @@ struct AsmRegVarUsageInt
     AsmRegField regField;   ///< place in instruction
     cxbyte rwFlags;  ///< 1 - read, 2 - write
     cxbyte align;   ///< register alignment
-    cxbyte nextDependency;  ///< next dependency flags
 };
 
 struct AsmRegUsageInt
 {
     AsmRegField regField;   ///< place in instruction
     cxbyte rwFlags;     ///< 1 - read, 2 - write, other flags
+};
+
+struct AsmRegUsage2Int
+{
+    uint16_t rstart, rend;
+    cxbyte rwFlags;
 };
 
 /// code flow type

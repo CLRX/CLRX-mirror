@@ -77,7 +77,8 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         ".space 12\n"
         "s_mov_b32 rax4[2],rbx5[1]\n"
         ".space 134\n"
-        "s_mov_b64 rax4[2:3],rbx5[1:2]\n",
+        "s_mov_b64 rax4[2:3],rbx5[1:2]\n"
+        ".space 274\n",
         {
             // s_mov_b32 rax,rbx
             { 200, "rax", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
