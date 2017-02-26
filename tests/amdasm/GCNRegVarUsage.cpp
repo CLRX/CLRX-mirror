@@ -1503,6 +1503,37 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 80, "srex", 0, 1, ASMFIELD_NONE, ASMRVU_READ, 0 },
         },
         true, ""
+    },
+#define USEREG_0(a) ".usereg rax[" a "]:rw\n"
+#define USEREG_1(a) USEREG_0(a) USEREG_0(a "+1")
+#define USEREG_2(a) USEREG_1(a) USEREG_1(a "+2")
+#define USEREG_3(a) USEREG_2(a) USEREG_2(a "+4")
+#define USEREG_4(a) USEREG_3(a) USEREG_3(a "+8")
+#define USEREG_5(a) USEREG_4(a) USEREG_4(a "+16")
+#define USEREG_6(a) USEREG_5(a) USEREG_5(a "+32")
+#define USEREG_7(a) USEREG_6(a) USEREG_6(a "+64")
+#define USEREG_ALL USEREG_7("0") USEREG_7("128")
+
+#define RVUENTRY_0(a) { 0, "rax", a, a+1, ASMFIELD_NONE, ASMRVU_READ|ASMRVU_WRITE, 0 }
+#define RVUENTRY_1(a) RVUENTRY_0(a), RVUENTRY_0(a+1)
+#define RVUENTRY_2(a) RVUENTRY_1(a), RVUENTRY_1(a+2)
+#define RVUENTRY_3(a) RVUENTRY_2(a), RVUENTRY_2(a+4)
+#define RVUENTRY_4(a) RVUENTRY_3(a), RVUENTRY_3(a+8)
+#define RVUENTRY_5(a) RVUENTRY_4(a), RVUENTRY_4(a+16)
+#define RVUENTRY_6(a) RVUENTRY_5(a), RVUENTRY_5(a+32)
+#define RVUENTRY_7(a) RVUENTRY_6(a), RVUENTRY_6(a+64)
+#define RVUENTRY_ALL RVUENTRY_7(0), RVUENTRY_7(128)
+    { /* 22: usereg 256 useregs */
+        ".regvar rax:v:256\n"
+        USEREG_ALL,
+        { RVUENTRY_ALL },
+        true, ""
+    },
+    { /* 23: usereg 256*2+64 useregs */
+        ".regvar rax:v:256\n"
+        USEREG_ALL USEREG_ALL USEREG_6("0"),
+        { RVUENTRY_ALL, RVUENTRY_ALL, RVUENTRY_6(0) },
+        true, ""
     }
 };
 

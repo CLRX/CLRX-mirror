@@ -75,7 +75,7 @@ protected:
     size_t regUsagesPos;
     size_t regUsages2Pos;
     size_t regVarUsagesPos;
-    cxbyte pushedArgs;
+    uint16_t pushedArgs;
     cxbyte argPos;
     cxbyte argFlags;
     cxbyte defaultInstrSize;

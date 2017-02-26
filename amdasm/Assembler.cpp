@@ -583,9 +583,10 @@ void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
     else // otherwise
         putSpace(rvu.offset);
     useRegMode = true;
-    if (pushedArgs == 0)
+    if (pushedArgs == 0 || pushedArgs == 256)
     {
         argFlags = 0;
+        pushedArgs = 0;
         instrStruct.push_back(0x80); // sign of regvarusage from usereg
         instrStruct.push_back(0);
     }
@@ -683,7 +684,7 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
     argPos++;
     if (useRegMode)
     {   // if inside useregs
-        if (argPos == pushedArgs)
+        if (argPos == (pushedArgs&0xff))
         {
             instrStructPos++; // end
             skipBytesInInstrStruct();
