@@ -90,7 +90,8 @@ static const char* pseudoOpNamesTbl[] =
     "32bit", "64bit", "abort", "align", "altmacro",
     "amd", "amdcl2", "arch", "ascii", "asciz",
     "balign", "balignl", "balignw", "buggyfplit", "byte",
-    "cf_call", "cf_end", "cf_jump", "cf_ret", "cf_start",
+    "cf_call", "cf_cjump", "cf_end",
+    "cf_jump", "cf_ret", "cf_start",
     "data", "double", "else",
     "elseif", "elseif32", "elseif64",
     "elseifarch", "elseifb", "elseifc", "elseifdef",
@@ -129,7 +130,8 @@ enum
     ASMOP_32BIT = 0, ASMOP_64BIT, ASMOP_ABORT, ASMOP_ALIGN, ASMOP_ALTMACRO,
     ASMOP_AMD, ASMOP_AMDCL2, ASMOP_ARCH, ASMOP_ASCII, ASMOP_ASCIZ,
     ASMOP_BALIGN, ASMOP_BALIGNL, ASMOP_BALIGNW, ASMOP_BUGGYFPLIT, ASMOP_BYTE,
-    ASMOP_CF_CALL, ASMOP_CF_END, ASMOP_CF_JUMP, ASMOP_CF_RET, ASMOP_CF_START,
+    ASMOP_CF_CALL, ASMOP_CF_CJUMP, ASMOP_CF_END,
+    ASMOP_CF_JUMP, ASMOP_CF_RET, ASMOP_CF_START,
     ASMOP_DATA, ASMOP_DOUBLE, ASMOP_ELSE,
     ASMOP_ELSEIF, ASMOP_ELSEIF32, ASMOP_ELSEIF64,
     ASMOP_ELSEIFARCH, ASMOP_ELSEIFB, ASMOP_ELSEIFC, ASMOP_ELSEIFDEF,
@@ -2315,6 +2317,10 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_CF_CALL:
             AsmPseudoOps::addCodeFlowEntries(*this, stmtPlace, linePtr,
                                   AsmCodeFlowType::CALL);
+            break;
+        case ASMOP_CF_CJUMP:
+            AsmPseudoOps::addCodeFlowEntries(*this, stmtPlace, linePtr,
+                                  AsmCodeFlowType::CJUMP);
             break;
         case ASMOP_CF_END:
             AsmPseudoOps::addCodeFlowEntries(*this, stmtPlace, linePtr,
