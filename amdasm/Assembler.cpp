@@ -610,16 +610,20 @@ void ISAUsageHandler::flush()
 {
     if (pushedArgs != 0)
     {
-        instrStruct.push_back(argFlags);
         if (!useRegMode)
         {   // normal regvarusages
+            instrStruct.push_back(argFlags);
             if ((argFlags & (1U<<(pushedArgs-1))) != 0)
                 regVarUsages.back().rwFlags |= 0x80;
             else // reg usages
                 regUsages.back().rwFlags |= 0x80;
         }
         else // use reg regvarusages
+        {
+            if ((pushedArgs & 7) != 0) //if only not pushed args remains
+                instrStruct.push_back(argFlags);
             instrStruct[instrStruct.size() - ((pushedArgs+7) >> 3) - 1] = pushedArgs;
+        }
     }
 }
 

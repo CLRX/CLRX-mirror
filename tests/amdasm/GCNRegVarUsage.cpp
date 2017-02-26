@@ -1461,6 +1461,48 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 80, "rbx4", 3, 4, ASMFIELD_NONE, ASMRVU_READ, 0 }
         },
         true, ""
+    },
+    { /* 21: usereg (multipla of 8) */
+        ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
+        ".regvar rax2:v:10, rbx4:v:8, rcx4:v:12, rex5:v:10\n"
+        ".regvar srex:s, srdx3:s:8, srbx:s, srcx5:s:8\n"
+        ".space 24\n"
+        ".usereg rbx4[2:3]:rw\n"
+        "v_sub_f32  rex, rax, rbx\n"
+        ".space 32\n"
+        ".usereg rbx4[5:7]:r, v10:rw\n"
+        ".space 10\n"
+        ".usereg rex5[7:8]:r\n"
+        ".space 10\n"
+        ".usereg rax:rw, s42:w, rbx:r, s71:r, rcx:r, rex:r, v3:w, v5:w\n"
+        ".usereg rax2[6]:r, rbx4[3]:r, srcx5[7]:w, srcx5[2]:r, v[51:54]:w\n"
+        ".usereg srbx:rw, srdx3:rw, srex:r\n",
+        {
+            { 24, "rbx4", 2, 4, ASMFIELD_NONE, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 24, "rex", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 24, "rax", 0, 1, GCNFIELD_VOP_SRC0, ASMRVU_READ, 1 },
+            { 24, "rbx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            { 60, "rbx4", 5, 8, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 60, nullptr, 256+10, 256+11, ASMFIELD_NONE, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 70, "rex5", 7, 9, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 80, "rax", 0, 1, ASMFIELD_NONE, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 80, nullptr, 42, 43, ASMFIELD_NONE, ASMRVU_WRITE, 0 },
+            { 80, "rbx", 0, 1, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 80, nullptr, 71, 72, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 80, "rcx", 0, 1, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 80, "rex", 0, 1, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 80, nullptr, 256+3, 256+4, ASMFIELD_NONE, ASMRVU_WRITE, 0 },
+            { 80, nullptr, 256+5, 256+6, ASMFIELD_NONE, ASMRVU_WRITE, 0 },
+            { 80, "rax2", 6, 7, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 80, "rbx4", 3, 4, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 80, "srcx5", 7, 8, ASMFIELD_NONE, ASMRVU_WRITE, 0 },
+            { 80, "srcx5", 2, 3, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 80, nullptr, 256+51, 256+55, ASMFIELD_NONE, ASMRVU_WRITE, 0 },
+            { 80, "srbx", 0, 1, ASMFIELD_NONE, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 80, "srdx3", 0, 8, ASMFIELD_NONE, ASMRVU_READ|ASMRVU_WRITE, 0 },
+            { 80, "srex", 0, 1, ASMFIELD_NONE, ASMRVU_READ, 0 },
+        },
+        true, ""
     }
 };
 
