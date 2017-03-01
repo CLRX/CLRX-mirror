@@ -115,6 +115,7 @@ doc/GcnTimings.md -text
 doc/PrepareOffline.py -text
 doc/genclrxdoc.sh -text
 doc/styles.css -text
+editors/clrx.vim -text
 programs/CMakeLists.txt -text svneol=unset#text/plain
 programs/clrxasm.cpp -text
 programs/clrxasm.pod -text
