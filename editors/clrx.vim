@@ -51,7 +51,9 @@ syntax match asmOperator ">="
 
 " comments
 
-syntax region asmComment start="/\*" end="\*/"
+syn keyword asmTodo     contained TODO
+
+syntax region asmComment start="/\*" end="\*/" contains=asmTodo
 syntax match asmComment "#.*$"
 
 " other pseudo-ops

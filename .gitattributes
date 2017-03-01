@@ -116,6 +116,7 @@ doc/PrepareOffline.py -text
 doc/genclrxdoc.sh -text
 doc/styles.css -text
 editors/clrx.vim -text
+editors/notepad++.xml -text svneol=unset#text/xml
 programs/CMakeLists.txt -text svneol=unset#text/plain
 programs/clrxasm.cpp -text
 programs/clrxasm.pod -text
