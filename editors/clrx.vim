@@ -166,7 +166,6 @@ syntax match asmPseudoOps "\.driver_info"
 syntax match asmPseudoOps "\.driver_version"
 syntax match asmPseudoOps "\.dx10clamp"
 syntax match asmPseudoOps "\.earlyexit"
-syntax match asmPseudoOps "\.end"
 syntax match asmPseudoOps "\.endr"
 syntax match asmPseudoOps "\.endrept"
 syntax match asmPseudoOps "\.ends"
@@ -331,8 +330,6 @@ syntax match asmPseudoOps "\.workgroup_fbarrier_count"
 syntax match asmPseudoOps "\.workgroup_group_segment_size"
 syntax match asmPseudoOps "\.workitem_private_segment_size"
 syntax match asmPseudoOps "\.workitem_vgpr_count"
-
-
 
 """
 " GCN 1.0/1.1/1.2 register
