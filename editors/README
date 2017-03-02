@@ -1,0 +1,38 @@
+Syntax highlighting for editors:
+
+Files:
+* clrx.vim - for VIM
+* gedit.lang - for GEdit and GtkSourceView
+* kate.xml - for KDE Kate and KatePart
+* notepad++.xml - for NotePad++
+
+1. Installing syntax highlighting for VIM
+
+Copy 'clrx.vim' to '.vim/syntax' or your local VIM syntax directory. Or, just
+copy 'clrx.vim' to '/usr/share/vim/current/syntax' or other VIM syntax global directory.
+
+2. Installing syntax highlighting for GEdit
+
+Copy 'gedit.lang' as 'clrx.lang' to '/usr/share/gtksourceview-3.0/language-specs/' or
+'/usr/share/gtksourceview-2.0/language-specs/' directory.
+
+3. Installing syntax highlighting for Kate
+
+Copy 'kate.xml' as 'clrx.xml' to one following directory
+(depends on your Kate and KDE version):
+
+* '~/.kde4/share/apps/katepart/syntax/'
+* '~/.local/share/katepart5/syntax/'
+* '~/.local/share/katepart5/syntax/'
+* '~/.local/share/org.kde.syntax-highlighting/syntax'
+
+or to one following global directory:
+
+* '/usr/share/kde4/apps/katepart/syntax/'
+* '/usr/share/kde/katepart/syntax/'
+
+or other global directory.
+
+4. Installing syntax highlighting for Notepad++
+
+Choose Language -> Define your language, click 'Import' and choose 'notepad++.xml' file.

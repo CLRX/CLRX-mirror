@@ -115,6 +115,7 @@ doc/GcnTimings.md -text
 doc/PrepareOffline.py -text
 doc/genclrxdoc.sh -text
 doc/styles.css -text
+editors/README -text
 editors/clrx.vim -text
 editors/gedit.lang -text svneol=unset#application/xml
 editors/kate.xml -text svneol=unset#text/xml
