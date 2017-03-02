@@ -15,22 +15,24 @@ syntax case ignore
 let s:cpo_save = &cpo
 set cpo&vim
 
+" variables
+
+syntax match asmVar "[A-Za-z.$_][0-9A-Za-z.$_]*"
+
 " constants
 
 syntax match asmInteger "[1-9]\d*"
 syntax match asmInteger "0\o\+"
 syntax match asmInteger "0[xX]\x\+"
 syntax match asmInteger "0[bB][01]\+"
-syntax match asmFloat "[-+]\?\d*\.\d*\([Ee][-+]\?\d\+\)\?[sShHlL]\?"
-syntax match asmFloat "[-+]\?\d*[Ee][-+]\?\d\+[sShHlL]\?"
-syntax match asmFloat "[-+]\?0[Xx]\x*\.\x*\([Pp][-+]\?\d\+\)\?[sShHlL]\?"
-syntax match asmFloat "[-+]\?0[Xx]\x*[Pp][-+]\?\d\+[sShHlL]\?"
+syntax match asmFloat "[\-+]\?\d\+\.\d*\([Ee][-+]\?\d\+\)\?[sShHlL]\?"
+syntax match asmFloat "[\-+]\?\.\d\+\([Ee][-+]\?\d\+\)\?[sShHlL]\?"
+syntax match asmFloat "[\-+]\?\d\+[Ee][-+]\?\d\+[sShHlL]\?"
+syntax match asmFloat "[\-+]\?0[Xx]\x\+\.\x*\([Pp][-+]\?\d\+\)\?[sShHlL]\?"
+syntax match asmFloat "[\-+]\?0[Xx]\.\x*\([Pp][-+]\?\d\+\)\?[sShHlL]\?"
+syntax match asmFloat "[\-+]\?0[Xx]\x\+[Pp][-+]\?\d\+[sShHlL]\?"
 syntax match asmChar "'\([^'\\]\|\\'\|\\\)*'"
 syntax match asmString '"\([^"\\]\|\\"\|\\\)*"'
-
-" variables
-
-syntax match asmVar "[A-Za-z.$_][0-9A-Za-z.$_]*"
 
 " operators
 
