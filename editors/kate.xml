@@ -1776,11 +1776,7 @@
                 <Detect2Chars attribute="Comment" context="Comment2" char="/" char1="*" beginRegion="Comment"/>
                 <RangeDetect attribute="Char" context="#stay" char="'"  char1="'"/>
                 <AnyChar attribute="String" context="String" String="&quot;'"/>
-<!--                 <Float attribute="Float" context="#stay"/> -->
                 <Detect2Chars attribute="BaseN" context="Number2" char="0" char1="b"/>
-                <RegExpr attribute="Float" context="#stay" String="[+-]?0x\x+\.\x*([pP][+-]?\d+)?[hHsSlL]?"/>
-                <RegExpr attribute="Float" context="#stay" String="[+-]?0x\.\x+([pP][+-]?\d+)?[hHsSlL]?"/>
-                <RegExpr attribute="Float" context="#stay" String="[+-]?0x\x+([pP][+-]?\d+)?[hHsSlL]?"/>
                 <Detect2Chars attribute="BaseN" context="Number16" char="0" char1="x"/>
                 <Int attribute="Number" context="#stay"/>
                 <RegExpr attribute="Float" context="#stay" String="[+-]?\d+\.\d*([eE][+-]?\d+)?[hHsSlL]?"/>
