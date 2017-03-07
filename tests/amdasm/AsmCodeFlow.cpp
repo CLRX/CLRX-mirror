@@ -114,6 +114,51 @@ label3: v_madak_f32 v3, v4, v6, 1.453
     }
 };
 
+struct AsmKernelData
+{
+    const char* name;
+    Array<std::pair<size_t, size_t> > codeRegions;
+};
+
+struct AsmKernelRegionsCase
+{
+    const char* input;
+    Array<AsmKernelData> kernels;
+    bool good;
+    const char* errorMessages;
+};
+
+static const AsmKernelRegionsCase kernelRegionsTestCases1Tbl[] =
+{
+    {
+        R"ffDXD(.gallium
+.kernel ala
+.kernel beata
+.kernel celina
+.text
+ala:
+        s_mov_b32 s5, s1
+.p2align 8
+beata:
+        s_mov_b32 s5, s1
+.p2align 8
+celina:
+        s_mov_b32 s5, s1
+)ffDXD",
+        {
+            { "ala",
+                { { 0, 256 }
+                } },
+            { "beata",
+                { { 256, 512 }
+                } },
+            { "celina",
+                { { 512, 516 }
+                } }
+        }, true, ""
+    }
+};
+
 static void testAsmCodeFlow(cxuint i, const AsmCodeFlowCase& testCase)
 {
     std::istringstream input(testCase.input);
@@ -122,10 +167,11 @@ static void testAsmCodeFlow(cxuint i, const AsmCodeFlowCase& testCase)
     Assembler assembler("test.s", input, ASM_ALL&~ASM_ALTMACRO,
                     BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, errorStream);
     bool good = assembler.assemble();
+    
     std::ostringstream oss;
     oss << " testAsmCodeFlowCase#" << i;
     const std::string testCaseName = oss.str();
-    assertValue<bool>("testAsmCodeFlowCase", testCaseName+".good",
+    assertValue<bool>("testAsmCodeFlow", testCaseName+".good",
                       testCase.good, good);
     if (assembler.getSections().size()<1)
     {
@@ -139,8 +185,9 @@ static void testAsmCodeFlow(cxuint i, const AsmCodeFlowCase& testCase)
               { return e1.offset < e2.offset || (e1.offset==e2.offset &&
                           (e1.target<e2.target ||
                               (e1.target==e2.target && e1.type<e2.type))); });
-    assertValue("testAsmCodeFlowCase", testCaseName+".codeFlowSize",
+    assertValue("testAsmCodeFlow", testCaseName+".codeFlowSize",
                 testCase.codeFlow.size(), resultCFlow.size());
+    
     for (size_t j = 0; j < testCase.codeFlow.size(); j++)
     {
         const AsmCodeFlowEntry& expEntry = testCase.codeFlow[j];
@@ -149,13 +196,65 @@ static void testAsmCodeFlow(cxuint i, const AsmCodeFlowCase& testCase)
         cfOss << ".cflow#" << j << ".";
         cfOss.flush();
         std::string cflowName(cfOss.str());
-        assertValue("testAsmCodeFlowCase", testCaseName+cflowName+"offset",
+        assertValue("testAsmCodeFlow", testCaseName+cflowName+"offset",
                     expEntry.offset, resultEntry.offset);
-        assertValue("testAsmCodeFlowCase", testCaseName+cflowName+"target",
+        assertValue("testAsmCodeFlow", testCaseName+cflowName+"target",
                     expEntry.target, resultEntry.target);
-        assertValue("testAsmCodeFlowCase", testCaseName+cflowName+"type",
+        assertValue("testAsmCodeFlow", testCaseName+cflowName+"type",
                     cxuint(expEntry.type), cxuint(resultEntry.type));
     }
+    assertString("testAsmCodeFlow", testCaseName+".errorMessages",
+              testCase.errorMessages, errorStream.str());
+}
+
+static void testAsmKernelRegions(cxuint i, const AsmKernelRegionsCase& testCase)
+{
+    std::istringstream input(testCase.input);
+    std::ostringstream errorStream;
+    
+    Assembler assembler("test.s", input, ASM_ALL&~ASM_ALTMACRO,
+                    BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, errorStream);
+    bool good = assembler.assemble();
+    std::ostringstream oss;
+    oss << " testAsmKernelRegionsCase#" << i;
+    const std::string testCaseName = oss.str();
+    assertValue<bool>("testAsmKernelRegions", testCaseName+".good",
+                      testCase.good, good);
+    const std::vector<AsmKernel>& resultKernels = assembler.getKernels();
+    assertValue("testAsmKernelRegions", testCaseName+".codeFlowSize",
+                testCase.kernels.size(), resultKernels.size());
+    
+    for (size_t j = 0; j < testCase.kernels.size(); j++)
+    {
+        std::ostringstream kernelOss;
+        kernelOss << ".kernel#" << j << ".";
+        kernelOss.flush();
+        std::string kname(kernelOss.str());
+        const AsmKernelData& expKernel = testCase.kernels[j];
+        const AsmKernel& resultKernel = resultKernels[j];
+        assertString("testAsmKernelRegions", testCaseName+kname+".name",
+                     expKernel.name, resultKernel.name);
+        
+        assertValue("testAsmKernelRegions", testCaseName+kname+".regionsSize",
+                     expKernel.codeRegions.size(), resultKernel.codeRegions.size());
+        
+        for (size_t k = 0; k < expKernel.codeRegions.size(); k++)
+        {
+            std::ostringstream regionOss;
+            regionOss << "region#" << k << ".";
+            regionOss.flush();
+            std::string rname(regionOss.str());
+            std::pair<size_t, size_t> expRegion = expKernel.codeRegions[k];
+            std::pair<size_t, size_t> resRegion = resultKernel.codeRegions[k];
+            assertValue("testAsmKernelRegions", testCaseName+kname+rname+"first",
+                     expRegion.first, resRegion.first);
+            assertValue("testAsmKernelRegions", testCaseName+kname+rname+"second",
+                     expRegion.second, resRegion.second);
+        }
+    }
+    
+    assertString("testAsmKernelRegions", testCaseName+".errorMessages",
+              testCase.errorMessages, errorStream.str());
 }
 
 int main(int argc, const char** argv)
@@ -164,6 +263,15 @@ int main(int argc, const char** argv)
     for (size_t i = 0; i < sizeof(codeFlowTestCases1Tbl)/sizeof(AsmCodeFlowCase); i++)
         try
         { testAsmCodeFlow(i, codeFlowTestCases1Tbl[i]); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    for (size_t i = 0; i < sizeof(kernelRegionsTestCases1Tbl) /
+                sizeof(AsmKernelRegionsCase); i++)
+        try
+        { testAsmKernelRegions(i, kernelRegionsTestCases1Tbl[i]); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;

@@ -82,7 +82,7 @@ void AsmKernel::closeCodeRegion(size_t offset)
 {
     if (codeRegions.empty())
         codeRegions.push_back({ size_t(0), SIZE_MAX });
-    else
+    else if (codeRegions.back().second == SIZE_MAX) // only if not closed
         codeRegions.back().second = offset;
 }
 
