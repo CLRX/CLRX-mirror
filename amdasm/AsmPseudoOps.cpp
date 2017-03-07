@@ -2209,7 +2209,7 @@ void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace
             if (expr)
                 expr->setTarget(AsmExprTarget::codeFlowTarget(asmr.currentSection,
                         asmr.sections[asmr.currentSection].codeFlow.size()-1));
-            
+            expr.release();
         } while (skipCommaForMultipleArgs(asmr, linePtr));
     }
     else // single entry without target
