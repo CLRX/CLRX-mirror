@@ -83,7 +83,11 @@ void AsmKernel::closeCodeRegion(size_t offset)
     if (codeRegions.empty())
         codeRegions.push_back({ size_t(0), SIZE_MAX });
     else if (codeRegions.back().second == SIZE_MAX) // only if not closed
+    {
         codeRegions.back().second = offset;
+        if (codeRegions.back().first == codeRegions.back().second)
+            codeRegions.pop_back(); // remove empty region
+    }
 }
 
 const cxbyte CLRX::tokenCharTable[96] =

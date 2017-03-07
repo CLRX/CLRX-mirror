@@ -130,7 +130,7 @@ struct AsmKernelRegionsCase
 
 static const AsmKernelRegionsCase kernelRegionsTestCases1Tbl[] =
 {
-    {
+    {   /* simple */
         R"ffDXD(.gallium
 .kernel ala
 .kernel beata
@@ -154,6 +154,45 @@ celina:
                 } },
             { "celina",
                 { { 512, 516 }
+                } }
+        }, true, ""
+    },
+    {   /* kcode */
+        R"ffDXD(.gallium
+.kernel ala
+.kernel beata
+.kernel celina
+.text
+ala:
+        s_mov_b32 s5, s1
+.p2align 8
+beata:
+        s_mov_b32 s5, s1
+.p2align 8
+celina:
+        s_mov_b32 s5, s1
+.p2align 8
+.kcode ala, beata
+        v_mov_b32 v3, v4
+.kcode -ala
+        v_mov_b32 v3, v4
+.kcode celina
+        v_mov_b32 v3, v5
+.kcodeend
+        s_mov_b32 s0, 0
+.kcodeend
+        s_mov_b32 s0, 0
+.kcodeend
+)ffDXD",
+        {
+            { "ala",
+                { { 0, 256 }, { 768, 772 }, { 784, 788 }
+                } },
+            { "beata",
+                { { 256, 512 }, { 768, 788 }
+                } },
+            { "celina",
+                { { 512, 768 }, { 776, 780 }
                 } }
         }, true, ""
     }
@@ -235,7 +274,7 @@ static void testAsmKernelRegions(cxuint i, const AsmKernelRegionsCase& testCase)
         assertString("testAsmKernelRegions", testCaseName+kname+".name",
                      expKernel.name, resultKernel.name);
         
-        assertValue("testAsmKernelRegions", testCaseName+kname+".regionsSize",
+        assertValue("testAsmKernelRegions", testCaseName+kname+"regionsSize",
                      expKernel.codeRegions.size(), resultKernel.codeRegions.size());
         
         for (size_t k = 0; k < expKernel.codeRegions.size(); k++)
