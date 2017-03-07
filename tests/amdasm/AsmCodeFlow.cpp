@@ -38,43 +38,45 @@ struct AsmCodeFlowCase
 
 static const AsmCodeFlowCase codeFlowTestCases1Tbl[] =
 {
-    R"ffDXD(.text
-        v_mov_b32 v3, v1
-        v_mov_b32 v3, v2
-label1:
-        v_mov_b32 v3, v6
-label2:
-        v_mov_b32 v3, v2
-        v_mov_b32 v3, v2
-        .cf_jump label1, label2, label3
-        v_nop
-        v_add_f32 v54, v3, v21
-        v_add_f32 v54, v3, v21
-        .cf_call label4, label2, label3
-        v_mul_f32 v54, v3, v21
-        .cf_cjump label1, label4, label3
-label3: s_nop 3
-label4: v_nop
-        .cf_ret
-        v_nop; v_nop
-        .cf_start
-        v_nop; v_nop; v_nop
-        .cf_end
-        )ffDXD",
     {
-        { 20U, 8U, AsmCodeFlowType::JUMP },
-        { 20U, 12U, AsmCodeFlowType::JUMP },
-        { 20U, 36U, AsmCodeFlowType::JUMP },
-        { 32U, 40U, AsmCodeFlowType::CALL },
-        { 32U, 12U, AsmCodeFlowType::CALL },
-        { 32U, 36U, AsmCodeFlowType::CALL },
-        { 36U, 8U, AsmCodeFlowType::CJUMP },
-        { 36U, 40U, AsmCodeFlowType::CJUMP },
-        { 36U, 36U, AsmCodeFlowType::CJUMP },
-        { 44U, 0U, AsmCodeFlowType::RETURN },
-        { 52U, 0U, AsmCodeFlowType::START },
-        { 64U, 0U, AsmCodeFlowType::END }
-    }, true, ""
+        R"ffDXD(.text
+            v_mov_b32 v3, v1
+            v_mov_b32 v3, v2
+    label1:
+            v_mov_b32 v3, v6
+    label2:
+            v_mov_b32 v3, v2
+            v_mov_b32 v3, v2
+            .cf_jump label1, label2, label3
+            v_nop
+            v_add_f32 v54, v3, v21
+            v_add_f32 v54, v3, v21
+            .cf_call label4, label2, label3
+            v_mul_f32 v54, v3, v21
+            .cf_cjump label1, label4, label3
+    label3: s_nop 3
+    label4: v_nop
+            .cf_ret
+            v_nop; v_nop
+            .cf_start
+            v_nop; v_nop; v_nop
+            .cf_end
+            )ffDXD",
+        {
+            { 20U, 8U, AsmCodeFlowType::JUMP },
+            { 20U, 12U, AsmCodeFlowType::JUMP },
+            { 20U, 36U, AsmCodeFlowType::JUMP },
+            { 32U, 40U, AsmCodeFlowType::CALL },
+            { 32U, 12U, AsmCodeFlowType::CALL },
+            { 32U, 36U, AsmCodeFlowType::CALL },
+            { 36U, 8U, AsmCodeFlowType::CJUMP },
+            { 36U, 40U, AsmCodeFlowType::CJUMP },
+            { 36U, 36U, AsmCodeFlowType::CJUMP },
+            { 44U, 0U, AsmCodeFlowType::RETURN },
+            { 52U, 0U, AsmCodeFlowType::START },
+            { 64U, 0U, AsmCodeFlowType::END }
+        }, true, ""
+    }
 };
 
 static void testAsmCodeFlow(cxuint i, const AsmCodeFlowCase& testCase)
