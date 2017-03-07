@@ -2181,7 +2181,8 @@ void AsmPseudoOps::defRegVar(Assembler& asmr, const char* pseudoOpPlace,
 void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace,
                      const char* linePtr, AsmCodeFlowType type)
 {
-    const bool acceptArgs = (type==AsmCodeFlowType::JUMP || type==AsmCodeFlowType::CALL);
+    const bool acceptArgs = (type==AsmCodeFlowType::JUMP || type==AsmCodeFlowType::CJUMP ||
+            type==AsmCodeFlowType::CALL);
     asmr.initializeOutputFormat();
     
     if (asmr.currentSection==ASMSECT_ABS ||
