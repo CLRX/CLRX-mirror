@@ -560,7 +560,7 @@ void ISAUsageHandler::putSpace(size_t offset)
 void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
 {
     if (lastOffset == rvu.offset && useRegMode)
-        flush();
+        flush(); // only flush if useRegMode and no change in offset
     else // otherwise
         putSpace(rvu.offset);
     useRegMode = false;
@@ -579,7 +579,7 @@ void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
 void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
 {
     if (lastOffset == rvu.offset && !useRegMode)
-        flush();
+        flush(); // only flush if useRegMode and no change in offset
     else // otherwise
         putSpace(rvu.offset);
     useRegMode = true;

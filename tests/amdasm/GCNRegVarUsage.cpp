@@ -1534,6 +1534,12 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         USEREG_ALL USEREG_ALL USEREG_6("0"),
         { RVUENTRY_ALL, RVUENTRY_ALL, RVUENTRY_6(0) },
         true, ""
+    },
+    { /* 24: usereg 256*2+64+4 useregs */
+        ".regvar rax:v:256\n"
+        USEREG_ALL USEREG_ALL USEREG_6("0") USEREG_2("0"),
+        { RVUENTRY_ALL, RVUENTRY_ALL, RVUENTRY_6(0), RVUENTRY_2(0) },
+        true, ""
     }
 };
 
@@ -1560,8 +1566,6 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
     std::unordered_map<const AsmRegVar*, CString> regVarNamesMap;
     for (const auto& entry: assembler.getRegVarMap())
         regVarNamesMap.insert(std::make_pair(&entry.second, entry.first));
-    /*assertValue("testGCNRegVarUsages", testCaseName+".size",
-                    testCase.regVarUsages.size(), section.regVarUsages.size());*/
     ISAUsageHandler* usageHandler = assembler.getSections()[0].usageHandler.get();
     usageHandler->rewind();
     size_t j;
