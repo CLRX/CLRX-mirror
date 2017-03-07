@@ -1064,8 +1064,9 @@ void AsmROCmPseudoOps::doKCodeEnd(AsmROCmHandler& handler, const char* pseudoOpP
                         handler.codeSection);
     else if (handler.currentKcodeKernel != ASMKERN_GLOBAL)
     {   // if choosen current kernel
-        oldKCodeSel.push_back(handler.currentKcodeKernel);
-        asmr.handleRegionsOnKernels(oldKCodeSel, oldKCodeSel, handler.codeSection);
+        std::vector<cxuint> curKernelSel;
+        curKernelSel.push_back(handler.currentKcodeKernel);
+        asmr.handleRegionsOnKernels(curKernelSel, oldKCodeSel, handler.codeSection);
     }
     
     handler.kcodeSelStack.pop();

@@ -195,6 +195,58 @@ celina:
                 { { 512, 768 }, { 776, 780 }
                 } }
         }, true, ""
+    },
+    {   /* kcode 2 */
+        R"ffDXD(.gallium
+.kernel ala
+.kernel beata
+.kernel celina
+.kernel dorota
+.text
+ala:
+        s_mov_b32 s5, s1
+.p2align 8
+beata:
+        s_mov_b32 s5, s1
+
+.kcode ala,celina
+        s_mov_b32 s5, s56
+        s_mov_b32 s15, s6
+.kcodeend
+
+.p2align 8
+celina:
+        s_mov_b32 s5, s1
+.p2align 8
+dorota:
+        s_mov_b32 s5, s1
+.p2align 8
+.kcode ala, beata
+        v_mov_b32 v3, v4
+.kcode -ala
+        v_mov_b32 v3, v4
+.kcode celina
+        v_mov_b32 v3, v5
+.kcodeend
+        s_mov_b32 s0, 0
+.kcodeend
+        s_mov_b32 s0, 0
+.kcodeend
+)ffDXD",
+        {
+            { "ala",
+                { { 0, 256 }, { 260, 268 }, { 1024, 1028 }, { 1040, 1044 }
+                } },
+            { "beata",
+                { { 256, 260 }, { 268, 512 }, { 1024, 1044 }
+                } },
+            { "celina",
+                { { 260, 268 }, { 512, 768 }, { 1032, 1036 }
+                } },
+            { "dorota",
+                { { 768, 1024 }
+                } }
+        }, true, ""
     }
 };
 
