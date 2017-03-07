@@ -154,6 +154,7 @@ protected:
     /// print warning about integer out of range
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
                 cxbyte signess = WS_BOTH);
+    void addCodeFlowEntry(cxuint sectionId, const AsmCodeFlowEntry& entry);
     /// constructor
     explicit ISAAssembler(Assembler& assembler);
 public:
@@ -630,20 +631,23 @@ public:
 };
 
 inline void ISAAssembler::printWarning(const char* linePtr, const char* message)
-{ return assembler.printWarning(linePtr, message); }
+{ assembler.printWarning(linePtr, message); }
 
 inline void ISAAssembler::printError(const char* linePtr, const char* message)
-{ return assembler.printError(linePtr, message); }
+{ assembler.printError(linePtr, message); }
 
 inline void ISAAssembler::printWarningForRange(cxuint bits, uint64_t value,
                    const AsmSourcePos& pos, cxbyte signess)
-{ return assembler.printWarningForRange(bits, value, pos, signess); }
+{ assembler.printWarningForRange(bits, value, pos, signess); }
 
 inline void ISAAssembler::printWarning(const AsmSourcePos& sourcePos, const char* message)
-{ return assembler.printWarning(sourcePos, message); }
+{ assembler.printWarning(sourcePos, message); }
 
 inline void ISAAssembler::printError(const AsmSourcePos& sourcePos, const char* message)
-{ return assembler.printError(sourcePos, message); }
+{ assembler.printError(sourcePos, message); }
+
+inline void ISAAssembler::addCodeFlowEntry(cxuint sectionId, const AsmCodeFlowEntry& entry)
+{ assembler.sections[sectionId].addCodeFlowEntry(entry); }
 
 };
 

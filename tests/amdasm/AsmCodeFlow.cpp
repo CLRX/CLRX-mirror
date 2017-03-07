@@ -40,28 +40,27 @@ static const AsmCodeFlowCase codeFlowTestCases1Tbl[] =
 {
     {
         R"ffDXD(.text
-            v_mov_b32 v3, v1
-            v_mov_b32 v3, v2
-    label1:
-            v_mov_b32 v3, v6
-    label2:
-            v_mov_b32 v3, v2
-            v_mov_b32 v3, v2
-            .cf_jump label1, label2, label3
-            v_nop
-            v_add_f32 v54, v3, v21
-            v_add_f32 v54, v3, v21
-            .cf_call label4, label2, label3
-            v_mul_f32 v54, v3, v21
-            .cf_cjump label1, label4, label3
-    label3: s_nop 3
-    label4: v_nop
-            .cf_ret
-            v_nop; v_nop
-            .cf_start
-            v_nop; v_nop; v_nop
-            .cf_end
-            )ffDXD",
+        v_mov_b32 v3, v1
+        v_mov_b32 v3, v2
+label1:
+        v_mov_b32 v3, v6
+label2:
+        v_mov_b32 v3, v2
+        v_mov_b32 v3, v2
+        .cf_jump label1, label2, label3
+        v_nop
+        v_add_f32 v54, v3, v21
+        v_add_f32 v54, v3, v21
+        .cf_call label4, label2, label3
+        v_mul_f32 v54, v3, v21
+        .cf_cjump label1, label4, label3
+label3: s_nop 3
+label4: v_nop
+        .cf_ret
+        v_nop; v_nop
+        .cf_start
+        v_nop; v_nop; v_nop
+        .cf_end)ffDXD",
         {
             { 20U, 8U, AsmCodeFlowType::JUMP },
             { 20U, 12U, AsmCodeFlowType::JUMP },
@@ -75,6 +74,42 @@ static const AsmCodeFlowCase codeFlowTestCases1Tbl[] =
             { 44U, 0U, AsmCodeFlowType::RETURN },
             { 52U, 0U, AsmCodeFlowType::START },
             { 64U, 0U, AsmCodeFlowType::END }
+        }, true, ""
+    },
+    {
+        R"ffDXD(.text
+        v_mov_b32 v3, v1
+        v_mov_b32 v3, v2
+label1:
+        v_mov_b32 v3, v6
+label2:
+        v_mov_b32 v3, v2
+        v_mov_b32 v3, v2
+        s_branch label1
+        s_cbranch_vccz label1
+        s_cbranch_i_fork s[4:5], label1
+        s_nop 5
+        s_branch label2
+        s_cbranch_vccz label2
+        s_cbranch_i_fork s[6:7], label2
+        v_mov_b32 v5, v3
+        v_sub_f32 v6, v2, v1
+        s_branch label3
+        s_cbranch_vccz label3
+        s_cbranch_i_fork s[6:7], label3
+        v_nop; v_nop; v_nop
+label3: v_madak_f32 v3, v4, v6, 1.453
+)ffDXD",
+        {
+            { 20U, 8U, AsmCodeFlowType::JUMP },
+            { 24U, 8U, AsmCodeFlowType::CJUMP },
+            { 28U, 8U, AsmCodeFlowType::CJUMP },
+            { 36U, 12U, AsmCodeFlowType::JUMP },
+            { 40U, 12U, AsmCodeFlowType::CJUMP },
+            { 44U, 12U, AsmCodeFlowType::CJUMP },
+            { 56U, 80U, AsmCodeFlowType::JUMP },
+            { 60U, 80U, AsmCodeFlowType::CJUMP },
+            { 64U, 80U, AsmCodeFlowType::CJUMP },
         }, true, ""
     }
 };
@@ -98,7 +133,10 @@ static void testAsmCodeFlow(cxuint i, const AsmCodeFlowCase& testCase)
         oss << "FAILED for " << " testAsmCodeFlowCase#" << i;
         throw Exception(oss.str());
     }
-    const std::vector<AsmCodeFlowEntry>& resultCFlow = assembler.getSections()[0].codeFlow;
+    std::vector<AsmCodeFlowEntry> resultCFlow = assembler.getSections()[0].codeFlow;
+    std::sort(resultCFlow.begin(), resultCFlow.end(),
+              [](const AsmCodeFlowEntry& e1, const AsmCodeFlowEntry& e2)
+              { return e1.offset < e2.offset; });
     assertValue("testAsmCodeFlowCase", testCaseName+".codeFlowSize",
                 testCase.codeFlow.size(), resultCFlow.size());
     for (size_t j = 0; j < testCase.codeFlow.size(); j++)

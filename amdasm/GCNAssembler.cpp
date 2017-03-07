@@ -591,6 +591,11 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 good = false;
             }
             imm16 = offset;
+            // add codeflow entry
+            if (good)
+                asmr.sections[asmr.currentSection].addCodeFlowEntry({ 
+                    size_t(asmr.currentOutPos), size_t(value),
+                    gcnInsn.code1==2 ? AsmCodeFlowType::JUMP : AsmCodeFlowType::CJUMP });
         }
     }
     else if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_SREG)
@@ -792,6 +797,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                   GCNEncSize gcnEncSize)
 {
     const char* end = asmr.line+asmr.lineSize;
+    GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     bool good = true;
     if (gcnEncSize==GCNEncSize::BIT64)
     {
@@ -823,6 +829,13 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     good = false;
                 }
                 imm16 = offset;
+                Assembler& asmr = gcnAsm->assembler;
+                // add codeflow entry
+                if (good)
+                    asmr.sections[asmr.currentSection].addCodeFlowEntry({ 
+                        size_t(asmr.currentOutPos), size_t(value),
+                        gcnInsn.code1==2 ? AsmCodeFlowType::JUMP :
+                            AsmCodeFlowType::CJUMP });
             }
             break;
         }
@@ -3463,6 +3476,10 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                 return false;
             }
             SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), outOffset);
+            uint16_t insnCode = ULEV(*reinterpret_cast<uint16_t*>(sectionData+offset+2));
+            // add codeflow entry
+            addCodeFlowEntry(sectionId, { size_t(offset), size_t(value),
+                    insnCode==0xbf82U ? AsmCodeFlowType::JUMP : AsmCodeFlowType::CJUMP });
             return true;
         }
         case GCNTGT_SMRDOFFSET:
