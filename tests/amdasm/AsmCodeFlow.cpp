@@ -65,12 +65,12 @@ label4: v_nop
             { 20U, 8U, AsmCodeFlowType::JUMP },
             { 20U, 12U, AsmCodeFlowType::JUMP },
             { 20U, 36U, AsmCodeFlowType::JUMP },
-            { 32U, 40U, AsmCodeFlowType::CALL },
             { 32U, 12U, AsmCodeFlowType::CALL },
             { 32U, 36U, AsmCodeFlowType::CALL },
+            { 32U, 40U, AsmCodeFlowType::CALL },
             { 36U, 8U, AsmCodeFlowType::CJUMP },
-            { 36U, 40U, AsmCodeFlowType::CJUMP },
             { 36U, 36U, AsmCodeFlowType::CJUMP },
+            { 36U, 40U, AsmCodeFlowType::CJUMP },
             { 44U, 0U, AsmCodeFlowType::RETURN },
             { 52U, 0U, AsmCodeFlowType::START },
             { 64U, 0U, AsmCodeFlowType::END }
@@ -136,7 +136,9 @@ static void testAsmCodeFlow(cxuint i, const AsmCodeFlowCase& testCase)
     std::vector<AsmCodeFlowEntry> resultCFlow = assembler.getSections()[0].codeFlow;
     std::sort(resultCFlow.begin(), resultCFlow.end(),
               [](const AsmCodeFlowEntry& e1, const AsmCodeFlowEntry& e2)
-              { return e1.offset < e2.offset; });
+              { return e1.offset < e2.offset || (e1.offset==e2.offset &&
+                          (e1.target<e2.target ||
+                              (e1.target==e2.target && e1.type<e2.type))); });
     assertValue("testAsmCodeFlowCase", testCaseName+".codeFlowSize",
                 testCase.codeFlow.size(), resultCFlow.size());
     for (size_t j = 0; j < testCase.codeFlow.size(); j++)
