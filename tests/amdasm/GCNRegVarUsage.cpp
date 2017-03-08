@@ -370,7 +370,8 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "v_mac_f32  rex, rax, rbx vop3\n"
         "v_mac_f32  v46, v42, v22\n"
         "v_sub_f32  rex, 87.0, rbx\n"
-        "v_sub_f32  v46, -61.5, v22\n",
+        "v_sub_f32  v46, -61.5, v22\n"
+        "v_add_f32 v10, srex, s21\n",
         {
             // v_sub_f32  rex, rax, rbx
             { 0, "rex", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
@@ -463,7 +464,11 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 108, "rbx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
             // v_sub_f32  v46, -61.5, v22
             { 116, nullptr, 256+46, 256+47, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 0 },
-            { 116, nullptr, 256+22, 256+23, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 }
+            { 116, nullptr, 256+22, 256+23, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 },
+            // v_add_f32 v10, srex, s21
+            { 124, nullptr, 266, 267, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 0 },
+            { 124, "srex", 0, 1, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 124, nullptr, 21, 22, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 0 }
         },
         true, ""
     },
@@ -1547,11 +1552,29 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "v_add_f32 v10, srex, srdx\n"
         "v_add_f32 v10, srex, s21\n" // no error, resolved while register allocation
         "v_addc_u32 v10, vcc, srex, v43, srr[0:1]\n"
-        "v_addc_u32 v10, vcc, srex, rax, srr[0:1]\n",
+        "v_addc_u32 v10, vcc, srex, rax, srr[0:1]\n"
+        "v_fma_f32 v10, srex, rax, srbx\n"
+        "v_fma_f32 v10, srex, v42, srbx\n"
+        "v_fma_f32 v10, srex, srbx, v1\n"
+        "v_fma_f32 v10, srex, srbx, rbx\n"
+        "v_fma_f32 v10, srex, srbx, s12\n"
+        "v_fma_f32 v10, s22, srbx, s12\n"
+        "v_fma_f32 v10, srbx, s33, s12\n"
+        "v_addc_u32 v10, vcc, s22, srbx, s[12:13]\n"
+        "v_addc_u32 v10, vcc, srbx, s33, s[12:13]\n",
         { },
         false, "test.s:3:1: Error: More than one SGPR to read in instruction\n"
         "test.s:5:1: Error: More than one SGPR to read in instruction\n"
         "test.s:6:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:7:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:8:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:9:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:10:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:11:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:12:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:13:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:14:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:15:1: Error: More than one SGPR to read in instruction\n"
     }
 };
 

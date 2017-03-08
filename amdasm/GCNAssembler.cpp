@@ -1387,9 +1387,15 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         sgprsReaded++;
     if (src1Op.range.isSGPR() && !regRangeCanEqual(src0Op.range, src1Op.range))
         sgprsReaded++;
-    if (haveSrcCC && !regRangeCanEqual(src1Op.range, srcCCReg) &&
-            !regRangeCanEqual(src0Op.range, srcCCReg))
-        sgprsReaded++;
+    if (haveSrcCC)
+    {
+        bool equalS0SCC = regRangeCanEqual(src0Op.range, srcCCReg);
+        bool equalS1SCC = regRangeCanEqual(src1Op.range, srcCCReg);
+        if((!equalS0SCC && !equalS1SCC) ||
+            (!equalS0SCC && equalS1SCC && src1Op.range.isRegVar()) ||
+            (equalS0SCC && !equalS1SCC && src0Op.range.isRegVar()))
+            sgprsReaded++;
+    }
     
     if (sgprsReaded >= 2)
     {   /* include VCCs (???) */
@@ -2026,8 +2032,11 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         //if (src2Op && src2Op.range.start<108 &&
         if (src2Op && src2Op.range.isSGPR())
         {
-            if(!regRangeCanEqual(src0Op.range, src2Op.range) &&
-                !regRangeCanEqual(src1Op.range, src2Op.range))
+            bool equalS0S2 = regRangeCanEqual(src0Op.range, src2Op.range);
+            bool equalS1S2 = regRangeCanEqual(src1Op.range, src2Op.range);
+            if((!equalS0S2 && !equalS1S2) ||
+                (!equalS0S2 && equalS1S2 && src1Op.range.isRegVar()) ||
+                (equalS0S2 && !equalS1S2 && src0Op.range.isRegVar()))
                 numSgprToRead++;
         }
         
