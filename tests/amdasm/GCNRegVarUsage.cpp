@@ -1540,6 +1540,18 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         USEREG_ALL USEREG_ALL USEREG_6("0") USEREG_2("0"),
         { RVUENTRY_ALL, RVUENTRY_ALL, RVUENTRY_6(0), RVUENTRY_2(0) },
         true, ""
+    },
+    {   /* 25: errors (two scalar registers) */
+        ".regvar rax:v, rbx:v, rcx:v, rex:v\n"
+        ".regvar srex:s, srdx:s, srbx:s, srr:s:4\n"
+        "v_add_f32 v10, srex, srdx\n"
+        "v_add_f32 v10, srex, s21\n" // no error, resolved while register allocation
+        "v_addc_u32 v10, vcc, srex, v43, srr[0:1]\n"
+        "v_addc_u32 v10, vcc, srex, rax, srr[0:1]\n",
+        { },
+        false, "test.s:3:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:5:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:6:1: Error: More than one SGPR to read in instruction\n"
     }
 };
 

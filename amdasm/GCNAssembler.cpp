@@ -367,7 +367,7 @@ static void tryPromoteConstImmToLiteral(GCNOperand& src0Op, uint16_t arch)
 
 static inline bool regRangeCanEqual(const RegRange& r1, const RegRange& r2)
 {
-    if (r1.isRegVar() != r2.isRegVar())
+    if (r1.isRegVar() != r2.isRegVar() && r1.isSGPR()==r2.isSGPR())
         return true; // can be equal: regvar -> reg
     return r1.regVar==r2.regVar && r1.start==r2.start;
 }
