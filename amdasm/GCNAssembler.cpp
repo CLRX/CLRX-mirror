@@ -1394,7 +1394,10 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if((!equalS0SCC && !equalS1SCC) ||
             (!srcCCReg.isRegVar() &&
              ((!equalS0SCC && equalS1SCC && src1Op.range.isRegVar()) ||
-              (equalS0SCC && !equalS1SCC && src0Op.range.isRegVar()))))
+              (equalS0SCC && !equalS1SCC && src0Op.range.isRegVar()))) ||
+            (srcCCReg.isRegVar() &&
+                 ((!equalS0SCC && equalS1SCC && !src1Op.range.isRegVar()) ||
+                 (equalS0SCC && !equalS1SCC && !src0Op.range.isRegVar()))))
             sgprsReaded++;
     }
     
@@ -2038,7 +2041,10 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             if((!equalS0S2 && !equalS1S2) ||
                 (!src2Op.range.isRegVar() &&
                 ((!equalS0S2 && equalS1S2 && src1Op.range.isRegVar()) ||
-                 (equalS0S2 && !equalS1S2 && src0Op.range.isRegVar()))))
+                 (equalS0S2 && !equalS1S2 && src0Op.range.isRegVar()))) ||
+                (src2Op.range.isRegVar() &&
+                 ((!equalS0S2 && equalS1S2 && !src1Op.range.isRegVar()) ||
+                 (equalS0S2 && !equalS1S2 && !src0Op.range.isRegVar()))))
                 numSgprToRead++;
         }
         

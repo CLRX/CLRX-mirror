@@ -1561,7 +1561,11 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "v_fma_f32 v10, s22, srbx, s12\n"
         "v_fma_f32 v10, srbx, s33, s12\n"
         "v_addc_u32 v10, vcc, s22, srbx, s[12:13]\n"
-        "v_addc_u32 v10, vcc, srbx, s33, s[12:13]\n",
+        "v_addc_u32 v10, vcc, srbx, s33, s[12:13]\n"
+        "v_fma_f32 v10, srex, s42, srbx\n"
+        "v_fma_f32 v10, s42, srex, srbx\n"
+        "v_addc_u32 v10, vcc, srex, s42, srr[0:1]\n"
+        "v_addc_u32 v10, vcc, s42, srex, srr[0:1]\n",
         { },
         false, "test.s:3:1: Error: More than one SGPR to read in instruction\n"
         "test.s:5:1: Error: More than one SGPR to read in instruction\n"
@@ -1575,6 +1579,10 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "test.s:13:1: Error: More than one SGPR to read in instruction\n"
         "test.s:14:1: Error: More than one SGPR to read in instruction\n"
         "test.s:15:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:16:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:17:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:18:1: Error: More than one SGPR to read in instruction\n"
+        "test.s:19:1: Error: More than one SGPR to read in instruction\n"
     }
 };
 
