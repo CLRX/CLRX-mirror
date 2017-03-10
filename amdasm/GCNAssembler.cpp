@@ -3657,3 +3657,123 @@ bool GCNAssembler::parseRegisterType(const char*& linePtr, const char* end, cxui
     }
     return false;
 }
+
+static const bool gcnSize11Table[16] =
+{
+    false, // GCNENC_SMRD, // 0000
+    false, // GCNENC_SMRD, // 0001
+    false, // GCNENC_VINTRP, // 0010
+    false, // GCNENC_NONE, // 0011 - illegal
+    true,  // GCNENC_VOP3A, // 0100
+    false, // GCNENC_NONE, // 0101 - illegal
+    true,  // GCNENC_DS,   // 0110
+    true,  // GCNENC_FLAT, // 0111
+    true,  // GCNENC_MUBUF, // 1000
+    false, // GCNENC_NONE,  // 1001 - illegal
+    true,  // GCNENC_MTBUF, // 1010
+    false, // GCNENC_NONE,  // 1011 - illegal
+    true,  // GCNENC_MIMG,  // 1100
+    false, // GCNENC_NONE,  // 1101 - illegal
+    true,  // GCNENC_EXP,   // 1110
+    false // GCNENC_NONE   // 1111 - illegal
+};
+
+static const bool gcnSize12Table[16] =
+{
+    true,  // GCNENC_SMEM, // 0000
+    true,  // GCNENC_EXP, // 0001
+    false, // GCNENC_NONE, // 0010 - illegal
+    false, // GCNENC_NONE, // 0011 - illegal
+    true,  // GCNENC_VOP3A, // 0100
+    false, // GCNENC_VINTRP, // 0101
+    true,  // GCNENC_DS,   // 0110
+    true,  // GCNENC_FLAT, // 0111
+    true,  // GCNENC_MUBUF, // 1000
+    false, // GCNENC_NONE,  // 1001 - illegal
+    true,  // GCNENC_MTBUF, // 1010
+    false, // GCNENC_NONE,  // 1011 - illegal
+    true,  // GCNENC_MIMG,  // 1100
+    false, // GCNENC_NONE,  // 1101 - illegal
+    false, // GCNENC_NONE,  // 1110 - illegal
+    false // GCNENC_NONE   // 1111 - illegal
+};
+
+size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) const
+{
+    if (codeSize < 4)
+        return 0; // no instruction
+    bool isGCN11 = (curArchMask & ARCH_RX2X0)!=0;
+    bool isGCN12 = (curArchMask & ARCH_RX3X0)!=0;
+    const uint32_t insnCode = ULEV(*reinterpret_cast<const uint32_t*>(code));
+    uint32_t words = 1;
+    if ((insnCode & 0x80000000U) != 0)
+    {
+        if ((insnCode & 0x40000000U) == 0)
+        {   // SOP???
+            if  ((insnCode & 0x30000000U) == 0x30000000U)
+            {   // SOP1/SOPK/SOPC/SOPP
+                const uint32_t encPart = (insnCode & 0x0f800000U);
+                if (encPart == 0x0e800000U)
+                {   // SOP1
+                    if ((insnCode&0xff) == 0xff) // literal
+                        words++;
+                }
+                else if (encPart == 0x0f000000U)
+                {   // SOPC
+                    if ((insnCode&0xff) == 0xff ||
+                        (insnCode&0xff00) == 0xff00) // literal
+                        words++;
+                }
+                else if (encPart != 0x0f800000U)
+                {   // SOPK
+                    const cxuint opcode = (insnCode>>23)&0x1f;
+                    if ((!isGCN12 && opcode == 21) ||
+                        (isGCN12 && opcode == 20))
+                        words++; // additional literal
+                }
+            }
+            else
+            {   // SOP2
+                if ((insnCode&0xff) == 0xff || (insnCode&0xff00) == 0xff00)
+                    words++;  // literal
+            }
+        }
+        else
+        {   // SMRD and others
+            const uint32_t encPart = (insnCode&0x3c000000U)>>26;
+            if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
+                (isGCN12 && gcnSize12Table[encPart]))
+                words++;
+        }
+    }
+    else
+    {   // some vector instructions
+        if ((insnCode & 0x7e000000U) == 0x7c000000U)
+        {   // VOPC
+            if ((insnCode&0x1ff) == 0xff || // literal
+                // SDWA, DDP
+                (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                words++;
+        }
+        else if ((insnCode & 0x7e000000U) == 0x7e000000U)
+        {   // VOP1
+            if ((insnCode&0x1ff) == 0xff || // literal
+                // SDWA, DDP
+                (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                words++;
+        }
+        else
+        {   // VOP2
+            const cxuint opcode = (insnCode >> 25)&0x3f;
+            if ((!isGCN12 && (opcode == 32 || opcode == 33)) ||
+                (isGCN12 && (opcode == 23 || opcode == 24 ||
+                opcode == 36 || opcode == 37))) // V_MADMK and V_MADAK
+                words++;  // inline 32-bit constant
+            else if ((insnCode&0x1ff) == 0xff || // literal
+                // SDWA, DDP
+                (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                words++;  // literal
+        }
+    }
+    return words<<2;
+}

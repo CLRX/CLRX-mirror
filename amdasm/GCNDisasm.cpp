@@ -280,7 +280,7 @@ void GCNDisassembler::analyzeBeforeDisassemble()
     {   /* scan all instructions and get jump addresses */
         const uint32_t insnCode = ULEV(codeWords[pos]);
         if ((insnCode & 0x80000000U) != 0)
-        {   
+        {
             if ((insnCode & 0x40000000U) == 0)
             {   // SOP???
                 if  ((insnCode & 0x30000000U) == 0x30000000U)

@@ -189,6 +189,8 @@ public:
     /// parse register type for '.reg' pseudo-op
     virtual bool parseRegisterType(const char*& linePtr,
                        const char* end, cxuint& type) = 0;
+    /// get size of instruction
+    virtual size_t getInstructionSize(size_t codeSize, const cxbyte* code) const = 0;
 };
 
 /// GCN arch assembler
@@ -250,6 +252,7 @@ public:
                 const AsmRegVar*& regVar);
     bool relocationIsFit(cxuint bits, AsmExprTargetType tgtType);
     bool parseRegisterType(const char*& linePtr, const char* end, cxuint& type);
+    size_t getInstructionSize(size_t codeSize, const cxbyte* code) const;
 };
 
 
