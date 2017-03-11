@@ -255,6 +255,26 @@ public:
     size_t getInstructionSize(size_t codeSize, const cxbyte* code) const;
 };
 
+class AsmRegAllocator
+{
+private:
+    Assembler& assembler;
+    struct CodeBlock
+    {
+        size_t start, end; // place in code
+        std::vector<size_t> nexts; ///< nexts blocks
+        bool withCall;
+        bool withReturn;
+    };
+    std::vector<CodeBlock> codeBlocks;
+    
+    void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
+             size_t codeSize, const cxbyte* code);
+public:
+    AsmRegAllocator(Assembler& assembler);
+    
+    void allocateRegisters(cxuint sectionId);
+};
 
 /// type of clause
 enum class AsmClauseType
@@ -294,6 +314,7 @@ private:
     friend class AsmGalliumHandler;
     friend class AsmROCmHandler;
     friend class ISAAssembler;
+    friend class AsmRegAllocator;
     
     friend struct AsmParseUtils; // INTERNAL LOGIC
     friend struct AsmPseudoOps; // INTERNAL LOGIC

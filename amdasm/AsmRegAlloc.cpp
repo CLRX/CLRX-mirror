@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+#include <stack>
 #include <vector>
 #include <utility>
 #include <algorithm>
@@ -228,4 +229,158 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
         skipBytesInInstrStruct();
     }
     return rvu;
+}
+
+AsmRegAllocator::AsmRegAllocator(Assembler& _assembler) : assembler(_assembler)
+{ }
+
+void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
+             size_t codeSize, const cxbyte* code)
+{
+    ISAAssembler* isaAsm = assembler.isaAssembler;
+    std::vector<size_t> splits;
+    std::vector<size_t> codeStarts;
+    std::vector<size_t> codeEnds;
+    codeStarts.push_back(0);
+    codeEnds.push_back(codeSize);
+    for (const AsmCodeFlowEntry& entry: codeFlow)
+    {
+        size_t instrAfter = 0;
+        if (entry.type == AsmCodeFlowType::JUMP || entry.type == AsmCodeFlowType::CJUMP)
+            instrAfter = entry.offset + isaAsm->getInstructionSize(
+                        codeSize - entry.offset, code + entry.offset);
+        
+        switch(entry.type)
+        {
+            case AsmCodeFlowType::START:
+                codeStarts.push_back(entry.offset);
+                break;
+            case AsmCodeFlowType::END:
+                codeEnds.push_back(entry.offset);
+                break;
+            case AsmCodeFlowType::JUMP:
+                splits.push_back(entry.target);
+                codeEnds.push_back(instrAfter);
+                break;
+            case AsmCodeFlowType::CJUMP:
+                splits.push_back(entry.target);
+                splits.push_back(instrAfter);
+                break;
+            case AsmCodeFlowType::CALL:
+                splits.push_back(entry.target);
+                break;
+            case AsmCodeFlowType::RETURN:
+                codeEnds.push_back(instrAfter);
+                break;
+            default:
+                break;
+        }
+    }
+    std::sort(splits.begin(), splits.end());
+    splits.resize(std::unique(splits.begin(), splits.end()) - splits.begin());
+    std::sort(codeEnds.begin(), codeEnds.end());
+    codeEnds.resize(std::unique(codeEnds.begin(), codeEnds.end())
+                - codeEnds.begin());
+    // add next codeStarts
+    auto splitIt = splits.begin();
+    for (size_t codeEnd: codeEnds)
+    {
+        auto it = std::lower_bound(splitIt, splits.end(), codeEnd);
+        if (it != splits.end())
+        {
+            codeStarts.push_back(*it);
+            splitIt = it;
+        }
+        else // if end
+            break;
+    }
+    std::sort(codeStarts.begin(), codeStarts.end());
+    codeStarts.resize(std::unique(codeStarts.begin(), codeStarts.end())
+                - codeStarts.begin());
+    // divide to blocks
+    for (size_t codeStart: codeStarts)
+    {
+        size_t codeEnd = *std::lower_bound(codeEnds.begin(), codeEnds.end(), codeStart);
+        splitIt = std::lower_bound(splitIt, splits.end(), codeStart);
+        if (splitIt == splits.end())
+            break; // end of code blocks
+        for (size_t start = *splitIt; start < codeEnd;)
+        {
+            start = *splitIt;
+            ++splitIt;
+            size_t end = codeEnd;
+            if (splitIt != splits.end())
+                end = std::min(end, *splitIt);
+            codeBlocks.push_back({ start, end, { }, false, false });
+        }
+        if (splitIt == splits.end())
+            break; // end of code blocks
+    }
+    // construct flow-graph
+    for (const AsmCodeFlowEntry& entry: codeFlow)
+        if (entry.type == AsmCodeFlowType::CALL || entry.type == AsmCodeFlowType::JUMP ||
+            entry.type == AsmCodeFlowType::CJUMP || entry.type == AsmCodeFlowType::RETURN)
+        {
+            auto it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
+                    CodeBlock{ entry.target },
+                    [](const CodeBlock& c1, const CodeBlock& c2)
+                    { return c1.start < c2.end; });
+            
+            if (entry.type == AsmCodeFlowType::RETURN)
+            {   // if block have return
+                if (it == codeBlocks.end())
+                    continue;
+                it->withReturn = true;
+                continue;
+            }
+            if (entry.type == AsmCodeFlowType::CALL && it != codeBlocks.end())
+                it->withCall = true;
+            
+            size_t instrAfter = entry.offset + isaAsm->getInstructionSize(
+                        codeSize - entry.offset, code + entry.offset);
+            auto it2 = binaryFind(codeBlocks.begin(), codeBlocks.end(),
+                    CodeBlock{ instrAfter },
+                    [](const CodeBlock& c1, const CodeBlock& c2)
+                    { return c1.start < c2.end; });
+            if (it == codeBlocks.end() || it2 == codeBlocks.end())
+                continue; // error!
+            it->nexts.push_back(it2 - codeBlocks.begin());
+            if (entry.type != AsmCodeFlowType::JUMP) // add next next block
+                it->nexts.push_back(it - codeBlocks.begin() + 1);
+        }
+    // add return nexts
+    std::vector<bool> visited(codeBlocks.size());
+    std::stack<size_t> callStack;
+    
+    struct FlowStackEntry
+    {
+        const CodeBlock& cblock;
+        size_t nextIndex;
+    };
+    std::stack<FlowStackEntry> flowStack;
+    flowStack.push({ codeBlocks[0], 0 });
+    
+    while (!flowStack.empty())
+    {
+        FlowStackEntry& entry = flowStack.top();
+        if (entry.nextIndex == 0)
+        { // process current block
+            
+        }
+        if (entry.nextIndex < entry.cblock.nexts.size())
+        {
+            flowStack.push({ codeBlocks[entry.cblock.nexts[entry.nextIndex]], 0 });
+            entry.nextIndex++;
+        }
+        else // back
+            flowStack.pop();
+    }
+}
+
+void AsmRegAllocator::allocateRegisters(cxuint sectionId)
+{   // before any operation, clear all
+    codeBlocks.clear();
+    // set up
+    const AsmSection& section = assembler.sections[sectionId];
+    createCodeStructure(section.codeFlow, section.content.size(), section.content.data());
 }
