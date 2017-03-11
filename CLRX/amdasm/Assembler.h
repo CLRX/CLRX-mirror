@@ -263,8 +263,6 @@ private:
     {
         size_t start, end; // place in code
         std::vector<size_t> nexts; ///< nexts blocks
-        bool withCall;
-        bool withReturn;
     };
     std::vector<CodeBlock> codeBlocks;
     
