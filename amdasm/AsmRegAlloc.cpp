@@ -318,12 +318,13 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
         if (splitIt == splits.end())
             break; // end of code blocks
     }
-    // flags = 1 - have call, 2 - have return
+    // flags = 1 - have call, 2 - have return, 4 - have jump
     struct CodeBlockInfo
     {
         cxbyte flags;
         std::vector<bool> nextCalls; // true if next is call
-        CodeBlockInfo() : flags(0)
+        size_t nextRet; // next block with return
+        CodeBlockInfo() : flags(0), nextRet(SIZE_MAX)
         { }
     };
     std::vector<CodeBlockInfo> codeBlockInfos(codeBlocks.size());
@@ -345,8 +346,9 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                 codeBlockInfos[it - codeBlocks.begin()].flags = 2;
                 continue;
             }
-            if (entry.type == AsmCodeFlowType::CALL && it != codeBlocks.end())
-                codeBlockInfos[it - codeBlocks.begin()].flags = 1;
+            if (it != codeBlocks.end())
+                codeBlockInfos[it - codeBlocks.begin()].flags = 
+                    entry.type == AsmCodeFlowType::CALL ? 1 : 4;
             
             size_t instrAfter = entry.offset + isaAsm->getInstructionSize(
                         codeSize - entry.offset, code + entry.offset);
@@ -362,6 +364,10 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             if (entry.type != AsmCodeFlowType::JUMP) // add next next block
                 it->nexts.push_back(it - codeBlocks.begin() + 1);
         }
+    // add direct next
+    for (size_t i = 0; i < codeBlocks.size(); i++)
+    {
+    }
     // add return nexts
     std::vector<bool> visited(codeBlocks.size());
     struct CallStackEntry
@@ -381,6 +387,33 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     std::stack<FlowStackEntry> flowStack;
     flowStack.push({ 0, 0 });
     
+    /// collect returns next
+    while (!flowStack.empty())
+    {
+        FlowStackEntry& entry = flowStack.top();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        if (entry.nextIndex == 0)
+        {
+            if (!visited[entry.blockIndex])
+                visited[entry.blockIndex] = true;
+            else
+            {   // back, already visited
+                flowStack.pop();
+                continue;
+            }
+        }
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            flowStack.push({ cblock.nexts[entry.nextIndex], 0 });
+            entry.nextIndex++;
+        }
+        else // back
+            flowStack.pop();
+    }
+    
+    visited.clear();
+    // real resolving returns nexts
+    flowStack.push({ 0, 0 });
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.top();
@@ -390,22 +423,21 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
-                if ((codeBlockInfos[entry.blockIndex].flags & 2) != 0 &&
-                    !callStack.empty())
+                if (callStack.empty())
+                    continue;
+                CallStackEntry& centry = callStack.top();
+                if ((codeBlockInfos[entry.blockIndex].flags & 2) != 0)
                     // add return to stack
-                    callStack.top().returns.push_back(entry.blockIndex);
+                    centry.returns.push_back(entry.blockIndex);
                 else if ((codeBlockInfos[entry.blockIndex].flags & 1) != 0 &&
-                    !callStack.empty() &&
-                    entry.blockIndex == callStack.top().callBlock &&
-                    entry.nextIndex-1 == callStack.top().callNextIndex)
+                    entry.blockIndex == centry.callBlock &&
+                    entry.nextIndex-1 == centry.callNextIndex)
                 {   // insert new routine
                     routineMap.insert(std::make_pair(
-                        codeBlocks[callStack.top().callBlock].nexts[
-                            callStack.top().callNextIndex],
-                         Array<size_t>(callStack.top().returns.begin(),
-                                 callStack.top().returns.end())));
+                        codeBlocks[centry.callBlock].nexts[centry.callNextIndex],
+                        Array<size_t>(centry.returns.begin(), centry.returns.end())));
                     
-                    for (size_t retIndex: callStack.top().returns)
+                    for (size_t retIndex: centry.returns)
                         codeBlocks[retIndex].nexts.push_back(entry.blockIndex+1);
                     callStack.pop(); // just return from call
                 }
@@ -420,7 +452,8 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
         {
             if (codeBlockInfos[entry.blockIndex].nextCalls[entry.nextIndex])
             {
-                if (!visited[cblock.nexts[entry.nextIndex]])
+                auto it = routineMap.find(cblock.nexts[entry.nextIndex]);
+                if (it == routineMap.end())
                     // add return block to callstack
                     callStack.push({ entry.blockIndex, entry.nextIndex });
                 else
@@ -429,6 +462,8 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                     if (it != routineMap.end())
                         for (size_t retIndex: it->second)
                             codeBlocks[retIndex].nexts.push_back(entry.blockIndex+1);
+                    entry.nextIndex++;
+                    continue;
                 }
             }
             flowStack.push({ cblock.nexts[entry.nextIndex], 0 });
