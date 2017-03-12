@@ -257,8 +257,7 @@ public:
 
 class AsmRegAllocator
 {
-private:
-    Assembler& assembler;
+public:
     struct NextBlock
     {
         size_t block;
@@ -270,6 +269,8 @@ private:
         std::vector<NextBlock> nexts; ///< nexts blocks
         bool haveReturn;
     };
+private:
+    Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
     
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
@@ -278,6 +279,9 @@ public:
     AsmRegAllocator(Assembler& assembler);
     
     void allocateRegisters(cxuint sectionId);
+    
+    const std::vector<CodeBlock>& getCodeBlocks() const
+    { return codeBlocks; }
 };
 
 /// type of clause
