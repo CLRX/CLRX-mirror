@@ -259,10 +259,15 @@ class AsmRegAllocator
 {
 private:
     Assembler& assembler;
+    struct NextBlock
+    {
+        size_t block;
+        bool isCall;
+    };
     struct CodeBlock
     {
         size_t start, end; // place in code
-        std::vector<size_t> nexts; ///< nexts blocks
+        std::vector<NextBlock> nexts; ///< nexts blocks
         bool haveReturn;
     };
     std::vector<CodeBlock> codeBlocks;

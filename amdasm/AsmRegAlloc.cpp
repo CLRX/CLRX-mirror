@@ -236,15 +236,6 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
 AsmRegAllocator::AsmRegAllocator(Assembler& _assembler) : assembler(_assembler)
 { }
 
-enum : cxbyte {
-    CFFLAG_JUMP = 1U<<AsmCodeFlowType::JUMP,  ///< jump
-    CFFLAG_CJUMP = 1U<<AsmCodeFlowType::CJUMP,   ///< conditional jump
-    CFFLAG_CALL = 1U<<AsmCodeFlowType::CALL,   ///< call of procedure
-    CFFLAG_RETURN = 1U<<AsmCodeFlowType::RETURN, ///< return from procedure
-    CFFLAG_START = 1U<<AsmCodeFlowType::START,  ///< code start
-    CFFLAG_END = 1U<<AsmCodeFlowType::END     ///< code end
-};
-
 void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code)
 {
@@ -327,15 +318,6 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
         if (splitIt == splits.end())
             break; // end of code blocks
     }
-    struct CodeBlockInfo
-    {
-        cxbyte flags;
-        std::vector<bool> nextCalls; // true if next is call
-        size_t callSlotId;
-        CodeBlockInfo() : flags(0), callSlotId(SIZE_MAX)
-        { }
-    };
-    std::vector<CodeBlockInfo> codeBlockInfos(codeBlocks.size());
     
     // construct flow-graph
     for (const AsmCodeFlowEntry& entry: codeFlow)
@@ -347,13 +329,6 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                     [](const CodeBlock& c1, const CodeBlock& c2)
                     { return c1.start < c2.end; });
             
-            if (it == codeBlocks.end())
-            {
-                if (entry.type != AsmCodeFlowType::END || entry.offset != it->start)
-                    codeBlockInfos[it - codeBlocks.begin()].flags |= 1U<<entry.type;
-                else if (it!=codeBlocks.begin()) // end for previous block
-                    codeBlockInfos[it - codeBlocks.begin()-1].flags |= 1U<<entry.type;
-            }
             if (entry.type == AsmCodeFlowType::RETURN)
             {   // if block have return
                 it->haveReturn = true;
@@ -368,150 +343,11 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                     { return c1.start < c2.end; });
             if (it == codeBlocks.end() || it2 == codeBlocks.end())
                 continue; // error!
-            it->nexts.push_back(it2 - codeBlocks.begin());
-            codeBlockInfos[it - codeBlocks.begin()].nextCalls.push_back(
-                    entry.type == AsmCodeFlowType::CALL);
+            it->nexts.push_back({ size_t(it2 - codeBlocks.begin()),
+                        entry.type == AsmCodeFlowType::CALL });
             if (entry.type != AsmCodeFlowType::JUMP) // add next next block
-                it->nexts.push_back(it - codeBlocks.begin() + 1);
+                it->nexts.push_back({ size_t(it - codeBlocks.begin() + 1), false });
         }
-    
-    struct CallSlot
-    {
-        size_t callee;   // block that begin callee (routine)
-        std::vector<size_t> callers; // block that calls this call
-        std::vector<size_t> nexts; // next callslots
-    };
-    std::vector<CallSlot> callSlots;
-    
-    std::vector<bool> visited(codeBlocks.size());
-    struct CallStackEntry
-    {
-        size_t callBlock; // index
-        size_t callNextIndex; // index of call next
-        std::vector<size_t> returns; // returns
-    };
-    std::stack<CallStackEntry> callStack;
-    std::unordered_map<size_t, Array<size_t> > routineMap;
-    
-    struct FlowStackEntry
-    {
-        size_t blockIndex;
-        size_t nextIndex;
-    };
-    std::stack<FlowStackEntry> flowStack;
-    
-    /// collect call slots (
-    size_t curCallSlotId = 0;
-    for (const AsmCodeFlowEntry& cfentry: codeFlow)
-    {
-        if (cfentry.type != AsmCodeFlowType::CALL)
-            continue;
-        
-        while (!flowStack.empty())
-        {
-            FlowStackEntry& entry = flowStack.top();
-            const CodeBlock& cblock = codeBlocks[entry.blockIndex];
-            const CodeBlockInfo& cblockInfo = codeBlockInfos[entry.blockIndex];
-            if (entry.nextIndex == 0)
-            { // process current block
-                if (!visited[entry.blockIndex])
-                {
-                    if ((cblockInfo.flags & CFFLAG_CALL) != 0)
-                    {
-                    }
-                    visited[entry.blockIndex] = true;
-                }
-                else
-                {   // back, already visited
-                    flowStack.pop();
-                    continue;
-                }
-            }
-            
-            if (entry.nextIndex < cblock.nexts.size())
-            {
-                flowStack.push({ cblock.nexts[entry.nextIndex], 0 });
-                entry.nextIndex++;
-            }
-            else if (entry.nextIndex==0 && cblock.nexts.empty() &&
-                    (cblockInfo.flags & (0xff&~CFFLAG_START))==0)
-            {
-                flowStack.push({ entry.blockIndex+1, 0 });
-                entry.nextIndex++;
-            }
-            else // back
-                flowStack.pop();
-        }
-    }
-    
-    visited.clear();
-    // real resolving returns nexts
-    flowStack.push({ 0, 0 });
-    while (!flowStack.empty())
-    {
-        FlowStackEntry& entry = flowStack.top();
-        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
-        const CodeBlockInfo& cblockInfo = codeBlockInfos[entry.blockIndex];
-        if (entry.nextIndex == 0)
-        { // process current block
-            if (!visited[entry.blockIndex])
-            {
-                visited[entry.blockIndex] = true;
-                if (callStack.empty())
-                    continue;
-                CallStackEntry& centry = callStack.top();
-                if ((cblockInfo.flags & CFFLAG_RETURN) != 0)
-                    // add return to stack
-                    centry.returns.push_back(entry.blockIndex);
-                else if ((cblockInfo.flags & CFFLAG_CALL) != 0 &&
-                    entry.blockIndex == centry.callBlock &&
-                    entry.nextIndex-1 == centry.callNextIndex)
-                {   // insert new routine
-                    routineMap.insert(std::make_pair(
-                        codeBlocks[centry.callBlock].nexts[centry.callNextIndex],
-                        Array<size_t>(centry.returns.begin(), centry.returns.end())));
-                    
-                    for (size_t retIndex: centry.returns)
-                        codeBlocks[retIndex].nexts.push_back(entry.blockIndex+1);
-                    callStack.pop(); // just return from call
-                }
-            }
-            else
-            {   // back, already visited
-                flowStack.pop();
-                continue;
-            }
-        }
-        if (entry.nextIndex < cblock.nexts.size())
-        {
-            if (cblockInfo.nextCalls[entry.nextIndex])
-            {
-                auto it = routineMap.find(cblock.nexts[entry.nextIndex]);
-                if (it == routineMap.end())
-                    // add return block to callstack
-                    callStack.push({ entry.blockIndex, entry.nextIndex });
-                else
-                {   // if routine already visited
-                    auto it = routineMap.find(cblock.nexts[entry.nextIndex]);
-                    if (it != routineMap.end())
-                        for (size_t retIndex: it->second)
-                            codeBlocks[retIndex].nexts.push_back(entry.blockIndex+1);
-                    entry.nextIndex++;
-                    continue;
-                }
-            }
-            flowStack.push({ cblock.nexts[entry.nextIndex], 0 });
-            entry.nextIndex++;
-        }
-        else if (entry.nextIndex==0 && cblock.nexts.empty() &&
-                (cblockInfo.flags & (0xff&~CFFLAG_START))==0)
-        {
-            flowStack.push({ entry.blockIndex+1, 0 });
-            entry.nextIndex++;
-        }
-        else // back
-            flowStack.pop();
-    }
 }
 
 void AsmRegAllocator::allocateRegisters(cxuint sectionId)
