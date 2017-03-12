@@ -269,9 +269,16 @@ public:
         std::vector<NextBlock> nexts; ///< nexts blocks
         bool haveReturn;
     };
+    struct RegVarSSA
+    {
+        cxuint type;
+        // array SSA id history for every register. key - place, value - SSA id
+        Array<std::vector<std::pair<size_t, size_t> > > ssaHistory;
+    };
 private:
     Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
+    Array<RegVarSSA> regVarSSASlots;
     
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);
