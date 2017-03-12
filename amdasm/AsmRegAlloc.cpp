@@ -236,6 +236,10 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
 AsmRegAllocator::AsmRegAllocator(Assembler& _assembler) : assembler(_assembler)
 { }
 
+static inline bool codeBlockStartLess(const AsmRegAllocator::CodeBlock& c1,
+                  const AsmRegAllocator::CodeBlock& c2)
+{ return c1.start < c2.start; }
+
 void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code)
 {
@@ -325,24 +329,22 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             entry.type == AsmCodeFlowType::CJUMP || entry.type == AsmCodeFlowType::RETURN)
         {
             auto it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
-                    CodeBlock{ entry.target },
-                    [](const CodeBlock& c1, const CodeBlock& c2)
-                    { return c1.start < c2.start; });
+                    CodeBlock{ entry.target }, codeBlockStartLess);
             
             if (entry.type == AsmCodeFlowType::RETURN)
             {   // if block have return
-                it->haveReturn = true;
+                if (it != codeBlocks.end())
+                    it->haveReturn = true;
                 continue;
             }
             
             size_t instrAfter = entry.offset + isaAsm->getInstructionSize(
                         codeSize - entry.offset, code + entry.offset);
             auto it2 = binaryFind(codeBlocks.begin(), codeBlocks.end(),
-                    CodeBlock{ instrAfter },
-                    [](const CodeBlock& c1, const CodeBlock& c2)
-                    { return c1.start < c2.start; });
+                    CodeBlock{ instrAfter }, codeBlockStartLess);
             if (it == codeBlocks.end() || it2 == codeBlocks.end())
                 continue; // error!
+            
             it->nexts.push_back({ size_t(it2 - codeBlocks.begin()),
                         entry.type == AsmCodeFlowType::CALL });
             if (entry.type != AsmCodeFlowType::JUMP) // add next next block
