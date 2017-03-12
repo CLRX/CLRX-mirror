@@ -236,6 +236,15 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
 AsmRegAllocator::AsmRegAllocator(Assembler& _assembler) : assembler(_assembler)
 { }
 
+enum : cxbyte {
+    CFFLAG_JUMP = 1U<<AsmCodeFlowType::JUMP,  ///< jump
+    CFFLAG_CJUMP = 1U<<AsmCodeFlowType::CJUMP,   ///< conditional jump
+    CFFLAG_CALL = 1U<<AsmCodeFlowType::CALL,   ///< call of procedure
+    CFFLAG_RETURN = 1U<<AsmCodeFlowType::RETURN, ///< return from procedure
+    CFFLAG_START = 1U<<AsmCodeFlowType::START,  ///< code start
+    CFFLAG_END = 1U<<AsmCodeFlowType::END     ///< code end
+};
+
 void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code)
 {
@@ -313,18 +322,17 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             size_t end = codeEnd;
             if (splitIt != splits.end())
                 end = std::min(end, *splitIt);
-            codeBlocks.push_back({ start, end, { } });
+            codeBlocks.push_back({ start, end, { }, false });
         }
         if (splitIt == splits.end())
             break; // end of code blocks
     }
-    // flags = 1 - have call, 2 - have return, 4 - have jump
     struct CodeBlockInfo
     {
         cxbyte flags;
         std::vector<bool> nextCalls; // true if next is call
-        size_t nextRet; // next block with return
-        CodeBlockInfo() : flags(0), nextRet(SIZE_MAX)
+        size_t callSlotId;
+        CodeBlockInfo() : flags(0), callSlotId(SIZE_MAX)
         { }
     };
     std::vector<CodeBlockInfo> codeBlockInfos(codeBlocks.size());
@@ -339,16 +347,18 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                     [](const CodeBlock& c1, const CodeBlock& c2)
                     { return c1.start < c2.end; });
             
+            if (it == codeBlocks.end())
+            {
+                if (entry.type != AsmCodeFlowType::END || entry.offset != it->start)
+                    codeBlockInfos[it - codeBlocks.begin()].flags |= 1U<<entry.type;
+                else if (it!=codeBlocks.begin()) // end for previous block
+                    codeBlockInfos[it - codeBlocks.begin()-1].flags |= 1U<<entry.type;
+            }
             if (entry.type == AsmCodeFlowType::RETURN)
             {   // if block have return
-                if (it == codeBlocks.end())
-                    continue;
-                codeBlockInfos[it - codeBlocks.begin()].flags = 2;
+                it->haveReturn = true;
                 continue;
             }
-            if (it != codeBlocks.end())
-                codeBlockInfos[it - codeBlocks.begin()].flags = 
-                    entry.type == AsmCodeFlowType::CALL ? 1 : 4;
             
             size_t instrAfter = entry.offset + isaAsm->getInstructionSize(
                         codeSize - entry.offset, code + entry.offset);
@@ -364,11 +374,15 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             if (entry.type != AsmCodeFlowType::JUMP) // add next next block
                 it->nexts.push_back(it - codeBlocks.begin() + 1);
         }
-    // add direct next
-    for (size_t i = 0; i < codeBlocks.size(); i++)
+    
+    struct CallSlot
     {
-    }
-    // add return nexts
+        size_t callee;   // block that begin callee (routine)
+        std::vector<size_t> callers; // block that calls this call
+        std::vector<size_t> nexts; // next callslots
+    };
+    std::vector<CallSlot> callSlots;
+    
     std::vector<bool> visited(codeBlocks.size());
     struct CallStackEntry
     {
@@ -385,30 +399,49 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
         size_t nextIndex;
     };
     std::stack<FlowStackEntry> flowStack;
-    flowStack.push({ 0, 0 });
     
-    /// collect returns next
-    while (!flowStack.empty())
+    /// collect call slots (
+    size_t curCallSlotId = 0;
+    for (const AsmCodeFlowEntry& cfentry: codeFlow)
     {
-        FlowStackEntry& entry = flowStack.top();
-        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
-        if (entry.nextIndex == 0)
+        if (cfentry.type != AsmCodeFlowType::CALL)
+            continue;
+        
+        while (!flowStack.empty())
         {
-            if (!visited[entry.blockIndex])
-                visited[entry.blockIndex] = true;
-            else
-            {   // back, already visited
-                flowStack.pop();
-                continue;
+            FlowStackEntry& entry = flowStack.top();
+            const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+            const CodeBlockInfo& cblockInfo = codeBlockInfos[entry.blockIndex];
+            if (entry.nextIndex == 0)
+            { // process current block
+                if (!visited[entry.blockIndex])
+                {
+                    if ((cblockInfo.flags & CFFLAG_CALL) != 0)
+                    {
+                    }
+                    visited[entry.blockIndex] = true;
+                }
+                else
+                {   // back, already visited
+                    flowStack.pop();
+                    continue;
+                }
             }
+            
+            if (entry.nextIndex < cblock.nexts.size())
+            {
+                flowStack.push({ cblock.nexts[entry.nextIndex], 0 });
+                entry.nextIndex++;
+            }
+            else if (entry.nextIndex==0 && cblock.nexts.empty() &&
+                    (cblockInfo.flags & (0xff&~CFFLAG_START))==0)
+            {
+                flowStack.push({ entry.blockIndex+1, 0 });
+                entry.nextIndex++;
+            }
+            else // back
+                flowStack.pop();
         }
-        if (entry.nextIndex < cblock.nexts.size())
-        {
-            flowStack.push({ cblock.nexts[entry.nextIndex], 0 });
-            entry.nextIndex++;
-        }
-        else // back
-            flowStack.pop();
     }
     
     visited.clear();
@@ -418,6 +451,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     {
         FlowStackEntry& entry = flowStack.top();
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        const CodeBlockInfo& cblockInfo = codeBlockInfos[entry.blockIndex];
         if (entry.nextIndex == 0)
         { // process current block
             if (!visited[entry.blockIndex])
@@ -426,10 +460,10 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                 if (callStack.empty())
                     continue;
                 CallStackEntry& centry = callStack.top();
-                if ((codeBlockInfos[entry.blockIndex].flags & 2) != 0)
+                if ((cblockInfo.flags & CFFLAG_RETURN) != 0)
                     // add return to stack
                     centry.returns.push_back(entry.blockIndex);
-                else if ((codeBlockInfos[entry.blockIndex].flags & 1) != 0 &&
+                else if ((cblockInfo.flags & CFFLAG_CALL) != 0 &&
                     entry.blockIndex == centry.callBlock &&
                     entry.nextIndex-1 == centry.callNextIndex)
                 {   // insert new routine
@@ -450,7 +484,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
         }
         if (entry.nextIndex < cblock.nexts.size())
         {
-            if (codeBlockInfos[entry.blockIndex].nextCalls[entry.nextIndex])
+            if (cblockInfo.nextCalls[entry.nextIndex])
             {
                 auto it = routineMap.find(cblock.nexts[entry.nextIndex]);
                 if (it == routineMap.end())
@@ -467,6 +501,12 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                 }
             }
             flowStack.push({ cblock.nexts[entry.nextIndex], 0 });
+            entry.nextIndex++;
+        }
+        else if (entry.nextIndex==0 && cblock.nexts.empty() &&
+                (cblockInfo.flags & (0xff&~CFFLAG_START))==0)
+        {
+            flowStack.push({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
         }
         else // back
