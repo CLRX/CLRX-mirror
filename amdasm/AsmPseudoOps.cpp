@@ -2034,7 +2034,7 @@ void AsmPseudoOps::doUseReg(Assembler& asmr, const char* pseudoOpPlace,
                                     asmr.sections[asmr.currentSection].content));
             // put regVar usage
             asmr.sections[asmr.currentSection].usageHandler->pushUseRegUsage(
-                AsmRegVarUsage{ asmr.currentOutPos, regVar,
+                AsmRegVarUsage{ size_t(asmr.currentOutPos), regVar,
                     uint16_t(regStart), uint16_t(regEnd), ASMFIELD_NONE, rwFlags, 0 });
         }
         
