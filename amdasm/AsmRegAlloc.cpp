@@ -327,7 +327,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             auto it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
                     CodeBlock{ entry.target },
                     [](const CodeBlock& c1, const CodeBlock& c2)
-                    { return c1.start < c2.end; });
+                    { return c1.start < c2.start; });
             
             if (entry.type == AsmCodeFlowType::RETURN)
             {   // if block have return
@@ -340,7 +340,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             auto it2 = binaryFind(codeBlocks.begin(), codeBlocks.end(),
                     CodeBlock{ instrAfter },
                     [](const CodeBlock& c1, const CodeBlock& c2)
-                    { return c1.start < c2.end; });
+                    { return c1.start < c2.start; });
             if (it == codeBlocks.end() || it2 == codeBlocks.end())
                 continue; // error!
             it->nexts.push_back({ size_t(it2 - codeBlocks.begin()),
