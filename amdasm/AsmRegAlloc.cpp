@@ -338,6 +338,9 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                 continue;
             }
             
+            if (entry.type == AsmCodeFlowType::END && it != codeBlocks.end())
+                it->haveEnd = true;
+            
             size_t instrAfter = entry.offset + isaAsm->getInstructionSize(
                         codeSize - entry.offset, code + entry.offset);
             auto it2 = binaryFind(codeBlocks.begin(), codeBlocks.end(),
@@ -362,6 +365,106 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                   [](const NextBlock& n1, const NextBlock& n2)
                   { return n1.block == n2.block && n1.isCall == n2.isCall; });
         block.nexts.resize(it - block.nexts.begin());
+    }
+}
+
+void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
+{
+    usageHandler.rewind();
+    auto cbit = codeBlocks.begin();
+    AsmRegVarUsage rvu;
+    if (!usageHandler.hasNext())
+        return; // do nothing if no regusages
+    rvu = usageHandler.nextUsage();
+    
+    while (true)
+    {
+        while (cbit != codeBlocks.end() && cbit->end <= rvu.offset)
+            ++cbit;
+        if (cbit == codeBlocks.end())
+            break;
+        // skip rvu's before codeblock
+        while (rvu.offset < cbit->start && usageHandler.hasNext())
+            rvu = usageHandler.nextUsage();
+        if (rvu.offset < cbit->start)
+            break;
+        
+        while(true)
+        {   // process rvu
+            if (rvu.regVar != nullptr)
+            { // only if regVar
+                for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
+                {
+                    SSAInfo& sinfo = cbit->ssaInfoMap[
+                            AsmSingleVReg{ rvu.regVar, rindex }];
+                    if ((rvu.rwFlags & ASMRVU_READ) != 0 && sinfo.ssaIdChange == 0)
+                        sinfo.readBeforeWrite = true;
+                    if (rvu.rwFlags == ASMRVU_WRITE && rvu.regField!=ASMFIELD_NONE)
+                        sinfo.ssaIdChange++;
+                }
+            }
+            // get next rvusage
+            if (!usageHandler.hasNext())
+                break;
+            rvu = usageHandler.nextUsage();
+            if (rvu.offset >= cbit->end)
+                break; // if end of codeblock
+        }
+    }
+    
+    // resolve conflicts between SSA across paths (like loops)
+    struct CallStackEntry
+    {
+        size_t callBlock; // index
+        size_t callNextIndex; // index of call next
+    };
+    std::stack<CallStackEntry> callStack;
+    struct FlowStackEntry
+    {
+        size_t blockIndex;
+        size_t nextIndex;
+    };
+    std::stack<FlowStackEntry> flowStack;
+    
+    std::vector<bool> visited(codeBlocks.size());
+    while (!flowStack.empty())
+    {
+        FlowStackEntry& entry = flowStack.top();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        { // process current block
+            if (!visited[entry.blockIndex])
+            {
+                visited[entry.blockIndex] = true;
+                if (cblock.haveReturn || cblock.end) // if end of routine in this way
+                {
+                    flowStack.pop();
+                    continue;
+                }
+            }
+            else
+            {   // back, already visited
+                flowStack.pop();
+                continue;
+            }
+        }
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            if (cblock.nexts[entry.nextIndex].isCall)
+            {   // if call
+                callStack.push({ entry.blockIndex, entry.nextIndex });
+            }
+            flowStack.push({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (entry.nextIndex==0 && cblock.nexts.empty())
+        {
+            flowStack.push({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else // back
+            flowStack.pop();
     }
 }
 
