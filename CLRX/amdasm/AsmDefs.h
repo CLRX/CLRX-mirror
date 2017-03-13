@@ -497,6 +497,11 @@ struct AsmSingleVReg // key for regvar
 {
     const AsmRegVar* regVar;
     uint16_t index; // index of regvar array
+    
+    bool operator==(const AsmSingleVReg& r2) const
+    { return regVar == r2.regVar && index == r2.index; }
+    bool operator!=(const AsmSingleVReg& r2) const
+    { return regVar == r2.regVar && index == r2.index; }
 };
 
 /// regvar map

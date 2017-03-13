@@ -263,11 +263,17 @@ public:
         size_t block;
         bool isCall;
     };
-    struct RegVarInfo
+    struct SSAInfo
     {
-        size_t ssaId;
-        size_t ssaIdChange;
-        bool readBeforeWrite;
+        size_t ssaIdBefore; ///< SSA id before first SSA in block
+        size_t ssaId;   ///< SSA id at first SSA change
+        size_t ssaIdChange; ///< number of SSA id changes
+        bool readBeforeWrite;   ///< have read before write
+        SSAInfo(size_t _bssaId = SIZE_MAX, size_t _ssaId = SIZE_MAX,
+                size_t _ssaIdChange = SIZE_MAX, bool _readBeforeWrite = false)
+            : ssaIdBefore(_bssaId), ssaIdChange(_ssaIdChange),
+              readBeforeWrite(_readBeforeWrite)
+        { }
     };
     struct SSAReplace
     {
@@ -279,8 +285,9 @@ public:
         size_t start, end; // place in code
         std::vector<NextBlock> nexts; ///< nexts blocks
         bool haveReturn;
+        bool haveEnd;
         // key - regvar, value - SSA info for this regvar
-        std::unordered_map<AsmSingleVReg, RegVarInfo> ssaInfoMap;
+        std::unordered_map<AsmSingleVReg, SSAInfo> ssaInfoMap;
         std::unordered_map<AsmSingleVReg, SSAReplace> ssaReplaceMap;
     };
 private:
@@ -289,6 +296,7 @@ private:
     
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);
+    void createSSAData(ISAUsageHandler& usageHandler);
 public:
     AsmRegAllocator(Assembler& assembler);
     

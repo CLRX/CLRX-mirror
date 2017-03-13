@@ -440,6 +440,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     // last SSA ids in current way in code flow
     std::unordered_map<AsmSingleVReg, size_t> lastSSAIdMap;
     
+    /* resolve SSA conflict:
+     * when not visited block goes to visited block (win lower SSAid)
+     *    fix many different (different ways) SSAid in subgraph of visited block
+     * when return blocks of routine have different SSAids
+     *    (in different ways) (join all together)
+     */
     std::vector<bool> visited(codeBlocks.size());
     while (!flowStack.empty())
     {
