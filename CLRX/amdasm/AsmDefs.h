@@ -492,6 +492,13 @@ struct AsmRegVar
     uint16_t size;  ///< in regs
 };
 
+/// single regvar id
+struct AsmSingleVReg // key for regvar
+{
+    const AsmRegVar* regVar;
+    uint16_t index; // index of regvar array
+};
+
 /// regvar map
 typedef std::unordered_map<CString, AsmRegVar> AsmRegVarMap;
 /// regvar entry
@@ -510,10 +517,7 @@ enum : cxbyte {
 struct AsmRegVarUsage
 {
     size_t offset;  ///< offset in section
-    union {
-        const AsmRegVar* regVar;    // if null, then usage of called register
-        size_t regVarSSA; // regVar SSA slot
-    };
+    const AsmRegVar* regVar;    // if null, then usage of called register
     uint16_t rstart; ///< register start
     uint16_t rend;  ///< register end
     AsmRegField regField;   ///< place in instruction
@@ -524,10 +528,7 @@ struct AsmRegVarUsage
 /// regvar usage (internal)
 struct AsmRegVarUsageInt
 {
-    union {
-        const AsmRegVar* regVar;    // if null, then usage of called register
-        size_t regVarSSA; // regVar SSA slot
-    };
+    const AsmRegVar* regVar;    // if null, then usage of called register
     uint16_t rstart, rend;
     AsmRegField regField;   ///< place in instruction
     cxbyte rwFlags;  ///< 1 - read, 2 - write
@@ -657,5 +658,26 @@ struct AsmKernel
 };
 
 };
+
+namespace std
+{
+
+/// std::hash specialization for CLRX CString
+template<>
+struct hash<CLRX::AsmSingleVReg>
+{
+    typedef CLRX::AsmSingleVReg argument_type;    ///< argument type
+    typedef std::size_t result_type;    ///< result type
+    
+    /// a calling operator
+    size_t operator()(const CLRX::AsmSingleVReg& r1) const
+    {
+        std::hash<const CLRX::AsmRegVar*> h1;
+        std::hash<uint16_t> h2;
+        return h1(r1.regVar) ^ (h2(r1.index)<<1);
+    }
+};
+
+}
 
 #endif

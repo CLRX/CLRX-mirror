@@ -263,22 +263,29 @@ public:
         size_t block;
         bool isCall;
     };
+    struct RegVarInfo
+    {
+        size_t ssaId;
+        size_t ssaIdChange;
+        bool readBeforeWrite;
+    };
+    struct SSAReplace
+    {
+        size_t origSSAId;
+        size_t targetSSAId;
+    };
     struct CodeBlock
     {
         size_t start, end; // place in code
         std::vector<NextBlock> nexts; ///< nexts blocks
         bool haveReturn;
-    };
-    struct RegVarSSA
-    {
-        cxuint type;
-        // array SSA id history for every register. key - place, value - SSA id
-        Array<std::vector<std::pair<size_t, size_t> > > ssaHistory;
+        // key - regvar, value - SSA info for this regvar
+        std::unordered_map<AsmSingleVReg, RegVarInfo> ssaInfoMap;
+        std::unordered_map<AsmSingleVReg, SSAReplace> ssaReplaceMap;
     };
 private:
     Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
-    Array<RegVarSSA> regVarSSASlots;
     
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);
