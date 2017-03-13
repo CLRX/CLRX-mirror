@@ -317,7 +317,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             size_t end = codeEnd;
             if (splitIt != splits.end())
                 end = std::min(end, *splitIt);
-            codeBlocks.push_back({ start, end, { }, false });
+            codeBlocks.push_back({ start, end, { }, false, false });
         }
         if (splitIt == splits.end())
             break; // end of code blocks
@@ -417,6 +417,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     {
         size_t callBlock; // index
         size_t callNextIndex; // index of call next
+        std::vector<size_t> returns; // returns
     };
     std::stack<CallStackEntry> callStack;
     struct FlowStackEntry
@@ -424,7 +425,20 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         size_t blockIndex;
         size_t nextIndex;
     };
+    struct RoutineData
+    {
+        Array<size_t> returns; // block with returns
+        // last SSA id for all ways in this routine
+        std::unordered_map<AsmSingleVReg, Array<size_t> > ssaIdMap;
+        // first - caller block, second - routine block
+        Array<std::pair<size_t, size_t> > calls;
+    };
     std::stack<FlowStackEntry> flowStack;
+    std::unordered_map<size_t, RoutineData> routineMap;
+    // current SSA count
+    std::unordered_map<AsmSingleVReg, size_t> curSSACountMap;
+    // last SSA ids in current way in code flow
+    std::unordered_map<AsmSingleVReg, size_t> lastSSAIdMap;
     
     std::vector<bool> visited(codeBlocks.size());
     while (!flowStack.empty())
@@ -437,14 +451,22 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
-                if (cblock.haveReturn || cblock.end) // if end of routine in this way
-                {
-                    flowStack.pop();
-                    continue;
+                if (!callStack.empty() &&
+                    entry.blockIndex == callStack.top().callBlock &&
+                    entry.nextIndex-1 == callStack.top().callNextIndex)
+                {   // insert new routine
+                    CallStackEntry& centry = callStack.top();
+                    auto res = routineMap.insert(std::make_pair(
+                        codeBlocks[centry.callBlock].nexts[centry.callNextIndex].block,
+                        RoutineData{ }));
+                    res.first->second.returns =
+                        Array<size_t>(centry.returns.begin(), centry.returns.end());
+                    callStack.pop(); // just return from call
                 }
             }
             else
             {   // back, already visited
+                // resolveSSAConfict(flowStack, currentRegVars)
                 flowStack.pop();
                 continue;
             }
@@ -452,19 +474,36 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         if (entry.nextIndex < cblock.nexts.size())
         {
             if (cblock.nexts[entry.nextIndex].isCall)
-            {   // if call
-                callStack.push({ entry.blockIndex, entry.nextIndex });
+            {
+                auto it = routineMap.find(cblock.nexts[entry.nextIndex].block);
+                if (it == routineMap.end())
+                    // add return block to callstack
+                    callStack.push({ entry.blockIndex, entry.nextIndex });
+                else
+                {   // if routine already visited
+                    auto it = routineMap.find(cblock.nexts[entry.nextIndex].block);
+                    entry.nextIndex++;
+                    continue;
+                }
             }
             flowStack.push({ cblock.nexts[entry.nextIndex].block, 0 });
             entry.nextIndex++;
         }
-        else if (entry.nextIndex==0 && cblock.nexts.empty())
+        else if (entry.nextIndex==0 && cblock.nexts.empty() &&
+                 !cblock.haveReturn && !cblock.haveEnd)
         {
             flowStack.push({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
         }
         else // back
+        {
+            if (!callStack.empty() && cblock.haveReturn)
+            { // add return to stack
+                CallStackEntry& centry = callStack.top();
+                centry.returns.push_back(entry.blockIndex);
+            }
             flowStack.pop();
+        }
     }
 }
 
