@@ -401,6 +401,16 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
     std::deque<FlowStackEntry> flowStack;
     std::vector<bool> visited(codeBlocks.size());
     
+    struct ResolveEntry
+    {
+        size_t sourceBlock;
+        size_t firstSSAId; // from first occurrence
+        bool firstOccur;
+        bool handled;
+    };
+    // key - regvar, value - block where first read (SIZE_MAX - handled)
+    std::unordered_map<AsmSingleVReg, ResolveEntry> toResolveMap;
+    
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.back();
@@ -414,8 +424,32 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
                 for (const auto& sentry: cblock.ssaInfoMap)
                 {
                     const SSAInfo& sinfo = sentry.second;
-                    if (!sinfo.readBeforeWrite)
-                        continue;
+                    auto res = toResolveMap.insert({ sentry.first,
+                            { entry.blockIndex, sinfo.ssaId, true, false } });
+                    if (!res.second && res.first->second.handled)
+                        continue; // handled
+                    
+                    if (!res.second && res.first->second.firstOccur &&
+                        sinfo.ssaIdChange!=0)
+                    {   // resolve conflict for this variable ssaId>
+                        auto it = stackVarMap.find(sentry.first);
+                        if (it != stackVarMap.end() && it->second.ssaId > sinfo.ssaId)
+                        {   // found, resolve by adding to replaces
+                            CodeBlock& newBlock = codeBlocks[it->second.blockIndex];
+                            newBlock.ssaReplaceMap.insert({ sentry.first,
+                                { it->second.ssaId, sinfo.ssaId } });
+                        }
+                        res.first->second.firstOccur = false;
+                        res.first->second.handled = true;
+                    }
+                    else if (!res.second && !res.first->second.firstOccur &&
+                        sentry.second.ssaId > res.first->second.firstSSAId)
+                    {   // resolved but encounter more than once
+                        cblock.ssaReplaceMap.insert({ sentry.first,
+                            { sentry.second.ssaId, res.first->second.firstSSAId } });
+                        res.first->second.sourceBlock = entry.blockIndex;
+                        res.first->second.handled = true;
+                    }
                 }
             }
             else
@@ -438,8 +472,13 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
         }
         else // back
         {
-            /*for (const auto& ssaEntry: cblock.ssaInfoMap)
-                curSSAIdMap[ssaEntry.first] -= ssaEntry.second.ssaIdChange;*/
+            for (const auto& sentry: cblock.ssaInfoMap)
+            {   // mark resolved variables as not handled for further processing
+                auto it = toResolveMap.find(sentry.first);
+                if (it != toResolveMap.end() && it->second.handled &&
+                    it->second.sourceBlock == entry.blockIndex)
+                    it->second.handled = false;
+            }
             flowStack.pop_back();
         }
     }
