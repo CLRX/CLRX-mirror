@@ -447,8 +447,7 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
                         {   // found, resolve by set ssaIdLast
                             CodeBlock& newBlock = codeBlocks[it->second.blockIndex];
                             newBlock.ssaInfoMap.find(sentry.first)->second.ssaIdLast =
-                                    sinfo.ssaIdFirst;
-                            sinfo.ssaIdBefore = sinfo.ssaIdFirst;
+                                    sinfo.ssaIdBefore;
                         }
                         res.first->second.firstOccur = false;
                         res.first->second.handled = true;
@@ -458,7 +457,6 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
                         sinfo.ssaIdFirst > res.first->second.firstSSAId)
                     {   // resolved but encounter more than once
                         sinfo.ssaIdFirst = res.first->second.firstSSAId;
-                        sinfo.ssaIdBefore = res.first->second.ssaIdBefore;
                         res.first->second.sourceBlock = entry.blockIndex;
                         res.first->second.handled = true;
                     }
