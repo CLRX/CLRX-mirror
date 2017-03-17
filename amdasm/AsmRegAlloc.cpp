@@ -18,7 +18,7 @@
  */
 
 #include <CLRX/Config.h>
-#include <stack>
+#include <deque>
 #include <vector>
 #include <utility>
 #include <unordered_map>
@@ -29,6 +29,9 @@
 #include "AsmInternals.h"
 
 using namespace CLRX;
+
+typedef AsmRegAllocator::CodeBlock CodeBlock;
+typedef AsmRegAllocator::SSAInfo SSAInfo;
 
 ISAUsageHandler::ISAUsageHandler(const std::vector<cxbyte>& _content) :
             content(_content), lastOffset(0), readOffset(0), instrStructPos(0),
@@ -368,6 +371,80 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     }
 }
 
+struct FlowStackEntry
+{
+    size_t blockIndex;
+    size_t nextIndex;
+};
+
+struct SSAId
+{
+    size_t ssaId;
+    size_t blockIndex;
+};
+
+static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
+        std::vector<CodeBlock>& codeBlocks, size_t nextBlock)
+{
+    std::unordered_map<AsmSingleVReg, SSAId> stackVarMap;
+    for (const FlowStackEntry& entry: prevFlowStack)
+    {
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        for (const auto& sentry: cblock.ssaInfoMap)
+        {
+            const SSAInfo& sinfo = sentry.second;
+            stackVarMap[sentry.first] =
+                    { sinfo.ssaId + sinfo.ssaIdChange - 1, entry.nextIndex };
+        }
+    }
+    // traverse by graph from next block
+    std::deque<FlowStackEntry> flowStack;
+    std::vector<bool> visited(codeBlocks.size());
+    
+    while (!flowStack.empty())
+    {
+        FlowStackEntry& entry = flowStack.back();
+        CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        { // process current block
+            if (!visited[entry.blockIndex])
+            {
+                visited[entry.blockIndex] = true;
+                for (const auto& sentry: cblock.ssaInfoMap)
+                {
+                    const SSAInfo& sinfo = sentry.second;
+                    if (!sinfo.readBeforeWrite)
+                        continue;
+                }
+            }
+            else
+            {   // back, already visited
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (entry.nextIndex==0 && cblock.nexts.empty() &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            flowStack.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else // back
+        {
+            /*for (const auto& ssaEntry: cblock.ssaInfoMap)
+                curSSAIdMap[ssaEntry.first] -= ssaEntry.second.ssaIdChange;*/
+            flowStack.pop_back();
+        }
+    }
+}
+
 void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
 {
     usageHandler.rewind();
@@ -419,12 +496,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         size_t callNextIndex; // index of call next
         std::vector<size_t> returns; // returns
     };
-    std::stack<CallStackEntry> callStack;
-    struct FlowStackEntry
-    {
-        size_t blockIndex;
-        size_t nextIndex;
-    };
+    std::deque<CallStackEntry> callStack;
     struct RoutineData
     {
         Array<size_t> returns; // block with returns
@@ -433,23 +505,23 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         // first - caller block, second - routine block
         Array<std::pair<size_t, size_t> > calls;
     };
-    std::stack<FlowStackEntry> flowStack;
+    std::deque<FlowStackEntry> flowStack;
     std::unordered_map<size_t, RoutineData> routineMap;
     // total SSA count
     std::unordered_map<AsmSingleVReg, size_t> totalSSACountMap;
     // last SSA ids in current way in code flow
     std::unordered_map<AsmSingleVReg, size_t> curSSAIdMap;
     
+    std::vector<bool> visited(codeBlocks.size());
     /* resolve SSA conflict:
      * when not visited block goes to visited block (win lower SSAid)
      *    fix many different (different ways) SSAid in subgraph of visited block
      * when return blocks of routine have different SSAids
      *    (in different ways) (join all together)
      */
-    std::vector<bool> visited(codeBlocks.size());
     while (!flowStack.empty())
     {
-        FlowStackEntry& entry = flowStack.top();
+        FlowStackEntry& entry = flowStack.back();
         CodeBlock& cblock = codeBlocks[entry.blockIndex];
         
         if (entry.nextIndex == 0)
@@ -461,9 +533,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 {
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
                     size_t& totalSSACount = totalSSACountMap[ssaEntry.first];
-                    ssaId += ssaEntry.second.ssaIdChange;
                     ssaEntry.second.ssaId = ssaId;
                     ssaEntry.second.ssaIdBefore = ssaId-1;
+                    ssaId += ssaEntry.second.ssaIdChange;
                     totalSSACount = std::max(totalSSACount, ssaId);
                 }
                 /*if (!callStack.empty() &&
@@ -481,8 +553,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             else
             {   // back, already visited
-                // resolveSSAConfict(flowStack, currentRegVars)
-                flowStack.pop();
+                size_t nextIndex = entry.blockIndex;
+                flowStack.pop_back();
+                resolveSSAConflicts(flowStack, codeBlocks, nextIndex);
                 continue;
             }
         }
@@ -501,25 +574,25 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     continue;
                 }
             }*/
-            flowStack.push({ cblock.nexts[entry.nextIndex].block, 0 });
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
             entry.nextIndex++;
         }
         else if (entry.nextIndex==0 && cblock.nexts.empty() &&
                  !cblock.haveReturn && !cblock.haveEnd)
         {
-            flowStack.push({ entry.blockIndex+1, 0 });
+            flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
         }
         else // back
         {
-            if (!callStack.empty() && cblock.haveReturn)
+            /*if (!callStack.empty() && cblock.haveReturn)
             { // add return to stack
-                CallStackEntry& centry = callStack.top();
+                CallStackEntry& centry = callStack.back();
                 centry.returns.push_back(entry.blockIndex);
-            }
+            }*/
             for (const auto& ssaEntry: cblock.ssaInfoMap)
                 curSSAIdMap[ssaEntry.first] -= ssaEntry.second.ssaIdChange;
-            flowStack.pop();
+            flowStack.pop_back();
         }
     }
 }
