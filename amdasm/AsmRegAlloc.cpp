@@ -403,12 +403,13 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
     
     struct ResolveEntry
     {
-        size_t sourceBlock;
+        size_t sourceBlock; // current source block index
         size_t firstSSAId; // from first occurrence
-        bool firstOccur;
-        bool handled;
+        bool firstOccur; // true if first occurence
+        bool handled; // handled in current way
+        size_t readBeforeBlock;
+        size_t ssaIdBefore;
     };
-    // key - regvar, value - block where first read (SIZE_MAX - handled)
     std::unordered_map<AsmSingleVReg, ResolveEntry> toResolveMap;
     
     while (!flowStack.empty())
@@ -421,32 +422,43 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
-                for (const auto& sentry: cblock.ssaInfoMap)
+                for (auto& sentry: cblock.ssaInfoMap)
                 {
-                    const SSAInfo& sinfo = sentry.second;
+                    SSAInfo& sinfo = sentry.second;
+                    size_t blkReadBefore = sinfo.ssaIdBefore!=SIZE_MAX ?
+                            entry.blockIndex : SIZE_MAX;
                     auto res = toResolveMap.insert({ sentry.first,
-                            { entry.blockIndex, sinfo.ssaId, true, false } });
+                            { entry.blockIndex, sinfo.ssaId, true, false,
+                                blkReadBefore } });
+                    if (!res.second && res.first->second.readBeforeBlock == SIZE_MAX)
+                    {
+                        res.first->second.readBeforeBlock = blkReadBefore;
+                        res.first->second.ssaIdBefore = sinfo.ssaIdBefore;
+                    }
                     if (!res.second && res.first->second.handled)
                         continue; // handled
                     
                     if (!res.second && res.first->second.firstOccur &&
-                        sinfo.ssaIdChange!=0)
+                        res.first->second.readBeforeBlock!=SIZE_MAX &&
+                        sinfo.ssaIdChange != 0)
                     {   // resolve conflict for this variable ssaId>
                         auto it = stackVarMap.find(sentry.first);
                         if (it != stackVarMap.end() && it->second.ssaId > sinfo.ssaId)
-                        {   // found, resolve by adding to replaces
+                        {   // found, resolve by set ssaIdLast
                             CodeBlock& newBlock = codeBlocks[it->second.blockIndex];
-                            newBlock.ssaReplaceMap.insert({ sentry.first,
-                                { it->second.ssaId, sinfo.ssaId } });
+                            newBlock.ssaInfoMap.find(sentry.first)->second.ssaIdLast =
+                                    sinfo.ssaIdFirst;
+                            sinfo.ssaIdBefore = sinfo.ssaIdFirst;
                         }
                         res.first->second.firstOccur = false;
                         res.first->second.handled = true;
                     }
                     else if (!res.second && !res.first->second.firstOccur &&
-                        sentry.second.ssaId > res.first->second.firstSSAId)
+                        res.first->second.readBeforeBlock!=SIZE_MAX &&
+                        sinfo.ssaIdFirst > res.first->second.firstSSAId)
                     {   // resolved but encounter more than once
-                        cblock.ssaReplaceMap.insert({ sentry.first,
-                            { sentry.second.ssaId, res.first->second.firstSSAId } });
+                        sinfo.ssaIdFirst = res.first->second.firstSSAId;
+                        sinfo.ssaIdBefore = res.first->second.ssaIdBefore;
                         res.first->second.sourceBlock = entry.blockIndex;
                         res.first->second.handled = true;
                     }
@@ -475,9 +487,14 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
             for (const auto& sentry: cblock.ssaInfoMap)
             {   // mark resolved variables as not handled for further processing
                 auto it = toResolveMap.find(sentry.first);
-                if (it != toResolveMap.end() && it->second.handled &&
-                    it->second.sourceBlock == entry.blockIndex)
-                    it->second.handled = false;
+                if (it != toResolveMap.end())
+                {
+                    if (it->second.handled &&
+                        it->second.sourceBlock == entry.blockIndex)
+                        it->second.handled = false;
+                    if (it->second.readBeforeBlock == entry.blockIndex)
+                        it->second.readBeforeBlock = SIZE_MAX;
+                }
             }
             flowStack.pop_back();
         }
@@ -572,9 +589,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 {
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
                     size_t& totalSSACount = totalSSACountMap[ssaEntry.first];
-                    ssaEntry.second.ssaId = ssaId;
+                    ssaEntry.second.ssaId = ssaEntry.second.ssaIdFirst = ssaId;
                     ssaEntry.second.ssaIdBefore = ssaId-1;
                     ssaId += ssaEntry.second.ssaIdChange;
+                    ssaEntry.second.ssaIdLast = ssaId-1;
                     totalSSACount = std::max(totalSSACount, ssaId);
                 }
                 /*if (!callStack.empty() &&

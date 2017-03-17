@@ -266,19 +266,16 @@ public:
     struct SSAInfo
     {
         size_t ssaIdBefore; ///< SSA id before first SSA in block
-        size_t ssaId;   ///< SSA id at first SSA change
+        size_t ssaIdFirst; // SSA id at first change
+        size_t ssaId;   ///< original SSA id
+        size_t ssaIdLast; ///< last SSA id in last
         size_t ssaIdChange; ///< number of SSA id changes
         bool readBeforeWrite;   ///< have read before write
         SSAInfo(size_t _bssaId = SIZE_MAX, size_t _ssaId = SIZE_MAX,
                 size_t _ssaIdChange = SIZE_MAX, bool _readBeforeWrite = false)
-            : ssaIdBefore(_bssaId), ssaIdChange(_ssaIdChange),
-              readBeforeWrite(_readBeforeWrite)
+            : ssaIdBefore(_bssaId), ssaIdFirst(_ssaId), ssaId(_ssaId),
+              ssaIdChange(_ssaIdChange), readBeforeWrite(_readBeforeWrite)
         { }
-    };
-    struct SSAReplace
-    {
-        size_t origSSAId;
-        size_t targetSSAId;
     };
     struct CodeBlock
     {
@@ -288,7 +285,6 @@ public:
         bool haveEnd;
         // key - regvar, value - SSA info for this regvar
         std::unordered_map<AsmSingleVReg, SSAInfo> ssaInfoMap;
-        std::unordered_map<AsmSingleVReg, SSAReplace> ssaReplaceMap;
     };
 private:
     Assembler& assembler;
