@@ -435,10 +435,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     };
     std::stack<FlowStackEntry> flowStack;
     std::unordered_map<size_t, RoutineData> routineMap;
-    // current SSA count
-    std::unordered_map<AsmSingleVReg, size_t> curSSACountMap;
+    // total SSA count
+    std::unordered_map<AsmSingleVReg, size_t> totalSSACountMap;
     // last SSA ids in current way in code flow
-    std::unordered_map<AsmSingleVReg, size_t> lastSSAIdMap;
+    std::unordered_map<AsmSingleVReg, size_t> curSSAIdMap;
     
     /* resolve SSA conflict:
      * when not visited block goes to visited block (win lower SSAid)
@@ -450,14 +450,23 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.top();
-        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        CodeBlock& cblock = codeBlocks[entry.blockIndex];
         
         if (entry.nextIndex == 0)
         { // process current block
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
-                if (!callStack.empty() &&
+                for (auto& ssaEntry: cblock.ssaInfoMap)
+                {
+                    size_t& ssaId = curSSAIdMap[ssaEntry.first];
+                    size_t& totalSSACount = totalSSACountMap[ssaEntry.first];
+                    ssaId += ssaEntry.second.ssaIdChange;
+                    ssaEntry.second.ssaId = ssaId;
+                    ssaEntry.second.ssaIdBefore = ssaId-1;
+                    totalSSACount = std::max(totalSSACount, ssaId);
+                }
+                /*if (!callStack.empty() &&
                     entry.blockIndex == callStack.top().callBlock &&
                     entry.nextIndex-1 == callStack.top().callNextIndex)
                 {   // insert new routine
@@ -468,7 +477,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     res.first->second.returns =
                         Array<size_t>(centry.returns.begin(), centry.returns.end());
                     callStack.pop(); // just return from call
-                }
+                }*/
             }
             else
             {   // back, already visited
@@ -479,7 +488,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         }
         if (entry.nextIndex < cblock.nexts.size())
         {
-            if (cblock.nexts[entry.nextIndex].isCall)
+            /*if (cblock.nexts[entry.nextIndex].isCall)
             {
                 auto it = routineMap.find(cblock.nexts[entry.nextIndex].block);
                 if (it == routineMap.end())
@@ -491,7 +500,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     entry.nextIndex++;
                     continue;
                 }
-            }
+            }*/
             flowStack.push({ cblock.nexts[entry.nextIndex].block, 0 });
             entry.nextIndex++;
         }
@@ -508,6 +517,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 CallStackEntry& centry = callStack.top();
                 centry.returns.push_back(entry.blockIndex);
             }
+            for (const auto& ssaEntry: cblock.ssaInfoMap)
+                curSSAIdMap[ssaEntry.first] -= ssaEntry.second.ssaIdChange;
             flowStack.pop();
         }
     }
