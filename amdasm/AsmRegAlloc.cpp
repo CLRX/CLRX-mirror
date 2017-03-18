@@ -402,7 +402,12 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
     std::deque<FlowStackEntry> flowStack;
     std::vector<bool> visited(codeBlocks.size());
     
-    std::unordered_map<AsmSingleVReg, size_t> toResolveMap;
+    struct ResolveEntry
+    {
+        size_t sourceBlock;
+        bool handled;
+    };
+    std::unordered_map<AsmSingleVReg, ResolveEntry> toResolveMap;
     
     while (!flowStack.empty())
     {
@@ -417,7 +422,8 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
                 for (auto& sentry: cblock.ssaInfoMap)
                 {
                     SSAInfo& sinfo = sentry.second;
-                    auto res = toResolveMap.insert({ sentry.first, entry.blockIndex });
+                    auto res = toResolveMap.insert({sentry.first,
+                        { entry.blockIndex, false } });
                     
                     if (res.second && !sinfo.readBeforeWrite)
                     {   // resolve conflict for this variable ssaId>
@@ -429,6 +435,7 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
                             newBlock.ssaInfoMap.find(sentry.first)->second.ssaIdLast =
                                     sinfo.ssaIdBefore;
                         }
+                        res.first->second.handled = true;
                     }
                 }
             }
@@ -451,7 +458,16 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
             entry.nextIndex++;
         }
         else // back
+        {
+            for (const auto& sentry: cblock.ssaInfoMap)
+            {   // mark resolved variables as not handled for further processing
+                auto it = toResolveMap.find(sentry.first);
+                if (it != toResolveMap.end() && it->second.handled &&
+                    it->second.sourceBlock == entry.blockIndex)
+                    toResolveMap.erase(it);
+            }
             flowStack.pop_back();
+        }
     }
 }
 
