@@ -462,7 +462,7 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
             for (const auto& sentry: cblock.ssaInfoMap)
             {   // mark resolved variables as not handled for further processing
                 auto it = toResolveMap.find(sentry.first);
-                if (it != toResolveMap.end() && it->second.handled &&
+                if (it != toResolveMap.end() && !it->second.handled &&
                     it->second.sourceBlock == entry.blockIndex)
                     toResolveMap.erase(it);
             }
