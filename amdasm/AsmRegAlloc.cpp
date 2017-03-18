@@ -447,7 +447,7 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
                         {   // found, resolve by set ssaIdLast
                             CodeBlock& newBlock = codeBlocks[it->second.blockIndex];
                             newBlock.ssaInfoMap.find(sentry.first)->second.ssaIdLast =
-                                    sinfo.ssaIdBefore;
+                                    res.first->second.ssaIdBefore;
                         }
                         res.first->second.firstOccur = false;
                         res.first->second.handled = true;
