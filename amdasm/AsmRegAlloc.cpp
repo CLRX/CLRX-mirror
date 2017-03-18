@@ -425,7 +425,7 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
                     auto res = toResolveMap.insert({sentry.first,
                         { entry.blockIndex, false } });
                     
-                    if (res.second && !sinfo.readBeforeWrite)
+                    if (res.second && sinfo.readBeforeWrite)
                     {   // resolve conflict for this variable ssaId>
                         auto it = stackVarMap.find(sentry.first);
                         if (it != stackVarMap.end() &&
