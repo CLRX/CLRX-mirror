@@ -391,12 +391,7 @@ struct SSAId
     size_t blockIndex;
 };
 
-struct SSAReplace
-{
-    size_t origSSA;
-    size_t destSSA;
-};
-
+typedef std::pair<size_t, size_t> SSAReplace; // first - orig ssaid, second - dest ssaid
 typedef std::unordered_map<AsmSingleVReg, std::vector<SSAReplace> > ReplacesMap;
 
 static inline void insertReplace(ReplacesMap& rmap, const AsmSingleVReg& vreg,
@@ -630,6 +625,54 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             flowStack.pop_back();
         }
     }
+    
+    /* prepare SSA id replaces */
+    for (auto& entry: replacesMap)
+    {
+        std::vector<SSAReplace>& replaces = entry.second;
+        std::sort(replaces.begin(), replaces.end());
+        auto it = replaces.begin();
+        std::vector<SSAReplace> newReplaces;
+        while (it != replaces.end())
+        {
+            auto it2 = std::upper_bound(it, replaces.end(),
+                            std::make_pair(it->first, SIZE_MAX));
+            newReplaces.push_back(*it);
+            it2 = it;
+        }
+    }
+    
+    /* apply SSA id replaces */
+    for (CodeBlock& cblock: codeBlocks)
+        for (auto& ssaEntry: cblock.ssaInfoMap)
+        {
+            auto it = replacesMap.find(ssaEntry.first);
+            if (it == replacesMap.end())
+                continue;
+            SSAInfo& sinfo = ssaEntry.second;
+            std::vector<SSAReplace>& replaces = it->second;
+            if (sinfo.readBeforeWrite)
+            {
+                auto rit = binaryMapFind(replaces.begin(), replaces.end(),
+                                 ssaEntry.second.ssaIdBefore);
+                if (rit != replaces.end())
+                    sinfo.ssaIdBefore = rit->second; // replace
+            }
+            if (sinfo.ssaIdFirst != SIZE_MAX)
+            {
+                auto rit = binaryMapFind(replaces.begin(), replaces.end(),
+                                 ssaEntry.second.ssaIdFirst);
+                if (rit != replaces.end())
+                    sinfo.ssaIdFirst = rit->second; // replace
+            }
+            if (sinfo.ssaIdLast != SIZE_MAX)
+            {
+                auto rit = binaryMapFind(replaces.begin(), replaces.end(),
+                                 ssaEntry.second.ssaIdLast);
+                if (rit != replaces.end())
+                    sinfo.ssaIdLast = rit->second; // replace
+            }
+        }
 }
 
 void AsmRegAllocator::allocateRegisters(cxuint sectionId)
