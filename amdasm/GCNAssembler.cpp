@@ -1016,6 +1016,9 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             break;
         }
         case GCN_IMM_NONE:
+            if (gcnInsn.code1 == 1 || gcnInsn.code1 == 27)
+                asmr.sections[asmr.currentSection].addCodeFlowEntry({ 
+                    size_t(asmr.currentOutPos+4), size_t(0), AsmCodeFlowType::END });
             break;
         default:
             good &= parseImm(asmr, linePtr, imm16, &imm16Expr);

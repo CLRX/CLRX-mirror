@@ -674,41 +674,48 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         }
         // propagate min value
         std::stack<MinSSAGraphStackEntry> minSSAStack;
-        minSSAStack.push({ ssaGraphNodes.begin(),
-                    ssaGraphNodes.begin()->second.nexts.begin() });
-        // traverse with minimalize SSA id
-        while (!minSSAStack.empty())
+        for (auto ssaGraphNodeIt = ssaGraphNodes.begin();
+                 ssaGraphNodeIt!=ssaGraphNodes.begin(); )
         {
-            MinSSAGraphStackEntry& entry = minSSAStack.top();
-            MinSSAGraphNode& node = entry.nodeIt->second;
-            bool toPop = false;
-            if (entry.nextIt == node.nexts.begin())
+            minSSAStack.push({ ssaGraphNodeIt, ssaGraphNodeIt->second.nexts.begin() });
+            // traverse with minimalize SSA id
+            while (!minSSAStack.empty())
             {
-                if (!node.visited)
-                    node.visited = true;
+                MinSSAGraphStackEntry& entry = minSSAStack.top();
+                MinSSAGraphNode& node = entry.nodeIt->second;
+                bool toPop = false;
+                if (entry.nextIt == node.nexts.begin())
+                {
+                    if (!node.visited)
+                        node.visited = true;
+                    else
+                        toPop = true;
+                }
+                if (!toPop && entry.nextIt != node.nexts.end())
+                {
+                    auto nodeIt = ssaGraphNodes.find(*entry.nextIt);
+                    if (nodeIt != ssaGraphNodes.end())
+                    {
+                        minSSAStack.push({ nodeIt, nodeIt->second.nexts.begin(),
+                                nodeIt->second.minSSAId });
+                    }
+                    ++entry.nextIt;
+                }
                 else
-                    toPop = true;
-            }
-            if (!toPop && entry.nextIt != node.nexts.end())
-            {
-                auto nodeIt = ssaGraphNodes.find(*entry.nextIt);
-                if (nodeIt != ssaGraphNodes.end())
                 {
-                    minSSAStack.push({ nodeIt, nodeIt->second.nexts.begin(),
-                            nodeIt->second.minSSAId });
-                }
-                ++entry.nextIt;
-            }
-            else
-            {
-                node.minSSAId = std::min(node.minSSAId, entry.minSSAId);
-                minSSAStack.pop();
-                if (!minSSAStack.empty())
-                {
-                    MinSSAGraphStackEntry& pentry = minSSAStack.top();
-                    pentry.minSSAId = std::min(pentry.minSSAId, node.minSSAId);
+                    node.minSSAId = std::min(node.minSSAId, entry.minSSAId);
+                    minSSAStack.pop();
+                    if (!minSSAStack.empty())
+                    {
+                        MinSSAGraphStackEntry& pentry = minSSAStack.top();
+                        pentry.minSSAId = std::min(pentry.minSSAId, node.minSSAId);
+                    }
                 }
             }
+            // skip visited nodes
+            while (ssaGraphNodeIt != ssaGraphNodes.end())
+                if (!ssaGraphNodeIt->second.visited)
+                    break;
         }
         
         for (const auto& entry: ssaGraphNodes)
@@ -751,10 +758,15 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         }
 }
 
+void AsmRegAllocator::createInferenceGraph(ISAUsageHandler& usageHandler)
+{
+}
+
 void AsmRegAllocator::allocateRegisters(cxuint sectionId)
 {   // before any operation, clear all
     codeBlocks.clear();
     // set up
     const AsmSection& section = assembler.sections[sectionId];
     createCodeStructure(section.codeFlow, section.content.size(), section.content.data());
+    createSSAData(*section.usageHandler);
 }

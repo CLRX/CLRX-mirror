@@ -293,6 +293,7 @@ private:
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);
     void createSSAData(ISAUsageHandler& usageHandler);
+    void createInferenceGraph(ISAUsageHandler& usageHandler);
 public:
     AsmRegAllocator(Assembler& assembler);
     
