@@ -22,6 +22,7 @@
 #include <deque>
 #include <vector>
 #include <utility>
+#include <map>
 #include <unordered_map>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
@@ -631,15 +632,41 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     {
         std::vector<SSAReplace>& replaces = entry.second;
         std::sort(replaces.begin(), replaces.end());
-        auto it = replaces.begin();
+        replaces.resize(std::unique(replaces.begin(), replaces.end()) - replaces.begin());
         std::vector<SSAReplace> newReplaces;
+        
+        std::map<size_t, size_t> propagReplaces;
+        
+        auto it = replaces.begin();
         while (it != replaces.end())
         {
             auto it2 = std::upper_bound(it, replaces.end(),
                             std::make_pair(it->first, SIZE_MAX));
+            size_t propagDest = it->second;
             newReplaces.push_back(*it);
-            it2 = it;
+            for (++it; it != it2; ++it)
+            {
+                size_t& v = propagReplaces[it->second];
+                v = std::min(v, propagDest);
+            }
         }
+        // next phase - replaces min orig
+        it = replaces.begin();
+        auto newIt = newReplaces.begin();
+        for (; it != replaces.end(); ++newIt)
+        {
+            auto it2 = std::upper_bound(it, replaces.end(),
+                            std::make_pair(it->first, SIZE_MAX));
+            size_t minV = newIt->second;
+            for (++it; it != it2; ++it)
+                minV = std::min(propagReplaces.find(it->second)->second, minV);
+            newIt->second = propagReplaces[it->second];
+        }
+        
+        for (const std::pair<size_t, size_t>& entry: propagReplaces)
+            newReplaces.push_back(entry);
+        std::sort(newReplaces.begin(), newReplaces.end());
+        entry.second = newReplaces;
     }
     
     /* apply SSA id replaces */
