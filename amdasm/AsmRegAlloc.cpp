@@ -559,19 +559,15 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     
     std::vector<bool> visited(codeBlocks.size());
     std::fill(visited.begin(), visited.end(), false);
-    /* resolve SSA conflict:
-     * when not visited block goes to visited block (win lower SSAid)
-     *    fix many different (different ways) SSAid in subgraph of visited block
-     * when return blocks of routine have different SSAids
-     *    (in different ways) (join all together)
-     */
+    flowStack.push_back({ 0, 0 });
+    
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.back();
         CodeBlock& cblock = codeBlocks[entry.blockIndex];
         
         if (entry.nextIndex == 0)
-        { // process current block
+        {   // process current block
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
@@ -759,6 +755,46 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
 
 void AsmRegAllocator::createInferenceGraph(ISAUsageHandler& usageHandler)
 {
+    std::stack<CallStackEntry> callStack;
+    std::deque<FlowStackEntry> flowStack;
+    std::vector<bool> visited(codeBlocks.size());
+    std::fill(visited.begin(), visited.end(), false);
+    
+    while (!flowStack.empty())
+    {
+        FlowStackEntry& entry = flowStack.back();
+        CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        {   // process current block
+            if (!visited[entry.blockIndex])
+            {
+                visited[entry.blockIndex] = true;
+            }
+           else
+            {   // back, already visited
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            if (cblock.nexts[entry.nextIndex].isCall)
+                callStack.push({ entry.blockIndex, entry.nextIndex });
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (entry.nextIndex==0 && cblock.nexts.empty() &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            flowStack.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else // back
+        {
+            flowStack.pop_back();
+        }
+    }
 }
 
 void AsmRegAllocator::allocateRegisters(cxuint sectionId)
