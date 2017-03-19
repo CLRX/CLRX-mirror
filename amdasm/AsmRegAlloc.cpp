@@ -22,7 +22,6 @@
 #include <deque>
 #include <vector>
 #include <utility>
-#include <map>
 #include <unordered_set>
 #include <unordered_map>
 #include <algorithm>
@@ -526,6 +525,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         if (rvu.offset < cbit->start)
             break;
         
+        cbit->usagePos = usageHandler.getReadPos();
         while(true)
         {   // process rvu
             if (rvu.regVar != nullptr)
@@ -650,7 +650,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         replaces.resize(std::unique(replaces.begin(), replaces.end()) - replaces.begin());
         std::vector<SSAReplace> newReplaces;
         
-        std::map<size_t, size_t> propagReplaces;
         std::unordered_map<size_t, MinSSAGraphNode> ssaGraphNodes;
         
         auto it = replaces.begin();

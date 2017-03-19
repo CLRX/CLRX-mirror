@@ -63,6 +63,17 @@ struct AsmRegVar;
 /// ISA (register and regvar) Usage handler
 class ISAUsageHandler
 {
+public:
+    struct ReadPos
+    {
+        size_t readOffset;
+        size_t instrStructPos;
+        size_t regUsagesPos;
+        size_t regUsages2Pos;
+        size_t regVarUsagesPos;
+        uint16_t pushedArgs;
+        bool useRegMode;
+    };
 protected:
     std::vector<cxbyte> instrStruct;    ///< structure of register usage
     std::vector<AsmRegUsageInt> regUsages;  ///< register usage
@@ -102,6 +113,22 @@ public:
     { return isNext; }
     /// get next usage
     AsmRegVarUsage nextUsage();
+    
+    ReadPos getReadPos() const
+    {
+        return { readOffset, instrStructPos, regUsagesPos, regUsages2Pos,
+            regVarUsagesPos, pushedArgs, useRegMode };
+    }
+    void setReadPos(const ReadPos rpos)
+    {
+        readOffset = rpos.readOffset;
+        instrStructPos = rpos.instrStructPos;
+        regUsagesPos = rpos.regUsagesPos;
+        regUsages2Pos = rpos.regUsages2Pos;
+        regVarUsagesPos = rpos.regVarUsagesPos;
+        pushedArgs = rpos.pushedArgs;
+        useRegMode = rpos.useRegMode;
+    }
     
     // push regvar or register from usereg pseudo-op
     void pushUseRegUsage(const AsmRegVarUsage& rvu);
@@ -285,6 +312,7 @@ public:
         bool haveEnd;
         // key - regvar, value - SSA info for this regvar
         std::unordered_map<AsmSingleVReg, SSAInfo> ssaInfoMap;
+        ISAUsageHandler::ReadPos usagePos;
     };
 private:
     Assembler& assembler;
