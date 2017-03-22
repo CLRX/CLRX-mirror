@@ -362,11 +362,11 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     
     // reduce nexts
     for (CodeBlock& block: codeBlocks)
-    {
+    { // first non-call nexts, for correct resolving SSA conflicts
         std::sort(block.nexts.begin(), block.nexts.end(),
                   [](const NextBlock& n1, const NextBlock& n2)
-                  { return n1.block < n2.block ||
-                      (n1.block==n2.block && int(n1.isCall)<int(n2.isCall)); });
+                  { return int(n1.isCall)<int(n2.isCall) ||
+                      (n1.isCall == n2.isCall && n1.block < n2.block); });
         auto it = std::unique(block.nexts.begin(), block.nexts.end(),
                   [](const NextBlock& n1, const NextBlock& n2)
                   { return n1.block == n2.block && n1.isCall == n2.isCall; });
