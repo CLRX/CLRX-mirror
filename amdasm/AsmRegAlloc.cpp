@@ -355,7 +355,8 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             
             it->nexts.push_back({ size_t(it2 - codeBlocks.begin()),
                         entry.type == AsmCodeFlowType::CALL });
-            if (entry.type == AsmCodeFlowType::CJUMP) // add next next block
+            if (entry.type == AsmCodeFlowType::CJUMP ||
+                entry.type == AsmCodeFlowType::CALL) // add next next block
                 it->nexts.push_back({ size_t(it - codeBlocks.begin() + 1), false });
         }
     
@@ -403,6 +404,7 @@ static inline void insertReplace(ReplacesMap& rmap, const AsmSingleVReg& vreg,
 }
 
 static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
+        std::stack<CallStackEntry>& prevCallStack, std::vector<bool>& prevVisited,
         std::vector<CodeBlock>& codeBlocks, size_t nextBlock,
         ReplacesMap& replacesMap)
 {
@@ -419,7 +421,7 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
         }
     }
     
-    std::stack<CallStackEntry> callStack;
+    std::stack<CallStackEntry> callStack = prevCallStack;
     // traverse by graph from next block
     std::deque<FlowStackEntry> flowStack;
     flowStack.push_back({ nextBlock, 0 });
@@ -476,7 +478,8 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
             }
         }
         
-        if (entry.nextIndex < cblock.nexts.size())
+        if (entry.nextIndex < cblock.nexts.size() &&
+            prevVisited[cblock.nexts[entry.nextIndex].block])
         {
             if (cblock.nexts[entry.nextIndex].isCall)
                 callStack.push({ entry.blockIndex, entry.nextIndex });
@@ -484,7 +487,8 @@ static void resolveSSAConflicts(std::deque<FlowStackEntry>& prevFlowStack,
             entry.nextIndex++;
         }
         else if (entry.nextIndex==0 && cblock.nexts.empty() &&
-                 !cblock.haveReturn && !cblock.haveEnd)
+                 !cblock.haveReturn && !cblock.haveEnd &&
+                 prevVisited[entry.blockIndex+1])
         {
             flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
@@ -588,17 +592,13 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     entry.blockIndex == callStack.top().callBlock &&
                     entry.nextIndex-1 == callStack.top().callNextIndex)
                     callStack.pop(); // just return from call
-                else if (!callStack.empty() && cblock.haveReturn &&
-                            visited[entry.blockIndex+1])
-                    // resolve SSA conflicts from return to this
-                    resolveSSAConflicts(flowStack, codeBlocks,
-                                entry.blockIndex+1, replacesMap);
             }
             else
             {   // back, already visited
                 size_t nextIndex = entry.blockIndex;
                 flowStack.pop_back();
-                resolveSSAConflicts(flowStack, codeBlocks, nextIndex, replacesMap);
+                resolveSSAConflicts(flowStack, callStack, visited, codeBlocks,
+                                    nextIndex, replacesMap);
                 continue;
             }
         }
