@@ -526,6 +526,36 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
     }
 }
 
+static void joinRoutineData(LastSSAIdMap& dest, const LastSSAIdMap& src,
+                const std::unordered_map<AsmSingleVReg, SSAInfo>& prevSSAInfoMap)
+{
+    for (const auto& entry: src)
+    {
+        auto res = dest.insert(entry); // find
+        if (res.second)
+            continue; // added new
+        auto ssaInfoIt = prevSSAInfoMap.find(entry.first);
+        std::vector<size_t>& destEntry = res.first->second;
+        if (ssaInfoIt->second.ssaIdChange!=0)
+        {
+            if (ssaInfoIt != prevSSAInfoMap.end())
+            {
+                auto it = std::find(destEntry.begin(), destEntry.end(),
+                                    ssaInfoIt->second.ssaIdLast);
+                if (it != destEntry.end())
+                    destEntry.erase(it); // remove old way
+            }
+            // add new ways
+            for (size_t ssaId: entry.second)
+            {
+                auto it = std::find(destEntry.begin(), destEntry.end(), ssaId);
+                if (it == destEntry.end())
+                    destEntry.push_back(ssaId);
+            }
+        }
+    }
+}
+
 void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
 {
     usageHandler.rewind();
@@ -634,19 +664,37 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                                             sinfo.ssaIdBefore);
                                 if (ssaIt != ssas.end()) // update this point
                                     *ssaIt = sinfo.ssaIdLast;
-                                else // otherwise add new way
+                                else if (std::find(ssas.begin(), ssas.end(),
+                                        sinfo.ssaIdLast) == ssas.end())
+                                    // otherwise add new way
                                     ssas.push_back(sinfo.ssaIdLast);
                             }
-                            else // otherwise add new way
+                            else if (std::find(ssas.begin(), ssas.end(),
+                                    sinfo.ssaIdLast) == ssas.end())
+                                // otherwise add new way// otherwise add new way
                                 ssas.push_back(sinfo.ssaIdLast);
                         }
                     }
                 }
             }
             else
-            {   // back, already visited
+            {   // join routine data
+                auto rit = routineMap.find(entry.blockIndex);
+                if (rit != routineMap.end() && !rit->second.processed)
+                { // just join with selected routines
+                    // if this ways to return are visited before
+                    auto fcit = flowStack.end();
+                    --fcit;
+                    --fcit; // before this codeblock
+                    const std::unordered_map<AsmSingleVReg, SSAInfo>& prevSSAInfoMap =
+                            codeBlocks[fcit->blockIndex].ssaInfoMap;
+                    for (size_t routine: selectedRoutines)
+                        joinRoutineData(routineMap.find(routine)->second.regVarMap,
+                                rit->second.regVarMap, prevSSAInfoMap);
+                }
                 resolveSSAConflicts(flowStack, callStack, visited, routineMap, codeBlocks,
                                     replacesMap);
+                // back, already visited
                 flowStack.pop_back();
                 continue;
             }
