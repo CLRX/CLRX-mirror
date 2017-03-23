@@ -308,6 +308,7 @@ public:
     {
         size_t start, end; // place in code
         std::vector<NextBlock> nexts; ///< nexts blocks
+        bool haveCalls;
         bool haveReturn;
         bool haveEnd;
         // key - regvar, value - SSA info for this regvar
