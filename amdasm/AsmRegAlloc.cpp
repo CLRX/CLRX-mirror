@@ -374,19 +374,6 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     }
 }
 
-struct FlowStackEntry
-{
-    size_t blockIndex;
-    size_t nextIndex;
-};
-
-
-struct CallStackEntry
-{
-    size_t callBlock; // index
-    size_t callNextIndex; // index of call next
-};
-
 struct SSAId
 {
     size_t ssaId;
@@ -401,7 +388,20 @@ struct RoutineData
     bool processed;
     LastSSAIdMap regVarMap;
 };
-    
+
+struct FlowStackEntry
+{
+    size_t blockIndex;
+    size_t nextIndex;
+    LastSSAIdMap replacedMultiSSAIds;
+        // ssaIds from called routine already visited before call
+};
+
+struct CallStackEntry
+{
+    size_t callBlock; // index
+    size_t callNextIndex; // index of call next
+};
 
 typedef std::pair<size_t, size_t> SSAReplace; // first - orig ssaid, second - dest ssaid
 typedef std::unordered_map<AsmSingleVReg, std::vector<SSAReplace> > ReplacesMap;
@@ -556,6 +556,25 @@ static void joinRoutineData(LastSSAIdMap& dest, const LastSSAIdMap& src,
     }
 }
 
+static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src)
+{
+    for (const auto& entry: src)
+    {
+        auto res = dest.insert(entry); // find
+        if (res.second)
+            continue; // added new
+        std::vector<size_t>& destEntry = res.first->second;
+        // add new ways
+        for (size_t ssaId: entry.second)
+        {
+            auto it = std::find(destEntry.begin(), destEntry.end(), ssaId);
+            if (it == destEntry.end())
+                destEntry.push_back(ssaId);
+        }
+    }
+}
+
+
 void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
 {
     usageHandler.rewind();
@@ -616,6 +635,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             if (next.isCall)
                 routineMap[next.block] = { false };
     
+    LastSSAIdMap lastMultiSSAIdMap; // current SSA id from visited calls
     std::unordered_set<size_t> selectedRoutines;
     std::vector<bool> visited(codeBlocks.size());
     std::fill(visited.begin(), visited.end(), false);
@@ -680,7 +700,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             else
             {   // join routine data
                 auto rit = routineMap.find(entry.blockIndex);
-                if (rit != routineMap.end() && !rit->second.processed)
+                if (rit != routineMap.end() && rit->second.processed)
                 { // just join with selected routines
                     // if this ways to return are visited before
                     auto fcit = flowStack.end();
@@ -718,6 +738,16 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
                  !cblock.haveReturn && !cblock.haveEnd)
         {
+            if (entry.nextIndex!=0) // if back from call
+            { // expand lastMultiSSAIdMap from all calls
+                for (const NextBlock& next: cblock.nexts)
+                {
+                    if (!next.isCall)
+                        continue;
+                    auto it = routineMap.find(next.block); // must find
+                    joinLastSSAIdMap(lastMultiSSAIdMap, it->second.regVarMap);
+                }
+            }
             flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
         }
