@@ -655,6 +655,11 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 {
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
                     size_t& totalSSACount = totalSSACountMap[ssaEntry.first];
+                    if (totalSSACount == 0 && ssaEntry.second.readBeforeWrite)
+                    {   // first read before write at all, need change totalcount, ssaId
+                        ssaId++;
+                        totalSSACount++;
+                    }
                     ssaEntry.second.ssaId = ssaId;
                     ssaEntry.second.ssaIdFirst = ssaEntry.second.ssaIdChange!=0 ?
                             ssaId : SIZE_MAX;
@@ -678,10 +683,26 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         if (sinfo.ssaIdChange!=0)
                         {
                             std::vector<size_t>& ssas = regVarMap[ssaEntry.first];
-                            if (sinfo.readBeforeWrite)
+                            auto lmsit = lastMultiSSAIdMap.find(ssaEntry.first);
+                            if (lmsit != lastMultiSSAIdMap.end())
+                            {   // if many parallel ssaId from routine returns
+                                const std::vector<size_t>& ssaIdsToRemove = lmsit->second;
+                                for (size_t s: ssaIdsToRemove)
+                                {
+                                    auto ssaIt = std::find(ssas.begin(), ssas.end(), s);
+                                    if (ssaIt != ssas.end())
+                                        ssas.erase(ssaIt);
+                                    // add new
+                                    ssas.push_back(sinfo.ssaIdLast);
+                                }
+                                lastMultiSSAIdMap.erase(lmsit);
+                                // add to replaced ssaid to revert changes at pop
+                                entry.replacedMultiSSAIds.insert(*lmsit);
+                            }
+                            else
                             {
                                 auto ssaIt = std::find(ssas.begin(), ssas.end(),
-                                            sinfo.ssaIdBefore);
+                                            sinfo.ssaId-1);
                                 if (ssaIt != ssas.end()) // update this point
                                     *ssaIt = sinfo.ssaIdLast;
                                 else if (std::find(ssas.begin(), ssas.end(),
@@ -689,10 +710,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                                     // otherwise add new way
                                     ssas.push_back(sinfo.ssaIdLast);
                             }
-                            else if (std::find(ssas.begin(), ssas.end(),
-                                    sinfo.ssaIdLast) == ssas.end())
-                                // otherwise add new way// otherwise add new way
-                                ssas.push_back(sinfo.ssaIdLast);
                         }
                     }
                 }
@@ -743,7 +760,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 for (const NextBlock& next: cblock.nexts)
                 {
                     if (!next.isCall)
-                        continue;
+                        continue; // skip non call ways
                     auto it = routineMap.find(next.block); // must find
                     joinLastSSAIdMap(lastMultiSSAIdMap, it->second.regVarMap);
                 }
@@ -752,7 +769,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             entry.nextIndex++;
         }
         else // back
-        {   // erase at pop from selectedRoutines
+        {   // revert lastMultiSSAIdMap changes (add removed entries)
+            lastMultiSSAIdMap.insert(entry.replacedMultiSSAIds.begin(), 
+                            entry.replacedMultiSSAIds.end());
+            // erase at pop from selectedRoutines
             selectedRoutines.erase(entry.blockIndex); 
             for (const auto& ssaEntry: cblock.ssaInfoMap)
                 curSSAIdMap[ssaEntry.first] -= ssaEntry.second.ssaIdChange;
