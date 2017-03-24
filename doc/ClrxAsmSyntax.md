@@ -1,7 +1,8 @@
 ## CLRadeonExtender Assembler syntax
 
-The CLRX assembler is compatible with GNU as syntax. In the many cases code for
-GNU as can be easily ported to CLRX assembler, ofcourse except processor instructions.
+The CLRX assembler is compatible with GNU assembler syntax. In the many cases code for
+GNU assembler can be easily ported to CLRX assembler, ofcourse except processor's
+instructions.
 
 ## Layout of the source
 

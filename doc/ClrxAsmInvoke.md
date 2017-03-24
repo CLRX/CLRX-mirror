@@ -2,8 +2,8 @@
 
 This is CLRadeonExtender assembler. This assembler can assemble code for all Radeon GPU's
 that based on the GCN1.0/1.1/1.2 architecture and it can generate AMD Catalyst
-OpenCL binaries and the GalliumCompute OpenCL binaries. It is compatible with GNU as
-and support the almost GNU as pseudo-operations (directives) including macros and
+OpenCL binaries and the GalliumCompute OpenCL binaries. It is compatible with GNU assembler
+and support the almost GNU assembler's pseudo-operations (directives) including macros and
 repetitions.
 
 ### Invoking an assembler

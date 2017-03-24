@@ -1,6 +1,6 @@
 ## CLRadeonExtender Assembler Pseudo-Operations
 
-The CLRX assembler accepts the almost pseudo-operations from GNU as.
+The CLRX assembler accepts the almost pseudo-operations from GNU assembler.
 This chapter lists and explains standard pseudo-operations.
 
 A CLRX assembler stores values greater than byte in the little-endian ordering.

@@ -16,8 +16,8 @@ clrxasm [-6Swam?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
 
 This is CLRadeonExtender assembler. This assembler can assemble code for all Radeon GPU's
 that based on the GCN1.0/1.1/1.2 architecture and it can generate AMD Catalyst
-OpenCL binaries and the GalliumCompute OpenCL binaries. It is compatible with GNU as
-and support the almost GNU as pseudo-operations (directives) including macros and
+OpenCL binaries and the GalliumCompute OpenCL binaries. It is compatible with GNU assembler
+and support the almost GNU assembler's pseudo-operations (directives) including macros and
 repetitions.
 
 An assembler read source from many files. If no input file specified an assembler
