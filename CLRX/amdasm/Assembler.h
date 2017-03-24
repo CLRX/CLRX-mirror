@@ -318,6 +318,7 @@ public:
 private:
     Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
+    Array<size_t> flowOrder;
     
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);

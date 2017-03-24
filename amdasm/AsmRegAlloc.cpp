@@ -488,11 +488,6 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                         res.first->second.handled = true;
                     }
                 }
-                
-                if (!callStack.empty() &&
-                    entry.blockIndex == callStack.top().callBlock &&
-                    entry.nextIndex-1 == callStack.top().callNextIndex)
-                    callStack.pop(); // just return from call
             }
             else
             {   // back, already visited
@@ -500,6 +495,11 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                 continue;
             }
         }
+        
+        if (!callStack.empty() &&
+            entry.blockIndex == callStack.top().callBlock &&
+            entry.nextIndex-1 == callStack.top().callNextIndex)
+            callStack.pop(); // just return from call
         
         if (entry.nextIndex < cblock.nexts.size() &&
             prevVisited[cblock.nexts[entry.nextIndex].block])
@@ -663,6 +663,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::fill(visited.begin(), visited.end(), false);
     flowStack.push_back({ 0, 0 });
     
+    size_t flowOrderPos = 0;
+    flowOrder.resize(codeBlocks.size());
+    
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.back();
@@ -673,6 +676,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
+                flowOrder[flowOrderPos++] = entry.blockIndex;
+                
                 for (auto& ssaEntry: cblock.ssaInfoMap)
                 {
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
@@ -810,6 +815,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             flowStack.pop_back();
         }
     }
+    // resize flow order
+    flowOrder.resize(flowOrderPos);
     
     /* prepare SSA id replaces */
     struct MinSSAGraphNode
@@ -942,45 +949,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
 
 void AsmRegAllocator::createInferenceGraph(ISAUsageHandler& usageHandler)
 {
-    std::stack<CallStackEntry> callStack;
-    std::deque<FlowStackEntry> flowStack;
-    std::vector<bool> visited(codeBlocks.size());
-    std::fill(visited.begin(), visited.end(), false);
-    
-    while (!flowStack.empty())
+    for (size_t blockIndex: flowOrder)
     {
-        FlowStackEntry& entry = flowStack.back();
-        CodeBlock& cblock = codeBlocks[entry.blockIndex];
-        
-        if (entry.nextIndex == 0)
-        {   // process current block
-            if (!visited[entry.blockIndex])
-            {
-                visited[entry.blockIndex] = true;
-            }
-           else
-            {   // back, already visited
-                flowStack.pop_back();
-                continue;
-            }
-        }
-        if (entry.nextIndex < cblock.nexts.size())
-        {
-            if (cblock.nexts[entry.nextIndex].isCall)
-                callStack.push({ entry.blockIndex, entry.nextIndex });
-            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
-            entry.nextIndex++;
-        }
-        else if (entry.nextIndex==0 && cblock.nexts.empty() &&
-                 !cblock.haveReturn && !cblock.haveEnd)
-        {
-            flowStack.push_back({ entry.blockIndex+1, 0 });
-            entry.nextIndex++;
-        }
-        else // back
-        {
-            flowStack.pop_back();
-        }
+        const CodeBlock& cblock = codeBlocks[blockIndex];
+        usageHandler.setReadPos(cblock.usagePos);
     }
 }
 
