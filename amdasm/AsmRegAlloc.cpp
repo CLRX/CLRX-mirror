@@ -846,7 +846,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         while (it != replaces.end())
         {
             auto itEnd = std::upper_bound(it, replaces.end(),
-                            std::make_pair(it->first, SIZE_MAX));
+                            std::make_pair(it->first, size_t(SIZE_MAX)));
             auto prevIt = it;
             {
                 MinSSAGraphNode& node = ssaGraphNodes[it->first];
