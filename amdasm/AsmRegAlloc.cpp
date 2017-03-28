@@ -654,17 +654,14 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     // initialize routineMap
     for (const CodeBlock& cblock: codeBlocks)
         for (const NextBlock& next: cblock.nexts)
-            if (next.isCall)
-                routineMap[next.block] = { false };
+            // all forks and calls
+            routineMap[next.block] = { false };
     
     LastSSAIdMap lastMultiSSAIdMap; // current SSA id from visited calls
     std::unordered_set<size_t> selectedRoutines;
     std::vector<bool> visited(codeBlocks.size());
     std::fill(visited.begin(), visited.end(), false);
     flowStack.push_back({ 0, 0 });
-    
-    size_t flowOrderPos = 0;
-    flowOrder.resize(codeBlocks.size());
     
     while (!flowStack.empty())
     {
@@ -676,7 +673,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
-                flowOrder[flowOrderPos++] = entry.blockIndex;
                 
                 for (auto& ssaEntry: cblock.ssaInfoMap)
                 {
@@ -815,8 +811,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             flowStack.pop_back();
         }
     }
-    // resize flow order
-    flowOrder.resize(flowOrderPos);
     
     /* prepare SSA id replaces */
     struct MinSSAGraphNode
@@ -949,11 +943,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
 
 void AsmRegAllocator::createInferenceGraph(ISAUsageHandler& usageHandler)
 {
-    for (size_t blockIndex: flowOrder)
-    {
-        const CodeBlock& cblock = codeBlocks[blockIndex];
-        usageHandler.setReadPos(cblock.usagePos);
-    }
+    
 }
 
 void AsmRegAllocator::allocateRegisters(cxuint sectionId)
