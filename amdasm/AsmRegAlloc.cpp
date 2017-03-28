@@ -943,7 +943,42 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
 
 void AsmRegAllocator::createInferenceGraph(ISAUsageHandler& usageHandler)
 {
+    std::deque<FlowStackEntry> flowStack;
+    std::vector<bool> visited(codeBlocks.size());
+    std::fill(visited.begin(), visited.end(), false);
     
+    while (!flowStack.empty())
+    {
+        FlowStackEntry& entry = flowStack.back();
+        CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        {   // process current block
+            if (!visited[entry.blockIndex])
+            {
+                visited[entry.blockIndex] = true;
+            }
+           else
+            {   // back, already visited
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (entry.nextIndex==0 && cblock.nexts.empty() && !cblock.haveEnd)
+        {
+            flowStack.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else // back
+        {
+            flowStack.pop_back();
+        }
+    }
 }
 
 void AsmRegAllocator::allocateRegisters(cxuint sectionId)
