@@ -941,6 +941,64 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         }
 }
 
+struct Liveness
+{
+    std::vector<std::pair<size_t, size_t> > l;
+    
+    Liveness() { }
+    
+    void expand(size_t k)
+    {
+        if (l.empty())
+            l.push_back(std::make_pair(k, k+1));
+        else
+            l.back().second = k+1;
+    }
+    void newRegion(size_t k)
+    { l.push_back(std::make_pair(k, k)); }
+    
+    bool contain(size_t t) const
+    {
+        auto it = std::lower_bound(l.begin(), l.end(), std::make_pair(t, size_t(0)));
+        if (it==l.begin() && it->first>t)
+            return false;
+        if (it==l.end() || it->first>t)
+            --it;
+        return it->first<=t && t<it->second;
+    }
+    
+    bool common(const Liveness& b) const
+    {
+        size_t i, j;
+        for (i = j = 0; i < l.size() && j < b.l.size();)
+        {
+            if (l[i].first==l[i].second)
+            {
+                i++;
+                continue;
+            }
+            if (b.l[j].first==b.l[j].second)
+            {
+                j++;
+                continue;
+            }
+            if (l[i].first<b.l[j].first)
+            {
+                if (l[i].second > b.l[j].first)
+                    return true; // common place
+                i++;
+            }
+            else
+            {
+                if (l[i].first < b.l[j].second)
+                    return true; // common place
+                j++;
+            }
+        }
+        return false;
+    }
+};
+
 void AsmRegAllocator::createInferenceGraph(ISAUsageHandler& usageHandler)
 {
     std::deque<FlowStackEntry> flowStack;
