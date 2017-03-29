@@ -1108,6 +1108,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                         {
                             const SSAInfo& ssaInfo = cblock.ssaInfoMap.find(svreg)->second;
                             size_t& ssaIdIdx = ssaIdIdxMap[svreg];
+                            ssaIdIdx++;
                             size_t ssaId;
                             if (ssaIdIdx==0)
                                 ssaId = ssaInfo.ssaIdBefore;
@@ -1124,7 +1125,6 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                                         vregIndexMap.find(svreg)->second;
                             Liveness& liveness = livenesses[regType][ssaIdIndices[ssaId]];
                             liveness.newRegion(oldOffset);
-                            ssaIdIdx++;
                         }
                         
                         readSVRegs.clear();
