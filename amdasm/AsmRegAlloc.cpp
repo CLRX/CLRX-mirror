@@ -607,6 +607,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     rvu = usageHandler.nextUsage();
     
     cxuint regRanges[MAX_REGTYPES_NUM*2];
+    cxuint realRegsCount[MAX_REGTYPES_NUM];
+    std::fill(realRegsCount, realRegsCount+MAX_REGTYPES_NUM, 0);
     size_t regTypesNum;
     assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
     
@@ -646,7 +648,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 // must found
                 cxuint regStartVal = regRanges[i<<1];
                 for (cxuint j = rvu.rstart; j < rvu.rend; j++)
-                    realRegsUsed[i][j - regStartVal] = true;
+                    realRegsUsed[i][j - regStartVal] = realRegsCount[i]++;
             }
             // get next rvusage
             if (!usageHandler.hasNext())
@@ -1052,6 +1054,9 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     // construct vreg liveness
     std::deque<FlowStackEntry> flowStack;
     std::vector<bool> visited(codeBlocks.size(), false);
+    std::vector<Liveness> livenesses[MAX_REGTYPES_NUM];
+    for (size_t i = 0; i < regTypesNum; i++)
+        livenesses[i].resize(graphVregsCounts[i]);
     
     while (!flowStack.empty())
     {
@@ -1063,6 +1068,83 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
+                std::unordered_map<AsmSingleVReg, size_t> ssaIdIdxMap;
+                
+                size_t oldOffset = cblock.usagePos.readOffset;
+                std::vector<AsmSingleVReg> readSVRegs;
+                std::vector<AsmSingleVReg> writtenSVRegs;
+                
+                usageHandler.setReadPos(cblock.usagePos);
+                // register in liveness
+                while (true)
+                {
+                    AsmRegVarUsage rvu;
+                    if (usageHandler.hasNext())
+                        rvu = usageHandler.nextUsage();
+                    if (!usageHandler.hasNext() || rvu.offset >= oldOffset)
+                    {   // apply to liveness
+                        for (AsmSingleVReg svreg: readSVRegs)
+                        {
+                            const SSAInfo& ssaInfo = cblock.ssaInfoMap.find(svreg)->second;
+                            const size_t ssaIdIdx = ssaIdIdxMap[svreg];
+                            size_t ssaId;
+                            if (ssaIdIdx==0)
+                                ssaId = ssaInfo.ssaIdBefore;
+                            else if (ssaIdIdx==1)
+                                ssaId = ssaInfo.ssaIdFirst;
+                            else if (ssaIdIdx<ssaInfo.ssaIdChange)
+                                ssaId = ssaInfo.ssaId + ssaIdIdx-1;
+                            else // last
+                                ssaId = ssaInfo.ssaIdLast;
+                            
+                            cxuint regType = svreg.regVar->type;
+                            const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+                            const std::vector<size_t>& ssaIdIndices =
+                                        vregIndexMap.find(svreg)->second;
+                            Liveness& liveness = livenesses[regType][ssaIdIndices[ssaId]];
+                            liveness.expand(oldOffset);
+                        }
+                        for (AsmSingleVReg svreg: writtenSVRegs)
+                        {
+                            const SSAInfo& ssaInfo = cblock.ssaInfoMap.find(svreg)->second;
+                            size_t& ssaIdIdx = ssaIdIdxMap[svreg];
+                            size_t ssaId;
+                            if (ssaIdIdx==0)
+                                ssaId = ssaInfo.ssaIdBefore;
+                            else if (ssaIdIdx==1)
+                                ssaId = ssaInfo.ssaIdFirst;
+                            else if (ssaIdIdx<ssaInfo.ssaIdChange)
+                                ssaId = ssaInfo.ssaId + ssaIdIdx-1;
+                            else // last
+                                ssaId = ssaInfo.ssaIdLast;
+                            
+                            cxuint regType = svreg.regVar->type;
+                            const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+                            const std::vector<size_t>& ssaIdIndices =
+                                        vregIndexMap.find(svreg)->second;
+                            Liveness& liveness = livenesses[regType][ssaIdIndices[ssaId]];
+                            liveness.newRegion(oldOffset);
+                            ssaIdIdx++;
+                        }
+                        
+                        readSVRegs.clear();
+                        writtenSVRegs.clear();
+                        if (!usageHandler.hasNext())
+                            break; // end
+                        oldOffset = rvu.offset;
+                    }
+                    if (rvu.offset >= cblock.end)
+                        break;
+                    
+                    for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
+                    {   // per register/singlvreg
+                        AsmSingleVReg svreg{ rvu.regVar, rindex };
+                        if ((rvu.rwFlags & ASMRVU_READ) != 0)
+                            readSVRegs.push_back(svreg);
+                        if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
+                            writtenSVRegs.push_back(svreg);
+                    }
+                }
             }
            else
             {   // back, already visited
@@ -1101,7 +1183,7 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
     for (size_t i = 0; i < regTypesNum; i++)
     {
         realRegsUsed[i].resize(maxRegs[i]);
-        std::fill(realRegsUsed[i].begin(), realRegsUsed[i].end(), false);
+        std::fill(realRegsUsed[i].begin(), realRegsUsed[i].end(), UINT_MAX);
     }
     
     // set up
