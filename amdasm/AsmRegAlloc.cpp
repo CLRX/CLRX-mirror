@@ -606,6 +606,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         return; // do nothing if no regusages
     rvu = usageHandler.nextUsage();
     
+    cxuint regRanges[MAX_REGTYPES_NUM*2];
+    size_t regTypesNum;
+    assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
+    
     while (true)
     {
         while (cbit != codeBlocks.end() && cbit->end <= rvu.offset)
@@ -632,6 +636,17 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     if (rvu.rwFlags == ASMRVU_WRITE && rvu.regField!=ASMFIELD_NONE)
                         sinfo.ssaIdChange++;
                 }
+            }
+            else
+            {   // if real register, mark as used in code
+                size_t i; // regtype
+                for (i = 0; i < regTypesNum; i++)
+                    if (rvu.rstart >= regRanges[i<<1] && rvu.rstart < regRanges[(i<<1)+1])
+                        break;
+                // must found
+                cxuint regStartVal = regRanges[i<<1];
+                for (cxuint j = rvu.rstart; j < rvu.rend; j++)
+                    realRegsUsed[i][j - regStartVal] = true;
             }
             // get next rvusage
             if (!usageHandler.hasNext())
@@ -1001,7 +1016,8 @@ struct Liveness
 void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
 {
     // construct var index maps
-    size_t graphVregsCounts[2] = { size_t(0), size_t(0) };
+    size_t graphVregsCounts[MAX_REGTYPES_NUM];
+    std::fill(graphVregsCounts, graphVregsCounts+regTypesNum, size_t(0));
     for (const CodeBlock& cblock: codeBlocks)
         for (const auto& entry: cblock.ssaInfoMap)
         {
@@ -1074,6 +1090,20 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
 void AsmRegAllocator::allocateRegisters(cxuint sectionId)
 {   // before any operation, clear all
     codeBlocks.clear();
+    for (size_t i = 0; i < MAX_REGTYPES_NUM; i++)
+    {
+        realRegsUsed[i].clear();
+        vregIndexMaps[i].clear();
+        interGraphs[i].clear();
+    }
+    cxuint maxRegs[MAX_REGTYPES_NUM];
+    assembler.isaAssembler->getMaxRegistersNum(regTypesNum, maxRegs);
+    for (size_t i = 0; i < regTypesNum; i++)
+    {
+        realRegsUsed[i].resize(maxRegs[i]);
+        std::fill(realRegsUsed[i].begin(), realRegsUsed[i].end(), false);
+    }
+    
     // set up
     const AsmSection& section = assembler.sections[sectionId];
     createCodeStructure(section.codeFlow, section.content.size(), section.content.data());

@@ -206,6 +206,8 @@ public:
     /// get allocated register numbers after assemblying
     virtual const cxuint* getAllocatedRegisters(size_t& regTypesNum,
                 Flags& regFlags) const = 0;
+    virtual void getMaxRegistersNum(size_t& regTypesNum, cxuint* maxRegs) const = 0;
+    virtual void getRegisterRanges(size_t& regTypesNum, cxuint* regRanges) const = 0;
     /// fill alignment when value is not given
     virtual void fillAlignment(size_t size, cxbyte* output) = 0;
     /// parse register range
@@ -274,6 +276,8 @@ public:
     bool checkMnemonic(const CString& mnemonic) const;
     void setAllocatedRegisters(const cxuint* regs, Flags regFlags);
     const cxuint* getAllocatedRegisters(size_t& regTypesNum, Flags& regFlags) const;
+    void getMaxRegistersNum(size_t& regTypesNum, cxuint* maxRegs) const;
+    void getRegisterRanges(size_t& regTypesNum, cxuint* regRanges) const;
     void fillAlignment(size_t size, cxbyte* output);
     bool parseRegisterRange(const char*& linePtr, cxuint& regStart, cxuint& regEnd,
                 const AsmRegVar*& regVar);
@@ -321,10 +325,11 @@ public:
 private:
     Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
+    size_t regTypesNum;
     
-    std::vector<bool> realRegsUsed[2];
-    VarIndexMap vregIndexMaps[2]; // indices to igraph for 2 reg types
-    InterGraph interGraphs[2]; // for 2 register types
+    std::vector<bool> realRegsUsed[MAX_REGTYPES_NUM];
+    VarIndexMap vregIndexMaps[MAX_REGTYPES_NUM]; // indices to igraph for 2 reg types
+    InterGraph interGraphs[MAX_REGTYPES_NUM]; // for 2 register types
     
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);

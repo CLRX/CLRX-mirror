@@ -3610,6 +3610,22 @@ const cxuint* GCNAssembler::getAllocatedRegisters(size_t& regTypesNum,
     return regTable;
 }
 
+void GCNAssembler::getMaxRegistersNum(size_t& regTypesNum, cxuint* maxRegs) const
+{
+    maxRegs[0] = getGPUMaxRegsNumByArchMask(curArchMask, 0);
+    maxRegs[1] = getGPUMaxRegsNumByArchMask(curArchMask, 1);
+    regTypesNum = 2;
+}
+
+void GCNAssembler::getRegisterRanges(size_t& regTypesNum, cxuint* regRanges) const
+{
+    regRanges[0] = 0;
+    regRanges[1] = getGPUMaxRegsNumByArchMask(curArchMask, 0);
+    regRanges[2] = 256; // vgpr
+    regRanges[3] = 256+getGPUMaxRegsNumByArchMask(curArchMask, 1);
+    regTypesNum = 2;
+}
+
 void GCNAssembler::fillAlignment(size_t size, cxbyte* output)
 {
     uint32_t value = LEV(0xbf800000U); // fill with s_nop's
