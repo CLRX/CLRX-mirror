@@ -999,8 +999,42 @@ struct Liveness
     }
 };
 
-void AsmRegAllocator::createInferenceGraph(ISAUsageHandler& usageHandler)
+void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
 {
+    // construct var index maps
+    size_t graphVregsCounts[2] = { size_t(0), size_t(0) };
+    for (const CodeBlock& cblock: codeBlocks)
+        for (const auto& entry: cblock.ssaInfoMap)
+        {
+            VarIndexMap& vregIndices = vregIndexMaps[entry.first.regVar->type];
+            size_t& graphVregsCount = graphVregsCounts[entry.first.regVar->type];
+            std::vector<size_t>& ssaIdIndices = vregIndices[entry.first];
+            const SSAInfo& sinfo = entry.second;
+            size_t ssaIdCount = 0;
+            if (sinfo.readBeforeWrite)
+                ssaIdCount = sinfo.ssaIdBefore+1;
+            if (sinfo.ssaIdChange!=0)
+            {
+                ssaIdCount = std::max(ssaIdCount, sinfo.ssaIdLast+1);
+                ssaIdCount = std::max(ssaIdCount, sinfo.ssaIdFirst+1);
+            }
+            if (ssaIdIndices.size() < ssaIdCount)
+                ssaIdIndices.resize(ssaIdCount, SIZE_MAX);
+            
+            if (sinfo.readBeforeWrite)
+                ssaIdIndices[sinfo.ssaIdBefore] = graphVregsCount++;
+            if (sinfo.ssaIdChange!=0)
+            {   // fill up ssaIdIndices (with graph Ids)
+                ssaIdIndices[sinfo.ssaIdFirst] = graphVregsCount++;
+                for (size_t ssaId = sinfo.ssaId+1;
+                        ssaId < sinfo.ssaId+sinfo.ssaIdChange-1; ssaId++)
+                    ssaIdIndices[ssaId] = graphVregsCount++;
+                ssaIdIndices[sinfo.ssaIdLast] = graphVregsCount++;
+            }
+        }
+    // add real registers
+    
+    // construct vreg liveness
     std::deque<FlowStackEntry> flowStack;
     std::vector<bool> visited(codeBlocks.size());
     std::fill(visited.begin(), visited.end(), false);

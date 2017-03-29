@@ -315,14 +315,20 @@ public:
         std::unordered_map<AsmSingleVReg, SSAInfo> ssaInfoMap;
         ISAUsageHandler::ReadPos usagePos;
     };
+    // interference graph type
+    typedef std::vector<std::vector<size_t> > InterGraph;
+    typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > VarIndexMap;
 private:
     Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
     
+    VarIndexMap vregIndexMaps[2]; // indices to igraph for 2 reg types
+    InterGraph interGraphs[2]; // for 2 register types
+    
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);
     void createSSAData(ISAUsageHandler& usageHandler);
-    void createInferenceGraph(ISAUsageHandler& usageHandler);
+    void createInterferenceGraph(ISAUsageHandler& usageHandler);
 public:
     AsmRegAllocator(Assembler& assembler);
     
