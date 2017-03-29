@@ -1015,6 +1015,41 @@ struct Liveness
     }
 };
 
+typedef AsmRegAllocator::VarIndexMap VarIndexMap;
+
+static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
+        AsmRegAllocator::SSAInfo& ssaInfo, std::vector<Liveness>* livenesses,
+        const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges)
+{
+    size_t ssaId;
+    if (ssaIdIdx==0)
+        ssaId = ssaInfo.ssaIdBefore;
+    else if (ssaIdIdx==1)
+        ssaId = ssaInfo.ssaIdFirst;
+    else if (ssaIdIdx<ssaInfo.ssaIdChange)
+        ssaId = ssaInfo.ssaId + ssaIdIdx-1;
+    else // last
+        ssaId = ssaInfo.ssaIdLast;
+    
+    if (svreg.regVar != nullptr)
+    {
+        cxuint regType = svreg.regVar->type;
+        const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+        const std::vector<size_t>& ssaIdIndices =
+                    vregIndexMap.find(svreg)->second;
+        return livenesses[regType][ssaIdIndices[ssaId]];
+    }
+    else
+    {   // real register
+        size_t i; // regtype
+        for (i = 0; i < regTypesNum; i++)
+            if (svreg.index >= regRanges[i<<1] && svreg.index < regRanges[(i<<1)+1])
+                break;
+        // must found
+        return livenesses[i][livenesses[i].size() - regRanges[(i<<1)+1] + svreg.index];
+    }
+}
+
 void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
 {
     // construct var index maps
@@ -1058,6 +1093,10 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     for (size_t i = 0; i < regTypesNum; i++)
         livenesses[i].resize(graphVregsCounts[i]);
     
+    cxuint regRanges[MAX_REGTYPES_NUM*2];
+    size_t regTypesNum;
+    assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
+    
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.back();
@@ -1085,46 +1124,19 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                     {   // apply to liveness
                         for (AsmSingleVReg svreg: readSVRegs)
                         {
-                            const SSAInfo& ssaInfo = cblock.ssaInfoMap.find(svreg)->second;
-                            const size_t ssaIdIdx = ssaIdIdxMap[svreg];
-                            size_t ssaId;
-                            if (ssaIdIdx==0)
-                                ssaId = ssaInfo.ssaIdBefore;
-                            else if (ssaIdIdx==1)
-                                ssaId = ssaInfo.ssaIdFirst;
-                            else if (ssaIdIdx<ssaInfo.ssaIdChange)
-                                ssaId = ssaInfo.ssaId + ssaIdIdx-1;
-                            else // last
-                                ssaId = ssaInfo.ssaIdLast;
-                            
-                            cxuint regType = svreg.regVar->type;
-                            const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-                            const std::vector<size_t>& ssaIdIndices =
-                                        vregIndexMap.find(svreg)->second;
-                            Liveness& liveness = livenesses[regType][ssaIdIndices[ssaId]];
-                            liveness.expand(oldOffset);
+                            Liveness& lv = getLiveness(svreg, ssaIdIdxMap[svreg],
+                                    cblock.ssaInfoMap.find(svreg)->second,
+                                    livenesses, vregIndexMaps, regTypesNum, regRanges);
+                            lv.expand(oldOffset);
                         }
                         for (AsmSingleVReg svreg: writtenSVRegs)
                         {
-                            const SSAInfo& ssaInfo = cblock.ssaInfoMap.find(svreg)->second;
                             size_t& ssaIdIdx = ssaIdIdxMap[svreg];
                             ssaIdIdx++;
-                            size_t ssaId;
-                            if (ssaIdIdx==0)
-                                ssaId = ssaInfo.ssaIdBefore;
-                            else if (ssaIdIdx==1)
-                                ssaId = ssaInfo.ssaIdFirst;
-                            else if (ssaIdIdx<ssaInfo.ssaIdChange)
-                                ssaId = ssaInfo.ssaId + ssaIdIdx-1;
-                            else // last
-                                ssaId = ssaInfo.ssaIdLast;
-                            
-                            cxuint regType = svreg.regVar->type;
-                            const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-                            const std::vector<size_t>& ssaIdIndices =
-                                        vregIndexMap.find(svreg)->second;
-                            Liveness& liveness = livenesses[regType][ssaIdIndices[ssaId]];
-                            liveness.newRegion(oldOffset);
+                            Liveness& lv = getLiveness(svreg, ssaIdIdx,
+                                    cblock.ssaInfoMap.find(svreg)->second,
+                                    livenesses, vregIndexMaps, regTypesNum, regRanges);
+                            lv.newRegion(oldOffset);
                         }
                         
                         readSVRegs.clear();
@@ -1139,14 +1151,14 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                     for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
                     {   // per register/singlvreg
                         AsmSingleVReg svreg{ rvu.regVar, rindex };
-                        if ((rvu.rwFlags & ASMRVU_READ) != 0)
-                            readSVRegs.push_back(svreg);
-                        if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
+                        if (rvu.rwFlags == ASMRVU_WRITE && rvu.regField == ASMFIELD_NONE)
                             writtenSVRegs.push_back(svreg);
+                        else // read or treat as reading // expand previous region
+                            readSVRegs.push_back(svreg);
                     }
                 }
             }
-           else
+            else
             {   // back, already visited
                 flowStack.pop_back();
                 continue;
