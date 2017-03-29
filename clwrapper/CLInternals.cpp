@@ -357,9 +357,7 @@ void clrxWrapperInitialize()
         if (platformCount == 0)
             return;
         
-        std::vector<cl_platform_id> amdOclPlatforms(platformCount);
-        std::fill(amdOclPlatforms.begin(), amdOclPlatforms.end(), nullptr);
-        
+        std::vector<cl_platform_id> amdOclPlatforms(platformCount, nullptr);
         status = pgetPlatformIDs(platformCount, amdOclPlatforms.data(), nullptr);
         if (status != CL_SUCCESS)
         {

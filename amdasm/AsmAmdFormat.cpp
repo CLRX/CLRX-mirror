@@ -112,8 +112,7 @@ void AsmAmdHandler::saveCurrentAllocRegs()
         cxuint* destRegs = kernelStates[assembler.currentKernel]->allocRegs;
         const cxuint* regs = assembler.isaAssembler->getAllocatedRegisters(num,
                        kernelStates[assembler.currentKernel]->allocRegFlags);
-        destRegs[0] = regs[0];
-        destRegs[1] = regs[1];
+        std::copy(regs, regs + num, destRegs);
     }
 }
 

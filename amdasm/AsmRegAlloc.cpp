@@ -455,8 +455,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
     // traverse by graph from next block
     std::deque<FlowStackEntry> flowStack;
     flowStack.push_back({ nextBlock, 0 });
-    std::vector<bool> visited(codeBlocks.size());
-    std::fill(visited.begin(), visited.end(), false);
+    std::vector<bool> visited(codeBlocks.size(), false);
     
     std::unordered_map<AsmSingleVReg, ResolveEntry> toResolveMap;
     
@@ -660,8 +659,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     
     LastSSAIdMap lastMultiSSAIdMap; // current SSA id from visited calls
     std::unordered_set<size_t> selectedRoutines;
-    std::vector<bool> visited(codeBlocks.size());
-    std::fill(visited.begin(), visited.end(), false);
+    std::vector<bool> visited(codeBlocks.size(), false);
     flowStack.push_back({ 0, 0 });
     
     while (!flowStack.empty())
@@ -1037,8 +1035,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     
     // construct vreg liveness
     std::deque<FlowStackEntry> flowStack;
-    std::vector<bool> visited(codeBlocks.size());
-    std::fill(visited.begin(), visited.end(), false);
+    std::vector<bool> visited(codeBlocks.size(), false);
     
     while (!flowStack.empty())
     {

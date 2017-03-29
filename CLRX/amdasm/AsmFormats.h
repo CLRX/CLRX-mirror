@@ -36,6 +36,7 @@
 #include <CLRX/amdbin/AmdCL2BinGen.h>
 #include <CLRX/amdbin/ROCmBinaries.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/GPUId.h>
 #include <CLRX/amdasm/Commons.h>
 
 namespace CLRX
@@ -230,7 +231,7 @@ private:
         cxuint extraSectionCount;
         cxuint savedSection;
         std::unordered_set<CString> argNamesSet;
-        cxuint allocRegs[2];
+        cxuint allocRegs[MAX_REGTYPES_NUM];
         Flags allocRegFlags;
     };
     std::vector<Section> sections;
@@ -302,7 +303,7 @@ private:
         cxuint codeSection;
         cxuint savedSection;
         std::unordered_set<CString> argNamesSet;
-        cxuint allocRegs[2];
+        cxuint allocRegs[MAX_REGTYPES_NUM];
         Flags allocRegFlags;
     };
     std::vector<Section> sections;
@@ -374,7 +375,7 @@ private:
         cxuint defaultSection;
         bool hasProgInfo;
         cxbyte progInfoEntries;
-        cxuint allocRegs[2];
+        cxuint allocRegs[MAX_REGTYPES_NUM];
         Flags allocRegFlags;
     };
     std::vector<Kernel> kernelStates;
@@ -456,7 +457,7 @@ private:
         cxuint ctrlDirSection;
         cxuint savedSection;
         Flags allocRegFlags;
-        cxuint allocRegs[2];
+        cxuint allocRegs[MAX_REGTYPES_NUM];
         
         void initializeKernelConfig();
     };

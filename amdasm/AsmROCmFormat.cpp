@@ -256,7 +256,7 @@ void AsmROCmHandler::saveKcodeCurrentAllocRegs()
         Kernel& oldKernel = *kernelStates[currentKcodeKernel];
         const cxuint* regs = assembler.isaAssembler->getAllocatedRegisters(
                             regTypesNum, oldKernel.allocRegFlags);
-        std::copy(regs, regs+2, oldKernel.allocRegs);
+        std::copy(regs, regs+regTypesNum, oldKernel.allocRegs);
     }
 }
 
@@ -953,12 +953,12 @@ void AsmROCmPseudoOps::updateKCodeSel(AsmROCmHandler& handler,
         Flags curAllocRegFlags;
         const cxuint* curAllocRegs = asmr.isaAssembler->getAllocatedRegisters(regTypesNum,
                                curAllocRegFlags);
-        cxuint newAllocRegs[2];
+        cxuint newAllocRegs[MAX_REGTYPES_NUM];
         AsmROCmHandler::Kernel& kernel = *(handler.kernelStates[*it]);
-        newAllocRegs[0] = std::max(curAllocRegs[0], kernel.allocRegs[0]);
-        newAllocRegs[1] = std::max(curAllocRegs[1], kernel.allocRegs[1]);
+        for (size_t i = 0; i < regTypesNum; i++)
+            newAllocRegs[i] = std::max(curAllocRegs[i], kernel.allocRegs[i]);
         kernel.allocRegFlags |= curAllocRegFlags;
-        std::copy(newAllocRegs, newAllocRegs+2, kernel.allocRegs);
+        std::copy(newAllocRegs, newAllocRegs+regTypesNum, kernel.allocRegs);
     }
     asmr.isaAssembler->setAllocatedRegisters();
 }

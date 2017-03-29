@@ -322,6 +322,7 @@ private:
     Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
     
+    std::vector<bool> realRegsUsed[2];
     VarIndexMap vregIndexMaps[2]; // indices to igraph for 2 reg types
     InterGraph interGraphs[2]; // for 2 register types
     

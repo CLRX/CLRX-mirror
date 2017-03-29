@@ -119,6 +119,10 @@ enum: Flags {
     GPUSETUP_SCRATCH_EN = 2
 };
 
+enum: cxuint {
+    MAX_REGTYPES_NUM = 4
+};
+
 /// get maximum available registers for GPU (type: 0 - scalar, 1 - vector)
 extern cxuint getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
                          Flags flags = 0);
