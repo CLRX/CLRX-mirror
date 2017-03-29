@@ -404,6 +404,12 @@ struct CallStackEntry
     size_t callNextIndex; // index of call next
 };
 
+struct ResolveEntry
+{
+    size_t sourceBlock;
+    bool handled;
+};
+
 typedef std::pair<size_t, size_t> SSAReplace; // first - orig ssaid, second - dest ssaid
 typedef std::unordered_map<AsmSingleVReg, std::vector<SSAReplace> > ReplacesMap;
 
@@ -452,11 +458,6 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
     std::vector<bool> visited(codeBlocks.size());
     std::fill(visited.begin(), visited.end(), false);
     
-    struct ResolveEntry
-    {
-        size_t sourceBlock;
-        bool handled;
-    };
     std::unordered_map<AsmSingleVReg, ResolveEntry> toResolveMap;
     
     while (!flowStack.empty())
@@ -655,7 +656,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     for (const CodeBlock& cblock: codeBlocks)
         for (const NextBlock& next: cblock.nexts)
             // all forks and calls
-            routineMap[next.block] = { false };
+            routineMap[next.block].processed = false;
     
     LastSSAIdMap lastMultiSSAIdMap; // current SSA id from visited calls
     std::unordered_set<size_t> selectedRoutines;
