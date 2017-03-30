@@ -734,9 +734,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                                     // add new
                                     ssas.push_back(sinfo.ssaIdLast);
                                 }
-                                lastMultiSSAIdMap.erase(lmsit);
                                 // add to replaced ssaid to revert changes at pop
                                 entry.replacedMultiSSAIds.insert(*lmsit);
+                                lastMultiSSAIdMap.erase(lmsit);
                             }
                             else
                             {
@@ -817,7 +817,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         removeLastSSAIdMap(lastMultiSSAIdMap, it->second.regVarMap);
                     }
             }
-            else // normal block
+            else // normal block (revert changes in lastMultiSSAIdMap)
                 lastMultiSSAIdMap.insert(entry.replacedMultiSSAIds.begin(),
                                 entry.replacedMultiSSAIds.end());
             // erase at pop from selectedRoutines
@@ -971,7 +971,10 @@ struct Liveness
             l.back().second = k+1;
     }
     void newRegion(size_t k)
-    { l.push_back(std::make_pair(k, k)); }
+    {
+        if (l.empty() || l.back().first != k)
+            l.push_back(std::make_pair(k, k));
+    }
     
     bool contain(size_t t) const
     {
@@ -1050,6 +1053,12 @@ static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
     }
 }
 
+struct VRegLastPos
+{
+    size_t ssaId; // last SSA id
+    size_t blockIndex; // index
+};
+
 void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
 {
     // construct var index maps
@@ -1089,6 +1098,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     // construct vreg liveness
     std::deque<FlowStackEntry> flowStack;
     std::vector<bool> visited(codeBlocks.size(), false);
+    std::unordered_map<AsmSingleVReg, VRegLastPos> lastVRegMap;
     std::vector<Liveness> livenesses[MAX_REGTYPES_NUM];
     for (size_t i = 0; i < regTypesNum; i++)
         livenesses[i].resize(graphVregsCounts[i]);
@@ -1113,11 +1123,19 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                 std::vector<AsmSingleVReg> readSVRegs;
                 std::vector<AsmSingleVReg> writtenSVRegs;
                 
+                for (const auto& sentry: cblock.ssaInfoMap)
+                {
+                    const SSAInfo& sinfo = sentry.second;
+                    size_t lastSSAId =  (sinfo.ssaIdChange != 0) ? sinfo.ssaIdLast :
+                            (sinfo.readBeforeWrite) ? sinfo.ssaIdBefore : 0;
+                    lastVRegMap[sentry.first] = { lastSSAId, entry.blockIndex };
+                }
+                
                 usageHandler.setReadPos(cblock.usagePos);
                 // register in liveness
                 while (true)
                 {
-                    AsmRegVarUsage rvu;
+                    AsmRegVarUsage rvu = { 0U, nullptr, 0U, 0U };
                     if (usageHandler.hasNext())
                         rvu = usageHandler.nextUsage();
                     if (!usageHandler.hasNext() || rvu.offset >= oldOffset)
@@ -1136,7 +1154,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                             Liveness& lv = getLiveness(svreg, ssaIdIdx,
                                     cblock.ssaInfoMap.find(svreg)->second,
                                     livenesses, vregIndexMaps, regTypesNum, regRanges);
-                            lv.newRegion(oldOffset);
+                            lv.newRegion(oldOffset+1); // because live after this instr
                         }
                         
                         readSVRegs.clear();
