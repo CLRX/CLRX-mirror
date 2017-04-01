@@ -1021,7 +1021,7 @@ struct Liveness
 typedef AsmRegAllocator::VarIndexMap VarIndexMap;
 
 static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
-        AsmRegAllocator::SSAInfo& ssaInfo, std::vector<Liveness>* livenesses,
+        const AsmRegAllocator::SSAInfo& ssaInfo, std::vector<Liveness>* livenesses,
         const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges)
 {
     size_t ssaId;
@@ -1056,7 +1056,33 @@ static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
 struct VRegLastPos
 {
     size_t ssaId; // last SSA id
-    size_t blockIndex; // index
+    size_t firstBlock; // block index
+};
+
+struct AsmSingleVar : AsmSingleVReg
+{
+    size_t ssaId;
+};
+
+namespace std
+{
+
+/// std::hash specialization for CLRX CString
+template<>
+struct hash<AsmSingleVar>
+{
+    typedef AsmSingleVar argument_type;    ///< argument type
+    typedef std::size_t result_type;    ///< result type
+    
+    /// a calling operator
+    size_t operator()(const AsmSingleVar& r1) const
+    {
+        std::hash<CLRX::AsmSingleVReg> h1;
+        std::hash<size_t> h2;
+        return h1(r1) ^ h2(r1.ssaId);
+    }
+};
+
 };
 
 void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
@@ -1093,12 +1119,16 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                 ssaIdIndices[sinfo.ssaIdLast] = graphVregsCount++;
             }
         }
-    // add real registers
     
     // construct vreg liveness
     std::deque<FlowStackEntry> flowStack;
     std::vector<bool> visited(codeBlocks.size(), false);
+    // hold last vreg ssaId and position
     std::unordered_map<AsmSingleVReg, VRegLastPos> lastVRegMap;
+    std::unordered_map<AsmSingleVar, std::vector<Liveness> > extraLivenessesMap;
+    // hold start live time position for every code block
+    std::vector<size_t> codeBlockLiveTimes(codeBlocks.size());
+    
     std::vector<Liveness> livenesses[MAX_REGTYPES_NUM];
     for (size_t i = 0; i < regTypesNum; i++)
         livenesses[i].resize(graphVregsCounts[i]);
@@ -1107,16 +1137,19 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     size_t regTypesNum;
     assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
     
+    size_t curLiveTime = 0;
+    
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.back();
-        CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
         
         if (entry.nextIndex == 0)
         {   // process current block
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
+                codeBlockLiveTimes[entry.blockIndex] = curLiveTime;
                 std::unordered_map<AsmSingleVReg, size_t> ssaIdIdxMap;
                 
                 size_t oldOffset = cblock.usagePos.readOffset;
@@ -1128,7 +1161,12 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                     const SSAInfo& sinfo = sentry.second;
                     size_t lastSSAId =  (sinfo.ssaIdChange != 0) ? sinfo.ssaIdLast :
                             (sinfo.readBeforeWrite) ? sinfo.ssaIdBefore : 0;
-                    lastVRegMap[sentry.first] = { lastSSAId, entry.blockIndex };
+                    auto res = lastVRegMap.insert({ sentry.first, 
+                                { lastSSAId, entry.blockIndex } });
+                    if (!res.second) // if not first seen, just update
+                    {   // update last
+                        res.first->second.ssaId = lastSSAId;
+                    }
                 }
                 
                 usageHandler.setReadPos(cblock.usagePos);
@@ -1138,6 +1176,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                     AsmRegVarUsage rvu = { 0U, nullptr, 0U, 0U };
                     if (usageHandler.hasNext())
                         rvu = usageHandler.nextUsage();
+                    size_t liveTime = oldOffset - cblock.start + curLiveTime;
                     if (!usageHandler.hasNext() || rvu.offset >= oldOffset)
                     {   // apply to liveness
                         for (AsmSingleVReg svreg: readSVRegs)
@@ -1145,7 +1184,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                             Liveness& lv = getLiveness(svreg, ssaIdIdxMap[svreg],
                                     cblock.ssaInfoMap.find(svreg)->second,
                                     livenesses, vregIndexMaps, regTypesNum, regRanges);
-                            lv.expand(oldOffset);
+                            lv.expand(liveTime);
                         }
                         for (AsmSingleVReg svreg: writtenSVRegs)
                         {
@@ -1154,7 +1193,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                             Liveness& lv = getLiveness(svreg, ssaIdIdx,
                                     cblock.ssaInfoMap.find(svreg)->second,
                                     livenesses, vregIndexMaps, regTypesNum, regRanges);
-                            lv.newRegion(oldOffset+1); // because live after this instr
+                            lv.newRegion(liveTime+1); // because live after this instr
                         }
                         
                         readSVRegs.clear();
@@ -1175,6 +1214,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                             readSVRegs.push_back(svreg);
                     }
                 }
+                curLiveTime += cblock.end-cblock.start;
             }
             else
             {   // back, already visited
@@ -1193,8 +1233,24 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             entry.nextIndex++;
         }
         else // back
-        {
+        {   // revert lastSSAIdMap
+            size_t thisBlockIndex = entry.blockIndex;
             flowStack.pop_back();
+            if (!flowStack.empty())
+            {
+                for (const auto& sentry: cblock.ssaInfoMap)
+                {
+                    auto lvrit = lastVRegMap.find(sentry.first);
+                    if (lvrit != lastVRegMap.end())
+                    {
+                        if (lvrit->second.firstBlock == thisBlockIndex)
+                            // just remove from lastVRegs
+                            lastVRegMap.erase(lvrit);
+                        else // update
+                            lvrit->second.ssaId = sentry.second.ssaIdBefore;
+                    }
+                }
+            }
         }
     }
 }
