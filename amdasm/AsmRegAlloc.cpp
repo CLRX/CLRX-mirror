@@ -1091,6 +1091,17 @@ struct hash<AsmSingleVar>
 
 };
 
+/* TODO: redesign liveness to be fast and efficient without collecting extra liveness
+ * (fast adding random ranges)
+ * reduce common routine overhead by reducing size of liveness
+ * optimize common for creating interference graph
+ * (by skipping already added neighbours) */
+
+/* simple algorithm for global liveness:
+ * store all regions for in sorted form: key - start, end, value - variable
+ * find interferences by iterating and binary searching
+ */
+
 typedef std::unordered_map<AsmSingleVReg, VRegLastPos> LastVRegMap;
 typedef std::unordered_map<AsmSingleVar, std::vector<size_t> > CrossBlockLvMap;
 
@@ -1160,6 +1171,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     CrossBlockLvMap crossBlockLvMap;
     // hold start live time position for every code block
     std::vector<size_t> codeBlockLiveTimes(codeBlocks.size());
+    std::unordered_set<size_t> blockInWay;
     
     std::vector<Liveness> livenesses[MAX_REGTYPES_NUM];
     for (size_t i = 0; i < regTypesNum; i++)
@@ -1178,35 +1190,41 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
         
         if (entry.nextIndex == 0)
         {   // process current block
+            if (!blockInWay.insert(entry.blockIndex).second)
+            {   // if loop, TODO: add liveness for inner-loop variables
+                flowStack.pop_back();
+                continue;
+            }
+            
+            codeBlockLiveTimes[entry.blockIndex] = curLiveTime;
+            createCrossBlockLivenesses(flowStack, codeBlocks, lastVRegMap,
+                            crossBlockLvMap);
+            
+            for (const auto& sentry: cblock.ssaInfoMap)
+            {
+                const SSAInfo& sinfo = sentry.second;
+                // update
+                size_t lastSSAId =  (sinfo.ssaIdChange != 0) ? sinfo.ssaIdLast :
+                        (sinfo.readBeforeWrite) ? sinfo.ssaIdBefore : 0;
+                FlowStackCIter flit = flowStack.end();
+                --flit; // to last position
+                auto res = lastVRegMap.insert({ sentry.first, 
+                            { lastSSAId, { flit } } });
+                if (!res.second) // if not first seen, just update
+                {   // update last
+                    res.first->second.ssaId = lastSSAId;
+                    res.first->second.blockChain.push_back(flit);
+                }
+            }
+            
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
-                codeBlockLiveTimes[entry.blockIndex] = curLiveTime;
                 std::unordered_map<AsmSingleVReg, size_t> ssaIdIdxMap;
                 
                 size_t oldOffset = cblock.usagePos.readOffset;
                 std::vector<AsmSingleVReg> readSVRegs;
                 std::vector<AsmSingleVReg> writtenSVRegs;
-                
-                createCrossBlockLivenesses(flowStack, codeBlocks, lastVRegMap,
-                                crossBlockLvMap);
-                
-                for (const auto& sentry: cblock.ssaInfoMap)
-                {
-                    const SSAInfo& sinfo = sentry.second;
-                    // update
-                    size_t lastSSAId =  (sinfo.ssaIdChange != 0) ? sinfo.ssaIdLast :
-                            (sinfo.readBeforeWrite) ? sinfo.ssaIdBefore : 0;
-                    FlowStackCIter flit = flowStack.end();
-                    --flit; // to last position
-                    auto res = lastVRegMap.insert({ sentry.first, 
-                                { lastSSAId, { flit } } });
-                    if (!res.second) // if not first seen, just update
-                    {   // update last
-                        res.first->second.ssaId = lastSSAId;
-                        res.first->second.blockChain.push_back(flit);
-                    }
-                }
                 
                 usageHandler.setReadPos(cblock.usagePos);
                 // register in liveness
@@ -1273,6 +1291,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
         }
         else // back
         {   // revert lastSSAIdMap
+            blockInWay.erase(entry.blockIndex);
             flowStack.pop_back();
             if (!flowStack.empty())
             {
