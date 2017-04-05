@@ -329,7 +329,6 @@ private:
     std::vector<CodeBlock> codeBlocks;
     size_t regTypesNum;
     
-    std::vector<cxuint> realRegsUsed[MAX_REGTYPES_NUM];
     VarIndexMap vregIndexMaps[MAX_REGTYPES_NUM]; // indices to igraph for 2 reg types
     InterGraph interGraphs[MAX_REGTYPES_NUM]; // for 2 register types
     

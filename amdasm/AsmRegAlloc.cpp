@@ -539,6 +539,8 @@ static void joinRoutineData(LastSSAIdMap& dest, const LastSSAIdMap& src,
 {
     for (const auto& entry: src)
     {
+        if (entry.first.regVar==nullptr)
+            continue;
         auto res = dest.insert(entry); // find
         if (res.second)
             continue; // added new
@@ -628,33 +630,21 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         cbit->usagePos = usageHandler.getReadPos();
         while(true)
         {   // process rvu
-            if (rvu.regVar != nullptr)
-            { // only if regVar
-                for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
-                {
-                    auto res = cbit->ssaInfoMap.insert(
-                            { AsmSingleVReg{ rvu.regVar, rindex }, SSAInfo() });
-                    
-                    SSAInfo& sinfo = res.first->second;
-                    if (res.second)
-                        sinfo.firstPos = rvu.offset;
-                    sinfo.lastPos = rvu.offset;
-                    if ((rvu.rwFlags & ASMRVU_READ) != 0 && sinfo.ssaIdChange == 0)
-                        sinfo.readBeforeWrite = true;
-                    if (rvu.rwFlags == ASMRVU_WRITE && rvu.regField!=ASMFIELD_NONE)
-                        sinfo.ssaIdChange++;
-                }
-            }
-            else
-            {   // if real register, mark as used in code
-                size_t i; // regtype
-                for (i = 0; i < regTypesNum; i++)
-                    if (rvu.rstart >= regRanges[i<<1] && rvu.rstart < regRanges[(i<<1)+1])
-                        break;
-                // must found
-                cxuint regStartVal = regRanges[i<<1];
-                for (cxuint j = rvu.rstart; j < rvu.rend; j++)
-                    realRegsUsed[i][j - regStartVal] = realRegsCount[i]++;
+            // only if regVar
+            for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
+            {
+                auto res = cbit->ssaInfoMap.insert(
+                        { AsmSingleVReg{ rvu.regVar, rindex }, SSAInfo() });
+                
+                SSAInfo& sinfo = res.first->second;
+                if (res.second)
+                    sinfo.firstPos = rvu.offset;
+                sinfo.lastPos = rvu.offset;
+                if ((rvu.rwFlags & ASMRVU_READ) != 0 && sinfo.ssaIdChange == 0)
+                    sinfo.readBeforeWrite = true;
+                if (rvu.regVar!=nullptr && rvu.rwFlags == ASMRVU_WRITE &&
+                            rvu.regField!=ASMFIELD_NONE)
+                    sinfo.ssaIdChange++;
             }
             // get next rvusage
             if (!usageHandler.hasNext())
@@ -725,7 +715,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     for (const auto& ssaEntry: cblock.ssaInfoMap)
                     {
                         const SSAInfo& sinfo = ssaEntry.second;
-                        if (sinfo.ssaIdChange!=0)
+                        if (sinfo.ssaIdChange!=0 && ssaEntry.first.regVar!=nullptr)
                         {
                             std::vector<size_t>& ssas = regVarMap[ssaEntry.first];
                             auto lmsit = lastMultiSSAIdMap.find(ssaEntry.first);
@@ -1055,6 +1045,20 @@ struct Liveness
 
 typedef AsmRegAllocator::VarIndexMap VarIndexMap;
 
+static cxuint getRegType(size_t regTypesNum, const cxuint* regRanges,
+            const AsmSingleVReg& svreg)
+{
+    cxuint regType; // regtype
+    if (svreg.regVar!=nullptr)
+        regType = svreg.regVar->type;
+    else
+        for (regType = 0; regType < regTypesNum; regType++)
+            if (svreg.index >= regRanges[regType<<1] &&
+                svreg.index < regRanges[(regType<<1)+1])
+                break;
+    return regType;
+}
+
 static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
         const AsmRegAllocator::SSAInfo& ssaInfo, std::vector<Liveness>* livenesses,
         const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges)
@@ -1069,23 +1073,11 @@ static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
     else // last
         ssaId = ssaInfo.ssaIdLast;
     
-    if (svreg.regVar != nullptr)
-    {
-        cxuint regType = svreg.regVar->type;
-        const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-        const std::vector<size_t>& ssaIdIndices =
-                    vregIndexMap.find(svreg)->second;
-        return livenesses[regType][ssaIdIndices[ssaId]];
-    }
-    else
-    {   // real register
-        size_t i; // regtype
-        for (i = 0; i < regTypesNum; i++)
-            if (svreg.index >= regRanges[i<<1] && svreg.index < regRanges[(i<<1)+1])
-                break;
-        // must found
-        return livenesses[i][livenesses[i].size() - regRanges[(i<<1)+1] + svreg.index];
-    }
+    cxuint regType = getRegType(regTypesNum, regRanges, svreg); // regtype
+    const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+    const std::vector<size_t>& ssaIdIndices =
+                vregIndexMap.find(svreg)->second;
+    return livenesses[regType][ssaIdIndices[ssaId]];
 }
 
 typedef std::deque<FlowStackEntry>::const_iterator FlowStackCIter;
@@ -1096,15 +1088,8 @@ struct VRegLastPos
     std::vector<FlowStackCIter> blockChain; // subsequent blocks that changes SSAId
 };
 
-/* TODO: redesign liveness to be fast and efficient without collecting extra liveness
- * (fast adding random ranges)
- * reduce common routine overhead by reducing size of liveness
- * optimize common for creating interference graph
- * (by skipping already added neighbours) */
-
-/* simple algorithm for global liveness:
- * store all regions for in sorted form: key - start, end, value - variable
- * find interferences by iterating and binary searching
+/* TODO: add handling calls
+ * TODO: add handling register liveness between block (cross blocks)
  */
 
 typedef std::unordered_map<AsmSingleVReg, VRegLastPos> LastVRegMap;
@@ -1112,7 +1097,8 @@ typedef std::unordered_map<AsmSingleVReg, VRegLastPos> LastVRegMap;
 static void putCrossBlockLivenesses(const std::deque<FlowStackEntry>& flowStack,
         const std::vector<CodeBlock>& codeBlocks,
         const std::vector<size_t>& codeBlockLiveTimes, const LastVRegMap& lastVRegMap,
-        std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps)
+        std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps,
+        size_t regTypesNum, const cxuint* regRanges)
 {
     const CodeBlock& cblock = codeBlocks[flowStack.back().blockIndex];
     for (const auto& entry: cblock.ssaInfoMap)
@@ -1123,7 +1109,7 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry>& flowStack,
                 continue; // not found
             const VRegLastPos& lastPos = lvrit->second;
             FlowStackCIter flit = lastPos.blockChain.back();
-            cxuint regType = entry.first.regVar->type;
+            cxuint regType = getRegType(regTypesNum, regRanges, entry.first);
             const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
             const std::vector<size_t>& ssaIdIndices =
                         vregIndexMap.find(entry.first)->second;
@@ -1147,7 +1133,8 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry>& flowStack,
 static void putCrossBlockForLoop(const std::deque<FlowStackEntry>& flowStack,
         const std::vector<CodeBlock>& codeBlocks,
         const std::vector<size_t>& codeBlockLiveTimes,
-        std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps)
+        std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps,
+        size_t regTypesNum, const cxuint* regRanges)
 {
     auto flitStart = flowStack.end();
     --flitStart;
@@ -1186,7 +1173,7 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry>& flowStack,
                 continue;
             // just connect
             
-            cxuint regType = entry.first.regVar->type;
+            cxuint regType = getRegType(regTypesNum, regRanges, entry.first);
             const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
             const std::vector<size_t>& ssaIdIndices =
                         vregIndexMap.find(entry.first)->second;
@@ -1238,13 +1225,18 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     // construct var index maps
     size_t graphVregsCounts[MAX_REGTYPES_NUM];
     std::fill(graphVregsCounts, graphVregsCounts+regTypesNum, size_t(0));
+    cxuint regRanges[MAX_REGTYPES_NUM*2];
+    size_t regTypesNum;
+    assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
+    
     for (const CodeBlock& cblock: codeBlocks)
         for (const auto& entry: cblock.ssaInfoMap)
         {
-            VarIndexMap& vregIndices = vregIndexMaps[entry.first.regVar->type];
-            size_t& graphVregsCount = graphVregsCounts[entry.first.regVar->type];
-            std::vector<size_t>& ssaIdIndices = vregIndices[entry.first];
             const SSAInfo& sinfo = entry.second;
+            cxuint regType = getRegType(regTypesNum, regRanges, entry.first);
+            VarIndexMap& vregIndices = vregIndexMaps[regType];
+            size_t& graphVregsCount = graphVregsCounts[regType];
+            std::vector<size_t>& ssaIdIndices = vregIndices[entry.first];
             size_t ssaIdCount = 0;
             if (sinfo.readBeforeWrite)
                 ssaIdCount = sinfo.ssaIdBefore+1;
@@ -1278,11 +1270,9 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     std::unordered_set<size_t> blockInWay;
     
     std::vector<Liveness> livenesses[MAX_REGTYPES_NUM];
-    cxuint regRanges[MAX_REGTYPES_NUM*2];
-    size_t regTypesNum;
-    assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
+    
     for (size_t i = 0; i < regTypesNum; i++)
-        livenesses[i].resize(graphVregsCounts[i] + regRanges[(i<<1)+1]-regRanges[i<<1]);
+        livenesses[i].resize(graphVregsCounts[i]);
     
     size_t curLiveTime = 0;
     
@@ -1296,14 +1286,14 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             if (!blockInWay.insert(entry.blockIndex).second)
             {   // if loop
                 putCrossBlockForLoop(flowStack, codeBlocks, codeBlockLiveTimes, 
-                        livenesses, vregIndexMaps);
+                        livenesses, vregIndexMaps, regTypesNum, regRanges);
                 flowStack.pop_back();
                 continue;
             }
             
             codeBlockLiveTimes[entry.blockIndex] = curLiveTime;
             putCrossBlockLivenesses(flowStack, codeBlocks, codeBlockLiveTimes, 
-                    lastVRegMap, livenesses, vregIndexMaps);
+                    lastVRegMap, livenesses, vregIndexMaps, regTypesNum, regRanges);
             
             for (const auto& sentry: cblock.ssaInfoMap)
             {
@@ -1422,17 +1412,11 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
     codeBlocks.clear();
     for (size_t i = 0; i < MAX_REGTYPES_NUM; i++)
     {
-        realRegsUsed[i].clear();
         vregIndexMaps[i].clear();
         interGraphs[i].clear();
     }
     cxuint maxRegs[MAX_REGTYPES_NUM];
     assembler.isaAssembler->getMaxRegistersNum(regTypesNum, maxRegs);
-    for (size_t i = 0; i < regTypesNum; i++)
-    {
-        realRegsUsed[i].resize(maxRegs[i]);
-        std::fill(realRegsUsed[i].begin(), realRegsUsed[i].end(), UINT_MAX);
-    }
     
     // set up
     const AsmSection& section = assembler.sections[sectionId];
