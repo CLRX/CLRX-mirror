@@ -1084,7 +1084,6 @@ struct VRegLastPos
  */
 
 typedef std::unordered_map<AsmSingleVReg, VRegLastPos> LastVRegMap;
-//typedef std::unordered_map<AsmSingleVar, std::vector<size_t> > CrossBlockLvMap;
 
 static void putCrossBlockLivenesses(const std::deque<FlowStackEntry>& flowStack,
         const std::vector<CodeBlock>& codeBlocks,
@@ -1114,6 +1113,72 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry>& flowStack,
                 lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
             }
         }
+}
+
+static void putCrossBlockForLoop(const std::deque<FlowStackEntry>& flowStack,
+        const std::vector<CodeBlock>& codeBlocks,
+        const std::vector<size_t>& codeBlockLiveTimes,
+        std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps)
+{
+    auto flitStart = flowStack.end();
+    --flitStart;
+    size_t curBlock = flitStart->blockIndex;
+    // find step in way
+    while (flitStart->blockIndex != curBlock) --flitStart;
+    auto flitEnd = flowStack.end();
+    --flitEnd;
+    std::unordered_map<AsmSingleVReg, std::pair<size_t, size_t> > varMap;
+    
+    // collect var to check
+    size_t flowPos = 0;
+    for (auto flit = flitStart; flit != flitEnd; ++flit, flowPos++)
+    {
+        const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+        for (const auto& entry: cblock.ssaInfoMap)
+        {
+            const SSAInfo& sinfo = entry.second;
+            size_t lastSSAId = (sinfo.ssaIdChange != 0) ? sinfo.ssaIdLast :
+                    (sinfo.readBeforeWrite) ? sinfo.ssaIdBefore : 0;
+            varMap[entry.first] = { lastSSAId, flowPos };
+        }
+    }
+    // find connections
+    flowPos = 0;
+    for (auto flit = flitStart; flit != flitEnd; ++flit, flowPos++)
+    {
+        const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+        for (const auto& entry: cblock.ssaInfoMap)
+        {
+            const SSAInfo& sinfo = entry.second;
+            auto varMapIt = varMap.find(entry.first);
+            if (!sinfo.readBeforeWrite || varMapIt == varMap.end() ||
+                flowPos > varMapIt->second.second ||
+                sinfo.ssaIdBefore != varMapIt->second.first)
+                continue;
+            // just connect
+            
+            cxuint regType = entry.first.regVar->type;
+            const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+            const std::vector<size_t>& ssaIdIndices =
+                        vregIndexMap.find(entry.first)->second;
+            Liveness& lv = livenesses[regType][ssaIdIndices[entry.second.ssaIdBefore]];
+            
+            size_t flowPos2 = 0;
+            for (auto flit2 = flitStart; flowPos2 < flowPos; ++flit2, flowPos++)
+            {
+                const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
+                size_t blockLiveTime = codeBlockLiveTimes[flit2->blockIndex];
+                lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
+            }
+            for (auto flit2 = flitStart + varMapIt->second.second;
+                    flit2 != flitEnd; ++flit2)
+            {
+                const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
+                size_t blockLiveTime = codeBlockLiveTimes[flit2->blockIndex];
+                lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
+            }
+        }
+    }
 }
 
 void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
@@ -1161,12 +1226,11 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     std::unordered_set<size_t> blockInWay;
     
     std::vector<Liveness> livenesses[MAX_REGTYPES_NUM];
-    for (size_t i = 0; i < regTypesNum; i++)
-        livenesses[i].resize(graphVregsCounts[i]);
-    
     cxuint regRanges[MAX_REGTYPES_NUM*2];
     size_t regTypesNum;
     assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
+    for (size_t i = 0; i < regTypesNum; i++)
+        livenesses[i].resize(graphVregsCounts[i] + regRanges[(i<<1)+1]-regRanges[i<<1]);
     
     size_t curLiveTime = 0;
     
@@ -1179,6 +1243,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
         {   // process current block
             if (!blockInWay.insert(entry.blockIndex).second)
             {   // if loop, TODO: add liveness for inner-loop variables
+                putCrossBlockForLoop(flowStack, codeBlocks, codeBlockLiveTimes, 
+                        livenesses, vregIndexMaps);
                 flowStack.pop_back();
                 continue;
             }
