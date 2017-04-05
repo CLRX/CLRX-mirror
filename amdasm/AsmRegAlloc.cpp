@@ -23,6 +23,7 @@
 #include <vector>
 #include <utility>
 #include <unordered_set>
+#include <map>
 #include <unordered_map>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
@@ -959,26 +960,35 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
 
 struct Liveness
 {
-    std::vector<std::pair<size_t, size_t> > l;
+    std::map<size_t, size_t> l;
     
     Liveness() { }
     
     void expand(size_t k)
     {
         if (l.empty())
-            l.push_back(std::make_pair(k, k+1));
+            l.insert(std::make_pair(k, k+1));
         else
-            l.back().second = k+1;
+        {
+            auto it = l.end();
+            --it;
+            it->second = k+1;
+        }
     }
     void newRegion(size_t k)
     {
-        if (l.empty() || l.back().first != k)
-            l.push_back(std::make_pair(k, k));
+        if (l.empty() || (--l.end())->first != k)
+            l.insert(std::make_pair(k, k));
+    }
+    
+    void insert(size_t t, size_t t2)
+    {
+        l.insert(std::make_pair(t, t2));
     }
     
     bool contain(size_t t) const
     {
-        auto it = std::lower_bound(l.begin(), l.end(), std::make_pair(t, size_t(0)));
+        auto it = l.lower_bound(t);
         if (it==l.begin() && it->first>t)
             return false;
         if (it==l.end() || it->first>t)
@@ -988,30 +998,31 @@ struct Liveness
     
     bool common(const Liveness& b) const
     {
-        size_t i, j;
-        for (i = j = 0; i < l.size() && j < b.l.size();)
+        auto i = l.begin();
+        auto j = b.l.begin();
+        for (; i != l.end() && j != b.l.end();)
         {
-            if (l[i].first==l[i].second)
+            if (i->first==i->second)
             {
-                i++;
+                ++i;
                 continue;
             }
-            if (b.l[j].first==b.l[j].second)
+            if (j->first==j->second)
             {
-                j++;
+                ++j;
                 continue;
             }
-            if (l[i].first<b.l[j].first)
+            if (i->first<j->first)
             {
-                if (l[i].second > b.l[j].first)
+                if (i->second > j->first)
                     return true; // common place
-                i++;
+                ++i;
             }
             else
             {
-                if (l[i].first < b.l[j].second)
+                if (i->first < j->second)
                     return true; // common place
-                j++;
+                ++j;
             }
         }
         return false;
@@ -1061,36 +1072,6 @@ struct VRegLastPos
     std::vector<FlowStackCIter> blockChain; // subsequent blocks that changes SSAId
 };
 
-struct AsmSingleVar : AsmSingleVReg
-{
-    size_t ssaId;
-    AsmSingleVar() : ssaId(0)
-    { }
-    AsmSingleVar(AsmSingleVReg v, size_t s) : AsmSingleVReg(v), ssaId(s)
-    { }
-};
-
-namespace std
-{
-
-/// std::hash specialization for CLRX CString
-template<>
-struct hash<AsmSingleVar>
-{
-    typedef AsmSingleVar argument_type;    ///< argument type
-    typedef std::size_t result_type;    ///< result type
-    
-    /// a calling operator
-    size_t operator()(const AsmSingleVar& r1) const
-    {
-        std::hash<CLRX::AsmSingleVReg> h1;
-        std::hash<size_t> h2;
-        return h1(r1) ^ h2(r1.ssaId);
-    }
-};
-
-};
-
 /* TODO: redesign liveness to be fast and efficient without collecting extra liveness
  * (fast adding random ranges)
  * reduce common routine overhead by reducing size of liveness
@@ -1103,11 +1084,12 @@ struct hash<AsmSingleVar>
  */
 
 typedef std::unordered_map<AsmSingleVReg, VRegLastPos> LastVRegMap;
-typedef std::unordered_map<AsmSingleVar, std::vector<size_t> > CrossBlockLvMap;
+//typedef std::unordered_map<AsmSingleVar, std::vector<size_t> > CrossBlockLvMap;
 
-static void createCrossBlockLivenesses(const std::deque<FlowStackEntry>& flowStack,
-        const std::vector<CodeBlock>& codeBlocks, const LastVRegMap& lastVRegMap,
-        CrossBlockLvMap& crossBlockLvMap)
+static void putCrossBlockLivenesses(const std::deque<FlowStackEntry>& flowStack,
+        const std::vector<CodeBlock>& codeBlocks,
+        const std::vector<size_t>& codeBlockLiveTimes, const LastVRegMap& lastVRegMap,
+        std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps)
 {
     const CodeBlock& cblock = codeBlocks[flowStack.back().blockIndex];
     for (const auto& entry: cblock.ssaInfoMap)
@@ -1118,12 +1100,19 @@ static void createCrossBlockLivenesses(const std::deque<FlowStackEntry>& flowSta
                 continue; // not found
             const VRegLastPos& lastPos = lvrit->second;
             FlowStackCIter flit = lastPos.blockChain.back();
-            // put codeblocks to extra liveness
-            AsmSingleVar varKey(entry.first, entry.second.ssaIdBefore);
+            cxuint regType = entry.first.regVar->type;
+            const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+            const std::vector<size_t>& ssaIdIndices =
+                        vregIndexMap.find(entry.first)->second;
+            Liveness& lv = livenesses[regType][ssaIdIndices[entry.second.ssaIdBefore]];
             FlowStackCIter flitEnd = flowStack.end();
             --flitEnd; // before last element
             for (; flit != flitEnd; ++flit)
-                crossBlockLvMap[varKey].push_back(flit->blockIndex);
+            {
+                const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+                size_t blockLiveTime = codeBlockLiveTimes[flit->blockIndex];
+                lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
+            }
         }
 }
 
@@ -1167,8 +1156,6 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     std::vector<bool> visited(codeBlocks.size(), false);
     // hold last vreg ssaId and position
     LastVRegMap lastVRegMap;
-    // joins between rrads for every SSAVars (list of blocks to apply)
-    CrossBlockLvMap crossBlockLvMap;
     // hold start live time position for every code block
     std::vector<size_t> codeBlockLiveTimes(codeBlocks.size());
     std::unordered_set<size_t> blockInWay;
@@ -1197,8 +1184,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             }
             
             codeBlockLiveTimes[entry.blockIndex] = curLiveTime;
-            createCrossBlockLivenesses(flowStack, codeBlocks, lastVRegMap,
-                            crossBlockLvMap);
+            putCrossBlockLivenesses(flowStack, codeBlocks, codeBlockLiveTimes, 
+                    lastVRegMap, livenesses, vregIndexMaps);
             
             for (const auto& sentry: cblock.ssaInfoMap)
             {
