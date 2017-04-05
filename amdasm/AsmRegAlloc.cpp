@@ -632,8 +632,13 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             { // only if regVar
                 for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
                 {
-                    SSAInfo& sinfo = cbit->ssaInfoMap[
-                            AsmSingleVReg{ rvu.regVar, rindex }];
+                    auto res = cbit->ssaInfoMap.insert(
+                            { AsmSingleVReg{ rvu.regVar, rindex }, SSAInfo() });
+                    
+                    SSAInfo& sinfo = res.first->second;
+                    if (res.second)
+                        sinfo.firstPos = rvu.offset;
+                    sinfo.lastPos = rvu.offset;
                     if ((rvu.rwFlags & ASMRVU_READ) != 0 && sinfo.ssaIdChange == 0)
                         sinfo.readBeforeWrite = true;
                     if (rvu.rwFlags == ASMRVU_WRITE && rvu.regField!=ASMFIELD_NONE)
@@ -977,13 +982,32 @@ struct Liveness
     }
     void newRegion(size_t k)
     {
-        if (l.empty() || (--l.end())->first != k)
+        if (l.empty())
             l.insert(std::make_pair(k, k));
+        else
+        {
+            auto it = l.end();
+            --it;
+            if (it->first != k && it->second != k)
+                l.insert(std::make_pair(k, k));
+        }
     }
     
-    void insert(size_t t, size_t t2)
+    void insert(size_t k, size_t k2)
     {
-        l.insert(std::make_pair(t, t2));
+        auto it1 = l.lower_bound(k);
+        if (it1!=l.begin() && (it1==l.end() || it1->first>k))
+            --it1;
+        if (it1->second < k)
+            ++it1;
+        auto it2 = l.lower_bound(k2);
+        if (it1!=it2)
+        {
+            k = std::min(k, it1->first);
+            k2 = std::max(k2, (--it2)->second);
+            l.erase(it1, it2);
+        }
+        l.insert(std::make_pair(k, k2));
     }
     
     bool contain(size_t t) const
@@ -1106,7 +1130,12 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry>& flowStack,
             Liveness& lv = livenesses[regType][ssaIdIndices[entry.second.ssaIdBefore]];
             FlowStackCIter flitEnd = flowStack.end();
             --flitEnd; // before last element
-            for (; flit != flitEnd; ++flit)
+            // insert live time to last seen position
+            const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
+            size_t toLiveCvt = codeBlockLiveTimes[flit->blockIndex] - lastBlk.start;
+            lv.insert(lastBlk.ssaInfoMap.find(entry.first)->second.lastPos + toLiveCvt,
+                    toLiveCvt + lastBlk.end);
+            for (++flit; flit != flitEnd; ++flit)
             {
                 const CodeBlock& cblock = codeBlocks[flit->blockIndex];
                 size_t blockLiveTime = codeBlockLiveTimes[flit->blockIndex];
@@ -1163,6 +1192,17 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry>& flowStack,
                         vregIndexMap.find(entry.first)->second;
             Liveness& lv = livenesses[regType][ssaIdIndices[entry.second.ssaIdBefore]];
             
+            if (flowPos == varMapIt->second.second)
+            {   // fill whole loop
+                for (auto flit2 = flitStart; flit != flitEnd; ++flit)
+                {
+                    const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
+                    size_t blockLiveTime = codeBlockLiveTimes[flit2->blockIndex];
+                    lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
+                }
+                continue;
+            }
+            
             size_t flowPos2 = 0;
             for (auto flit2 = flitStart; flowPos2 < flowPos; ++flit2, flowPos++)
             {
@@ -1170,8 +1210,20 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry>& flowStack,
                 size_t blockLiveTime = codeBlockLiveTimes[flit2->blockIndex];
                 lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
             }
-            for (auto flit2 = flitStart + varMapIt->second.second;
-                    flit2 != flitEnd; ++flit2)
+            // insert liveness for last block in loop of last SSAId (prev round)
+            auto flit2 = flitStart + flowPos;
+            const CodeBlock& firstBlk = codeBlocks[flit2->blockIndex];
+            size_t toLiveCvt = codeBlockLiveTimes[flit2->blockIndex] - firstBlk.start;
+            lv.insert(codeBlockLiveTimes[flit2->blockIndex],
+                    firstBlk.ssaInfoMap.find(entry.first)->second.firstPos + toLiveCvt);
+            // insert liveness for first block in loop of last SSAId
+            flit2 = flitStart + (varMapIt->second.second+1);
+            const CodeBlock& lastBlk = codeBlocks[flit2->blockIndex];
+            toLiveCvt = codeBlockLiveTimes[flit2->blockIndex] - lastBlk.start;
+            lv.insert(lastBlk.ssaInfoMap.find(entry.first)->second.lastPos + toLiveCvt,
+                    toLiveCvt + lastBlk.end);
+            // fill up loop end
+            for (++flit2; flit2 != flitEnd; ++flit2)
             {
                 const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
                 size_t blockLiveTime = codeBlockLiveTimes[flit2->blockIndex];
@@ -1242,7 +1294,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
         if (entry.nextIndex == 0)
         {   // process current block
             if (!blockInWay.insert(entry.blockIndex).second)
-            {   // if loop, TODO: add liveness for inner-loop variables
+            {   // if loop
                 putCrossBlockForLoop(flowStack, codeBlocks, codeBlockLiveTimes, 
                         livenesses, vregIndexMaps);
                 flowStack.pop_back();
@@ -1300,8 +1352,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                         {
                             size_t& ssaIdIdx = ssaIdIdxMap[svreg];
                             ssaIdIdx++;
-                            Liveness& lv = getLiveness(svreg, ssaIdIdx,
-                                    cblock.ssaInfoMap.find(svreg)->second,
+                            const SSAInfo& sinfo = cblock.ssaInfoMap.find(svreg)->second;
+                            Liveness& lv = getLiveness(svreg, ssaIdIdx, sinfo,
                                     livenesses, vregIndexMaps, regTypesNum, regRanges);
                             lv.newRegion(liveTime+1); // because live after this instr
                         }

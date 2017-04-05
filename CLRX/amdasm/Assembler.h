@@ -301,6 +301,8 @@ public:
         size_t ssaId;   ///< original SSA id
         size_t ssaIdLast; ///< last SSA id in last
         size_t ssaIdChange; ///< number of SSA id changes
+        size_t firstPos;
+        size_t lastPos;
         bool readBeforeWrite;   ///< have read before write
         SSAInfo(size_t _bssaId = SIZE_MAX, size_t _ssaId = SIZE_MAX,
                 size_t _ssaIdChange = SIZE_MAX, bool _readBeforeWrite = false)
