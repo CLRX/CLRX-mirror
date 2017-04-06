@@ -639,7 +639,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 SSAInfo& sinfo = res.first->second;
                 if (res.second)
                     sinfo.firstPos = rvu.offset;
-                sinfo.lastPos = rvu.offset;
                 if ((rvu.rwFlags & ASMRVU_READ) != 0 && sinfo.ssaIdChange == 0)
                     sinfo.readBeforeWrite = true;
                 if (rvu.regVar!=nullptr && rvu.rwFlags == ASMRVU_WRITE &&
@@ -1089,7 +1088,6 @@ struct VRegLastPos
 };
 
 /* TODO: add handling calls
- * TODO: add handling register liveness between block (cross blocks)
  */
 
 typedef std::unordered_map<AsmSingleVReg, VRegLastPos> LastVRegMap;
@@ -1279,7 +1277,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.back();
-        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        CodeBlock& cblock = codeBlocks[entry.blockIndex];
         
         if (entry.nextIndex == 0)
         {   // process current block
@@ -1312,6 +1310,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                 }
             }
             
+            size_t curBlockLiveEnd = cblock.end - cblock.start + curLiveTime;
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
@@ -1326,8 +1325,13 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                 while (true)
                 {
                     AsmRegVarUsage rvu = { 0U, nullptr, 0U, 0U };
+                    size_t liveTimeNext = curBlockLiveEnd;
                     if (usageHandler.hasNext())
+                    {
                         rvu = usageHandler.nextUsage();
+                        liveTimeNext = std::min(rvu.offset, cblock.end) -
+                                cblock.start + curLiveTime;
+                    }
                     size_t liveTime = oldOffset - cblock.start + curLiveTime;
                     if (!usageHandler.hasNext() || rvu.offset >= oldOffset)
                     {   // apply to liveness
@@ -1336,16 +1340,21 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                             Liveness& lv = getLiveness(svreg, ssaIdIdxMap[svreg],
                                     cblock.ssaInfoMap.find(svreg)->second,
                                     livenesses, vregIndexMaps, regTypesNum, regRanges);
+                            if (!lv.l.empty() && (--lv.l.end())->first < curLiveTime)
+                                lv.newRegion(curLiveTime); // begin region from this block
                             lv.expand(liveTime);
                         }
                         for (AsmSingleVReg svreg: writtenSVRegs)
                         {
                             size_t& ssaIdIdx = ssaIdIdxMap[svreg];
                             ssaIdIdx++;
-                            const SSAInfo& sinfo = cblock.ssaInfoMap.find(svreg)->second;
+                            SSAInfo& sinfo = cblock.ssaInfoMap.find(svreg)->second;
                             Liveness& lv = getLiveness(svreg, ssaIdIdx, sinfo,
                                     livenesses, vregIndexMaps, regTypesNum, regRanges);
-                            lv.newRegion(liveTime+1); // because live after this instr
+                            if (liveTimeNext != curBlockLiveEnd)
+                                // because live after this instr
+                                lv.newRegion(liveTimeNext);
+                            sinfo.lastPos = liveTimeNext - curLiveTime + cblock.start;
                         }
                         
                         readSVRegs.clear();
