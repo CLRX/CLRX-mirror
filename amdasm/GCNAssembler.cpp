@@ -289,13 +289,13 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
     return { rstart, rstart+regSize };
 }
 
-void GCNUsageHandler::getUsageDependencies(size_t offset, const AsmRegVarUsage* rvus,
+void GCNUsageHandler::getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
                 cxbyte* linearDeps, cxbyte* equalToDeps) const
 {
     cxuint count = 0;
     if (rvus[0].regField>=GCNFIELD_VOP_SRC0 && rvus[0].regField<=GCNFIELD_VOP3_SDST1)
     {   // if VOPx instructions, equalTo deps for rule (only one SGPR in source)
-        for (cxuint i = 0; i < 6; i++)
+        for (cxuint i = 0; i < rvusNum; i++)
         {
             const AsmRegField rf = rvus[i].regField;
             if (rf == GCNFIELD_VOP_SRC0 || rf == GCNFIELD_VOP_VSRC1 ||
@@ -313,7 +313,7 @@ void GCNUsageHandler::getUsageDependencies(size_t offset, const AsmRegVarUsage* 
     }
     // linear dependencies (join fields)
     count = 0;
-    for (cxuint i = 0; i < 6; i++)
+    for (cxuint i = 0; i < rvusNum; i++)
     {
         const AsmRegField rf = rvus[i].regField;
         if (rf == GCNFIELD_M_VDATA || rf == GCNFIELD_M_VDATAH ||

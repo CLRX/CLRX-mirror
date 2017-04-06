@@ -181,6 +181,7 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
         pushedArgs = instrStruct[instrStructPos++];
         argFlags = instrStruct[instrStructPos];
     }
+    rvu.useRegMode = useRegMode; // no ArgPos
     
     if ((instrStruct[instrStructPos] & (1U << (argPos&7))) != 0)
     {   // regvar usage
@@ -1237,6 +1238,93 @@ struct LiveBlock
             (end<b.end || (end==b.end && vidx<b.vidx))); }
 };
 
+typedef AsmRegAllocator::LinearDep LinearDep;
+
+static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNum,
+            const AsmRegVarUsage* rvus, std::vector<LinearDep>* ldepsOut,
+            std::vector<Array<size_t> >* edepsOut, const VarIndexMap* vregIndexMaps,
+            std::unordered_map<AsmSingleVReg, size_t> ssaIdIdxMap,
+            size_t regTypesNum, const cxuint* regRanges)
+{
+    // add linear deps
+    cxuint count = ldeps[0];
+    cxuint pos = 1;
+    cxbyte rvuAdded = 0;
+    for (cxuint i = 0; i < count; i++)
+    {
+        cxuint ccount = ldeps[pos++];
+        std::vector<size_t> vidxes;
+        cxuint regType = UINT_MAX;
+        cxbyte align = rvus[ldeps[pos]].align;
+        for (cxuint j = 0; j < ccount; j++)
+        {
+            rvuAdded |= 1U<<ldeps[pos];
+            const AsmRegVarUsage& rvu = rvus[ldeps[pos++]];
+            for (uint16_t k = rvu.rstart; k < rvu.rend; k++)
+            {
+                AsmSingleVReg svreg = {rvu.regVar, k};
+                auto sit = ssaIdIdxMap.find(svreg);
+                if (regType==UINT_MAX)
+                    regType = getRegType(regTypesNum, regRanges, svreg);
+                const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+                const std::vector<size_t>& ssaIdIndices =
+                            vregIndexMap.find(svreg)->second;
+                // push variable index
+                vidxes.push_back(ssaIdIndices[sit->second]);
+            }
+        }
+        ldepsOut[regType].push_back(LinearDep{
+                align, Array<size_t>(vidxes.begin(), vidxes.end()) });
+    }
+    // add single arg linear dependencies
+    for (cxuint i = 0; i < rvusNum; i++)
+        if ((rvuAdded & (1U<<i)) == 0 && rvus[i].rstart+1<rvus[i].rend)
+        {
+            const AsmRegVarUsage& rvu = rvus[i];
+            std::vector<size_t> vidxes;
+            cxuint regType = UINT_MAX;
+            for (uint16_t k = rvu.rstart; k < rvu.rend; k++)
+            {
+                AsmSingleVReg svreg = {rvu.regVar, k};
+                auto sit = ssaIdIdxMap.find(svreg);
+                if (regType==UINT_MAX)
+                    regType = getRegType(regTypesNum, regRanges, svreg);
+                const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+                const std::vector<size_t>& ssaIdIndices =
+                            vregIndexMap.find(svreg)->second;
+                // push variable index
+                vidxes.push_back(ssaIdIndices[sit->second]);
+            }
+            ldepsOut[regType].push_back(LinearDep{ rvu.align,
+                        Array<size_t>(vidxes.begin(), vidxes.end()) });
+        }
+        
+    /* equalTo dependencies */
+    count = edeps[0];
+    pos = 1;
+    for (cxuint i = 0; i < count; i++)
+    {
+        cxuint ccount = edeps[pos++];
+        std::vector<size_t> vidxes;
+        cxuint regType = UINT_MAX;
+        for (cxuint j = 0; j < ccount; j++)
+        {
+            const AsmRegVarUsage& rvu = rvus[edeps[pos++]];
+            // only one register should be set for equalTo depencencies
+            // other registers in range will be resolved by linear dependencies
+            AsmSingleVReg svreg = {rvu.regVar, rvu.rstart};
+            auto sit = ssaIdIdxMap.find(svreg);
+            if (regType==UINT_MAX)
+                regType = getRegType(regTypesNum, regRanges, svreg);
+            const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+            const std::vector<size_t>& ssaIdIndices =
+                        vregIndexMap.find(svreg)->second;
+            // push variable index
+            vidxes.push_back(ssaIdIndices[sit->second]);
+        }
+    }
+}
+
 void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
 {
     // construct var index maps
@@ -1334,6 +1422,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             {
                 visited[entry.blockIndex] = true;
                 std::unordered_map<AsmSingleVReg, size_t> ssaIdIdxMap;
+                AsmRegVarUsage instrRVUs[8];
+                cxuint instrRVUsCount = 0;
                 
                 size_t oldOffset = cblock.usagePos.readOffset;
                 std::vector<AsmSingleVReg> readSVRegs;
@@ -1348,6 +1438,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                     if (usageHandler.hasNext())
                     {
                         rvu = usageHandler.nextUsage();
+                        if (!rvu.useRegMode)
+                            instrRVUs[instrRVUsCount++] = rvu;
                         liveTimeNext = std::min(rvu.offset, cblock.end) -
                                 cblock.start + curLiveTime;
                     }
@@ -1375,12 +1467,22 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                                 lv.newRegion(liveTimeNext);
                             sinfo.lastPos = liveTimeNext - curLiveTime + cblock.start;
                         }
+                        // get linear deps and equal to
+                        cxbyte lDeps[16];
+                        cxbyte eDeps[16];
+                        usageHandler.getUsageDependencies(instrRVUsCount, instrRVUs,
+                                        lDeps, eDeps);
+                        
+                        addUsageDeps(lDeps, eDeps, instrRVUsCount, instrRVUs,
+                                linearDeps, equalToDeps, vregIndexMaps, ssaIdIdxMap,
+                                regTypesNum, regRanges);
                         
                         readSVRegs.clear();
                         writtenSVRegs.clear();
                         if (!usageHandler.hasNext())
                             break; // end
                         oldOffset = rvu.offset;
+                        instrRVUsCount = 0;
                     }
                     if (rvu.offset >= cblock.end)
                         break;

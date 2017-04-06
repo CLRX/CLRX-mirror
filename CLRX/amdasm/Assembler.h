@@ -58,8 +58,6 @@ enum: Flags
 
 struct AsmRegVar;
 
-/* TODO: add some mechanism to resolve dependencies between register in single instruction
- * like, the same SGPR register, this same register in two fields, etc */
 /// ISA (register and regvar) Usage handler
 class ISAUsageHandler
 {
@@ -140,8 +138,8 @@ public:
     virtual std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField,
                     cxbyte rwFlags) const = 0;
     // get usage dependencies around single instruction
-    virtual void getUsageDependencies(size_t offset, const AsmRegVarUsage* rvus,
-                cxbyte* linearDeps, cxbyte* equalToDeps) const = 0;
+    virtual void getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
+                    cxbyte* linearDeps, cxbyte* equalToDeps) const = 0;
 };
 
 /// GCN (register and regvar) Usage handler
@@ -160,8 +158,8 @@ public:
     
     cxbyte getRwFlags(AsmRegField regFied, uint16_t rstart, uint16_t rend) const;
     std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField, cxbyte rwFlags) const;
-    void getUsageDependencies(size_t offset, const AsmRegVarUsage* rvus,
-                cxbyte* linearDeps, cxbyte* equalToDeps) const;
+    void getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
+                    cxbyte* linearDeps, cxbyte* equalToDeps) const;
 };
 
 /// ISA assembler class
@@ -324,6 +322,11 @@ public:
     // interference graph type
     typedef std::vector<std::unordered_set<size_t> > InterGraph;
     typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > VarIndexMap;
+    struct LinearDep
+    {
+        cxbyte align;
+        Array<size_t> vidxes;
+    };
 private:
     Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
@@ -331,6 +334,8 @@ private:
     
     VarIndexMap vregIndexMaps[MAX_REGTYPES_NUM]; // indices to igraph for 2 reg types
     InterGraph interGraphs[MAX_REGTYPES_NUM]; // for 2 register types
+    std::vector<LinearDep> linearDeps[MAX_REGTYPES_NUM];
+    std::vector<Array<size_t> > equalToDeps[MAX_REGTYPES_NUM];
     
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);
