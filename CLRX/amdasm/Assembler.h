@@ -322,7 +322,7 @@ public:
         ISAUsageHandler::ReadPos usagePos;
     };
     // interference graph type
-    typedef std::vector<std::vector<size_t> > InterGraph;
+    typedef std::vector<std::unordered_set<size_t> > InterGraph;
     typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > VarIndexMap;
 private:
     Assembler& assembler;

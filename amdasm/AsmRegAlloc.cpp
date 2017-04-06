@@ -24,6 +24,8 @@
 #include <utility>
 #include <unordered_set>
 #include <map>
+#include <set>
+#include <tuple>
 #include <unordered_map>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
@@ -958,6 +960,9 @@ struct Liveness
     
     Liveness() { }
     
+    void clear()
+    { l.clear(); }
+    
     void expand(size_t k)
     {
         if (l.empty())
@@ -1218,6 +1223,9 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry>& flowStack,
     }
 }
 
+// liveblock: first - live start, second - live end, third - vreg index
+typedef std::tuple<size_t, size_t, size_t> LiveBlock;
+
 void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
 {
     // construct var index maps
@@ -1412,6 +1420,63 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                     }
                 }
             }
+        }
+    }
+    
+    /// construct liveBlockMaps
+    std::set<LiveBlock> liveBlockMaps[MAX_REGTYPES_NUM];
+    for (size_t regType = 0; regType < regTypesNum; regType++)
+    {
+        std::set<LiveBlock>& liveBlockMap = liveBlockMaps[regType];
+        std::vector<Liveness>& liveness = livenesses[regType];
+        for (size_t li = 0; li < liveness.size(); li++)
+        {
+            Liveness& lv = liveness[li];
+            for (const std::pair<size_t, size_t>& blk: lv.l)
+                if (blk.first != blk.second)
+                    liveBlockMap.insert(LiveBlock(blk.first, blk.second, li));
+            lv.clear();
+        }
+        liveness.clear();
+    }
+    
+    // create interference graphs
+    for (size_t regType = 0; regType < regTypesNum; regType++)
+    {
+        InterGraph& interGraph = interGraphs[regType];
+        interGraph.resize(graphVregsCounts[regType]);
+        std::set<LiveBlock>& liveBlockMap = liveBlockMaps[regType];
+        
+        auto lit = liveBlockMap.begin();
+        size_t rangeStart = 0;
+        if (lit != liveBlockMap.end())
+            rangeStart = std::get<0>(*lit);
+        while (lit != liveBlockMap.end())
+        {
+            const size_t blkStart = std::get<0>(*lit);
+            const size_t blkEnd = std::get<1>(*lit);
+            size_t rangeEnd = blkEnd;
+            auto liStart = liveBlockMap.lower_bound(LiveBlock(rangeStart, 0, 0));
+            auto liEnd = liveBlockMap.lower_bound(LiveBlock(rangeEnd, 0, 0));
+            // collect from this range, variable indices
+            std::set<size_t> varIndices;
+            for (auto lit2 = liStart; lit2 != liEnd; ++lit2)
+                varIndices.insert(std::get<2>(*lit2));
+            // push to intergraph as full subgGraph
+            for (auto vit = varIndices.begin(); vit != varIndices.end(); ++vit)
+            {
+                auto vit2 = vit;
+                for (++vit2; vit2 != varIndices.end(); ++vit2)
+                    interGraph[*vit].insert(*vit2);
+            }
+            // go to next live blocks
+            rangeStart = rangeEnd;
+            for (; lit != liveBlockMap.end(); ++lit)
+                if (std::get<0>(*lit) != blkStart && std::get<1>(*lit) != blkEnd)
+                    break;
+            if (lit == liveBlockMap.end())
+                break; // 
+            rangeStart = std::max(rangeStart, std::get<0>(*lit));
         }
     }
 }
