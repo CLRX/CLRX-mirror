@@ -25,7 +25,6 @@
 #include <unordered_set>
 #include <map>
 #include <set>
-#include <tuple>
 #include <unordered_map>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
@@ -1093,6 +1092,7 @@ struct VRegLastPos
 };
 
 /* TODO: add handling calls
+ * handle many start points in this code (for example many kernel's in same code)
  */
 
 typedef std::unordered_map<AsmSingleVReg, VRegLastPos> LastVRegMap;
@@ -1223,8 +1223,19 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry>& flowStack,
     }
 }
 
-// liveblock: first - live start, second - live end, third - vreg index
-typedef std::tuple<size_t, size_t, size_t> LiveBlock;
+struct LiveBlock
+{
+    size_t start;
+    size_t end;
+    size_t vidx;
+    
+    bool operator==(const LiveBlock& b) const
+    { return start==b.start && end==b.end && vidx==b.vidx; }
+    
+    bool operator<(const LiveBlock& b) const
+    { return start<b.start || (start==b.start &&
+            (end<b.end || (end==b.end && vidx<b.vidx))); }
+};
 
 void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
 {
@@ -1434,7 +1445,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             Liveness& lv = liveness[li];
             for (const std::pair<size_t, size_t>& blk: lv.l)
                 if (blk.first != blk.second)
-                    liveBlockMap.insert(LiveBlock(blk.first, blk.second, li));
+                    liveBlockMap.insert({ blk.first, blk.second, li });
             lv.clear();
         }
         liveness.clear();
@@ -1450,18 +1461,18 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
         auto lit = liveBlockMap.begin();
         size_t rangeStart = 0;
         if (lit != liveBlockMap.end())
-            rangeStart = std::get<0>(*lit);
+            rangeStart = lit->start;
         while (lit != liveBlockMap.end())
         {
-            const size_t blkStart = std::get<0>(*lit);
-            const size_t blkEnd = std::get<1>(*lit);
+            const size_t blkStart = lit->start;
+            const size_t blkEnd = lit->end;
             size_t rangeEnd = blkEnd;
-            auto liStart = liveBlockMap.lower_bound(LiveBlock(rangeStart, 0, 0));
-            auto liEnd = liveBlockMap.lower_bound(LiveBlock(rangeEnd, 0, 0));
+            auto liStart = liveBlockMap.lower_bound({ rangeStart, 0, 0 });
+            auto liEnd = liveBlockMap.lower_bound({ rangeEnd, 0, 0 });
             // collect from this range, variable indices
             std::set<size_t> varIndices;
             for (auto lit2 = liStart; lit2 != liEnd; ++lit2)
-                varIndices.insert(std::get<2>(*lit2));
+                varIndices.insert(lit2->vidx);
             // push to intergraph as full subgGraph
             for (auto vit = varIndices.begin(); vit != varIndices.end(); ++vit)
             {
@@ -1472,11 +1483,11 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             // go to next live blocks
             rangeStart = rangeEnd;
             for (; lit != liveBlockMap.end(); ++lit)
-                if (std::get<0>(*lit) != blkStart && std::get<1>(*lit) != blkEnd)
+                if (lit->start != blkStart && lit->end != blkEnd)
                     break;
             if (lit == liveBlockMap.end())
                 break; // 
-            rangeStart = std::max(rangeStart, std::get<0>(*lit));
+            rangeStart = std::max(rangeStart, lit->start);
         }
     }
 }
@@ -1496,4 +1507,5 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
     const AsmSection& section = assembler.sections[sectionId];
     createCodeStructure(section.codeFlow, section.content.size(), section.content.data());
     createSSAData(*section.usageHandler);
+    createInterferenceGraph(*section.usageHandler);
 }
