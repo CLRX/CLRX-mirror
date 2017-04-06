@@ -341,6 +341,7 @@ private:
              size_t codeSize, const cxbyte* code);
     void createSSAData(ISAUsageHandler& usageHandler);
     void createInterferenceGraph(ISAUsageHandler& usageHandler);
+    void colorInterferenceGraph();
 public:
     AsmRegAllocator(Assembler& assembler);
     

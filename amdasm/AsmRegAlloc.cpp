@@ -1094,6 +1094,7 @@ struct VRegLastPos
 
 /* TODO: add handling calls
  * handle many start points in this code (for example many kernel's in same code)
+ * replace sets by vector, and sort and remove same values on demand
  */
 
 typedef std::unordered_map<AsmSingleVReg, VRegLastPos> LastVRegMap;
@@ -1322,6 +1323,7 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
             // push variable index
             vidxes.push_back(ssaIdIndices[sit->second]);
         }
+        edepsOut[regType].push_back(Array<size_t>(vidxes.begin(), vidxes.end()));
     }
 }
 
@@ -1592,6 +1594,10 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             rangeStart = std::max(rangeStart, lit->start);
         }
     }
+}
+
+void AsmRegAllocator::colorInterferenceGraph()
+{
 }
 
 void AsmRegAllocator::allocateRegisters(cxuint sectionId)
