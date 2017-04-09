@@ -1101,7 +1101,7 @@ typedef std::unordered_map<AsmSingleVReg, VRegLastPos> LastVRegMap;
 
 static void putCrossBlockLivenesses(const std::deque<FlowStackEntry>& flowStack,
         const std::vector<CodeBlock>& codeBlocks,
-        const std::vector<size_t>& codeBlockLiveTimes, const LastVRegMap& lastVRegMap,
+        const Array<size_t>& codeBlockLiveTimes, const LastVRegMap& lastVRegMap,
         std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps,
         size_t regTypesNum, const cxuint* regRanges)
 {
@@ -1137,7 +1137,7 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry>& flowStack,
 
 static void putCrossBlockForLoop(const std::deque<FlowStackEntry>& flowStack,
         const std::vector<CodeBlock>& codeBlocks,
-        const std::vector<size_t>& codeBlockLiveTimes,
+        const Array<size_t>& codeBlockLiveTimes,
         std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps,
         size_t regTypesNum, const cxuint* regRanges)
 {
@@ -1387,7 +1387,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     // hold last vreg ssaId and position
     LastVRegMap lastVRegMap;
     // hold start live time position for every code block
-    std::vector<size_t> codeBlockLiveTimes(codeBlocks.size());
+    Array<size_t> codeBlockLiveTimes(codeBlocks.size());
     std::unordered_set<size_t> blockInWay;
     
     std::vector<Liveness> livenesses[MAX_REGTYPES_NUM];
@@ -1593,11 +1593,9 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                 varIndices.insert(lit2->vidx);
             // push to intergraph as full subgGraph
             for (auto vit = varIndices.begin(); vit != varIndices.end(); ++vit)
-            {
-                auto vit2 = vit;
-                for (++vit2; vit2 != varIndices.end(); ++vit2)
-                    interGraph[*vit].insert(*vit2);
-            }
+                for (auto vit2 = varIndices.begin(); vit2 != varIndices.end(); ++vit2)
+                    if (vit != vit2)
+                        interGraph[*vit].insert(*vit2);
             // go to next live blocks
             rangeStart = rangeEnd;
             for (; lit != liveBlockMap.end(); ++lit)
@@ -1610,8 +1608,88 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
     }
 }
 
+typedef AsmRegAllocator::InterGraph InterGraph;
+
+struct CLRX_INTERNAL SDOLDOCompare
+{
+    const InterGraph& interGraph;
+    const Array<size_t>& sdoCounts;
+    
+    SDOLDOCompare(const InterGraph& _interGraph, const Array<size_t>&_sdoCounts)
+        : interGraph(_interGraph), sdoCounts(_sdoCounts)
+    { }
+    
+    bool operator()(cxuint a, cxuint b) const
+    {
+        if (sdoCounts[a] > sdoCounts[b])
+            return true;
+        return interGraph[a].size() > interGraph[b].size();
+    }
+};
+
 void AsmRegAllocator::colorInterferenceGraph()
 {
+    for (size_t regType = 0; regType < regTypesNum; regType++)
+    {
+        InterGraph& interGraph = interGraphs[regType];
+        Array<cxuint>& gcMap = graphColorMaps[regType];
+        const size_t nodesNum = interGraph.size();
+        gcMap.resize(nodesNum);
+        std::fill(gcMap.begin(), gcMap.end(), cxuint(UINT_MAX));
+        Array<size_t> sdoCounts(nodesNum);
+        std::fill(sdoCounts.begin(), sdoCounts.end(), size_t(0));
+        
+        SDOLDOCompare compare(interGraph, sdoCounts);
+        std::set<size_t, SDOLDOCompare> nodeSet(compare);
+        for (size_t i = 0; i < nodesNum; i++)
+            nodeSet.insert(i);
+        
+        cxuint color = 0;
+        for (size_t colored = 0; colored < nodesNum; colored++)
+        {
+            size_t node = *nodeSet.begin();
+            // can color with this color
+            for (size_t nb: interGraph[node])
+                if (gcMap[nb] == color)
+                {
+                    color++; // new color
+                    break;
+                }
+            
+            nodeSet.erase(node);
+            // update SDO for node
+            bool colorExists = false;
+            for (size_t nb: interGraph[node])
+                if (gcMap[nb] == color)
+                {
+                    colorExists = true;
+                    break;
+                }
+            if (!colorExists)
+                sdoCounts[node]++;
+            // update SDO for neighbors
+            for (size_t nb: interGraph[node])
+            {
+                colorExists = false;
+                for (size_t nb2: interGraph[nb])
+                    if (gcMap[nb2] == color)
+                    {
+                        colorExists = true;
+                        break;
+                        
+                    }
+                if (!colorExists)
+                {
+                    if (gcMap[nb] == UINT_MAX)
+                        nodeSet.erase(nb);  // before update we erase from nodeSet
+                    sdoCounts[nb]++;
+                    if (gcMap[nb] == UINT_MAX)
+                        nodeSet.insert(nb); // after update, insert again
+                }
+            }
+            gcMap[node] = color;
+        }
+    }
 }
 
 void AsmRegAllocator::allocateRegisters(cxuint sectionId)
@@ -1621,6 +1699,9 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
     {
         vregIndexMaps[i].clear();
         interGraphs[i].clear();
+        linearDeps[i].clear();
+        equalToDeps[i].clear();
+        graphColorMaps[i].clear();
     }
     cxuint maxRegs[MAX_REGTYPES_NUM];
     assembler.isaAssembler->getMaxRegistersNum(regTypesNum, maxRegs);

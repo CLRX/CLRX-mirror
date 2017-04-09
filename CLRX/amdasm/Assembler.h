@@ -320,7 +320,7 @@ public:
         ISAUsageHandler::ReadPos usagePos;
     };
     // interference graph type
-    typedef std::vector<std::unordered_set<size_t> > InterGraph;
+    typedef Array<std::unordered_set<size_t> > InterGraph;
     typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > VarIndexMap;
     struct LinearDep
     {
@@ -339,7 +339,8 @@ private:
     size_t regTypesNum;
     
     VarIndexMap vregIndexMaps[MAX_REGTYPES_NUM]; // indices to igraph for 2 reg types
-    InterGraph interGraphs[MAX_REGTYPES_NUM]; // for 2 register types
+    InterGraph interGraphs[MAX_REGTYPES_NUM]; // for 2 register 
+    Array<cxuint> graphColorMaps[MAX_REGTYPES_NUM];
     std::unordered_map<size_t, LinearDep> linearDeps[MAX_REGTYPES_NUM];
     std::unordered_map<size_t, EqualToDep> equalToDeps[MAX_REGTYPES_NUM];
     
