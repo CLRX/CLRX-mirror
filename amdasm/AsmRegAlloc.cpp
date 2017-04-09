@@ -1644,17 +1644,26 @@ void AsmRegAllocator::colorInterferenceGraph()
         for (size_t i = 0; i < nodesNum; i++)
             nodeSet.insert(i);
         
-        cxuint color = 0;
+        cxuint colorsNum = 0;
         for (size_t colored = 0; colored < nodesNum; colored++)
         {
             size_t node = *nodeSet.begin();
             // can color with this color
-            for (size_t nb: interGraph[node])
-                if (gcMap[nb] == color)
-                {
-                    color++; // new color
+            size_t color = 0;
+            for (color = 0; color <= colorsNum; color++)
+            {
+                bool thisSame = false;
+                for (size_t nb: interGraph[node])
+                    if (gcMap[nb] == color)
+                    {
+                        thisSame = true;
+                        break;
+                    }
+                if (!thisSame)
                     break;
-                }
+            }
+            if (color==colorsNum)
+                colorsNum++;
             
             nodeSet.erase(node);
             // update SDO for node
