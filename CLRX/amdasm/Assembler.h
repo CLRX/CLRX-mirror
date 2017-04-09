@@ -341,8 +341,10 @@ private:
     VarIndexMap vregIndexMaps[MAX_REGTYPES_NUM]; // indices to igraph for 2 reg types
     InterGraph interGraphs[MAX_REGTYPES_NUM]; // for 2 register 
     Array<cxuint> graphColorMaps[MAX_REGTYPES_NUM];
-    std::unordered_map<size_t, LinearDep> linearDeps[MAX_REGTYPES_NUM];
-    std::unordered_map<size_t, EqualToDep> equalToDeps[MAX_REGTYPES_NUM];
+    std::unordered_map<size_t, LinearDep> linearDepMaps[MAX_REGTYPES_NUM];
+    std::unordered_map<size_t, EqualToDep> equalToDepMaps[MAX_REGTYPES_NUM];
+    std::unordered_map<size_t, size_t> equalSetMaps[MAX_REGTYPES_NUM];
+    std::vector<std::vector<size_t> > equalSetLists[MAX_REGTYPES_NUM];
     
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);

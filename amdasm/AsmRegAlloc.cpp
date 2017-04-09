@@ -1341,6 +1341,14 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
     }
 }
 
+typedef std::unordered_map<size_t, EqualToDep>::const_iterator EqualToDepMapCIter;
+
+struct EqualStackEntry
+{
+    EqualToDepMapCIter etoDepIt;
+    size_t nextIdx; // over nextVidxes size, then prevVidxes[nextIdx-nextVidxes.size()]
+};
+
 void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
 {
     // construct var index maps
@@ -1490,7 +1498,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                                         lDeps, eDeps);
                         
                         addUsageDeps(lDeps, eDeps, instrRVUsCount, instrRVUs,
-                                linearDeps, equalToDeps, vregIndexMaps, ssaIdIdxMap,
+                                linearDepMaps, equalToDepMaps, vregIndexMaps, ssaIdIdxMap,
                                 regTypesNum, regRanges);
                         
                         readSVRegs.clear();
@@ -1606,6 +1614,76 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             rangeStart = std::max(rangeStart, lit->start);
         }
     }
+    
+    /*
+     * resolve equalSets
+     */
+    for (cxuint regType = 0; regType < regTypesNum; regType++)
+    {
+        InterGraph& interGraph = interGraphs[regType];
+        const size_t nodesNum = interGraph.size();
+        const std::unordered_map<size_t, EqualToDep>& etoDepMap = equalToDepMaps[regType];
+        std::vector<bool> visited(nodesNum, false);
+        std::vector<std::vector<size_t> >& equalSetList = equalSetLists[regType];
+        
+        for (size_t v = 0; v < nodesNum;)
+        {
+            auto it = etoDepMap.find(v);
+            if (it == etoDepMap.end())
+            {   // is not regvar in equalTo dependencies
+                v++;
+                continue;
+            }
+            
+            std::stack<EqualStackEntry> etoStack;
+            etoStack.push(EqualStackEntry{ it, size_t(0) });
+            
+            std::unordered_map<size_t, size_t>& equalSetMap =  equalSetMaps[regType];
+            const size_t equalSetIndex = equalSetList.size();
+            equalSetList.push_back(std::vector<size_t>());
+            std::vector<size_t>& equalSet = equalSetList.back();
+            
+            // traverse by this
+            while (!etoStack.empty())
+            {
+                EqualStackEntry& entry = etoStack.top();
+                size_t vidx = entry.etoDepIt->first; // node index, vreg index
+                const EqualToDep& eToDep = entry.etoDepIt->second;
+                if (entry.nextIdx == 0)
+                {
+                    if (!visited[vidx])
+                    {   // push to this equalSet
+                        equalSetMap.insert({ vidx, equalSetIndex });
+                        equalSet.push_back(vidx);
+                    }
+                    else
+                    {   // already visited
+                        etoStack.pop();
+                        continue;
+                    }
+                }
+                
+                if (entry.nextIdx < eToDep.nextVidxes.size())
+                {
+                    auto nextIt = etoDepMap.find(eToDep.nextVidxes[entry.nextIdx]);
+                    etoStack.push(EqualStackEntry{ nextIt, 0 });
+                    entry.nextIdx++;
+                }
+                else if (entry.nextIdx < eToDep.nextVidxes.size()+eToDep.prevVidxes.size())
+                {
+                    auto nextIt = etoDepMap.find(eToDep.prevVidxes[
+                                entry.nextIdx - eToDep.nextVidxes.size()]);
+                    etoStack.push(EqualStackEntry{ nextIt, 0 });
+                    entry.nextIdx++;
+                }
+                else
+                    etoStack.pop();
+            }
+            
+            // to first already added node (var)
+            while (v < nodesNum && !visited[v]) v++;
+        }
+    }
 }
 
 typedef AsmRegAllocator::InterGraph InterGraph;
@@ -1633,6 +1711,9 @@ void AsmRegAllocator::colorInterferenceGraph()
     {
         InterGraph& interGraph = interGraphs[regType];
         Array<cxuint>& gcMap = graphColorMaps[regType];
+        const std::vector<std::vector<size_t> >& equalSetList = equalSetLists[regType];
+        const std::unordered_map<size_t, size_t>& equalSetMap =  equalSetMaps[regType];
+        
         const size_t nodesNum = interGraph.size();
         gcMap.resize(nodesNum);
         std::fill(gcMap.begin(), gcMap.end(), cxuint(UINT_MAX));
@@ -1648,10 +1729,18 @@ void AsmRegAllocator::colorInterferenceGraph()
         for (size_t colored = 0; colored < nodesNum; colored++)
         {
             size_t node = *nodeSet.begin();
-            // can color with this color
+            if (gcMap[node] != UINT_MAX)
+                continue; // already colored
             size_t color = 0;
+            std::vector<size_t> equalNodes;
+            equalNodes.push_back(node); // only one node, if equalSet not found
+            auto equalSetMapIt = equalSetMap.find(node);
+            if (equalSetMapIt != equalSetMap.end())
+                // found, get equal set from equalSetList
+                equalNodes = equalSetList[equalSetMapIt->second];
+            
             for (color = 0; color <= colorsNum; color++)
-            {
+            {   // find first usable color
                 bool thisSame = false;
                 for (size_t nb: interGraph[node])
                     if (gcMap[nb] == color)
@@ -1662,41 +1751,47 @@ void AsmRegAllocator::colorInterferenceGraph()
                 if (!thisSame)
                     break;
             }
-            if (color==colorsNum)
+            if (color==colorsNum) // add new color if needed
                 colorsNum++;
             
-            nodeSet.erase(node);
+            for (size_t nextNode: equalNodes)
+                gcMap[nextNode] = color;
             // update SDO for node
             bool colorExists = false;
-            for (size_t nb: interGraph[node])
-                if (gcMap[nb] == color)
-                {
-                    colorExists = true;
-                    break;
-                }
-            if (!colorExists)
-                sdoCounts[node]++;
-            // update SDO for neighbors
-            for (size_t nb: interGraph[node])
+            for (size_t node: equalNodes)
             {
-                colorExists = false;
-                for (size_t nb2: interGraph[nb])
-                    if (gcMap[nb2] == color)
+                for (size_t nb: interGraph[node])
+                    if (gcMap[nb] == color)
                     {
                         colorExists = true;
                         break;
-                        
                     }
                 if (!colorExists)
-                {
-                    if (gcMap[nb] == UINT_MAX)
-                        nodeSet.erase(nb);  // before update we erase from nodeSet
-                    sdoCounts[nb]++;
-                    if (gcMap[nb] == UINT_MAX)
-                        nodeSet.insert(nb); // after update, insert again
-                }
+                    sdoCounts[node]++;
             }
-            gcMap[node] = color;
+            // update SDO for neighbors
+            for (size_t node: equalNodes)
+                for (size_t nb: interGraph[node])
+                {
+                    colorExists = false;
+                    for (size_t nb2: interGraph[nb])
+                        if (gcMap[nb2] == color)
+                        {
+                            colorExists = true;
+                            break;
+                        }
+                    if (!colorExists)
+                    {
+                        if (gcMap[nb] == UINT_MAX)
+                            nodeSet.erase(nb);  // before update we erase from nodeSet
+                        sdoCounts[nb]++;
+                        if (gcMap[nb] == UINT_MAX)
+                            nodeSet.insert(nb); // after update, insert again
+                    }
+                }
+            
+            for (size_t nextNode: equalNodes)
+                gcMap[nextNode] = color;
         }
     }
 }
@@ -1708,9 +1803,11 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
     {
         vregIndexMaps[i].clear();
         interGraphs[i].clear();
-        linearDeps[i].clear();
-        equalToDeps[i].clear();
+        linearDepMaps[i].clear();
+        equalToDepMaps[i].clear();
         graphColorMaps[i].clear();
+        equalSetMaps[i].clear();
+        equalSetLists[i].clear();
     }
     cxuint maxRegs[MAX_REGTYPES_NUM];
     assembler.isaAssembler->getMaxRegistersNum(regTypesNum, maxRegs);
