@@ -1240,10 +1240,13 @@ struct LiveBlock
 };
 
 typedef AsmRegAllocator::LinearDep LinearDep;
+typedef AsmRegAllocator::EqualToDep EqualToDep;
+typedef std::unordered_map<size_t, LinearDep> LinearDepMap;
+typedef std::unordered_map<size_t, EqualToDep> EqualToDepMap;
 
 static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNum,
-            const AsmRegVarUsage* rvus, std::vector<LinearDep>* ldepsOut,
-            std::vector<Array<size_t> >* edepsOut, const VarIndexMap* vregIndexMaps,
+            const AsmRegVarUsage* rvus, LinearDepMap* ldepsOut,
+            EqualToDepMap* edepsOut, const VarIndexMap* vregIndexMaps,
             std::unordered_map<AsmSingleVReg, size_t> ssaIdIdxMap,
             size_t regTypesNum, const cxuint* regRanges)
 {
@@ -1274,8 +1277,12 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
                 vidxes.push_back(ssaIdIndices[sit->second]);
             }
         }
-        ldepsOut[regType].push_back(LinearDep{
-                align, Array<size_t>(vidxes.begin(), vidxes.end()) });
+        ldepsOut[regType][vidxes[0]].align = align;
+        for (size_t k = 1; k < vidxes.size(); k++)
+        {
+            ldepsOut[regType][vidxes[k-1]].nextVidxes.push_back(vidxes[k]);
+            ldepsOut[regType][vidxes[k]].prevVidxes.push_back(vidxes[k-1]);
+        }
     }
     // add single arg linear dependencies
     for (cxuint i = 0; i < rvusNum; i++)
@@ -1296,8 +1303,11 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
                 // push variable index
                 vidxes.push_back(ssaIdIndices[sit->second]);
             }
-            ldepsOut[regType].push_back(LinearDep{ rvu.align,
-                        Array<size_t>(vidxes.begin(), vidxes.end()) });
+            for (size_t j = 1; j < vidxes.size(); j++)
+            {
+                ldepsOut[regType][vidxes[j-1]].nextVidxes.push_back(vidxes[j]);
+                ldepsOut[regType][vidxes[j]].prevVidxes.push_back(vidxes[j-1]);
+            }
         }
         
     /* equalTo dependencies */
@@ -1323,7 +1333,11 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
             // push variable index
             vidxes.push_back(ssaIdIndices[sit->second]);
         }
-        edepsOut[regType].push_back(Array<size_t>(vidxes.begin(), vidxes.end()));
+        for (size_t j = 1; j < vidxes.size(); j++)
+        {
+            edepsOut[regType][vidxes[j-1]].nextVidxes.push_back(vidxes[j]);
+            edepsOut[regType][vidxes[j]].prevVidxes.push_back(vidxes[j-1]);
+        }
     }
 }
 

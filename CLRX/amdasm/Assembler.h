@@ -325,7 +325,13 @@ public:
     struct LinearDep
     {
         cxbyte align;
-        Array<size_t> vidxes;
+        std::vector<size_t> prevVidxes;
+        std::vector<size_t> nextVidxes;
+    };
+    struct EqualToDep
+    {
+        std::vector<size_t> prevVidxes;
+        std::vector<size_t> nextVidxes;
     };
 private:
     Assembler& assembler;
@@ -334,8 +340,8 @@ private:
     
     VarIndexMap vregIndexMaps[MAX_REGTYPES_NUM]; // indices to igraph for 2 reg types
     InterGraph interGraphs[MAX_REGTYPES_NUM]; // for 2 register types
-    std::vector<LinearDep> linearDeps[MAX_REGTYPES_NUM];
-    std::vector<Array<size_t> > equalToDeps[MAX_REGTYPES_NUM];
+    std::unordered_map<size_t, LinearDep> linearDeps[MAX_REGTYPES_NUM];
+    std::unordered_map<size_t, EqualToDep> equalToDeps[MAX_REGTYPES_NUM];
     
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);
