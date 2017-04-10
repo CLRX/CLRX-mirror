@@ -336,11 +336,6 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     {
         size_t codeEnd = *std::upper_bound(codeEnds.begin(), codeEnds.end(), codeStart);
         splitIt = std::lower_bound(splitIt, splits.end(), codeStart);
-        if (splitIt == splits.end())
-        {
-            codeBlocks.push_back({ codeStart, codeEnd, { }, false, false, false });
-            continue; // end of code blocks
-        }
         
         for (size_t start = codeStart; start < codeEnd; )
         {
@@ -370,7 +365,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             else // return
             {
                 it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
-                        CodeBlock{ 0, instrAfter }, codeBlockStartLess);
+                        CodeBlock{ 0, instrAfter }, codeBlockEndLess);
                 // if block have return
                 if (it != codeBlocks.end())
                     it->haveReturn = true;
@@ -379,13 +374,14 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             
             auto it2 = binaryFind(codeBlocks.begin(), codeBlocks.end(),
                     CodeBlock{ instrAfter }, codeBlockStartLess);
-            if (it == codeBlocks.end() || it2 == codeBlocks.end())
+            if (it == codeBlocks.end())
                 continue; // error!
             
             it->nexts.push_back({ size_t(it - codeBlocks.begin()),
                         entry.type == AsmCodeFlowType::CALL });
             it->haveCalls = entry.type == AsmCodeFlowType::CALL;
-            if (entry.type == AsmCodeFlowType::CJUMP) // add next next block
+            if (entry.type == AsmCodeFlowType::CJUMP  || it2 != codeBlocks.end())
+                // add next next block
                 it->nexts.push_back({ size_t(it2 - codeBlocks.begin()), false });
         }
         else if (entry.type == AsmCodeFlowType::END)
