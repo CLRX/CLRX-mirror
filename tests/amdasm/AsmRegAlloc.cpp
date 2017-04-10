@@ -50,11 +50,26 @@ struct AsmCodeStructCase
 
 static const AsmCodeStructCase codeStructTestCases1Tbl[] =
 {
-    {
+    /*{
         "v_mov_b32 v1, v2\n"
         "v_mov_b32 v1, v3\n",
         {
             { 0, 8, { }, false, false, true }
+        },
+        true, ""
+    },*/
+    {
+        "v_mov_b32 v1, v2\n"
+        "v_mov_b32 v1, v3\n"
+        ".cf_end\n"
+        ".cf_start\n"
+        "v_mov_b32 v4, v2\n"
+        "v_mov_b32 v8, v3\n"
+        "v_mov_b32 v8, v3\n"
+        ".cf_end\n",
+        {
+            { 0, 8, { }, false, false, true },
+            { 8, 20, { }, false, false, true }
         },
         true, ""
     }

@@ -249,6 +249,10 @@ static inline bool codeBlockStartLess(const AsmRegAllocator::CodeBlock& c1,
                   const AsmRegAllocator::CodeBlock& c2)
 { return c1.start < c2.start; }
 
+static inline bool codeBlockEndLess(const AsmRegAllocator::CodeBlock& c1,
+                  const AsmRegAllocator::CodeBlock& c2)
+{ return c1.end < c2.end; }
+
 void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code)
 {
@@ -315,12 +319,12 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     // divide to blocks
     for (size_t codeStart: codeStarts)
     {
-        size_t codeEnd = *std::lower_bound(codeEnds.begin(), codeEnds.end(), codeStart);
+        size_t codeEnd = *std::upper_bound(codeEnds.begin(), codeEnds.end(), codeStart);
         splitIt = std::lower_bound(splitIt, splits.end(), codeStart);
         if (splitIt == splits.end())
         {
             codeBlocks.push_back({ codeStart, codeEnd, { }, false, false, false });
-            break; // end of code blocks
+            continue; // end of code blocks
         }
         
         for (size_t start = *splitIt; start < codeEnd;)
@@ -341,8 +345,16 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
         if (entry.type == AsmCodeFlowType::CALL || entry.type == AsmCodeFlowType::JUMP ||
             entry.type == AsmCodeFlowType::CJUMP || entry.type == AsmCodeFlowType::RETURN)
         {
-            auto it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
-                    CodeBlock{ entry.target }, codeBlockStartLess);
+            std::vector<CodeBlock>::iterator it;
+            size_t instrAfter = entry.offset + isaAsm->getInstructionSize(
+                        codeSize - entry.offset, code + entry.offset);
+            
+            if (entry.type != AsmCodeFlowType::RETURN)
+                it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
+                        CodeBlock{ entry.target }, codeBlockStartLess);
+            else // return
+                it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
+                        CodeBlock{ size_t(0), instrAfter }, codeBlockStartLess);
             
             if (entry.type == AsmCodeFlowType::RETURN)
             {   // if block have return
@@ -351,11 +363,6 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                 continue;
             }
             
-            if (entry.type == AsmCodeFlowType::END && it != codeBlocks.end())
-                it->haveEnd = true;
-            
-            size_t instrAfter = entry.offset + isaAsm->getInstructionSize(
-                        codeSize - entry.offset, code + entry.offset);
             auto it2 = binaryFind(codeBlocks.begin(), codeBlocks.end(),
                     CodeBlock{ instrAfter }, codeBlockStartLess);
             if (it == codeBlocks.end() || it2 == codeBlocks.end())
@@ -367,6 +374,13 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             if (entry.type == AsmCodeFlowType::CJUMP) // add next next block
                 it->nexts.push_back({ size_t(it - codeBlocks.begin() + 1), false });
         }
+        else if (entry.type == AsmCodeFlowType::END)
+        {
+            auto it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
+                    CodeBlock{ size_t(0), entry.offset }, codeBlockEndLess);
+            it->haveEnd = true;
+        }
+            
     
     if (!codeBlocks.empty()) // always set haveEnd to last block
         codeBlocks.back().haveEnd = true;
