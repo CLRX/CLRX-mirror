@@ -1705,11 +1705,25 @@ struct CLRX_INTERNAL SDOLDOCompare
     }
 };
 
+/* algorithm to allocate regranges:
+ * from smallest regranges to greatest regranges:
+ *   choosing free register: from smallest free regranges
+ *      to greatest regranges:
+ *         in this same regrange: 
+ *               try to find free regs in regranges
+ *               try to link free ends of two distinct regranges
+ */
+
 void AsmRegAllocator::colorInterferenceGraph()
 {
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                    assembler.deviceType);
+    
     for (size_t regType = 0; regType < regTypesNum; regType++)
     {
+        const size_t maxColorsNum = getGPUMaxRegistersNum(arch, regType);
         InterGraph& interGraph = interGraphs[regType];
+        const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
         Array<cxuint>& gcMap = graphColorMaps[regType];
         const std::vector<std::vector<size_t> >& equalSetList = equalSetLists[regType];
         const std::unordered_map<size_t, size_t>& equalSetMap =  equalSetMaps[regType];
@@ -1726,6 +1740,11 @@ void AsmRegAllocator::colorInterferenceGraph()
             nodeSet.insert(i);
         
         cxuint colorsNum = 0;
+        // firstly, allocate real registers
+        for (const auto& entry: vregIndexMap)
+            if (entry.first.regVar == nullptr)
+                gcMap[entry.second[0]] = colorsNum++;
+        
         for (size_t colored = 0; colored < nodesNum; colored++)
         {
             size_t node = *nodeSet.begin();
@@ -1752,7 +1771,11 @@ void AsmRegAllocator::colorInterferenceGraph()
                     break;
             }
             if (color==colorsNum) // add new color if needed
+            {
+                if (colorsNum >= maxColorsNum)
+                    throw Exception("Too many register is needed");
                 colorsNum++;
+            }
             
             for (size_t nextNode: equalNodes)
                 gcMap[nextNode] = color;
