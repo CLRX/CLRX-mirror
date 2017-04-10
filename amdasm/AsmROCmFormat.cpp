@@ -270,6 +270,9 @@ void AsmROCmHandler::handleLabel(const CString& label)
         return;
     if (!kcodeSelection.empty())
         return; // do not change if inside kcode
+    // add code start
+    assembler.sections[assembler.currentSection].addCodeFlowEntry({
+                    size_t(assembler.currentOutPos), 0, AsmCodeFlowType::START });
     // save other state
     saveKcodeCurrentAllocRegs();
     if (currentKcodeKernel != ASMKERN_GLOBAL)

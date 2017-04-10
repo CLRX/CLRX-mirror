@@ -110,6 +110,24 @@ static const AsmCodeStructCase codeStructTestCases1Tbl[] =
         },
         true, ""
     },
+    {
+        "v_mov_b32 v1, v2\n"
+        "v_mov_b32 v1, v3\n"
+        "label2:\n"
+        "v_mov_b32 v1, v3\n"
+        "v_mov_b32 v1, v3\n"
+        "s_cbranch_vccz label2\n"
+        "s_xor_b32 s3, s5, s8\n"
+        "s_endpgm\n",
+        {
+            { 0, 8, { }, false, false, false },
+            { 8, 20,
+              { { 1, false }, { 2, false } },
+              false, false, false },
+            { 20, 28, { }, false, false, true }
+        },
+        true, ""
+    }
 };
 
 static void testAsmCodeStructure(cxuint i, const AsmCodeStructCase& testCase)

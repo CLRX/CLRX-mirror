@@ -342,17 +342,17 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             continue; // end of code blocks
         }
         
-        for (size_t start = *splitIt; start < codeEnd;)
+        for (size_t start = codeStart; start < codeEnd; )
         {
-            start = *splitIt;
-            ++splitIt;
             size_t end = codeEnd;
             if (splitIt != splits.end())
+            {
                 end = std::min(end, *splitIt);
+                ++splitIt;
+            }
             codeBlocks.push_back({ start, end, { }, false, false, false });
+            start = end;
         }
-        if (splitIt == splits.end())
-            break; // end of code blocks
     }
     
     // construct flow-graph
@@ -370,7 +370,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             else // return
             {
                 it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
-                        CodeBlock{ size_t(0), instrAfter }, codeBlockStartLess);
+                        CodeBlock{ 0, instrAfter }, codeBlockStartLess);
                 // if block have return
                 if (it != codeBlocks.end())
                     it->haveReturn = true;
@@ -382,16 +382,16 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             if (it == codeBlocks.end() || it2 == codeBlocks.end())
                 continue; // error!
             
-            it->nexts.push_back({ size_t(it2 - codeBlocks.begin()),
+            it->nexts.push_back({ size_t(it - codeBlocks.begin()),
                         entry.type == AsmCodeFlowType::CALL });
             it->haveCalls = entry.type == AsmCodeFlowType::CALL;
             if (entry.type == AsmCodeFlowType::CJUMP) // add next next block
-                it->nexts.push_back({ size_t(it - codeBlocks.begin() + 1), false });
+                it->nexts.push_back({ size_t(it2 - codeBlocks.begin()), false });
         }
         else if (entry.type == AsmCodeFlowType::END)
         {
             auto it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
-                    CodeBlock{ size_t(0), entry.offset }, codeBlockEndLess);
+                    CodeBlock{ 0, entry.offset }, codeBlockEndLess);
             if (it != codeBlocks.end())
                 it->haveEnd = true;
         }
@@ -1389,7 +1389,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
 {
     // construct var index maps
     size_t graphVregsCounts[MAX_REGTYPES_NUM];
-    std::fill(graphVregsCounts, graphVregsCounts+regTypesNum, size_t(0));
+    std::fill(graphVregsCounts, graphVregsCounts+regTypesNum, 0);
     cxuint regRanges[MAX_REGTYPES_NUM*2];
     size_t regTypesNum;
     assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
@@ -1672,7 +1672,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             }
             
             std::stack<EqualStackEntry> etoStack;
-            etoStack.push(EqualStackEntry{ it, size_t(0) });
+            etoStack.push(EqualStackEntry{ it, 0 });
             
             std::unordered_map<size_t, size_t>& equalSetMap =  equalSetMaps[regType];
             const size_t equalSetIndex = equalSetList.size();
@@ -1768,7 +1768,7 @@ void AsmRegAllocator::colorInterferenceGraph()
         gcMap.resize(nodesNum);
         std::fill(gcMap.begin(), gcMap.end(), cxuint(UINT_MAX));
         Array<size_t> sdoCounts(nodesNum);
-        std::fill(sdoCounts.begin(), sdoCounts.end(), size_t(0));
+        std::fill(sdoCounts.begin(), sdoCounts.end(), 0);
         
         SDOLDOCompare compare(interGraph, sdoCounts);
         std::set<size_t, SDOLDOCompare> nodeSet(compare);
