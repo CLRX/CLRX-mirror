@@ -300,6 +300,20 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     splits.resize(std::unique(splits.begin(), splits.end()) - splits.begin());
     std::sort(codeEnds.begin(), codeEnds.end());
     codeEnds.resize(std::unique(codeEnds.begin(), codeEnds.end()) - codeEnds.begin());
+    // remove codeStarts between codeStart and codeEnd
+    size_t i = 0;
+    size_t ii = 0;
+    size_t ei = 0; // codeEnd i
+    while (i < codeStarts.size())
+    {
+        size_t end = (ei < codeEnds.size() ? codeEnds[ei] : SIZE_MAX);
+        if (ei < codeEnds.size())
+            ei++;
+        codeStarts[ii++] = codeStarts[i];
+        // skip codeStart to end
+        for (i++ ;i < codeStarts.size() && codeStarts[i] < end; i++);
+    }
+    codeStarts.resize(ii);
     // add next codeStarts
     auto splitIt = splits.begin();
     for (size_t codeEnd: codeEnds)
@@ -313,6 +327,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
         else // if end
             break;
     }
+    
     std::sort(codeStarts.begin(), codeStarts.end());
     codeStarts.resize(std::unique(codeStarts.begin(), codeStarts.end())
                 - codeStarts.begin());
@@ -353,11 +368,10 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                 it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
                         CodeBlock{ entry.target }, codeBlockStartLess);
             else // return
+            {
                 it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
                         CodeBlock{ size_t(0), instrAfter }, codeBlockStartLess);
-            
-            if (entry.type == AsmCodeFlowType::RETURN)
-            {   // if block have return
+                // if block have return
                 if (it != codeBlocks.end())
                     it->haveReturn = true;
                 continue;
@@ -378,7 +392,8 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
         {
             auto it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
                     CodeBlock{ size_t(0), entry.offset }, codeBlockEndLess);
-            it->haveEnd = true;
+            if (it != codeBlocks.end())
+                it->haveEnd = true;
         }
             
     

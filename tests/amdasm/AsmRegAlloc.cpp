@@ -50,14 +50,14 @@ struct AsmCodeStructCase
 
 static const AsmCodeStructCase codeStructTestCases1Tbl[] =
 {
-    /*{
+    {
         "v_mov_b32 v1, v2\n"
         "v_mov_b32 v1, v3\n",
         {
             { 0, 8, { }, false, false, true }
         },
         true, ""
-    },*/
+    },
     {
         "v_mov_b32 v1, v2\n"
         "v_mov_b32 v1, v3\n"
@@ -72,7 +72,44 @@ static const AsmCodeStructCase codeStructTestCases1Tbl[] =
             { 8, 20, { }, false, false, true }
         },
         true, ""
-    }
+    },
+    {   // ignore cf_start to cf_end (except first)
+        "v_mov_b32 v1, v2\n"
+        "v_mov_b32 v1, v3\n"
+        ".cf_start\n"
+        "v_mov_b32 v4, v2\n"
+        "v_mov_b32 v8, v3\n"
+        ".cf_start\n"
+        "v_mov_b32 v8, v3\n"
+        ".cf_end\n"
+        ".cf_start\n"
+        "v_and_b32 v6, v1, v2\n"
+        ".cf_start\n"
+        "v_and_b32 v9, v1, v3\n"
+        ".cf_end\n",
+        {
+            { 0, 20, { }, false, false, true },
+            { 20, 28, { }, false, false, true }
+        },
+        true, ""
+    },
+    {   // ignore cf_end
+        "v_mov_b32 v1, v2\n"
+        "v_mov_b32 v1, v3\n"
+        ".cf_end\n"
+        "v_mov_b32 v4, v2\n"
+        "v_mov_b32 v8, v3\n"
+        "v_mov_b32 v8, v3\n"
+        ".cf_end\n"
+        ".cf_start\n"
+        "v_and_b32 v9, v1, v3\n"
+        ".cf_end\n",
+        {
+            { 0, 8, { }, false, false, true },
+            { 20, 24, { }, false, false, true }
+        },
+        true, ""
+    },
 };
 
 static void testAsmCodeStructure(cxuint i, const AsmCodeStructCase& testCase)
