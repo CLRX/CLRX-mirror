@@ -78,3 +78,7 @@ ADD_TEST(GCNRegVarUsage GCNRegVarUsage)
 ADD_EXECUTABLE(AsmCodeFlow AsmCodeFlow.cpp)
 TEST_LINK_LIBRARIES(AsmCodeFlow CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AsmCodeFlow AsmCodeFlow)
+
+ADD_EXECUTABLE(AsmRegAlloc AsmRegAlloc.cpp)
+TEST_LINK_LIBRARIES(AsmRegAlloc CLRXAmdAsm CLRXAmdBin CLRXUtils)
+ADD_TEST(AsmRegAlloc AsmRegAlloc)

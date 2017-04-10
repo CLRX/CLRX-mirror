@@ -338,7 +338,7 @@ static void testAsmKernelRegions(cxuint i, const AsmKernelRegionsCase& testCase)
         std::string kname(kernelOss.str());
         const AsmKernelData& expKernel = testCase.kernels[j];
         const AsmKernel& resultKernel = resultKernels[j];
-        assertString("testAsmKernelRegions", testCaseName+kname+".name",
+        assertString("testAsmKernelRegions", testCaseName+kname+"name",
                      expKernel.name, resultKernel.name);
         
         assertValue("testAsmKernelRegions", testCaseName+kname+"regionsSize",

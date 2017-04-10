@@ -283,6 +283,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                 break;
             case AsmCodeFlowType::CALL:
                 splits.push_back(entry.target);
+                splits.push_back(instrAfter);
                 break;
             case AsmCodeFlowType::RETURN:
                 codeEnds.push_back(instrAfter);
@@ -294,8 +295,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     std::sort(splits.begin(), splits.end());
     splits.resize(std::unique(splits.begin(), splits.end()) - splits.begin());
     std::sort(codeEnds.begin(), codeEnds.end());
-    codeEnds.resize(std::unique(codeEnds.begin(), codeEnds.end())
-                - codeEnds.begin());
+    codeEnds.resize(std::unique(codeEnds.begin(), codeEnds.end()) - codeEnds.begin());
     // add next codeStarts
     auto splitIt = splits.begin();
     for (size_t codeEnd: codeEnds)
@@ -318,7 +318,11 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
         size_t codeEnd = *std::lower_bound(codeEnds.begin(), codeEnds.end(), codeStart);
         splitIt = std::lower_bound(splitIt, splits.end(), codeStart);
         if (splitIt == splits.end())
+        {
+            codeBlocks.push_back({ codeStart, codeEnd, { }, false, false, false });
             break; // end of code blocks
+        }
+        
         for (size_t start = *splitIt; start < codeEnd;)
         {
             start = *splitIt;
@@ -363,6 +367,9 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             if (entry.type == AsmCodeFlowType::CJUMP) // add next next block
                 it->nexts.push_back({ size_t(it - codeBlocks.begin() + 1), false });
         }
+    
+    if (!codeBlocks.empty()) // always set haveEnd to last block
+        codeBlocks.back().haveEnd = true;
     
     // reduce nexts
     for (CodeBlock& block: codeBlocks)

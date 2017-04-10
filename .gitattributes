@@ -146,6 +146,7 @@ tests/amdasm/AsmCodeFlow.cpp -text
 tests/amdasm/AsmExprParse.cpp -text
 tests/amdasm/AsmGalliumFormat.cpp -text
 tests/amdasm/AsmROCmFormat.cpp -text
+tests/amdasm/AsmRegAlloc.cpp -text
 tests/amdasm/AsmRegPool.cpp -text
 tests/amdasm/AssemblerBasics.cpp -text
 tests/amdasm/CMakeLists.txt -text svneol=unset#text/plain

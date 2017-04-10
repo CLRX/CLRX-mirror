@@ -345,14 +345,14 @@ private:
     std::unordered_map<size_t, EqualToDep> equalToDepMaps[MAX_REGTYPES_NUM];
     std::unordered_map<size_t, size_t> equalSetMaps[MAX_REGTYPES_NUM];
     std::vector<std::vector<size_t> > equalSetLists[MAX_REGTYPES_NUM];
+public:
+    AsmRegAllocator(Assembler& assembler);
     
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);
     void createSSAData(ISAUsageHandler& usageHandler);
     void createInterferenceGraph(ISAUsageHandler& usageHandler);
     void colorInterferenceGraph();
-public:
-    AsmRegAllocator(Assembler& assembler);
     
     void allocateRegisters(cxuint sectionId);
     
