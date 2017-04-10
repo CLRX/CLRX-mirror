@@ -332,6 +332,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     codeStarts.resize(std::unique(codeStarts.begin(), codeStarts.end())
                 - codeStarts.begin());
     // divide to blocks
+    splitIt = splits.begin();
     for (size_t codeStart: codeStarts)
     {
         size_t codeEnd = *std::upper_bound(codeEnds.begin(), codeEnds.end(), codeStart);
@@ -376,13 +377,17 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                     CodeBlock{ instrAfter }, codeBlockStartLess);
             if (it == codeBlocks.end())
                 continue; // error!
+            auto curIt = it2;
+            --curIt;
             
-            it->nexts.push_back({ size_t(it - codeBlocks.begin()),
+            curIt->nexts.push_back({ size_t(it - codeBlocks.begin()),
                         entry.type == AsmCodeFlowType::CALL });
-            it->haveCalls = entry.type == AsmCodeFlowType::CALL;
-            if (entry.type == AsmCodeFlowType::CJUMP  || it2 != codeBlocks.end())
+            curIt->haveCalls = entry.type == AsmCodeFlowType::CALL;
+            if (entry.type == AsmCodeFlowType::CJUMP && it2 != codeBlocks.end())
                 // add next next block
-                it->nexts.push_back({ size_t(it2 - codeBlocks.begin()), false });
+                curIt->nexts.push_back({ size_t(it2 - codeBlocks.begin()), false });
+            else if (entry.type == AsmCodeFlowType::JUMP)
+                curIt->haveEnd = true; // set end
         }
         else if (entry.type == AsmCodeFlowType::END)
         {

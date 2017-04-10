@@ -144,6 +144,46 @@ static const AsmCodeStructCase codeStructTestCases1Tbl[] =
               false, false, true }
         },
         true, ""
+    },
+    {
+        /* jump */
+        "v_mov_b32 v1, v2\n"
+        "v_mov_b32 v1, v3\n"
+        "lstart:\n"
+        ".cf_jump l0, l1, l2\n"
+        "s_setpc_b64 s[0:1]\n"
+        "l0:\n"
+        "v_add_f32 v1, v2, v3\n"
+        "s_branch lend\n"
+        "l1:\n"
+        "v_add_f32 v1, v2, v3\n"
+        "s_branch lend\n"
+        "l2:\n"
+        "v_add_f32 v1, v2, v3\n"
+        "s_branch lend\n"
+        "lend:\n"
+        "s_cbranch_vccz lstart\n"
+        "s_endpgm\n",
+        {
+            { 0, 8, { }, false, false, false },
+            { 8, 12,
+              { { 2, false }, { 3, false }, { 4, false } },
+              false, false, true },
+            { 12, 20,
+              { { 5, false } },
+              false, false, true },
+            { 20, 28,
+              { { 5, false } },
+              false, false, true },
+            { 28, 36,
+              { { 5, false } },
+              false, false, true },
+            { 36, 40,
+              { { 1, false }, { 6, false } },
+              false, false, false },
+            { 40, 44, { }, false, false, true }
+        },
+        true, ""
     }
 };
 
