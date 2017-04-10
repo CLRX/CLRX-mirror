@@ -1697,7 +1697,7 @@ struct CLRX_INTERNAL SDOLDOCompare
         : interGraph(_interGraph), sdoCounts(_sdoCounts)
     { }
     
-    bool operator()(cxuint a, cxuint b) const
+    bool operator()(size_t a, size_t b) const
     {
         if (sdoCounts[a] > sdoCounts[b])
             return true;
