@@ -370,6 +370,8 @@ b0:         s_sub_u32 s0, s1, s2    # 72
             v_xor_b32 v1, v5, v8
             s_endpgm
 .p2align 6
+            .cf_start       # empty block, ignored
+            .cf_end
             .cf_start
             v_xor_b32 v3, v9, v8
             v_xor_b32 v1, v5, v8
@@ -377,11 +379,18 @@ b0:         s_sub_u32 s0, s1, s2    # 72
             v_or_b32 v3, v9, v8
             v_or_b32 v3, v9, v8
             s_endpgm
+            .cf_end
+            .cf_start
+            v_or_b32 v3, v9, v8
+            .cf_end
+            .cf_start   # empty block, ignored
+            .cf_end
 )ffDXD",
         {
             { 0, 8, { }, false, false, true },
             { 64, 84, { }, false, false, true },
-            { 128, 152, { }, false, false, true }
+            { 128, 152, { }, false, false, true },
+            { 152, 156, { }, false, false, true }
         },
         true, ""
     },
