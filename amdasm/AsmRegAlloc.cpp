@@ -387,14 +387,20 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             curIt->nexts.push_back({ size_t(it - codeBlocks.begin()),
                         entry.type == AsmCodeFlowType::CALL });
             curIt->haveCalls = entry.type == AsmCodeFlowType::CALL;
-            if ((entry.type == AsmCodeFlowType::CJUMP ||
-                 entry.type == AsmCodeFlowType::CALL) && it2 != codeBlocks.end())
-                // add next next block
-                curIt->nexts.push_back({ size_t(it2 - codeBlocks.begin()), false });
+            if (entry.type == AsmCodeFlowType::CJUMP ||
+                 entry.type == AsmCodeFlowType::CALL)
+            {
+                curIt->haveEnd = false; // revert haveEnd if block have cond jump or call
+                if (it2 != codeBlocks.end())
+                    // add next next block
+                    curIt->nexts.push_back({ size_t(it2 - codeBlocks.begin()), false });
+            }
             else if (entry.type == AsmCodeFlowType::JUMP)
                 curIt->haveEnd = true; // set end
         }
-        else if (entry.type == AsmCodeFlowType::END)
+    // force haveEnd for block with cf_end
+    for (const AsmCodeFlowEntry& entry: codeFlow)
+        if (entry.type == AsmCodeFlowType::END)
         {
             auto it = binaryFind(codeBlocks.begin(), codeBlocks.end(),
                     CodeBlock{ 0, entry.offset }, codeBlockEndLess);

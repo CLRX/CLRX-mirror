@@ -384,7 +384,58 @@ b0:         s_sub_u32 s0, s1, s2    # 72
             { 128, 152, { }, false, false, true }
         },
         true, ""
-    }
+    },
+    {   // 11 - different type of jumps
+        R"ffDXD(
+            v_mac_f32 v6, v9, v8    # 0
+            v_xor_b32 v3, v9, v8
+            .cf_jump j1, j4
+            .cf_cjump j2, j3
+            s_setpc_b64 s[0:1]
+            
+            v_mov_b32 v5, v3
+            .cf_jump j1, j4
+            .cf_cjump j2, j3
+            s_setpc_b64 s[0:1]
+            .cf_end
+            
+j1:         v_xor_b32 v3, v9, v8    # 20
+            v_xor_b32 v3, v9, v8
+            v_xor_b32 v3, v9, v8
+            s_branch b0
+
+j2:         v_xor_b32 v3, v9, v8    # 36
+            v_xor_b32 v1, v5, v8
+            v_and_b32 v2, v9, v8
+            v_xor_b32 v3, v9, v8
+            s_branch b0
+
+j3:         v_xor_b32 v3, v9, v8    # 56
+            v_xor_b32 v1, v5, v8
+            s_branch b0
+
+j4:         v_xor_b32 v3, v9, v8    # 68
+            v_xor_b32 v1, v5, v8
+            v_xor_b32 v1, v5, v8
+b0:         s_sub_u32 s0, s1, s2    # 80
+            s_endpgm
+)ffDXD",
+        {
+            { 0, 12,
+                { { 1, false }, { 2, false }, { 3, false },
+                  { 4, false }, { 5, false } },
+                false, false, false },
+            { 12, 20,
+                { { 2, false }, { 3, false }, { 4, false }, { 5, false } },
+                false, false, true }, // have cf_end, force haveEnd
+            { 20, 36, { { 6, false } }, false, false, true },
+            { 36, 56, { { 6, false } }, false, false, true },
+            { 56, 68, { { 6, false } }, false, false, true },
+            { 68, 80, { }, false, false, false },
+            { 80, 88, { }, false, false, true }
+        },
+        true, ""
+    },
 };
 
 static void testAsmCodeStructure(cxuint i, const AsmCodeStructCase& testCase)
