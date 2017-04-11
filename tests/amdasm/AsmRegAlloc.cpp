@@ -21,6 +21,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/utils/Containers.h>
@@ -352,6 +353,35 @@ b0:         s_sub_u32 s0, s1, s2    # 72
             { 48, 60, { { 5, false } }, false, false, true },
             { 60, 72, { }, false, false, false },
             { 72, 80, { }, false, false, true }
+        },
+        true, ""
+    },
+    {   // 10 - multiple kernels
+        R"ffDXD(
+            .cf_start
+            v_mac_f32 v6, v9, v8    # 0
+            v_xor_b32 v3, v9, v8
+            .cf_end
+.p2align 6
+            .cf_start
+            v_xor_b32 v3, v9, v8
+            v_xor_b32 v1, v5, v8
+            v_xor_b32 v1, v5, v8
+            v_xor_b32 v1, v5, v8
+            s_endpgm
+.p2align 6
+            .cf_start
+            v_xor_b32 v3, v9, v8
+            v_xor_b32 v1, v5, v8
+            v_xor_b32 v3, v9, v8
+            v_or_b32 v3, v9, v8
+            v_or_b32 v3, v9, v8
+            s_endpgm
+)ffDXD",
+        {
+            { 0, 8, { }, false, false, true },
+            { 64, 84, { }, false, false, true },
+            { 128, 152, { }, false, false, true }
         },
         true, ""
     }

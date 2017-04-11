@@ -330,8 +330,8 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     }
     
     std::sort(codeStarts.begin(), codeStarts.end());
-    codeStarts.resize(std::unique(codeStarts.begin(), codeStarts.end())
-                - codeStarts.begin());
+    codeStarts.resize(std::unique(codeStarts.begin(), codeStarts.end()) -
+                codeStarts.begin());
     // divide to blocks
     splitIt = splits.begin();
     for (size_t codeStart: codeStarts)
@@ -401,7 +401,6 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             if (it != codeBlocks.end())
                 it->haveEnd = true;
         }
-            
     
     if (!codeBlocks.empty()) // always set haveEnd to last block
         codeBlocks.back().haveEnd = true;
