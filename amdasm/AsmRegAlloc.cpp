@@ -373,7 +373,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                         CodeBlock{ 0, instrAfter }, codeBlockEndLess);
                 // if block have return
                 if (it != codeBlocks.end())
-                    it->haveReturn = true;
+                    it->haveEnd = it->haveReturn = true;
                 continue;
             }
             

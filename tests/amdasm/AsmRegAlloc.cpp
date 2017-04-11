@@ -50,7 +50,7 @@ struct AsmCodeStructCase
 
 static const AsmCodeStructCase codeStructTestCases1Tbl[] =
 {
-    {
+    {   // 0
         "v_mov_b32 v1, v2\n"
         "v_mov_b32 v1, v3\n",
         {
@@ -58,7 +58,7 @@ static const AsmCodeStructCase codeStructTestCases1Tbl[] =
         },
         true, ""
     },
-    {
+    {   // 1
         "v_mov_b32 v1, v2\n"
         "v_mov_b32 v1, v3\n"
         ".cf_end\n"
@@ -73,7 +73,7 @@ static const AsmCodeStructCase codeStructTestCases1Tbl[] =
         },
         true, ""
     },
-    {   // ignore cf_start to cf_end (except first)
+    {   // 2 - ignore cf_start to cf_end (except first)
         "v_mov_b32 v1, v2\n"
         "v_mov_b32 v1, v3\n"
         ".cf_start\n"
@@ -93,7 +93,7 @@ static const AsmCodeStructCase codeStructTestCases1Tbl[] =
         },
         true, ""
     },
-    {   // ignore cf_end
+    {   // 3 - ignore cf_end
         "v_mov_b32 v1, v2\n"
         "v_mov_b32 v1, v3\n"
         ".cf_end\n"
@@ -110,7 +110,7 @@ static const AsmCodeStructCase codeStructTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* cond jump */
+    {   /* 4 - cond jump */
         "v_mov_b32 v1, v2\n"
         "v_mov_b32 v1, v3\n"
         "label2:\n"
@@ -128,7 +128,7 @@ static const AsmCodeStructCase codeStructTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* jump */
+    {   /* 5 - jump */
         "v_mov_b32 v1, v2\n"
         "v_mov_b32 v1, v3\n"
         "label2:\n"
@@ -146,7 +146,7 @@ static const AsmCodeStructCase codeStructTestCases1Tbl[] =
         true, ""
     },
     {
-        /* jump */
+        /* 6 - jump */
         "v_mov_b32 v1, v2\n"
         "v_mov_b32 v1, v3\n"
         "lstart:\n"
@@ -185,7 +185,7 @@ static const AsmCodeStructCase codeStructTestCases1Tbl[] =
         },
         true, ""
     },
-    {   /* subroutines */
+    {   /* 7 - subroutines */
         R"ffDXD(
         v_mov_b32 v1, v2
         v_mov_b32 v1, v3
@@ -226,10 +226,132 @@ j0:     # 84
                 true, false, false },
             { 12, 20, { { 6, false } }, false, false, true },
             { 20, 32, { }, false, false, true },
-            { 32, 44, { }, false, true, false },
-            { 44, 60, { }, false, true, false },
-            { 60, 84, { }, false, true, false },
+            { 32, 44, { }, false, true, true },
+            { 44, 60, { }, false, true, true },
+            { 60, 84, { }, false, true, true },
             { 84, 96, { { 2, false } }, false, false, true }
+        },
+        true, ""
+    },
+    {   /* 8 - subroutines 2 - more complex */
+        R"ffDXD(
+        v_mov_b32 v1, v2    # 0
+        v_mov_b32 v1, v3
+loop:   s_mov_b32 s5, s0    # 8
+        .cf_call c1,c2,c3
+        s_swappc_b64 s[0:1], s[0:1]
+        v_and_b32 v4, v5, v4    # 16
+        v_and_b32 v4, v5, v3
+        v_and_b32 v4, v5, v4
+        .cf_call c5,c6
+        s_swappc_b64 s[0:1], s[0:1]
+        v_and_b32 v4, v5, v3    # 32
+        v_and_b32 v4, v5, v9
+        s_add_i32 s3, s3, s1
+        s_cbranch_vccnz loop
+        v_mac_f32 v4, v6, v7    # 48
+        s_endpgm
+.p2align 4
+c1:     v_xor_b32 v3, v4, v3    # 64
+        v_xor_b32 v3, v4, v7
+        v_xor_b32 v3, v4, v8
+        .cf_ret
+        s_swappc_b64 s[0:1], s[0:1]
+.p2align 4
+c2:     v_xor_b32 v3, v4, v3    # 80
+        v_xor_b32 v3, v4, v7
+c5:     v_xor_b32 v3, v4, v8    # 88
+        .cf_call c4
+        s_swappc_b64 s[0:1], s[0:1]
+        v_or_b32 v3, v11, v9    # 96
+        .cf_ret
+        s_swappc_b64 s[0:1], s[0:1]
+.p2align 4
+c3:     v_xor_b32 v3, v4, v3    # 112
+        v_xor_b32 v3, v4, v8
+        .cf_ret
+        s_swappc_b64 s[0:1], s[0:1]
+.p2align 4
+c4:     v_xor_b32 v3, v4, v3    # 128
+        v_xor_b32 v3, v9, v8
+c6: loop2:
+        v_xor_b32 v3, v9, v8    # 136
+        v_xor_b32 v3, v9, v8
+        s_add_i32 s4, 1, s34
+        s_cbranch_vccz loop2
+        v_lshlrev_b32 v3, 4, v2 # 152
+        .cf_ret
+        s_swappc_b64 s[0:1], s[0:1]
+)ffDXD",
+        {
+            { 0, 8, { }, false, false, false },
+            { 8, 16,
+                { { 2, false }, { 5, true }, { 6, true }, { 9, true } },
+                true, false, false },
+            // 2
+            { 16, 32,
+                { { 3, false }, { 7, true }, { 11, true } },
+                true, false, false },
+            { 32, 48,
+                { { 1, false }, { 4, false } },
+                false, false, false },
+            // 4
+            { 48, 56, { }, false, false, true },
+            // 5 - c1 subroutine
+            { 64, 80, { }, false, true, true },
+            // 6 - c2 subroutine
+            { 80, 88, { }, false, false, false },
+            { 88, 96, { { 8, false }, { 10, true } },
+                true, false, false },
+            { 96, 104, { }, false, true, true },
+            // 9 - c3 subroutine
+            { 112, 124, { }, false, true, true },
+            // 10 - c4 subroutine
+            { 128, 136, { }, false, false, false },
+            { 136, 152,
+                { { 11, false }, { 12, false } },
+                false, false, false },
+            { 152, 160, { }, false, true, true }
+        },
+        true, ""
+    },
+    {   // 9 - switch
+        R"ffDXD(
+            v_mac_f32 v6, v9, v8    # 0
+            v_xor_b32 v3, v9, v8
+            .cf_jump j1, j2, j3, j4
+            s_setpc_b64 s[0:1]
+            
+j1:         v_xor_b32 v3, v9, v8    # 12
+            v_xor_b32 v3, v9, v8
+            v_xor_b32 v3, v9, v8
+            s_branch b0
+
+j2:         v_xor_b32 v3, v9, v8    # 28
+            v_xor_b32 v1, v5, v8
+            v_and_b32 v2, v9, v8
+            v_xor_b32 v3, v9, v8
+            s_branch b0
+
+j3:         v_xor_b32 v3, v9, v8    # 48
+            v_xor_b32 v1, v5, v8
+            s_branch b0
+
+j4:         v_xor_b32 v3, v9, v8    # 60
+            v_xor_b32 v1, v5, v8
+            v_xor_b32 v1, v5, v8
+b0:         s_sub_u32 s0, s1, s2    # 72
+            s_endpgm
+)ffDXD",
+        {
+            { 0, 12,
+                { { 1, false }, { 2, false }, { 3, false }, { 4, false } },
+                false, false, true },
+            { 12, 28, { { 5, false } }, false, false, true },
+            { 28, 48, { { 5, false } }, false, false, true },
+            { 48, 60, { { 5, false } }, false, false, true },
+            { 60, 72, { }, false, false, false },
+            { 72, 80, { }, false, false, true }
         },
         true, ""
     }
