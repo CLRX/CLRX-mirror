@@ -445,6 +445,64 @@ b0:         s_sub_u32 s0, s1, s2    # 80
         },
         true, ""
     },
+    {   // 12 - many jumps to same place
+        R"ffDXD(
+            v_mac_f32 v6, v9, v8    # 0
+            v_xor_b32 v3, v9, v8
+            s_cbranch_vccz j1
+            v_mov_b32 v4, v3        # 12
+            v_mov_b32 v4, v3
+            s_cbranch_execz j1
+            v_mov_b32 v4, v3        # 24
+            v_mov_b32 v4, v3
+            s_cbranch_execnz b0
+            s_branch j2             # 36
+b0:         v_mov_b32 v4, v3        # 40
+            v_mov_b32 v5, v3
+            v_mov_b32 v5, v4
+            s_branch j2
+j1:         v_max_u32 v4, v1, v6    # 56
+            s_endpgm
+j2:         v_min_i32 v4, v1, v6    # 64
+            v_min_i32 v3, v1, v6
+            .cf_call c1
+            s_swappc_b64 s[0:1], s[0:1]
+            v_min_i32 v3, v1, v6    # 76
+            .cf_call c1
+            s_swappc_b64 s[0:1], s[0:1]
+            v_min_i32 v3, v1, v6    # 84
+            s_endpgm
+c1:         v_add_f32 v6, v1, v4    # 92
+            v_add_f32 v6, v1, v4
+            .cf_ret
+            s_swappc_b64 s[0:1], s[0:1]
+)ffDXD",
+        {
+            { 0, 12,
+                { { 1, false }, { 5, false } },
+                false, false, false },
+            { 12, 24,
+                { { 2, false }, { 5, false } },
+                false, false, false },
+            { 24, 36,
+                { { 3, false }, { 4, false } },
+                false, false, false },
+            { 36, 40, { { 6, false } }, false, false, true },
+            { 40, 56, { { 6, false } }, false, false, true },
+            // 5
+            { 56, 64, { }, false, false, true },
+            { 64, 76,
+                { { 7, false }, { 9, true } },
+                true, false, false },
+            { 76, 84,
+                { { 8, false }, { 9, true } },
+                true, false, false },
+            { 84, 92, { }, false, false, true },
+            // 9 - subroutine
+            { 92, 104, { }, false, true, true }
+        },
+        true, ""
+    }
 };
 
 static void testAsmCodeStructure(cxuint i, const AsmCodeStructCase& testCase)
