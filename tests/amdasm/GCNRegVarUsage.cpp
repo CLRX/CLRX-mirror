@@ -48,7 +48,6 @@ struct GCNRegVarUsageCase
 
 static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
 {
-#if 0
     {   /* 0: skipping test 1 */
         ".regvar rax:s, rbx:s\n"
         ".regvar rax4:s:6, rbx5:s:8\n"
@@ -1585,7 +1584,6 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "test.s:18:1: Error: More than one SGPR to read in instruction\n"
         "test.s:19:1: Error: More than one SGPR to read in instruction\n"
     },
-#endif
     {   /* 26: regvars */
         ".regvar rax:s, rbx:s\n"
         ".regvar rax4:s:6, rbx5:s:8\n"
