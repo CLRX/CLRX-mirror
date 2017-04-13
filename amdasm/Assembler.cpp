@@ -1955,8 +1955,8 @@ AsmRegVarEntry* Assembler::findRegVarInScopeInt(AsmScope* scope, const CString& 
         AsmScope* curScope = current.scope;
         if (current.usingIt == curScope->usedScopes.begin())
         {   // first we found in this scope
-            AsmRegVarMap::iterator it = scope->regVarMap.find(rvName);
-            if (it != scope->regVarMap.end())
+            AsmRegVarMap::iterator it = curScope->regVarMap.find(rvName);
+            if (it != curScope->regVarMap.end())
                 return &*it;
         }
         // next we find in used children
