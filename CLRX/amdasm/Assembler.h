@@ -322,7 +322,7 @@ public:
     
      // first - orig ssaid, second - dest ssaid
     typedef std::pair<size_t, size_t> SSAReplace;
-    typedef std::unordered_map<AsmSingleVReg, std::vector<SSAReplace> > ReplacesMap;
+    typedef std::unordered_map<AsmSingleVReg, std::vector<SSAReplace> > SSAReplacesMap;
     // interference graph type
     typedef Array<std::unordered_set<size_t> > InterGraph;
     typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > VarIndexMap;
@@ -340,7 +340,7 @@ public:
 private:
     Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
-    ReplacesMap replacesMap;
+    SSAReplacesMap ssaReplacesMap;
     size_t regTypesNum;
     
     VarIndexMap vregIndexMaps[MAX_REGTYPES_NUM]; // indices to igraph for 2 reg types
@@ -364,6 +364,8 @@ public:
     
     const std::vector<CodeBlock>& getCodeBlocks() const
     { return codeBlocks; }
+    const SSAReplacesMap& getSSAReplacesMap() const
+    { return ssaReplacesMap; }
 };
 
 /// type of clause

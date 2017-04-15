@@ -461,9 +461,9 @@ struct ResolveEntry
 };
 
 typedef AsmRegAllocator::SSAReplace SSAReplace; // first - orig ssaid, second - dest ssaid
-typedef AsmRegAllocator::ReplacesMap ReplacesMap;
+typedef AsmRegAllocator::SSAReplacesMap SSAReplacesMap;
 
-static inline void insertReplace(ReplacesMap& rmap, const AsmSingleVReg& vreg,
+static inline void insertReplace(SSAReplacesMap& rmap, const AsmSingleVReg& vreg,
               size_t origId, size_t destId)
 {
     auto res = rmap.insert({ vreg, {} });
@@ -475,7 +475,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
         const std::vector<bool>& prevVisited,
         const std::unordered_map<size_t, RoutineData>& routineMap,
         const std::vector<CodeBlock>& codeBlocks,
-        ReplacesMap& replacesMap)
+        SSAReplacesMap& replacesMap)
 {
     size_t nextBlock = prevFlowStack.back().blockIndex;
     auto pfEnd = prevFlowStack.end();
@@ -812,7 +812,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                                 rit->second.regVarMap, prevSSAInfoMap);
                 }
                 resolveSSAConflicts(flowStack, callStack, visited, routineMap, codeBlocks,
-                                    replacesMap);
+                                    ssaReplacesMap);
                 // back, already visited
                 flowStack.pop_back();
                 continue;
@@ -889,7 +889,7 @@ void AsmRegAllocator::applySSAReplaces()
         size_t minSSAId;
     };
     
-    for (auto& entry: replacesMap)
+    for (auto& entry: ssaReplacesMap)
     {
         std::vector<SSAReplace>& replaces = entry.second;
         std::sort(replaces.begin(), replaces.end());
@@ -974,8 +974,8 @@ void AsmRegAllocator::applySSAReplaces()
     for (CodeBlock& cblock: codeBlocks)
         for (auto& ssaEntry: cblock.ssaInfoMap)
         {
-            auto it = replacesMap.find(ssaEntry.first);
-            if (it == replacesMap.end())
+            auto it = ssaReplacesMap.find(ssaEntry.first);
+            if (it == ssaReplacesMap.end())
                 continue;
             SSAInfo& sinfo = ssaEntry.second;
             std::vector<SSAReplace>& replaces = it->second;
@@ -1881,7 +1881,7 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
         equalSetMaps[i].clear();
         equalSetLists[i].clear();
     }
-    replacesMap.clear();
+    ssaReplacesMap.clear();
     cxuint maxRegs[MAX_REGTYPES_NUM];
     assembler.isaAssembler->getMaxRegistersNum(regTypesNum, maxRegs);
     
@@ -1889,5 +1889,7 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
     const AsmSection& section = assembler.sections[sectionId];
     createCodeStructure(section.codeFlow, section.content.size(), section.content.data());
     createSSAData(*section.usageHandler);
+    applySSAReplaces();
     createInterferenceGraph(*section.usageHandler);
+    colorInterferenceGraph();
 }
