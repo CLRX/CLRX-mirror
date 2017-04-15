@@ -460,8 +460,8 @@ struct ResolveEntry
     bool handled;
 };
 
-typedef std::pair<size_t, size_t> SSAReplace; // first - orig ssaid, second - dest ssaid
-typedef std::unordered_map<AsmSingleVReg, std::vector<SSAReplace> > ReplacesMap;
+typedef AsmRegAllocator::SSAReplace SSAReplace; // first - orig ssaid, second - dest ssaid
+typedef AsmRegAllocator::ReplacesMap ReplacesMap;
 
 static inline void insertReplace(ReplacesMap& rmap, const AsmSingleVReg& vreg,
               size_t origId, size_t destId)
@@ -704,7 +704,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     }
     
     std::stack<CallStackEntry> callStack;
-    ReplacesMap replacesMap;
     std::deque<FlowStackEntry> flowStack;
     // total SSA count
     std::unordered_map<AsmSingleVReg, size_t> totalSSACountMap;
@@ -871,7 +870,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             flowStack.pop_back();
         }
     }
+}
     
+void AsmRegAllocator::applySSAReplaces()
+{
     /* prepare SSA id replaces */
     struct MinSSAGraphNode
     {
@@ -1879,6 +1881,7 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
         equalSetMaps[i].clear();
         equalSetLists[i].clear();
     }
+    replacesMap.clear();
     cxuint maxRegs[MAX_REGTYPES_NUM];
     assembler.isaAssembler->getMaxRegistersNum(regTypesNum, maxRegs);
     

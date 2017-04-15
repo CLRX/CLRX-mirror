@@ -311,7 +311,7 @@ public:
     struct CodeBlock
     {
         size_t start, end; // place in code
-        std::vector<NextBlock> nexts; ///< nexts blocks
+        std::vector<NextBlock> nexts; ///< nexts blocks, if empty then direct next block
         bool haveCalls;
         bool haveReturn;
         bool haveEnd;
@@ -319,6 +319,10 @@ public:
         std::unordered_map<AsmSingleVReg, SSAInfo> ssaInfoMap;
         ISAUsageHandler::ReadPos usagePos;
     };
+    
+     // first - orig ssaid, second - dest ssaid
+    typedef std::pair<size_t, size_t> SSAReplace;
+    typedef std::unordered_map<AsmSingleVReg, std::vector<SSAReplace> > ReplacesMap;
     // interference graph type
     typedef Array<std::unordered_set<size_t> > InterGraph;
     typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > VarIndexMap;
@@ -336,6 +340,7 @@ public:
 private:
     Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
+    ReplacesMap replacesMap;
     size_t regTypesNum;
     
     VarIndexMap vregIndexMaps[MAX_REGTYPES_NUM]; // indices to igraph for 2 reg types
@@ -351,6 +356,7 @@ public:
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);
     void createSSAData(ISAUsageHandler& usageHandler);
+    void applySSAReplaces();
     void createInterferenceGraph(ISAUsageHandler& usageHandler);
     void colorInterferenceGraph();
     
