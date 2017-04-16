@@ -667,7 +667,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     while (true)
     {
         while (cbit != codeBlocks.end() && cbit->end <= rvu.offset)
+        {
+            cbit->usagePos = usageHandler.getReadPos();
             ++cbit;
+        }
         if (cbit == codeBlocks.end())
             break;
         // skip rvu's before codeblock
@@ -677,7 +680,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             break;
         
         cbit->usagePos = usageHandler.getReadPos();
-        while(true)
+        while (rvu.offset < cbit->end)
         {   // process rvu
             // only if regVar
             for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
@@ -698,8 +701,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             if (!usageHandler.hasNext())
                 break;
             rvu = usageHandler.nextUsage();
-            if (rvu.offset >= cbit->end)
-                break; // if end of codeblock
         }
         ++cbit;
     }
@@ -1512,6 +1513,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                     if (usageHandler.hasNext())
                     {
                         rvu = usageHandler.nextUsage();
+                        if (rvu.offset >= cblock.end)
+                            break;
                         if (!rvu.useRegMode)
                             instrRVUs[instrRVUsCount++] = rvu;
                         liveTimeNext = std::min(rvu.offset, cblock.end) -

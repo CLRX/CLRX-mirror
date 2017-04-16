@@ -624,7 +624,7 @@ struct AsmSSADataCase
 
 static const AsmSSADataCase ssaDataTestCases1Tbl[] =
 {
-    {   /* simple */
+    {   /* 0 - simple */
         ".regvar sa:s:8, va:v:10\n"
         "s_mov_b32 sa[4], sa[2]\n"
         "s_add_u32 sa[4], sa[2], s3\n"
@@ -650,6 +650,67 @@ static const AsmSSADataCase ssaDataTestCases1Tbl[] =
                     { { "va", 4 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) },
                     { { "va", 5 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) }
                 }, false, false, true }
+        },
+        { },
+        true, ""
+    },
+    {   /* 1 - tree */
+        R"ffDXD(.regvar sa:s:8, va:v:10
+        s_mov_b32 sa[4], sa[2]  # 0
+        s_add_u32 sa[4], sa[2], s3
+        ds_read_b64 va[4:5], v0
+        v_add_f64 va[0:1], va[4:5], va[2:3]
+        v_add_f64 va[0:1], va[4:5], va[2:3]
+        v_add_f64 va[0:1], va[4:5], va[2:3]
+        .cf_jump j1,j2,j3
+        s_setpc_b64 s[0:1]
+        # 44
+j1:     v_add_f32 va[5], va[2], va[3]
+        v_mov_b32 va[6], va[2]
+        s_endpgm
+j2:     v_add_f32 va[3], va[2], va[5]
+        v_add_f32 va[6], va[2], va[3]
+        s_endpgm
+j3:     v_add_f32 va[2], va[5], va[3]
+        s_endpgm
+)ffDXD",
+        {
+            { 0, 44,
+                { { 1, false }, { 2, false }, { 3, false } },
+                {
+                    { { "", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "", 3 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "", 256 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 2 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 4 }, SSAInfo(SIZE_MAX, 0, 0, 1, 2, false) },
+                    { { "va", 0 }, SSAInfo(SIZE_MAX, 0, 0, 2, 3, false) },
+                    { { "va", 1 }, SSAInfo(SIZE_MAX, 0, 0, 2, 3, false) },
+                    { { "va", 2 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 3 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 4 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) },
+                    { { "va", 5 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) }
+                }, false, false, true },
+            { 44, 56, { },
+                {
+                    { { "va", 2 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 3 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 5 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "va", 6 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) }
+                }, false, false, true },
+            { 56, 68, { },
+                {
+                    { { "va", 2 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 3 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "va", 5 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 6 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) }
+                }, false, false, true },
+            { 68, 76, { },
+                {
+                    { { "va", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "va", 3 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 5 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, true },
         },
         { },
         true, ""
