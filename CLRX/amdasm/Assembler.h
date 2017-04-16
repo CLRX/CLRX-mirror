@@ -302,10 +302,12 @@ public:
         size_t firstPos;
         size_t lastPos;
         bool readBeforeWrite;   ///< have read before write
-        SSAInfo(size_t _bssaId = SIZE_MAX, size_t _ssaId = SIZE_MAX,
-                size_t _ssaIdChange = SIZE_MAX, bool _readBeforeWrite = false)
-            : ssaIdBefore(_bssaId), ssaIdFirst(_ssaId), ssaId(_ssaId),
-              ssaIdChange(_ssaIdChange), readBeforeWrite(_readBeforeWrite)
+        SSAInfo(size_t _bssaId = SIZE_MAX, size_t _ssaIdF = SIZE_MAX,
+                size_t _ssaId = SIZE_MAX, size_t _ssaIdL = SIZE_MAX,
+                size_t _ssaIdChange = 0, bool _readBeforeWrite = false)
+            : ssaIdBefore(_bssaId), ssaIdFirst(_ssaIdF), ssaId(_ssaId),
+              ssaIdLast(_ssaIdL), ssaIdChange(_ssaIdChange),
+              readBeforeWrite(_readBeforeWrite)
         { }
     };
     struct CodeBlock

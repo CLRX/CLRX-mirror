@@ -622,6 +622,23 @@ struct AsmSSADataCase
     const char* errorMessages;
 };
 
+static const AsmSSADataCase ssaDataTestCases1Tbl[] =
+{
+    {   /* simple */
+        ".regvar sa:s:8, va:v:4\n"
+        "s_mov_b32 sa[4], sa[2]\n",
+        {
+            { 0, 4, { },
+                {
+                    { { "sa", 2 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 4 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) }
+                }, false, false, true }
+        },
+        { },
+        true, ""
+    }
+};
+
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
         const std::unordered_map<const AsmRegVar*, CString>& rvMap)
 {
@@ -784,7 +801,6 @@ static void testCreateSSAData(cxuint i, const AsmSSADataCase& testCase)
                         expEntry.second[k].second, resEntry.second[k].second);
         }
     }
-    
 }
 
 int main(int argc, const char** argv)
@@ -798,13 +814,13 @@ int main(int argc, const char** argv)
             std::cerr << ex.what() << std::endl;
             retVal = 1;
         }
-    /*for (size_t i = 0; i < sizeof(ssaDataTestCases1Tbl)/sizeof(AsmSSADataCase); i++)
+    for (size_t i = 0; i < sizeof(ssaDataTestCases1Tbl)/sizeof(AsmSSADataCase); i++)
         try
         { testCreateSSAData(i, ssaDataTestCases1Tbl[i]); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;
             retVal = 1;
-        }*/
+        }
     return retVal;
 }

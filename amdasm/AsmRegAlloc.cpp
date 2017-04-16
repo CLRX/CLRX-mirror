@@ -701,6 +701,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             if (rvu.offset >= cbit->end)
                 break; // if end of codeblock
         }
+        ++cbit;
     }
     
     std::stack<CallStackEntry> callStack;
