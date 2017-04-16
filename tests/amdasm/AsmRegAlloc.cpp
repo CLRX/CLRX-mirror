@@ -702,14 +702,14 @@ j3:     v_add_f32 va[2], va[5], va[3]
                 {
                     { { "va", 2 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
                     { { "va", 3 }, SSAInfo(0, 1, 1, 1, 1, false) },
-                    { { "va", 5 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
-                    { { "va", 6 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) }
+                    { { "va", 5 }, SSAInfo(0, SIZE_MAX, 2, SIZE_MAX, 0, true) },
+                    { { "va", 6 }, SSAInfo(SIZE_MAX, 1, 1, 1, 1, false) }
                 }, false, false, true },
             { 68, 76, { },
                 {
                     { { "va", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
-                    { { "va", 3 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
-                    { { "va", 5 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                    { { "va", 3 }, SSAInfo(0, SIZE_MAX, 2, SIZE_MAX, 0, true) },
+                    { { "va", 5 }, SSAInfo(0, SIZE_MAX, 2, SIZE_MAX, 0, true) }
                 }, false, false, true },
         },
         { },

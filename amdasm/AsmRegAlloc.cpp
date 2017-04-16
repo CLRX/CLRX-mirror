@@ -446,6 +446,7 @@ struct FlowStackEntry
     size_t nextIndex;
     LastSSAIdMap replacedMultiSSAIds;
         // ssaIds from called routine already visited before call
+    std::unordered_map<AsmSingleVReg, size_t> prevSSAIds;
 };
 
 struct CallStackEntry
@@ -744,14 +745,17 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         ssaId++;
                         totalSSACount++;
                     }
-                    ssaEntry.second.ssaId = ssaId;
+                    if (ssaId != totalSSACount) // save old ssaId
+                        entry.prevSSAIds.insert({ ssaEntry.first, ssaId });
+                    ssaEntry.second.ssaId = totalSSACount;
                     ssaEntry.second.ssaIdFirst = ssaEntry.second.ssaIdChange!=0 ?
-                            ssaId : SIZE_MAX;
+                            totalSSACount : SIZE_MAX;
                     ssaEntry.second.ssaIdBefore = ssaId-1;
-                    ssaId += ssaEntry.second.ssaIdChange;
+                    totalSSACount += ssaEntry.second.ssaIdChange;
                     ssaEntry.second.ssaIdLast = ssaEntry.second.ssaIdChange!=0 ?
-                            ssaId-1 : SIZE_MAX;
-                    totalSSACount = std::max(totalSSACount, ssaId);
+                            totalSSACount-1 : SIZE_MAX;
+                    //totalSSACount = std::max(totalSSACount, ssaId);
+                    ssaId = totalSSACount;
                 }
                 // check if routineMap
                 auto rit = routineMap.find(entry.blockIndex);
@@ -868,7 +872,13 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             // erase at pop from selectedRoutines
             selectedRoutines.erase(entry.blockIndex); 
             for (const auto& ssaEntry: cblock.ssaInfoMap)
-                curSSAIdMap[ssaEntry.first] -= ssaEntry.second.ssaIdChange;
+            {
+                auto it = entry.prevSSAIds.find(ssaEntry.first);
+                if (it == entry.prevSSAIds.end())
+                    curSSAIdMap[ssaEntry.first] -= ssaEntry.second.ssaIdChange;
+                else // if found
+                    curSSAIdMap[ssaEntry.first] = it->second;
+            }
             flowStack.pop_back();
         }
     }
