@@ -625,13 +625,30 @@ struct AsmSSADataCase
 static const AsmSSADataCase ssaDataTestCases1Tbl[] =
 {
     {   /* simple */
-        ".regvar sa:s:8, va:v:4\n"
-        "s_mov_b32 sa[4], sa[2]\n",
+        ".regvar sa:s:8, va:v:10\n"
+        "s_mov_b32 sa[4], sa[2]\n"
+        "s_add_u32 sa[4], sa[2], s3\n"
+        "ds_read_b64 va[4:5], v0\n"
+        "v_add_f64 va[0:1], va[4:5], va[2:3]\n"
+        "v_mac_f32 va[0], va[4], va[5]\n"  // ignore this write, because also read
+        "v_mul_f32 va[1], va[4], va[5]\n"
+        "ds_read_b32 v10, v0\n"
+        "v_mul_lo_u32 v10, va[2], va[3]\n"
+        "v_mul_lo_u32 v10, va[2], va[3]\n",
         {
-            { 0, 4, { },
+            { 0, 56, { },
                 {
+                    { { "", 3 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "", 256 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "", 266 }, SSAInfo(SIZE_MAX, SIZE_MAX, 0, SIZE_MAX, 0, false) },
                     { { "sa", 2 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
-                    { { "sa", 4 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) }
+                    { { "sa", 4 }, SSAInfo(SIZE_MAX, 0, 0, 1, 2, false) },
+                    { { "va", 0 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) },
+                    { { "va", 1 }, SSAInfo(SIZE_MAX, 0, 0, 1, 2, false) },
+                    { { "va", 2 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 3 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 4 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) },
+                    { { "va", 5 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) }
                 }, false, false, true }
         },
         { },
