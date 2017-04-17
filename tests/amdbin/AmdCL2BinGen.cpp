@@ -483,13 +483,13 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     return config;
 }
 
-struct CLRX_INTERNAL CL2GPUDeviceCodeEntry
+struct CLRX_INTERNAL CL2GPUGenDeviceCodeEntry
 {
     uint32_t elfFlags;
     GPUDeviceType deviceType;
 };
 
-static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[11] =
+static const CL2GPUGenDeviceCodeEntry cl2GpuDeviceCodeTable[11] =
 {
     { 6, GPUDeviceType::BONAIRE },
     { 1, GPUDeviceType::SPECTRE },
