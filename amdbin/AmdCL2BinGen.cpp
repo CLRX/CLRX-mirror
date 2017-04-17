@@ -331,13 +331,13 @@ static const uint32_t gpuDeviceCodeTable2348[22] =
     19 // GPUDeviceType::GFX804
 };
 
-struct CLRX_INTERNAL CL2GPUCodeTable
+struct CLRX_INTERNAL CL2GPUGenCodeTable
 {
     cxuint toDriverVersion;   // to driver version
     const uint32_t* table;
 };
 
-static const CL2GPUCodeTable cl2CodeTables[] =
+static const CL2GPUGenCodeTable cl2GenCodeTables[] =
 {
     { 191205U, gpuDeviceCodeTable15_7 },
     { 200406U, gpuDeviceCodeTable },
@@ -1999,24 +1999,12 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             input->driverVersion == 207903);
     /* determine correct flags for device type */
     const uint32_t* deviceCodeTable;
-    /*if (input->driverVersion < 191205)
-        deviceCodeTable = gpuDeviceCodeTable15_7;
-    else if (input->driverVersion < 200406)
-        deviceCodeTable = gpuDeviceCodeTable;
-    else if (input->driverVersion < 203603)
-        deviceCodeTable = gpuDeviceCodeTable16_3;
-    else if (input->driverVersion < 223600)
-        // AMD GPUPRO driver and later
-        deviceCodeTable = gpuDeviceCodeTableGPUPRO;
-    else // newest driver
-        deviceCodeTable = gpuDeviceCodeTable2236;*/
-    
-    const size_t codeTablesNum = sizeof(cl2CodeTables)/sizeof(CL2GPUCodeTable);
-    auto ctit = std::upper_bound(cl2CodeTables, cl2CodeTables+codeTablesNum,
-                CL2GPUCodeTable{ input->driverVersion },
-                [](const CL2GPUCodeTable& a, const CL2GPUCodeTable& b)
+    const size_t codeTablesNum = sizeof(cl2GenCodeTables)/sizeof(CL2GPUGenCodeTable);
+    auto ctit = std::upper_bound(cl2GenCodeTables, cl2GenCodeTables+codeTablesNum,
+                CL2GPUGenCodeTable{ input->driverVersion },
+                [](const CL2GPUGenCodeTable& a, const CL2GPUGenCodeTable& b)
                 { return a.toDriverVersion < b.toDriverVersion; });
-    if (ctit == cl2CodeTables+codeTablesNum)
+    if (ctit == cl2GenCodeTables+codeTablesNum)
         ctit--; // to previous table
     deviceCodeTable = ctit->table;
     

@@ -858,7 +858,7 @@ struct CLRX_INTERNAL CL2GPUCodeTable
     size_t tableSize;
 };
 
-static CL2GPUCodeTable cl2CodeTables[] =
+static const CL2GPUCodeTable cl2CodeTables[] =
 {
     { 191205U, cl2_15_7GpuDeviceCodeTable,
         sizeof(cl2_15_7GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
