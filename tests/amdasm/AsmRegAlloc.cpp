@@ -777,6 +777,103 @@ j3:     v_add_f32 va[2], va[5], va[3]
         { },
         true, ""
     }
+#if 0
+    ,
+    {   /* 3 - longer tree (more blocks) */
+        R"ffDXD(.regvar sa:s:8, va:v:12, vb:v:10
+        # 0
+        ds_read_b64 v[2:3], v0
+        ds_read_b64 v[4:5], v0
+        v_mov_b32 va[0], v1
+        v_mul_f32 va[1], v0, v1
+        .cf_cjump tx1, tx2, tx3
+        s_setpc_b64 s[0:1]
+        # 28
+        v_mul_lo_u32 va[2], va[0], va[1]
+        v_mul_hi_u32 va[3], va[0], va[1]
+        v_lshrrev_b32 va[4], v2, va[5]
+        .cf_cjump ux1, ux2, ux3
+        s_setpc_b64 s[0:1]
+        # 52
+        v_mul_u32_u24 va[2], va[0], va[1]
+        v_mul_hi_u32_u24 va[3], va[0], va[1]
+        v_lshlrev_b32 va[5], v3, va[4]
+        .cf_cjump vx1, vx2, vx3
+        s_setpc_b64 s[0:1]
+        # 68
+        v_mul_lo_i32 va[2], va[0], va[1]
+        v_mul_hi_i32 va[3], va[0], va[1]
+        v_ashrrev_i32 va[6], v4, va[4]
+        .cf_jump wx1, wx2, wx3
+        s_setpc_b64 s[0:1]
+        
+.p2align 4
+        # 96
+tx1:    v_min_f32 vb[0], va[0], va[1]
+        v_madak_f32 vb[5], vb[0], va[1], 2.5
+ux1:    v_nop
+vx1:    v_add_f32 va[9], v11, vb[4]
+wx1:    v_add_f32 va[10], v11, vb[4]
+        s_endpgm
+.p2align 4
+tx2:    v_max_f32 vb[1], va[0], va[1]
+        v_madak_f32 va[3], va[0], va[1], 2.5
+ux2:    v_nop
+        s_nop 7
+vx2:    v_nop
+wx2:    v_add_f32 va[8], v19, vb[5]
+        s_endpgm
+.p2align 4
+tx3:    v_max_u32 vb[2], va[0], va[1]
+        v_madmk_f32 vb[3], va[0], 1.23, vb[1]
+ux3:    v_add_f32 va[7], v11, vb[5]
+vx3:    v_add_f32 va[6], v13, vb[5]
+wx3:    v_nop
+        s_endpgm
+)ffDXD",
+        {
+            { 0, 28,
+                { { 1, false }, { 4, false }, { 8, false }, { 12, false },
+                    { 16, false } },
+                {
+                    { { "", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "", 256 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "", 256+1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "", 256+2 }, SSAInfo(SIZE_MAX, SIZE_MAX, 0, SIZE_MAX, 0, false) },
+                    { { "", 256+3 }, SSAInfo(SIZE_MAX, SIZE_MAX, 0, SIZE_MAX, 0, false) },
+                    { { "", 256+4 }, SSAInfo(SIZE_MAX, SIZE_MAX, 0, SIZE_MAX, 0, false) },
+                    { { "", 256+5 }, SSAInfo(SIZE_MAX, SIZE_MAX, 0, SIZE_MAX, 0, false) },
+                    { { "va", 0 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) },
+                    { { "va", 1 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) },
+                }, false, false, false },
+            { 28, 52,
+                { { 2, false }, { 5, false }, { 9, false }, { 13, false },
+                    { 17, false } },
+                {
+                    { { "", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 2 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) },
+                    { { "va", 3 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) },
+                    { { "va", 4 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) }
+                }, false, false, false },
+            { 52, 68,
+                { { 3, false }, { 6, false }, { 10, false }, { 14, false },
+                    { 18, false } },
+                {
+                }, false, false, false },
+            { 68, 92,
+                { { 7, false }, { 11, false }, { 15, false }, { 19, false } },
+                {
+                }, false, false, false },
+            // 4-8:
+        },
+        { },
+        true, ""
+    }
+#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
@@ -784,7 +881,7 @@ static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
 {
     if (vr.regVar == nullptr)
         return { "", vr.index };
-        
+    
     auto it = rvMap.find(vr.regVar);
     if (it == rvMap.end())
         throw Exception("getTestSingleVReg: RegVar not found!!");

@@ -58,7 +58,8 @@ enum class GPUDeviceType: cxbyte
     STONEY,
     ELLESMERE,
     BAFFIN,
-    GPUDEVICE_MAX = BAFFIN,    ///< last value
+    GFX804,
+    GPUDEVICE_MAX = GFX804,    ///< last value
     
     RADEON_HD7700 = CAPE_VERDE, ///< Radeon HD7700
     RADEON_HD7800 = PITCAIRN,   ///< Radeon HD7800

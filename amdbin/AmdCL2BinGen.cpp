@@ -149,7 +149,7 @@ static const ArgTypeSizes argTypeSizesTable[] =
     { 7, 8, 1, /*clkevent*/ }
 };
 
-static const uint32_t gpuDeviceCodeTable[21] =
+static const uint32_t gpuDeviceCodeTable[22] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -171,10 +171,11 @@ static const uint32_t gpuDeviceCodeTable[21] =
     UINT_MAX, // GPUDeviceType::HORSE
     UINT_MAX, // GPUDeviceType::STONEY
     UINT_MAX, // GPUDeviceType::ELLESMERE
-    UINT_MAX  // GPUDeviceType::BAFFIN
+    UINT_MAX, // GPUDeviceType::BAFFIN
+    UINT_MAX  // GPUDeviceType::GFX804
 };
 
-static const uint32_t gpuDeviceCodeTable15_7[21] =
+static const uint32_t gpuDeviceCodeTable15_7[22] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -196,10 +197,11 @@ static const uint32_t gpuDeviceCodeTable15_7[21] =
     UINT_MAX, // GPUDeviceType::HORSE
     UINT_MAX, // GPUDeviceType::STONEY
     UINT_MAX, // GPUDeviceType::ELLESMERE
-    UINT_MAX  // GPUDeviceType::BAFFIN
+    UINT_MAX, // GPUDeviceType::BAFFIN
+    UINT_MAX  // GPUDeviceType::GFX804
 };
 
-static const uint32_t gpuDeviceCodeTable16_3[21] =
+static const uint32_t gpuDeviceCodeTable16_3[22] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -221,10 +223,11 @@ static const uint32_t gpuDeviceCodeTable16_3[21] =
     12, // GPUDeviceType::HORSE
     17, // GPUDeviceType::STONEY
     12, // GPUDeviceType::ELLESMERE
-    13  // GPUDeviceType::BAFFIN
+    13,  // GPUDeviceType::BAFFIN
+    UINT_MAX  // GPUDeviceType::GFX804
 };
 
-static const uint32_t gpuDeviceCodeTableGPUPRO[21] =
+static const uint32_t gpuDeviceCodeTableGPUPRO[22] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -246,10 +249,11 @@ static const uint32_t gpuDeviceCodeTableGPUPRO[21] =
     17, // GPUDeviceType::HORSE
     15, // GPUDeviceType::STONEY
     17, // GPUDeviceType::ELLESMERE
-    16 // GPUDeviceType::BAFFIN
+    16,// GPUDeviceType::BAFFIN
+    UINT_MAX // GPUDeviceType::GFX804
 };
 
-static const uint32_t gpuDeviceCodeTable2236[21] =
+static const uint32_t gpuDeviceCodeTable2236[22] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -271,7 +275,8 @@ static const uint32_t gpuDeviceCodeTable2236[21] =
     16, // GPUDeviceType::HORSE
     14, // GPUDeviceType::STONEY
     16, // GPUDeviceType::ELLESMERE
-    15 // GPUDeviceType::BAFFIN
+    15, // GPUDeviceType::BAFFIN
+    18 // GPUDeviceType::GFX804
 };
 
 static const uint16_t mainBuiltinSectionTable[] =
@@ -1751,7 +1756,8 @@ static const AMDGPUArchValues amdGpuArchValuesTbl[] =
     { 8, 0, 4 }, // GPUDeviceType::HORSE
     { 8, 1, 0 }, // GPUDeviceType::STONEY
     { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
-    { 8, 0, 4 } // GPUDeviceType::BAFFIN
+    { 8, 0, 4 }, // GPUDeviceType::BAFFIN
+    { 8, 0, 4 }  // GPUDeviceType::GFX804
 };
 
 static CString constructName(size_t prefixSize, const char* prefix, const CString& name,

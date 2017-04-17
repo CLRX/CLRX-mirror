@@ -812,7 +812,8 @@ static const CL2GPUDeviceCodeEntry cl2_2236GpuDeviceCodeTable[] =
     { 13, GPUDeviceType::FIJI },
     { 14, GPUDeviceType::STONEY },
     { 15, GPUDeviceType::BAFFIN },
-    { 16, GPUDeviceType::ELLESMERE }
+    { 16, GPUDeviceType::ELLESMERE },
+    { 18, GPUDeviceType::GFX804 }
 };
 
 template<typename Types>
