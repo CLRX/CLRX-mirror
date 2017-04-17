@@ -377,10 +377,10 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                 continue;
             }
             
-            auto it2 = binaryFind(codeBlocks.begin(), codeBlocks.end(),
-                    CodeBlock{ instrAfter }, codeBlockStartLess);
             if (it == codeBlocks.end())
                 continue; // error!
+            auto it2 = std::lower_bound(codeBlocks.begin(), codeBlocks.end(),
+                    CodeBlock{ instrAfter }, codeBlockStartLess);
             auto curIt = it2;
             --curIt;
             
