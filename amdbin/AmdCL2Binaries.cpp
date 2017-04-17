@@ -797,7 +797,6 @@ static const CL2GPUDeviceCodeEntry cl2GPUPROGpuDeviceCodeTable[] =
     { 17, GPUDeviceType::ELLESMERE }
 };
 
-/* driver version: 2036.3 */
 static const CL2GPUDeviceCodeEntry cl2_2236GpuDeviceCodeTable[] =
 {
     { 1, GPUDeviceType::SPECTRE },
@@ -816,6 +815,67 @@ static const CL2GPUDeviceCodeEntry cl2_2236GpuDeviceCodeTable[] =
     { 18, GPUDeviceType::GFX804 }
 };
 
+static const CL2GPUDeviceCodeEntry cl2_2264GpuDeviceCodeTable[] =
+{
+    { 1, GPUDeviceType::SPECTRE },
+    { 2, GPUDeviceType::SPOOKY },
+    { 3, GPUDeviceType::KALINDI },
+    { 4, GPUDeviceType::MULLINS },
+    { 6, GPUDeviceType::BONAIRE },
+    { 7, GPUDeviceType::HAWAII },
+    { 8, GPUDeviceType::ICELAND },
+    { 9, GPUDeviceType::TONGA },
+    { 13, GPUDeviceType::CARRIZO },
+    { 14, GPUDeviceType::FIJI },
+    { 15, GPUDeviceType::STONEY },
+    { 16, GPUDeviceType::BAFFIN },
+    { 17, GPUDeviceType::ELLESMERE },
+    { 18, GPUDeviceType::GFX804 }
+};
+
+static const CL2GPUDeviceCodeEntry cl2_2348GpuDeviceCodeTable[] =
+{
+    { 1, GPUDeviceType::SPECTRE },
+    { 2, GPUDeviceType::SPOOKY },
+    { 3, GPUDeviceType::KALINDI },
+    { 4, GPUDeviceType::MULLINS },
+    { 6, GPUDeviceType::BONAIRE },
+    { 7, GPUDeviceType::HAWAII },
+    { 8, GPUDeviceType::ICELAND },
+    { 9, GPUDeviceType::TONGA },
+    { 14, GPUDeviceType::CARRIZO },
+    { 15, GPUDeviceType::FIJI },
+    { 16, GPUDeviceType::STONEY },
+    { 17, GPUDeviceType::BAFFIN },
+    { 18, GPUDeviceType::ELLESMERE },
+    { 19, GPUDeviceType::GFX804 }
+};
+
+struct CLRX_INTERNAL CL2GPUCodeTable
+{
+    cxuint toDriverVersion;   // to driver version
+    const CL2GPUDeviceCodeEntry* table;
+    size_t tableSize;
+};
+
+static CL2GPUCodeTable cl2CodeTables[] =
+{
+    { 191205U, cl2_15_7GpuDeviceCodeTable,
+        sizeof(cl2_15_7GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
+    { 200406U, cl2GpuDeviceCodeTable,
+        sizeof(cl2GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
+    { 203603U, cl2_16_3GpuDeviceCodeTable,
+        sizeof(cl2_16_3GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
+    { 223600U, cl2GPUPROGpuDeviceCodeTable,
+        sizeof(cl2GPUPROGpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
+    { 226400U, cl2_2236GpuDeviceCodeTable,
+        sizeof(cl2_2236GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
+    { 234800U, cl2_2264GpuDeviceCodeTable,
+        sizeof(cl2_2264GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
+    { UINT_MAX, cl2_2348GpuDeviceCodeTable,
+        sizeof(cl2_2348GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) }
+};
+
 template<typename Types>
 GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
         const typename Types::ElfBinary& binary, uint32_t& outArchMinor,
@@ -832,31 +892,16 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
     else
         inputDriverVersion = inDriverVersion;
     
-    if (inputDriverVersion < 191205)
-    {
-        gpuCodeTable = cl2_15_7GpuDeviceCodeTable;
-        entriesNum = sizeof(cl2_15_7GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
-    }
-    else if (inputDriverVersion < 200406)
-    {
-        gpuCodeTable = cl2GpuDeviceCodeTable;
-        entriesNum = sizeof(cl2GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
-    }
-    else if (inputDriverVersion < 203603)
-    {
-        gpuCodeTable = cl2_16_3GpuDeviceCodeTable;
-        entriesNum = sizeof(cl2_16_3GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
-    }
-    else if (inputDriverVersion < 223600)
-    {
-        gpuCodeTable = cl2GPUPROGpuDeviceCodeTable;
-        entriesNum = sizeof(cl2GPUPROGpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
-    }
-    else
-    {
-        gpuCodeTable = cl2_2236GpuDeviceCodeTable;
-        entriesNum = sizeof(cl2_2236GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
-    }
+    const size_t codeTablesNum = sizeof(cl2CodeTables)/sizeof(CL2GPUCodeTable);
+    auto ctit = std::upper_bound(cl2CodeTables, cl2CodeTables+codeTablesNum,
+                CL2GPUCodeTable{ inputDriverVersion },
+                [](const CL2GPUCodeTable& a, const CL2GPUCodeTable& b)
+                { return a.toDriverVersion < b.toDriverVersion; });
+    if (ctit == cl2CodeTables+codeTablesNum)
+        ctit--; // to previous table
+    //std::cout << "ctitver: " << ctit->toDriverVersion << "\n";
+    gpuCodeTable = ctit->table;
+    entriesNum = ctit->tableSize;
     
     cxuint index = binaryFind(gpuCodeTable, gpuCodeTable + entriesNum, { elfFlags },
               [] (const CL2GPUDeviceCodeEntry& l, const CL2GPUDeviceCodeEntry& r)

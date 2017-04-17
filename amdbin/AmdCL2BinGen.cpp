@@ -279,6 +279,75 @@ static const uint32_t gpuDeviceCodeTable2236[22] =
     18 // GPUDeviceType::GFX804
 };
 
+static const uint32_t gpuDeviceCodeTable2264[22] =
+{
+    UINT_MAX, // GPUDeviceType::CAPE_VERDE
+    UINT_MAX, // GPUDeviceType::PITCAIRN
+    UINT_MAX, // GPUDeviceType::TAHITI
+    UINT_MAX, // GPUDeviceType::OLAND
+    6, // GPUDeviceType::BONAIRE
+    1, // GPUDeviceType::SPECTRE
+    2, // GPUDeviceType::SPOOKY
+    3, // GPUDeviceType::KALINDI
+    UINT_MAX, // GPUDeviceType::HAINAN
+    7, // GPUDeviceType::HAWAII
+    8, // GPUDeviceType::ICELAND
+    9, // GPUDeviceType::TONGA
+    4, // GPUDeviceType::MULLINS
+    14, // GPUDeviceType::FIJI
+    13, // GPUDeviceType::CARRIZO
+    15, // GPUDeviceType::DUMMY
+    16, // GPUDeviceType::GOOSE
+    17, // GPUDeviceType::HORSE
+    15, // GPUDeviceType::STONEY
+    17, // GPUDeviceType::ELLESMERE
+    16, // GPUDeviceType::BAFFIN
+    18 // GPUDeviceType::GFX804
+};
+
+static const uint32_t gpuDeviceCodeTable2348[22] =
+{
+    UINT_MAX, // GPUDeviceType::CAPE_VERDE
+    UINT_MAX, // GPUDeviceType::PITCAIRN
+    UINT_MAX, // GPUDeviceType::TAHITI
+    UINT_MAX, // GPUDeviceType::OLAND
+    6, // GPUDeviceType::BONAIRE
+    1, // GPUDeviceType::SPECTRE
+    2, // GPUDeviceType::SPOOKY
+    3, // GPUDeviceType::KALINDI
+    UINT_MAX, // GPUDeviceType::HAINAN
+    7, // GPUDeviceType::HAWAII
+    8, // GPUDeviceType::ICELAND
+    9, // GPUDeviceType::TONGA
+    4, // GPUDeviceType::MULLINS
+    15, // GPUDeviceType::FIJI
+    14, // GPUDeviceType::CARRIZO
+    16, // GPUDeviceType::DUMMY
+    17, // GPUDeviceType::GOOSE
+    18, // GPUDeviceType::HORSE
+    16, // GPUDeviceType::STONEY
+    18, // GPUDeviceType::ELLESMERE
+    17, // GPUDeviceType::BAFFIN
+    19 // GPUDeviceType::GFX804
+};
+
+struct CLRX_INTERNAL CL2GPUCodeTable
+{
+    cxuint toDriverVersion;   // to driver version
+    const uint32_t* table;
+};
+
+static const CL2GPUCodeTable cl2CodeTables[] =
+{
+    { 191205U, gpuDeviceCodeTable15_7 },
+    { 200406U, gpuDeviceCodeTable },
+    { 203603U, gpuDeviceCodeTable16_3 },
+    { 223600U, gpuDeviceCodeTableGPUPRO },
+    { 226400U, gpuDeviceCodeTable2236 },
+    { 234800U, gpuDeviceCodeTable2264 },
+    { UINT_MAX, gpuDeviceCodeTable2348 }
+};
+
 static const uint16_t mainBuiltinSectionTable[] =
 {
     1, // ELFSECTID_SHSTRTAB
@@ -1930,7 +1999,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             input->driverVersion == 207903);
     /* determine correct flags for device type */
     const uint32_t* deviceCodeTable;
-    if (input->driverVersion < 191205)
+    /*if (input->driverVersion < 191205)
         deviceCodeTable = gpuDeviceCodeTable15_7;
     else if (input->driverVersion < 200406)
         deviceCodeTable = gpuDeviceCodeTable;
@@ -1940,7 +2009,17 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         // AMD GPUPRO driver and later
         deviceCodeTable = gpuDeviceCodeTableGPUPRO;
     else // newest driver
-        deviceCodeTable = gpuDeviceCodeTable2236;
+        deviceCodeTable = gpuDeviceCodeTable2236;*/
+    
+    const size_t codeTablesNum = sizeof(cl2CodeTables)/sizeof(CL2GPUCodeTable);
+    auto ctit = std::upper_bound(cl2CodeTables, cl2CodeTables+codeTablesNum,
+                CL2GPUCodeTable{ input->driverVersion },
+                [](const CL2GPUCodeTable& a, const CL2GPUCodeTable& b)
+                { return a.toDriverVersion < b.toDriverVersion; });
+    if (ctit == cl2CodeTables+codeTablesNum)
+        ctit--; // to previous table
+    deviceCodeTable = ctit->table;
+    
     // if GPU type is not supported by driver version
     if (deviceCodeTable[cxuint(input->deviceType)] == UINT_MAX)
         throw Exception("Unsupported GPU device type by driver version");
