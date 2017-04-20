@@ -1085,17 +1085,18 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         {
             toLowerString(regName);
             operand.range = {0, 0};
-            if (::strcmp(regName, "vccz") == 0)
+            if (::strcmp(regName, "vccz") == 0 || ::strcmp(regName, "src_vccz") == 0)
             {
                 operand.range = { 251, 252 };
                 return true;
             }
-            else if (::strcmp(regName, "execz") == 0)
+            else if (::strcmp(regName, "execz") == 0 ||
+                    ::strcmp(regName, "src_execz") == 0)
             {
                 operand.range = { 252, 253 };
                 return true;
             }
-            else if (::strcmp(regName, "scc") == 0)
+            else if (::strcmp(regName, "scc") == 0 || ::strcmp(regName, "src_scc") == 0)
             {
                 operand.range = { 253, 254 };
                 return true;
