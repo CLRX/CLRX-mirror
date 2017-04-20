@@ -531,6 +531,7 @@ static const std::pair<const char*, cxuint> hwregNamesMap[] =
     { "gpr_alloc", 5 },
     { "hw_id", 4 },
     { "ib_dbg0", 12 },
+    { "ib_dbg1", 13 },
     { "ib_sts", 7 },
     { "inst_dw0", 10 },
     { "inst_dw1", 11 },
@@ -615,8 +616,14 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         ++linePtr;
         skipSpacesToEnd(linePtr, end);
         cxuint hwregId = 0;
+        const char* hwregNamePlace = linePtr;
         good &= getEnumeration(asmr, linePtr, "HWRegister",
                       hwregNamesMapSize, hwregNamesMap, hwregId, "hwreg_");
+        if (good && (arch & ARCH_RX3X0) == 0 && hwregId == 13)
+        {   // if ib_dgb1 in not GCN 1.2
+            asmr.printError(hwregNamePlace, "Unknown HWRegister");
+            good = false;
+        }
         
         if (!skipRequiredComma(asmr, linePtr))
             return false;

@@ -997,12 +997,12 @@ void GCNDisasmUtils::decodeSOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     output.forward(bufPtr-bufStart);
 }
 
-static const char* hwregNames[13] =
+static const char* hwregNames[14] =
 {
     "0", "mode", "status", "trapsts",
     "hw_id", "gpr_alloc", "lds_alloc", "ib_sts",
     "pc_lo", "pc_hi", "inst_dw0", "inst_dw1",
-    "ib_dbg0"
+    "ib_dbg0", "ib_dbg1"
 };
 
 /// about label writer - label is workaround for class hermetization
@@ -1034,7 +1034,8 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
     {
         putChars(bufPtr, "hwreg(", 6);
         const cxuint hwregId = imm16&0x3f;
-        if (hwregId < 13)
+        cxuint hwregNamesNum = 13 + ((arch&ARCH_RX3X0)!=0);
+        if (hwregId < hwregNamesNum)
             putChars(bufPtr, hwregNames[hwregId], ::strlen(hwregNames[hwregId]));
         else
         {

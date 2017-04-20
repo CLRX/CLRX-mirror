@@ -399,6 +399,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:39: Error: Unterminated hwreg function\n" },
     { "    s_getreg_b32  s43, hwreg(XXX,6,8)", 0, 0, false, false,
         "test.s:1:30: Error: Unknown HWRegister\n" },
+    { "    s_getreg_b32  s43, hwreg(ib_dbg1,6,8)", 0, 0, false, false,
+        "test.s:1:30: Error: Unknown HWRegister\n" },
     /// s_getreg_b32  s43, hwreg(HW_REG_IB_DBG0, 0, 1)
     /* SOPP */
     { "s_nop  0x0", 0xbf800000U, 0, false, true, "" },

@@ -115,6 +115,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
                 "0x45d2a sdst=0x2b\n" },
     { 0xba0048c3u, 0x45d2a, true, "        s_setreg_imm32_b32 hwreg(trapsts, 3, 10), "
                 "0x45d2a\n" },
+    { 0xb8ab000du, 0, false, "        s_getreg_b32    s43, hwreg(ib_dbg1, 0, 1)\n" },
     { 0xbaabd3b9u, 0, false, "        SOPK_ill_21     s43, 0xd3b9\n" },
     { 0xbb2bd3b9U, 0, false, "        SOPK_ill_22     s43, 0xd3b9\n" },
     { 0xbbabd3b9U, 0, false, "        SOPK_ill_23     s43, 0xd3b9\n" },
