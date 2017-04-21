@@ -879,9 +879,15 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             putChars(bufPtr, "sendmsg(", 8);
             const cxuint msgType = imm16&15;
             const char* msgName = sendMsgCodeMessageTable[msgType];
+            cxuint minUnknownMsgType = 4;
+            if ((arch & ARCH_RX3X0) != 0 && msgType == 4)
+            {
+                msgName = "savewave"; // 4 - save_wave
+                minUnknownMsgType = 5;
+            }
             while (*msgName != 0)
                 *bufPtr++ = *msgName++;
-            if ((msgType&14) == 2 || (msgType >= 4 && msgType <= 14) ||
+            if ((msgType&14) == 2 || (msgType >= minUnknownMsgType && msgType <= 14) ||
                 (imm16&0x3f0) != 0) // gs ops
             {
                 *bufPtr++ = ',';

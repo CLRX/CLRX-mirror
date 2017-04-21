@@ -259,6 +259,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0xbf8e032bU, 0, false, "        s_sleep         0x32b\n" },
     { 0xbf8f032bU, 0, false, "        s_setprio       0x32b\n" },
     { 0xbf90001bU, 0, false, "        s_sendmsg       sendmsg(11, cut, 0)\n" },
+    { 0xbf900014U, 0, false, "        s_sendmsg       sendmsg(savewave, cut, 0)\n" },
+    { 0xbf900004U, 0, false, "        s_sendmsg       sendmsg(savewave)\n" },
     { 0xbf91001bU, 0, false, "        s_sendmsghalt   sendmsg(11, cut, 0)\n" },
     { 0xbf92032bU, 0, false, "        s_trap          0x32b\n" },
     { 0xbf93032bU, 0, false, "        s_icache_inv    0x32b\n" },

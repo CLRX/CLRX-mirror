@@ -162,6 +162,9 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "    s_endpgm_saved", 0xbf9b0000U, 0, false, true, "" },
     { "    s_set_gpr_idx_off", 0xbf9c0000U, 0, false, true, "" },
     { "    s_set_gpr_idx_mode 332", 0xbf9d014cU, 0, false, true, "" },
+    { "    s_sendmsg  sendmsg(MSG_SAVEWAVE)",
+        0xbf900004U, 0, false, true, "" },
+    { "    s_sendmsg  sendmsg(savewave)", 0xbf900004U, 0, false, true, "" },
     /* SMEM encoding */
     { "    s_load_dword  s50, s[58:59], 0x1345b", 0xc0020c9dU, 0x1345b, true, true, "" },
     { "    s_load_dword  s50, s[58:59], 0x1345b glc   ",

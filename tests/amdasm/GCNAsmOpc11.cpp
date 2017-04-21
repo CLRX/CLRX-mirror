@@ -504,6 +504,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* msg errors */
     { "    s_sendmsg  sendmsg(interrupxt)", 0, 0, false, false,
         "test.s:1:24: Error: Unknown message\n" },
+    { "    s_sendmsg  sendmsg(savewave)", 0, 0, false, false,
+        "test.s:1:24: Error: Unknown message\n" },
     { "    s_sendmsg  sendmsg(gs, nop__x)", 0, 0, false, false,
         "test.s:1:28: Error: Unknown GSOP\n" },
     { "    s_sendmsg  sendmsg(gs, nop__x", 0, 0, false, false,

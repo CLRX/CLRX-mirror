@@ -788,6 +788,7 @@ static const std::pair<const char*, uint16_t> sendMessageNamesMap[] =
     { "gs", 2 },
     { "gs_done", 3 },
     { "interrupt", 1 },
+    { "savewave", 4 },
     { "sysmsg", 15 },
     { "system", 15 }
 };
@@ -950,7 +951,9 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 size_t index = binaryMapFind(sendMessageNamesMap,
                          sendMessageNamesMap + sendMessageNamesMapSize,
                          name+msgNameIndex, CStringLess()) - sendMessageNamesMap;
-                if (index != sendMessageNamesMapSize)
+                if (index != sendMessageNamesMapSize &&
+                    // save_wave only for GCN1.2
+                    (sendMessageNamesMap[index].second!=4 || (arch&ARCH_RX3X0)!=0))
                     sendMessage = sendMessageNamesMap[index].second;
                 else
                 {
