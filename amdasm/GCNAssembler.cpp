@@ -1236,6 +1236,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (simm7Expr!=nullptr)
         simm7Expr->setTarget(AsmExprTarget(GCNTGT_SMEMIMM, asmr.currentSection,
                        output.size()));
+    // TODO: add RVU modification for atomics
     
     uint32_t words[2];
     SLEV(words[0], 0xc0000000U | (uint32_t(gcnInsn.code1)<<18) | (dataReg.bstart()<<6) |
@@ -1248,7 +1249,8 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     soffsetExpr.release();
     simm7Expr.release();
-    if ((gcnInsn.mode & GCN_MLOAD) != 0 && dataReg && !dataReg.isRegVar())
+    if (((gcnInsn.mode & GCN_MLOAD) != 0 || ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc)) &&
+            dataReg && !dataReg.isRegVar())
     {
         updateSGPRsNum(gcnRegs.sgprsNum, dataReg.end-1, arch);
         updateRegFlags(gcnRegs.regFlags, dataReg.start, arch);

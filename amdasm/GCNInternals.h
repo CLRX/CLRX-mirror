@@ -180,7 +180,7 @@ enum : uint16_t
     GCN_MIMG_VAGE6D = 0x15,  /// vaddr requires 6 or more registers and holds user derivs
     GCN_MIMG_VA_MASK = 0xf,
     GCN_MLOAD = 0x1000, // instruction load data to vgprs
-    GCN_MATOMIC = 0x2000, // instructin perform atomics and returns data if glc==1
+    GCN_MATOMIC = 0x2000, // instruction perform atomics and returns data if glc==1
     GCN_MHALFWRITE = 0x4000,
     GCN_MCMPSWAP = 0x6000,
     GCN_FLAT_DDST = 0x00,   // destination as first operand
