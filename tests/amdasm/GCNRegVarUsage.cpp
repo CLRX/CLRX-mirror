@@ -302,7 +302,11 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "s_atc_probe  0x32, rax4[12:13], 0xfff5b\n"
         "s_atc_probe_buffer  0x32, rax4[12:15], 0xfff5b\n"
         "s_load_dwordx2 s[28:29], s[36:37], 0x5b\n"
-        "s_buffer_load_dwordx4 s[44:47], s[12:15], 0x5b\n",
+        "s_buffer_load_dwordx4 s[44:47], s[12:15], 0x5b\n"
+        "s_buffer_atomic_add rax4[0], rbx5[8:11], 0x5b\n"
+        "s_buffer_atomic_add rax4[0], rbx5[8:11], 0x5b glc\n"
+        "s_buffer_atomic_cmpswap rax4[0:1], rbx5[8:11], 0x5b glc\n"
+        "s_buffer_atomic_cmpswap_x2 rax4[0:3], rbx5[8:11], 0x5b glc\n",
         {
             // s_load_dword rbx, rbx5[2:3], 0x5b
             { 0, "rbx", 0, 1, GCNFIELD_SMRD_SDST, ASMRVU_WRITE, 1 },
@@ -340,7 +344,21 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 96, nullptr, 36, 38, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 0 },
             // s_buffer_load_dwordx4 s[44:47], s[12:15], 0x5b
             { 104, nullptr, 44, 48, GCNFIELD_SMRD_SDST, ASMRVU_WRITE, 0 },
-            { 104, nullptr, 12, 16, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 0 }
+            { 104, nullptr, 12, 16, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 0 },
+            // s_buffer_atomic_add rax4[0], rbx5[8:11], 0x5b
+            { 112, "rax4", 0, 1, GCNFIELD_SMRD_SDST, ASMRVU_READ, 1 },
+            { 112, "rbx5", 8, 12, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 4 },
+            // s_buffer_atomic_add rax4[0], rbx5[8:11], 0x5b glc
+            { 120, "rax4", 0, 1, GCNFIELD_SMRD_SDST, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            { 120, "rbx5", 8, 12, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 4 },
+            // s_buffer_atomic_cmpswap rax4[0:1], rbx5[8:11], 0x5b glc
+            { 128, "rax4", 0, 1, GCNFIELD_SMRD_SDST, ASMRVU_READ|ASMRVU_WRITE, 2 },
+            { 128, "rbx5", 8, 12, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 4 },
+            { 128, "rax4", 1, 2, GCNFIELD_SMRD_SDSTH, ASMRVU_READ, 0 },
+            // s_buffer_atomic_cmpswap_x2 rax4[0:3], rbx5[8:11], 0x5b glc
+            { 136, "rax4", 0, 2, GCNFIELD_SMRD_SDST, ASMRVU_READ|ASMRVU_WRITE, 4 },
+            { 136, "rbx5", 8, 12, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 4 },
+            { 136, "rax4", 2, 4, GCNFIELD_SMRD_SDSTH, ASMRVU_READ, 0 }
         },
         true, ""
     },

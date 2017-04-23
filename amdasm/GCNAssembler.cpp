@@ -185,11 +185,14 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
             regSize<<=1; // 2 or 4
             break;
         case GCNFIELD_SMRD_SDST:
+        case GCNFIELD_SMRD_SDSTH:
             if (isGCN12)
                 rstart = (code1>>6) & 0x7f;
             else
                 rstart = (code1>>15) & 0x7f;
             regSize = 1U<<(regSize-1);
+            if (regField == GCNFIELD_SMRD_SDSTH)
+                rstart += regSize;
             break;
         case GCNFIELD_SMRD_SOFFSET:
             if (isGCN12)
@@ -1160,6 +1163,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> soffsetExpr;
     std::unique_ptr<AsmExpression> simm7Expr;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    
     if (mode1 == GCN_SMRD_ONLYDST)
     {
         gcnAsm->setCurrentRVU(0);
@@ -1237,6 +1241,31 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         simm7Expr->setTarget(AsmExprTarget(GCNTGT_SMEMIMM, asmr.currentSection,
                        output.size()));
     // TODO: add RVU modification for atomics
+    bool dataToRead = false;
+    bool dataToWrite = false;
+    if (dataReg)
+    {
+        dataToWrite = ((gcnInsn.mode&GCN_MLOAD) != 0 ||
+                ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc));
+        dataToRead = (gcnInsn.mode&GCN_MLOAD)==0 || (gcnInsn.mode&GCN_MATOMIC)!=0;
+    }
+    
+    gcnAsm->instrRVUs[0].rwFlags = (dataToRead ? ASMRVU_READ : 0) |
+            (dataToWrite ? ASMRVU_WRITE : 0);
+    // check fcmpswap
+    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && dataToWrite)
+    {   // fix access
+        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
+        uint16_t size = rvu.rend-rvu.rstart;
+        rvu.rend = rvu.rstart + (size>>1);
+        AsmRegVarUsage& nextRvu = gcnAsm->instrRVUs[3];
+        nextRvu = rvu;
+        nextRvu.regField = GCNFIELD_SMRD_SDSTH;
+        nextRvu.rstart += (size>>1);
+        nextRvu.rend = rvu.rstart + size;
+        nextRvu.rwFlags = ASMRVU_READ;
+        nextRvu.align = 0;
+    }
     
     uint32_t words[2];
     SLEV(words[0], 0xc0000000U | (uint32_t(gcnInsn.code1)<<18) | (dataReg.bstart()<<6) |
@@ -1249,8 +1278,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     soffsetExpr.release();
     simm7Expr.release();
-    if (((gcnInsn.mode & GCN_MLOAD) != 0 || ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc)) &&
-            dataReg && !dataReg.isRegVar())
+    if (!dataReg.isRegVar() && dataToWrite)
     {
         updateSGPRsNum(gcnRegs.sgprsNum, dataReg.end-1, arch);
         updateRegFlags(gcnRegs.regFlags, dataReg.start, arch);
