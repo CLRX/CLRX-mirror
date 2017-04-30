@@ -116,6 +116,13 @@ static const char* gpuArchitectureNameTable[3] =
     "GCN1.2"
 };
 
+static const char* gpuArchitectureNameTable2[6] =
+{
+    "GCN1.0", "GFX6",
+    "GCN1.1", "GFX7",
+    "GCN1.2", "GFX8"
+};
+
 static const GPUDeviceType gpuLowestDeviceFromArchTable[3] =
 {
     GPUDeviceType::CAPE_VERDE,
@@ -135,12 +142,13 @@ GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
 GPUArchitecture CLRX::getGPUArchitectureFromName(const char* name)
 {
     cxuint found = 0;
-    for (; found < sizeof gpuArchitectureNameTable / sizeof(const char*); found++)
-        if (::strcasecmp(name, gpuArchitectureNameTable[found]) == 0)
+    for (; found < sizeof gpuArchitectureNameTable2 /
+                sizeof(const char*); found++)
+        if (::strcasecmp(name, gpuArchitectureNameTable2[found]) == 0)
             break;
-    if (found == sizeof(gpuArchitectureNameTable) / sizeof(const char*))
+    if (found == sizeof(gpuArchitectureNameTable2) / sizeof(const char*))
         throw Exception("Unknown GPU architecture");
-    return GPUArchitecture(found);
+    return GPUArchitecture(found>>1);
 }
 
 GPUArchitecture CLRX::getGPUArchitectureFromDeviceType(GPUDeviceType deviceType)
