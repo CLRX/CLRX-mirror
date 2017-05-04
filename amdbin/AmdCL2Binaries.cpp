@@ -812,6 +812,7 @@ static const CL2GPUDeviceCodeEntry cl2_2236GpuDeviceCodeTable[] =
     { 14, GPUDeviceType::STONEY },
     { 15, GPUDeviceType::BAFFIN },
     { 16, GPUDeviceType::ELLESMERE },
+    { 17, GPUDeviceType::GFX900 },
     { 18, GPUDeviceType::GFX804 }
 };
 
@@ -830,7 +831,8 @@ static const CL2GPUDeviceCodeEntry cl2_2264GpuDeviceCodeTable[] =
     { 15, GPUDeviceType::STONEY },
     { 16, GPUDeviceType::BAFFIN },
     { 17, GPUDeviceType::ELLESMERE },
-    { 18, GPUDeviceType::GFX804 }
+    { 18, GPUDeviceType::GFX804 },
+    { 19, GPUDeviceType::GFX900 }
 };
 
 static const CL2GPUDeviceCodeEntry cl2_2348GpuDeviceCodeTable[] =
@@ -848,7 +850,8 @@ static const CL2GPUDeviceCodeEntry cl2_2348GpuDeviceCodeTable[] =
     { 16, GPUDeviceType::STONEY },
     { 17, GPUDeviceType::BAFFIN },
     { 18, GPUDeviceType::ELLESMERE },
-    { 19, GPUDeviceType::GFX804 }
+    { 19, GPUDeviceType::GFX804 },
+    { 20, GPUDeviceType::GFX900 }
 };
 
 struct CLRX_INTERNAL CL2GPUCodeTable
@@ -949,13 +952,14 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
                         (arch==GPUArchitecture::GCN1_1 && major!=7))
                         throw Exception("Wrong arch major for GPU architecture");
                 }
-                else if (major != 8 && major != 7)
+                else if (major != 9 && major != 8 && major != 7)
                     throw Exception("Unknown arch major");
                     
                 if (!knownGPUType)
                 {
                     arch = (major == 7) ? GPUArchitecture::GCN1_1 :
-                            GPUArchitecture::GCN1_2;
+                            ((major == 8) ? GPUArchitecture::GCN1_2 :
+                            GPUArchitecture::GCN1_4);
                     deviceType = getLowestGPUDeviceTypeFromArchitecture(arch);
                     knownGPUType = true;
                 }

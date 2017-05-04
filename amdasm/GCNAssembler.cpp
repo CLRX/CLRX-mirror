@@ -164,7 +164,7 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
     if (readOffset+8 <= content.size())
         code2 = ULEV(*reinterpret_cast<const uint32_t*>(content.data()+readOffset+4));
     
-    const bool isGCN12 = (archMask & ARCH_RX3X0)!=0;
+    const bool isGCN12 = (archMask & ARCH_GCN_1_2_4)!=0;
     
     switch(regField)
     {
@@ -361,7 +361,7 @@ static void tryPromoteConstImmToLiteral(GCNOperand& src0Op, uint16_t arch)
     }
     else if (!src0Op.range.isRegVar() &&
             ((src0Op.range.start>=240 && src0Op.range.start<248) ||
-             ((arch&ARCH_RX3X0)!=0 && src0Op.range.start==248)))
+             ((arch&ARCH_GCN_1_2_4)!=0 && src0Op.range.start==248)))
     {
         src0Op.value = constImmFloatLiterals[src0Op.range.start-240];
         src0Op.range.start = 255;
@@ -622,7 +622,7 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         const char* hwregNamePlace = linePtr;
         good &= getEnumeration(asmr, linePtr, "HWRegister",
                       hwregNamesMapSize, hwregNamesMap, hwregId, "hwreg_");
-        if (good && (arch & ARCH_RX3X0) == 0 && hwregId == 13)
+        if (good && (arch & ARCH_GCN_1_2_4) == 0 && hwregId == 13)
         {   // if ib_dgb1 in not GCN 1.2
             asmr.printError(hwregNamePlace, "Unknown HWRegister");
             good = false;
@@ -956,7 +956,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                          name+msgNameIndex, CStringLess()) - sendMessageNamesMap;
                 if (index != sendMessageNamesMapSize &&
                     // save_wave only for GCN1.2
-                    (sendMessageNamesMap[index].second!=4 || (arch&ARCH_RX3X0)!=0))
+                    (sendMessageNamesMap[index].second!=4 || (arch&ARCH_GCN_1_2_4)!=0))
                     sendMessage = sendMessageNamesMap[index].second;
                 else
                 {
@@ -1305,7 +1305,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool good = true;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
-    const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
+    const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     RegRange dstReg(0, 0);
@@ -1590,7 +1590,7 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool good = true;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
-    const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
+    const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
     
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     RegRange dstReg(0, 0);
@@ -1741,7 +1741,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 {
     bool good = true;
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
-    const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
+    const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
     
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     RegRange dstReg(0, 0);
@@ -1920,7 +1920,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool good = true;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
-    const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
+    const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
     if (gcnVOPEnc!=GCNVOPEnc::NORMAL)
     {
         asmr.printError(instrPlace, "DPP and SDWA encoding is illegal for VOP3");
@@ -2410,7 +2410,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     output.size()));
     
     uint32_t words[2];
-    if ((arch & ARCH_RX3X0)==0)
+    if ((arch & ARCH_GCN_1_2_4)==0)
         SLEV(words[0], 0xd8000000U | uint32_t(offset) | (haveGds ? 0x20000U : 0U) |
                 (uint32_t(gcnInsn.code1)<<18));
     else
@@ -2476,7 +2476,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     RegRange vdataReg(0, 0);
     GCNOperand soffsetOp{};
     RegRange srsrcReg(0, 0);
-    const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
+    const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     skipSpacesToEnd(linePtr, end);
@@ -2887,7 +2887,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             if (name[1]=='a' && name[2]==0)
                 haveDa = true;
-            else if ((arch & ARCH_RX3X0)!=0 && name[1]=='1' && name[2]=='6' && name[3]==0)
+            else if ((arch & ARCH_GCN_1_2_4)!=0 && name[1]=='1' && name[2]=='6' && name[3]==0)
                 haveD16 = true;
             else if (::strcmp(name+1, "mask")==0)
             {
@@ -3201,7 +3201,7 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
     }
     
     uint32_t words[2];
-    SLEV(words[0], ((arch&ARCH_RX3X0) ? 0xc4000000 : 0xf8000000U) | enMask |
+    SLEV(words[0], ((arch&ARCH_GCN_1_2_4) ? 0xc4000000 : 0xf8000000U) | enMask |
             (uint32_t(target)<<4) | (haveCompr ? 0x400 : 0) | (haveDone ? 0x800 : 0) |
             (haveVM ? 0x1000U : 0));
     SLEV(words[1], uint32_t(vsrcsReg[0].bstart()&0xff) |
@@ -3436,7 +3436,7 @@ void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
                                curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_SMRD:
-            if (curArchMask & ARCH_RX3X0)
+            if (curArchMask & ARCH_GCN_1_2_4)
                 good = GCNAsmUtils::parseSMEMEncoding(assembler, *it, mnemPlace, linePtr,
                                curArchMask, output, regs, gcnEncSize);
             else
@@ -3762,7 +3762,7 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
     if (codeSize < 4)
         return 0; // no instruction
     bool isGCN11 = (curArchMask & ARCH_RX2X0)!=0;
-    bool isGCN12 = (curArchMask & ARCH_RX3X0)!=0;
+    bool isGCN12 = (curArchMask & ARCH_GCN_1_2_4)!=0;
     const uint32_t insnCode = ULEV(*reinterpret_cast<const uint32_t*>(code));
     uint32_t words = 1;
     if ((insnCode & 0x80000000U) != 0)

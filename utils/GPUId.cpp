@@ -28,7 +28,7 @@ using namespace CLRX;
 /* TODO: add routines to calculate pgmRSRCs and localsize.
  * use this in code */
 
-static const size_t gpuDeviceTableSize = 22;
+static const size_t gpuDeviceTableSize = 23;
 
 static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
 {
@@ -53,7 +53,8 @@ static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
     "Stoney",
     "Ellesmere",
     "Baffin",
-    "GFX804"
+    "GFX804",
+    "GFX900"
 };
 
 static std::pair<const char*, GPUDeviceType>
@@ -67,6 +68,7 @@ lowerCaseGpuDeviceEntryTable[gpuDeviceTableSize] =
     { "ellesmere", GPUDeviceType::ELLESMERE },
     { "fiji", GPUDeviceType::FIJI },
     { "gfx804", GPUDeviceType::GFX804 },
+    { "gfx900", GPUDeviceType::GFX900 },
     { "goose", GPUDeviceType::GOOSE },
     { "hainan", GPUDeviceType::HAINAN },
     { "hawaii", GPUDeviceType::HAWAII },
@@ -106,28 +108,32 @@ static const GPUArchitecture gpuDeviceArchTable[gpuDeviceTableSize] =
     GPUArchitecture::GCN1_2, // Stoney
     GPUArchitecture::GCN1_2, // Ellesmere
     GPUArchitecture::GCN1_2, // Baffin
-    GPUArchitecture::GCN1_2  // GFX804
+    GPUArchitecture::GCN1_2, // GFX804
+    GPUArchitecture::GCN1_4  // GFX900
 };
 
-static const char* gpuArchitectureNameTable[3] =
+static const char* gpuArchitectureNameTable[4] =
 {
     "GCN1.0",
     "GCN1.1",
-    "GCN1.2"
+    "GCN1.2",
+    "GCN1.4"
 };
 
-static const char* gpuArchitectureNameTable2[9] =
+static const char* gpuArchitectureNameTable2[12] =
 {
     "GCN1.0", "GFX6", "SI",
     "GCN1.1", "GFX7", "CI",
-    "GCN1.2", "GFX8", "VI"
+    "GCN1.2", "GFX8", "VI",
+    "GCN1.4", "GFX9", "Vega"
 };
 
-static const GPUDeviceType gpuLowestDeviceFromArchTable[3] =
+static const GPUDeviceType gpuLowestDeviceFromArchTable[4] =
 {
     GPUDeviceType::CAPE_VERDE,
     GPUDeviceType::BONAIRE,
-    GPUDeviceType::TONGA
+    GPUDeviceType::TONGA,
+    GPUDeviceType::GFX900
 };
 
 GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)

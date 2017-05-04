@@ -141,7 +141,8 @@ static const AMDGPUArchValuesEntry amdGpuArchValuesTbl[] =
     { 8, 0, 2, GPUDeviceType::ICELAND },
     { 8, 0, 3, GPUDeviceType::FIJI },
     { 8, 0, 4, GPUDeviceType::FIJI },
-    { 8, 1, 0, GPUDeviceType::STONEY }
+    { 8, 1, 0, GPUDeviceType::STONEY },
+    { 9, 0, 0, GPUDeviceType::GFX900 }
 };
 
 static const size_t amdGpuArchValuesNum = sizeof(amdGpuArchValuesTbl) /
@@ -317,7 +318,9 @@ static const AMDGPUArchValues rocmAmdGpuArchValuesTbl[] =
     { 8, 0, 4 }, // GPUDeviceType::HORSE
     { 8, 0, 1 }, // GPUDeviceType::STONEY
     { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
-    { 8, 0, 4 } // GPUDeviceType::BAFFIN
+    { 8, 0, 4 }, // GPUDeviceType::BAFFIN
+    { 8, 0, 4 }, // GPUDeviceType::GFX804
+    { 9, 0, 0 }, // GPUDeviceType::GFX900
 };
 
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,

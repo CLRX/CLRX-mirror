@@ -543,14 +543,14 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             regPair = { 124, 125 };
             return true;
         }
-        else if (arch&ARCH_GCN_1_1_2)
+        else if (arch&ARCH_GCN_1_1_2_4)
         {
             if (::strncmp(regName, "flat_scratch", 12)==0)
             {   // flat
                 loHiRegSuffix = 12;
-                loHiReg = (arch&ARCH_RX3X0)?102:104;
+                loHiReg = (arch&ARCH_GCN_1_2_4)?102:104;
             }
-            else if ((arch&ARCH_RX3X0)!=0 && ::strncmp(regName, "xnack_mask", 10)==0)
+            else if ((arch&ARCH_GCN_1_2_4)!=0 && ::strncmp(regName, "xnack_mask", 10)==0)
             {   // xnack
                 loHiRegSuffix = 10;
                 loHiReg = 104;
@@ -949,7 +949,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             return parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
                              instrOpMask & ~INSTROP_VOP3MODS, regField);
         
-        if ((arch & ARCH_RX3X0) && linePtr+4 <= end && toLower(linePtr[0])=='s' &&
+        if ((arch & ARCH_GCN_1_2_4) && linePtr+4 <= end && toLower(linePtr[0])=='s' &&
             toLower(linePtr[1])=='e' && toLower(linePtr[2])=='x' &&
             toLower(linePtr[3])=='t')
         {   /* sext */
@@ -1224,7 +1224,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                                 operand.range = { 247, 0 };
                                 return true;
                             case 0x3e22f983: // 1/(2*PI)
-                                if (arch&ARCH_RX3X0)
+                                if (arch&ARCH_GCN_1_2_4)
                                 {
                                     operand.range = { 248, 0 };
                                     return true;
@@ -1276,7 +1276,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                                     operand.range = { 247, 0 };
                                     return true;
                                 case 0x3118: // 1/(2*PI)
-                                    if (arch&ARCH_RX3X0)
+                                    if (arch&ARCH_GCN_1_2_4)
                                     {
                                         operand.range = { 248, 0 };
                                         return true;
@@ -1313,7 +1313,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                                 operand.range = { 247, 0 };
                                 return true;
                             case 0x3e22f983: // 1/(2*PI)
-                                if (arch&ARCH_RX3X0)
+                                if (arch&ARCH_GCN_1_2_4)
                                 {
                                     operand.range = { 248, 0 };
                                     return true;
@@ -1350,7 +1350,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                                 operand.range = { 247, 0 };
                                 return true;
                             case 0x3fc45f30: // 1/(2*PI)
-                                if (arch&ARCH_RX3X0)
+                                if (arch&ARCH_GCN_1_2_4)
                                 {
                                     operand.range = { 248, 0 };
                                     return true;

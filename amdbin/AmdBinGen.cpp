@@ -73,7 +73,7 @@ static inline void putProgInfoEntryLE(FastOutputBuffer& bos,
 }
 
 // e_type (16-bit)
-static const uint16_t gpuDeviceCodeTable[22] =
+static const uint16_t gpuDeviceCodeTable[23] =
 {
     0x3ff, // GPUDeviceType::CAPE_VERDE
     0x3fe, // GPUDeviceType::PITCAIRN
@@ -96,11 +96,12 @@ static const uint16_t gpuDeviceCodeTable[22] =
     0x411, // GPUDeviceType::STONEY
     0x40e, // GPUDeviceType::ELLESMERE
     0x40f, // GPUDeviceType::BAFFIN
-    0x412  // GPUDeviceType::GFX804
+    0x412, // GPUDeviceType::GFX804
+    0xffff // GPUDeviceType::GFX900
 };
 
 /// CALNoteEntry (32-bit)
-static const uint32_t gpuDeviceInnerCodeTable[22] =
+static const uint32_t gpuDeviceInnerCodeTable[23] =
 {
     0x1c, // GPUDeviceType::CAPE_VERDE
     0x1b, // GPUDeviceType::PITCAIRN
@@ -123,7 +124,8 @@ static const uint32_t gpuDeviceInnerCodeTable[22] =
     0x31, // GPUDeviceType::STONEY
     0x2f, // GPUDeviceType::ELLESMERE
     0x2c, // GPUDeviceType::BAFFIN
-    0x32  // GPUDeviceType::GFX804
+    0x32, // GPUDeviceType::GFX804
+    UINT_MAX // GPUDeviceType::GFX900
 };
 
 void AmdInput::addKernel(const AmdKernelInput& kernelInput)
