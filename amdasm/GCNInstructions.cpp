@@ -255,7 +255,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "s_orn1_saveexec_b64", GCNENC_SOP1,   GCN_REG_ALL_64,           52,   ARCH_RXVEGA  },
     { "s_andn1_wrexec_b64",  GCNENC_SOP1,   GCN_REG_ALL_64,           53,   ARCH_RXVEGA  },
     { "s_andn2_wrexec_b64",  GCNENC_SOP1,   GCN_REG_ALL_64,           54,   ARCH_RXVEGA  },
-    { "s_bitreplicate_b64_b32",  GCNENC_SOP1,   GCN_REG_DS0_64,           55,   ARCH_RXVEGA  },
+    { "s_bitreplicate_b64_b32",  GCNENC_SOP1,   GCN_REG_DST_64,           55,   ARCH_RXVEGA  },
     { "s_cmp_eq_i32",        GCNENC_SOPC,   GCN_STDMODE,              0,    ARCH_GCN_ALL  },
     { "s_cmp_lg_i32",        GCNENC_SOPC,   GCN_STDMODE,              1,    ARCH_GCN_ALL  },
     { "s_cmp_gt_i32",        GCNENC_SOPC,   GCN_STDMODE,              2,    ARCH_GCN_ALL  },

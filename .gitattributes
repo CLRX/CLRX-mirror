@@ -159,6 +159,7 @@ tests/amdasm/GCNDisasmLabels.cpp -text
 tests/amdasm/GCNDisasmOpc.h -text
 tests/amdasm/GCNDisasmOpc11.cpp -text
 tests/amdasm/GCNDisasmOpc12.cpp -text
+tests/amdasm/GCNDisasmOpc14.cpp -text
 tests/amdasm/GCNDisasmOpcodes.cpp -text
 tests/amdasm/GCNRegVarUsage.cpp -text
 tests/amdasm/amdbins/amd1.clo -text svneol=unset#application/x-executable

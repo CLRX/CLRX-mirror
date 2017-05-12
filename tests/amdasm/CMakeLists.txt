@@ -22,7 +22,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.1)
 ADD_EXECUTABLE(GCNDisasmOpcodes
         GCNDisasmOpcodes.cpp
         GCNDisasmOpc11.cpp
-        GCNDisasmOpc12.cpp)
+        GCNDisasmOpc12.cpp
+        GCNDisasmOpc14.cpp)
 TEST_LINK_LIBRARIES(GCNDisasmOpcodes CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(GCNDisasmOpcodes GCNDisasmOpcodes)
 

@@ -274,7 +274,8 @@ void GCNDisassembler::analyzeBeforeDisassemble()
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
                 disassembler.getDeviceType());
     const bool isGCN11 = (arch == GPUArchitecture::GCN1_1);
-    const bool isGCN12 = (arch == GPUArchitecture::GCN1_2);
+    const bool isGCN12 = (arch >= GPUArchitecture::GCN1_2);
+    const bool isGCN14 = (arch == GPUArchitecture::GCN1_4);
     size_t pos;
     for (pos = 0; pos < codeWordsNum; pos++)
     {   /* scan all instructions and get jump addresses */
@@ -311,7 +312,8 @@ void GCNDisassembler::analyzeBeforeDisassemble()
                     {   // SOPK
                         const cxuint opcode = (insnCode>>23)&0x1f;
                         if ((!isGCN12 && opcode == 17) ||
-                            (isGCN12 && opcode == 16)) // if branch fork
+                            (isGCN12 && opcode == 16) || // if branch fork
+                            (isGCN14 && opcode == 21)) // if s_call_b64
                             labels.push_back(startOffset +
                                     ((pos+int16_t(insnCode&0xffff)+1)<<2));
                         else if ((!isGCN12 && opcode == 21) ||
@@ -566,6 +568,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
            cxuint regNum, char*& bufPtr, uint16_t arch, FloatLitType floatLit)
 {
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
+    const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
     const cxuint maxSgprsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
     if ((op < maxSgprsNum) || (op >= 256 && op < 512))
     {   // scalar
@@ -581,7 +584,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
     }
     
     const cxuint op2 = op&~1U;
-    if (op2 == 106 || op2 == 108 || op2 == 110 || op2 == 126 ||
+    if (op2 == 106 || (!isGCN14 && (op2 == 108 || op2 == 110)) || op2 == 126 ||
         (op2 == 104 && (arch&ARCH_RX2X0)!=0) ||
         ((op2 == 102 || op2 == 104) && isGCN12))
     {   // if not SGPR, but other scalar registers
@@ -644,10 +647,11 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
         return;
     }
     
-    if (op >= 112 && op < 124)
+    cxuint ttmpStart = (isGCN14 ? 108 : 112);
+    if (op >= ttmpStart && op < 124)
     {
         putChars(bufPtr, "ttmp", 4);
-        regRanges(op-112, regNum, bufPtr);
+        regRanges(op-ttmpStart, regNum, bufPtr);
         return;
     }
     if (op == 124)
@@ -690,6 +694,26 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
             *bufPtr++ = 's';    /* old rules of assembler */
         return;
     }
+    
+    if (isGCN14)
+        switch(op)
+        {
+            case 0xeb:
+                putChars(bufPtr, "shared_base", 11);
+                return;
+            case 0xec:
+                putChars(bufPtr, "shared_limit", 12);
+                return;
+            case 0xed:
+                putChars(bufPtr, "private_base", 12);
+                return;
+            case 0xee:
+                putChars(bufPtr, "private_limit", 13);
+                return;
+            case 0xef:
+                putChars(bufPtr, "pops_exiting_wave_id", 20);
+                return;
+        }
     
     switch(op)
     {
@@ -753,6 +777,23 @@ static const char* sendMsgCodeMessageTable[16] =
     "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "system"
 };
 
+static const char* sendMsgCodeMessageTableVEGA[16] =
+{
+    "0",
+    "interrupt",
+    "gs",
+    "gs_done",
+    "savewave",
+    "stall_wave_gen",
+    "halt_waves",
+    "ordered_ps_done",
+    "early_prim_dealloc",
+    "gs_alloc_req",
+    "get_doorbell",
+    "11", "12", "13", "14", "system"
+};
+
+
 static const char* sendGsOpMessageTable[4] =
 { "nop", "cut", "emit", "emit-cut" };
 
@@ -802,6 +843,7 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
          uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
          uint32_t literal, size_t pos)
 {
+    const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(60);
     char* bufPtr = bufStart;
@@ -820,14 +862,18 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         {
             bool prevLock = false;
             addSpaces(bufPtr, spacesToAdd);
-            const bool isf7f = (imm16==0xf7f);
-            if ((imm16&15) != 15 || isf7f)
+            const bool isf7f = (!isGCN14 && imm16==0xf7f) ||
+                    (isGCN14 && imm16==0xcf7f);
+            if ((!isGCN14 && (imm16&15) != 15) ||
+                (isGCN14 && (imm16&0xc00f) != 0xc00f) || isf7f)
             {
-                const cxuint lockCnt = imm16&15;
+                const cxuint lockCnt = isGCN14 ?
+                        ((imm16>>10)&0x30) + (imm16&15) : imm16&15;
                 putChars(bufPtr, "vmcnt(", 6);
+                const cxuint digit2 = lockCnt/10U;
                 if (lockCnt >= 10)
-                    *bufPtr++ = '1';
-                *bufPtr++ = '0' + ((lockCnt>=10)?lockCnt-10:lockCnt);
+                    *bufPtr++ = '0'+digit2;
+                *bufPtr++= '0' + lockCnt-digit2*10U;
                 *bufPtr++ = ')';
                 prevLock = true;
             }
@@ -861,7 +907,7 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                 *bufPtr++ = ')';
                 prevLock = true;
             }
-            if ((imm16&0xf080) != 0)
+            if ((!isGCN14 && (imm16&0xf080) != 0) || (isGCN14 && (imm16&0x3080) != 0))
             {   /* additional info about imm16 */
                 if (prevLock)
                 {
@@ -878,11 +924,12 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             addSpaces(bufPtr, spacesToAdd);
             putChars(bufPtr, "sendmsg(", 8);
             const cxuint msgType = imm16&15;
-            const char* msgName = sendMsgCodeMessageTable[msgType];
-            cxuint minUnknownMsgType = 4;
-            if ((arch & ARCH_GCN_1_2_4) != 0 && msgType == 4)
+            const char* msgName = (isGCN14 ? sendMsgCodeMessageTableVEGA[msgType] :
+                    sendMsgCodeMessageTable[msgType]);
+            cxuint minUnknownMsgType = isGCN14 ? 11 : 4;
+            if ((arch & ARCH_RX3X0) != 0 && msgType == 4)
             {
-                msgName = "savewave"; // 4 - save_wave
+                msgName = "savewave"; // 4 - savewave
                 minUnknownMsgType = 5;
             }
             while (*msgName != 0)
@@ -1003,12 +1050,14 @@ void GCNDisasmUtils::decodeSOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     output.forward(bufPtr-bufStart);
 }
 
-static const char* hwregNames[14] =
+static const char* hwregNames[20] =
 {
     "0", "mode", "status", "trapsts",
     "hw_id", "gpr_alloc", "lds_alloc", "ib_sts",
     "pc_lo", "pc_hi", "inst_dw0", "inst_dw1",
-    "ib_dbg0", "ib_dbg1"
+    "ib_dbg0", "ib_dbg1", "flush_ib", "sh_mem_bases",
+    "sq_shader_tba_lo", "sq_shader_tba_hi",
+    "sq_shader_tma_lo", "sq_shader_tma_hi"
 };
 
 /// about label writer - label is workaround for class hermetization
@@ -1041,6 +1090,8 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
         putChars(bufPtr, "hwreg(", 6);
         const cxuint hwregId = imm16&0x3f;
         cxuint hwregNamesNum = 13 + ((arch&ARCH_GCN_1_2_4)!=0);
+        if ((arch&ARCH_RXVEGA) != 0)
+            hwregNamesNum = 20;
         if (hwregId < hwregNamesNum)
             putChars(bufPtr, hwregNames[hwregId], ::strlen(hwregNames[hwregId]));
         else
@@ -2452,7 +2503,7 @@ void GCNDisassembler::disassemble()
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
                 disassembler.getDeviceType());
     const bool isGCN11 = (arch == GPUArchitecture::GCN1_1);
-    const bool isGCN12 = (arch == GPUArchitecture::GCN1_2);
+    const bool isGCN124 = (arch >= GPUArchitecture::GCN1_2);
     const uint16_t curArchMask = 
             1U<<int(getGPUArchitectureFromDeviceType(disassembler.getDeviceType()));
     const size_t codeWordsNum = (inputSize>>2);
@@ -2527,8 +2578,8 @@ void GCNDisassembler::disassemble()
                     {
                         gcnEncoding = GCNENC_SOPK;
                         const uint32_t opcode = ((insnCode>>23)&0x1f);
-                        if ((!isGCN12 && opcode == 21) ||
-                            (isGCN12 && opcode == 20))
+                        if ((!isGCN124 && opcode == 21) ||
+                            (isGCN124 && opcode == 20))
                         {
                             if (pos < codeWordsNum)
                                 insnCode2 = ULEV(codeWords[pos++]);
@@ -2548,17 +2599,17 @@ void GCNDisassembler::disassemble()
             else
             {   // SMRD and others
                 const uint32_t encPart = (insnCode&0x3c000000U)>>26;
-                if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
-                    (isGCN12 && gcnSize12Table[encPart]))
+                if ((!isGCN124 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
+                    (isGCN124 && gcnSize12Table[encPart]))
                 {
                     if (pos < codeWordsNum)
                         insnCode2 = ULEV(codeWords[pos++]);
                 }
-                if (isGCN12)
+                if (isGCN124)
                     gcnEncoding = gcnEncoding12Table[encPart];
                 else
                     gcnEncoding = gcnEncoding11Table[encPart];
-                if (gcnEncoding == GCNENC_FLAT && !isGCN11 && !isGCN12)
+                if (gcnEncoding == GCNENC_FLAT && !isGCN11 && !isGCN124)
                     gcnEncoding = GCNENC_NONE; // illegal if not GCN1.1
             }
         }
@@ -2568,7 +2619,7 @@ void GCNDisassembler::disassemble()
             {   // VOPC
                 if ((insnCode&0x1ff) == 0xff || // literal
                     // SDWA, DDP
-                    (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                    (isGCN124 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
                 {
                     if (pos < codeWordsNum)
                         insnCode2 = ULEV(codeWords[pos++]);
@@ -2579,7 +2630,7 @@ void GCNDisassembler::disassemble()
             {   // VOP1
                 if ((insnCode&0x1ff) == 0xff || // literal
                     // SDWA, DDP
-                    (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                    (isGCN124 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
                 {
                     if (pos < codeWordsNum)
                         insnCode2 = ULEV(codeWords[pos++]);
@@ -2589,8 +2640,8 @@ void GCNDisassembler::disassemble()
             else
             {   // VOP2
                 const cxuint opcode = (insnCode >> 25)&0x3f;
-                if ((!isGCN12 && (opcode == 32 || opcode == 33)) ||
-                    (isGCN12 && (opcode == 23 || opcode == 24 ||
+                if ((!isGCN124 && (opcode == 32 || opcode == 33)) ||
+                    (isGCN124 && (opcode == 23 || opcode == 24 ||
                     opcode == 36 || opcode == 37))) // V_MADMK and V_MADAK
                 {
                     if (pos < codeWordsNum)
@@ -2598,7 +2649,7 @@ void GCNDisassembler::disassemble()
                 }
                 else if ((insnCode&0x1ff) == 0xff || // literal
                     // SDWA, DDP
-                    (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                    (isGCN124 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
                 {
                     if (pos < codeWordsNum)
                         insnCode2 = ULEV(codeWords[pos++]);
@@ -2647,14 +2698,14 @@ void GCNDisassembler::disassemble()
         else
         {
             const GCNEncodingOpcodeBits* encodingOpcodeTable = 
-                    (isGCN12) ? gcnEncodingOpcode12Table : gcnEncodingOpcodeTable;
+                    (isGCN124) ? gcnEncodingOpcode12Table : gcnEncodingOpcodeTable;
             const cxuint opcode =
                     (insnCode>>encodingOpcodeTable[gcnEncoding].bitPos) & 
                     ((1U<<encodingOpcodeTable[gcnEncoding].bits)-1U);
             
             /* decode instruction and put to output */
             const GCNEncodingSpace& encSpace = 
-                (isGCN12) ? gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+3 + gcnEncoding] :
+                (isGCN124) ? gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+3 + gcnEncoding] :
                   gcnInstrTableByCodeSpaces[gcnEncoding];
             const GCNInstruction* gcnInsn = gcnInstrTableByCode.get() +
                     encSpace.offset + opcode;
@@ -2663,7 +2714,7 @@ void GCNDisassembler::disassemble()
                         0, 0 };
             cxuint spacesToAdd = 16;
             bool isIllegal = false;
-            if (!isGCN12 && gcnInsn->mnemonic != nullptr &&
+            if (!isGCN124 && gcnInsn->mnemonic != nullptr &&
                 (curArchMask & gcnInsn->archMask) == 0 &&
                 gcnEncoding == GCNENC_VOP3A)
             {    /* new overrides */
@@ -2688,7 +2739,7 @@ void GCNDisassembler::disassemble()
             {
                 char* bufStart = output.reserve(40);
                 char* bufPtr = bufStart;
-                if (!isGCN12 || gcnEncoding != GCNENC_SMEM)
+                if (!isGCN124 || gcnEncoding != GCNENC_SMEM)
                     putChars(bufPtr, gcnEncodingNames[gcnEncoding],
                             ::strlen(gcnEncodingNames[gcnEncoding]));
                 else /* SMEM encoding */
@@ -2730,7 +2781,7 @@ void GCNDisassembler::disassemble()
                                spacesToAdd, curArchMask, *gcnInsn, insnCode, insnCode2);
                     break;
                 case GCNENC_SMRD:
-                    if (isGCN12)
+                    if (isGCN124)
                         GCNDisasmUtils::decodeSMEMEncoding(*this, spacesToAdd, curArchMask,
                                   *gcnInsn, insnCode, insnCode2);
                     else
