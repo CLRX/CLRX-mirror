@@ -20,7 +20,7 @@
 #include <CLRX/Config.h>
 #include "GCNDisasmOpc.h"
 
-/* for Radeon RX3X0 series with GCN1.2 */
+/* for Radeon RX VEGA series with GCN1.4 */
 const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
 {   /* extra scalar registers */
     { 0x80153debU, 0, false, "        s_add_u32       s21, shared_base, s61\n" },
