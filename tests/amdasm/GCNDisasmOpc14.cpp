@@ -66,5 +66,53 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
     { 0xbed63514U, 0, false, "        s_andn1_wrexec_b64 s[86:87], s[20:21]\n" },
     { 0xbed63614U, 0, false, "        s_andn2_wrexec_b64 s[86:87], s[20:21]\n" },
     { 0xbed63714U, 0, false, "        s_bitreplicate_b64_b32 s[86:87], s20\n" },
+    /* SOPK instructions */
+    { 0xbaab0000U, 0, false, "        s_call_b64      s[43:44], .L4_0\n" },
+    { 0xbaab000aU, 0, false, "        s_call_b64      s[43:44], .L44_0\n" },
+    /* SOPP instructions */
+    { 0xbf9e0000U, 0, false, "        s_endpgm_ordered_ps_done\n" },
+    /* hwregisters */
+    { 0xb8ab000eu, 0, false, "        s_getreg_b32    s43, hwreg(flush_ib, 0, 1)\n" },
+    { 0xb8ab000fu, 0, false, "        s_getreg_b32    s43, hwreg(sh_mem_bases, 0, 1)\n" },
+    { 0xb8ab0010u, 0, false, "        s_getreg_b32    "
+                "s43, hwreg(sq_shader_tba_lo, 0, 1)\n" },
+    { 0xb8ab0011u, 0, false, "        s_getreg_b32    "
+                "s43, hwreg(sq_shader_tba_hi, 0, 1)\n" },
+    { 0xb8ab0012u, 0, false, "        s_getreg_b32    "
+                "s43, hwreg(sq_shader_tma_lo, 0, 1)\n" },
+    { 0xb8ab0013u, 0, false, "        s_getreg_b32    "
+                "s43, hwreg(sq_shader_tma_hi, 0, 1)\n" },
+    /* new msg types */
+    { 0xbf900015U, 0, false, "        s_sendmsg       sendmsg(stall_wave_gen, cut, 0)\n" },
+    { 0xbf900016U, 0, false, "        s_sendmsg       sendmsg(halt_waves, cut, 0)\n" },
+    { 0xbf900017U, 0, false, "        s_sendmsg       "
+                "sendmsg(ordered_ps_done, cut, 0)\n" },
+    { 0xbf900018U, 0, false, "        s_sendmsg       "
+                "sendmsg(early_prim_dealloc, cut, 0)\n" },
+    { 0xbf900019U, 0, false, "        s_sendmsg       sendmsg(gs_alloc_req, cut, 0)\n" },
+    { 0xbf90001aU, 0, false, "        s_sendmsg       sendmsg(get_doorbell, cut, 0)\n" },
+    /* waitcnts */
+    { 0xbf8c0d36U, 0, false, "        s_waitcnt       "
+        "vmcnt(6) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c4d36U, 0, false, "        s_waitcnt       "
+        "vmcnt(22) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c8d36U, 0, false, "        s_waitcnt       "
+        "vmcnt(38) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8ccd36U, 0, false, "        s_waitcnt       "
+        "vmcnt(54) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c0d3fU, 0, false, "        s_waitcnt       "
+        "vmcnt(15) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c4d3fU, 0, false, "        s_waitcnt       "
+        "vmcnt(31) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c8d3fU, 0, false, "        s_waitcnt       "
+        "vmcnt(47) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8ccd3fU, 0, false, "        s_waitcnt       "
+        "expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c0000U, 0, false, "        s_waitcnt       "
+        "vmcnt(0) & expcnt(0) & lgkmcnt(0)\n" },
+    { 0xbf8ccf7fU, 0, false, "        s_waitcnt       " /* good ??? */
+        "vmcnt(63) & expcnt(7) & lgkmcnt(15)\n" },
+    { 0xbf8cfd36U, 0, false, "        s_waitcnt       "
+        "vmcnt(54) & expcnt(3) & lgkmcnt(13) :0xfd36\n" },
     { 0, 0, false, nullptr }
 };
