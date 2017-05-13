@@ -1334,13 +1334,14 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
 
 struct CLRX_INTERNAL VOPExtraWordOut
 {
-    uint16_t src0: 9;
+    uint16_t src0;
     bool sextSrc0;
     bool negSrc0;
     bool absSrc0;
     bool sextSrc1;
     bool negSrc1;
     bool absSrc1;
+    cxbyte mod;
 };
 
 static const char* sdwaSelChoicesTbl[] =
@@ -1354,7 +1355,7 @@ static const char* sdwaDstUnusedTbl[] =
 };
 
 /* returns mask of abs,neg,sext for src0 and src1 argument and src0 register */
-static inline VOPExtraWordOut decodeVOPSDWAFlags(uint32_t insnCode2)
+static inline VOPExtraWordOut decodeVOPSDWAFlags(uint32_t insnCode2, uint16_t arch)
 {
     return { uint16_t((insnCode2&0xff)+256),
         (insnCode2&(1U<<19))!=0, (insnCode2&(1U<<20))!=0, (insnCode2&(1U<<21))!=0,
@@ -1518,7 +1519,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     if (isGCN12)
     {
         if (src0Field == 0xf9)
-            extraFlags = decodeVOPSDWAFlags(literal);
+            extraFlags = decodeVOPSDWAFlags(literal, arch);
         else if (src0Field == 0xfa)
             extraFlags = decodeVOPDPPFlags(literal);
         else
@@ -1584,7 +1585,7 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
     if (isGCN12)
     {
         if (src0Field == 0xf9)
-            extraFlags = decodeVOPSDWAFlags(literal);
+            extraFlags = decodeVOPSDWAFlags(literal, arch);
         else if (src0Field == 0xfa)
             extraFlags = decodeVOPDPPFlags(literal);
         else
@@ -1666,7 +1667,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     if (isGCN12)
     {
         if (src0Field == 0xf9)
-            extraFlags = decodeVOPSDWAFlags(literal);
+            extraFlags = decodeVOPSDWAFlags(literal, arch);
         else if (src0Field == 0xfa)
             extraFlags = decodeVOPDPPFlags(literal);
         else
