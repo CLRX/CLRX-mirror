@@ -151,6 +151,7 @@ enum : uint16_t
     GCN_F16LIT = 0x200, /// half literal
     GCN_SMRD_ONLYDST = 0x30,    // only destination (no other operands)
     GCN_SMEM_SDATA_IMM = 0x40,  // treat SDATA as immediate
+    GCN_SMEM_NOSDATA = 0x80,  // no destination
     GCN_MEMOP_MX1 = 0x0,    /// sdst/sdata requires 1 register
     GCN_MEMOP_MX2 = 0x100,     /// sdst/sdata requires 2 registers
     GCN_MEMOP_MX4 = 0x200,     /// sdst/sdata requires 4 registers
