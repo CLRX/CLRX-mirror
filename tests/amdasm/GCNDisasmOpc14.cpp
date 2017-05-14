@@ -161,5 +161,27 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
     { 0xc2aa0c9dU, 0x5b, true, "        s_atomic_xor_x2 s[50:51], s[58:59], 0x5b\n" },
     { 0xc2ae0c9dU, 0x5b, true, "        s_atomic_inc_x2 s[50:51], s[58:59], 0x5b\n" },
     { 0xc2b20c9dU, 0x5b, true, "        s_atomic_dec_x2 s[50:51], s[58:59], 0x5b\n" },
+    /* VOP DPP */
+    { 0x0134d6faU, 0x101be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:1 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x102be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:2 bank_mask:0 row_mask:0\n" },
+    /* VOP SDWA */
+    { 0x0134d6f9U, 0x3d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x13d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte1 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x403d, true, "        v_cndmask_b32   v154, v61, v107, vcc mul:2 "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x803d, true, "        v_cndmask_b32   v154, v61, v107, vcc mul:4 "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0xc03d, true, "        v_cndmask_b32   v154, v61, v107, vcc div:2 "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x80003d, true, "        v_cndmask_b32   v154, s61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x8000003d, true, "        v_cndmask_b32   v154, v61, vcc_hi, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x8080003d, true, "        v_cndmask_b32   v154, s61, vcc_hi, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
     { 0, 0, false, nullptr }
 };

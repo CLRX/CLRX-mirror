@@ -1341,7 +1341,7 @@ struct CLRX_INTERNAL VOPExtraWordOut
     bool sextSrc1;
     bool negSrc1;
     bool absSrc1;
-    cxbyte mod;
+    bool scalarSrc1;
 };
 
 static const char* sdwaSelChoicesTbl[] =
@@ -1357,12 +1357,15 @@ static const char* sdwaDstUnusedTbl[] =
 /* returns mask of abs,neg,sext for src0 and src1 argument and src0 register */
 static inline VOPExtraWordOut decodeVOPSDWAFlags(uint32_t insnCode2, uint16_t arch)
 {
-    return { uint16_t((insnCode2&0xff)+256),
+    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
+    return { uint16_t((insnCode2&0xff) +
+        ((!isGCN14 || (insnCode2 & (1U<<23))==0) ? 256 : 0)),
         (insnCode2&(1U<<19))!=0, (insnCode2&(1U<<20))!=0, (insnCode2&(1U<<21))!=0,
-        (insnCode2&(1U<<27))!=0, (insnCode2&(1U<<28))!=0, (insnCode2&(1U<<29))!=0 };
+        (insnCode2&(1U<<27))!=0, (insnCode2&(1U<<28))!=0, (insnCode2&(1U<<29))!=0,
+        isGCN14 && ((insnCode2&(1U<<31))!=0) };
 }
 
-static void decodeVOPSDWA(FastOutputBuffer& output, uint32_t insnCode2,
+static void decodeVOPSDWA(FastOutputBuffer& output, uint16_t arch, uint32_t insnCode2,
           bool src0Used, bool src1Used)
 {
     char* bufStart = output.reserve(90);
@@ -1371,6 +1374,12 @@ static void decodeVOPSDWA(FastOutputBuffer& output, uint32_t insnCode2,
     const cxuint dstUnused = (insnCode2>>11)&3;
     const cxuint src0Sel = (insnCode2>>16)&7;
     const cxuint src1Sel = (insnCode2>>24)&7;
+    if ((arch&ARCH_RXVEGA)!=0 && (insnCode2 & 0xc000U) != 0)
+    {
+        cxuint omod = (insnCode2>>14)&3;
+        const char* omodStr = (omod==3)?" div:2":(omod==2)?" mul:4":" mul:2";
+        putChars(bufPtr, omodStr, 6);
+    }
     if (insnCode2 & 0x2000)
         putChars(bufPtr, " clamp", 6);
     
@@ -1435,7 +1444,7 @@ static inline VOPExtraWordOut decodeVOPDPPFlags(uint32_t insnCode2)
 {
     return { uint16_t((insnCode2&0xff)+256),
         false, (insnCode2&(1U<<20))!=0, (insnCode2&(1U<<21))!=0,
-        false, (insnCode2&(1U<<22))!=0, (insnCode2&(1U<<23))!=0 };
+        false, (insnCode2&(1U<<22))!=0, (insnCode2&(1U<<23))!=0, false };
 }
 
 static void decodeVOPDPP(FastOutputBuffer& output, uint32_t insnCode2,
@@ -1553,7 +1562,8 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     if (extraFlags.absSrc1)
         putChars(bufPtr, "abs(", 4);
     
-    decodeGCNVRegOperand(((insnCode>>9)&0xff), (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr);
+    decodeGCNOperandNoLit(dasm, ((insnCode>>9)&0xff) + (extraFlags.scalarSrc1 ? 0 : 256),
+                (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr, arch);
     if (extraFlags.absSrc1)
         *bufPtr++ = ')';
     if (extraFlags.sextSrc1)
@@ -1563,7 +1573,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     if (isGCN12)
     {
         if (src0Field == 0xf9)
-            decodeVOPSDWA(output, literal, true, true);
+            decodeVOPSDWA(output, arch, literal, true, true);
         else if (src0Field == 0xfa)
             decodeVOPDPP(output, literal, true, true);
     }
@@ -1642,7 +1652,7 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
     if (isGCN12)
     {
         if (src0Field == 0xf9)
-            decodeVOPSDWA(output, literal, argsUsed, false);
+            decodeVOPSDWA(output, arch, literal, argsUsed, false);
         else if (src0Field == 0xfa)
             decodeVOPDPP(output, literal, argsUsed, false);
     }
@@ -1723,8 +1733,9 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
                  ((insnCode>>9)&0xff), (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, arch);
     }
     else
-        decodeGCNVRegOperand(((insnCode>>9)&0xff),
-                     (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr);
+        decodeGCNOperandNoLit(dasm, ((insnCode>>9)&0xff) +
+                (extraFlags.scalarSrc1 ? 0 : 256),
+                (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr, arch);
     if (extraFlags.absSrc1)
         *bufPtr++ = ')';
     if (extraFlags.sextSrc1)
@@ -1746,7 +1757,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     if (isGCN12)
     {
         if (src0Field == 0xf9)
-            decodeVOPSDWA(output, literal, true, true);
+            decodeVOPSDWA(output, arch, literal, true, true);
         else if (src0Field == 0xfa)
             decodeVOPDPP(output, literal, true, true);
     }
