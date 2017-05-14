@@ -133,7 +133,7 @@ static const char* gcnEncodingNames[GCNENC_MAXVAL+1] =
     "VOP3A", "VOP3B", "VINTRP", "DS", "MUBUF", "MTBUF", "MIMG", "EXP", "FLAT"
 };
 
-static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2] =
+static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+2] =
 {
     { 0, 0 },
     { 0, 0x80 }, /* GCNENC_SOPC, opcode = (7bit)<<16 */
@@ -174,10 +174,12 @@ static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2] =
     { 0x1791, 0x10 }, /* GCNENC_MTBUF, opcode = (4bit)<<16 (GCN1.2) */
     { 0x17a1, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 (GCN1.2) */
     { 0x1821, 0x1 }, /* GCNENC_EXP, opcode = none (GCN1.2) */
-    { 0x1822, 0x100 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
+    { 0x1822, 0x100 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
+    { 0x1922, 0x40 }, /* GCNENC_VOP2, opcode = (6bit)<<25 (RXVEGA) */
+    { 0x1962, 0x400 } /* GCNENC_VOP3B, opcode = (10bit)<<17  (RXVEGA) */
 };
 
-static const size_t gcnInstrTableByCodeLength = 0x1922;
+static const size_t gcnInstrTableByCodeLength = 0x1d62;
 
 static void initializeGCNDisassembler()
 {
@@ -212,6 +214,13 @@ static void initializeGCNDisassembler()
                         GCNENC_MAXVAL+3+instr.encoding];
             if (gcnInstrTableByCode[encSpace3.offset + instr.code].mnemonic == nullptr)
                 gcnInstrTableByCode[encSpace3.offset + instr.code] = instr;
+            else if((instr.archMask & ARCH_RXVEGA) != 0) /* otherwise we for GCN1.4 */
+            {
+                const bool encVOP3b = instr.encoding != GCNENC_VOP2;
+                const GCNEncodingSpace& encSpace4 =
+                        gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 + encVOP3b];
+                gcnInstrTableByCode[encSpace4.offset + instr.code] = instr;
+            }
             // otherwise we ignore this entry
         }
     }
@@ -2554,6 +2563,7 @@ void GCNDisassembler::disassemble()
                 disassembler.getDeviceType());
     const bool isGCN11 = (arch == GPUArchitecture::GCN1_1);
     const bool isGCN124 = (arch >= GPUArchitecture::GCN1_2);
+    const bool isGCN14 = (arch >= GPUArchitecture::GCN1_4);
     const uint16_t curArchMask = 
             1U<<int(getGPUArchitectureFromDeviceType(disassembler.getDeviceType()));
     const size_t codeWordsNum = (inputSize>>2);
@@ -2771,6 +2781,18 @@ void GCNDisassembler::disassemble()
                 const GCNEncodingSpace& encSpace2 =
                         gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1];
                 gcnInsn = gcnInstrTableByCode.get() + encSpace2.offset + opcode;
+                if (gcnInsn->mnemonic == nullptr ||
+                        (curArchMask & gcnInsn->archMask) == 0)
+                    isIllegal = true; // illegal
+            }
+            else if (isGCN14 && gcnInsn->mnemonic != nullptr &&
+                (curArchMask & gcnInsn->archMask) == 0 &&
+                (gcnEncoding == GCNENC_VOP3A || gcnEncoding == GCNENC_VOP2))
+            {   /* new overrides */
+                const GCNEncodingSpace& encSpace4 =
+                        gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 +
+                                (gcnEncoding == GCNENC_VOP3A)];
+                gcnInsn = gcnInstrTableByCode.get() + encSpace4.offset + opcode;
                 if (gcnInsn->mnemonic == nullptr ||
                         (curArchMask & gcnInsn->archMask) == 0)
                     isIllegal = true; // illegal

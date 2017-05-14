@@ -183,5 +183,39 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
         "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
     { 0x0134d6f9U, 0x8080003d, true, "        v_cndmask_b32   v154, s61, vcc_hi, vcc "
         "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
+    /* VOP2 instructions */
+    { 0x3334d715U, 0, false, "        v_add_co_u32    v154, vcc, v21, v107\n" },
+    { 0x3534d715U, 0, false, "        v_sub_co_u32    v154, vcc, v21, v107\n" },
+    { 0x3734d715U, 0, false, "        v_subrev_co_u32 v154, vcc, v21, v107\n" },
+    { 0x3934d715U, 0, false, "        v_addc_co_u32   v154, vcc, v21, v107, vcc\n" },
+    { 0x3b34d715U, 0, false, "        v_subb_co_u32   v154, vcc, v21, v107, vcc\n" },
+    { 0x3d34d715U, 0, false, "        v_subbrev_co_u32 v154, vcc, v21, v107, vcc\n" },
+    { 0xd1191237U, 0x0002b41bU, true,
+        "        v_add_co_u32    v55, s[18:19], s27, v90\n" },
+    { 0xd1196a37U, 0x0002b41bU, true,
+        "        v_add_co_u32    v55, vcc, s27, v90 vop3\n" },
+    { 0xd11a1237U, 0x0002b41bU, true,
+        "        v_sub_co_u32    v55, s[18:19], s27, v90\n" },
+    { 0xd11a6a37U, 0x0002b41bU, true,
+        "        v_sub_co_u32    v55, vcc, s27, v90 vop3\n" },
+    { 0xd11b1237U, 0x0002b41bU, true,
+        "        v_subrev_co_u32 v55, s[18:19], s27, v90\n" },
+    { 0xd11b6a37U, 0x0002b41bU, true,
+        "        v_subrev_co_u32 v55, vcc, s27, v90 vop3\n" },
+    { 0xd11c0737U, 0x4066b41bU, true, "        v_addc_co_u32   "
+                "v55, s[7:8], s27, -v90, s[25:26]\n" },
+    { 0xd11c6a37U, 0x01aab41bU, true, "        v_addc_co_u32   "
+                "v55, vcc, s27, v90, vcc vop3\n" },
+    { 0xd11c6a37U, 0x41aab41bU, true, "        v_addc_co_u32   "
+                "v55, vcc, s27, -v90, vcc\n" },
+    { 0xd11d0737U, 0x4066b41bU, true, "        v_subb_co_u32   "
+                "v55, s[7:8], s27, -v90, s[25:26]\n" },
+    { 0xd11e0737U, 0x4066b41bU, true, "        v_subbrev_co_u32 "
+                "v55, s[7:8], s27, -v90, s[25:26]\n" },
+    { 0xd11d6a0bU, 0x00021480U, true,   /* no vop3 case! */
+                "        v_subb_co_u32   v11, vcc, 0, v10, s[0:1]\n" },
+    { 0x6934d715U, 0, false, "        v_add_u32       v154, v21, v107\n" },
+    { 0x6b34d715U, 0, false, "        v_sub_u32       v154, v21, v107\n" },
+    { 0x6d34d715U, 0, false, "        v_subrev_u32    v154, v21, v107\n" },
     { 0, 0, false, nullptr }
 };
