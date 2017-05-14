@@ -133,7 +133,7 @@ static const char* gcnEncodingNames[GCNENC_MAXVAL+1] =
     "VOP3A", "VOP3B", "VINTRP", "DS", "MUBUF", "MTBUF", "MIMG", "EXP", "FLAT"
 };
 
-static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+2] =
+static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+3] =
 {
     { 0, 0 },
     { 0, 0x80 }, /* GCNENC_SOPC, opcode = (7bit)<<16 */
@@ -176,10 +176,11 @@ static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+2]
     { 0x1821, 0x1 }, /* GCNENC_EXP, opcode = none (GCN1.2) */
     { 0x1822, 0x100 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
     { 0x1922, 0x40 }, /* GCNENC_VOP2, opcode = (6bit)<<25 (RXVEGA) */
-    { 0x1962, 0x400 } /* GCNENC_VOP3B, opcode = (10bit)<<17  (RXVEGA) */
+    { 0x1962, 0x400 }, /* GCNENC_VOP3B, opcode = (10bit)<<17  (RXVEGA) */
+    { 0x1d62, 0x100 } /* GCNENC_VOP1, opcode = (8bit)<<9 (RXVEGA) */
 };
 
-static const size_t gcnInstrTableByCodeLength = 0x1d62;
+static const size_t gcnInstrTableByCodeLength = 0x1e62;
 
 static void initializeGCNDisassembler()
 {
@@ -214,11 +215,14 @@ static void initializeGCNDisassembler()
                         GCNENC_MAXVAL+3+instr.encoding];
             if (gcnInstrTableByCode[encSpace3.offset + instr.code].mnemonic == nullptr)
                 gcnInstrTableByCode[encSpace3.offset + instr.code] = instr;
-            else if((instr.archMask & ARCH_RXVEGA) != 0) /* otherwise we for GCN1.4 */
-            {
-                const bool encVOP3b = instr.encoding != GCNENC_VOP2;
+            else if((instr.archMask & ARCH_RXVEGA) != 0 &&
+                (instr.encoding == GCNENC_VOP2 || instr.encoding == GCNENC_VOP1 ||
+                instr.encoding == GCNENC_VOP3A || instr.encoding == GCNENC_VOP3B))
+            {   /* otherwise we for GCN1.4 */
+                const bool encNoVOP2 = instr.encoding != GCNENC_VOP2;
+                const bool encVOP1 = instr.encoding == GCNENC_VOP1;
                 const GCNEncodingSpace& encSpace4 =
-                        gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 + encVOP3b];
+                    gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 + encNoVOP2 + encVOP1];
                 gcnInstrTableByCode[encSpace4.offset + instr.code] = instr;
             }
             // otherwise we ignore this entry
@@ -2787,11 +2791,13 @@ void GCNDisassembler::disassemble()
             }
             else if (isGCN14 && gcnInsn->mnemonic != nullptr &&
                 (curArchMask & gcnInsn->archMask) == 0 &&
-                (gcnEncoding == GCNENC_VOP3A || gcnEncoding == GCNENC_VOP2))
+                (gcnEncoding == GCNENC_VOP3A || gcnEncoding == GCNENC_VOP2 ||
+                    gcnEncoding == GCNENC_VOP1))
             {   /* new overrides */
                 const GCNEncodingSpace& encSpace4 =
                         gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 +
-                                (gcnEncoding == GCNENC_VOP3A)];
+                                (gcnEncoding != GCNENC_VOP2) +
+                                (gcnEncoding == GCNENC_VOP1)];
                 gcnInsn = gcnInstrTableByCode.get() + encSpace4.offset + opcode;
                 if (gcnInsn->mnemonic == nullptr ||
                         (curArchMask & gcnInsn->archMask) == 0)
