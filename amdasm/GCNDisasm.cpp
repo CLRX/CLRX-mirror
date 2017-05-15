@@ -1798,6 +1798,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     char* bufStart = output.reserve(140);
     char* bufPtr = bufStart;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
+    const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
     const cxuint opcode = (isGCN12) ? ((insnCode>>16)&0x3ff) : ((insnCode>>17)&0x1ff);
     
     const cxuint vdst = insnCode&0xff;
@@ -1938,6 +1939,25 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     else
         addSpaces(bufPtr, spacesToAdd-1);
     
+    if (isGCN14 && (gcnInsn.mode & GCN_VOP3_OPSEL) != 0 && (insnCode & 0x7800) != 0)
+    {   // insnCode
+        putChars(bufPtr, " op_sel:[", 9);
+        *bufPtr++ = (insnCode&0x800) ? '1' : '0';
+        *bufPtr++ = ',';
+        *bufPtr++ = (insnCode&0x1000) ? '1' : '0';
+        if (vsrc1Used)
+        {
+            *bufPtr++ = ',';
+            *bufPtr++ = (insnCode&0x2000) ? '1' : '0';
+        }
+        if (vsrc2Used)
+        {
+            *bufPtr++ = ',';
+            *bufPtr++ = (insnCode&0x4000) ? '1' : '0';
+        }
+        *bufPtr++ = ']';
+    }
+    
     const cxuint omod = (insnCode2>>27)&3;
     if (omod != 0)
     {
@@ -1992,6 +2012,13 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             putChars(bufPtr, " abs2", 5);
         if ((insnCode2 & (1U<<31)) != 0)
             putChars(bufPtr, " neg2", 5);
+    }
+    
+    if (isGCN14 && (gcnInsn.mode & GCN_VOP3_OPSEL) == 0 && (insnCode & 0x7800) != 0 &&
+        gcnInsn.encoding != GCNENC_VOP3B)
+    {
+        putChars(bufPtr, " op_sel=", 8);
+        bufPtr += itocstrCStyle((insnCode>>11)&15, bufPtr, 6, 16);
     }
     
     const cxuint usedMask = 7 & ~(vsrc2CC?4:0);
