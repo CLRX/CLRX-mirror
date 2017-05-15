@@ -270,5 +270,16 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
     { 0xd1ee0037U, 0x07974d4fU, true, "        v_fma_legacy_f16 v55, v79, v166, v229\n" },
     { 0xd1ef0037U, 0x07974d4fU, true,
             "        v_div_fixup_legacy_f16 v55, v79, v166, v229\n" },
+    { 0xd276002aU, 0x007402a7, true,
+        "        v_interp_p2_legacy_f16 v42, s1, attr39.z, s29\n" },
+    { 0xd277002aU, 0x007402a7, true, "        v_interp_p2_f16 v42, s1, attr39.z, s29\n" },
+    { 0xd2990037U, 0x0002b51bU, true, "        v_cvt_pknorm_i16_f16 v55, v27, v90\n" },
+    { 0xd29a0037U, 0x0002b51bU, true, "        v_cvt_pknorm_u16_f16 v55, v27, v90\n" },
+    { 0xd29b0037U, 0x0002b51bU, true, "        v_readlane_regrd_b32 s55, v27, v90\n" },
+    { 0xd29c0037U, 0x0002b51bU, true, "        v_add_i32       v55, v27, v90\n" },
+    { 0xd29d0037U, 0x0002b51bU, true, "        v_sub_i32       v55, v27, v90\n" },
+    { 0xd29e0037U, 0x0002b51bU, true, "        v_add_i16       v55, v27, v90\n" },
+    { 0xd29f0037U, 0x0002b51bU, true, "        v_sub_i16       v55, v27, v90\n" },
+    { 0xd2a00037U, 0x0002b51bU, true, "        v_pack_b32_f16  v55, v27, v90\n" },
     { 0, 0, false, nullptr }
 };
