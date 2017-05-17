@@ -1919,7 +1919,8 @@ uint32_t CLRX::detectAmdDriverVersion()
         // write to config
         if (!clrxTimestampPath.empty()) // if clrxamdocltstamp set
         {   // write to
-            std::ofstream ofs(clrxTimestampPath.c_str(), std::ios::binary);
+            std::ofstream ofs(clrxTimestampPath.c_str(),
+                              std::ios::binary | std::ios::trunc);
             ofs << detectionFileTimestamp << " " << detectedDriverVersion;
         }
     }

@@ -2680,7 +2680,7 @@ void Assembler::writeBinary(const char* filename) const
         const AsmFormatHandler* formatHandler = getFormatHandler();
         if (formatHandler!=nullptr)
         {
-            std::ofstream ofs(filename, std::ios::binary);
+            std::ofstream ofs(filename, std::ios::binary | std::ios::trunc);
             if (ofs)
                 formatHandler->writeBinary(ofs);
             else
