@@ -114,17 +114,19 @@ enum : uint16_t
     GCN_VOP3_VOP2 = 0x100,  /// VOP2 encoded as VOP3
     GCN_VOP3_VOP1 = 0x200,  /// VOP1 encoded as VOP3
     GCN_VOP3_VINTRP = 0x300,    /// VINTRP encoded as VOP3
-    GCN_VOP3_DS2_128 = 0xf000,   /// VOP3 with DST 128 and SRC2 128
+    GCN_VOP3_DS2_128 = 0x7000,   /// VOP3 with DST 128 and SRC2 128
     GCN_VOP3_VINTRP_NEW = 0x3e0,    /// new VINTRP instructions encoded as VOP3 
     GCN_VOP3_VOP2_DS01 = 0x110, /// VOP2 in VOP3, destination and two sources
     GCN_VOP3_VOP1_DS0 = 0x230,  /// VOP1 in VOP3, destination and one source
     GCN_VOP3_DST_SGPR = 0x400,  /// VOPX in VOP3, and dst is SGPR (if mask1 used)
     GCN_VOP3_SRC1_SGPR = 0x800,   /// VOPX in VOP3, and src1 is SGPR (if mask1 used)
     GCN_VOP3_DS1_SGPR = 0xc00, /// VOPX in VOP3, and dst and src1 is SGPR (if mask1 used)
-    GCN_VOP3_MASK2 = 0x300,     // mask for VOPx in VOP2 encodings
+    GCN_VOP3_MASK2 = 0x8300,    // mask for VOPx in VOP2 encodings
     GCN_VINTRP_SRC2 = 0x1000,   /// VOP3/VINTRP with source2 (third source)
     GCN_VOP3_MASK3 = 0x3000,    /// mask for VINTRP in VOP2 encodings
     GCN_VOP3_OPSEL = 0x4000,    /// if instruction uses op_sel modifier
+    GCN_VOP3_VOP3P = 0x8000,    /// VOP3P encoding
+    GCN_VOP3P_OPSEL = 0xc000,    /// VOP3P encoding with opsel
     // DS encoding modes
     GCN_ADDR_STD = 0x0,    /// standard place of address
     GCN_ADDR_DST = 0x10,    /// address operand in destination place

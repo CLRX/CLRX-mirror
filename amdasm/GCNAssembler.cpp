@@ -1934,7 +1934,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     GCNOperand src1Op{};
     GCNOperand src2Op{};
     
-    const bool is128Ops = (gcnInsn.mode & 0xf000) == GCN_VOP3_DS2_128;
+    const bool is128Ops = (gcnInsn.mode & 0x7000) == GCN_VOP3_DS2_128;
     bool modHigh = false;
     cxbyte modifiers = 0;
     const Flags vop3Mods = (gcnInsn.encoding == GCNENC_VOP3B) ?

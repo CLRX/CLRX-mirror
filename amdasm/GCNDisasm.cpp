@@ -19,6 +19,7 @@
 
 #include <CLRX/Config.h>
 #include <algorithm>
+#include <iostream>
 #include <cstring>
 #include <mutex>
 #include <memory>
@@ -1815,11 +1816,14 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     bool vsrc2Used = false;
     bool vsrc2CC = false;
     cxuint absFlags = 0;
+    cxuint negFlags = 0;
     
-    if (gcnInsn.encoding == GCNENC_VOP3A)
+    if (gcnInsn.encoding == GCNENC_VOP3A && vop3Mode != GCN_VOP3_VOP3P)
         absFlags = (insnCode>>8)&7;
+    if (vop3Mode != GCN_VOP3_VOP3P)
+        negFlags = (insnCode2>>29)&7;
     
-    const bool is128Ops = (gcnInsn.mode&0xf000)==GCN_VOP3_DS2_128;
+    const bool is128Ops = (gcnInsn.mode&0x7000)==GCN_VOP3_DS2_128;
     
     if (mode1 != GCN_VOP_ARG_NONE)
     {
@@ -1845,7 +1849,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
         *bufPtr++ = ' ';
         if (vop3Mode != GCN_VOP3_VINTRP)
         {
-            if ((insnCode2 & (1U<<29)) != 0)
+            if (negFlags & 1)
                 *bufPtr++ = '-';
             if (absFlags & 1)
                 putChars(bufPtr, "abs(", 4);
@@ -1858,7 +1862,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
         
         if (vop3Mode == GCN_VOP3_VINTRP)
         {
-            if ((insnCode2 & (1U<<30)) != 0)
+            if (negFlags & 2)
                 *bufPtr++ = '-';
             if (absFlags & 2)
                 putChars(bufPtr, "abs(", 4);
@@ -1878,7 +1882,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             {
                 *bufPtr++ = ',';
                 *bufPtr++ = ' ';
-                if ((insnCode2 & (1U<<31)) != 0)
+                if (negFlags & 4)
                     *bufPtr++ = '-';
                 if (absFlags & 4)
                     putChars(bufPtr, "abs(", 4);
@@ -1897,7 +1901,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
         {
             *bufPtr++ = ',';
             *bufPtr++ = ' ';
-            if ((insnCode2 & (1U<<30)) != 0)
+            if (negFlags & 2)
                 *bufPtr++ = '-';
             if (absFlags & 2)
                 putChars(bufPtr, "abs(", 4);
@@ -1918,7 +1922,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
                 }
                 else
                 {
-                    if ((insnCode2 & (1U<<31)) != 0)
+                    if (negFlags & 4)
                         *bufPtr++ = '-';
                     if (absFlags & 4)
                         putChars(bufPtr, "abs(", 4);
@@ -1939,27 +1943,78 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     else
         addSpaces(bufPtr, spacesToAdd-1);
     
-    if (isGCN14 && (gcnInsn.mode & GCN_VOP3_OPSEL) != 0 && (insnCode & 0x7800) != 0)
+    if (isGCN14 && (gcnInsn.mode & GCN_VOP3_OPSEL) != 0)
     {   // insnCode
-        putChars(bufPtr, " op_sel:[", 9);
-        *bufPtr++ = (insnCode&0x800) ? '1' : '0';
-        *bufPtr++ = ',';
-        *bufPtr++ = (insnCode&0x1000) ? '1' : '0';
-        if (vsrc1Used)
+        const bool opsel2Bit = (vop3Mode!=GCN_VOP3_VOP3P && vsrc1Used) ||
+            (vop3Mode==GCN_VOP3_VOP3P && vsrc2Used);
+        const bool opsel3Bit = (vsrc2Used && vop3Mode!=GCN_VOP3_VOP3P);
+        if ((insnCode & ((3 + (opsel2Bit?4:0) + (opsel3Bit?8:0))<<11)) != 0)
         {
+            putChars(bufPtr, " op_sel:[", 9);
+            *bufPtr++ = (insnCode&0x800) ? '1' : '0';
             *bufPtr++ = ',';
-            *bufPtr++ = (insnCode&0x2000) ? '1' : '0';
+            *bufPtr++ = (insnCode&0x1000) ? '1' : '0';
+            if ((vop3Mode!=GCN_VOP3_VOP3P && vsrc1Used) ||
+                (vop3Mode==GCN_VOP3_VOP3P && vsrc2Used))
+            {
+                *bufPtr++ = ',';
+                *bufPtr++ = (insnCode&0x2000) ? '1' : '0';
+            }
+            if (vsrc2Used && vop3Mode!=GCN_VOP3_VOP3P)
+            {
+                *bufPtr++ = ',';
+                *bufPtr++ = (insnCode&0x4000) ? '1' : '0';
+            }
+            *bufPtr++ = ']';
         }
-        if (vsrc2Used)
+    }
+    
+    if (vop3Mode==GCN_VOP3_VOP3P)
+    {
+        cxuint opselHi = ((insnCode2 >> 27) & 3) | (vsrc2Used ? ((insnCode>>12)&4) : 0);
+        if (opselHi != 3+(vsrc2Used?4:0))
         {
+            putChars(bufPtr, " op_sel_hi:[", 12);
+            *bufPtr++ = (insnCode2 & (1U<<27)) ? '1' : '0';
             *bufPtr++ = ',';
-            *bufPtr++ = (insnCode&0x4000) ? '1' : '0';
+            *bufPtr++ = (insnCode2 & (1U<<28)) ? '1' : '0';
+            if (vsrc2Used)
+            {
+                *bufPtr++ = ',';
+                *bufPtr++ = (insnCode& 0x4000) ? '1' : '0';
+            }
+            *bufPtr++ = ']';
         }
-        *bufPtr++ = ']';
+        if ((insnCode2&((3+(vsrc2Used?4:0))<<29)) != 0)
+        {
+            putChars(bufPtr, " neg_lo:[", 9);
+            *bufPtr++ = (insnCode2 & (1U<<29)) ? '1' : '0';
+            *bufPtr++ = ',';
+            *bufPtr++ = (insnCode2 & (1U<<30)) ? '1' : '0';
+            if (vsrc2Used)
+            {
+                *bufPtr++ = ',';
+                *bufPtr++ = (insnCode2 & (1U<<31)) ? '1' : '0';
+            }
+            *bufPtr++ = ']';
+        }
+        if ((insnCode & ((3+(vsrc2Used?4:0))<<8)) != 0)
+        {
+            putChars(bufPtr, " neg_hi:[", 9);
+            *bufPtr++ = (insnCode & (1U<<8)) ? '1' : '0';
+            *bufPtr++ = ',';
+            *bufPtr++ = (insnCode & (1U<<9)) ? '1' : '0';
+            if (vsrc2Used)
+            {
+                *bufPtr++ = ',';
+                *bufPtr++ = (insnCode & (1U<<10)) ? '1' : '0';
+            }
+            *bufPtr++ = ']';
+        }
     }
     
     const cxuint omod = (insnCode2>>27)&3;
-    if (omod != 0)
+    if (vop3Mode != GCN_VOP3_VOP3P && omod != 0)
     {
         const char* omodStr = (omod==3)?" div:2":(omod==2)?" mul:4":" mul:2";
         putChars(bufPtr, omodStr, 6);
