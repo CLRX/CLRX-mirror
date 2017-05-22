@@ -433,5 +433,19 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
     { 0xd3a04037U, 0x1f974d4fU, true, "        v_mad_mix_f32   v55, v79, v166, v229\n" },
     { 0xd3a14037U, 0x1f974d4fU, true, "        v_mad_mixlo_f16 v55, v79, v166, v229\n" },
     { 0xd3a24037U, 0x1f974d4fU, true, "        v_mad_mixhi_f16 v55, v79, v166, v229\n" },
+    /* DS instructions */
+    { 0xd83acd67U, 0x00000047U, true, "        ds_write_addtid_b32 v71 offset:52583\n" },
+    { 0xd8a8cd67U, 0x0000a947U, true,
+        "        ds_write_b8_d16_hi v71, v169 offset:52583\n" },
+    { 0xd8aacd67U, 0x0000a947U, true,
+        "        ds_write_b16_d16_hi v71, v169 offset:52583\n" },
+    { 0xd8accd67U, 0x8b000047U, true, "        ds_read_u8_d16  v139, v71 offset:52583\n" },
+    { 0xd8aecd67U, 0x8b000047U, true,
+        "        ds_read_u8_d16_hi v139, v71 offset:52583\n" },
+    { 0xd8b0cd67U, 0x8b000047U, true, "        ds_read_i8_d16  v139, v71 offset:52583\n" },
+    { 0xd8b2cd67U, 0x8b000047U, true,
+        "        ds_read_i8_d16_hi v139, v71 offset:52583\n" },
+    { 0xd8b4cd67U, 0x8b000047U, true, "        ds_read_u16_d16 v139, v71 offset:52583\n" },
+    { 0xd96ccd67U, 0x8b000000U, true, "        ds_read_addtid_b32 v139 offset:52583\n" },
     { 0, 0, false, nullptr }
 };
