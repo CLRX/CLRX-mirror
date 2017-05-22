@@ -447,5 +447,26 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
         "        ds_read_i8_d16_hi v139, v71 offset:52583\n" },
     { 0xd8b4cd67U, 0x8b000047U, true, "        ds_read_u16_d16 v139, v71 offset:52583\n" },
     { 0xd96ccd67U, 0x8b000000U, true, "        ds_read_addtid_b32 v139 offset:52583\n" },
+    /* MUBUF instructions */
+    { 0xe067725bU, 0x23343d12U, true, "        buffer_store_byte_d16_hi "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+    { 0xe06f725bU, 0x23343d12U, true, "        buffer_store_short_d16_hi "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+    { 0xe083725bU, 0x23343d12U, true, "        buffer_load_ubyte_d16 "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+    { 0xe087725bU, 0x23343d12U, true, "        buffer_load_ubyte_d16_hi "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+    { 0xe08b725bU, 0x23343d12U, true, "        buffer_load_sbyte_d16 "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+    { 0xe08f725bU, 0x23343d12U, true, "        buffer_load_sbyte_d16_hi "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+    { 0xe093725bU, 0x23343d12U, true, "        buffer_load_short_d16 "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+    { 0xe097725bU, 0x23343d12U, true, "        buffer_load_short_d16_hi "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+    { 0xe09b725bU, 0x23343d12U, true, "        buffer_load_format_d16_hi_x "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+    { 0xe09f725bU, 0x23343d12U, true, "        buffer_store_format_d16_hi_x "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
     { 0, 0, false, nullptr }
 };
