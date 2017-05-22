@@ -831,7 +831,7 @@ void GCNDisasmUtils::decodeSOPCEncoding(GCNDisassembler& dasm, size_t codePos,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(80);
+    char* bufStart = output.reserve(90);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     output.forward(bufPtr-bufStart);
@@ -859,7 +859,7 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
 {
     const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(60);
+    char* bufStart = output.reserve(70);
     char* bufPtr = bufStart;
     const cxuint imm16 = insnCode&0xffff;
     switch(gcnInsn.mode&GCN_MASK1)
@@ -994,7 +994,7 @@ void GCNDisasmUtils::decodeSOP1Encoding(GCNDisassembler& dasm, size_t codePos,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(70);
+    char* bufStart = output.reserve(80);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     bool isDst = (gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE;
@@ -1035,7 +1035,7 @@ void GCNDisasmUtils::decodeSOP2Encoding(GCNDisassembler& dasm, size_t codePos,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(80);
+    char* bufStart = output.reserve(90);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
@@ -1080,7 +1080,7 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(80);
+    char* bufStart = output.reserve(90);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     if ((gcnInsn.mode & GCN_IMM_DST) == 0)
@@ -1227,7 +1227,7 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
          uint32_t insnCode2)
 {
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(100);
+    char* bufStart = output.reserve(120);
     char* bufPtr = bufStart;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     bool useDst = false;
@@ -1382,7 +1382,7 @@ static inline VOPExtraWordOut decodeVOPSDWAFlags(uint32_t insnCode2, uint16_t ar
 static void decodeVOPSDWA(FastOutputBuffer& output, uint16_t arch, uint32_t insnCode2,
           bool src0Used, bool src1Used)
 {
-    char* bufStart = output.reserve(90);
+    char* bufStart = output.reserve(100);
     char* bufPtr = bufStart;
     const cxuint dstSel = (insnCode2>>8)&7;
     const cxuint dstUnused = (insnCode2>>11)&3;
@@ -1464,7 +1464,7 @@ static inline VOPExtraWordOut decodeVOPDPPFlags(uint32_t insnCode2)
 static void decodeVOPDPP(FastOutputBuffer& output, uint32_t insnCode2,
         bool src0Used, bool src1Used)
 {
-    char* bufStart = output.reserve(100);
+    char* bufStart = output.reserve(110);
     char* bufPtr = bufStart;
     const cxuint dppCtrl = (insnCode2>>8)&0x1ff;
     
@@ -1532,7 +1532,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
 {
     FastOutputBuffer& output = dasm.output;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
-    char* bufStart = output.reserve(100);
+    char* bufStart = output.reserve(120);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     
@@ -1600,7 +1600,7 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
 {
     FastOutputBuffer& output = dasm.output;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
-    char* bufStart = output.reserve(110);
+    char* bufStart = output.reserve(130);
     char* bufPtr = bufStart;
     
     const cxuint src0Field = (insnCode&0x1ff);
@@ -1679,7 +1679,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
 {
     FastOutputBuffer& output = dasm.output;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
-    char* bufStart = output.reserve(130);
+    char* bufStart = output.reserve(150);
     char* bufPtr = bufStart;
     
     addSpaces(bufPtr, spacesToAdd);
@@ -1796,7 +1796,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
          uint32_t insnCode2, FloatLitType displayFloatLits)
 {
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(140);
+    char* bufStart = output.reserve(170);
     char* bufPtr = bufStart;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
     const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
@@ -2132,7 +2132,7 @@ void GCNDisasmUtils::decodeVINTRPEncoding(GCNDisassembler& dasm, cxuint spacesTo
           uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode)
 {
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(80);
+    char* bufStart = output.reserve(90);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     decodeGCNVRegOperand((insnCode>>18)&0xff, 1, bufPtr);
@@ -2155,7 +2155,7 @@ void GCNDisasmUtils::decodeDSEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
           uint32_t insnCode2)
 {
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(90);
+    char* bufStart = output.reserve(105);
     char* bufPtr = bufStart;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
     addSpaces(bufPtr, spacesToAdd);
@@ -2283,7 +2283,7 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
           uint32_t insnCode2)
 {
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(150);
+    char* bufStart = output.reserve(170);
     char* bufPtr = bufStart;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
     const cxuint vaddr = insnCode2&0xff;
@@ -2403,7 +2403,7 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
 {
     const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(150);
+    char* bufStart = output.reserve(170);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     
@@ -2486,7 +2486,7 @@ void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd
             uint32_t insnCode2)
 {
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(90);
+    char* bufStart = output.reserve(100);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     /* export target */
@@ -2575,7 +2575,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm ,cxuint spacesToAd
             uint32_t insnCode2)
 {
     FastOutputBuffer& output = dasm.output;
-    char* bufStart = output.reserve(130);
+    char* bufStart = output.reserve(150);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     bool vdstUsed = false;

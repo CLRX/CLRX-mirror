@@ -98,7 +98,7 @@ protected:
     FastOutputBuffer output;    ///< output buffer
     
     /// constructor
-    explicit ISADisassembler(Disassembler& disassembler, cxuint outBufSize = 500);
+    explicit ISADisassembler(Disassembler& disassembler, cxuint outBufSize = 600);
     
     /// write location in the code
     void writeLocation(size_t pos);
