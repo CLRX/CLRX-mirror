@@ -468,5 +468,15 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
         "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
     { 0xe09f725bU, 0x23343d12U, true, "        buffer_store_format_d16_hi_x "
         "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+    /* MIMG instructions */
+    /* TODO: check register ranges */
+    { 0xf108fb00U, 0x00159d79U, true, "        image_gather4h  "
+            "v[157:160], v[121:124], s[84:91], s[0:3] dmask:11 unorm glc a16 da\n" },
+    { 0xf1087b00U, 0x00159d79U, true, "        image_gather4h  "
+            "v[157:160], v[121:124], s[84:91], s[0:3] dmask:11 unorm glc da\n" },
+    { 0xf128fb00U, 0x00159d79U, true, "        image_gather4h_pck "
+            "v[157:160], v[121:124], s[84:91], s[0:3] dmask:11 unorm glc a16 da\n" },
+    { 0xf12cfb00U, 0x00159d79U, true, "        image_gather8h_pck "
+            "v[157:160], v[121:124], s[84:91], s[0:3] dmask:11 unorm glc a16 da\n" },
     { 0, 0, false, nullptr }
 };

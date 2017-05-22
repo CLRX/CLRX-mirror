@@ -2401,6 +2401,7 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
          uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
          uint32_t insnCode2)
 {
+    const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(150);
     char* bufPtr = bufStart;
@@ -2423,8 +2424,8 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                  std::max(4, (gcnInsn.mode&GCN_MIMG_VA_MASK)+1), bufPtr);
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
-    decodeGCNOperandNoLit(dasm, ((insnCode2>>14)&0x7c), (insnCode & 0x8000)?4:8,
-                          bufPtr, arch);
+    decodeGCNOperandNoLit(dasm, ((insnCode2>>14)&0x7c),
+                (((insnCode & 0x8000)!=0) && !isGCN14) ? 4: 8, bufPtr, arch);
     
     const cxuint ssamp = (insnCode2>>21)&0x1f;
     if ((gcnInsn.mode & GCN_MIMG_SAMPLE) != 0)
@@ -2452,7 +2453,12 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     if (insnCode & 0x2000000)
         putChars(bufPtr, " slc", 4);
     if (insnCode & 0x8000)
-        putChars(bufPtr, " r128", 5);
+    {
+        if (!isGCN14)
+            putChars(bufPtr, " r128", 5);
+        else
+            putChars(bufPtr, " a16", 4);
+    }
     if (insnCode & 0x10000)
         putChars(bufPtr, " tfe", 4);
     if (insnCode & 0x20000)
