@@ -3082,6 +3082,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
     /* FLAT instructions */
     { 0xdc270000U, 0x2f8000bbU, true, "        flat_load_sbyte "
                 "v[47:48], v[187:188] glc slc tfe\n" },
+    { 0xde270000U, 0x2f8000bbU, true, "        flat_load_sbyte "
+                "v[47:48], v[187:188] glc slc tfe\n" },
     { 0xdc2b0000U, 0x2f8000bbU, true, "        flat_load_ushort "
                 "v[47:48], v[187:188] glc slc tfe\n" },
     { 0xdc2f0000U, 0x2f8000bbU, true, "        flat_load_sshort "

@@ -3032,6 +3032,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     /* FLAT encoding */
     { 0xdc030000U, 0x2f8041bbU, true, "        FLAT_ill_0      "
                 "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xde030000U, 0x2f8041bbU, true, "        FLAT_ill_0      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
     { 0xdc070000U, 0x2f8041bbU, true, "        FLAT_ill_1      "
                 "v[47:48], v[187:188], v65 glc slc tfe\n" },
     { 0xdc0b0000U, 0x2f8041bbU, true, "        FLAT_ill_2      "
@@ -3078,6 +3080,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
                 "v[47:48], v[191:192] slc tfe\n" },
     /* FLAT instructions */
     { 0xdc470000U, 0x2f8000bbU, true, "        flat_load_sbyte "
+                "v[47:48], v[187:188] glc slc tfe\n" },
+    { 0xde470000U, 0x2f8000bbU, true, "        flat_load_sbyte "
                 "v[47:48], v[187:188] glc slc tfe\n" },
     { 0xdc4b0000U, 0x2f8000bbU, true, "        flat_load_ushort "
                 "v[47:48], v[187:188] glc slc tfe\n" },

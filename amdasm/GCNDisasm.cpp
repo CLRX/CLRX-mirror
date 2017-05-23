@@ -134,7 +134,7 @@ static const char* gcnEncodingNames[GCNENC_MAXVAL+1] =
     "VOP3A", "VOP3B", "VINTRP", "DS", "MUBUF", "MTBUF", "MIMG", "EXP", "FLAT"
 };
 
-static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+3] =
+static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+3+2] =
 {
     { 0, 0 },
     { 0, 0x80 }, /* GCNENC_SOPC, opcode = (7bit)<<16 */
@@ -154,31 +154,33 @@ static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+3]
     { 0x08a4, 0x8 }, /* GCNENC_MTBUF, opcode = (3bit)<<16 */
     { 0x08ac, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
     { 0x092c, 0x1 }, /* GCNENC_EXP, opcode = none */
-    { 0x092d, 0x100 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
-    { 0x0a2d, 0x200 }, /* GCNENC_VOP3A, opcode = (9bit)<<17 (GCN1.1) */
-    { 0x0a2d, 0x200 },  /* GCNENC_VOP3B, opcode = (9bit)<<17 (GCN1.1) */
-    { 0x0c2d, 0x0 },
-    { 0x0c2d, 0x80 }, /* GCNENC_SOPC, opcode = (7bit)<<16 (GCN1.2) */
-    { 0x0cad, 0x80 }, /* GCNENC_SOPP, opcode = (7bit)<<16 (GCN1.2) */
-    { 0x0d2d, 0x100 }, /* GCNENC_SOP1, opcode = (8bit)<<8 (GCN1.2) */
-    { 0x0e2d, 0x80 }, /* GCNENC_SOP2, opcode = (7bit)<<23 (GCN1.2) */
-    { 0x0ead, 0x20 }, /* GCNENC_SOPK, opcode = (5bit)<<23 (GCN1.2) */
-    { 0x0ecd, 0x100 }, /* GCNENC_SMEM, opcode = (8bit)<<18 (GCN1.2) */
-    { 0x0fcd, 0x100 }, /* GCNENC_VOPC, opcode = (8bit)<<27 (GCN1.2) */
-    { 0x10cd, 0x100 }, /* GCNENC_VOP1, opcode = (8bit)<<9 (GCN1.2) */
-    { 0x11cd, 0x40 }, /* GCNENC_VOP2, opcode = (6bit)<<25 (GCN1.2) */
-    { 0x120d, 0x400 }, /* GCNENC_VOP3A, opcode = (10bit)<<16 (GCN1.2) */
-    { 0x120d, 0x400 }, /* GCNENC_VOP3B, opcode = (10bit)<<16 (GCN1.2) */
-    { 0x160d, 0x4 }, /* GCNENC_VINTRP, opcode = (2bit)<<16 (GCN1.2) */
-    { 0x1611, 0x100 }, /* GCNENC_DS, opcode = (8bit)<<18 (GCN1.2) */
-    { 0x1711, 0x80 }, /* GCNENC_MUBUF, opcode = (7bit)<<18 (GCN1.2) */
-    { 0x1791, 0x10 }, /* GCNENC_MTBUF, opcode = (4bit)<<16 (GCN1.2) */
-    { 0x17a1, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 (GCN1.2) */
-    { 0x1821, 0x1 }, /* GCNENC_EXP, opcode = none (GCN1.2) */
-    { 0x1822, 0x100 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
-    { 0x1922, 0x40 }, /* GCNENC_VOP2, opcode = (6bit)<<25 (RXVEGA) */
-    { 0x1962, 0x400 }, /* GCNENC_VOP3B, opcode = (10bit)<<17  (RXVEGA) */
-    { 0x1d62, 0x100 } /* GCNENC_VOP1, opcode = (8bit)<<9 (RXVEGA) */
+    { 0x092d, 0x80 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
+    { 0x09ad, 0x200 }, /* GCNENC_VOP3A, opcode = (9bit)<<17 (GCN1.1) */
+    { 0x09ad, 0x200 },  /* GCNENC_VOP3B, opcode = (9bit)<<17 (GCN1.1) */
+    { 0x0bad, 0x0 },
+    { 0x0bad, 0x80 }, /* GCNENC_SOPC, opcode = (7bit)<<16 (GCN1.2) */
+    { 0x0c2d, 0x80 }, /* GCNENC_SOPP, opcode = (7bit)<<16 (GCN1.2) */
+    { 0x0cad, 0x100 }, /* GCNENC_SOP1, opcode = (8bit)<<8 (GCN1.2) */
+    { 0x0dad, 0x80 }, /* GCNENC_SOP2, opcode = (7bit)<<23 (GCN1.2) */
+    { 0x0e2d, 0x20 }, /* GCNENC_SOPK, opcode = (5bit)<<23 (GCN1.2) */
+    { 0x0e4d, 0x100 }, /* GCNENC_SMEM, opcode = (8bit)<<18 (GCN1.2) */
+    { 0x0f4d, 0x100 }, /* GCNENC_VOPC, opcode = (8bit)<<27 (GCN1.2) */
+    { 0x104d, 0x100 }, /* GCNENC_VOP1, opcode = (8bit)<<9 (GCN1.2) */
+    { 0x114d, 0x40 }, /* GCNENC_VOP2, opcode = (6bit)<<25 (GCN1.2) */
+    { 0x118d, 0x400 }, /* GCNENC_VOP3A, opcode = (10bit)<<16 (GCN1.2) */
+    { 0x118d, 0x400 }, /* GCNENC_VOP3B, opcode = (10bit)<<16 (GCN1.2) */
+    { 0x158d, 0x4 }, /* GCNENC_VINTRP, opcode = (2bit)<<16 (GCN1.2) */
+    { 0x1591, 0x100 }, /* GCNENC_DS, opcode = (8bit)<<18 (GCN1.2) */
+    { 0x1691, 0x80 }, /* GCNENC_MUBUF, opcode = (7bit)<<18 (GCN1.2) */
+    { 0x1711, 0x10 }, /* GCNENC_MTBUF, opcode = (4bit)<<16 (GCN1.2) */
+    { 0x1721, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 (GCN1.2) */
+    { 0x17a1, 0x1 }, /* GCNENC_EXP, opcode = none (GCN1.2) */
+    { 0x17a2, 0x80 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
+    { 0x1822, 0x40 }, /* GCNENC_VOP2, opcode = (6bit)<<25 (RXVEGA) */
+    { 0x1862, 0x400 }, /* GCNENC_VOP3B, opcode = (10bit)<<17  (RXVEGA) */
+    { 0x1c62, 0x100 }, /* GCNENC_VOP1, opcode = (8bit)<<9 (RXVEGA) */
+    { 0x1d62, 0x80 }, /* GCNENC_FLAT_SCRATCH, opcode = (8bit)<<18 (???8bit) RXVEGA */
+    { 0x1de2, 0x80 }  /* GCNENC_FLAT_GLOBAL, opcode = (8bit)<<18 (???8bit) RXVEGA */
 };
 
 static const size_t gcnInstrTableByCodeLength = 0x1e62;
@@ -224,6 +226,14 @@ static void initializeGCNDisassembler()
                 const bool encVOP1 = instr.encoding == GCNENC_VOP1;
                 const GCNEncodingSpace& encSpace4 =
                     gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 + encNoVOP2 + encVOP1];
+                gcnInstrTableByCode[encSpace4.offset + instr.code] = instr;
+            }
+            else if((instr.archMask & ARCH_RXVEGA) != 0 &&
+                instr.encoding == GCNENC_FLAT && (instr.mode & GCN_FLAT_MODEMASK) != 0)
+            {   /* FLAT SCRATCH and GLOBAL instructions */
+                const cxuint encFlatMode = (instr.mode & GCN_FLAT_MODEMASK)-1;
+                const GCNEncodingSpace& encSpace4 =
+                    gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+3 + encFlatMode];
                 gcnInstrTableByCode[encSpace4.offset + instr.code] = instr;
             }
             // otherwise we ignore this entry
@@ -450,7 +460,7 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcodeTable[GCNENC_MAXVAL+1] =
     { 16, 3 }, /* GCNENC_MTBUF, opcode = (3bit)<<16 */
     { 18, 7 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
     { 0, 0 }, /* GCNENC_EXP, opcode = none */
-    { 18, 8 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
+    { 18, 7 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
 };
 
 static const GCNEncodingOpcodeBits gcnEncodingOpcode12Table[GCNENC_MAXVAL+1] =
@@ -473,7 +483,7 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcode12Table[GCNENC_MAXVAL+1] =
     { 15, 4 }, /* GCNENC_MTBUF, opcode = (4bit)<<15 */
     { 18, 7 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
     { 0, 0 }, /* GCNENC_EXP, opcode = none */
-    { 18, 8 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
+    { 18, 7 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
 };
 
 static inline void putChars(char*& buf, const char* input, size_t size)
@@ -2574,6 +2584,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm ,cxuint spacesToAd
             uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
             uint32_t insnCode2)
 {
+    const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(150);
     char* bufPtr = bufStart;
@@ -2584,7 +2595,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm ,cxuint spacesToAd
     /// cmpswap store only to half of number of data registers
     cxuint dstRegsNum = ((gcnInsn.mode & GCN_CMPSWAP)!=0) ? (dregsNum>>1) :  dregsNum;
     // tfe
-    dstRegsNum = (insnCode2 & 0x800000U)?dstRegsNum+1:dstRegsNum;
+    dstRegsNum = (!isGCN14 && (insnCode2 & 0x800000U))?dstRegsNum+1:dstRegsNum;
     
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
@@ -2613,13 +2624,28 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm ,cxuint spacesToAd
         *bufPtr++ = ' ';
         decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     }
+    // get inst_offset, with sign if FLAT_SCRATCH, FLAT_GLOBAL
+    const cxint instOffset = ((gcnInsn.mode & GCN_FLAT_MODEMASK) != 0 &&
+            (insnCode&0x1000) != 0) ? (-insnCode&0xfff) : insnCode&0xfff;
+    if (isGCN14 && instOffset != 0)
+    {
+        putChars(bufPtr, " inst_offset:", 13);
+        bufPtr += itocstrCStyle(instOffset, bufPtr, 7, 10);
+    }
     
+    if (isGCN14 && (insnCode & 0x2000U))
+        putChars(bufPtr, " lds", 4);
     if (insnCode & 0x10000U)
         putChars(bufPtr, " glc", 4);
     if (insnCode & 0x20000U)
         putChars(bufPtr, " slc", 4);
     if (insnCode2 & 0x800000U)
-        putChars(bufPtr, " tfe", 4);
+    {
+        if (!isGCN14)
+            putChars(bufPtr, " tfe", 4);
+        else
+            putChars(bufPtr, " nv", 3);
+    }
     
     // print value, if some are not used, but values is not default
     if (!vdataUsed && ((insnCode2>>8)&0xff) != 0)
@@ -2886,6 +2912,17 @@ void GCNDisassembler::disassemble()
                         gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 +
                                 (gcnEncoding != GCNENC_VOP2) +
                                 (gcnEncoding == GCNENC_VOP1)];
+                gcnInsn = gcnInstrTableByCode.get() + encSpace4.offset + opcode;
+                if (gcnInsn->mnemonic == nullptr ||
+                        (curArchMask & gcnInsn->archMask) == 0)
+                    isIllegal = true; // illegal
+            }
+            else if (isGCN14 && (curArchMask & gcnInsn->archMask) == 0 &&
+                gcnEncoding == GCNENC_FLAT && ((insnCode>>14)&3)!=0)
+            {
+                const GCNEncodingSpace& encSpace4 =
+                    gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+3 +
+                        ((insnCode>>14)&3)-1];
                 gcnInsn = gcnInstrTableByCode.get() + encSpace4.offset + opcode;
                 if (gcnInsn->mnemonic == nullptr ||
                         (curArchMask & gcnInsn->archMask) == 0)
