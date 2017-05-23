@@ -110,6 +110,8 @@ struct CLRX_INTERNAL GCNDisasmUtils
     
     static void decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd, uint16_t arch,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2);
+
+    static void printFLATAddr(cxuint flatMode, char*& bufPtr, uint32_t insnCode2);
     
     static void decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAdd, uint16_t arch,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2);
@@ -2580,7 +2582,21 @@ void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd
     output.forward(bufPtr-bufStart);
 }
 
-void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm ,cxuint spacesToAdd,
+void GCNDisasmUtils::printFLATAddr(cxuint flatMode, char*& bufPtr, uint32_t insnCode2)
+{
+    const cxuint vaddr = insnCode2&0xff;
+    if (flatMode == 0 || flatMode == GCN_FLAT_GLOBAL)
+        decodeGCNVRegOperand(vaddr, 2, bufPtr); // addr
+    else if (flatMode == GCN_FLAT_SCRATCH)
+    {
+        if (((insnCode2>>16)&0xff) == 0xff)
+            decodeGCNVRegOperand(vaddr, 1, bufPtr); // addr
+        else // no vaddr
+            putChars(bufPtr, "off", 3);
+    }
+}
+
+void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
             uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
             uint32_t insnCode2)
 {
@@ -2591,23 +2607,28 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm ,cxuint spacesToAd
     addSpaces(bufPtr, spacesToAdd);
     bool vdstUsed = false;
     bool vdataUsed = false;
+    bool saddrUsed = false;
     const cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
     /// cmpswap store only to half of number of data registers
     cxuint dstRegsNum = ((gcnInsn.mode & GCN_CMPSWAP)!=0) ? (dregsNum>>1) :  dregsNum;
+    const cxuint flatMode = gcnInsn.mode & GCN_FLAT_MODEMASK;
     // tfe
-    dstRegsNum = (!isGCN14 && (insnCode2 & 0x800000U))?dstRegsNum+1:dstRegsNum;
+    dstRegsNum = (!isGCN14 && (insnCode2 & 0x800000U)) ? dstRegsNum+1 : dstRegsNum;
     
+    bool printAddr = false;
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
         vdstUsed = true;
         decodeGCNVRegOperand(insnCode2>>24, dstRegsNum, bufPtr);
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
-        decodeGCNVRegOperand(insnCode2&0xff, 2, bufPtr); // addr
+        printFLATAddr(flatMode, bufPtr, insnCode2);
+        printAddr = true;
     }
     else
     {   /* two vregs, because 64-bitness stored in PTR32 mode (at runtime) */
-        decodeGCNVRegOperand(insnCode2&0xff, 2, bufPtr); // addr
+        printFLATAddr(flatMode, bufPtr, insnCode2);
+        printAddr = true;
         if ((gcnInsn.mode & GCN_FLAT_NODST) == 0)
         {
             vdstUsed = true;
@@ -2624,9 +2645,23 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm ,cxuint spacesToAd
         *bufPtr++ = ' ';
         decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     }
+    
+    if (flatMode != 0 && printAddr)
+    {
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+        cxuint saddr = (insnCode2>>16)&0xff;
+        if (saddr != 0xff)
+            decodeGCNOperandNoLit(dasm, saddr, flatMode == GCN_FLAT_SCRATCH ? 1 : 2,
+                        bufPtr, arch, FLTLIT_NONE);
+        else // off
+            putChars(bufPtr, "off", 3);
+        saddrUsed = true;
+    }
+    
     // get inst_offset, with sign if FLAT_SCRATCH, FLAT_GLOBAL
-    const cxint instOffset = ((gcnInsn.mode & GCN_FLAT_MODEMASK) != 0 &&
-            (insnCode&0x1000) != 0) ? (-insnCode&0xfff) : insnCode&0xfff;
+    const cxint instOffset = (flatMode != 0 && (insnCode&0x1000) != 0) ?
+                -4096+(insnCode&0xfff) : insnCode&0xfff;
     if (isGCN14 && instOffset != 0)
     {
         putChars(bufPtr, " inst_offset:", 13);
@@ -2639,7 +2674,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm ,cxuint spacesToAd
         putChars(bufPtr, " glc", 4);
     if (insnCode & 0x20000U)
         putChars(bufPtr, " slc", 4);
-    if (insnCode2 & 0x800000U)
+    if (flatMode==0 && insnCode2 & 0x800000U)
     {
         if (!isGCN14)
             putChars(bufPtr, " tfe", 4);
@@ -2657,6 +2692,11 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm ,cxuint spacesToAd
     {
         putChars(bufPtr, " vdst=", 6);
         bufPtr += itocstrCStyle(insnCode2>>24, bufPtr, 6, 16);
+    }
+    if (flatMode != 0 && !saddrUsed && ((insnCode>>16)&0xff) != 0)
+    {
+        putChars(bufPtr, " saddr=", 7);
+        bufPtr += itocstrCStyle((insnCode2>>16)&0xff, bufPtr, 6, 16);
     }
     output.forward(bufPtr-bufStart);
 }
@@ -2917,8 +2957,7 @@ void GCNDisassembler::disassemble()
                         (curArchMask & gcnInsn->archMask) == 0)
                     isIllegal = true; // illegal
             }
-            else if (isGCN14 && (curArchMask & gcnInsn->archMask) == 0 &&
-                gcnEncoding == GCNENC_FLAT && ((insnCode>>14)&3)!=0)
+            else if (isGCN14 && gcnEncoding == GCNENC_FLAT && ((insnCode>>14)&3)!=0)
             {
                 const GCNEncodingSpace& encSpace4 =
                     gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+3 +
