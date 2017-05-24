@@ -441,6 +441,10 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
     }
     
     /* parse single SGPR */
+    const bool isGCN14 = (arch & ARCH_RXVEGA) != 0;
+    const cxuint ttmpSize = isGCN14 ? 16 : 12;
+    const cxuint ttmpStart = isGCN14 ? 108 : 112;
+        
     const cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
     if (singleSorTtmp)
     {
@@ -461,10 +465,11 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                 }
                 else
                 {   // ttmp register
-                    if (value >= 12)
+                    if (value >= ttmpSize)
                     {
                         asmr.printError(sgprRangePlace,
-                                        "TTMPRegister number out of range (0-11)");
+                            isGCN14 ? "TTMPRegister number out of range (0-15)" :
+                            "TTMPRegister number out of range (0-11)");
                         return false;
                     }
                 }
@@ -483,7 +488,10 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                             ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
                 }
                 else
-                    regPair = { 112+value, 112+value+1 };
+                {
+                    
+                    regPair = { ttmpStart+value, ttmpStart+value+1 };
+                }
                 return true;
             }
             else
@@ -520,7 +528,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             loHiRegSuffix = 4;
             loHiReg = 126;
         }
-        else if (regName[0]=='t')
+        else if ((arch & ARCH_RXVEGA) == 0 && regName[0]=='t')
         {   /* tma,tba */
             if (regName[1] == 'b' && regName[2] == 'a')
             {
@@ -670,10 +678,11 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                 asmr.printError(sgprRangePlace, "Illegal TTMPRegister range");
                 return false;
             }
-            if (value1 >= 12 || value2 >= 12)
+            if (value1 >= ttmpSize || value2 >= ttmpSize)
             {
                 asmr.printError(sgprRangePlace,
-                                "Some TTMPRegister number out of range (0-11)");
+                            isGCN14 ? "Some TTMPRegister number out of range (0-15)" :
+                            "Some TTMPRegister number out of range (0-11)");
                 return false;
             }
         }
@@ -700,7 +709,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                     ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
         }
         else
-            regPair = { 112+value1, 112+uint16_t(value2)+1 };
+            regPair = { ttmpStart+value1, ttmpStart+uint16_t(value2)+1 };
         return true;
     }
     } catch(const ParseException& ex)
@@ -921,6 +930,42 @@ bool GCNAsmUtils::parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_
     return parseImm(asmr, linePtr, value, outTargetExpr);
 }
 
+static const std::pair<const char*, uint16_t> ssourceNamesTbl[] =
+{
+    { "execz", 252 },
+    { "scc", 253 },
+    { "src_execz", 252 },
+    { "src_scc", 253 },
+    { "src_vccz", 251 },
+    { "vccz", 251 }
+};
+
+static const size_t ssourceNamesTblSize = sizeof(ssourceNamesTbl) /
+        sizeof(std::pair<const char*, uint16_t>);
+
+static const std::pair<const char*, uint16_t> ssourceNamesGCN14Tbl[] =
+{
+    { "execz", 252 },
+    { "pops_exiting_wave_id", 0xef },
+    { "private_base", 0xed },
+    { "private_limit", 0xee },
+    { "scc", 253 },
+    { "shared_base", 0xeb },
+    { "shared_limit", 0xec },
+    { "src_execz", 252 },
+    { "src_pops_exiting_wave_id", 0xef },
+    { "src_private_base", 0xed },
+    { "src_private_limit", 0xee },
+    { "src_scc", 253 },
+    { "src_shared_base", 0xeb },
+    { "src_shared_limit", 0xec },
+    { "src_vccz", 251 },
+    { "vccz", 251 }
+};
+
+static const size_t ssourceNamesGCN14TblSize = sizeof(ssourceNamesGCN14Tbl) /
+        sizeof(std::pair<const char*, uint16_t>);
+
 bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
              std::unique_ptr<AsmExpression>* outTargetExpr, uint16_t arch,
              cxuint regsNum, Flags instrOpMask, AsmRegField regField)
@@ -1079,26 +1124,23 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     
     if ((instrOpMask & INSTROP_SSOURCE)!=0)
     {
-        char regName[20];
+        char regName[25];
         const char* regNamePlace = linePtr;
-        if (getNameArg(asmr, 20, regName, linePtr, "register name", false, true))
+        if (getNameArg(asmr, 25, regName, linePtr, "register name", false, true))
         {
             toLowerString(regName);
             operand.range = {0, 0};
-            if (::strcmp(regName, "vccz") == 0 || ::strcmp(regName, "src_vccz") == 0)
+            
+            auto regNameTblEnd = (arch & ARCH_RXVEGA) ?
+                        ssourceNamesGCN14Tbl + ssourceNamesGCN14TblSize :
+                        ssourceNamesTbl + ssourceNamesTblSize;
+            auto regNameIt = binaryMapFind(
+                    (arch & ARCH_RXVEGA) ? ssourceNamesGCN14Tbl : ssourceNamesTbl,
+                    regNameTblEnd, regName, CStringLess());
+            
+            if (regNameIt != regNameTblEnd)
             {
-                operand.range = { 251, 252 };
-                return true;
-            }
-            else if (::strcmp(regName, "execz") == 0 ||
-                    ::strcmp(regName, "src_execz") == 0)
-            {
-                operand.range = { 252, 253 };
-                return true;
-            }
-            else if (::strcmp(regName, "scc") == 0 || ::strcmp(regName, "src_scc") == 0)
-            {
-                operand.range = { 253, 254 };
+                operand.range = { regNameIt->second, regNameIt->second+1 };
                 return true;
             }
             else if ((instrOpMask&INSTROP_LDS)!=0 &&

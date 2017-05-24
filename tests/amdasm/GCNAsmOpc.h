@@ -34,5 +34,6 @@ struct GCNAsmOpcodeCase
 extern const GCNAsmOpcodeCase encGCNOpcodeCases[];
 extern const GCNAsmOpcodeCase encGCN11OpcodeCases[];
 extern const GCNAsmOpcodeCase encGCN12OpcodeCases[];
+extern const GCNAsmOpcodeCase encGCN14OpcodeCases[];
 
 #endif

@@ -154,6 +154,7 @@ tests/amdasm/DisasmDataTest.cpp -text
 tests/amdasm/GCNAsmOpc.h -text
 tests/amdasm/GCNAsmOpc11.cpp -text
 tests/amdasm/GCNAsmOpc12.cpp -text
+tests/amdasm/GCNAsmOpc14.cpp -text
 tests/amdasm/GCNAsmOpcodes.cpp -text
 tests/amdasm/GCNDisasmLabels.cpp -text
 tests/amdasm/GCNDisasmOpc.h -text

@@ -64,7 +64,8 @@ ADD_TEST(AsmROCmFormat AsmROCmFormat)
 ADD_EXECUTABLE(GCNAsmOpcodes
         GCNAsmOpcodes.cpp
         GCNAsmOpc11.cpp
-        GCNAsmOpc12.cpp)
+        GCNAsmOpc12.cpp
+        GCNAsmOpc14.cpp)
 TEST_LINK_LIBRARIES(GCNAsmOpcodes CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(GCNAsmOpcodes GCNAsmOpcodes)
 
