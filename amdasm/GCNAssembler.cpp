@@ -549,6 +549,32 @@ static const std::pair<const char*, cxuint> hwregNamesMap[] =
 static const size_t hwregNamesMapSize = sizeof(hwregNamesMap) /
             sizeof(std::pair<const char*, uint16_t>);
 
+static const std::pair<const char*, cxuint> hwregNamesGCN14Map[] =
+{
+    { "flush_ib", 14 },
+    { "gpr_alloc", 5 },
+    { "hw_id", 4 },
+    { "ib_dbg0", 12 },
+    { "ib_dbg1", 13 },
+    { "ib_sts", 7 },
+    { "inst_dw0", 10 },
+    { "inst_dw1", 11 },
+    { "lds_alloc", 6 },
+    { "mode", 1 },
+    { "pc_hi", 9 },
+    { "pc_lo", 8 },
+    { "sh_mem_bases", 15 },
+    { "sq_shader_tba_hi", 17 },
+    { "sq_shader_tba_lo", 16 },
+    { "sq_shader_tma_hi", 19 },
+    { "sq_shader_tma_lo", 18 },
+    { "status", 2 },
+    { "trapsts", 3 }
+};
+
+static const size_t hwregNamesGCN14MapSize = sizeof(hwregNamesGCN14Map) /
+            sizeof(std::pair<const char*, uint16_t>);
+
 bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
@@ -599,7 +625,8 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             if (good)
                 asmr.sections[asmr.currentSection].addCodeFlowEntry({ 
                     size_t(asmr.currentOutPos), size_t(value),
-                    gcnInsn.code1==2 ? AsmCodeFlowType::JUMP : AsmCodeFlowType::CJUMP });
+                    (arch&ARCH_RXVEGA && gcnInsn.code1==21) ? AsmCodeFlowType::CALL :
+                            AsmCodeFlowType::CJUMP });
         }
     }
     else if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_SREG)
@@ -620,8 +647,12 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         skipSpacesToEnd(linePtr, end);
         cxuint hwregId = 0;
         const char* hwregNamePlace = linePtr;
+        const size_t regMapSize = (arch & ARCH_RXVEGA) ?
+                    hwregNamesGCN14MapSize : hwregNamesMapSize;
+        const std::pair<const char*, cxuint>* regMap = (arch & ARCH_RXVEGA) ?
+                    hwregNamesGCN14Map : hwregNamesMap;
         good &= getEnumeration(asmr, linePtr, "HWRegister",
-                      hwregNamesMapSize, hwregNamesMap, hwregId, "hwreg_");
+                      regMapSize, regMap, hwregId, "hwreg_");
         if (good && (arch & ARCH_GCN_1_2_4) == 0 && hwregId == 13)
         {   // if ib_dgb1 in not GCN 1.2
             asmr.printError(hwregNamePlace, "Unknown HWRegister");
@@ -799,6 +830,25 @@ static const std::pair<const char*, uint16_t> sendMessageNamesMap[] =
 static const size_t sendMessageNamesMapSize = sizeof(sendMessageNamesMap) /
             sizeof(std::pair<const char*, uint16_t>);
 
+static const std::pair<const char*, uint16_t> sendMessageNamesGCN14Map[] =
+{
+    { "early_prim_dealloc", 8 },
+    { "get_doorbell", 10 },
+    { "gs", 2 },
+    { "gs_alloc_req", 9 },
+    { "gs_done", 3 },
+    { "halt_waves", 6 },
+    { "interrupt", 1 },
+    { "ordered_ps_done", 7 },
+    { "savewave", 4 },
+    { "stall_wave_gen", 5 },
+    { "sysmsg", 15 },
+    { "system", 15 }
+};
+
+static const size_t sendMessageNamesGCN14MapSize = sizeof(sendMessageNamesGCN14Map) /
+            sizeof(std::pair<const char*, uint16_t>);
+
 static const char* sendMsgGSOPTable[] =
 { "nop", "cut", "emit", "emit_cut" };
 
@@ -856,7 +906,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             bool haveLgkmCnt = false;
             bool haveExpCnt = false;
             bool haveVMCnt = false;
-            imm16 = 0xf7f;
+            imm16 = (arch & ARCH_RXVEGA) ? 0xcf7f : 0xf7f;
             while (true)
             {
                 skipSpacesToEnd(linePtr, end);
@@ -867,13 +917,14 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 
                 cxuint bitPos = 0, bitMask = UINT_MAX;
                 bool goodCnt = true;
+                bool doVMCnt = false;
                 if (::strcmp(name, "vmcnt")==0)
                 {
                     if (haveVMCnt)
                         asmr.printWarning(funcNamePlace, "vmcnt was already defined");
                     bitPos = 0;
-                    bitMask = 15;
-                    haveVMCnt = true;
+                    bitMask = (arch & ARCH_RXVEGA) ? 63 : 15;
+                    doVMCnt = haveVMCnt = true;
                 }
                 else if (::strcmp(name, "lgkmcnt")==0)
                 {
@@ -911,7 +962,10 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 {
                     if (value > bitMask)
                         asmr.printWarning(argPlace, "Value out of range");
-                    imm16 = (imm16 & ~(bitMask<<bitPos)) | ((value&bitMask)<<bitPos);
+                    if ((arch & ARCH_RXVEGA)==0 || !doVMCnt)
+                        imm16 = (imm16 & ~(bitMask<<bitPos)) | ((value&bitMask)<<bitPos);
+                    else // vmcnt for GFX9
+                        imm16 = (imm16 & 0x3ff0) | ((value&15) | ((value&0x30)<<10));
                 }
                 else
                     good = false;
@@ -932,9 +986,9 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
         case GCN_IMM_MSGS:
         {
-            char name[20];
+            char name[25];
             const char* funcNamePlace = linePtr;
-            if (!getNameArg(asmr, 20, name, linePtr, "function name", true))
+            if (!getNameArg(asmr, 25, name, linePtr, "function name", true))
                 return false;
             toLowerString(name);
             skipSpacesToEnd(linePtr, end);
@@ -947,17 +1001,20 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             
             const char* funcArg1Place = linePtr;
             size_t sendMessage = 0;
-            if (getNameArg(asmr, 20, name, linePtr, "message name", true))
+            if (getNameArg(asmr, 25, name, linePtr, "message name", true))
             {
                 toLowerString(name);
                 const size_t msgNameIndex = (::strncmp(name, "msg_", 4) == 0) ? 4 : 0;
-                size_t index = binaryMapFind(sendMessageNamesMap,
-                         sendMessageNamesMap + sendMessageNamesMapSize,
-                         name+msgNameIndex, CStringLess()) - sendMessageNamesMap;
-                if (index != sendMessageNamesMapSize &&
+                auto msgMap = (arch & ARCH_RXVEGA) ? sendMessageNamesGCN14Map :
+                        sendMessageNamesMap;
+                const size_t msgMapSize = (arch & ARCH_RXVEGA) ?
+                        sendMessageNamesGCN14MapSize : sendMessageNamesMapSize;
+                size_t index = binaryMapFind(msgMap, msgMap + msgMapSize,
+                         name+msgNameIndex, CStringLess()) - msgMap;
+                if (index != msgMapSize &&
                     // save_wave only for GCN1.2
-                    (sendMessageNamesMap[index].second!=4 || (arch&ARCH_GCN_1_2_4)!=0))
-                    sendMessage = sendMessageNamesMap[index].second;
+                    (msgMap[index].second!=4 || (arch&ARCH_GCN_1_2_4)!=0))
+                    sendMessage = msgMap[index].second;
                 else
                 {
                     asmr.printError(funcArg1Place, "Unknown message");
