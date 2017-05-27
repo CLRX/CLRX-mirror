@@ -153,7 +153,7 @@ revTable:
         flat_load_ubyte v1, v[2:3]      # load input byte
         s_waitcnt vmcnt(0)
         v_mov_b32 v3, s13
-        v_add_u32 v2, vcc, s12, v0      # add input byte to constant pointer
+        v_add_u32 v2, vcc, s12, v1      # add input byte to constant pointer
         v_addc_u32 v3, vcc, 0, v3, vcc
         flat_load_ubyte v1, v[2:3]      # load constantData[byte]
         s_waitcnt vmcnt(0)
