@@ -752,8 +752,14 @@ bool GCNAsmUtils::parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& o
             asmr.printError(exprPlace, "Expression must be absolute!");
             return false;
         }
-        asmr.printWarningForRange(bits, value, asmr.getSourcePos(exprPlace), signess);
-        outValue = value & ((1ULL<<bits)-1ULL);
+        if (bits != UINT_MAX)
+        {
+            asmr.printWarningForRange(bits, value,
+                            asmr.getSourcePos(exprPlace), signess);
+            outValue = value & ((1ULL<<bits)-1ULL);
+        }
+        else // just copy
+            outValue = value;
         return true;
     }
     else

@@ -1217,9 +1217,13 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     RegRange sbaseReg(0, 0);
     RegRange soffsetReg(0, 0);
     uint32_t soffsetVal = 0;
+    cxbyte soffsetVal2 = 0;
     std::unique_ptr<AsmExpression> soffsetExpr;
     std::unique_ptr<AsmExpression> simm7Expr;
+    std::unique_ptr<AsmExpression> soffset2Expr;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    
+    const char* soffsetPlace = nullptr;
     
     if (mode1 == GCN_SMRD_ONLYDST)
     {
@@ -1261,10 +1265,15 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!soffsetReg)
         {   // parse immediate
             soffsetReg.start = 255; // indicate an immediate
-            good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr, 20, WS_UNSIGNED);
+            skipSpacesToEnd(linePtr, end);
+            soffsetPlace = linePtr;
+            good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr,
+                // for VEGA we check range later
+                (arch & ARCH_RXVEGA) ? UINT_MAX : 20, WS_UNSIGNED);
         }
     }
     bool haveGlc = false;
+    bool haveNv = false;
     // modifiers
     while (linePtr != end)
     {
@@ -1278,6 +1287,20 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             toLowerString(name);
             if (::strcmp(name, "glc")==0)
                 haveGlc = true;
+            else if ((arch & ARCH_RXVEGA)!=0 && ::strcmp(name, "nv")==0)
+                haveNv = true;
+            else if (::strcmp(name, "offset")==0)
+            {
+                /*if (parseModImm(asmr, linePtr, soffset2Val, &soffset2Expr, "offset",
+                        WS_UNSIGNED))
+                {
+                    if (haveOffset)
+                        asmr.printWarning(modPlace, "Offset is already defined");
+                    haveOffset = true;
+                }
+                else
+                    good = false;*/
+            }
             else
             {
                 asmr.printError(modPlace, "Unknown SMEM modifier");
@@ -1327,8 +1350,9 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t words[2];
     SLEV(words[0], 0xc0000000U | (uint32_t(gcnInsn.code1)<<18) | (dataReg.bstart()<<6) |
             (sbaseReg.bstart()>>1) | ((soffsetReg.isVal(255)) ? 0x20000 : 0) |
-            (haveGlc ? 0x10000 : 0));
-    SLEV(words[1], ((soffsetReg.isVal(255)) ? soffsetVal : soffsetReg.bstart()));
+            (haveGlc ? 0x10000 : 0) | (haveNv ? 0x8000 : 0));
+    SLEV(words[1], ((soffsetReg.isVal(255)) ?
+                (soffsetVal | (uint32_t(soffsetVal2)<<24)) : soffsetReg.bstart()));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
             reinterpret_cast<cxbyte*>(words+2));
@@ -2384,7 +2408,8 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         {
             if (::strcmp(name, "offset") == 0)
             {
-                if (parseModImm(asmr, linePtr, offset, &offsetExpr, "offset", WS_UNSIGNED))
+                if (parseModImm(asmr, linePtr, offset, &offsetExpr, "offset",
+                            0, WS_UNSIGNED))
                 {
                     if (haveOffset)
                         asmr.printWarning(modPlace, "Offset is already defined");

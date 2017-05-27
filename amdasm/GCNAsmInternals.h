@@ -177,6 +177,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                    uint16_t arch, cxuint regsNum, AsmRegField regField,
                    bool required = true, Flags flags = INSTROP_SYMREGRANGE);
     
+    // bits=UINT_MAX - no range checking
     /* return true if no error */
     static bool parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& value,
             std::unique_ptr<AsmExpression>* outTargetExpr, cxuint bits = 0,
