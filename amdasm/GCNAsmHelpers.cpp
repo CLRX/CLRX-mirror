@@ -1533,8 +1533,9 @@ static const size_t vopSDWADSTSelNamesNum = sizeof(vopSDWADSTSelNamesMap)/
 /* main routine to parse VOP modifiers: basic modifiers stored in mods parameter,
  * modifier specific for VOP_SDWA and VOP_DPP stored in extraMods structure
  * withSDWAOperands - specify number of operand for that modifier will be parsed */
-bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods,
-                VOPExtraModifiers* extraMods, bool withClamp, cxuint withSDWAOperands)
+bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
+                uint16_t arch, cxbyte& mods, VOPExtraModifiers* extraMods, bool withClamp,
+                cxuint withSDWAOperands)
 {
     const char* end = asmr.line+asmr.lineSize;
     //bool haveSDWAMod = false, haveDPPMod = false;
@@ -2036,16 +2037,20 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
         else
             good = false;
     }
-    bool vopSDWA = (haveDstSel || haveDstUnused || haveSrc0Sel || haveSrc1Sel);
-    bool vopDPP = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask);
-    bool vop3 = (mods & (3|VOP3_VOP3))!=0;
+    const bool vopSDWA = (haveDstSel || haveDstUnused || haveSrc0Sel || haveSrc1Sel);
+    const bool vopDPP = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask);
+    const bool isGCN14 = (arch & ARCH_RXVEGA) != 0;
+    // mul/div modifier does not apply to vop3 if RXVEGA (this case will be checked later)
+    const bool vop3 = (mods & ((isGCN14 ? 0 : 3)|VOP3_VOP3))!=0;
     if (extraMods!=nullptr)
     {
         extraMods->needSDWA = vopSDWA;
         extraMods->needDPP = vopDPP;
     }
-        
-    if ((int(vop3)+vopSDWA+vopDPP)>1 || ((mods&VOP3_CLAMP)!=0 && vopDPP))
+    if ((int(vop3)+vopSDWA+vopDPP)>1 ||
+                // RXVEGA: mul/div modifier are accepted in VOP_SDWA but not for VOP_DPP
+                (isGCN14 && (mods & 3)!=0 && vopDPP) ||
+                ((mods&VOP3_CLAMP)!=0 && vopDPP))
     {
         asmr.printError(modsPlace, "Mixing modifiers from different encodings is illegal");
         return false;
