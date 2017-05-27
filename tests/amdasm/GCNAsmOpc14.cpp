@@ -22,6 +22,7 @@
 
 const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
 {
+    /* extra scalar registers */
     { "s_add_u32 s21, shared_base, s61\n", 0x80153debU, 0, false, true, "" },
     { "s_add_u32 s21, src_shared_base, s61\n", 0x80153debU, 0, false, true, "" },
     { "s_add_u32 s21, shared_limit, s61\n", 0x80153decU, 0, false, true, "" },
@@ -54,5 +55,25 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         "test.s:1:16: Error: Expected 1 scalar register\n" },
     { "    s_add_u32  tba_lo, s4, s61", 0x806e3d04U, 0, false, false,
         "test.s:1:16: Error: Expected 1 scalar register\n" },
+    /* SOP2 instructions */
+    { "        s_mul_hi_u32    s21, s4, s61\n", 0x96153d04U, 0, false, true, "" },
+    { "        s_mul_hi_i32    s21, s4, s61\n", 0x96953d04U, 0, false, true, "" },
+    { "        s_lshl1_add_u32 s21, s4, s61\n", 0x97153d04U, 0, false, true, "" },
+    { "        s_lshl2_add_u32 s21, s4, s61\n", 0x97953d04U, 0, false, true, "" },
+    { "        s_lshl3_add_u32 s21, s4, s61\n", 0x98153d04U, 0, false, true, "" },
+    { "        s_lshl4_add_u32 s21, s4, s61\n", 0x98953d04U, 0, false, true, "" },
+    { "        s_pack_ll_b32_b16 s21, s4, s61\n", 0x99153d04U, 0, false, true, "" },
+    { "        s_pack_lh_b32_b16 s21, s4, s61\n", 0x99953d04U, 0, false, true, "" },
+    { "        s_pack_hh_b32_b16 s21, s4, s61\n", 0x9a153d04U, 0, false, true, "" },
+    /* SOP1 instructions */
+    { "s_andn1_saveexec_b64 s[86:87], s[20:21]\n", 0xbed63314U, 0, false, true, "" },
+    { "s_orn1_saveexec_b64 s[86:87], s[20:21]\n", 0xbed63414U, 0, false, true, "" },
+    { "s_andn1_wrexec_b64 s[86:87], s[20:21]\n", 0xbed63514U, 0, false, true, "" },
+    { "s_andn2_wrexec_b64 s[86:87], s[20:21]\n", 0xbed63614U, 0, false, true, "" },
+    { "s_bitreplicate_b64_b32 s[86:87], s20\n", 0xbed63714U, 0, false, true, "" },
+    /* SOPK instructions */
+    { "s_call_b64 s[44:45], xxxx+8\nxxxx:", 0xbaac0002U, 0, false, true, "" },
+    /* SOPP instructions */
+    { "        s_endpgm_ordered_ps_done\n", 0xbf9e0000U, 0, false, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
