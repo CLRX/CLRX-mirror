@@ -1217,13 +1217,14 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     RegRange sbaseReg(0, 0);
     RegRange soffsetReg(0, 0);
     uint32_t soffsetVal = 0;
-    cxbyte soffsetVal2 = 0;
+    uint32_t soffset2Val = 0;
     std::unique_ptr<AsmExpression> soffsetExpr;
     std::unique_ptr<AsmExpression> simm7Expr;
     std::unique_ptr<AsmExpression> soffset2Expr;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     
     const char* soffsetPlace = nullptr;
+    AsmSourcePos soffsetPos;
     
     if (mode1 == GCN_SMRD_ONLYDST)
     {
@@ -1267,6 +1268,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             soffsetReg.start = 255; // indicate an immediate
             skipSpacesToEnd(linePtr, end);
             soffsetPlace = linePtr;
+            soffsetPos = asmr.getSourcePos(soffsetPlace);
             good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr,
                 // for VEGA we check range later
                 (arch & ARCH_RXVEGA) ? UINT_MAX : 20, WS_UNSIGNED);
@@ -1274,6 +1276,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     bool haveGlc = false;
     bool haveNv = false;
+    bool haveOffset = false;
     // modifiers
     while (linePtr != end)
     {
@@ -1289,17 +1292,17 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 haveGlc = true;
             else if ((arch & ARCH_RXVEGA)!=0 && ::strcmp(name, "nv")==0)
                 haveNv = true;
-            else if (::strcmp(name, "offset")==0)
+            else if ((arch & ARCH_RXVEGA)!=0 && ::strcmp(name, "offset")==0)
             {
-                /*if (parseModImm(asmr, linePtr, soffset2Val, &soffset2Expr, "offset",
-                        WS_UNSIGNED))
+                if (parseModImm(asmr, linePtr, soffset2Val, &soffset2Expr, "offset",
+                        21, WS_UNSIGNED))
                 {
                     if (haveOffset)
                         asmr.printWarning(modPlace, "Offset is already defined");
                     haveOffset = true;
                 }
                 else
-                    good = false;*/
+                    good = false;
             }
             else
             {
@@ -1310,13 +1313,26 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         else
             good = false;
     }
+    // check range for offset
+    if ((arch & ARCH_RXVEGA)!=0)
+        asmr.printWarningForRange(haveOffset ? 8 : 21, soffsetVal,
+                    soffsetPos, WS_UNSIGNED);
+    if (haveOffset)
+    {   // swap (offset2 is first offset)
+        std::swap(soffsetVal, soffset2Val);
+        std::swap(soffsetExpr, soffset2Expr);
+    }
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     
     if (soffsetExpr!=nullptr)
-        soffsetExpr->setTarget(AsmExprTarget(GCNTGT_SMEMOFFSET, asmr.currentSection,
-                       output.size()));
+        soffsetExpr->setTarget(AsmExprTarget((arch & ARCH_RXVEGA) ?
+                    GCNTGT_SMEMOFFSETVEGA : GCNTGT_SMEMOFFSET,
+                    asmr.currentSection, output.size()));
+    if (soffset2Expr!=nullptr)
+        soffset2Expr->setTarget(AsmExprTarget(GCNTGT_SMEMOFFSET2,
+                    asmr.currentSection, output.size()));
     if (simm7Expr!=nullptr)
         simm7Expr->setTarget(AsmExprTarget(GCNTGT_SMEMIMM, asmr.currentSection,
                        output.size()));
@@ -1350,14 +1366,15 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t words[2];
     SLEV(words[0], 0xc0000000U | (uint32_t(gcnInsn.code1)<<18) | (dataReg.bstart()<<6) |
             (sbaseReg.bstart()>>1) | ((soffsetReg.isVal(255)) ? 0x20000 : 0) |
-            (haveGlc ? 0x10000 : 0) | (haveNv ? 0x8000 : 0));
+            (haveGlc ? 0x10000 : 0) | (haveNv ? 0x8000 : 0) | (haveOffset ? 0x4000 : 0));
     SLEV(words[1], ((soffsetReg.isVal(255)) ?
-                (soffsetVal | (uint32_t(soffsetVal2)<<24)) : soffsetReg.bstart()));
+                (soffsetVal | (uint32_t(soffset2Val)<<24)) : soffsetReg.bstart()));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
             reinterpret_cast<cxbyte*>(words+2));
     /// prevent freeing expression
     soffsetExpr.release();
+    soffset2Expr.release();
     simm7Expr.release();
     if (!dataReg.isRegVar() && dataToWrite)
     {
@@ -3669,13 +3686,31 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             printWarningForRange(12, value, sourcePos, WS_UNSIGNED);
             return true;
         case GCNTGT_SMEMOFFSET:
+        case GCNTGT_SMEMOFFSETVEGA:
             if (sectionId != ASMSECT_ABS)
             {
                 printError(sourcePos, "Relative value is illegal in offset expressions");
                 return false;
             }
-            SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value&0xfffffU);
-            printWarningForRange(20, value, sourcePos, WS_UNSIGNED);
+            if (targetType==GCNTGT_SMEMOFFSETVEGA)
+            {
+                uint32_t oldV = ULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4));
+                SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4),
+                            (oldV & 0xffe00000U) | (value&0x1fffffU));
+            }
+            else
+                SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value&0xfffffU);
+            printWarningForRange(targetType==GCNTGT_SMEMOFFSETVEGA ? 21 : 20,
+                                 value, sourcePos, WS_UNSIGNED);
+            return true;
+        case GCNTGT_SMEMOFFSET2:
+            if (sectionId != ASMSECT_ABS)
+            {
+                printError(sourcePos, "Relative value is illegal in offset expressions");
+                return false;
+            }
+            sectionData[offset+7] = value;
+            printWarningForRange(8, value, sourcePos, WS_UNSIGNED);
             return true;
         case GCNTGT_SMEMIMM:
             if (sectionId != ASMSECT_ABS)
