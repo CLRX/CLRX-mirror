@@ -167,6 +167,10 @@
             <keyword>gds_segment_size</keyword>
             <keyword>gdssize</keyword>
             <keyword>get_driver_version</keyword>
+            <keyword>get_arch</keyword>
+            <keyword>get_64bit</keyword>
+            <keyword>get_format</keyword>
+            <keyword>get_gpu</keyword>
             <keyword>global</keyword>
             <keyword>globalbuffers</keyword>
             <keyword>globaldata</keyword>

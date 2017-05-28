@@ -1250,6 +1250,10 @@ ttmp0 ttmp1 ttmp2 ttmp3 ttmp4 ttmp5 ttmp6 ttmp7 ttmp8 ttmp9 ttmp10 ttmp11
 .gds_segment_size
 .gdssize
 .get_driver_version
+.get_arch
+.get_64bit
+.get_format
+.get_gpu
 .global
 .globalbuffers
 .globaldata

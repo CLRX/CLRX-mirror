@@ -126,6 +126,14 @@ struct CLRX_INTERNAL AsmParseUtils
     static bool parseDimensions(Assembler& asmr, const char*& linePtr, cxuint& dimMask);
 };
 
+enum class AsmPredefined: cxbyte
+{
+    ARCH,
+    BIT64,
+    FORMAT,
+    GPU
+};
+
 struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
 {
     /*
@@ -279,6 +287,9 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
                      const char* linePtr, AsmCodeFlowType type);
     
     static void setAbsoluteOffset(Assembler& asmr, const char* linePtr);
+    
+    static void getPredefinedValue(Assembler& asmr, const char* linePtr,
+                        AsmPredefined predefined);
     
     static void ignoreString(Assembler& asmr, const char* linePtr);
     

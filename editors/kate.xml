@@ -1617,6 +1617,10 @@
             <item>.gds_segment_size</item>
             <item>.gdssize</item>
             <item>.get_driver_version</item>
+            <item>.get_arch</item>
+            <item>.get_64bit</item>
+            <item>.get_gpu</item>
+            <item>.get_format</item>
             <item>.global</item>
             <item>.globalbuffers</item>
             <item>.globaldata</item>

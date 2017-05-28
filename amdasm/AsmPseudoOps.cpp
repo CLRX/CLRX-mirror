@@ -105,7 +105,8 @@ static const char* pseudoOpNamesTbl[] =
     "equ", "equiv", "eqv",
     "err", "error", "exitm", "extern",
     "fail", "file", "fill", "fillq",
-    "float", "format", "gallium", "global",
+    "float", "format", "gallium", "get_64bit", "get_arch",
+    "get_format", "get_gpu", "global",
     "globl", "gpu", "half", "hword", "if", "if32", "if64",
     "ifarch", "ifb", "ifc", "ifdef", "ifeq",
     "ifeqs", "iffmt", "ifge", "ifgpu", "ifgt", "ifle",
@@ -145,7 +146,8 @@ enum
     ASMOP_EQU, ASMOP_EQUIV, ASMOP_EQV,
     ASMOP_ERR, ASMOP_ERROR, ASMOP_EXITM, ASMOP_EXTERN,
     ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FILLQ,
-    ASMOP_FLOAT, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GLOBAL,
+    ASMOP_FLOAT, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GET_64BIT, ASMOP_GET_ARCH,
+    ASMOP_GET_FORMAT, ASMOP_GET_GPU, ASMOP_GLOBAL,
     ASMOP_GLOBL, ASMOP_GPU, ASMOP_HALF, ASMOP_HWORD, ASMOP_IF, ASMOP_IF32, ASMOP_IF64,
     ASMOP_IFARCH, ASMOP_IFB, ASMOP_IFC, ASMOP_IFDEF, ASMOP_IFEQ,
     ASMOP_IFEQS, ASMOP_IFFMT, ASMOP_IFGE, ASMOP_IFGPU, ASMOP_IFGT, ASMOP_IFLE,
@@ -2220,6 +2222,59 @@ void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
+void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
+                            AsmPredefined predefined)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    
+    const char* symNamePlace = linePtr;
+    const CString symName = extractScopedSymName(linePtr, end, false);
+    if (symName.empty())
+    {
+        asmr.printError(symNamePlace, "Illegal symbol name");
+        return;
+    }
+    size_t symNameLength = symName.size();
+    if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
+    {
+        asmr.printError(symNamePlace, "Symbol '.' can be only in global scope");
+        return;
+    }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    cxuint predefValue = 0;
+    asmr.initializeOutputFormat();
+    switch (predefined)
+    {
+        case AsmPredefined::ARCH:
+            predefValue = cxuint(getGPUArchitectureFromDeviceType(asmr.deviceType));
+            break;
+        case AsmPredefined::BIT64:
+            predefValue = asmr._64bit;
+            break;
+        case AsmPredefined::GPU:
+            predefValue = cxuint(asmr.deviceType);
+            break;
+        case AsmPredefined::FORMAT:
+            predefValue = cxuint(asmr.format);
+            break;
+        default:
+            break;
+    }
+    std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
+                AsmSymbol(ASMSECT_ABS, predefValue));
+    if (!res.second)
+    {   // found
+        if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
+            asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
+                        "' is already defined").c_str());
+        else
+            asmr.setSymbol(*res.first, predefValue, ASMSECT_ABS);
+    }
+}
+
 void AsmPseudoOps::ignoreString(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
@@ -2484,6 +2539,18 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_FORMAT:
             AsmPseudoOps::setOutFormat(*this, linePtr);
+            break;
+        case ASMOP_GET_64BIT:
+            AsmPseudoOps::getPredefinedValue(*this, linePtr, AsmPredefined::BIT64);
+            break;
+        case ASMOP_GET_ARCH:
+            AsmPseudoOps::getPredefinedValue(*this, linePtr, AsmPredefined::ARCH);
+            break;
+        case ASMOP_GET_FORMAT:
+            AsmPseudoOps::getPredefinedValue(*this, linePtr, AsmPredefined::FORMAT);
+            break;
+        case ASMOP_GET_GPU:
+            AsmPseudoOps::getPredefinedValue(*this, linePtr, AsmPredefined::GPU);
             break;
         case ASMOP_GLOBAL:
         case ASMOP_GLOBL:

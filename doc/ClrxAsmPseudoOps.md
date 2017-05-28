@@ -316,6 +316,62 @@ Choose binary format. Binary can be one of following list:
 This pseudo-operation should to be at begin of source.
 Choose GalliumCompute OpenCL program binary format.
 
+### .get_64bit SYMBOL
+
+Store 64-bitness in specified symbol. Store 1 to symbol if 64-bit mode enabled.
+
+### .get_arch SYMBOL
+
+Store GPU architecture identifier to symbol. List of architecture ids:
+
+Id | Description
+---|-------------------------------------------
+ 0 | GCN1.0 (Pitcairn, Tahiti)
+ 1 | GCN1.1 (Bonaire, Hawaii)
+ 2 | GCN1.2 (Tonga, Fiji, Ellesmere)
+ 3 | VEGA (AMD RX VEGA)
+
+### .get_format SYMBOL
+
+Store binary format identifier to symbol. List of format ids:
+
+Id | Description
+---|-------------------------------------------
+ 0 | AMD OpenCL 1.2 binary format
+ 1 | Gallium Compute binary format
+ 2 | AMD OpenCL 2.0 (new driver) binary format
+ 3 | ROCm binary format
+
+### .get_gpu SYMBOL
+
+Store GPU device identifier to symbol. List of GPU device ids:
+
+Id  | Description
+----|-------------------------------------------
+ 0  | Cape Verde (Radeon HD 7700)
+ 1  | Pitcairn (Radeon HD 7850)
+ 2  | Tahiti  (Radeon HD 7900)
+ 3  | Oland
+ 4  | Bonaire  (Radeon R7 260)
+ 5  | Spectre
+ 6  | Spooky
+ 7  | Kalindi
+ 8  | Hainan
+ 9  | Hawaii (Radeon R9 290)
+ 10 | Iceland
+ 11 | Tonga (Radeon R9 285)
+ 12 | Mullins
+ 13 | Fiji (Radeon Fury)
+ 14 | Carrizo
+ 15 | Dummy
+ 16 | Goose
+ 17 | Horse
+ 18 | Stoney
+ 19 | Ellesmere (Radeon RX 470/480)
+ 20 | Baffin (Radeon 460)
+ 21 | Gfx804
+ 22 | Gfx900 (Radeon RX VEGA)
+
 ### .global, .globl
 
 Syntax: .global SYMBOL,...  
