@@ -1904,5 +1904,46 @@ label2: .int 3,6,7
         "test.s:4:18: Error: Expression have unresolved symbol 'tlx::blx::.'\n"
         "test.s:5:21: Error: Expected scope path\n", ""
     },
+    /* 67 - get_* */
+    {   R"ffDXD(.amdcl2
+            .gpu Mullins
+            .get_gpu GPUX
+            .get_arch ARCHY
+            .get_64bit _64bitZZ
+            .get_format FORMATWWW
+)ffDXD",
+        BinaryFormat::AMDCL2, GPUDeviceType::MULLINS, false, { },
+        {
+            { ".rodata", ASMKERN_GLOBAL, AsmSectionType::DATA, { } }
+        },
+        {
+            { ".", 0U, 0, 0U, true, false, false, 0, 0 },
+            { "ARCHY", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "FORMATWWW", 3U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "GPUX", 12U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "_64bitZZ", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+        }, true, "", ""
+    },
+    /* 68 - get_* */
+    {   R"ffDXD(.amdcl2
+            .gpu Mullins
+            .64bit
+            .get_gpu GPUX
+            .get_arch ARCHY
+            .get_64bit _64bitZZ
+            .get_format FORMATWWW
+)ffDXD",
+        BinaryFormat::AMDCL2, GPUDeviceType::MULLINS, true, { },
+        {
+            { ".rodata", ASMKERN_GLOBAL, AsmSectionType::DATA, { } }
+        },
+        {
+            { ".", 0U, 0, 0U, true, false, false, 0, 0 },
+            { "ARCHY", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "FORMATWWW", 3U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "GPUX", 12U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "_64bitZZ", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+        }, true, "", ""
+    },
     { nullptr }
 };
