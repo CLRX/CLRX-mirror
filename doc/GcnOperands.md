@@ -155,3 +155,12 @@ Table of formats:
 5      | Signed 16-bit word
 
 A LDS direct access doesn't require `S_WAITCNT LGKMCNT(0)` (??? check).
+
+### Parametrizable modifiers
+
+Many an instruction's modifiers can have parameter that have value 0 or 1. This feature
+allow to easily parametrize modifiers. The value 1 enables modifier, zero disables it.
+`tfe:0` disable TFE modifier, `tfe:1` enables it. The value of parameter is an expression.
+The `omod` modifier with parameter (expression) replaces `mul` and `div` modifiers.
+The `format` in MTBUF encoding is also parametrizable if data and/or
+number format expression will be preceded by `@` character.

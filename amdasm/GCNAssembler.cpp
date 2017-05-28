@@ -2702,7 +2702,14 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 const char* fmtPlace = linePtr;
                 char fmtName[30];
                 bool haveNFMT = false;
-                if (getMUBUFFmtNameArg(asmr, 30, fmtName, linePtr, "data/number format"))
+                if (linePtr != end && *linePtr=='@')
+                {   // expression
+                    linePtr++;
+                    if (!parseImm(asmr, linePtr, dfmt, nullptr, 4, WS_UNSIGNED))
+                        modGood = good = false;
+                }
+                else if (getMUBUFFmtNameArg(
+                            asmr, 30, fmtName, linePtr, "data/number format"))
                 {
                     toLowerString(fmtName);
                     size_t dfmtNameIndex = (::strncmp(fmtName,
@@ -2737,9 +2744,18 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 if (!haveNFMT && linePtr!=end && *linePtr==',')
                 {
                     skipCharAndSpacesToEnd(linePtr, end);
-                    fmtPlace = linePtr;
-                    good &= getEnumeration(asmr, linePtr, "number format",
-                              8, mtbufNFMTNamesMap, nfmt, "buf_num_format_");
+                    if (linePtr != end && *linePtr=='@')
+                    {   // expression
+                        linePtr++;
+                        if (!parseImm(asmr, linePtr, nfmt, nullptr, 3, WS_UNSIGNED))
+                            modGood = good = false;
+                    }
+                    else
+                    {
+                        fmtPlace = linePtr;
+                        good &= getEnumeration(asmr, linePtr, "number format",
+                                8, mtbufNFMTNamesMap, nfmt, "buf_num_format_");
+                    }
                 }
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr!=end && *linePtr==']')
