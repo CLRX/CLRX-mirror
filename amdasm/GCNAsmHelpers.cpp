@@ -1663,18 +1663,36 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         {
                             linePtr++;
                             cxuint dstSel = 0;
-                            if (getEnumeration(asmr, linePtr, "dst_sel",
-                                        vopSDWADSTSelNamesNum,
-                                        vopSDWADSTSelNamesMap, dstSel))
+                            if (linePtr == end || *linePtr!='@')
                             {
-                                extraMods->dstSel = dstSel;
-                                if (haveDstSel)
-                                    asmr.printWarning(modPlace,
-                                              "Dst_sel is already defined");
-                                haveDstSel = true;
+                                if (getEnumeration(asmr, linePtr, "dst_sel",
+                                            vopSDWADSTSelNamesNum,
+                                            vopSDWADSTSelNamesMap, dstSel))
+                                {
+                                    extraMods->dstSel = dstSel;
+                                    if (haveDstSel)
+                                        asmr.printWarning(modPlace,
+                                                "Dst_sel is already defined");
+                                    haveDstSel = true;
+                                }
+                                else
+                                    good = false;
                             }
                             else
-                                good = false;
+                            {   /* parametrize */
+                                linePtr++;
+                                if (parseImm(asmr, linePtr, dstSel, nullptr,
+                                                 3, WS_UNSIGNED))
+                                {
+                                    extraMods->dstSel = dstSel;
+                                    if (haveDstSel)
+                                        asmr.printWarning(modPlace,
+                                                "Dst_sel is already defined");
+                                    haveDstSel = true;
+                                }
+                                else
+                                    good = false;
+                            }
                         }
                         else
                         {
@@ -1689,30 +1707,49 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         if (linePtr!=end && *linePtr==':')
                         {
                             skipCharAndSpacesToEnd(linePtr, end);
-                            char name[20];
-                            const char* enumPlace = linePtr;
-                            if (getNameArg(asmr, 20, name, linePtr, "dst_unused"))
+                            cxbyte unused = 0;
+                            if (linePtr == end || *linePtr!='@')
                             {
-                                toLowerString(name);
-                                size_t namePos = (::strncmp(name, "unused_", 7)==0) ? 7 : 0;
-                                cxbyte unused = 0;
-                                if (::strcmp(name+namePos, "sext")==0)
-                                    unused = 1;
-                                else if (::strcmp(name+namePos, "preserve")==0)
-                                    unused = 2;
-                                else if (::strcmp(name+namePos, "pad")!=0)
+                                char name[20];
+                                const char* enumPlace = linePtr;
+                                if (getNameArg(asmr, 20, name, linePtr, "dst_unused"))
                                 {
-                                    asmr.printError(enumPlace, "Unknown dst_unused");
-                                    good = false;
+                                    toLowerString(name);
+                                    size_t namePos =
+                                            (::strncmp(name, "unused_", 7)==0) ?7 : 0;
+                                    if (::strcmp(name+namePos, "sext")==0)
+                                        unused = 1;
+                                    else if (::strcmp(name+namePos, "preserve")==0)
+                                        unused = 2;
+                                    else if (::strcmp(name+namePos, "pad")!=0)
+                                    {
+                                        asmr.printError(enumPlace, "Unknown dst_unused");
+                                        good = false;
+                                    }
+                                    extraMods->dstUnused = unused;
+                                    if (haveDstUnused)
+                                        asmr.printWarning(modPlace,
+                                                        "Dst_unused is already defined");
+                                    haveDstUnused = true;
                                 }
-                                extraMods->dstUnused = unused;
-                                if (haveDstUnused)
-                                    asmr.printWarning(modPlace,
-                                                      "Dst_unused is already defined");
-                                haveDstUnused = true;
+                                else
+                                    good = false;
                             }
                             else
-                                good = false;
+                            {
+                                linePtr++;
+                                if (parseImm(asmr, linePtr, unused, nullptr,
+                                                 2, WS_UNSIGNED))
+                                {
+                                    extraMods->dstUnused = unused;
+                                    if (haveDstUnused)
+                                        asmr.printWarning(modPlace,
+                                                        "Dst_unused is already defined");
+                                    haveDstUnused = true;
+                                }
+                                else
+                                    good = false;
+                            }
                         }
                         else
                         {
@@ -1727,18 +1764,36 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         {
                             linePtr++;
                             cxuint src0Sel = 0;
-                            if (getEnumeration(asmr, linePtr, "src0_sel",
-                                        vopSDWADSTSelNamesNum,
-                                        vopSDWADSTSelNamesMap, src0Sel))
+                            if (linePtr == end || *linePtr!='@')
                             {
-                                extraMods->src0Sel = src0Sel;
-                                if (haveSrc0Sel)
-                                    asmr.printWarning(modPlace,
-                                                      "Src0_sel is already defined");
-                                haveSrc0Sel = true;
+                                if (getEnumeration(asmr, linePtr, "src0_sel",
+                                            vopSDWADSTSelNamesNum,
+                                            vopSDWADSTSelNamesMap, src0Sel))
+                                {
+                                    extraMods->src0Sel = src0Sel;
+                                    if (haveSrc0Sel)
+                                        asmr.printWarning(modPlace,
+                                                        "Src0_sel is already defined");
+                                    haveSrc0Sel = true;
+                                }
+                                else
+                                    good = false;
                             }
                             else
-                                good = false;
+                            {   /* parametrize */
+                                linePtr++;
+                                if (parseImm(asmr, linePtr, src0Sel, nullptr,
+                                                 3, WS_UNSIGNED))
+                                {
+                                    extraMods->src0Sel = src0Sel;
+                                    if (haveSrc0Sel)
+                                        asmr.printWarning(modPlace,
+                                                        "Src0_sel is already defined");
+                                    haveSrc0Sel = true;
+                                }
+                                else
+                                    good = false;
+                            }
                         }
                         else
                         {
@@ -1753,18 +1808,36 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         {
                             linePtr++;
                             cxuint src1Sel = 0;
-                            if (getEnumeration(asmr, linePtr, "src1_sel",
-                                        vopSDWADSTSelNamesNum,
-                                        vopSDWADSTSelNamesMap, src1Sel))
+                            if (linePtr == end || *linePtr!='@')
                             {
-                                extraMods->src1Sel = src1Sel;
-                                if (haveSrc1Sel)
-                                    asmr.printWarning(modPlace,
-                                                      "Src1_sel is already defined");
-                                haveSrc1Sel = true;
+                                if (getEnumeration(asmr, linePtr, "src1_sel",
+                                            vopSDWADSTSelNamesNum,
+                                            vopSDWADSTSelNamesMap, src1Sel))
+                                {
+                                    extraMods->src1Sel = src1Sel;
+                                    if (haveSrc1Sel)
+                                        asmr.printWarning(modPlace,
+                                                        "Src1_sel is already defined");
+                                    haveSrc1Sel = true;
+                                }
+                                else
+                                    good = false;
                             }
                             else
-                                good = false;
+                            {   /* parametrize */
+                                linePtr++;
+                                if (parseImm(asmr, linePtr, src1Sel, nullptr,
+                                                 3, WS_UNSIGNED))
+                                {
+                                    extraMods->src1Sel = src1Sel;
+                                    if (haveSrc1Sel)
+                                        asmr.printWarning(modPlace,
+                                                        "Src1_sel is already defined");
+                                    haveSrc1Sel = true;
+                                }
+                                else
+                                    good = false;
+                            }
                         }
                         else
                         {

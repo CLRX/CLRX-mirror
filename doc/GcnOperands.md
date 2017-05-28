@@ -166,4 +166,4 @@ The `format` in MTBUF encoding is also parametrizable if data and/or
 number format expression will be preceded by `@` character (example: `format[@1,@4]`).
 
 The HW registers and send message parameters (message and GSOP) is parametrizable if
-they will be preceded by `@` (example: `hwreg(@5)`).
+they will be preceded by `@` (example: `hwreg(@5, 8, 16)`).
