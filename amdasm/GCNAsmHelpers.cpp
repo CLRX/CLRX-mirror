@@ -1618,6 +1618,24 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         good = false;
                     }
                 }
+                else if (::strcmp(mod, "omod")==0)
+                {
+                    skipSpacesToEnd(linePtr, end);
+                    if (linePtr!=end && *linePtr==':')
+                    {
+                        linePtr++;
+                        cxbyte omod = 0;
+                        if (parseImm(asmr, linePtr, omod, nullptr, 2, WS_UNSIGNED))
+                            mods = (mods & ~3) | omod;
+                        else
+                            good = false;
+                    }
+                    else
+                    {
+                        asmr.printError(linePtr, "Expected ':' before omod");
+                        good = false;
+                    }
+                }
                 else if (::strcmp(mod, "clamp")==0) // clamp
                 {
                     bool clamp = false;
