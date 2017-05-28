@@ -128,15 +128,17 @@ struct CLRX_INTERNAL GCNOperand
 
 struct CLRX_INTERNAL VOPExtraModifiers
 {   // TODO: check that for MSVC 2015
-    cxuint dstSel:3;
-    cxuint dstUnused:2;
-    cxuint src0Sel:3;
-    cxuint src1Sel:3;
-    cxuint bankMask:4;
-    cxuint rowMask:4;
-    cxuint dppCtrl:9;
-    cxuint needSDWA:1;
-    cxuint needDPP:1;
+    cxbyte dstSel;
+    cxbyte dstUnused;
+    cxbyte src0Sel;
+    cxbyte src1Sel;
+    cxbyte bankMask;
+    cxbyte rowMask;
+    uint16_t dppCtrl;
+    bool needSDWA;
+    bool needDPP;
+    cxbyte absMod;
+    cxbyte negMod;
 };
 
 enum class GCNEncSize

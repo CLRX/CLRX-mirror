@@ -1543,10 +1543,12 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
     bool haveDstUnused = false;
     bool haveBankMask = false, haveRowMask = false;
     bool haveBoundCtrl = false, haveDppCtrl = false;
+    bool haveNeg = false, haveAbs = false;
     
     if (extraMods!=nullptr)
-        *extraMods = { 6, 0, (withSDWAOperands>=2)?6U:0U, (withSDWAOperands>=3)?6U:0U,
-                    15, 15, 0xe4 /* TODO: why not 0xe4? */, false, false };
+        *extraMods = { 6, 0, cxbyte((withSDWAOperands>=2)?6:0),
+                    cxbyte((withSDWAOperands>=3)?6:0),
+                    15, 15, 0xe4 /* TODO: why not 0xe4? */, false, false, 0U, 0U };
     
     skipSpacesToEnd(linePtr, end);
     const char* modsPlace = linePtr;
@@ -1648,6 +1650,40 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         good = false;
                     }
                 }
+                /*else if (::strcmp(mod, "abs")==0)
+                {
+                    cxbyte absVal = 0;
+                    if (linePtr!=end && *linePtr==':')
+                    {
+                        linePtr++;
+                        if (parseImm(asmr, linePtr, absVal, nullptr, 2, WS_UNSIGNED))
+                        {
+                            extraMods->absMod = absVal;
+                            if (haveAbs)
+                                asmr.printWarning(modPlace, "Abs is already defined");
+                            haveAbs = true;
+                        }
+                    }
+                    else
+                        good = false;
+                }
+                else if (::strcmp(mod, "neg")==0)
+                {
+                    cxbyte negVal = 0;
+                    if (linePtr!=end && *linePtr==':')
+                    {
+                        linePtr++;
+                        if (parseImm(asmr, linePtr, negVal, nullptr, 2, WS_UNSIGNED))
+                        {
+                            extraMods->negMod = negVal;
+                            if (haveNeg)
+                                asmr.printWarning(modPlace, "Neg is already defined");
+                            haveNeg = true;
+                        }
+                    }
+                    else
+                        good = false;
+                }*/
                 else if (::strcmp(mod, "vop3")==0)
                 {
                     bool vop3 = false;
