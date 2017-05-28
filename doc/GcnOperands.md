@@ -163,4 +163,7 @@ allow to easily parametrize modifiers. The value 1 enables modifier, zero disabl
 `tfe:0` disable TFE modifier, `tfe:1` enables it. The value of parameter is an expression.
 The `omod` modifier with parameter (expression) replaces `mul` and `div` modifiers.
 The `format` in MTBUF encoding is also parametrizable if data and/or
-number format expression will be preceded by `@` character.
+number format expression will be preceded by `@` character (example: `format[@1,@4]`).
+
+The HW registers and send message parameters (message and GSOP) is parametrizable if
+they will be preceded by `@` (example: `hwreg(@5)`).

@@ -647,16 +647,24 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         ++linePtr;
         skipSpacesToEnd(linePtr, end);
         cxuint hwregId = 0;
-        const char* hwregNamePlace = linePtr;
-        const size_t regMapSize = isGCN14 ? hwregNamesGCN14MapSize : hwregNamesMapSize;
-        const std::pair<const char*, cxuint>* regMap = isGCN14 ?
-                    hwregNamesGCN14Map : hwregNamesMap;
-        good &= getEnumeration(asmr, linePtr, "HWRegister",
-                      regMapSize, regMap, hwregId, "hwreg_");
-        if (good && (arch & ARCH_GCN_1_2_4) == 0 && hwregId == 13)
-        {   // if ib_dgb1 in not GCN 1.2
-            asmr.printError(hwregNamePlace, "Unknown HWRegister");
-            good = false;
+        if (linePtr == end || *linePtr!='@')
+        {
+            const char* hwregNamePlace = linePtr;
+            const size_t regMapSize = isGCN14 ? hwregNamesGCN14MapSize : hwregNamesMapSize;
+            const std::pair<const char*, cxuint>* regMap = isGCN14 ?
+                        hwregNamesGCN14Map : hwregNamesMap;
+            good &= getEnumeration(asmr, linePtr, "HWRegister",
+                        regMapSize, regMap, hwregId, "hwreg_");
+            if (good && (arch & ARCH_GCN_1_2_4) == 0 && hwregId == 13)
+            {   // if ib_dgb1 in not GCN 1.2
+                asmr.printError(hwregNamePlace, "Unknown HWRegister");
+                good = false;
+            }
+        }
+        else
+        {   // parametrization
+            linePtr++;
+            good &= parseImm(asmr, linePtr, hwregId, nullptr, 6, WS_UNSIGNED);
         }
         
         if (!skipRequiredComma(asmr, linePtr))
@@ -1002,28 +1010,36 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             
             const char* funcArg1Place = linePtr;
             size_t sendMessage = 0;
-            if (getNameArg(asmr, 25, name, linePtr, "message name", true))
+            if (linePtr == end || *linePtr != '@')
             {
-                toLowerString(name);
-                const size_t msgNameIndex = (::strncmp(name, "msg_", 4) == 0) ? 4 : 0;
-                auto msgMap = isGCN14 ? sendMessageNamesGCN14Map :
-                        sendMessageNamesMap;
-                const size_t msgMapSize = isGCN14 ?
-                        sendMessageNamesGCN14MapSize : sendMessageNamesMapSize;
-                size_t index = binaryMapFind(msgMap, msgMap + msgMapSize,
-                         name+msgNameIndex, CStringLess()) - msgMap;
-                if (index != msgMapSize &&
-                    // save_wave only for GCN1.2
-                    (msgMap[index].second!=4 || (arch&ARCH_GCN_1_2_4)!=0))
-                    sendMessage = msgMap[index].second;
-                else
+                if (getNameArg(asmr, 25, name, linePtr, "message name", true))
                 {
-                    asmr.printError(funcArg1Place, "Unknown message");
-                    good = false;
+                    toLowerString(name);
+                    const size_t msgNameIndex = (::strncmp(name, "msg_", 4) == 0) ? 4 : 0;
+                    auto msgMap = isGCN14 ? sendMessageNamesGCN14Map :
+                            sendMessageNamesMap;
+                    const size_t msgMapSize = isGCN14 ?
+                            sendMessageNamesGCN14MapSize : sendMessageNamesMapSize;
+                    size_t index = binaryMapFind(msgMap, msgMap + msgMapSize,
+                            name+msgNameIndex, CStringLess()) - msgMap;
+                    if (index != msgMapSize &&
+                        // save_wave only for GCN1.2
+                        (msgMap[index].second!=4 || (arch&ARCH_GCN_1_2_4)!=0))
+                        sendMessage = msgMap[index].second;
+                    else
+                    {
+                        asmr.printError(funcArg1Place, "Unknown message");
+                        good = false;
+                    }
                 }
+                else
+                    good = false;
             }
             else
-                good = false;
+            {   // parametrization
+                linePtr++;
+                good &= parseImm(asmr, linePtr, sendMessage, nullptr, 4, WS_UNSIGNED);
+            }
             
             cxuint gsopIndex = 0;
             cxuint streamId = 0;
@@ -1032,34 +1048,42 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 if (!skipRequiredComma(asmr, linePtr))
                     return false;
                 skipSpacesToEnd(linePtr, end);
-                const char* funcArg2Place = linePtr;
-                if (getNameArg(asmr, 20, name, linePtr, "GSOP", true))
+                if (linePtr == end || *linePtr != '@')
                 {
-                    toLowerString(name);
-                    const size_t gsopNameIndex = (::strncmp(name, "gs_op_", 6) == 0)
-                                ? 6 : 0;
-                    for (gsopIndex = 0; gsopIndex < 4; gsopIndex++)
-                        if (::strcmp(name+gsopNameIndex, sendMsgGSOPTable[gsopIndex])==0)
-                            break;
-                    if (gsopIndex==2 && gsopNameIndex==0)
-                    {   /* 'emit-cut' handling */
-                        if (linePtr+4<end && ::strncmp(linePtr, "-cut", 4)==0 &&
-                            (linePtr==end || (!isAlnum(*linePtr) && *linePtr!='_' &&
-                            *linePtr!='$' && *linePtr!='.')))
-                        {
-                            linePtr+=4;
-                            gsopIndex++;
+                    const char* funcArg2Place = linePtr;
+                    if (getNameArg(asmr, 20, name, linePtr, "GSOP", true))
+                    {
+                        toLowerString(name);
+                        const size_t gsopNameIndex = (::strncmp(name, "gs_op_", 6) == 0)
+                                    ? 6 : 0;
+                        for (gsopIndex = 0; gsopIndex < 4; gsopIndex++)
+                            if (::strcmp(name+gsopNameIndex, sendMsgGSOPTable[gsopIndex])==0)
+                                break;
+                        if (gsopIndex==2 && gsopNameIndex==0)
+                        {   /* 'emit-cut' handling */
+                            if (linePtr+4<end && ::strncmp(linePtr, "-cut", 4)==0 &&
+                                (linePtr==end || (!isAlnum(*linePtr) && *linePtr!='_' &&
+                                *linePtr!='$' && *linePtr!='.')))
+                            {
+                                linePtr+=4;
+                                gsopIndex++;
+                            }
+                        }
+                        if (gsopIndex == 4)
+                        {   // not found
+                            gsopIndex = 0;
+                            asmr.printError(funcArg2Place, "Unknown GSOP");
+                            good = false;
                         }
                     }
-                    if (gsopIndex == 4)
-                    {   // not found
-                        gsopIndex = 0;
-                        asmr.printError(funcArg2Place, "Unknown GSOP");
+                    else
                         good = false;
-                    }
                 }
                 else
-                    good = false;
+                {   // parametrization
+                    linePtr++;
+                    good &= parseImm(asmr, linePtr, gsopIndex, nullptr, 3, WS_UNSIGNED);
+                }
                 
                 if (gsopIndex!=0)
                 {

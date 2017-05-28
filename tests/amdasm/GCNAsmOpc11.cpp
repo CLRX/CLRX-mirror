@@ -381,6 +381,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_getreg_b32    s43, hwreg(trapsts, 10, 1)", 0xb92b0283u, 0, false, true, "" },
     { "    s_getreg_b32    s43, hwreg(trapsts, 3, 10)", 0xb92b48c3u, 0, false, true, "" },
     { "    s_getreg_b32    s43, hwreg(trapsts, 3, 32)", 0xb92bf8c3u, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(@10, 0, 1)", 0xb92b000aU, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(@8, 0, 1)", 0xb92b0008U, 0, false, true, "" },
     { "    s_setreg_imm32_b32 hwreg(trapsts, 3, 10), 0x24da4f",
                     0xba8048c3u, 0x24da4fU, true, true, "" },
     { "    s_setreg_imm32_b32 hwreg(trapsts, 3, 10), xx; xx=0x24da4f",
@@ -501,6 +503,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_sendmsg  sendmsg(gs_done, nop)", 0xbf900003U, 0, false, true, "" },
     { "    s_sendmsg  sendmsg(MSG_GS_DONE, GS_OP_NOP)", 0xbf900003U, 0, false, true, "" },
     { "    s_sendmsghalt  sendmsg(interrupt)", 0xbf910001U, 0, false, true, "" },
+    { "    s_sendmsg  sendmsg(@2, GS_OP_CUT, 0)", 0xbf900012U, 0, false, true, "" },
+    { "    s_sendmsg  sendmsg(@2, @1, 0)", 0xbf900012U, 0, false, true, "" },
     /* msg errors */
     { "    s_sendmsg  sendmsg(interrupxt)", 0, 0, false, false,
         "test.s:1:24: Error: Unknown message\n" },
