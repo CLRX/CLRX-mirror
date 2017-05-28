@@ -2119,9 +2119,13 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 if (!getNameArgS(asmr, 10, modName, linePtr, "VINTRP modifier"))
                     continue;
                 if (::strcmp(modName, "high")==0)
-                    modHigh = true;
+                    good &= parseModEnable(asmr, linePtr, modHigh, "high modifier");
                 else if (::strcmp(modName, "vop3")==0)
-                    modifiers |= VOP3_VOP3;
+                {
+                    bool vop3Mod = false;
+                    good &= parseModEnable(asmr, linePtr, vop3Mod, "vop3 modifier");
+                    modifiers = (modifiers & ~VOP3_VOP3) | (vop3Mod ? VOP3_VOP3 : 0);
+                }
                 else
                 {
                     asmr.printError(modPlace, "Unknown VINTRP modifier");
@@ -2424,7 +2428,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         }
         toLowerString(name);
         if (::strcmp(name, "gds")==0)
-            haveGds = true;
+            good &= parseModEnable(asmr, linePtr, haveGds, "gds modifier");
         else if ((gcnInsn.mode & GCN_2OFFSETS) == 0) /* single offset */
         {
             if (::strcmp(name, "offset") == 0)
@@ -2657,7 +2661,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         if (name[0] == 'o')
         {   // offen, offset
             if (::strcmp(name+1, "ffen")==0)
-                haveOffen = true;
+                good &= parseModEnable(asmr, linePtr, haveOffen, "offen modifier");
             else if (::strcmp(name+1, "ffset")==0)
             {   // parse offset
                 if (parseModImm(asmr, linePtr, offset, &offsetExpr, "offset",
@@ -2754,17 +2758,17 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             }
         }
         else if (!isGCN12 && ::strcmp(name, "addr64")==0)
-            haveAddr64 = true;
+            good &= parseModEnable(asmr, linePtr, haveAddr64, "addr64 modifier");
         else if (::strcmp(name, "tfe")==0)
-            haveTfe = true;
+            good &= parseModEnable(asmr, linePtr, haveTfe, "tfe modifier");
         else if (::strcmp(name, "glc")==0)
-            haveGlc = true;
+            good &= parseModEnable(asmr, linePtr, haveGlc, "glc modifier");
         else if (::strcmp(name, "slc")==0)
-            haveSlc = true;
+            good &= parseModEnable(asmr, linePtr, haveSlc, "slc modifier");
         else if (gcnInsn.encoding==GCNENC_MUBUF && ::strcmp(name, "lds")==0)
-            haveLds = true;
+            good &= parseModEnable(asmr, linePtr, haveLds, "lds modifier");
         else if (::strcmp(name, "idxen")==0)
-            haveIdxen = true;
+            good &= parseModEnable(asmr, linePtr, haveIdxen, "idxen modifier");
         else
         {
             asmr.printError(modPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
@@ -2989,9 +2993,10 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (name[0] == 'd')
         {
             if (name[1]=='a' && name[2]==0)
-                haveDa = true;
-            else if ((arch & ARCH_GCN_1_2_4)!=0 && name[1]=='1' && name[2]=='6' && name[3]==0)
-                haveD16 = true;
+                good &= parseModEnable(asmr, linePtr, haveDa, "da modifier");
+            else if ((arch & ARCH_GCN_1_2_4)!=0 && name[1]=='1' &&
+                name[2]=='6' && name[3]==0)
+                good &= parseModEnable(asmr, linePtr, haveD16, "d16 modifier");
             else if (::strcmp(name+1, "mask")==0)
             {
                 // parse offset
@@ -3033,11 +3038,11 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         else if (name[0] < 's')
         {
             if (::strcmp(name, "glc")==0)
-                haveGlc = true;
+                good &= parseModEnable(asmr, linePtr, haveGlc, "glc modifier");
             else if (::strcmp(name, "lwe")==0)
-                haveLwe = true;
+                good &= parseModEnable(asmr, linePtr, haveLwe, "lwe modifier");
             else if (::strcmp(name, "r128")==0)
-                haveR128 = true;
+                good &= parseModEnable(asmr, linePtr, haveR128, "r128 modifier");
             else
             {
                 asmr.printError(modPlace, "Unknown MIMG modifier");
@@ -3045,11 +3050,11 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             }
         }
         else if (::strcmp(name, "tfe")==0)
-            haveTfe = true;
+            good &= parseModEnable(asmr, linePtr, haveTfe, "tfe modifier");
         else if (::strcmp(name, "slc")==0)
-            haveSlc = true;
+            good &= parseModEnable(asmr, linePtr, haveSlc, "slc modifier");
         else if (::strcmp(name, "unorm")==0)
-            haveUnorm = true;
+            good &= parseModEnable(asmr, linePtr, haveUnorm, "unorm modifier");
         else
         {
             asmr.printError(modPlace, "Unknown MIMG modifier");
@@ -3271,11 +3276,11 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
         }
         toLowerString(name);
         if (name[0]=='v' && name[1]=='m' && name[2]==0)
-            haveVM = true;
+            good &= parseModEnable(asmr, linePtr, haveVM, "vm modifier");
         else if (::strcmp(name, "done")==0)
-            haveDone = true;
+            good &= parseModEnable(asmr, linePtr, haveDone, "done modifier");
         else if (::strcmp(name, "compr")==0)
-            haveCompr = true;
+            good &= parseModEnable(asmr, linePtr, haveCompr, "compr modifier");
         else
         {
             asmr.printError(modPlace, "Unknown EXP modifier");
@@ -3391,11 +3396,11 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             continue;
         }
         if (::strcmp(name, "tfe") == 0)
-            haveTfe = true;
+            good &= parseModEnable(asmr, linePtr, haveTfe, "tfe modifier");
         else if (::strcmp(name, "glc") == 0)
-            haveGlc = true;
+            good &= parseModEnable(asmr, linePtr, haveGlc, "glc modifier");
         else if (::strcmp(name, "slc") == 0)
-            haveSlc = true;
+            good &= parseModEnable(asmr, linePtr, haveSlc, "slc modifier");
         else
         {
             asmr.printError(modPlace, "Unknown FLAT modifier");

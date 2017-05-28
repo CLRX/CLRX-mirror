@@ -1620,8 +1620,10 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                 }
                 else if (::strcmp(mod, "clamp")==0) // clamp
                 {
+                    bool clamp = false;
+                    good &= parseModEnable(asmr, linePtr, clamp, "clamp modifier");
                     if (withClamp)
-                        mods |= VOP3_CLAMP;
+                        mods = (mods & ~VOP3_CLAMP) | (clamp ? VOP3_CLAMP : 0);
                     else
                     {
                         asmr.printError(modPlace, "Modifier CLAMP in VOP3B is illegal");
@@ -1629,7 +1631,11 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     }
                 }
                 else if (::strcmp(mod, "vop3")==0)
-                    mods |= VOP3_VOP3;
+                {
+                    bool vop3 = false;
+                    good &= parseModEnable(asmr, linePtr, vop3, "vop3 modifier");
+                    mods = (mods & ~VOP3_VOP3) | (vop3 ? VOP3_VOP3 : 0);
+                }
                 else if (extraMods!=nullptr)
                 {   /* parse specific modofier from VOP_SDWA or VOP_DPP encoding */
                     if (withSDWAOperands>=1 && ::strcmp(mod, "dst_sel")==0)
@@ -1769,15 +1775,10 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                 skipSpacesToEnd(linePtr, end);
                                 try
                                 {
-                                    cxbyte qpv = cstrtobyte(linePtr, end);
-                                    if (qpv<4)
-                                        quadPerm |= qpv<<(k<<1);
-                                    else
-                                    {
-                                        asmr.printError(linePtr,
-                                            "quad_perm component out of range (0-3)");
-                                        goodMod = good = false;
-                                    }
+                                    cxbyte qpv = 0;
+                                    good &= parseImm(asmr, linePtr, qpv, nullptr,
+                                            2, WS_UNSIGNED);
+                                    quadPerm |= qpv<<(k<<1);
                                 }
                                 catch(const ParseException& ex)
                                 {

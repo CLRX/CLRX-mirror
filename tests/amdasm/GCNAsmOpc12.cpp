@@ -464,7 +464,7 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         "test.s:1:86: Warning: Value 0xabc3b truncated to 0xb\n" },
     /* VOP_DPP errors */
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[2,,0,3]", 0, 0, false, false,
-        "test.s:1:54: Error: Missing number\n" },
+        "test.s:1:54: Error: Expected expression\n" },
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[2,1,0,3  ", 0, 0, false, false,
         "test.s:1:61: Error: Unterminated quad_perm\n" },
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[2 1 0 3]  ", 0, 0, false, false,
@@ -1086,7 +1086,11 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     /* VINTRP in VOP3 encoding */
     { "   v_interp_p1_f32 v42, v16, attr39.z vop3",
         0xd270002aU, 0x000220a7U, true, true, "" },
+    { "a=1; b=0;   v_interp_p1_f32 v42, v16, attr39.z vop3:a high:b",
+        0xd270002aU, 0x000220a7U, true, true, "" },
     { "   v_interp_p1_f32 v42, v16, attr39.z high",
+        0xd270002aU, 0x000221a7U, true, true, "" },
+    { "   v_interp_p1_f32 v42, v16, attr39.z high:1",
         0xd270002aU, 0x000221a7U, true, true, "" },
     { "    v_interp_p2_f32 v42, v22, attr39.z vop3",
         0xd271002aU, 0x00022ca7U, true, true, "" },
@@ -1360,7 +1364,11 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     /* MIMG encoding */
     { "image_load  v[157:160], v[121:124], s[84:87] dmask:11 unorm glc slc r128 "
         "tfe lwe da", 0xf203fb00U, 0x00159d79U, true, true, "" },
+    { "image_load  v[157:160], v[121:124], s[84:87] dmask:11 unorm glc slc r128 "
+        "tfe lwe da d16:0", 0xf203fb00U, 0x00159d79U, true, true, "" },
     { "    image_load  v157, v[121:124], s[84:91] d16",
+        0xf0000100U, 0x80159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91] d16:1",
         0xf0000100U, 0x80159d79U, true, true, "" },
     { "    image_load_mip  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
         0xf004fb00U, 0x00159d79U, true, true, "" },

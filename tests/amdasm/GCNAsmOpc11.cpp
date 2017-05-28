@@ -591,7 +591,10 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_add_f32  v154, s21, v107", 0x0734d615U, 0, false, true, "" },
     { " fla=%v154;   v_add_f32  fla, s21, v107", 0x0734d615U, 0, false, true, "" },
     { "    v_add_f32  v154, v21, v107 vop3", 0xd206009aU, 0x0002d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, v107 vop3:1", 0xd206009aU, 0x0002d715U, true, true, "" },
     { "    v_add_f32_e64  v154, v21, v107", 0xd206009aU, 0x0002d715U, true, true, "" },
+    { "    v_add_f32_e64  v154, v21, v107 vop3:0",
+        0xd206009aU, 0x0002d715U, true, true, "" },
     { "    v_add_f32  v154, v21, s98", 0xd206009aU, 0x0000c515U, true, true, "" },
     { "    v_add_f32  v154, abs(v21), v107", 0xd206019aU, 0x0002d715U, true, true, "" },
     { "    v_add_f32  v154, |v21|, v107", 0xd206019aU, 0x0002d715U, true, true, "" },
@@ -605,11 +608,15 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_add_f32  v154, -abs(v21), -abs(v107)",
         0xd206039aU, 0x6002d715U, true, true, "" },
     { "    v_add_f32  v154, v21, v107 mul:2", 0xd206009aU, 0x0802d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, v107 mul:2 clamp:0",
+        0xd206009aU, 0x0802d715U, true, true, "" },
     { "    v_add_f32  v154, v21, v107 mul:002", 0xd206009aU, 0x0802d715U, true, true, "" },
     { "    v_add_f32  v154, v21, v107 mul:4", 0xd206009aU, 0x1002d715U, true, true, "" },
     { "    v_add_f32  v154, v21, v107 div:2", 0xd206009aU, 0x1802d715U, true, true, "" },
     { "    v_add_f32  v154, v21, v107 div:002", 0xd206009aU, 0x1802d715U, true, true, "" },
     { "    v_add_f32  v154, v21, v107 mul:2 clamp",
+        0xd206089aU, 0x0802d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, v107 mul:2 clamp:1",
         0xd206089aU, 0x0802d715U, true, true, "" },
     { "    v_add_f32  v154, v21, v107 clamp", 0xd206089aU, 0x0002d715U, true, true, "" },
     { "    v_cndmask_b32   v154, v21, v107, s[6:7]",
@@ -1804,6 +1811,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:32: Error: VINTRP parameter is too long\n" },
     /* DS encoding */
     { "   ds_add_u32  v71, v169 offset:52583", 0xd800cd67U, 0x0000a947U, true, true, "" },
+    { "   ds_add_u32  v71, v169 offset:52583 gds:0",
+            0xd800cd67U, 0x0000a947U, true, true, "" },
     { "   ds_add_u32  v71, v169   ", 0xd8000000U, 0x0000a947U, true, true, "" },
     { "   ds_add_u32_e64  v71, v169   ", 0xd8000000U, 0x0000a947U, true, true, "" },
     { "   ds_add_u32  v71, v169 offset :  52583",
@@ -1814,6 +1823,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "ds_add_u32  v71, v169 offset:dct+2; dct=771",
         0xd8000305U, 0x0000a947U, true, true, "" },
     { "   ds_add_u32  v71, v169 gds", 0xd8020000U, 0x0000a947U, true, true, "" },
+    { "   ds_add_u32  v71, v169 gds:1", 0xd8020000U, 0x0000a947U, true, true, "" },
     { "   ds_consume  v155 offset:52583", 0xd8f4cd67U, 0x9b000000U, true, true, "" },
     { "   ds_wrxchg2st64_rtn_b64 v[139:142], v71, v[169:170], v[86:87]"
       " offset0:103 offset1:205", 0xd9bccd67U, 0x8b56a947U, true, true, "" },
@@ -2084,14 +2094,23 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* MUBUF */
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 tfe", 0xe000c25bU, 0x23d43d12U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
+        "offset:603 glc slc addr64 tfe:1", 0xe000c25bU, 0x23d43d12U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
+        "offset:603 glc slc:1 addr64 tfe:1", 0xe000c25bU, 0x23d43d12U, true, true, "" },
     { "    buffer_load_format_x  v[61:62], s[80:83], s35 "
         "offset:603 glc slc tfe", 0xe000425bU, 0x23d43d00U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], s[80:83], s35 "
+        "offset:603 glc:1 slc:1 tfe:1 addr64:0 lds:0",
+        0xe000425bU, 0x23d43d00U, true, true, "" },
     { "    buffer_load_format_x  v[61:62], off, s[80:83], s35 "
         "offset:603 glc slc tfe", 0xe000425bU, 0x23d43d00U, true, true, "" },
     { "    buffer_load_format_x_e64  v[61:62], v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 tfe", 0xe000c25bU, 0x23d43d12U, true, true, "" },
     { "    buffer_load_format_x  v61, v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 lds", 0xe001c25bU, 0x23543d12U, true, true, "" },
+    { "    buffer_load_format_x  v61, v[18:19], s[80:83], s35 "
+        "offset:603 glc:1 slc:1 addr64:1 lds:1", 0xe001c25bU, 0x23543d12U, true, true, "" },
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 lds tfe", 0, 0, false, false,
         "test.s:1:5: Error: Both LDS and TFE is illegal\n" },
@@ -2464,6 +2483,9 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* dmask */
     { "    image_load  v157, v[121:124], s[84:87] dmask:1 unorm glc slc r128 lwe da",
         0xf202f100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:87] "
+        "dmask:1 unorm:1 glc:1 slc:1 r128:1 lwe:1 da:1",
+        0xf202f100U, 0x00159d79U, true, true, "" },
     { "    image_load  v157, v[121:124], s[84:87] dmask:2 unorm glc slc r128 lwe da",
         0xf202f200U, 0x00159d79U, true, true, "" },
     { "    image_load  v[157:158], v[121:124], s[84:87] dmask:3 unorm glc slc r128 "
@@ -2506,6 +2528,23 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    image_load  v157, v[121:124], s[84:91] lwe",
         0xf0020100U, 0x00159d79U, true, true, "" },
     { "    image_load  v157, v[121:124], s[84:91] slc",
+        0xf2000100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91] unorm:0 glc:0 da:0 r128:0 tfe:0 lwe:0",
+        0xf0000100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91] unorm:1 glc:0 da:0 r128:0 tfe:0 lwe:0",
+        0xf0001100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91] unorm:0 glc:1 da:0 r128:0 tfe:0 lwe:0",
+        0xf0002100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91] unorm:0 glc:0 da:1 r128:0 tfe:0 lwe:0",
+        0xf0004100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:87] unorm:0 glc:0 da:0 r128:1 tfe:0 lwe:0",
+        0xf0008100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:158], v[121:124], s[84:91] "
+        "unorm:0 glc:0 da:0 r128:0 tfe:1 lwe:0",
+        0xf0010100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91] unorm:0 glc:0 da:0 r128:0 tfe:0 lwe:1",
+        0xf0020100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91] unorm:0 glc:0 da:0 r128:0 tfe:0 slc:1",
         0xf2000100U, 0x00159d79U, true, true, "" },
     /* MIMG errors */
     { "    image_load  v157, v[121:124], s[84:91] sxc", 0, 0, false, false,
@@ -2760,6 +2799,14 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0xf8001c07U, 0x00005d74U, true, true, "" },
     { "exp  mrt0, v116, v116, v93, v93 done compr vm",
         0xf8001c0fU, 0x00005d74U, true, true, "" },
+    { "exp  param5, v116, v93, v27, v124 done:1 compr:0 vm:0",
+        0xf8000a5fU, 0x7c1b5d74U, true, true, "" },
+    { "exp  mrt0, v116, v116, v93, v93 done:1 compr:1 vm:1",
+        0xf8001c0fU, 0x00005d74U, true, true, "" },
+    { "exp  param5, v116, v93, v27, v124 done:0 compr:0 vm:0",
+        0xf800025fU, 0x7c1b5d74U, true, true, "" },
+    { "exp  param5, v116, v93, v27, v124 done:0 compr:0 vm:1",
+        0xf800125fU, 0x7c1b5d74U, true, true, "" },
     /* EXP encoding src enables */
     { "exp  param5, v116, v93, v27, off done", 0xf8000a57U, 0x001b5d74U, true, true, "" },
     { "exp  param5, v116, v93, off, v124 done", 0xf8000a5bU, 0x7c005d74U, true, true, "" },
@@ -2884,7 +2931,13 @@ const GCNAsmOpcodeCase encGCN11OpcodeCases[] =
         0xdc230000U, 0x2f8000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188] glc slc",
         0xdc230000U, 0x2f0000bbU, true, true, "" },
+    { "flat_load_ubyte v[47:48], v[187:188] glc:1 slc:1 tfe:1",
+        0xdc230000U, 0x2f8000bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188] glc:1 slc:1 tfe:0",
+        0xdc230000U, 0x2f0000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188] glc", 0xdc210000U, 0x2f0000bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188] glc:1 slc:0 tfe:0",
+        0xdc210000U, 0x2f0000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188] glc   ", 0xdc210000U, 0x2f0000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188]", 0xdc200000U, 0x2f0000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188]   ", 0xdc200000U, 0x2f0000bbU, true, true, "" },
