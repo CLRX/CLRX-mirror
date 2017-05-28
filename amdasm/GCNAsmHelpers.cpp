@@ -1969,8 +1969,12 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             skipCharAndSpacesToEnd(linePtr, end);
                             if (linePtr!=end && (*linePtr=='0' || *linePtr=='1'))
                             {
-                                mods |= VOP3_BOUNDCTRL;
+                                bool boundCtrl = false;
                                 linePtr++;
+                                good &= parseModEnable(asmr, linePtr, boundCtrl,
+                                        "bound_ctrl modifier");
+                                mods = (mods & ~VOP3_BOUNDCTRL) |
+                                        (boundCtrl ? VOP3_BOUNDCTRL : 0);
                             }
                             else
                             {

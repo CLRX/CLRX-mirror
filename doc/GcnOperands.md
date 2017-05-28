@@ -164,6 +164,8 @@ allow to easily parametrize modifiers. The value 1 enables modifier, zero disabl
 The `omod` modifier with parameter (expression) replaces `mul` and `div` modifiers.
 The `format` in MTBUF encoding is also parametrizable if data and/or
 number format expression will be preceded by `@` character (example: `format[@1,@4]`).
+Special case is `bound_ctrl`. To parametrize bound_ctrl you must use syntax:
+`bound_ctrl:0:expr` or `bound_ctrl:1:expr`.
 
 The HW registers and send message parameters (message and GSOP) is parametrizable if
 they will be preceded by `@` (example: `hwreg(@5, 8, 16)`).
