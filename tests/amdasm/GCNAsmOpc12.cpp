@@ -167,7 +167,11 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "    s_sendmsg  sendmsg(savewave)", 0xbf900004U, 0, false, true, "" },
     /* SMEM encoding */
     { "    s_load_dword  s50, s[58:59], 0x1345b", 0xc0020c9dU, 0x1345b, true, true, "" },
+    { "    s_load_dword  s50, s[58:59], 0x1345b glc:0",
+        0xc0020c9dU, 0x1345b, true, true, "" },
     { "    s_load_dword  s50, s[58:59], 0x1345b glc   ",
+        0xc0030c9dU, 0x1345b, true, true, "" },
+    { "    s_load_dword  s50, s[58:59], 0x1345b glc:1   ",
         0xc0030c9dU, 0x1345b, true, true, "" },
     { "    s_load_dword  s50, s[58:59], 0x1345b glc  glc ",
         0xc0030c9dU, 0x1345b, true, true, "" },

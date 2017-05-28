@@ -200,9 +200,12 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         0xbf8c0000U, 0, false, true, "" },
     /* SMEM encoding */
     { "s_load_dword    s50, s[58:59], s91\n", 0xc0000c9dU, 0x5b, true, true, "" },
+    { "s_load_dword    s50, s[58:59], s91 glc:0 nv:0\n",
+        0xc0000c9dU, 0x5b, true, true, "" },
     { "s_load_dword    s50, s[58:59], 0x5b\n", 0xc0020c9dU, 0x5b, true, true, "" },
     { "s_load_dword    s50, s[58:59], 0x13da5b\n", 0xc0020c9dU, 0x13da5b, true, true, "" },
     { "s_load_dword    s50, s[58:59], 0x5b nv\n", 0xc0028c9dU, 0x5b, true, true, "" },
+    { "s_load_dword    s50, s[58:59], 0x5b nv:1\n", 0xc0028c9dU, 0x5b, true, true, "" },
     { "s_load_dword    s50, s[58:59], 0x5b nv glc\n", 0xc0038c9dU, 0x5b, true, true, "" },
     { "s_load_dword    s50, s[58:59], 0x32 offset:0x5b\n",
         0xc0024c9dU, 0x3200005b, true, true, "" },

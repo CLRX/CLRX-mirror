@@ -1315,9 +1315,9 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             toLowerString(name);
             if (::strcmp(name, "glc")==0)
-                haveGlc = true;
+                good &= parseModEnable(asmr, linePtr, haveGlc, "glc modifier");
             else if (isGCN14 && ::strcmp(name, "nv")==0)
-                haveNv = true;
+                good &= parseModEnable(asmr, linePtr, haveNv, "nv modifier");
             else if (isGCN14 && ::strcmp(name, "offset")==0)
             {
                 if (parseModImm(asmr, linePtr, soffset2Val, &soffset2Expr, "offset",
