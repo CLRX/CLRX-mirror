@@ -339,8 +339,9 @@ Id | Description
 ---|-------------------------------------------
  0 | AMD OpenCL 1.2 binary format
  1 | Gallium Compute binary format
- 2 | AMD OpenCL 2.0 (new driver) binary format
- 3 | ROCm binary format
+ 2 | Raw code
+ 3 | AMD OpenCL 2.0 (new driver) binary format
+ 4 | ROCm binary format
 
 ### .get_gpu SYMBOL
 
