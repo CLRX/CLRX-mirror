@@ -137,8 +137,13 @@ struct CLRX_INTERNAL VOPExtraModifiers
     uint16_t dppCtrl;
     bool needSDWA;
     bool needDPP;
+};
+
+struct CLRX_INTERNAL VOPOpModifiers
+{
     cxbyte absMod;
     cxbyte negMod;
+    cxbyte sextMod;
 };
 
 enum class GCNEncSize
@@ -204,8 +209,9 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     /* withSDWAOperands - number operand that will be handled by SDWA modifer parser,
      * (includes destination at begin) */
     static bool parseVOPModifiers(Assembler& asmr, const char*& linePtr, uint16_t arch,
-                       cxbyte& mods, VOPExtraModifiers* extraMods = nullptr,
-                       bool withClamp = true, cxuint withSDWAOperands = 3);
+                       cxbyte& mods, VOPOpModifiers& opMods,
+                       VOPExtraModifiers* extraMods = nullptr, bool withClamp = true,
+                       cxuint withSDWAOperands = 3);
     
     static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
                std::unique_ptr<AsmExpression>* outTargetExpr, uint16_t arch,

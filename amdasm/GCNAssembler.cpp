@@ -1516,10 +1516,20 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     // modifiers
     cxbyte modifiers = 0;
     VOPExtraModifiers extraMods{};
-    good &= parseVOPModifiers(asmr, linePtr, arch, modifiers,
+    VOPOpModifiers opMods{};
+    good &= parseVOPModifiers(asmr, linePtr, arch, modifiers, opMods,
                     (isGCN12) ? &extraMods : nullptr, !haveDstCC || isGCN12);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
+    
+    if (src0Op)
+        src0Op.vopMods |= ((opMods.absMod&1) ? VOPOP_ABS : 0) |
+                ((opMods.negMod&1) ? VOPOP_NEG : 0) |
+                ((opMods.sextMod&1) ? VOPOP_SEXT : 0);
+    if (src1Op)
+        src1Op.vopMods |= ((opMods.absMod&2) ? VOPOP_ABS : 0) |
+                ((opMods.negMod&2) ? VOPOP_NEG : 0) |
+                ((opMods.sextMod&2) ? VOPOP_SEXT : 0);
     
     bool vop3 = /* src1=sgprs and not (DS1_SGPR|src1_SGPR) */
         //((src1Op.range.start<256) ^ sgprRegInSrc1) ||
@@ -1748,10 +1758,16 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     // modifiers
     VOPExtraModifiers extraMods{};
-    good &= parseVOPModifiers(asmr, linePtr, arch, modifiers, (isGCN12)?&extraMods:nullptr,
-                  true, (mode1!=GCN_VOP_ARG_NONE) ? 2 : 0);
+    VOPOpModifiers opMods{};
+    good &= parseVOPModifiers(asmr, linePtr, arch, modifiers, opMods,
+                  (isGCN12)?&extraMods:nullptr, true, (mode1!=GCN_VOP_ARG_NONE) ? 2 : 0);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
+    
+    if (src0Op)
+        src0Op.vopMods |= ((opMods.absMod&1) ? VOPOP_ABS : 0) |
+                ((opMods.negMod&1) ? VOPOP_NEG : 0) |
+                ((opMods.sextMod&1) ? VOPOP_SEXT : 0);
     
     bool vop3 = ((!isGCN12 && src0Op.vopMods!=0) ||
             (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0) ||
@@ -1902,10 +1918,20 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 GCNFIELD_VOP_VSRC1);
     // modifiers
     VOPExtraModifiers extraMods{};
-    good &= parseVOPModifiers(asmr, linePtr, arch, modifiers,
+    VOPOpModifiers opMods{};
+    good &= parseVOPModifiers(asmr, linePtr, arch, modifiers, opMods,
                         (isGCN12)?&extraMods:nullptr, true);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
+    
+    if (src0Op)
+        src0Op.vopMods |= ((opMods.absMod&1) ? VOPOP_ABS : 0) |
+                ((opMods.negMod&1) ? VOPOP_NEG : 0) |
+                ((opMods.sextMod&1) ? VOPOP_SEXT : 0);
+    if (src1Op)
+        src1Op.vopMods |= ((opMods.absMod&2) ? VOPOP_ABS : 0) |
+                ((opMods.negMod&2) ? VOPOP_NEG : 0) |
+                ((opMods.sextMod&2) ? VOPOP_SEXT : 0);
     
     bool vop3 = //(dstReg.start!=106) || (src1Op.range.start<256) ||
         (!dstReg.isVal(106)) || (src1Op.range.isNonVGPR()) ||
@@ -2190,11 +2216,24 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
     }
     // modifiers
+    VOPOpModifiers opMods{};
     if (mode2 != GCN_VOP3_VINTRP)
-        good &= parseVOPModifiers(asmr, linePtr, arch, modifiers, nullptr,
+        good &= parseVOPModifiers(asmr, linePtr, arch, modifiers, opMods, nullptr,
                               isGCN12 || gcnInsn.encoding!=GCNENC_VOP3B);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
+    
+    if (src0Op)
+        src0Op.vopMods |= ((opMods.absMod&1) ? VOPOP_ABS : 0) |
+                ((opMods.negMod&1) ? VOPOP_NEG : 0) |
+                ((opMods.sextMod&1) ? VOPOP_SEXT : 0);
+    if (src1Op)
+        src1Op.vopMods |= ((opMods.absMod&2) ? VOPOP_ABS : 0) |
+                ((opMods.negMod&2) ? VOPOP_NEG : 0) |
+                ((opMods.sextMod&2) ? VOPOP_SEXT : 0);
+    if (src2Op)
+        src2Op.vopMods |= ((opMods.absMod&4) ? VOPOP_ABS : 0) |
+                ((opMods.negMod&4) ? VOPOP_NEG : 0);
     
     if (mode2 != GCN_VOP3_VINTRP)
     {
