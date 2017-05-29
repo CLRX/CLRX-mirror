@@ -340,5 +340,21 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
     { "v_add_u32       v55, s27, v90 vop3\n", 0xd1340037U, 0x0002b41bU, true, true, "" },
     { "v_sub_u32       v55, s27, v90 vop3\n", 0xd1350037U, 0x0002b41bU, true, true, "" },
     { "v_subrev_u32    v55, s27, v90 vop3\n", 0xd1360037U, 0x0002b41bU, true, true, "" },
+    /* VOP1 instructions */
+    { "v_mov_prsv_b32  v158, v79\n", 0x7f3c6d4fU, 0, false, true, "" },
+    { "v_screen_partition_4se_b32 v158, v79\n", 0x7f3c6f4fU, 0, false, true, "" },
+    { "v_mov_prsv_b32  v55, v27 vop3\n", 0xd1760037U, 0x0000011bU, true, true, "" },
+    { "v_screen_partition_4se_b32 v55, v27 vop3\n",
+        0xd1770037U, 0x0000011bU, true, true, "" },
+    { "v_cvt_norm_i16_f16 v158, v79\n", 0x7f3c9b4fU, 0, false, true, "" },
+    { "v_cvt_norm_u16_f16 v158, v79\n", 0x7f3c9d4fU, 0, false, true, "" },
+    { "v_sat_pk_u8_i16 v158, v79\n", 0x7f3c9f4fU, 0, false, true, "" },
+    { "v_writelane_regwr_b32 v158, v79\n", 0x7f3ca14fU, 0, false, true, "" },
+    { "v_swap_b32      v158, v79\n", 0x7f3ca34fU, 0, false, true, "" },
+    { "v_cvt_norm_i16_f16 v55, v27 vop3\n", 0xd18d0037U, 0x0000011bU, true, true, "" },
+    { "v_cvt_norm_u16_f16 v55, v27 vop3\n", 0xd18e0037U, 0x0000011bU, true, true, "" },
+    { "v_sat_pk_u8_i16 v55, v27 vop3\n", 0xd18f0037U, 0x0000011bU, true, true, "" },
+    { "v_writelane_regwr_b32 v55, v27 vop3\n", 0xd1900037U, 0x0000011bU, true, true, "" },
+    { "v_swap_b32      v55, v27 vop3\n", 0xd1910037U, 0x0000011bU, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
