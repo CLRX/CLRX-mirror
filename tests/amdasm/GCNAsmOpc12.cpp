@@ -342,6 +342,8 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         0x0134d6f9U, 0x1e060541U, true, true, "" },
     { "   v_cndmask_b32   v154, v65, v107, vcc dst_sel:word1 sext:2 neg:2",
         0x0134d6f9U, 0x1e060541U, true, true, "" },
+    { "   v_cndmask_b32   v154, v65, v107, vcc dst_sel:word1 sext:[0,1] neg:[0,1]",
+        0x0134d6f9U, 0x1e060541U, true, true, "" },
     { "   v_cndmask_b32   v154, abs(v65), v107, vcc clamp dst_sel:word1",
         0x0134d6f9U, 0x06262541U, true, true, "" },
     /* VOP_SDWA - warnings */

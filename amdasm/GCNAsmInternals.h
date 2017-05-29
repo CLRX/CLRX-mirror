@@ -204,13 +204,17 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
         return ret;
     }
     
+    static bool parseImmWithBoolArray(Assembler& asmr, const char*& linePtr,
+            uint32_t& value, cxuint bits = 0, cxbyte signess = WS_BOTH);
+    
     static bool parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_t& value,
             std::unique_ptr<AsmExpression>* outTargetExpr, Flags instropMask = 0);
     
     /* withSDWAOperands - number operand that will be handled by SDWA modifer parser,
+     * modOperands - number of operands for abs,neg,sext
      * (includes destination at begin) */
     static bool parseVOPModifiers(Assembler& asmr, const char*& linePtr, uint16_t arch,
-                       cxbyte& mods, VOPOpModifiers& opMods,
+                       cxbyte& mods, VOPOpModifiers& opMods, cxuint modOperands,
                        VOPExtraModifiers* extraMods = nullptr, bool withClamp = true,
                        cxuint withSDWAOperands = 3, bool withSext = true);
     

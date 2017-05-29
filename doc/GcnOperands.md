@@ -167,7 +167,8 @@ number format expression will be preceded by `@` character (example: `format[@1,
 Special case is `bound_ctrl`. To parametrize bound_ctrl you must use syntax:
 `bound_ctrl:0:expr` or `bound_ctrl:1:expr`.
 The `abs`, `neg` and `sext` modifiers with parameter (expression) allow to set what
-source operand will have operand modifier. Number of bit of value refer to number of source operand.
+source operand will have operand modifier. Number of bit of value refer to number of source operand. The `abs`, `neg` and `sext` modifiers accepts binary array of expressions like
+`[bit0,bit1,...]`.
 
 The HW registers and send message parameters (message and GSOP) is parametrizable if
 they will be preceded by `@` (example: `hwreg(@5, 8, 16)`).

@@ -1505,6 +1505,50 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     return false;
 }
 
+bool GCNAsmUtils::parseImmWithBoolArray(Assembler& asmr, const char*& linePtr,
+            uint32_t& value, cxuint bits, cxbyte signess)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr == end || *linePtr != '[')
+        return parseImm(asmr, linePtr, value, nullptr, bits, signess);
+    // array of boolean values
+    linePtr++;
+    bool good = true;
+    uint32_t inVal = 0;
+    for (cxuint i = 0; i < bits; i++)
+    {
+        uint32_t v = 0;
+        good &= parseImm(asmr, linePtr, v, nullptr, 1, WS_UNSIGNED);
+        inVal |= v<<i;
+        skipSpacesToEnd(linePtr, end);
+        if (i+1 < bits)
+        {
+            if (linePtr==end || *linePtr!=',')
+            {
+                asmr.printError(linePtr, "Expected ',' before bit value");
+                good = false;
+                break;
+            }
+            else
+                ++linePtr;
+        }
+        else
+        {
+            if (linePtr == end || *linePtr!=']')
+            {
+                asmr.printError(linePtr, "Unterminated bit array");
+                good = false;
+            }
+            else
+                ++linePtr;
+        }
+    }
+    if (good)
+        value = inVal;
+    return good;
+}
+
 static const std::pair<const char*, cxuint> vopSDWADSTSelNamesMap[] =
 {
     { "b0", 0 },
@@ -1535,7 +1579,7 @@ static const size_t vopSDWADSTSelNamesNum = sizeof(vopSDWADSTSelNamesMap)/
  * modifier specific for VOP_SDWA and VOP_DPP stored in extraMods structure
  * withSDWAOperands - specify number of operand for that modifier will be parsed */
 bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
-                uint16_t arch, cxbyte& mods, VOPOpModifiers& opMods,
+                uint16_t arch, cxbyte& mods, VOPOpModifiers& opMods, cxuint modOperands,
                 VOPExtraModifiers* extraMods, bool withClamp, cxuint withSDWAOperands,
                 bool withSext)
 {
@@ -1653,13 +1697,14 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         good = false;
                     }
                 }
-                else if (::strcmp(mod, "abs")==0)
+                else if (modOperands>1 && ::strcmp(mod, "abs")==0)
                 {
-                    cxbyte absVal = 0;
+                    uint32_t absVal = 0;
                     if (linePtr!=end && *linePtr==':')
                     {
                         linePtr++;
-                        if (parseImm(asmr, linePtr, absVal, nullptr, 3, WS_UNSIGNED))
+                        if (parseImmWithBoolArray(asmr, linePtr, absVal, modOperands-1,
+                                    WS_UNSIGNED))
                         {
                             opMods.absMod = absVal;
                             if (haveAbs)
@@ -1670,13 +1715,14 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     else
                         good = false;
                 }
-                else if (::strcmp(mod, "neg")==0)
+                else if (modOperands>1 && ::strcmp(mod, "neg")==0)
                 {
-                    cxbyte negVal = 0;
+                    uint32_t negVal = 0;
                     if (linePtr!=end && *linePtr==':')
                     {
                         linePtr++;
-                        if (parseImm(asmr, linePtr, negVal, nullptr, 3, WS_UNSIGNED))
+                        if (parseImmWithBoolArray(asmr, linePtr, negVal, modOperands-1,
+                                        WS_UNSIGNED))
                         {
                             opMods.negMod = negVal;
                             if (haveNeg)
@@ -1687,13 +1733,15 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     else
                         good = false;
                 }
-                else if ((arch & ARCH_GCN_1_2_4) && withSext && ::strcmp(mod, "sext")==0)
+                else if ((arch & ARCH_GCN_1_2_4) && withSext &&
+                         modOperands>1 && ::strcmp(mod, "sext")==0)
                 {
-                    cxbyte sextVal = 0;
+                    uint32_t sextVal = 0;
                     if (linePtr!=end && *linePtr==':')
                     {
                         linePtr++;
-                        if (parseImm(asmr, linePtr, sextVal, nullptr, 2, WS_UNSIGNED))
+                        if (parseImmWithBoolArray(asmr, linePtr, sextVal, modOperands-1,
+                                    WS_UNSIGNED))
                         {
                             opMods.sextMod = sextVal;
                             if (haveSext)
@@ -1920,18 +1968,10 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             for (cxuint k = 0; k < 4; k++)
                             {
                                 skipSpacesToEnd(linePtr, end);
-                                try
-                                {
-                                    cxbyte qpv = 0;
-                                    good &= parseImm(asmr, linePtr, qpv, nullptr,
-                                            2, WS_UNSIGNED);
-                                    quadPerm |= qpv<<(k<<1);
-                                }
-                                catch(const ParseException& ex)
-                                {
-                                    asmr.printError(linePtr, ex.what());
-                                    goodMod = good = false;
-                                }
+                                cxbyte qpv = 0;
+                                good &= parseImm(asmr, linePtr, qpv, nullptr,
+                                        2, WS_UNSIGNED);
+                                quadPerm |= qpv<<(k<<1);
                                 skipSpacesToEnd(linePtr, end);
                                 if (k!=3)
                                 {
