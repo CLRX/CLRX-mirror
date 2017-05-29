@@ -1047,6 +1047,12 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "v_mad_f32 v55, v79, v166, v229 clamp ", 0xd1c18037U, 0x07974d4fU, true, true, "" },
     { "v_mad_f32 v55, abs(v79), abs(v166), -v229",
         0xd1c10337U, 0x87974d4fU, true, true, "" },
+    { "v_mad_f32 v55, abs(v79), abs(v166), sext(-v229)", 0, 0, true, false,
+        "test.s:1:41: Error: Expected operator\n"
+        "test.s:1:47: Error: Some garbages at VOP modifier place\n" },
+    { "v_mad_f32 v55, abs(v79), abs(v166), -v229 sext:4", 0, 0, true, false,
+        "test.s:1:43: Error: Unknown VOP modifier\n"
+        "test.s:1:47: Error: Some garbages at VOP modifier place\n" },
     /* VOP3 instructions */
     { "v_mad_i32_i24 v55, v79, v166, v229", 0xd1c20037U, 0x07974d4fU, true, true, "" },
     { "v_mad_u32_u24 v55, v79, v166, v229", 0xd1c30037U, 0x07974d4fU, true, true, "" },

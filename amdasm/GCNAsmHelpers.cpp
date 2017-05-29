@@ -1000,7 +1000,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             return parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
                              instrOpMask & ~INSTROP_VOP3MODS, regField);
         
-        if ((arch & ARCH_GCN_1_2_4) && linePtr+4 <= end && toLower(linePtr[0])=='s' &&
+        if ((arch & ARCH_GCN_1_2_4)!=0 && (instrOpMask & INSTROP_NOSEXT)==0 &&
+            linePtr+4 <= end && toLower(linePtr[0])=='s' &&
             toLower(linePtr[1])=='e' && toLower(linePtr[2])=='x' &&
             toLower(linePtr[3])=='t')
         {   /* sext */
@@ -1535,7 +1536,8 @@ static const size_t vopSDWADSTSelNamesNum = sizeof(vopSDWADSTSelNamesMap)/
  * withSDWAOperands - specify number of operand for that modifier will be parsed */
 bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                 uint16_t arch, cxbyte& mods, VOPOpModifiers& opMods,
-                VOPExtraModifiers* extraMods, bool withClamp, cxuint withSDWAOperands)
+                VOPExtraModifiers* extraMods, bool withClamp, cxuint withSDWAOperands,
+                bool withSext)
 {
     const char* end = asmr.line+asmr.lineSize;
     //bool haveSDWAMod = false, haveDPPMod = false;
@@ -1685,7 +1687,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     else
                         good = false;
                 }
-                else if ((arch & ARCH_GCN_1_2_4) && ::strcmp(mod, "sext")==0)
+                else if ((arch & ARCH_GCN_1_2_4) && withSext && ::strcmp(mod, "sext")==0)
                 {
                     cxbyte sextVal = 0;
                     if (linePtr!=end && *linePtr==':')

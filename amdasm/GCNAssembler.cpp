@@ -2090,7 +2090,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool modHigh = false;
     cxbyte modifiers = 0;
     const Flags vop3Mods = (gcnInsn.encoding == GCNENC_VOP3B) ?
-            INSTROP_VOP3NEG : INSTROP_VOP3MODS;
+            INSTROP_VOP3NEG : INSTROP_VOP3MODS | INSTROP_NOSEXT;
     
     if (mode1 != GCN_VOP_ARG_NONE)
     {
@@ -2219,7 +2219,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     VOPOpModifiers opMods{};
     if (mode2 != GCN_VOP3_VINTRP)
         good &= parseVOPModifiers(asmr, linePtr, arch, modifiers, opMods, nullptr,
-                              isGCN12 || gcnInsn.encoding!=GCNENC_VOP3B);
+                              isGCN12 || gcnInsn.encoding!=GCNENC_VOP3B, 3, false);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     

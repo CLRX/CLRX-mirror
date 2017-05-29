@@ -57,6 +57,7 @@ enum : Flags {
     INSTROP_READ = 0x10000,
     INSTROP_WRITE = 0x20000,
     INSTROP_ACCESS_MASK = 0x30000,
+    INSTROP_NOSEXT = 0x40000,
     
     // for parseSRregRange/parseVRegRange
     INSTROP_SYMREGRANGE = 1
@@ -211,7 +212,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool parseVOPModifiers(Assembler& asmr, const char*& linePtr, uint16_t arch,
                        cxbyte& mods, VOPOpModifiers& opMods,
                        VOPExtraModifiers* extraMods = nullptr, bool withClamp = true,
-                       cxuint withSDWAOperands = 3);
+                       cxuint withSDWAOperands = 3, bool withSext = true);
     
     static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
                std::unique_ptr<AsmExpression>* outTargetExpr, uint16_t arch,
