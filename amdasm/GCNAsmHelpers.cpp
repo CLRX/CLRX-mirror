@@ -2229,7 +2229,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
         else
             good = false;
     }
-    const bool vopSDWA = (haveDstSel || haveDstUnused || haveSrc0Sel || haveSrc1Sel);
+    const bool vopSDWA = (haveDstSel || haveDstUnused || haveSrc0Sel || haveSrc1Sel ||
+        opMods.sextMod!=0);
     const bool vopDPP = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask);
     const bool isGCN14 = (arch & ARCH_RXVEGA) != 0;
     // mul/div modifier does not apply to vop3 if RXVEGA (this case will be checked later)
@@ -2428,8 +2429,8 @@ bool GCNAsmUtils::checkGCNVOPEncoding(Assembler& asmr, const char* insnPtr,
     return true;
 }
 
-bool GCNAsmUtils::checkGCNVOPExtraModifers(Assembler& asmr, bool needImm, bool sextFlags,
-                 bool vop3, GCNVOPEnc gcnVOPEnc, const GCNOperand& src0Op,
+bool GCNAsmUtils::checkGCNVOPExtraModifers(Assembler& asmr, uint16_t arch, bool needImm,
+                 bool sextFlags, bool vop3, GCNVOPEnc gcnVOPEnc, const GCNOperand& src0Op,
                  VOPExtraModifiers& extraMods, const char* instrPlace)
 {
     if (needImm)
@@ -2437,10 +2438,15 @@ bool GCNAsmUtils::checkGCNVOPExtraModifers(Assembler& asmr, bool needImm, bool s
         asmr.printError(instrPlace, "Literal with SDWA or DPP word is illegal");
         return false;
     }
-    if (!src0Op.range.isVGPR())
+    if ((arch & ARCH_RXVEGA)==0 && !src0Op.range.isVGPR())
     {
         asmr.printError(instrPlace, "SRC0 must be a vector register with "
                     "SDWA or DPP word");
+        return false;
+    }
+    if ((arch & ARCH_RXVEGA)!=0 && extraMods.needDPP && !src0Op.range.isVGPR())
+    {
+        asmr.printError(instrPlace, "SRC0 must be a vector register with DPP word");
         return false;
     }
     if (vop3)
@@ -2448,7 +2454,7 @@ bool GCNAsmUtils::checkGCNVOPExtraModifers(Assembler& asmr, bool needImm, bool s
         asmr.printError(instrPlace, "Mixing VOP3 with SDWA or WORD is illegal");
         return false;
     }
-    if (sextFlags & extraMods.needDPP)
+    if (sextFlags && extraMods.needDPP)
     {
         asmr.printError(instrPlace, "SEXT modifiers is unavailable for DPP word");
         return false;

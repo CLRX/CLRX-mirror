@@ -286,6 +286,9 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
         case GCNFIELD_M_SOFFSET:
             rstart = (code2>>24)&0xff;
             break;
+        case GCNFIELD_DPPSDWA_SSRC0:
+            rstart = code2&0xff;
+            break;
         default:
             throw Exception("Unknown GCNField");
     }
@@ -1531,11 +1534,16 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 ((opMods.negMod&2) ? VOPOP_NEG : 0) |
                 ((opMods.sextMod&2) ? VOPOP_SEXT : 0);
     
+    // TODO: to modify or delete
+    extraMods.needSDWA |= ((src0Op.vopMods | src1Op.vopMods) & VOPOP_SEXT) != 0;
     bool vop3 = /* src1=sgprs and not (DS1_SGPR|src1_SGPR) */
         //((src1Op.range.start<256) ^ sgprRegInSrc1) ||
-        (src1Op.range.isNonVGPR() ^ sgprRegInSrc1) ||
+        ((!isGCN14 || !extraMods.needSDWA) &&
+                (src1Op.range.isNonVGPR() ^ sgprRegInSrc1)) ||
         (!isGCN12 && (src0Op.vopMods!=0 || src1Op.vopMods!=0)) ||
-        (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0 ||
+        (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)|
+            /* exclude OMOD if RXVEGA and SDWA used */
+            ((isGCN14 && extraMods.needSDWA) ? 3 : 0)))!=0 ||
         /* srcCC!=VCC or dstCC!=VCC */
         //(haveDstCC && dstCCReg.start!=106) || (haveSrcCC && srcCCReg.start!=106) ||
         (haveDstCC && !dstCCReg.isVal(106)) || (haveSrcCC && !srcCCReg.isVal(106)) ||
@@ -1591,10 +1599,19 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
                 gcnVOPEnc!=GCNVOPEnc::NORMAL))
     {   /* if VOP_SDWA or VOP_DPP is required */
-        if (!checkGCNVOPExtraModifers(asmr, needImm, sextFlags, vop3, gcnVOPEnc, src0Op,
-                    extraMods, instrPlace))
+        if (!checkGCNVOPExtraModifers(asmr, arch, needImm, sextFlags, vop3,
+                    gcnVOPEnc, src0Op, extraMods, instrPlace))
             return false;
         gcnAsm->instrRVUs[2].regField = GCNFIELD_DPPSDWA_SRC0;
+        
+        if (extraMods.needSDWA && isGCN14)
+        {   // fix for extra type operand from SDWA
+            AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
+            if (rvus[2].regField != ASMFIELD_NONE && src0Op.range.isNonVGPR())
+                rvus[2].regField = GCNFIELD_DPPSDWA_SSRC0;
+            if (rvus[3].regField != ASMFIELD_NONE)
+                rvus[3].regField = GCNFIELD_VOP_SSRC1;
+        }
     }
     else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
@@ -1648,7 +1665,10 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                     (uint32_t(extraMods.src1Sel)<<24) |
                     ((src1Op.vopMods&VOPOP_SEXT) ? (1U<<27) : 0) |
                     ((src1Op.vopMods&VOPOP_NEG) ? (1U<<28) : 0) |
-                    ((src1Op.vopMods&VOPOP_ABS) ? (1U<<29) : 0));
+                    ((src1Op.vopMods&VOPOP_ABS) ? (1U<<29) : 0) |
+                    (src0Op.range.isNonVGPR() ? (1U<<23) : 0) |
+                    (src1Op.range.isNonVGPR() ? (1U<<31) : 0) |
+                    ((modifiers & 3) << 14));
         else if (extraMods.needDPP)
             SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) | (extraMods.dppCtrl<<8) |
                     ((modifiers&VOP3_BOUNDCTRL) ? (1U<<19) : 0) |
@@ -1726,6 +1746,7 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
+    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
     
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     RegRange dstReg(0, 0);
@@ -1771,7 +1792,9 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 ((opMods.sextMod&1) ? VOPOP_SEXT : 0);
     
     bool vop3 = ((!isGCN12 && src0Op.vopMods!=0) ||
-            (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0) ||
+            (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)|
+            /* exclude OMOD if RXVEGA and SDWA used */
+            ((isGCN14 && extraMods.needSDWA) ? 3 : 0)))!=0) ||
             (gcnEncSize==GCNEncSize::BIT64);
     
     if (vop3) // modify fields in reg usage
@@ -1789,10 +1812,16 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
                 gcnVOPEnc!=GCNVOPEnc::NORMAL))
     {   /* if VOP_SDWA or VOP_DPP is required */
-        if (!checkGCNVOPExtraModifers(asmr, needImm, sextFlags, vop3, gcnVOPEnc, src0Op,
-                    extraMods, instrPlace))
+        if (!checkGCNVOPExtraModifers(asmr, arch, needImm, sextFlags, vop3,
+                    gcnVOPEnc, src0Op, extraMods, instrPlace))
             return false;
         gcnAsm->instrRVUs[1].regField = GCNFIELD_DPPSDWA_SRC0;
+        if (extraMods.needSDWA && isGCN14)
+        {   // fix for extra type operand from SDWA
+            AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
+            if (rvus[2].regField != ASMFIELD_NONE && src0Op.range.isNonVGPR())
+                rvus[2].regField = GCNFIELD_DPPSDWA_SSRC0;
+        }
     }
     else if (isGCN12 && (src0Op.vopMods & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
@@ -1831,7 +1860,9 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                     (uint32_t(extraMods.src1Sel)<<24) |
                     ((src0Op.vopMods&VOPOP_SEXT) ? (1U<<19) : 0) |
                     ((src0Op.vopMods&VOPOP_NEG) ? (1U<<20) : 0) |
-                    ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0));
+                    ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0) |
+                    (src0Op.range.isNonVGPR() ? (1U<<23) : 0) |
+                    ((modifiers & 3) << 14));
         else if (extraMods.needDPP)
             SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) | (extraMods.dppCtrl<<8) | 
                     ((modifiers&VOP3_BOUNDCTRL) ? (1U<<19) : 0) |
@@ -1969,8 +2000,8 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
                 gcnVOPEnc!=GCNVOPEnc::NORMAL))
     {   /* if VOP_SDWA or VOP_DPP is required */
-        if (!checkGCNVOPExtraModifers(asmr, needImm, sextFlags, vop3, gcnVOPEnc, src0Op,
-                    extraMods, instrPlace))
+        if (!checkGCNVOPExtraModifers(asmr, arch, needImm, sextFlags, vop3,
+                    gcnVOPEnc, src0Op, extraMods, instrPlace))
             return false;
         gcnAsm->instrRVUs[1].regField = GCNFIELD_DPPSDWA_SRC0;
     }

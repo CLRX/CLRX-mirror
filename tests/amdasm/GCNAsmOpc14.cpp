@@ -263,5 +263,21 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         0xc2ae0c9eU, 0x5b, true, true, "" },
     { "        s_atomic_dec_x2 s[50:51], s[60:61], 0x5b\n",
         0xc2b20c9eU, 0x5b, true, true, "" },
+    /* SDWA encoding */
+    { "   v_cndmask_b32   v154, v0, v107, vcc dst_sel:byte0 src0_sel:byte0 src1_sel:byte0",
+        0x0134d6f9U, 0, true, true, "" },
+    { "   v_cndmask_b32   v154, v0, v107, vcc "
+        "mul:4 dst_sel:byte0 src0_sel:byte0 src1_sel:byte0",
+        0x0134d6f9U, 0x8000, true, true, "" },
+    { "v_add_f32   v154, v61, v107 dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n",
+        0x0334d6f9U, 0x0000003dU, true, true, "" },
+    { "v_add_f32   v154, v61, vcc_hi dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n",
+        0x0334d6f9U, 0x8000003dU, true, true, "" },
+    { "v_add_f32   v154, s61, v107 dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n",
+        0x0334d6f9U, 0x0080003dU, true, true, "" },
+    { "v_cndmask_b32   v154, sext(-abs(v65)), v107, vcc mul:2",
+        0x0134d6f9U, 0x063e4641U, true, true, "" },
+    { "v_add_f32   v154, sext(-abs(v65)), vcc_hi",
+        0x0334d6f9U, 0x863e0641U, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
