@@ -217,6 +217,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
     { 0x6934d715U, 0, false, "        v_add_u32       v154, v21, v107\n" },
     { 0x6b34d715U, 0, false, "        v_sub_u32       v154, v21, v107\n" },
     { 0x6d34d715U, 0, false, "        v_subrev_u32    v154, v21, v107\n" },
+    { 0xd1340037U, 0x0002b41bU, true, "        v_add_u32       v55, s27, v90 vop3\n" },
+    { 0xd1350037U, 0x0002b41bU, true, "        v_sub_u32       v55, s27, v90 vop3\n" },
+    { 0xd1360037U, 0x0002b41bU, true, "        v_subrev_u32    v55, s27, v90 vop3\n" },
     /* VOP1 instructions */
     { 0x7f3c6d4fU, 0, false, "        v_mov_prsv_b32  v158, v79\n" },
     { 0x7f3c6f4fU, 0, false, "        v_screen_partition_4se_b32 v158, v79\n" },
