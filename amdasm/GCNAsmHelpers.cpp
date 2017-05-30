@@ -1000,7 +1000,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             return parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
                              instrOpMask & ~INSTROP_VOP3MODS, regField);
         
-        if ((arch & ARCH_GCN_1_2_4)!=0 && (instrOpMask & INSTROP_NOSEXT)==0 &&
+        if ((arch & ARCH_GCN_1_2_4)!=0 &&
+            (instrOpMask & (INSTROP_NOSEXT|INSTROP_VOP3P))==0 &&
             linePtr+4 <= end && toLower(linePtr[0])=='s' &&
             toLower(linePtr[1])=='e' && toLower(linePtr[2])=='x' &&
             toLower(linePtr[3])=='t')
@@ -1026,7 +1027,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             skipCharAndSpacesToEnd(linePtr, end);
         }
         bool llvmAbs = false;
-        if (linePtr+3 <= end && toLower(linePtr[0])=='a' &&
+        if (linePtr+3 <= end && (instrOpMask & INSTROP_VOP3P)==0 &&
+            toLower(linePtr[0])=='a' &&
             toLower(linePtr[1])=='b' && toLower(linePtr[2])=='s')
         {
             linePtr += 3;
@@ -1580,8 +1582,7 @@ static const size_t vopSDWADSTSelNamesNum = sizeof(vopSDWADSTSelNamesMap)/
  * withSDWAOperands - specify number of operand for that modifier will be parsed */
 bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                 uint16_t arch, cxbyte& mods, VOPOpModifiers& opMods, cxuint modOperands,
-                VOPExtraModifiers* extraMods, bool withClamp, cxuint withSDWAOperands,
-                bool withSext, bool withOpSel)
+                VOPExtraModifiers* extraMods, cxuint flags, cxuint withSDWAOperands)
 {
     const char* end = asmr.line+asmr.lineSize;
     //bool haveSDWAMod = false, haveDPPMod = false;
@@ -1591,6 +1592,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
     bool haveBoundCtrl = false, haveDppCtrl = false;
     bool haveNeg = false, haveAbs = false;
     bool haveSext = false, haveOpsel = false;
+    bool haveNegHi = false, haveOpselHi = false;
     
     if (extraMods!=nullptr)
         *extraMods = { 6, 0, cxbyte((withSDWAOperands>=2)?6:0),
@@ -1601,6 +1603,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
     const char* modsPlace = linePtr;
     bool good = true;
     mods = 0;
+    const bool vop3p = (flags & PARSEVOP_VOP3P)!=0;
     while (linePtr != end)
     {
         skipSpacesToEnd(linePtr, end);
@@ -1614,7 +1617,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
             try
             {
                 bool alreadyModDefined = false;
-                if (::strcmp(mod, "mul")==0)
+                if (!vop3p && ::strcmp(mod, "mul")==0)
                 {
                     skipSpacesToEnd(linePtr, end);
                     if (linePtr!=end && *linePtr==':')
@@ -1643,7 +1646,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         good = false;
                     }
                 }
-                else if (::strcmp(mod, "div")==0)
+                else if (!vop3p && ::strcmp(mod, "div")==0)
                 {
                     skipSpacesToEnd(linePtr, end);
                     if (linePtr!=end && *linePtr==':')
@@ -1667,7 +1670,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         good = false;
                     }
                 }
-                else if (::strcmp(mod, "omod")==0)
+                else if (!vop3p && ::strcmp(mod, "omod")==0)
                 {
                     skipSpacesToEnd(linePtr, end);
                     if (linePtr!=end && *linePtr==':')
@@ -1689,7 +1692,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                 {
                     bool clamp = false;
                     good &= parseModEnable(asmr, linePtr, clamp, "clamp modifier");
-                    if (withClamp)
+                    if (flags & PARSEVOP_WITHCLAMP)
                         mods = (mods & ~VOP3_CLAMP) | (clamp ? VOP3_CLAMP : 0);
                     else
                     {
@@ -1697,7 +1700,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         good = false;
                     }
                 }
-                else if (modOperands>1 && ::strcmp(mod, "abs")==0)
+                else if (!vop3p && modOperands>1 && ::strcmp(mod, "abs")==0)
                 {
                     uint32_t absVal = 0;
                     if (linePtr!=end && *linePtr==':')
@@ -1715,7 +1718,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     else
                         good = false;
                 }
-                else if (modOperands>1 && ::strcmp(mod, "neg")==0)
+                else if (modOperands>1 && (::strcmp(mod, "neg")==0 ||
+                        (vop3p && ::strcmp(mod, "neg_lo")==0)))
                 {
                     uint32_t negVal = 0;
                     if (linePtr!=end && *linePtr==':')
@@ -1724,7 +1728,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         if (parseImmWithBoolArray(asmr, linePtr, negVal, modOperands-1,
                                         WS_UNSIGNED))
                         {
-                            opMods.negMod = negVal;
+                            opMods.negMod = (opMods.negMod&0xf0) | negVal;
                             if (haveNeg)
                                 asmr.printWarning(modPlace, "Neg is already defined");
                             haveNeg = true;
@@ -1733,7 +1737,26 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     else
                         good = false;
                 }
-                else if ((arch & ARCH_GCN_1_2_4) && withSext &&
+                else if (modOperands>1 && vop3p && ::strcmp(mod, "neg_hi")==0)
+                {
+                    uint32_t negVal = 0;
+                    if (linePtr!=end && *linePtr==':')
+                    {
+                        linePtr++;
+                        if (parseImmWithBoolArray(asmr, linePtr, negVal, modOperands-1,
+                                        WS_UNSIGNED))
+                        {
+                            opMods.negMod = (opMods.negMod&15) | (negVal<<4);
+                            if (haveNegHi)
+                                asmr.printWarning(modPlace, "Neg_hi is already defined");
+                            haveNegHi = true;
+                        }
+                    }
+                    else
+                        good = false;
+                }
+                else if (!vop3p &&(arch & ARCH_GCN_1_2_4) &&
+                        (flags & PARSEVOP_WITHSEXT)!=0 &&
                          modOperands>1 && ::strcmp(mod, "sext")==0)
                 {
                     uint32_t sextVal = 0;
@@ -1752,19 +1775,40 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     else
                         good = false;
                 }
-                else if (withOpSel && modOperands>1 && ::strcmp(mod, "op_sel")==0)
+                else if ((flags & PARSEVOP_WITHOPSEL) != 0 && modOperands>1 &&
+                            ::strcmp(mod, "op_sel")==0)
                 {
                     uint32_t opselVal = 0;
                     if (linePtr!=end && *linePtr==':')
                     {
                         linePtr++;
-                        if (parseImmWithBoolArray(asmr, linePtr, opselVal, modOperands,
+                        if (parseImmWithBoolArray(asmr, linePtr, opselVal,
+                                (vop3p ? modOperands-1 : modOperands),
                                     WS_UNSIGNED))
                         {
-                            opMods.opselMod = opselVal;
+                            opMods.opselMod = (opMods.opselMod&0xf0) | opselVal;
                             if (haveOpsel)
                                 asmr.printWarning(modPlace, "Opsel is already defined");
                             haveOpsel = true;
+                        }
+                    }
+                    else
+                        good = false;
+                }
+                else if (vop3p && (flags & PARSEVOP_WITHOPSEL) != 0 && modOperands>1 &&
+                            ::strcmp(mod, "op_sel_hi")==0)
+                {
+                    uint32_t opselVal = 0;
+                    if (linePtr!=end && *linePtr==':')
+                    {
+                        linePtr++;
+                        if (parseImmWithBoolArray(asmr, linePtr, opselVal, modOperands-1,
+                                    WS_UNSIGNED))
+                        {
+                            opMods.opselMod = (opMods.opselMod&15) | (opselVal<<4);
+                            if (haveOpselHi)
+                                asmr.printWarning(modPlace, "Opsel_hi is already defined");
+                            haveOpselHi = true;
                         }
                     }
                     else

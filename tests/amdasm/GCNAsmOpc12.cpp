@@ -679,6 +679,8 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "    v_mov_b32_sdwa  v158, v79", 0x7f3c02f9U, 0x6064f, true, true, "" },
     { "    v_mov_b32  v158, sext(abs(v79))", 0x7f3c02f9U, 0x2e064fU, true, true, "" },
     { "    v_mov_b32  v158, sext(-abs(v79))", 0x7f3c02f9U, 0x3e064fU, true, true, "" },
+    { "    v_mov_b32  v158, v79 abs:1 neg:1 sext:1",
+        0x7f3c02f9U, 0x3e064fU, true, true, "" },
     { "    v_mov_b32  v158, v79 dst_sel:w1 src0_sel:b2 dst_un:preserve",
         0x7f3c02f9U, 0x02154fU, true, true, "" },
     { "    v_mov_b32  v158, v79 dst_sel:w1 src0_sel:b2 dst_un:preserve clamp",

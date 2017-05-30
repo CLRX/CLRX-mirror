@@ -58,6 +58,7 @@ enum : Flags {
     INSTROP_WRITE = 0x20000,
     INSTROP_ACCESS_MASK = 0x30000,
     INSTROP_NOSEXT = 0x40000,
+    INSTROP_VOP3P = 0x80000, // VOP3P encoding
     
     // for parseSRregRange/parseVRegRange
     INSTROP_SYMREGRANGE = 1
@@ -128,7 +129,7 @@ struct CLRX_INTERNAL GCNOperand
 };
 
 struct CLRX_INTERNAL VOPExtraModifiers
-{   // TODO: check that for MSVC 2015
+{
     cxbyte dstSel;
     cxbyte dstUnused;
     cxbyte src0Sel;
@@ -143,9 +144,9 @@ struct CLRX_INTERNAL VOPExtraModifiers
 struct CLRX_INTERNAL VOPOpModifiers
 {
     cxbyte absMod;
-    cxbyte negMod;
+    cxbyte negMod; // lo (low 4-bits) and hi (high 4-bits)
     cxbyte sextMod;
-    cxbyte opselMod;
+    cxbyte opselMod; // lo (low 4-bits) and hi (high 4-bits)
 };
 
 enum class GCNEncSize
@@ -160,6 +161,13 @@ enum class GCNVOPEnc
     NORMAL,
     DPP,
     SDWA
+};
+
+enum {
+    PARSEVOP_WITHCLAMP = 1,
+    PARSEVOP_WITHSEXT = 2,
+    PARSEVOP_WITHOPSEL = 4,
+    PARSEVOP_VOP3P = 8
 };
 
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
@@ -216,9 +224,9 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
      * (includes destination at begin) */
     static bool parseVOPModifiers(Assembler& asmr, const char*& linePtr, uint16_t arch,
                        cxbyte& mods, VOPOpModifiers& opMods, cxuint modOperands,
-                       VOPExtraModifiers* extraMods = nullptr, bool withClamp = true,
-                       cxuint withSDWAOperands = 3, bool withSext = true,
-                       bool withOpSel = false);
+                       VOPExtraModifiers* extraMods = nullptr,
+                       cxuint flags = PARSEVOP_WITHCLAMP|PARSEVOP_WITHSEXT,
+                       cxuint withSDWAOperands = 3);
     
     static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
                std::unique_ptr<AsmExpression>* outTargetExpr, uint16_t arch,
