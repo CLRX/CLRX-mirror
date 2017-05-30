@@ -3088,6 +3088,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         asmr.printError(instrPlace, "Only 64-bit size for MIMG encoding");
         return false;
     }
+    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
     bool good = true;
     RegRange vaddrReg(0, 0);
     RegRange vdataReg(0, 0);
@@ -3139,7 +3140,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     bool haveTfe = false, haveSlc = false, haveGlc = false;
     bool haveDa = false, haveR128 = false, haveLwe = false, haveUnorm = false;
-    bool haveDMask = false, haveD16 = false;
+    bool haveDMask = false, haveD16 = false, haveA16 = false;
     cxbyte dmask = 0x1;
     /* modifiers and modifiers */
     while(linePtr!=end)
@@ -3207,8 +3208,10 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 good &= parseModEnable(asmr, linePtr, haveGlc, "glc modifier");
             else if (::strcmp(name, "lwe")==0)
                 good &= parseModEnable(asmr, linePtr, haveLwe, "lwe modifier");
-            else if (::strcmp(name, "r128")==0)
+            else if (!isGCN14 && ::strcmp(name, "r128")==0)
                 good &= parseModEnable(asmr, linePtr, haveR128, "r128 modifier");
+            else if (isGCN14 && ::strcmp(name, "a16")==0)
+                good &= parseModEnable(asmr, linePtr, haveA16, "a16 modifier");
             else
             {
                 asmr.printError(modPlace, "Unknown MIMG modifier");
@@ -3305,7 +3308,8 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     uint32_t words[2];
     SLEV(words[0], 0xf0000000U | (uint32_t(dmask&0xf)<<8) | (haveUnorm ? 0x1000U : 0) |
-        (haveGlc ? 0x2000U : 0) | (haveDa ? 0x4000U : 0) | (haveR128 ? 0x8000U : 0) |
+        (haveGlc ? 0x2000U : 0) | (haveDa ? 0x4000U : 0) |
+        (haveR128|haveA16 ? 0x8000U : 0) |
         (haveTfe ? 0x10000U : 0) | (haveLwe ? 0x20000U : 0) |
         (uint32_t(gcnInsn.code1)<<18) | (haveSlc ? (1U<<25) : 0));
     SLEV(words[1], (vaddrReg.bstart()&0xff) | (uint32_t(vdataReg.bstart()&0xff)<<8) |
