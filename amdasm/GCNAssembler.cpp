@@ -3165,10 +3165,10 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 good &= parseModEnable(asmr, linePtr, haveD16, "d16 modifier");
             else if (::strcmp(name+1, "mask")==0)
             {
-                // parse offset
+                // parse dmask
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr!=end && *linePtr==':')
-                {   /* parse offset immediate */
+                {   /* parse dmask immediate */
                     skipCharAndSpacesToEnd(linePtr, end);
                     const char* valuePlace = linePtr;
                     uint64_t value;
