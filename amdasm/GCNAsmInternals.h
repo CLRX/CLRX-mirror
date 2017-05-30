@@ -145,6 +145,7 @@ struct CLRX_INTERNAL VOPOpModifiers
     cxbyte absMod;
     cxbyte negMod;
     cxbyte sextMod;
+    cxbyte opselMod;
 };
 
 enum class GCNEncSize
@@ -216,7 +217,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool parseVOPModifiers(Assembler& asmr, const char*& linePtr, uint16_t arch,
                        cxbyte& mods, VOPOpModifiers& opMods, cxuint modOperands,
                        VOPExtraModifiers* extraMods = nullptr, bool withClamp = true,
-                       cxuint withSDWAOperands = 3, bool withSext = true);
+                       cxuint withSDWAOperands = 3, bool withSext = true,
+                       bool withOpSel = false);
     
     static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
                std::unique_ptr<AsmExpression>* outTargetExpr, uint16_t arch,

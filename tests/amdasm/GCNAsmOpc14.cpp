@@ -399,5 +399,21 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
     { "v_sub_i16       v55, v27, v90\n", 0xd29f0037U, 0x0002b51bU, true, true, "" },
     { "v_pack_b32_f16  v55, v27, v90\n", 0xd2a00037U, 0x0002b51bU, true, true, "" },
     /* VOP3 op_sel */
+    { "v_interp_p2_legacy_f16 v42, v1, attr39.z, s29 op_sel:[1,1,1,1]\n",
+        0xd276782aU, 0x007602a7, true, true, "" },
+    { "v_interp_p2_legacy_f16 v42, v1, attr39.z, s29 op_sel:15\n",
+        0xd276782aU, 0x007602a7, true, true, "" },
+    { "v_interp_p2_legacy_f16 v42, v1, attr39.z, s29 op_sel:[0,1,1,1]\n",
+        0xd276702aU, 0x007602a7, true, true, "" },
+    { "v_interp_p2_legacy_f16 v42, v1, attr39.z, s29 op_sel:14\n",
+        0xd276702aU, 0x007602a7, true, true, "" },
+    { "v_interp_p2_legacy_f16 v42, v1, attr39.z, s29 op_sel:[1,0,0,1]\n",
+        0xd276482aU, 0x007602a7, true, true, "" },
+    { "v_interp_p2_legacy_f16 v42, v1, attr39.z, s29 op_sel:9\n",
+        0xd276482aU, 0x007602a7, true, true, "" },
+    { "v_alignbit_b32  v55, v79, v166, v229 op_sel:[1,1,0,1]\n",
+        0xd1ce5837U, 0x07974d4fU, true, true, "" },
+    { "v_alignbit_b32  v55, v79, v166, v229 op_sel:0xb\n",
+        0xd1ce5837U, 0x07974d4fU, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };

@@ -2122,6 +2122,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
+    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
     if (gcnVOPEnc!=GCNVOPEnc::NORMAL)
     {
         asmr.printError(instrPlace, "DPP and SDWA encoding is illegal for VOP3");
@@ -2141,6 +2142,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const Flags vop3Mods = (gcnInsn.encoding == GCNENC_VOP3B) ?
             INSTROP_VOP3NEG : INSTROP_VOP3MODS | INSTROP_NOSEXT;
     
+    VOPOpModifiers opMods{};
     cxuint operands = 1;
     if (mode1 != GCN_VOP_ARG_NONE)
     {
@@ -2210,6 +2212,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             }
             // high and vop3
             const char* end = asmr.line+asmr.lineSize;
+            bool haveOpsel = false;
             while (true)
             {
                 skipSpacesToEnd(linePtr, end);
@@ -2226,6 +2229,24 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                     bool vop3Mod = false;
                     good &= parseModEnable(asmr, linePtr, vop3Mod, "vop3 modifier");
                     modifiers = (modifiers & ~VOP3_VOP3) | (vop3Mod ? VOP3_VOP3 : 0);
+                }
+                else if (::strcmp(modName, "op_sel")==0)
+                {
+                    uint32_t opselVal = 0;
+                    if (linePtr!=end && *linePtr==':')
+                    {
+                        linePtr++;
+                        if (parseImmWithBoolArray(asmr, linePtr, opselVal, 4, WS_UNSIGNED))
+                        {
+                            opMods.opselMod = opselVal;
+                            if (haveOpsel)
+                                asmr.printWarning(modPlace, "Opsel is already defined");
+                            haveOpsel = true;
+                            opMods.opselMod = opselVal;
+                        }
+                    }
+                    else
+                        good = false;
                 }
                 else
                 {
@@ -2269,10 +2290,10 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
     }
     // modifiers
-    VOPOpModifiers opMods{};
     if (mode2 != GCN_VOP3_VINTRP)
         good &= parseVOPModifiers(asmr, linePtr, arch, modifiers, opMods, operands,
-                    nullptr, isGCN12 || gcnInsn.encoding!=GCNENC_VOP3B, 3, false);
+                    nullptr, isGCN12 || gcnInsn.encoding!=GCNENC_VOP3B, 3, false,
+                    isGCN14 && (gcnInsn.mode & GCN_VOP3_OPSEL) != 0);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     
@@ -2347,7 +2368,8 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 (dstReg.bstart()&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000: 0) |
                 ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
                 ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0) |
-                ((src2Op.vopMods & VOPOP_ABS) ? 0x400 : 0));
+                ((src2Op.vopMods & VOPOP_ABS) ? 0x400 : 0) |
+                ((opMods.opselMod&15) << 11));
         else // VINTRP
         {
             SLEV(words[0], 0xd4000000U | (src1Op.range.bstart()&0xff) |

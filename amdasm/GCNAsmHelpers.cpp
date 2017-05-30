@@ -1581,7 +1581,7 @@ static const size_t vopSDWADSTSelNamesNum = sizeof(vopSDWADSTSelNamesMap)/
 bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                 uint16_t arch, cxbyte& mods, VOPOpModifiers& opMods, cxuint modOperands,
                 VOPExtraModifiers* extraMods, bool withClamp, cxuint withSDWAOperands,
-                bool withSext)
+                bool withSext, bool withOpSel)
 {
     const char* end = asmr.line+asmr.lineSize;
     //bool haveSDWAMod = false, haveDPPMod = false;
@@ -1590,7 +1590,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
     bool haveBankMask = false, haveRowMask = false;
     bool haveBoundCtrl = false, haveDppCtrl = false;
     bool haveNeg = false, haveAbs = false;
-    bool haveSext = false;
+    bool haveSext = false, haveOpsel = false;
     
     if (extraMods!=nullptr)
         *extraMods = { 6, 0, cxbyte((withSDWAOperands>=2)?6:0),
@@ -1747,6 +1747,24 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             if (haveSext)
                                 asmr.printWarning(modPlace, "Sext is already defined");
                             haveSext = true;
+                        }
+                    }
+                    else
+                        good = false;
+                }
+                else if (withOpSel && modOperands>1 && ::strcmp(mod, "op_sel")==0)
+                {
+                    uint32_t opselVal = 0;
+                    if (linePtr!=end && *linePtr==':')
+                    {
+                        linePtr++;
+                        if (parseImmWithBoolArray(asmr, linePtr, opselVal, modOperands,
+                                    WS_UNSIGNED))
+                        {
+                            opMods.opselMod = opselVal;
+                            if (haveOpsel)
+                                asmr.printWarning(modPlace, "Opsel is already defined");
+                            haveOpsel = true;
                         }
                     }
                     else
