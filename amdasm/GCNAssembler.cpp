@@ -3503,6 +3503,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         asmr.printError(instrPlace, "Only 64-bit size for FLAT encoding");
         return false;
     }
+    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
     bool good = true;
     RegRange vaddrReg(0, 0);
     RegRange vdstReg(0, 0);
@@ -3552,25 +3553,44 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                                true, INSTROP_SYMREGRANGE|INSTROP_READ);
     }
     
+    uint16_t instOffset = 0;
+    std::unique_ptr<AsmExpression> instOffsetExpr;
     bool haveTfe = false, haveSlc = false, haveGlc = false;
+    bool haveNv = false, haveLds = false, haveInstOffset = false;
     while(linePtr!=end)
     {
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end)
             break;
-        char name[10];
+        char name[20];
         const char* modPlace = linePtr;
-        if (!getNameArgS(asmr, 10, name, linePtr, "FLAT modifier"))
+        if (!getNameArgS(asmr, 20, name, linePtr, "FLAT modifier"))
         {
             good = false;
             continue;
         }
-        if (::strcmp(name, "tfe") == 0)
+        if (!isGCN14 && ::strcmp(name, "tfe") == 0)
             good &= parseModEnable(asmr, linePtr, haveTfe, "tfe modifier");
+        else if (isGCN14 && ::strcmp(name, "nv") == 0)
+            good &= parseModEnable(asmr, linePtr, haveNv, "nv modifier");
+        else if (isGCN14 && ::strcmp(name, "lds") == 0)
+            good &= parseModEnable(asmr, linePtr, haveLds, "lds modifier");
         else if (::strcmp(name, "glc") == 0)
             good &= parseModEnable(asmr, linePtr, haveGlc, "glc modifier");
         else if (::strcmp(name, "slc") == 0)
             good &= parseModEnable(asmr, linePtr, haveSlc, "slc modifier");
+        else if (isGCN14 && ::strcmp(name, "inst_offset")==0)
+        {
+            if (parseModImm(asmr, linePtr, instOffset, &instOffsetExpr, "inst_offset",
+                            12, WS_UNSIGNED))
+            {
+                if (haveInstOffset)
+                    asmr.printWarning(modPlace, "InstOffset is already defined");
+                haveInstOffset = true;
+            }
+            else
+                good = false;
+        }
         else
         {
             asmr.printError(modPlace, "Unknown FLAT modifier");
@@ -3615,14 +3635,20 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     
+    if (instOffsetExpr!=nullptr)
+        instOffsetExpr->setTarget(AsmExprTarget(GCNTGT_INSTOFFSET, asmr.currentSection,
+                    output.size()));
+    
     uint32_t words[2];
     SLEV(words[0], 0xdc000000U | (haveGlc ? 0x10000 : 0) | (haveSlc ? 0x20000: 0) |
-            (uint32_t(gcnInsn.code1)<<18));
+            (uint32_t(gcnInsn.code1)<<18) | (haveLds ? 0x2000U : 0) | instOffset);
     SLEV(words[1], (vaddrReg.start&0xff) | (uint32_t(vdataReg.start&0xff)<<8) |
-            (haveTfe ? (1U<<23) : 0) | (uint32_t(vdstReg.start&0xff)<<24));
+            (haveTfe|haveNv ? (1U<<23) : 0) | (uint32_t(vdstReg.start&0xff)<<24));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + 2));
+    
+    instOffsetExpr.release();
     // update register pool
     if (vdstReg && !vdstReg.isRegVar() && (dstToWrite || haveTfe))
         updateVGPRsNum(gcnRegs.vgprsNum, vdstReg.end-257);
@@ -3900,6 +3926,16 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             sectionData[offset] = (sectionData[offset]&0x3f) | ((value<<6)&0xff);
             sectionData[offset+1] = (sectionData[offset+1]&0xe0) | ((value>>2)&0x1f);
             printWarningForRange(7, value, sourcePos, WS_UNSIGNED);
+            return true;
+        case GCNTGT_INSTOFFSET:
+            if (sectionId != ASMSECT_ABS)
+            {
+                printError(sourcePos, "Relative value is illegal in offset expressions");
+                return false;
+            }
+            sectionData[offset] = value;
+            sectionData[offset+1] = (sectionData[offset+1]&0xf0) | ((value&0xf00)>>8);
+            printWarningForRange(12, value, sourcePos, WS_UNSIGNED);
             return true;
         default:
             return false;

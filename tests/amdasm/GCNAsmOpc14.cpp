@@ -632,5 +632,30 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         "unorm glc a16 da\n", 0xf128fb00U, 0x00159d79U, true, true, "" },
     { "image_gather8h_pck v[157:160], v[121:124], s[84:91], s[0:3] dmask:11 "
         "unorm glc a16 da\n", 0xf12cfb00U, 0x00159d79U, true, true, "" },
+    /* FLAT encoding */
+    { "flat_load_ubyte v47, v[187:188] nv\n", 0xdc400000U, 0x2f8000bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188]\n", 0xdc400000U, 0x2f0000bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188] lds\n", 0xdc402000U, 0x2f0000bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188] inst_offset:529\n",
+        0xdc400211U, 0x2f0000bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188] inst_offset:zzz\nzzz=529\n",
+        0xdc400211U, 0x2f0000bbU, true, true, "" },
+    /* FLAT instructions */
+    { "flat_store_byte_d16_hi " "v[187:188], v65 glc slc nv\n",
+        0xdc670000U, 0x008041bbU, true, true, "" },
+    { "flat_store_short_d16_hi " "v[187:188], v65 glc slc nv\n",
+        0xdc6f0000U, 0x008041bbU, true, true, "" },
+    { "flat_load_ubyte_d16 " "v47, v[187:188] glc slc nv\n",
+        0xdc830000U, 0x2f8000bbU, true, true, "" },
+    { "flat_load_ubyte_d16_hi " "v47, v[187:188] glc slc nv\n",
+        0xdc870000U, 0x2f8000bbU, true, true, "" },
+    { "flat_load_sbyte_d16 " "v47, v[187:188] glc slc nv\n",
+        0xdc8b0000U, 0x2f8000bbU, true, true, "" },
+    { "flat_load_sbyte_d16_hi " "v47, v[187:188] glc slc nv\n",
+        0xdc8f0000U, 0x2f8000bbU, true, true, "" },
+    { "flat_load_short_d16 " "v47, v[187:188] glc slc nv\n",
+        0xdc930000U, 0x2f8000bbU, true, true, "" },
+    { "flat_load_short_d16_hi " "v47, v[187:188] glc slc nv\n",
+        0xdc970000U, 0x2f8000bbU, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };

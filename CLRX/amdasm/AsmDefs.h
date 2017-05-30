@@ -67,7 +67,8 @@ enum : AsmExprTargetType
     GCNTGT_SOPCIMM8,
     GCNTGT_SMEMIMM,
     GCNTGT_SMEMOFFSETVEGA,
-    GCNTGT_SMEMOFFSET2 // RXVEGA first soffset
+    GCNTGT_SMEMOFFSET2, // RXVEGA first soffset
+    GCNTGT_INSTOFFSET
 };
 
 /*
