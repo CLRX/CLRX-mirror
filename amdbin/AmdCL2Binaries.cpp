@@ -948,13 +948,16 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
                 uint32_t major = ULEV(content[1]);
                 if (knownGPUType)
                 {
-                    if ((arch==GPUArchitecture::GCN1_2 && major!=8) ||
+                    if ((arch==GPUArchitecture::GCN1_2 && major<8) ||
                         (arch==GPUArchitecture::GCN1_1 && major!=7))
                         throw Exception("Wrong arch major for GPU architecture");
+                    // fix for GFX900 - we don't know what is type of device
+                    if (arch==GPUArchitecture::GCN1_2 && major!=8)
+                        knownGPUType = false;
                 }
                 else if (major != 9 && major != 8 && major != 7)
                     throw Exception("Unknown arch major");
-                    
+                
                 if (!knownGPUType)
                 {
                     arch = (major == 7) ? GPUArchitecture::GCN1_1 :
