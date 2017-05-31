@@ -1002,9 +1002,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         
         if ((arch & ARCH_GCN_1_2_4)!=0 &&
             (instrOpMask & (INSTROP_NOSEXT|INSTROP_VOP3P))==0 &&
-            linePtr+4 <= end && toLower(linePtr[0])=='s' &&
-            toLower(linePtr[1])=='e' && toLower(linePtr[2])=='x' &&
-            toLower(linePtr[3])=='t')
+            linePtr+4 <= end && strncasecmp(linePtr, "sext", 4)==0)
         {   /* sext */
             linePtr += 4;
             skipSpacesToEnd(linePtr, end);

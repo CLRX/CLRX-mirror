@@ -3528,9 +3528,8 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             return false;
         skipSpacesToEnd(linePtr, end);
         if (flatMode == GCN_FLAT_SCRATCH && linePtr+3<end &&
-            toLower(linePtr[0])=='o' && toLower(linePtr[1])=='f' &&
-            toLower(linePtr[2])=='f' && (linePtr+3==end || !isAlnum(linePtr[3])))
-        { // if off
+            strncasecmp(linePtr, "off", 3)==0 && (linePtr+3==end || !isAlnum(linePtr[3])))
+        { // // if 'off' word
             vaddrOff = true;
             linePtr+=3;
         }
@@ -3546,9 +3545,8 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         skipSpacesToEnd(linePtr, end);
         if (flatMode == GCN_FLAT_SCRATCH && linePtr+3<end &&
-            toLower(linePtr[0])=='o' && toLower(linePtr[1])=='f' &&
-            toLower(linePtr[2])=='f' && (linePtr+3==end || !isAlnum(linePtr[3])))
-        { // if off
+            strncasecmp(linePtr, "off", 3)==0 && (linePtr+3==end || !isAlnum(linePtr[3])))
+        { // if 'off' word
             vaddrOff = true;
             linePtr+=3;
         }
@@ -3586,10 +3584,9 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!skipRequiredComma(asmr, linePtr))
             return false;
         skipSpacesToEnd(linePtr, end);
-        if (flatMode != 0 && linePtr+3<end &&
-            toLower(linePtr[0])=='o' && toLower(linePtr[1])=='f' &&
-            toLower(linePtr[2])=='f' && (linePtr+3==end || !isAlnum(linePtr[3])))
-        { // if off
+        if (flatMode != 0 && linePtr+3<end && strncasecmp(linePtr, "off", 3)==0 &&
+            (linePtr+3==end || !isAlnum(linePtr[3])))
+        {  // if 'off' word
             saddrOff = true;
             linePtr+=3;
         }

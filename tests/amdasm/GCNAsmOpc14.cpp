@@ -717,7 +717,7 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         0xdc934000U, 0x2f3100ffU, true, true, "" },
     { "scratch_load_short_d16_hi v47, off, s49 glc slc\n",
         0xdc974000U, 0x2f3100ffU, true, true, "" },
-    /* FLAT GLOBAL scope */
+    /* FLAT GLOBAL encoding */
     { "global_load_ubyte v47, v[187:188], s[50:51] glc slc\n",
         0xdc438000U, 0x2f3200bbU, true, true, "" },
     { "global_load_ubyte v47, v[187:188], off glc slc\n",
