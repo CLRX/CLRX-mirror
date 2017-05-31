@@ -2589,7 +2589,7 @@ void GCNDisasmUtils::printFLATAddr(cxuint flatMode, char*& bufPtr, uint32_t insn
         decodeGCNVRegOperand(vaddr, 2, bufPtr); // addr
     else if (flatMode == GCN_FLAT_SCRATCH)
     {
-        if (((insnCode2>>16)&0xff) == 0xff)
+        if (((insnCode2>>16)&0x7f) == 0x7f)
             decodeGCNVRegOperand(vaddr, 1, bufPtr); // addr
         else // no vaddr
             putChars(bufPtr, "off", 3);
@@ -2650,8 +2650,8 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     {
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
-        cxuint saddr = (insnCode2>>16)&0xff;
-        if (saddr != 0xff)
+        cxuint saddr = (insnCode2>>16)&0x7f;
+        if ((saddr&0x7f) != 0x7f)
             decodeGCNOperandNoLit(dasm, saddr, flatMode == GCN_FLAT_SCRATCH ? 1 : 2,
                         bufPtr, arch, FLTLIT_NONE);
         else // off

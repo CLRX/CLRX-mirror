@@ -3607,9 +3607,9 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     
     if (saddrOff)
-        saddrReg.start = 0xff;
+        saddrReg.start = 0x7f;
     if (vaddrOff)
-        vaddrReg.start = 0xff;
+        vaddrReg.start = 0x00;
     
     uint16_t instOffset = 0;
     std::unique_ptr<AsmExpression> instOffsetExpr;

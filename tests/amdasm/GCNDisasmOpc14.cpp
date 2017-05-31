@@ -563,6 +563,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
         "        global_load_ubyte v47, v[187:188], s[49:50] glc slc\n" },
     { 0xdc438000U, 0x2fff00bbU, true,
         "        global_load_ubyte v47, v[187:188], off glc slc\n" },
+    { 0xdc438000U, 0x2f7f00bbU, true,
+        "        global_load_ubyte v47, v[187:188], off glc slc\n" },
     { 0xdc438413U, 0x2f3100bbU, true, "        global_load_ubyte "
         "v47, v[187:188], s[49:50] inst_offset:1043 glc slc\n" },
     { 0xdc439413U, 0x2f3100bbU, true, "        global_load_ubyte "
