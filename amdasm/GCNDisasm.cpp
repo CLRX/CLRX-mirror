@@ -2674,7 +2674,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         putChars(bufPtr, " glc", 4);
     if (insnCode & 0x20000U)
         putChars(bufPtr, " slc", 4);
-    if (flatMode==0 && insnCode2 & 0x800000U)
+    if (insnCode2 & 0x800000U)
     {
         if (!isGCN14)
             putChars(bufPtr, " tfe", 4);
