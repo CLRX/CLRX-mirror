@@ -3504,15 +3504,18 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         return false;
     }
     const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
+    const cxuint flatMode = (gcnInsn.mode & GCN_FLAT_MODEMASK);
     bool good = true;
     RegRange vaddrReg(0, 0);
     RegRange vdstReg(0, 0);
     RegRange vdataReg(0, 0);
+    RegRange saddrReg(0, 0);
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     skipSpacesToEnd(linePtr, end);
     const char* vdstPlace = nullptr;
     
+    bool vaddrOff = false;
     const cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
@@ -3523,15 +3526,39 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                         INSTROP_SYMREGRANGE|INSTROP_WRITE);
         if (!skipRequiredComma(asmr, linePtr))
             return false;
-        gcnAsm->setCurrentRVU(1);
-        good &= parseVRegRange(asmr, linePtr, vaddrReg, 2, GCNFIELD_FLAT_ADDR, true,
-                        INSTROP_SYMREGRANGE|INSTROP_READ);
+        skipSpacesToEnd(linePtr, end);
+        if (flatMode == GCN_FLAT_SCRATCH && linePtr+3<end &&
+            toLower(linePtr[0])=='o' && toLower(linePtr[1])=='f' &&
+            toLower(linePtr[2])=='f' && (linePtr+3==end || !isAlnum(linePtr[3])))
+        { // if off
+            vaddrOff = true;
+            linePtr+=3;
+        }
+        else
+        {
+            gcnAsm->setCurrentRVU(1);
+            good &= parseVRegRange(asmr, linePtr, vaddrReg,
+                    (flatMode != GCN_FLAT_SCRATCH ? 2 : 1), GCNFIELD_FLAT_ADDR, true,
+                    INSTROP_SYMREGRANGE|INSTROP_READ);
+        }
     }
     else
     {
-        gcnAsm->setCurrentRVU(1);
-        good &= parseVRegRange(asmr, linePtr, vaddrReg, 2, GCNFIELD_FLAT_ADDR, true,
+        skipSpacesToEnd(linePtr, end);
+        if (flatMode == GCN_FLAT_SCRATCH && linePtr+3<end &&
+            toLower(linePtr[0])=='o' && toLower(linePtr[1])=='f' &&
+            toLower(linePtr[2])=='f' && (linePtr+3==end || !isAlnum(linePtr[3])))
+        { // if off
+            vaddrOff = true;
+            linePtr+=3;
+        }
+        else
+        {
+            gcnAsm->setCurrentRVU(1);
+            good &= parseVRegRange(asmr, linePtr, vaddrReg, 
+                        (flatMode != GCN_FLAT_SCRATCH ? 2 : 1), GCNFIELD_FLAT_ADDR, true,
                         INSTROP_SYMREGRANGE|INSTROP_READ);
+        }
         if ((gcnInsn.mode & GCN_FLAT_NODST) == 0)
         {
             if (!skipRequiredComma(asmr, linePtr))
@@ -3552,6 +3579,40 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         good &= parseVRegRange(asmr, linePtr, vdataReg, dregsNum, GCNFIELD_FLAT_DATA,
                                true, INSTROP_SYMREGRANGE|INSTROP_READ);
     }
+    
+    bool saddrOff = false;
+    if (flatMode != 0)
+    {   // SADDR
+        if (!skipRequiredComma(asmr, linePtr))
+            return false;
+        skipSpacesToEnd(linePtr, end);
+        if (flatMode != 0 && linePtr+3<end &&
+            toLower(linePtr[0])=='o' && toLower(linePtr[1])=='f' &&
+            toLower(linePtr[2])=='f' && (linePtr+3==end || !isAlnum(linePtr[3])))
+        { // if off
+            saddrOff = true;
+            linePtr+=3;
+        }
+        else
+        {
+            gcnAsm->setCurrentRVU(3);
+            good &= parseSRegRange(asmr, linePtr, saddrReg, arch,
+                        (flatMode==GCN_FLAT_SCRATCH ? 1 : 2), GCNFIELD_FLAT_SADDR, true,
+                        INSTROP_SYMREGRANGE|INSTROP_READ);
+        }
+    }
+    
+    if (flatMode == GCN_FLAT_SCRATCH && !saddrOff && !vaddrOff)
+    {
+        asmr.printError(instrPlace, "Only one of VADDR and SADDR can be set in "
+                    "SCRATCH mode");
+        good = false;
+    }
+    
+    if (saddrOff)
+        saddrReg.start = 0xff;
+    if (vaddrOff)
+        vaddrReg.start = 0xff;
     
     uint16_t instOffset = 0;
     std::unique_ptr<AsmExpression> instOffsetExpr;
@@ -3582,7 +3643,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         else if (isGCN14 && ::strcmp(name, "inst_offset")==0)
         {
             if (parseModImm(asmr, linePtr, instOffset, &instOffsetExpr, "inst_offset",
-                            12, WS_UNSIGNED))
+                            flatMode!=0 ? 13 : 12, flatMode!=0 ? WS_BOTH : WS_UNSIGNED))
             {
                 if (haveInstOffset)
                     asmr.printWarning(modPlace, "InstOffset is already defined");
@@ -3636,14 +3697,17 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         return false;
     
     if (instOffsetExpr!=nullptr)
-        instOffsetExpr->setTarget(AsmExprTarget(GCNTGT_INSTOFFSET, asmr.currentSection,
+        instOffsetExpr->setTarget(AsmExprTarget(flatMode!=0 ?
+                    GCNTGT_INSTOFFSET_S : GCNTGT_INSTOFFSET, asmr.currentSection,
                     output.size()));
     
     uint32_t words[2];
     SLEV(words[0], 0xdc000000U | (haveGlc ? 0x10000 : 0) | (haveSlc ? 0x20000: 0) |
-            (uint32_t(gcnInsn.code1)<<18) | (haveLds ? 0x2000U : 0) | instOffset);
-    SLEV(words[1], (vaddrReg.start&0xff) | (uint32_t(vdataReg.start&0xff)<<8) |
-            (haveTfe|haveNv ? (1U<<23) : 0) | (uint32_t(vdstReg.start&0xff)<<24));
+            (uint32_t(gcnInsn.code1)<<18) | (haveLds ? 0x2000U : 0) | instOffset |
+            (uint32_t(flatMode)<<14));
+    SLEV(words[1], (vaddrReg.bstart()&0xff) | (uint32_t(vdataReg.bstart()&0xff)<<8) |
+            (haveTfe|haveNv ? (1U<<23) : 0) | (uint32_t(vdstReg.bstart()&0xff)<<24) |
+            (uint32_t(saddrReg.bstart())<<16));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + 2));
@@ -3936,6 +4000,17 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             sectionData[offset] = value;
             sectionData[offset+1] = (sectionData[offset+1]&0xf0) | ((value&0xf00)>>8);
             printWarningForRange(12, value, sourcePos, WS_UNSIGNED);
+            return true;
+        case GCNTGT_INSTOFFSET_S:
+            if (sectionId != ASMSECT_ABS)
+            {
+                printError(sourcePos, "Relative value is illegal in offset expressions");
+                return false;
+            }
+            sectionData[offset] = value;
+            sectionData[offset+1] = (sectionData[offset+1]&0xe0) |
+                    ((value&0x1f00)>>8);
+            printWarningForRange(13, value, sourcePos, WS_BOTH);
             return true;
         default:
             return false;
