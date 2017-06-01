@@ -724,6 +724,8 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         0xdc438000U, 0x2f3200bbU, true, true, "" },
     { "global_load_ubyte v47, v[187:188], off glc slc\n",
         0xdc438000U, 0x2f7f00bbU, true, true, "" },
+    { "global_load_ubyte v47, v[187:188], off glc slc\n",
+        0xdc438000U, 0x2f7f00bbU, true, true, "" },
     { "global_load_ubyte v47, v[187:188], s[50:51] inst_offset:1043 glc slc\n",
         0xdc438413U, 0x2f3200bbU, true, true, "" },
     { "global_load_ubyte v47, v[187:188], s[50:51] inst_offset:zz glc slc\nzz=1044\n",
@@ -732,6 +734,8 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         0xdc439413U, 0x2f3200bbU, true, true, "" },
     { "global_load_ubyte v47, v[187:188], s[50:51] inst_offset:zza glc slc\nzza=-3057\n",
         0xdc43940fU, 0x2f3200bbU, true, true, "" },
+    { "global_load_dword v3, v[5:6], off\n",
+        0xdc508000U, 0x037f0005U, true, true, "" },
     /* FLAT GLOBAL instructions */
     { "global_load_sbyte v47, v[187:188], s[50:51] glc slc\n",
         0xdc478000U, 0x2f3200bbU, true, true, "" },
