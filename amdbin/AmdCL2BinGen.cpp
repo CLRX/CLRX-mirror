@@ -1114,13 +1114,14 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
 };
 
 static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
-                  bool storeLocalSize = false)
+                GPUArchitecture arch, bool storeLocalSize = false)
 {
     uint32_t dimValues = 0;
     if (config.dimMask != BINGEN_DEFAULT)
     {
         dimValues = ((config.dimMask&7)<<7);
-        if (!config.useEnqueue)
+        if (!config.useEnqueue || arch==GPUArchitecture::GCN1_4)
+            // useenqueue in GFX9 is enabled by default ???
             dimValues |= (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
         else // enqueue needs TIDIG_COMP_CNT=2 ????
             dimValues |= (2U<<11);
@@ -1174,7 +1175,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     else if (config.useArgs)
         setup1 = 0x9;
     
-    SLEV(setupData.pgmRSRC2, calculatePgmRSRC2(config));
+    SLEV(setupData.pgmRSRC2, calculatePgmRSRC2(config, arch));
     
     SLEV(setupData.setup1, setup1);
     uint16_t archInd = (is64Bit) ? 0xa : 0x2;
@@ -1508,7 +1509,7 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
         fob.writeObject(stubEnd);
     }
     fob.fill(0xa8-sizeof(IntAmdCL2StubEnd), 0);
-    fob.writeObject(LEV(calculatePgmRSRC2(config, true)));
+    fob.writeObject(LEV(calculatePgmRSRC2(config, arch, true)));
     fob.fill(0xc0-0xac, 0);
 }
 
