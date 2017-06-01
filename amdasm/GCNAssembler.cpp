@@ -1064,7 +1064,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                                 break;
                         if (gsopIndex==2 && gsopNameIndex==0)
                         {   /* 'emit-cut' handling */
-                            if (linePtr+4<end && ::strncmp(linePtr, "-cut", 4)==0 &&
+                            if (linePtr+4<=end && ::strncasecmp(linePtr, "-cut", 4)==0 &&
                                 (linePtr==end || (!isAlnum(*linePtr) && *linePtr!='_' &&
                                 *linePtr!='$' && *linePtr!='.')))
                             {
