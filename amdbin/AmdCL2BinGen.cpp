@@ -1120,7 +1120,7 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
     if (config.dimMask != BINGEN_DEFAULT)
     {
         dimValues = ((config.dimMask&7)<<7);
-        if (!config.useEnqueue || arch==GPUArchitecture::GCN1_4)
+        if (!config.useEnqueue)
             // useenqueue in GFX9 is enabled by default ???
             dimValues |= (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
         else // enqueue needs TIDIG_COMP_CNT=2 ????
