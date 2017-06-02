@@ -1378,7 +1378,8 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     gcnAsm->instrRVUs[0].rwFlags = (dataToRead ? ASMRVU_READ : 0) |
             (dataToWrite ? ASMRVU_WRITE : 0);
     // check fcmpswap
-    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && dataToWrite)
+    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && dataToWrite &&
+            gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {   // fix access
         AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
         uint16_t size = rvu.rend-rvu.rstart;
@@ -1560,8 +1561,9 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (vop3) // modify fields in reg usage
     {
         AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
-        rvus[0].regField = (rvus[0].regField==GCNFIELD_VOP_VDST) ? GCNFIELD_VOP3_VDST :
-                        GCNFIELD_VOP3_SDST0;
+        if (rvus[0].regField != ASMFIELD_NONE)
+            rvus[0].regField = (rvus[0].regField==GCNFIELD_VOP_VDST) ? GCNFIELD_VOP3_VDST :
+                            GCNFIELD_VOP3_SDST0;
         if (rvus[2].regField != ASMFIELD_NONE)
             rvus[2].regField = GCNFIELD_VOP3_SRC0;
         if (rvus[3].regField != ASMFIELD_NONE)
@@ -2989,7 +2991,8 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             (vdataToRead ? ASMRVU_READ : 0);
     // check fcmpswap
     bool vdataDivided = false;
-    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && vdataToWrite && !haveLds)
+    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && vdataToWrite && !haveLds &&
+        gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {   // fix access
         AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
         uint16_t size = rvu.rend-rvu.rstart;
@@ -3026,7 +3029,8 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         gcnAsm->instrRVUs[0].regField = ASMFIELD_NONE;
     
     if (haveTfe && (vdataDivided ||
-            gcnAsm->instrRVUs[0].rwFlags!=(ASMRVU_READ|ASMRVU_WRITE)))
+            gcnAsm->instrRVUs[0].rwFlags!=(ASMRVU_READ|ASMRVU_WRITE)) &&
+            gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {   // fix for tfe
         const cxuint rvuId = (vdataDivided ? 4 : 0);
         AsmRegVarUsage& rvu = gcnAsm->instrRVUs[rvuId];
@@ -3267,7 +3271,8 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     // check fcmpswap
     bool vdataDivided = false;
-    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && vdataToWrite)
+    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && vdataToWrite &&
+        gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {   // fix access
         AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
         uint16_t size = rvu.rend-rvu.rstart;
@@ -3282,7 +3287,8 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     
     if (haveTfe && (vdataDivided ||
-            gcnAsm->instrRVUs[0].rwFlags!=(ASMRVU_READ|ASMRVU_WRITE)))
+            gcnAsm->instrRVUs[0].rwFlags!=(ASMRVU_READ|ASMRVU_WRITE)) &&
+       gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {   // fix for tfe
         const cxuint rvuId = (vdataDivided ? 4 : 0);
         AsmRegVarUsage& rvu = gcnAsm->instrRVUs[rvuId];
@@ -3677,7 +3683,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             gcnAsm->instrRVUs[0].regField = ASMFIELD_NONE;
     }
     
-    if (haveTfe && vdstReg)
+    if (haveTfe && vdstReg && gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {   // fix for tfe
         AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
         AsmRegVarUsage& lastRvu = gcnAsm->instrRVUs[3];
