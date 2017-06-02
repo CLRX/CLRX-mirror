@@ -1131,15 +1131,17 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
     
     const uint32_t localPart = (storeLocalSize) ? (((config.localSize+511)>>9)<<15) : 0;
     
-    cxuint userDatasNum = 4;
+    const bool isGCN14 = arch >= GPUArchitecture::GCN1_4;
+    cxuint userDatasNum = isGCN14 ? 6 : 4;
     if (config.useGeneric)
         userDatasNum = 12;
     else if (config.useEnqueue)
         userDatasNum = 10;
     else if (config.useSetup)
-        userDatasNum = 8;
+        userDatasNum = isGCN14 ? 10 : 8;
     else if (config.useArgs)
-        userDatasNum = 6;
+        userDatasNum = isGCN14 ? 8 : 6;
+    
     return (config.pgmRSRC2 & 0xffffe440U) | (userDatasNum<<1) |
             ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues |
             (uint32_t(config.exceptions)<<24) | localPart;
