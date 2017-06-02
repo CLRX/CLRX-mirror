@@ -3679,24 +3679,24 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             good = false;
         }
         
+        if (haveTfe && vdstReg && gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
+        {   // fix for tfe
+            AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
+            AsmRegVarUsage& lastRvu = gcnAsm->instrRVUs[3];
+            lastRvu = rvu;
+            lastRvu.rstart = lastRvu.rend-1;
+            lastRvu.rwFlags = ASMRVU_READ|ASMRVU_WRITE;
+            lastRvu.regField = GCNFIELD_FLAT_VDSTLAST;
+            if (lastRvu.regVar==nullptr) // fix for regusage
+            {   // to save register size for VDSTLAST
+                lastRvu.rstart = rvu.rstart;
+                lastRvu.rend--;
+            }
+            rvu.rend--;
+        }
+        
         if (!dstToWrite)
             gcnAsm->instrRVUs[0].regField = ASMFIELD_NONE;
-    }
-    
-    if (haveTfe && vdstReg && gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
-    {   // fix for tfe
-        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
-        AsmRegVarUsage& lastRvu = gcnAsm->instrRVUs[3];
-        lastRvu = rvu;
-        lastRvu.rstart = lastRvu.rend-1;
-        lastRvu.rwFlags = ASMRVU_READ|ASMRVU_WRITE;
-        lastRvu.regField = GCNFIELD_FLAT_VDSTLAST;
-        if (lastRvu.regVar==nullptr) // fix for regusage
-        {   // to save register size for VDSTLAST
-            lastRvu.rstart = rvu.rstart;
-            lastRvu.rend--;
-        }
-        rvu.rend--;
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
