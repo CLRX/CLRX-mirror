@@ -1602,7 +1602,8 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!checkGCNVOPExtraModifers(asmr, arch, needImm, sextFlags, vop3,
                     gcnVOPEnc, src0Op, extraMods, instrPlace))
             return false;
-        gcnAsm->instrRVUs[2].regField = GCNFIELD_DPPSDWA_SRC0;
+        if (gcnAsm->instrRVUs[2].regField != ASMFIELD_NONE)
+            gcnAsm->instrRVUs[2].regField = GCNFIELD_DPPSDWA_SRC0;
         
         if (extraMods.needSDWA && isGCN14)
         {   // fix for extra type operand from SDWA
@@ -1816,12 +1817,13 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!checkGCNVOPExtraModifers(asmr, arch, needImm, sextFlags, vop3,
                     gcnVOPEnc, src0Op, extraMods, instrPlace))
             return false;
-        gcnAsm->instrRVUs[1].regField = GCNFIELD_DPPSDWA_SRC0;
+        if (gcnAsm->instrRVUs[1].regField != ASMFIELD_NONE)
+            gcnAsm->instrRVUs[1].regField = GCNFIELD_DPPSDWA_SRC0;
         if (extraMods.needSDWA && isGCN14)
         {   // fix for extra type operand from SDWA
             AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
-            if (rvus[2].regField != ASMFIELD_NONE && src0Op.range.isNonVGPR())
-                rvus[2].regField = GCNFIELD_DPPSDWA_SSRC0;
+            if (rvus[1].regField != ASMFIELD_NONE && src0Op.range.isNonVGPR())
+                rvus[1].regField = GCNFIELD_DPPSDWA_SSRC0;
         }
     }
     else if (isGCN12 && (src0Op.vopMods & ~VOPOP_SEXT)!=0 && !sextFlags)
@@ -2009,15 +2011,16 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!checkGCNVOPExtraModifers(asmr, arch, needImm, sextFlags, vop3,
                     gcnVOPEnc, src0Op, extraMods, instrPlace))
             return false;
-        gcnAsm->instrRVUs[1].regField = GCNFIELD_DPPSDWA_SRC0;
+        if (gcnAsm->instrRVUs[1].regField != ASMFIELD_NONE)
+            gcnAsm->instrRVUs[1].regField = GCNFIELD_DPPSDWA_SRC0;
         
         if (extraMods.needSDWA && isGCN14)
         {   // fix for extra type operand from SDWA
             AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
-            if (rvus[2].regField != ASMFIELD_NONE && src0Op.range.isNonVGPR())
-                rvus[2].regField = GCNFIELD_DPPSDWA_SSRC0;
-            if (rvus[3].regField != ASMFIELD_NONE)
-                rvus[3].regField = GCNFIELD_VOP_SSRC1;
+            if (rvus[1].regField != ASMFIELD_NONE && src0Op.range.isNonVGPR())
+                rvus[1].regField = GCNFIELD_DPPSDWA_SSRC0;
+            if (rvus[2].regField != ASMFIELD_NONE)
+                rvus[2].regField = GCNFIELD_VOP_SSRC1;
         }
     }
     else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0 && !sextFlags)

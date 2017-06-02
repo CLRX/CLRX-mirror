@@ -358,7 +358,7 @@ static const cxuint vectorIdTable[17] =
 template<typename Types>
 static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* metadata,
         size_t setupSize, const cxbyte* setup, const std::vector<size_t> samplerOffsets,
-        const std::vector<AmdCL2RelaEntry>& textRelocs)
+        const std::vector<AmdCL2RelaEntry>& textRelocs, bool isGCN14)
 {
     AmdCL2KernelConfig config{};
     const typename Types::MetadataHeader* mdHdr =
@@ -393,8 +393,10 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     config.useGeneric = config.useEnqueue = false;
     if (ksetup1==0x2f) // if generic pointer support
         config.useGeneric = true;
-    else
+    else if (!isGCN14)
         config.useEnqueue = (ksetup1&0x20)!=0;
+    else // for GFX9 - check number of all registers must be 6+
+        config.useEnqueue = (setupData->sgprsNum+6 == setupData->sgprsNumAll);
     
     // get samplers
     for (const AmdCL2RelaEntry& reloc: textRelocs)
@@ -851,15 +853,17 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         
         if (doDumpConfig)
         {
+            const bool isGCN14 = getGPUArchitectureFromDeviceType(
+                        amdCL2Input->deviceType) >= GPUArchitecture::GCN1_4;
             AmdCL2KernelConfig config;
             if (amdCL2Input->is64BitMode)
                 config = genKernelConfig<AmdCL2Types64>(kinput.metadataSize,
                         kinput.metadata, kinput.setupSize, kinput.setup, samplerOffsets,
-                        kinput.textRelocs);
+                        kinput.textRelocs, isGCN14);
             else
                 config = genKernelConfig<AmdCL2Types32>(kinput.metadataSize,
                         kinput.metadata, kinput.setupSize, kinput.setup, samplerOffsets,
-                        kinput.textRelocs);
+                        kinput.textRelocs, isGCN14);
             dumpAmdCL2KernelConfig(output, config);
         }
         

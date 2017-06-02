@@ -1152,7 +1152,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     fob.writeObject<uint64_t>(LEV(uint64_t(newBinaries ? 0x100000001ULL : 1ULL)));
     fob.writeArray(40, kernelSetupBytesAfter8);
     IntAmdCL2SetupData setupData;
-    const cxuint neededExtraSGPRsNum = arch==GPUArchitecture::GCN1_2 ? 4 : 2;
+    const cxuint neededExtraSGPRsNum = arch>=GPUArchitecture::GCN1_2 ? 4 : 2;
     const cxuint extraSGPRsNum = (config.useEnqueue || config.useGeneric) ?
                 neededExtraSGPRsNum : 0;
     cxuint sgprsNum = std::max(config.usedSGPRsNum + extraSGPRsNum + 2, 1U);
@@ -1174,6 +1174,8 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
         setup1 = 0xb;
     else if (config.useArgs)
         setup1 = 0x9;
+    if (arch==GPUArchitecture::GCN1_4)
+        setup1 |= 0x20;
     
     SLEV(setupData.pgmRSRC2, calculatePgmRSRC2(config, arch));
     
@@ -1834,7 +1836,8 @@ static const AMDGPUArchValues amdGpuArchValuesTbl[] =
     { 8, 1, 0 }, // GPUDeviceType::STONEY
     { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
     { 8, 0, 4 }, // GPUDeviceType::BAFFIN
-    { 8, 0, 4 }  // GPUDeviceType::GFX804
+    { 8, 0, 4 }, // GPUDeviceType::GFX804
+    { 9, 0, 0 }  // GPUDeviceType::GFX900
 };
 
 static CString constructName(size_t prefixSize, const char* prefix, const CString& name,
