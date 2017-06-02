@@ -746,7 +746,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         output.write(escapedAclVersionString.c_str(), escapedAclVersionString.size());
         output.write("\"\n", 2);
     }
-    if (doSetup && !doDumpCode)
+    if (doSetup && !doDumpConfig)
     {
         if (amdCL2Input->samplerInit!=nullptr && amdCL2Input->samplerInitSize!=0)
         {   /// sampler init entries
