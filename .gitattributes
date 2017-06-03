@@ -118,7 +118,7 @@ doc/genclrxdoc.sh -text
 doc/styles.css -text
 editors/README -text
 editors/clrx.vim -text
-editors/gedit.lang -text svneol=unset#application/xml
+editors/gedit.lang -text svneol=unset#text/xml
 editors/kate.xml -text svneol=unset#text/xml
 editors/notepad++.xml -text svneol=unset#text/xml
 programs/CMakeLists.txt -text svneol=unset#text/plain
