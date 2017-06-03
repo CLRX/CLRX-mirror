@@ -422,6 +422,22 @@
             <item>ttmp9</item>
             <item>ttmp10</item>
             <item>ttmp11</item>
+            <item>scc</item>
+            <item>src_scc</item>
+            <item>execz</item>
+            <item>src_execz</item>
+            <item>vccz</item>
+            <item>src_vccz</item>
+            <item>shared_base</item>
+            <item>src_shared_base</item>
+            <item>shared_limit</item>
+            <item>src_shared_limit</item>
+            <item>private_base</item>
+            <item>src_private_base</item>
+            <item>private_limit</item>
+            <item>src_private_limit</item>
+            <item>pops_exiting_wave_id</item>
+            <item>src_pops_exiting_wave_id</item>
         </list>
         <list name="Instructions">
             <item>buffer_atomic_add</item>

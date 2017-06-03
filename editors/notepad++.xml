@@ -1385,6 +1385,9 @@ v245 v246 v247 v248 v249 v250 v251 v252 v253 v254 v255
 vcc vcc_lo vcc_hi exec exec_lo exec_hi m0 tba tba_lo tba_hi tma tma_lo tma_hi
 flat_scratch flat_scratch_lo flat_scratch_hi xnack_mask xnack_mask_lo xnack_mask_hi
 ttmp0 ttmp1 ttmp2 ttmp3 ttmp4 ttmp5 ttmp6 ttmp7 ttmp8 ttmp9 ttmp10 ttmp11
+scc src_scc execz src_execz vccz src_vccz shared_base src_shared_base
+shared_limit src_shared_limit private_base src_private_base
+private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
             </Keywords>
             <Keywords name="Words3">
 .32bit

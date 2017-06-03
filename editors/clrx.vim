@@ -369,6 +369,10 @@ syntax keyword asmRegister vcc vcc_lo vcc_hi exec exec_lo exec_hi
 syntax keyword asmRegister flat_scratch flat_scratch_lo flat_scratch_hi
 syntax keyword asmRegister xnack_mask xnack_mask_lo xnack_mask_hi
 syntax keyword asmRegister tba tba_lo tba_hi tma tma_lo tma_hi m0
+syntax keyword asmRegister scc src_scc execz src_execz vccz src_vccz
+syntax keyword asmRegister shared_base src_shared_base shared_limit src_shared_limit
+syntax keyword asmRegister private_base src_private_base private_limit src_private_limit
+syntax keyword asmRegister pops_exiting_wave_id src_pops_exiting_wave_id
 
 """
 " GCN 1.0/1.1/1.2 instructions
