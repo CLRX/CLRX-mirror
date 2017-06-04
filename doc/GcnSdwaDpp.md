@@ -25,10 +25,9 @@ Bits  | Name       | Description
 28    | SRC1_NEG   | Negation modifier for SRC1
 29    | SRC1_ABS   | Absolute value for SRC1
 
-The DST_SEL modifier determines which first part of destination dword will be placed
-to choosen part with same length of this dword.
-This make operation `(RESULT & PARTMASK) << PARTSHIFT`.
-The SRC0_SEL and SRC1_SEL determines what part of source dword will be placed to first
+The DST_SEL modifier determines which part of dword will hold first part (with same length)
+of destination dword will be placed. This make operation `(RESULT & PARTMASK) << PARTSHIFT`.
+The SRC0_SEL and SRC1_SEL determines which part of source dword will be placed to first
 part of this source dword. This make operation `(SOURCE>>PARTSHIFT) & PARTMASK`.
 Possible part selection for DST_SEL, SRC0_SEL and SRC1_SEL:
 
