@@ -556,6 +556,12 @@ SDST = SSRC0 | ~SSRC1
 SCC = SDST!=0
 ```
 
+#### S_RFE_RESTORE_B64
+
+Opcode: 43 (0x2b) for GCN 1.2  
+Syntax: S_RFE_RESTORE_B64 SDST(2), SSRC0(1)  
+Description: Return from exception handler and set: INST_ATC = SSRC1.U32[0] ???
+
 #### S_SUBB_U32
 
 Opcode: 5 (0x5)  

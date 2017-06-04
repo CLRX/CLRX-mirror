@@ -79,7 +79,7 @@ Alphabetically sorted instruction list:
 #### S_ABS_I32
 
 Opcode: 52 (0x34) for GCN 1.0/1.1; 48 (0x30) for GCN 1.2  
-Syntax: S_NOT_B32 SDST, SSRC0  
+Syntax: S_ABS_B32 SDST, SSRC0  
 Description: Store absolute signed value of the SSRC0 into SDST.
 If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
@@ -105,14 +105,14 @@ SCC = EXEC!=0
 #### S_ANDN2_SAVEEXEC_B64
 
 Opcode: 39 (0x27) for GCN 1.0/1.1; 35 (0x23) for GCN 1.2  
-Syntax: S_AND_SAVEEXEC_B64 SDST(2), SSRC0(2)  
+Syntax: S_ANDN2_SAVEEXEC_B64 SDST(2), SSRC0(2)  
 Description: Store EXEC register to SDST. Make bitwise AND on SSRC0 and negated EXEC
 and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
 SDST and SSRC0 are 64-bit.  
 Operation:  
 ```
 SDST = EXEC
-EXEC = SSRC0 & EXEC
+EXEC = SSRC0 & ~EXEC
 SCC = EXEC!=0
 ```
 
