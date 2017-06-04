@@ -111,6 +111,7 @@ doc/GcnInstrsVopc.md -text
 doc/GcnIsa.md -text
 doc/GcnMemHandling.md -text
 doc/GcnOperands.md -text
+doc/GcnSdwaDpp.md -text
 doc/GcnState.md -text
 doc/GcnTimings.md -text
 doc/PrepareOffline.py -text

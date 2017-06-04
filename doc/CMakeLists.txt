@@ -56,6 +56,7 @@ IF(BUILD_CLRXDOC)
           "${PROJECT_SOURCE_DIR}/doc/GcnIsa.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnMemHandling.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnOperands.md"
+          "${PROJECT_SOURCE_DIR}/doc/GcnSdwaDpp.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnState.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnTimings.md")
       ADD_CUSTOM_TARGET(CLRXDocs ALL DEPENDS "${PROJECT_BINARY_DIR}/clrxdoc/doc.stamp")

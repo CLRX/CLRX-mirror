@@ -68,6 +68,7 @@ By default, any register value is treated as unsigned integer.
 * [VOP1 instructions](GcnInstrsVop1)
 * [VOPC instructions](GcnInstrsVopc)
 * [VOP3 instructions](GcnInstrsVop3)
+* [SDWA and DPP encodings](GcnSdwaDpp)
 * [VINTRP instructions](GcnInstrsVintrp)
 * [DS instructions](GcnInstrsDs)
 * [Main memory handling](GcnMemHandling)
