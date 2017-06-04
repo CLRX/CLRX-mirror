@@ -582,6 +582,16 @@ Operation: ???
 PC = TTMP[0:1]
 ```
 
+#### S_SET_GPR_IDX_IDX
+
+Opcode: 50 (0x32) for GCN 1.2  
+Syntax S_SET_GPR_IDX_IDX SSRC0(1)  
+Description: Move lowest 8 bits from SSRC0 to lowest 8 bits M0.  
+Operation:  
+```
+M0 = (M0 & 0xffffff00) | (SSRC0 & 0xff)
+```
+
 #### S_SETPC_B64
 
 Opcode: 32 (0x20) for GCN 1.0/1.1; 29 (0x1d) for GCN 1.2  
