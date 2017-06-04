@@ -230,7 +230,7 @@ Description: Send message and halt.
 Opcode: 29 (0x1d) only for GCN 1.2  
 Syntax: S_SET_GPR_IDX_MODE SIMM16  
 Description: Set GPR indexing mode (12-15 bits in MO).  
-Operation:
+Operation:  
 ```
 M0 = (M0 & 0xffff0fff) | ((SIMM16 & 15)<<12)
 ```
