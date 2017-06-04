@@ -143,12 +143,12 @@ SCC = SDST!=0
 #### S_BCNT1_I32_B32
 
 Opcode: 15 (0xf) for GCN 1.0/1.1; 12 (0xc) for GCN 1.2  
-Syntax: S_BCNT1_I32_B65 SDST, SSRC0  
+Syntax: S_BCNT1_I32_B64 SDST, SSRC0  
 Description: Count one bits in SSRC0 and store result to SDST.
 If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
-SDST = SDST(SSRC0)
+SDST = BITCOUNT(SSRC0)
 SCC = SDST!=0
 ```
 
