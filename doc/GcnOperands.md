@@ -172,24 +172,3 @@ source operand will have operand modifier. Number of bit of value refer to numbe
 
 The HW registers and send message parameters (message and GSOP) is parametrizable if
 they will be preceded by `@` (example: `hwreg(@5, 8, 16)`).
-
-### GPR indexing mode (GCN 1.2)
-
-The GCN 1.2 introduces the GPR indexing mode that facilitate usage of indexing in VGPR's.
-The bit 27 in MODE register indicates whether this mode is enabled.
-The M0 register holds index and mode of GPR indexing. If this mode will be enabled
-then this index will be added to index of specified VGPR used in vector instruction.
-The mode specifies to which operand of vector instruction GPR index will be added.
-If sum of GPR index and VGPR register index beyond last available VGPR register or
-this is not a VGPR register (SGPR or other), then operand register will be substituted by
-V0 register.
-
-The lowest 8 bits of M0 register holds the GPR index. The 12-15 bits holds GPR indexing mode.
-The GPR indexing mode bits table:
-
-Bit | Description
-----|--------------------------------------
- 0  | Apply GPR indexing to VSRC0 operand
- 1  | Apply GPR indexing to VSRC1 operand
- 2  | Apply GPR indexing to VSRC2 operand
- 3  | Apply GPR indexing to VDST operand
