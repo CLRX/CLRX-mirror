@@ -102,7 +102,7 @@ Table of fields for STATUS Register:
  10     | LOD_CLAMPED | Sticky bit for LOD clamping
  11     | DEBUG     | Forces the wavefront to jump to exception handler
  12-18  | EXCP_EN   | Enable mask for exceptions
- 27     | GPR_IDX_EN | GPR index enable
+ 27     | GPR_IDX_EN | GPR index enable (only for GCN 1.2)
  29-31  | CSP       | Conditional branch stack pointer
 
 The single floating point rounding mode is controlled by 0-1 bits in MODE register.
