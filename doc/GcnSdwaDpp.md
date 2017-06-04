@@ -53,3 +53,130 @@ Value | Name                 | CLRX name      | Descrption
 The modifier SEXT (applied by using `sext(operand)`) apply sign extension
 (fill bits after part) to source operand while for source operand was not
 selected whole dword (SDWA_DWORD not choosen).
+
+Operation code:  
+```
+// SRC0_SRC = source SRC0, SRC1_SRC = source SRC1, DST_SRC = VDST source
+// SRC0_DST = dest. SRC0, SRC1_DST = dest. SRC1, DST_DST = VDST dest.
+// OPERATION(SRC0, SRC1) - instruction operation, VDST - VDST register before instruction
+if (HAVE_SRC0)
+{
+    switch(SRC0_SEL)
+    {
+        case SDWA_BYTE_0:
+            SRC0_DST = (SRC0_SEXT) ? INT32(INT8(SRC0_SRC & 0xff)) : SRC0_SRC & 0xff
+            break;
+        case SDWA_BYTE_1:
+            SRC0_DST = (SRC0_SEXT) ? INT32(INT8((SRC0_SRC>>8) & 0xff)) :
+                        (SRC0_SRC>>8) & 0xff
+            break;
+        case SDWA_BYTE_2:
+            SRC0_DST = (SRC0_SEXT) ? INT32(INT8((SRC0_SRC>>16) & 0xff)) :
+                        (SRC0_SRC>>16) & 0xff
+            break;
+        case SDWA_BYTE_1:
+            SRC0_DST = (SRC0_SEXT) ? INT32(INT8(SRC0_SRC>>24)) : SRC0_SRC>>24
+            break;
+        case SDWA_WORD_0:
+            SRC0_DST = (SRC0_SEXT) ? INT32(INT16(SRC0_SRC & 0xffff)) : SRC0_SRC & 0xffff
+            break;
+        case SDWA_WORD_1:
+            SRC0_DST = (SRC0_SEXT) ? INT32(INT16(SRC0_SRC >> 16)) : SRC0_SRC >> 16
+            break;
+        case SDWA_DWORD:
+            SRC0_DST = SRC0_SRC
+            break;
+    }
+}
+if (HAVE_SRC1)
+{
+    switch(SRC1_SEL)
+    {
+        case SDWA_BYTE_0:
+            SRC1_DST = (SRC1_SEXT) ? INT32(INT8(SRC1_SRC & 0xff)) : SRC1_SRC & 0xff
+            break;
+        case SDWA_BYTE_1:
+            SRC1_DST = (SRC1_SEXT) ? INT32(INT8((SRC1_SRC>>8) & 0xff)) :
+                        (SRC1_SRC>>8) & 0xff
+            break;
+        case SDWA_BYTE_2:
+            SRC1_DST = (SRC1_SEXT) ? INT32(INT8((SRC1_SRC>>16) & 0xff)) :
+                        (SRC1_SRC>>16) & 0xff
+            break;
+        case SDWA_BYTE_1:
+            SRC1_DST = (SRC1_SEXT) ? INT32(INT8(SRC1_SRC>>24)) : SRC1_SRC>>24
+            break;
+        case SDWA_WORD_0:
+            SRC1_DST = (SRC1_SEXT) ? INT32(INT16(SRC1_SRC & 0xffff)) : SRC1_SRC & 0xffff
+            break;
+        case SDWA_WORD_1:
+            SRC1_DST = (SRC1_SEXT) ? INT32(INT16(SRC1_SRC >> 16)) : SRC1_SRC >> 16
+            break;
+        case SDWA_DWORD:
+            SRC1_DST = SRC1_SRC
+            break;
+    }
+}
+DST_SRC = OPERATION(SRC0,SRC1)
+UNT32 tmp
+switch(DST_SEL)
+{
+    case SDWA_BYTE_0:
+        tmp = DST_SRC & 0xff
+        if (DST_UNUSED==SDWA_UNUSED_PAD)
+            DST_DST = tmp
+        else if (DST_UNUSED==SDWA_UNUSED_SEXT)
+            DST_DST = INT32(INT8(tmp))
+        else if (DST_UNUSED==SDWA_UNUSED_PRESERVE)
+            DST_DST = tmp | (VDST & 0xffffff00)
+        break;
+    case SDWA_BYTE_1:
+        tmp = DST_SRC & 0xff
+        if (DST_UNUSED==SDWA_UNUSED_PAD)
+            DST_DST = tmp << 8
+        else if (DST_UNUSED==SDWA_UNUSED_SEXT)
+            DST_DST = INT32(INT8(tmp)) << 8
+        else if (DST_UNUSED==SDWA_UNUSED_PRESERVE)
+            DST_DST = (tmp<<8) | (VDST & 0xffff00ff)
+        break;
+    case SDWA_BYTE_2:
+        tmp = DST_SRC & 0xff
+        if (DST_UNUSED==SDWA_UNUSED_PAD)
+            DST_DST = tmp << 16
+        else if (DST_UNUSED==SDWA_UNUSED_SEXT)
+            DST_DST = INT32(INT8(tmp)) << 16
+        else if (DST_UNUSED==SDWA_UNUSED_PRESERVE)
+            DST_DST = (tmp<<16) | (VDST & 0xff00ffff)
+        break;
+    case SDWA_BYTE_3:
+        tmp = DST_SRC & 0xff
+        if (DST_UNUSED==SDWA_UNUSED_PAD)
+            DST_DST = tmp << 24
+        else if (DST_UNUSED==SDWA_UNUSED_SEXT)
+            DST_DST = INT32(INT8(tmp)) << 24
+        else if (DST_UNUSED==SDWA_UNUSED_PRESERVE)
+            DST_DST = (tmp<<24) | (VDST & 0x00ffffff)
+        break;
+    case SDWA_WORD_0:
+        tmp = DST_SRC & 0xffff
+        if (DST_UNUSED==SDWA_UNUSED_PAD)
+            DST_DST = tmp
+        else if (DST_UNUSED==SDWA_UNUSED_SEXT)
+            DST_DST = INT32(INT16(tmp))
+        else if (DST_UNUSED==SDWA_UNUSED_PRESERVE)
+            DST_DST = tmp | (VDST & 0xffff0000)
+        break;
+    case SDWA_WORD_1:
+        tmp = DST_SRC & 0xffff
+        if (DST_UNUSED==SDWA_UNUSED_PAD)
+            DST_DST = tmp << 16
+        else if (DST_UNUSED==SDWA_UNUSED_SEXT)
+            DST_DST = INT32(INT16(tmp)) << 16
+        else if (DST_UNUSED==SDWA_UNUSED_PRESERVE)
+            DST_DST = (tmp<<16) | (VDST & 0xffff)
+        break;
+    case SDWA_DWORD:
+        DST_DST = DST_SRC
+        break;
+}
+```
