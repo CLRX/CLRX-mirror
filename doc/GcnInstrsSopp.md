@@ -168,6 +168,15 @@ Opcode: 1 (0x1)
 Syntax: S_ENDPGM  
 Description: End program.
 
+#### S_ENDPGM_SAVED
+
+Opcode: 27 (0x1b) for GCN 1.2  
+Syntax: S_ENDPGM_SAVED  
+Description: End of program; signal that a wave has been saved by the context-switch trap handler, and
+terminate wavefront. The hardware implicitly executes S_WAITCNT 0 before executing this
+instruction. Use S_ENDPGM in all cases unless you are executing the context-switch save
+handler. (from ISA manual)
+
 #### S_ICACHE_INV
 
 Opcode: 19 (0x13)  

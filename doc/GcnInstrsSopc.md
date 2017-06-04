@@ -240,6 +240,18 @@ Operation:
 SCC = SSRC0 < SSRC1
 ```
 
+#### S_SET_GPR_IDX_ON
+
+Opcode: 17 (0x11) for GCN 1.2  
+Syntax:S_SET_GPR_IDX_ON SSRC0(0), IMM8  
+Description: Enable GPR indexing mode. Set mode and index for GPR indexing. The mode
+and index for GPR indexing are in M0. Refer to GPR indexing mode in [GcnOperands]  
+Operation:  
+```
+MODE.gpr_idx_en = 1
+M0 = (M0 & 0xffff0f00) | ((IMM8 & 15)<<12) | (SSRC0 & 0xff)
+```
+
 #### S_SETVSKIP
 
 Opcode: 16 (0x10)  
