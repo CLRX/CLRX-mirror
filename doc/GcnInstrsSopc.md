@@ -248,7 +248,7 @@ Description: Enable GPR indexing mode. Set mode and index for GPR indexing. The 
 and index for GPR indexing are in M0. Refer to GPR indexing mode in [GcnOperands]  
 Operation:  
 ```
-MODE.gpr_idx_en = 1
+MODE = (MODE & ~(1U<<27)) | (1U<<27)
 M0 = (M0 & 0xffff0f00) | ((IMM8 & 15)<<12) | (SSRC0 & 0xff)
 ```
 

@@ -170,7 +170,7 @@ Description: End program.
 
 #### S_ENDPGM_SAVED
 
-Opcode: 27 (0x1b) for GCN 1.2  
+Opcode: 27 (0x1b) only for GCN 1.2  
 Syntax: S_ENDPGM_SAVED  
 Description: End of program; signal that a wave has been saved by the context-switch trap handler, and
 terminate wavefront. The hardware implicitly executes S_WAITCNT 0 before executing this
@@ -224,6 +224,26 @@ M0&0xff - gs waveID
 Opcode: 17 (0x11)  
 Syntax: S_SENDMSGHALT SENDMSG(MSG, GS_OP, STREAMID)  
 Description: Send message and halt.
+
+#### S_SET_GPR_IDX_MODE
+
+Opcode: 29 (0x1d) only for GCN 1.2  
+Syntax: S_SET_GPR_IDX_MODE SIMM16  
+Description: Set GPR indexing mode (12-15 bits in MO).  
+Operation:
+```
+M0 = (M0 & 0xffff0fff) | ((SIMM16 & 15)<<12)
+```
+
+#### S_SET_GPR_IDX_OFF
+
+Opcode: 28 (0x1c) only for GCN 1.2  
+Syntax: S_SET_GPR_IDX_OFF  
+Description: Disables GPR indexing.  
+Operation:  
+```
+MODE = (MODE & ~(1U<<27))
+```
 
 #### S_SETHALT
 
