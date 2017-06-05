@@ -54,7 +54,7 @@ The modifier SEXT (applied by using `sext(operand)`) apply sign extension
 (fill bits after part) to source operand while for source operand was not
 selected whole dword (SDWA_DWORD not choosen).
 
-Examples:
+Examples:  
 ```
 v_xor_b32 v1,v2,v3 dst_sel:byte_1 src0_sel:byte1 src1_sel:word1
 v_xor_b32 v1,v2,v3 dst_sel:b1 src0_sel:b1 src1_sel:w1
@@ -68,34 +68,31 @@ Operation code:
 // SRC0_SRC = source SRC0, SRC1_SRC = source SRC1, DST_SRC = VDST source
 // SRC0_DST = dest. SRC0, SRC1_DST = dest. SRC1, DST_DST = VDST dest.
 // OPERATION(SRC0, SRC1) - instruction operation, VDST - VDST register before instruction
-if (HAVE_SRC0)
+switch(SRC0_SEL)
 {
-    switch(SRC0_SEL)
-    {
-        case SDWA_BYTE_0:
-            SRC0_DST = (SRC0_SEXT) ? INT32(INT8(SRC0_SRC & 0xff)) : SRC0_SRC & 0xff
-            break;
-        case SDWA_BYTE_1:
-            SRC0_DST = (SRC0_SEXT) ? INT32(INT8((SRC0_SRC>>8) & 0xff)) :
-                        (SRC0_SRC>>8) & 0xff
-            break;
-        case SDWA_BYTE_2:
-            SRC0_DST = (SRC0_SEXT) ? INT32(INT8((SRC0_SRC>>16) & 0xff)) :
-                        (SRC0_SRC>>16) & 0xff
-            break;
-        case SDWA_BYTE_1:
-            SRC0_DST = (SRC0_SEXT) ? INT32(INT8(SRC0_SRC>>24)) : SRC0_SRC>>24
-            break;
-        case SDWA_WORD_0:
-            SRC0_DST = (SRC0_SEXT) ? INT32(INT16(SRC0_SRC & 0xffff)) : SRC0_SRC & 0xffff
-            break;
-        case SDWA_WORD_1:
-            SRC0_DST = (SRC0_SEXT) ? INT32(INT16(SRC0_SRC >> 16)) : SRC0_SRC >> 16
-            break;
-        case SDWA_DWORD:
-            SRC0_DST = SRC0_SRC
-            break;
-    }
+    case SDWA_BYTE_0:
+        SRC0_DST = (SRC0_SEXT) ? INT32(INT8(SRC0_SRC & 0xff)) : SRC0_SRC & 0xff
+        break;
+    case SDWA_BYTE_1:
+        SRC0_DST = (SRC0_SEXT) ? INT32(INT8((SRC0_SRC>>8) & 0xff)) :
+                    (SRC0_SRC>>8) & 0xff
+        break;
+    case SDWA_BYTE_2:
+        SRC0_DST = (SRC0_SEXT) ? INT32(INT8((SRC0_SRC>>16) & 0xff)) :
+                    (SRC0_SRC>>16) & 0xff
+        break;
+    case SDWA_BYTE_1:
+        SRC0_DST = (SRC0_SEXT) ? INT32(INT8(SRC0_SRC>>24)) : SRC0_SRC>>24
+        break;
+    case SDWA_WORD_0:
+        SRC0_DST = (SRC0_SEXT) ? INT32(INT16(SRC0_SRC & 0xffff)) : SRC0_SRC & 0xffff
+        break;
+    case SDWA_WORD_1:
+        SRC0_DST = (SRC0_SEXT) ? INT32(INT16(SRC0_SRC >> 16)) : SRC0_SRC >> 16
+        break;
+    case SDWA_DWORD:
+        SRC0_DST = SRC0_SRC
+        break;
 }
 if (HAVE_SRC1)
 {
@@ -126,7 +123,7 @@ if (HAVE_SRC1)
             break;
     }
 }
-DST_SRC = OPERATION(SRC0,SRC1)
+DST_SRC = OPERATION(SRC0_DST,SRC1_DST)
 UNT32 tmp
 switch(DST_SEL)
 {
@@ -192,7 +189,7 @@ switch(DST_SEL)
 
 ### VOP_DPP
 
-The VOP_DPP encoding is enabled by setting 0xfa in VSRC0 field in VOP1/VOP2/VOPC encoding.
+The VOP_DPP encoding is enabled by setting 0xfa in SRC0 field in VOP1/VOP2/VOPC encoding.
 List of fields:
 
 Bits  | Name       | Description
@@ -207,9 +204,9 @@ Bits  | Name       | Description
 24-27 | BANK_MASK  | Bank enable mask
 28-31 | ROW_MASK   | Row enable mask
 
-The operation on wavefronts applied to VSRC0 operand in VOP instruction.
+The operation on wavefronts applied to SRC0 operand in VOP instruction.
 The wavefront contains 4 rows (16 threads), and each row contains 4 banks (4 threads).
-The DPP_CTRL choose which operation will be applied to VSRC0.
+The DPP_CTRL choose which operation will be applied to SRC0.
 List of data parallel operations:
 
 Value        | Name                 | Modifier | Description
@@ -225,18 +222,139 @@ Value        | Name                 | Modifier | Description
 0x140        | DPP_ROW_MIRROR       | row_mirror | Mirror threads within row
 0x141        | DPP_ROW_HALF_MIRROR  | row_half_mirror | Mirror threads within half row
 0x142        | DPP_ROW_BCAST15      | row_bcast:15 | Broadcast 15 thread of each row to next row
-0x143        | DPP_ROW_BCAST15      | row_bcast:15 | Broadcast 31 thread to row 2 and row 3
+0x143        | DPP_ROW_BCAST31      | row_bcast:31 | Broadcast 31 thread to row 2 and row 3
 
 The BOUND_CTRL flag (modifier `bound_ctrl` or `bound_ctrl:0`) control how to fill invalid
 threads (for example that last threads after left shifting). Zero value (no modifier)
-sets invalid threads by original VSRC0 value for particular thread. One value (with modifier)
-fills invalid threads by 0 thread VSRC0 value.
+do not perform operation in thread that source threads are invalid.
+One value (with modifier) fills invalid threads by 0 value.
 
 The field BANK_MASK (modifier `bank_mask:value`) choose which banks will be enabled during
 data parallel operation in each enabled row. The Nth bit represents Nth bank in each row.
-Disabled bank will be filled by original VSRC0 value for particular thread
+Threads in disabled banks do not perform operation.
 
 The field ROW_MASK (modifier `row_mask:value`) choose which rows will be enabled during
 data parallel operation. The Nth bit represents Nth row.
-Disabled row will be filled by original VSRC0 value for particular thread.
+Threads in disabled rows do not perform operation.
 
+Examples:  
+```
+v_xor_b32 v1,v2,v3 quad_perm:[2,3,0,1]
+v_xor_b32 v1,v2,v3 row_shl:5
+v_xor_b32 v1,v2,v3 row_shr:7
+v_xor_b32 v1,v2,v3 row_ror:8
+v_xor_b32 v1,v2,v3 wave_shl:1
+v_xor_b32 v1,v2,v3 wave_shl
+v_xor_b32 v1,v2,v3 wave_shr:1
+v_xor_b32 v1,v2,v3 wave_shr
+v_xor_b32 v1,v2,v3 wave_rol:1
+v_xor_b32 v1,v2,v3 wave_rol
+v_xor_b32 v1,v2,v3 wave_ror:1
+v_xor_b32 v1,v2,v3 wave_ror
+v_xor_b32 v1,v2,v3 row_mirror
+v_xor_b32 v1,v2,v3 row_half_mirror
+v_xor_b32 v1,v2,v3 row_bcast:15
+v_xor_b32 v1,v2,v3 row_bcast:31
+v_xor_b32 v1,v2,v3 row_shr:7 bound_ctrl
+v_xor_b32 v1,v2,v3 row_shr:7 bound_ctrl:0
+v_xor_b32 v1,v2,v3 row_shl:5 row_mask:0b1100
+v_xor_b32 v1,v2,v3 row_shl:5 bank_mask:0b0101
+```
+
+Operation code:  
+```
+// SRC0_SRC[X] - original VSRC0 value from thread X
+// SRC0_DST[X] - destination VSRC0 value from thread X
+// OPERATION(SRC0, SRC1) - instruction operation, VDST - VDST register before instruction
+BYTE invalid = 0
+BYTE srcLane
+if (DPP_CTRL>=DPP_QUAD_PERM00 && DPP_CTRL<=DPP_QUAD_PERMFF)
+{
+    BYTE p0 = DPP_CTRL&3
+    BYTE p1 = (DPP_CTRL>>2)&3
+    BYTE p2 = (DPP_CTRL>>4)&3
+    BYTE p3 = (DPP_CTRL>>6)&3
+    BYTE curL4 = LANEID&~3
+    if (LANEID&3==0)
+        srcLane = curL4 + p0
+    else if (LANEID&3==1)
+        srcLane = curL4 + p1
+    else if (LANEID&3==2)
+        srcLane = curL4 + p2
+    else if (LANEID&3==3)
+        srcLane = curL4 + p3    
+}
+else if (DPP_CTRL>=DPP_ROW_SL1 && DPP_CTRL<=DPP_ROW_SL15)
+{
+    BYTE shift = DPP_CTRL&15
+    BYTE slid = LANEID&15
+    BYTE curR = LANEID&~15
+    if (slid+shift<=15)
+        srcLane = curR + slid + shift
+    else
+        srcLane = LANESNUM
+}
+else if (DPP_CTRL>=DPP_ROW_SR1 && DPP_CTRL<=DPP_ROW_SR15)
+{
+    BYTE shift = DPP_CTRL&15
+    BYTE slid = LANEID&15
+    BYTE curR = LANEID&~15
+    if (slid>=shift)
+        srcLane = curR + slid - shift
+    else
+        srcLane = LANESNUM
+}
+else if (DPP_CTRL>=DPP_ROW_RR1 && DPP_CTRL<=DPP_ROW_RR15)
+{
+    BYTE shift = DPP_CTRL&15
+    BYTE slid = LANEID&15
+    BYTE curR = LANEID&~15
+    srcLane = curR + ((16+slid - shift)&15)
+}
+else if (DPP_CTRL==DPP_WF_SL1)
+    srcLane = LANEID+1
+else if (DPP_CTRL==DPP_WF_SR1)
+    srcLane = LANEID-1
+else if (DPP_CTRL==DPP_WF_RL1)
+    srcLane = (LANEID+1)&63
+else if (DPP_CTRL==DPP_WF_RR1)
+    srcLane = (LANEID-1)&63
+else if (DPP_CTRL==DPP_ROW_MIRROR)
+{
+    BYTE curR = LANEID&~15
+    srcLane = curR + ((LANEID&15)^15)
+}
+else if (DPP_CTRL==DPP_ROW_HALF_MIRROR)
+{
+    BYTE curR = LANEID&~7
+    srcLane = curR + ((LANEID&7)^7)
+}
+else if (DPP_CTRL==DPP_BCAST_15)
+{
+    BYTE curR = LANEID&~15
+    if (LANEID<15)
+        srcLane = LANEID
+    else
+        srcLane = ((LANEID-16)&~15)+15
+}
+else if (DPP_CTRL==DPP_BCAST_31)
+{
+    BYTE curR = LANEID&~31
+    if (LANEID<31)
+        srcLane = LANEID
+    else
+        srcLane = ((LANEID-31)&~31)+31
+}
+if (dstLane < LANESNUM)
+    SRC0_DST[LANEID] = SRC0_SRC[srcLane]
+else if (BOUND_CTRL==0)
+    SRC0_DST[LANEID] = 0
+else
+    invalid = 1
+if ((ROW_MASK & (1U<<(LANEID>>4)))==0)
+    invalid = 1
+if ((BANK_MASK & (1U<<((LANEID>>2)&3)))==0)
+    invalid = 1
+if (!invalid)
+    VDST = OPERATION(SRC0_DST,SRC1)
+```
