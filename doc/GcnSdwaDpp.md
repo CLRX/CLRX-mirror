@@ -31,7 +31,7 @@ The SRC0_SEL and SRC1_SEL determines which part of source dword will be placed t
 part of this source dword. This make operation `(SOURCE>>PARTSHIFT) & PARTMASK`.
 Possible part selection for DST_SEL, SRC0_SEL and SRC1_SEL:
 
-Value | Name        | CLRX names         | Description
+Value | Name        | Assembler names    | Description
 ------|-------------|--------------------|----------------------
  0    | SDWA_BYTE_0 | BYTE0, BYTE_0, B0  | Byte 0 of dword
  1    | SDWA_BYTE_1 | BYTE1, BYTE_1, B1  | Byte 1 of dword
@@ -44,7 +44,7 @@ Value | Name        | CLRX names         | Description
 The DST_UNUSED modifier specify how to fill bits that do not hold by choosen part.
 Following options:
 
-Value | Name                 | CLRX name      | Descrption
+Value | Name                 | Assembler name | Descrption
 ------|----------------------|----------------|--------------------------------------
  0    | SDWA_UNUSED_PAD      | PAD            | Fill by zeroes
  1    | SDWA_UNUSED_SEXT     | SEXT           | Fill by last bit of parts (sign), zero pad lower bits
@@ -53,6 +53,15 @@ Value | Name                 | CLRX name      | Descrption
 The modifier SEXT (applied by using `sext(operand)`) apply sign extension
 (fill bits after part) to source operand while for source operand was not
 selected whole dword (SDWA_DWORD not choosen).
+
+Examples:
+```
+v_xor_b32 v1,v2,v3 dst_sel:byte_1 src0_sel:byte1 src1_sel:word1
+v_xor_b32 v1,v2,v3 dst_sel:b1 src0_sel:b1 src1_sel:w1
+v_xor_b32 v1,v2,v3 dst_sel:byte_1 src0_sel:byte1 src1_sel:word1 dst_unused:preserve
+v_xor_b32 v1,v2,v3 dst_sel:byte_1 src0_sel:byte1 src1_sel:word1 dst_unused:sext
+v_xor_b32 v1,sext(v2),v3 dst_sel:byte_1 src0_sel:byte1 src1_sel:word1
+```
 
 Operation code:  
 ```
@@ -180,3 +189,54 @@ switch(DST_SEL)
         break;
 }
 ```
+
+### VOP_DPP
+
+The VOP_DPP encoding is enabled by setting 0xfa in VSRC0 field in VOP1/VOP2/VOPC encoding.
+List of fields:
+
+Bits  | Name       | Description
+------|------------|------------------------------
+0-7   | SRC0       | First source vector operand
+8-16  | DPP_CTRL   | Data parallel primitive control
+19    | BOUND_CTRL | Specifies behaviour when shared data is invalid
+20    | SRC0_NEG   | Negation modifier for SRC0
+21    | SRC0_ABS   | Absolute value for SRC0
+22    | SRC1_NEG   | Negation modifier for SRC1
+23    | SRC1_ABS   | Absolute value for SRC1
+24-27 | BANK_MASK  | Bank enable mask
+28-31 | ROW_MASK   | Row enable mask
+
+The operation on wavefronts applied to VSRC0 operand in VOP instruction.
+The wavefront contains 4 rows (16 threads), and each row contains 4 banks (4 threads).
+The DPP_CTRL choose which operation will be applied to VSRC0.
+List of data parallel operations:
+
+Value        | Name                 | Modifier | Description
+-------------|----------------------|----------|-------------------
+0x00-0xff    | DPP_QUAD_PERM{00:ff} | quad_perm:[A,B,C,D]  | Full permute of 4 threads
+0x101-0x10f  | DPP_ROW_SL{1:15}     | row_shl:N | Row shift left by N threads
+0x111-0x11f  | DPP_ROW_SR{1:15}     | row_shr:N | Row shift right by N threads
+0x121-0x12f  | DPP_ROW_RR{1:15}     | row_ror:N | Row rotate right by N threads
+0x130        | DPP_WF_SL1           | wave_shl:1 | Wave shift left by 1 thread
+0x134        | DPP_WF_RL1           | wave_rol:1 | Wave rotate left by 1 thread
+0x138        | DPP_WF_SR1           | wave_shr:1 | Wave shift right by 1 thread
+0x13c        | DPP_WF_RR1           | wave_ror:1 | Wave rotate right by 1 thread
+0x140        | DPP_ROW_MIRROR       | row_mirror | Mirror threads within row
+0x141        | DPP_ROW_HALF_MIRROR  | row_half_mirror | Mirror threads within half row
+0x142        | DPP_ROW_BCAST15      | row_bcast:15 | Broadcast 15 thread of each row to next row
+0x143        | DPP_ROW_BCAST15      | row_bcast:15 | Broadcast 31 thread to row 2 and row 3
+
+The BOUND_CTRL flag (modifier `bound_ctrl` or `bound_ctrl:0`) control how to fill invalid
+threads (for example that last threads after left shifting). Zero value (no modifier)
+sets invalid threads by original VSRC0 value for particular thread. One value (with modifier)
+fills invalid threads by 0 thread VSRC0 value.
+
+The field BANK_MASK (modifier `bank_mask:value`) choose which banks will be enabled during
+data parallel operation in each enabled row. The Nth bit represents Nth bank in each row.
+Disabled bank will be filled by original VSRC0 value for particular thread
+
+The field ROW_MASK (modifier `row_mask:value`) choose which rows will be enabled during
+data parallel operation. The Nth bit represents Nth row.
+Disabled row will be filled by original VSRC0 value for particular thread.
+
