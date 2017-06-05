@@ -1,7 +1,7 @@
 ## CLRadeonExtender Assembler
 
 This is CLRadeonExtender assembler. This assembler can assemble code for all Radeon GPU's
-that based on the GCN1.0/1.1/1.2 architecture and it can generate AMD Catalyst
+that based on the GCN1.0/1.1/1.2/1.4 (AMD VEGA) architecture and it can generate AMD Catalyst
 OpenCL binaries and the GalliumCompute OpenCL binaries. It is compatible with GNU assembler
 and support the almost GNU assembler's pseudo-operations (directives) including macros and
 repetitions.
@@ -55,13 +55,13 @@ Assembler accepts following formats: 'amd', 'amdcl2', 'gallium', 'rocm', 'rawcod
 Currently is supported: 
 CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
 Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose, Horse, Stoney,
-Ellesmere, and Baffin.
+Ellesmere, Baffin, GFX804 and GFX900.
 
 * **-A ARCH**, **--arch=ARCH**
 
     Choose device architecture. Architecture name is case-insensitive.
 List of supported architectures:
-GCN1.0, GCN1.1 and GCN1.2.
+SI, VI, CI, VEGA, GFX6, GFX7, GFX8, GFX9, GCN1.0, GCN1.1, GCN1.2 and GCN1.4.
 
 * **-t VERSION**, **--driverVersion=VERSION**
 

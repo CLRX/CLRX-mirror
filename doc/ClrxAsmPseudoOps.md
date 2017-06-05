@@ -99,7 +99,8 @@ Choose AMD Catalyst OpenCL 2.0 program binary format.
 Syntax: .arch ARCHITECTURE
 
 This pseudo-operation should to be at begin of source. Set GPU architecture.
-One of following architecture can be set: GCN1.0, GCN1.1, GCN1.2.
+One of following architecture can be set:
+SI, VI, CI, VEGA, GFX6, GFX7, GFX8, GFX9, GCN1.0, GCN1.1, GCN1.2 and GCN1.4.
 
 ### .ascii
 

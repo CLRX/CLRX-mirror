@@ -59,13 +59,13 @@ Choose device type. Device type name is case-insensitive.
 Currently is supported: 
 CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
 Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose, Horse, Stoney,
-Ellesmere, and Baffin.
+Ellesmere, Baffin, GFX804 and GFX900.
 
 =item B<-A ARCH>, B<--arch=ARCH>
 
 Choose device architecture. Architecture name is case-insensitive.
 List of supported architectures:
-GCN1.0, GCN1.1 and GCN1.2.
+SI, VI, CI, VEGA, GFX6, GFX7, GFX8, GFX9, GCN1.0, GCN1.1, GCN1.2 and GCN1.4.
 
 =item B<-t VERSION>, B<--driverVersion=VERSION>
 

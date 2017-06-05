@@ -1,7 +1,7 @@
 ## CLRadeonExtender Disassembler
 
 The CLRadeonExtender provides a disassembler that can disassemble code
-for the Radeon GPU's based on the GCN 1.0/1.1/1.2 architecture.
+for the Radeon GPU's based on the GCN 1.0/1.1/1.2/1.4 (AMD VEGA) architecture.
 Program is called `clrxdisasm`.
 
 Disassembler can handle the AMD Catalyst(tm) OpenCL(tm) kernel binaries and the
@@ -67,13 +67,13 @@ the GCN1.0 architecture.
 Currently is supported: 
 CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
 Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose, Horse, Stoney,
-Ellesmere, and Baffin.
+Ellesmere, Baffin, GFX804 and GFX900.
 
 * **-A ARCH**, **--arch=ARCH**
 
     Choose device architecture. Architecture name is case-insensitive.
 List of supported architectures:
-GCN1.0, GCN1.1 and GCN1.2.
+SI, VI, CI, VEGA, GFX6, GFX7, GFX8, GFX9, GCN1.0, GCN1.1, GCN1.2 and GCN1.4.
 
 * **-t VERSION**, **--driverVersion=VERSION**
 
