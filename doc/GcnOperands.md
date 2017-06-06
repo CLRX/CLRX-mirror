@@ -87,11 +87,12 @@ There are two ways to supply immediate value to GCN instruction: first is builti
 (both  integer and floating points) and second is 32-bit immediate. Some type encoding
 allow to supply immediate with various size (16-bit or 12-bit).
 
-The literals are differently treated for scalar instructions and for vector instructions.
-In scalar instructions if operand is 64-bit, the literal value is exact value 64-bit value
-(sign or zero extended). By contrast, in vector instructions, for 64-bit operand, the
-literal is higher 32-bits of value (lower 32-bit are zero). Unhapilly, the CLRX assembler
-always encodes and decodes literal immediate as 32-bit value (except floating values).
+The literals are differently treated for scalar/vector instructions and for
+double floating point operands in vector instructions.
+In scalar or vector instructions if operand is 64-bit, the literal value is exact value
+64-bit value (sign or zero extended). By contrast, in FP64 operands in vector instructions,
+for 64-bit operand, the literal is higher 32-bits of value (lower 32-bit are zero). Unhapilly, the CLRX assembler always encodes and decodes literal immediate as 32-bit
+value (except floating values).
 The immediate constants are always exact value, either for 32-bit and 64-bit operands.
 For example, instructions `v_frexp_exp_i32_f64 v3, lit(45)` and
 `v_frexp_exp_i32_f64 v3, 45` generates different results, because literal and constant
