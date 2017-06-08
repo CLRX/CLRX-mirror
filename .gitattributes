@@ -97,6 +97,7 @@ doc/GcnInstrsFlat.md -text
 doc/GcnInstrsMimg.md -text
 doc/GcnInstrsMtbuf.md -text
 doc/GcnInstrsMubuf.md -text
+doc/GcnInstrsSmem.md -text
 doc/GcnInstrsSmrd.md -text
 doc/GcnInstrsSop1.md -text
 doc/GcnInstrsSop2.md -text

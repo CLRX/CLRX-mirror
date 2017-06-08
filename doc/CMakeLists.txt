@@ -42,6 +42,7 @@ IF(BUILD_CLRXDOC)
           "${PROJECT_SOURCE_DIR}/doc/GcnInstrsMimg.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnInstrsMtbuf.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnInstrsMubuf.md"
+          "${PROJECT_SOURCE_DIR}/doc/GcnInstrsSmem.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnInstrsSmrd.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnInstrsSop1.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnInstrsSop2.md"

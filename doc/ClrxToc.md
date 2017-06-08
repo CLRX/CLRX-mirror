@@ -42,6 +42,7 @@ Copyright (c)  2015-2017  Mateusz Szpakowski.
     * [SOP1 instructions](GcnInstrsSop1)
     * [SOPC instructions](GcnInstrsSopc)
     * [SOPP instructions](GcnInstrsSopp)
+    * [SMEM instructions](GcnInstrsSmem)
     * [SMRD instructions](GcnInstrsSmrd)
     * [VOP2 instructions](GcnInstrsVop2)
     * [VOP1 instructions](GcnInstrsVop1)
