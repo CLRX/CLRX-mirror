@@ -14,7 +14,7 @@ Bits  | Name     | Description
 
 Value of the IMM determines meaning of the OFFSET field:
 
-* IMM=1 - OFFSET holds a dword offset to SBASE.
+* IMM=1 - OFFSET holds a byte offset to SBASE.
 * IMM=0 - OFFSET holds number of SGPR that holds byte offset to SBASE.
 
 For S_LOAD_DWORD\* instructions, 2 SBASE SGPRs holds an base 48-bit address and a
