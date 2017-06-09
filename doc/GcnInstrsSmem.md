@@ -1,6 +1,6 @@
 ## GCN ISA SMEM instructions (GCN 1.2)
 
-The basic encoding of the SMEM instructions needs 9 bytes (2 dwords). List of fields:
+The encoding of the SMEM instructions needs 8 bytes (2 dwords). List of fields:
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -18,9 +18,9 @@ Value of the IMM determines meaning of the OFFSET field:
 * IMM=0 - OFFSET holds number of SGPR that holds byte offset to SBASE.
 
 For S_LOAD_DWORD\* instructions, 2 SBASE SGPRs holds an base 48-bit address and a
-16-bit size.
-For S_BUFFER_LOAD_DWORD\* instructions, 4 SBASE SGPRs holds a buffer descriptor.
-In this case, SBASE must be a multipla of 2.
+16-bit size. For S_BUFFER_LOAD_DWORD\* instructions, 4 SBASE SGPRs holds a
+buffer descriptor. In this case, SBASE must be a multipla of 2.
+S_STORE_\* and S_BUFFER_STORE_\* accepts only M0 as offset register.
 
 The SMEM instructions can return the result data out of the order. Any SMEM operation
 (including S_MEMTIME) increments LGKM_CNT counter. The best way to wait for results
