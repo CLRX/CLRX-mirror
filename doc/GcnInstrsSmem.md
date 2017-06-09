@@ -1,6 +1,6 @@
-## GCN ISA SMRD instructions (GCN 1.2)
+## GCN ISA SMEM instructions (GCN 1.2)
 
-The basic encoding of the SMRD instructions needs 4 bytes (dword). List of fields:
+The basic encoding of the SMEM instructions needs 9 bytes (2 dwords). List of fields:
 
 Bits  | Name     | Description
 ------|----------|------------------------------
