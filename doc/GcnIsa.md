@@ -52,6 +52,13 @@ where BITS is number bits in operand).
     returns FP value
 * ISNAN(v) - return true if value v is NAN value
 
+Shortcuts:
+
+* FP - floating point (default single if not specified)
+* FP16 - half floating point
+* FP32 - single floating point
+* FP64 - double floating point
+
 By default, any register value is treated as unsigned integer.
 
 ---
