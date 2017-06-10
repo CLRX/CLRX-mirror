@@ -180,6 +180,18 @@ UINT64 mask = (1ULL<<LANEID)
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 ```
 
+#### V_ADD_U16
+
+Opcode VOP2: 38 (0x26) for GCN 1.2  
+Opcode VOP3A: 294 (0x126) for GCN 1.2  
+Syntax: V_ADD_U16 VDST, SRC0, SRC1  
+Description: Add two 16-bit unsigned values from SRC0 and SRC1 and
+store 16-bit unsigned result to VDST.  
+Operation:  
+```
+VDST = (SRC0 + SRC1) & 0xffff
+```
+
 #### V_ADDC_U32
 
 Opcode VOP2: 40 (0x28) for GCN 1.0/1.1; 28 (0x1c) for GCN 1.2  
@@ -220,6 +232,18 @@ Description: Arithmetic shift right SRC0 by (SRC1&31) bits and store result into
 Operation:  
 ```
 VDST = (INT32)SRC0 >> (SRC1&31)
+```
+
+#### V_ASHRREV_B16
+
+Opcode VOP2: 44 (0x2c) for GCN 1.2  
+Opcode VOP3A: 300 (0x12c) for GCN 1.2  
+Syntax: V_ASHRREV_B16 VDST, SRC0, SRC1  
+Description: Shift right signed 16-bit value from SRC1 by (SRC0&15) bits and
+store 16-bit signed result into VDST.  
+Operation:  
+```
+VDST = ((INT16)SRC1 >> (SRC0&15)) & 0xffff
 ```
 
 #### V_ASHRREV_I32
@@ -370,6 +394,18 @@ UINT16 D1 = ASINT16(CVT_HALF_RTZ(ASFLOAT(SRC1)))
 VDST = D0 | (((UINT32)D1) << 16)
 ```
 
+#### V_LDEXP_F16
+
+Opcode VOP2: 51 (0x33) for GCN 1.2  
+Opcode VOP3A: 307 (0x133) for GCN 1.2  
+Syntax: V_LDEXP_F16 VDST, SRC0, SRC1  
+Description: Do ldexp operation on SRC0 and SRC1 (multiply SRC0 by 2**(SRC1)).
+SRC1 is signed integer, SRC0 is half floating point value.  
+Operation:  
+```
+VDST = ASHALF(SRC0) * POW(2.0, (INT32)SRC1)
+```
+
 #### V_LDEXP_F32
 
 Opcode VOP2: 43 (0x2b) for GCN 1.0/1.1  
@@ -391,6 +427,18 @@ Description: Shift left SRC0 by (SRC1&31) bits and store result into VDST.
 Operation:  
 ```
 VDST = SRC0 << (SRC1&31)
+```
+
+#### V_LSHLREV_B16
+
+Opcode VOP2: 42 (0x2a) for GCN 1.2  
+Opcode VOP3A: 298 (0x12a) for GCN 1.2  
+Syntax: V_LSHLREV_B16 VDST, SRC0, SRC1  
+Description: Shift left unsigned 16-bit value from SRC1 by (SRC0&15) bits and
+store 16-bit unsigned result into VDST.  
+Operation:  
+```
+VDST = (SRC1 << (SRC0&15)) & 0xffff
 ```
 
 #### V_LSHLREV_B32
@@ -415,6 +463,18 @@ Operation:
 VDST = SRC0 >> (SRC1&31)
 ```
 
+#### V_LSHRREV_B16
+
+Opcode VOP2: 43 (0x2b) for GCN 1.2  
+Opcode VOP3A: 299 (0x12b) for GCN 1.2  
+Syntax: V_LSHRREV_B16 VDST, SRC0, SRC1  
+Description: Shift right unsigned 16-bit value from SRC1 by (SRC0&15) bits and
+store 16-bit unsigned result into VDST.  
+Operation:  
+```
+VDST = (SRC1 >> (SRC0&15)) & 0xffff
+```
+
 #### V_LSHRREV_B32
 
 Opcode VOP2: 22 (0x16) for GCN 1.0/1.1; 16 (0x10) for GCN 1.2  
@@ -431,7 +491,8 @@ VDST = SRC1 >> (SRC0&31)
 Opcode VOP2: 35 (0x23) for GCN 1.2  
 Opcode VOP3A: 291 (0x123) for GCN 1.2  
 Syntax: V_MAC_F16 VDST, SRC0, SRC1  
-Description: Multiply FP16 value from SRC0 by FP16 value from SRC1 and add result to VDST.  
+Description: Multiply FP16 value from SRC0 by FP16 value from SRC1 and
+add result to VDST. It applies OMOD modifier to result.  
 Operation:  
 ```
 VDST = ASHALF(SRC0) * ASHALF(SRC1) + ASHALF(VDST)
@@ -513,6 +574,18 @@ Operation:
 VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(FLOATLIT)
 ```
 
+#### V_MAX_F16
+
+Opcode VOP2: 45 (0x2d) for GCN 1.2  
+Opcode VOP3A: 301 (0x12d) for GCN 1.2  
+Syntax: V_MAX_F16 VDST, SRC0, SRC1  
+Description: Choose largest half floating point value from SRC0 and SRC1,
+and store result to VDST.  
+Operation:  
+```
+VDST = MAX(ASFHALF(SRC0), ASFHALF(SRC1))
+```
+
 #### V_MAX_F32
 
 Opcode VOP2: 16 (0x10) for GCN 1.0/1.1; 11 (0xb) for GCN 1.2  
@@ -591,6 +664,18 @@ UINT32 MASK = ((1ULL << LANEID) - 1ULL) & SRC0
 VDST = SRC1 + BITCOUNT(MASK)
 ```
 
+#### V_MIN_F16
+
+Opcode VOP2: 46 (0x2e) for GCN 1.2  
+Opcode VOP3A: 302 (0x12e) for GCN 1.2  
+Syntax: V_MIN_F16 VDST, SRC0, SRC1  
+Description: Choose smallest half floating point value from SRC0 and SRC1,
+and store result to VDST.  
+Operation:  
+```
+VDST = MIN(ASFHALF(SRC0), ASFHALF(SRC1))
+```
+
 #### V_MIN_F32
 
 Opcode VOP2: 15 (0xf) for GCN 1.0/1.1; 10 (0xa) for GCN 1.2  
@@ -601,6 +686,18 @@ and store result to VDST.
 Operation:  
 ```
 VDST = MIN(ASFLOAT(SRC0), ASFLOAT(SRC1))
+```
+
+#### V_MIN_i16
+
+Opcode VOP2: 50 (0x32) for GCN 1.2  
+Opcode VOP3A: 306 (0x132) for GCN 1.2  
+Syntax: V_MIN_i16 VDST, SRC0, SRC1  
+Description: Choose smallest signed 16-bit value from SRC0 and SRC1,
+and store result to VDST.  
+Operation:  
+```
+VDST = MIN((INT16)SRC0, (INT16)SRC1)
 ```
 
 #### V_MIN_I32
@@ -628,6 +725,18 @@ if (!ISNAN(ASFLOAT(SRC1)))
     VDST = MIN(ASFLOAT(SRC0), ASFLOAT(SRC1))
 else
     VDST = NaN
+```
+
+#### V_MIN_U16
+
+Opcode VOP2: 49 (0x31) for GCN 1.2  
+Opcode VOP3A: 305 (0x131) for GCN 1.2  
+Syntax: V_MIN_U16 VDST, SRC0, SRC1  
+Description: Choose smallest unsigned 16-bit value from SRC0 and SRC1,
+and store result to VDST.  
+Operation:  
+```
+VDST = MIN(SRC0&0xffff, SRC1&0xffff)
 ```
 
 #### V_MIN_U32
@@ -721,6 +830,18 @@ INT32 V1 = (INT32)((SRC1&0x7fffff) | (SSRC1&0x800000 ? 0xff800000 : 0))
 VDST = V0 * V1
 ```
 
+#### V_MUL_LO_U16
+
+Opcode VOP2: 41 (0x29) for GCN 1.2  
+Opcode VOP3A: 297 (0x129) for GCN 1.2  
+Syntax: V_MUL_LO_U16 VDST, SRC0, SRC1  
+Description: Multiply 16-bit unsigned value from SRC0 by 16-bit unsigned value from SRC1
+and store 16-bit result to VDST.  
+Operation:  
+```
+VDST = ((SRC0&0Xffff) * (SRC1&0xffff)) & 0xffff
+```
+
 #### V_MUL_U32_U24
 
 Opcode VOP2: 11 (0xb) for GCN 1.0/1.1; 8 (0x8) for GCN 1.2  
@@ -777,6 +898,18 @@ Description: Subtract FP value of SRC1 from FP value of SRC0 and store result to
 Operation:  
 ```
 VDST = ASFLOAT(SRC0) - ASFLOAT(SRC1)
+```
+
+#### V_SUB_U16
+
+Opcode VOP2: 39 (0x27) for GCN 1.2  
+Opcode VOP3A: 295 (0x127) for GCN 1.2  
+Syntax: V_SUB_U16 VDST, SRC0, SRC1  
+Description: Subtract unsigned 16-bit value of SRC1 from SRC0 and store
+16-bit unsigned result to VDST.  
+Operation:  
+```
+VDST = (SRC0 - SRC1) & 0xffff
 ```
 
 #### V_SUB_I32, V_SUB_U32
@@ -879,6 +1012,18 @@ VDST = temp
 SDST = 0
 UINT64 mask = (1ULL<<LANEID)
 SDST = (SDST&~mask) | ((temp>>32) ? mask : 0)
+```
+
+#### V_SUBREV_U16
+
+Opcode VOP2: 40 (0x28) for GCN 1.2  
+Opcode VOP3A: 296 (0x128) for GCN 1.2  
+Syntax: V_SUBREV_U16 VDST, SRC0, SRC1  
+Description: Subtract unsigned 16-bit value of SRC0 from SRC1 and store
+16-bit unsigned result to VDST.  
+Operation:  
+```
+VDST = (SRC1 - SRC0) & 0xffff
 ```
 
 #### V_XOR_B32
