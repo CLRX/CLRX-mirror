@@ -396,6 +396,8 @@ struct GalliumKernelInput
 struct GalliumInput
 {
     bool is64BitElf;   ///< is 64-bit elf binary
+    bool isLLVM390;
+    bool isMesa170;
     GPUDeviceType deviceType;   ///< GPU device type
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data

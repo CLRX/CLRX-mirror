@@ -57,21 +57,22 @@ static void getGalliumDisasmInputFromBinaryBase(const GalliumBinary& binary,
     }
     input->isMesa170 = binary.isMesa170();
     input->isLLVM390 = elfBin.isLLVM390();
+    const cxuint progInfoEntriesNum = input->isLLVM390 ? 5 : 3;
     // kernels
     input->kernels.resize(binary.getKernelsNum());
     for (cxuint i = 0; i < binary.getKernelsNum(); i++)
     {
         const GalliumKernel& kernel = binary.getKernel(i);
         const GalliumProgInfoEntry* progInfo = elfBin.getProgramInfo(i);
-        GalliumProgInfoEntry outProgInfo[3];
-        for (cxuint k = 0; k < 3; k++)
+        GalliumProgInfoEntry outProgInfo[5];
+        for (cxuint k = 0; k < progInfoEntriesNum; k++)
         {
             outProgInfo[k].address = ULEV(progInfo[k].address);
             outProgInfo[k].value = ULEV(progInfo[k].value);
         }
-        input->kernels[i] = { kernel.kernelName,
-            {outProgInfo[0],outProgInfo[1],outProgInfo[2]}, kernel.offset,
+        input->kernels[i] = { kernel.kernelName, {}, kernel.offset,
             std::vector<GalliumArgInfo>(kernel.argInfos.begin(), kernel.argInfos.end()) };
+        std::copy(outProgInfo, outProgInfo+progInfoEntriesNum, input->kernels[i].progInfo);
     }
     input->code = elfBin.getSectionContent(textIndex);
     input->codeSize = ULEV(elfBin.getSectionHeader(textIndex).sh_size);
@@ -107,7 +108,7 @@ static const char* galliumArgSemTypeNamesTbl[] =
 };
 
 static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
-             GPUArchitecture arch, const GalliumProgInfoEntry* progInfo)
+             GPUArchitecture arch, const GalliumProgInfoEntry* progInfo, bool isLLVM390)
 {
     output.write("    .config\n", 12);
     size_t bufSize;
@@ -116,6 +117,8 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     const uint32_t pgmRsrc1 = progInfo[0].value;
     const uint32_t pgmRsrc2 = progInfo[1].value;
     const uint32_t scratchVal = progInfo[2].value;
+    const uint32_t spilledSGPRs = progInfo[3].value;
+    const uint32_t spilledVGPRs = progInfo[4].value;
     
     const cxuint dimMask = (pgmRsrc2 >> 7) & 7;
     strcpy(buf, "        .dims ");
@@ -173,6 +176,13 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     output.write(buf, bufSize);
     bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", pgmRsrc2);
     output.write(buf, bufSize);
+    if (isLLVM390)
+    {
+        bufSize = snprintf(buf, 100, "        .spilledsgprs %d\n", spilledSGPRs);
+        output.write(buf, bufSize);
+        bufSize = snprintf(buf, 100, "        .spilledvgprs %d\n", spilledVGPRs);
+        output.write(buf, bufSize);
+    }
 }
 
 void CLRX::disassembleGallium(std::ostream& output,
@@ -258,9 +268,11 @@ void CLRX::disassembleGallium(std::ostream& output,
             }
             if (!doDumpConfig)
             {   /// proginfo
+                const cxuint progInfoEntriesNum = galliumInput->isLLVM390 ? 5 : 3;
                 output.write("    .proginfo\n", 14);
-                for (const GalliumProgInfoEntry& piEntry: kinput.progInfo)
+                for (cxuint k = 0; k < progInfoEntriesNum; k++)
                 {
+                    const GalliumProgInfoEntry& piEntry = kinput.progInfo[k];
                     output.write("        .entry ", 15);
                     char buf[32];
                     size_t numSize = itocstrCStyle<uint32_t>(piEntry.address,
@@ -273,7 +285,8 @@ void CLRX::disassembleGallium(std::ostream& output,
                 }
             }
             else
-                dumpKernelConfig(output, maxSgprsNum, arch, kinput.progInfo);
+                dumpKernelConfig(output, maxSgprsNum, arch, kinput.progInfo,
+                    galliumInput->isLLVM390);
         }
         isaDisassembler->addNamedLabel(kinput.offset, kinput.kernelName);
     }

@@ -80,6 +80,7 @@ void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary, size_t kernelsNum)
         shdrSize % amdGPUConfigSize != 0)
         throw Exception("Wrong size of .AMDGPU.config section!");
     llvm390 = amdGPUConfigSize==40;
+    const cxuint progInfoEntriesNum = amdGPUConfigSize>>3;
     
     const bool hasProgInfoMap = (elfBinary.getCreationFlags() &
                         GALLIUM_ELF_CREATE_PROGINFOMAP) != 0;
@@ -97,7 +98,8 @@ void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary, size_t kernelsNum)
             if (ULEV(sym.st_value) >= textSize)
                 throw Exception("kernel symbol offset out of range");
             if (hasProgInfoMap)
-                progInfoEntryMap[progInfosNum] = std::make_pair(symName, 3*progInfosNum);
+                progInfoEntryMap[progInfosNum] = std::make_pair(symName,
+                                progInfoEntriesNum*progInfosNum);
             progInfosNum++;
         }
     }
@@ -391,8 +393,8 @@ GalliumBinGenerator::GalliumBinGenerator(bool _64bitMode, GPUDeviceType deviceTy
         const std::vector<GalliumKernelInput>& kernels)
         : manageable(true), input(nullptr)
 {
-    input = new GalliumInput{ _64bitMode, deviceType, globalDataSize, globalData, kernels,
-            codeSize, code, 0, nullptr };
+    input = new GalliumInput{ _64bitMode, false, false, deviceType, globalDataSize,
+            globalData, kernels, codeSize, code, 0, nullptr };
 }
 
 GalliumBinGenerator::GalliumBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
@@ -401,8 +403,8 @@ GalliumBinGenerator::GalliumBinGenerator(bool _64bitMode, GPUDeviceType deviceTy
         std::vector<GalliumKernelInput>&& kernels)
         : manageable(true), input(nullptr)
 {
-    input = new GalliumInput{ _64bitMode, deviceType, globalDataSize, globalData,
-        std::move(kernels), codeSize, code, 0, nullptr };
+    input = new GalliumInput{ _64bitMode, false, false, deviceType, globalDataSize,
+            globalData, std::move(kernels), codeSize, code, 0, nullptr };
 }
 
 
