@@ -511,8 +511,8 @@ public:
                 outEntries[2].value = (scratchBlocks)<<12;
                 if (input.isLLVM390)
                 {
-                    outEntries[4].value = config.spilledSGPRs;
-                    outEntries[5].value = config.spilledVGPRs;
+                    outEntries[3].value = config.spilledSGPRs;
+                    outEntries[4].value = config.spilledVGPRs;
                 }
                 for (cxuint k = 0; k < progInfoEntriesNum; k++)
                     outEntries[k].value = ULEV(outEntries[k].value);
