@@ -314,12 +314,18 @@ enum GalliumConfigValueTarget
     GALLIUMCVAL_DEBUGMODE,
     GALLIUMCVAL_DX10CLAMP,
     GALLIUMCVAL_PRIVMODE,
-    GALLIUMCVAL_EXCEPTIONS
+    GALLIUMCVAL_EXCEPTIONS,
+    GALLIUMCVAL_SPILLEDSGPRS,
+    GALLIUMCVAL_SPILLEDVGPRS
 };
 
 struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
 {
     static bool checkPseudoOpName(const CString& string);
+    
+    static void setDriverVersion(AsmGalliumHandler& handler, const char* linePtr);
+    
+    static void setLLVMVersion(AsmGalliumHandler& handler, const char* linePtr);
     
     /* user configuration pseudo-ops */
     static void doConfig(AsmGalliumHandler& handler, const char* pseudoOpPlace,

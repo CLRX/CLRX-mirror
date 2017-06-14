@@ -385,7 +385,7 @@ struct GalliumKernelConfig
 struct GalliumKernelInput
 {
     CString kernelName;   ///< kernel's name
-    GalliumProgInfoEntry progInfo[3];   ///< program info for kernel
+    GalliumProgInfoEntry progInfo[5];   ///< program info for kernel
     bool useConfig;         ///< true if configuration has been used to generate binary
     GalliumKernelConfig config; ///< kernel's configuration
     uint32_t offset;    ///< offset of kernel code

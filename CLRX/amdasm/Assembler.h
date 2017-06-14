@@ -422,6 +422,7 @@ private:
     BinaryFormat format;
     GPUDeviceType deviceType;
     uint32_t driverVersion;
+    uint32_t llvmVersion; // GalliumCompute
     bool _64bit;    ///
     bool good;
     bool resolvingRelocs;
@@ -682,6 +683,13 @@ public:
     /// set AMD driver version
     void setDriverVersion(uint32_t driverVersion)
     { this->driverVersion = driverVersion; }
+    
+    /// get LLVM version
+    uint32_t getLLVMVersion() const
+    { return llvmVersion; }
+    /// set LLVM version
+    void setLLVMVersion(uint32_t llvmVersion)
+    { this->llvmVersion = llvmVersion; }
     
     /// get GPU device type
     GPUDeviceType getDeviceType() const

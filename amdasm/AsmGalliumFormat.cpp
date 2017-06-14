@@ -33,27 +33,30 @@ using namespace CLRX;
 static const char* galliumPseudoOpNamesTbl[] =
 {
     "arg", "args", "config",
-    "debugmode", "dims", "dx10clamp",
+    "debugmode", "dims", "driver_version", "dx10clamp",
     "entry", "exceptions", "floatmode",
     "globaldata", "ieeemode",
     "kcode", "kcodeend",
-    "localsize", "pgmrsrc1", "pgmrsrc2", "priority",
+    "llvm_version", "localsize",
+    "pgmrsrc1", "pgmrsrc2", "priority",
     "privmode", "proginfo",
-    "scratchbuffer", "sgprsnum", "tgsize",
-    "userdatanum", "vgprsnum"
+    "scratchbuffer", "sgprsnum", "spilledsgprs", "spilledvgprs",
+    "tgsize", "userdatanum", "vgprsnum"
 };
 
 enum
 {
     GALLIUMOP_ARG = 0, GALLIUMOP_ARGS, GALLIUMOP_CONFIG,
-    GALLIUMOP_DEBUGMODE, GALLIUMOP_DIMS, GALLIUMOP_DX10CLAMP,
+    GALLIUMOP_DEBUGMODE, GALLIUMOP_DIMS, GALLIUMOP_DRIVER_VERSION, GALLIUMOP_DX10CLAMP,
     GALLIUMOP_ENTRY, GALLIUMOP_EXCEPTIONS, GALLIUMOP_FLOATMODE,
     GALLIUMOP_GLOBALDATA, GALLIUMOP_IEEEMODE,
     GALLIUMOP_KCODE, GALLIUMOP_KCODEEND,
-    GALLIUMOP_LOCALSIZE, GALLIUMOP_PGMRSRC1, GALLIUMOP_PGMRSRC2, GALLIUMOP_PRIORITY,
+    GALLIUMOP_LLVM_VERSION, GALLIUMOP_LOCALSIZE,
+    GALLIUMOP_PGMRSRC1, GALLIUMOP_PGMRSRC2, GALLIUMOP_PRIORITY,
     GALLIUMOP_PRIVMODE, GALLIUMOP_PROGINFO,
-    GALLIUMOP_SCRATCHBUFFER, GALLIUMOP_SGPRSNUM, GALLIUMOP_TGSIZE,
-    GALLIUMOP_USERDATANUM, GALLIUMOP_VGPRSNUM
+    GALLIUMOP_SCRATCHBUFFER, GALLIUMOP_SGPRSNUM,
+    GALLIUMOP_SPILLEDSGPRS, GALLIUMOP_SPILLEDVGPRS,
+    GALLIUMOP_TGSIZE, GALLIUMOP_USERDATANUM, GALLIUMOP_VGPRSNUM
 };
 
 /*
@@ -267,6 +270,33 @@ bool AsmGalliumPseudoOps::checkPseudoOpName(const CString& string)
     return pseudoOp < sizeof(galliumPseudoOpNamesTbl)/sizeof(char*);
 }
 
+void AsmGalliumPseudoOps::setDriverVersion(AsmGalliumHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value;
+    if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    asmr.driverVersion = value;
+}
+
+void AsmGalliumPseudoOps::setLLVMVersion(AsmGalliumHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value;
+    if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    asmr.llvmVersion = value;
+}
+
+
 void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {
@@ -371,6 +401,36 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 }
                 break;
             }
+            case GALLIUMCVAL_SPILLEDSGPRS:
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+                if (value > maxSGPRsNum)
+                {
+                    char buf[64];
+                    snprintf(buf, 64, "Spilled SGPRs number out of range (0-%u)",
+                             maxSGPRsNum);
+                    asmr.printError(valuePlace, buf);
+                    good = false;
+                }
+                break;
+            }
+            case GALLIUMCVAL_SPILLEDVGPRS:
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                cxuint maxVGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
+                if (value > maxVGPRsNum)
+                {
+                    char buf[64];
+                    snprintf(buf, 64, "Spilled VGPRs number out of range (0-%u)",
+                             maxVGPRsNum);
+                    asmr.printError(valuePlace, buf);
+                    good = false;
+                }
+                break;
+            }
             case GALLIUMCVAL_EXCEPTIONS:
                 asmr.printWarningForRange(7, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
@@ -429,6 +489,12 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
             break;
         case GALLIUMCVAL_VGPRSNUM:
             config.usedVGPRsNum = value;
+            break;
+        case GALLIUMCVAL_SPILLEDSGPRS:
+            config.spilledSGPRs = value;
+            break;
+        case GALLIUMCVAL_SPILLEDVGPRS:
+            config.spilledVGPRs = value;
             break;
         case GALLIUMCVAL_PGMRSRC1:
             config.pgmRSRC1 = value;
@@ -928,6 +994,9 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
         case GALLIUMOP_DIMS:
             AsmGalliumPseudoOps::setDimensions(*this, stmtPlace, linePtr);
             break;
+        case GALLIUMOP_DRIVER_VERSION:
+            AsmGalliumPseudoOps::setDriverVersion(*this, linePtr);
+            break;
         case GALLIUMOP_DX10CLAMP:
             AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                                 GALLIUMCVAL_DX10CLAMP);
@@ -955,6 +1024,9 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             break;
         case GALLIUMOP_KCODEEND:
             AsmGalliumPseudoOps::doKCodeEnd(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_LLVM_VERSION:
+            AsmGalliumPseudoOps::setLLVMVersion(*this, linePtr);
             break;
         case GALLIUMOP_LOCALSIZE:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
@@ -986,6 +1058,14 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
         case GALLIUMOP_SGPRSNUM:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_SGPRSNUM);
+            break;
+        case GALLIUMOP_SPILLEDSGPRS:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_SPILLEDSGPRS);
+            break;
+        case GALLIUMOP_SPILLEDVGPRS:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_SPILLEDVGPRS);
             break;
         case GALLIUMOP_TGSIZE:
             AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
@@ -1170,6 +1250,9 @@ bool AsmGalliumHandler::prepareBinary()
         }
         kinput.offset = symbol.value;
     }
+    // set versions
+    output.isMesa170 = assembler.driverVersion >= 170000U;
+    output.isLLVM390 = assembler.llvmVersion >= 30900U;
     return good;
 }
 

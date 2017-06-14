@@ -46,7 +46,9 @@ static const CLIOption programOptions[] =
     { "arch", 'A', CLIArgType::TRIMMED_STRING, false, false,
         "set GPU architecture for Gallium/raw binaries", "ARCH" },
     { "driverVersion", 't', CLIArgType::UINT, false, false,
-        "set driver version (for AmdCatalyst)", nullptr },
+        "set driver version (for Amd/GalliumCompute)", nullptr },
+    { "llvmVersion", 0, CLIArgType::UINT, false, false,
+        "set LLVM version (for GalliumCompute)", nullptr },
     { "forceAddSymbols", 'S', CLIArgType::NONE, false, false,
         "force add symbols to binaries", nullptr },
     { "alternate", 'a', CLIArgType::NONE, false, false,
@@ -83,6 +85,7 @@ try
     BinaryFormat binFormat = BinaryFormat::AMD;
     GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE;
     uint32_t driverVersion = 0;
+    uint32_t llvmVersion = 0;
     Flags flags = 0;
     if (cli.hasShortOption('b'))
     {
@@ -109,6 +112,8 @@ try
                     cli.getShortOptArg<const char*>('A')));
     if (cli.hasShortOption('t'))
         driverVersion = cli.getShortOptArg<cxuint>('t');
+    if (cli.hasLongOption("llvmVersion"))
+        llvmVersion = cli.getLongOptArg<cxuint>("llvmVersion");
     if (cli.hasShortOption('S'))
         flags |= ASM_FORCE_ADD_SYMBOLS;
     if (!cli.hasShortOption('w'))
@@ -132,6 +137,7 @@ try
         assembler.reset(new Assembler(nullptr, std::cin, flags, binFormat, deviceType));
     assembler->set64Bit(is64Bit);
     assembler->setDriverVersion(driverVersion);
+    assembler->setLLVMVersion(llvmVersion);
     
     size_t defSymsNum = 0;
     const char* const* defSyms = nullptr;

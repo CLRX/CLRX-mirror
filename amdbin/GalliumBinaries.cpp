@@ -471,16 +471,21 @@ public:
         const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input.deviceType);
         const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
         const uint32_t ldsMask = (1U<<ldsShift)-1U;
+        
+        const cxuint progInfoEntriesNum = input.isLLVM390 ? 5 : 3;
+        
         for (uint32_t korder: kernelsOrder)
         {
             const GalliumKernelInput& kernel = input.kernels[korder];
-            GalliumProgInfoEntry outEntries[3];
+            GalliumProgInfoEntry outEntries[5];
             if (kernel.useConfig)
             {
                 const GalliumKernelConfig& config = kernel.config;
                 outEntries[0].address = ULEV(0x0000b848U);
                 outEntries[1].address = ULEV(0x0000b84cU);
                 outEntries[2].address = ULEV(0x0000b860U);
+                outEntries[3].address = ULEV(0x00000004U);
+                outEntries[4].address = ULEV(0x00000008U);
                 
                 uint32_t scratchBlocks = ((config.scratchBufferSize<<6) + 1023)>>10;
                 uint32_t dimValues = 0;
@@ -504,15 +509,22 @@ public:
                         (((config.localSize+ldsMask)>>ldsShift)<<15) |
                         ((uint32_t(config.exceptions)&0x7f)<<24);
                 outEntries[2].value = (scratchBlocks)<<12;
-                for (cxuint k = 0; k < 3; k++)
+                if (input.isLLVM390)
+                {
+                    outEntries[4].value = config.spilledSGPRs;
+                    outEntries[5].value = config.spilledVGPRs;
+                }
+                for (cxuint k = 0; k < progInfoEntriesNum; k++)
                     outEntries[k].value = ULEV(outEntries[k].value);
             }
             else
-                for (cxuint k = 0; k < 3; k++)
+            {
+                for (cxuint k = 0; k < progInfoEntriesNum; k++)
                 {
                     outEntries[k].address = ULEV(kernel.progInfo[k].address);
                     outEntries[k].value = ULEV(kernel.progInfo[k].value);
                 }
+            }
             fob.writeArray(3, outEntries);
         }
     }
@@ -710,8 +722,10 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     }
     /* section */
     {
-        const uint32_t section[6] = { LEV(1U), LEV(0U), LEV(0U), LEV(uint32_t(elfSize)),
-            LEV(uint32_t(elfSize+4)), LEV(uint32_t(elfSize)) };
+        const uint32_t secType = uint32_t(input->isMesa170 ?
+                GalliumSectionType::TEXT_EXECUTABLE_170 : GalliumSectionType::TEXT);
+        const uint32_t section[6] = { LEV(1U), LEV(0U), LEV(secType),
+            LEV(uint32_t(elfSize)), LEV(uint32_t(elfSize+4)), LEV(uint32_t(elfSize)) };
         bos.writeArray(6, section);
     }
     if (!input->is64BitElf)

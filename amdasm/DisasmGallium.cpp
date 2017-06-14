@@ -205,10 +205,10 @@ void CLRX::disassembleGallium(std::ostream& output,
         output.write(".rodata\n", 8);
         printDisasmData(galliumInput->globalDataSize, galliumInput->globalData, output);
     }
-    if (galliumInput->isLLVM390)
-        output.write(".llvm390\n", 9);
     if (galliumInput->isMesa170)
-        output.write(".mesa170\n", 9);
+        output.write(".driver_version 170000\n", 23);
+    if (galliumInput->isLLVM390)
+        output.write(".llvm_version 30900\n", 20);
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(galliumInput->deviceType);
     const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
