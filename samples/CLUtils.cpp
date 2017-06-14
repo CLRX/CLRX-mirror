@@ -282,7 +282,19 @@ try
             catch(const ParseException& ex)
             { } // ignore error
         }
-        const char* mesaPart = strstr(deviceName.get(), "Mesa ");
+        
+        size_t deviceVersionSize;
+        std::unique_ptr<char[]> deviceVersion;
+        error = clGetDeviceInfo(device, CL_DEVICE_VERSION, 0, nullptr, &deviceVersionSize);
+        if (error != CL_SUCCESS)
+            throw CLError(error, "clGetDeviceInfoVersion");
+        deviceVersion.reset(new char[deviceVersionSize]);
+        error = clGetDeviceInfo(device, CL_DEVICE_VERSION, deviceVersionSize,
+                                deviceVersion.get(), nullptr);
+        if (error != CL_SUCCESS)
+            throw CLError(error, "clGetDeviceInfoVersion");
+        
+        const char* mesaPart = strstr(deviceVersion.get(), "Mesa ");
         if (mesaPart!=nullptr)
         {
             try
