@@ -525,7 +525,7 @@ public:
                     outEntries[k].value = ULEV(kernel.progInfo[k].value);
                 }
             }
-            fob.writeArray(3, outEntries);
+            fob.writeArray(progInfoEntriesNum, outEntries);
         }
     }
 };
@@ -548,8 +548,9 @@ static void putSectionsAndSymbols(ElfBinaryGenTemplate<Types>& elfBinGen,
     elfBinGen.addRegion(ElfRegion(0, (const cxbyte*)nullptr, 4, ".bss",
             SHT_NOBITS, SHF_ALLOC|SHF_WRITE));
     // write configuration for kernel execution
-    elfBinGen.addRegion(ElfRegion(uint64_t(24U)*kernelsNum, &amdGpuConfigContent, 1,
-            ".AMDGPU.config", SHT_PROGBITS, 0));
+    const cxuint progInfoEntriesNum = input->isLLVM390 ? 5 : 3;
+    elfBinGen.addRegion(ElfRegion(uint64_t(8U*progInfoEntriesNum)*kernelsNum,
+            &amdGpuConfigContent, 1, ".AMDGPU.config", SHT_PROGBITS, 0));
     
     if (input->globalData!=nullptr)
         elfBinGen.addRegion(ElfRegion(input->globalDataSize, input->globalData, 4,

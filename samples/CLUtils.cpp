@@ -258,7 +258,8 @@ try
     std::cout << "Device: " << deviceIndex << " - " << deviceName.get() << std::endl;
     
     // get bits from device name (LLVM version)
-#if HAVE_64BIT
+    cxuint llvmVersion = 0;
+    cxuint mesaVersion = 0;
     if (binaryFormat == BinaryFormat::GALLIUM)
     {
         const char* llvmPart = strstr(deviceName.get(), "LLVM ");
@@ -272,14 +273,32 @@ try
                 cxuint majorVersion = cstrtoui(majorVerPart, nullptr, minorVerPart);
                 minorVerPart++; // skip '.'
                 cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
+                llvmVersion = majorVersion*10000U + minorVersion*100U;
+#if HAVE_64BIT
                 if (majorVersion*10000U + minorVersion*100U >= 30900U)
                     bits = 64; // use 64-bit
+#endif
+            }
+            catch(const ParseException& ex)
+            { } // ignore error
+        }
+        const char* mesaPart = strstr(deviceName.get(), "Mesa ");
+        if (mesaPart!=nullptr)
+        {
+            try
+            {
+                const char* majorVerPart = mesaPart+5;
+                const char* minorVerPart;
+                const char* end;
+                cxuint majorVersion = cstrtoui(majorVerPart, nullptr, minorVerPart);
+                minorVerPart++; // skip '.'
+                cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
+                mesaVersion = majorVersion*10000U + minorVersion*100U;
             }
             catch(const ParseException& ex)
             { } // ignore error
         }
     }
-#endif
     /* assemble source code */
     /// determine device type
     char* sdeviceName = stripCString(deviceName.get());
@@ -316,6 +335,9 @@ try
         // by default assembler put logs to stderr
         Assembler assembler("", astream, 0, binaryFormat, devType);
         assembler.set64Bit(bits==64);
+        assembler.setLLVMVersion(llvmVersion);
+        if (binaryFormat == BinaryFormat::GALLIUM)
+            assembler.setDriverVersion(mesaVersion);
         assembler.assemble();
         assembler.writeBinary(binary);
     }

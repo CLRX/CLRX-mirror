@@ -62,6 +62,8 @@ static GalliumInput getGalliumInputBase(bool disassembly, const GalliumBinary* g
     
     input.commentSize = ULEV(commentHdr.sh_size);
     input.comment = (const char*)elfBin.getSectionContent(".comment");
+    input.isMesa170 = galliumBin->isMesa170();
+    input.isLLVM390 = elfBin.isLLVM390();
     
     // kernel input
     const cxuint kernelsNum = galliumBin->getKernelsNum();
