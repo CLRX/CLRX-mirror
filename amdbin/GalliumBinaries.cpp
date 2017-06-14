@@ -35,11 +35,12 @@ using namespace CLRX;
 /* Gallium ELF binary */
 
 GalliumElfBinaryBase::GalliumElfBinaryBase() :
-        progInfosNum(0), progInfoEntries(nullptr), disasmSize(0), disasmOffset(0)
+        progInfosNum(0), progInfoEntries(nullptr), disasmSize(0), disasmOffset(0),
+        llvm390(false)
 { }
 
 template<typename ElfBinary>
-void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary)
+void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary, size_t kernelsNum)
 {
     uint16_t amdGpuConfigIndex = SHN_UNDEF;
     try
@@ -73,8 +74,12 @@ void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary)
         return;
     // create amdGPU config systems
     const auto& shdr = elfBinary.getSectionHeader(amdGpuConfigIndex);
-    if ((ULEV(shdr.sh_size) % 24U) != 0)
+    size_t shdrSize = ULEV(shdr.sh_size);
+    size_t amdGPUConfigSize = (shdrSize / kernelsNum);
+    if (amdGPUConfigSize != 24 && amdGPUConfigSize != 40 &&
+        shdrSize % amdGPUConfigSize != 0)
         throw Exception("Wrong size of .AMDGPU.config section!");
+    llvm390 = amdGPUConfigSize==40;
     
     const bool hasProgInfoMap = (elfBinary.getCreationFlags() &
                         GALLIUM_ELF_CREATE_PROGINFOMAP) != 0;
@@ -96,7 +101,7 @@ void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary)
             progInfosNum++;
         }
     }
-    if (progInfosNum*24U != ULEV(shdr.sh_size))
+    if (progInfosNum*amdGPUConfigSize != ULEV(shdr.sh_size))
         throw Exception("Number of symbol kernels doesn't match progInfos number!");
     cxbyte* binaryCode = (cxbyte*)elfBinary.getBinaryCode();
     progInfoEntries = reinterpret_cast<GalliumProgInfoEntry*>(binaryCode +
@@ -119,10 +124,11 @@ GalliumElfBinary32::~GalliumElfBinary32()
 { }
 
 GalliumElfBinary32::GalliumElfBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
-           Flags creationFlags) : ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
+           Flags creationFlags, size_t kernelsNum) :
+           ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
        
 {
-    loadFromElf(static_cast<const ElfBinary32&>(*this));
+    loadFromElf(static_cast<const ElfBinary32&>(*this), kernelsNum);
 }
 
 GalliumElfBinary64::GalliumElfBinary64()
@@ -132,10 +138,11 @@ GalliumElfBinary64::~GalliumElfBinary64()
 { }
 
 GalliumElfBinary64::GalliumElfBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
-           Flags creationFlags) : ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
+           Flags creationFlags, size_t kernelsNum) :
+           ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
        
 {
-    loadFromElf(static_cast<const ElfBinary64&>(*this));
+    loadFromElf(static_cast<const ElfBinary64&>(*this), kernelsNum);
 }
 
 uint32_t GalliumElfBinaryBase::getProgramInfoEntriesNum(uint32_t index) const
@@ -199,7 +206,7 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
                  Flags _creationFlags) : creationFlags(_creationFlags),
          binaryCodeSize(_binaryCodeSize), binaryCode(_binaryCode),
          kernelsNum(0), sectionsNum(0), kernels(nullptr), sections(nullptr),
-         elf64BitBinary(false)
+         elf64BitBinary(false), mesa170(false)
 {
     if (binaryCodeSize < 4)
         throw Exception("GalliumBinary is too small!!!");
@@ -301,22 +308,24 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
         
         section.offset = data-binaryCode;
         
-        if (!elfBinary && section.type == GalliumSectionType::TEXT)
-        {
+        if (!elfBinary && (section.type == GalliumSectionType::TEXT ||
+            section.type == GalliumSectionType::TEXT_EXECUTABLE_170))
+        {   // if new Mesa3D 17.0
+            mesa170 = (section.type == GalliumSectionType::TEXT_EXECUTABLE_170);
             if (section.size < sizeof(Elf32_Ehdr))
                 throw Exception("Wrong GalliumElfBinary size");
             const Elf32_Ehdr& ehdr = *reinterpret_cast<const Elf32_Ehdr*>(data);
             if (ehdr.e_ident[EI_CLASS] == ELFCLASS32)
             {   // 32-bit
                 elfBinary.reset(new GalliumElfBinary32(section.size, data,
-                                 creationFlags>>GALLIUM_INNER_SHIFT));
+                                 creationFlags>>GALLIUM_INNER_SHIFT, kernelsNum));
                 elf64BitBinary = false;
             }
             else if (ehdr.e_ident[EI_CLASS] == ELFCLASS64)
             {   // 64-bit
                 elfSectionId = section.sectionId;
                 elfBinary.reset(new GalliumElfBinary64(section.size, data,
-                                 creationFlags>>GALLIUM_INNER_SHIFT));
+                                 creationFlags>>GALLIUM_INNER_SHIFT, kernelsNum));
                 elf64BitBinary = true;
             }
             else // wrong class
@@ -361,6 +370,7 @@ void GalliumInput::addEmptyKernel(const char* kernelName)
     kinput.config.usedSGPRsNum = BINGEN_DEFAULT;
     kinput.config.floatMode = 0xc0;
     kinput.config.userDataNum = 4;
+    kinput.config.spilledVGPRs = kinput.config.spilledSGPRs = 0;
     kernels.push_back(std::move(kinput));
 }
 

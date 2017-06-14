@@ -116,7 +116,14 @@ enum class GalliumSectionType: cxbyte
     DATA_GLOBAL,    ///< global data (???)
     DATA_LOCAL,     ///< local data (???)
     DATA_PRIVATE,   ///< private data (???)
-    MAX_VALUE = DATA_PRIVATE    ///< last value
+    TEXT_INTERMEDIATE_170 = 0,
+    TEXT_LIBRARY_170,
+    TEXT_EXECUTABLE_170,
+    DATA_CONSTANT_170,
+    DATA_GLOBAL_170,
+    DATA_LOCAL_170,
+    DATA_PRIVATE_170,
+    MAX_VALUE = DATA_PRIVATE_170    ///< last value
 };
 
 /// Gallium binarie's Section
@@ -140,10 +147,11 @@ protected:
     ProgInfoEntryIndexMap progInfoEntryMap; ///< program info map
     size_t disasmSize;  ///< disassembly size
     size_t disasmOffset;    ///< disassembly offset
+    bool llvm390;
     
     /// routine to load binary fro internal ELF 
     template<typename ElfBinary>
-    void loadFromElf(ElfBinary& elfBinary);
+    void loadFromElf(ElfBinary& elfBinary, size_t kernelsNum);
 public:
     /// empty constructor
     GalliumElfBinaryBase();
@@ -182,6 +190,9 @@ public:
     /// returns size of disassembly
     size_t getDisassemblySize() const
     { return disasmSize; }
+    
+    bool isLLVM390() const
+    { return llvm390; }
 };
 
 /* INFO: in this file is used ULEV function for conversion
@@ -197,7 +208,8 @@ public:
     /// empty constructor
     GalliumElfBinary32();
     /// constructor
-    GalliumElfBinary32(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags);
+    GalliumElfBinary32(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags,
+            size_t kernelsNum);
     /// destructor
     virtual ~GalliumElfBinary32();
     
@@ -217,7 +229,8 @@ public:
     /// empty constructor
     GalliumElfBinary64();
     /// constructor
-    GalliumElfBinary64(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags);
+    GalliumElfBinary64(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags,
+            size_t kernelsNum);
     /// destructor
     virtual ~GalliumElfBinary64();
     
@@ -245,6 +258,8 @@ private:
     
     bool elf64BitBinary;
     std::unique_ptr<GalliumElfBinaryBase> elfBinary;
+    bool mesa170;
+    
 public:
     /// constructor
     GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags);
@@ -328,6 +343,9 @@ public:
     /// get kernel with speciified name
     const GalliumKernel& getKernel(const char* name) const
     { return kernels[getKernelIndex(name)]; }
+    
+    bool isMesa170() const
+    { return mesa170; };
 };
 
 enum: cxuint {
@@ -359,6 +377,8 @@ struct GalliumKernelConfig
     bool dx10Clamp;     ///< DX10 CLAMP mode
     size_t localSize; ///< used local size (not local defined in kernel arguments)
     uint32_t scratchBufferSize; ///< size of scratch buffer
+    cxuint spilledVGPRs;
+    cxuint spilledSGPRs;
 };
 
 /// kernel info structure (Gallium binaries)

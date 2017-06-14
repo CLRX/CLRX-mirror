@@ -61,7 +61,7 @@ NOTE: OMOD modifier doesn't work if output denormals are allowed
 NOTE: OMOD and CLAMP modifier affects only for instruction that output is
 floating point value.  
 NOTE: ABS and negation is applied to source operand for any instruction.  
-OMOD: OMOD modifier doesn't work for half precision (FP16) instructions (except V_MAC_F16).
+NOTE: OMOD modifier doesn't work for half precision (FP16) instructions (except V_MAC_F16).
 
 Negation and absolute value can be combined: `-ABS(V0)`. Modifiers CLAMP and
 OMOD (MUL:2, MUL:4 and DIV:2) can be given in random order.
