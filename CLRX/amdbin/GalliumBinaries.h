@@ -410,7 +410,7 @@ struct GalliumInput
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
     
     /// add empty kernel with default values
-    void addEmptyKernel(const char* kernelName);
+    void addEmptyKernel(const char* kernelName, cxuint llvmVersion);
 };
 
 /// gallium code binary generator

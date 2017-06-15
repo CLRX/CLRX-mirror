@@ -83,7 +83,7 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
 {
     cxuint thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
-    output.addEmptyKernel(kernelName);
+    output.addEmptyKernel(kernelName, assembler.llvmVersion);
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
     kernelStates.push_back({ thisSection, false, 0 });
@@ -1235,7 +1235,7 @@ bool AsmGalliumHandler::prepareBinary()
         if (!output.kernels[i].useConfig)
             continue;
         GalliumKernelConfig& config = output.kernels[i].config;
-        cxuint userSGPRsNum = (assembler.llvmVersion >= 40000U) ? 8 : 4;
+        cxuint userSGPRsNum = config.userDataNum;
         /* include userData sgprs */
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
                 ((config.pgmRSRC2>>7)&7);
