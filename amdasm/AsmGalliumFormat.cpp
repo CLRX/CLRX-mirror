@@ -1377,8 +1377,8 @@ bool AsmGalliumHandler::prepareBinary()
                     uint16_t(AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER|
                         AMDHSAFLAG_USE_DISPATCH_PTR|AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR));
             SULEV(outConfig.enableFeatureFlags, uint16_t(AMDHSAFLAG_USE_PTR64|2));
-            SULEV(outConfig.workitemPrivateSegmentSize, config.spilledVGPRs<<2);
-            SULEV(outConfig.workgroupGroupSegmentSize, config.spilledSGPRs<<2);
+            SULEV(outConfig.workitemPrivateSegmentSize, config.scratchBufferSize);
+            SULEV(outConfig.workgroupGroupSegmentSize, config.localSize);
             SULEV(outConfig.gdsSegmentSize, 0);
             SULEV(outConfig.kernargSegmentSize, argSegmentSize);
             SULEV(outConfig.workgroupFbarrierCount, 0);
