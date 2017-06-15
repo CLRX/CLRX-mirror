@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+#include <iostream>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -27,6 +28,7 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/amdasm/AsmFormats.h>
+#include <CLRX/amdbin/GalliumBinaries.h>
 #include "AsmInternals.h"
 
 using namespace CLRX;
@@ -1360,7 +1362,16 @@ bool AsmGalliumHandler::prepareBinary()
             
             size_t argSegmentSize = 0;
             for (GalliumArgInfo& argInfo: output.kernels[ki].argInfos)
-                argSegmentSize += (argInfo.targetSize+7) & ~size_t(7);
+            {
+                if (argInfo.semantic == GalliumArgSemantic::GRID_DIMENSION ||
+                        argInfo.semantic == GalliumArgSemantic::GRID_OFFSET)
+                    continue; // skip
+                argSegmentSize = (argSegmentSize + argInfo.targetAlign-1) &
+                        ~(argInfo.targetAlign-1);
+                argSegmentSize += argInfo.targetSize;
+                printf("argSize: %zu\n", argSegmentSize);
+            }
+            argSegmentSize += 16; // gridOffset and gridDim
             SULEV(outConfig.amdCodeVersionMajor, 1);
             SULEV(outConfig.amdCodeVersionMinor, 0);
             SULEV(outConfig.amdMachineKind, 1);
