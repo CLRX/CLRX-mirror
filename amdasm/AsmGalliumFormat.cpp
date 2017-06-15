@@ -23,6 +23,7 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include <CLRX/utils/GPUId.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/amdasm/AsmFormats.h>
@@ -35,6 +36,7 @@ static const char* galliumPseudoOpNamesTbl[] =
     "arg", "args", "config",
     "debugmode", "dims", "driver_version", "dx10clamp",
     "entry", "exceptions", "floatmode",
+    "get_driver_version", "get_llvm_version",
     "globaldata", "ieeemode",
     "kcode", "kcodeend",
     "llvm_version", "localsize",
@@ -49,6 +51,7 @@ enum
     GALLIUMOP_ARG = 0, GALLIUMOP_ARGS, GALLIUMOP_CONFIG,
     GALLIUMOP_DEBUGMODE, GALLIUMOP_DIMS, GALLIUMOP_DRIVER_VERSION, GALLIUMOP_DX10CLAMP,
     GALLIUMOP_ENTRY, GALLIUMOP_EXCEPTIONS, GALLIUMOP_FLOATMODE,
+    GALLIUMOP_GET_DRIVER_VERSION, GALLIUMOP_GET_LLVM_VERSION,
     GALLIUMOP_GLOBALDATA, GALLIUMOP_IEEEMODE,
     GALLIUMOP_KCODE, GALLIUMOP_KCODEEND,
     GALLIUMOP_LLVM_VERSION, GALLIUMOP_LOCALSIZE,
@@ -295,6 +298,48 @@ void AsmGalliumPseudoOps::setLLVMVersion(AsmGalliumHandler& handler, const char*
         return;
     asmr.llvmVersion = value;
 }
+
+void AsmGalliumPseudoOps::getXXXVersion(AsmGalliumHandler& handler, const char* linePtr,
+            bool getLLVMVersion)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    
+    const char* symNamePlace = linePtr;
+    const CString symName = extractScopedSymName(linePtr, end, false);
+    if (symName.empty())
+    {
+        asmr.printError(symNamePlace, "Illegal symbol name");
+        return;
+    }
+    size_t symNameLength = symName.size();
+    if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
+    {
+        asmr.printError(symNamePlace, "Symbol '.' can be only in global scope");
+        return;
+    }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    cxuint driverVersion = 0;
+    if (getLLVMVersion)
+        driverVersion = asmr.llvmVersion;
+    else
+        driverVersion = asmr.driverVersion;
+    
+    std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
+                AsmSymbol(ASMSECT_ABS, driverVersion));
+    if (!res.second)
+    {   // found
+        if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
+            asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
+                        "' is already defined").c_str());
+        else
+            asmr.setSymbol(*res.first, driverVersion, ASMSECT_ABS);
+    }
+}
+
 
 
 void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseudoOpPlace,
@@ -1012,6 +1057,12 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_FLOATMODE);
             break;
+        case GALLIUMOP_GET_DRIVER_VERSION:
+            AsmGalliumPseudoOps::getXXXVersion(*this, linePtr, false);
+            break;
+        case GALLIUMOP_GET_LLVM_VERSION:
+            AsmGalliumPseudoOps::getXXXVersion(*this, linePtr, true);
+            break;
         case GALLIUMOP_GLOBALDATA:
             AsmGalliumPseudoOps::doGlobalData(*this, stmtPlace, linePtr);
             break;
@@ -1084,6 +1135,31 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
     }
     return true;
 }
+
+static const AMDGPUArchValues galliumAmdGpuArchValuesTbl[] =
+{
+    { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
+    { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
+    { 0, 0, 0 }, // GPUDeviceType::TAHITI
+    { 0, 0, 0 }, // GPUDeviceType::OLAND
+    { 7, 0, 0 }, // GPUDeviceType::BONAIRE
+    { 7, 0, 0 }, // GPUDeviceType::SPECTRE
+    { 7, 0, 0 }, // GPUDeviceType::SPOOKY
+    { 7, 0, 0 }, // GPUDeviceType::KALINDI
+    { 0, 0, 0 }, // GPUDeviceType::HAINAN
+    { 7, 0, 1 }, // GPUDeviceType::HAWAII
+    { 8, 0, 0 }, // GPUDeviceType::ICELAND
+    { 8, 0, 0 }, // GPUDeviceType::TONGA
+    { 7, 0, 0 }, // GPUDeviceType::MULLINS
+    { 8, 0, 3 }, // GPUDeviceType::FIJI
+    { 8, 0, 1 }, // GPUDeviceType::CARRIZO
+    { 0, 0, 0 }, // GPUDeviceType::DUMMY
+    { 0, 0, 0 }, // GPUDeviceType::GOOSE
+    { 0, 0, 0 }, // GPUDeviceType::HORSE
+    { 8, 0, 1 }, // GPUDeviceType::STONEY
+    { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
+    { 8, 0, 4 } // GPUDeviceType::BAFFIN
+};
 
 bool AsmGalliumHandler::prepareBinary()
 {   // before call we initialize pointers and datas
@@ -1218,7 +1294,14 @@ bool AsmGalliumHandler::prepareBinary()
         }
     
     /// checking symbols and set offset for kernels
+    AMDGPUArchValues amdGpuArchValues = galliumAmdGpuArchValuesTbl[
+                    cxuint(assembler.deviceType)];
+    AsmSection& asmCSection = assembler.sections[codeSection];
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
+    
+    const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
+    const uint32_t ldsMask = (1U<<ldsShift)-1U;
+    
     for (size_t ki = 0; ki < output.kernels.size(); ki++)
     {
         GalliumKernelInput& kinput = output.kernels[ki];
@@ -1249,6 +1332,78 @@ bool AsmGalliumHandler::prepareBinary()
             continue;
         }
         kinput.offset = symbol.value;
+        if (assembler.llvmVersion >= 40000U)
+        {   // requires amdhsa-gcn (with HSA header)
+            // hotfix
+            GalliumKernelConfig& config = output.kernels[ki].config;
+            AmdHsaKernelConfig outConfig;
+            
+            uint32_t dimValues = 0;
+            if (config.dimMask != BINGEN_DEFAULT)
+                dimValues = ((config.dimMask&7)<<7) |
+                        (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+            else
+                dimValues |= (config.pgmRSRC2 & 0x1b80U);
+            cxuint sgprsNum = std::max(config.usedSGPRsNum, 1U);
+            cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
+            uint32_t pgmRSRC1 =  (config.pgmRSRC1) | ((vgprsNum-1)>>2) |
+                (((sgprsNum-1)>>3)<<6) | ((uint32_t(config.floatMode)&0xff)<<12) |
+                (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10) |
+                (config.privilegedMode?1U<<20:0) | (config.dx10Clamp?1U<<21:0) |
+                (config.debugMode?1U<<22:0);
+            
+            uint32_t pgmRSRC2 = (config.pgmRSRC2 & 0xffffe440U) |
+                        (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |
+                        ((config.scratchBufferSize)?1:0) | dimValues |
+                        (((config.localSize+ldsMask)>>ldsShift)<<15) |
+                        ((uint32_t(config.exceptions)&0x7f)<<24);
+            
+            size_t argSegmentSize = 0;
+            for (GalliumArgInfo& argInfo: output.kernels[ki].argInfos)
+                argSegmentSize += (argInfo.targetSize+7) & ~size_t(7);
+            SULEV(outConfig.amdCodeVersionMajor, 1);
+            SULEV(outConfig.amdCodeVersionMinor, 0);
+            SULEV(outConfig.amdMachineKind, 1);
+            SULEV(outConfig.amdMachineMajor, amdGpuArchValues.major);
+            SULEV(outConfig.amdMachineMinor, amdGpuArchValues.minor);
+            SULEV(outConfig.amdMachineStepping, amdGpuArchValues.stepping);
+            SULEV(outConfig.kernelCodeEntryOffset, 256);
+            SULEV(outConfig.kernelCodePrefetchOffset, 0);
+            SULEV(outConfig.kernelCodePrefetchSize, 0);
+            SULEV(outConfig.maxScrachBackingMemorySize, 0);
+            SULEV(outConfig.computePgmRsrc1, pgmRSRC1);
+            SULEV(outConfig.computePgmRsrc2, pgmRSRC2);
+            SULEV(outConfig.enableSpgrRegisterFlags, 
+                    uint16_t(AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER|
+                        AMDHSAFLAG_USE_DISPATCH_PTR|AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR));
+            SULEV(outConfig.enableFeatureFlags, uint16_t(AMDHSAFLAG_USE_PTR64|2));
+            SULEV(outConfig.workitemPrivateSegmentSize, config.spilledVGPRs<<2);
+            SULEV(outConfig.workgroupGroupSegmentSize, config.spilledSGPRs<<2);
+            SULEV(outConfig.gdsSegmentSize, 0);
+            SULEV(outConfig.kernargSegmentSize, argSegmentSize);
+            SULEV(outConfig.workgroupFbarrierCount, 0);
+            SULEV(outConfig.wavefrontSgprCount, config.usedSGPRsNum);
+            SULEV(outConfig.workitemVgprCount, config.usedVGPRsNum);
+            SULEV(outConfig.reservedVgprFirst, 0);
+            SULEV(outConfig.reservedVgprCount, 0);
+            SULEV(outConfig.reservedSgprFirst, 0);
+            SULEV(outConfig.reservedSgprCount, 0);
+            SULEV(outConfig.debugWavefrontPrivateSegmentOffsetSgpr, 0);
+            SULEV(outConfig.debugPrivateSegmentBufferSgpr, 0);
+            outConfig.kernargSegmentAlignment = 4;
+            outConfig.groupSegmentAlignment = 4;
+            outConfig.privateSegmentAlignment = 4;
+            outConfig.wavefrontSize = 6;
+            SULEV(outConfig.callConvention, 0);
+            SULEV(outConfig.reserved1[0], 0);
+            SULEV(outConfig.reserved1[1], 0);
+            SULEV(outConfig.reserved1[2], 0);
+            SULEV(outConfig.runtimeLoaderKernelSymbol, 0);
+            
+            ::memset(outConfig.controlDirective, 0, 128);
+            ::memcpy(asmCSection.content.data() + symbol.value,
+                     &outConfig, sizeof(AmdHsaKernelConfig));
+        }
     }
     // set versions
     output.isMesa170 = assembler.driverVersion >= 170000U;

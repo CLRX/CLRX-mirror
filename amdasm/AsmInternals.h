@@ -327,6 +327,9 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
     
     static void setLLVMVersion(AsmGalliumHandler& handler, const char* linePtr);
     
+    static void getXXXVersion(AsmGalliumHandler& handler, const char* linePtr,
+                              bool getLLVMVersion);
+    
     /* user configuration pseudo-ops */
     static void doConfig(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);

@@ -126,6 +126,13 @@ Syntax: .dims DIMENSIONS
 This pseudo-op must be inside kernel configuration (`.config`). Defines what dimensions
 (from list: x, y, z) will be used to determine space of the kernel execution.
 
+### .driver_version
+
+Syntax: .driver_version VERSION
+
+Set driver (Mesa3D) version for this binary. Version in form: MajorVersion*100+MinorVersion.
+This pseudo-op replaces driver info.
+
 ### .dx10clamp
 
 This pseudo-op must be inside kernel configuration (`.config`).
@@ -156,6 +163,18 @@ Syntax: .floatmode BYTE-VALUE
 
 This pseudo-op must be inside kernel configuration (`.config`). Defines float-mode.
 Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register). Default value is 0xc0.
+
+### .get_driver_version
+
+Syntax: .get_driver_version SYMBOL
+
+Store current driver version to SYMBOL.
+
+### .get_llvm_version
+
+Syntax: .get_llvm_version SYMBOL
+
+Store current LLVM compiler version to SYMBOL.
 
 ### .globaldata
 
@@ -193,6 +212,13 @@ Sample usage:
 ### .kcodeend
 
 Close `.kcode` clause. Refer to `.kcode`.
+
+### .llvm_version
+
+Syntax: .llvm_version VERSION
+
+Set LLVM compiler version for this binary. Version in form: MajorVersion*100+MinorVersion.
+This pseudo-op replaces driver info.
 
 ### .localsize
 

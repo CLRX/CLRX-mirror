@@ -13,8 +13,9 @@ The `clrxasm` can be invoked in following way:
 clrxasm [-6Swam?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
 [-g GPUDEVICE] [-A ARCH] [-t VERSION] [--defsym=SYM[=VALUE]] [--includePath=PATH]
 [--output OUTFILE] [--binaryFormat=BINFORMAT] [--64bit] [--gpuType=GPUDEVICE]
-[--arch=ARCH] [--driverVersion=VERSION] [--forceAddSymbols] [--noWarnings]
-[--alternate] [--buggyFPLit] [--noMacroCase] [--help] [--usage] [--version] [file...]
+[--arch=ARCH] [--driverVersion=VERSION] [--llvmVersion=VERSION] [--forceAddSymbols]
+[--noWarnings] [--alternate] [--buggyFPLit] [--noMacroCase] [--help] [--usage]
+[--version] [file...]
 
 ### Input
 
@@ -68,6 +69,11 @@ SI, VI, CI, VEGA, GFX6, GFX7, GFX8, GFX9, GCN1.0, GCN1.1, GCN1.2 and GCN1.4.
     Choose AMD Catalyst OpenCL driver version. Version can retrieved from clinfo program
 that display field 'Driver version' where version is. Version is number in that form:
 MajorVersion*100 + MinorVersion.
+
+* **--llvmVersion=VERSION**
+
+    Choose LLVM compiler version. Version can be retrieved from clinfo program that display
+field Version. Version is number in that form: MajorVersion*100 + MinorVersion.
 
 * **-S**, **--forceAddSymbols**
 
