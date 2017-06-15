@@ -25,3 +25,27 @@ Userdata tooks 4 first scalar registers and holds:
 
 Section '.rodata' ('.globaldata') hold constant data for kernels.
 Constant data is placed after code of kernels. Use PC pointer to get this data.
+
+## Gallium ABI description AMDHSA
+
+### Argument passing
+
+Argument is stored in memory which address is stored in s[6:7]. Argument begins from
+the first dword in this memory. After kernel arguments are kernel dimensions.
+List of data (number is dword offset after kernel argument):
+
+* 0 - number of dimensions
+* 1-3 - global offsets for each dimensions
+
+Local sizes and other kernel setup is in memory which address is stored in s[4:5]. 
+List of data (number is dword offset after kernel argument):
+
+* 1 - low 16-bits is global local size for X dimension, higher 16-bits is for Y dimension
+* 2 - low 16-bits is global size for Z dimension
+* 3-5 - global size for each dimension
+
+Userdata tooks 8 first scalar registers and holds:
+
+* s[0:3] - scratch buffer resource
+* s[4:5] - kernel setup
+* s[6:7] - address to argument list and kernel dimensions and global offsets
