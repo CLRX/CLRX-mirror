@@ -239,6 +239,7 @@ end:
 end:
         s_endpgm
 .elseiffmt gallium   # GalliumCompute code
+.get_llvm_version LLVM_VERSION
 .kernel vectorAdd
     .args
         .arg scalar,4       # uint n
@@ -254,6 +255,9 @@ end:
         # 9 - n, 11 - abuf, 13 - bbuf, 15 - cbuf, 17 - griddim, 18 - gridoffset
 .text
 vectorAdd:
+    .if LLVM_VERSION>=40000
+        .skip 256
+    .endif
         s_load_dword s2, s[0:1], 6*SMUL         # s2 - local_size(0)
         s_load_dword s3, s[0:1], 9*SMUL         # s3 - n
         s_load_dword s1, s[0:1], 18*SMUL        # s1 - global_offset(0)
