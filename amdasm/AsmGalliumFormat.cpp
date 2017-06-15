@@ -18,7 +18,6 @@
  */
 
 #include <CLRX/Config.h>
-#include <iostream>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -1369,7 +1368,6 @@ bool AsmGalliumHandler::prepareBinary()
                 argSegmentSize = (argSegmentSize + argInfo.targetAlign-1) &
                         ~(argInfo.targetAlign-1);
                 argSegmentSize += argInfo.targetSize;
-                printf("argSize: %zu\n", argSegmentSize);
             }
             argSegmentSize += 16; // gridOffset and gridDim
             SULEV(outConfig.amdCodeVersionMajor, 1);
