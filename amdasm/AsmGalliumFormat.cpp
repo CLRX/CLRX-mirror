@@ -1235,7 +1235,7 @@ bool AsmGalliumHandler::prepareBinary()
         if (!output.kernels[i].useConfig)
             continue;
         GalliumKernelConfig& config = output.kernels[i].config;
-        cxuint userSGPRsNum = 4;
+        cxuint userSGPRsNum = (assembler.llvmVersion >= 40000U) ? 8 : 4;
         /* include userData sgprs */
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
                 ((config.pgmRSRC2>>7)&7);

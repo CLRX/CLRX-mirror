@@ -249,15 +249,59 @@ end:
         .arg griddim,4
         .arg gridoffset,4
     .config
+    .if LLVM_VERSION>=40000
+        .dims x
+        .dx10clamp
+        .ieeemode
+    .else
         .dims xyz   # gallium set always three dimensions by Gallium
         .tgsize     # TG_SIZE_EN is always enabled by Gallium
         # arg offset in dwords:
         # 9 - n, 11 - abuf, 13 - bbuf, 15 - cbuf, 17 - griddim, 18 - gridoffset
+    .endif
 .text
 vectorAdd:
-    .if LLVM_VERSION>=40000
+.if LLVM_VERSION>=40000
+        # disassembled code from GalliumCompute
         .skip 256
-    .endif
+         s_load_dword    s0, s[4:5], 0x1
+         v_mov_b32       v1, s8
+         s_load_dword    s1, s[6:7], 0x9
+         s_mov_b32       s2, 0
+         s_waitcnt       lgkmcnt(0)
+         s_and_b32       s0, s0, 0xffff
+         v_mul_hi_u32    v1, v1, s0
+         s_mul_i32       s0, s0, s8
+         v_mov_b32       v2, s0
+         s_load_dword    s0, s[6:7], 0x0
+         v_add_i32       v0, vcc, v0, v2
+         v_addc_u32      v1, vcc, 0, v1, vcc
+         v_add_i32       v0, vcc, s1, v0
+         v_addc_u32      v1, vcc, 0, v1, vcc
+         s_waitcnt       lgkmcnt(0)
+         v_cmp_gt_u32    vcc, s0, v0
+         s_and_saveexec_b64 s[0:1], vcc
+         s_xor_b64       s[4:5], exec, s[0:1]
+         s_cbranch_execz .L424_0
+         s_load_dwordx2  s[8:9], s[6:7], 0x2
+         s_load_dwordx2  s[12:13], s[6:7], 0x4
+         v_lshl_b64      v[0:1], v[0:1], 2
+         s_mov_b32       s3, 0xf000
+         v_and_b32       v1, 3, v1
+         s_mov_b64       s[14:15], s[2:3]
+         s_mov_b64       s[10:11], s[2:3]
+         s_waitcnt       lgkmcnt(0)
+         buffer_load_dword v2, v[0:1], s[8:11], 0 addr64
+         buffer_load_dword v3, v[0:1], s[12:15], 0 addr64
+         s_load_dwordx2  s[0:1], s[6:7], 0x6
+         s_waitcnt       vmcnt(0)
+         v_add_f32       v2, v3, v2
+         s_waitcnt       lgkmcnt(0)
+         buffer_store_dword v2, v[0:1], s[0:3], 0 addr64
+         s_waitcnt       vmcnt(0) & expcnt(0)
+.L424_0:
+         s_or_b64        exec, exec, s[4:5]
+.else
         s_load_dword s2, s[0:1], 6*SMUL         # s2 - local_size(0)
         s_load_dword s3, s[0:1], 9*SMUL         # s3 - n
         s_load_dword s1, s[0:1], 18*SMUL        # s1 - global_offset(0)
@@ -306,6 +350,7 @@ vectorAdd:
         v_addc_u32 v3, vcc, v3, v1, vcc
         flat_store_dword v[2:3], v6
     .endif
+.endif
 end:
         s_endpgm
 .else
