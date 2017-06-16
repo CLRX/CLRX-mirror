@@ -341,8 +341,6 @@ void AsmGalliumPseudoOps::getXXXVersion(AsmGalliumHandler& handler, const char* 
     }
 }
 
-
-
 void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {
@@ -1366,7 +1364,7 @@ bool AsmGalliumHandler::prepareBinary()
                         argInfo.semantic == GalliumArgSemantic::GRID_OFFSET)
                     continue; // skip
                 argSegmentSize = (argSegmentSize + argInfo.targetAlign-1) &
-                        ~(argInfo.targetAlign-1);
+                        ~size_t(argInfo.targetAlign-1);
                 argSegmentSize += argInfo.targetSize;
             }
             argSegmentSize += 16; // gridOffset and gridDim

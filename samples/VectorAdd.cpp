@@ -238,7 +238,8 @@ end:
     .endif
 end:
         s_endpgm
-.elseiffmt gallium   # GalliumCompute code
+)ffDXD" // MSVC fix: string too big
+R"ffDXD(.elseiffmt gallium   # GalliumCompute code
 .get_llvm_version LLVM_VERSION
 .kernel vectorAdd
     .args
