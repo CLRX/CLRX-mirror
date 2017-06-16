@@ -106,7 +106,8 @@ Table of fields for STATUS Register:
  29-31  | CSP       | Conditional branch stack pointer
 
 The single floating point rounding mode is controlled by 0-1 bits in MODE register.
-A rounding mode for double precision is controlled by 2-3 bits. List of possible values:
+A rounding mode for double precision and half precision is controlled by 2-3 bits.
+List of possible values:
 
  Value | Description
 -------|---------------------------------
@@ -116,8 +117,8 @@ A rounding mode for double precision is controlled by 2-3 bits. List of possible
  3     | Toward zero
 
 The denormal mode for single precision controlled by 4-5 bits in MODE register. The 6-7
-bits of MODE register controls denormal mode for double precision ops.
-List of possible values:
+bits of MODE register controls denormal mode for double precision and half precision
+operations. List of possible values:
 
  Value | Description
 -------|---------------------------------

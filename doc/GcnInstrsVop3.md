@@ -827,7 +827,7 @@ if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
 Opcode: 321 (0x141) for GCN 1.0/1.1; 449 (0x1c1) for GCN 1.2  
 Syntax: V_MAD_F32 VDST, SRC0, SRC1, SRC2  
 Description: Multiply FP value from SRC0 by FP value from SRC1 and add SRC2, and store
-result to VDST.  
+result to VDST. It applies OMOD modifier to result and it flush denormals.  
 Operation:  
 ```
 VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(SRC2)
@@ -868,7 +868,8 @@ Opcode: 320 (0x140) for GCN 1.0/1.1; 448 (0x1c0) for GCN 1.2
 Syntax: V_MAD_LEGACY_F32 VDST, SRC0, SRC1, SRC2  
 Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to SRC2, and
 store result to VDST. If one of value is 0.0 then always store SRC2 to VDST
-(do not apply IEEE rules for 0.0*x).  
+(do not apply IEEE rules for 0.0*x). It applies OMOD modifier to result and it flush
+denormals.  
 Operation:  
 ```
 if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)

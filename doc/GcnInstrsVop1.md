@@ -60,7 +60,6 @@ NOTE: OMOD modifier doesn't work if output denormals are allowed
 NOTE: OMOD and CLAMP modifier affects only for instruction that output is
 floating point value.  
 NOTE: ABS and negation is applied to source operand for any instruction.  
-NOTE: OMOD modifier doesn't work for half precision (FP16) instructions.
 
 Negation and absolute value can be combined: `-ABS(V0)`. Modifiers CLAMP and
 OMOD (MUL:2, MUL:4 and DIV:2) can be given in random order.
@@ -312,10 +311,22 @@ Opcode VOP3A: 394 (0x18a) for GCN 1.0/1.1; 330 (0x14a) for GCN 1.2
 Syntax: V_CVT_F16_F32 VDST, SRC0  
 Description: Convert single FP value to half floating point value with rounding from
 MODE register (single FP rounding mode), and store result to VDST.
-If absolute value is too high, then store -/+infinity to VDST.  
+If absolute value is too high, then store -/+infinity to VDST.
+In GCN 1.2 flushing denormals controlled by MODE. In GCN 1.0/1.1, denormals are enabled.  
 Operation:  
 ```
 VDST = CVTHALF(ASFLOAT(SRC0))
+```
+
+#### V_CVT_F16_U16
+
+Opcode: VOP1: 57 (0x39) for GCN 1.2  
+Opcode VOP3A: 377 (0x179) for GCN 1.2  
+Syntax: V_CVT_F16_U16 VDST, SRC0  
+Description: Convert 16-bit unsigned valut to half floating point value.  
+Operation:  
+```
+VDST = (HALF)SRC0
 ```
 
 #### V_CVT_F32_F16
@@ -324,7 +335,8 @@ Opcode VOP1: 11 (0xb)
 Opcode VOP3A: 395 (0x18b) for GCN 1.0/1.1; 331 (0x14b) for GCN 1.2  
 Syntax: V_CVT_F32_F16 VDST, SRC0  
 Description: Convert half FP value to single FP value, and store result to VDST.
-**By default, immediate is in FP32 format!**.  
+**By default, immediate is in FP32 format!**.
+In GCN 1.2 flushing denormals controlled by MODE. In GCN 1.0/1.1, denormals are enabled.  
 Operation:  
 ```
 VDST = (FLOAT)(ASHALF(SRC0))

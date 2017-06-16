@@ -61,7 +61,6 @@ NOTE: OMOD modifier doesn't work if output denormals are allowed
 NOTE: OMOD and CLAMP modifier affects only for instruction that output is
 floating point value.  
 NOTE: ABS and negation is applied to source operand for any instruction.  
-NOTE: OMOD modifier doesn't work for half precision (FP16) instructions (except V_MAC_F16).
 
 Negation and absolute value can be combined: `-ABS(V0)`. Modifiers CLAMP and
 OMOD (MUL:2, MUL:4 and DIV:2) can be given in random order.
@@ -492,7 +491,7 @@ Opcode VOP2: 35 (0x23) for GCN 1.2
 Opcode VOP3A: 291 (0x123) for GCN 1.2  
 Syntax: V_MAC_F16 VDST, SRC0, SRC1  
 Description: Multiply FP16 value from SRC0 by FP16 value from SRC1 and
-add result to VDST. It applies OMOD modifier to result.  
+add result to VDST. It applies OMOD modifier to result and it flush denormals.  
 Operation:  
 ```
 VDST = ASHALF(SRC0) * ASHALF(SRC1) + ASHALF(VDST)
@@ -503,7 +502,8 @@ VDST = ASHALF(SRC0) * ASHALF(SRC1) + ASHALF(VDST)
 Opcode VOP2: 31 (0x1f) for GCN 1.0/1.1; 22 (0x16) for GCN 1.2  
 Opcode VOP3A: 287 (0x11f) for GCN 1.0/1.1; 278 (0x116) for GCN 1.2  
 Syntax: V_MAC_F32 VDST, SRC0, SRC1  
-Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to VDST.  
+Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to VDST.
+It applies OMOD modifier to result and it flush denormals.  
 Operation:  
 ```
 VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(VDST)
@@ -515,37 +515,12 @@ Opcode VOP2: 6 (0x6) for GCN 1.0/1.1
 Opcode VOP3A: 262 (0x106) for GCN 1.0/1.1  
 Syntax: V_MAC_LEGACY_F32 VDST, SRC0, SRC1  
 Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to VDST.
-If one of value is 0.0 then always do not change VDST (do not apply IEEE rules for 0.0*x).  
+If one of value is 0.0 then always do not change VDST (do not apply IEEE rules for 0.0*x).
+It applies OMOD modifier to result and it flush denormals.  
 Operation:  
 ```
 if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
     VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(VDST)
-```
-
-#### V_MADMK_F16
-
-Opcode: 36 (0x24) for GCN 1.2  
-Opcode: 292 (0x124) for GCN 1.2  
-Syntax: V_MADMK_F16 VDST, SRC0, FLOAT16LIT, SRC1  
-Description: Multiply FP16 value from SRC0 with the constant literal FLOAT16LIT and add
-FP16 value from SRC1; and store result to VDST. Constant literal follows
-after instruction word. Use nearest-even rouding.  
-Operation:
-```
-VDST = ASHALF(SRC0) * ASHALF(FLOAT16LIT) + ASHALF(SRC1)
-```
-
-#### V_MADMK_F32
-
-Opcode: VOP2: 32 (0x20) for GCN 1.0/1.1; 23 (0x17) for GCN 1.2  
-Opcode: VOP3A: 288 (0x120) for GCN 1.0/1.1; 279 (0x117) for GCN 1.2  
-Syntax: V_MADMK_F32 VDST, SRC0, FLOATLIT, SRC1  
-Description: Multiply FP value from SRC0 with the constant literal FLOATLIT and add
-FP value from SRC1; and store result to VDST. Constant literal follows
-after instruction word.  
-Operation:
-```
-VDST = ASFLOAT(SRC0) * ASFLOAT(FLOATLIT) + ASFLOAT(SRC1)
 ```
 
 #### V_MADAK_F16
@@ -555,7 +530,7 @@ Opcode: 293 (0x125) for GCN 1.2
 Syntax: V_MADAK_F16 VDST, SRC0, SRC1, FLOAT16LIT  
 Description: Multiply FP16 value from SRC0 with FP16 value from SRC1 and add
 the constant literal FLOATLIT16; and store result to VDST. Constant literal follows
-after instruction word.  
+after instruction word. It flush denormals.  
 Operation:
 ```
 VDST = ASHALF(SRC0) * ASHALF(SRC1) + ASHALF(FLOAT16LIT)
@@ -568,10 +543,36 @@ Opcode: VOP3A: 289 (0x121) for GCN 1.0/1.1; 280 (0x118) for GCN 1.2
 Syntax: V_MADAK_F32 VDST, SRC0, SRC1, FLOATLIT  
 Description: Multiply FP value from SRC0 with FP value from SRC1 and add
 the constant literal FLOATLIT; and store result to VDST. Constant literal follows
-after instruction word.  
+after instruction word. It flush denormals.  
 Operation:
 ```
 VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(FLOATLIT)
+```
+
+#### V_MADMK_F16
+
+Opcode: 36 (0x24) for GCN 1.2  
+Opcode: 292 (0x124) for GCN 1.2  
+Syntax: V_MADMK_F16 VDST, SRC0, FLOAT16LIT, SRC1  
+Description: Multiply FP16 value from SRC0 with the constant literal FLOAT16LIT and add
+FP16 value from SRC1; and store result to VDST. Constant literal follows
+after instruction word. It flush denormals.  
+Operation:
+```
+VDST = ASHALF(SRC0) * ASHALF(FLOAT16LIT) + ASHALF(SRC1)
+```
+
+#### V_MADMK_F32
+
+Opcode: VOP2: 32 (0x20) for GCN 1.0/1.1; 23 (0x17) for GCN 1.2  
+Opcode: VOP3A: 288 (0x120) for GCN 1.0/1.1; 279 (0x117) for GCN 1.2  
+Syntax: V_MADMK_F32 VDST, SRC0, FLOATLIT, SRC1  
+Description: Multiply FP value from SRC0 with the constant literal FLOATLIT and add
+FP value from SRC1; and store result to VDST. Constant literal follows
+after instruction word. It flush denormals.  
+Operation:
+```
+VDST = ASFLOAT(SRC0) * ASFLOAT(FLOATLIT) + ASFLOAT(SRC1)
 ```
 
 #### V_MAX_F16
