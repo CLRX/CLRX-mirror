@@ -530,7 +530,7 @@ Opcode: 293 (0x125) for GCN 1.2
 Syntax: V_MADAK_F16 VDST, SRC0, SRC1, FLOAT16LIT  
 Description: Multiply FP16 value from SRC0 with FP16 value from SRC1 and add
 the constant literal FLOATLIT16; and store result to VDST. Constant literal follows
-after instruction word. It flush denormals.  
+after instruction word.  
 Operation:
 ```
 VDST = ASHALF(SRC0) * ASHALF(SRC1) + ASHALF(FLOAT16LIT)
@@ -556,7 +556,7 @@ Opcode: 292 (0x124) for GCN 1.2
 Syntax: V_MADMK_F16 VDST, SRC0, FLOAT16LIT, SRC1  
 Description: Multiply FP16 value from SRC0 with the constant literal FLOAT16LIT and add
 FP16 value from SRC1; and store result to VDST. Constant literal follows
-after instruction word. It flush denormals.  
+after instruction word.  
 Operation:
 ```
 VDST = ASHALF(SRC0) * ASHALF(FLOAT16LIT) + ASHALF(SRC1)
