@@ -599,6 +599,18 @@ Operation:
 VDST = MAX(ASFLOAT(SRC0), ASFLOAT(SRC1))
 ```
 
+#### V_MAX_I16
+
+Opcode VOP2: 48 (0x30) for GCN 1.2  
+Opcode VOP3A: 304 (0x130) for GCN 1.2  
+Syntax: V_MIN_i16 VDST, SRC0, SRC1  
+Description: Choose largest signed 16-bit value from SRC0 and SRC1,
+and store result to VDST.  
+Operation:  
+```
+VDST = MAX((INT16)SRC0, (INT16)SRC1)
+```
+
 #### V_MAX_I32
 
 Opcode VOP2: 18 (0x12) for GCN 1.0/1.1; 13 (0xd) for GCN 1.2  
@@ -624,6 +636,18 @@ if (!ISNAN(ASFLOAT(SRC1)))
     VDST = MAX(ASFLOAT(SRC0), ASFLOAT(SRC1))
 else
     VDST = NaN
+```
+
+#### V_MAX_U16
+
+Opcode VOP2: 47 (0x2f) for GCN 1.2  
+Opcode VOP3A: 303 (0x12f) for GCN 1.2  
+Syntax: V_MAX_U16 VDST, SRC0, SRC1  
+Description: Choose largest unsigned 16-bit value from SRC0 and SRC1,
+and store result to VDST.  
+Operation:  
+```
+VDST = MAX(SRC0&0xffff, SRC1&0xffff)
 ```
 
 #### V_MAX_U32
@@ -689,7 +713,7 @@ Operation:
 VDST = MIN(ASFLOAT(SRC0), ASFLOAT(SRC1))
 ```
 
-#### V_MIN_i16
+#### V_MIN_I16
 
 Opcode VOP2: 50 (0x32) for GCN 1.2  
 Opcode VOP3A: 306 (0x132) for GCN 1.2  

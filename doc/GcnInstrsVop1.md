@@ -318,6 +318,17 @@ Operation:
 VDST = CVTHALF(ASFLOAT(SRC0))
 ```
 
+#### V_CVT_F16_I16
+
+Opcode: VOP1: 58 (0x3a) for GCN 1.2  
+Opcode VOP3A: 378 (0x17a) for GCN 1.2  
+Syntax: V_CVT_F16_I16 VDST, SRC0  
+Description: Convert 16-bit signed valut to half floating point value.  
+Operation:  
+```
+VDST = (HALF)(INT16)SRC0
+```
+
 #### V_CVT_F16_U16
 
 Opcode: VOP1: 57 (0x39) for GCN 1.2  
@@ -326,7 +337,7 @@ Syntax: V_CVT_F16_U16 VDST, SRC0
 Description: Convert 16-bit unsigned valut to half floating point value.  
 Operation:  
 ```
-VDST = (HALF)SRC0
+VDST = (HALF)(SRC0&0xffff)
 ```
 
 #### V_CVT_F32_F16
