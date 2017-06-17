@@ -1257,8 +1257,7 @@ Opcode VOP1: 63 (0x3f) for GCN 1.2
 Opcode VOP3A: 383 (0x17f) for GCN 1.2  
 Syntax: V_RSQ_F16 VDST, SRC0  
 Description: Approximate reciprocal square root from half floating point value SRC0 and
-store it to VDST. If SRC0 is negative value, store -NAN to VDST.
-This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.  
+store it to VDST. If SRC0 is negative value, store -NAN to VDST.  
 Operation:  
 ```
 VDST = APPROX_RSQRT(ASHALF(SRC0))
