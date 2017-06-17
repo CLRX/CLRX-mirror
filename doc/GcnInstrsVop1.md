@@ -760,6 +760,23 @@ else
     VDST = NAN * SIGN(SD)
 ```
 
+#### V_FREXP_EXP_I16_F16
+
+Opcode VOP1: 67 (0x43) for GCN 1.2  
+Opcode VOP3A: 387 (0x183) for GCN 1.2  
+Syntax: V_FREXP_EXP_I16_F16 VDST, SRC0  
+Description: Get exponent plus 1 from half FP value SRC0, and store that exponent to VDST
+as 16-bit signed integer. This instruction realizes frexp function.
+If SRC0 is infinity or NAN then store -1 to VDST.  
+Operation:  
+```
+HALF SF = ASHALF(SRC0)
+if (ABS(SF) != INF_H && !ISNAN(SF))
+    VDST = (INT16)FREXP_EXP(SF)
+else
+    VDST = (INT16)-1
+```
+
 #### V_FREXP_EXP_I32_F32
 
 Opcode VOP1: 63 (0x3f) for GCN 1.0/1.1; 51 (0x33) for GCN 1.2  
@@ -794,12 +811,30 @@ else
     VDST = -1
 ```
 
+#### V_FREXP_MANT_F16
+
+Opcode VOP1: 66 (0x42) for GCN 1.2  
+Opcode VOP3A: 386 (0x182) for GCN 1.2  
+Syntax: V_FREXP_MANT_F16 VDST, SRC0  
+Description: Get mantisa from half FP value SRC0, and store it to VDST. Mantisa includes
+sign of input. If SRC0 is infinity then store -NAN to VDST.  
+Operation:  
+```
+HALF SF = ASHALF(SRC0)
+if (ABS(SF) == INF)
+    VDST = -NAN_H
+else if (!ISNAN(SF))
+    VDST = FREXP_MANT(SF) * SIGN(SF)
+else
+    VDST = NAN_H * SIGN(SF)
+```
+
 #### V_FREXP_MANT_F32
 
 Opcode VOP1: 64 (0x40) for GCN 1.0/1.1; 52 (0x34) for GCN 1.2  
 Opcode VOP3A: 448 (0x1c0) for GCN 1.0/1.1; 372 (0x174) for GCN 1.2  
 Syntax: V_FREXP_MANT_F32 VDST, SRC0  
-Description: Get mantisa from double FP value SRC0, and store it to VDST. Mantisa includes
+Description: Get mantisa from single FP value SRC0, and store it to VDST. Mantisa includes
 sign of input. If SRC0 is infinity then store -NAN to VDST.  
 Operation:  
 ```
