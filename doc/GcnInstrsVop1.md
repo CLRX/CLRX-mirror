@@ -300,6 +300,27 @@ Opcode VOP3A: 449 (0x1c1) for GCN 1.0/1.1; 373 (0x175) for GCN 1.2
 Syntax: V_CLREXCP  
 Description: Clear wave's exception state in SIMD.  
 
+#### V_COS_F16
+
+Opcode VOP1: 74 (0x4a) for GCN 1.2  
+Opcode VOP3A: 394 (0x18a) for GCN 1.2  
+Syntax: V_COS_F16 VDST, SRC0  
+Description: Compute cosine of half FP value from SRC0.
+Input value must be normalized to range 1.0 - 1.0 (-360 degree : 360 degree).
+If SRC0 value is out of range then store 1.0 to VDST.
+If SRC0 value is infinity, store -NAN to VDST.  
+Operation:  
+```
+FLOAT SF = ASHALF(SRC0)
+VDST = 1.0
+if (SF >= -1.0 && SF <= 1.0)
+    VDST = APPROX_COS(SF)
+else if (ABS(SF)==INF_H)
+    VDST = -NAN_H
+else if (ISNAN(SF))
+    VDST = SRC0
+```
+
 #### V_COS_F32
 
 Opcode VOP1: 54 (0x36) for GCN 1.0/1.1; 42 (0x2a) for GCN 1.2  
@@ -1282,6 +1303,27 @@ Operation:
 VDST = APPROX_RSQRT(ASFLOAT(SRC0))
 if (ASFLOAT(VDST)==INF)
     VDST = 0.0
+```
+
+#### V_SIN_F16
+
+Opcode VOP1: 73 (0x49) for GCN 1.2  
+Opcode VOP3A: 393 (0x189) for GCN 1.2  
+Syntax: V_SIN_F16 VDST, SRC0  
+Description: Compute sine of half FP value from SRC0. Input value must be
+normalized to range 1.0 - 1.0 (-360 degree : 360 degree).
+If SRC0 value is out of range then store 0.0 to VDST.
+If SRC0 value is infinity, store -NAN to VDST.  
+Operation:  
+```
+HALF SF = ASHALF(SRC0)
+VDST = 0.0
+if (SF >= -1.0 && SF <= 1.0)
+    VDST = APPROX_SIN(SF)
+else if (ABS(SF)==INF_H)
+    VDST = -NAN_H
+else if (ISNAN(SF))
+    VDST = SRC0
 ```
 
 #### V_SIN_F32
