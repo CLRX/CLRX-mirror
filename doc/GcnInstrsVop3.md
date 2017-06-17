@@ -886,6 +886,17 @@ Operation:
 VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(SRC2)
 ```
 
+#### V_MAD_I16
+
+Opcode: 492 (0x1ec) for GCN 1.2  
+Syntax: V_MAD_I16 VDST, SRC0, SRC1, SRC2  
+Description: Multiply 16-bit signed value from SRC0 by 16-bit signed value from
+SRC1 and add 16-bit signed value from SRC2, and store 16-bit signed result to VDST.  
+Operation:  
+```
+VDST = (INT16)((INT16)SRC0*(INT16)SRC1 + (INT16)SRC2)
+```
+
 #### V_MAD_I32_I24
 
 Opcode: 322 (0x142) for GCN 1.0/1.1; 450 (0x1c2) for GCN 1.2  
@@ -927,6 +938,17 @@ Operation:
 ```
 if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
     VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(SRC2)
+```
+
+#### V_MAD_U16
+
+Opcode: 491 (0x1eb) for GCN 1.2  
+Syntax: V_MAD_U16 VDST, SRC0, SRC1, SRC2  
+Description: Multiply 16-bit unsigned value from SRC0 by 16-bit unsigned value from
+SRC1 and add 16-bit unsigned value from SRC2, and store 16-bit unsigned result to VDST.  
+Operation:  
+```
+VDST = ((UINT16)SRC0*(UINT16)SRC1 + (UINT16)SRC2) & 0xffff
 ```
 
 #### V_MAD_U32_U24
@@ -1294,6 +1316,35 @@ if (ASFLOAT(SRC2) > 0.0 && !ISNAN(ASFLOAT(SRC2)))
     VDST = 0.0
     if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
         VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1)
+}
+```
+
+#### V_PERM_B32
+
+Opcode: 493 (0x1ed) for GCN 1.2  
+Syntax: V_PERM_B32 VDST, SRC0, SRC1, SRC2  
+Description: Permute bytes. Choose for every byte in dword, specified value. Bytes in
+SRC2 dword selects value for result dword. Value 0-7 choose byte of this index of quadword
+(64-bit value) built from SRC0 (higher bits) and SRC1 (lower bits). Value from 8-11
+choose 0xff*BIT, where BIT is last bit from 2*N+1 from 64-bit value (SRC0,SRC1).
+Value 12 choose zero. Value equal or greater than 13 choose 0xff.  
+Operation:  
+```
+VDST = 0
+UINT64 qword = (((UINT64)SRC0)<<32) | SRC1 
+for (int i = 0; i < 4; i++)
+{
+    BYTE choice = (SRC2 >> (8*i)) & 0xff
+    BYTE result
+    if (choice >= 13)
+        result = 0xff
+    else if (choice == 12)
+        result = 0
+    else if (choice >= 8)
+        result = 0xff * qword>>((choice-8)*16 + 15)
+    else
+        result = (qword >> (choice*8)) & 0xff
+    VDST |= (result << (i*8))
 }
 ```
 
