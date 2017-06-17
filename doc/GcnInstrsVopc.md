@@ -87,8 +87,8 @@ Table of floating point comparison instructions by opcode (GCN 1.2):
 
 Opcode range        | Instruction        | Description
 --------------------|--------------------|---------------------------
-32-47 (0x20-0x2f)   | V_CMP_{OP16}_F32   | Signal on sNAN input only. Half FP values.
-48-63 (0x30-0x3f)   | V_CMPX_{OP16}_F32  | Signal on sNAN input only. Also write result to EXEC. Half FP values.
+32-47 (0x20-0x2f)   | V_CMP_{OP16}_F16   | Signal on sNAN input only. Half FP values.
+48-63 (0x30-0x3f)   | V_CMPX_{OP16}_F16  | Signal on sNAN input only. Also write result to EXEC. Half FP values.
 64-79 (0x40-0x4f)   | V_CMP_{OP16}_F32   | Signal on sNAN input only. Single FP values.
 80-95 (0x50-0x5f)   | V_CMPX_{OP16}_F32  | Signal on sNAN input only. Also write result to EXEC. Single FP values.
 96-111 (0x60-0x6f)  | V_CMP_{OP16}_F64   | Signal on sNAN input only. Double FP values.
