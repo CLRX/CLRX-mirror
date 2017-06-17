@@ -655,8 +655,7 @@ if (!ISNAN(ASDOUBLE(SRC0)))
 Opcode VOP1: 65 (0x41) for GCN 1.2  
 Opcode VOP3A: 385 (0x181) for GCN 1.2  
 Syntax: V_EXP_F16 VDST, SRC0  
-Description: Approximate power of two from half FP value SRC0 and store it to VDST.
-Instruction always handles dernomals in output regardless floatmode in MODE register.  
+Description: Approximate power of two from half FP value SRC0 and store it to VDST.  
 Operation:  
 ```
 VDST = APPROX_POW2(ASHALF(SRC0))
@@ -948,8 +947,7 @@ Opcode VOP1: 64 (0x40) for GCN 1.2
 Opcode VOP3A: 384 (0x180) for GCN 1.2  
 Syntax: V_LOG_F16 VDST, SRC0  
 Description: Approximate logarithm of base 2 from half floating point value SRC0, and store
-result to VDST. If SRC0 is negative then store -NaN to VDST.
-This instruction handle denormalized values regardless FLOAT MODE register setup.  
+result to VDST. If SRC0 is negative then store -NaN to VDST.  
 Operation:  
 ```
 HALF F = ASHALF(SRC0)
