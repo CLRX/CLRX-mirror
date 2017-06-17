@@ -245,6 +245,22 @@ Operation:
 VDST = REVBIT(SRC0)
 ```
 
+#### V_CEIL_F16
+
+Opcode VOP1: 69 (0x45) for GCN 1.2  
+Opcode VOP3A: 389 (0x185) for GCN 1.2  
+Syntax: V_CEIL_F16 VDST, SRC0  
+Description: Truncate half floating point valu from SRC0 with rounding to positive infinity
+(ceilling), and store result to VDST. Implemented by flooring.
+If SRC0 is infinity or NaN then copy SRC0 to VDST.  
+Operation:  
+```
+HALF F = FLOOR(ASHALF(SRC0))
+if (ASHALF(SRC0) > 0.0 && ASHALF(SRC0) != F)
+    F += 1.0
+VDST = F
+```
+
 #### V_CEIL_F32
 
 Opcode VOP1: 34 (0x22) for GCN 1.0/1.1; 29 (0x1d) for GCN 1.2  
@@ -702,12 +718,24 @@ for (UINT8 i = 0; i < 32; i++)
     { VDST = i; break; }
 ```
 
+#### V_FLOOR_F16
+
+Opcode VOP1: 68 (0x44) for GCN 1.2  
+Opcode VOP3A: 388 (0x184) for GCN 1.2  
+Syntax: V_FLOOR_F16 VDST, SRC0  
+Description: Truncate half floating point value SRC0 with rounding to negative infinity
+(flooring), and store result to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
+Operation:  
+```
+VDST = FLOOR(ASHALF(SRC0))
+```
+
 #### V_FLOOR_F32
 
 Opcode VOP1: 36 (0x24) for GCN 1.0/1.1; 31 (0x1f) for GCN 1.2  
 Opcode VOP3A: 420 (0x1a4) for GCN 1.0/1.1; 351 (0x15f) for GCN 1.2  
 Syntax: V_FLOOR_F32 VDST, SRC0  
-Description: Truncate floating point value SRC0 with rounding to positive infinity
+Description: Truncate floating point value SRC0 with rounding to negative infinity
 (flooring), and store result to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
 Operation:  
 ```
@@ -719,7 +747,7 @@ VDST = FLOOR(ASFLOAT(SRC0))
 Opcode VOP1: 26 (0x1a) for GCN 1.1/1.2  
 Opcode VOP3A: 410 (0x19a) for GCN 1.1; 346 (0x15a) for GCN 1.2  
 Syntax: V_FLOOR_F64 VDST(2), SRC0(2)  
-Description: Truncate double floating point value SRC0 with rounding to positive infinity
+Description: Truncate double floating point value SRC0 with rounding to negative infinity
 (flooring), and store result to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
 Operation:  
 ```
@@ -1135,6 +1163,17 @@ for (UINT8 i = 0; i < 64; i++)
     { firstlane = i; break; }
 SDST = VSRC0[firstlane]
 ```
+#### V_RNDNE_F16
+
+Opcode VOP1: 71 (0x47) for GCN 1.2  
+Opcode VOP3A: 391 (0x187) for GCN 1.2  
+Syntax: V_RNDNE_F16 VDST, SRC0  
+Description: Round half floating point value SRC0 to nearest even integer,
+and store result to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
+Operation:  
+```
+VDST = RNDNE(ASHALF(SRC0))
+```
 
 #### V_RNDNE_F32
 
@@ -1309,6 +1348,18 @@ if (ASDOUBLE(SRC0)>=0.0)
     VDST = APPROX_SQRT(ASDOUBLE(SRC0))
 else
     VDST = -NAN
+```
+
+#### V_TRUNC_F16
+
+Opcode VOP1: 70 (0x46) for GCN 1.2  
+Opcode VOP3A: 390 (0x186) for GCN 1.2  
+Syntax: V_TRUNC_F16 VDST, SRC0  
+Description: Get integer value from half floating point value SRC0, and store (as half)
+it to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
+Operation:  
+```
+VDST = RNDTZ(ASHALF(SRC0))
 ```
 
 #### V_TRUNC_F32
