@@ -531,6 +531,35 @@ UINT16 D1 = ASINT16(CVT_HALF_RTZ(ASFLOAT(SRC1)))
 VDST = D0 | (((UINT32)D1) << 16)
 ```
 
+#### V_DIV_FIXUP_F16
+
+Opcode: 495 (0x1ef) for GCN 1.2  
+Syntax: V_DIV_FIXUP_F16 VDST, SRC0, SRC1, SRC2  
+Description: Handle all exceptions requires for half floating point division.
+SRC0 is quotient, SRC1 is denominator, SRC2 is nominator. Correct result stored to VDST.  
+Operation:  
+```
+HALF SF0 = ASHALF(SRC0)
+HALF SF1 = ASHALF(SRC1)
+HALF SF2 = ASHALF(SRC2)
+if (ISNAN(SF1) && !ISNAN(SF2))
+    VDST = QUIETNAN(SF1)
+else if (ISNAN(SF2))
+    VDST = QUIETNAN(SF2)
+else if (SF1 == 0.0 && SF2 == 0.0)
+    VDST = NAN_H
+else if (ABS(SF1)==INF && ABS(SF2)==INF)
+    VDST = -NAN_H
+else if (SF1 == 0.0)
+    VDST = INF_H*SIGN(SF1)*SIGN(SF2)
+else if (ABS(SF1) == INF)
+    VDST = SIGN(SF1)*SIGN(SF2) >=0 ? 0.0 : -0.0
+else if (ISNAN(SF0))
+    VDST = SIGN(SF1)*SIGN(SF2)*INF_H
+else
+    VDST = SF0
+```
+
 #### V_DIV_FIXUP_F32
 
 Opcode: 351 (0x15f) for GCN 1.0/1.1; 478 (0x1de) for GCN 1.2  
@@ -706,6 +735,18 @@ else
 }
 ```
 
+#### V_FMA_F16
+
+Opcode: 494 (0x1ee) for GCN 1.2  
+Syntax: V_FMA_F16 VDST, SRC0, SRC1, SRC2  
+Description: Fused multiply addition on half floating point values from
+SRC0, SRC1 and SRC2. Result stored in VDST.  
+Operation:  
+```
+// SRC0*SRC1+SRC2
+VDST = FMA(ASHALF(SRC0), ASHALF(SRC1), ASHALF(SRC2))
+```
+
 #### V_FMA_F32
 
 Opcode: 331 (0x14b) for GCN 1.0/1.1; 459 (0x1cb) for GCN 1.2  
@@ -820,6 +861,18 @@ Operation:
 ```
 if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
     VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(VDST)
+```
+
+#### V_MAD_F16
+
+Opcode: 490 (0x1ea) for GCN 1.2  
+Syntax: V_MAD_F16 VDST, SRC0, SRC1, SRC2  
+Description: Multiply half FP value from SRC0 by half FP value from
+SRC1 and add SRC2, and store result to VDST.
+It applies OMOD modifier to result and it flush denormals.  
+Operation:  
+```
+VDST = ASHALF(SRC0) * ASHALF(SRC1) + ASHALF(SRC2)
 ```
 
 #### V_MAD_F32
