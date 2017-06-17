@@ -487,6 +487,22 @@ else
     VDST = (INT32)SF>=0 ? 2147483647 : -2147483648
 ```
 
+#### V_CVT_I16_F16
+
+Opcode VOP1: 60 (0x3c)  
+Opcode VOP3A: 380 (0x17c) for GCN 1.2  
+Syntax: V_CVT_I16_F16 VDST, SRC0  
+Description: Convert 16-bit floating point value from SRC0 to signed 16-bit integer, and
+store result to VDST. Conversion uses rounding to zero. If value is higher/lower than
+maximal/minimal integer then store MAX_INT16/MIN_INT16 to VDST.
+If input value is NaN then store 0 to VDST.  
+Operation:  
+```
+VDST = 0
+if (!ISNAN(ASHALF(SRC0)))
+    VDST = (INT16)MAX(MIN(RNDTZINT(ASHALF(SRC0)), 32767.0), -32768.0)
+```
+
 #### V_CVT_I32_F32
 
 Opcode VOP1: 8 (0x8)  
@@ -549,6 +565,22 @@ else
     VDST = (INT32)SF>=0 ? 2147483647 : -2147483648
 ```
 
+#### V_CVT_U16_F16
+
+Opcode VOP1: 59 (0x3b) for GCN 1.2  
+Opcode VOP3A: 379 (0x17b) for GCN 1.2  
+Syntax: V_CVT_U16_F16 VDST, SRC0  
+Description: Convert 32-bit half floating point value from SRC0 to unsigned 16-bit integer,
+and store result to VDST. Conversion uses rounding to zero. If value is higher than
+maximal integer then store MAX_UINT16 to VDST. If input value is NaN then store 0 to VDST.  
+Operation:  
+```
+VDST = 0
+if (!ISNAN(ASHALF(SRC0)))
+    VDST = (UINT16)MIN(RNDTZINT(ASHALF(SRC0)), 65535.0)
+```
+
+
 #### V_CVT_U32_F32
 
 Opcode VOP1: 7 (0x7)  
@@ -579,6 +611,18 @@ Operation:
 VDST = 0
 if (!ISNAN(ASDOUBLE(SRC0)))
     VDST = (UINT32)MIN(RNDTZINT(ASDOUBLE(SRC0)), 4294967295.0)
+```
+
+#### V_EXP_F16
+
+Opcode VOP1: 65 (0x41) for GCN 1.2  
+Opcode VOP3A: 385 (0x181) for GCN 1.2  
+Syntax: V_EXP_F16 VDST, SRC0  
+Description: Approximate power of two from half FP value SRC0 and store it to VDST.
+Instruction always handles dernomals in output regardless floatmode in MODE register.  
+Operation:  
+```
+VDST = APPROX_POW2(ASHALF(SRC0))
 ```
 
 #### V_EXP_F32
@@ -810,6 +854,25 @@ else
 }
 ```
 
+#### V_LOG_F16
+
+Opcode VOP1: 64 (0x40) for GCN 1.2  
+Opcode VOP3A: 384 (0x180) for GCN 1.2  
+Syntax: V_LOG_F16 VDST, SRC0  
+Description: Approximate logarithm of base 2 from half floating point value SRC0, and store
+result to VDST. If SRC0 is negative then store -NaN to VDST.
+This instruction handle denormalized values regardless FLOAT MODE register setup.  
+Operation:  
+```
+HALF F = ASHALF(SRC0)
+if (F==1.0)
+    VDST = 0.0h
+if (F<0.0)
+    VDST = -NaN_F
+else
+    VDST = APPROX_LOG2(F)
+```
+
 #### V_LOG_F32
 
 Opcode VOP1: 39 (0x27) for GCN 1.0/1.1; 33 (0x21) for GCN 1.2  
@@ -948,6 +1011,18 @@ if (ABS(ASDOUBLE(VDST))==INF)
     VDST = SIGN(ASDOUBLE(VDST)) * MAX_DOUBLE
 ```
 
+#### V_RCP_F16
+
+Opcode VOP1: 61 (0x3d) for GCN 1.2  
+Opcode VOP3A: 381 (0x17d) for GCN 1.2  
+Syntax: V_RCP_F16 VDST, SRC0  
+Description: Approximate reciprocal from half floating point value SRC0 and
+store it to VDST. Guaranted error below 1ulp.  
+Operation:  
+```
+VDST = APPROX_RCP(ASHALF(SRC0))
+```
+
 #### V_RCP_F32
 
 Opcode VOP1: 42 (0x2a) for GCN 1.0/1.1; 34 (0x22) for GCN 1.2  
@@ -1077,6 +1152,19 @@ if (ASDOUBLE(VDST)==INF)
     VDST = MAX_DOUBLE
 ```
 
+#### V_RSQ_F16
+
+Opcode VOP1: 63 (0x3f) for GCN 1.2  
+Opcode VOP3A: 383 (0x17f) for GCN 1.2  
+Syntax: V_RSQ_F16 VDST, SRC0  
+Description: Approximate reciprocal square root from half floating point value SRC0 and
+store it to VDST. If SRC0 is negative value, store -NAN to VDST.
+This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.  
+Operation:  
+```
+VDST = APPROX_RSQRT(ASHALF(SRC0))
+```
+
 #### V_RSQ_F32
 
 Opcode VOP1: 46 (0x2e) for GCN 1.0/1.1; 36 (0x24) for GCN 1.2  
@@ -1136,6 +1224,21 @@ else if (ABS(SF)==INF)
     VDST = -NAN
 else if (ISNAN(SF))
     VDST = SRC0
+```
+
+#### V_SQRT_F16
+
+Opcode VOP1: 62 (0x3e) for GCN 1.2  
+Opcode VOP3A: 382 (0x17e) for GCN 1.2  
+Syntax: V_SQRT_F16 VDST, SRC0  
+Description: Compute square root of half floating point value SRC0, and
+store result to VDST. If SRC0 is negative value then store -NaN to VDST.  
+Operation:  
+```
+if (ASHALF(SRC0)>=0.0)
+    VDST = APPROX_SQRT(ASHALF(SRC0))
+else
+    VDST = -NAN_H
 ```
 
 #### V_SQRT_F32
