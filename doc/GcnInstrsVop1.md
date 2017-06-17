@@ -347,8 +347,8 @@ Opcode VOP1: 10 (0xa)
 Opcode VOP3A: 394 (0x18a) for GCN 1.0/1.1; 330 (0x14a) for GCN 1.2  
 Syntax: V_CVT_F16_F32 VDST, SRC0  
 Description: Convert single FP value to half floating point value with rounding from
-MODE register (single FP rounding mode), and store result to VDST.
-If absolute value is too high, then store -/+infinity to VDST.
+MODE register (single FP rounding mode for GCN 1.0, double FP rounding modefor GCN 1.2),
+and store result to VDST. If absolute value is too high, then store -/+infinity to VDST.
 In GCN 1.2 flushing denormals controlled by MODE. In GCN 1.0/1.1, denormals are enabled.  
 Operation:  
 ```
