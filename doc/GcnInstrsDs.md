@@ -193,6 +193,19 @@ List of the instructions by opcode:
 
 Alphabetically sorted instruction list:
 
+#### DS_ADD_F32
+
+Opcode: 21 (0x15) for GCN 1.2  
+Syntax: DS_ADD_U32 ADDR, VDATA0 [OFFSET:OFFSET]  
+Description: Add single float value from LDS/GDS at address (ADDR+OFFSET) & ~3 and
+VDATA0, and store result back to LDS/GDS at this address as single float value.
+Operation is atomic.  
+Operation:  
+```
+FLOAT* V = (FLOAT*)(DS + ((ADDR+OFFSET)&~3))
+*V = *V + ASFLOAT(VDATA0)  // atomic operation
+```
+
 #### DS_ADD_RTN_U32
 
 Opcode: 32 (0x20)  
@@ -373,6 +386,27 @@ Operation:
 UINT32* V = (UINT32*)(DS + (OFFSET&~3))
 VDST = *V   // scalar operation
 *V += BITCOUNT(EXEC)  // scalar operation
+```
+
+#### DS_BPERMUTE_B32
+
+Opcode: 63 (0x3f) for GCN 1.2  
+Syntax: DS_BPERMUTE_B32 DST, ADDR, SRC [OFFSET:OFFSET]  
+Description: Backward permutation for wave. Put value of SRC0 from 
+lane id calculated from `ADDR[(LANEID + (OFFSET>>2)) & 64`,
+to DST register in LANEID. The ADDR holds lane id is multiplied by 4 (size of dword).
+Realizes pop semantic: “read data from lane i”.
+Operation:  
+```
+UINT tmp[64]
+for (BYTE i = 0; i < 64; i++)
+{
+    UINT32 laneid = ADDR[(i + (OFFSET>>2)) & 63]
+    tmp[i] = (EXEC & (1ULL<<laneid)!=0) ?  SRC[laneid] : 0
+}
+for (BYTE i = 0; i < 64; i++)
+    if (EXEC & (1ULL<<i)!=0)
+        DST[i] = tmp[i]
 ```
 
 #### DS_CONSUME
@@ -1340,6 +1374,24 @@ UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
 *V = *V | *(UINT64*)(DS + B) // atomic operation
+```
+
+#### DS_PERMUTE_B32
+
+Opcode: 62 (0x3e) for GCN 1.2  
+Syntax: DS_PERMUTE_B32 DST, ADDR, SRC [OFFSET:OFFSET]  
+Description: Forward permutation for wave. Put value of SRC0 from LANEID to DST register in
+lane id calculated from `ADDR[(LANEID + (OFFSET>>2)) & 64`.
+The ADDR holds lane id multiplied by 4 (size of dword). Realizes push semantic:
+"put my lane data in lane i".
+Operation:  
+```
+UINT32 TMP[64]
+for (BYTE i = 0; i < 64; i++)
+    tmp[ADDR[(i + (OFFSET>>2)) & 63]] = (EXEC & (1ULL<<i) != 0) ? SRC[i] : 0
+for (BYTE i = 0; i < 64; i++)
+    if (EXEC & (1ULL<<i) != 0)
+        DST[i] = tmp[i]
 ```
 
 #### DS_READ_B128
