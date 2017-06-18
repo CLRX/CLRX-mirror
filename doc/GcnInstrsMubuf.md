@@ -712,6 +712,50 @@ VDATA[2] = VM[2]
 VDATA[3] = VM[3]
 ```
 
+#### BUFFER_LOAD_FORMAT_D16_X
+
+Opcode: 8 (0x8)  
+Syntax: BUFFER_LOAD_FORMAT_D16_X VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Load the first component of the element from SRSRC including format from
+buffer resource. Store result as 16-bit value (half FP or 16-bit integer).  
+Operation:  
+```
+VDATA = LOAD_FORMAT_D16_X(SRSRC, VADDR(1:2), SOFFSET, OFFSET)
+```
+
+#### BUFFER_LOAD_FORMAT_D16_XY
+
+Opcode: 9 (0x9)  
+Syntax: BUFFER_LOAD_FORMAT_D16_XY VDATA(2), VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Load the first two components of the element from SRSRC resource
+including format from SRSRC. Store result as 16-bit value (half FP or 16-bit integer).  
+Operation:  
+```
+VDATA[0] = LOAD_FORMAT_D16_XY(SRSRC, VADDR(1:2), SOFFSET, OFFSET)
+```
+
+#### BUFFER_LOAD_FORMAT_D16_XYZ
+
+Opcode: 10 (0xa)  
+Syntax: BUFFER_LOAD_FORMAT_D16_XYZ VDATA(3), VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Load the first three components of the element from SRSRC resource
+including format from SRSRC. Store result as 16-bit value (half FP or 16-bit integer).  
+Operation:  
+```
+VDATA[0] = LOAD_FORMAT_D16_XYZ(SRSRC, VADDR(1:2), SOFFSET, OFFSET)
+```
+
+#### BUFFER_LOAD_FORMAT_D16_XYZW
+
+Opcode: 11 (0xb)  
+Syntax: BUFFER_LOAD_FORMAT_D16_XYZW VDATA(4), VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Load the all four components of the element from SRSRC resource 
+including format from SRSRC. Store result as 16-bit value (half FP or 16-bit integer).  
+Operation:  
+```
+VDATA[0] = LOAD_FORMAT_D16_XYZW(SRSRC, VADDR(1:2), SOFFSET, OFFSET)
+```
+
 #### BUFFER_LOAD_FORMAT_X
 
 Opcode: 0 (0x0)  
@@ -853,6 +897,50 @@ VM[0] = VDATA[0]
 VM[1] = VDATA[1]
 VM[2] = VDATA[2]
 VM[3] = VDATA[3]
+```
+
+#### BUFFER_STORE_FORMAT_D16_X
+
+Opcode: 12 (0xc)  
+Syntax: BUFFER_STORE_FORMAT_D16_X VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Store the first component of the element into SRSRC resource
+including format from SRSRC. Treat input as 16-bit value (half FP or 16-bit integer).  
+Operation:  
+```
+STORE_FORMAT_D16_X(SRSRC, VADDR(1:2), SOFFSET, OFFSET, VDATA)
+```
+
+#### BUFFER_STORE_FORMAT_D16_XY
+
+Opcode: 13 (0xd)  
+Syntax: BUFFER_STORE_FORMAT_D16_XY VDATA(2), VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Store the first two components of the element into SRSRC resource
+including format from SRSRC. Treat input as 16-bit value (half FP or 16-bit integer).  
+Operation:  
+```
+STORE_FORMAT_D16_XY(SRSRC, VADDR(1:2), SOFFSET, OFFSET, VDATA)
+```
+
+#### BUFFER_STORE_FORMAT_D16_XYZ
+
+Opcode: 14 (0xe)  
+Syntax: BUFFER_STORE_FORMAT_D16_XYZ VDATA(3), VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Store the first three components of the element into SRSRC resource
+including format from SRSRC. Treat input as 16-bit value (half FP or 16-bit integer).  
+Operation:  
+```
+STORE_FORMAT_D16_XYZ(SRSRC, VADDR(1:2), SOFFSET, OFFSET, VDATA)
+```
+
+#### BUFFER_STORE_FORMAT_D16_XYZW
+
+Opcode: 15 (0xf)  
+Syntax: BUFFER_STORE_FORMAT_D16_XYZW VDATA(4), VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Store the all components of the element into SRSRC resource
+including format from SRSRC. Treat input as 16-bit value (half FP or 16-bit integer).  
+Operation:  
+```
+STORE_FORMAT_D16_XYZW(SRSRC, VADDR(1:2), SOFFSET, OFFSET, VDATA)
 ```
 
 #### BUFFER_STORE_FORMAT_X
