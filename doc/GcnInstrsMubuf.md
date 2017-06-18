@@ -120,7 +120,7 @@ List of the MUBUF instructions by opcode (GCN 1.0/1.1):
  112 (0x70) |   ✓   |   ✓   | BUFFER_WBINVL1_SC
  113 (0x71) |   ✓   |   ✓   | BUFFER_WBINVL1
 
-List of the MUBUF instructions by opcode (GCN 1.0/1.1):
+List of the MUBUF instructions by opcode (GCN 1.2):
 
  Opcode     | Mnemonic
 ------------|------------------------------
