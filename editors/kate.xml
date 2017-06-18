@@ -1874,6 +1874,7 @@
             <item>.gds_segment_size</item>
             <item>.gdssize</item>
             <item>.get_driver_version</item>
+            <item>.get_llvm_version</item>
             <item>.get_arch</item>
             <item>.get_64bit</item>
             <item>.get_gpu</item>
@@ -1934,6 +1935,7 @@
             <item>.kernel_code_prefetch_size</item>
             <item>.lflags</item>
             <item>.line</item>
+            <item>.llvm_version</item>
             <item>.ln</item>
             <item>.local</item>
             <item>.localsize</item>
@@ -1992,6 +1994,8 @@
             <item>.size</item>
             <item>.skip</item>
             <item>.space</item>
+            <item>.spilledsgprs</item>
+            <item>.spilledvgprs</item>
             <item>.string</item>
             <item>.string16</item>
             <item>.string32</item>

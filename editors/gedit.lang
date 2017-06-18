@@ -167,6 +167,7 @@
             <keyword>gds_segment_size</keyword>
             <keyword>gdssize</keyword>
             <keyword>get_driver_version</keyword>
+            <keyword>get_llvm_version</keyword>
             <keyword>get_arch</keyword>
             <keyword>get_64bit</keyword>
             <keyword>get_format</keyword>
@@ -227,6 +228,7 @@
             <keyword>kernel_code_prefetch_size</keyword>
             <keyword>lflags</keyword>
             <keyword>line</keyword>
+            <keyword>llvm_version</keyword>
             <keyword>ln</keyword>
             <keyword>local</keyword>
             <keyword>localsize</keyword>
@@ -285,6 +287,8 @@
             <keyword>size</keyword>
             <keyword>skip</keyword>
             <keyword>space</keyword>
+            <keyword>spilledsgprs</keyword>
+            <keyword>spilledvgprs</keyword>
             <keyword>string</keyword>
             <keyword>string16</keyword>
             <keyword>string32</keyword>

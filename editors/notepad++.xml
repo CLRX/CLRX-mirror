@@ -1494,6 +1494,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .gds_segment_size
 .gdssize
 .get_driver_version
+.get_llvm_version
 .get_arch
 .get_64bit
 .get_format
@@ -1554,6 +1555,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .kernel_code_prefetch_size
 .lflags
 .line
+.llvm_version
 .ln
 .local
 .localsize
@@ -1612,6 +1614,8 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .size
 .skip
 .space
+.spilledsgprs
+.spilledvgprs
 .string
 .string16
 .string32
