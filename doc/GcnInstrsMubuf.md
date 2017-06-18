@@ -987,6 +987,17 @@ Operation:
 STORE_FORMAT_XYZW(SRSRC, VADDR(1:2), SOFFSET, OFFSET, VDATA)
 ```
 
+#### BUFFER_STORE_LDS_DWORD
+
+Opcode: 61 (0x3d) for GCN 1.2  
+Syntax: BUFFER_STORE_LDS_DWORD SRSRC(4), SOFFSET  
+Description: Store single dword from LDS into SRSRC resource.  
+Operation:  
+```
+UINT32 VAL = *(UINT32*)(LDS + (M0&0xffff) + OFFSET + LANEID*4)
+*(UINT32*)VMEM(SRSRC, 0, SOFFSET, OFFSET) = VAL
+```
+
 #### BUFFER_STORE_SHORT
 
 Opcode: 26 (0x1a)  
