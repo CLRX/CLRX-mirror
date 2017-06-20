@@ -133,86 +133,100 @@ Timings of VOP1 instructions are in this table:
 
  Instruction           | Cycles        | Instruction           | Cycles
 -----------------------|---------------|-----------------------|---------------
- V_BFREV_B32           | 4             | V_FREXP_EXP_I32_F32   | 4
+ V_BFREV_B32           | 4             | V_FREXP_EXP_I16_F16   | 4
+ V_CEIL_F16            | 4             | V_FREXP_EXP_I32_F32   | 4
  V_CEIL_F32            | 4             | V_FREXP_EXP_I32_F64   | DPFACTOR*4
- V_CEIL_F64            | DPFACTOR*4    | V_FREXP_MANT_F32      | 4
- V_CLREXCP             | 4             | V_FREXP_MANT_F64      | DPFACTOR*4
+ V_CEIL_F64            | DPFACTOR*4    | V_FREXP_MANT_F16      | 4
+ V_CLREXCP             | 4             | V_FREXP_MANT_F32      | 4
+ V_COS_F16             | 16            | V_FREXP_MANT_F64      | DPFACTOR*4
  V_COS_F32             | 16            | V_LOG_CLAMP_F32       | 16
- V_CVT_F16_F32         | 4             | V_LOG_F32             | 16
- V_CVT_F32_F16         | 4             | V_LOG_LEGACY_F32      | 16
- V_CVT_F32_F64         | DPFACTOR*4    | V_MOVRELD_B32         | 4
- V_CVT_F32_I32         | 4             | V_MOVRELSD_B32        | 4
- V_CVT_F32_U32         | 4             | V_MOVRELS_B32         | 4
- V_CVT_F32_UBYTE0      | 4             | V_MOV_B32             | 4
- V_CVT_F32_UBYTE1      | 4             | V_MOV_FED_B32         | 4
- V_CVT_F32_UBYTE2      | 4             | V_NOP                 | 4
- V_CVT_F32_UBYTE3      | 4             | V_NOT_B32             | 4
- V_CVT_F64_F32         | DPFACTOR*4    | V_RCP_CLAMP_F32       | 16
- V_CVT_F64_I32         | DPFACTOR*4    | V_RCP_CLAMP_F64       | DPFACTOR*8
+ V_CVT_F16_F32         | 4             | V_LOG_F16             | 16
+ V_CVT_F16_I16         | 4             | V_LOG_F32             | 16
+ V_CVT_F16_U16         | 4             | V_LOG_LEGACY_F32      | 16
+ V_CVT_F32_F16         | 4             | V_MOVRELD_B32         | 4
+ V_CVT_F32_F64         | DPFACTOR*4    | V_MOVRELSD_B32        | 4
+ V_CVT_F32_I32         | 4             | V_MOVRELS_B32         | 4
+ V_CVT_F32_U32         | 4             | V_MOV_B32             | 4
+ V_CVT_F32_UBYTE0      | 4             | V_MOV_FED_B32         | 4
+ V_CVT_F32_UBYTE1      | 4             | V_NOP                 | 4
+ V_CVT_F32_UBYTE2      | 4             | V_NOT_B32             | 4
+ V_CVT_F32_UBYTE3      | 4             | V_RCP_CLAMP_F32       | 16
+ V_CVT_F64_F32         | DPFACTOR*4    | V_RCP_CLAMP_F64       | DPFACTOR*8
+ V_CVT_F64_I32         | DPFACTOR*4    | V_RCP_F16             | 16
  V_CVT_F64_U32         | DPFACTOR*4    | V_RCP_F32             | 16
  V_CVT_FLR_I32_F32     | 4             | V_RCP_F64             | DPFACTOR*8
- V_CVT_I32_F32         | 4             | V_RCP_IFLAG_F32       | 16
- V_CVT_I32_F64         | DPFACTOR*4    | V_RCP_LEGACY_F32      | 16
- V_CVT_OFF_F32_I4      | 4             | V_READFIRSTLANE_B32   | 4
+ V_CVT_I16_F16         | 4             | V_RCP_IFLAG_F32       | 16
+ V_CVT_I32_F32         | 4             | V_RCP_LEGACY_F32      | 16
+ V_CVT_I32_F64         | DPFACTOR*4    | V_READFIRSTLANE_B32   | 4
+ V_CVT_OFF_F32_I4      | 4             | V_RNDNE_F16           | 4
  V_CVT_RPI_I32_F32     | 4             | V_RNDNE_F32           | 4
- V_CVT_U32_F32         | 4             | V_RNDNE_F64           | DPFACTOR*4
- V_CVT_U32_F64         | DPFACTOR*4    | V_RSQ_CLAMP_F32       | 16
- V_EXP_F32             | 16            | V_RSQ_CLAMP_F64       | DPFACTOR*8
- V_EXP_LEGACY_F32      | 16            | V_RSQ_F32             | 16
- V_FFBH_I32            | 4             | V_RSQ_F64             | DPFACTOR*8
- V_FFBH_U32            | 4             | V_RSQ_LEGACY_F32      | 16
+ V_CVT_U16_F16         | 4             | V_RNDNE_F64           | DPFACTOR*4
+ V_CVT_U32_F32         | 4             | V_RSQ_CLAMP_F32       | 16
+ V_CVT_U32_F64         | DPFACTOR*4    | V_RSQ_CLAMP_F64       | DPFACTOR*8
+ V_EXP_F16             | 16            | V_RSQ_F16             | 16
+ V_EXP_F32             | 16            | V_RSQ_F32             | 16
+ V_EXP_LEGACY_F32      | 16            | V_RSQ_F64             | DPFACTOR*8
+ V_FFBH_I32            | 4             | V_RSQ_LEGACY_F32      | 16
+ V_FFBH_U32            | 4             | V_SIN_F16             | 16
  V_FFBL_B32            | 4             | V_SIN_F32             | 16
+ V_FLOOR_F16           | 4             | V_SQRT_F16            | 16 
  V_FLOOR_F32           | 4             | V_SQRT_F32            | 16
  V_FLOOR_F64           | DPFACTOR*4    | V_SQRT_F64            | DPFACTOR*8
+ V_FRACT_F16           | 4             | V_TRUNC_F16           | 4
  V_FRACT_F32           | 4             | V_TRUNC_F32           | 4
  V_FRACT_F64           | DPFACTOR*4    | V_TRUNC_F64           | DPFACTOR*4
 
 ### VOPC Instruction timings
 
 Maximum throughput of these instructions can be calculated by using expression
-`(1/(CYCLES/4))` - for 4 cycles it is 1 instruction per cycle, for 8 cycles it is 1/2 instruction
-per cycle, etc.
-All 32-bit comparison instructions take 4 cycles. All 64-bit comparison instructions take
-DPFACTOR*4 cycles.
+`(1/(CYCLES/4))` - for 4 cycles it is 1 instruction per cycle, for 8 cycles it is 1/2
+instruction per cycle, etc.
+All 16-bit and 32-bit comparison instructions take 4 cycles.
+All 64-bit comparison instructions take DPFACTOR*4 cycles.
 
 ### VOP3 Instruction timings
 
 Maximum throughput of these instructions can be calculated by using expression
-`(1/(CYCLES/4))` - for 4 cycles it is 1 instruction per cycle, for 8 cycles it is 1/2 instruction
-per cycle and etc.
+`(1/(CYCLES/4))` - for 4 cycles it is 1 instruction per cycle, for 8 cycles it is 1/2
+instruction per cycle and etc.
+
 Timings of VOP3 instructions are in this table:
 
  Instruction           | Cycles        | Instruction           | Cycles
 -----------------------|---------------|-----------------------|---------------
- V_ADD_F64             | DPFACTOR*4    | V_MAD_U64_U32         | 16
- V_ALIGNBIT_B32        | 4             | V_MAX3_F32            | 4
- V_ALIGNBYTE_B32       | 4             | V_MAX3_I32            | 4
- V_ASHR_I64            | DPFACTOR*4    | V_MAX3_U32            | 4
- V_BFE_I32             | 4             | V_MAX_F64             | DPFACTOR*4
- V_BFE_U32             | 4             | V_MED3_F32            | 4
- V_BFI_B32             | 4             | V_MED3_I32            | 4
- V_CUBEID_F32          | 4             | V_MED3_U32            | 4
- V_CUBEMA_F32          | 4             | V_MIN3_F32            | 4
- V_CUBESC_F32          | 4             | V_MIN3_I32            | 4
- V_CUBETC_F32          | 4             | V_MIN3_U32            | 4
- V_CVT_PK_U8_F32       | 4             | V_MIN_F64             | DPFACTOR*4
- V_DIV_FIXUP_F32       | 16            | V_MQSAD_PK_U16_U8     | 16
- V_DIV_FIXUP_F64       | DPFACTOR*4    | V_MQSAD_U32_U8        | 16
- V_DIV_FMAS_F32        | 16            | V_MQSAD_U8            | 16
- V_DIV_FMAS_F64        | DPFACTOR*8    | V_MSAD_U8             | 4
- V_DIV_SCALE_F32       | 16            | V_MULLIT_F32          | 4
- V_DIV_SCALE_F64       | DPFACTOR*4    | V_MUL_F64             | DPFACTOR*8
- V_FMA_F32             | 4 or 16 (1)   | V_MUL_HI_I32          | 16
- V_FMA_F64             | DPFACTOR*8    | V_MUL_HI_U32          | 16
- V_LDEXP_F64           | DPFACTOR*4    | V_MUL_LO_I32          | 16
- V_LERP_U8             | 4             | V_MUL_LO_U32          | 16
- V_LSHL_B64            | DPFACTOR*4    | V_QSAD_PK_U16_U8      | 16
+ V_ADD_F64             | DPFACTOR*4    | V_MAD_LEGACY_F32      | 4
+ V_ALIGNBIT_B32        | 4             | V_MAD_U16             | 4
+ V_ALIGNBYTE_B32       | 4             | V_MAD_U32_U24         | 4
+ V_ASHR_I64            | DPFACTOR*4    | V_MAD_U64_U32         | 16
+ V_ASHRREV_I64         | DPFACTOR*4    | V_MAX3_F32            | 4
+ V_BFE_I32             | 4             | V_MAX3_I32            | 4
+ V_BFE_U32             | 4             | V_MAX3_U32            | 4
+ V_BFI_B32             | 4             | V_MAX_F64             | DPFACTOR*4
+ V_CUBEID_F32          | 4             | V_MED3_F32            | 4
+ V_CUBEMA_F32          | 4             | V_MED3_I32            | 4
+ V_CUBESC_F32          | 4             | V_MED3_U32            | 4
+ V_CUBETC_F32          | 4             | V_MIN3_F32            | 4
+ V_CVT_PK_U8_F32       | 4             | V_MIN3_I32            | 4
+ V_DIV_FIXUP_F32       | 16            | V_MIN3_U32            | 4
+ V_DIV_FIXUP_F64       | DPFACTOR*4    | V_MIN_F64             | DPFACTOR*4
+ V_DIV_FMAS_F32        | 16            | V_MQSAD_PK_U16_U8     | 16
+ V_DIV_FMAS_F64        | DPFACTOR*8    | V_MQSAD_U32_U8        | 16
+ V_DIV_SCALE_F32       | 16            | V_MQSAD_U8            | 16
+ V_DIV_SCALE_F64       | DPFACTOR*4    | V_MSAD_U8             | 4
+ V_MAD_F16             | 4             | V_MULLIT_F32          | 4
+ V_FMA_F32             | 4 or 16 (1)   | V_MUL_F64             | DPFACTOR*8
+ V_FMA_F64             | DPFACTOR*8    | V_MUL_HI_I32          | 16
+ V_LDEXP_F64           | DPFACTOR*4    | V_MUL_HI_U32          | 16
+ V_LERP_U8             | 4             | V_MUL_LO_I32          | 16
+ V_LSHL_B64            | DPFACTOR*4    | V_MUL_LO_U32          | 16
+ V_LSHLREV_B64         | DPFACTOR*4    | V_QSAD_PK_U16_U8      | 16
  V_LSHR_B64            | DPFACTOR*4    | V_QSAD_U8             | 16
- V_MAD_F32             | 4             | V_SAD_HI_U8           | 4
- V_MAD_I32_I24         | 4             | V_SAD_U16             | 4
- V_MAD_I64_I32         | 16            | V_SAD_U32             | 4
- V_MAD_LEGACY_F32      | 4             | V_SAD_U8              | 4
- V_MAD_U32_U24         | 4             | V_TRIG_PREOP_F64      | DPFACTOR*8
+ V_LSHRREV_B64         | DPFACTOR*4    | V_SAD_HI_U8           | 4
+ V_MAD_F16             | 4             | V_SAD_U16             | 4
+ V_MAD_F32             | 4             | V_SAD_U32             | 4
+ V_MAD_I16             | 4             | V_SAD_U8              | 4
+ V_MAD_I32_I24         | 4             | V_TRIG_PREOP_F64      | DPFACTOR*8
+ V_MAD_I64_I32         | 16            |
 
 (1) - for device with DP speed 1/2, 1/4 or 1/8 is 4 cycles, for other devices is 16 cycles
 
