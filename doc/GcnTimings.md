@@ -67,6 +67,9 @@ branches, and scalar instructions will be masked while executing
 more waves than 4\*CUs. For best results is recommended to execute many waves
 (multiple of 4\*CUs) with occupancy greater than 1.
 
+The GCN 1.2 always execute instruction with full speed if these are in instruction cache.
+GCN 1.2 can fetch double dword instructions in full speed.
+
 ### Instruction scheduling
 
 * if many wavefronts are executed in a single CU (if many wavefronts) then scalar, vector and
