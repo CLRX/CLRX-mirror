@@ -273,6 +273,20 @@ Syntax: .sgprsnum REGNUM
 This pseudo-op must be inside kernel configuration (`.config`). Set number of scalar
 registers which can be used during kernel execution.
 
+### .spilledgprs
+
+Syntax: .sgpilledsgprs REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`). Set number of scalar
+registers to spill in scratch buffer. It have meaning for LLVM 3.9 or later.
+
+### .spilledgprs
+
+Syntax: .sgpilledvgprs REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`). Set number of vector
+registers to spill in scratch buffer. It have meaning for LLVM 3.9 or later. 
+
 ### .tgsize
 
 This pseudo-op must be inside kernel configuration (`.config`).
