@@ -105,6 +105,8 @@ By default, automatically computed by assembler.
 By default, automatically computed by assembler.
 * .userdatanum NUMBER - number of USERDATA used by kernel (0-16). Default value is 4.
 * .tgsize - enables using of TG_SIZE_EN (we recommend to add this always)
+* .spillesgprs - number of scalar register to spill
+* .spillevgprs - number of vector register to spill
 
 Example configuration:
 
