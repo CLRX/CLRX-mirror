@@ -1286,8 +1286,16 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (linePtr==end || *linePtr!='@')
         {
             gcnAsm->setCurrentRVU(2);
+            const char* soffsetPlace = linePtr;
             good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1,
                        GCNFIELD_SMRD_SOFFSET, false, INSTROP_SYMREGRANGE|INSTROP_READ);
+            if (good && (gcnInsn.mode & GCN_MLOAD) == 0 && soffsetReg &&
+                    !soffsetReg.isVal(124))
+            {   // if no M0 register
+                asmr.printError(soffsetPlace,
+                        "Store/Atomic SMEM instructions accepts only M0 register");
+                good = false;
+            }
         }
         else // '@' prefix
             skipCharAndSpacesToEnd(linePtr, end);

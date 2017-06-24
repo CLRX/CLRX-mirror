@@ -167,6 +167,9 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "    s_sendmsg  sendmsg(savewave)", 0xbf900004U, 0, false, true, "" },
     /* SMEM encoding */
     { "    s_load_dword  s50, s[58:59], 0x1345b", 0xc0020c9dU, 0x1345b, true, true, "" },
+    { "    s_load_dword  s50, s[58:59], s63", 0xc0000c9dU, 0x3fU, true, true, "" },
+    { "    s_load_dword  s50, s[58:59], m0", 0xc0000c9dU, 0x7cU, true, true, "" },
+    { "zreg=%s26; s_load_dword  s50, s[58:59], zreg", 0xc0000c9dU, 0x1aU, true, true, "" },
     { "    s_load_dword  s50, s[58:59], 0x1345b glc:0",
         0xc0020c9dU, 0x1345b, true, true, "" },
     { "    s_load_dword  s50, s[58:59], 0x1345b glc   ",
@@ -244,6 +247,15 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         "test.s:1:19: Error: Required 1 scalar register\n" },
     { "    s_load_dword  s50, s[58:58], 0x1345b", 0, 0, false, false,
         "test.s:1:24: Error: Required 2 scalar registers\n" },
+    // non M0 register
+    { "    s_store_dword  s50, s[58:59], s32", 0, 0, false, false,
+        "test.s:1:35: Error: Store/Atomic SMEM instructions accepts only M0 register\n" },
+    { "    s_buffer_store_dword  s50, s[60:63], s32", 0, 0, false, false,
+        "test.s:1:42: Error: Store/Atomic SMEM instructions accepts only M0 register\n" },
+    { "    s_buffer_atomic_xor  s50, s[60:63], s32", 0, 0, false, false,
+        "test.s:1:41: Error: Store/Atomic SMEM instructions accepts only M0 register\n" },
+    { "    s_buffer_atomic_xor  s50, s[60:63], s32 glc", 0, 0, false, false,
+        "test.s:1:41: Error: Store/Atomic SMEM instructions accepts only M0 register\n" },
     /* SMEM instructons */
     { "    s_load_dwordx2  s[50:51], s[58:59], 0x1b", 0xc0060c9dU, 0x1b, true, true, "" },
     { "    s_load_dwordx4  s[52:55], s[58:59], 0x1b", 0xc00a0d1dU, 0x1b, true, true, "" },
