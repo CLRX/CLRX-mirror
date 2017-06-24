@@ -52,7 +52,9 @@ enum : Flags {
     INSTROP_FLOAT = 0x1000, // floating point literal
     INSTROP_F16 = 0x2000,   // half floating point literal
     INSTROP_V64BIT = 0x3000, // 64-bit value (specific for vector instructions)
-    INSTROP_UNALIGNED = 0x8000, // not aligned, use by parseRegisterRange
+    INSTROP_UNALIGNED = 0xc000, // not aligned, use by parseRegisterRange
+    INSTROP_ALIGNED = 0x0000,
+    INSTROP_SGPR_UNALIGNED = 0x4000,
     
     INSTROP_READ = 0x10000,
     INSTROP_WRITE = 0x20000,

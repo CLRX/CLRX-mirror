@@ -1444,7 +1444,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (mode1 == GCN_DS1_SGPR) // if SGPRS as destination
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                        (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP_SDST, true,
-                       INSTROP_SYMREGRANGE|INSTROP_UNALIGNED|INSTROP_WRITE);
+                       INSTROP_SYMREGRANGE|INSTROP_SGPR_UNALIGNED|INSTROP_WRITE);
     else // if VGPRS as destination
     {
         bool v_mac = ::strncmp(gcnInsn.mnemonic, "v_mac_", 6)==0;
@@ -1461,7 +1461,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             return false;
         gcnAsm->setCurrentRVU(1);
         good &= parseSRegRange(asmr, linePtr, dstCCReg, arch, 2, GCNFIELD_VOP3_SDST1, true,
-                               INSTROP_SYMREGRANGE|INSTROP_UNALIGNED|INSTROP_WRITE);
+                               INSTROP_SYMREGRANGE|INSTROP_SGPR_UNALIGNED|INSTROP_WRITE);
     }
     
     GCNOperand src0Op{}, src1Op{};
@@ -1477,7 +1477,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     gcnAsm->setCurrentRVU(2);
     good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch, regsNum,
             correctOpType(regsNum, literalConstsFlags) | vopOpModFlags |
-            INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
+            INSTROP_SGPR_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
             INSTROP_READ, GCNFIELD_VOP_SRC0);
     
     uint32_t immValue = 0;
@@ -1499,7 +1499,8 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch, regsNum,
             correctOpType(regsNum, literalConstsFlags) | vopOpModFlags |
             (!sgprRegInSrc1 ? INSTROP_VREGS : 0)|INSTROP_SSOURCE|INSTROP_SREGS|
-            INSTROP_UNALIGNED | (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0)|
+            INSTROP_SGPR_UNALIGNED |
+            (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0)|
             INSTROP_READ, (!sgprRegInSrc1) ? GCNFIELD_VOP_VSRC1 : GCNFIELD_VOP_SSRC1);
     
     if (mode1 == GCN_ARG2_IMM)
@@ -1762,7 +1763,7 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (mode1 == GCN_DST_SGPR) // if SGPRS as destination
             good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                            (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP_SDST, true,
-                           INSTROP_SYMREGRANGE|INSTROP_UNALIGNED|INSTROP_WRITE);
+                           INSTROP_SYMREGRANGE|INSTROP_SGPR_UNALIGNED|INSTROP_WRITE);
         else // if VGPRS as destination
             good &= parseVRegRange(asmr, linePtr, dstReg,
                        (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP_VDST, true,
@@ -1777,7 +1778,7 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         gcnAsm->setCurrentRVU(1);
         good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch, regsNum,
                     correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
-                    INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
+                    INSTROP_SGPR_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
                     INSTROP_VOP3MODS|INSTROP_READ, GCNFIELD_VOP_SRC0);
     }
     // modifiers
@@ -1932,7 +1933,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     gcnAsm->setCurrentRVU(0);
     good &= parseSRegRange(asmr, linePtr, dstReg, arch, 2, GCNFIELD_VOP3_SDST0, true,
-                           INSTROP_SYMREGRANGE|INSTROP_UNALIGNED|INSTROP_WRITE);
+                           INSTROP_SYMREGRANGE|INSTROP_SGPR_UNALIGNED|INSTROP_WRITE);
     if (!skipRequiredComma(asmr, linePtr))
         return false;
     
@@ -1942,7 +1943,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     gcnAsm->setCurrentRVU(1);
     good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch, regsNum,
                     correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
-                    INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
+                    INSTROP_SGPR_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
                     INSTROP_VOP3MODS|INSTROP_READ, GCNFIELD_VOP_SRC0);
     
     if (!skipRequiredComma(asmr, linePtr))
@@ -1951,7 +1952,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     gcnAsm->setCurrentRVU(2);
     good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch, regsNum,
                 correctOpType(regsNum, literalConstsFlags) | INSTROP_VOP3MODS|
-                INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
+                INSTROP_SGPR_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
                 INSTROP_READ| (src0Op.range.isVal(255) ? INSTROP_ONLYINLINECONSTS : 0),
                 GCNFIELD_VOP_VSRC1);
     // modifiers
@@ -2164,7 +2165,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         else // SGPRS as dest
             good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                        (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP3_SDST0, true,
-                       INSTROP_SYMREGRANGE|INSTROP_UNALIGNED|INSTROP_WRITE);
+                       INSTROP_SYMREGRANGE|INSTROP_SGPR_UNALIGNED|INSTROP_WRITE);
         if (!skipRequiredComma(asmr, linePtr))
             return false;
         
@@ -2174,7 +2175,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             gcnAsm->setCurrentRVU(1);
             good &= parseSRegRange(asmr, linePtr, sdstReg, arch, 2, GCNFIELD_VOP3_SDST1,
-                       true, INSTROP_SYMREGRANGE|INSTROP_WRITE|INSTROP_UNALIGNED);
+                       true, INSTROP_SYMREGRANGE|INSTROP_WRITE|INSTROP_SGPR_UNALIGNED);
             if (!skipRequiredComma(asmr, linePtr))
                 return false;
         }
@@ -2188,8 +2189,8 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             regsNum = (gcnInsn.mode&GCN_REG_SRC0_64)?2:1;
             good &= parseOperand(asmr, linePtr, src0Op, nullptr, arch, regsNum,
                     correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
-                    INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|vop3Mods|
-                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR|INSTROP_READ,
+                    INSTROP_SGPR_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
+                    vop3Mods|INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR|INSTROP_READ,
                     GCNFIELD_VOP3_SRC0);
             operands++;
         }
@@ -2217,8 +2218,8 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                     return false;
                 gcnAsm->setCurrentRVU(4);
                 good &= parseOperand(asmr, linePtr, src2Op, nullptr, arch,
-                    (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, INSTROP_UNALIGNED|INSTROP_VREGS|
-                    INSTROP_SREGS|INSTROP_READ, GCNFIELD_VOP3_SRC2);
+                    (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, INSTROP_SGPR_UNALIGNED|
+                    INSTROP_VREGS|INSTROP_SREGS|INSTROP_READ, GCNFIELD_VOP3_SRC2);
             }
             // high and vop3
             const char* end = asmr.line+asmr.lineSize;
@@ -2278,7 +2279,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             gcnAsm->setCurrentRVU(3);
             good &= parseOperand(asmr, linePtr, src1Op, nullptr, arch, regsNum,
                     correctOpType(regsNum, literalConstsFlags)|INSTROP_VREGS|
-                    INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
+                    INSTROP_SGPR_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
                     INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR|INSTROP_READ,
                     GCNFIELD_VOP3_SRC1);
             operands++;
@@ -2291,7 +2292,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 gcnAsm->setCurrentRVU(4);
                 good &= parseOperand(asmr, linePtr, src2Op, nullptr, arch,
                         is128Ops ? 4 : regsNum,
-                        correctOpType(regsNum, literalConstsFlags)|INSTROP_UNALIGNED|
+                        correctOpType(regsNum, literalConstsFlags)|INSTROP_SGPR_UNALIGNED|
                         INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_READ|
                         vop3Mods|INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR,
                         GCNFIELD_VOP3_SRC2);

@@ -4,6 +4,8 @@ The GCN1.0/1.1 delivers maximum 104 registers (with VCC). Basic list of destinat
 scalar operands have 128 entries. Source operands codes is in range 0-255.
 
 **Important**: Two SGPR's must be aligned to 2. Four or more SGPR's must be aligned to 4.
+This rule do not apply to vector instruction where is more complex rule:
+SGPR's can be unaligned only if SGPR register range do not cross line (4 SGPR registers).
 
 Following list describes all operand codes values:
 

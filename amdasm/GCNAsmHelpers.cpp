@@ -240,12 +240,25 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                 return false;
             }
             /// check aligned for scalar registers
-            if ((flags & INSTROP_UNALIGNED) == 0 && rstart<maxSGPRsNum)
-                if ((rend-rstart==2 && (rstart&1)!=0) || (rend-rstart>2 && (rstart&3)!=0))
+            if (rstart<maxSGPRsNum)
+            {
+                if ((flags & INSTROP_UNALIGNED) == 0)
                 {
-                    asmr.printError(regRangePlace, "Unaligned scalar register range");
-                    return false;
-                }
+                    if ((rend-rstart==2 && (rstart&1)!=0) ||
+                        (rend-rstart>2 && (rstart&3)!=0))
+                    {
+                        asmr.printError(regRangePlace, "Unaligned scalar register range");
+                        return false;
+                    }
+                }   
+                else if ((flags & INSTROP_UNALIGNED) == INSTROP_SGPR_UNALIGNED)
+                    if ((rstart & 0xfc) != ((rend-1) & 0xfc))
+                    { // unaligned, but some restrictions
+                        asmr.printError(regRangePlace,
+                                "Scalar register range cross two register lines");
+                        return false;
+                    }
+            }
             
             if (regField != ASMFIELD_NONE)
                 gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
@@ -693,14 +706,25 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             return false;
         }
         /// check alignment
-        if (!ttmpReg && (flags & INSTROP_UNALIGNED)==0)
-            if ((value2-value1==1 && (value1&1)!=0) || (value2-value1>1 && (value1&3)!=0))
-            {
-                asmr.printError(sgprRangePlace, "Unaligned scalar register range");
-                return false;
-            }
+        
         if (!ttmpReg)
         {
+            if ((flags & INSTROP_UNALIGNED)==0)
+            {
+                if ((value2-value1==1 && (value1&1)!=0) ||
+                    (value2-value1>1 && (value1&3)!=0))
+                {
+                    asmr.printError(sgprRangePlace, "Unaligned scalar register range");
+                    return false;
+                }
+            }
+            else  if ((flags & INSTROP_UNALIGNED)==INSTROP_SGPR_UNALIGNED)
+                if ((value1 & 0xfc) != ((value2) & 0xfc))
+                { // unaligned, but some restrictions
+                    asmr.printError(sgprRangePlace,
+                            "Scalar register range cross two register lines");
+                    return false;
+                }
             regPair = { value1, uint16_t(value2)+1 };
             if (regField != ASMFIELD_NONE)
                 gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,

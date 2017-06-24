@@ -509,7 +509,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "v_cvt_f32_i32 v43, v147\n"
         "v_cvt_f32_i32 v51, s19\n"
         "v_rcp_f64 v[72:73], v[27:28]\n"
-        "v_rcp_f64 v[72:73], s[27:28]\n"
+        "v_rcp_f64 v[72:73], s[26:27]\n"
         "v_readfirstlane_b32 s35, v91\n"
         "v_rcp_f64 v[55:56], v[87:88] vop3\n"
         "v_cvt_f32_i32 v43, v147 vop3\n",
@@ -558,7 +558,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 76, nullptr, 256+27, 256+29, GCNFIELD_VOP_SRC0, ASMRVU_READ, 0 },
             // v_rcp_f64 v[72:73], s[27:28]
             { 80, nullptr, 256+72, 256+74, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 0 },
-            { 80, nullptr, 27, 29, GCNFIELD_VOP_SRC0, ASMRVU_READ, 0 },
+            { 80, nullptr, 26, 28, GCNFIELD_VOP_SRC0, ASMRVU_READ, 0 },
             // v_readfirstlane_b32 s35, v91
             { 84, nullptr, 35, 36, GCNFIELD_VOP_SDST, ASMRVU_WRITE, 0 },
             { 84, nullptr, 256+91, 256+92, GCNFIELD_VOP_SRC0, ASMRVU_READ, 0 },
@@ -640,7 +640,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "v_mad_f32 v67, s83, v43, v91\n"
         "v_mad_f32 v67, v83, s43, v91\n"
         "v_mad_f32 v67, v83, v43, s91\n"
-        "v_fma_f64 v[153:154], v[73:74], s[83:84], v[17:18]\n"
+        "v_fma_f64 v[153:154], v[73:74], s[82:83], v[17:18]\n"
         "v_div_scale_f32 v184, s[93:94], v53, v14, v89\n",
         {
             // v_mad_f32 rex, rax, rbx, rcx
@@ -715,7 +715,7 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             // v_fma_f64 v[153:154], rax2[73:74], s[83:84], v[17:18]
             { 112, nullptr, 256+153, 256+155, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 0 },
             { 112, nullptr, 256+73, 256+75, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 0 },
-            { 112, nullptr, 83, 85, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 0 },
+            { 112, nullptr, 82, 84, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 0 },
             { 112, nullptr, 256+17, 256+19, GCNFIELD_VOP3_SRC2, ASMRVU_READ, 0 },
             // v_div_scale_f32 v184, s[93:94], v53, v14, v89
             { 120, nullptr, 256+184, 256+185, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 0 },
