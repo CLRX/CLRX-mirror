@@ -1690,7 +1690,7 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
     std::istringstream input(testCase.input);
     std::ostringstream errorStream;
     
-    Assembler assembler("test.s", input, ASM_ALL&~ASM_ALTMACRO,
+    Assembler assembler("test.s", input, (ASM_ALL&~ASM_ALTMACRO) | ASM_TESTRUN,
                     BinaryFormat::GALLIUM, GPUDeviceType::CAPE_VERDE, errorStream);
     bool good = assembler.assemble();
     std::ostringstream oss;

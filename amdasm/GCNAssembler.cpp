@@ -3871,7 +3871,8 @@ void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
         default:
             break;
     }
-    if (good)
+    // register RegVarUsage in tests, do not apply normal usage
+    if (good && (assembler.getFlags() & ASM_TESTRUN) != 0)
         flushInstrRVUs(usageHandler);
 }
 
