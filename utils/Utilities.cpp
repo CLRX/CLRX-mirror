@@ -388,6 +388,16 @@ bool CLRX::isDirectory(const char* path)
 #endif
 }
 
+/// returns true if file exists
+bool CLRX::isFileExists(const char* path)
+{
+#ifdef HAVE_WINDOWS
+    return PathFileExists(path);
+#else
+    return ::access(path, F_OK)==0;
+#endif
+}
+
 Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
 {
     uint64_t size;
@@ -540,4 +550,41 @@ void CLRX::makeDir(const char* dirname)
         else
             throw Exception("Can't create directory");
     }
+}
+
+static const char* libAmdOCLPaths[] =
+{
+#ifdef HAVE_LINUX
+#  ifdef HAVE_32BIT
+     "/usr/lib/i386-linux-gnu/amdgpu-pro",
+     "/opt/amdgpu-pro/lib/i386-linux-gnu",
+     "/opt/amdgpu-pro/lib",
+     "/usr/lib32",
+     "/usr/lib"
+#  else
+     "/usr/lib/x86_64-linux-gnu/amdgpu-pro",
+     "/opt/amdgpu-pro/lib/x86_64-linux-gnu",
+     "/opt/amdgpu-pro/lib64",
+     "/usr/lib64"
+#  endif
+#elif defined(HAVE_WINDOWS)
+     "c:\\Windows\\System32"
+#endif
+};
+
+std::string CLRX::findAmdOCL()
+{
+    std::string amdOclPath = parseEnvVariable<std::string>("CLRX_AMDOCL_PATH", "");
+    if (!amdOclPath.empty() && isFileExists(amdOclPath.c_str()))
+        return amdOclPath;
+    else if (isFileExists(DEFAULT_AMDOCLPATH))
+        return DEFAULT_AMDOCLPATH;
+    else
+        for (const char* libPath: libAmdOCLPaths)
+        {
+            amdOclPath = joinPaths(libPath, DEFAULT_AMDOCLNAME);
+            if (isFileExists(amdOclPath.c_str()))
+                return amdOclPath;
+        }
+    return "";
 }

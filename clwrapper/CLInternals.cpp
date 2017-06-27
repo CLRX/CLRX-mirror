@@ -303,8 +303,7 @@ void clrxWrapperInitialize()
     try
     {
         useCLRXWrapper = !parseEnvVariable<bool>("CLRX_FORCE_ORIGINAL_AMDOCL", false);
-        std::string amdOclPath = parseEnvVariable<std::string>("CLRX_AMDOCL_PATH",
-                           DEFAULT_AMDOCLPATH);
+        std::string amdOclPath = findAmdOCL();
         /// set temporary amd ocl library
         tmpAmdOclLibrary.reset(new DynLibrary(amdOclPath.c_str(), DYNLIB_NOW));
         // get relevant OpenCL function pointers

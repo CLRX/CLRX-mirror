@@ -1831,8 +1831,7 @@ static std::string escapePath(const std::string& path)
 uint32_t CLRX::detectAmdDriverVersion()
 {
     std::lock_guard<std::mutex> lock(detectionMutex);
-    std::string amdOclPath = parseEnvVariable<std::string>("CLRX_AMDOCL_PATH",
-                           DEFAULT_AMDOCLPATH);
+    std::string amdOclPath = findAmdOCL();
     
     bool notThisSameFile = false;
     if (amdOclPath != detectionAmdOclPath)

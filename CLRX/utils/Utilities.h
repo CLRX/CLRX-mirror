@@ -682,6 +682,8 @@ inline size_t dtocstrCStyle(double value, char* str, size_t maxSize, bool scient
 
 /// returns true if path refers to directory
 extern bool isDirectory(const char* path);
+/// returns true if file exists
+extern bool isFileExists(const char* path);
 
 /// load data from file (any regular or pipe or device)
 /**
@@ -705,6 +707,8 @@ extern uint64_t getFileTimestamp(const char* filename);
 extern std::string getHomeDir();
 /// create directory
 extern void makeDir(const char* dirname);
+/// find amdocl library, returns path if found, otherwise returns empty string
+extern std::string findAmdOCL();
 
 /*
  * Reference support

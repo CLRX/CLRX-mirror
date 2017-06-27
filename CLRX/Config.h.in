@@ -138,6 +138,7 @@
 #  define SYSTEM_CONFIG_PATH "/etc"
 
 #  ifdef HAVE_32BIT
+#    define DEFAULT_AMDOCLNAME "libamdocl32.so"
 #    ifdef HAVE_UBUNTU_GPUPRO
 #    define DEFAULT_AMDOCLPATH "/usr/lib/i386-linux-gnu/amdgpu-pro/libamdocl32.so"
 #    elif defined(HAVE_GPUPRO_NEW)
@@ -148,6 +149,7 @@
 #    define DEFAULT_AMDOCLPATH "/usr/lib/libamdocl32.so"
 #    endif
 #  else
+#    define DEFAULT_AMDOCLNAME "libamdocl64.so"
 #    ifdef HAVE_UBUNTU_GPUPRO
 #    define DEFAULT_AMDOCLPATH "/usr/lib/x86_64-linux-gnu/amdgpu-pro/libamdocl64.so"
 #    elif defined(HAVE_GPUPRO_NEW)
@@ -169,8 +171,10 @@
 #  define SYSTEM_CONFIG_PATH "c:\\etc"
 
 #  ifdef HAVE_32BIT
+#  define DEFAULT_AMDOCLNAME "amdocl.dll"
 #  define DEFAULT_AMDOCLPATH "c:\\Windows\\System32\\amdocl.dll"
 #  else
+#  define DEFAULT_AMDOCLNAME "amdocl64.dll"
 #  define DEFAULT_AMDOCLPATH "c:\\Windows\\System32\\amdocl64.dll"
 #  endif
 
