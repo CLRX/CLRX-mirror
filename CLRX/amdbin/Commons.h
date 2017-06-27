@@ -39,24 +39,24 @@ enum
 };
 
 enum {
-    AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER = 1,  ///< 
+    AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER = 1,  ///< use privae segment buffer
     AMDHSAFLAG_USE_DISPATCH_PTR = 2,
-    AMDHSAFLAG_USE_QUEUE_PTR = 4,
-    AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR = 8,
+    AMDHSAFLAG_USE_QUEUE_PTR = 4,       ///< use queue pointer
+    AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR = 8, ///< use kernel argument segment pointer
     AMDHSAFLAG_USE_DISPATCH_ID = 16,
     AMDHSAFLAG_USE_FLAT_SCRATCH_INIT = 32,
-    AMDHSAFLAG_USE_PRIVATE_SEGMENT_SIZE = 64,
+    AMDHSAFLAG_USE_PRIVATE_SEGMENT_SIZE = 64,       ///< use private segment size
     AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_BIT = 7,
-    AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_X = 128,
-    AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_Y = 256,
-    AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_Z = 512,
+    AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_X = 128,    ///< use workgroup count for X dim
+    AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_Y = 256,    ///< use workgroup count for Y dim
+    AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_Z = 512,    ///< use workgroup count for Z dim
     
-    AMDHSAFLAG_USE_ORDERED_APPEND_GDS = 1,
+    AMDHSAFLAG_USE_ORDERED_APPEND_GDS = 1,  /// use ordered append gds
     AMDHSAFLAG_PRIVATE_ELEM_SIZE_BIT = 1,
-    AMDHSAFLAG_USE_PTR64 = 8,
+    AMDHSAFLAG_USE_PTR64 = 8,       ///< use 64-bit pointers
     AMDHSAFLAG_USE_DYNAMIC_CALL_STACK = 16,
-    AMDHSAFLAG_USE_DEBUG_ENABLED = 32,
-    AMDHSAFLAG_USE_XNACK_ENABLED = 64
+    AMDHSAFLAG_USE_DEBUG_ENABLED = 32,  ///< debug enabled
+    AMDHSAFLAG_USE_XNACK_ENABLED = 64   ///< znack enabled
 };
 
 /// AMD HSA kernel configuration structure
@@ -76,27 +76,27 @@ struct AmdHsaKernelConfig
     uint32_t computePgmRsrc2;   ///< PGMRSRC2 register value
     uint16_t enableSgprRegisterFlags;   ///< bitfield of sg
     uint16_t enableFeatureFlags;    ///< bitfield of feature flags
-    uint32_t workitemPrivateSegmentSize;
-    uint32_t workgroupGroupSegmentSize;
-    uint32_t gdsSegmentSize;
-    uint64_t kernargSegmentSize;
+    uint32_t workitemPrivateSegmentSize; ///< workitem private (scratchbuffer) segment size
+    uint32_t workgroupGroupSegmentSize; ///< workgroup group segment (local memory) size
+    uint32_t gdsSegmentSize;   ///< GDS segment size
+    uint64_t kernargSegmentSize;    ///< kernel argument segment size
     uint32_t workgroupFbarrierCount;
-    uint16_t wavefrontSgprCount;
-    uint16_t workitemVgprCount;
-    uint16_t reservedVgprFirst;
-    uint16_t reservedVgprCount;
-    uint16_t reservedSgprFirst;
-    uint16_t reservedSgprCount;
+    uint16_t wavefrontSgprCount;    ///< scalar register count per wavefront
+    uint16_t workitemVgprCount;     ///< vector register count per workitem
+    uint16_t reservedVgprFirst;     ///< reserved first vector register
+    uint16_t reservedVgprCount;     ///< reserved vector register count
+    uint16_t reservedSgprFirst;     ///< reserved first scalar register
+    uint16_t reservedSgprCount;     ///< reserved scalar register count
     uint16_t debugWavefrontPrivateSegmentOffsetSgpr;
     uint16_t debugPrivateSegmentBufferSgpr;
-    cxbyte kernargSegmentAlignment;
-    cxbyte groupSegmentAlignment;
-    cxbyte privateSegmentAlignment;
-    cxbyte wavefrontSize;
-    uint32_t callConvention;
-    uint32_t reserved1[3];
+    cxbyte kernargSegmentAlignment;     ///< kernel segment alignment
+    cxbyte groupSegmentAlignment;       ///< group segment alignment
+    cxbyte privateSegmentAlignment;     ///< private segment alignment
+    cxbyte wavefrontSize;           ///< wavefront size
+    uint32_t callConvention;        ///< call convention
+    uint32_t reserved1[3];          ///< reserved
     uint64_t runtimeLoaderKernelSymbol;
-    cxbyte controlDirective[128];
+    cxbyte controlDirective[128];       ///< control directives area
 };
 
 };

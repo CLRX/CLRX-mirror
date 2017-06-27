@@ -356,33 +356,39 @@ struct AmdCL2GPUKernelArgEntry64
     uint64_t isConst;   ///< is const pointer
 };
 
+/// base class of AMD OpenCL 2.0 binaries
 class AmdCL2MainGPUBinaryBase: public AmdMainBinaryBase
 {
 public:
+    /// type definition of metadata map
     typedef Array<std::pair<CString, size_t> > MetadataMap;
 protected:
-    cxuint driverVersion;
-    size_t kernelsNum;
+    cxuint driverVersion;   ///< driver version
+    size_t kernelsNum;  ///< kernels number
     std::unique_ptr<AmdCL2GPUKernelMetadata[]> metadatas;  ///< AMD metadatas
     Array<AmdCL2GPUKernelMetadata> isaMetadatas;  ///< AMD metadatas
-    std::unique_ptr<AmdGPUKernelHeader[]> kernelHeaders;
-    MetadataMap isaMetadataMap;
+    std::unique_ptr<AmdGPUKernelHeader[]> kernelHeaders;    ///< kernel headers
+    MetadataMap isaMetadataMap; ///< ISA metadata map
     
     CString aclVersionString; ///< acl version string
-    std::unique_ptr<AmdCL2InnerGPUBinaryBase> innerBinary;
+    std::unique_ptr<AmdCL2InnerGPUBinaryBase> innerBinary;  ///< inner binary pointer
     
+    /// initialize binary
     template<typename Types>
     void initMainGPUBinary(typename Types::ElfBinary& elfBin);
     
+    /// internal method to determine GPU device type
     template<typename Types>
     GPUDeviceType determineGPUDeviceTypeInt(const typename Types::ElfBinary& elfBin,
                 uint32_t& archMinor, uint32_t& archStepping, cxuint driverVersion) const;
     
 public:
+    /// constructor
     explicit AmdCL2MainGPUBinaryBase(AmdMainType amdMainType);
+    /// default destructor
     ~AmdCL2MainGPUBinaryBase() = default;
     
-    // returns true if inner binary exists
+    /// returns true if inner binary exists
     bool hasInnerBinary() const
     { return innerBinary.get()!=nullptr; }
     
@@ -472,8 +478,10 @@ public:
 class AmdCL2MainGPUBinary32: public AmdCL2MainGPUBinaryBase, public ElfBinary32
 {
 public:
+    /// constructor
     AmdCL2MainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags = AMDBIN_CREATE_ALL);
+    /// default destructor
     ~AmdCL2MainGPUBinary32() = default;
     
     /// determine GPU device from this binary
@@ -506,8 +514,10 @@ public:
 class AmdCL2MainGPUBinary64: public AmdCL2MainGPUBinaryBase, public ElfBinary64
 {
 public:
+    /// constructor
     AmdCL2MainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags = AMDBIN_CREATE_ALL);
+    /// default destructor
     ~AmdCL2MainGPUBinary64() = default;
     
     /// determine GPU device from this binary

@@ -162,12 +162,13 @@ public:
         relSymbols.clear();
         relocations.clear();
     }
-    
+    /// get numbered labels
     const std::vector<size_t>& getLabels() const
     { return labels; }
+    /// get named labels
     const std::vector<std::pair<size_t, CString> >& getNamedLabels() const
     { return namedLabels; }
-    
+    /// flush output
     void flushOutput()
     { return output.flush(); }
 };
@@ -276,12 +277,13 @@ struct AmdCL2DisasmInput
     std::vector<AmdCL2DisasmKernelInput> kernels;    ///< kernel inputs
 };
 
+/// disasm ROCm kernel input
 struct ROCmDisasmKernelInput
 {
     CString kernelName; ///< kernel name
-    const cxbyte* setup;
-    size_t codeSize;
-    size_t offset;
+    const cxbyte* setup;    ///< setup
+    size_t codeSize;    ///< code size
+    size_t offset;      ///< kernel offset
 };
 
 /// disasm ROCm region
@@ -293,6 +295,7 @@ struct ROCmDisasmRegionInput
     ROCmRegionType type ;  ///< type
 };
 
+/// disasm ROCm input
 struct ROCmDisasmInput
 {
     GPUDeviceType deviceType;   ///< GPU device type
@@ -317,8 +320,8 @@ struct GalliumDisasmInput
 {
     GPUDeviceType deviceType;   ///< GPU device type
     bool is64BitMode;       ///< true if 64-bit mode of addressing
-    bool isLLVM390;
-    bool isMesa170;
+    bool isLLVM390;     ///< if >=LLVM3.9
+    bool isMesa170;     ///< if >=Mesa3D 17.0
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
     std::vector<GalliumDisasmKernelInput> kernels;    ///< list of input kernels

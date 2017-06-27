@@ -237,7 +237,7 @@ struct AsmExprTarget
         target.symbol = entry;
         return target;
     }
-    
+    /// make code flow target for expression
     static AsmExprTarget codeFlowTarget(cxuint sectionId, size_t cflowIndex)
     {
         AsmExprTarget target;
@@ -406,6 +406,7 @@ public:
     const AsmSourcePos& getSourcePos() const
     { return sourcePos; }
     
+    /// for internal usage
     size_t toTop(size_t opIndex) const;
     
     /// make symbol snapshot (required to implement .eqv pseudo-op)    
@@ -440,6 +441,7 @@ inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurren
         relativeSymOccurs = true;
 }
 
+/// type of register field
 typedef cxbyte AsmRegField;
 
 enum : AsmRegField
@@ -502,11 +504,13 @@ struct AsmRegVar
 /// single regvar id
 struct AsmSingleVReg // key for regvar
 {
-    const AsmRegVar* regVar;
-    uint16_t index; // index of regvar array
+    const AsmRegVar* regVar;    ///< regvar
+    uint16_t index; ///< index of regvar array
     
+    /// equal operator
     bool operator==(const AsmSingleVReg& r2) const
     { return regVar == r2.regVar && index == r2.index; }
+    /// not equal operator
     bool operator!=(const AsmSingleVReg& r2) const
     { return regVar == r2.regVar && index == r2.index; }
 };
@@ -529,7 +533,7 @@ enum : cxbyte {
 struct AsmRegVarUsage
 {
     size_t offset;  ///< offset in section
-    const AsmRegVar* regVar;    // if null, then usage of called register
+    const AsmRegVar* regVar;    ///< if null, then usage of called register
     uint16_t rstart; ///< register start
     uint16_t rend;  ///< register end
     AsmRegField regField;   ///< place in instruction
@@ -541,23 +545,27 @@ struct AsmRegVarUsage
 /// regvar usage (internal)
 struct AsmRegVarUsageInt
 {
-    const AsmRegVar* regVar;    // if null, then usage of called register
-    uint16_t rstart, rend;
+    const AsmRegVar* regVar;    ///< if null, then usage of called register
+    uint16_t rstart;    ///< register start
+    uint16_t rend;      ///< register end
     AsmRegField regField;   ///< place in instruction
     cxbyte rwFlags;  ///< 1 - read, 2 - write
     cxbyte align;   ///< register alignment
 };
 
+/// internal structure for regusage
 struct AsmRegUsageInt
 {
     AsmRegField regField;   ///< place in instruction
     cxbyte rwFlags;     ///< 1 - read, 2 - write, other flags
 };
 
+/// internal structure for regusage
 struct AsmRegUsage2Int
 {
-    uint16_t rstart, rend;
-    cxbyte rwFlags;
+    uint16_t rstart;    ///< register start
+    uint16_t rend;      ///< register end
+    cxbyte rwFlags;     ///< rw flags and others
 };
 
 /// code flow type
@@ -574,9 +582,9 @@ enum AsmCodeFlowType
 /// code flow entry
 struct AsmCodeFlowEntry
 {
-    size_t offset;
-    size_t target;      // target jump addreses
-    AsmCodeFlowType type;
+    size_t offset;      ///< offset where is this entry
+    size_t target;      ///< target jump addreses
+    AsmCodeFlowType type;   ///< type of code flow entry
 };
 
 /// assembler macro map
@@ -584,6 +592,7 @@ typedef std::unordered_map<CString, RefPtr<const AsmMacro> > AsmMacroMap;
 
 struct AsmScope;
 
+/// type definition of scope's map
 typedef std::unordered_map<CString, AsmScope*> AsmScopeMap;
 
 /// assembler scope for symbol, macros, regvars
@@ -594,7 +603,9 @@ struct AsmScope
     AsmRegVarMap regVarMap; ///< regvar map
     AsmScopeMap scopeMap;   ///< scope map
     bool temporary; ///< true if temporary
-    std::list<AsmScope*> usedScopes;
+    std::list<AsmScope*> usedScopes;    ///< list of used scope in this scope
+    
+    /// set of used scopes in this scope
     std::unordered_map<AsmScope*, std::list<AsmScope*>::iterator> usedScopesSet;
     
     /// constructor
@@ -619,6 +630,7 @@ struct AsmScope
         usedScopes.clear();
         usedScopesSet.clear();
     }
+    /// delete symbols recursively
     void deleteSymbolsRecursively();
 };
 
@@ -635,20 +647,24 @@ struct AsmSection
     uint64_t size;  ///< section size
     std::vector<cxbyte> content;    ///< content of section
     
-    std::unique_ptr<ISAUsageHandler> usageHandler;
-    /// code flow info
-    std::vector<AsmCodeFlowEntry> codeFlow;
+    std::unique_ptr<ISAUsageHandler> usageHandler;  ///< usage handler
+    std::vector<AsmCodeFlowEntry> codeFlow;  ///< code flow info
     
+    /// constructor
     AsmSection();
+    /// constructor
     AsmSection(const char* _name, cxuint _kernelId, AsmSectionType _type,
             Flags _flags, uint64_t _alignment, uint64_t _size = 0)
             : name(_name), kernelId(_kernelId), type(_type), flags(_flags),
               alignment(_alignment), size(_size)
     { }
     
+    /// copy constructor
     AsmSection(const AsmSection& section);
+    /// copy assignment
     AsmSection& operator=(const AsmSection& section);
     
+    /// add code flow entry to this section
     void addCodeFlowEntry(const AsmCodeFlowEntry& entry)
     { codeFlow.push_back(entry); }
     
@@ -662,7 +678,7 @@ struct AsmKernel
 {
     const char* name;   ///< name of kernel
     AsmSourcePos sourcePos; ///< source position of definition
-    std::vector<std::pair<size_t, size_t> > codeRegions;
+    std::vector<std::pair<size_t, size_t> > codeRegions; ///< code regions
     
     /// open kernel region in code
     void openCodeRegion(size_t offset);

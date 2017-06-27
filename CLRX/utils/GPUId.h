@@ -147,11 +147,12 @@ extern size_t getGPUMaxGDSSize(GPUArchitecture architecture);
 extern cxuint getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType,
               Flags flags);
 
+/// structure helper for AMDGPU architecture version
 struct AMDGPUArchValues
 {
-    uint32_t major;
-    uint32_t minor;
-    uint32_t stepping;
+    uint32_t major;     ///< arch major number
+    uint32_t minor;     ///< arch minor number
+    uint32_t stepping;  ///< arch stepping number
 };
 
 };

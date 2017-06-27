@@ -114,8 +114,8 @@ struct AmdCL2Input
 {
     bool is64Bit;           ///< if binary is 64-bit
     GPUDeviceType deviceType;   ///< GPU device type
-    uint32_t archMinor;            /// arch minor
-    uint32_t archStepping;         /// arch stepping
+    uint32_t archMinor;            ///< arch minor
+    uint32_t archStepping;         ///< arch stepping
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
     size_t rwDataSize;  ///< global rw data size

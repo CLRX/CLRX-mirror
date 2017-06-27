@@ -62,15 +62,16 @@ struct AsmRegVar;
 class ISAUsageHandler
 {
 public:
+    /// stgructure that hold read position to store later
     struct ReadPos
     {
-        size_t readOffset;
-        size_t instrStructPos;
-        size_t regUsagesPos;
-        size_t regUsages2Pos;
-        size_t regVarUsagesPos;
-        uint16_t pushedArgs;
-        bool useRegMode;
+        size_t readOffset;  ///< read offset
+        size_t instrStructPos;  ///< position instrStructs
+        size_t regUsagesPos;    ///< position in reg usage
+        size_t regUsages2Pos;   ///< position in regUsage2
+        size_t regVarUsagesPos;    ///< position in regVarUsage
+        uint16_t pushedArgs;    ///< pused argds number
+        bool useRegMode;        ///< true if in usereg mode
     };
 protected:
     std::vector<cxbyte> instrStruct;    ///< structure of register usage
@@ -78,26 +79,29 @@ protected:
     std::vector<AsmRegUsage2Int> regUsages2;  ///< register usage (by .usereg)
     std::vector<AsmRegVarUsageInt> regVarUsages;    ///< regvar usage
     const std::vector<cxbyte>& content; ///< code content
-    size_t lastOffset;
-    size_t readOffset;
-    size_t instrStructPos;
-    size_t regUsagesPos;
-    size_t regUsages2Pos;
-    size_t regVarUsagesPos;
-    uint16_t pushedArgs;
-    cxbyte argPos;
-    cxbyte argFlags;
-    cxbyte defaultInstrSize;
-    bool isNext;
-    bool useRegMode;
+    size_t lastOffset;  ///< last offset
+    size_t readOffset;  ///< read offset
+    size_t instrStructPos;  ///< position in instr struct
+    size_t regUsagesPos;    ///< position in reg usage
+    size_t regUsages2Pos;   ///< position in reg usage 2
+    size_t regVarUsagesPos; ///< position in regvar usage
+    uint16_t pushedArgs;    ///< pushed args 
+    cxbyte argPos;      ///< argument position
+    cxbyte argFlags;    ///< ???
+    cxbyte defaultInstrSize;    ///< default instruction size
+    bool isNext;        ///< is next
+    bool useRegMode;    ///< true if in usereg mode
     
     void skipBytesInInstrStruct();
+    /// put space to offset
     void putSpace(size_t offset);
     
     /// constructor
     explicit ISAUsageHandler(const std::vector<cxbyte>& content);
 public:
+    /// destructor
     virtual ~ISAUsageHandler();
+    /// copy this usage handler
     virtual ISAUsageHandler* copy() const = 0;
     
     /// push regvar or register usage
@@ -112,11 +116,13 @@ public:
     /// get next usage
     AsmRegVarUsage nextUsage();
     
+    /// get reading position
     ReadPos getReadPos() const
     {
         return { readOffset, instrStructPos, regUsagesPos, regUsages2Pos,
             regVarUsagesPos, pushedArgs, useRegMode };
     }
+    /// set reading position
     void setReadPos(const ReadPos rpos)
     {
         readOffset = rpos.readOffset;
@@ -128,7 +134,7 @@ public:
         useRegMode = rpos.useRegMode;
     }
     
-    // push regvar or register from usereg pseudo-op
+    /// push regvar or register from usereg pseudo-op
     void pushUseRegUsage(const AsmRegVarUsage& rvu);
     
     /// get RW flags (used by assembler)
@@ -137,7 +143,7 @@ public:
     /// get reg pair (used by assembler)
     virtual std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField,
                     cxbyte rwFlags) const = 0;
-    // get usage dependencies around single instruction
+    /// get usage dependencies around single instruction
     virtual void getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
                     cxbyte* linearDeps, cxbyte* equalToDeps) const = 0;
 };
@@ -185,7 +191,7 @@ protected:
 public:
     /// destructor
     virtual ~ISAAssembler();
-    
+    /// create usage handler
     virtual ISAUsageHandler* createUsageHandler(std::vector<cxbyte>& content) const = 0;
     
     /// assemble single line
@@ -204,7 +210,9 @@ public:
     /// get allocated register numbers after assemblying
     virtual const cxuint* getAllocatedRegisters(size_t& regTypesNum,
                 Flags& regFlags) const = 0;
+    /// get max registers number
     virtual void getMaxRegistersNum(size_t& regTypesNum, cxuint* maxRegs) const = 0;
+    /// get registers ranges
     virtual void getRegisterRanges(size_t& regTypesNum, cxuint* regRanges) const = 0;
     /// fill alignment when value is not given
     virtual void fillAlignment(size_t size, cxbyte* output) = 0;

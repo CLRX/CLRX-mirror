@@ -147,7 +147,7 @@ protected:
     ProgInfoEntryIndexMap progInfoEntryMap; ///< program info map
     size_t disasmSize;  ///< disassembly size
     size_t disasmOffset;    ///< disassembly offset
-    bool llvm390;
+    bool llvm390;   ///< true if >= LLVM 3.9
     
     /// routine to load binary fro internal ELF 
     template<typename ElfBinary>
@@ -190,7 +190,7 @@ public:
     /// returns size of disassembly
     size_t getDisassemblySize() const
     { return disasmSize; }
-    
+    /// returns true binary for if >=LLVM 3.9
     bool isLLVM390() const
     { return llvm390; }
 };
@@ -343,7 +343,7 @@ public:
     /// get kernel with speciified name
     const GalliumKernel& getKernel(const char* name) const
     { return kernels[getKernelIndex(name)]; }
-    
+    /// returns true if binary for >=Mesa3D 17.0
     bool isMesa170() const
     { return mesa170; };
 };
@@ -377,8 +377,8 @@ struct GalliumKernelConfig
     bool dx10Clamp;     ///< DX10 CLAMP mode
     size_t localSize; ///< used local size (not local defined in kernel arguments)
     uint32_t scratchBufferSize; ///< size of scratch buffer
-    cxuint spilledVGPRs;
-    cxuint spilledSGPRs;
+    cxuint spilledVGPRs;    ///< number of spilled vector registers
+    cxuint spilledSGPRs;    ///< number of spilled scalar registers
 };
 
 /// kernel info structure (Gallium binaries)
@@ -396,8 +396,8 @@ struct GalliumKernelInput
 struct GalliumInput
 {
     bool is64BitElf;   ///< is 64-bit elf binary
-    bool isLLVM390;
-    bool isMesa170;
+    bool isLLVM390;     ///< true if binary for >= LLVM 3.9
+    bool isMesa170;     ///< true if binary for >= Mesa3D 17.0
     GPUDeviceType deviceType;   ///< GPU device type
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
