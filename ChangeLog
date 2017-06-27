@@ -1,6 +1,28 @@
 
 Change Log
 
+CLRadeonExtender 0.1.4:
+
+* add AMD RX VEGA support (GCN 1.4/VEGA)
+* add symbol scopes
+* add support for 32-bit AMD OpenCL 2.0 binaries
+* update GPU device ids to latest drivers
+* add Ellesmere and Baffin support for AMD OpenCL 1.2 binaries
+* add support for LLVM 3.9, LLVM 4.0 and Mesa3D 17.0
+* add new options to clrxasm (--llvmVersion)
+* add GCN 1.2 instruction set documentation
+* add new SMEM instruction (s_buffer_atomics)
+* add GDS segment size to AMD OpenCL 2.0 binaries
+* add code of samples for GCN 1.2
+* add option to use old AMD OpenCL 1.2 binary format into samples
+* add editor's syntax (NotePad++, Kate, Gedit, VIM)
+* minor fixes in GCN assembler
+* add modifier's parametrization
+* add options to control case-sensitiviness in macro names
+* fixed handling AMDOCL names for 32-bit Windows environment
+* add installation rules for AMDGPU-PRO drivers (OpenSUSE and Ubuntu)
+* add new pseudo-ops '.get_64bit', '.get_arch', '.get_format', '.get_gpu'
+
 CLRadeonExtender 0.1.3:
 
 * ROCm binary format support
