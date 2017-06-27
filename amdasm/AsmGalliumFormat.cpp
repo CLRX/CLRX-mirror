@@ -1380,7 +1380,7 @@ bool AsmGalliumHandler::prepareBinary()
             SULEV(outConfig.maxScrachBackingMemorySize, 0);
             SULEV(outConfig.computePgmRsrc1, pgmRSRC1);
             SULEV(outConfig.computePgmRsrc2, pgmRSRC2);
-            SULEV(outConfig.enableSpgrRegisterFlags, 
+            SULEV(outConfig.enableSgprRegisterFlags, 
                     uint16_t(AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER|
                         AMDHSAFLAG_USE_DISPATCH_PTR|AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR));
             SULEV(outConfig.enableFeatureFlags, uint16_t(AMDHSAFLAG_USE_PTR64|2));

@@ -382,6 +382,7 @@ public:
     typename Types::Nhdr* getNotes()
     { return reinterpret_cast<typename Types::Nhdr*>(noteTable); }
     
+    /// get size of notes in bytes
     typename Types::Size getNotesSize() const
     { return noteTableSize; }
     
@@ -681,12 +682,13 @@ struct ElfRegionTemplate
                 ".dynamic", SHT_DYNAMIC, SHF_ALLOC|SHF_WRITE, link); }
 };
 
+/// ELF note structure
 struct ElfNote
 {
-    const char* name;
-    size_t descSize;
-    const cxbyte* desc;
-    uint32_t type;
+    const char* name;   ///< note name
+    size_t descSize;    ///< description size
+    const cxbyte* desc; ///< description
+    uint32_t type;      ///< type
 };
 
 /// 32-bit region (for 32-bit elf)

@@ -201,7 +201,6 @@ public:
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;
     void writeBinary(Array<cxbyte>& array) const;
-    const cxuint* getCurrentKernels(cxuint& kernelsNum) const;
 };
 
 /// handles AMD Catalyst format
@@ -419,6 +418,7 @@ public:
     { return &output; }
 };
 
+/// ROCm kernel configuration
 struct AsmROCmKernelConfig: ROCmKernelConfig
 {
     cxuint dimMask;    ///< mask of dimension (bits: 0 - X, 1 - Y, 2 - Z)

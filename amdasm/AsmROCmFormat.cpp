@@ -295,7 +295,7 @@ void AsmROCmHandler::Kernel::initializeKernelConfig()
         ::memset(config.get(), 0xff, 128);
         ::memset(config->controlDirective, 0, 128);
         config->computePgmRsrc1 = config->computePgmRsrc2 = 0;
-        config->enableSpgrRegisterFlags = 0;
+        config->enableSgprRegisterFlags = 0;
         config->enableFeatureFlags = 0;
         config->reserved1[0] = config->reserved1[1] = config->reserved1[2] = 0;
         config->dimMask = 0;
@@ -709,25 +709,25 @@ void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,
             config.tgSize = true;
             break;
         case ROCMCVAL_USE_PRIVATE_SEGMENT_BUFFER:
-            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER;
+            config.enableSgprRegisterFlags |= ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER;
             break;
         case ROCMCVAL_USE_DISPATCH_PTR:
-            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_DISPATCH_PTR;
+            config.enableSgprRegisterFlags |= ROCMFLAG_USE_DISPATCH_PTR;
             break;
         case ROCMCVAL_USE_QUEUE_PTR:
-            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_QUEUE_PTR;
+            config.enableSgprRegisterFlags |= ROCMFLAG_USE_QUEUE_PTR;
             break;
         case ROCMCVAL_USE_KERNARG_SEGMENT_PTR:
-            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_KERNARG_SEGMENT_PTR;
+            config.enableSgprRegisterFlags |= ROCMFLAG_USE_KERNARG_SEGMENT_PTR;
             break;
         case ROCMCVAL_USE_DISPATCH_ID:
-            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_DISPATCH_ID;
+            config.enableSgprRegisterFlags |= ROCMFLAG_USE_DISPATCH_ID;
             break;
         case ROCMCVAL_USE_FLAT_SCRATCH_INIT:
-            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_FLAT_SCRATCH_INIT;
+            config.enableSgprRegisterFlags |= ROCMFLAG_USE_FLAT_SCRATCH_INIT;
             break;
         case ROCMCVAL_USE_PRIVATE_SEGMENT_SIZE:
-            config.enableSpgrRegisterFlags |= ROCMFLAG_USE_PRIVATE_SEGMENT_SIZE;
+            config.enableSgprRegisterFlags |= ROCMFLAG_USE_PRIVATE_SEGMENT_SIZE;
             break;
         case ROCMCVAL_USE_ORDERED_APPEND_GDS:
             config.enableFeatureFlags |= ROCMFLAG_USE_ORDERED_APPEND_GDS;
@@ -940,7 +940,7 @@ void AsmROCmPseudoOps::setUseGridWorkGroupCount(AsmROCmHandler& handler,
         return;
     handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     uint16_t& flags = handler.kernelStates[asmr.currentKernel]->config->
-                enableSpgrRegisterFlags;
+                enableSgprRegisterFlags;
     flags = (flags & ~(7<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT)) |
             (dimMask<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT);
 }
@@ -1486,7 +1486,7 @@ bool AsmROCmHandler::prepareBinary()
         cxuint userSGPRsNum = 0;
         if (config.userDataNum == BINGEN8_DEFAULT)
         {   // calcuate userSGPRs
-            const uint16_t sgprFlags = config.enableSpgrRegisterFlags;
+            const uint16_t sgprFlags = config.enableSgprRegisterFlags;
             userSGPRsNum =
                 ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER)!=0 ? 4 : 0) +
                 ((sgprFlags&ROCMFLAG_USE_DISPATCH_PTR)!=0 ? 2 : 0) +
@@ -1528,7 +1528,7 @@ bool AsmROCmHandler::prepareBinary()
         {
             cxuint flags = kernelStates[i]->allocRegFlags |
                 // flat_scratch_init
-                ((config.enableSpgrRegisterFlags&ROCMFLAG_USE_FLAT_SCRATCH_INIT)!=0?
+                ((config.enableSgprRegisterFlags&ROCMFLAG_USE_FLAT_SCRATCH_INIT)!=0?
                             GCN_FLAT : 0) |
                 // enable_xnack
                 ((config.enableFeatureFlags&ROCMFLAG_USE_XNACK_ENABLED)!=0 ?
@@ -1587,7 +1587,7 @@ bool AsmROCmHandler::prepareBinary()
         SLEV(config.maxScrachBackingMemorySize, config.maxScrachBackingMemorySize);
         SLEV(config.computePgmRsrc1, config.computePgmRsrc1);
         SLEV(config.computePgmRsrc2, config.computePgmRsrc2);
-        SLEV(config.enableSpgrRegisterFlags, config.enableSpgrRegisterFlags);
+        SLEV(config.enableSgprRegisterFlags, config.enableSgprRegisterFlags);
         SLEV(config.enableFeatureFlags, config.enableFeatureFlags);
         SLEV(config.workitemPrivateSegmentSize, config.workitemPrivateSegmentSize);
         SLEV(config.workgroupGroupSegmentSize, config.workgroupGroupSegmentSize);

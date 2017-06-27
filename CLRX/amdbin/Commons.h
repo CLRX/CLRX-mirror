@@ -39,7 +39,7 @@ enum
 };
 
 enum {
-    AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER = 1,
+    AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER = 1,  ///< 
     AMDHSAFLAG_USE_DISPATCH_PTR = 2,
     AMDHSAFLAG_USE_QUEUE_PTR = 4,
     AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR = 8,
@@ -59,23 +59,23 @@ enum {
     AMDHSAFLAG_USE_XNACK_ENABLED = 64
 };
 
-
+/// AMD HSA kernel configuration structure
 struct AmdHsaKernelConfig
 {
-    uint32_t amdCodeVersionMajor;
-    uint32_t amdCodeVersionMinor;
-    uint16_t amdMachineKind;
-    uint16_t amdMachineMajor;
-    uint16_t amdMachineMinor;
-    uint16_t amdMachineStepping;
-    uint64_t kernelCodeEntryOffset;
-    uint64_t kernelCodePrefetchOffset;
+    uint32_t amdCodeVersionMajor;   ///< AMD code version major number
+    uint32_t amdCodeVersionMinor;   ///< AMD code version minor number
+    uint16_t amdMachineKind;    ///< architecture kind
+    uint16_t amdMachineMajor;   ///< arch major number
+    uint16_t amdMachineMinor;   ///< arch minor number
+    uint16_t amdMachineStepping;    ///< arch stepping number
+    uint64_t kernelCodeEntryOffset;     ///< kernel relative to this config to kernel code
+    uint64_t kernelCodePrefetchOffset;  ///< kernel code prefetch offset
     uint64_t kernelCodePrefetchSize;
     uint64_t maxScrachBackingMemorySize;
-    uint32_t computePgmRsrc1;
-    uint32_t computePgmRsrc2;
-    uint16_t enableSpgrRegisterFlags;
-    uint16_t enableFeatureFlags;
+    uint32_t computePgmRsrc1;   ///< PGMRSRC1 register value
+    uint32_t computePgmRsrc2;   ///< PGMRSRC2 register value
+    uint16_t enableSgprRegisterFlags;   ///< bitfield of sg
+    uint16_t enableFeatureFlags;    ///< bitfield of feature flags
     uint32_t workitemPrivateSegmentSize;
     uint32_t workgroupGroupSegmentSize;
     uint32_t gdsSegmentSize;

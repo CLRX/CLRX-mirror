@@ -192,14 +192,14 @@ cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
         throw Exception("Unknown GPU architecture");
     if (regType == REGTYPE_VGPR)
         return 256; // VGPRS
-    cxuint maxSpgrs = (architecture==GPUArchitecture::GCN1_2) ? 102 : 104;
+    cxuint maxSgprs = (architecture==GPUArchitecture::GCN1_2) ? 102 : 104;
     if ((flags & REGCOUNT_NO_FLAT)!=0 && (architecture>GPUArchitecture::GCN1_0))
-        maxSpgrs -= (architecture==GPUArchitecture::GCN1_2) ? 6 : 4;
+        maxSgprs -= (architecture==GPUArchitecture::GCN1_2) ? 6 : 4;
     else if ((flags & REGCOUNT_NO_XNACK)!=0 && (architecture>GPUArchitecture::GCN1_1))
-        maxSpgrs -= 4;
+        maxSgprs -= 4;
     else if ((flags & REGCOUNT_NO_VCC)!=0)
-        maxSpgrs -= 2;
-    return maxSpgrs;
+        maxSgprs -= 2;
+    return maxSgprs;
 }
 
 cxuint CLRX::getGPUMaxRegsNumByArchMask(uint16_t archMask, cxuint regType)

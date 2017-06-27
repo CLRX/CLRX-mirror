@@ -83,8 +83,8 @@ static void printROCmOutput(std::ostream& os, const ROCmInput* output)
                 ULEV(config.maxScrachBackingMemorySize) << "\n"
             "      computePgmRsrc1=0x" << std::hex << ULEV(config.computePgmRsrc1) << "\n"
             "      computePgmRsrc2=0x" << ULEV(config.computePgmRsrc2) << "\n"
-            "      enableSpgrRegisterFlags=0x" <<
-                ULEV(config.enableSpgrRegisterFlags) << "\n"
+            "      enableSgprRegisterFlags=0x" <<
+                ULEV(config.enableSgprRegisterFlags) << "\n"
             "      enableFeatureFlags=0x" <<
                 ULEV(config.enableFeatureFlags) << std::dec << "\n"
             "      workitemPrivateSegmentSize=" <<
@@ -218,7 +218,7 @@ kxx2:
       maxScrachBackingMemorySize=0
       computePgmRsrc1=0x3c0000
       computePgmRsrc2=0xa008081
-      enableSpgrRegisterFlags=0x0
+      enableSgprRegisterFlags=0x0
       enableFeatureFlags=0x6
       workitemPrivateSegmentSize=111
       workgroupGroupSegmentSize=22
@@ -254,7 +254,7 @@ kxx2:
       maxScrachBackingMemorySize=0
       computePgmRsrc1=0xc0000
       computePgmRsrc2=0x84
-      enableSpgrRegisterFlags=0x8
+      enableSgprRegisterFlags=0x8
       enableFeatureFlags=0x0
       workitemPrivateSegmentSize=0
       workgroupGroupSegmentSize=0
@@ -370,7 +370,7 @@ someKernelX:
       maxScrachBackingMemorySize=4212
       computePgmRsrc1=0xa00c3ab4
       computePgmRsrc2=0x3ed09291
-      enableSpgrRegisterFlags=0x2a1
+      enableSgprRegisterFlags=0x2a1
       enableFeatureFlags=0x6c
       workitemPrivateSegmentSize=33
       workgroupGroupSegmentSize=324

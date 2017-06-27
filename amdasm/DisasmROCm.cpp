@@ -73,7 +73,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     uint64_t maxScrachBackingMemorySize = ULEV(config.maxScrachBackingMemorySize);
     uint32_t computePgmRsrc1 = ULEV(config.computePgmRsrc1);
     uint32_t computePgmRsrc2 = ULEV(config.computePgmRsrc2);
-    uint16_t enableSpgrRegisterFlags = ULEV(config.enableSpgrRegisterFlags);
+    uint16_t enableSgprRegisterFlags = ULEV(config.enableSgprRegisterFlags);
     uint16_t enableFeatureFlags = ULEV(config.enableFeatureFlags);
     uint32_t workitemPrivateSegmentSize = ULEV(config.workitemPrivateSegmentSize);
     uint32_t workgroupGroupSegmentSize = ULEV(config.workgroupGroupSegmentSize);
@@ -180,7 +180,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
         output.write(buf, bufSize);
     }
     
-    const uint16_t sgprFlags = enableSpgrRegisterFlags;
+    const uint16_t sgprFlags = enableSgprRegisterFlags;
     if ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER) != 0)
         output.write("        .use_private_segment_buffer\n", 36);
     if ((sgprFlags&ROCMFLAG_USE_DISPATCH_PTR) != 0)

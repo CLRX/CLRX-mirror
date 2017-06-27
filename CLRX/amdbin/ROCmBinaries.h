@@ -43,7 +43,6 @@ namespace CLRX
 
 enum : Flags {
     ROCMBIN_CREATE_REGIONMAP = 0x10,    ///< create region map
-    
     ROCMBIN_CREATE_ALL = ELF_CREATE_ALL | 0xfff0 ///< all ROCm binaries flags
 };
 
@@ -61,7 +60,7 @@ struct ROCmRegion
     CString regionName; ///< region name
     size_t size;    ///< data size
     size_t offset;     ///< data
-    ROCmRegionType type;
+    ROCmRegionType type; ///< type
 };
 
 /// ROCm main binary for GPU for 64-bit mode
@@ -71,6 +70,7 @@ struct ROCmRegion
 class ROCmBinary : public ElfBinary64, public NonCopyableAndNonMovable
 {
 public:
+    /// region map type
     typedef Array<std::pair<CString, size_t> > RegionMap;
 private:
     size_t regionsNum;
@@ -79,8 +79,10 @@ private:
     size_t codeSize;
     cxbyte* code;
 public:
+    /// constructor
     ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags = ROCMBIN_CREATE_ALL);
+    /// default destructor
     ~ROCmBinary() = default;
     
     /// determine GPU device type from this binary
@@ -158,6 +160,7 @@ struct ROCmSymbolInput
     ROCmRegionType type;  ///< type
 };
 
+/// ROCm binary input structure
 struct ROCmInput
 {
     GPUDeviceType deviceType;   ///< GPU device type
@@ -171,9 +174,11 @@ struct ROCmInput
     std::vector<BinSection> extraSections;  ///< extra sections
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
     
+    /// add empty kernel with default values
     void addEmptyKernel(const char* kernelName);
 };
 
+/// ROCm binary generator
 class ROCmBinGenerator: public NonCopyableAndNonMovable
 {
 private:
@@ -184,16 +189,28 @@ private:
     void generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const;
 public:
+    /// constructor
     ROCmBinGenerator();
     /// constructor with ROCm input
     ROCmBinGenerator(const ROCmInput* rocmInput);
     
+    /// constructor
+    /**
+     * \param deviceType device type
+     * \param archMinor architecture minor number
+     * \param archStepping architecture stepping number
+     * \param codeSize size of code
+     * \param code code pointer
+     * \param symbols symbols (kernels, datas,...)
+     */
     ROCmBinGenerator(GPUDeviceType deviceType, uint32_t archMinor, uint32_t archStepping,
             size_t codeSize, const cxbyte* code,
             const std::vector<ROCmSymbolInput>& symbols);
+    /// constructor
     ROCmBinGenerator(GPUDeviceType deviceType, uint32_t archMinor, uint32_t archStepping,
             size_t codeSize, const cxbyte* code,
             std::vector<ROCmSymbolInput>&& symbols);
+    /// destructor
     ~ROCmBinGenerator();
     
     /// get input
