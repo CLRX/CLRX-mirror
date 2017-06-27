@@ -26,12 +26,13 @@
 
 using namespace CLRX;
 
-static const char* origBinaryFiles[4] =
+static const char* origBinaryFiles[5] =
 {
     CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/BlackScholes.0.reconf.orig",
     CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/DCT.0.reconf.orig",
     CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/MatrixMultiplication.0.reconf.orig",
-    CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/vectoradd-64bit.clo.reconf"
+    CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/vectoradd-64bit.clo.reconf",
+    CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/vectoradd-llvm4.clrx.clo"
 };
 
 template<typename GalliumElfBinary>
@@ -65,6 +66,7 @@ static GalliumInput getGalliumInputBase(bool disassembly, const GalliumBinary* g
     input.isMesa170 = galliumBin->isMesa170();
     input.isLLVM390 = elfBin.isLLVM390();
     
+    const cxuint progInfoEntriesNum = input.isLLVM390 ? 5 : 3;
     // kernel input
     const cxuint kernelsNum = galliumBin->getKernelsNum();
     for (cxuint i = 0; i < kernelsNum; i++)
@@ -72,15 +74,15 @@ static GalliumInput getGalliumInputBase(bool disassembly, const GalliumBinary* g
         cxuint ii = (((i&~3)+3) < kernelsNum) ? (i^3) : i;
         const GalliumKernel& kernel = galliumBin->getKernel(ii);
         const GalliumProgInfoEntry* progInfo = elfBin.getProgramInfo(ii);
-        GalliumProgInfoEntry outProgInfo[3];
-        for (cxuint k = 0; k < 3; k++)
+        GalliumProgInfoEntry outProgInfo[5];
+        for (cxuint k = 0; k < progInfoEntriesNum; k++)
         {
             outProgInfo[k].address = ULEV(progInfo[k].address);
             outProgInfo[k].value = ULEV(progInfo[k].value);
         }
-        GalliumKernelInput kinput = { kernel.kernelName,
-            {outProgInfo[0],outProgInfo[1],outProgInfo[2]}, false, {}, kernel.offset,
+        GalliumKernelInput kinput = { kernel.kernelName, {}, false, {}, kernel.offset,
             std::vector<GalliumArgInfo>(kernel.argInfos.begin(), kernel.argInfos.end()) };
+        std::copy(outProgInfo, outProgInfo + progInfoEntriesNum, kinput.progInfo);
         input.kernels.push_back(kinput);
     }
     
