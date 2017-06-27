@@ -118,6 +118,7 @@ doc/GcnTimings.md -text
 doc/PrepareOffline.py -text
 doc/genclrxdoc.sh -text
 doc/styles.css -text
+editors/CMakeLists.txt -text svneol=unset#text/plain
 editors/README -text
 editors/clrx.vim -text
 editors/gedit.lang -text svneol=unset#text/xml
