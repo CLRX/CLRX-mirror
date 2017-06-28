@@ -126,6 +126,15 @@ Following environment variables impacts on assembler work:
 Path to AMDOCL (AMD OpenCL implementation) shared library
 (libamdocl32.so, libamdocl64.so, amdocl.dll or amdocl64.dll).
 
+=item CLRX_MESAOCL_PATH
+
+Path to Mesa3D Gallium OpenCL (libMesaOpenCL.so or libOpenCL.so)
+shared library.
+
+=item CLRX_LLVMCONFIG_PATH
+
+Path to llvm-config program.
+
 =back
 
 =head1 RETURN VALUE

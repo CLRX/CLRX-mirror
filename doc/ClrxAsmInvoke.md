@@ -118,6 +118,16 @@ Following environment variables impacts on assembler work:
     Path to AMDOCL (AMD OpenCL implementation) shared library (libamdocl32.so,
 libamdocl64.so, amdocl.dll or amdocl64.dll).
 
+* CLRX_MESAOCL_PATH
+
+    Path to Mesa3D Gallium OpenCL (libMesaOpenCL.so or libOpenCL.so)
+shared library.
+
+* CLRX_LLVMCONFIG_PATH
+
+    Path to llvm-config program.
+
+
 ### Output
 
 An assembler generates single output binary. If no output specified an assembler will
