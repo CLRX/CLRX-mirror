@@ -325,9 +325,19 @@ void AsmGalliumPseudoOps::getXXXVersion(AsmGalliumHandler& handler, const char* 
     
     cxuint driverVersion = 0;
     if (getLLVMVersion)
-        driverVersion = asmr.llvmVersion;
+    {
+        if (asmr.llvmVersion == 0)
+            driverVersion = detectLLVMCompilerVersion();
+        else
+            driverVersion = asmr.llvmVersion;
+    }
     else
-        driverVersion = asmr.driverVersion;
+    {
+        if (asmr.driverVersion == 0)
+            driverVersion = detectMesaDriverVersion();
+        else
+            driverVersion = asmr.driverVersion;
+    }
     
     std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
                 AsmSymbol(ASMSECT_ABS, driverVersion));
@@ -1298,6 +1308,10 @@ bool AsmGalliumHandler::prepareBinary()
     AsmSection& asmCSection = assembler.sections[codeSection];
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
     
+    cxuint llvmVersion = assembler.llvmVersion;
+    if (llvmVersion == 0)
+        llvmVersion = detectLLVMCompilerVersion();
+    
     const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
     const uint32_t ldsMask = (1U<<ldsShift)-1U;
     
@@ -1331,7 +1345,7 @@ bool AsmGalliumHandler::prepareBinary()
             continue;
         }
         kinput.offset = symbol.value;
-        if (assembler.llvmVersion >= 40000U)
+        if (llvmVersion >= 40000U)
         {   // requires amdhsa-gcn (with HSA header)
             // hotfix
             GalliumKernelConfig& config = output.kernels[ki].config;
@@ -1413,8 +1427,11 @@ bool AsmGalliumHandler::prepareBinary()
         }
     }
     // set versions
-    output.isMesa170 = assembler.driverVersion >= 170000U;
-    output.isLLVM390 = assembler.llvmVersion >= 30900U;
+    if (assembler.driverVersion == 0) // auto detection
+        output.isMesa170 = detectMesaDriverVersion() >= 170000U;
+    else
+        output.isMesa170 = assembler.driverVersion >= 170000U;
+    output.isLLVM390 = llvmVersion >= 30900U;
     return good;
 }
 
