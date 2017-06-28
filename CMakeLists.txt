@@ -122,10 +122,12 @@ ELSE(BUILD_32BIT)
     ENDIF(MSVC)
 ENDIF(BUILD_32BIT)
 
-IF(IS_DIRECTORY "/usr/lib/x86_64-linux-gnu/amdgpu-pro")
+IF(IS_DIRECTORY "/usr/lib/x86_64-linux-gnu/amdgpu-pro" OR
+    IS_DIRECTORY "/usr/lib/i386-linux-gnu/amdgpu-pro")
     SET(HAVE_UBUNTU_GPUPRO TRUE)
     MESSAGE(STATUS "AMDGPU-PRO for Ubuntu is found")
-ENDIF(IS_DIRECTORY "/usr/lib/x86_64-linux-gnu/amdgpu-pro")
+ENDIF(IS_DIRECTORY "/usr/lib/x86_64-linux-gnu/amdgpu-pro" OR
+    IS_DIRECTORY "/usr/lib/i386-linux-gnu/amdgpu-pro")
 IF(IS_DIRECTORY "/opt/amdgpu-pro/lib/x86_64-linux-gnu" OR
         IS_DIRECTORY "/opt/amdgpu-pro/lib/i386-linux-gnu")
     SET(HAVE_GPUPRO_NEW TRUE)
@@ -234,6 +236,13 @@ IF(HAVE_OPENCL)
         ENDIF(EXISTS ${OPENCL_DIST_DIR}/lib/x86/libOpenCL.so OR
             EXISTS ${OPENCL_DIST_DIR}/lib/x86/OpenCL.lib)
     ENDIF((CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_CL_64) AND NOT BUILD_32BIT)
+    IF(HAVE_UBUNTU_GPUPRO)
+        IF((CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_CL_64) AND NOT BUILD_32BIT)
+            SET(OPENCL_LIBRARY_DIRS "/usr/lib/x86_64-linux-gnu/amdgpu-pro")
+        ELSE((CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_CL_64) AND NOT BUILD_32BIT)
+            SET(OPENCL_LIBRARY_DIRS "/usr/lib/i386-linux-gnu/amdgpu-pro")
+        ENDIF((CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_CL_64) AND NOT BUILD_32BIT)
+    ENDIF(HAVE_UBUNTU_GPUPRO)
     IF(HAVE_GPUPRO_NEW)
         IF((CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_CL_64) AND NOT BUILD_32BIT)
             SET(OPENCL_LIBRARY_DIRS "/opt/amdgpu-pro/lib/x86_64-linux-gnu")

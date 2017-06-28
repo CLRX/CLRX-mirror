@@ -558,12 +558,15 @@ static const char* libAmdOCLPaths[] =
 #  ifdef HAVE_32BIT
      "/usr/lib/i386-linux-gnu/amdgpu-pro",
      "/opt/amdgpu-pro/lib/i386-linux-gnu",
+     "/opt/amdgpu-pro/lib32",
      "/opt/amdgpu-pro/lib",
+     "/usr/lib/i386-linux-gnu",
      "/usr/lib32",
      "/usr/lib"
 #  else
      "/usr/lib/x86_64-linux-gnu/amdgpu-pro",
      "/opt/amdgpu-pro/lib/x86_64-linux-gnu",
+     "/usr/lib/x86_64-linux-gnu",
      "/opt/amdgpu-pro/lib64",
      "/usr/lib64"
 #  endif
@@ -575,10 +578,11 @@ static const char* libAmdOCLPaths[] =
 std::string CLRX::findAmdOCL()
 {
     std::string amdOclPath = parseEnvVariable<std::string>("CLRX_AMDOCL_PATH", "");
-    if (!amdOclPath.empty() && isFileExists(amdOclPath.c_str()))
-        return amdOclPath;
-    else if (isFileExists(DEFAULT_AMDOCLPATH))
-        return DEFAULT_AMDOCLPATH;
+    if (!amdOclPath.empty())
+    {
+        if (isFileExists(amdOclPath.c_str()))
+            return amdOclPath;
+    }
     else
         for (const char* libPath: libAmdOCLPaths)
         {
