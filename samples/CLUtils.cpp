@@ -283,13 +283,16 @@ try
                 const char* minorVerPart;
                 const char* end;
                 cxuint majorVersion = cstrtoui(majorVerPart, nullptr, minorVerPart);
-                minorVerPart++; // skip '.'
-                cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
-                llvmVersion = majorVersion*10000U + minorVersion*100U;
+                if (*minorVerPart!=0)
+                {
+                    minorVerPart++; // skip '.'
+                    cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
+                    llvmVersion = majorVersion*10000U + minorVersion*100U;
 #if HAVE_64BIT
-                if (majorVersion*10000U + minorVersion*100U >= 30900U)
-                    bits = 64; // use 64-bit
+                    if (majorVersion*10000U + minorVersion*100U >= 30900U)
+                        bits = 64; // use 64-bit
 #endif
+                }
             }
             catch(const ParseException& ex)
             { } // ignore error
@@ -306,9 +309,12 @@ try
                 const char* minorVerPart;
                 const char* end;
                 cxuint majorVersion = cstrtoui(majorVerPart, nullptr, minorVerPart);
-                minorVerPart++; // skip '.'
-                cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
-                mesaVersion = majorVersion*10000U + minorVersion*100U;
+                if (*minorVerPart!=0)
+                {
+                    minorVerPart++; // skip '.'
+                    cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
+                    mesaVersion = majorVersion*10000U + minorVersion*100U;
+                }
             }
             catch(const ParseException& ex)
             { } // ignore error
@@ -325,9 +331,12 @@ try
                 const char* minorVerPart;
                 const char* end;
                 cxuint majorVersion = cstrtoui(majorVerPart, nullptr, minorVerPart);
-                minorVerPart++; // skip '.'
-                cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
-                amdappVersion = majorVersion*100U + minorVersion;
+                if (*minorVerPart!=0)
+                {
+                    minorVerPart++; // skip '.'
+                    cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
+                    amdappVersion = majorVersion*100U + minorVersion;
+                }
             }
             catch(const ParseException& ex)
             { } // ignore error
