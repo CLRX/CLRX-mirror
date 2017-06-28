@@ -393,7 +393,7 @@ bool CLRX::isDirectory(const char* path)
 bool CLRX::isFileExists(const char* path)
 {
 #ifdef HAVE_WINDOWS
-    return PathFileExists(path);
+    return GetFileAttributtes(path)==INVALID_FILE_ATTRIBUTES;
 #else
     return ::access(path, F_OK)==0;
 #endif
@@ -704,9 +704,9 @@ std::string CLRX::findAmdOCL()
     return "";
 }
 
+#ifdef HAVE_LINUX
 static const char* libMesaOCLPaths[] =
 {
-#ifdef HAVE_LINUX
 #  ifdef HAVE_32BIT
      "/usr/lib/i386-linux-gnu",
      "/usr/lib32",
@@ -715,8 +715,8 @@ static const char* libMesaOCLPaths[] =
      "/usr/lib/x86_64-linux-gnu",
      "/usr/lib64"
 #  endif
-#endif
 };
+#endif
 
 std::string CLRX::findMesaOCL()
 {
