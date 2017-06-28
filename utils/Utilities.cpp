@@ -566,7 +566,7 @@ CLRX::Array<cxbyte> CLRX::runExecWithOutput(const char* program, const char** ar
     {   // children
         if (::close(1)<0)
             ::exit(-1);
-        if (::dup(pipefds[1])<0) // redirection to pipe
+        if (::dup2(pipefds[1], 1)<0) // redirection to pipe
             ::exit(-1);
         ::close(pipefds[0]);
         ::execvp(program, (char**)argv);
