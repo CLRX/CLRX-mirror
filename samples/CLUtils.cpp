@@ -257,9 +257,21 @@ try
         throw CLError(error, "clGetDeviceInfoName");
     std::cout << "Device: " << deviceIndex << " - " << deviceName.get() << std::endl;
     
+    size_t deviceVersionSize;
+    std::unique_ptr<char[]> deviceVersion;
+    error = clGetDeviceInfo(device, CL_DEVICE_VERSION, 0, nullptr, &deviceVersionSize);
+    if (error != CL_SUCCESS)
+        throw CLError(error, "clGetDeviceInfoVersion");
+    deviceVersion.reset(new char[deviceVersionSize]);
+    error = clGetDeviceInfo(device, CL_DEVICE_VERSION, deviceVersionSize,
+                            deviceVersion.get(), nullptr);
+    if (error != CL_SUCCESS)
+        throw CLError(error, "clGetDeviceInfoVersion");
+    
     // get bits from device name (LLVM version)
     cxuint llvmVersion = 0;
     cxuint mesaVersion = 0;
+    cxuint amdappVersion = 0;
     if (binaryFormat == BinaryFormat::GALLIUM)
     {
         const char* llvmPart = strstr(deviceName.get(), "LLVM ");
@@ -283,17 +295,6 @@ try
             { } // ignore error
         }
         
-        size_t deviceVersionSize;
-        std::unique_ptr<char[]> deviceVersion;
-        error = clGetDeviceInfo(device, CL_DEVICE_VERSION, 0, nullptr, &deviceVersionSize);
-        if (error != CL_SUCCESS)
-            throw CLError(error, "clGetDeviceInfoVersion");
-        deviceVersion.reset(new char[deviceVersionSize]);
-        error = clGetDeviceInfo(device, CL_DEVICE_VERSION, deviceVersionSize,
-                                deviceVersion.get(), nullptr);
-        if (error != CL_SUCCESS)
-            throw CLError(error, "clGetDeviceInfoVersion");
-        
         const char* mesaPart = strstr(deviceVersion.get(), "Mesa ");
         if (mesaPart!=nullptr)
         {
@@ -306,6 +307,25 @@ try
                 minorVerPart++; // skip '.'
                 cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
                 mesaVersion = majorVersion*10000U + minorVersion*100U;
+            }
+            catch(const ParseException& ex)
+            { } // ignore error
+        }
+    }
+    else if (binaryFormat == BinaryFormat::AMD || binaryFormat == BinaryFormat::AMDCL2)
+    {
+        const char* amdappPart = strstr(deviceVersion.get(), "AMD-APP (");
+        if (amdappPart!=nullptr)
+        {
+            try
+            {
+                const char* majorVerPart = amdappPart+9;
+                const char* minorVerPart;
+                const char* end;
+                cxuint majorVersion = cstrtoui(majorVerPart, nullptr, minorVerPart);
+                minorVerPart++; // skip '.'
+                cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
+                amdappVersion = majorVersion*100U + minorVersion;
             }
             catch(const ParseException& ex)
             { } // ignore error
@@ -347,9 +367,13 @@ try
         // by default assembler put logs to stderr
         Assembler assembler("", astream, 0, binaryFormat, devType);
         assembler.set64Bit(bits==64);
-        assembler.setLLVMVersion(llvmVersion);
-        if (binaryFormat == BinaryFormat::GALLIUM)
+        if (binaryFormat == BinaryFormat::GALLIUM && llvmVersion != 0)
+            assembler.setLLVMVersion(llvmVersion);
+        if (binaryFormat == BinaryFormat::GALLIUM && mesaVersion != 0)
             assembler.setDriverVersion(mesaVersion);
+        else if ((binaryFormat == BinaryFormat::AMD ||
+                binaryFormat == BinaryFormat::AMDCL2) && amdappVersion != 0)
+            assembler.setDriverVersion(amdappVersion);
         assembler.assemble();
         assembler.writeBinary(binary);
     }
