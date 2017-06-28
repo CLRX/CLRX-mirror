@@ -671,7 +671,9 @@ static const char* libAmdOCLPaths[] =
      "/opt/amdgpu-pro/lib/x86_64-linux-gnu",
      "/usr/lib/x86_64-linux-gnu",
      "/opt/amdgpu-pro/lib64",
-     "/usr/lib64"
+     "/opt/amdgpu-pro/lib",
+     "/usr/lib64",
+     "/usr/lib"
 #  endif
 #elif defined(HAVE_WINDOWS)
      "c:\\Windows\\System32"
@@ -714,7 +716,8 @@ static const char* libMesaOCLPaths[] =
      "/usr/lib"
 #  else
      "/usr/lib/x86_64-linux-gnu",
-     "/usr/lib64"
+     "/usr/lib64",
+     "/usr/lib"
 #  endif
 };
 #endif
@@ -739,6 +742,8 @@ std::string CLRX::findMesaOCL()
 #ifdef HAVE_64BIT
         if (isFileExists("/usr/lib64/OpenCL/vendors/mesa/libOpenCL.so"))
             return "/usr/lib64/OpenCL/vendors/mesa/libOpenCL.so";
+        if (isFileExists("/usr/lib/OpenCL/vendors/mesa/libOpenCL.so"))
+            return "/usr/lib/OpenCL/vendors/mesa/libOpenCL.so";
 #else
         if (isFileExists("/usr/lib32/OpenCL/vendors/mesa/libOpenCL.so"))
             return "/usr/lib32/OpenCL/vendors/mesa/libOpenCL.so";
