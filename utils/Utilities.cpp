@@ -29,6 +29,7 @@
 #include <pwd.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #endif
 #include <fstream>
 #include <fcntl.h>
@@ -552,6 +553,76 @@ void CLRX::makeDir(const char* dirname)
     }
 }
 
+CLRX::Array<cxbyte> CLRX::runExecWithOutput(const char* program, const char** argv)
+{
+#ifndef HAVE_WINDOWS
+    Array<cxbyte> output;
+    errno = 0;
+    int pipefds[2];
+    if (::pipe(pipefds) < 0)
+        throw Exception("Can't create pipe");
+    int fret = fork();
+    if (fret == 0)
+    {   // children
+        if (::close(1)<0)
+            ::exit(-1);
+        if (::dup(pipefds[1])<0) // redirection to pipe
+            ::exit(-1);
+        ::close(pipefds[0]);
+        ::execvp(program, (char**)argv);
+        ::exit(-1); // not
+    }
+    else if (fret > 0)
+    {   // parent
+        ::close(pipefds[1]);
+        /* growing, growing... */
+        size_t prevBufSize = 0;
+        size_t readBufSize = 256;
+        output.resize(readBufSize);
+        try
+        {
+        while(true)
+        {
+            while (prevBufSize < readBufSize)
+            {
+                ssize_t ret = ::read(pipefds[0], output.data()+prevBufSize,
+                            readBufSize-prevBufSize);
+                if (ret < 0)
+                    throw Exception("Can't read output of running process");
+                prevBufSize += ret;
+                if (ret == 0)
+                    break;
+            }
+            if (prevBufSize < readBufSize)
+            {   /* final resize */
+                output.resize(prevBufSize);
+                break;
+            }
+            prevBufSize = readBufSize;
+            readBufSize = prevBufSize+(prevBufSize>>1);
+            output.resize(readBufSize);
+        }
+        }
+        catch(...)
+        {   // close on error
+            ::waitpid(fret, nullptr, 0);
+            ::close(pipefds[0]);
+            throw;
+        }
+        int status = 0;
+        ::waitpid(fret, &status, 0);
+        ::close(pipefds[0]);
+        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+            throw Exception("Process exited abnormally");
+    }
+    else
+        throw Exception("Can't create new process");
+    return output;
+#else
+    throw Exception("Unsupported function");
+#endif
+}
+
 static const char* libAmdOCLPaths[] =
 {
 #ifdef HAVE_LINUX
@@ -590,5 +661,48 @@ std::string CLRX::findAmdOCL()
             if (isFileExists(amdOclPath.c_str()))
                 return amdOclPath;
         }
+    return "";
+}
+
+static const char* libMesaOCLPaths[] =
+{
+#ifdef HAVE_LINUX
+#  ifdef HAVE_32BIT
+     "/usr/lib/i386-linux-gnu",
+     "/usr/lib32",
+     "/usr/lib"
+#  else
+     "/usr/lib/x86_64-linux-gnu",
+     "/usr/lib64"
+#  endif
+#endif
+};
+
+std::string CLRX::findMesaOCL()
+{
+    std::string amdOclPath = parseEnvVariable<std::string>("CLRX_MESAOCL_PATH", "");
+    if (!amdOclPath.empty())
+    {
+        if (isFileExists(amdOclPath.c_str()))
+            return amdOclPath;
+    }
+    else
+    {
+        for (const char* libPath: libMesaOCLPaths)
+        {
+            amdOclPath = joinPaths(libPath, "libMesaOpenCL.so.1");
+            if (isFileExists(amdOclPath.c_str()))
+                return amdOclPath;
+        }
+#ifdef HAVE_64BIT
+        if (isFileExists("/usr/lib64/OpenCL/vendors/mesa/libOpenCL.so"))
+            return "/usr/lib64/OpenCL/vendors/mesa/libOpenCL.so";
+#else
+        if (isFileExists("/usr/lib32/OpenCL/vendors/mesa/libOpenCL.so"))
+            return "/usr/lib32/OpenCL/vendors/mesa/libOpenCL.so";
+        if (isFileExists("/usr/lib/OpenCL/vendors/mesa/libOpenCL.so"))
+            return "/usr/lib/OpenCL/vendors/mesa/libOpenCL.so";
+#endif
+    }
     return "";
 }

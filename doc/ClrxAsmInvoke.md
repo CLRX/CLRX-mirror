@@ -117,7 +117,7 @@ Following environment variables impacts on assembler work:
 
     Path to AMDOCL (AMD OpenCL implementation) shared library (libamdocl32.so,
 libamdocl64.so, amdocl.dll or amdocl64.dll).
-    
+
 ### Output
 
 An assembler generates single output binary. If no output specified an assembler will

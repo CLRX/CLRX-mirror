@@ -707,8 +707,14 @@ extern uint64_t getFileTimestamp(const char* filename);
 extern std::string getHomeDir();
 /// create directory
 extern void makeDir(const char* dirname);
+/// run executable with output, returns array of output
+extern Array<cxbyte> runExecWithOutput(const char* program, const char** argv);
+
 /// find amdocl library, returns path if found, otherwise returns empty string
 extern std::string findAmdOCL();
+
+/// find Mesa OpenCL library, returns path if found, otherwise returns empty string
+extern std::string findMesaOCL();
 
 /*
  * Reference support
