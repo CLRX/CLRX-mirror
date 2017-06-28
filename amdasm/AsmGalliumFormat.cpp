@@ -1309,7 +1309,7 @@ bool AsmGalliumHandler::prepareBinary()
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
     
     cxuint llvmVersion = assembler.llvmVersion;
-    if (llvmVersion == 0)
+    if (llvmVersion == 0 && (assembler.flags&ASM_TESTRUN)==0)
         llvmVersion = detectLLVMCompilerVersion();
     
     const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
@@ -1427,7 +1427,7 @@ bool AsmGalliumHandler::prepareBinary()
         }
     }
     // set versions
-    if (assembler.driverVersion == 0) // auto detection
+    if (assembler.driverVersion == 0 && (assembler.flags&ASM_TESTRUN)==0) // auto detection
         output.isMesa170 = detectMesaDriverVersion() >= 170000U;
     else
         output.isMesa170 = assembler.driverVersion >= 170000U;
