@@ -754,7 +754,6 @@ std::string CLRX::findMesaOCL()
         if (isFileExists("/usr/lib/OpenCL/vendors/mesa/libOpenCL.so"))
             return "/usr/lib/OpenCL/vendors/mesa/libOpenCL.so";
 #endif
-        
     }
 #endif
     return "";
