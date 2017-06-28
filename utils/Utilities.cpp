@@ -393,7 +393,8 @@ bool CLRX::isDirectory(const char* path)
 bool CLRX::isFileExists(const char* path)
 {
 #ifdef HAVE_WINDOWS
-    return GetFileAttributes(path)!=INVALID_FILE_ATTRIBUTES;
+    return GetFileAttributes(path)!=INVALID_FILE_ATTRIBUTES ||
+            GetLastError()==ERROR_FILE_NOT_FOUND;
 #else
     return ::access(path, F_OK)==0;
 #endif
