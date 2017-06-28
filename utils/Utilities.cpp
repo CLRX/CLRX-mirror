@@ -697,12 +697,10 @@ std::string CLRX::findAmdOCL()
                 return amdOclPath;
         }
 #ifndef HAVE_WINDOWS
-        amdOclPath = findFileByEnvPaths("LD_LIBRARY_PATH", DEFAULT_AMDOCLNAME);
+        return findFileByEnvPaths("LD_LIBRARY_PATH", DEFAULT_AMDOCLNAME);
 #else
-        amdOclPath = findFileByEnvPaths("PATH", DEFAULT_AMDOCLNAME);
+        return findFileByEnvPaths("PATH", DEFAULT_AMDOCLNAME);
 #endif
-        if (!amdOclPath.empty())
-            return amdOclPath;
     }
     return "";
 }
@@ -750,9 +748,7 @@ std::string CLRX::findMesaOCL()
         if (isFileExists("/usr/lib/OpenCL/vendors/mesa/libOpenCL.so"))
             return "/usr/lib/OpenCL/vendors/mesa/libOpenCL.so";
 #endif
-        mesaOclPath = findFileByEnvPaths("LD_LIBRARY_PATH", "libMesaOpenCL.so.1");
-        if (!mesaOclPath.empty())
-            return mesaOclPath;
+        return findFileByEnvPaths("LD_LIBRARY_PATH", "libMesaOpenCL.so.1");
     }
 #endif
     return "";
