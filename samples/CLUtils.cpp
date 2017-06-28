@@ -296,6 +296,8 @@ try
         }
         
         const char* mesaPart = strstr(deviceVersion.get(), "Mesa ");
+        if (mesaPart==nullptr)
+            mesaPart = strstr(deviceVersion.get(), "MESA ");
         if (mesaPart!=nullptr)
         {
             try
