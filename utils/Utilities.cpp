@@ -690,15 +690,18 @@ std::string CLRX::findAmdOCL()
     }
     else
     {
+#ifndef HAVE_WINDOWS
+        amdOclPath = findFileByEnvPaths("LD_LIBRARY_PATH", DEFAULT_AMDOCLNAME);
+        if (!amdOclPath.empty())
+            return amdOclPath;
+#endif
         for (const char* libPath: libAmdOCLPaths)
         {
             amdOclPath = joinPaths(libPath, DEFAULT_AMDOCLNAME);
             if (isFileExists(amdOclPath.c_str()))
                 return amdOclPath;
         }
-#ifndef HAVE_WINDOWS
-        return findFileByEnvPaths("LD_LIBRARY_PATH", DEFAULT_AMDOCLNAME);
-#else
+#ifdef HAVE_WINDOWS
         return findFileByEnvPaths("PATH", DEFAULT_AMDOCLNAME);
 #endif
     }
@@ -731,6 +734,9 @@ std::string CLRX::findMesaOCL()
     }
     else
     {
+        mesaOclPath = findFileByEnvPaths("LD_LIBRARY_PATH", "libMesaOpenCL.so.1");
+        if (!mesaOclPath.empty())
+            return mesaOclPath;
         for (const char* libPath: libMesaOCLPaths)
         {
             mesaOclPath = joinPaths(libPath, "libMesaOpenCL.so.1");
@@ -748,7 +754,7 @@ std::string CLRX::findMesaOCL()
         if (isFileExists("/usr/lib/OpenCL/vendors/mesa/libOpenCL.so"))
             return "/usr/lib/OpenCL/vendors/mesa/libOpenCL.so";
 #endif
-        return findFileByEnvPaths("LD_LIBRARY_PATH", "libMesaOpenCL.so.1");
+        
     }
 #endif
     return "";
@@ -765,11 +771,14 @@ std::string CLRX::findLLVMConfig()
     }
     else
     {
+        // find by path
+        llvmConfigPath = findFileByEnvPaths("PATH", "llvm-config");
+        if (!llvmConfigPath.empty())
+            return llvmConfigPath;
 #ifndef HAVE_WINDOWS
         if (isFileExists("/usr/bin/llvm-config"))
             return "/usr/bin/llvm-config";
 #endif
-        // find by path
-        return findFileByEnvPaths("PATH", "llvm-config");
     }
+    return "";
 }
