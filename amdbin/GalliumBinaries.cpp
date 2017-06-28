@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <utility>
 #include <memory>
+#include <fstream>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/InputOutput.h>
@@ -756,4 +757,206 @@ void GalliumBinGenerator::generate(std::ostream& os) const
 void GalliumBinGenerator::generate(std::vector<char>& v) const
 {
     generateInternal(nullptr, &v, nullptr);
+}
+
+static const char* mesaOclMagicString = "OpenCL 1.1 MESA";
+static const char* mesaOclMagicString2 = "OpenCL 1.1 Mesa";
+static std::mutex detectionMutex;
+static uint64_t detectionFileTimestamp = 0;
+static std::string detectionMesaOclPath;
+static uint64_t detectionLLVMFileTimestamp = 0;
+static std::string detectionLlvmConfigPath;
+static uint32_t detectedDriverVersion = 0;
+static uint32_t detectedLLVMVersion = 0;
+
+static std::string escapePath(const std::string& path)
+{
+    std::string newPath;
+    for (char c: path)
+        if (c == CLRX_NATIVE_DIR_SEP)
+            newPath.append("%#");
+        else if (c == '%')
+            newPath.append("%%");
+        else if (c == ':')
+            newPath.append("%$");
+        else
+            newPath += c;
+    return newPath;
+}
+
+uint32_t CLRX::detectMesaDriverVersion()
+{
+    std::lock_guard<std::mutex> lock(detectionMutex);
+    std::string mesaOclPath = findMesaOCL();
+    
+    bool notThisSameFile = false;
+    if (mesaOclPath != detectionMesaOclPath)
+    {
+        notThisSameFile = true;
+        detectionMesaOclPath = mesaOclPath;
+    }
+    
+    uint64_t timestamp = 0;
+    try
+    { timestamp = getFileTimestamp(mesaOclPath.c_str()); }
+    catch(const Exception& ex)
+    { }
+    
+    if (!notThisSameFile && timestamp == detectionFileTimestamp)
+        return detectedDriverVersion;
+    
+    std::string clrxTimestampPath = getHomeDir();
+    if (!clrxTimestampPath.empty())
+    {   // first, we check from stored version in config files
+        clrxTimestampPath = joinPaths(clrxTimestampPath, ".clrxmesaocltstamp");
+        try
+        { makeDir(clrxTimestampPath.c_str()); }
+        catch(const std::exception& ex)
+        { }
+        // file path
+        clrxTimestampPath = joinPaths(clrxTimestampPath, escapePath(mesaOclPath));
+        try
+        {
+        std::ifstream ifs(clrxTimestampPath.c_str(), std::ios::binary);
+        if (ifs)
+        {   // read driver version from stored config files
+            ifs.exceptions(std::ios::badbit | std::ios::failbit);
+            uint64_t readedTimestamp = 0;
+            uint32_t readedVersion = 0;
+            ifs >> readedTimestamp >> readedVersion;
+            if (readedTimestamp!=0 && readedVersion!=0 && timestamp==readedTimestamp)
+            {   // amdocl has not been changed
+                detectionFileTimestamp = readedTimestamp;
+                detectedDriverVersion = readedVersion;
+                return readedVersion;
+            }
+        }
+        }
+        catch(const std::exception& ex)
+        { }
+    }
+    detectionFileTimestamp = timestamp;
+    detectedDriverVersion = 0;
+    try
+    {
+        std::ifstream fs(mesaOclPath.c_str(), std::ios::binary);
+        if (!fs) return 0;
+        FastInputBuffer fib(256, fs);
+        size_t index = 0;
+        while (mesaOclMagicString[index]!=0)
+        {
+            int c = fib.get();
+            if (c == std::streambuf::traits_type::eof())
+                break;
+            if (mesaOclMagicString[index]==c)
+                index++;
+            else if (mesaOclMagicString2[index]==c)
+                index++;
+            else // reset
+                index=0;
+        }
+        if (mesaOclMagicString[index]==0)
+        { //
+            char buf[30];
+            ::memset(buf, 0, 30);
+            if (fib.get()!=' ')
+                return 0; // skip space
+            // get driver version
+            fib.read(buf, 30);
+            
+            const char* next;
+            detectedDriverVersion = cstrtoui(buf, buf+30, next)*10000;
+            if (next!=buf+30 && *next=='.') // minor version
+                detectedDriverVersion += (cstrtoui(next+1, buf+30, next)%100)*100;
+            if (next!=buf+30 && *next=='.') // micro version
+                detectedDriverVersion += cstrtoui(next+1, buf+30, next)%100;
+        }
+        
+        // write to config
+        if (!clrxTimestampPath.empty()) // if clrxamdocltstamp set
+        {   // write to
+            std::ofstream ofs(clrxTimestampPath.c_str(), std::ios::binary);
+            ofs << detectionFileTimestamp << " " << detectedDriverVersion;
+        }
+    }
+    catch(const std::exception& ex)
+    { }
+    return detectedDriverVersion;
+}
+
+uint32_t CLRX::detectLLVMCompilerVersion()
+{
+    std::lock_guard<std::mutex> lock(detectionMutex);
+    std::string llvmConfigPath = findLLVMConfig();
+    
+    bool notThisSameFile = false;
+    if (llvmConfigPath != detectionLlvmConfigPath)
+    {
+        notThisSameFile = true;
+        detectionLlvmConfigPath = llvmConfigPath;
+    }
+    
+    uint64_t timestamp = 0;
+    try
+    { timestamp = getFileTimestamp(llvmConfigPath.c_str()); }
+    catch(const Exception& ex)
+    { }
+    
+    if (!notThisSameFile && timestamp == detectionLLVMFileTimestamp)
+        return detectedLLVMVersion;
+    
+    std::string clrxTimestampPath = getHomeDir();
+    if (!clrxTimestampPath.empty())
+    {   // first, we check from stored version in config files
+        clrxTimestampPath = joinPaths(clrxTimestampPath, ".clrxllvmcfgtstamp");
+        try
+        { makeDir(clrxTimestampPath.c_str()); }
+        catch(const std::exception& ex)
+        { }
+        // file path
+        clrxTimestampPath = joinPaths(clrxTimestampPath, escapePath(llvmConfigPath));
+        try
+        {
+        std::ifstream ifs(clrxTimestampPath.c_str(), std::ios::binary);
+        if (ifs)
+        {   // read driver version from stored config files
+            ifs.exceptions(std::ios::badbit | std::ios::failbit);
+            uint64_t readedTimestamp = 0;
+            uint32_t readedVersion = 0;
+            ifs >> readedTimestamp >> readedVersion;
+            if (readedTimestamp!=0 && readedVersion!=0 && timestamp==readedTimestamp)
+            {   // amdocl has not been changed
+                detectionLLVMFileTimestamp = readedTimestamp;
+                detectedLLVMVersion = readedVersion;
+                return readedVersion;
+            }
+        }
+        }
+        catch(const std::exception& ex)
+        { }
+    }
+    detectionLLVMFileTimestamp = timestamp;
+    detectedLLVMVersion = 0;
+    try
+    {
+        const char* arguments[3] = { llvmConfigPath.c_str(), "--version", nullptr };
+        Array<cxbyte> out = runExecWithOutput(llvmConfigPath.c_str(), arguments);
+        const char* next;
+        const char* end = ((const char*)out.data()) + out.size();
+        detectedLLVMVersion = cstrtoui(((const char*)out.data()), end, next)*10000;
+        if (next!=end && *next=='.') // minor version
+            detectedLLVMVersion += (cstrtoui(next+1, end, next)%100)*100;
+        if (next!=end && *next=='.') // micro version
+            detectedLLVMVersion += cstrtoui(next+1, end, next)%100;
+        
+        // write to config
+        if (!clrxTimestampPath.empty()) // if clrxamdocltstamp set
+        {   // write to
+            std::ofstream ofs(clrxTimestampPath.c_str(), std::ios::binary);
+            ofs << detectionLLVMFileTimestamp << " " << detectedLLVMVersion;
+        }
+    }
+    catch(const std::exception& ex)
+    { }
+    return detectedLLVMVersion;
 }

@@ -716,6 +716,9 @@ extern std::string findAmdOCL();
 /// find Mesa OpenCL library, returns path if found, otherwise returns empty string
 extern std::string findMesaOCL();
 
+/// find LLVM config, returns path if found, otherwise returns empty string
+extern std::string findLLVMConfig();
+
 /*
  * Reference support
  */

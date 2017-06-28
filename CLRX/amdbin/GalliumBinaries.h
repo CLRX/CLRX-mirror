@@ -463,6 +463,11 @@ public:
     void generate(std::vector<char>& vector) const;
 };
 
+/// detect driver version in the system
+extern uint32_t detectMesaDriverVersion();
+/// detect LLVM compiler version in the system
+extern uint32_t detectLLVMCompilerVersion();
+
 };
 
 #endif
