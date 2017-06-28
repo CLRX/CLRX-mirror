@@ -705,7 +705,7 @@ std::string CLRX::findAmdOCL()
     return "";
 }
 
-#ifdef HAVE_LINUX
+#ifndef HAVE_WINDOWS
 static const char* libMesaOCLPaths[] =
 {
 #  ifdef HAVE_32BIT
