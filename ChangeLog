@@ -22,6 +22,8 @@ CLRadeonExtender 0.1.4:
 * fixed handling AMDOCL names for 32-bit Windows environment
 * add installation rules for AMDGPU-PRO drivers (OpenSUSE and Ubuntu)
 * add new pseudo-ops '.get_64bit', '.get_arch', '.get_format', '.get_gpu'
+* add autodetection for LLVM and Mesa3D version
+* find correct AMDOCL, MesaOCL and llvm-config at runtime
 
 CLRadeonExtender 0.1.3:
 
