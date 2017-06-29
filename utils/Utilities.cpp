@@ -231,13 +231,6 @@ bool parseEnvVariable<bool>(const char* envVar, const bool& defaultValue)
 }
 };
 
-template
-std::string CLRX::parseEnvVariable<std::string>(const char* envVar,
-              const std::string& defaultValue);
-
-template
-bool CLRX::parseEnvVariable<bool>(const char* envVar, const bool& defaultValue);
-
 /// escape char names witout '\'
 static const char cstyleEscapesTable[32] =
 {
