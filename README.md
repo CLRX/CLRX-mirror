@@ -65,6 +65,8 @@ Optional CMake configuration options for build:
 * BUILD_DOXYGEN - build doxygen documentation
 * BUILD_MANUAL - build Unix manual pages
 * BUILD_CLRXDOC - build CLRX user documentation
+* BUILD_STATIC_EXE - build with statically linked executables
+* GCC5CXX11NEWABI - build with new GCC5 C++11 ABI
 * NO_STATIC - no static libraries
 * OPENCL_DIST_DIR - an OpenCL directory distribution installation (optional)
 
