@@ -99,6 +99,11 @@ Installation is easy. Just run command:
 make install
 ```
 
+### Usage of libraries in binaries
+
+The default binary libraries for Linux are compiled for C++11 old ABI, hence you must add
+option -D_GLIBCXX_USE_CXX11_ABI=0 to compiler commands if you are using GCC 5.0
+or higher or compiler that by default uses new C++11 ABI.
 
 ### Usage
 
