@@ -3,6 +3,9 @@
 The AMD Catalyst driver provides own OpenCL implementation that can generates
 own binaries of the OpenCL programs. The CLRX assembler supports both OpenCL 1.2
 and OpenCL 2.0 binary format. This chapter describes Amd OpenCL 2.0 binary format.
+The first Catalyst drivers uses this format for OpenCL 2.0 programs.
+Current AMD drivers uses this format for OpenCL 1.2 and OpenCL 2.0 programs for
+GCN 1.1 and later architectures.
 
 ## Binary format
 

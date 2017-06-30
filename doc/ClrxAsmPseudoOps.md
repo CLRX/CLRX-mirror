@@ -92,7 +92,7 @@ Choose AMD Catalyst OpenCL 1.2 program binary format.
 ### .amdcl2
 
 This pseudo-operation should to be at begin of source.
-Choose AMD Catalyst OpenCL 2.0 program binary format.
+Choose AMD Catalyst new (introduced for OpenCL 2.0 support) program binary format.
 
 ### .arch
 
@@ -307,7 +307,7 @@ This pseudo-operation should to be at begin of source.
 Choose binary format. Binary can be one of following list:
 
 * `amd`, `catalyst` - AMD Catalyst OpenCL 1.2 binary format
-* `amdcl2` - AMD Catalyst OpenCL 2.0 binary format
+* `amdcl2` - AMD Catalyst new (introduced for OpenCL 2.0) binary format
 * `gallium` - the GalliumCompute binary format
 * `rocm` - the ROCm binary format
 * `raw` - rawcode (raw program instructions)
