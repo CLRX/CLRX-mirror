@@ -14,7 +14,7 @@ This package provides source code and requires:
 
 * C++11 compliant compiler (Clang++ or GCC 4.7 or later)
 * GNU make tool
-* CMake system (2.6 or later)
+* CMake system (2.8 or later)
 * Threads support (for Linux, recommended NPTL)
 * Unix-like (Linux or BSD) system or Windows system
 
