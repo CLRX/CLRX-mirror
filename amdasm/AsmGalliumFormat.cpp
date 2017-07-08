@@ -1377,8 +1377,9 @@ bool AsmGalliumHandler::prepareBinary()
                 if (argInfo.semantic == GalliumArgSemantic::GRID_DIMENSION ||
                         argInfo.semantic == GalliumArgSemantic::GRID_OFFSET)
                     continue; // skip
-                argSegmentSize = (argSegmentSize + argInfo.targetAlign-1) &
-                        ~size_t(argInfo.targetAlign-1);
+                if (argInfo.targetAlign != 0)
+                    argSegmentSize = (argSegmentSize + argInfo.targetAlign-1) &
+                            ~size_t(argInfo.targetAlign-1);
                 argSegmentSize += argInfo.targetSize;
             }
             argSegmentSize += 16; // gridOffset and gridDim
