@@ -205,8 +205,8 @@ Bits  | Name       | Description
 28-31 | ROW_MASK   | Row enable mask
 
 The operation on wavefronts applied to SRC0 operand in VOP instruction.
-The wavefront contains 4 rows (16 threads), and each row contains 4 banks (4 threads).
-The DPP_CTRL choose which operation will be applied to SRC0.
+The wavefront contains 4 rows (1 row - 16 threads), and each row contains 4 banks
+(1 bank - 4 threads). The DPP_CTRL choose which operation will be applied to SRC0.
 List of data parallel operations:
 
 Value        | Name                 | Modifier | Description
