@@ -393,7 +393,7 @@ VDST = *V   // scalar operation
 Opcode: 63 (0x3f) for GCN 1.2  
 Syntax: DS_BPERMUTE_B32 DST, ADDR, SRC [OFFSET:OFFSET]  
 Description: Backward permutation for wave. Put value of SRC0 from 
-lane id calculated from `ADDR[(LANEID + (OFFSET>>2)) & 64`,
+lane id calculated from `ADDR[(LANEID + (OFFSET>>2)) & 63]`,
 to DST register in LANEID. The ADDR holds lane id is multiplied by 4 (size of dword).
 Realizes pop semantic: “read data from lane i”.
 Operation:  
@@ -1381,7 +1381,7 @@ UINT64* V = (UINT64*)(DS + A)
 Opcode: 62 (0x3e) for GCN 1.2  
 Syntax: DS_PERMUTE_B32 DST, ADDR, SRC [OFFSET:OFFSET]  
 Description: Forward permutation for wave. Put value of SRC0 from LANEID to DST register in
-lane id calculated from `ADDR[(LANEID + (OFFSET>>2)) & 64`.
+lane id calculated from `ADDR[(LANEID + (OFFSET>>2)) & 63]`.
 The ADDR holds lane id multiplied by 4 (size of dword). Realizes push semantic:
 "put my lane data in lane i".
 Operation:  
