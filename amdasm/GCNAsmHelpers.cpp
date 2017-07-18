@@ -501,10 +501,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                             ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
                 }
                 else
-                {
-                    
                     regPair = { ttmpStart+value, ttmpStart+value+1 };
-                }
                 return true;
             }
             else
@@ -606,10 +603,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                 regPair = { loHiReg, loHiReg+2 };
                 return true;
             }
-            else
-            {   // this is not this register
+            else // this is not this register
                 trySymReg = true;
-            }
         }
         else
             trySymReg = true;
