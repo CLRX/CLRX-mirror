@@ -578,6 +578,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             }
         }
         
+        bool trySymReg = false;
         if (loHiRegSuffix != 0) // handle 64-bit registers
         {
             if (regName[loHiRegSuffix] == '_')
@@ -607,15 +608,13 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             }
             else
             {   // this is not this register
-                if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar",
-                            regsNum, required))
-                    return false;
-                linePtr = oldLinePtr;
-                regPair = { 0, 0 };
-                return true;
+                trySymReg = true;
             }
         }
         else
+            trySymReg = true;
+        
+        if (trySymReg)
         {   // otherwise
             linePtr = oldLinePtr;
             if (!parseRegVarRange(asmr, linePtr, regPair, 0, regsNum, regField,
