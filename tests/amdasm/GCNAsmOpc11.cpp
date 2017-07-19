@@ -46,6 +46,9 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "s_add_u32  zx[1], ss, b[4]", 0x80153d04U, 0, false, true, "" },
     { "zx=%s[20:23]; ss=%execz; b=%s[57:67];s_add_u32  zx[1], ss, b[4]",
             0x80153dfcU, 0, false, true, "" },
+    /* symregranges with names of other registers (vcc,exec,...) */
+    { "execmi=%s[20:23]; vcctf=%s4; tmad=%s[57:67];s_add_u32  execmi[1], vcctf, tmad[4]",
+            0x80153d04U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 0", 0x80158004U, 0, false, true, "" },
     { "lit=3;s_add_u32  s21, s4, lit*5", 0x80158f04U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 1", 0x80158104U, 0, false, true, "" },
