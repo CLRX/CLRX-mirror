@@ -61,7 +61,7 @@ Description: Load single dword from read-only memory through constant cache (kca
 SBASE is buffer descriptor.  
 Operation:  
 ```
-SDST = *(UINT32*)(SMRD + (OFFSET & 3))
+SDST = *(UINT32*)(SMRD + (OFFSET & ~3))
 ```
 
 #### S_BUFFER_LOAD_DWORDX16
@@ -73,7 +73,7 @@ SBASE is buffer descriptor.
 Operation:  
 ```
 for (BYTE i = 0; i < 16; i++)
-    SDST[i] = *(UINT32*)(SMRD + i*4 + (OFFSET & 3))
+    SDST[i] = *(UINT32*)(SMRD + i*4 + (OFFSET & ~3))
 ```
 
 #### S_BUFFER_LOAD_DWORDX2
@@ -84,7 +84,7 @@ Description: Load two dwords from read-only memory through constant cache (kcach
 SBASE is buffer descriptor.  
 Operation:  
 ```
-SDST = *(UINT64*)(SMRD + (OFFSET & 3))
+SDST = *(UINT64*)(SMRD + (OFFSET & ~3))
 ```
 
 #### S_BUFFER_LOAD_DWORDX4
@@ -96,7 +96,7 @@ SBASE is buffer descriptor.
 Operation:  
 ```
 for (BYTE i = 0; i < 4; i++)
-    SDST[i] = *(UINT32*)(SMRD + i*4 + (OFFSET & 3))
+    SDST[i] = *(UINT32*)(SMRD + i*4 + (OFFSET & ~3))
 ```
 
 #### S_BUFFER_LOAD_DWORDX8
@@ -108,7 +108,7 @@ SBASE is buffer descriptor.
 Operation:  
 ```
 for (BYTE i = 0; i < 8; i++)
-    SDST[i] = *(UINT32*)(SMRD + i*4 + (OFFSET & 3))
+    SDST[i] = *(UINT32*)(SMRD + i*4 + (OFFSET & ~3))
 ```
 
 #### S_DCACHE_INV
@@ -130,7 +130,7 @@ Syntax: S_LOAD_DWORD SDST, SBASE(2), OFFSET
 Description: Load single dword from read-only memory through constant cache (kcache).  
 Operation:  
 ```
-SDST = *(UINT32*)(SMRD + (OFFSET & 3))
+SDST = *(UINT32*)(SMRD + (OFFSET & ~3))
 ```
 
 #### S_LOAD_DWORDX16
@@ -141,7 +141,7 @@ Description: Load 16 dwords from read-only memory through constant cache (kcache
 Operation:  
 ```
 for (BYTE i = 0; i < 16; i++)
-    SDST[i] = *(UINT32*)(SMRD + i*4 + (OFFSET & 3))
+    SDST[i] = *(UINT32*)(SMRD + i*4 + (OFFSET & ~3))
 ```
 
 #### S_LOAD_DWORDX2
@@ -150,7 +150,7 @@ Opcode: 1 (0x1)
 Syntax: S_LOAD_DWORDX2 SDST(2), SBASE(2), OFFSET  
 Description: Load two dwords from read-only memory through constant cache (kcache).  
 ```
-SDST = *(UINT64*)(SMRD + (OFFSET & 3))
+SDST = *(UINT64*)(SMRD + (OFFSET & ~3))
 ```
 
 #### S_LOAD_DWORDX4
@@ -161,7 +161,7 @@ Description: Load four dwords from read-only memory through constant cache (kcac
 Operation:  
 ```
 for (BYTE i = 0; i < 4; i++)
-    SDST[i] = *(UINT32*)(SMRD + i*4 + (OFFSET & 3))
+    SDST[i] = *(UINT32*)(SMRD + i*4 + (OFFSET & ~3))
 ```
 
 #### S_LOAD_DWORDX8
@@ -172,7 +172,7 @@ Description: Load eight dwords from read-only memory through constant cache (kca
 Operation:  
 ```
 for (BYTE i = 0; i < 8; i++)
-    SDST[i] = *(UINT32*)(SMRD + i*4 + (OFFSET & 3))
+    SDST[i] = *(UINT32*)(SMRD + i*4 + (OFFSET & ~3))
 ```
 
 #### S_MEMTIME

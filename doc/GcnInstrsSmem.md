@@ -73,7 +73,7 @@ Description: Load single dword from read-only memory through constant cache (kca
 SBASE is buffer descriptor.  
 Operation:  
 ```
-SDATA = *(UINT32*)(SMEM + (OFFSET & 3))
+SDATA = *(UINT32*)(SMEM + (OFFSET & ~3))
 ```
 
 #### S_BUFFER_LOAD_DWORDX16
@@ -85,7 +85,7 @@ SBASE is buffer descriptor.
 Operation:  
 ```
 for (BYTE i = 0; i < 16; i++)
-    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & 3))
+    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & ~3))
 ```
 
 #### S_BUFFER_LOAD_DWORDX2
@@ -96,7 +96,7 @@ Description: Load two dwords from read-only memory through constant cache (kcach
 SBASE is buffer descriptor.  
 Operation:  
 ```
-SDATA = *(UINT64*)(SMEM + (OFFSET & 3))
+SDATA = *(UINT64*)(SMEM + (OFFSET & ~3))
 ```
 
 #### S_BUFFER_LOAD_DWORDX4
@@ -108,7 +108,7 @@ SBASE is buffer descriptor.
 Operation:  
 ```
 for (BYTE i = 0; i < 4; i++)
-    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & 3))
+    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & ~3))
 ```
 
 #### S_BUFFER_LOAD_DWORDX8
@@ -120,7 +120,7 @@ SBASE is buffer descriptor.
 Operation:  
 ```
 for (BYTE i = 0; i < 8; i++)
-    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & 3))
+    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & ~3))
 ```
 
 #### S_BUFFER_STORE_DWORD
@@ -131,7 +131,7 @@ Description: Store single dword to memory. It accepts only offset as M0 or any i
 SBASE is buffer descriptor.  
 Operation:  
 ```
-*(UINT32*)(SMEM + (OFFSET & 3)) = SDATA
+*(UINT32*)(SMEM + (OFFSET & ~3)) = SDATA
 ```
 
 #### S_BUFFER_STORE_DWORDX2
@@ -142,7 +142,7 @@ Description: Store two dwords to memory. It accepts only offset as M0 or any imm
 SBASE is buffer descriptor.  
 Operation:  
 ```
-*(UINT64*)(SMEM + (OFFSET & 3)) = SDATA
+*(UINT64*)(SMEM + (OFFSET & ~3)) = SDATA
 ```
 
 #### S_BUFFER_STORE_DWORDX4
@@ -154,7 +154,7 @@ SBASE is buffer descriptor.
 Operation:  
 ```
 for (BYTE i = 0; i < 4; i++)
-    *(UINT32*)(SMEM + i*4 + (OFFSET & 3)) = SDATA
+    *(UINT32*)(SMEM + i*4 + (OFFSET & ~3)) = SDATA
 ```
 
 #### S_DCACHE_INV
@@ -177,7 +177,7 @@ Syntax: S_LOAD_DWORD SDATA, SBASE(2), OFFSET
 Description: Load single dword from read-only memory through constant cache (kcache).  
 Operation:  
 ```
-SDATA = *(UINT32*)(SMEM + (OFFSET & 3))
+SDATA = *(UINT32*)(SMEM + (OFFSET & ~3))
 ```
 
 #### S_LOAD_DWORDX16
@@ -188,7 +188,7 @@ Description: Load 16 dwords from read-only memory through constant cache (kcache
 Operation:  
 ```
 for (BYTE i = 0; i < 16; i++)
-    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & 3))
+    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & ~3))
 ```
 
 #### S_LOAD_DWORDX2
@@ -197,7 +197,7 @@ Opcode: 1 (0x1)
 Syntax: S_LOAD_DWORDX2 SDATA(2), SBASE(2), OFFSET  
 Description: Load two dwords from read-only memory through constant cache (kcache).  
 ```
-SDATA = *(UINT64*)(SMEM + (OFFSET & 3))
+SDATA = *(UINT64*)(SMEM + (OFFSET & ~3))
 ```
 
 #### S_LOAD_DWORDX4
@@ -208,7 +208,7 @@ Description: Load four dwords from read-only memory through constant cache (kcac
 Operation:  
 ```
 for (BYTE i = 0; i < 4; i++)
-    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & 3))
+    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & ~3))
 ```
 
 #### S_LOAD_DWORDX8
@@ -219,7 +219,7 @@ Description: Load eight dwords from read-only memory through constant cache (kca
 Operation:  
 ```
 for (BYTE i = 0; i < 8; i++)
-    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & 3))
+    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & ~3))
 ```
 
 #### S_MEMREALTIME
@@ -253,7 +253,7 @@ Description: Store single dword to memory. It accepts only offset as M0 or any i
 SBASE is buffer descriptor.  
 Operation:  
 ```
-*(UINT32*)(SMEM + (OFFSET & 3)) = SDATA
+*(UINT32*)(SMEM + (OFFSET & ~3)) = SDATA
 ```
 
 #### S_STORE_DWORDX2
@@ -263,7 +263,7 @@ Syntax: S_STORE_DWORDX2 SDATA(2), SBASE(2), OFFSET
 Description: Store two dwords to memory. It accepts only offset as M0 or any immediate.  
 Operation:  
 ```
-*(UINT64*)(SMEM + (OFFSET & 3)) = SDATA
+*(UINT64*)(SMEM + (OFFSET & ~3)) = SDATA
 ```
 
 #### S_STORE_DWORDX4
@@ -274,5 +274,5 @@ Description: Store four dwords to memory. It accepts only offset as M0 or any im
 Operation:  
 ```
 for (BYTE i = 0; i < 4; i++)
-    *(UINT32*)(SMEM + i*4 + (OFFSET & 3)) = SDATA
+    *(UINT32*)(SMEM + i*4 + (OFFSET & ~3)) = SDATA
 ```
