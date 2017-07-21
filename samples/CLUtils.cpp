@@ -167,6 +167,8 @@ try
     if (error != CL_SUCCESS)
         throw CLError(error, "clGetPlatformIDs");
     
+    cxuint amdappVersion = 0;
+    
     BinaryFormat binaryFormat = BinaryFormat::GALLIUM;
     cl_platform_id choosenPlatform = nullptr;
     bool defaultCL2ForDriver = false;
@@ -192,9 +194,47 @@ try
             choosenPlatform = platforms[i];
             binaryFormat = ::strcmp(platformName.get(), "Clover")==0 ?
                     BinaryFormat::GALLIUM : BinaryFormat::AMD;
+            
+            if (binaryFormat == BinaryFormat::AMD)
+            {   // get amdappVersion
+                size_t platformVersionSize;
+                std::unique_ptr<char[]> platformVersion;
+                error = clGetPlatformInfo(choosenPlatform, CL_PLATFORM_VERSION, 0, nullptr,
+                                        &platformVersionSize);
+                if (error != CL_SUCCESS)
+                    throw CLError(error, "clGetPlatformInfoVersion");
+                platformVersion.reset(new char[platformVersionSize]);
+                error = clGetPlatformInfo(choosenPlatform, CL_PLATFORM_VERSION,
+                                platformVersionSize, platformVersion.get(), nullptr);
+                if (error != CL_SUCCESS)
+                    throw CLError(error, "clGetPlatformInfoVersion");
+                
+                const char* amdappPart = strstr(platformVersion.get(), "AMD-APP (");
+                if (amdappPart!=nullptr)
+                {
+                    try
+                    {
+                        const char* majorVerPart = amdappPart+9;
+                        const char* minorVerPart;
+                        const char* end;
+                        cxuint majorVersion = cstrtoui(majorVerPart, nullptr,
+                                        minorVerPart);
+                        
+                        if (*minorVerPart!=0)
+                        {
+                            minorVerPart++; // skip '.'
+                            cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
+                            amdappVersion = majorVersion*100U + minorVersion;
+                        }
+                    }
+                    catch(const ParseException& ex)
+                    { } // ignore error
+                }
+            }
+            
             if (binaryFormat == BinaryFormat::AMD && useCL==2)
                 binaryFormat = BinaryFormat::AMDCL2;
-            if (binaryFormat == BinaryFormat::AMD && detectAmdDriverVersion() >= 200406)
+            if (binaryFormat == BinaryFormat::AMD && amdappVersion >= 200406)
                 defaultCL2ForDriver = true;
             break;
         }
@@ -271,7 +311,7 @@ try
     // get bits from device name (LLVM version)
     cxuint llvmVersion = 0;
     cxuint mesaVersion = 0;
-    cxuint amdappVersion = 0;
+    
     if (binaryFormat == BinaryFormat::GALLIUM)
     {
         const char* llvmPart = strstr(deviceName.get(), "LLVM ");
@@ -314,28 +354,6 @@ try
                     minorVerPart++; // skip '.'
                     cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
                     mesaVersion = majorVersion*10000U + minorVersion*100U;
-                }
-            }
-            catch(const ParseException& ex)
-            { } // ignore error
-        }
-    }
-    else if (binaryFormat == BinaryFormat::AMD || binaryFormat == BinaryFormat::AMDCL2)
-    {
-        const char* amdappPart = strstr(deviceVersion.get(), "AMD-APP (");
-        if (amdappPart!=nullptr)
-        {
-            try
-            {
-                const char* majorVerPart = amdappPart+9;
-                const char* minorVerPart;
-                const char* end;
-                cxuint majorVersion = cstrtoui(majorVerPart, nullptr, minorVerPart);
-                if (*minorVerPart!=0)
-                {
-                    minorVerPart++; // skip '.'
-                    cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
-                    amdappVersion = majorVersion*100U + minorVersion;
                 }
             }
             catch(const ParseException& ex)
