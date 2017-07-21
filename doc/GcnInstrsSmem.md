@@ -154,7 +154,7 @@ SBASE is buffer descriptor.
 Operation:  
 ```
 for (BYTE i = 0; i < 4; i++)
-    *(UINT32*)(SMEM + i*4 + (OFFSET & ~3)) = SDATA
+    *(UINT32*)(SMEM + i*4 + (OFFSET & ~3)) = SDATA[i]
 ```
 
 #### S_DCACHE_INV
@@ -274,5 +274,5 @@ Description: Store four dwords to memory. It accepts only offset as M0 or any im
 Operation:  
 ```
 for (BYTE i = 0; i < 4; i++)
-    *(UINT32*)(SMEM + i*4 + (OFFSET & ~3)) = SDATA
+    *(UINT32*)(SMEM + i*4 + (OFFSET & ~3)) = SDATA[i]
 ```
