@@ -28,6 +28,8 @@ SET(CLRX_MICRO_VERSION 4)
 
 ENABLE_LANGUAGE(CXX)
 
+SET(EXTRA_OPTS CACHE STRING "add extra options")
+SET(CPU_ARCH CACHE STRING "Set CPU architecture option")
 OPTION(GCC5CXX11NEWABI "Force new GCC 5 C++11 ABI" OFF)
 IF(GCC5CXX11NEWABI)
     MESSAGE(STATUS "GCC5 C++11 New ABI enabled")
@@ -98,37 +100,50 @@ IF(NOT LIB_INSTALL_DIR)
     MESSAGE("Using library install dirname ${LIB_INSTALL_DIR}")
 ENDIF(NOT LIB_INSTALL_DIR)
 
+IF(CPU_ARCH)
+    IF(MSVC)
+        SET(EXTRA_OPTS "${EXTRA_OPTS} /arch:${CPU_ARCH}")
+    ELSE(MSVC)
+        SET(EXTRA_OPTS "${EXTRA_OPTS} -march=${CPU_ARCH}")
+    ENDIF(MSVC)
+ENDIF(CPU_ARCH)
+
 IF(BUILD_32BIT)
-    SET(CMAKE_CXX_FLAGS "-Wall -m32 ${CPP_STANDARD}")
-    SET(CMAKE_CXX_FLAGS_DEBUG "-Wall -m32 ${CPP_STANDARD} -g -O0 -DDEBUG=1")
-    SET(CMAKE_CXX_FLAGS_DEBUGCOV "-Wall -m32 ${CPP_STANDARD} -g -O0 -DDEBUG=1 --coverage")
+    SET(CMAKE_CXX_FLAGS "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD}")
+    SET(CMAKE_CXX_FLAGS_DEBUG "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1")
+    SET(CMAKE_CXX_FLAGS_DEBUGCOV
+        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 --coverage")
     SET(CMAKE_CXX_FLAGS_GCCSAN
-    "-Wall -m32 ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all -fsanitize=address")
+    "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all -fsanitize=address")
     SET(CMAKE_CXX_FLAGS_GCCSSP
-        "-Wall -m32 ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all")
-    SET(CMAKE_CXX_FLAGS_RELEASE "-Wall -m32 ${CPP_STANDARD} -O2 -fomit-frame-pointer")
+        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all")
+    SET(CMAKE_CXX_FLAGS_RELEASE
+        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -O2 -fomit-frame-pointer")
     SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        "-Wall -m32 ${CPP_STANDARD} -g -O2 -funroll-loops -DDEBUG=1")
+        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -funroll-loops -DDEBUG=1")
     SET(CMAKE_CXX_FLAGS_RELWITHPROFILE
-        "-Wall -m32 ${CPP_STANDARD} -g -O2 -pg -funroll-loops")
+        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -pg -funroll-loops")
 ELSE(BUILD_32BIT)
     IF(MSVC)
-    SET(CMAKE_CXX_FLAGS "/W1 /EHsc")
-    SET(CMAKE_CXX_FLAGS_DEBUG "/W1 /EHsc /Zi /Od /DDEBUG=1")
-    SET(CMAKE_CXX_FLAGS_RELEASE "/W1 /EHsc /O2")
-    SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/W1 /EHsc /Zi /O2 /DDEBUG=1")
+    SET(CMAKE_CXX_FLAGS "/W1 ${EXTRA_OPTS} /EHsc")
+    SET(CMAKE_CXX_FLAGS_DEBUG "/W1 ${EXTRA_OPTS} /EHsc /Zi /Od /DDEBUG=1")
+    SET(CMAKE_CXX_FLAGS_RELEASE "/W1 ${EXTRA_OPTS} /EHsc /O2")
+    SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/W1 ${EXTRA_OPTS} /EHsc /Zi /O2 /DDEBUG=1")
     ELSE(MSVC)
-    SET(CMAKE_CXX_FLAGS "-Wall ${CPP_STANDARD}")
-    SET(CMAKE_CXX_FLAGS_DEBUG "-Wall ${CPP_STANDARD} -g -O0 -DDEBUG=1")
-    SET(CMAKE_CXX_FLAGS_DEBUGCOV "-Wall ${CPP_STANDARD} -g -O0 -DDEBUG=1 --coverage")
+    SET(CMAKE_CXX_FLAGS "-Wall ${EXTRA_OPTS} ${CPP_STANDARD}")
+    SET(CMAKE_CXX_FLAGS_DEBUG "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1")
+    SET(CMAKE_CXX_FLAGS_DEBUGCOV
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 --coverage")
     SET(CMAKE_CXX_FLAGS_GCCSAN
-        "-Wall ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all -fsanitize=address")
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all -fsanitize=address")
     SET(CMAKE_CXX_FLAGS_GCCSSP
-        "-Wall ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all")
-    SET(CMAKE_CXX_FLAGS_RELEASE "-Wall ${CPP_STANDARD} -O2 -fomit-frame-pointer")
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all")
+    SET(CMAKE_CXX_FLAGS_RELEASE
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -O2 -fomit-frame-pointer")
     SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        "-Wall ${CPP_STANDARD} -g -O2 -funroll-loops -DDEBUG=1")
-    SET(CMAKE_CXX_FLAGS_RELWITHPROFILE "-Wall ${CPP_STANDARD} -g -O2 -pg -funroll-loops")
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -funroll-loops -DDEBUG=1")
+    SET(CMAKE_CXX_FLAGS_RELWITHPROFILE
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -pg -funroll-loops")
     ENDIF(MSVC)
 ENDIF(BUILD_32BIT)
 
