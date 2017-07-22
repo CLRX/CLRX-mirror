@@ -1042,8 +1042,7 @@ void CLIParser::printVersion(std::ostream& os) const
     try
     {
         const char* pkgName = (packageName!=nullptr) ? packageName : "CLRadeonExtender";
-        os << programName << " (" << pkgName << ") " << CLRX_MAJOR_VERSION << '.' <<
-                CLRX_MINOR_VERSION << '.' << CLRX_MICRO_VERSION << "\n";
+        os << programName << " (" << pkgName << ") " << CLRX_VERSION << "\n";
     }
     catch(...)
     {

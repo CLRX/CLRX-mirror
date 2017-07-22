@@ -407,15 +407,14 @@ void clrxWrapperInitialize()
                 if (amdOclPlatform->dispatch->clGetPlatformInfo(amdOclPlatform,
                             CL_PLATFORM_VERSION, 0, nullptr, &versionSize) != CL_SUCCESS)
                     continue;
-                std::unique_ptr<char[]> versionBuffer(new char[versionSize+20]);
+                std::unique_ptr<char[]> versionBuffer(new char[versionSize+30]);
                 if (amdOclPlatform->dispatch->clGetPlatformInfo(amdOclPlatform,
                         CL_PLATFORM_VERSION, versionSize,
                         versionBuffer.get(), nullptr) != CL_SUCCESS)
                     continue;
                 {
-                    char verBuf[20];
-                    snprintf(verBuf, 20, " (clrx %u.%u.%u)", CLRX_MAJOR_VERSION,
-                             CLRX_MINOR_VERSION, CLRX_MICRO_VERSION);
+                    char verBuf[30];
+                    snprintf(verBuf, 30, " (clrx %s)", CLRX_VERSION);
                     ::strcat(versionBuffer.get(), verBuf);
                 }
                 clrxPlatform.versionSize = ::strlen(versionBuffer.get())+1;
@@ -722,15 +721,14 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                       CL_DEVICE_VERSION, 0, nullptr, &versionSize);
             if (status != CL_SUCCESS)
                 break;
-            std::unique_ptr<char[]> versionBuffer(new char[versionSize+20]);
+            std::unique_ptr<char[]> versionBuffer(new char[versionSize+30]);
             status = amdDevices[i]->dispatch->clGetDeviceInfo(amdDevices[i],
                       CL_DEVICE_VERSION, versionSize, versionBuffer.get(), nullptr);
             if (status != CL_SUCCESS)
                 break;
             {
-                char verBuf[20];
-                snprintf(verBuf, 20, " (clrx %u.%u.%u)", CLRX_MAJOR_VERSION,
-                         CLRX_MINOR_VERSION, CLRX_MICRO_VERSION);
+                char verBuf[30];
+                snprintf(verBuf, 30, " (clrx %s)", CLRX_VERSION);
                 ::strcat(versionBuffer.get(), verBuf);
             }
             clrxDevice.versionSize = ::strlen(versionBuffer.get())+1;
