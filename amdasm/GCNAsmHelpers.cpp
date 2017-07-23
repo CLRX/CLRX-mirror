@@ -193,7 +193,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
             (((flags&INSTROP_SSOURCE)!=0) || (rstart!=251 && rstart!=252 && rstart!=253))))
         {
             skipSpacesToEnd(linePtr, end);
-            if (*linePtr == '[')
+            if (linePtr != end && *linePtr == '[')
             {
                 uint64_t value1, value2;
                 skipCharAndSpacesToEnd(linePtr, end);
