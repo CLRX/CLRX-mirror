@@ -395,7 +395,7 @@ Syntax: DS_BPERMUTE_B32 DST, ADDR, SRC [OFFSET:OFFSET]
 Description: Backward permutation for wave. Put value of SRC0 from 
 lane id calculated from `ADDR[(LANEID + (OFFSET>>2)) & 63]`,
 to DST register in LANEID. The ADDR holds lane id is multiplied by 4 (size of dword).
-Realizes pop semantic: “read data from lane i”.
+Realizes pop semantic: "read data from lane i".
 Operation:  
 ```
 UINT tmp[64]
