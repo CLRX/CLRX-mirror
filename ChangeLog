@@ -1,6 +1,12 @@
 
 Change Log
 
+CLRadeonExtender 0.1.4r1:
+
+* fixed code operation in SMRD and SMEM instructions
+* fixed parsing symbol register ranges begins from 'exec', 'vcc', 'tma', ...
+* checking end of line at parsing symbol and regvar register ranges
+
 CLRadeonExtender 0.1.4:
 
 * add AMD RX VEGA support (GCN 1.4/VEGA)
