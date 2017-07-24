@@ -1364,11 +1364,11 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
                 const char* ptrAccessPlace = linePtr;
                 if (getNameArg(asmr, 10, name, linePtr, "access qualifier", true))
                 {
-                    if (::strcmp(name, "const")==0)
+                    if (::strcasecmp(name, "const")==0)
                         ptrAccess |= KARG_PTR_CONST;
-                    else if (::strcmp(name, "restrict")==0)
+                    else if (::strcasecmp(name, "restrict")==0)
                         ptrAccess |= KARG_PTR_RESTRICT;
-                    else if (::strcmp(name, "volatile")==0)
+                    else if (::strcasecmp(name, "volatile")==0)
                         ptrAccess |= KARG_PTR_VOLATILE;
                     else
                     {
