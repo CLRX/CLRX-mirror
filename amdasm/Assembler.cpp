@@ -199,7 +199,7 @@ void CLRX::skipSpacesAndLabels(const char*& linePtr, const char* end)
                 {
                     if (*linePtr=='@')
                         linePtr++;
-                    if (linePtr!=end && *linePtr=='(')
+                    else if (*linePtr=='(')
                     {
                         linePtr++;
                         if (linePtr!=end && *linePtr==')')
