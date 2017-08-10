@@ -183,6 +183,12 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
         "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
     { 0x0134d6f9U, 0x8080003d, true, "        v_cndmask_b32   v154, s61, vcc_hi, vcc "
         "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x7c2192f9U, 0x0404004eU, true, "        v_cmp_class_f32 vcc, v78, v201 "
+            "src0_sel:word0 src1_sel:word0\n" },
+    { 0x7c2192f9U, 0x0404924eU, true, "        v_cmp_class_f32 s[18:19], v78, v201 "
+            "src0_sel:word0 src1_sel:word0\n" },
+    { 0x7c2192f9U, 0x0404424eU, true, "        v_cmp_class_f32 vcc, v78, v201 "
+            "src0_sel:word0 src1_sel:word0\n" },
     /* VOP2 instructions */
     { 0x3334d715U, 0, false, "        v_add_co_u32    v154, vcc, v21, v107\n" },
     { 0x3534d715U, 0, false, "        v_sub_co_u32    v154, vcc, v21, v107\n" },

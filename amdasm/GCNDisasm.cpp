@@ -1392,34 +1392,44 @@ static inline VOPExtraWordOut decodeVOPSDWAFlags(uint32_t insnCode2, uint16_t ar
 }
 
 static void decodeVOPSDWA(FastOutputBuffer& output, uint16_t arch, uint32_t insnCode2,
-          bool src0Used, bool src1Used)
+          bool src0Used, bool src1Used, bool vopc = false)
 {
     char* bufStart = output.reserve(100);
     char* bufPtr = bufStart;
-    const cxuint dstSel = (insnCode2>>8)&7;
-    const cxuint dstUnused = (insnCode2>>11)&3;
+    const bool isGCN14 = ((arch&ARCH_RXVEGA) != 0);
+    cxuint dstSel = 6;
+    cxuint dstUnused = 0;
+    if (!isGCN14 || !vopc)
+    {   // not VEGA or not VOPC
+        dstSel = (insnCode2>>8)&7;
+        dstUnused = (insnCode2>>11)&3;
+    }
     const cxuint src0Sel = (insnCode2>>16)&7;
     const cxuint src1Sel = (insnCode2>>24)&7;
-    if ((arch&ARCH_RXVEGA)!=0 && (insnCode2 & 0xc000U) != 0)
-    {
-        cxuint omod = (insnCode2>>14)&3;
-        const char* omodStr = (omod==3)?" div:2":(omod==2)?" mul:4":" mul:2";
-        putChars(bufPtr, omodStr, 6);
-    }
-    if (insnCode2 & 0x2000)
-        putChars(bufPtr, " clamp", 6);
     
-    if (dstSel != 6)
-    {
-        putChars(bufPtr, " dst_sel:", 9);
-        putChars(bufPtr, sdwaSelChoicesTbl[dstSel],
-                 ::strlen(sdwaSelChoicesTbl[dstSel]));
-    }
-    if (dstUnused!=0)
-    {
-        putChars(bufPtr, " dst_unused:", 12);
-        putChars(bufPtr, sdwaDstUnusedTbl[dstUnused],
-                 ::strlen(sdwaDstUnusedTbl[dstUnused]));
+    if (!isGCN14 || !vopc)
+    {   // not VEGA or not VOPC
+        if (isGCN14 && (insnCode2 & 0xc000U) != 0)
+        {
+            cxuint omod = (insnCode2>>14)&3;
+            const char* omodStr = (omod==3)?" div:2":(omod==2)?" mul:4":" mul:2";
+            putChars(bufPtr, omodStr, 6);
+        }
+        if (insnCode2 & 0x2000)
+            putChars(bufPtr, " clamp", 6);
+        
+        if (dstSel != 6)
+        {
+            putChars(bufPtr, " dst_sel:", 9);
+            putChars(bufPtr, sdwaSelChoicesTbl[dstSel],
+                    ::strlen(sdwaSelChoicesTbl[dstSel]));
+        }
+        if (dstUnused!=0)
+        {
+            putChars(bufPtr, " dst_unused:", 12);
+            putChars(bufPtr, sdwaDstUnusedTbl[dstUnused],
+                    ::strlen(sdwaDstUnusedTbl[dstUnused]));
+        }
     }
     if (src0Sel!=6 && src0Used)
     {
@@ -1550,7 +1560,16 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     
     const cxuint src0Field = (insnCode&0x1ff);
     VOPExtraWordOut extraFlags = { 0, 0, 0, 0, 0, 0, 0 };
-    putChars(bufPtr, "vcc, ", 5);
+    if ((arch & ARCH_RXVEGA) != 0 && src0Field==0xf9 && (literal & 0x8000) != 0)
+    {   // SDWAB replacement of SDST
+        output.forward(bufPtr-bufStart);
+        bufPtr = bufStart = decodeGCNOperand(dasm, codePos, relocIter,
+                            (literal>>8)&0x7f, 2, arch);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+    }
+    else
+        putChars(bufPtr, "vcc, ", 5);
     if (isGCN12)
     {
         if (src0Field == 0xf9)
@@ -1599,7 +1618,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     if (isGCN12)
     {
         if (src0Field == 0xf9)
-            decodeVOPSDWA(output, arch, literal, true, true);
+            decodeVOPSDWA(output, arch, literal, true, true, true);
         else if (src0Field == 0xfa)
             decodeVOPDPP(output, literal, true, true);
     }

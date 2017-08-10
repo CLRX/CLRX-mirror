@@ -1967,7 +1967,8 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     VOPExtraModifiers extraMods{};
     VOPOpModifiers opMods{};
     good &= parseVOPModifiers(asmr, linePtr, arch, modifiers, opMods, 3,
-                (isGCN12)?&extraMods:nullptr, PARSEVOP_WITHCLAMP|PARSEVOP_WITHSEXT);
+                (isGCN12)?&extraMods:nullptr, (isGCN14 ? PARSEVOP_NODSTMODS : 0)|
+                PARSEVOP_WITHCLAMP|PARSEVOP_WITHSEXT);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     
@@ -1982,7 +1983,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     extraMods.needSDWA |= ((src0Op.vopMods | src1Op.vopMods) & VOPOP_SEXT) != 0;
     bool vop3 = //(dstReg.start!=106) || (src1Op.range.start<256) ||
-        (!dstReg.isVal(106)) ||
+        ((!isGCN14 || !extraMods.needSDWA) && !dstReg.isVal(106)) ||
         ((!isGCN14 || !extraMods.needSDWA) && src1Op.range.isNonVGPR()) ||
         (!isGCN12 && (src0Op.vopMods!=0 || src1Op.vopMods!=0)) ||
         (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)|
@@ -2047,6 +2048,12 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!checkGCNVOPEncoding(asmr, instrPlace, gcnVOPEnc, &extraMods))
         return false;
     
+    if (isGCN14 && ((modifiers & VOP3_CLAMP)!=0 || (modifiers&3)!=0))
+    {
+        asmr.printError(instrPlace, "Modifiers CLAMP and OMOD is illegal in SDWAB");
+        return false;
+    }
+    
     if (src0OpExpr!=nullptr)
         src0OpExpr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
                       output.size()));
@@ -2066,10 +2073,13 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         SLEV(words[0], 0x7c000000U | (uint32_t(gcnInsn.code1)<<17) | src0out |
                 (uint32_t(src1Op.range.bstart()&0xff)<<9));
         if (extraMods.needSDWA)
-            SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) |
-                    (uint32_t(extraMods.dstSel)<<8) |
+        {
+            const uint32_t dstMods = (!isGCN14) ? ((uint32_t(extraMods.dstSel)<<8) |
                     (uint32_t(extraMods.dstUnused)<<11) |
                     ((modifiers & VOP3_CLAMP) ? 0x2000 : 0) |
+                    (uint32_t(modifiers & 3) << 14)) : 0;
+            SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) |
+                    ((isGCN14 && !dstReg.isVal(106)) ? ((dstReg.bstart()|0x80)<<8) : 0) |
                     (uint32_t(extraMods.src0Sel)<<16) |
                     ((src0Op.vopMods&VOPOP_SEXT) ? (1U<<19) : 0) |
                     ((src0Op.vopMods&VOPOP_NEG) ? (1U<<20) : 0) |
@@ -2079,8 +2089,8 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     ((src1Op.vopMods&VOPOP_NEG) ? (1U<<28) : 0) |
                     ((src1Op.vopMods&VOPOP_ABS) ? (1U<<29) : 0) |
                     (src0Op.range.isNonVGPR() ? (1U<<23) : 0) |
-                    (src1Op.range.isNonVGPR() ? (1U<<31) : 0) |
-                    (uint32_t(modifiers & 3) << 14));
+                    (src1Op.range.isNonVGPR() ? (1U<<31) : 0) | dstMods);
+        }
         else if (extraMods.needDPP)
             SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) | (extraMods.dppCtrl<<8) |
                     ((modifiers&VOP3_BOUNDCTRL) ? (1U<<19) : 0) |

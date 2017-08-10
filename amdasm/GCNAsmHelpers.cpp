@@ -1838,7 +1838,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                 }
                 else if (extraMods!=nullptr)
                 {   /* parse specific modofier from VOP_SDWA or VOP_DPP encoding */
-                    if (withSDWAOperands>=1 && ::strcmp(mod, "dst_sel")==0)
+                    if (withSDWAOperands>=1 && (flags&PARSEVOP_NODSTMODS)==0 &&
+                            ::strcmp(mod, "dst_sel")==0)
                     {   // dstsel
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
@@ -1882,7 +1883,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             good = false;
                         }
                     }
-                    else if (withSDWAOperands>=1 &&
+                    else if (withSDWAOperands>=1 && (flags&PARSEVOP_NODSTMODS)==0 &&
                         (::strcmp(mod, "dst_unused")==0 || ::strcmp(mod, "dst_un")==0))
                     {
                         skipSpacesToEnd(linePtr, end);
