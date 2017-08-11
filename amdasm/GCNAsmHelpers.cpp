@@ -1609,6 +1609,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
     bool haveNeg = false, haveAbs = false;
     bool haveSext = false, haveOpsel = false;
     bool haveNegHi = false, haveOpselHi = false;
+    bool haveDPP = false, haveSDWA = false;
     
     if (extraMods!=nullptr)
         *extraMods = { 6, 0, cxbyte((withSDWAOperands>=2)?6:0),
@@ -2284,6 +2285,18 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             haveDppCtrl = true;
                         }
                     }
+                    else if (::strcmp(mod, "sdwa")==0)
+                    {
+                        bool sdwa = false;
+                        good &= parseModEnable(asmr, linePtr, sdwa, "vop3 modifier");
+                        haveSDWA = sdwa;
+                    }
+                    else if (::strcmp(mod, "dpp")==0)
+                    {
+                        bool dpp = false;
+                        good &= parseModEnable(asmr, linePtr, dpp, "vop3 modifier");
+                        haveDPP = dpp;
+                    }
                     else
                     {   /// unknown modifier
                         asmr.printError(modPlace, "Unknown VOP modifier");
@@ -2309,8 +2322,9 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
             good = false;
     }
     const bool vopSDWA = (haveDstSel || haveDstUnused || haveSrc0Sel || haveSrc1Sel ||
-        opMods.sextMod!=0);
-    const bool vopDPP = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask);
+        opMods.sextMod!=0 || haveSDWA);
+    const bool vopDPP = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask ||
+            haveDPP);
     const bool isGCN14 = (arch & ARCH_RXVEGA) != 0;
     // mul/div modifier does not apply to vop3 if RXVEGA (this case will be checked later)
     const bool vop3 = (mods & ((isGCN14 ? 0 : 3)|VOP3_VOP3))!=0;
