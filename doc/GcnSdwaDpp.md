@@ -8,6 +8,7 @@ threads).
 ### VOP_SDWA
 
 The VOP_SDWA encoding is enabled by setting 0xf9 in VSRC0 field in VOP1/VOP2/VOPC encoding.
+In an assembler's syntax you can force this encoding by using `SDWA` modifier in instruction.
 List of fields:
 
 Bits  | Name       | Description
@@ -190,6 +191,7 @@ switch(DST_SEL)
 ### VOP_DPP
 
 The VOP_DPP encoding is enabled by setting 0xfa in SRC0 field in VOP1/VOP2/VOPC encoding.
+In an assembler's syntax you can force this encoding by using `DPP` modifier in instruction.
 List of fields:
 
 Bits  | Name       | Description

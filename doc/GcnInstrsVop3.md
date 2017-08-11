@@ -4,6 +4,8 @@ The VOP3 instructions requires two dword to store in program code. By default, t
 encoding of these instructions gives all features of the VOP3 encoding: all possible
 modifiers, any source operand combination.
 
+In an assembler's syntax you can force this encoding by using `VOP3` modifier in instruction.
+
 List of fields for the VOP3A/VOP3B encoding (GCN 1.0/1.1):
 
 Bits  | Name     | Description
