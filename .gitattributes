@@ -88,6 +88,7 @@ doc/ClrxAsmPseudoOps.md -text
 doc/ClrxAsmRocm.md -text
 doc/ClrxAsmSyntax.md -text
 doc/ClrxDisasm.md -text
+doc/ClrxLibraries.md -text
 doc/ClrxToc.md -text
 doc/ClrxWrapper.md -text
 doc/DocLicense.md -text

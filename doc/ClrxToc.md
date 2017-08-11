@@ -30,6 +30,7 @@ Copyright (c)  2015-2017  Mateusz Szpakowski.
     * [AMD Catalyst OpenCL 2.0 handling](ClrxAsmAmdCl2)
     * [GalliumCompute handling](ClrxAsmGallium)
     * [ROCm handling](ClrxAsmRocm)
+* [CLRX libraries](ClrxLibraries)
 * [CLRXWrapper](ClrxWrapper)
 * [GalliumCompute ABI](GalliumAbi)
 * [AMD Catalyst ABI](AmdAbi)
