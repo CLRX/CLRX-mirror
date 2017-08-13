@@ -25,7 +25,7 @@ argument's pointer.
 setup pointer. 6-7 user data regs are argument's pointer.
 * if useenqueue enabled, then 10 user data registers will be used. 4-5 user data regs
 are kernel setup pointer. 6-7 user data regs are argument's pointer.
-* if useenqueue enabled, then 12 user data registers will be used. 4-5 user data regs
+* if usegeneric enabled, then 12 user data registers will be used. 4-5 user data regs
 are kernel setup pointer. 8-9 user data regs are argument's pointer.
 
 ### Argument passing and kernel setup
