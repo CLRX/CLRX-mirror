@@ -1268,7 +1268,8 @@ bool AsmGalliumHandler::prepareBinary()
         {
             config.usedSGPRsNum = std::min(
                 std::max(minRegsNum[0], kernelStates[i].allocRegs[0]) +
-                    getGPUExtraRegsNum(arch, REGTYPE_SGPR, kernelStates[i].allocRegFlags),
+                    getGPUExtraRegsNum(arch, REGTYPE_SGPR,
+                        kernelStates[i].allocRegFlags|GCN_VCC),
                     maxSGPRsNum); // include all extra sgprs
         }
         if (config.usedVGPRsNum==BINGEN_DEFAULT)

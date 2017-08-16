@@ -1535,7 +1535,7 @@ bool AsmROCmHandler::prepareBinary()
                             GCN_XNACK : 0);
             config.usedSGPRsNum = std::min(
                 std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]) +
-                    getGPUExtraRegsNum(arch, REGTYPE_SGPR, flags),
+                    getGPUExtraRegsNum(arch, REGTYPE_SGPR, flags|GCN_VCC),
                     maxSGPRsNum); // include all extra sgprs
         }
         // set usedVGPRsNum

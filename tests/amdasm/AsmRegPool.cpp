@@ -109,7 +109,7 @@ static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
         "attr39.z vop3", { { "xx", 1, 43 } } },
     /* regflags test */
     { ".gallium;.kernel xx;.config;.text;xx:s_xor_b64 "
-        "s[10:11], s[4:5], s[62:63]", { { "xx", 12, 0 } } },
+        "s[10:11], s[4:5], s[62:63]", { { "xx", 14, 0 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_xor_b64 s[10:11], s[4:5], vcc",
         { { "xx", 14, 0 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_xor_b64 s[10:11], vcc, s[6:7]",
@@ -198,8 +198,8 @@ kx5: s_mov_b32 s11, s0
             v_sub_f32 v14,v1,v2
     .kcodeend
 .kcodeend)ffDXD",
-        { { "kx0", 11, 5 }, { "kx1", 15, 15 }, { "kx2", 20, 0 },
-            { "kx3", 17, 8 }, { "kx4", 9, 8 }, { "kx5", 12, 8 } }
+        { { "kx0", 13, 5 }, { "kx1", 17, 15 }, { "kx2", 22, 0 },
+            { "kx3", 19, 8 }, { "kx4", 11, 8 }, { "kx5", 14, 8 } }
     },
     {
         R"ffDXD(            .gallium; .gpu pitcairn
@@ -237,8 +237,8 @@ kx5:
 .kcode +
             v_sub_f32 v4,v1,v2
 .kcodeend)ffDXD",
-        { { "kx0", 11, 5 }, { "kx1", 15, 5 }, { "kx2", 20, 5 },
-            { "kx3", 17, 5 }, { "kx4", 9, 5 }, { "kx5", 12, 5 } }
+        { { "kx0", 13, 5 }, { "kx1", 17, 5 }, { "kx2", 22, 5 },
+            { "kx3", 19, 5 }, { "kx4", 11, 5 }, { "kx5", 14, 5 } }
     },
     {
         R"ffDXD(            .gallium; .gpu pitcairn
@@ -298,8 +298,8 @@ kx7: s_mov_b32 s23, s0
             v_and_b32 v34,v2,v1
     .kcodeend
 .kcodeend)ffDXD",
-        { { "kx0", 11, 25 }, { "kx1", 15, 42 }, { "kx2", 20, 16 }, { "kx3", 17, 42 },
-          { "kx4", 9, 19 }, { "kx5", 12, 25 }, { "kx6", 22, 18 }, { "kx7", 24, 35 } }
+        { { "kx0", 13, 25 }, { "kx1", 17, 42 }, { "kx2", 22, 16 }, { "kx3", 19, 42 },
+          { "kx4", 11, 19 }, { "kx5", 14, 25 }, { "kx6", 24, 18 }, { "kx7", 26, 35 } }
     },
     
     /* rocm kcode test */
@@ -377,8 +377,8 @@ s_mov_b32 s23, s0
             v_and_b32 v34,v2,v1
     .kcodeend
 .kcodeend)ffDXD",
-        { { "kx0", 11, 25 }, { "kx1", 15, 42 }, { "kx2", 20, 16 }, { "kx3", 17, 42 },
-          { "kx4", 9, 19 }, { "kx5", 12, 25 }, { "kx6", 22, 18 }, { "kx7", 24, 35 } }
+        { { "kx0", 13, 25 }, { "kx1", 17, 42 }, { "kx2", 22, 16 }, { "kx3", 19, 42 },
+          { "kx4", 11, 19 }, { "kx5", 14, 25 }, { "kx6", 24, 18 }, { "kx7", 26, 35 } }
     }
 };
 

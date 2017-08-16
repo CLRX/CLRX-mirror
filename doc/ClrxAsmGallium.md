@@ -27,8 +27,8 @@ Kernel function should to be aligned to 256 byte boundary.
 ## Scalar register allocation
 
 Assembler for GalliumCompute format counts all SGPR registers and add extra registers
-(VCC, FLAT_SCRATCH, XNACK_MASK) if any used to register pool. By default no extra register
-is added.
+(VCC, FLAT_SCRATCH, XNACK_MASK) if any used to register pool.
+ The VCC register is included by default.
 
 ## List of the specific pseudo-operations
 

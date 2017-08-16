@@ -239,7 +239,7 @@ cxuint CLRX::getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType, Fl
         return (architecture==GPUArchitecture::GCN1_2) ? 6 : 4;
     else if ((flags & GCN_XNACK)!=0 && (architecture>GPUArchitecture::GCN1_1))
         return 4;
-    else if ((flags & REGCOUNT_NO_VCC)!=0)
+    else if ((flags & GCN_VCC)!=0)
         return 2;
     return 0;
 }
