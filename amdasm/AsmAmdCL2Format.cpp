@@ -1485,7 +1485,7 @@ bool AsmAmdCL2Handler::prepareBinary()
                    ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |
                    ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
         
-        const cxuint neededExtraSGPRsNum = arch==GPUArchitecture::GCN1_2 ? 6 : 4;
+        const cxuint neededExtraSGPRsNum = arch>=GPUArchitecture::GCN1_2 ? 6 : 4;
         const cxuint extraSGPRsNum = (config.useEnqueue || config.useGeneric) ?
                     neededExtraSGPRsNum : 2;
         if (config.usedSGPRsNum!=BINGEN_DEFAULT)

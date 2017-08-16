@@ -192,9 +192,9 @@ cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
         throw Exception("Unknown GPU architecture");
     if (regType == REGTYPE_VGPR)
         return 256; // VGPRS
-    cxuint maxSgprs = (architecture==GPUArchitecture::GCN1_2) ? 102 : 104;
+    cxuint maxSgprs = (architecture>=GPUArchitecture::GCN1_2) ? 102 : 104;
     if ((flags & REGCOUNT_NO_FLAT)!=0 && (architecture>GPUArchitecture::GCN1_0))
-        maxSgprs -= (architecture==GPUArchitecture::GCN1_2) ? 6 : 4;
+        maxSgprs -= (architecture>=GPUArchitecture::GCN1_2) ? 6 : 4;
     else if ((flags & REGCOUNT_NO_XNACK)!=0 && (architecture>GPUArchitecture::GCN1_1))
         maxSgprs -= 4;
     else if ((flags & REGCOUNT_NO_VCC)!=0)
@@ -207,7 +207,7 @@ cxuint CLRX::getGPUMaxRegsNumByArchMask(uint16_t archMask, cxuint regType)
     if (regType == REGTYPE_VGPR)
         return 256;
     else
-        return (archMask&(1U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
+        return (archMask&(7U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
 }
 
 void CLRX::getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,
@@ -236,7 +236,7 @@ cxuint CLRX::getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType, Fl
     if (regType == 1)
         return 0;
     if ((flags & GCN_FLAT)!=0 && (architecture>GPUArchitecture::GCN1_0))
-        return (architecture==GPUArchitecture::GCN1_2) ? 6 : 4;
+        return (architecture>=GPUArchitecture::GCN1_2) ? 6 : 4;
     else if ((flags & GCN_XNACK)!=0 && (architecture>GPUArchitecture::GCN1_1))
         return 4;
     else if ((flags & GCN_VCC)!=0)
