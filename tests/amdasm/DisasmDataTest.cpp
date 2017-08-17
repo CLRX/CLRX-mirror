@@ -1392,7 +1392,7 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
 {
     std::ostringstream disasmOss;
     std::string resultStr;
-    Flags disasmFlags = DISASM_ALL;
+    Flags disasmFlags = DISASM_ALL&~DISASM_CODEPOS;
     if (testCase.config)
         disasmFlags |= DISASM_CONFIG;
     if (testCase.filename == nullptr)

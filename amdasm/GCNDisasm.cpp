@@ -2903,6 +2903,12 @@ void GCNDisassembler::disassemble()
             size_t bufPos = 0;
             buf[bufPos++] = '/';
             buf[bufPos++] = '*';
+            if (disassembler.getFlags() & DISASM_CODEPOS)
+            {
+                bufPos += itocstrCStyle(oldPos<<2, buf+bufPos, 20, 16, 12, false);
+                buf[bufPos++] = ':';
+                buf[bufPos++] = ' ';
+            }
             bufPos += itocstrCStyle(insnCode, buf+bufPos, 12, 16, 8, false);
             buf[bufPos++] = ' ';
             if (prevIsTwoWord)
@@ -2916,8 +2922,23 @@ void GCNDisassembler::disassemble()
         }
         else // add spaces
         {
-            char* buf = output.reserve(8);
-            output.forward(addSpacesOld(buf, 8));
+            if (disassembler.getFlags() & DISASM_CODEPOS)
+            {
+                char* buf = output.reserve(30);
+                size_t bufPos = 0;
+                buf[bufPos++] = '/';
+                buf[bufPos++] = '*';
+                bufPos += itocstrCStyle(oldPos<<2, buf+bufPos, 20, 16, 12, false);
+                buf[bufPos++] = '*';
+                buf[bufPos++] = '/';
+                buf[bufPos++] = ' ';
+                output.forward(bufPos);
+            }
+            else
+            {   // add spaces
+                char* buf = output.reserve(8);
+                output.forward(addSpacesOld(buf, 8));
+            }
         }
         
         if (gcnEncoding == GCNENC_NONE)

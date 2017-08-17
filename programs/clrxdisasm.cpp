@@ -69,7 +69,7 @@ try
         return 1;
     }
     
-    Flags disasmFlags = DISASM_DUMPCODE;
+    Flags disasmFlags = DISASM_DUMPCODE|DISASM_CODEPOS;
     if (cli.hasShortOption('a'))
         disasmFlags = DISASM_ALL;
     else

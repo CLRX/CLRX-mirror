@@ -56,6 +56,7 @@ enum: Flags
     DISASM_SETUP = 64,
     DISASM_CONFIG = 128,    ///< print kernel configuration instead raw data
     DISASM_BUGGYFPLIT = 256,
+    DISASM_CODEPOS = 512,   ///< print code position
     
     ///< all disassembler flags (without config)
     DISASM_ALL = FLAGS_ALL&(~(DISASM_CONFIG|DISASM_BUGGYFPLIT))
