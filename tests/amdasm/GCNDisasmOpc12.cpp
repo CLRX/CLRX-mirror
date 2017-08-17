@@ -467,6 +467,16 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
         "dst_sel:byte0 src0_sel:byte0 src1_sel:invalid\n" },
     { 0x0134d6f9U, 0x3f00003d, true, "        v_cndmask_b32   v154, v61, "
         "sext(-abs(v107)), vcc dst_sel:byte0 src0_sel:byte0 src1_sel:invalid\n" },
+    // SDWA word at end
+    { 0x0134d6f9U, 0x06060600, true, "        v_cndmask_b32   v154, v0, v107, vcc sdwa\n" },
+    { 0x0134d6f9U, 0x06160600, true,
+        "        v_cndmask_b32   v154, -v0, v107, vcc sdwa\n" },
+    { 0x0134d6f9U, 0x16160600, true,
+        "        v_cndmask_b32   v154, -v0, -v107, vcc sdwa\n" },
+    { 0x0134d6f9U, 0x26260600, true,
+        "        v_cndmask_b32   v154, abs(v0), abs(v107), vcc sdwa\n" },
+    { 0x0134d6f9U, 0x0e0e0600, true,
+        "        v_cndmask_b32   v154, sext(v0), sext(v107), vcc\n" },
     /* VOP_DPP */
     { 0x0134d6faU, 0xbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
         "quad_perm:[0,0,0,0] bank_mask:0 row_mask:0\n" },

@@ -1446,7 +1446,7 @@ static void decodeVOPSDWA(FastOutputBuffer& output, uint16_t arch, uint32_t insn
     // unused but fields
     if (!src0Used)
     {
-        if ((insnCode2&(1U<<20))!=0)
+        if ((insnCode2&(1U<<19))!=0)
             putChars(bufPtr, " sext0", 6);
         if ((insnCode2&(1U<<20))!=0)
             putChars(bufPtr, " neg0", 5);
@@ -1462,6 +1462,10 @@ static void decodeVOPSDWA(FastOutputBuffer& output, uint16_t arch, uint32_t insn
         if ((insnCode2&(1U<<29))!=0)
             putChars(bufPtr, " abs1", 5);
     }
+    
+    if (((isGCN14 && vopc) || (dstSel==6 && dstUnused==0)) &&
+        src0Sel==6 && (insnCode2&(1U<<19))==0 && src1Sel==6 && (insnCode2&(1U<<27))==0)
+        putChars(bufPtr, " sdwa", 5);
     
     output.forward(bufPtr-bufStart);
 }
