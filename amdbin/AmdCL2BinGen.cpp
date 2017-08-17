@@ -1183,7 +1183,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     
     SLEV(setupData.setup1, setup1);
     uint16_t archInd = (is64Bit) ? 0xa : 0x2;
-    SLEV(setupData.archInd, (arch==GPUArchitecture::GCN1_2 && newBinaries) ?
+    SLEV(setupData.archInd, (arch>=GPUArchitecture::GCN1_2 && newBinaries) ?
                     0x40 : archInd);
     SLEV(setupData.scratchBufferSize, config.scratchBufferSize);
     SLEV(setupData.localSize, config.localSize);
@@ -1332,7 +1332,7 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
     uint32_t localMemOps = 0;
     const size_t codeWordsNum = codeSize>>2;
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(code);
-    bool isGCN12 = (arch == GPUArchitecture::GCN1_2);
+    bool isGCN12 = (arch >= GPUArchitecture::GCN1_2);
     bool isGCN11 = (arch == GPUArchitecture::GCN1_1);
     
     /* main analyzing code loop, parse and determine instr encoding, and counts
@@ -1461,7 +1461,7 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
         FastOutputBuffer& fob, size_t codeSize, const cxbyte* code, bool useLocals,
         bool usePipes)
 {
-    const cxuint neededExtraSGPRsNum = arch==GPUArchitecture::GCN1_2 ? 4 : 2;
+    const cxuint neededExtraSGPRsNum = arch>=GPUArchitecture::GCN1_2 ? 4 : 2;
     const cxuint extraSGPRsNum = (config.useEnqueue) ? neededExtraSGPRsNum : 0;
     cxuint sgprsNumAll = config.usedSGPRsNum+2 + extraSGPRsNum;
     {
