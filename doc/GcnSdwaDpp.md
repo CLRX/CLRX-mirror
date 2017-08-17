@@ -347,7 +347,7 @@ else if (DPP_CTRL==DPP_BCAST_31)
     else
         srcLane = ((LANEID-31)&~31)+31
 }
-if (dstLane < LANESNUM)
+if (srcLane < LANESNUM)
     SRC0_DST[LANEID] = SRC0_SRC[srcLane]
 else if (BOUND_CTRL==0)
     SRC0_DST[LANEID] = 0
