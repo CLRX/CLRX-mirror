@@ -1149,7 +1149,7 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
 
 static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& config,
                 FastOutputBuffer& fob, bool newBinaries, bool useLocals, bool usePipes,
-                bool is64Bit)
+                bool is64Bit, cxuint driverVersion)
 {
     fob.writeObject<uint64_t>(LEV(uint64_t(newBinaries ? 0x100000001ULL : 1ULL)));
     fob.writeArray(40, kernelSetupBytesAfter8);
@@ -1183,8 +1183,8 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     
     SLEV(setupData.setup1, setup1);
     uint16_t archInd = (is64Bit) ? 0xa : 0x2;
-    SLEV(setupData.archInd, (arch>=GPUArchitecture::GCN1_2 && newBinaries) ?
-                    0x40 : archInd);
+    SLEV(setupData.archInd, (arch>=GPUArchitecture::GCN1_2 && newBinaries &&
+                driverVersion <= 191205) ? (0x40|archInd) : archInd);
     SLEV(setupData.scratchBufferSize, config.scratchBufferSize);
     SLEV(setupData.localSize, config.localSize);
     SLEV(setupData.gdsSize, config.gdsSize);
@@ -1561,7 +1561,8 @@ public:
                     generateKernelStub(arch, kernel.config, fob, tempData.codeSize,
                                kernel.code, tempData.useLocals, tempData.pipesUsed!=0);
                     generateKernelSetup(arch, kernel.config, fob, false,
-                                tempData.useLocals, tempData.pipesUsed!=0, input->is64Bit);
+                                tempData.useLocals, tempData.pipesUsed!=0, input->is64Bit,
+                                input->driverVersion);
                 }
                 fob.writeArray(kernel.codeSize, kernel.code);
             }
@@ -1610,7 +1611,7 @@ public:
                 fob.writeArray(tempData.setupSize, kernel.setup);
             else
                 generateKernelSetup(arch, kernel.config, fob, true, tempData.useLocals,
-                            tempData.pipesUsed!=0, input->is64Bit);
+                            tempData.pipesUsed!=0, input->is64Bit, input->driverVersion);
             fob.writeArray(tempData.codeSize, kernel.code);
             outSize += tempData.setupSize + tempData.codeSize;
         }
