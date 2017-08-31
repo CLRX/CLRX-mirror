@@ -263,45 +263,54 @@ R"ffDXD(.elseiffmt gallium   # GalliumCompute code
 .text
 vectorAdd:
 .if LLVM_VERSION>=40000
-        # disassembled code from GalliumCompute
-        .skip 256
-         s_load_dword    s0, s[4:5], 0x1
-         v_mov_b32       v1, s8
-         s_load_dword    s1, s[6:7], 0x9
-         s_mov_b32       s2, 0
-         s_waitcnt       lgkmcnt(0)
-         s_and_b32       s0, s0, 0xffff
-         v_mul_hi_u32    v1, v1, s0
-         s_mul_i32       s0, s0, s8
-         v_mov_b32       v2, s0
-         s_load_dword    s0, s[6:7], 0x0
-         v_add_i32       v0, vcc, v0, v2
-         v_addc_u32      v1, vcc, 0, v1, vcc
-         v_add_i32       v0, vcc, s1, v0
-         v_addc_u32      v1, vcc, 0, v1, vcc
-         s_waitcnt       lgkmcnt(0)
-         v_cmp_gt_u32    vcc, s0, v0
-         s_and_saveexec_b64 s[0:1], vcc
-         s_xor_b64       s[4:5], exec, s[0:1]
-         s_cbranch_execz .L424_0
-         s_load_dwordx2  s[8:9], s[6:7], 0x2
-         s_load_dwordx2  s[12:13], s[6:7], 0x4
-         v_lshl_b64      v[0:1], v[0:1], 2
-         s_mov_b32       s3, 0xf000
-         v_and_b32       v1, 3, v1
-         s_mov_b64       s[14:15], s[2:3]
-         s_mov_b64       s[10:11], s[2:3]
-         s_waitcnt       lgkmcnt(0)
-         buffer_load_dword v2, v[0:1], s[8:11], 0 addr64
-         buffer_load_dword v3, v[0:1], s[12:15], 0 addr64
-         s_load_dwordx2  s[0:1], s[6:7], 0x6
-         s_waitcnt       vmcnt(0)
-         v_add_f32       v2, v3, v2
-         s_waitcnt       lgkmcnt(0)
-         buffer_store_dword v2, v[0:1], s[0:3], 0 addr64
-         s_waitcnt       vmcnt(0) & expcnt(0)
-.L424_0:
-         s_or_b64        exec, exec, s[4:5]
+                .skip 256
+        s_load_dword s0, s[4:5], 1*SMUL        # s0 - local size X
+        s_load_dword s1, s[6:7], 9*SMUL        # s1 - global offset
+        s_load_dword s2, s[6:7], 0             # s2 - n
+        s_waitcnt lgkmcnt(0)
+        s_and_b32 s0, s0, 0xffff           # only local size X
+        s_mul_i32 s0, s0, s8               # s0 - localSize*groupId
+        s_add_i32 s0, s0, s1               # s0 - localSize*groupId + offset
+        v_add_u32 v0, vcc, s0, v0          # v0 - localId + localSize*groupId + offset
+        v_cmp_gt_u32 vcc, s2, v0           # compare n > id
+        s_and_saveexec_b64 s[0:1], vcc
+        s_cbranch_execz end             # end
+        v_mov_b32 v1, 0
+    .ifnarch GCN1.2
+        s_load_dwordx2  s[0:1], s[6:7], 2*SMUL      # prepare Aptr buffer
+        s_mov_b32       s2, 0
+        s_mov_b32       s3, 0xf000
+        s_load_dwordx2  s[8:9], s[6:7], 4*SMUL      # prepare Bptr buffer
+        s_mov_b64 s[10:11], s[2:3]
+        s_load_dwordx2  s[12:13], s[6:7], 6*SMUL    # prepare Cptr buffer
+        s_mov_b64 s[14:15], s[2:3]
+        v_lshl_b64 v[0:1], v[0:1], 2          # make vector offset
+        s_waitcnt lgkmcnt(0)
+        buffer_load_dword v2, v[0:1], s[0:3], 0 addr64      # load a value
+        buffer_load_dword v3, v[0:1], s[8:11], 0 addr64     # load b value
+        s_waitcnt vmcnt(0)
+        v_add_f32 v2, v3, v2
+        buffer_store_dword v2, v[0:1], s[12:15], 0 addr64
+    .else
+        s_load_dwordx4  s[0:3], s[6:7], 2*SMUL      # load Aptr and Bptr
+        s_load_dwordx2  s[4:5], s[6:7], 6*SMUL      # load Cptr
+        s_waitcnt lgkmcnt(0)
+        v_lshlrev_b64 v[0:1], 2, v[0:1]     # make vector offset
+        v_add_u32 v2, vcc, s0, v0           # Aptr + offset
+        v_mov_b32 v3, s1
+        v_addc_u32 v3, vcc, v3, v1, vcc
+        v_add_u32 v4, vcc, s2, v0           # Bptr + offset
+        v_mov_b32 v5, s3
+        v_addc_u32 v5, vcc, v5, v1, vcc
+        flat_load_dword v6, v[2:3]          # load A value
+        flat_load_dword v7, v[2:3]          # load B value
+        v_add_u32 v0, vcc, s4, v0           # Cptr + offset
+        v_mov_b32 v6, s5
+        v_addc_u32 v1, vcc, v6, v1, vcc
+        s_waitcnt vmcnt(0)          # wait for values
+        v_add_f32 v6, v7, v6            # add values
+        flat_store_dword v[0:1], v6
+    .endif
 .else
         s_load_dword s2, s[0:1], 6*SMUL         # s2 - local_size(0)
         s_load_dword s3, s[0:1], 9*SMUL         # s3 - n
