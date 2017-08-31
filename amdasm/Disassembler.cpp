@@ -565,6 +565,8 @@ void Disassembler::disassemble()
     output.exceptions(std::ios::failbit | std::ios::badbit);
     try
     {
+    sectionCount = 0;
+    
     switch(binaryFormat)
     {
         case BinaryFormat::AMD:
