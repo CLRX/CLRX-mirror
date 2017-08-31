@@ -8,10 +8,12 @@
 /build
 /build-*
 /build32
+/build32-*
 /core
 /debug
 /debug-*
 /debug32
+/debug32-*
 /default
 /default32
 /make.deps
