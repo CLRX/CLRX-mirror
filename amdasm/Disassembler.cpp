@@ -548,7 +548,7 @@ void CLRX::printDisasmLongString(size_t size, const char* data, std::ostream& ou
 }
 
 static void disassembleRawCode(std::ostream& output, const RawCodeInput* rawInput,
-       ISADisassembler* isaDisassembler, size_t& sectionCount, Flags flags)
+       ISADisassembler* isaDisassembler, Flags flags)
 {
     if ((flags & DISASM_DUMPCODE) != 0)
     {
@@ -601,16 +601,13 @@ void Disassembler::disassemble()
                               sectionCount, flags);
             break;
         case BinaryFormat::ROCM:
-            disassembleROCm(output, rocmInput, isaDisassembler.get(),
-                              sectionCount, flags);
+            disassembleROCm(output, rocmInput, isaDisassembler.get(), flags);
             break;
         case BinaryFormat::GALLIUM: // Gallium
-            disassembleGallium(output, galliumInput, isaDisassembler.get(),
-                           sectionCount, flags);
+            disassembleGallium(output, galliumInput, isaDisassembler.get(), flags);
             break;
         default:
-            disassembleRawCode(output, rawInput, isaDisassembler.get(),
-                           sectionCount, flags);
+            disassembleRawCode(output, rawInput, isaDisassembler.get(), flags);
     }
     output.flush();
     } /* try catch */

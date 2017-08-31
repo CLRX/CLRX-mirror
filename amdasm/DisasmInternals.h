@@ -54,11 +54,11 @@ extern CLRX_INTERNAL void disassembleAmdCL2(std::ostream& output,
 
 extern CLRX_INTERNAL void disassembleROCm(std::ostream& output,
        const ROCmDisasmInput* rocmInput, ISADisassembler* isaDisassembler,
-       size_t& sectionCount, Flags flags);
+       Flags flags);
 
 extern CLRX_INTERNAL void disassembleGallium(std::ostream& output,
        const GalliumDisasmInput* galliumInput, ISADisassembler* isaDisassembler,
-       size_t& sectionCount, Flags flags);
+       Flags flags);
 
 extern CLRX_INTERNAL AmdDisasmInput* getAmdDisasmInputFromBinary32(
             const AmdMainGPUBinary32& binary, Flags flags);

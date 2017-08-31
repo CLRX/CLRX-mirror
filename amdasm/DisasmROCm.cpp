@@ -320,7 +320,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
 }
 
 void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInput,
-           ISADisassembler* isaDisassembler, size_t& sectionCount, Flags flags)
+           ISADisassembler* isaDisassembler, Flags flags)
 {
     const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
     const bool doMetadata = ((flags & (DISASM_METADATA|DISASM_CONFIG)) != 0);

@@ -187,7 +187,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
 
 void CLRX::disassembleGallium(std::ostream& output,
           const GalliumDisasmInput* galliumInput, ISADisassembler* isaDisassembler,
-          size_t& sectionCount, Flags flags)
+          Flags flags)
 {
     const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
     const bool doMetadata = ((flags & (DISASM_METADATA|DISASM_CONFIG)) != 0);
