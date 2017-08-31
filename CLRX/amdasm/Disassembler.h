@@ -323,6 +323,7 @@ struct GalliumDisasmInput
     bool is64BitMode;       ///< true if 64-bit mode of addressing
     bool isLLVM390;     ///< if >=LLVM3.9
     bool isMesa170;     ///< if >=Mesa3D 17.0
+    bool isHSACO;       ///< if HSACO (LLVM 4.0)
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
     std::vector<GalliumDisasmKernelInput> kernels;    ///< list of input kernels
@@ -429,9 +430,10 @@ public:
      * \param binary main GPU binary
      * \param output output stream
      * \param flags flags for disassembler
+     * \param llvmVersion LLVM version
      */
     Disassembler(GPUDeviceType deviceType, const GalliumBinary& binary,
-                 std::ostream& output, Flags flags = 0);
+                 std::ostream& output, Flags flags = 0, cxuint llvmVersion = 0);
     
     /// constructor for Gallium disassembler input
     /**

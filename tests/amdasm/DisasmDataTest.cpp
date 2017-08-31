@@ -184,7 +184,7 @@ static const cxbyte galliumInput1Global[14] =
 
 static const GalliumDisasmInput galliumDisasmData =
 {
-    GPUDeviceType::PITCAIRN, false, false, false,
+    GPUDeviceType::PITCAIRN, false, false, false, false,
     sizeof(galliumInput1Global), galliumInput1Global,
     {
         { "kernel1",

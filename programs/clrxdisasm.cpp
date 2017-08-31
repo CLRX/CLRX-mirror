@@ -49,6 +49,8 @@ static const CLIOption programOptions[] =
         "set GPU architecture for Gallium/raw binaries", "ARCH" },
     { "driverVersion", 't', CLIArgType::UINT, false, false,
         "set driver version (for AmdCL2)", nullptr },
+    { "llvmVersion", 0, CLIArgType::UINT, false, false,
+        "set LLVM version (for Gallium)", nullptr },
     { "buggyFPLit", 0, CLIArgType::NONE, false, false,
         "use old and buggy fplit rules", nullptr },
     CLRX_CLI_AUTOHELP
@@ -93,6 +95,9 @@ try
     cxuint driverVersion = 0;
     if (cli.hasShortOption('t'))
         driverVersion = cli.getShortOptArg<cxuint>('t');
+    cxuint llvmVersion = 0;
+    if (cli.hasLongOption("llvmVersion"))
+        llvmVersion = cli.getLongOptArg<cxuint>("llvmVersion");
     
     int ret = 0;
     for (const char* const* args = cli.getArgs();*args != nullptr; args++)
@@ -170,7 +175,8 @@ try
                 else // if gallium binary
                 {
                     GalliumBinary galliumBin(binaryData.size(),binaryData.data(), 0);
-                    Disassembler disasm(gpuDeviceType, galliumBin, std::cout, disasmFlags);
+                    Disassembler disasm(gpuDeviceType, galliumBin, std::cout,
+                            disasmFlags, llvmVersion);
                     disasm.disassemble();
                 }
             }

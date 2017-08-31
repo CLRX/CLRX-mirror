@@ -15,8 +15,8 @@ The `clrxdisasm` can be invoked in following way:
 
 clrxdisasm [-mdcCfhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
 [--calNotes] [--config] [--floats] [--hexcode] [--all] [--raw] [--gpuType=GPUDEVICE]
-[--arch=ARCH] [--driverVersion=VERSION] [--buggyFPLit] [--help] [--usage] [--version]
-[file...]
+[--arch=ARCH] [--driverVersion=VERSION] [--llvmVersion=VERSION] [--buggyFPLit]
+[--help] [--usage] [--version] [file...]
 
 ### Program Options
 
@@ -81,6 +81,12 @@ SI, VI, CI, VEGA, GFX6, GFX7, GFX8, GFX9, GCN1.0, GCN1.1, GCN1.2 and GCN1.4.
 Version can retrieved from clinfo program that display field 'Driver version'
 where version is. Version is number in that form: MajorVersion*100 + MinorVersion.
 Used for AMD OpenCL 2.0 binaries.
+
+* **--llvmVersion=VERSION**
+
+    Choose LLVM version that generates binaries.
+Version is number in that form: MajorVersion*100 + MinorVersion.
+
 
 * **--buggyFPLit**
 

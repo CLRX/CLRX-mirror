@@ -330,12 +330,12 @@ Disassembler::Disassembler(const ROCmDisasmInput* disasmInput, std::ostream& _ou
 }
 
 Disassembler::Disassembler(GPUDeviceType deviceType, const GalliumBinary& binary,
-           std::ostream& _output, Flags _flags) :
+           std::ostream& _output, Flags _flags, cxuint llvmVersion) :
            fromBinary(true), binaryFormat(BinaryFormat::GALLIUM),
            galliumInput(nullptr), output(_output), flags(_flags), sectionCount(0)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
-    galliumInput = getGalliumDisasmInputFromBinary(deviceType, binary);
+    galliumInput = getGalliumDisasmInputFromBinary(deviceType, binary, llvmVersion);
 }
 
 Disassembler::Disassembler(const GalliumDisasmInput* disasmInput, std::ostream& _output,

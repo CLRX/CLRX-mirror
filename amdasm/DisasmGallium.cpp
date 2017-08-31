@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <string>
@@ -79,10 +80,11 @@ static void getGalliumDisasmInputFromBinaryBase(const GalliumBinary& binary,
 }
 
 GalliumDisasmInput* CLRX::getGalliumDisasmInputFromBinary(GPUDeviceType deviceType,
-           const GalliumBinary& binary)
+           const GalliumBinary& binary, cxuint llvmVersion)
 {
     std::unique_ptr<GalliumDisasmInput> input(new GalliumDisasmInput);
     input->deviceType = deviceType;
+    input->isHSACO = (llvmVersion >= 40000);
     if (!binary.is64BitElfBinary())
     {
         input->is64BitMode = false;
@@ -285,16 +287,44 @@ void CLRX::disassembleGallium(std::ostream& output,
                 }
             }
             else
+            {
                 dumpKernelConfig(output, maxSgprsNum, arch, kinput.progInfo,
                     galliumInput->isLLVM390);
+                if (galliumInput->isHSACO)
+                    dumpHSACOConfig(output, maxSgprsNum, arch, 
+                        *reinterpret_cast<const ROCmKernelConfig*>(
+                             galliumInput->code + kinput.offset));
+            }
         }
-        isaDisassembler->addNamedLabel(kinput.offset, kinput.kernelName);
+        if (!galliumInput->isHSACO)
+            isaDisassembler->addNamedLabel(kinput.offset, kinput.kernelName);
     }
     if (doDumpCode && galliumInput->code != nullptr && galliumInput->codeSize != 0)
     {   // print text
-        output.write(".text\n", 6);
-        isaDisassembler->setInput(galliumInput->codeSize, galliumInput->code);
-        isaDisassembler->beforeDisassemble();
-        isaDisassembler->disassemble();
+        if (!galliumInput->isHSACO)
+        {
+            output.write(".text\n", 6);
+            isaDisassembler->setInput(galliumInput->codeSize, galliumInput->code);
+            isaDisassembler->beforeDisassemble();
+            isaDisassembler->disassemble();
+        }
+        else
+        {   // LLVM 4.0 - HSACO code
+            std::vector<ROCmDisasmRegionInput> regions(galliumInput->kernels.size());
+            for (size_t i = 0; i < galliumInput->kernels.size(); i++)
+            {
+                const GalliumDisasmKernelInput& kernel = galliumInput->kernels[i];
+                ROCmDisasmRegionInput& region = regions[i];
+                region.regionName = kernel.kernelName;
+                region.offset = kernel.offset;
+                const size_t end = (i+1 < galliumInput->kernels.size()) ?
+                        galliumInput->kernels[i+1].offset : galliumInput->codeSize;
+                region.size = end - kernel.offset;
+                region.type = ROCmRegionType::KERNEL;
+            }
+            
+            disassembleHSACOCode(output, regions, galliumInput->codeSize,
+                            galliumInput->code, isaDisassembler, flags);
+        }
     }
 }
