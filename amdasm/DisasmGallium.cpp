@@ -84,7 +84,7 @@ GalliumDisasmInput* CLRX::getGalliumDisasmInputFromBinary(GPUDeviceType deviceTy
 {
     std::unique_ptr<GalliumDisasmInput> input(new GalliumDisasmInput);
     input->deviceType = deviceType;
-    input->isHSACO = (llvmVersion >= 40000);
+    input->isAMDHSA = (llvmVersion >= 40000);
     if (!binary.is64BitElfBinary())
     {
         input->is64BitMode = false;
@@ -290,18 +290,18 @@ void CLRX::disassembleGallium(std::ostream& output,
             {
                 dumpKernelConfig(output, maxSgprsNum, arch, kinput.progInfo,
                     galliumInput->isLLVM390);
-                if (galliumInput->isHSACO)
-                    dumpHSACOConfig(output, maxSgprsNum, arch, 
+                if (galliumInput->isAMDHSA)
+                    dumpAMDHSAConfig(output, maxSgprsNum, arch,
                         *reinterpret_cast<const ROCmKernelConfig*>(
-                             galliumInput->code + kinput.offset));
+                             galliumInput->code + kinput.offset), true);
             }
         }
-        if (!galliumInput->isHSACO)
+        if (!galliumInput->isAMDHSA)
             isaDisassembler->addNamedLabel(kinput.offset, kinput.kernelName);
     }
     if (doDumpCode && galliumInput->code != nullptr && galliumInput->codeSize != 0)
     {   // print text
-        if (!galliumInput->isHSACO)
+        if (!galliumInput->isAMDHSA)
         {
             output.write(".text\n", 6);
             isaDisassembler->setInput(galliumInput->codeSize, galliumInput->code);
@@ -309,7 +309,7 @@ void CLRX::disassembleGallium(std::ostream& output,
             isaDisassembler->disassemble();
         }
         else
-        {   // LLVM 4.0 - HSACO code
+        {   // LLVM 4.0 - AMDHSA code
             std::vector<ROCmDisasmRegionInput> regions(galliumInput->kernels.size());
             for (size_t i = 0; i < galliumInput->kernels.size(); i++)
             {
@@ -323,7 +323,7 @@ void CLRX::disassembleGallium(std::ostream& output,
                 region.type = ROCmRegionType::KERNEL;
             }
             
-            disassembleHSACOCode(output, regions, galliumInput->codeSize,
+            disassembleAMDHSACode(output, regions, galliumInput->codeSize,
                             galliumInput->code, isaDisassembler, flags);
         }
     }

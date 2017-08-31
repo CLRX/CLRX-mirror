@@ -56,8 +56,8 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
     return input.release();
 }
 
-void CLRX::dumpHSACOConfig(std::ostream& output, cxuint maxSgprsNum,
-             GPUArchitecture arch, const ROCmKernelConfig& config)
+void CLRX::dumpAMDHSAConfig(std::ostream& output, cxuint maxSgprsNum,
+             GPUArchitecture arch, const ROCmKernelConfig& config, bool amdhsaPrefix)
 {
     // convert to native-endian
     uint32_t amdCodeVersionMajor = ULEV(config.amdCodeVersionMajor);
@@ -98,8 +98,16 @@ void CLRX::dumpHSACOConfig(std::ostream& output, cxuint maxSgprsNum,
     const uint32_t pgmRsrc2 = computePgmRsrc2;
     
     const cxuint dimMask = (pgmRsrc2 >> 7) & 7;
-    strcpy(buf, "        .dims ");
-    bufSize = 14;
+    if (!amdhsaPrefix)
+    {
+        strcpy(buf, "        .dims ");
+        bufSize = 14;
+    }
+    else
+    {
+        strcpy(buf, "        .hsa_dims ");
+        bufSize = 18;
+    }
     if ((dimMask & 1) != 0)
         buf[bufSize++] = 'x';
     if ((dimMask & 2) != 0)
@@ -109,45 +117,92 @@ void CLRX::dumpHSACOConfig(std::ostream& output, cxuint maxSgprsNum,
     buf[bufSize++] = '\n';
     output.write(buf, bufSize);
     
-    bufSize = snprintf(buf, 100, "        .sgprsnum %u\n",
-              std::min((((pgmRsrc1>>6) & 0xf)<<3)+8, maxSgprsNum));
-    output.write(buf, bufSize);
-    bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", ((pgmRsrc1 & 0x3f)<<2)+4);
-    output.write(buf, bufSize);
-    if ((pgmRsrc1 & (1U<<20)) != 0)
-        output.write("        .privmode\n", 18);
-    if ((pgmRsrc1 & (1U<<22)) != 0)
-        output.write("        .debugmode\n", 19);
-    if ((pgmRsrc1 & (1U<<21)) != 0)
-        output.write("        .dx10clamp\n", 19);
-    if ((pgmRsrc1 & (1U<<23)) != 0)
-        output.write("        .ieeemode\n", 18);
-    if ((pgmRsrc2 & 0x400) != 0)
-        output.write("        .tgsize\n", 16);
-    
-    bufSize = snprintf(buf, 100, "        .floatmode 0x%02x\n", (pgmRsrc1>>12) & 0xff);
-    output.write(buf, bufSize);
-    bufSize = snprintf(buf, 100, "        .priority %u\n", (pgmRsrc1>>10) & 3);
-    output.write(buf, bufSize);
-    if (((pgmRsrc1>>24) & 0x7f) != 0)
+    if (!amdhsaPrefix)
     {
-        bufSize = snprintf(buf, 100, "        .exceptions 0x%02x\n",
-                   (pgmRsrc1>>24) & 0x7f);
+        bufSize = snprintf(buf, 100, "        .sgprsnum %u\n",
+                std::min((((pgmRsrc1>>6) & 0xf)<<3)+8, maxSgprsNum));
+        output.write(buf, bufSize);
+        bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", ((pgmRsrc1 & 0x3f)<<2)+4);
+        output.write(buf, bufSize);
+        if ((pgmRsrc1 & (1U<<20)) != 0)
+            output.write("        .privmode\n", 18);
+        if ((pgmRsrc1 & (1U<<22)) != 0)
+            output.write("        .debugmode\n", 19);
+        if ((pgmRsrc1 & (1U<<21)) != 0)
+            output.write("        .dx10clamp\n", 19);
+        if ((pgmRsrc1 & (1U<<23)) != 0)
+            output.write("        .ieeemode\n", 18);
+        if ((pgmRsrc2 & 0x400) != 0)
+            output.write("        .tgsize\n", 16);
+        
+        bufSize = snprintf(buf, 100, "        .floatmode 0x%02x\n", (pgmRsrc1>>12) & 0xff);
+        output.write(buf, bufSize);
+        bufSize = snprintf(buf, 100, "        .priority %u\n", (pgmRsrc1>>10) & 3);
+        output.write(buf, bufSize);
+        if (((pgmRsrc1>>24) & 0x7f) != 0)
+        {
+            bufSize = snprintf(buf, 100, "        .exceptions 0x%02x\n",
+                    (pgmRsrc1>>24) & 0x7f);
+            output.write(buf, bufSize);
+        }
+        const cxuint localSize = ((pgmRsrc2>>15) & 0x1ff) << ldsShift;
+        if (localSize!=0)
+        {
+            bufSize = snprintf(buf, 100, "        .localsize %u\n", localSize);
+            output.write(buf, bufSize);
+        }
+        bufSize = snprintf(buf, 100, "        .userdatanum %u\n", (pgmRsrc2>>1) & 0x1f);
+        output.write(buf, bufSize);
+        
+        bufSize = snprintf(buf, 100, "        .pgmrsrc1 0x%08x\n", pgmRsrc1);
+        output.write(buf, bufSize);
+        bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", pgmRsrc2);
         output.write(buf, bufSize);
     }
-    const cxuint localSize = ((pgmRsrc2>>15) & 0x1ff) << ldsShift;
-    if (localSize!=0)
+    else
     {
-        bufSize = snprintf(buf, 100, "        .localsize %u\n", localSize);
+        bufSize = snprintf(buf, 100, "        .hsa_sgprsnum %u\n",
+                std::min((((pgmRsrc1>>6) & 0xf)<<3)+8, maxSgprsNum));
+        output.write(buf, bufSize);
+        bufSize = snprintf(buf, 100, "        .hsa_vgprsnum %u\n", ((pgmRsrc1 & 0x3f)<<2)+4);
+        output.write(buf, bufSize);
+        if ((pgmRsrc1 & (1U<<20)) != 0)
+            output.write("        .hsa_privmode\n", 22);
+        if ((pgmRsrc1 & (1U<<22)) != 0)
+            output.write("        .hsa_debugmode\n", 23);
+        if ((pgmRsrc1 & (1U<<21)) != 0)
+            output.write("        .hsa_dx10clamp\n", 23);
+        if ((pgmRsrc1 & (1U<<23)) != 0)
+            output.write("        .hsa_ieeemode\n", 22);
+        if ((pgmRsrc2 & 0x400) != 0)
+            output.write("        .hsa_tgsize\n", 20);
+        
+        bufSize = snprintf(buf, 100, "        .hsa_floatmode 0x%02x\n",
+                    (pgmRsrc1>>12) & 0xff);
+        output.write(buf, bufSize);
+        bufSize = snprintf(buf, 100, "        .hsa_priority %u\n",
+                    (pgmRsrc1>>10) & 3);
+        output.write(buf, bufSize);
+        if (((pgmRsrc1>>24) & 0x7f) != 0)
+        {
+            bufSize = snprintf(buf, 100, "        .hsa_exceptions 0x%02x\n",
+                    (pgmRsrc1>>24) & 0x7f);
+            output.write(buf, bufSize);
+        }
+        const cxuint localSize = ((pgmRsrc2>>15) & 0x1ff) << ldsShift;
+        if (localSize!=0)
+        {
+            bufSize = snprintf(buf, 100, "        .hsa_localsize %u\n", localSize);
+            output.write(buf, bufSize);
+        }
+        bufSize = snprintf(buf, 100, "        .hsa_userdatanum %u\n", (pgmRsrc2>>1) & 0x1f);
+        output.write(buf, bufSize);
+        
+        bufSize = snprintf(buf, 100, "        .hsa_pgmrsrc1 0x%08x\n", pgmRsrc1);
+        output.write(buf, bufSize);
+        bufSize = snprintf(buf, 100, "        .hsa_pgmrsrc2 0x%08x\n", pgmRsrc2);
         output.write(buf, bufSize);
     }
-    bufSize = snprintf(buf, 100, "        .userdatanum %u\n", (pgmRsrc2>>1) & 0x1f);
-    output.write(buf, bufSize);
-    
-    bufSize = snprintf(buf, 100, "        .pgmrsrc1 0x%08x\n", pgmRsrc1);
-    output.write(buf, bufSize);
-    bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", pgmRsrc2);
-    output.write(buf, bufSize);
     
     bufSize = snprintf(buf, 100, "        .codeversion %u, %u\n",
                    amdCodeVersionMajor, amdCodeVersionMinor);
@@ -322,10 +377,10 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
              GPUArchitecture arch, const ROCmKernelConfig& config)
 {
     output.write("    .config\n", 12);
-    dumpHSACOConfig(output, maxSgprsNum, arch, config);
+    dumpAMDHSAConfig(output, maxSgprsNum, arch, config);
 }
 
-void CLRX::disassembleHSACOCode(std::ostream& output,
+void CLRX::disassembleAMDHSACode(std::ostream& output,
             const std::vector<ROCmDisasmRegionInput>& regions,
             size_t codeSize, const cxbyte* code, ISADisassembler* isaDisassembler,
             Flags flags)
@@ -474,6 +529,6 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
         }
     
     if (rocmInput->code != nullptr && rocmInput->codeSize != 0)
-        disassembleHSACOCode(output, rocmInput->regions,
+        disassembleAMDHSACode(output, rocmInput->regions,
                         rocmInput->codeSize, rocmInput->code, isaDisassembler, flags);
 }

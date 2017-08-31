@@ -521,7 +521,6 @@ void CLRX::printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& o
 void CLRX::printDisasmLongString(size_t size, const char* data, std::ostream& output,
             bool secondAlign)
 {
-    
     const char* linePrefix = "    .ascii \"";
     size_t prefixSize = 12;
     if (secondAlign)

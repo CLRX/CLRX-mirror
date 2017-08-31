@@ -323,7 +323,7 @@ struct GalliumDisasmInput
     bool is64BitMode;       ///< true if 64-bit mode of addressing
     bool isLLVM390;     ///< if >=LLVM3.9
     bool isMesa170;     ///< if >=Mesa3D 17.0
-    bool isHSACO;       ///< if HSACO (LLVM 4.0)
+    bool isAMDHSA;       ///< if AMDHSA (LLVM 4.0)
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
     std::vector<GalliumDisasmKernelInput> kernels;    ///< list of input kernels
