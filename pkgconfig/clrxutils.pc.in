@@ -1,0 +1,9 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+libdir=@CMAKE_INSTALL_PREFIX@/@LIB_INSTALL_DIR@
+includedir=@CMAKE_INSTALL_PREFIX@/include
+
+Name: CLRXUtils
+Description: CLRX utilities library
+Version: @CLRX_VERSION@
+Libs: -L${libdir} -lCLRXUtils -ldl @CMAKE_THREAD_LIBS_INIT@
+Cflags: -I${includedir}

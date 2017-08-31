@@ -125,6 +125,10 @@ editors/clrx.vim -text
 editors/gedit.lang -text svneol=unset#text/xml
 editors/kate.xml -text svneol=unset#text/xml
 editors/notepad++.xml -text svneol=unset#text/xml
+pkgconfig/CMakeLists.txt -text svneol=unset#text/plain
+pkgconfig/clrxamdasm.pc.in -text
+pkgconfig/clrxamdbin.pc.in -text
+pkgconfig/clrxutils.pc.in -text
 programs/CMakeLists.txt -text svneol=unset#text/plain
 programs/clrxasm.cpp -text
 programs/clrxasm.pod -text

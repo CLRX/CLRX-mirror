@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+libdir=@CMAKE_INSTALL_PREFIX@/@LIB_INSTALL_DIR@
+includedir=@CMAKE_INSTALL_PREFIX@/include
+
+Name: CLRXAmdAsm
+Description: CLRX AMD assembler library
+Requires: clrxamdbin
+Version: @CLRX_VERSION@
+Libs: -L${libdir} -lCLRXAmdAsm
+Cflags: -I${includedir}
