@@ -48,9 +48,9 @@ static const CLIOption programOptions[] =
     { "arch", 'A', CLIArgType::TRIMMED_STRING, false, false,
         "set GPU architecture for Gallium/raw binaries", "ARCH" },
     { "driverVersion", 't', CLIArgType::UINT, false, false,
-        "set driver version (for AmdCL2)", nullptr },
+        "set driver version (for AmdCL2)", "VERSION" },
     { "llvmVersion", 0, CLIArgType::UINT, false, false,
-        "set LLVM version (for Gallium)", nullptr },
+        "set LLVM version (for Gallium)", "VERSION" },
     { "buggyFPLit", 0, CLIArgType::NONE, false, false,
         "use old and buggy fplit rules", nullptr },
     CLRX_CLI_AUTOHELP
