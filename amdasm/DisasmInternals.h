@@ -56,6 +56,14 @@ extern CLRX_INTERNAL void disassembleROCm(std::ostream& output,
        const ROCmDisasmInput* rocmInput, ISADisassembler* isaDisassembler,
        Flags flags);
 
+extern CLRX_INTERNAL void dumpHSACOConfig(std::ostream& output, cxuint maxSgprsNum,
+             GPUArchitecture arch, const ROCmKernelConfig& config);
+
+extern CLRX_INTERNAL void disassembleHSACOCode(std::ostream& output,
+            const std::vector<ROCmDisasmRegionInput>& regions,
+            size_t codeSize, const cxbyte* code, ISADisassembler* isaDisassembler,
+            Flags flags);
+
 extern CLRX_INTERNAL void disassembleGallium(std::ostream& output,
        const GalliumDisasmInput* galliumInput, ISADisassembler* isaDisassembler,
        Flags flags);

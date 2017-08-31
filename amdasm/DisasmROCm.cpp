@@ -56,10 +56,9 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
     return input.release();
 }
 
-static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
+void CLRX::dumpHSACOConfig(std::ostream& output, cxuint maxSgprsNum,
              GPUArchitecture arch, const ROCmKernelConfig& config)
 {
-    output.write("    .config\n", 12);
     // convert to native-endian
     uint32_t amdCodeVersionMajor = ULEV(config.amdCodeVersionMajor);
     uint32_t amdCodeVersionMinor = ULEV(config.amdCodeVersionMinor);
@@ -319,12 +318,134 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     printDisasmData(sizeof config.controlDirective, config.controlDirective, output, true);
 }
 
-void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInput,
-           ISADisassembler* isaDisassembler, Flags flags)
+static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
+             GPUArchitecture arch, const ROCmKernelConfig& config)
+{
+    output.write("    .config\n", 12);
+    dumpHSACOConfig(output, maxSgprsNum, arch, config);
+}
+
+void CLRX::disassembleHSACOCode(std::ostream& output,
+            const std::vector<ROCmDisasmRegionInput>& regions,
+            size_t codeSize, const cxbyte* code, ISADisassembler* isaDisassembler,
+            Flags flags)
 {
     const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
     const bool doMetadata = ((flags & (DISASM_METADATA|DISASM_CONFIG)) != 0);
     const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
+    const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
+    
+    const size_t regionsNum = regions.size();
+    typedef std::pair<size_t, size_t> SortEntry;
+    std::unique_ptr<SortEntry[]> sorted(new SortEntry[regionsNum]);
+    for (size_t i = 0; i < regionsNum; i++)
+        sorted[i] = std::make_pair(regions[i].offset, i);
+    mapSort(sorted.get(), sorted.get() + regionsNum);
+    
+    output.write(".text\n", 6);
+    // clear labels
+    isaDisassembler->clearNumberedLabels();
+    
+    /// analyze code with collecting labels
+    for (size_t i = 0; i < regionsNum; i++)
+    {
+        const ROCmDisasmRegionInput& region = regions[sorted[i].second];
+        if (region.type==ROCmRegionType::KERNEL && doDumpCode)
+        {   // kernel code
+            isaDisassembler->setInput(region.size-256, code + region.offset+256,
+                                region.offset+256);
+            isaDisassembler->analyzeBeforeDisassemble();
+        }
+        else if (region.type==ROCmRegionType::FKERNEL && doDumpCode)
+        {   // function code
+            isaDisassembler->setInput(region.size, code + region.offset,
+                                region.offset);
+            isaDisassembler->analyzeBeforeDisassemble();
+        }
+        isaDisassembler->addNamedLabel(region.offset, region.regionName);
+    }
+    isaDisassembler->prepareLabelsAndRelocations();
+    
+    ISADisassembler::LabelIter curLabel;
+    ISADisassembler::NamedLabelIter curNamedLabel;
+    const auto& labels = isaDisassembler->getLabels();
+    const auto& namedLabels = isaDisassembler->getNamedLabels();
+    // real disassemble
+    size_t prevRegionPos = 0;
+    for (size_t i = 0; i < regionsNum; i++)
+    {
+        const ROCmDisasmRegionInput& region = regions[sorted[i].second];
+        // set labelIters to previous position
+        isaDisassembler->setInput(prevRegionPos, code + region.offset,
+                                region.offset, prevRegionPos);
+        curLabel = std::lower_bound(labels.begin(), labels.end(), prevRegionPos);
+        curNamedLabel = std::lower_bound(namedLabels.begin(), namedLabels.end(),
+            std::make_pair(prevRegionPos, CString()),
+                [](const std::pair<size_t,CString>& a,
+                                const std::pair<size_t, CString>& b)
+                { return a.first < b.first; });
+        isaDisassembler->writeLabelsToPosition(0, curLabel, curNamedLabel);
+        isaDisassembler->flushOutput();
+        
+        size_t dataSize = codeSize - region.offset;
+        if (i+1<regionsNum)
+        {
+            const ROCmDisasmRegionInput& newRegion = regions[sorted[i+1].second];
+            dataSize = newRegion.offset - region.offset;
+        }
+        if (region.type!=ROCmRegionType::DATA)
+        {
+            if (doMetadata)
+            {
+                if (!doDumpConfig)
+                    printDisasmData(0x100, code + region.offset, output, true);
+                else    // skip, config was dumped in kernel configuration
+                    output.write(".skip 256\n", 10);
+            }
+            
+            if (doDumpCode)
+            {
+                isaDisassembler->setInput(dataSize-256, code + region.offset+256,
+                                region.offset+256, region.offset+1);
+                isaDisassembler->setDontPrintLabels(i+1<regionsNum);
+                isaDisassembler->disassemble();
+            }
+            prevRegionPos = region.offset + dataSize + 1;
+        }
+        else if (doDumpData)
+        {
+            output.write(".global ", 8);
+            output.write(region.regionName.c_str(), region.regionName.size());
+            output.write("\n", 1);
+            printDisasmData(dataSize, code + region.offset, output, true);
+            prevRegionPos = region.offset+1;
+        }
+    }
+    
+    if (regionsNum!=0 && regions[sorted[regionsNum-1].second].type==ROCmRegionType::DATA)
+    {
+        const ROCmDisasmRegionInput& region = regions[sorted[regionsNum-1].second];
+        // set labelIters to previous position
+        isaDisassembler->setInput(prevRegionPos, code + region.offset+region.size,
+                                region.offset+region.size, prevRegionPos);
+        curLabel = std::lower_bound(labels.begin(), labels.end(), prevRegionPos);
+        curNamedLabel = std::lower_bound(namedLabels.begin(), namedLabels.end(),
+            std::make_pair(prevRegionPos, CString()),
+                [](const std::pair<size_t,CString>& a,
+                                const std::pair<size_t, CString>& b)
+                { return a.first < b.first; });
+        isaDisassembler->writeLabelsToPosition(0, curLabel, curNamedLabel);
+        isaDisassembler->flushOutput();
+        // if last region is not kernel, then print labels after last region
+        isaDisassembler->writeLabelsToEnd(region.size, curLabel, curNamedLabel);
+        isaDisassembler->flushOutput();
+    }
+}
+
+void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInput,
+           ISADisassembler* isaDisassembler, Flags flags)
+{
+    const bool doMetadata = ((flags & (DISASM_METADATA|DISASM_CONFIG)) != 0);
     const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(rocmInput->deviceType);
@@ -352,116 +473,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                              rocmInput->code + rinput.offset));
         }
     
-    const size_t regionsNum = rocmInput->regions.size();
-    typedef std::pair<size_t, size_t> SortEntry;
-    std::unique_ptr<SortEntry[]> sorted(new SortEntry[regionsNum]);
-    for (size_t i = 0; i < regionsNum; i++)
-        sorted[i] = std::make_pair(rocmInput->regions[i].offset, i);
-    mapSort(sorted.get(), sorted.get() + regionsNum);
-    
     if (rocmInput->code != nullptr && rocmInput->codeSize != 0)
-    {
-        const cxbyte* code = rocmInput->code;
-        output.write(".text\n", 6);
-        // clear labels
-        isaDisassembler->clearNumberedLabels();
-        
-        /// analyze code with collecting labels
-        for (size_t i = 0; i < regionsNum; i++)
-        {
-            const ROCmDisasmRegionInput& region = rocmInput->regions[sorted[i].second];
-            if (region.type==ROCmRegionType::KERNEL && doDumpCode)
-            {   // kernel code
-                isaDisassembler->setInput(region.size-256, code + region.offset+256,
-                                    region.offset+256);
-                isaDisassembler->analyzeBeforeDisassemble();
-            }
-            else if (region.type==ROCmRegionType::FKERNEL && doDumpCode)
-            {   // function code
-                isaDisassembler->setInput(region.size, code + region.offset,
-                                    region.offset);
-                isaDisassembler->analyzeBeforeDisassemble();
-            }
-            isaDisassembler->addNamedLabel(region.offset, region.regionName);
-        }
-        isaDisassembler->prepareLabelsAndRelocations();
-        
-        ISADisassembler::LabelIter curLabel;
-        ISADisassembler::NamedLabelIter curNamedLabel;
-        const auto& labels = isaDisassembler->getLabels();
-        const auto& namedLabels = isaDisassembler->getNamedLabels();
-        // real disassemble
-        size_t prevRegionPos = 0;
-        for (size_t i = 0; i < regionsNum; i++)
-        {
-            const ROCmDisasmRegionInput& region = rocmInput->regions[sorted[i].second];
-            // set labelIters to previous position
-            isaDisassembler->setInput(prevRegionPos, code + region.offset,
-                                    region.offset, prevRegionPos);
-            curLabel = std::lower_bound(labels.begin(), labels.end(), prevRegionPos);
-            curNamedLabel = std::lower_bound(namedLabels.begin(), namedLabels.end(),
-                std::make_pair(prevRegionPos, CString()),
-                  [](const std::pair<size_t,CString>& a,
-                                 const std::pair<size_t, CString>& b)
-                  { return a.first < b.first; });
-            isaDisassembler->writeLabelsToPosition(0, curLabel, curNamedLabel);
-            isaDisassembler->flushOutput();
-            
-            size_t dataSize = rocmInput->codeSize - region.offset;
-            if (i+1<regionsNum)
-            {
-                const ROCmDisasmRegionInput& newRegion =
-                        rocmInput->regions[sorted[i+1].second];
-                dataSize = newRegion.offset - region.offset;
-            }
-            if (region.type!=ROCmRegionType::DATA)
-            {
-                if (doMetadata)
-                {
-                    if (!doDumpConfig)
-                        printDisasmData(0x100, code + region.offset, output, true);
-                    else    // skip, config was dumped in kernel configuration
-                        output.write(".skip 256\n", 10);
-                }
-                
-                if (doDumpCode)
-                {
-                    isaDisassembler->setInput(dataSize-256, code + region.offset+256,
-                                    region.offset+256, region.offset+1);
-                    isaDisassembler->setDontPrintLabels(i+1<regionsNum);
-                    isaDisassembler->disassemble();
-                }
-                prevRegionPos = region.offset + dataSize + 1;
-            }
-            else if (doDumpData)
-            {
-                output.write(".global ", 8);
-                output.write(region.regionName.c_str(), region.regionName.size());
-                output.write("\n", 1);
-                printDisasmData(dataSize, code + region.offset, output, true);
-                prevRegionPos = region.offset+1;
-            }
-        }
-        
-        if (regionsNum!=0 &&
-            rocmInput->regions[sorted[regionsNum-1].second].type==ROCmRegionType::DATA)
-        {
-            const ROCmDisasmRegionInput& region =
-                    rocmInput->regions[sorted[regionsNum-1].second];
-            // set labelIters to previous position
-            isaDisassembler->setInput(prevRegionPos, code + region.offset+region.size,
-                                    region.offset+region.size, prevRegionPos);
-            curLabel = std::lower_bound(labels.begin(), labels.end(), prevRegionPos);
-            curNamedLabel = std::lower_bound(namedLabels.begin(), namedLabels.end(),
-                std::make_pair(prevRegionPos, CString()),
-                  [](const std::pair<size_t,CString>& a,
-                                 const std::pair<size_t, CString>& b)
-                  { return a.first < b.first; });
-            isaDisassembler->writeLabelsToPosition(0, curLabel, curNamedLabel);
-            isaDisassembler->flushOutput();
-            // if last region is not kernel, then print labels after last region
-            isaDisassembler->writeLabelsToEnd(region.size, curLabel, curNamedLabel);
-            isaDisassembler->flushOutput();
-        }
-    }
+        disassembleHSACOCode(output, rocmInput->regions,
+                        rocmInput->codeSize, rocmInput->code, isaDisassembler, flags);
 }
