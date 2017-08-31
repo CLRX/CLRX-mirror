@@ -6,8 +6,8 @@ In this chapter, size is given in dwords. Dword is 4-byte value.
 
 ### Argument passing
 
-Argument is stored in memory which address is stored in s[0:1].
-Argument begins from 9 dword. First 9 dwords are:
+Arguments are stored in memory which address is stored in s[0:1].
+Arguments begins from 9 dword. First 9 dwords are:
 
 * 0-2 - number of groups for each dimension
 * 3-5 - global size for each dimension
@@ -30,9 +30,9 @@ Constant data is placed after code of kernels. Use PC pointer to get this data.
 
 ### Argument passing
 
-Argument is stored in memory which address is stored in s[6:7]. Argument begins from
+Arguments are stored in memory which address is stored in s[6:7]. Arguments begins from
 the first dword in this memory. After kernel arguments are kernel dimensions.
-List of data (number is dword offset after kernel argument):
+List of data (number is dword offset after kernel arguments):
 
 * 0 - number of dimensions
 * 1-3 - global offsets for each dimensions
