@@ -257,7 +257,21 @@ end:
 reverseBits:
     .if LLVM_VERSION>=40000
         .skip 256
-    .endif
+        s_load_dword s2, s[4:5], 1*SMUL         # s2 - local_size(0)
+        s_load_dword s3, s[6:7], 0              # s3 - n
+        s_load_dword s1, s[6:7], 7*SMUL         # s1 - global_offset(0)
+        s_load_dwordx2 s[10:11], s[6:7], 2*SMUL   # s[10:11] - input pointer
+        s_load_dwordx2 s[6:7], s[6:7], 4*SMUL  # s[6:7] - output pointer
+        s_waitcnt lgkmcnt(0)            # wait for results
+        s_and_b32 s2, s2, 0xffff        # only local_size(0)
+        s_mul_i32 s0, s2, s8            # s0 - local_size(0)*group_id(0)
+        s_mov_b64 s[8:9], s[10:11]      # move input pointer to proper place
+        s_add_u32 s0, s0, s1            # s0 - local_size(0)*group_id(0)+global_offset(0)
+        v_add_i32 v0, vcc, s0, v0       # v0 - s0+local_id(0) -> global_id(0)
+        v_cmp_gt_u32 vcc, s3, v0                # global_id(0) < n
+        s_and_saveexec_b64 s[0:1], vcc          # lock all threads with id>=n
+        s_cbranch_execz end                     # no active threads, we jump to end
+    .else
         s_load_dword s2, s[0:1], 6*SMUL         # s2 - local_size(0)
         s_load_dword s3, s[0:1], 9*SMUL         # s3 - n
         s_load_dword s1, s[0:1], 16*SMUL        # s1 - global_offset(0)
@@ -270,6 +284,7 @@ reverseBits:
         v_cmp_gt_u32 vcc, s3, v0                # global_id(0) < n
         s_and_saveexec_b64 s[0:1], vcc          # lock all threads with id>=n
         s_cbranch_execz end                     # no active threads, we jump to end
+    .endif
     .ifnarch GCN1.2
         s_mov_b32 s4, s6
         s_mov_b32 s5, s7
