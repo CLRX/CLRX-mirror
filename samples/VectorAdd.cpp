@@ -303,11 +303,11 @@ vectorAdd:
         v_mov_b32 v5, s3
         v_addc_u32 v5, vcc, v5, v1, vcc
         flat_load_dword v6, v[2:3]          # load A value
-        flat_load_dword v7, v[2:3]          # load B value
-        v_add_u32 v0, vcc, s4, v0           # Cptr + offset
-        v_mov_b32 v6, s5
-        v_addc_u32 v1, vcc, v6, v1, vcc
+        flat_load_dword v7, v[4:5]          # load B value
         s_waitcnt vmcnt(0)          # wait for values
+        v_add_u32 v0, vcc, s4, v0           # Cptr + offset
+        v_mov_b32 v2, s5
+        v_addc_u32 v1, vcc, v2, v1, vcc
         v_add_f32 v6, v7, v6            # add values
         flat_store_dword v[0:1], v6
     .endif
