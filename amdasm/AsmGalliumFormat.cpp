@@ -63,6 +63,41 @@ enum
     GALLIUMOP_TGSIZE, GALLIUMOP_USERDATANUM, GALLIUMOP_VGPRSNUM
 };
 
+static cxuint determineLLVMVersion(Assembler& asmr)
+{
+    if (asmr.getLLVMVersion() == 0)
+        return detectLLVMCompilerVersion();
+    else
+        return asmr.getLLVMVersion();
+}
+
+void AsmGalliumHandler::Kernel::initializeAmdHsaKernelConfig()
+{
+    if (!config)
+    {
+        config.reset(new AsmROCmKernelConfig{});
+        // set default values to kernel config
+        ::memset(config.get(), 0xff, 128);
+        ::memset(config->controlDirective, 0, 128);
+        config->computePgmRsrc1 = config->computePgmRsrc2 = 0;
+        config->enableSgprRegisterFlags = 0;
+        config->enableFeatureFlags = 0;
+        config->reserved1[0] = config->reserved1[1] = config->reserved1[2] = 0;
+        config->dimMask = 0;
+        config->usedVGPRsNum = BINGEN_DEFAULT;
+        config->usedSGPRsNum = BINGEN_DEFAULT;
+        config->userDataNum = BINGEN8_DEFAULT;
+        config->ieeeMode = false;
+        config->floatMode = 0xc0;
+        config->priority = 0;
+        config->exceptions = 0;
+        config->tgSize = false;
+        config->debugMode = false;
+        config->privilegedMode = false;
+        config->dx10Clamp = false;
+    }
+}
+
 /*
  * GalliumCompute format handler
  */
@@ -84,10 +119,10 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
 {
     cxuint thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
-    output.addEmptyKernel(kernelName, assembler.llvmVersion);
+    output.addEmptyKernel(kernelName, determineLLVMVersion(assembler));
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
-    kernelStates.push_back({ thisSection, false, 0 });
+    kernelStates.push_back({ thisSection, nullptr, false, 0 });
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
@@ -325,12 +360,7 @@ void AsmGalliumPseudoOps::getXXXVersion(AsmGalliumHandler& handler, const char* 
     
     cxuint driverVersion = 0;
     if (getLLVMVersion)
-    {
-        if (asmr.llvmVersion == 0)
-            driverVersion = detectLLVMCompilerVersion();
-        else
-            driverVersion = asmr.llvmVersion;
-    }
+        driverVersion = determineLLVMVersion(asmr);
     else
     {
         if (asmr.driverVersion == 0)
@@ -373,6 +403,8 @@ void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseud
     
     handler.inside = AsmGalliumHandler::Inside::CONFIG;
     handler.output.kernels[asmr.currentKernel].useConfig = true;
+    if (determineLLVMVersion(asmr) >= 40000U) // HSA since LLVM 4.0
+        handler.kernelStates[asmr.currentKernel].initializeAmdHsaKernelConfig();
 }
 
 void AsmGalliumPseudoOps::doGlobalData(AsmGalliumHandler& handler,
@@ -418,6 +450,11 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
         return;
     }
     
+    /*if (target >= GALLIUMCVAL_HSA_FIRST_PARAM && handler.kern)
+    {
+        return;
+    }*/
+    
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
     uint64_t value = BINGEN_NOTSUPPLIED;
@@ -428,6 +465,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
         switch(target)
         {
             case GALLIUMCVAL_SGPRSNUM:
+            case GALLIUMCVAL_HSA_SGPRSNUM:
             {
                 const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
                             asmr.deviceType);
@@ -442,6 +480,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 break;
             }
             case GALLIUMCVAL_VGPRSNUM:
+            case GALLIUMCVAL_HSA_VGPRSNUM:
             {
                 const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
                             asmr.deviceType);
@@ -486,21 +525,25 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 break;
             }
             case GALLIUMCVAL_EXCEPTIONS:
+            case GALLIUMCVAL_HSA_EXCEPTIONS:
                 asmr.printWarningForRange(7, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 value &= 0x7f;
                 break;
             case GALLIUMCVAL_FLOATMODE:
+            case GALLIUMCVAL_HSA_FLOATMODE:
                 asmr.printWarningForRange(8, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 value &= 0xff;
                 break;
             case GALLIUMCVAL_PRIORITY:
+            case GALLIUMCVAL_HSA_PRIORITY:
                 asmr.printWarningForRange(2, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 value &= 3;
                 break;
             case GALLIUMCVAL_LOCALSIZE:
+            case GALLIUMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE:
             {
                 const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
                             asmr.deviceType);
@@ -515,6 +558,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 break;
             }
             case GALLIUMCVAL_USERDATANUM:
+            case GALLIUMCVAL_HSA_USERDATANUM:
                 if (value > 16)
                 {
                     asmr.printError(valuePlace, "UserDataNum out of range (0-16)");
@@ -523,9 +567,72 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 break;
             case GALLIUMCVAL_PGMRSRC1:
             case GALLIUMCVAL_PGMRSRC2:
+            case GALLIUMCVAL_HSA_PGMRSRC1:
+            case GALLIUMCVAL_HSA_PGMRSRC2:
                 asmr.printWarningForRange(32, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 break;
+            
+            case GALLIUMCVAL_PRIVATE_ELEM_SIZE:
+                if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
+                {
+                    asmr.printError(valuePlace,
+                                    "Private element size must be power of two");
+                    good = false;
+                }
+                else if (value < 2 || value > 16)
+                {
+                    asmr.printError(valuePlace, "Private element size out of range");
+                    good = false;
+                }
+                break;
+            case GALLIUMCVAL_KERNARG_SEGMENT_ALIGN:
+            case GALLIUMCVAL_GROUP_SEGMENT_ALIGN:
+            case GALLIUMCVAL_PRIVATE_SEGMENT_ALIGN:
+                if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
+                {
+                    asmr.printError(valuePlace, "Alignment must be power of two");
+                    good = false;
+                }
+                else if (value < 16)
+                {
+                    asmr.printError(valuePlace, "Alignment must be not smaller than 16");
+                    good = false;
+                }
+                break;
+            case GALLIUMCVAL_WAVEFRONT_SIZE:
+                if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
+                {
+                    asmr.printError(valuePlace, "Wavefront size must be power of two");
+                    good = false;
+                }
+                else if (value > 256)
+                {
+                    asmr.printError(valuePlace,
+                                "Wavefront size must be not greater than 256");
+                    good = false;
+                }
+                break;
+            case GALLIUMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
+            case GALLIUMCVAL_GDS_SEGMENT_SIZE:
+            case GALLIUMCVAL_WORKGROUP_FBARRIER_COUNT:
+            case GALLIUMCVAL_CALL_CONVENTION:
+                asmr.printWarningForRange(32, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                break;
+            case GALLIUMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
+            case GALLIUMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+                if (value >= maxSGPRsNum)
+                {
+                    asmr.printError(valuePlace, "SGPR register out of range");
+                    good = false;
+                }
+                break;
+            }
             default:
                 break;
         }
@@ -876,9 +983,15 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
     // do operation
     AsmGalliumHandler::Kernel& kstate = handler.kernelStates[asmr.currentKernel];
     kstate.hasProgInfo = true;
-    if (kstate.progInfoEntries == 3)
+    const cxuint llvmVersion = determineLLVMVersion(asmr);
+    if (llvmVersion<30900U && kstate.progInfoEntries == 3)
     {
         asmr.printError(pseudoOpPlace, "Maximum 3 entries can be in ProgInfo");
+        return;
+    }
+    if (llvmVersion>=30900U && kstate.progInfoEntries == 5)
+    {
+        asmr.printError(pseudoOpPlace, "Maximum 5 entries can be in ProgInfo");
         return;
     }
     GalliumProgInfoEntry& pentry = handler.output.kernels[asmr.currentKernel]

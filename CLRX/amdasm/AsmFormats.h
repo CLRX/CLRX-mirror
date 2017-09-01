@@ -351,6 +351,23 @@ public:
     { return &output; }
 };
 
+/// Asm AMD HSA kernel configuration
+struct AsmAmdHsaKernelConfig: AmdHsaKernelConfig
+{
+    cxuint dimMask;    ///< mask of dimension (bits: 0 - X, 1 - Y, 2 - Z)
+    cxuint usedVGPRsNum;  ///< number of used VGPRs
+    cxuint usedSGPRsNum;  ///< number of used SGPRs
+    cxbyte userDataNum;   ///< number of user data
+    bool ieeeMode;  ///< IEEE mode
+    cxbyte floatMode; ///< float mode
+    cxbyte priority;    ///< priority
+    cxbyte exceptions;      ///< enabled exceptions
+    bool tgSize;        ///< enable TG_SIZE_EN bit
+    bool debugMode;     ///< debug mode
+    bool privilegedMode;   ///< prvileged mode
+    bool dx10Clamp;     ///< DX10 CLAMP mode
+};
+
 /// handles GalliumCompute format
 class AsmGalliumHandler: public AsmFormatHandler
 {
@@ -372,10 +389,13 @@ private:
     struct Kernel
     {
         cxuint defaultSection;
+        std::unique_ptr<AsmAmdHsaKernelConfig> config;
         bool hasProgInfo;
         cxbyte progInfoEntries;
         cxuint allocRegs[MAX_REGTYPES_NUM];
         Flags allocRegFlags;
+        
+        void initializeAmdHsaKernelConfig();
     };
     std::vector<Kernel> kernelStates;
     std::vector<Section> sections;
@@ -418,22 +438,7 @@ public:
     { return &output; }
 };
 
-/// ROCm kernel configuration
-struct AsmROCmKernelConfig: ROCmKernelConfig
-{
-    cxuint dimMask;    ///< mask of dimension (bits: 0 - X, 1 - Y, 2 - Z)
-    cxuint usedVGPRsNum;  ///< number of used VGPRs
-    cxuint usedSGPRsNum;  ///< number of used SGPRs
-    cxbyte userDataNum;   ///< number of user data
-    bool ieeeMode;  ///< IEEE mode
-    cxbyte floatMode; ///< float mode
-    cxbyte priority;    ///< priority
-    cxbyte exceptions;      ///< enabled exceptions
-    bool tgSize;        ///< enable TG_SIZE_EN bit
-    bool debugMode;     ///< debug mode
-    bool privilegedMode;   ///< prvileged mode
-    bool dx10Clamp;     ///< DX10 CLAMP mode
-};
+typedef AsmAmdHsaKernelConfig AsmROCmKernelConfig;
 
 /// handles ROCM binary format
 class AsmROCmHandler: public AsmFormatHandler
