@@ -34,33 +34,85 @@ using namespace CLRX;
 
 static const char* galliumPseudoOpNamesTbl[] =
 {
-    "arg", "args", "config",
+    "arg", "args", "call_convention", "codeversion",
+    "config", "control_directive",
+    "debug_private_segment_buffer_sgpr",
+    "debug_wavefront_private_segment_offset_sgpr",
     "debugmode", "dims", "driver_version", "dx10clamp",
-    "entry", "exceptions", "floatmode",
-    "get_driver_version", "get_llvm_version",
-    "globaldata", "ieeemode",
-    "kcode", "kcodeend",
+    "entry", "exceptions", "floatmode", "gds_segment_size",
+    "get_driver_version", "get_llvm_version", "globaldata",
+    "group_segment_align",
+    "hsa_debugmode", "hsa_dims", "hsa_dx10clamp", "hsa_exceptions",
+    "hsa_floatmode", "hsa_ieeemode",
+    "hsa_localsize", "hsa_pgmrsrc1",
+    "hsa_pgmrsrc2", "hsa_priority", "hsa_privmode",
+    "hsa_sgprsnum", "hsa_tgsize", "hsa_userdatanum", "hsa_vgprsnum",
+    "ieeemode", "kcode", "kcodeend",
+    "kernarg_segment_align", "kernarg_segment_size",
+    "kernel_code_entry_offset", "kernel_code_prefetch_offset",
+    "kernel_code_prefetch_size",
     "llvm_version", "localsize",
+    "machine", "max_scratch_backing_memory",
     "pgmrsrc1", "pgmrsrc2", "priority",
-    "privmode", "proginfo",
-    "scratchbuffer", "sgprsnum", "spilledsgprs", "spilledvgprs",
-    "tgsize", "userdatanum", "vgprsnum"
+    "private_elem_size", "private_segment_align",
+    "privmode", "proginfo", "reserved_sgprs", "reserved_vgprs",
+    "runtime_loader_kernel_symbol",
+    "scratchbuffer", "sgprsnum",
+    "spilledsgprs", "spilledvgprs", "tgsize",
+    "use_debug_enabled", "use_dispatch_id",
+    "use_dispatch_ptr", "use_dynamic_call_stack",
+    "use_flat_scratch_init", "use_grid_workgroup_count",
+    "use_kernarg_segment_ptr",
+    "use_ordered_append_gds", "use_private_segment_buffer",
+    "use_private_segment_size", "use_ptr64",
+    "use_queue_ptr", "use_xnack_enabled",
+    "userdatanum", "vgprsnum",
+    "wavefront_sgpr_count", "wavefront_size",
+    "workgroup_fbarrier_count", "workgroup_group_segment_size",
+    "workitem_private_segment_size", "workitem_vgpr_count"
 };
 
 enum
 {
-    GALLIUMOP_ARG = 0, GALLIUMOP_ARGS, GALLIUMOP_CONFIG,
+    GALLIUMOP_ARG = 0, GALLIUMOP_ARGS, GALLIUMOP_CALL_CONVENTION, GALLIUMOP_CODEVERSION,
+    GALLIUMOP_CONFIG, GALLIUMOP_CONTROL_DIRECTIVE,
+    GALLIUMOP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR,
+    GALLIUMOP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
     GALLIUMOP_DEBUGMODE, GALLIUMOP_DIMS, GALLIUMOP_DRIVER_VERSION, GALLIUMOP_DX10CLAMP,
-    GALLIUMOP_ENTRY, GALLIUMOP_EXCEPTIONS, GALLIUMOP_FLOATMODE,
-    GALLIUMOP_GET_DRIVER_VERSION, GALLIUMOP_GET_LLVM_VERSION,
-    GALLIUMOP_GLOBALDATA, GALLIUMOP_IEEEMODE,
-    GALLIUMOP_KCODE, GALLIUMOP_KCODEEND,
+    GALLIUMOP_ENTRY, GALLIUMOP_EXCEPTIONS, GALLIUMOP_FLOATMODE, GALLIUMOP_GDS_SEGMENT_SIZE,
+    GALLIUMOP_GET_DRIVER_VERSION, GALLIUMOP_GET_LLVM_VERSION, GALLIUMOP_GLOBALDATA,
+    GALLIUMOP_GROUP_SEGMENT_ALIGN,
+    GALLIUMOP_HSA_DEBUGMODE, GALLIUMOP_HSA_DIMS,
+    GALLIUMOP_HSA_DX10CLAMP, GALLIUMOP_HSA_EXCEPTIONS,
+    GALLIUMOP_HSA_FLOATMODE, GALLIUMOP_HSA_IEEEMODE,
+    GALLIUMOP_HSA_LOCALSIZE, GALLIUMOP_HSA_PGMRSRC1,
+    GALLIUMOP_HSA_PGMRSRC2, GALLIUMOP_HSA_PRIORITY, GALLIUMOP_HSA_PRIVMODE,
+    GALLIUMOP_HSA_SGPRSNUM, GALLIUMOP_HSA_TGSIZE,
+    GALLIUMOP_HSA_USERDATANUM, GALLIUMOP_HSA_VGPRSNUM,
+    GALLIUMOP_IEEEMODE, GALLIUMOP_KCODE, GALLIUMOP_KCODEEND,
+    GALLIUMOP_KERNARG_SEGMENT_ALIGN, GALLIUMOP_KERNARG_SEGMENT_SIZE,
+    GALLIUMOP_KERNEL_CODE_ENTRY_OFFSET, GALLIUMOP_KERNEL_CODE_PREFETCH_OFFSET,
+    GALLIUMOP_KERNEL_CODE_PREFETCH_SIZE,
     GALLIUMOP_LLVM_VERSION, GALLIUMOP_LOCALSIZE,
+    GALLIUMOP_MACHINE, GALLIUMOP_MAX_SCRATCH_BACKING_MEMORY,
     GALLIUMOP_PGMRSRC1, GALLIUMOP_PGMRSRC2, GALLIUMOP_PRIORITY,
+    GALLIUMOP_PRIVATE_ELEM_SIZE, GALLIUMOP_PRIVATE_SEGMENT_ALIGN,
     GALLIUMOP_PRIVMODE, GALLIUMOP_PROGINFO,
+    GALLIUMOP_RESERVED_SGPRS, GALLIUMOP_RESERVED_VGPRS,
+    GALLIUMOP_RUNTIME_LOADER_KERNEL_SYMBOL,
     GALLIUMOP_SCRATCHBUFFER, GALLIUMOP_SGPRSNUM,
-    GALLIUMOP_SPILLEDSGPRS, GALLIUMOP_SPILLEDVGPRS,
-    GALLIUMOP_TGSIZE, GALLIUMOP_USERDATANUM, GALLIUMOP_VGPRSNUM
+    GALLIUMOP_SPILLEDSGPRS, GALLIUMOP_SPILLEDVGPRS, GALLIUMOP_TGSIZE,
+    GALLIUMOP_USE_DEBUG_ENABLED, GALLIUMOP_USE_DISPATCH_ID,
+    GALLIUMOP_USE_DISPATCH_PTR, GALLIUMOP_USE_DYNAMIC_CALL_STACK,
+    GALLIUMOP_USE_FLAT_SCRATCH_INIT, GALLIUMOP_USE_GRID_WORKGROUP_COUNT,
+    GALLIUMOP_USE_KERNARG_SEGMENT_PTR,
+    GALLIUMOP_USE_ORDERED_APPEND_GDS, GALLIUMOP_USE_PRIVATE_SEGMENT_BUFFER,
+    GALLIUMOP_USE_PRIVATE_SEGMENT_SIZE, GALLIUMOP_USE_PTR64,
+    GALLIUMOP_USE_QUEUE_PTR, GALLIUMOP_USE_XNACK_ENABLED,
+    GALLIUMOP_USERDATANUM, GALLIUMOP_VGPRSNUM,
+    GALLIUMOP_WAVEFRONT_SGPR_COUNT, GALLIUMOP_WAVEFRONT_SIZE,
+    GALLIUMOP_WORKGROUP_FBARRIER_COUNT, GALLIUMOP_WORKGROUP_GROUP_SEGMENT_SIZE,
+    GALLIUMOP_WORKITEM_PRIVATE_SEGMENT_SIZE, GALLIUMOP_WORKITEM_VGPR_COUNT
 };
 
 void AsmGalliumHandler::Kernel::initializeAmdHsaKernelConfig()
@@ -138,7 +190,7 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
     output.addEmptyKernel(kernelName, determineLLVMVersion());
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
-    kernelStates.push_back(new Kernel{ thisSection, nullptr, false, 0 });
+    kernelStates.push_back(new Kernel{ thisSection, nullptr, ASMSECT_NONE, false, 0 });
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
@@ -418,6 +470,37 @@ void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseud
         handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
 }
 
+void AsmGalliumPseudoOps::doControlDirective(AsmGalliumHandler& handler,
+              const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL)
+    {
+        asmr.printError(pseudoOpPlace, "Kernel control directive can be defined "
+                    "only inside kernel");
+        return;
+    }
+    if (handler.determineLLVMVersion() < 40000U)
+    {
+        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
+        return;
+    }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    AsmGalliumHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
+    if (kernel.ctrlDirSection == ASMSECT_NONE)
+    {
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ asmr.currentKernel,
+            AsmSectionType::ROCM_CONFIG_CTRL_DIRECTIVE,
+            ELFSECTID_UNDEF, nullptr });
+        kernel.ctrlDirSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, kernel.ctrlDirSection);
+    handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
+}
+
 void AsmGalliumPseudoOps::doGlobalData(AsmGalliumHandler& handler,
                    const char* pseudoOpPlace, const char* linePtr)
 {
@@ -431,7 +514,7 @@ void AsmGalliumPseudoOps::doGlobalData(AsmGalliumHandler& handler,
 }
 
 void AsmGalliumPseudoOps::setDimensions(AsmGalliumHandler& handler,
-                    const char* pseudoOpPlace, const char* linePtr)
+            const char* pseudoOpPlace, const char* linePtr, bool amdHsa)
 {
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
@@ -440,12 +523,25 @@ void AsmGalliumPseudoOps::setDimensions(AsmGalliumHandler& handler,
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
     }
+    if (amdHsa && handler.determineLLVMVersion() < 40000U)
+    {
+        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
+        return;
+    }
+        
     cxuint dimMask = 0;
     if (!parseDimensions(asmr, linePtr, dimMask))
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    handler.output.kernels[asmr.currentKernel].config.dimMask = dimMask;
+    if (!amdHsa)
+        handler.output.kernels[asmr.currentKernel].config.dimMask = dimMask;
+    else
+    {    // AMD HSA
+        handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
+        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
+        config.dimMask = dimMask;
+    }
 }
 
 void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
@@ -463,7 +559,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
     
     if (target >= GALLIUMCVAL_HSA_FIRST_PARAM && handler.determineLLVMVersion() < 40000U)
     {
-        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM<=4.0.0");
+        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
         return;
     }
     
@@ -696,6 +792,104 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
         default:
             break;
     }
+    
+    if (target >= GALLIUMCVAL_HSA_FIRST_PARAM)
+    {
+        handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
+        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
+        
+        // set value
+        switch(target)
+        {
+            case GALLIUMCVAL_HSA_SGPRSNUM:
+                config.usedSGPRsNum = value;
+                break;
+            case GALLIUMCVAL_HSA_VGPRSNUM:
+                config.usedVGPRsNum = value;
+                break;
+            case GALLIUMCVAL_HSA_PGMRSRC1:
+                config.computePgmRsrc1 = value;
+                break;
+            case GALLIUMCVAL_HSA_PGMRSRC2:
+                config.computePgmRsrc2 = value;
+                break;
+            case GALLIUMCVAL_HSA_FLOATMODE:
+                config.floatMode = value;
+                break;
+            case GALLIUMCVAL_HSA_PRIORITY:
+                config.priority = value;
+                break;
+            case GALLIUMCVAL_HSA_USERDATANUM:
+                config.userDataNum = value;
+                break;
+            case GALLIUMCVAL_HSA_EXCEPTIONS:
+                config.exceptions = value;
+                break;
+            case GALLIUMCVAL_KERNEL_CODE_ENTRY_OFFSET:
+                config.kernelCodeEntryOffset = value;
+                break;
+            case GALLIUMCVAL_KERNEL_CODE_PREFETCH_OFFSET:
+                config.kernelCodePrefetchOffset = value;
+                break;
+            case GALLIUMCVAL_KERNEL_CODE_PREFETCH_SIZE:
+                config.kernelCodePrefetchSize = value;
+                break;
+            case GALLIUMCVAL_MAX_SCRATCH_BACKING_MEMORY:
+                config.maxScrachBackingMemorySize = value;
+                break;
+            case GALLIUMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
+                config.workitemPrivateSegmentSize = value;
+                break;
+            case GALLIUMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE:
+                config.workgroupGroupSegmentSize = value;
+                break;
+            case GALLIUMCVAL_GDS_SEGMENT_SIZE:
+                config.gdsSegmentSize = value;
+                break;
+            case GALLIUMCVAL_KERNARG_SEGMENT_SIZE:
+                config.kernargSegmentSize = value;
+                break;
+            case GALLIUMCVAL_WORKGROUP_FBARRIER_COUNT:
+                config.workgroupFbarrierCount = value;
+                break;
+            case GALLIUMCVAL_WAVEFRONT_SGPR_COUNT:
+                config.wavefrontSgprCount = value;
+                break;
+            case GALLIUMCVAL_WORKITEM_VGPR_COUNT:
+                config.workitemVgprCount = value;
+                break;
+            case GALLIUMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
+                config.debugWavefrontPrivateSegmentOffsetSgpr = value;
+                break;
+            case GALLIUMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
+                config.debugPrivateSegmentBufferSgpr = value;
+                break;
+            case GALLIUMCVAL_PRIVATE_ELEM_SIZE:
+                config.enableFeatureFlags = (config.enableFeatureFlags & ~6) |
+                        ((63-CLZ64(value)-1)<<1);
+                break;
+            case GALLIUMCVAL_KERNARG_SEGMENT_ALIGN:
+                config.kernargSegmentAlignment = 63-CLZ64(value);
+                break;
+            case GALLIUMCVAL_GROUP_SEGMENT_ALIGN:
+                config.groupSegmentAlignment = 63-CLZ64(value);
+                break;
+            case GALLIUMCVAL_PRIVATE_SEGMENT_ALIGN:
+                config.privateSegmentAlignment = 63-CLZ64(value);
+                break;
+            case GALLIUMCVAL_WAVEFRONT_SIZE:
+                config.wavefrontSize = 63-CLZ64(value);
+                break;
+            case GALLIUMCVAL_CALL_CONVENTION:
+                config.callConvention = value;
+                break;
+            case GALLIUMCVAL_RUNTIME_LOADER_KERNEL_SYMBOL:
+                config.runtimeLoaderKernelSymbol = value;
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 void AsmGalliumPseudoOps::setConfigBoolValue(AsmGalliumHandler& handler,
@@ -709,6 +903,13 @@ void AsmGalliumPseudoOps::setConfigBoolValue(AsmGalliumHandler& handler,
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
     }
+    
+    if (target >= GALLIUMCVAL_HSA_FIRST_PARAM && handler.determineLLVMVersion() < 40000U)
+    {
+        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
+        return;
+    }
+    
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     GalliumKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
@@ -732,6 +933,268 @@ void AsmGalliumPseudoOps::setConfigBoolValue(AsmGalliumHandler& handler,
         default:
             break;
     }
+    
+    if (target >= GALLIUMCVAL_HSA_FIRST_PARAM)
+    {
+        handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
+        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
+        
+        // set value
+        switch(target)
+        {
+            case GALLIUMCVAL_HSA_PRIVMODE:
+                config.privilegedMode = true;
+                break;
+            case GALLIUMCVAL_HSA_DEBUGMODE:
+                config.debugMode = true;
+                break;
+            case GALLIUMCVAL_HSA_DX10CLAMP:
+                config.dx10Clamp = true;
+                break;
+            case GALLIUMCVAL_HSA_IEEEMODE:
+                config.ieeeMode = true;
+                break;
+            case GALLIUMCVAL_HSA_TGSIZE:
+                config.tgSize = true;
+                break;
+            case GALLIUMCVAL_USE_PRIVATE_SEGMENT_BUFFER:
+                config.enableSgprRegisterFlags |= ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER;
+                break;
+            case GALLIUMCVAL_USE_DISPATCH_PTR:
+                config.enableSgprRegisterFlags |= ROCMFLAG_USE_DISPATCH_PTR;
+                break;
+            case GALLIUMCVAL_USE_QUEUE_PTR:
+                config.enableSgprRegisterFlags |= ROCMFLAG_USE_QUEUE_PTR;
+                break;
+            case GALLIUMCVAL_USE_KERNARG_SEGMENT_PTR:
+                config.enableSgprRegisterFlags |= ROCMFLAG_USE_KERNARG_SEGMENT_PTR;
+                break;
+            case GALLIUMCVAL_USE_DISPATCH_ID:
+                config.enableSgprRegisterFlags |= ROCMFLAG_USE_DISPATCH_ID;
+                break;
+            case GALLIUMCVAL_USE_FLAT_SCRATCH_INIT:
+                config.enableSgprRegisterFlags |= ROCMFLAG_USE_FLAT_SCRATCH_INIT;
+                break;
+            case GALLIUMCVAL_USE_PRIVATE_SEGMENT_SIZE:
+                config.enableSgprRegisterFlags |= ROCMFLAG_USE_PRIVATE_SEGMENT_SIZE;
+                break;
+            case GALLIUMCVAL_USE_ORDERED_APPEND_GDS:
+                config.enableFeatureFlags |= ROCMFLAG_USE_ORDERED_APPEND_GDS;
+                break;
+            case GALLIUMCVAL_USE_PTR64:
+                config.enableFeatureFlags |= ROCMFLAG_USE_PTR64;
+                break;
+            case GALLIUMCVAL_USE_DYNAMIC_CALL_STACK:
+                config.enableFeatureFlags |= ROCMFLAG_USE_DYNAMIC_CALL_STACK;
+                break;
+            case GALLIUMCVAL_USE_DEBUG_ENABLED:
+                config.enableFeatureFlags |= ROCMFLAG_USE_DEBUG_ENABLED;
+                break;
+            case GALLIUMCVAL_USE_XNACK_ENABLED:
+                config.enableFeatureFlags |= ROCMFLAG_USE_XNACK_ENABLED;
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void AsmGalliumPseudoOps::setMachine(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    if (handler.determineLLVMVersion() < 40000U)
+    {
+        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    uint64_t kindValue = BINGEN_NOTSUPPLIED;
+    uint64_t majorValue = BINGEN_NOTSUPPLIED;
+    uint64_t minorValue = BINGEN_NOTSUPPLIED;
+    uint64_t steppingValue = BINGEN_NOTSUPPLIED;
+    const char* valuePlace = linePtr;
+    bool good = getAbsoluteValueArg(asmr, kindValue, linePtr, true);
+    asmr.printWarningForRange(16, kindValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    valuePlace = linePtr;
+    good &= getAbsoluteValueArg(asmr, majorValue, linePtr, true);
+    asmr.printWarningForRange(16, majorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    valuePlace = linePtr;
+    good &= getAbsoluteValueArg(asmr, minorValue, linePtr, true);
+    asmr.printWarningForRange(16, minorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    valuePlace = linePtr;
+    good &= getAbsoluteValueArg(asmr, steppingValue, linePtr, true);
+    asmr.printWarningForRange(16, steppingValue,
+                      asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
+    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
+    config->amdMachineKind = kindValue;
+    config->amdMachineMajor = majorValue;
+    config->amdMachineMinor = minorValue;
+    config->amdMachineStepping = steppingValue;
+}
+
+void AsmGalliumPseudoOps::setCodeVersion(AsmGalliumHandler& handler,
+                const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    if (handler.determineLLVMVersion() < 40000U)
+    {
+        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    uint64_t majorValue = BINGEN_NOTSUPPLIED;
+    uint64_t minorValue = BINGEN_NOTSUPPLIED;
+    const char* valuePlace = linePtr;
+    bool good = getAbsoluteValueArg(asmr, majorValue, linePtr, true);
+    asmr.printWarningForRange(32, majorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    valuePlace = linePtr;
+    good &= getAbsoluteValueArg(asmr, minorValue, linePtr, true);
+    asmr.printWarningForRange(32, minorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
+    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
+    config->amdCodeVersionMajor = majorValue;
+    config->amdCodeVersionMinor = minorValue;
+}
+
+void AsmGalliumPseudoOps::setReservedXgprs(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, bool inVgpr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    if (handler.determineLLVMVersion() < 40000U)
+    {
+        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(asmr.deviceType);
+    cxuint maxGPRsNum = getGPUMaxRegistersNum(arch,
+                       inVgpr ? REGTYPE_VGPR : REGTYPE_SGPR, 0);
+    
+    uint64_t firstReg = BINGEN_NOTSUPPLIED;
+    uint64_t lastReg = BINGEN_NOTSUPPLIED;
+    const char* valuePlace = linePtr;
+    bool haveFirstReg;
+    bool good = getAbsoluteValueArg(asmr, firstReg, linePtr, true);
+    haveFirstReg = good;
+    if (haveFirstReg && firstReg > maxGPRsNum-1)
+    {
+        char buf[64];
+        snprintf(buf, 64, "First reserved %s register out of range (0-%u)",
+                 inVgpr ? "VGPR" : "SGPR",  maxGPRsNum-1);
+        asmr.printError(valuePlace, buf);
+        good = false;
+    }
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    valuePlace = linePtr;
+    bool haveLastReg = getAbsoluteValueArg(asmr, lastReg, linePtr, true);
+    good &= haveLastReg;
+    if (haveLastReg && lastReg > maxGPRsNum-1)
+    {
+        char buf[64];
+        snprintf(buf, 64, "Last reserved %s register out of range (0-%u)",
+                 inVgpr ? "VGPR" : "SGPR", maxGPRsNum-1);
+        asmr.printError(valuePlace, buf);
+        good = false;
+    }
+    if (haveFirstReg && haveLastReg && firstReg > lastReg)
+    {
+        asmr.printError(valuePlace, "Wrong regsister range");
+        good = false;
+    }
+        
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
+    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
+    if (inVgpr)
+    {
+        config->reservedVgprFirst = firstReg;
+        config->reservedVgprCount = lastReg-firstReg+1;
+    }
+    else
+    {
+        config->reservedSgprFirst = firstReg;
+        config->reservedSgprCount = lastReg-firstReg+1;
+    }
+}
+
+
+void AsmGalliumPseudoOps::setUseGridWorkGroupCount(AsmGalliumHandler& handler,
+                   const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    if (handler.determineLLVMVersion() < 40000U)
+    {
+        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
+        return;
+    }
+    
+    cxuint dimMask = 0;
+    if (!parseDimensions(asmr, linePtr, dimMask))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
+    uint16_t& flags = handler.kernelStates[asmr.currentKernel]->config->
+                enableSgprRegisterFlags;
+    flags = (flags & ~(7<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT)) |
+            (dimMask<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT);
 }
 
 void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
@@ -1163,15 +1626,33 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
         case GALLIUMOP_ARGS:
             AsmGalliumPseudoOps::doArgs(*this, stmtPlace, linePtr);
             break;
+        case GALLIUMOP_CALL_CONVENTION:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_CALL_CONVENTION);
+            break;
+        case GALLIUMOP_CODEVERSION:
+            AsmGalliumPseudoOps::setCodeVersion(*this, stmtPlace, linePtr);
+            break;
         case GALLIUMOP_CONFIG:
             AsmGalliumPseudoOps::doConfig(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_CONTROL_DIRECTIVE:
+            AsmGalliumPseudoOps::doControlDirective(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR);
+            break;
+        case GALLIUMOP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                         GALLIUMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR);
             break;
         case GALLIUMOP_DEBUGMODE:
             AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                                 GALLIUMCVAL_DEBUGMODE);
             break;
         case GALLIUMOP_DIMS:
-            AsmGalliumPseudoOps::setDimensions(*this, stmtPlace, linePtr);
+            AsmGalliumPseudoOps::setDimensions(*this, stmtPlace, linePtr, false);
             break;
         case GALLIUMOP_DRIVER_VERSION:
             AsmGalliumPseudoOps::setDriverVersion(*this, linePtr);
@@ -1191,6 +1672,10 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_FLOATMODE);
             break;
+        case GALLIUMOP_GDS_SEGMENT_SIZE:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_GDS_SEGMENT_SIZE);
+            break;
         case GALLIUMOP_GET_DRIVER_VERSION:
             AsmGalliumPseudoOps::getXXXVersion(*this, linePtr, false);
             break;
@@ -1199,6 +1684,69 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             break;
         case GALLIUMOP_GLOBALDATA:
             AsmGalliumPseudoOps::doGlobalData(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_GROUP_SEGMENT_ALIGN:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_GROUP_SEGMENT_ALIGN);
+            break;
+        case GALLIUMOP_HSA_DEBUGMODE:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                                GALLIUMCVAL_HSA_DEBUGMODE);
+            break;
+        case GALLIUMOP_HSA_DIMS:
+            AsmGalliumPseudoOps::setDimensions(*this, stmtPlace, linePtr, true);
+            break;
+        case GALLIUMOP_HSA_DX10CLAMP:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                                GALLIUMCVAL_HSA_DX10CLAMP);
+            break;
+        case GALLIUMOP_HSA_EXCEPTIONS:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_HSA_EXCEPTIONS);
+            break;
+        case GALLIUMOP_HSA_FLOATMODE:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_HSA_FLOATMODE);
+            break;
+        case GALLIUMOP_HSA_IEEEMODE:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                                GALLIUMCVAL_HSA_IEEEMODE);
+            break;
+        case GALLIUMOP_HSA_LOCALSIZE:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE);
+            break;
+        case GALLIUMOP_HSA_PGMRSRC1:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_HSA_PGMRSRC1);
+            break;
+        case GALLIUMOP_HSA_PGMRSRC2:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_HSA_PGMRSRC2);
+            break;
+        case GALLIUMOP_HSA_PRIORITY:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_HSA_PRIORITY);
+            break;
+        case GALLIUMOP_HSA_PRIVMODE:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                                GALLIUMCVAL_HSA_PRIVMODE);
+            break;
+        case GALLIUMOP_HSA_SGPRSNUM:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_HSA_SGPRSNUM);
+            break;
+        case GALLIUMOP_HSA_TGSIZE:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                                GALLIUMCVAL_HSA_TGSIZE);
+            break;
+        case GALLIUMOP_HSA_USERDATANUM:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_HSA_USERDATANUM);
+            break;
+        case GALLIUMOP_HSA_VGPRSNUM:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_HSA_VGPRSNUM);
             break;
         case GALLIUMOP_IEEEMODE:
             AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
@@ -1210,6 +1758,26 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
         case GALLIUMOP_KCODEEND:
             AsmGalliumPseudoOps::doKCodeEnd(*this, stmtPlace, linePtr);
             break;
+        case GALLIUMOP_KERNARG_SEGMENT_ALIGN:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_KERNARG_SEGMENT_ALIGN);
+            break;
+        case GALLIUMOP_KERNARG_SEGMENT_SIZE:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_KERNARG_SEGMENT_SIZE);
+            break;
+        case GALLIUMOP_KERNEL_CODE_ENTRY_OFFSET:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_KERNEL_CODE_ENTRY_OFFSET);
+            break;
+        case GALLIUMOP_KERNEL_CODE_PREFETCH_OFFSET:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_KERNEL_CODE_PREFETCH_OFFSET);
+            break;
+        case GALLIUMOP_KERNEL_CODE_PREFETCH_SIZE:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_KERNEL_CODE_PREFETCH_SIZE);
+            break;
         case GALLIUMOP_LLVM_VERSION:
             AsmGalliumPseudoOps::setLLVMVersion(*this, linePtr);
             break;
@@ -1217,9 +1785,24 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_LOCALSIZE);
             break;
+        case GALLIUMOP_MACHINE:
+            AsmGalliumPseudoOps::setMachine(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_MAX_SCRATCH_BACKING_MEMORY:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_MAX_SCRATCH_BACKING_MEMORY);
+            break;
         case GALLIUMOP_PRIORITY:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_PRIORITY);
+            break;
+        case GALLIUMOP_PRIVATE_ELEM_SIZE:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_PRIVATE_ELEM_SIZE);
+            break;
+        case GALLIUMOP_PRIVATE_SEGMENT_ALIGN:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_PRIVATE_SEGMENT_ALIGN);
             break;
         case GALLIUMOP_PRIVMODE:
             AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
@@ -1235,6 +1818,16 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             break;
         case GALLIUMOP_PROGINFO:
             AsmGalliumPseudoOps::doProgInfo(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_RESERVED_SGPRS:
+            AsmGalliumPseudoOps::setReservedXgprs(*this, stmtPlace, linePtr, false);
+            break;
+        case GALLIUMOP_RESERVED_VGPRS:
+            AsmGalliumPseudoOps::setReservedXgprs(*this, stmtPlace, linePtr, true);
+            break;
+        case GALLIUMOP_RUNTIME_LOADER_KERNEL_SYMBOL:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_RUNTIME_LOADER_KERNEL_SYMBOL);
             break;
         case GALLIUMOP_SCRATCHBUFFER:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
@@ -1252,6 +1845,57 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_SPILLEDVGPRS);
             break;
+        case GALLIUMOP_USE_DEBUG_ENABLED:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_USE_DEBUG_ENABLED);
+            break;
+        case GALLIUMOP_USE_DISPATCH_ID:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_USE_DISPATCH_ID);
+            break;
+        case GALLIUMOP_USE_DISPATCH_PTR:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_USE_DISPATCH_PTR);
+            break;
+        case GALLIUMOP_USE_DYNAMIC_CALL_STACK:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_USE_DYNAMIC_CALL_STACK);
+            break;
+        case GALLIUMOP_USE_FLAT_SCRATCH_INIT:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_USE_FLAT_SCRATCH_INIT);
+            break;
+        case GALLIUMOP_USE_GRID_WORKGROUP_COUNT:
+            AsmGalliumPseudoOps::setUseGridWorkGroupCount(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_USE_KERNARG_SEGMENT_PTR:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_USE_KERNARG_SEGMENT_PTR);
+            break;
+        case GALLIUMOP_USE_ORDERED_APPEND_GDS:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_USE_ORDERED_APPEND_GDS);
+            break;
+        case GALLIUMOP_USE_PRIVATE_SEGMENT_SIZE:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_USE_PRIVATE_SEGMENT_SIZE);
+            break;
+        case GALLIUMOP_USE_PTR64:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_USE_PTR64);
+            break;
+        case GALLIUMOP_USE_QUEUE_PTR:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_USE_QUEUE_PTR);
+            break;
+        case GALLIUMOP_USE_PRIVATE_SEGMENT_BUFFER:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_USE_PRIVATE_SEGMENT_BUFFER);
+            break;
+        case GALLIUMOP_USE_XNACK_ENABLED:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_USE_XNACK_ENABLED);
+            break;
         case GALLIUMOP_TGSIZE:
             AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                                 GALLIUMCVAL_TGSIZE);
@@ -1263,6 +1907,30 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
         case GALLIUMOP_VGPRSNUM:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_VGPRSNUM);
+            break;
+        case GALLIUMOP_WAVEFRONT_SGPR_COUNT:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_WAVEFRONT_SGPR_COUNT);
+            break;
+        case GALLIUMOP_WAVEFRONT_SIZE:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_WAVEFRONT_SIZE);
+            break;
+        case GALLIUMOP_WORKITEM_VGPR_COUNT:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_WORKITEM_VGPR_COUNT);
+            break;
+        case GALLIUMOP_WORKGROUP_FBARRIER_COUNT:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_WORKGROUP_FBARRIER_COUNT);
+            break;
+        case GALLIUMOP_WORKGROUP_GROUP_SEGMENT_SIZE:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE);
+            break;
+        case GALLIUMOP_WORKITEM_PRIVATE_SEGMENT_SIZE:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE);
             break;
         default:
             return false;
@@ -1356,6 +2024,13 @@ bool AsmGalliumHandler::prepareBinary()
             case AsmSectionType::GALLIUM_COMMENT:
                 output.commentSize = sectionSize;
                 output.comment = (const char*)sectionData;
+                break;
+            case AsmSectionType::GALLIUM_CONFIG_CTRL_DIRECTIVE:
+                if (sectionSize != 128)
+                    assembler.printError(AsmSourcePos(),
+                         (std::string("Section '.control_directive' for kernel '")+
+                          assembler.kernels[section.kernelId].name+
+                          "' have wrong size").c_str());
                 break;
             default: // ignore other sections
                 break;

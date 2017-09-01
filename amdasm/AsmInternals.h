@@ -369,6 +369,9 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
 {
     static bool checkPseudoOpName(const CString& string);
     
+    static void doControlDirective(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
     static void setDriverVersion(AsmGalliumHandler& handler, const char* linePtr);
     
     static void setLLVMVersion(AsmGalliumHandler& handler, const char* linePtr);
@@ -387,7 +390,19 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
                       const char* linePtr, GalliumConfigValueTarget target);
     
     static void setDimensions(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, bool amdHsa);
+    
+    static void setMachine(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    
+    static void setCodeVersion(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void setReservedXgprs(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, bool inVgpr);
+    
+    static void setUseGridWorkGroupCount(AsmGalliumHandler& handler,
+                      const char* pseudoOpPlace, const char* linePtr);
     
     static void doGlobalData(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
@@ -461,6 +476,7 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
     
     static void doConfig(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    
     /// add any entry with two 32-bit integers
     static void doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
               const char* linePtr, uint32_t requiredCalNoteIdMask, const char* entryName);

@@ -63,6 +63,7 @@ enum class AsmSectionType: cxbyte
     AMDCL2_ISAMETADATA,
     
     GALLIUM_COMMENT = LAST_COMMON+1,    ///< gallium comment section
+    GALLIUM_CONFIG_CTRL_DIRECTIVE,
     
     ROCM_COMMENT = LAST_COMMON+1,        ///< ROCm comment section
     ROCM_CONFIG_CTRL_DIRECTIVE,
@@ -396,6 +397,7 @@ private:
     {
         cxuint defaultSection;
         std::unique_ptr<AsmAmdHsaKernelConfig> config;
+        cxuint ctrlDirSection;
         bool hasProgInfo;
         cxbyte progInfoEntries;
         cxuint allocRegs[MAX_REGTYPES_NUM];
