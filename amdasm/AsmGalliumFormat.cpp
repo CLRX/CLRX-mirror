@@ -2148,7 +2148,7 @@ bool AsmGalliumHandler::prepareBinary()
             continue;
         }
         kinput.offset = symbol.value;
-        if (llvmVersion >= 40000U)
+        if (llvmVersion >= 40000U && output.kernels[ki].useConfig)
         {   // requires amdhsa-gcn (with HSA header)
             // hotfix
             GalliumKernelConfig config = output.kernels[ki].config;
@@ -2162,8 +2162,7 @@ bool AsmGalliumHandler::prepareBinary()
             const Kernel& kernel = *kernelStates[ki];
             if (kernel.config != nullptr)
             {   // replace by HSA config
-                ::memcpy(&outConfig, kernel.config.get(),
-                        sizeof(AmdHsaKernelConfig));
+                ::memcpy(&outConfig, kernel.config.get(), sizeof(AmdHsaKernelConfig));
                 // set config from HSA config
                 const AsmAmdHsaKernelConfig& hsaConfig = *kernel.config.get();
                 if (hsaConfig.usedSGPRsNum != BINGEN_DEFAULT)
@@ -2187,6 +2186,13 @@ bool AsmGalliumHandler::prepareBinary()
                     config.localSize = hsaConfig.workgroupGroupSegmentSize;
                 if (hsaConfig.workitemPrivateSegmentSize != BINGEN_DEFAULT) // scratch buffer
                     config.scratchBufferSize = hsaConfig.workitemPrivateSegmentSize;
+                
+                if (outConfig.enableSgprRegisterFlags == 0)
+                    outConfig.enableSgprRegisterFlags =
+                        uint16_t(AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER|
+                            AMDHSAFLAG_USE_DISPATCH_PTR|AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR);
+                if (outConfig.enableFeatureFlags == 0)
+                    outConfig.enableFeatureFlags = uint16_t(AMDHSAFLAG_USE_PTR64|2);
             }
             
             uint32_t dimValues = 0;
