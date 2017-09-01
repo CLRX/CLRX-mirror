@@ -2151,8 +2151,43 @@ bool AsmGalliumHandler::prepareBinary()
         if (llvmVersion >= 40000U)
         {   // requires amdhsa-gcn (with HSA header)
             // hotfix
-            GalliumKernelConfig& config = output.kernels[ki].config;
+            GalliumKernelConfig config = output.kernels[ki].config;
             AmdHsaKernelConfig outConfig;
+            ::memset(&outConfig, 0xff, 128); // fill by defaults
+            outConfig.enableSgprRegisterFlags =
+                    uint16_t(AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER|
+                        AMDHSAFLAG_USE_DISPATCH_PTR|AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR);
+            outConfig.enableFeatureFlags = uint16_t(AMDHSAFLAG_USE_PTR64|2);
+            
+            const Kernel& kernel = *kernelStates[ki];
+            if (kernel.config != nullptr)
+            {   // replace by HSA config
+                ::memcpy(&outConfig, kernel.config.get(),
+                        sizeof(AmdHsaKernelConfig));
+                // set config from HSA config
+                const AsmAmdHsaKernelConfig& hsaConfig = *kernel.config.get();
+                if (hsaConfig.usedSGPRsNum != BINGEN_DEFAULT)
+                    config.usedSGPRsNum = hsaConfig.usedSGPRsNum;
+                if (hsaConfig.usedVGPRsNum != BINGEN_DEFAULT)
+                    config.usedVGPRsNum = hsaConfig.usedVGPRsNum;
+                if (hsaConfig.userDataNum != BINGEN8_DEFAULT)
+                    config.userDataNum = hsaConfig.userDataNum;
+                config.dimMask |= hsaConfig.dimMask;
+                config.pgmRSRC1 |= hsaConfig.computePgmRsrc1;
+                config.pgmRSRC2 |= hsaConfig.computePgmRsrc2;
+                config.ieeeMode |= hsaConfig.ieeeMode;
+                config.floatMode |= hsaConfig.floatMode;
+                config.priority = std::max(hsaConfig.priority, config.priority);
+                config.exceptions |= hsaConfig.exceptions;
+                config.tgSize |= hsaConfig.tgSize;
+                config.debugMode |= hsaConfig.debugMode;
+                config.privilegedMode |= hsaConfig.privilegedMode;
+                config.dx10Clamp |= hsaConfig.dx10Clamp;
+                if (hsaConfig.workgroupGroupSegmentSize == BINGEN_DEFAULT) // local size
+                    config.localSize = hsaConfig.workgroupGroupSegmentSize;
+                if (hsaConfig.workitemPrivateSegmentSize == BINGEN_DEFAULT) // scratch buffer
+                    config.scratchBufferSize = hsaConfig.workitemPrivateSegmentSize;
+            }
             
             uint32_t dimValues = 0;
             if (config.dimMask != BINGEN_DEFAULT)
@@ -2186,44 +2221,108 @@ bool AsmGalliumHandler::prepareBinary()
                 argSegmentSize += argInfo.targetSize;
             }
             argSegmentSize += 16; // gridOffset and gridDim
-            SULEV(outConfig.amdCodeVersionMajor, 1);
-            SULEV(outConfig.amdCodeVersionMinor, 0);
-            SULEV(outConfig.amdMachineKind, 1);
-            SULEV(outConfig.amdMachineMajor, amdGpuArchValues.major);
-            SULEV(outConfig.amdMachineMinor, amdGpuArchValues.minor);
-            SULEV(outConfig.amdMachineStepping, amdGpuArchValues.stepping);
-            SULEV(outConfig.kernelCodeEntryOffset, 256);
-            SULEV(outConfig.kernelCodePrefetchOffset, 0);
-            SULEV(outConfig.kernelCodePrefetchSize, 0);
-            SULEV(outConfig.maxScrachBackingMemorySize, 0);
-            SULEV(outConfig.computePgmRsrc1, pgmRSRC1);
-            SULEV(outConfig.computePgmRsrc2, pgmRSRC2);
-            SULEV(outConfig.enableSgprRegisterFlags, 
-                    uint16_t(AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER|
-                        AMDHSAFLAG_USE_DISPATCH_PTR|AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR));
-            SULEV(outConfig.enableFeatureFlags, uint16_t(AMDHSAFLAG_USE_PTR64|2));
-            SULEV(outConfig.workitemPrivateSegmentSize, config.scratchBufferSize);
-            SULEV(outConfig.workgroupGroupSegmentSize, config.localSize);
-            SULEV(outConfig.gdsSegmentSize, 0);
-            SULEV(outConfig.kernargSegmentSize, argSegmentSize);
-            SULEV(outConfig.workgroupFbarrierCount, 0);
-            SULEV(outConfig.wavefrontSgprCount, config.usedSGPRsNum);
-            SULEV(outConfig.workitemVgprCount, config.usedVGPRsNum);
-            SULEV(outConfig.reservedVgprFirst, 0);
-            SULEV(outConfig.reservedVgprCount, 0);
-            SULEV(outConfig.reservedSgprFirst, 0);
-            SULEV(outConfig.reservedSgprCount, 0);
-            SULEV(outConfig.debugWavefrontPrivateSegmentOffsetSgpr, 0);
-            SULEV(outConfig.debugPrivateSegmentBufferSgpr, 0);
-            outConfig.kernargSegmentAlignment = 4;
-            outConfig.groupSegmentAlignment = 4;
-            outConfig.privateSegmentAlignment = 4;
-            outConfig.wavefrontSize = 6;
-            SULEV(outConfig.callConvention, 0);
-            SULEV(outConfig.reserved1[0], 0);
-            SULEV(outConfig.reserved1[1], 0);
-            SULEV(outConfig.reserved1[2], 0);
-            SULEV(outConfig.runtimeLoaderKernelSymbol, 0);
+            
+            if (outConfig.amdCodeVersionMajor == BINGEN_DEFAULT)
+                outConfig.amdCodeVersionMajor = 1;
+            if (outConfig.amdCodeVersionMinor == BINGEN_DEFAULT)
+                outConfig.amdCodeVersionMinor = 0;
+            if (outConfig.amdMachineKind == BINGEN16_DEFAULT)
+                outConfig.amdMachineKind = 1;
+            if (outConfig.amdMachineMajor == BINGEN16_DEFAULT)
+                outConfig.amdMachineMajor = amdGpuArchValues.major;
+            if (outConfig.amdMachineMinor == BINGEN16_DEFAULT)
+                outConfig.amdMachineMinor = amdGpuArchValues.minor;
+            if (outConfig.amdMachineStepping == BINGEN16_DEFAULT)
+                outConfig.amdMachineStepping = amdGpuArchValues.stepping;
+            if (outConfig.kernelCodeEntryOffset == BINGEN64_DEFAULT)
+                outConfig.kernelCodeEntryOffset = 256;
+            if (outConfig.kernelCodePrefetchOffset == BINGEN64_DEFAULT)
+                outConfig.kernelCodePrefetchOffset = 0;
+            if (outConfig.kernelCodePrefetchSize == BINGEN64_DEFAULT)
+                outConfig.kernelCodePrefetchSize = 0;
+            if (outConfig.maxScrachBackingMemorySize == BINGEN64_DEFAULT) // ??
+                outConfig.maxScrachBackingMemorySize = 0;
+            outConfig.computePgmRsrc1 = pgmRSRC1;
+            outConfig.computePgmRsrc2 = pgmRSRC2;
+            if (outConfig.workitemPrivateSegmentSize == BINGEN_DEFAULT) // scratch buffer
+                outConfig.workitemPrivateSegmentSize = config.scratchBufferSize;
+            if (outConfig.workgroupGroupSegmentSize == BINGEN_DEFAULT)
+                outConfig.workgroupGroupSegmentSize = config.localSize;
+            if (outConfig.gdsSegmentSize == BINGEN_DEFAULT)
+                outConfig.gdsSegmentSize = 0;
+            if (outConfig.kernargSegmentSize == BINGEN64_DEFAULT)
+                outConfig.kernargSegmentSize = argSegmentSize;
+            if (outConfig.workgroupFbarrierCount == BINGEN_DEFAULT)
+                outConfig.workgroupFbarrierCount = 0;
+            if (outConfig.wavefrontSgprCount == BINGEN16_DEFAULT)
+                outConfig.wavefrontSgprCount = config.usedSGPRsNum;
+            if (outConfig.workitemVgprCount == BINGEN16_DEFAULT)
+                outConfig.workitemVgprCount = config.usedVGPRsNum;
+            if (outConfig.reservedVgprFirst == BINGEN16_DEFAULT)
+                outConfig.reservedVgprFirst = 0;
+            if (outConfig.reservedVgprCount == BINGEN16_DEFAULT)
+                outConfig.reservedVgprCount = 0;
+            if (outConfig.reservedSgprFirst == BINGEN16_DEFAULT)
+                outConfig.reservedSgprFirst = 0;
+            if (outConfig.reservedSgprCount == BINGEN16_DEFAULT)
+                outConfig.reservedSgprCount = 0;
+            if (outConfig.debugWavefrontPrivateSegmentOffsetSgpr == BINGEN16_DEFAULT)
+                outConfig.debugWavefrontPrivateSegmentOffsetSgpr = 0;
+            if (outConfig.debugPrivateSegmentBufferSgpr == BINGEN16_DEFAULT)
+                outConfig.debugPrivateSegmentBufferSgpr = 0;
+            if (outConfig.kernargSegmentAlignment == BINGEN8_DEFAULT)
+                outConfig.kernargSegmentAlignment = 4;
+            if (outConfig.groupSegmentAlignment == BINGEN8_DEFAULT)
+                outConfig.groupSegmentAlignment = 4;
+            if (outConfig.privateSegmentAlignment == BINGEN8_DEFAULT)
+                outConfig.privateSegmentAlignment = 4;
+            if (outConfig.wavefrontSize == BINGEN8_DEFAULT)
+                outConfig.wavefrontSize = 6;
+            if (outConfig.callConvention == BINGEN_DEFAULT)
+                outConfig.callConvention = 0;
+            outConfig.reserved1[0] = 0;
+            outConfig.reserved1[1] = 0;
+            outConfig.reserved1[2] = 0;
+            if (outConfig.runtimeLoaderKernelSymbol == BINGEN64_DEFAULT)
+                outConfig.runtimeLoaderKernelSymbol = 0;
+            
+            // to little endian
+            SLEV(outConfig.amdCodeVersionMajor, outConfig.amdCodeVersionMajor);
+            SLEV(outConfig.amdCodeVersionMinor, outConfig.amdCodeVersionMinor);
+            SLEV(outConfig.amdMachineKind, outConfig.amdMachineKind);
+            SLEV(outConfig.amdMachineMajor, outConfig.amdMachineMajor);
+            SLEV(outConfig.amdMachineMinor, outConfig.amdMachineMinor);
+            SLEV(outConfig.amdMachineStepping, outConfig.amdMachineStepping);
+            SLEV(outConfig.kernelCodeEntryOffset, outConfig.kernelCodeEntryOffset);
+            SLEV(outConfig.kernelCodePrefetchOffset, outConfig.kernelCodePrefetchOffset);
+            SLEV(outConfig.kernelCodePrefetchSize, outConfig.kernelCodePrefetchSize);
+            SLEV(outConfig.maxScrachBackingMemorySize, outConfig.maxScrachBackingMemorySize);
+            SLEV(outConfig.computePgmRsrc1, outConfig.computePgmRsrc1);
+            SLEV(outConfig.computePgmRsrc2, outConfig.computePgmRsrc2);
+            SLEV(outConfig.enableSgprRegisterFlags, outConfig.enableSgprRegisterFlags);
+            SLEV(outConfig.enableFeatureFlags, outConfig.enableFeatureFlags);
+            SLEV(outConfig.workitemPrivateSegmentSize, outConfig.workitemPrivateSegmentSize);
+            SLEV(outConfig.workgroupGroupSegmentSize, outConfig.workgroupGroupSegmentSize);
+            SLEV(outConfig.gdsSegmentSize, outConfig.gdsSegmentSize);
+            SLEV(outConfig.kernargSegmentSize, outConfig.kernargSegmentSize);
+            SLEV(outConfig.workgroupFbarrierCount, outConfig.workgroupFbarrierCount);
+            SLEV(outConfig.wavefrontSgprCount, outConfig.wavefrontSgprCount);
+            SLEV(outConfig.workitemVgprCount, outConfig.workitemVgprCount);
+            SLEV(outConfig.reservedVgprFirst, outConfig.reservedVgprFirst);
+            SLEV(outConfig.reservedVgprCount, outConfig.reservedVgprCount);
+            SLEV(outConfig.reservedSgprFirst, outConfig.reservedSgprFirst);
+            SLEV(outConfig.reservedSgprCount, outConfig.reservedSgprCount);
+            SLEV(outConfig.debugWavefrontPrivateSegmentOffsetSgpr,
+                outConfig.debugWavefrontPrivateSegmentOffsetSgpr);
+            SLEV(outConfig.debugPrivateSegmentBufferSgpr,
+                 outConfig.debugPrivateSegmentBufferSgpr);
+            SLEV(outConfig.callConvention, outConfig.callConvention);
+            SLEV(outConfig.runtimeLoaderKernelSymbol, outConfig.runtimeLoaderKernelSymbol);
+            // put control directive section to config
+            if (kernel.ctrlDirSection!=ASMSECT_NONE &&
+                assembler.sections[kernel.ctrlDirSection].content.size()==128)
+                ::memcpy(outConfig.controlDirective, 
+                    assembler.sections[kernel.ctrlDirSection].content.data(), 128);
             
             ::memset(outConfig.controlDirective, 0, 128);
             ::memcpy(asmCSection.content.data() + symbol.value,
