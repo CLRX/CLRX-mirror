@@ -77,12 +77,26 @@ AsmAmdHandler::AsmAmdHandler(Assembler& assembler) : AsmFormatHandler(assembler)
     assembler.currentSection = 0;
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA, ELFSECTID_UNDEF, nullptr });
     savedSection = 0;
+    defaultDriverVersion = detectAmdDriverVersion();
 }
 
 AsmAmdHandler::~AsmAmdHandler()
 {
     for (Kernel* kernel: kernelStates)
         delete kernel;
+}
+
+cxuint AsmAmdHandler::determineDriverVersion() const
+{
+    if (output.driverVersion==0 && output.driverInfo.empty())
+    {
+        if (assembler.getDriverVersion() == 0)
+            return defaultDriverVersion;
+        else
+            return assembler.getDriverVersion();
+    }
+    else
+        return output.driverVersion;
 }
 
 void AsmAmdHandler::saveCurrentSection()
@@ -331,15 +345,7 @@ void AsmAmdPseudoOps::getDriverVersion(AsmAmdHandler& handler, const char* lineP
         return;
     
     cxuint driverVersion = 0;
-    if (handler.output.driverVersion==0 && handler.output.driverInfo.empty())
-    {
-        if (asmr.driverVersion==0) // just detect driver version
-            driverVersion = detectAmdDriverVersion();
-        else // from assembler setup
-            driverVersion = asmr.driverVersion;
-    }
-    else
-        driverVersion = handler.output.driverVersion;
+    driverVersion = handler.determineDriverVersion();
     
     std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
                 AsmSymbol(ASMSECT_ABS, driverVersion));
@@ -1919,7 +1925,7 @@ bool AsmAmdHandler::prepareBinary()
         (assembler.flags&ASM_TESTRUN)==0)
     {
         if (assembler.driverVersion==0) // just detect driver version
-            output.driverVersion = detectAmdDriverVersion();
+            output.driverVersion = defaultDriverVersion;
         else // from assembler setup
             output.driverVersion = assembler.driverVersion;
     }

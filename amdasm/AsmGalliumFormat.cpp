@@ -63,14 +63,6 @@ enum
     GALLIUMOP_TGSIZE, GALLIUMOP_USERDATANUM, GALLIUMOP_VGPRSNUM
 };
 
-static cxuint determineLLVMVersion(Assembler& asmr)
-{
-    if (asmr.getLLVMVersion() == 0)
-        return detectLLVMCompilerVersion();
-    else
-        return asmr.getLLVMVersion();
-}
-
 void AsmGalliumHandler::Kernel::initializeAmdHsaKernelConfig()
 {
     if (!config)
@@ -113,13 +105,31 @@ AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler): AsmFormatHandler(ass
     inside = Inside::MAINLAYOUT;
     currentKcodeKernel = ASMKERN_GLOBAL;
     savedSection = 0;
+    defaultLLVMVersion = detectLLVMCompilerVersion();
+    defaultDriverVersion = detectMesaDriverVersion();
+}
+
+cxuint AsmGalliumHandler::determineLLVMVersion() const
+{
+    if (assembler.getLLVMVersion() == 0)
+        return defaultLLVMVersion;
+    else
+        return assembler.getLLVMVersion();
+}
+
+cxuint AsmGalliumHandler::determineDriverVersion() const
+{
+    if (assembler.getDriverVersion() == 0)
+        return defaultDriverVersion;
+    else
+        return assembler.getDriverVersion();
 }
 
 cxuint AsmGalliumHandler::addKernel(const char* kernelName)
 {
     cxuint thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
-    output.addEmptyKernel(kernelName, determineLLVMVersion(assembler));
+    output.addEmptyKernel(kernelName, determineLLVMVersion());
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
     kernelStates.push_back({ thisSection, nullptr, false, 0 });
@@ -360,14 +370,9 @@ void AsmGalliumPseudoOps::getXXXVersion(AsmGalliumHandler& handler, const char* 
     
     cxuint driverVersion = 0;
     if (getLLVMVersion)
-        driverVersion = determineLLVMVersion(asmr);
+        driverVersion = handler.determineLLVMVersion();
     else
-    {
-        if (asmr.driverVersion == 0)
-            driverVersion = detectMesaDriverVersion();
-        else
-            driverVersion = asmr.driverVersion;
-    }
+        driverVersion = handler.determineDriverVersion();
     
     std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
                 AsmSymbol(ASMSECT_ABS, driverVersion));
@@ -403,7 +408,7 @@ void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseud
     
     handler.inside = AsmGalliumHandler::Inside::CONFIG;
     handler.output.kernels[asmr.currentKernel].useConfig = true;
-    if (determineLLVMVersion(asmr) >= 40000U) // HSA since LLVM 4.0
+    if (handler.determineLLVMVersion() >= 40000U) // HSA since LLVM 4.0
         handler.kernelStates[asmr.currentKernel].initializeAmdHsaKernelConfig();
 }
 
@@ -450,10 +455,11 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
         return;
     }
     
-    /*if (target >= GALLIUMCVAL_HSA_FIRST_PARAM && handler.kern)
+    if (target >= GALLIUMCVAL_HSA_FIRST_PARAM && handler.determineLLVMVersion() < 40000U)
     {
+        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM<=4.0.0");
         return;
-    }*/
+    }
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
@@ -983,7 +989,7 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
     // do operation
     AsmGalliumHandler::Kernel& kstate = handler.kernelStates[asmr.currentKernel];
     kstate.hasProgInfo = true;
-    const cxuint llvmVersion = determineLLVMVersion(asmr);
+    const cxuint llvmVersion = handler.determineLLVMVersion();
     if (llvmVersion<30900U && kstate.progInfoEntries == 3)
     {
         asmr.printError(pseudoOpPlace, "Maximum 3 entries can be in ProgInfo");
@@ -1426,7 +1432,7 @@ bool AsmGalliumHandler::prepareBinary()
     
     cxuint llvmVersion = assembler.llvmVersion;
     if (llvmVersion == 0 && (assembler.flags&ASM_TESTRUN)==0)
-        llvmVersion = detectLLVMCompilerVersion();
+        llvmVersion = defaultLLVMVersion;
     
     const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
     const uint32_t ldsMask = (1U<<ldsShift)-1U;
@@ -1545,7 +1551,7 @@ bool AsmGalliumHandler::prepareBinary()
     }
     // set versions
     if (assembler.driverVersion == 0 && (assembler.flags&ASM_TESTRUN)==0) // auto detection
-        output.isMesa170 = detectMesaDriverVersion() >= 170000U;
+        output.isMesa170 = defaultDriverVersion >= 170000U;
     else
         output.isMesa170 = assembler.driverVersion >= 170000U;
     output.isLLVM390 = llvmVersion >= 30900U;

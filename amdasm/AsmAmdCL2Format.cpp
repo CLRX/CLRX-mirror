@@ -76,6 +76,7 @@ AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmFormatHandler(asse
     sections.push_back({ ASMKERN_INNER, AsmSectionType::DATA, ELFSECTID_RODATA,
             ".rodata" });
     savedSection = innerSavedSection = 0;
+    defaultDriverVersion = detectAmdDriverVersion();
 }
 
 AsmAmdCL2Handler::~AsmAmdCL2Handler()
@@ -110,7 +111,7 @@ cxuint AsmAmdCL2Handler::getDriverVersion() const
     if (output.driverVersion==0)
     {
         if (assembler.driverVersion==0) // just detect driver version
-            driverVersion = detectAmdDriverVersion();
+            driverVersion = defaultDriverVersion;
         else // from assembler setup
             driverVersion = assembler.driverVersion;
     }
@@ -1568,7 +1569,7 @@ bool AsmAmdCL2Handler::prepareBinary()
     if (output.driverVersion==0 && (assembler.flags&ASM_TESTRUN)==0)
     {
         if (assembler.driverVersion==0) // just detect driver version
-            output.driverVersion = detectAmdDriverVersion();
+            output.driverVersion = defaultDriverVersion;
         else // from assembler setup
             output.driverVersion = assembler.driverVersion;
     }

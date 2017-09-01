@@ -241,9 +241,13 @@ private:
     cxuint savedSection;
     cxuint extraSectionCount;
     
+    cxuint defaultDriverVersion;
+    
     void saveCurrentSection();
     void restoreCurrentAllocRegs();
     void saveCurrentAllocRegs();
+    
+    cxuint determineDriverVersion() const;
 public:
     /// constructor
     explicit AsmAmdHandler(Assembler& assembler);
@@ -319,6 +323,8 @@ private:
     cxuint innerSavedSection;
     cxuint extraSectionCount;
     cxuint innerExtraSectionCount;
+    
+    cxuint defaultDriverVersion;
     
     void saveCurrentSection();
     void restoreCurrentAllocRegs();
@@ -410,8 +416,14 @@ private:
     Inside inside;
     cxuint extraSectionCount;
     
+    cxuint defaultDriverVersion;
+    cxuint defaultLLVMVersion;
+    
     void restoreKcodeCurrentAllocRegs();
     void saveKcodeCurrentAllocRegs();
+    
+    cxuint determineDriverVersion() const;
+    cxuint determineLLVMVersion() const;
 public:
     /// construcror
     explicit AsmGalliumHandler(Assembler& assembler);
