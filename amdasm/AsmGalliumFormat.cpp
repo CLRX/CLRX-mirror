@@ -109,6 +109,12 @@ AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler): AsmFormatHandler(ass
     defaultDriverVersion = detectMesaDriverVersion();
 }
 
+AsmGalliumHandler::~AsmGalliumHandler()
+{
+    for (Kernel* kernel: kernelStates)
+        delete kernel;
+}
+
 cxuint AsmGalliumHandler::determineLLVMVersion() const
 {
     if (assembler.getLLVMVersion() == 0)
@@ -132,7 +138,7 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
     output.addEmptyKernel(kernelName, determineLLVMVersion());
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
-    kernelStates.push_back({ thisSection, nullptr, false, 0 });
+    kernelStates.push_back(new Kernel{ thisSection, nullptr, false, 0 });
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
@@ -222,7 +228,7 @@ void AsmGalliumHandler::setCurrentKernel(cxuint kernel)
     
     assembler.currentKernel = kernel;
     if (kernel != ASMKERN_GLOBAL)
-        assembler.currentSection = kernelStates[kernel].defaultSection;
+        assembler.currentSection = kernelStates[kernel]->defaultSection;
     else // default main section
         assembler.currentSection = savedSection;
     inside = Inside::MAINLAYOUT;
@@ -288,7 +294,7 @@ void AsmGalliumHandler::restoreKcodeCurrentAllocRegs()
 {
     if (currentKcodeKernel != ASMKERN_GLOBAL)
     {
-        Kernel& newKernel = kernelStates[currentKcodeKernel];
+        Kernel& newKernel = *kernelStates[currentKcodeKernel];
         assembler.isaAssembler->setAllocatedRegisters(newKernel.allocRegs,
                             newKernel.allocRegFlags);
     }
@@ -299,7 +305,7 @@ void AsmGalliumHandler::saveKcodeCurrentAllocRegs()
     if (currentKcodeKernel != ASMKERN_GLOBAL)
     {   // save other state
         size_t regTypesNum;
-        Kernel& oldKernel = kernelStates[currentKcodeKernel];
+        Kernel& oldKernel = *kernelStates[currentKcodeKernel];
         const cxuint* regs = assembler.isaAssembler->getAllocatedRegisters(
                             regTypesNum, oldKernel.allocRegFlags);
         std::copy(regs, regs+regTypesNum, oldKernel.allocRegs);
@@ -396,7 +402,7 @@ void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseud
         asmr.printError(pseudoOpPlace, "Configuration outside kernel definition");
         return;
     }
-    if (handler.kernelStates[asmr.currentKernel].hasProgInfo)
+    if (handler.kernelStates[asmr.currentKernel]->hasProgInfo)
     {
         asmr.printError(pseudoOpPlace,
                 "Configuration can't be defined if progInfo was defined");
@@ -409,7 +415,7 @@ void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseud
     handler.inside = AsmGalliumHandler::Inside::CONFIG;
     handler.output.kernels[asmr.currentKernel].useConfig = true;
     if (handler.determineLLVMVersion() >= 40000U) // HSA since LLVM 4.0
-        handler.kernelStates[asmr.currentKernel].initializeAmdHsaKernelConfig();
+        handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
 }
 
 void AsmGalliumPseudoOps::doGlobalData(AsmGalliumHandler& handler,
@@ -943,7 +949,7 @@ void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
         return;
     
     handler.inside = AsmGalliumHandler::Inside::PROGINFO;
-    handler.kernelStates[asmr.currentKernel].hasProgInfo = true;
+    handler.kernelStates[asmr.currentKernel]->hasProgInfo = true;
 }
 
 void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
@@ -987,7 +993,7 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
         return;
     
     // do operation
-    AsmGalliumHandler::Kernel& kstate = handler.kernelStates[asmr.currentKernel];
+    AsmGalliumHandler::Kernel& kstate = *handler.kernelStates[asmr.currentKernel];
     kstate.hasProgInfo = true;
     const cxuint llvmVersion = handler.determineLLVMVersion();
     if (llvmVersion<30900U && kstate.progInfoEntries == 3)
@@ -1020,7 +1026,7 @@ void AsmGalliumPseudoOps::updateKCodeSel(AsmGalliumHandler& handler,
         const cxuint* curAllocRegs = asmr.isaAssembler->getAllocatedRegisters(regTypesNum,
                                curAllocRegFlags);
         cxuint newAllocRegs[MAX_REGTYPES_NUM];
-        AsmGalliumHandler::Kernel& kernel = handler.kernelStates[*it];
+        AsmGalliumHandler::Kernel& kernel = *handler.kernelStates[*it];
         for (size_t i = 0; i < regTypesNum; i++)
             newAllocRegs[i] = std::max(curAllocRegs[i], kernel.allocRegs[i]);
         kernel.allocRegFlags |= curAllocRegFlags;
@@ -1388,13 +1394,13 @@ bool AsmGalliumHandler::prepareBinary()
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
         {
             config.usedSGPRsNum = std::min(
-                std::max(minRegsNum[0], kernelStates[i].allocRegs[0]) +
+                std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]) +
                     getGPUExtraRegsNum(arch, REGTYPE_SGPR,
-                        kernelStates[i].allocRegFlags|GCN_VCC),
+                        kernelStates[i]->allocRegFlags|GCN_VCC),
                     maxSGPRsNum); // include all extra sgprs
         }
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
-            config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i].allocRegs[1]);
+            config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i]->allocRegs[1]);
     }
     
     // if set adds symbols to binary

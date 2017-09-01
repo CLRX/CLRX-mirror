@@ -403,7 +403,7 @@ private:
         
         void initializeAmdHsaKernelConfig();
     };
-    std::vector<Kernel> kernelStates;
+    std::vector<Kernel*> kernelStates;
     std::vector<Section> sections;
     std::vector<cxuint> kcodeSelection; // kcode
     std::stack<std::vector<cxuint> > kcodeSelStack;
@@ -428,7 +428,7 @@ public:
     /// construcror
     explicit AsmGalliumHandler(Assembler& assembler);
     /// destructor
-    ~AsmGalliumHandler() = default;
+    ~AsmGalliumHandler();
     
     cxuint addKernel(const char* kernelName);
     cxuint addSection(const char* sectionName, cxuint kernelId);
