@@ -2183,9 +2183,9 @@ bool AsmGalliumHandler::prepareBinary()
                 config.debugMode |= hsaConfig.debugMode;
                 config.privilegedMode |= hsaConfig.privilegedMode;
                 config.dx10Clamp |= hsaConfig.dx10Clamp;
-                if (hsaConfig.workgroupGroupSegmentSize == BINGEN_DEFAULT) // local size
+                if (hsaConfig.workgroupGroupSegmentSize != BINGEN_DEFAULT) // local size
                     config.localSize = hsaConfig.workgroupGroupSegmentSize;
-                if (hsaConfig.workitemPrivateSegmentSize == BINGEN_DEFAULT) // scratch buffer
+                if (hsaConfig.workitemPrivateSegmentSize != BINGEN_DEFAULT) // scratch buffer
                     config.scratchBufferSize = hsaConfig.workitemPrivateSegmentSize;
             }
             
@@ -2325,8 +2325,13 @@ bool AsmGalliumHandler::prepareBinary()
                     assembler.sections[kernel.ctrlDirSection].content.data(), 128);
             
             ::memset(outConfig.controlDirective, 0, 128);
-            ::memcpy(asmCSection.content.data() + symbol.value,
-                     &outConfig, sizeof(AmdHsaKernelConfig));
+            if (asmCSection.content.size() >= symbol.value+256)
+                ::memcpy(asmCSection.content.data() + symbol.value,
+                        &outConfig, sizeof(AmdHsaKernelConfig));
+            else
+                assembler.printError(AsmSourcePos(), (
+                    std::string("HSA configuration for kernel'")+
+                    kinput.kernelName.c_str()+"' out of content").c_str());
         }
     }
     // set versions

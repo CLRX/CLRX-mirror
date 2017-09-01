@@ -71,7 +71,7 @@ static void printHexData(std::ostream& os, cxuint indentLevel, size_t size,
     }
 }
 
-static void printGalliumOutput(std::ostream& os, const GalliumInput* output)
+static void printGalliumOutput(std::ostream& os, const GalliumInput* output, bool amdHsa)
 {
     os << "GalliumBinDump:" << std::endl;
     for (const GalliumKernelInput& kernel: output->kernels)
@@ -99,6 +99,65 @@ static void printGalliumOutput(std::ostream& os, const GalliumInput* output)
                     "priority=" << cxuint(config.priority) << ", "
                     "localSize=" << config.localSize << ", "
                     "scratchBuffer=" << config.scratchBufferSize << std::endl;
+            if (amdHsa)
+            {
+                const AmdHsaKernelConfig& config =
+                    *reinterpret_cast<const AmdHsaKernelConfig*>(
+                                output->code + kernel.offset);
+                os << "    AMD HSA Config:\n"
+                    "      amdCodeVersion=" << ULEV(config.amdCodeVersionMajor) << "." <<
+                        ULEV(config.amdCodeVersionMajor) << "\n"
+                    "      amdMachine=" << ULEV(config.amdMachineKind) << ":" <<
+                        ULEV(config.amdMachineMajor) << ":" <<
+                        ULEV(config.amdMachineMinor) << ":" <<
+                        ULEV(config.amdMachineStepping) << "\n"
+                    "      kernelCodeEntryOffset=" <<
+                        ULEV(config.kernelCodeEntryOffset) << "\n"
+                    "      kernelCodePrefetchOffset=" <<
+                        ULEV(config.kernelCodePrefetchOffset) << "\n"
+                    "      kernelCodePrefetchSize=" <<
+                            ULEV(config.kernelCodePrefetchSize) << "\n"
+                    "      maxScrachBackingMemorySize=" <<
+                        ULEV(config.maxScrachBackingMemorySize) << "\n"
+                    "      computePgmRsrc1=0x" << std::hex <<
+                            ULEV(config.computePgmRsrc1) << "\n"
+                    "      computePgmRsrc2=0x" << ULEV(config.computePgmRsrc2) << "\n"
+                    "      enableSgprRegisterFlags=0x" <<
+                        ULEV(config.enableSgprRegisterFlags) << "\n"
+                    "      enableFeatureFlags=0x" <<
+                        ULEV(config.enableFeatureFlags) << std::dec << "\n"
+                    "      workitemPrivateSegmentSize=" <<
+                        ULEV(config.workitemPrivateSegmentSize) << "\n"
+                    "      workgroupGroupSegmentSize=" <<
+                        ULEV(config.workgroupGroupSegmentSize) << "\n"
+                    "      gdsSegmentSize=" << ULEV(config.gdsSegmentSize) << "\n"
+                    "      kernargSegmentSize=" << ULEV(config.kernargSegmentSize) << "\n"
+                    "      workgroupFbarrierCount=" <<
+                            ULEV(config.workgroupFbarrierCount) << "\n"
+                    "      wavefrontSgprCount=" << ULEV(config.wavefrontSgprCount) << "\n"
+                    "      workitemVgprCount=" << ULEV(config.workitemVgprCount) << "\n"
+                    "      reservedVgprFirst=" << ULEV(config.reservedVgprFirst) << "\n"
+                    "      reservedVgprCount=" << ULEV(config.reservedVgprCount) << "\n"
+                    "      reservedSgprFirst=" << ULEV(config.reservedSgprFirst) << "\n"
+                    "      reservedSgprCount=" << ULEV(config.reservedSgprCount) << "\n"
+                    "      debugWavefrontPrivateSegmentOffsetSgpr=" <<
+                        ULEV(config.debugWavefrontPrivateSegmentOffsetSgpr) << "\n"
+                    "      debugPrivateSegmentBufferSgpr=" <<
+                        ULEV(config.debugPrivateSegmentBufferSgpr) << "\n"
+                    "      kernargSegmentAlignment=" << 
+                        cxuint(config.kernargSegmentAlignment) << "\n"
+                    "      groupSegmentAlignment=" <<
+                        cxuint(config.groupSegmentAlignment) << "\n"
+                    "      privateSegmentAlignment=" <<
+                        cxuint(config.privateSegmentAlignment) << "\n"
+                    "      wavefrontSize=" << cxuint(config.wavefrontSize) << "\n"
+                    "      callConvention=0x" << std::hex <<
+                        ULEV(config.callConvention) << "\n"
+                    "      runtimeLoaderKernelSymbol=0x" <<
+                        ULEV(config.runtimeLoaderKernelSymbol) << std::dec << "\n";
+                os << "      ControlDirective:\n";
+                printHexData(os, 3, 128, config.controlDirective);
+            }
         }
         for (const GalliumArgInfo& arg: kernel.argInfos)
         {
@@ -367,6 +426,158 @@ test.s:15:23: Error: Used SGPRs number out of range (0-104)
 test.s:16:23: Error: Used VGPRs number out of range (0-256)
 )ffDXD", false
     },
+    /* AMD HSA */
+    /* 1 - gallium (configured proginfo) */
+    { R"ffDXD(            .gallium
+        .llvm_version 40000
+            .kernel aa22
+            .args
+            .arg scalar, 8,,,SEXT,griddim
+            .config
+            .priority 1
+            .floatmode 43
+            .ieeemode
+            .sgprsnum 36
+            .vgprsnum 139
+            .pgmrsrc2 523243
+            .scratchbuffer 230
+            
+            .call_convention 0x34dac
+            .debug_private_segment_buffer_sgpr 98
+            .debug_wavefront_private_segment_offset_sgpr 96
+            .gds_segment_size 100
+            .kernarg_segment_align 32
+            .workgroup_group_segment_size 22
+            .workgroup_fbarrier_count 3324
+            .hsa_sgprsnum 79
+            
+            .kernel aa23
+            .args
+            .arg scalar, 8,,,SEXT,griddim
+            .config
+            .dims yz
+            .priority 3
+            .ieeemode
+            .pgmrsrc2 0
+            .group_segment_align 128
+            .kernarg_segment_align 64
+            .kernarg_segment_size 228
+            .kernel_code_entry_offset 256
+            .kernel_code_prefetch_offset 1002
+            .kernel_code_prefetch_size 13431
+            .max_scratch_backing_memory 4212
+            .reserved_sgprs 12,19
+            .reserved_vgprs 26,48
+.text
+aa22:
+    .skip 256
+aa23:
+    .skip 256
+)ffDXD",
+       R"ffDXD(GalliumBinDump:
+  Kernel: name=aa22, offset=0
+    Config:
+      dims=default, SGPRS=36, VGPRS=139, pgmRSRC2=0x7fbeb, ieeeMode=0x1
+      floatMode=0x2b, priority=1, localSize=0, scratchBuffer=230
+    AMD HSA Config:
+      amdCodeVersion=1.1
+      amdMachine=1:0:0:0
+      kernelCodeEntryOffset=256
+      kernelCodePrefetchOffset=0
+      kernelCodePrefetchSize=0
+      maxScrachBackingMemorySize=0
+      computePgmRsrc1=0x8eb662
+      computePgmRsrc2=0x7fbd1
+      enableSgprRegisterFlags=0x0
+      enableFeatureFlags=0x0
+      workitemPrivateSegmentSize=230
+      workgroupGroupSegmentSize=22
+      gdsSegmentSize=100
+      kernargSegmentSize=16
+      workgroupFbarrierCount=3324
+      wavefrontSgprCount=79
+      workitemVgprCount=139
+      reservedVgprFirst=0
+      reservedVgprCount=0
+      reservedSgprFirst=0
+      reservedSgprCount=0
+      debugWavefrontPrivateSegmentOffsetSgpr=96
+      debugPrivateSegmentBufferSgpr=98
+      kernargSegmentAlignment=5
+      groupSegmentAlignment=4
+      privateSegmentAlignment=4
+      wavefrontSize=6
+      callConvention=0x34dac
+      runtimeLoaderKernelSymbol=0x0
+      ControlDirective:
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+  Kernel: name=aa23, offset=256
+    Config:
+      dims=6, SGPRS=12, VGPRS=3, pgmRSRC2=0x0, ieeeMode=0x1
+      floatMode=0xc0, priority=3, localSize=0, scratchBuffer=0
+    AMD HSA Config:
+      amdCodeVersion=1.1
+      amdMachine=1:0:0:0
+      kernelCodeEntryOffset=256
+      kernelCodePrefetchOffset=1002
+      kernelCodePrefetchSize=13431
+      maxScrachBackingMemorySize=4212
+      computePgmRsrc1=0x8c0c40
+      computePgmRsrc2=0x1310
+      enableSgprRegisterFlags=0x0
+      enableFeatureFlags=0x0
+      workitemPrivateSegmentSize=0
+      workgroupGroupSegmentSize=0
+      gdsSegmentSize=0
+      kernargSegmentSize=228
+      workgroupFbarrierCount=0
+      wavefrontSgprCount=12
+      workitemVgprCount=3
+      reservedVgprFirst=26
+      reservedVgprCount=23
+      reservedSgprFirst=12
+      reservedSgprCount=8
+      debugWavefrontPrivateSegmentOffsetSgpr=0
+      debugPrivateSegmentBufferSgpr=0
+      kernargSegmentAlignment=6
+      groupSegmentAlignment=7
+      privateSegmentAlignment=4
+      wavefrontSize=6
+      callConvention=0x0
+      runtimeLoaderKernelSymbol=0x0
+      ControlDirective:
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+  Comment:
+  nullptr
+  GlobalData:
+  nullptr
+  Code:
+  0100000000000000010000000000000000010000000000000000000000000000
+  0000000000000000000000000000000062b68e00d1fb070000000000e6000000
+  16000000640000001000000000000000fc0c00004f008b000000000000000000
+  6000620005040406ac4d03000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  010000000000000001000000000000000001000000000000ea03000000000000
+  77340000000000007410000000000000400c8c00101300000000000000000000
+  0000000000000000e400000000000000000000000c0003001a0017000c000800
+  0000000006070406000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+)ffDXD", "", true
+    },
 };
 
 static void testAssembler(cxuint testId, const AsmTestCase& testCase)
@@ -377,13 +588,15 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     
     Assembler assembler("test.s", input, (ASM_ALL|ASM_TESTRUN)&~ASM_ALTMACRO,
             BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, errorStream, printStream);
+    assembler.setLLVMVersion(0);
     bool good = assembler.assemble();
     
     std::ostringstream dumpOss;
     if (good && assembler.getFormatHandler()!=nullptr)
         // get format handler and their output
         printGalliumOutput(dumpOss, static_cast<const AsmGalliumHandler*>(
-                    assembler.getFormatHandler())->getOutput());
+                    assembler.getFormatHandler())->getOutput(),
+                    assembler.getLLVMVersion() >= 40000U);
     /* compare results */
     char testName[30];
     snprintf(testName, 30, "Test #%u", testId);
