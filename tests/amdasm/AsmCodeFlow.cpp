@@ -320,6 +320,7 @@ static void testAsmKernelRegions(cxuint i, const AsmKernelRegionsCase& testCase)
     
     Assembler assembler("test.s", input, ASM_ALL&~ASM_ALTMACRO,
                     BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, errorStream);
+    assembler.setLLVMVersion(1); // force old llvm version
     bool good = assembler.assemble();
     std::ostringstream oss;
     oss << " testAsmKernelRegionsCase#" << i;

@@ -588,7 +588,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     
     Assembler assembler("test.s", input, (ASM_ALL|ASM_TESTRUN)&~ASM_ALTMACRO,
             BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, errorStream, printStream);
-    assembler.setLLVMVersion(0);
+    assembler.setLLVMVersion(1);
     bool good = assembler.assemble();
     
     std::ostringstream dumpOss;
