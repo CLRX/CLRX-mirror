@@ -21,6 +21,7 @@
 #include <iostream>
 #include <algorithm>
 #include <exception>
+#include <cstdio>
 #include <vector>
 #include <utility>
 #include <thread>

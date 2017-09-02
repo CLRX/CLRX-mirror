@@ -22,6 +22,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <unordered_set>
 #include <utility>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>

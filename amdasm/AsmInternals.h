@@ -23,7 +23,9 @@
 #include <CLRX/Config.h>
 #include <cstdint>
 #include <string>
+#include <unordered_set>
 #include <utility>
+#include <memory>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
 #include "GCNInternals.h"

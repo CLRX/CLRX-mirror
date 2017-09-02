@@ -18,9 +18,11 @@
  */
 
 #include <CLRX/Config.h>
+#include <cstdio>
 #include <cstring>
 #include <string>
 #include <vector>
+#include <unordered_set>
 #include <utility>
 #include <algorithm>
 #include <CLRX/utils/GPUId.h>
