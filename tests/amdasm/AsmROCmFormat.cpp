@@ -452,8 +452,8 @@ someKernelX:
 someKernelX:
         .skip 256
         s_endpgm)ffDXD",
-        "", R"ffDXD(test.s:6:28: Error: Wrong regsister range
-test.s:7:28: Error: Wrong regsister range
+        "", R"ffDXD(test.s:6:28: Error: Wrong register range
+test.s:7:28: Error: Wrong register range
 test.s:8:25: Error: First reserved VGPR register out of range (0-255)
 test.s:8:29: Error: Last reserved VGPR register out of range (0-255)
 test.s:9:25: Error: First reserved SGPR register out of range (0-101)

@@ -793,10 +793,10 @@ bool AsmROCmPseudoOps::parseMachine(Assembler& asmr, const char* linePtr,
     const char* end = asmr.line + asmr.lineSize;
     
     skipSpacesToEnd(linePtr, end);
-    uint64_t kindValue = BINGEN_NOTSUPPLIED;
-    uint64_t majorValue = BINGEN_NOTSUPPLIED;
-    uint64_t minorValue = BINGEN_NOTSUPPLIED;
-    uint64_t steppingValue = BINGEN_NOTSUPPLIED;
+    uint64_t kindValue = 0;
+    uint64_t majorValue = 0;
+    uint64_t minorValue = 0;
+    uint64_t steppingValue = 0;
     const char* valuePlace = linePtr;
     bool good = getAbsoluteValueArg(asmr, kindValue, linePtr, true);
     asmr.printWarningForRange(16, kindValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
@@ -860,8 +860,8 @@ bool AsmROCmPseudoOps::parseCodeVersion(Assembler& asmr, const char* linePtr,
     const char* end = asmr.line + asmr.lineSize;
     
     skipSpacesToEnd(linePtr, end);
-    uint64_t majorValue = BINGEN_NOTSUPPLIED;
-    uint64_t minorValue = BINGEN_NOTSUPPLIED;
+    uint64_t majorValue = 0;
+    uint64_t minorValue = 0;
     const char* valuePlace = linePtr;
     bool good = getAbsoluteValueArg(asmr, majorValue, linePtr, true);
     asmr.printWarningForRange(32, majorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
@@ -940,7 +940,7 @@ bool AsmROCmPseudoOps::parseReservedXgprs(Assembler& asmr, const char* linePtr,
     }
     if (haveFirstReg && haveLastReg && firstReg > lastReg)
     {
-        asmr.printError(valuePlace, "Wrong regsister range");
+        asmr.printError(valuePlace, "Wrong register range");
         good = false;
     }
     

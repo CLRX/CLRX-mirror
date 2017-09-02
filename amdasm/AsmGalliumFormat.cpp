@@ -2058,13 +2058,16 @@ bool AsmGalliumHandler::prepareBinary()
             SLEV(outConfig.kernelCodeEntryOffset, outConfig.kernelCodeEntryOffset);
             SLEV(outConfig.kernelCodePrefetchOffset, outConfig.kernelCodePrefetchOffset);
             SLEV(outConfig.kernelCodePrefetchSize, outConfig.kernelCodePrefetchSize);
-            SLEV(outConfig.maxScrachBackingMemorySize, outConfig.maxScrachBackingMemorySize);
+            SLEV(outConfig.maxScrachBackingMemorySize,
+                 outConfig.maxScrachBackingMemorySize);
             SLEV(outConfig.computePgmRsrc1, outConfig.computePgmRsrc1);
             SLEV(outConfig.computePgmRsrc2, outConfig.computePgmRsrc2);
             SLEV(outConfig.enableSgprRegisterFlags, outConfig.enableSgprRegisterFlags);
             SLEV(outConfig.enableFeatureFlags, outConfig.enableFeatureFlags);
-            SLEV(outConfig.workitemPrivateSegmentSize, outConfig.workitemPrivateSegmentSize);
-            SLEV(outConfig.workgroupGroupSegmentSize, outConfig.workgroupGroupSegmentSize);
+            SLEV(outConfig.workitemPrivateSegmentSize,
+                 outConfig.workitemPrivateSegmentSize);
+            SLEV(outConfig.workgroupGroupSegmentSize,
+                 outConfig.workgroupGroupSegmentSize);
             SLEV(outConfig.gdsSegmentSize, outConfig.gdsSegmentSize);
             SLEV(outConfig.kernargSegmentSize, outConfig.kernargSegmentSize);
             SLEV(outConfig.workgroupFbarrierCount, outConfig.workgroupFbarrierCount);
@@ -2079,7 +2082,8 @@ bool AsmGalliumHandler::prepareBinary()
             SLEV(outConfig.debugPrivateSegmentBufferSgpr,
                  outConfig.debugPrivateSegmentBufferSgpr);
             SLEV(outConfig.callConvention, outConfig.callConvention);
-            SLEV(outConfig.runtimeLoaderKernelSymbol, outConfig.runtimeLoaderKernelSymbol);
+            SLEV(outConfig.runtimeLoaderKernelSymbol,
+                 outConfig.runtimeLoaderKernelSymbol);
             // put control directive section to config
             if (kernel.ctrlDirSection!=ASMSECT_NONE &&
                 assembler.sections[kernel.ctrlDirSection].content.size()==128)
