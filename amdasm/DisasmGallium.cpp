@@ -209,7 +209,9 @@ void CLRX::disassembleGallium(std::ostream& output,
     }
     if (galliumInput->isMesa170)
         output.write(".driver_version 170000\n", 23);
-    if (galliumInput->isLLVM390)
+    if (galliumInput->isAMDHSA)
+        output.write(".llvm_version 40000\n", 20);
+    else if (galliumInput->isLLVM390)
         output.write(".llvm_version 30900\n", 20);
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(galliumInput->deviceType);
