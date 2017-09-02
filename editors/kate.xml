@@ -1887,6 +1887,21 @@
             <item>.group_segment_align</item>
             <item>.half</item>
             <item>.header</item>
+            <item>.hsa_debugmode</item>
+            <item>.hsa_dims</item>
+            <item>.hsa_dx10clamp</item>
+            <item>.hsa_exceptions</item>
+            <item>.hsa_floatmode</item>
+            <item>.hsa_ieeemode</item>
+            <item>.hsa_localsize</item>
+            <item>.hsa_pgmrsrc1</item>
+            <item>.hsa_pgmrsrc2</item>
+            <item>.hsa_priority</item>
+            <item>.hsa_privmode</item>
+            <item>.hsa_sgprsnum</item>
+            <item>.hsa_tgsize</item>
+            <item>.hsa_userdatanum</item>
+            <item>.hsa_vgprsnum</item>
             <item>.hwlocal</item>
             <item>.hword</item>
             <item>.hwregion</item>

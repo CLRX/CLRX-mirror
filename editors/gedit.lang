@@ -180,6 +180,21 @@
             <keyword>group_segment_align</keyword>
             <keyword>half</keyword>
             <keyword>header</keyword>
+            <keyword>hsa_debugmode</keyword>
+            <keyword>hsa_dims</keyword>
+            <keyword>hsa_dx10clamp</keyword>
+            <keyword>hsa_exceptions</keyword>
+            <keyword>hsa_floatmode</keyword>
+            <keyword>hsa_ieeemode</keyword>
+            <keyword>hsa_localsize</keyword>
+            <keyword>hsa_pgmrsrc1</keyword>
+            <keyword>hsa_pgmrsrc2</keyword>
+            <keyword>hsa_priority</keyword>
+            <keyword>hsa_privmode</keyword>
+            <keyword>hsa_sgprsnum</keyword>
+            <keyword>hsa_tgsize</keyword>
+            <keyword>hsa_userdatanum</keyword>
+            <keyword>hsa_vgprsnum</keyword>
             <keyword>hwlocal</keyword>
             <keyword>hword</keyword>
             <keyword>hwregion</keyword>
