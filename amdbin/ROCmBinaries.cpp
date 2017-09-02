@@ -320,7 +320,7 @@ static const AMDGPUArchValues rocmAmdGpuArchValuesTbl[] =
     { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
     { 8, 0, 4 }, // GPUDeviceType::BAFFIN
     { 8, 0, 4 }, // GPUDeviceType::GFX804
-    { 9, 0, 0 }, // GPUDeviceType::GFX900
+    { 9, 0, 0 }  // GPUDeviceType::GFX900
 };
 
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
