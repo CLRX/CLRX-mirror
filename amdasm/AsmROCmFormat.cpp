@@ -418,6 +418,101 @@ void AsmROCmPseudoOps::doFKernel(AsmROCmHandler& handler, const char* pseudoOpPl
     handler.kernelStates[asmr.currentKernel]->isFKernel = true;
 }
 
+void AsmROCmPseudoOps::setConfigValueMain(AsmAmdHsaKernelConfig& config,
+                ROCmConfigValueTarget target, uint64_t value)
+{
+    switch(target)
+    {
+        case ROCMCVAL_SGPRSNUM:
+            config.usedSGPRsNum = value;
+            break;
+        case ROCMCVAL_VGPRSNUM:
+            config.usedVGPRsNum = value;
+            break;
+        case ROCMCVAL_PGMRSRC1:
+            config.computePgmRsrc1 = value;
+            break;
+        case ROCMCVAL_PGMRSRC2:
+            config.computePgmRsrc2 = value;
+            break;
+        case ROCMCVAL_FLOATMODE:
+            config.floatMode = value;
+            break;
+        case ROCMCVAL_PRIORITY:
+            config.priority = value;
+            break;
+        case ROCMCVAL_USERDATANUM:
+            config.userDataNum = value;
+            break;
+        case ROCMCVAL_EXCEPTIONS:
+            config.exceptions = value;
+            break;
+        case ROCMCVAL_KERNEL_CODE_ENTRY_OFFSET:
+            config.kernelCodeEntryOffset = value;
+            break;
+        case ROCMCVAL_KERNEL_CODE_PREFETCH_OFFSET:
+            config.kernelCodePrefetchOffset = value;
+            break;
+        case ROCMCVAL_KERNEL_CODE_PREFETCH_SIZE:
+            config.kernelCodePrefetchSize = value;
+            break;
+        case ROCMCVAL_MAX_SCRATCH_BACKING_MEMORY:
+            config.maxScrachBackingMemorySize = value;
+            break;
+        case ROCMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
+            config.workitemPrivateSegmentSize = value;
+            break;
+        case ROCMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE:
+            config.workgroupGroupSegmentSize = value;
+            break;
+        case ROCMCVAL_GDS_SEGMENT_SIZE:
+            config.gdsSegmentSize = value;
+            break;
+        case ROCMCVAL_KERNARG_SEGMENT_SIZE:
+            config.kernargSegmentSize = value;
+            break;
+        case ROCMCVAL_WORKGROUP_FBARRIER_COUNT:
+            config.workgroupFbarrierCount = value;
+            break;
+        case ROCMCVAL_WAVEFRONT_SGPR_COUNT:
+            config.wavefrontSgprCount = value;
+            break;
+        case ROCMCVAL_WORKITEM_VGPR_COUNT:
+            config.workitemVgprCount = value;
+            break;
+        case ROCMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
+            config.debugWavefrontPrivateSegmentOffsetSgpr = value;
+            break;
+        case ROCMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
+            config.debugPrivateSegmentBufferSgpr = value;
+            break;
+        case ROCMCVAL_PRIVATE_ELEM_SIZE:
+            config.enableFeatureFlags = (config.enableFeatureFlags & ~6) |
+                    ((63-CLZ64(value)-1)<<1);
+            break;
+        case ROCMCVAL_KERNARG_SEGMENT_ALIGN:
+            config.kernargSegmentAlignment = 63-CLZ64(value);
+            break;
+        case ROCMCVAL_GROUP_SEGMENT_ALIGN:
+            config.groupSegmentAlignment = 63-CLZ64(value);
+            break;
+        case ROCMCVAL_PRIVATE_SEGMENT_ALIGN:
+            config.privateSegmentAlignment = 63-CLZ64(value);
+            break;
+        case ROCMCVAL_WAVEFRONT_SIZE:
+            config.wavefrontSize = 63-CLZ64(value);
+            break;
+        case ROCMCVAL_CALL_CONVENTION:
+            config.callConvention = value;
+            break;
+        case ROCMCVAL_RUNTIME_LOADER_KERNEL_SYMBOL:
+            config.runtimeLoaderKernelSymbol = value;
+            break;
+        default:
+            break;
+    }
+}
+
 void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseudoOpPlace,
                   const char* linePtr, ROCmConfigValueTarget target)
 {
@@ -579,118 +674,12 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
     handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
     // set value
-    switch(target)
-    {
-        case ROCMCVAL_SGPRSNUM:
-            config.usedSGPRsNum = value;
-            break;
-        case ROCMCVAL_VGPRSNUM:
-            config.usedVGPRsNum = value;
-            break;
-        case ROCMCVAL_PGMRSRC1:
-            config.computePgmRsrc1 = value;
-            break;
-        case ROCMCVAL_PGMRSRC2:
-            config.computePgmRsrc2 = value;
-            break;
-        case ROCMCVAL_FLOATMODE:
-            config.floatMode = value;
-            break;
-        case ROCMCVAL_PRIORITY:
-            config.priority = value;
-            break;
-        case ROCMCVAL_USERDATANUM:
-            config.userDataNum = value;
-            break;
-        case ROCMCVAL_EXCEPTIONS:
-            config.exceptions = value;
-            break;
-        case ROCMCVAL_KERNEL_CODE_ENTRY_OFFSET:
-            config.kernelCodeEntryOffset = value;
-            break;
-        case ROCMCVAL_KERNEL_CODE_PREFETCH_OFFSET:
-            config.kernelCodePrefetchOffset = value;
-            break;
-        case ROCMCVAL_KERNEL_CODE_PREFETCH_SIZE:
-            config.kernelCodePrefetchSize = value;
-            break;
-        case ROCMCVAL_MAX_SCRATCH_BACKING_MEMORY:
-            config.maxScrachBackingMemorySize = value;
-            break;
-        case ROCMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
-            config.workitemPrivateSegmentSize = value;
-            break;
-        case ROCMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE:
-            config.workgroupGroupSegmentSize = value;
-            break;
-        case ROCMCVAL_GDS_SEGMENT_SIZE:
-            config.gdsSegmentSize = value;
-            break;
-        case ROCMCVAL_KERNARG_SEGMENT_SIZE:
-            config.kernargSegmentSize = value;
-            break;
-        case ROCMCVAL_WORKGROUP_FBARRIER_COUNT:
-            config.workgroupFbarrierCount = value;
-            break;
-        case ROCMCVAL_WAVEFRONT_SGPR_COUNT:
-            config.wavefrontSgprCount = value;
-            break;
-        case ROCMCVAL_WORKITEM_VGPR_COUNT:
-            config.workitemVgprCount = value;
-            break;
-        case ROCMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
-            config.debugWavefrontPrivateSegmentOffsetSgpr = value;
-            break;
-        case ROCMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
-            config.debugPrivateSegmentBufferSgpr = value;
-            break;
-        case ROCMCVAL_PRIVATE_ELEM_SIZE:
-            config.enableFeatureFlags = (config.enableFeatureFlags & ~6) |
-                    ((63-CLZ64(value)-1)<<1);
-            break;
-        case ROCMCVAL_KERNARG_SEGMENT_ALIGN:
-            config.kernargSegmentAlignment = 63-CLZ64(value);
-            break;
-        case ROCMCVAL_GROUP_SEGMENT_ALIGN:
-            config.groupSegmentAlignment = 63-CLZ64(value);
-            break;
-        case ROCMCVAL_PRIVATE_SEGMENT_ALIGN:
-            config.privateSegmentAlignment = 63-CLZ64(value);
-            break;
-        case ROCMCVAL_WAVEFRONT_SIZE:
-            config.wavefrontSize = 63-CLZ64(value);
-            break;
-        case ROCMCVAL_CALL_CONVENTION:
-            config.callConvention = value;
-            break;
-        case ROCMCVAL_RUNTIME_LOADER_KERNEL_SYMBOL:
-            config.runtimeLoaderKernelSymbol = value;
-            break;
-        default:
-            break;
-    }
+    setConfigValueMain(config, target, value);
 }
 
-void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,
-          const char* pseudoOpPlace, const char* linePtr, ROCmConfigValueTarget target)
+void AsmROCmPseudoOps::setConfigBoolValueMain(AsmAmdHsaKernelConfig& config,
+                ROCmConfigValueTarget target)
 {
-    Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    
-    if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
-    
-    skipSpacesToEnd(linePtr, end);
-    if (!checkGarbagesAtEnd(asmr, linePtr))
-        return;
-    
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
-    AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
-    
     switch(target)
     {
         case ROCMCVAL_PRIVMODE:
@@ -747,6 +736,29 @@ void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,
         default:
             break;
     }
+}
+
+void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,
+          const char* pseudoOpPlace, const char* linePtr, ROCmConfigValueTarget target)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
+    
+    setConfigBoolValueMain(config, target);
 }
 
 void AsmROCmPseudoOps::setDimensions(AsmROCmHandler& handler, const char* pseudoOpPlace,

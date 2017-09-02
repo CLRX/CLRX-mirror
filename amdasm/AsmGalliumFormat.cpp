@@ -833,97 +833,8 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
         handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
         AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
         
-        // set value
-        switch(target)
-        {
-            case GALLIUMCVAL_HSA_SGPRSNUM:
-                config.usedSGPRsNum = value;
-                break;
-            case GALLIUMCVAL_HSA_VGPRSNUM:
-                config.usedVGPRsNum = value;
-                break;
-            case GALLIUMCVAL_HSA_PGMRSRC1:
-                config.computePgmRsrc1 = value;
-                break;
-            case GALLIUMCVAL_HSA_PGMRSRC2:
-                config.computePgmRsrc2 = value;
-                break;
-            case GALLIUMCVAL_HSA_FLOATMODE:
-                config.floatMode = value;
-                break;
-            case GALLIUMCVAL_HSA_PRIORITY:
-                config.priority = value;
-                break;
-            case GALLIUMCVAL_HSA_USERDATANUM:
-                config.userDataNum = value;
-                break;
-            case GALLIUMCVAL_HSA_EXCEPTIONS:
-                config.exceptions = value;
-                break;
-            case GALLIUMCVAL_KERNEL_CODE_ENTRY_OFFSET:
-                config.kernelCodeEntryOffset = value;
-                break;
-            case GALLIUMCVAL_KERNEL_CODE_PREFETCH_OFFSET:
-                config.kernelCodePrefetchOffset = value;
-                break;
-            case GALLIUMCVAL_KERNEL_CODE_PREFETCH_SIZE:
-                config.kernelCodePrefetchSize = value;
-                break;
-            case GALLIUMCVAL_MAX_SCRATCH_BACKING_MEMORY:
-                config.maxScrachBackingMemorySize = value;
-                break;
-            case GALLIUMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
-                config.workitemPrivateSegmentSize = value;
-                break;
-            case GALLIUMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE:
-                config.workgroupGroupSegmentSize = value;
-                break;
-            case GALLIUMCVAL_GDS_SEGMENT_SIZE:
-                config.gdsSegmentSize = value;
-                break;
-            case GALLIUMCVAL_KERNARG_SEGMENT_SIZE:
-                config.kernargSegmentSize = value;
-                break;
-            case GALLIUMCVAL_WORKGROUP_FBARRIER_COUNT:
-                config.workgroupFbarrierCount = value;
-                break;
-            case GALLIUMCVAL_WAVEFRONT_SGPR_COUNT:
-                config.wavefrontSgprCount = value;
-                break;
-            case GALLIUMCVAL_WORKITEM_VGPR_COUNT:
-                config.workitemVgprCount = value;
-                break;
-            case GALLIUMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
-                config.debugWavefrontPrivateSegmentOffsetSgpr = value;
-                break;
-            case GALLIUMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
-                config.debugPrivateSegmentBufferSgpr = value;
-                break;
-            case GALLIUMCVAL_PRIVATE_ELEM_SIZE:
-                config.enableFeatureFlags = (config.enableFeatureFlags & ~6) |
-                        ((63-CLZ64(value)-1)<<1);
-                break;
-            case GALLIUMCVAL_KERNARG_SEGMENT_ALIGN:
-                config.kernargSegmentAlignment = 63-CLZ64(value);
-                break;
-            case GALLIUMCVAL_GROUP_SEGMENT_ALIGN:
-                config.groupSegmentAlignment = 63-CLZ64(value);
-                break;
-            case GALLIUMCVAL_PRIVATE_SEGMENT_ALIGN:
-                config.privateSegmentAlignment = 63-CLZ64(value);
-                break;
-            case GALLIUMCVAL_WAVEFRONT_SIZE:
-                config.wavefrontSize = 63-CLZ64(value);
-                break;
-            case GALLIUMCVAL_CALL_CONVENTION:
-                config.callConvention = value;
-                break;
-            case GALLIUMCVAL_RUNTIME_LOADER_KERNEL_SYMBOL:
-                config.runtimeLoaderKernelSymbol = value;
-                break;
-            default:
-                break;
-        }
+        AsmROCmPseudoOps::setConfigValueMain(config,
+                ROCmConfigValueTarget(target-GALLIUMCVAL_HSA_FIRST_PARAM), value);
     }
 }
 
@@ -974,63 +885,8 @@ void AsmGalliumPseudoOps::setConfigBoolValue(AsmGalliumHandler& handler,
         handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
         AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
         
-        // set value
-        switch(target)
-        {
-            case GALLIUMCVAL_HSA_PRIVMODE:
-                config.privilegedMode = true;
-                break;
-            case GALLIUMCVAL_HSA_DEBUGMODE:
-                config.debugMode = true;
-                break;
-            case GALLIUMCVAL_HSA_DX10CLAMP:
-                config.dx10Clamp = true;
-                break;
-            case GALLIUMCVAL_HSA_IEEEMODE:
-                config.ieeeMode = true;
-                break;
-            case GALLIUMCVAL_HSA_TGSIZE:
-                config.tgSize = true;
-                break;
-            case GALLIUMCVAL_USE_PRIVATE_SEGMENT_BUFFER:
-                config.enableSgprRegisterFlags |= ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER;
-                break;
-            case GALLIUMCVAL_USE_DISPATCH_PTR:
-                config.enableSgprRegisterFlags |= ROCMFLAG_USE_DISPATCH_PTR;
-                break;
-            case GALLIUMCVAL_USE_QUEUE_PTR:
-                config.enableSgprRegisterFlags |= ROCMFLAG_USE_QUEUE_PTR;
-                break;
-            case GALLIUMCVAL_USE_KERNARG_SEGMENT_PTR:
-                config.enableSgprRegisterFlags |= ROCMFLAG_USE_KERNARG_SEGMENT_PTR;
-                break;
-            case GALLIUMCVAL_USE_DISPATCH_ID:
-                config.enableSgprRegisterFlags |= ROCMFLAG_USE_DISPATCH_ID;
-                break;
-            case GALLIUMCVAL_USE_FLAT_SCRATCH_INIT:
-                config.enableSgprRegisterFlags |= ROCMFLAG_USE_FLAT_SCRATCH_INIT;
-                break;
-            case GALLIUMCVAL_USE_PRIVATE_SEGMENT_SIZE:
-                config.enableSgprRegisterFlags |= ROCMFLAG_USE_PRIVATE_SEGMENT_SIZE;
-                break;
-            case GALLIUMCVAL_USE_ORDERED_APPEND_GDS:
-                config.enableFeatureFlags |= ROCMFLAG_USE_ORDERED_APPEND_GDS;
-                break;
-            case GALLIUMCVAL_USE_PTR64:
-                config.enableFeatureFlags |= ROCMFLAG_USE_PTR64;
-                break;
-            case GALLIUMCVAL_USE_DYNAMIC_CALL_STACK:
-                config.enableFeatureFlags |= ROCMFLAG_USE_DYNAMIC_CALL_STACK;
-                break;
-            case GALLIUMCVAL_USE_DEBUG_ENABLED:
-                config.enableFeatureFlags |= ROCMFLAG_USE_DEBUG_ENABLED;
-                break;
-            case GALLIUMCVAL_USE_XNACK_ENABLED:
-                config.enableFeatureFlags |= ROCMFLAG_USE_XNACK_ENABLED;
-                break;
-            default:
-                break;
-        }
+        AsmROCmPseudoOps::setConfigBoolValueMain(config,
+                    ROCmConfigValueTarget(target-GALLIUMCVAL_HSA_FIRST_PARAM));
     }
 }
 
