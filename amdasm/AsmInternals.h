@@ -369,6 +369,9 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
 {
     static bool checkPseudoOpName(const CString& string);
     
+    static void setArchMinor(AsmGalliumHandler& handler, const char* linePtr);
+    static void setArchStepping(AsmGalliumHandler& handler, const char* linePtr);
+    
     static void doControlDirective(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     

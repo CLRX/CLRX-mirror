@@ -34,6 +34,7 @@ using namespace CLRX;
 
 static const char* galliumPseudoOpNamesTbl[] =
 {
+    "arch_minor", "arch_stepping",
     "arg", "args", "call_convention", "codeversion",
     "config", "control_directive",
     "debug_private_segment_buffer_sgpr",
@@ -74,7 +75,8 @@ static const char* galliumPseudoOpNamesTbl[] =
 
 enum
 {
-    GALLIUMOP_ARG = 0, GALLIUMOP_ARGS, GALLIUMOP_CALL_CONVENTION, GALLIUMOP_CODEVERSION,
+    GALLIUMOP_ARCH_MINOR = 0, GALLIUMOP_ARCH_STEPPING,
+    GALLIUMOP_ARG, GALLIUMOP_ARGS, GALLIUMOP_CALL_CONVENTION, GALLIUMOP_CODEVERSION,
     GALLIUMOP_CONFIG, GALLIUMOP_CONTROL_DIRECTIVE,
     GALLIUMOP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR,
     GALLIUMOP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
@@ -148,7 +150,8 @@ void AsmGalliumHandler::Kernel::initializeAmdHsaKernelConfig()
 
 AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler): AsmFormatHandler(assembler),
              output{}, codeSection(0), dataSection(ASMSECT_NONE),
-             commentSection(ASMSECT_NONE), extraSectionCount(0)
+             commentSection(ASMSECT_NONE), extraSectionCount(0),
+             archMinor(BINGEN_DEFAULT), archStepping(BINGEN_DEFAULT)
 {
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
@@ -375,6 +378,38 @@ bool AsmGalliumPseudoOps::checkPseudoOpName(const CString& string)
                 sizeof(galliumPseudoOpNamesTbl)/sizeof(char*), string.c_str()+1,
                CStringLess()) - galliumPseudoOpNamesTbl;
     return pseudoOp < sizeof(galliumPseudoOpNamesTbl)/sizeof(char*);
+}
+
+void AsmGalliumPseudoOps::setArchMinor(AsmGalliumHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value;
+    const char* valuePlace = linePtr;
+    if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+        return;
+    asmr.printWarningForRange(sizeof(cxuint)<<3, value,
+                 asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.archMinor = value;
+}
+
+void AsmGalliumPseudoOps::setArchStepping(AsmGalliumHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value;
+    const char* valuePlace = linePtr;
+    if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+        return;
+    asmr.printWarningForRange(sizeof(cxuint)<<3, value,
+                 asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.archStepping = value;
 }
 
 void AsmGalliumPseudoOps::setDriverVersion(AsmGalliumHandler& handler, const char* linePtr)
@@ -1620,6 +1655,12 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
     
     switch(pseudoOp)
     {
+        case GALLIUMOP_ARCH_MINOR:
+            AsmGalliumPseudoOps::setArchMinor(*this, linePtr);
+            break;
+        case GALLIUMOP_ARCH_STEPPING:
+            AsmGalliumPseudoOps::setArchStepping(*this, linePtr);
+            break;
         case GALLIUMOP_ARG:
             AsmGalliumPseudoOps::doArg(*this, stmtPlace, linePtr);
             break;
@@ -2108,6 +2149,10 @@ bool AsmGalliumHandler::prepareBinary()
     /// checking symbols and set offset for kernels
     AMDGPUArchValues amdGpuArchValues = galliumAmdGpuArchValuesTbl[
                     cxuint(assembler.deviceType)];
+    if (archMinor != BINGEN_DEFAULT)
+        amdGpuArchValues.minor = archMinor;
+    if (archStepping != BINGEN_DEFAULT)
+        amdGpuArchValues.stepping = archStepping;
     AsmSection& asmCSection = assembler.sections[codeSection];
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
     

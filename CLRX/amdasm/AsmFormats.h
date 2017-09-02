@@ -421,6 +421,9 @@ private:
     cxuint defaultDriverVersion;
     cxuint defaultLLVMVersion;
     
+    uint32_t archMinor;
+    uint32_t archStepping;
+    
     void restoreKcodeCurrentAllocRegs();
     void saveKcodeCurrentAllocRegs();
     
