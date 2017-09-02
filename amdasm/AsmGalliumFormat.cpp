@@ -2145,14 +2145,14 @@ bool AsmGalliumHandler::prepareBinary()
                     symEntry.second.size, binSectId, false, symEntry.second.info,
                     symEntry.second.other });
         }
-    
-    /// checking symbols and set offset for kernels
+    // setup amd GPU arch values (for LLVM 4.0 HSA config)
     AMDGPUArchValues amdGpuArchValues = galliumAmdGpuArchValuesTbl[
                     cxuint(assembler.deviceType)];
     if (archMinor != BINGEN_DEFAULT)
         amdGpuArchValues.minor = archMinor;
     if (archStepping != BINGEN_DEFAULT)
         amdGpuArchValues.stepping = archStepping;
+    /// checking symbols and set offset for kernels
     AsmSection& asmCSection = assembler.sections[codeSection];
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
     
@@ -2374,8 +2374,9 @@ bool AsmGalliumHandler::prepareBinary()
                 assembler.sections[kernel.ctrlDirSection].content.size()==128)
                 ::memcpy(outConfig.controlDirective, 
                     assembler.sections[kernel.ctrlDirSection].content.data(), 128);
+            else
+                ::memset(outConfig.controlDirective, 0, 128);
             
-            ::memset(outConfig.controlDirective, 0, 128);
             if (asmCSection.content.size() >= symbol.value+256)
                 ::memcpy(asmCSection.content.data() + symbol.value,
                         &outConfig, sizeof(AmdHsaKernelConfig));
