@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <utility>
 #include <memory>
+#include <mutex>
 #include <fstream>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>

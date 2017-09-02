@@ -23,6 +23,7 @@
 #include <climits>
 #include <cstdint>
 #include <map>
+#include <mutex>
 #include <utility>
 #include <vector>
 #include <CLRX/amdbin/Elf.h>
