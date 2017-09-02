@@ -47,7 +47,8 @@ static const char* galliumPseudoOpNamesTbl[] =
     "hsa_floatmode", "hsa_ieeemode",
     "hsa_localsize", "hsa_pgmrsrc1",
     "hsa_pgmrsrc2", "hsa_priority", "hsa_privmode",
-    "hsa_sgprsnum", "hsa_tgsize", "hsa_userdatanum", "hsa_vgprsnum",
+    "hsa_scratchbuffer", "hsa_sgprsnum", "hsa_tgsize",
+    "hsa_userdatanum", "hsa_vgprsnum",
     "ieeemode", "kcode", "kcodeend",
     "kernarg_segment_align", "kernarg_segment_size",
     "kernel_code_entry_offset", "kernel_code_prefetch_offset",
@@ -89,7 +90,7 @@ enum
     GALLIUMOP_HSA_FLOATMODE, GALLIUMOP_HSA_IEEEMODE,
     GALLIUMOP_HSA_LOCALSIZE, GALLIUMOP_HSA_PGMRSRC1,
     GALLIUMOP_HSA_PGMRSRC2, GALLIUMOP_HSA_PRIORITY, GALLIUMOP_HSA_PRIVMODE,
-    GALLIUMOP_HSA_SGPRSNUM, GALLIUMOP_HSA_TGSIZE,
+    GALLIUMOP_HSA_SCRATCHBUFFER, GALLIUMOP_HSA_SGPRSNUM, GALLIUMOP_HSA_TGSIZE,
     GALLIUMOP_HSA_USERDATANUM, GALLIUMOP_HSA_VGPRSNUM,
     GALLIUMOP_IEEEMODE, GALLIUMOP_KCODE, GALLIUMOP_KCODEEND,
     GALLIUMOP_KERNARG_SEGMENT_ALIGN, GALLIUMOP_KERNARG_SEGMENT_SIZE,
@@ -1484,6 +1485,10 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                                 GALLIUMCVAL_HSA_PRIVMODE);
             break;
+        case GALLIUMOP_HSA_SCRATCHBUFFER:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             GALLIUMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE);
+            break;
         case GALLIUMOP_HSA_SGPRSNUM:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_HSA_SGPRSNUM);
@@ -1940,7 +1945,8 @@ bool AsmGalliumHandler::prepareBinary()
                 config.dx10Clamp |= hsaConfig.dx10Clamp;
                 if (hsaConfig.workgroupGroupSegmentSize != BINGEN_DEFAULT) // local size
                     config.localSize = hsaConfig.workgroupGroupSegmentSize;
-                if (hsaConfig.workitemPrivateSegmentSize != BINGEN_DEFAULT) // scratch buffer
+                if (hsaConfig.workitemPrivateSegmentSize != BINGEN_DEFAULT)
+                    // scratch buffer
                     config.scratchBufferSize = hsaConfig.workitemPrivateSegmentSize;
                 
                 if (outConfig.enableSgprRegisterFlags == 0)

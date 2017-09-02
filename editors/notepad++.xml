@@ -1518,6 +1518,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .hsa_pgmrsrc2
 .hsa_priority
 .hsa_privmode
+.hsa_scratchbuffer
 .hsa_sgprsnum
 .hsa_tgsize
 .hsa_userdatanum

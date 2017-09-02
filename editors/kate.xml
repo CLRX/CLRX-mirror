@@ -1898,6 +1898,7 @@
             <item>.hsa_pgmrsrc2</item>
             <item>.hsa_priority</item>
             <item>.hsa_privmode</item>
+            <item>.hsa_scratchbuffer</item>
             <item>.hsa_sgprsnum</item>
             <item>.hsa_tgsize</item>
             <item>.hsa_userdatanum</item>

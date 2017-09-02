@@ -318,6 +318,13 @@ This pseudo-op must be inside kernel configuration (`.config`) and can ben used 
 LLVM version is 4.0.0 or later. Enable usage of the PRIV (privileged mode) in
 kernel HSA configuration.
 
+### .hsa_scratchbuffer
+
+Syntax: .hsa_scratchbuffer SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Defines scratchbuffer size in kernel HSA configuration.
+
 ### .hsa_sgprsnum
 
 Syntax: .hsa_sgprsnum REGNUM

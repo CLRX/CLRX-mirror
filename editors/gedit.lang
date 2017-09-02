@@ -191,6 +191,7 @@
             <keyword>hsa_pgmrsrc2</keyword>
             <keyword>hsa_priority</keyword>
             <keyword>hsa_privmode</keyword>
+            <keyword>hsa_scratchbuffer</keyword>
             <keyword>hsa_sgprsnum</keyword>
             <keyword>hsa_tgsize</keyword>
             <keyword>hsa_userdatanum</keyword>
