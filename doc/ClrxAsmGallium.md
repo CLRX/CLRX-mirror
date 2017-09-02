@@ -133,6 +133,7 @@ By default, automatically computed by assembler.
 * .tgsize - enables using of TG_SIZE_EN (we recommend to add this always)
 * .spillesgprs - number of scalar registers to spill
 * .spillevgprs - number of vector registers to spill
+* AMDHSA pseudo-ops
 
 Example configuration:
 
@@ -305,7 +306,7 @@ LLVM version is 4.0.0 or later. Defines value of the PGMRSRC2 in kernel HSA conf
 If dimensions is set then bits that controls dimension setup will be ignored.
 SCRATCH_EN bit will be ignored.
 
-### .priority
+### .hsa_priority
 
 Syntax: .hsa_priority PRIORITY
 
