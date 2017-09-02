@@ -608,7 +608,6 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
         switch(target)
         {
             case GALLIUMCVAL_SGPRSNUM:
-            case GALLIUMCVAL_HSA_SGPRSNUM:
             {
                 const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
                             asmr.deviceType);
@@ -623,7 +622,6 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 break;
             }
             case GALLIUMCVAL_VGPRSNUM:
-            case GALLIUMCVAL_HSA_VGPRSNUM:
             {
                 const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
                             asmr.deviceType);
@@ -668,25 +666,21 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 break;
             }
             case GALLIUMCVAL_EXCEPTIONS:
-            case GALLIUMCVAL_HSA_EXCEPTIONS:
                 asmr.printWarningForRange(7, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 value &= 0x7f;
                 break;
             case GALLIUMCVAL_FLOATMODE:
-            case GALLIUMCVAL_HSA_FLOATMODE:
                 asmr.printWarningForRange(8, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 value &= 0xff;
                 break;
             case GALLIUMCVAL_PRIORITY:
-            case GALLIUMCVAL_HSA_PRIORITY:
                 asmr.printWarningForRange(2, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 value &= 3;
                 break;
             case GALLIUMCVAL_LOCALSIZE:
-            case GALLIUMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE:
             {
                 const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
                             asmr.deviceType);
@@ -701,7 +695,6 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 break;
             }
             case GALLIUMCVAL_USERDATANUM:
-            case GALLIUMCVAL_HSA_USERDATANUM:
                 if (value > 16)
                 {
                     asmr.printError(valuePlace, "UserDataNum out of range (0-16)");
@@ -710,75 +703,16 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 break;
             case GALLIUMCVAL_PGMRSRC1:
             case GALLIUMCVAL_PGMRSRC2:
-            case GALLIUMCVAL_HSA_PGMRSRC1:
-            case GALLIUMCVAL_HSA_PGMRSRC2:
                 asmr.printWarningForRange(32, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 break;
-            
-            case GALLIUMCVAL_PRIVATE_ELEM_SIZE:
-                if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
-                {
-                    asmr.printError(valuePlace,
-                                    "Private element size must be power of two");
-                    good = false;
-                }
-                else if (value < 2 || value > 16)
-                {
-                    asmr.printError(valuePlace, "Private element size out of range");
-                    good = false;
-                }
-                break;
-            case GALLIUMCVAL_KERNARG_SEGMENT_ALIGN:
-            case GALLIUMCVAL_GROUP_SEGMENT_ALIGN:
-            case GALLIUMCVAL_PRIVATE_SEGMENT_ALIGN:
-                if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
-                {
-                    asmr.printError(valuePlace, "Alignment must be power of two");
-                    good = false;
-                }
-                else if (value < 16)
-                {
-                    asmr.printError(valuePlace, "Alignment must be not smaller than 16");
-                    good = false;
-                }
-                break;
-            case GALLIUMCVAL_WAVEFRONT_SIZE:
-                if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
-                {
-                    asmr.printError(valuePlace, "Wavefront size must be power of two");
-                    good = false;
-                }
-                else if (value > 256)
-                {
-                    asmr.printError(valuePlace,
-                                "Wavefront size must be not greater than 256");
-                    good = false;
-                }
-                break;
-            case GALLIUMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
-            case GALLIUMCVAL_GDS_SEGMENT_SIZE:
-            case GALLIUMCVAL_WORKGROUP_FBARRIER_COUNT:
-            case GALLIUMCVAL_CALL_CONVENTION:
-                asmr.printWarningForRange(32, value,
-                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-                break;
-            case GALLIUMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
-            case GALLIUMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
-            {
-                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
-                            asmr.deviceType);
-                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
-                if (value >= maxSGPRsNum)
-                {
-                    asmr.printError(valuePlace, "SGPR register out of range");
-                    good = false;
-                }
-                break;
-            }
             default:
                 break;
         }
+        
+        if (good && target >= GALLIUMCVAL_HSA_FIRST_PARAM)
+            good = AsmROCmPseudoOps::checkConfigValue(asmr, valuePlace,
+                ROCmConfigValueTarget(target-GALLIUMCVAL_HSA_FIRST_PARAM), value);
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))

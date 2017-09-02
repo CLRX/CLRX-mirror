@@ -418,6 +418,147 @@ void AsmROCmPseudoOps::doFKernel(AsmROCmHandler& handler, const char* pseudoOpPl
     handler.kernelStates[asmr.currentKernel]->isFKernel = true;
 }
 
+bool AsmROCmPseudoOps::checkConfigValue(Assembler& asmr, const char* valuePlace,
+                ROCmConfigValueTarget target, uint64_t value)
+{
+    bool good = true;
+    switch(target)
+    {
+        case ROCMCVAL_SGPRSNUM:
+        {
+            const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                        asmr.deviceType);
+            cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+            if (value > maxSGPRsNum)
+            {
+                char buf[64];
+                snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
+                asmr.printError(valuePlace, buf);
+                good = false;
+            }
+            break;
+        }
+        case ROCMCVAL_VGPRSNUM:
+        {
+            const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                        asmr.deviceType);
+            cxuint maxVGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
+            if (value > maxVGPRsNum)
+            {
+                char buf[64];
+                snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
+                asmr.printError(valuePlace, buf);
+                good = false;
+            }
+            break;
+        }
+        case ROCMCVAL_EXCEPTIONS:
+            asmr.printWarningForRange(7, value,
+                                asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+            value &= 0x7f;
+            break;
+        case ROCMCVAL_FLOATMODE:
+            asmr.printWarningForRange(8, value,
+                                asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+            value &= 0xff;
+            break;
+        case ROCMCVAL_PRIORITY:
+            asmr.printWarningForRange(2, value,
+                                asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+            value &= 3;
+            break;
+        case ROCMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE: // local size
+        {
+            asmr.printWarningForRange(32, value,
+                        asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+            
+            const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                        asmr.deviceType);
+            const cxuint maxLocalSize = getGPUMaxLocalSize(arch);
+            if (value > maxLocalSize)
+            {
+                char buf[64];
+                snprintf(buf, 64, "LocalSize out of range (0-%u)", maxLocalSize);
+                asmr.printError(valuePlace, buf);
+                good = false;
+            }
+            break;
+        }
+        case ROCMCVAL_USERDATANUM:
+            if (value > 16)
+            {
+                asmr.printError(valuePlace, "UserDataNum out of range (0-16)");
+                good = false;
+            }
+            break;
+        case ROCMCVAL_PRIVATE_ELEM_SIZE:
+            if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
+            {
+                asmr.printError(valuePlace,
+                                "Private element size must be power of two");
+                good = false;
+            }
+            else if (value < 2 || value > 16)
+            {
+                asmr.printError(valuePlace, "Private element size out of range");
+                good = false;
+            }
+            break;
+        case ROCMCVAL_KERNARG_SEGMENT_ALIGN:
+        case ROCMCVAL_GROUP_SEGMENT_ALIGN:
+        case ROCMCVAL_PRIVATE_SEGMENT_ALIGN:
+            if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
+            {
+                asmr.printError(valuePlace, "Alignment must be power of two");
+                good = false;
+            }
+            else if (value < 16)
+            {
+                asmr.printError(valuePlace, "Alignment must be not smaller than 16");
+                good = false;
+            }
+            break;
+        case ROCMCVAL_WAVEFRONT_SIZE:
+            if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
+            {
+                asmr.printError(valuePlace, "Wavefront size must be power of two");
+                good = false;
+            }
+            else if (value > 256)
+            {
+                asmr.printError(valuePlace,
+                            "Wavefront size must be not greater than 256");
+                good = false;
+            }
+            break;
+        case ROCMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
+        case ROCMCVAL_GDS_SEGMENT_SIZE:
+        case ROCMCVAL_WORKGROUP_FBARRIER_COUNT:
+        case ROCMCVAL_CALL_CONVENTION:
+        case ROCMCVAL_PGMRSRC1:
+        case ROCMCVAL_PGMRSRC2:
+            asmr.printWarningForRange(32, value,
+                                asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+            break;
+        case ROCMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
+        case ROCMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
+        {
+            const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                        asmr.deviceType);
+            cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+            if (value >= maxSGPRsNum)
+            {
+                asmr.printError(valuePlace, "SGPR register out of range");
+                good = false;
+            }
+            break;
+        }
+        default:
+            break;
+    }
+    return good;
+}
+
 void AsmROCmPseudoOps::setConfigValueMain(AsmAmdHsaKernelConfig& config,
                 ROCmConfigValueTarget target, uint64_t value)
 {
@@ -532,142 +673,7 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
     bool good = getAbsoluteValueArg(asmr, value, linePtr, true);
     /* ranges checking */
     if (good)
-    {
-        switch(target)
-        {
-            case ROCMCVAL_SGPRSNUM:
-            {
-                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
-                            asmr.deviceType);
-                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
-                if (value > maxSGPRsNum)
-                {
-                    char buf[64];
-                    snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
-                }
-                break;
-            }
-            case ROCMCVAL_VGPRSNUM:
-            {
-                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
-                            asmr.deviceType);
-                cxuint maxVGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
-                if (value > maxVGPRsNum)
-                {
-                    char buf[64];
-                    snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
-                }
-                break;
-            }
-            case ROCMCVAL_EXCEPTIONS:
-                asmr.printWarningForRange(7, value,
-                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-                value &= 0x7f;
-                break;
-            case ROCMCVAL_FLOATMODE:
-                asmr.printWarningForRange(8, value,
-                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-                value &= 0xff;
-                break;
-            case ROCMCVAL_PRIORITY:
-                asmr.printWarningForRange(2, value,
-                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-                value &= 3;
-                break;
-            case ROCMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE: // local size
-            {
-                asmr.printWarningForRange(32, value,
-                          asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-                
-                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
-                            asmr.deviceType);
-                const cxuint maxLocalSize = getGPUMaxLocalSize(arch);
-                if (value > maxLocalSize)
-                {
-                    char buf[64];
-                    snprintf(buf, 64, "LocalSize out of range (0-%u)", maxLocalSize);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
-                }
-                break;
-            }
-            case ROCMCVAL_USERDATANUM:
-                if (value > 16)
-                {
-                    asmr.printError(valuePlace, "UserDataNum out of range (0-16)");
-                    good = false;
-                }
-                break;
-            case ROCMCVAL_PRIVATE_ELEM_SIZE:
-                if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
-                {
-                    asmr.printError(valuePlace,
-                                    "Private element size must be power of two");
-                    good = false;
-                }
-                else if (value < 2 || value > 16)
-                {
-                    asmr.printError(valuePlace, "Private element size out of range");
-                    good = false;
-                }
-                break;
-            case ROCMCVAL_KERNARG_SEGMENT_ALIGN:
-            case ROCMCVAL_GROUP_SEGMENT_ALIGN:
-            case ROCMCVAL_PRIVATE_SEGMENT_ALIGN:
-                if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
-                {
-                    asmr.printError(valuePlace, "Alignment must be power of two");
-                    good = false;
-                }
-                else if (value < 16)
-                {
-                    asmr.printError(valuePlace, "Alignment must be not smaller than 16");
-                    good = false;
-                }
-                break;
-            case ROCMCVAL_WAVEFRONT_SIZE:
-                if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
-                {
-                    asmr.printError(valuePlace, "Wavefront size must be power of two");
-                    good = false;
-                }
-                else if (value > 256)
-                {
-                    asmr.printError(valuePlace,
-                                "Wavefront size must be not greater than 256");
-                    good = false;
-                }
-                break;
-            case ROCMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
-            case ROCMCVAL_GDS_SEGMENT_SIZE:
-            case ROCMCVAL_WORKGROUP_FBARRIER_COUNT:
-            case ROCMCVAL_CALL_CONVENTION:
-            case ROCMCVAL_PGMRSRC1:
-            case ROCMCVAL_PGMRSRC2:
-                asmr.printWarningForRange(32, value,
-                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-                break;
-            case ROCMCVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
-            case ROCMCVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
-            {
-                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
-                            asmr.deviceType);
-                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
-                if (value >= maxSGPRsNum)
-                {
-                    asmr.printError(valuePlace, "SGPR register out of range");
-                    good = false;
-                }
-                break;
-            }
-            default:
-                break;
-        }
-    }
+        good = checkConfigValue(asmr, valuePlace, target, value);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     

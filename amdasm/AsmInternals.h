@@ -667,6 +667,8 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     static void doFKernel(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    static bool checkConfigValue(Assembler& asmr, const char* valuePlace,
+                    ROCmConfigValueTarget target, uint64_t value);
     static void setConfigValueMain(AsmAmdHsaKernelConfig& config,
                         ROCmConfigValueTarget target, uint64_t value);
     
