@@ -32,6 +32,18 @@ Assembler for GalliumCompute format counts all SGPR registers and add extra regi
 
 ## List of the specific pseudo-operations
 
+### .arch_minor
+
+Syntax: .arch_minor ARCH_MINOR
+
+Set architecture minor number. Used only if LLVM version is 4.0.0 or later.
+
+### .arch_stepping
+
+Syntax: .arch_minor ARCH_STEPPING
+
+Set architecture stepping number. Used only if LLVM version is 4.0.0 or later.
+
 ### .arg
 
 Syntax: .arg ARGTYPE, SIZE[, TARGETSIZE[, ALIGNMENT[, NUMEXT[, SEMANTIC]]]]
@@ -82,6 +94,20 @@ Last two arguments (griddim, gridoffset) shall to be defined in any kernel defin
 
 Open kernel argument configuration. Must be inside kernel.
 
+### .call_convention
+
+Syntax: .call_convention CALL_CONV
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set call convention for kernel.
+
+### .codeversion
+
+Syntax .codeversion MAJOR, MINOR
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set AMD code version.
+
 ### .config
 
 Open kernel configuration. Must be inside kernel. Kernel configuration can not be
@@ -115,6 +141,28 @@ Example configuration:
     .dims xyz
     .tgsize
 ```
+
+### .control_directive
+
+Open control directive section. This section must be 128 bytes. The content of this
+section will be stored in control_directive field in kernel configuration.
+Must be defined inside kernel. Can ben used only if LLVM version is 4.0.0 or later
+
+### .debug_private_segment_buffer_sgpr
+
+Syntax: .debug_private_segment_buffer_sgpr SGPRREG
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `debug_private_segment_buffer_sgpr` field in
+kernel configuration.
+
+### .debug_wavefront_private_segment_offset_sgpr
+
+Syntax: .debug_wavefront_private_segment_offset_sgpr SGPRREG
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `debug_wavefront_private_segment_offset_sgpr` field in
+kernel configuration.
 
 ### .debugmode
 
@@ -166,6 +214,11 @@ Syntax: .floatmode BYTE-VALUE
 This pseudo-op must be inside kernel configuration (`.config`). Defines float-mode.
 Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register). Default value is 0xc0.
 
+### .gds_segment_size
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `gds_segment_size` field in kernel configuration.
+
 ### .get_driver_version
 
 Syntax: .get_driver_version SYMBOL
@@ -181,6 +234,118 @@ Store current LLVM compiler version to SYMBOL.
 ### .globaldata
 
 Go to constant global data section (`.rodata`).
+
+### .group_segment_align
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `group_segment_align` field in kernel configuration.
+
+### .hsa_debugmode
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable usage of the DEBUG_MODE in kernel HSA configuration.
+
+### .hsa_dims
+
+Syntax: .hsa_dims DIMENSIONS
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Defines what dimensions (from list: x, y, z) will be used
+to determine space of the kernel execution in kernel HSA configuration.
+
+### .hsa_dx10clamp
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable usage of the DX10_CLAMP in kernel HSA configuration.
+
+### .hsa_exceptions
+
+Syntax: .hsa_exceptions EXCPMASK
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set exception mask in PGMRSRC2 register value in
+kernel HSA configuration. Value should be 7-bit.
+
+### .hsa_floatmode
+
+Syntax: .hsa_floatmode BYTE-VALUE
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Defines float-mode in kernel HSA configuration.
+Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register). Default value is 0xc0.
+
+### .hsa_ieeemode
+
+Syntax: .hsa_ieeemode
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set ieee-mode in kernel HSA configuration.
+
+### .hsa_localsize
+
+Syntax: .hsa_localsize SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Defines initial local memory size used by kernel in
+kernel HSA configuration.
+
+### .hsa_pgmrsrc1
+
+Syntax: .hsa_pgmrsrc1 VALUE
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Defines value of the PGMRSRC1 in kernel HSA configuration.
+
+### .hsa_pgmrsrc2
+
+Syntax: .hsa_pgmrsrc2 VALUE
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Defines value of the PGMRSRC2 in kernel HSA configration.
+If dimensions is set then bits that controls dimension setup will be ignored.
+SCRATCH_EN bit will be ignored.
+
+### .priority
+
+Syntax: .hsa_priority PRIORITY
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Defines priority (0-3) in kernel HSA configuration.
+
+### .hsa_privmode
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable usage of the PRIV (privileged mode) in
+kernel HSA configuration.
+
+### .hsa_sgprsnum
+
+Syntax: .hsa_sgprsnum REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set number of scalar registers which can be used during
+kernel execution in kernel HSA configuration.
+
+### .hsa_tgsize
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable usage of the TG_SIZE_EN in kernel HSA configuration.
+
+### .hsa_userdatanum
+
+Syntax: .userdatanum NUMBER
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set number of registers for USERDATA in
+kernel HSA configuration.
+
+### .hsa_vgprsnum
+
+Syntax: .hsa_vgprsnum REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`) can ben used only if
+LLVM version is 4.0.0 or later. Set number of vector registers which can be used during
+kernel execution in kernel HSA configuration.
 
 ### .ieeemode
 
@@ -215,6 +380,46 @@ Sample usage:
 
 Close `.kcode` clause. Refer to `.kcode`.
 
+### .kernarg_segment_align
+
+Syntax: .kernarg_segment_align ALIGN
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `kernarg_segment_alignment` field in
+kernel configuration. Value must be a power of two.
+
+### .kernarg_segment_size
+
+Syntax: .kernarg_segment_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `kernarg_segment_byte_size` field in
+kernel configuration.
+
+### .kernel_code_entry_offset
+
+Syntax: .kernel_code_entry_offset OFFSET
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `kernel_code_entry_byte_offset` field in
+kernel configuration. This field store offset between configuration and kernel code.
+By default is 256.
+
+### .kernel_code_prefetch_offset
+
+Syntax: .kernel_code_prefetch_offset OFFSET
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `kernel_code_prefetch_byte_offset` field in kernel
+configuration.
+
+### .kernel_code_prefetch_size
+
+Syntax: .kernel_code_prefetch_size OFFSET
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `kernel_code_prefetch_byte_size` field in kernel configuration.
+
 ### .llvm_version
 
 Syntax: .llvm_version VERSION
@@ -229,6 +434,20 @@ Syntax: .localsize SIZE
 This pseudo-op must be inside kernel configuration (`.config`). Defines initial
 local memory size used by kernel.
 
+### .machine
+
+Syntax: .machine KIND, MAJOR, MINOR, STEPPING
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set machine version fields in kernel configuration.
+
+### .max_scratch_backing_memory
+
+Syntax: .max_scratch_backing_memory SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `max_scratch_backing_memory_byte_size` field
+in kernel configuration.
 
 ### .pgmrsrc1
 
@@ -251,6 +470,22 @@ Syntax: .priority PRIORITY
 
 This pseudo-op must be inside kernel configuration (`.config`). Defines priority (0-3).
 
+### .private_elem_size
+
+Syntax: .private_elem_size ELEMSIZE
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `private_element_size` field in kernel configuration.
+Must be a power of two between 2 and 16.
+
+### .private_segment_align
+
+Syntax: .private_segment ALIGN
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `private_segment_alignment` field in kernel
+configuration. Value must be a power of two.
+
 ### .privmode
 
 This pseudo-op must be inside kernel configuration (`.config`).
@@ -261,6 +496,32 @@ Enable usage of the PRIV (privileged mode).
 Open progInfo definition. Must be inside kernel.
 ProgInfo shall to be containing 3 entries. ProgInfo can not be defined if kernel config
 was defined (by using `.config`).
+
+### .reserved_sgprs
+
+Syntax: .reserved_sgprs FIRSTREG, LASTREG
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `reserved_sgpr_first` and `reserved_sgpr_count`
+fields in kernel configuration. `reserved_sgpr_count` filled by number of registers
+(LASTREG-FIRSTREG+1).
+
+### .reserved_vgprs
+
+Syntax: .reserved_vgprs FIRSTREG, LASTREG
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `reserved_vgpr_first` and `reserved_vgpr_count`
+fields in kernel configuration. `reserved_vgpr_count` filled by number of registers
+(LASTREG-FIRSTREG+1).
+
+### .runtime_loader_kernel_symbol
+
+Syntax: .runtime_loader_kernel_symbol ADDRESS
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `runtime_loader_kernel_symbol` field in kernel
+configuration.
 
 ### .scratchbuffer
 
@@ -294,6 +555,84 @@ registers to spill in scratch buffer. It have meaning for LLVM 3.9 or later.
 This pseudo-op must be inside kernel configuration (`.config`).
 Enable usage of the TG_SIZE_EN. Should be set.
 
+### .use_debug_enabled
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `is_debug_enabled` field in kernel configuration.
+
+### .use_dispatch_id
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `enable_sgpr_dispatch_id` field in kernel
+configuration.
+
+### .use_dispatch_ptr
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `enable_sgpr_dispatch_ptr` field in kernel
+configuration.
+
+### .use_dynamic_call_stack
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `is_dynamic_call_stack` field in
+kernel configuration.
+
+### .use_flat_scratch_init
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `enable_sgpr_flat_scratch_init` field in
+kernel configuration.
+
+### .use_grid_workgroup_count
+
+Syntax: .use_grid_workgroup_count DIMENSIONS
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `enable_sgpr_grid_workgroup_count_X`,
+`enable_sgpr_grid_workgroup_count_Y` and `enable_sgpr_grid_workgroup_count_Z` fields
+in kernel configuration, respectively by given dimensions.
+
+### .use_kernarg_segment_ptr
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `enable_sgpr_kernarg_segment_ptr` field in
+kernel configuration.
+
+### .use_ordered_append_gds
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `enable_ordered_append_gds` field in
+kernel configuration.
+
+### .use_private_segment_buffer
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `enable_sgpr_private_segment_buffer` field in
+kernel configuration.
+
+### .use_private_segment_size
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `enable_sgpr_private_segment_size` field in
+kernel configuration.
+
+### .use_ptr64
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `is_ptr64` field in kernel configuration.
+
+### .use_queue_ptr
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `enable_sgpr_queue_ptr` field in
+kernel configuration.
+
+### .use_xnack_enabled
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Enable `is_xnack_enabled` field in kernel configuration.
+
 ### .userdatanum
 
 Syntax: .userdatanum NUMBER
@@ -307,6 +646,53 @@ Syntax: .vgprsnum REGNUM
 
 This pseudo-op must be inside kernel configuration (`.config`). Set number of vector
 registers which can be used during kernel execution.
+
+### .wavefront_sgpr_count
+
+Syntax: .wavefront_sgpr_count REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `wavefront_sgpr_count` field in kernel configuration.
+
+### .wavefront_size
+
+Syntax: .wavefront_size POWEROFTWO
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `wavefront_size` field in kernel configuration.
+Value must be a power of two.
+
+### .workgroup_fbarrier_count
+
+Syntax: .workgroup_fbarrier_count COUNT
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `workgroup_fbarrier_count` field in
+kernel configuration.
+
+### .workgroup_group_segment_size
+
+Syntax: .workgroup_group_segment_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `workgroup_group_segment_byte_size` in
+kernel configuration.
+
+### .workitem_private_segment_size
+
+Syntax: .workitem_private_segment_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `workitem_private_segment_byte_size` field in
+kernel configuration.
+
+### .workitem_vgpr_count
+
+Syntax: .workitem_vgpr_count REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. Set `workitem_vgpr_count` field in kernel configuration.
+
 
 ## Sample code
 
