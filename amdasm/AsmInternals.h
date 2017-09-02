@@ -676,11 +676,21 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     static void setDimensions(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    static bool parseMachine(Assembler& asmr, const char* linePtr,
+                uint16_t& machineKind, uint16_t& machineMajor, uint16_t& machineMinor,
+                uint16_t& machineStepping);
+    
     static void setMachine(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    static bool parseCodeVersion(Assembler& asmr, const char* linePtr,
+                uint16_t& codeMajor, uint16_t& codeMinor);
+    
     static void setCodeVersion(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    
+    static bool parseReservedXgprs(Assembler& asmr, const char* linePtr, bool inVgpr,
+                uint16_t& gprFirst, uint16_t& gprCount);
     
     static void setReservedXgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, bool inVgpr);

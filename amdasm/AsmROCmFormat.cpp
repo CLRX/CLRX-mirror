@@ -768,17 +768,11 @@ void AsmROCmPseudoOps::setDimensions(AsmROCmHandler& handler, const char* pseudo
     handler.kernelStates[asmr.currentKernel]->config->dimMask = dimMask;
 }
 
-void AsmROCmPseudoOps::setMachine(AsmROCmHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr)
+bool AsmROCmPseudoOps::parseMachine(Assembler& asmr, const char* linePtr,
+        uint16_t& machineKind, uint16_t& machineMajor, uint16_t& machineMinor,
+        uint16_t& machineStepping)
 {
-    Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
     
     skipSpacesToEnd(linePtr, end);
     uint64_t kindValue = BINGEN_NOTSUPPLIED;
@@ -789,19 +783,19 @@ void AsmROCmPseudoOps::setMachine(AsmROCmHandler& handler, const char* pseudoOpP
     bool good = getAbsoluteValueArg(asmr, kindValue, linePtr, true);
     asmr.printWarningForRange(16, kindValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!skipRequiredComma(asmr, linePtr))
-        return;
+        return false;
     
     valuePlace = linePtr;
     good &= getAbsoluteValueArg(asmr, majorValue, linePtr, true);
     asmr.printWarningForRange(16, majorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!skipRequiredComma(asmr, linePtr))
-        return;
+        return false;
     
     valuePlace = linePtr;
     good &= getAbsoluteValueArg(asmr, minorValue, linePtr, true);
     asmr.printWarningForRange(16, minorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!skipRequiredComma(asmr, linePtr))
-        return;
+        return false;
     
     valuePlace = linePtr;
     good &= getAbsoluteValueArg(asmr, steppingValue, linePtr, true);
@@ -809,6 +803,29 @@ void AsmROCmPseudoOps::setMachine(AsmROCmHandler& handler, const char* pseudoOpP
                       asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return false;
+    
+    machineKind = kindValue;
+    machineMajor = majorValue;
+    machineMinor = minorValue;
+    machineStepping = steppingValue;
+    return true;
+}
+
+void AsmROCmPseudoOps::setMachine(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    
+    uint16_t kindValue = 0, majorValue = 0;
+    uint16_t minorValue = 0, steppingValue = 0;
+    if (!parseMachine(asmr, linePtr, kindValue, majorValue, minorValue, steppingValue))
         return;
     
     handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
@@ -819,17 +836,10 @@ void AsmROCmPseudoOps::setMachine(AsmROCmHandler& handler, const char* pseudoOpP
     config->amdMachineStepping = steppingValue;
 }
 
-void AsmROCmPseudoOps::setCodeVersion(AsmROCmHandler& handler, const char* pseudoOpPlace,
-                  const char* linePtr)
+bool AsmROCmPseudoOps::parseCodeVersion(Assembler& asmr, const char* linePtr,
+                uint16_t& codeMajor, uint16_t& codeMinor)
 {
-    Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
     
     skipSpacesToEnd(linePtr, end);
     uint64_t majorValue = BINGEN_NOTSUPPLIED;
@@ -838,13 +848,33 @@ void AsmROCmPseudoOps::setCodeVersion(AsmROCmHandler& handler, const char* pseud
     bool good = getAbsoluteValueArg(asmr, majorValue, linePtr, true);
     asmr.printWarningForRange(32, majorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!skipRequiredComma(asmr, linePtr))
-        return;
+        return false;
     
     valuePlace = linePtr;
     good &= getAbsoluteValueArg(asmr, minorValue, linePtr, true);
     asmr.printWarningForRange(32, minorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return false;
+    
+    codeMajor = majorValue;
+    codeMinor = minorValue;
+    return true;
+}
+
+void AsmROCmPseudoOps::setCodeVersion(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                  const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    
+    uint16_t majorValue = 0, minorValue = 0;
+    if (!parseCodeVersion(asmr, linePtr, majorValue, minorValue))
         return;
     
     handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
@@ -853,18 +883,10 @@ void AsmROCmPseudoOps::setCodeVersion(AsmROCmHandler& handler, const char* pseud
     config->amdCodeVersionMinor = minorValue;
 }
 
-void AsmROCmPseudoOps::setReservedXgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr, bool inVgpr)
+bool AsmROCmPseudoOps::parseReservedXgprs(Assembler& asmr, const char* linePtr,
+                bool inVgpr, uint16_t& gprFirst, uint16_t& gprCount)
 {
-    Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
-    
     skipSpacesToEnd(linePtr, end);
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(asmr.deviceType);
     cxuint maxGPRsNum = getGPUMaxRegistersNum(arch,
@@ -885,7 +907,7 @@ void AsmROCmPseudoOps::setReservedXgprs(AsmROCmHandler& handler, const char* pse
         good = false;
     }
     if (!skipRequiredComma(asmr, linePtr))
-        return;
+        return false;
     
     valuePlace = linePtr;
     bool haveLastReg = getAbsoluteValueArg(asmr, lastReg, linePtr, true);
@@ -903,22 +925,41 @@ void AsmROCmPseudoOps::setReservedXgprs(AsmROCmHandler& handler, const char* pse
         asmr.printError(valuePlace, "Wrong regsister range");
         good = false;
     }
-        
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return false;
+    
+    gprFirst = firstReg;
+    gprCount = lastReg-firstReg+1;
+    return true;
+}
+
+void AsmROCmPseudoOps::setReservedXgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, bool inVgpr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    
+    uint16_t gprFirst = 0, gprCount = 0;
+    if (!parseReservedXgprs(asmr, linePtr, inVgpr, gprFirst, gprCount))
         return;
     
     handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     AsmROCmKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
     if (inVgpr)
     {
-        config->reservedVgprFirst = firstReg;
-        config->reservedVgprCount = lastReg-firstReg+1;
+        config->reservedVgprFirst = gprFirst;
+        config->reservedVgprCount = gprCount;
     }
     else
     {
-        config->reservedSgprFirst = firstReg;
-        config->reservedSgprCount = lastReg-firstReg+1;
+        config->reservedSgprFirst = gprFirst;
+        config->reservedSgprCount = gprCount;
     }
 }
 

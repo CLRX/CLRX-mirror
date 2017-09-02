@@ -1038,7 +1038,6 @@ void AsmGalliumPseudoOps::setMachine(AsmGalliumHandler& handler, const char* pse
                       const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
@@ -1051,35 +1050,10 @@ void AsmGalliumPseudoOps::setMachine(AsmGalliumHandler& handler, const char* pse
         return;
     }
     
-    skipSpacesToEnd(linePtr, end);
-    uint64_t kindValue = BINGEN_NOTSUPPLIED;
-    uint64_t majorValue = BINGEN_NOTSUPPLIED;
-    uint64_t minorValue = BINGEN_NOTSUPPLIED;
-    uint64_t steppingValue = BINGEN_NOTSUPPLIED;
-    const char* valuePlace = linePtr;
-    bool good = getAbsoluteValueArg(asmr, kindValue, linePtr, true);
-    asmr.printWarningForRange(16, kindValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-    if (!skipRequiredComma(asmr, linePtr))
-        return;
-    
-    valuePlace = linePtr;
-    good &= getAbsoluteValueArg(asmr, majorValue, linePtr, true);
-    asmr.printWarningForRange(16, majorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-    if (!skipRequiredComma(asmr, linePtr))
-        return;
-    
-    valuePlace = linePtr;
-    good &= getAbsoluteValueArg(asmr, minorValue, linePtr, true);
-    asmr.printWarningForRange(16, minorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-    if (!skipRequiredComma(asmr, linePtr))
-        return;
-    
-    valuePlace = linePtr;
-    good &= getAbsoluteValueArg(asmr, steppingValue, linePtr, true);
-    asmr.printWarningForRange(16, steppingValue,
-                      asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-    
-    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+    uint16_t kindValue = 0, majorValue = 0;
+    uint16_t minorValue = 0, steppingValue = 0;
+    if (!AsmROCmPseudoOps::parseMachine(asmr, linePtr, kindValue,
+                    majorValue, minorValue, steppingValue))
         return;
     
     handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
@@ -1094,7 +1068,6 @@ void AsmGalliumPseudoOps::setCodeVersion(AsmGalliumHandler& handler,
                 const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
@@ -1107,20 +1080,8 @@ void AsmGalliumPseudoOps::setCodeVersion(AsmGalliumHandler& handler,
         return;
     }
     
-    skipSpacesToEnd(linePtr, end);
-    uint64_t majorValue = BINGEN_NOTSUPPLIED;
-    uint64_t minorValue = BINGEN_NOTSUPPLIED;
-    const char* valuePlace = linePtr;
-    bool good = getAbsoluteValueArg(asmr, majorValue, linePtr, true);
-    asmr.printWarningForRange(32, majorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-    if (!skipRequiredComma(asmr, linePtr))
-        return;
-    
-    valuePlace = linePtr;
-    good &= getAbsoluteValueArg(asmr, minorValue, linePtr, true);
-    asmr.printWarningForRange(32, minorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-    
-    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+    uint16_t majorValue = 0, minorValue = 0;
+    if (!AsmROCmPseudoOps::parseCodeVersion(asmr, linePtr, majorValue, minorValue))
         return;
     
     handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
@@ -1133,7 +1094,6 @@ void AsmGalliumPseudoOps::setReservedXgprs(AsmGalliumHandler& handler, const cha
                       const char* linePtr, bool inVgpr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
@@ -1146,60 +1106,21 @@ void AsmGalliumPseudoOps::setReservedXgprs(AsmGalliumHandler& handler, const cha
         return;
     }
     
-    skipSpacesToEnd(linePtr, end);
-    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(asmr.deviceType);
-    cxuint maxGPRsNum = getGPUMaxRegistersNum(arch,
-                       inVgpr ? REGTYPE_VGPR : REGTYPE_SGPR, 0);
-    
-    uint64_t firstReg = BINGEN_NOTSUPPLIED;
-    uint64_t lastReg = BINGEN_NOTSUPPLIED;
-    const char* valuePlace = linePtr;
-    bool haveFirstReg;
-    bool good = getAbsoluteValueArg(asmr, firstReg, linePtr, true);
-    haveFirstReg = good;
-    if (haveFirstReg && firstReg > maxGPRsNum-1)
-    {
-        char buf[64];
-        snprintf(buf, 64, "First reserved %s register out of range (0-%u)",
-                 inVgpr ? "VGPR" : "SGPR",  maxGPRsNum-1);
-        asmr.printError(valuePlace, buf);
-        good = false;
-    }
-    if (!skipRequiredComma(asmr, linePtr))
-        return;
-    
-    valuePlace = linePtr;
-    bool haveLastReg = getAbsoluteValueArg(asmr, lastReg, linePtr, true);
-    good &= haveLastReg;
-    if (haveLastReg && lastReg > maxGPRsNum-1)
-    {
-        char buf[64];
-        snprintf(buf, 64, "Last reserved %s register out of range (0-%u)",
-                 inVgpr ? "VGPR" : "SGPR", maxGPRsNum-1);
-        asmr.printError(valuePlace, buf);
-        good = false;
-    }
-    if (haveFirstReg && haveLastReg && firstReg > lastReg)
-    {
-        asmr.printError(valuePlace, "Wrong regsister range");
-        good = false;
-    }
-        
-    
-    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+    uint16_t gprFirst = 0, gprCount = 0;
+    if (!AsmROCmPseudoOps::parseReservedXgprs(asmr, linePtr, inVgpr, gprFirst, gprCount))
         return;
     
     handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
     AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
     if (inVgpr)
     {
-        config->reservedVgprFirst = firstReg;
-        config->reservedVgprCount = lastReg-firstReg+1;
+        config->reservedVgprFirst = gprFirst;
+        config->reservedVgprCount = gprCount;
     }
     else
     {
-        config->reservedSgprFirst = firstReg;
-        config->reservedSgprCount = lastReg-firstReg+1;
+        config->reservedSgprFirst = gprFirst;
+        config->reservedSgprCount = gprCount;
     }
 }
 
