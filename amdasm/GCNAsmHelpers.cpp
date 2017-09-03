@@ -45,6 +45,7 @@ cxbyte CLRX::cstrtobyte(const char*& str, const char* end)
 namespace CLRX
 {
 
+// print error 'range expected', return true if printed, false if not
 bool GCNAsmUtils::printRegisterRangeExpected(Assembler& asmr, const char* linePtr,
                const char* regPoolName, cxuint regsNum, bool required)
 {
@@ -408,12 +409,6 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
         asmr.printError(linePtr, ex.what());
         return false;
     }
-    
-    if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
-        return false;
-    regPair = { 0, 0 }; // no range
-    linePtr = oldLinePtr; // revert current line pointer
-    return true;
 }
 
 bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
@@ -665,7 +660,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         ++linePtr;
         
         if (!ttmpReg)
-        {
+        {   // is scalar register
             if (value2 < value1)
             {   // error (illegal register range)
                 asmr.printError(sgprRangePlace, "Illegal scalar register range");
@@ -679,7 +674,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             }
         }
         else
-        {
+        {   // is TTMP register
             if (value2 < value1)
             {   // error (illegal register range)
                 asmr.printError(sgprRangePlace, "Illegal TTMPRegister range");
@@ -735,12 +730,6 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         asmr.printError(linePtr, ex.what());
         return false;
     }
-    
-    if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar", regsNum, required))
-        return false;
-    regPair = { 0, 0 };
-    linePtr = oldLinePtr; // revert current line pointer
-    return true;
 }
 
 bool GCNAsmUtils::parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& outValue,
