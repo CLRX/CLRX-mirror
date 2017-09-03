@@ -124,6 +124,7 @@ ISAUsageHandler* GCNUsageHandler::copy() const
     return new GCNUsageHandler(*this);
 }
 
+// get read-write flags from current position
 cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
                    uint16_t rstart, uint16_t rend) const
 {
@@ -153,6 +154,7 @@ cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
     return flags;
 }
 
+/* get register pair from specified field from instruction in current code position */
 std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
                  cxbyte rwFlags) const
 {
@@ -295,6 +297,9 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
     return { rstart, rstart+regSize };
 }
 
+/// get usage dependencies
+/* linearDeps - lists of linked register fields (linked fields)
+ * equalToDeps - lists of register fields should be equal */
 void GCNUsageHandler::getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
                 cxbyte* linearDeps, cxbyte* equalToDeps) const
 {
@@ -354,10 +359,11 @@ static const uint32_t constImmFloatLiterals[9] =
     0x40000000, 0xc0000000, 0x40800000, 0xc0800000, 0x3e22f983
 };
 
+// used while converting 32-bit SOPx encoding to 64-bit SOPx encoding
 static void tryPromoteConstImmToLiteral(GCNOperand& src0Op, uint16_t arch)
 {
     if (!src0Op.range.isRegVar() && src0Op.range.start>=128 && src0Op.range.start<=208)
-    {
+    {   // convert integer const immediates
         src0Op.value = src0Op.range.start<193? src0Op.range.start-128 :
                 192-src0Op.range.start;
         src0Op.range.start = 255;
@@ -365,12 +371,13 @@ static void tryPromoteConstImmToLiteral(GCNOperand& src0Op, uint16_t arch)
     else if (!src0Op.range.isRegVar() &&
             ((src0Op.range.start>=240 && src0Op.range.start<248) ||
              ((arch&ARCH_GCN_1_2_4)!=0 && src0Op.range.start==248)))
-    {
+    {   // floating point immediates to literal
         src0Op.value = constImmFloatLiterals[src0Op.range.start-240];
         src0Op.range.start = 255;
     }
 }
 
+// check whether reg range can be equal (regvar and registers)
 static inline bool regRangeCanEqual(const RegRange& r1, const RegRange& r2)
 {
     if (r1.isRegVar() != r2.isRegVar() && r1.isSGPR()==r2.isSGPR())
@@ -653,6 +660,7 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (linePtr == end || *linePtr!='@')
         {
             const char* hwregNamePlace = linePtr;
+            // choose hwReg names map
             const size_t regMapSize = isGCN14 ? hwregNamesGCN14MapSize : hwregNamesMapSize;
             const std::pair<const char*, cxuint>* regMap = isGCN14 ?
                         hwregNamesGCN14Map : hwregNamesMap;
@@ -863,6 +871,8 @@ static const size_t sendMessageNamesGCN14MapSize = sizeof(sendMessageNamesGCN14M
 static const char* sendMsgGSOPTable[] =
 { "nop", "cut", "emit", "emit_cut" };
 
+static const size_t sendMsgGSOPTableSize = sizeof(sendMsgGSOPTable) / sizeof(const char*);
+
 bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
@@ -1057,10 +1067,12 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     if (getNameArg(asmr, 20, name, linePtr, "GSOP", true))
                     {
                         toLowerString(name);
+                        // handle gs_op prefix
                         const size_t gsopNameIndex = (::strncmp(name, "gs_op_", 6) == 0)
                                     ? 6 : 0;
                         for (gsopIndex = 0; gsopIndex < 4; gsopIndex++)
-                            if (::strcmp(name+gsopNameIndex, sendMsgGSOPTable[gsopIndex])==0)
+                            if (::strcmp(name+gsopNameIndex,
+                                        sendMsgGSOPTable[gsopIndex])==0)
                                 break;
                         if (gsopIndex==2 && gsopNameIndex==0)
                         {   /* 'emit-cut' handling */
@@ -1072,7 +1084,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                                 gsopIndex++;
                             }
                         }
-                        if (gsopIndex == 4)
+                        if (gsopIndex == sendMsgGSOPTableSize)
                         {   // not found
                             gsopIndex = 0;
                             asmr.printError(funcArg2Place, "Unknown GSOP");
@@ -1426,6 +1438,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     return true;
 }
 
+// choose between 64-bit immediate (FP64) and 32-bit immediate
 static Flags correctOpType(uint32_t regsNum, Flags typeMask)
 {
     return (regsNum==2 && (typeMask==INSTROP_FLOAT || typeMask==INSTROP_INT)) ?
@@ -1491,7 +1504,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t immValue = 0;
     std::unique_ptr<AsmExpression> immExpr;
     if (mode1 == GCN_ARG1_IMM)
-    {
+    {   // for V_MADMK_FXxx instruction
         if (!skipRequiredComma(asmr, linePtr))
             return false;
         good &= parseLiteralImm(asmr, linePtr, immValue, &immExpr, literalConstsFlags);
@@ -1512,7 +1525,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             INSTROP_READ, (!sgprRegInSrc1) ? GCNFIELD_VOP_VSRC1 : GCNFIELD_VOP_SSRC1);
     
     if (mode1 == GCN_ARG2_IMM)
-    {
+    {   // for V_MADAK_Fxx instruction
         if (!skipRequiredComma(asmr, linePtr))
             return false;
         good &= parseLiteralImm(asmr, linePtr, immValue, &immExpr, literalConstsFlags);
@@ -2290,7 +2303,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             }
         }
         else if (mode1 != GCN_SRC12_NONE)
-        {
+        {   // if encoding have two or three source operands
             if (!skipRequiredComma(asmr, linePtr))
                 return false;
             regsNum = (gcnInsn.mode&GCN_REG_SRC1_64)?2:1;
@@ -2573,7 +2586,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         good &= parseVRegRange(asmr, linePtr, data0Reg, regsNum, GCNFIELD_DS_DATA0, true,
                     INSTROP_SYMREGRANGE|INSTROP_READ);
         if (srcMode == GCN_2SRCS)
-        {
+        {   // insturction have second source
             if (!skipRequiredComma(asmr, linePtr))
                 return false;
             gcnAsm->setCurrentRVU(3);
@@ -2604,7 +2617,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         if (::strcmp(name, "gds")==0)
             good &= parseModEnable(asmr, linePtr, haveGds, "gds modifier");
         else if ((gcnInsn.mode & GCN_2OFFSETS) == 0) /* single offset */
-        {
+        {   // single offset
             if (::strcmp(name, "offset") == 0)
             {
                 if (parseModImm(asmr, linePtr, offset, &offsetExpr, "offset",
@@ -2947,6 +2960,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 }
             }
         }
+        // other modifiers
         else if (!isGCN12 && ::strcmp(name, "addr64")==0)
             good &= parseModEnable(asmr, linePtr, haveAddr64, "addr64 modifier");
         else if (::strcmp(name, "tfe")==0)
@@ -3229,7 +3243,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             }
         }
         else if (name[0] < 's')
-        {
+        {   // glc, lwe, r128, a16 modifiers
             if (::strcmp(name, "glc")==0)
                 good &= parseModEnable(asmr, linePtr, haveGlc, "glc modifier");
             else if (::strcmp(name, "lwe")==0)
@@ -3244,6 +3258,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 good = false;
             }
         }
+        // other modifiers
         else if (::strcmp(name, "tfe")==0)
             good &= parseModEnable(asmr, linePtr, haveTfe, "tfe modifier");
         else if (::strcmp(name, "slc")==0)
@@ -3382,7 +3397,7 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
         const char* nameStart = name;
         toLowerString(name);
         if (name[0]=='m' && name[1]=='r' && name[2]=='t')
-        {   // mrt
+        {   // parse mrtX target
             if (name[3]!='z' || name[4]!=0)
             {
                 nameStart+=3;
@@ -3397,7 +3412,7 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
                 target = 8; // mrtz
         }
         else if (name[0]=='p' && name[1]=='o' && name[2]=='s')
-        {
+        {   // parse pos target
             nameStart+=3;
             cxbyte posNum = cstrtobyte(nameStart, name+nameSize);
             if (posNum>=4)
@@ -3444,6 +3459,7 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
             return false;
         skipSpacesToEnd(linePtr, end);
         vsrcPlaces[i] = linePtr;
+        // if not 'off', then parse vector register
         if (linePtr+2>=end || toLower(linePtr[0])!='o' || toLower(linePtr[1])!='f' ||
             toLower(linePtr[2])!='f' || (linePtr+3!=end && isAlnum(linePtr[3])))
         {
@@ -3546,7 +3562,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool vaddrOff = false;
     const cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
-    {
+    {   // first is destination
         vdstPlace = linePtr;
         
         gcnAsm->setCurrentRVU(0);
@@ -3570,7 +3586,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
     }
     else
-    {
+    {   // first is data
         skipSpacesToEnd(linePtr, end);
         if (flatMode == GCN_FLAT_SCRATCH && linePtr+3<=end &&
             strncasecmp(linePtr, "off", 3)==0 && (linePtr+3==end || !isAlnum(linePtr[3])))
