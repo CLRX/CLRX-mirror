@@ -1875,7 +1875,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     }
                     else if (withSDWAOperands>=1 && (flags&PARSEVOP_NODSTMODS)==0 &&
                         (::strcmp(mod, "dst_unused")==0 || ::strcmp(mod, "dst_un")==0))
-                    {
+                    {   /* dst_unused modifer */
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
                         {
@@ -1909,7 +1909,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                     good = false;
                             }
                             else
-                            {
+                            {   /* '@' in dst_unused: parametrization */
                                 linePtr++;
                                 if (parseImm(asmr, linePtr, unused, nullptr,
                                                  2, WS_UNSIGNED))
@@ -1931,7 +1931,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         }
                     }
                     else if (withSDWAOperands>=2 && ::strcmp(mod, "src0_sel")==0)
-                    {
+                    {   /* src0_sel modifier */
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
                         {
@@ -1953,7 +1953,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                     good = false;
                             }
                             else
-                            {   /* parametrize */
+                            {   /* parametrize by '@' */
                                 linePtr++;
                                 if (parseImm(asmr, linePtr, src0Sel, nullptr,
                                                  3, WS_UNSIGNED))
@@ -1975,7 +1975,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         }
                     }
                     else if (withSDWAOperands>=3 && ::strcmp(mod, "src1_sel")==0)
-                    {
+                    {   // src1_sel modifier
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
                         {
@@ -1997,7 +1997,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                     good = false;
                             }
                             else
-                            {   /* parametrize */
+                            {   /* parametrize by '@' */
                                 linePtr++;
                                 if (parseImm(asmr, linePtr, src1Sel, nullptr,
                                                  3, WS_UNSIGNED))
@@ -2133,7 +2133,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         {
                             skipCharAndSpacesToEnd(linePtr, end);
                             if (linePtr!=end && (*linePtr=='0' || *linePtr=='1'))
-                            {
+                            {   // accept '0' and '1' as enabled (old and new syntax)
                                 bool boundCtrl = false;
                                 linePtr++;
                                 good &= parseModEnable(asmr, linePtr, boundCtrl,
@@ -2160,7 +2160,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     else if (mod[0]=='r' && mod[1]=='o' && mod[2]=='w' && mod[3]=='_' &&
                             (::strcmp(mod+4, "shl")==0 || ::strcmp(mod+4, "shr")==0 ||
                                 ::strcmp(mod+4, "ror")==0))
-                    {   //
+                    {   // row_XXX (shl, shr, ror) modifier
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
                         {
@@ -2198,7 +2198,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     else if (memcmp(mod, "wave_", 5)==0 &&
                         (::strcmp(mod+5, "shl")==0 || ::strcmp(mod+5, "shr")==0 ||
                             ::strcmp(mod+5, "rol")==0 || ::strcmp(mod+5, "ror")==0))
-                    {
+                    {   // wave_XXX (shl,shr,rol,ror)
                         bool modGood = true;
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
@@ -2226,7 +2226,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     else if (::strcmp(mod, "row_mirror")==0 ||
                         ::strcmp(mod, "row_half_mirror")==0 ||
                         ::strcmp(mod, "row_hmirror")==0)
-                    {
+                    {   // row_mirror, row_half_mirror
                         extraMods->dppCtrl = (mod[4]=='h') ? 0x141 : 0x140;
                         if (haveDppCtrl)
                             asmr.printWarning(modPlace, "DppCtrl is already defined");
@@ -2235,7 +2235,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     else if (::strncmp(mod, "row_bcast", 9)==0 && (
                         (mod[9]=='1' && mod[10]=='5' && mod[11]==0) ||
                         (mod[9]=='3' && mod[10]=='1' && mod[11]==0) || mod[9]==0))
-                    {
+                    {   // row_bcast15 and row_bast31 modifier
                         bool modGood = true;
                         if (mod[9] =='1') // if row_bcast15
                             extraMods->dppCtrl = 0x142;
