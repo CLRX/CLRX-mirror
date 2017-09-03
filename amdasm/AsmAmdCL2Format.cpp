@@ -76,7 +76,7 @@ AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmFormatHandler(asse
     sections.push_back({ ASMKERN_INNER, AsmSectionType::DATA, ELFSECTID_RODATA,
             ".rodata" });
     savedSection = innerSavedSection = 0;
-    defaultDriverVersion = detectAmdDriverVersion();
+    detectedDriverVersion = detectAmdDriverVersion();
 }
 
 AsmAmdCL2Handler::~AsmAmdCL2Handler()
@@ -95,6 +95,21 @@ void AsmAmdCL2Handler::saveCurrentSection()
         kernelStates[assembler.currentKernel]->savedSection = assembler.currentSection;
 }
 
+cxuint AsmAmdCL2Handler::getDriverVersion() const
+{
+    cxuint driverVersion = 0;
+    if (output.driverVersion==0)
+    {
+        if (assembler.driverVersion==0) // just detect driver version
+            driverVersion = detectedDriverVersion;
+        else // from assembler setup
+            driverVersion = assembler.driverVersion;
+    }
+    else
+        driverVersion = output.driverVersion;
+    return driverVersion;
+}
+
 void AsmAmdCL2Handler::restoreCurrentAllocRegs()
 {
     if (assembler.currentKernel!=ASMKERN_GLOBAL &&
@@ -103,21 +118,6 @@ void AsmAmdCL2Handler::restoreCurrentAllocRegs()
         assembler.isaAssembler->setAllocatedRegisters(
                 kernelStates[assembler.currentKernel]->allocRegs,
                 kernelStates[assembler.currentKernel]->allocRegFlags);
-}
-
-cxuint AsmAmdCL2Handler::getDriverVersion() const
-{
-    cxuint driverVersion = 0;
-    if (output.driverVersion==0)
-    {
-        if (assembler.driverVersion==0) // just detect driver version
-            driverVersion = defaultDriverVersion;
-        else // from assembler setup
-            driverVersion = assembler.driverVersion;
-    }
-    else
-        driverVersion = output.driverVersion;
-    return driverVersion;
 }
 
 void AsmAmdCL2Handler::saveCurrentAllocRegs()
@@ -442,11 +442,12 @@ void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char*
         if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
             asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
                         "' is already defined").c_str());
-        else
+        else // set value of symbol
             asmr.setSymbol(*res.first, driverVersion, ASMSECT_ABS);
     }
 }
 
+// go to inner binary
 void AsmAmdCL2PseudoOps::doInner(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {
@@ -1445,11 +1446,12 @@ bool AsmAmdCL2Handler::prepareBinary()
                     ((asmSection.flags&ASMELFSECT_ALLOCATABLE) ? SHF_ALLOC : 0) |
                     ((asmSection.flags&ASMELFSECT_WRITEABLE) ? SHF_WRITE : 0) |
                     ((asmSection.flags&ASMELFSECT_EXECUTABLE) ? SHF_EXECINSTR : 0);
+                // put extra sections to binary
                 if (section.kernelId == ASMKERN_GLOBAL)
                     output.extraSections.push_back({section.name, sectionSize, sectionData,
                             asmSection.alignment!=0?asmSection.alignment:1, elfSectType,
                             elfSectFlags, ELFSECTID_NULL, 0, 0 });
-                else
+                else // to inner binary
                     output.innerExtraSections.push_back({section.name, sectionSize,
                             sectionData, asmSection.alignment!=0?asmSection.alignment:1,
                             elfSectType, elfSectFlags, ELFSECTID_NULL, 0, 0 });
@@ -1569,7 +1571,7 @@ bool AsmAmdCL2Handler::prepareBinary()
     if (output.driverVersion==0 && (assembler.flags&ASM_TESTRUN)==0)
     {
         if (assembler.driverVersion==0) // just detect driver version
-            output.driverVersion = defaultDriverVersion;
+            output.driverVersion = detectedDriverVersion;
         else // from assembler setup
             output.driverVersion = assembler.driverVersion;
     }

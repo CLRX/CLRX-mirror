@@ -77,7 +77,7 @@ AsmAmdHandler::AsmAmdHandler(Assembler& assembler) : AsmFormatHandler(assembler)
     assembler.currentSection = 0;
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA, ELFSECTID_UNDEF, nullptr });
     savedSection = 0;
-    defaultDriverVersion = detectAmdDriverVersion();
+    detectedDriverVersion = detectAmdDriverVersion();
 }
 
 AsmAmdHandler::~AsmAmdHandler()
@@ -91,7 +91,7 @@ cxuint AsmAmdHandler::determineDriverVersion() const
     if (output.driverVersion==0 && output.driverInfo.empty())
     {
         if (assembler.getDriverVersion() == 0)
-            return defaultDriverVersion;
+            return detectedDriverVersion;
         else
             return assembler.getDriverVersion();
     }
@@ -1853,11 +1853,12 @@ bool AsmAmdHandler::prepareBinary()
                     ((asmSection.flags&ASMELFSECT_ALLOCATABLE) ? SHF_ALLOC : 0) |
                     ((asmSection.flags&ASMELFSECT_WRITEABLE) ? SHF_WRITE : 0) |
                     ((asmSection.flags&ASMELFSECT_EXECUTABLE) ? SHF_EXECINSTR : 0);
+                // put extra sections to binary
                 if (section.kernelId == ASMKERN_GLOBAL)
                     output.extraSections.push_back({section.name, sectionSize, sectionData,
                             asmSection.alignment!=0?asmSection.alignment:1, elfSectType,
                             elfSectFlags, ELFSECTID_NULL, 0, 0 });
-                else
+                else // to inner binary
                     kernel->extraSections.push_back({section.name, sectionSize, sectionData,
                             asmSection.alignment!=0?asmSection.alignment:1, elfSectType,
                             elfSectFlags, ELFSECTID_NULL, 0, 0 });
@@ -1925,7 +1926,7 @@ bool AsmAmdHandler::prepareBinary()
         (assembler.flags&ASM_TESTRUN)==0)
     {
         if (assembler.driverVersion==0) // just detect driver version
-            output.driverVersion = defaultDriverVersion;
+            output.driverVersion = detectedDriverVersion;
         else // from assembler setup
             output.driverVersion = assembler.driverVersion;
     }

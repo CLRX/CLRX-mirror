@@ -787,6 +787,7 @@ void AsmROCmPseudoOps::setDimensions(AsmROCmHandler& handler, const char* pseudo
     handler.kernelStates[asmr.currentKernel]->config->dimMask = dimMask;
 }
 
+// parse machine version - used also in AsmGalliumFormat
 bool AsmROCmPseudoOps::parseMachine(Assembler& asmr, const char* linePtr,
         uint16_t& machineKind, uint16_t& machineMajor, uint16_t& machineMinor,
         uint16_t& machineStepping)
@@ -855,6 +856,7 @@ void AsmROCmPseudoOps::setMachine(AsmROCmHandler& handler, const char* pseudoOpP
     config->amdMachineStepping = steppingValue;
 }
 
+// parse code version (amd code version) - used also in AsmGalliumFormat
 bool AsmROCmPseudoOps::parseCodeVersion(Assembler& asmr, const char* linePtr,
                 uint16_t& codeMajor, uint16_t& codeMinor)
 {
@@ -902,6 +904,7 @@ void AsmROCmPseudoOps::setCodeVersion(AsmROCmHandler& handler, const char* pseud
     config->amdCodeVersionMinor = minorValue;
 }
 
+// parse reserved gprs - used also in AsmGalliumFormat
 bool AsmROCmPseudoOps::parseReservedXgprs(Assembler& asmr, const char* linePtr,
                 bool inVgpr, uint16_t& gprFirst, uint16_t& gprCount)
 {

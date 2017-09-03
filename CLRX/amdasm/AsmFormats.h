@@ -242,7 +242,7 @@ private:
     cxuint savedSection;
     cxuint extraSectionCount;
     
-    cxuint defaultDriverVersion;
+    cxuint detectedDriverVersion;
     
     void saveCurrentSection();
     void restoreCurrentAllocRegs();
@@ -325,7 +325,7 @@ private:
     cxuint extraSectionCount;
     cxuint innerExtraSectionCount;
     
-    cxuint defaultDriverVersion;
+    cxuint detectedDriverVersion;
     
     void saveCurrentSection();
     void restoreCurrentAllocRegs();
@@ -418,8 +418,8 @@ private:
     Inside inside;
     cxuint extraSectionCount;
     
-    cxuint defaultDriverVersion;
-    cxuint defaultLLVMVersion;
+    cxuint detectedDriverVersion;
+    cxuint detectedLLVMVersion;
     
     uint32_t archMinor;
     uint32_t archStepping;

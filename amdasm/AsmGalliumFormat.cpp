@@ -163,8 +163,8 @@ AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler): AsmFormatHandler(ass
     inside = Inside::MAINLAYOUT;
     currentKcodeKernel = ASMKERN_GLOBAL;
     savedSection = 0;
-    defaultLLVMVersion = detectLLVMCompilerVersion();
-    defaultDriverVersion = detectMesaDriverVersion();
+    detectedLLVMVersion = detectLLVMCompilerVersion();
+    detectedDriverVersion = detectMesaDriverVersion();
 }
 
 AsmGalliumHandler::~AsmGalliumHandler()
@@ -173,18 +173,20 @@ AsmGalliumHandler::~AsmGalliumHandler()
         delete kernel;
 }
 
+// determine LLVM version from assembler settings or CLRX settings
 cxuint AsmGalliumHandler::determineLLVMVersion() const
 {
     if (assembler.getLLVMVersion() == 0)
-        return defaultLLVMVersion;
+        return detectedLLVMVersion;
     else
         return assembler.getLLVMVersion();
 }
 
+// determine Mesa3D driver version from assembler settings or CLRX settings
 cxuint AsmGalliumHandler::determineDriverVersion() const
 {
     if (assembler.getDriverVersion() == 0)
-        return defaultDriverVersion;
+        return detectedDriverVersion;
     else
         return assembler.getDriverVersion();
 }
@@ -1876,7 +1878,7 @@ bool AsmGalliumHandler::prepareBinary()
     
     cxuint llvmVersion = assembler.llvmVersion;
     if (llvmVersion == 0 && (assembler.flags&ASM_TESTRUN)==0)
-        llvmVersion = defaultLLVMVersion;
+        llvmVersion = detectedLLVMVersion;
     
     const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
     const uint32_t ldsMask = (1U<<ldsShift)-1U;
@@ -2111,7 +2113,7 @@ bool AsmGalliumHandler::prepareBinary()
     }
     // set versions
     if (assembler.driverVersion == 0 && (assembler.flags&ASM_TESTRUN)==0) // auto detection
-        output.isMesa170 = defaultDriverVersion >= 170000U;
+        output.isMesa170 = detectedDriverVersion >= 170000U;
     else
         output.isMesa170 = assembler.driverVersion >= 170000U;
     output.isLLVM390 = llvmVersion >= 30900U;
