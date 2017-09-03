@@ -1035,7 +1035,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         if (linePtr+3 <= end && (instrOpMask & INSTROP_VOP3P)==0 &&
             toLower(linePtr[0])=='a' &&
             toLower(linePtr[1])=='b' && toLower(linePtr[2])=='s')
-        {
+        {   // if 'abs' operand modifier
             linePtr += 3;
             skipSpacesToEnd(linePtr, end);
             if (linePtr!=end && *linePtr=='(')
@@ -1137,7 +1137,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     skipSpacesToEnd(linePtr, end);
     
     if ((instrOpMask & INSTROP_SSOURCE)!=0)
-    {
+    {   // try parse scalar source (vcc, scc, literals)
         char regName[25];
         const char* regNamePlace = linePtr;
         if (getNameArg(asmr, 25, regName, linePtr, "register name", false, true))
@@ -1198,7 +1198,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         bool encodeAsLiteral = false;
         if (linePtr+4<end && toLower(linePtr[0])=='l' && toLower(linePtr[1])=='i' &&
             toLower(linePtr[2])=='t' && (isSpace(linePtr[3]) || linePtr[3]=='('))
-        {
+        {   // lit() - force encoding as literal
             linePtr+=3;
             const char* oldLinePtr = linePtr;
             skipSpacesToEnd(linePtr, end);
@@ -1207,7 +1207,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 encodeAsLiteral = true;
                 linePtr++;
                 skipSpacesToEnd(linePtr, end);
-                negPlace = linePtr;
+                negPlace = linePtr; // later treaten as next part of operand
             }
             else // back to expression start
                 linePtr = oldLinePtr;
@@ -1488,7 +1488,6 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         if (exprToResolve) // finish if expression to resolve
             return true;
         
-        
         if ((instrOpMask & INSTROP_ONLYINLINECONSTS)!=0)
         {   // error
             if ((instrOpMask & INSTROP_NOLITERALERROR)!=0)
@@ -1530,7 +1529,7 @@ bool GCNAsmUtils::parseImmWithBoolArray(Assembler& asmr, const char*& linePtr,
         inVal |= v<<i;
         skipSpacesToEnd(linePtr, end);
         if (i+1 < bits)
-        {
+        {   // next bool will be, try parse ','
             if (linePtr==end || *linePtr!=',')
             {
                 asmr.printError(linePtr, "Expected ',' before bit value");
@@ -1541,7 +1540,7 @@ bool GCNAsmUtils::parseImmWithBoolArray(Assembler& asmr, const char*& linePtr,
                 ++linePtr;
         }
         else
-        {
+        {   // end of array, try parse ']'
             if (linePtr == end || *linePtr!=']')
             {
                 asmr.printError(linePtr, "Unterminated bit array");
@@ -1622,6 +1621,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
             toLowerString(mod);
             try
             {
+                // check what is VOP modifier
                 bool alreadyModDefined = false;
                 if (!vop3p && ::strcmp(mod, "mul")==0)
                 {
