@@ -60,7 +60,8 @@ enum class GPUDeviceType: cxbyte
     BAFFIN,
     GFX804,
     GFX900,
-    GPUDEVICE_MAX = GFX900,    ///< last value
+    GFX901,
+    GPUDEVICE_MAX = GFX901,    ///< last value
     
     RADEON_HD7700 = CAPE_VERDE, ///< Radeon HD7700
     RADEON_HD7800 = PITCAIRN,   ///< Radeon HD7800

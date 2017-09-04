@@ -1723,7 +1723,8 @@ static const AMDGPUArchValues galliumAmdGpuArchValuesTbl[] =
     { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
     { 8, 0, 4 }, // GPUDeviceType::BAFFIN
     { 8, 0, 4 }, // GPUDeviceType::GFX804
-    { 9, 0, 0 } // GPUDeviceType::GFX900
+    { 9, 0, 0 }, // GPUDeviceType::GFX900
+    { 9, 0, 1 }  // GPUDeviceType::GFX901
 };
 
 bool AsmGalliumHandler::prepareBinary()
