@@ -397,12 +397,18 @@ static const cxbyte kernelIsaMetadata[] =
     0x00, 0x00, 0x00, 0x00
 };
 
+static const char* amdcl2GPUArchNameWordTable[] =
+{
+    "GFX6", "GFX7", "GFX8", "GFX9"
+};
+
 static void prepareKernelTempData(const AmdCL2Input* input,
           Array<TempAmdCL2KernelData>& tempDatas)
 {
     const bool newBinaries = input->driverVersion >= 191205;
     const bool is16_3Ver = input->driverVersion >= 200406;
     const size_t kernelsNum = input->kernels.size();
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
     
     const size_t samplersNum = (input->samplerConfig) ?
                 input->samplers.size() : (input->samplerInitSize>>3);
@@ -453,6 +459,9 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                     out += arg.argName.size() + arg.typeName.size() + 2;
                 out += 24;
             }
+            // fix for new word (GFX?)
+            if (input->driverVersion >= 223600U)
+                out += ::strlen(amdcl2GPUArchNameWordTable[cxuint(arch)]) - 7;
             
             /// if kernels uses locals
             tempData.pipesUsed = 0;
@@ -874,6 +883,8 @@ public:
     {
         const bool newBinaries = input->driverVersion >= 191205;
         const bool is16_3Ver = input->driverVersion >= 200406;
+        const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
+        
         typename Types::MetadataHeader header;
         cxuint argsNum = config.args.size();
         
@@ -899,7 +910,11 @@ public:
         SLEV(header.reqdWorkGroupSize[2], config.reqdWorkGroupSize[2]);
         ::memset(header.unknown3, 0, sizeof header.unknown3);
         SLEV(header.firstNameLength, 0x15);
-        SLEV(header.secondNameLength, 0x7);
+        if (input->driverVersion < 223600U)
+            SLEV(header.secondNameLength, 0x7); // generic word
+        else  // GFX? word
+            SLEV(header.secondNameLength,
+                        ::strlen(amdcl2GPUArchNameWordTable[cxuint(arch)]));
         for (cxuint i = 0; i < 3; i++)
             header.unknown4[i] = 0;
         if (!newBinaries)
@@ -925,7 +940,11 @@ public:
             fob.fill(Types::headerEndSize, 0);
         // two null terminated strings
         fob.writeArray(22, "__OpenCL_dummy_kernel");
-        fob.writeArray(8, "generic");
+        if (input->driverVersion < 223600U)
+            fob.writeArray(8, "generic");
+        else    // GFX?
+            fob.writeArray(::strlen(amdcl2GPUArchNameWordTable[cxuint(arch)])+1,
+                           amdcl2GPUArchNameWordTable[cxuint(arch)]);
         if (is16_3Ver)
             fob.writeObject<cxbyte>(0);
         
