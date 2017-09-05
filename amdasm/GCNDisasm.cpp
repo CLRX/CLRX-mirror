@@ -796,16 +796,16 @@ char* GCNDisasmUtils::decodeGCNOperand(GCNDisassembler& dasm, size_t codePos,
 
 static const char* sendMsgCodeMessageTable[16] =
 {
-    "0",
+    "@0",
     "interrupt",
     "gs",
     "gs_done",
-    "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "system"
+    "@4", "@5", "@6", "@7", "@8", "@9", "@10", "@11", "@12", "@13", "@14", "system"
 };
 
 static const char* sendMsgCodeMessageTableVEGA[16] =
 {
-    "0",
+    "@0",
     "interrupt",
     "gs",
     "gs_done",
@@ -816,7 +816,7 @@ static const char* sendMsgCodeMessageTableVEGA[16] =
     "early_prim_dealloc",
     "gs_alloc_req",
     "get_doorbell",
-    "11", "12", "13", "14", "system"
+    "@11", "@12", "@13", "@14", "system"
 };
 
 
@@ -1078,7 +1078,7 @@ void GCNDisasmUtils::decodeSOP2Encoding(GCNDisassembler& dasm, size_t codePos,
 
 static const char* hwregNames[20] =
 {
-    "0", "mode", "status", "trapsts",
+    "@0", "mode", "status", "trapsts",
     "hw_id", "gpr_alloc", "lds_alloc", "ib_sts",
     "pc_lo", "pc_hi", "inst_dw0", "inst_dw1",
     "ib_dbg0", "ib_dbg1", "flush_ib", "sh_mem_bases",
@@ -1123,6 +1123,7 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
         else
         {
             const cxuint digit2 = hwregId/10U;
+            *bufPtr++ = '@';
             *bufPtr++ = '0' + digit2;
             *bufPtr++ = '0' + hwregId - digit2*10U;
         }

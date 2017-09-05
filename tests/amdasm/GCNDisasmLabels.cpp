@@ -184,7 +184,7 @@ static const GCNDisasmLabelCase decGCN12LabelCases[] =
       "        s_branch        .L12_0\n.L4_0:\n        s_cmp_eq_i32    s69, 0x6d894\n"
       ".L12_0:\n        s_branch        .L4_0\n" },
     { { 0xbf820001U, 0xbf90001bU, 0xbf82fffeU },  /* SOPP */
-      "        s_branch        .L8_0\n.L4_0:\n        s_sendmsg       sendmsg(11, cut, 0)\n"
+      "        s_branch        .L8_0\n.L4_0:\n        s_sendmsg       sendmsg(@11, cut, 0)\n"
       ".L8_0:\n        s_branch        .L4_0\n" },
     { { 0xbf820002U, 0xc0020c9dU, 0x1d1345bU, 0xbf82fffdU }, /* SMEM */
       "        s_branch        .L12_0\n.L4_0:\n        s_load_dword    s50, s[58:59], 0x1345b\n"
