@@ -1799,6 +1799,10 @@ bool AsmGalliumHandler::prepareBinary()
         }
     }
     
+    cxuint llvmVersion = assembler.llvmVersion;
+    if (llvmVersion == 0 && (assembler.flags&ASM_TESTRUN)==0)
+        llvmVersion = detectedLLVMVersion;
+    
     GPUArchitecture arch = getGPUArchitectureFromDeviceType(assembler.deviceType);
     // set up number of the allocated SGPRs and VGPRs for kernel
     cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
@@ -1830,10 +1834,22 @@ bool AsmGalliumHandler::prepareBinary()
         
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
         {
+            cxuint allocFlags = kernelStates[i]->allocRegFlags;
+            if (llvmVersion >= 40000U)
+            {   // fix alloc reg flags for AMD HSA (such as ROCm)
+                const AmdHsaKernelConfig& hsaConfig  = *kernelStates[i]->config.get();
+                allocFlags = kernelStates[i]->allocRegFlags |
+                    // flat_scratch_init
+                    ((hsaConfig.enableSgprRegisterFlags&
+                            AMDHSAFLAG_USE_FLAT_SCRATCH_INIT)!=0? GCN_FLAT : 0) |
+                    // enable_xnack
+                    ((hsaConfig.enableFeatureFlags&AMDHSAFLAG_USE_XNACK_ENABLED)!=0 ?
+                                GCN_XNACK : 0);
+            }
+            
             config.usedSGPRsNum = std::min(
                 std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]) +
-                    getGPUExtraRegsNum(arch, REGTYPE_SGPR,
-                        kernelStates[i]->allocRegFlags|GCN_VCC),
+                    getGPUExtraRegsNum(arch, REGTYPE_SGPR, allocFlags|GCN_VCC),
                     maxSGPRsNum); // include all extra sgprs
         }
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
@@ -1876,10 +1892,6 @@ bool AsmGalliumHandler::prepareBinary()
     /// checking symbols and set offset for kernels
     AsmSection& asmCSection = assembler.sections[codeSection];
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
-    
-    cxuint llvmVersion = assembler.llvmVersion;
-    if (llvmVersion == 0 && (assembler.flags&ASM_TESTRUN)==0)
-        llvmVersion = detectedLLVMVersion;
     
     const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
     const uint32_t ldsMask = (1U<<ldsShift)-1U;

@@ -29,6 +29,8 @@ Kernel function should to be aligned to 256 byte boundary.
 Assembler for GalliumCompute format counts all SGPR registers and add extra registers
 (VCC, FLAT_SCRATCH, XNACK_MASK) if any used to register pool.
  The VCC register is included by default.
+In AMDHSA configuration (LLVM >= 4.0.0) then special fields determines
+what extra SGPR extra has been added.
 
 ## List of the specific pseudo-operations
 

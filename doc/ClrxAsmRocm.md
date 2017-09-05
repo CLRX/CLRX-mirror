@@ -27,7 +27,7 @@ Kernel function should to be aligned to 256 byte boundary.
 ## Scalar register allocation
 
 Assembler for ROCm format counts all SGPR registers and add extra registers
-(FLAT_SCRATCH, XNACK_MASK) if any used to register pool. Special fields determines
+(FLAT_SCRATCH, XNACK_MASK). Special fields determines
 what extra SGPR extra has been added. The VCC register is included by default.
 
 ## List of the specific pseudo-operations

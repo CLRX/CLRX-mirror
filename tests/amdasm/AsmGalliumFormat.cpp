@@ -427,7 +427,7 @@ test.s:16:23: Error: Used VGPRs number out of range (0-256)
 )ffDXD", false
     },
     /* AMD HSA */
-    /* 1 - gallium (configured proginfo) */
+    /* 3 - gallium (configured proginfo and AMDHSA) */
     { R"ffDXD(            .gallium
         .llvm_version 40000
             .kernel aa22
@@ -583,6 +583,90 @@ aa23:
   0000000000000000000000000000000000000000000000000000000000000000
 )ffDXD", "", true
     },
+    /* 3 - gallium - alloc reg flags (extra SGPR registers) */
+    { R"ffDXD(            .gallium
+        .gpu Fiji
+        .llvm_version 40000
+            .kernel aa22
+            .args
+            .arg scalar, 8,,,SEXT,griddim
+            .config
+            .priority 1
+            .floatmode 43
+            .ieeemode
+            .vgprsnum 139
+            .pgmrsrc2 523243
+            .scratchbuffer 230
+            .use_flat_scratch_init
+            
+            .call_convention 0x34dac
+            .debug_private_segment_buffer_sgpr 98
+            .debug_wavefront_private_segment_offset_sgpr 96
+            .gds_segment_size 100
+            .kernarg_segment_align 32
+            .workgroup_group_segment_size 22
+            .workgroup_fbarrier_count 3324
+    .text
+aa22:
+    .skip 256
+    s_mov_b32 s54, 455
+)ffDXD", R"ffDXD(GalliumBinDump:
+  Kernel: name=aa22, offset=0
+    Config:
+      dims=default, SGPRS=61, VGPRS=139, pgmRSRC2=0x7fbeb, ieeeMode=0x1
+      floatMode=0x2b, priority=1, localSize=0, scratchBuffer=230
+    AMD HSA Config:
+      amdCodeVersion=1.1
+      amdMachine=1:8:0:3
+      kernelCodeEntryOffset=256
+      kernelCodePrefetchOffset=0
+      kernelCodePrefetchSize=0
+      maxScrachBackingMemorySize=0
+      computePgmRsrc1=0x8eb5e2
+      computePgmRsrc2=0x7fbd1
+      enableSgprRegisterFlags=0x20
+      enableFeatureFlags=0xa
+      workitemPrivateSegmentSize=230
+      workgroupGroupSegmentSize=22
+      gdsSegmentSize=100
+      kernargSegmentSize=16
+      workgroupFbarrierCount=3324
+      wavefrontSgprCount=61
+      workitemVgprCount=139
+      reservedVgprFirst=0
+      reservedVgprCount=0
+      reservedSgprFirst=0
+      reservedSgprCount=0
+      debugWavefrontPrivateSegmentOffsetSgpr=96
+      debugPrivateSegmentBufferSgpr=98
+      kernargSegmentAlignment=5
+      groupSegmentAlignment=4
+      privateSegmentAlignment=4
+      wavefrontSize=6
+      callConvention=0x34dac
+      runtimeLoaderKernelSymbol=0x0
+      ControlDirective:
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+  Comment:
+  nullptr
+  GlobalData:
+  nullptr
+  Code:
+  0100000000000000010008000000030000010000000000000000000000000000
+  00000000000000000000000000000000e2b58e00d1fb070020000a00e6000000
+  16000000640000001000000000000000fc0c00003d008b000000000000000000
+  6000620005040406ac4d03000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  ff00b6bec7010000
+)ffDXD", "", true
+    }
 };
 
 static void testAssembler(cxuint testId, const AsmTestCase& testCase)
