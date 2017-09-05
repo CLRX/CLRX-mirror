@@ -254,6 +254,7 @@ R"ffDXD(.elseiffmt gallium   # GalliumCompute code
         .dims x
         .dx10clamp
         .ieeemode
+        .default_hsa_features
     .else
         .dims xyz   # gallium set always three dimensions by Gallium
         .tgsize     # TG_SIZE_EN is always enabled by Gallium

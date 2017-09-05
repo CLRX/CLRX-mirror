@@ -41,7 +41,8 @@ static const char* galliumPseudoOpNamesTbl[] =
     "config", "control_directive",
     "debug_private_segment_buffer_sgpr",
     "debug_wavefront_private_segment_offset_sgpr",
-    "debugmode", "dims", "driver_version", "dx10clamp",
+    "debugmode", "default_hsa_features",
+    "dims", "driver_version", "dx10clamp",
     "entry", "exceptions", "floatmode", "gds_segment_size",
     "get_driver_version", "get_llvm_version", "globaldata",
     "group_segment_align",
@@ -83,7 +84,8 @@ enum
     GALLIUMOP_CONFIG, GALLIUMOP_CONTROL_DIRECTIVE,
     GALLIUMOP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR,
     GALLIUMOP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
-    GALLIUMOP_DEBUGMODE, GALLIUMOP_DIMS, GALLIUMOP_DRIVER_VERSION, GALLIUMOP_DX10CLAMP,
+    GALLIUMOP_DEBUGMODE, GALLIUMOP_DEFAULT_HSA_FEATURES,
+    GALLIUMOP_DIMS, GALLIUMOP_DRIVER_VERSION, GALLIUMOP_DX10CLAMP,
     GALLIUMOP_ENTRY, GALLIUMOP_EXCEPTIONS, GALLIUMOP_FLOATMODE, GALLIUMOP_GDS_SEGMENT_SIZE,
     GALLIUMOP_GET_DRIVER_VERSION, GALLIUMOP_GET_LLVM_VERSION, GALLIUMOP_GLOBALDATA,
     GALLIUMOP_GROUP_SEGMENT_ALIGN,
@@ -829,6 +831,33 @@ void AsmGalliumPseudoOps::setConfigBoolValue(AsmGalliumHandler& handler,
     }
 }
 
+void AsmGalliumPseudoOps::setDefaultHSAFeatures(AsmGalliumHandler& handler,
+                    const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    if (handler.determineLLVMVersion() < 40000U)
+    {
+        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
+        return;
+    }
+    
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
+    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
+    config->enableSgprRegisterFlags =
+                    uint16_t(AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER|
+                        AMDHSAFLAG_USE_DISPATCH_PTR|AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR);
+    config->enableFeatureFlags = uint16_t(AMDHSAFLAG_USE_PTR64|2);
+}
+
 void AsmGalliumPseudoOps::setMachine(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {
@@ -1408,6 +1437,9 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                                 GALLIUMCVAL_DEBUGMODE);
             break;
+        case GALLIUMOP_DEFAULT_HSA_FEATURES:
+            AsmGalliumPseudoOps::setDefaultHSAFeatures(*this, stmtPlace, linePtr);
+            break;
         case GALLIUMOP_DIMS:
             AsmGalliumPseudoOps::setDimensions(*this, stmtPlace, linePtr, false);
             break;
@@ -1932,10 +1964,6 @@ bool AsmGalliumHandler::prepareBinary()
             GalliumKernelConfig config = output.kernels[ki].config;
             AmdHsaKernelConfig outConfig;
             ::memset(&outConfig, 0xff, 128); // fill by defaults
-            outConfig.enableSgprRegisterFlags =
-                    uint16_t(AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER|
-                        AMDHSAFLAG_USE_DISPATCH_PTR|AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR);
-            outConfig.enableFeatureFlags = uint16_t(AMDHSAFLAG_USE_PTR64|2);
             
             const Kernel& kernel = *kernelStates[ki];
             if (kernel.config != nullptr)
@@ -1965,13 +1993,6 @@ bool AsmGalliumHandler::prepareBinary()
                 if (hsaConfig.workitemPrivateSegmentSize != BINGEN_DEFAULT)
                     // scratch buffer
                     config.scratchBufferSize = hsaConfig.workitemPrivateSegmentSize;
-                
-                if (outConfig.enableSgprRegisterFlags == 0)
-                    outConfig.enableSgprRegisterFlags =
-                        uint16_t(AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER|
-                            AMDHSAFLAG_USE_DISPATCH_PTR|AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR);
-                if (outConfig.enableFeatureFlags == 0)
-                    outConfig.enableFeatureFlags = uint16_t(AMDHSAFLAG_USE_PTR64|2);
             }
             
             uint32_t dimValues = 0;

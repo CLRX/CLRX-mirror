@@ -172,6 +172,12 @@ kernel configuration.
 This pseudo-op must be inside kernel configuration (`.config`).
 Enable usage of the DEBUG_MODE.
 
+### .default_hsa_features
+
+This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
+LLVM version is 4.0.0 or later. It sets default HSA kernel features and register features
+(extra SGPR registers usage).
+
 ### .dims
 
 Syntax: .dims DIMENSIONS

@@ -441,6 +441,7 @@ test.s:16:23: Error: Used VGPRs number out of range (0-256)
             .vgprsnum 139
             .pgmrsrc2 523243
             .scratchbuffer 230
+            .default_hsa_features
             
             .call_convention 0x34dac
             .debug_private_segment_buffer_sgpr 98
@@ -461,6 +462,7 @@ test.s:16:23: Error: Used VGPRs number out of range (0-256)
             .priority 3
             .ieeemode
             .pgmrsrc2 0
+            .default_hsa_features
             .group_segment_align 128
             .kernarg_segment_align 64
             .kernarg_segment_size 228
@@ -625,7 +627,7 @@ aa22:
       computePgmRsrc1=0x8eb5e2
       computePgmRsrc2=0x7fbd1
       enableSgprRegisterFlags=0x20
-      enableFeatureFlags=0xa
+      enableFeatureFlags=0x0
       workitemPrivateSegmentSize=230
       workgroupGroupSegmentSize=22
       gdsSegmentSize=100
@@ -657,7 +659,7 @@ aa22:
   nullptr
   Code:
   0100000000000000010008000000030000010000000000000000000000000000
-  00000000000000000000000000000000e2b58e00d1fb070020000a00e6000000
+  00000000000000000000000000000000e2b58e00d1fb070020000000e6000000
   16000000640000001000000000000000fc0c00003d008b000000000000000000
   6000620005040406ac4d03000000000000000000000000000000000000000000
   0000000000000000000000000000000000000000000000000000000000000000

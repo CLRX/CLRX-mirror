@@ -394,6 +394,9 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
     static void setConfigBoolValue(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, GalliumConfigValueTarget target);
     
+    static void setDefaultHSAFeatures(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
     static void setDimensions(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, bool amdHsa);
     

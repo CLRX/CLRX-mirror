@@ -249,8 +249,15 @@ end:
         .arg griddim,4
         .arg gridoffset,4
     .config
+    .if LLVM_VERSION>=40000
+        .dims x
+        .dx10clamp
+        .ieeemode
+        .default_hsa_features
+    .else
         .dims xyz   # gallium set always three dimensions by Gallium
         .tgsize     # TG_SIZE_EN is always enabled by Gallium
+    .endif
         # arg offset in dwords:
         # 9 - n, 11 - abuf, 13 - bbuf, 15 - griddim, 16 - gridoffset
 .text
