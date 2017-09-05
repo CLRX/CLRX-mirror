@@ -6,10 +6,10 @@ clrxdisasm - disassemble Radeon code binaries
 
 =head1 SYNOPSIS
 
-clrxdisasm [-mdcCfhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
-[--calNotes] [--config] [--floats] [--hexcode] [--all] [--raw] [--gpuType=GPUDEVICE]
-[--arch=ARCH] [--driverVersion=VERSION] [--llvmVersion=VERSION] [--buggyFPLit]
-[--help] [--usage] [--version] [file...]
+clrxdisasm [-mdcCfsHhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
+[--calNotes] [--config] [--floats] [--hexcode] [--all] [--setup] [--HSAConfig
+[--raw] [--gpuType=GPUDEVICE] [--arch=ARCH] [--driverVersion=VERSION]
+[--llvmVersion=VERSION] [--buggyFPLit] [--help] [--usage] [--version] [file...]
 
 =head1 DESCRIPTION
 
@@ -47,6 +47,14 @@ Print list of the ATI CAL notes and their content from AMD Catalyst binaries to 
 =item B<-C>, B<--config>
 
 Print human-readable configuration instead of metadatas, headers and ATI CAL notes.
+
+=item B<-s>, B<--setup>
+
+Print AMD OpenCL 2.0 kernel setup data.
+
+=item B<-H>, B<--HSAConfig>
+
+Print AMD OpenCL 2.0 kernel setup configuration as AMD HSA configuration.
 
 =item B<-f>, B<--float>
 

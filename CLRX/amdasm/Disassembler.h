@@ -55,11 +55,12 @@ enum: Flags
     DISASM_HEXCODE = 32,    ///< print on left side hexadecimal code
     DISASM_SETUP = 64,
     DISASM_CONFIG = 128,    ///< print kernel configuration instead raw data
-    DISASM_BUGGYFPLIT = 256,
-    DISASM_CODEPOS = 512,   ///< print code position
+    DISASM_BUGGYFPLIT = 0x100,
+    DISASM_CODEPOS = 0x200,   ///< print code position
+    DISASM_HSACONFIG = 0x400,  ///< print HSA configuration
     
     ///< all disassembler flags (without config)
-    DISASM_ALL = FLAGS_ALL&(~(DISASM_CONFIG|DISASM_BUGGYFPLIT))
+    DISASM_ALL = FLAGS_ALL&(~(DISASM_CONFIG|DISASM_BUGGYFPLIT|DISASM_HSACONFIG))
 };
 
 struct GCNDisasmUtils;

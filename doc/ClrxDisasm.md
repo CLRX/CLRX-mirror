@@ -13,10 +13,10 @@ can be used as input to the CLRX assembler if option '--all' will be used.
 
 The `clrxdisasm` can be invoked in following way:
 
-clrxdisasm [-mdcCfhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
-[--calNotes] [--config] [--floats] [--hexcode] [--all] [--raw] [--gpuType=GPUDEVICE]
-[--arch=ARCH] [--driverVersion=VERSION] [--llvmVersion=VERSION] [--buggyFPLit]
-[--help] [--usage] [--version] [file...]
+clrxdisasm [-mdcCfsHhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
+[--calNotes] [--config] [--floats] [--hexcode] [--setup] [--HSAConfig] [--all]
+[--raw] [--gpuType=GPUDEVICE] [--arch=ARCH] [--driverVersion=VERSION]
+[--llvmVersion=VERSION] [--buggyFPLit] [--help] [--usage] [--version] [file...]
 
 ### Program Options
 
@@ -51,6 +51,14 @@ and their has a constant literal. Floating point values will be inside comment.
 
     Print hexadecimal code before disassembled instruction in comment. Hexadecimal code
 will be printed in 4-byte words.
+
+* **-s**, **--setup**
+
+    Print AMD OpenCL 2.0 kernel setup data.
+
+* **-H*, **--HSAConfig**
+
+    Print AMD OpenCL 2.0 kernel setup configuration as AMD HSA configuration.
 
 * **-a**, **--all**
 

@@ -366,37 +366,41 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     size_t headerSize = ULEV(mdHdr->size);
     for (size_t i = 0; i < 3; i++)
         config.reqdWorkGroupSize[i] = ULEV(mdHdr->reqdWorkGroupSize[i]);
-    const IntAmdCL2SetupData* setupData =
-            reinterpret_cast<const IntAmdCL2SetupData*>(setup + 48);
-    uint32_t pgmRSRC1 = ULEV(setupData->pgmRSRC1);
-    uint32_t pgmRSRC2 = ULEV(setupData->pgmRSRC2);
-    /* initializing fields from PGM_RSRC1 and PGM_RSRC2 */
-    config.dimMask = (pgmRSRC2>>7)&7;
-    config.ieeeMode = (pgmRSRC1>>23)&1;
-    config.exceptions = (pgmRSRC2>>24)&0xff;
-    config.floatMode = (pgmRSRC1>>12)&0xff;
-    config.priority = (pgmRSRC1>>10)&3;
-    config.tgSize = (pgmRSRC2>>10)&1;
-    config.privilegedMode = (pgmRSRC1>>20)&1;
-    config.dx10Clamp = (pgmRSRC1>>21)&1;
-    config.debugMode = (pgmRSRC1>>22)&1;
-    config.pgmRSRC2 = pgmRSRC2;
-    config.pgmRSRC1 = pgmRSRC1;
-    config.usedVGPRsNum = ULEV(setupData->vgprsNum);
-    config.usedSGPRsNum = ULEV(setupData->sgprsNum);
-    config.scratchBufferSize = ULEV(setupData->scratchBufferSize);
-    config.localSize = ULEV(setupData->localSize);
-    config.gdsSize = ULEV(setupData->gdsSize);
-    uint16_t ksetup1 = ULEV(setupData->setup1);
-    config.useSetup = (ksetup1&2)!=0;
-    config.useArgs = (ksetup1&8)!=0;
-    config.useGeneric = config.useEnqueue = false;
-    if (ksetup1==0x2f) // if generic pointer support
-        config.useGeneric = true;
-    else if (!isGCN14)
-        config.useEnqueue = (ksetup1&0x20)!=0;
-    else // for GFX9 - check number of all registers must be 6+
-        config.useEnqueue = (setupData->sgprsNum+6 == setupData->sgprsNumAll);
+    
+    if (setup != nullptr)
+    {   // if passed to this function
+        const IntAmdCL2SetupData* setupData =
+                reinterpret_cast<const IntAmdCL2SetupData*>(setup + 48);
+        uint32_t pgmRSRC1 = ULEV(setupData->pgmRSRC1);
+        uint32_t pgmRSRC2 = ULEV(setupData->pgmRSRC2);
+        /* initializing fields from PGM_RSRC1 and PGM_RSRC2 */
+        config.dimMask = (pgmRSRC2>>7)&7;
+        config.ieeeMode = (pgmRSRC1>>23)&1;
+        config.exceptions = (pgmRSRC2>>24)&0xff;
+        config.floatMode = (pgmRSRC1>>12)&0xff;
+        config.priority = (pgmRSRC1>>10)&3;
+        config.tgSize = (pgmRSRC2>>10)&1;
+        config.privilegedMode = (pgmRSRC1>>20)&1;
+        config.dx10Clamp = (pgmRSRC1>>21)&1;
+        config.debugMode = (pgmRSRC1>>22)&1;
+        config.pgmRSRC2 = pgmRSRC2;
+        config.pgmRSRC1 = pgmRSRC1;
+        config.usedVGPRsNum = ULEV(setupData->vgprsNum);
+        config.usedSGPRsNum = ULEV(setupData->sgprsNum);
+        config.scratchBufferSize = ULEV(setupData->scratchBufferSize);
+        config.localSize = ULEV(setupData->localSize);
+        config.gdsSize = ULEV(setupData->gdsSize);
+        uint16_t ksetup1 = ULEV(setupData->setup1);
+        config.useSetup = (ksetup1&2)!=0;
+        config.useArgs = (ksetup1&8)!=0;
+        config.useGeneric = config.useEnqueue = false;
+        if (ksetup1==0x2f) // if generic pointer support
+            config.useGeneric = true;
+        else if (!isGCN14)
+            config.useEnqueue = (ksetup1&0x20)!=0;
+        else // for GFX9 - check number of all registers must be 6+
+            config.useEnqueue = (setupData->sgprsNum+6 == setupData->sgprsNumAll);
+    }
     
     // get samplers
     for (const AmdCL2RelaEntry& reloc: textRelocs)
@@ -613,23 +617,31 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     return config;
 }
 
-static void dumpAmdCL2KernelConfig(std::ostream& output, const AmdCL2KernelConfig& config)
+static void dumpAmdCL2KernelConfig(std::ostream& output,
+                    const AmdCL2KernelConfig& config, bool hsaConfig)
 {
     size_t bufSize;
     char buf[100];
-    output.write("    .config\n", 12);
-    if (config.dimMask != BINGEN_DEFAULT)
-    {
-        strcpy(buf, "        .dims ");
-        bufSize = 14;
-        if ((config.dimMask & 1) != 0)
-            buf[bufSize++] = 'x';
-        if ((config.dimMask & 2) != 0)
-            buf[bufSize++] = 'y';
-        if ((config.dimMask & 4) != 0)
-            buf[bufSize++] = 'z';
-        buf[bufSize++] = '\n';
-        output.write(buf, bufSize);
+    if (hsaConfig)
+        output.write("    .hsaconfig\n", 15);
+    else
+        output.write("    .config\n", 12);
+    
+    if (!hsaConfig)
+    {   // do not print old-config style params if HSA config enabled
+        if (config.dimMask != BINGEN_DEFAULT)
+        {
+            strcpy(buf, "        .dims ");
+            bufSize = 14;
+            if ((config.dimMask & 1) != 0)
+                buf[bufSize++] = 'x';
+            if ((config.dimMask & 2) != 0)
+                buf[bufSize++] = 'y';
+            if ((config.dimMask & 4) != 0)
+                buf[bufSize++] = 'z';
+            buf[bufSize++] = '\n';
+            output.write(buf, bufSize);
+        }
     }
     bufSize = 0;
     if (config.reqdWorkGroupSize[2] != 0)
@@ -644,60 +656,70 @@ static void dumpAmdCL2KernelConfig(std::ostream& output, const AmdCL2KernelConfi
     if (bufSize != 0) // if we have cws
         output.write(buf, bufSize);
     
-    bufSize = snprintf(buf, 100, "        .sgprsnum %u\n", config.usedSGPRsNum);
-    output.write(buf, bufSize);
-    bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", config.usedVGPRsNum);
-    output.write(buf, bufSize);
-    
-    if (config.localSize!=0)
-    {
-        bufSize = snprintf(buf, 100, "        .localsize %" PRIu64 "\n",
-                       uint64_t(config.localSize));
+    if (!hsaConfig)
+    {   // do not print old-config style params if HSA config enabled
+        bufSize = snprintf(buf, 100, "        .sgprsnum %u\n", config.usedSGPRsNum);
+        output.write(buf, bufSize);
+        bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", config.usedVGPRsNum);
+        output.write(buf, bufSize);
+        
+        if (config.localSize!=0)
+        {
+            bufSize = snprintf(buf, 100, "        .localsize %" PRIu64 "\n",
+                        uint64_t(config.localSize));
+            output.write(buf, bufSize);
+        }
+        if (config.gdsSize!=0)
+        {
+            bufSize = snprintf(buf, 100, "        .gdssize %u\n", config.gdsSize);
+            output.write(buf, bufSize);
+        }
+        bufSize = snprintf(buf, 100, "        .floatmode 0x%02x\n", config.floatMode);
+        output.write(buf, bufSize);
+        if (config.scratchBufferSize!=0)
+        {
+            bufSize = snprintf(buf, 100, "        .scratchbuffer %u\n",
+                            config.scratchBufferSize);
+            output.write(buf, bufSize);
+        }
+        bufSize = snprintf(buf, 100, "        .pgmrsrc1 0x%08x\n", config.pgmRSRC1);
+        output.write(buf, bufSize);
+        bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", config.pgmRSRC2);
+        output.write(buf, bufSize);
+        if (config.privilegedMode)
+            output.write("        .privmode\n", 18);
+        if (config.debugMode)
+            output.write("        .debugmode\n", 19);
+        if (config.dx10Clamp)
+            output.write("        .dx10clamp\n", 19);
+        if (config.ieeeMode)
+            output.write("        .ieeemode\n", 18);
+        if (config.tgSize)
+            output.write("        .tgsize\n", 16);
+        if ((config.exceptions & 0x7f) != 0)
+        {
+            bufSize = snprintf(buf, 100, "        .exceptions 0x%02x\n",
+                    cxuint(config.exceptions));
+            output.write(buf, bufSize);
+        }
+        if (config.useArgs)
+            output.write("        .useargs\n", 17);
+        if (config.useSetup)
+            output.write("        .usesetup\n", 18);
+        if (config.useEnqueue)
+            output.write("        .useenqueue\n", 20);
+        if (config.useGeneric)
+            output.write("        .usegeneric\n", 20);
+        bufSize = snprintf(buf, 100, "        .priority %u\n", config.priority);
         output.write(buf, bufSize);
     }
-    if (config.gdsSize!=0)
-    {
-        bufSize = snprintf(buf, 100, "        .gdssize %u\n", config.gdsSize);
-        output.write(buf, bufSize);
-    }
-    bufSize = snprintf(buf, 100, "        .floatmode 0x%02x\n", config.floatMode);
-    output.write(buf, bufSize);
-    if (config.scratchBufferSize!=0)
-    {
-        bufSize = snprintf(buf, 100, "        .scratchbuffer %u\n",
-                           config.scratchBufferSize);
-        output.write(buf, bufSize);
-    }
-    bufSize = snprintf(buf, 100, "        .pgmrsrc1 0x%08x\n", config.pgmRSRC1);
-    output.write(buf, bufSize);
-    bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", config.pgmRSRC2);
-    output.write(buf, bufSize);
-    if (config.privilegedMode)
-        output.write("        .privmode\n", 18);
-    if (config.debugMode)
-        output.write("        .debugmode\n", 19);
-    if (config.dx10Clamp)
-        output.write("        .dx10clamp\n", 19);
-    if (config.ieeeMode)
-        output.write("        .ieeemode\n", 18);
-    if (config.tgSize)
-        output.write("        .tgsize\n", 16);
-    if ((config.exceptions & 0x7f) != 0)
-    {
-        bufSize = snprintf(buf, 100, "        .exceptions 0x%02x\n",
-                   cxuint(config.exceptions));
-        output.write(buf, bufSize);
-    }
-    if (config.useArgs)
-        output.write("        .useargs\n", 17);
-    if (config.useSetup)
-        output.write("        .usesetup\n", 18);
-    if (config.useEnqueue)
-        output.write("        .useenqueue\n", 20);
-    if (config.useGeneric)
-        output.write("        .usegeneric\n", 20);
-    bufSize = snprintf(buf, 100, "        .priority %u\n", config.priority);
-    output.write(buf, bufSize);
+}
+
+static void dumpAmdCL2ArgsAndSamplers(std::ostream& output,
+                    const AmdCL2KernelConfig& config)
+{
+    size_t bufSize;
+    char buf[100];
     // arguments
     for (const AmdKernelArgInput& arg: config.args)
         dumpAmdKernelArg(output, arg, true);
@@ -717,6 +739,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
     const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
     const bool doSetup = ((flags & DISASM_SETUP) != 0);
+    const bool doHSAConfig = ((flags & DISASM_HSACONFIG) != 0);
     
     if (amdCL2Input->is64BitMode)
         output.write(".64bit\n", 7);
@@ -819,6 +842,9 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         }
     }
     
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(amdCL2Input->deviceType);
+    const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    
     for (const AmdCL2DisasmKernelInput& kinput: amdCL2Input->kernels)
     {
         output.write(".kernel ", 8);
@@ -855,16 +881,28 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         {
             const bool isGCN14 = getGPUArchitectureFromDeviceType(
                         amdCL2Input->deviceType) >= GPUArchitecture::GCN1_4;
-            AmdCL2KernelConfig config;
+            AmdCL2KernelConfig config{};
+            // get kernel config
             if (amdCL2Input->is64BitMode)
                 config = genKernelConfig<AmdCL2Types64>(kinput.metadataSize,
-                        kinput.metadata, kinput.setupSize, kinput.setup, samplerOffsets,
+                        kinput.metadata, kinput.setupSize,
+                        (doHSAConfig ? nullptr : kinput.setup), samplerOffsets,
                         kinput.textRelocs, isGCN14);
             else
                 config = genKernelConfig<AmdCL2Types32>(kinput.metadataSize,
-                        kinput.metadata, kinput.setupSize, kinput.setup, samplerOffsets,
+                        kinput.metadata, kinput.setupSize,
+                        (doHSAConfig ? nullptr : kinput.setup), samplerOffsets,
                         kinput.textRelocs, isGCN14);
-            dumpAmdCL2KernelConfig(output, config);
+            
+            dumpAmdCL2KernelConfig(output, config, doHSAConfig);
+            if (doHSAConfig)
+            {   // print as HSA config
+                dumpAMDHSAConfig(output, maxSgprsNum, arch,
+                     *reinterpret_cast<const AmdHsaKernelConfig*>(kinput.setup));
+                output.write("    .hsaconfig\n", 15);
+            }
+            
+            dumpAmdCL2ArgsAndSamplers(output, config);
         }
         
         if (doDumpCode && kinput.code != nullptr && kinput.codeSize != 0)

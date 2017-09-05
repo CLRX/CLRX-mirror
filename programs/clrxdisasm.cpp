@@ -37,6 +37,7 @@ static const CLIOption programOptions[] =
     { "calNotes", 'c', CLIArgType::NONE, false, false, "dump ATI CAL notes", nullptr },
     { "config", 'C', CLIArgType::NONE, false, false, "dump kernel configuration", nullptr },
     { "setup", 's', CLIArgType::NONE, false, false, "dump kernel setup", nullptr },
+    { "HSAConfig", 'H', CLIArgType::NONE, false, false, "dump kernel HSA config", nullptr },
     { "floats", 'f', CLIArgType::NONE, false, false, "display float literals", nullptr },
     { "hexcode", 'h', CLIArgType::NONE, false, false,
         "display hexadecimal instr. codes", nullptr },
@@ -82,7 +83,8 @@ try
             (cli.hasShortOption('f')?DISASM_FLOATLITS:0) |
             (cli.hasShortOption('h')?DISASM_HEXCODE:0);
      disasmFlags |= (cli.hasShortOption('C')?DISASM_CONFIG:0) |
-             (cli.hasLongOption("buggyFPLit")?DISASM_BUGGYFPLIT:0);
+             (cli.hasLongOption("buggyFPLit")?DISASM_BUGGYFPLIT:0) |
+             (cli.hasShortOption('H')?DISASM_HSACONFIG:0);
     
     GPUDeviceType gpuDeviceType = GPUDeviceType::CAPE_VERDE;
     const bool fromRawCode = cli.hasShortOption('r');
