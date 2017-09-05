@@ -668,6 +668,99 @@ aa22:
   0000000000000000000000000000000000000000000000000000000000000000
   ff00b6bec7010000
 )ffDXD", "", true
+    },
+    /* 3 - gallium (configured proginfo and AMDHSA) */
+    { R"ffDXD(            .gallium
+        .llvm_version 40000
+            .kernel aa22
+            .args
+            .arg scalar, 8,,,SEXT,griddim
+            .config
+            .priority 1
+            .floatmode 0x12
+            .ieeemode
+            .sgprsnum 36
+            .vgprsnum 139
+            .pgmrsrc2 523243
+            .scratchbuffer 230
+            .default_hsa_features
+            .dims x
+            .hsa_dims xy
+            .hsa_priority 2
+            .call_convention 0x34dac
+            .debug_wavefront_private_segment_offset_sgpr 96
+            .gds_segment_size 100
+            .kernarg_segment_align 32
+            .workgroup_group_segment_size 22
+            .localsize 23
+            .workgroup_fbarrier_count 3324
+            .hsa_sgprsnum 79
+            .hsa_vgprsnum 167
+            .hsa_scratchbuffer 786
+            .hsa_floatmode 0xdd
+        .control_directive
+        .int 1,2,4
+.text
+aa22:
+    .skip 256
+    .kernel aa22
+    .control_directive
+        .fill 116,1,0
+)ffDXD", R"ffDXD(GalliumBinDump:
+  Kernel: name=aa22, offset=0
+    Config:
+      dims=1, SGPRS=36, VGPRS=139, pgmRSRC2=0x7fbeb, ieeeMode=0x1
+      floatMode=0x12, priority=1, localSize=23, scratchBuffer=230
+    AMD HSA Config:
+      amdCodeVersion=1.1
+      amdMachine=1:0:0:0
+      kernelCodeEntryOffset=256
+      kernelCodePrefetchOffset=0
+      kernelCodePrefetchSize=0
+      maxScrachBackingMemorySize=0
+      computePgmRsrc1=0x8dfa69
+      computePgmRsrc2=0x7e9d1
+      enableSgprRegisterFlags=0xb
+      enableFeatureFlags=0xa
+      workitemPrivateSegmentSize=786
+      workgroupGroupSegmentSize=22
+      gdsSegmentSize=100
+      kernargSegmentSize=16
+      workgroupFbarrierCount=3324
+      wavefrontSgprCount=79
+      workitemVgprCount=167
+      reservedVgprFirst=0
+      reservedVgprCount=0
+      reservedSgprFirst=0
+      reservedSgprCount=0
+      debugWavefrontPrivateSegmentOffsetSgpr=96
+      debugPrivateSegmentBufferSgpr=0
+      kernargSegmentAlignment=5
+      groupSegmentAlignment=4
+      privateSegmentAlignment=4
+      wavefrontSize=6
+      callConvention=0x34dac
+      runtimeLoaderKernelSymbol=0x0
+      ControlDirective:
+      0100000002000000040000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+  Comment:
+  nullptr
+  GlobalData:
+  nullptr
+  Code:
+  0100000000000000010000000000000000010000000000000000000000000000
+  0000000000000000000000000000000069fa8d00d1e907000b000a0012030000
+  16000000640000001000000000000000fc0c00004f00a7000000000000000000
+  6000000005040406ac4d03000000000000000000000000000000000000000000
+  0100000002000000040000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+)ffDXD", "", true
     }
 };
 
