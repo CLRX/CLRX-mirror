@@ -54,6 +54,8 @@ for human (`.config`) and for quick recompilation (kernel setup, stub, metadata 
 
 Depend on configuration options, an assembler add VCC and FLAT_SCRATCH
 (if `.useenqueue` or `.usegeneric` enabled).
+In HSA configuration mode, a special fields determines
+what extra SGPR extra has been added.
 
 ## List of the specific pseudo-operations
 
