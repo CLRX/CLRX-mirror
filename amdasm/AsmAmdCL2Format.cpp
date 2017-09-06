@@ -1906,51 +1906,250 @@ bool AsmAmdCL2Handler::prepareBinary()
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(assembler.deviceType);
     cxuint maxTotalSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
+    const uint32_t ldsMask = (1U<<ldsShift)-1U;
+    
+    // driver version setup
+    if (output.driverVersion==0 && (assembler.flags&ASM_TESTRUN)==0)
+    {
+        if (assembler.driverVersion==0) // just detect driver version
+            output.driverVersion = detectedDriverVersion;
+        else // from assembler setup
+            output.driverVersion = assembler.driverVersion;
+    }
+    
     // set up number of the allocated SGPRs and VGPRs for kernel
     for (size_t i = 0; i < kernelsNum; i++)
     {
         if (!output.kernels[i].useConfig)
             continue;
-        AmdCL2KernelConfig& config = output.kernels[i].config;
-        cxuint userSGPRsNum = 4;
-        if (config.useGeneric)
-            userSGPRsNum = 12;
-        else if (config.useEnqueue)
-            userSGPRsNum = 10;
-        else if (config.useSetup)
-            userSGPRsNum = 8;
-        else if (config.useArgs)
-            userSGPRsNum = 6;
         
-        /* include userData sgprs */
-        cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
-                ((config.pgmRSRC2>>7)&7);
-        cxuint minRegsNum[2];
-        getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,
-                   ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |
-                   ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
-        
-        const cxuint neededExtraSGPRsNum = arch>=GPUArchitecture::GCN1_2 ? 6 : 4;
-        const cxuint extraSGPRsNum = (config.useEnqueue || config.useGeneric) ?
-                    neededExtraSGPRsNum : 2;
-        if (config.usedSGPRsNum!=BINGEN_DEFAULT)
-        {   // check only if sgprsnum set explicitly
-            if (maxTotalSgprsNum-extraSGPRsNum < config.usedSGPRsNum)
-            {
+        if (!kernelStates[i]->useHsaConfig)
+        {   // previous form of config (non-HSA)
+            AmdCL2KernelConfig& config = output.kernels[i].config;
+            cxuint userSGPRsNum = 4;
+            if (config.useGeneric)
+                userSGPRsNum = 12;
+            else if (config.useEnqueue)
+                userSGPRsNum = 10;
+            else if (config.useSetup)
+                userSGPRsNum = 8;
+            else if (config.useArgs)
+                userSGPRsNum = 6;
+            
+            /* include userData sgprs */
+            cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
+                    ((config.pgmRSRC2>>7)&7);
+            cxuint minRegsNum[2];
+            getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,
+                    ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |
+                    ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
+            
+            const cxuint neededExtraSGPRsNum = arch>=GPUArchitecture::GCN1_2 ? 6 : 4;
+            const cxuint extraSGPRsNum = (config.useEnqueue || config.useGeneric) ?
+                        neededExtraSGPRsNum : 2;
+            if (config.usedSGPRsNum!=BINGEN_DEFAULT)
+            {   // check only if sgprsnum set explicitly
+                if (maxTotalSgprsNum-extraSGPRsNum < config.usedSGPRsNum)
+                {
+                    char numBuf[64];
+                    snprintf(numBuf, 64, "(max %u)", maxTotalSgprsNum);
+                    assembler.printError(assembler.kernels[i].sourcePos, (std::string(
+                        "Number of total SGPRs for kernel '")+
+                        output.kernels[i].kernelName.c_str()+"' is too high "
+                        +numBuf).c_str());
+                    good = false;
+                }
+            }
+            
+            if (config.usedSGPRsNum==BINGEN_DEFAULT)
+                config.usedSGPRsNum = std::min(maxTotalSgprsNum-extraSGPRsNum, 
+                    std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]));
+            if (config.usedVGPRsNum==BINGEN_DEFAULT)
+                config.usedVGPRsNum = std::max(minRegsNum[1],
+                                kernelStates[i]->allocRegs[1]);
+        }
+        else // setup HSA configuration
+        {
+            AsmAmdHsaKernelConfig config;
+            const CString& kernelName = output.kernels[i].kernelName;
+            
+            const Kernel& kernel = *kernelStates[i];
+            if (kernelStates[i]->config != nullptr)
+                // if HSA config set in this kernel
+                ::memcpy(&config, kernel.config.get(), sizeof(AsmAmdHsaKernelConfig));
+            else
+                ::memset(&config, 0xff, 128); // fill by defaults
+            
+            // setup some params: pgmRSRC1 and PGMRSRC2 and others
+            // setup config
+            // fill default values
+            if (config.amdCodeVersionMajor == BINGEN_DEFAULT)
+                config.amdCodeVersionMajor = 1;
+            if (config.amdCodeVersionMinor == BINGEN_DEFAULT)
+                config.amdCodeVersionMinor = 0;
+            if (config.amdMachineKind == BINGEN16_DEFAULT)
+                config.amdMachineKind = 1;
+            if (config.amdMachineMajor == BINGEN16_DEFAULT)
+                config.amdMachineMajor = 0;
+            if (config.amdMachineMinor == BINGEN16_DEFAULT)
+                config.amdMachineMinor = 0;
+            if (config.amdMachineStepping == BINGEN16_DEFAULT)
+                config.amdMachineStepping = 0;
+            if (config.kernelCodeEntryOffset == BINGEN64_DEFAULT)
+                config.kernelCodeEntryOffset = 256;
+            if (config.kernelCodePrefetchOffset == BINGEN64_DEFAULT)
+                config.kernelCodePrefetchOffset = 0;
+            if (config.kernelCodePrefetchSize == BINGEN64_DEFAULT)
+                config.kernelCodePrefetchSize = 0;
+            if (config.maxScrachBackingMemorySize == BINGEN64_DEFAULT) // ??
+                config.maxScrachBackingMemorySize = 0;
+            
+            if (config.workitemPrivateSegmentSize == BINGEN_DEFAULT) // scratch buffer
+                config.workitemPrivateSegmentSize =  0;
+            if (config.workgroupGroupSegmentSize == BINGEN_DEFAULT) // local size
+                config.workgroupGroupSegmentSize = 0;
+            if (config.gdsSegmentSize == BINGEN_DEFAULT)
+                config.gdsSegmentSize = 0;
+            if (config.kernargSegmentSize == BINGEN64_DEFAULT)
+            {   // calculate kernel arg size
+                const bool newBinaries = output.driverVersion >= 191205;
+                config.kernargSegmentSize = 
+                        output.kernels[i].config.calculateKernelArgSize(
+                            assembler.is64Bit(), newBinaries);
+            }
+            if (config.workgroupFbarrierCount == BINGEN_DEFAULT)
+                config.workgroupFbarrierCount = 0;
+            if (config.debugWavefrontPrivateSegmentOffsetSgpr == BINGEN16_DEFAULT)
+                config.debugWavefrontPrivateSegmentOffsetSgpr = 0;
+            if (config.debugPrivateSegmentBufferSgpr == BINGEN16_DEFAULT)
+                config.debugPrivateSegmentBufferSgpr = 0;
+            if (config.kernargSegmentAlignment == BINGEN8_DEFAULT)
+                config.kernargSegmentAlignment = 4; // 16 bytes
+            if (config.groupSegmentAlignment == BINGEN8_DEFAULT)
+                config.groupSegmentAlignment = 4; // 16 bytes
+            if (config.privateSegmentAlignment == BINGEN8_DEFAULT)
+                config.privateSegmentAlignment = 4; // 16 bytes
+            if (config.wavefrontSize == BINGEN8_DEFAULT)
+                config.wavefrontSize = 6; // 64 threads
+            
+            cxuint userSGPRsNum = 0;
+            if (config.userDataNum == BINGEN8_DEFAULT)
+            {   // calcuate userSGPRs
+                const uint16_t sgprFlags = config.enableSgprRegisterFlags;
+                userSGPRsNum =
+                    ((sgprFlags&AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER)!=0 ? 4 : 0) +
+                    ((sgprFlags&AMDHSAFLAG_USE_DISPATCH_PTR)!=0 ? 2 : 0) +
+                    ((sgprFlags&AMDHSAFLAG_USE_QUEUE_PTR)!=0 ? 2 : 0) +
+                    ((sgprFlags&AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR)!=0 ? 2 : 0) +
+                    ((sgprFlags&AMDHSAFLAG_USE_DISPATCH_ID)!=0 ? 2 : 0) +
+                    ((sgprFlags&AMDHSAFLAG_USE_FLAT_SCRATCH_INIT)!=0 ? 2 : 0) +
+                    ((sgprFlags&AMDHSAFLAG_USE_PRIVATE_SEGMENT_SIZE)!=0) +
+                    /* use_grid_workgroup_count */
+                    ((sgprFlags&AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_X)!=0) +
+                    ((sgprFlags&AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_Y)!=0) +
+                    ((sgprFlags&AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_Z)!=0);
+                userSGPRsNum = std::min(16U, userSGPRsNum);
+            }
+            else // default
+                userSGPRsNum = config.userDataNum;
+            
+            /* include userData sgprs */
+            cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
+                    ((config.computePgmRsrc2>>7)&7);
+            // extra sgprs for dimensions
+            cxuint minRegsNum[2];
+            getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,
+                    ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |
+                    ((config.workitemPrivateSegmentSize!=0) ?
+                            GPUSETUP_SCRATCH_EN : 0), minRegsNum);
+            
+            if (config.usedSGPRsNum!=BINGEN_DEFAULT &&
+                    maxTotalSgprsNum < config.usedSGPRsNum)
+            {   // check only if sgprsnum set explicitly
                 char numBuf[64];
                 snprintf(numBuf, 64, "(max %u)", maxTotalSgprsNum);
                 assembler.printError(assembler.kernels[i].sourcePos, (std::string(
-                    "Number of total SGPRs for kernel '")+
-                    output.kernels[i].kernelName.c_str()+"' is too high "+numBuf).c_str());
+                        "Number of total SGPRs for kernel '")+
+                        kernelName.c_str()+"' is too high "+numBuf).c_str());
                 good = false;
             }
+            // set usedSGPRsNum
+            cxuint progSgprsNum = 0;
+            cxuint flags = kernelStates[i]->allocRegFlags |
+                // flat_scratch_init
+                ((config.enableSgprRegisterFlags&ROCMFLAG_USE_FLAT_SCRATCH_INIT)!=0?
+                            GCN_FLAT : 0) |
+                // enable_xnack
+                ((config.enableFeatureFlags&ROCMFLAG_USE_XNACK_ENABLED)!=0 ?
+                            GCN_XNACK : 0);
+            cxuint extraSgprsNum = getGPUExtraRegsNum(arch, REGTYPE_SGPR, flags|GCN_VCC);
+            
+            if (config.usedSGPRsNum==BINGEN_DEFAULT)
+            {
+                progSgprsNum = std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]);
+                config.usedSGPRsNum = std::min(progSgprsNum + extraSgprsNum,
+                        maxTotalSgprsNum); // include all extra sgprs
+            }
+            else // calculate progs SPGRs num (without extra SGPR num)
+                progSgprsNum = std::max(cxint(config.usedSGPRsNum - extraSgprsNum), 0);
+            
+            // set usedVGPRsNum
+            if (config.usedVGPRsNum==BINGEN_DEFAULT)
+                config.usedVGPRsNum = std::max(minRegsNum[1],
+                                kernelStates[i]->allocRegs[1]);
+            
+            cxuint sgprsNum = std::max(config.usedSGPRsNum, 1U);
+            cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
+            // computePGMRSRC1
+            config.computePgmRsrc1 |= ((vgprsNum-1)>>2) |
+                    (((sgprsNum-1)>>3)<<6) | ((uint32_t(config.floatMode)&0xff)<<12) |
+                    (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10) |
+                    (config.privilegedMode?1U<<20:0) | (config.dx10Clamp?1U<<21:0) |
+                    (config.debugMode?1U<<22:0);
+                    
+            uint32_t dimValues = 0;
+            if (config.dimMask != BINGEN_DEFAULT)
+                dimValues = ((config.dimMask&7)<<7) |
+                        (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+            else
+                dimValues |= (config.computePgmRsrc2 & 0x1b80U);
+            // computePGMRSRC2
+            config.computePgmRsrc2 = (config.computePgmRsrc2 & 0xffffe440U) |
+                            (userSGPRsNum<<1) | ((config.tgSize) ? 0x400 : 0) |
+                            ((config.workitemPrivateSegmentSize)?1:0) | dimValues |
+                            (((config.workgroupGroupSegmentSize+ldsMask)>>ldsShift)<<15) |
+                            ((uint32_t(config.exceptions)&0x7f)<<24);
+            
+            if (config.wavefrontSgprCount == BINGEN16_DEFAULT)
+                config.wavefrontSgprCount = sgprsNum;
+            if (config.workitemVgprCount == BINGEN16_DEFAULT)
+                config.workitemVgprCount = vgprsNum;
+            if (config.reservedVgprFirst == BINGEN16_DEFAULT)
+                config.reservedVgprFirst = vgprsNum;
+            if (config.reservedVgprCount == BINGEN16_DEFAULT)
+                config.reservedVgprCount = 0;
+            if (config.reservedSgprFirst == BINGEN16_DEFAULT)
+                config.reservedSgprFirst = progSgprsNum;
+            if (config.reservedSgprCount == BINGEN16_DEFAULT)
+                config.reservedSgprCount = 0;
+            
+            if (config.callConvention == BINGEN_DEFAULT)
+                config.callConvention = 0;
+            if (config.runtimeLoaderKernelSymbol == BINGEN64_DEFAULT)
+                config.runtimeLoaderKernelSymbol = 0;
+            
+            config.reserved1[0] = config.reserved1[1] = config.reserved1[2] = 0;
+            
+            config.toLE(); // to little-endian
+            // put control directive section to config
+            if (kernel.ctrlDirSection!=ASMSECT_NONE &&
+                assembler.sections[kernel.ctrlDirSection].content.size()==128)
+                ::memcpy(config.controlDirective, 
+                    assembler.sections[kernel.ctrlDirSection].content.data(), 128);
+            else // zeroing if not supplied
+                ::memset(config.controlDirective, 0, 128);
         }
-        
-        if (config.usedSGPRsNum==BINGEN_DEFAULT)
-            config.usedSGPRsNum = std::min(maxTotalSgprsNum-extraSGPRsNum, 
-                std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]));
-        if (config.usedVGPRsNum==BINGEN_DEFAULT)
-            config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i]->allocRegs[1]);
     }
     
     /* put kernels relocations */
@@ -2008,14 +2207,6 @@ bool AsmAmdCL2Handler::prepareBinary()
                 output.innerExtraSymbols.push_back(std::move(binSym));
             }
         }
-    }
-    // driver version setup
-    if (output.driverVersion==0 && (assembler.flags&ASM_TESTRUN)==0)
-    {
-        if (assembler.driverVersion==0) // just detect driver version
-            output.driverVersion = detectedDriverVersion;
-        else // from assembler setup
-            output.driverVersion = assembler.driverVersion;
     }
     return good;
 }

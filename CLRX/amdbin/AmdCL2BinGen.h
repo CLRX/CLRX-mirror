@@ -79,6 +79,8 @@ struct AmdCL2KernelConfig
     bool useArgs; ///< use argument's buffer
     bool useEnqueue; ///< this kernel enqueues other kernel
     bool useGeneric;    ///< use generic pointer addresses (for flat instrs)
+    
+    size_t calculateKernelArgSize(bool is64Bit, bool newBinaries) const;
 };
 
 /// AMD CL2 Relocation entry input

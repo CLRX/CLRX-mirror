@@ -1173,6 +1173,40 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
             (uint32_t(config.exceptions)<<24) | localPart;
 }
 
+size_t AmdCL2KernelConfig::calculateKernelArgSize(bool is64Bit, bool newBinaries) const
+{
+    cxuint kernelArgSize = 0;
+    for (const AmdKernelArgInput arg: args)
+    {
+        if (arg.argType == KernelArgType::POINTER ||
+            arg.argType == KernelArgType::PIPE ||
+            arg.argType == KernelArgType::CLKEVENT ||
+            arg.argType == KernelArgType::STRUCTURE ||
+            arg.argType == KernelArgType::CMDQUEUE ||
+            arg.argType == KernelArgType::SAMPLER || isKernelArgImage(arg.argType))
+        {
+            cxuint size = (is64Bit) ? 8 : 4;
+            if ((kernelArgSize&(size-1))!=0)    // alignment
+                kernelArgSize += size-(kernelArgSize&(size-1));
+            kernelArgSize += size;
+        }
+        else
+        {   // scalar
+            const ArgTypeSizes& argTypeSizes = argTypeSizesTable[cxuint(arg.argType)];
+            cxuint vectorLength = argTypeSizes.vectorSize;
+            if (newBinaries && vectorLength==3)
+                vectorLength = 4;
+            if ((kernelArgSize & (argTypeSizes.elemSize-1))!=0)
+                kernelArgSize += argTypeSizes.elemSize -
+                        (kernelArgSize & (argTypeSizes.elemSize-1));
+            kernelArgSize += vectorLength * argTypeSizes.elemSize;
+        }
+    }
+    if (newBinaries)
+        kernelArgSize = (kernelArgSize+15)&~15U;
+    return kernelArgSize;
+}
+
 static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& config,
                 FastOutputBuffer& fob, bool newBinaries, bool useLocals, bool usePipes,
                 bool is64Bit, cxuint driverVersion)
@@ -1217,35 +1251,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     setupData.zeroes[0] = setupData.zeroes[1] = 0;
     setupData.zero3 = 0;
     
-    cxuint kernelArgSize = 0;
-    for (const AmdKernelArgInput arg: config.args)
-    {
-        if (arg.argType == KernelArgType::POINTER ||
-            arg.argType == KernelArgType::PIPE ||
-            arg.argType == KernelArgType::CLKEVENT ||
-            arg.argType == KernelArgType::STRUCTURE ||
-            arg.argType == KernelArgType::CMDQUEUE ||
-            arg.argType == KernelArgType::SAMPLER || isKernelArgImage(arg.argType))
-        {
-            cxuint size = (is64Bit) ? 8 : 4;
-            if ((kernelArgSize&(size-1))!=0)    // alignment
-                kernelArgSize += size-(kernelArgSize&(size-1));
-            kernelArgSize += size;
-        }
-        else
-        {   // scalar
-            const ArgTypeSizes& argTypeSizes = argTypeSizesTable[cxuint(arg.argType)];
-            cxuint vectorLength = argTypeSizes.vectorSize;
-            if (newBinaries && vectorLength==3)
-                vectorLength = 4;
-            if ((kernelArgSize & (argTypeSizes.elemSize-1))!=0)
-                kernelArgSize += argTypeSizes.elemSize -
-                        (kernelArgSize & (argTypeSizes.elemSize-1));
-            kernelArgSize += vectorLength * argTypeSizes.elemSize;
-        }
-    }
-    if (newBinaries)
-        kernelArgSize = (kernelArgSize+15)&~15U;
+    const cxuint kernelArgSize = config.calculateKernelArgSize(is64Bit, newBinaries);
     SLEV(setupData.kernelArgsSize, kernelArgSize);
     SLEV(setupData.sgprsNumAll, sgprsNum);
     SLEV(setupData.vgprsNum16, config.usedVGPRsNum);
