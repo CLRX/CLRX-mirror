@@ -390,6 +390,7 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
     std::istringstream input(testCase.input);
     Assembler assembler("test.s", input, (ASM_ALL|ASM_TESTRUN)&~ASM_ALTMACRO,
             BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE);
+    assembler.setLLVMVersion(1);
     assertTrue(testName, "good", assembler.assemble());
     // retrieve data
     if (assembler.getBinaryFormat()==BinaryFormat::AMD)
