@@ -127,25 +127,7 @@ void AsmGalliumHandler::Kernel::initializeAmdHsaKernelConfig()
     if (!config)
     {
         config.reset(new AsmROCmKernelConfig{});
-        // set default values to kernel config
-        ::memset(config.get(), 0xff, 128);
-        ::memset(config->controlDirective, 0, 128);
-        config->computePgmRsrc1 = config->computePgmRsrc2 = 0;
-        config->enableSgprRegisterFlags = 0;
-        config->enableFeatureFlags = 0;
-        config->reserved1[0] = config->reserved1[1] = config->reserved1[2] = 0;
-        config->dimMask = 0;
-        config->usedVGPRsNum = BINGEN_DEFAULT;
-        config->usedSGPRsNum = BINGEN_DEFAULT;
-        config->userDataNum = BINGEN8_DEFAULT;
-        config->ieeeMode = false;
-        config->floatMode = 0xc0;
-        config->priority = 0;
-        config->exceptions = 0;
-        config->tgSize = false;
-        config->debugMode = false;
-        config->privilegedMode = false;
-        config->dx10Clamp = false;
+        config->initialize();
     }
 }
 
@@ -535,7 +517,7 @@ void AsmGalliumPseudoOps::doControlDirective(AsmGalliumHandler& handler,
     {
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel,
-            AsmSectionType::ROCM_CONFIG_CTRL_DIRECTIVE,
+            AsmSectionType::GALLIUM_CONFIG_CTRL_DIRECTIVE,
             ELFSECTID_UNDEF, nullptr });
         kernel.ctrlDirSection = thisSection;
     }
@@ -858,6 +840,7 @@ void AsmGalliumPseudoOps::setDefaultHSAFeatures(AsmGalliumHandler& handler,
     config->enableFeatureFlags = uint16_t(AMDHSAFLAG_USE_PTR64|2);
 }
 
+// set machine - four numbers - kind, major, minor, stepping
 void AsmGalliumPseudoOps::setMachine(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {
@@ -888,6 +871,7 @@ void AsmGalliumPseudoOps::setMachine(AsmGalliumHandler& handler, const char* pse
     config->amdMachineStepping = steppingValue;
 }
 
+// two numbers - major and minor
 void AsmGalliumPseudoOps::setCodeVersion(AsmGalliumHandler& handler,
                 const char* pseudoOpPlace, const char* linePtr)
 {
@@ -914,8 +898,9 @@ void AsmGalliumPseudoOps::setCodeVersion(AsmGalliumHandler& handler,
     config->amdCodeVersionMinor = minorValue;
 }
 
-void AsmGalliumPseudoOps::setReservedXgprs(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr, bool inVgpr)
+/// set reserved S/VGRPS - first number is first register, second is last register
+void AsmGalliumPseudoOps::setReservedXgprs(AsmGalliumHandler& handler,
+                    const char* pseudoOpPlace, const char* linePtr, bool inVgpr)
 {
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
@@ -948,7 +933,7 @@ void AsmGalliumPseudoOps::setReservedXgprs(AsmGalliumHandler& handler, const cha
     }
 }
 
-
+// set UseGridWorkGroupCount - 3 bits for dimensions
 void AsmGalliumPseudoOps::setUseGridWorkGroupCount(AsmGalliumHandler& handler,
                    const char* pseudoOpPlace, const char* linePtr)
 {
@@ -2093,41 +2078,7 @@ bool AsmGalliumHandler::prepareBinary()
                 outConfig.runtimeLoaderKernelSymbol = 0;
             
             // to little endian
-            SLEV(outConfig.amdCodeVersionMajor, outConfig.amdCodeVersionMajor);
-            SLEV(outConfig.amdCodeVersionMinor, outConfig.amdCodeVersionMinor);
-            SLEV(outConfig.amdMachineKind, outConfig.amdMachineKind);
-            SLEV(outConfig.amdMachineMajor, outConfig.amdMachineMajor);
-            SLEV(outConfig.amdMachineMinor, outConfig.amdMachineMinor);
-            SLEV(outConfig.amdMachineStepping, outConfig.amdMachineStepping);
-            SLEV(outConfig.kernelCodeEntryOffset, outConfig.kernelCodeEntryOffset);
-            SLEV(outConfig.kernelCodePrefetchOffset, outConfig.kernelCodePrefetchOffset);
-            SLEV(outConfig.kernelCodePrefetchSize, outConfig.kernelCodePrefetchSize);
-            SLEV(outConfig.maxScrachBackingMemorySize,
-                 outConfig.maxScrachBackingMemorySize);
-            SLEV(outConfig.computePgmRsrc1, outConfig.computePgmRsrc1);
-            SLEV(outConfig.computePgmRsrc2, outConfig.computePgmRsrc2);
-            SLEV(outConfig.enableSgprRegisterFlags, outConfig.enableSgprRegisterFlags);
-            SLEV(outConfig.enableFeatureFlags, outConfig.enableFeatureFlags);
-            SLEV(outConfig.workitemPrivateSegmentSize,
-                 outConfig.workitemPrivateSegmentSize);
-            SLEV(outConfig.workgroupGroupSegmentSize,
-                 outConfig.workgroupGroupSegmentSize);
-            SLEV(outConfig.gdsSegmentSize, outConfig.gdsSegmentSize);
-            SLEV(outConfig.kernargSegmentSize, outConfig.kernargSegmentSize);
-            SLEV(outConfig.workgroupFbarrierCount, outConfig.workgroupFbarrierCount);
-            SLEV(outConfig.wavefrontSgprCount, outConfig.wavefrontSgprCount);
-            SLEV(outConfig.workitemVgprCount, outConfig.workitemVgprCount);
-            SLEV(outConfig.reservedVgprFirst, outConfig.reservedVgprFirst);
-            SLEV(outConfig.reservedVgprCount, outConfig.reservedVgprCount);
-            SLEV(outConfig.reservedSgprFirst, outConfig.reservedSgprFirst);
-            SLEV(outConfig.reservedSgprCount, outConfig.reservedSgprCount);
-            SLEV(outConfig.debugWavefrontPrivateSegmentOffsetSgpr,
-                outConfig.debugWavefrontPrivateSegmentOffsetSgpr);
-            SLEV(outConfig.debugPrivateSegmentBufferSgpr,
-                 outConfig.debugPrivateSegmentBufferSgpr);
-            SLEV(outConfig.callConvention, outConfig.callConvention);
-            SLEV(outConfig.runtimeLoaderKernelSymbol,
-                 outConfig.runtimeLoaderKernelSymbol);
+            outConfig.toLE(); // to little-endian
             // put control directive section to config
             if (kernel.ctrlDirSection!=ASMSECT_NONE &&
                 assembler.sections[kernel.ctrlDirSection].content.size()==128)

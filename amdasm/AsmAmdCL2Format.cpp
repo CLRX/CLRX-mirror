@@ -35,34 +35,85 @@ using namespace CLRX;
 static const char* amdCL2PseudoOpNamesTbl[] =
 {
     "acl_version", "arch_minor", "arch_stepping",
-    "arg", "bssdata", "compile_options", "config",
-    "cws", "debugmode", "dims", "driver_version", "dx10clamp", "exceptions",
-    "floatmode", "gdssize", "get_driver_version",
-    "globaldata", "ieeemode", "inner",
-    "isametadata", "localsize", "metadata", "pgmrsrc1", "pgmrsrc2",
-    "priority", "privmode", "rwdata", "sampler",
+    "arg", "bssdata", "compile_options",
+    "call_convention", "codeversion", "config", "control_directive",
+    "cws", "debug_private_segment_buffer_sgpr",
+    "debug_wavefront_private_segment_offset_sgpr",
+    "debugmode", "dims", "driver_version", "dx10clamp", "exceptions",
+    "floatmode", "gds_segment_size", "gdssize", "get_driver_version",
+    "globaldata", "group_segment_align", "hsaconfig", "ieeemode", "inner",
+    "isametadata", "kernarg_segment_align",
+    "kernarg_segment_size", "kernel_code_entry_offset",
+    "kernel_code_prefetch_offset", "kernel_code_prefetch_size",
+    "localsize", "machine", "max_scratch_backing_memory",
+    "metadata", "pgmrsrc1", "pgmrsrc2", "priority",
+    "private_elem_size", "private_segment_align",
+    "privmode", "reserved_sgprs", "reserved_vgprs",
+    "runtime_loader_kernel_symbol", "rwdata", "sampler",
     "samplerinit", "samplerreloc", "scratchbuffer", "setup",
-    "setupargs", "sgprsnum", "stub", "tgsize", "useargs",
-    "useenqueue", "usegeneric", "usesetup", "vgprsnum"
+    "setupargs", "sgprsnum", "stub", "tgsize",
+    "use_debug_enabled", "use_dispatch_id",
+    "use_dispatch_ptr", "use_dynamic_call_stack",
+    "use_flat_scratch_init", "use_grid_workgroup_count",
+    "use_kernarg_segment_ptr", "use_ordered_append_gds",
+    "use_private_segment_buffer", "use_private_segment_size",
+    "use_ptr64", "use_queue_ptr", "use_xnack_enabled",
+    "useargs", "useenqueue", "usegeneric", "usesetup", "vgprsnum",
+    "wavefront_sgpr_count", "wavefront_size",  "workgroup_fbarrier_count",
+    "workgroup_group_segment_size", "workitem_private_segment_size",
+    "workitem_vgpr_count"
 };
 
 enum
 {
     AMDCL2OP_ACL_VERSION = 0, AMDCL2OP_ARCH_MINOR, AMDCL2OP_ARCH_STEPPING,
     AMDCL2OP_ARG, AMDCL2OP_BSSDATA, AMDCL2OP_COMPILE_OPTIONS,
-    AMDCL2OP_CONFIG, AMDCL2OP_CWS, AMDCL2OP_DEBUGMODE, AMDCL2OP_DIMS,
+    AMDCL2OP_CALL_CONVENTION, AMDCL2OP_CODEVERSION, 
+    AMDCL2OP_CONFIG, AMDCL2OP_CONTROL_DIRECTIVE,
+    AMDCL2OP_CWS, AMDCL2OP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR,
+    AMDCL2OP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
+    AMDCL2OP_DEBUGMODE, AMDCL2OP_DIMS,
     AMDCL2OP_DRIVER_VERSION, AMDCL2OP_DX10CLAMP, AMDCL2OP_EXCEPTIONS,
-    AMDCL2OP_FLOATMODE, AMDCL2OP_GDSSIZE, AMDCL2OP_GET_DRIVER_VERSION, AMDCL2OP_GLOBALDATA,
-    AMDCL2OP_IEEEMODE, AMDCL2OP_INNER, AMDCL2OP_ISAMETADATA, AMDCL2OP_LOCALSIZE,
+    AMDCL2OP_FLOATMODE, AMDCL2OP_GDS_SEGMENT_SIZE,
+    AMDCL2OP_GDSSIZE, AMDCL2OP_GET_DRIVER_VERSION,
+    AMDCL2OP_GLOBALDATA, AMDCL2OP_GROUP_SEGMENT_ALIGN,
+    AMDCL2OP_HSACONFIG, AMDCL2OP_IEEEMODE, AMDCL2OP_INNER,
+    AMDCL2OP_ISAMETADATA, AMDCL2OP_KERNARG_SEGMENT_ALIGN,
+    AMDCL2OP_KERNARG_SEGMENT_SIZE, AMDCL2OP_KERNEL_CODE_ENTRY_OFFSET,
+    AMDCL2OP_KERNEL_CODE_PREFETCH_OFFSET,
+    AMDCL2OP_KERNEL_CODE_PREFETCH_SIZE, AMDCL2OP_LOCALSIZE,
+    AMDCL2OP_MACHINE, AMDCL2OP_MAX_SCRATCH_BACKING_MEMORY,
     AMDCL2OP_METADATA, AMDCL2OP_PGMRSRC1, AMDCL2OP_PGMRSRC2, AMDCL2OP_PRIORITY,
-    AMDCL2OP_PRIVMODE, AMDCL2OP_RWDATA, AMDCL2OP_SAMPLER, AMDCL2OP_SAMPLERINIT,
+    AMDCL2OP_PRIVATE_ELEM_SIZE, AMDCL2OP_PRIVATE_SEGMENT_ALIGN,
+    AMDCL2OP_PRIVMODE, AMDCL2OP_RESERVED_SGPRS, AMDCL2OP_RESERVED_VGPRS,
+    AMDCL2OP_RUNTIME_LOADER_KERNEL_SYMBOL, AMDCL2OP_RWDATA,
+    AMDCL2OP_SAMPLER, AMDCL2OP_SAMPLERINIT,
     AMDCL2OP_SAMPLERRELOC, AMDCL2OP_SCRATCHBUFFER, AMDCL2OP_SETUP, AMDCL2OP_SETUPARGS,
-    AMDCL2OP_SGPRSNUM, AMDCL2OP_STUB, AMDCL2OP_TGSIZE, AMDCL2OP_USEARGS,
-    AMDCL2OP_USEENQUEUE, AMDCL2OP_USEGENERIC, AMDCL2OP_USESETUP, AMDCL2OP_VGPRSNUM
+    AMDCL2OP_SGPRSNUM, AMDCL2OP_STUB, AMDCL2OP_TGSIZE,
+    AMDCL2OP_USE_DEBUG_ENABLED, AMDCL2OP_USE_DISPATCH_ID,
+    AMDCL2OP_USE_DISPATCH_PTR, AMDCL2OP_USE_DYNAMIC_CALL_STACK,
+    AMDCL2OP_USE_FLAT_SCRATCH_INIT, AMDCL2OP_USE_GRID_WORKGROUP_COUNT,
+    AMDCL2OP_USE_KERNARG_SEGMENT_PTR, AMDCL2OP_USE_ORDERED_APPEND_GDS,
+    AMDCL2OP_USE_PRIVATE_SEGMENT_BUFFER, AMDCL2OP_USE_PRIVATE_SEGMENT_SIZE,
+    AMDCL2OP_USE_PTR64, AMDCL2OP_USE_QUEUE_PTR, AMDCL2OP_USE_XNACK_ENABLED,
+    AMDCL2OP_USEARGS, AMDCL2OP_USEENQUEUE, AMDCL2OP_USEGENERIC,
+    AMDCL2OP_USESETUP, AMDCL2OP_VGPRSNUM,
+    AMDCL2OP_WAVEFRONT_SGPR_COUNT, AMDCL2OP_WAVEFRONT_SIZE,
+    AMDCL2OP_WORKGROUP_FBARRIER_COUNT, AMDCL2OP_WORKGROUP_GROUP_SEGMENT_SIZE,
+    AMDCL2OP_WORKITEM_PRIVATE_SEGMENT_SIZE, AMDCL2OP_WORKITEM_VGPR_COUNT
 };
 
+void AsmAmdCL2Handler::Kernel::initializeKernelConfig()
+{
+    if (!config)
+    {
+        config.reset(new AsmROCmKernelConfig{});
+        config->initialize();
+    }
+}
+
 /*
- * AmdCatalyst format handler
+ * AmdCL2Catalyst format handler
  */
 
 AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmFormatHandler(assembler),
@@ -140,7 +191,7 @@ cxuint AsmAmdCL2Handler::addKernel(const char* kernelName)
     cxuint thisSection = sections.size();
     output.addEmptyKernel(kernelName);
     Kernel kernelState{ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
-            ASMSECT_NONE, ASMSECT_NONE, thisSection, ASMSECT_NONE };
+            ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE, thisSection, ASMSECT_NONE, false };
     /* add new kernel and their section (.text) */
     kernelStates.push_back(new Kernel(std::move(kernelState)));
     sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
@@ -707,6 +758,46 @@ void AsmAmdCL2PseudoOps::doSamplerReloc(AsmAmdCL2Handler& handler,
     handler.output.samplerOffsets[samplerId] = offset;
 }
 
+void AsmAmdCL2PseudoOps::doControlDirective(AsmAmdCL2Handler& handler,
+              const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL)
+    {
+        asmr.printError(pseudoOpPlace, "Kernel control directive can be defined "
+                    "only inside kernel");
+        return;
+    }
+    AsmAmdCL2Handler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
+    if (kernel.metadataSection!=ASMSECT_NONE || kernel.isaMetadataSection!=ASMSECT_NONE ||
+        kernel.setupSection!=ASMSECT_NONE || kernel.stubSection!=ASMSECT_NONE)
+    {
+        asmr.printError(pseudoOpPlace, "Control directive "
+            "can't be defined if metadata,header,setup,stub section exists");
+        return;
+    }
+    if (kernel.configSection != ASMSECT_NONE && !kernel.useHsaConfig)
+    {   // control directive only if hsa config
+        asmr.printError(pseudoOpPlace, "Config and Control directive can't be mixed");
+        return;
+    }
+    
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (kernel.ctrlDirSection == ASMSECT_NONE)
+    {
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ asmr.currentKernel,
+            AsmSectionType::AMDCL2_CONFIG_CTRL_DIRECTIVE,
+            ELFSECTID_UNDEF, nullptr });
+        kernel.ctrlDirSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, kernel.ctrlDirSection);
+    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+}
+
+
 void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
          const char* pseudoOpPlace, const char* linePtr, AmdCL2ConfigValueTarget target)
 {
@@ -719,6 +810,12 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
     }
+    const bool useHsaConfig = handler.kernelStates[asmr.currentKernel]->useHsaConfig;
+    if (!useHsaConfig && target >= AMDCL2CVAL_ONLY_HSA_FIRST_PARAM)
+    {
+        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
+        return;
+    }
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
@@ -727,91 +824,109 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
     /* ranges checking */
     if (good)
     {
-        switch(target)
-        {
-            case AMDCL2CVAL_SGPRSNUM:
+        if (useHsaConfig && target >= AMDCL2CVAL_HSA_FIRST_PARAM)
+            // hsa config
+            good = AsmROCmPseudoOps::checkConfigValue(asmr, valuePlace, 
+                    ROCmConfigValueTarget(cxuint(target) - AMDCL2CVAL_HSA_FIRST_PARAM),
+                    value);
+        else
+            switch(target)
             {
-                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
-                            asmr.deviceType);
-                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
-                if (value > maxSGPRsNum)
+                case AMDCL2CVAL_SGPRSNUM:
                 {
-                    char buf[64];
-                    snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
+                    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                                asmr.deviceType);
+                    cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+                    if (value > maxSGPRsNum)
+                    {
+                        char buf[64];
+                        snprintf(buf, 64,
+                                 "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
+                        asmr.printError(valuePlace, buf);
+                        good = false;
+                    }
+                    break;
                 }
-                break;
-            }
-            case AMDCL2CVAL_VGPRSNUM:
-            {
-                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
-                            asmr.deviceType);
-                cxuint maxVGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
-                if (value > maxVGPRsNum)
+                case AMDCL2CVAL_VGPRSNUM:
                 {
-                    char buf[64];
-                    snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
+                    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                                asmr.deviceType);
+                    cxuint maxVGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
+                    if (value > maxVGPRsNum)
+                    {
+                        char buf[64];
+                        snprintf(buf, 64,
+                                 "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
+                        asmr.printError(valuePlace, buf);
+                        good = false;
+                    }
+                    break;
                 }
-                break;
-            }
-            case AMDCL2CVAL_EXCEPTIONS:
-                asmr.printWarningForRange(7, value,
-                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-                value &= 0x7f;
-                break;
-            case AMDCL2CVAL_FLOATMODE:
-                asmr.printWarningForRange(8, value,
-                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-                value &= 0xff;
-                break;
-            case AMDCL2CVAL_PRIORITY:
-                asmr.printWarningForRange(2, value,
-                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-                value &= 3;
-                break;
-            case AMDCL2CVAL_LOCALSIZE:
-            {
-                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
-                            asmr.deviceType);
-                const cxuint maxLocalSize = getGPUMaxLocalSize(arch);
-                if (value > maxLocalSize)
+                case AMDCL2CVAL_EXCEPTIONS:
+                    asmr.printWarningForRange(7, value,
+                                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                    value &= 0x7f;
+                    break;
+                case AMDCL2CVAL_FLOATMODE:
+                    asmr.printWarningForRange(8, value,
+                                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                    value &= 0xff;
+                    break;
+                case AMDCL2CVAL_PRIORITY:
+                    asmr.printWarningForRange(2, value,
+                                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                    value &= 3;
+                    break;
+                case AMDCL2CVAL_LOCALSIZE:
                 {
-                    char buf[64];
-                    snprintf(buf, 64, "LocalSize out of range (0-%u)", maxLocalSize);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
+                    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                                asmr.deviceType);
+                    const cxuint maxLocalSize = getGPUMaxLocalSize(arch);
+                    if (value > maxLocalSize)
+                    {
+                        char buf[64];
+                        snprintf(buf, 64, "LocalSize out of range (0-%u)", maxLocalSize);
+                        asmr.printError(valuePlace, buf);
+                        good = false;
+                    }
+                    break;
                 }
-                break;
-            }
-            case AMDCL2CVAL_GDSSIZE:
-            {
-                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
-                            asmr.deviceType);
-                const cxuint maxGDSSize = getGPUMaxGDSSize(arch);
-                if (value > maxGDSSize)
+                case AMDCL2CVAL_GDSSIZE:
                 {
-                    char buf[64];
-                    snprintf(buf, 64, "GDSSize out of range (0-%u)", maxGDSSize);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
+                    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                                asmr.deviceType);
+                    const cxuint maxGDSSize = getGPUMaxGDSSize(arch);
+                    if (value > maxGDSSize)
+                    {
+                        char buf[64];
+                        snprintf(buf, 64, "GDSSize out of range (0-%u)", maxGDSSize);
+                        asmr.printError(valuePlace, buf);
+                        good = false;
+                    }
+                    break;
                 }
-                break;
+                case AMDCL2CVAL_PGMRSRC1:
+                case AMDCL2CVAL_PGMRSRC2:
+                    asmr.printWarningForRange(32, value,
+                                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                    break;
+                default:
+                    break;
             }
-            case AMDCL2CVAL_PGMRSRC1:
-            case AMDCL2CVAL_PGMRSRC2:
-                asmr.printWarningForRange(32, value,
-                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-                break;
-            default:
-                break;
-        }
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
+    
+    if (handler.kernelStates[asmr.currentKernel]->useHsaConfig)
+    {   // hsa config
+        handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+        AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
+        
+        AsmROCmPseudoOps::setConfigValueMain(config, ROCmConfigValueTarget(
+                cxuint(target) - AMDCL2CVAL_HSA_FIRST_PARAM), value);
+        return;
+    }
     
     AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
     // set value
@@ -833,13 +948,37 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
             config.floatMode = value;
             break;
         case AMDCL2CVAL_LOCALSIZE:
-            config.localSize = value;
+            if (!useHsaConfig)
+                config.localSize = value;
+            else
+            {
+                handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+                AsmROCmKernelConfig& hsaConfig = *(handler.
+                                kernelStates[asmr.currentKernel]->config);
+                hsaConfig.workgroupGroupSegmentSize = value;
+            }
             break;
         case AMDCL2CVAL_GDSSIZE:
-            config.gdsSize = value;
+            if (!useHsaConfig)
+                config.gdsSize = value;
+            else
+            {
+                handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+                AsmROCmKernelConfig& hsaConfig = *(handler.
+                                kernelStates[asmr.currentKernel]->config);
+                hsaConfig.gdsSegmentSize = value;
+            }
             break;
         case AMDCL2CVAL_SCRATCHBUFFER:
-            config.scratchBufferSize = value;
+            if (!useHsaConfig)
+                config.scratchBufferSize = value;
+            else
+            {
+                handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+                AsmROCmKernelConfig& hsaConfig = *(handler.
+                                kernelStates[asmr.currentKernel]->config);
+                hsaConfig.workitemPrivateSegmentSize = value;
+            }
             break;
         case AMDCL2CVAL_PRIORITY:
             config.priority = value;
@@ -863,8 +1002,34 @@ void AsmAmdCL2PseudoOps::setConfigBoolValue(AsmAmdCL2Handler& handler,
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
     }
+    
+    const bool useHsaConfig = handler.kernelStates[asmr.currentKernel]->useHsaConfig;
+    if (useHsaConfig &&
+        (target == AMDCL2CVAL_USESETUP || target == AMDCL2CVAL_USEARGS ||
+         target == AMDCL2CVAL_USEENQUEUE || target == AMDCL2CVAL_USEGENERIC))
+    {
+        asmr.printError(pseudoOpPlace, "Illegal config pseudo-op in HSAConfig");
+        return;
+    }
+    if (!useHsaConfig && target >= AMDCL2CVAL_ONLY_HSA_FIRST_PARAM)
+    {
+        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
+        return;
+    }
+    
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
+    
+    if (useHsaConfig)
+    {   // hsa config
+        handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+        AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
+        
+        AsmROCmPseudoOps::setConfigBoolValueMain(config, ROCmConfigValueTarget(
+                cxuint(target) - AMDCL2CVAL_HSA_FIRST_PARAM));
+        return;
+    }
+    
     AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
     switch(target)
     {
@@ -916,6 +1081,125 @@ void AsmAmdCL2PseudoOps::setDimensions(AsmAmdCL2Handler& handler,
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     handler.output.kernels[asmr.currentKernel].config.dimMask = dimMask;
+}
+
+void AsmAmdCL2PseudoOps::setMachine(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    if (!handler.kernelStates[asmr.currentKernel]->useHsaConfig)
+    {
+        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
+        return;
+    }
+    
+    uint16_t kindValue = 0, majorValue = 0;
+    uint16_t minorValue = 0, steppingValue = 0;
+    if (!AsmROCmPseudoOps::parseMachine(asmr, linePtr, kindValue,
+                    majorValue, minorValue, steppingValue))
+        return;
+    
+    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
+    config->amdMachineKind = kindValue;
+    config->amdMachineMajor = majorValue;
+    config->amdMachineMinor = minorValue;
+    config->amdMachineStepping = steppingValue;
+}
+
+void AsmAmdCL2PseudoOps::setCodeVersion(AsmAmdCL2Handler& handler,
+                const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    if (!handler.kernelStates[asmr.currentKernel]->useHsaConfig)
+    {
+        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
+        return;
+    }
+    
+    uint16_t majorValue = 0, minorValue = 0;
+    if (!AsmROCmPseudoOps::parseCodeVersion(asmr, linePtr, majorValue, minorValue))
+        return;
+    
+    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
+    config->amdCodeVersionMajor = majorValue;
+    config->amdCodeVersionMinor = minorValue;
+}
+
+void AsmAmdCL2PseudoOps::setReservedXgprs(AsmAmdCL2Handler& handler,
+                const char* pseudoOpPlace, const char* linePtr, bool inVgpr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    if (!handler.kernelStates[asmr.currentKernel]->useHsaConfig)
+    {
+        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
+        return;
+    }
+    
+    uint16_t gprFirst = 0, gprCount = 0;
+    if (!AsmROCmPseudoOps::parseReservedXgprs(asmr, linePtr, inVgpr, gprFirst, gprCount))
+        return;
+    
+    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
+    if (inVgpr)
+    {
+        config->reservedVgprFirst = gprFirst;
+        config->reservedVgprCount = gprCount;
+    }
+    else
+    {
+        config->reservedSgprFirst = gprFirst;
+        config->reservedSgprCount = gprCount;
+    }
+}
+
+
+void AsmAmdCL2PseudoOps::setUseGridWorkGroupCount(AsmAmdCL2Handler& handler,
+                   const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    if (!handler.kernelStates[asmr.currentKernel]->useHsaConfig)
+    {
+        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
+        return;
+    }
+    
+    cxuint dimMask = 0;
+    if (!parseDimensions(asmr, linePtr, dimMask))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    uint16_t& flags = handler.kernelStates[asmr.currentKernel]->config->
+                enableSgprRegisterFlags;
+    flags = (flags & ~(7<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT)) |
+            (dimMask<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT);
 }
 
 void AsmAmdCL2PseudoOps::setCWS(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
@@ -1181,7 +1465,7 @@ void AsmAmdCL2PseudoOps::addKernelStub(AsmAmdCL2Handler& handler,
 }
 
 void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
-                      const char* linePtr)
+                      const char* linePtr, bool hsaConfig)
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
@@ -1191,7 +1475,6 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
         asmr.printError(pseudoOpPlace, "Kernel config can be defined only inside kernel");
         return;
     }
-    skipSpacesToEnd(linePtr, end);
     AsmAmdCL2Handler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.metadataSection!=ASMSECT_NONE || kernel.isaMetadataSection!=ASMSECT_NONE ||
         kernel.setupSection!=ASMSECT_NONE || kernel.stubSection!=ASMSECT_NONE)
@@ -1200,7 +1483,13 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
                         "stub section exists");
         return;
     }
+    if (kernel.configSection != ASMSECT_NONE && kernel.useHsaConfig != hsaConfig)
+    {   // if config defined and doesn't match type of config
+        asmr.printError(pseudoOpPlace, "Config and HSAConfig can't be mixed");
+        return;
+    }
     
+    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1212,6 +1501,7 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
         kernel.configSection = thisSection;
     }
     asmr.goToSection(pseudoOpPlace, kernel.configSection);
+    kernel.useHsaConfig = hsaConfig;
     handler.output.kernels[asmr.currentKernel].useConfig = true;
 }
 
@@ -1241,14 +1531,28 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
         case AMDCL2OP_BSSDATA:
             AsmAmdCL2PseudoOps::doBssData(*this, stmtPlace, linePtr);
             break;
+        case AMDCL2OP_CODEVERSION:
+            AsmAmdCL2PseudoOps::setCodeVersion(*this, stmtPlace, linePtr);
+            break;
         case AMDCL2OP_COMPILE_OPTIONS:
             AsmAmdCL2PseudoOps::setCompileOptions(*this, linePtr);
             break;
         case AMDCL2OP_CONFIG:
-            AsmAmdCL2PseudoOps::doConfig(*this, stmtPlace, linePtr);
+            AsmAmdCL2PseudoOps::doConfig(*this, stmtPlace, linePtr, false);
+            break;
+        case AMDCL2OP_CONTROL_DIRECTIVE:
+            AsmAmdCL2PseudoOps::doControlDirective(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_CWS:
             AsmAmdCL2PseudoOps::setCWS(*this, stmtPlace, linePtr);
+            break;
+        case AMDCL2OP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR);
+            break;
+        case AMDCL2OP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                         AMDCL2CVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR);
             break;
         case AMDCL2OP_DEBUGMODE:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
@@ -1272,6 +1576,14 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_FLOATMODE);
             break;
+        case AMDCL2OP_GDS_SEGMENT_SIZE:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_GDS_SEGMENT_SIZE);
+            break;
+        case AMDCL2OP_GROUP_SEGMENT_ALIGN:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_GROUP_SEGMENT_ALIGN);
+            break;
         case AMDCL2OP_GDSSIZE:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_GDSSIZE);
@@ -1281,6 +1593,9 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             break;
         case AMDCL2OP_GLOBALDATA:
             AsmAmdCL2PseudoOps::doGlobalData(*this, stmtPlace, linePtr);
+            break;
+        case AMDCL2OP_HSACONFIG:
+            AsmAmdCL2PseudoOps::doConfig(*this, stmtPlace, linePtr, true);
             break;
         case AMDCL2OP_IEEEMODE:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
@@ -1292,12 +1607,47 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
         case AMDCL2OP_ISAMETADATA:
             AsmAmdCL2PseudoOps::addISAMetadata(*this, stmtPlace, linePtr);
             break;
+        case AMDCL2OP_KERNARG_SEGMENT_ALIGN:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_KERNARG_SEGMENT_ALIGN);
+            break;
+        case AMDCL2OP_KERNARG_SEGMENT_SIZE:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_KERNARG_SEGMENT_SIZE);
+            break;
+        case AMDCL2OP_KERNEL_CODE_ENTRY_OFFSET:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_KERNEL_CODE_ENTRY_OFFSET);
+            break;
+        case AMDCL2OP_KERNEL_CODE_PREFETCH_OFFSET:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_KERNEL_CODE_PREFETCH_OFFSET);
+            break;
+        case AMDCL2OP_KERNEL_CODE_PREFETCH_SIZE:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_KERNEL_CODE_PREFETCH_SIZE);
+            break;
         case AMDCL2OP_LOCALSIZE:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_LOCALSIZE);
             break;
+        case AMDCL2OP_MACHINE:
+            AsmAmdCL2PseudoOps::setMachine(*this, stmtPlace, linePtr);
+            break;
+        case AMDCL2OP_MAX_SCRATCH_BACKING_MEMORY:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_MAX_SCRATCH_BACKING_MEMORY);
+            break;
         case AMDCL2OP_METADATA:
             AsmAmdCL2PseudoOps::addMetadata(*this, stmtPlace, linePtr);
+            break;
+        case AMDCL2OP_PRIVATE_ELEM_SIZE:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_PRIVATE_ELEM_SIZE);
+            break;
+        case AMDCL2OP_PRIVATE_SEGMENT_ALIGN:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_PRIVATE_SEGMENT_ALIGN);
             break;
         case AMDCL2OP_PRIVMODE:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
@@ -1314,6 +1664,16 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
         case AMDCL2OP_PRIORITY:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_PRIORITY);
+            break;
+        case AMDCL2OP_RESERVED_SGPRS:
+            AsmAmdCL2PseudoOps::setReservedXgprs(*this, stmtPlace, linePtr, false);
+            break;
+        case AMDCL2OP_RESERVED_VGPRS:
+            AsmAmdCL2PseudoOps::setReservedXgprs(*this, stmtPlace, linePtr, true);
+            break;
+        case AMDCL2OP_RUNTIME_LOADER_KERNEL_SYMBOL:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_RUNTIME_LOADER_KERNEL_SYMBOL);
             break;
         case AMDCL2OP_RWDATA:
             AsmAmdCL2PseudoOps::doRwData(*this, stmtPlace, linePtr);
@@ -1348,6 +1708,57 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_TGSIZE);
             break;
+        case AMDCL2OP_USE_DEBUG_ENABLED:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_USE_DEBUG_ENABLED);
+            break;
+        case AMDCL2OP_USE_DISPATCH_ID:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_USE_DISPATCH_ID);
+            break;
+        case AMDCL2OP_USE_DISPATCH_PTR:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_USE_DISPATCH_PTR);
+            break;
+        case AMDCL2OP_USE_DYNAMIC_CALL_STACK:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_USE_DYNAMIC_CALL_STACK);
+            break;
+        case AMDCL2OP_USE_FLAT_SCRATCH_INIT:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_USE_FLAT_SCRATCH_INIT);
+            break;
+        case AMDCL2OP_USE_GRID_WORKGROUP_COUNT:
+            AsmAmdCL2PseudoOps::setUseGridWorkGroupCount(*this, stmtPlace, linePtr);
+            break;
+        case AMDCL2OP_USE_KERNARG_SEGMENT_PTR:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_USE_KERNARG_SEGMENT_PTR);
+            break;
+        case AMDCL2OP_USE_ORDERED_APPEND_GDS:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_USE_ORDERED_APPEND_GDS);
+            break;
+        case AMDCL2OP_USE_PRIVATE_SEGMENT_SIZE:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_USE_PRIVATE_SEGMENT_SIZE);
+            break;
+        case AMDCL2OP_USE_PTR64:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_USE_PTR64);
+            break;
+        case AMDCL2OP_USE_QUEUE_PTR:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_USE_QUEUE_PTR);
+            break;
+        case AMDCL2OP_USE_PRIVATE_SEGMENT_BUFFER:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_USE_PRIVATE_SEGMENT_BUFFER);
+            break;
+        case AMDCL2OP_USE_XNACK_ENABLED:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_USE_XNACK_ENABLED);
+            break;
         case AMDCL2OP_USEARGS:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_USEARGS);
@@ -1367,6 +1778,30 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
         case AMDCL2OP_VGPRSNUM:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_VGPRSNUM);
+            break;
+        case AMDCL2OP_WAVEFRONT_SGPR_COUNT:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_WAVEFRONT_SGPR_COUNT);
+            break;
+        case AMDCL2OP_WAVEFRONT_SIZE:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_WAVEFRONT_SIZE);
+            break;
+        case AMDCL2OP_WORKITEM_VGPR_COUNT:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_WORKITEM_VGPR_COUNT);
+            break;
+        case AMDCL2OP_WORKGROUP_FBARRIER_COUNT:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_WORKGROUP_FBARRIER_COUNT);
+            break;
+        case AMDCL2OP_WORKGROUP_GROUP_SEGMENT_SIZE:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_WORKGROUP_GROUP_SEGMENT_SIZE);
+            break;
+        case AMDCL2OP_WORKITEM_PRIVATE_SEGMENT_SIZE:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_WORKITEM_PRIVATE_SEGMENT_SIZE);
             break;
         default:
             return false;
@@ -1432,6 +1867,13 @@ bool AsmAmdCL2Handler::prepareBinary()
             case AsmSectionType::AMDCL2_STUB:
                 kernel->stubSize = sectionSize;
                 kernel->stub = sectionData;
+                break;
+            case AsmSectionType::AMDCL2_CONFIG_CTRL_DIRECTIVE:
+                if (sectionSize != 128)
+                    assembler.printError(AsmSourcePos(),
+                         (std::string("Section '.control_directive' for kernel '")+
+                          assembler.kernels[section.kernelId].name+
+                          "' have wrong size").c_str());
                 break;
             case AsmSectionType::EXTRA_PROGBITS:
             case AsmSectionType::EXTRA_NOTE:

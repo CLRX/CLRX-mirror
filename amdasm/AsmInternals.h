@@ -526,25 +526,74 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
 
 enum AmdCL2ConfigValueTarget
 {
-    AMDCL2CVAL_SGPRSNUM,
-    AMDCL2CVAL_VGPRSNUM,
-    AMDCL2CVAL_PGMRSRC1,
-    AMDCL2CVAL_PGMRSRC2,
-    AMDCL2CVAL_IEEEMODE,
-    AMDCL2CVAL_FLOATMODE,
     AMDCL2CVAL_LOCALSIZE,
     AMDCL2CVAL_GDSSIZE,
     AMDCL2CVAL_SCRATCHBUFFER,
-    AMDCL2CVAL_PRIORITY,
-    AMDCL2CVAL_TGSIZE,
-    AMDCL2CVAL_DEBUGMODE,
-    AMDCL2CVAL_DX10CLAMP,
-    AMDCL2CVAL_PRIVMODE,
-    AMDCL2CVAL_EXCEPTIONS,
     AMDCL2CVAL_USESETUP,
     AMDCL2CVAL_USEARGS,
     AMDCL2CVAL_USEENQUEUE,
-    AMDCL2CVAL_USEGENERIC
+    AMDCL2CVAL_USEGENERIC,
+    AMDCL2CVAL_HSA_SGPRSNUM,
+    AMDCL2CVAL_HSA_VGPRSNUM,
+    AMDCL2CVAL_HSA_PRIVMODE,
+    AMDCL2CVAL_HSA_DEBUGMODE,
+    AMDCL2CVAL_HSA_DX10CLAMP,
+    AMDCL2CVAL_HSA_IEEEMODE,
+    AMDCL2CVAL_HSA_TGSIZE,
+    AMDCL2CVAL_HSA_FLOATMODE,
+    AMDCL2CVAL_HSA_PRIORITY,
+    AMDCL2CVAL_HSA_EXCEPTIONS,
+    AMDCL2CVAL_HSA_USERDATANUM,
+    AMDCL2CVAL_HSA_PGMRSRC1,
+    AMDCL2CVAL_HSA_PGMRSRC2,
+    AMDCL2CVAL_KERNEL_CODE_ENTRY_OFFSET,
+    AMDCL2CVAL_KERNEL_CODE_PREFETCH_OFFSET,
+    AMDCL2CVAL_KERNEL_CODE_PREFETCH_SIZE,
+    AMDCL2CVAL_MAX_SCRATCH_BACKING_MEMORY,
+    AMDCL2CVAL_USE_PRIVATE_SEGMENT_BUFFER,
+    AMDCL2CVAL_USE_DISPATCH_PTR,
+    AMDCL2CVAL_USE_QUEUE_PTR,
+    AMDCL2CVAL_USE_KERNARG_SEGMENT_PTR,
+    AMDCL2CVAL_USE_DISPATCH_ID,
+    AMDCL2CVAL_USE_FLAT_SCRATCH_INIT,
+    AMDCL2CVAL_USE_PRIVATE_SEGMENT_SIZE,
+    AMDCL2CVAL_USE_ORDERED_APPEND_GDS,
+    AMDCL2CVAL_PRIVATE_ELEM_SIZE,
+    AMDCL2CVAL_USE_PTR64,
+    AMDCL2CVAL_USE_DYNAMIC_CALL_STACK,
+    AMDCL2CVAL_USE_DEBUG_ENABLED,
+    AMDCL2CVAL_USE_XNACK_ENABLED,
+    AMDCL2CVAL_WORKITEM_PRIVATE_SEGMENT_SIZE,
+    AMDCL2CVAL_WORKGROUP_GROUP_SEGMENT_SIZE,
+    AMDCL2CVAL_GDS_SEGMENT_SIZE,
+    AMDCL2CVAL_KERNARG_SEGMENT_SIZE,
+    AMDCL2CVAL_WORKGROUP_FBARRIER_COUNT,
+    AMDCL2CVAL_WAVEFRONT_SGPR_COUNT,
+    AMDCL2CVAL_WORKITEM_VGPR_COUNT,
+    AMDCL2CVAL_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
+    AMDCL2CVAL_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR,
+    AMDCL2CVAL_KERNARG_SEGMENT_ALIGN,
+    AMDCL2CVAL_GROUP_SEGMENT_ALIGN,
+    AMDCL2CVAL_PRIVATE_SEGMENT_ALIGN,
+    AMDCL2CVAL_WAVEFRONT_SIZE,
+    AMDCL2CVAL_CALL_CONVENTION,
+    AMDCL2CVAL_RUNTIME_LOADER_KERNEL_SYMBOL,
+    AMDCL2CVAL_HSA_FIRST_PARAM = AMDCL2CVAL_HSA_SGPRSNUM,
+    AMDCL2CVAL_ONLY_HSA_FIRST_PARAM = AMDCL2CVAL_KERNEL_CODE_ENTRY_OFFSET,
+    
+    AMDCL2CVAL_SGPRSNUM = AMDCL2CVAL_HSA_SGPRSNUM,
+    AMDCL2CVAL_VGPRSNUM = AMDCL2CVAL_HSA_VGPRSNUM,
+    AMDCL2CVAL_PRIVMODE = AMDCL2CVAL_HSA_PRIVMODE,
+    AMDCL2CVAL_DEBUGMODE = AMDCL2CVAL_HSA_DEBUGMODE,
+    AMDCL2CVAL_DX10CLAMP = AMDCL2CVAL_HSA_DX10CLAMP,
+    AMDCL2CVAL_IEEEMODE = AMDCL2CVAL_HSA_IEEEMODE,
+    AMDCL2CVAL_TGSIZE = AMDCL2CVAL_HSA_TGSIZE,
+    AMDCL2CVAL_FLOATMODE = AMDCL2CVAL_HSA_FLOATMODE,
+    AMDCL2CVAL_PRIORITY = AMDCL2CVAL_HSA_PRIORITY,
+    AMDCL2CVAL_EXCEPTIONS = AMDCL2CVAL_HSA_EXCEPTIONS,
+    AMDCL2CVAL_USERDATANUM = AMDCL2CVAL_HSA_USERDATANUM,
+    AMDCL2CVAL_PGMRSRC1 = AMDCL2CVAL_HSA_PGMRSRC1,
+    AMDCL2CVAL_PGMRSRC2 = AMDCL2CVAL_HSA_PGMRSRC2
 };
 
 struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
@@ -562,6 +611,9 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
     static void getDriverVersion(AsmAmdCL2Handler& handler, const char* linePtr);
     
     static void doInner(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void doControlDirective(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
     static void doGlobalData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
@@ -586,6 +638,18 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
     static void setDimensions(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    static void setMachine(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void setCodeVersion(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void setReservedXgprs(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, bool inVgpr);
+    
+    static void setUseGridWorkGroupCount(AsmAmdCL2Handler& handler,
+                      const char* pseudoOpPlace, const char* linePtr);
+    
     static void setCWS(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     static void doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
@@ -603,7 +667,7 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
     static void addKernelStub(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     static void doConfig(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
+                      const char* linePtr, bool hsaConfig);
 };
 
 enum ROCmConfigValueTarget

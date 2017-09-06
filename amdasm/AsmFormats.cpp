@@ -32,6 +32,29 @@ using namespace CLRX;
 AsmFormatException::AsmFormatException(const std::string& message) : Exception(message)
 { }
 
+void AsmAmdHsaKernelConfig::initialize()
+{
+    // set default values to kernel config
+    ::memset(this, 0xff, 128);
+    ::memset(controlDirective, 0, 128);
+    computePgmRsrc1 = computePgmRsrc2 = 0;
+    enableSgprRegisterFlags = 0;
+    enableFeatureFlags = 0;
+    reserved1[0] = reserved1[1] = reserved1[2] = 0;
+    dimMask = 0;
+    usedVGPRsNum = BINGEN_DEFAULT;
+    usedSGPRsNum = BINGEN_DEFAULT;
+    userDataNum = BINGEN8_DEFAULT;
+    ieeeMode = false;
+    floatMode = 0xc0;
+    priority = 0;
+    exceptions = 0;
+    tgSize = false;
+    debugMode = false;
+    privilegedMode = false;
+    dx10Clamp = false;
+}
+
 AsmFormatHandler::AsmFormatHandler(Assembler& _assembler) : assembler(_assembler)
 { }
 

@@ -589,6 +589,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
         kernel.isaMetadataSize = 0;
         kernel.isaMetadata = nullptr;
         kernel.useConfig = useConfig;
+        kernel.hsaConfig = false;
         if (!isNewBinary)
         {
             kernel.isaMetadataSize = binary.getISAMetadataSize(k);

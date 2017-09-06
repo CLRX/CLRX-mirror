@@ -61,6 +61,7 @@ enum class AsmSectionType: cxbyte
     AMDCL2_STUB,
     AMDCL2_METADATA,
     AMDCL2_ISAMETADATA,
+    AMDCL2_CONFIG_CTRL_DIRECTIVE,
     
     GALLIUM_COMMENT = LAST_COMMON+1,    ///< gallium comment section
     GALLIUM_CONFIG_CTRL_DIRECTIVE,
@@ -274,6 +275,25 @@ public:
     { return &output; }
 };
 
+/// Asm AMD HSA kernel configuration
+struct AsmAmdHsaKernelConfig: AmdHsaKernelConfig
+{
+    cxuint dimMask;    ///< mask of dimension (bits: 0 - X, 1 - Y, 2 - Z)
+    cxuint usedVGPRsNum;  ///< number of used VGPRs
+    cxuint usedSGPRsNum;  ///< number of used SGPRs
+    cxbyte userDataNum;   ///< number of user data
+    bool ieeeMode;  ///< IEEE mode
+    cxbyte floatMode; ///< float mode
+    cxbyte priority;    ///< priority
+    cxbyte exceptions;      ///< enabled exceptions
+    bool tgSize;        ///< enable TG_SIZE_EN bit
+    bool debugMode;     ///< debug mode
+    bool privilegedMode;   ///< prvileged mode
+    bool dx10Clamp;     ///< DX10 CLAMP mode
+    
+    void initialize();
+};
+
 /// handles AMD OpenCL 2.0 binary format
 class AsmAmdCL2Handler: public AsmFormatHandler
 {
@@ -304,11 +324,16 @@ private:
         cxuint metadataSection;
         cxuint isaMetadataSection;
         cxuint configSection;
+        cxuint ctrlDirSection;
         cxuint codeSection;
         cxuint savedSection;
+        bool useHsaConfig; // 
+        std::unique_ptr<AsmAmdHsaKernelConfig> config; // hsaConfig
         std::unordered_set<CString> argNamesSet;
         cxuint allocRegs[MAX_REGTYPES_NUM];
         Flags allocRegFlags;
+        
+        void initializeKernelConfig();
     };
     std::vector<Section> sections;
     // use pointer to prevents copying Kernel objects
@@ -356,23 +381,6 @@ public:
     /// get output structure pointer
     const AmdCL2Input* getOutput() const
     { return &output; }
-};
-
-/// Asm AMD HSA kernel configuration
-struct AsmAmdHsaKernelConfig: AmdHsaKernelConfig
-{
-    cxuint dimMask;    ///< mask of dimension (bits: 0 - X, 1 - Y, 2 - Z)
-    cxuint usedVGPRsNum;  ///< number of used VGPRs
-    cxuint usedSGPRsNum;  ///< number of used SGPRs
-    cxbyte userDataNum;   ///< number of user data
-    bool ieeeMode;  ///< IEEE mode
-    cxbyte floatMode; ///< float mode
-    cxbyte priority;    ///< priority
-    cxbyte exceptions;      ///< enabled exceptions
-    bool tgSize;        ///< enable TG_SIZE_EN bit
-    bool debugMode;     ///< debug mode
-    bool privilegedMode;   ///< prvileged mode
-    bool dx10Clamp;     ///< DX10 CLAMP mode
 };
 
 /// handles GalliumCompute format

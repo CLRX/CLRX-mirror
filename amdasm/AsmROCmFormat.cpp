@@ -292,25 +292,7 @@ void AsmROCmHandler::Kernel::initializeKernelConfig()
     if (!config)
     {
         config.reset(new AsmROCmKernelConfig{});
-        // set default values to kernel config
-        ::memset(config.get(), 0xff, 128);
-        ::memset(config->controlDirective, 0, 128);
-        config->computePgmRsrc1 = config->computePgmRsrc2 = 0;
-        config->enableSgprRegisterFlags = 0;
-        config->enableFeatureFlags = 0;
-        config->reserved1[0] = config->reserved1[1] = config->reserved1[2] = 0;
-        config->dimMask = 0;
-        config->usedVGPRsNum = BINGEN_DEFAULT;
-        config->usedSGPRsNum = BINGEN_DEFAULT;
-        config->userDataNum = BINGEN8_DEFAULT;
-        config->ieeeMode = false;
-        config->floatMode = 0xc0;
-        config->priority = 0;
-        config->exceptions = 0;
-        config->tgSize = false;
-        config->debugMode = false;
-        config->privilegedMode = false;
-        config->dx10Clamp = false;
+        config->initialize();
     }
 }
 
@@ -788,6 +770,7 @@ void AsmROCmPseudoOps::setDimensions(AsmROCmHandler& handler, const char* pseudo
 }
 
 // parse machine version - used also in AsmGalliumFormat
+// four numbers - kind, major, minor, stepping
 bool AsmROCmPseudoOps::parseMachine(Assembler& asmr, const char* linePtr,
         uint16_t& machineKind, uint16_t& machineMajor, uint16_t& machineMinor,
         uint16_t& machineStepping)
@@ -832,6 +815,7 @@ bool AsmROCmPseudoOps::parseMachine(Assembler& asmr, const char* linePtr,
     return true;
 }
 
+// set machine - four numbers - kind, major, minor, stepping
 void AsmROCmPseudoOps::setMachine(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {
@@ -857,6 +841,7 @@ void AsmROCmPseudoOps::setMachine(AsmROCmHandler& handler, const char* pseudoOpP
 }
 
 // parse code version (amd code version) - used also in AsmGalliumFormat
+// two numbers - major and minor
 bool AsmROCmPseudoOps::parseCodeVersion(Assembler& asmr, const char* linePtr,
                 uint16_t& codeMajor, uint16_t& codeMinor)
 {
@@ -883,6 +868,7 @@ bool AsmROCmPseudoOps::parseCodeVersion(Assembler& asmr, const char* linePtr,
     return true;
 }
 
+// two numbers - major and minor
 void AsmROCmPseudoOps::setCodeVersion(AsmROCmHandler& handler, const char* pseudoOpPlace,
                   const char* linePtr)
 {
@@ -905,6 +891,7 @@ void AsmROCmPseudoOps::setCodeVersion(AsmROCmHandler& handler, const char* pseud
 }
 
 // parse reserved gprs - used also in AsmGalliumFormat
+// parsereserved S/VGRPS - first number is first register, second is last register
 bool AsmROCmPseudoOps::parseReservedXgprs(Assembler& asmr, const char* linePtr,
                 bool inVgpr, uint16_t& gprFirst, uint16_t& gprCount)
 {
@@ -956,6 +943,7 @@ bool AsmROCmPseudoOps::parseReservedXgprs(Assembler& asmr, const char* linePtr,
     return true;
 }
 
+/// set reserved S/VGRPS - first number is first register, second is last register
 void AsmROCmPseudoOps::setReservedXgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, bool inVgpr)
 {
@@ -985,7 +973,7 @@ void AsmROCmPseudoOps::setReservedXgprs(AsmROCmHandler& handler, const char* pse
     }
 }
 
-
+// set UseGridWorkGroupCount - 3 bits for dimensions
 void AsmROCmPseudoOps::setUseGridWorkGroupCount(AsmROCmHandler& handler,
                    const char* pseudoOpPlace, const char* linePtr)
 {
@@ -1640,37 +1628,7 @@ bool AsmROCmHandler::prepareBinary()
         if (config.runtimeLoaderKernelSymbol == BINGEN64_DEFAULT)
             config.runtimeLoaderKernelSymbol = 0;
         
-        // to little endian
-        SLEV(config.amdCodeVersionMajor, config.amdCodeVersionMajor);
-        SLEV(config.amdCodeVersionMinor, config.amdCodeVersionMinor);
-        SLEV(config.amdMachineKind, config.amdMachineKind);
-        SLEV(config.amdMachineMajor, config.amdMachineMajor);
-        SLEV(config.amdMachineMinor, config.amdMachineMinor);
-        SLEV(config.amdMachineStepping, config.amdMachineStepping);
-        SLEV(config.kernelCodeEntryOffset, config.kernelCodeEntryOffset);
-        SLEV(config.kernelCodePrefetchOffset, config.kernelCodePrefetchOffset);
-        SLEV(config.kernelCodePrefetchSize, config.kernelCodePrefetchSize);
-        SLEV(config.maxScrachBackingMemorySize, config.maxScrachBackingMemorySize);
-        SLEV(config.computePgmRsrc1, config.computePgmRsrc1);
-        SLEV(config.computePgmRsrc2, config.computePgmRsrc2);
-        SLEV(config.enableSgprRegisterFlags, config.enableSgprRegisterFlags);
-        SLEV(config.enableFeatureFlags, config.enableFeatureFlags);
-        SLEV(config.workitemPrivateSegmentSize, config.workitemPrivateSegmentSize);
-        SLEV(config.workgroupGroupSegmentSize, config.workgroupGroupSegmentSize);
-        SLEV(config.gdsSegmentSize, config.gdsSegmentSize);
-        SLEV(config.kernargSegmentSize, config.kernargSegmentSize);
-        SLEV(config.workgroupFbarrierCount, config.workgroupFbarrierCount);
-        SLEV(config.wavefrontSgprCount, config.wavefrontSgprCount);
-        SLEV(config.workitemVgprCount, config.workitemVgprCount);
-        SLEV(config.reservedVgprFirst, config.reservedVgprFirst);
-        SLEV(config.reservedVgprCount, config.reservedVgprCount);
-        SLEV(config.reservedSgprFirst, config.reservedSgprFirst);
-        SLEV(config.reservedSgprCount, config.reservedSgprCount);
-        SLEV(config.debugWavefrontPrivateSegmentOffsetSgpr,
-             config.debugWavefrontPrivateSegmentOffsetSgpr);
-        SLEV(config.debugPrivateSegmentBufferSgpr, config.debugPrivateSegmentBufferSgpr);
-        SLEV(config.callConvention, config.callConvention);
-        SLEV(config.runtimeLoaderKernelSymbol, config.runtimeLoaderKernelSymbol);
+        config.toLE(); // to little-endian
         // put control directive section to config
         if (kernel.ctrlDirSection!=ASMSECT_NONE &&
             assembler.sections[kernel.ctrlDirSection].content.size()==128)

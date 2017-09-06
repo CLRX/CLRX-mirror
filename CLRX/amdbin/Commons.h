@@ -24,6 +24,7 @@
 #define __CLRX_COMMONS_H__
 
 #include <CLRX/Config.h>
+#include <CLRX/utils/MemAccess.h>
 
 /// main namespace
 namespace CLRX
@@ -97,6 +98,40 @@ struct AmdHsaKernelConfig
     uint32_t reserved1[3];          ///< reserved
     uint64_t runtimeLoaderKernelSymbol;
     cxbyte controlDirective[128];       ///< control directives area
+    
+    void toLE()
+    {
+        SLEV(amdCodeVersionMajor, amdCodeVersionMajor);
+        SLEV(amdCodeVersionMinor, amdCodeVersionMinor);
+        SLEV(amdMachineKind, amdMachineKind);
+        SLEV(amdMachineMajor, amdMachineMajor);
+        SLEV(amdMachineMinor, amdMachineMinor);
+        SLEV(amdMachineStepping, amdMachineStepping);
+        SLEV(kernelCodeEntryOffset, kernelCodeEntryOffset);
+        SLEV(kernelCodePrefetchOffset, kernelCodePrefetchOffset);
+        SLEV(kernelCodePrefetchSize, kernelCodePrefetchSize);
+        SLEV(maxScrachBackingMemorySize, maxScrachBackingMemorySize);
+        SLEV(computePgmRsrc1, computePgmRsrc1);
+        SLEV(computePgmRsrc2, computePgmRsrc2);
+        SLEV(enableSgprRegisterFlags, enableSgprRegisterFlags);
+        SLEV(enableFeatureFlags, enableFeatureFlags);
+        SLEV(workitemPrivateSegmentSize, workitemPrivateSegmentSize);
+        SLEV(workgroupGroupSegmentSize, workgroupGroupSegmentSize);
+        SLEV(gdsSegmentSize, gdsSegmentSize);
+        SLEV(kernargSegmentSize, kernargSegmentSize);
+        SLEV(workgroupFbarrierCount, workgroupFbarrierCount);
+        SLEV(wavefrontSgprCount, wavefrontSgprCount);
+        SLEV(workitemVgprCount, workitemVgprCount);
+        SLEV(reservedVgprFirst, reservedVgprFirst);
+        SLEV(reservedVgprCount, reservedVgprCount);
+        SLEV(reservedSgprFirst, reservedSgprFirst);
+        SLEV(reservedSgprCount, reservedSgprCount);
+        SLEV(debugWavefrontPrivateSegmentOffsetSgpr,
+             debugWavefrontPrivateSegmentOffsetSgpr);
+        SLEV(debugPrivateSegmentBufferSgpr, debugPrivateSegmentBufferSgpr);
+        SLEV(callConvention, callConvention);
+        SLEV(runtimeLoaderKernelSymbol, runtimeLoaderKernelSymbol);
+    }
 };
 
 };

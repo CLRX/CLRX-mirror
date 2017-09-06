@@ -1578,18 +1578,19 @@ public:
                 const AmdCL2KernelInput& kernel = input->kernels[i];
                 const TempAmdCL2KernelData& tempData = tempDatas[i];
                 if (!kernel.useConfig)
-                {   // no configuration, get from kernel data
+                    // no configuration, get from kernel data
                     fob.writeArray(tempData.stubSize, kernel.stub);
-                    fob.writeArray(tempData.setupSize, kernel.setup);
-                }
-                else // generate stub, setup from kernel config
-                {
+                else // generate stub, from kernel config
                     generateKernelStub(arch, kernel.config, fob, tempData.codeSize,
                                kernel.code, tempData.useLocals, tempData.pipesUsed!=0);
+                
+                if (!kernel.useConfig || kernel.hsaConfig)
+                    // no configuration, get from kernel data
+                    fob.writeArray(tempData.setupSize, kernel.setup);
+                else // generate stub, setup from kernel config
                     generateKernelSetup(arch, kernel.config, fob, false,
                                 tempData.useLocals, tempData.pipesUsed!=0, input->is64Bit,
                                 input->driverVersion);
-                }
                 fob.writeArray(kernel.codeSize, kernel.code);
             }
         }
@@ -1633,7 +1634,7 @@ public:
                 fob.fill(toFill, 0);
                 outSize += toFill;
             }
-            if (!kernel.useConfig)
+            if (!kernel.useConfig || kernel.hsaConfig)
                 fob.writeArray(tempData.setupSize, kernel.setup);
             else
                 generateKernelSetup(arch, kernel.config, fob, true, tempData.useLocals,
