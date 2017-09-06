@@ -742,6 +742,126 @@ test.s:45:5: Error: Config can't be defined if metadata,header,setup,stub sectio
 )ffDXD", false
     },
     /* AMD HSA config */
+    {
+        R"ffDXD(/* Disassembling 'opencl_program-Bonaire.clo' */
+.amdcl2
+.gpu Bonaire
+.64bit
+.arch_minor 0
+.arch_stepping 0
+.driver_version 234800
+.kernel GenerateScramblerKernel
+    .hsaconfig
+        .dims xyz
+        .sgprsnum 22
+        .vgprsnum 16
+        .dx10clamp
+        .ieeemode
+        .floatmode 0xc0
+        .priority 0
+        .userdatanum 6
+        .pgmrsrc1 0x00ac0083
+        .pgmrsrc2 0x0000038c
+        .codeversion 1, 1
+        .machine 1, 0, 0, 0
+        .kernel_code_entry_offset 0x100
+        .use_private_segment_buffer
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .kernarg_segment_size 96
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+        .wavefront_size 64
+        .call_convention 0x0
+    .control_directive
+        .byte 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        .fill 120, 1, 0x00
+    .hsaconfig
+        .arg _.global_offset_0, "size_t", long
+        .arg _.global_offset_1, "size_t", long
+        .arg _.global_offset_2, "size_t", long
+        .arg _.printf_buffer, "size_t", void*, global, , rdonly
+        .arg _.vqueue_pointer, "size_t", long
+        .arg _.aqlwrap_pointer, "size_t", long
+        .arg d_wiring, "Wiring*", structure*, 1024, constant, const, rdonly
+        .arg d_key, "Key*", structure*, 64, constant, const, rdonly
+        .arg thblockShift, "uint", uint
+        .arg localShift, "uint", uint
+        .arg scramblerDataPitch, "uint", uint
+        .arg scramblerData, "int8_t*", char*, global, 
+    .text
+        s_load_dwordx2  s[0:1], s[4:5], 0x10
+        s_waitcnt       lgkmcnt(0)
+        s_sub_u32       s1, s1, s0
+        v_bfe_u32       v1, v0, 0, s1
+        v_cmp_ge_u32    vcc, 25, v1
+        s_and_saveexec_b64 s[2:3], vcc
+        v_lshrrev_b32   v0, s1, v0
+        s_endpgm
+)ffDXD",
+        R"ffDXD(AmdCL2BinDump:
+  devType=Bonaire, aclVersion=, drvVersion=234800, compileOptions=""
+  Kernel: GenerateScramblerKernel
+    Code:
+    100540c07f008cbf01008180010090d20001050099028c7d6a2482be0100002c
+    000081bf
+    HSAConfig:
+      Arg: "_.global_offset_0", "size_t", long, void, none, 0, 0, 0, default, 3
+      Arg: "_.global_offset_1", "size_t", long, void, none, 0, 0, 0, default, 3
+      Arg: "_.global_offset_2", "size_t", long, void, none, 0, 0, 0, default, 3
+      Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 0, 0, default, 1
+      Arg: "_.vqueue_pointer", "size_t", long, void, none, 0, 0, 0, default, 3
+      Arg: "_.aqlwrap_pointer", "size_t", long, void, none, 0, 0, 0, default, 3
+      Arg: "d_wiring", "Wiring*", pointer, structure, constant, 4, 1024, 0, default, 1
+      Arg: "d_key", "Key*", pointer, structure, constant, 4, 64, 0, default, 1
+      Arg: "thblockShift", "uint", uint, void, none, 0, 0, 0, default, 3
+      Arg: "localShift", "uint", uint, void, none, 0, 0, 0, default, 3
+      Arg: "scramblerDataPitch", "uint", uint, void, none, 0, 0, 0, default, 3
+      Arg: "scramblerData", "int8_t*", pointer, char, global, 0, 0, 0, default, 3
+      amdCodeVersion=1.1
+      amdMachine=1:0:0:0
+      kernelCodeEntryOffset=256
+      kernelCodePrefetchOffset=0
+      kernelCodePrefetchSize=0
+      maxScrachBackingMemorySize=0
+      computePgmRsrc1=0xac0083
+      computePgmRsrc2=0x138c
+      enableSgprRegisterFlags=0x9
+      enableFeatureFlags=0xa
+      workitemPrivateSegmentSize=0
+      workgroupGroupSegmentSize=0
+      gdsSegmentSize=0
+      kernargSegmentSize=96
+      workgroupFbarrierCount=0
+      wavefrontSgprCount=22
+      workitemVgprCount=16
+      reservedVgprFirst=16
+      reservedVgprCount=0
+      reservedSgprFirst=20
+      reservedSgprCount=0
+      debugWavefrontPrivateSegmentOffsetSgpr=0
+      debugPrivateSegmentBufferSgpr=0
+      kernargSegmentAlignment=4
+      groupSegmentAlignment=4
+      privateSegmentAlignment=4
+      wavefrontSize=6
+      callConvention=0x0
+      runtimeLoaderKernelSymbol=0x0
+      ControlDirective:
+      0001000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+  GlobalData:
+  RwData:
+  nullptr
+  Bss size: 0, bssAlign: 0
+  SamplerInit:
+  nullptr
+)ffDXD", "", true
+    }
 };
 
 static void testAssembler(cxuint testId, const AsmTestCase& testCase)

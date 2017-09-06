@@ -1082,7 +1082,13 @@ void AsmAmdCL2PseudoOps::setDimensions(AsmAmdCL2Handler& handler,
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    handler.output.kernels[asmr.currentKernel].config.dimMask = dimMask;
+    if (!handler.kernelStates[asmr.currentKernel]->useHsaConfig)
+        handler.output.kernels[asmr.currentKernel].config.dimMask = dimMask;
+    else
+    {   // if HSA config
+        handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+        handler.kernelStates[asmr.currentKernel]->config->dimMask = dimMask;
+    }
 }
 
 void AsmAmdCL2PseudoOps::setMachine(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
