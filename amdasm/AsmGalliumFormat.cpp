@@ -1830,6 +1830,28 @@ bool AsmGalliumHandler::prepareBinary()
             continue;
         GalliumKernelConfig& config = output.kernels[i].config;
         cxuint userSGPRsNum = config.userDataNum;
+        
+        if (llvmVersion >= 40000U && config.userDataNum == BINGEN8_DEFAULT)
+        {   // fixed userdatanum for LLVM 4.0
+            const AmdHsaKernelConfig& hsaConfig  = *kernelStates[i]->config.get();
+            // calcuate userSGPRs
+            const uint16_t sgprFlags = hsaConfig.enableSgprRegisterFlags;
+            userSGPRsNum =
+                ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER)!=0 ? 4 : 0) +
+                ((sgprFlags&ROCMFLAG_USE_DISPATCH_PTR)!=0 ? 2 : 0) +
+                ((sgprFlags&ROCMFLAG_USE_QUEUE_PTR)!=0 ? 2 : 0) +
+                ((sgprFlags&ROCMFLAG_USE_KERNARG_SEGMENT_PTR)!=0 ? 2 : 0) +
+                ((sgprFlags&ROCMFLAG_USE_DISPATCH_ID)!=0 ? 2 : 0) +
+                ((sgprFlags&ROCMFLAG_USE_FLAT_SCRATCH_INIT)!=0 ? 2 : 0) +
+                ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_SIZE)!=0) +
+                /* use_grid_workgroup_count */
+                ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_X)!=0) +
+                ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_Y)!=0) +
+                ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_Z)!=0);
+            userSGPRsNum = std::min(16U, userSGPRsNum);
+            config.userDataNum = userSGPRsNum;
+        }
+        
         /* include userData sgprs */
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
                 ((config.pgmRSRC2>>7)&7);

@@ -373,7 +373,7 @@ void GalliumInput::addEmptyKernel(const char* kernelName, cxuint llvmVersion)
     kinput.config.usedVGPRsNum = BINGEN_DEFAULT;
     kinput.config.usedSGPRsNum = BINGEN_DEFAULT;
     kinput.config.floatMode = 0xc0;
-    kinput.config.userDataNum = (llvmVersion >= 40000U) ? 8 : 4;
+    kinput.config.userDataNum = (llvmVersion >= 40000U) ? BINGEN_DEFAULT : 4;
     kinput.config.spilledVGPRs = kinput.config.spilledSGPRs = 0;
     kernels.push_back(std::move(kinput));
 }
