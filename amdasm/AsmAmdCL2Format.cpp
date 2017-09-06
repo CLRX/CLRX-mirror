@@ -920,7 +920,8 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    if (handler.kernelStates[asmr.currentKernel]->useHsaConfig)
+    if (handler.kernelStates[asmr.currentKernel]->useHsaConfig &&
+        target >= AMDCL2CVAL_HSA_FIRST_PARAM)
     {   // hsa config
         handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
         AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);

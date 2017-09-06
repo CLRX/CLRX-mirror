@@ -743,8 +743,7 @@ test.s:45:5: Error: Config can't be defined if metadata,header,setup,stub sectio
     },
     /* AMD HSA config */
     {
-        R"ffDXD(/* Disassembling 'opencl_program-Bonaire.clo' */
-.amdcl2
+        R"ffDXD(.amdcl2
 .gpu Bonaire
 .64bit
 .arch_minor 0
@@ -760,8 +759,6 @@ test.s:45:5: Error: Config can't be defined if metadata,header,setup,stub sectio
         .floatmode 0xc0
         .priority 0
         .userdatanum 6
-        .pgmrsrc1 0x00ac0083
-        .pgmrsrc2 0x0000038c
         .codeversion 1, 1
         .machine 1, 0, 0, 0
         .kernel_code_entry_offset 0x100
@@ -853,6 +850,117 @@ test.s:45:5: Error: Config can't be defined if metadata,header,setup,stub sectio
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
+  GlobalData:
+  RwData:
+  nullptr
+  Bss size: 0, bssAlign: 0
+  SamplerInit:
+  nullptr
+)ffDXD", "", true
+    },
+    {
+        R"ffDXD(.amdcl2
+.gpu Bonaire
+.64bit
+.arch_minor 0
+.arch_stepping 0
+.driver_version 234800
+.kernel GenerateScramblerKernel
+    .hsaconfig
+        .dims xyz
+        .dx10clamp
+        .ieeemode
+        .floatmode 0xc0
+        .priority 0
+        .userdatanum 6
+        .codeversion 1, 1
+        .machine 1, 4, 6, 7
+        .kernel_code_entry_offset 0x100
+        .use_private_segment_buffer
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .call_convention 0x0
+        .workgroup_fbarrier_count 3324
+        .runtime_loader_kernel_symbol 0x4dc98b3a
+        .scratchbuffer 77222
+        .localsize 413
+    .control_directive
+        .byte 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    .hsaconfig
+        .arg _.global_offset_0, "size_t", long
+        .arg _.global_offset_1, "size_t", long
+        .arg _.global_offset_2, "size_t", long
+        .arg _.printf_buffer, "size_t", void*, global, , rdonly
+        .arg _.vqueue_pointer, "size_t", long
+        .arg _.aqlwrap_pointer, "size_t", long
+        .arg d_wiring, "Wiring*", structure*, 1024, constant, const, rdonly
+        .arg d_key, "Key*", structure*, 64, constant, const, rdonly
+        .arg thblockShift, "uint", uint
+        .arg localShift, "uint", uint
+        .arg scramblerDataPitch, "uint", uint
+        .arg scramblerData, "int8_t*", char*, global, 
+    .control_directive
+        .fill 116, 1, 0x00
+    .text
+        s_mov_b32 s32, s14
+        v_mov_b32 v42, v11
+        s_endpgm
+    .control_directive
+        .int 2132
+)ffDXD",
+        R"ffDXD(AmdCL2BinDump:
+  devType=Bonaire, aclVersion=, drvVersion=234800, compileOptions=""
+  Kernel: GenerateScramblerKernel
+    Code:
+    0e03a0be0b03547e000081bf
+    HSAConfig:
+      Arg: "_.global_offset_0", "size_t", long, void, none, 0, 0, 0, default, 3
+      Arg: "_.global_offset_1", "size_t", long, void, none, 0, 0, 0, default, 3
+      Arg: "_.global_offset_2", "size_t", long, void, none, 0, 0, 0, default, 3
+      Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 0, 0, default, 1
+      Arg: "_.vqueue_pointer", "size_t", long, void, none, 0, 0, 0, default, 3
+      Arg: "_.aqlwrap_pointer", "size_t", long, void, none, 0, 0, 0, default, 3
+      Arg: "d_wiring", "Wiring*", pointer, structure, constant, 4, 1024, 0, default, 1
+      Arg: "d_key", "Key*", pointer, structure, constant, 4, 64, 0, default, 1
+      Arg: "thblockShift", "uint", uint, void, none, 0, 0, 0, default, 3
+      Arg: "localShift", "uint", uint, void, none, 0, 0, 0, default, 3
+      Arg: "scramblerDataPitch", "uint", uint, void, none, 0, 0, 0, default, 3
+      Arg: "scramblerData", "int8_t*", pointer, char, global, 0, 0, 0, default, 3
+      amdCodeVersion=1.1
+      amdMachine=1:4:6:7
+      kernelCodeEntryOffset=256
+      kernelCodePrefetchOffset=0
+      kernelCodePrefetchSize=0
+      maxScrachBackingMemorySize=0
+      computePgmRsrc1=0xac010a
+      computePgmRsrc2=0x938d
+      enableSgprRegisterFlags=0x9
+      enableFeatureFlags=0xa
+      workitemPrivateSegmentSize=77222
+      workgroupGroupSegmentSize=413
+      gdsSegmentSize=0
+      kernargSegmentSize=96
+      workgroupFbarrierCount=3324
+      wavefrontSgprCount=35
+      workitemVgprCount=43
+      reservedVgprFirst=43
+      reservedVgprCount=0
+      reservedSgprFirst=33
+      reservedSgprCount=0
+      debugWavefrontPrivateSegmentOffsetSgpr=0
+      debugPrivateSegmentBufferSgpr=0
+      kernargSegmentAlignment=4
+      groupSegmentAlignment=4
+      privateSegmentAlignment=4
+      wavefrontSize=6
+      callConvention=0x0
+      runtimeLoaderKernelSymbol=0x4dc98b3a
+      ControlDirective:
+      0001000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000054080000
   GlobalData:
   RwData:
   nullptr
