@@ -2114,7 +2114,7 @@ bool AsmGalliumHandler::prepareBinary()
                         &outConfig, sizeof(AmdHsaKernelConfig));
             else
                 assembler.printError(AsmSourcePos(), (
-                    std::string("HSA configuration for kernel'")+
+                    std::string("HSA configuration for kernel '")+
                     kinput.kernelName.c_str()+"' out of content").c_str());
         }
     }
