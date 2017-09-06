@@ -35,8 +35,8 @@ using namespace CLRX;
 static const char* amdCL2PseudoOpNamesTbl[] =
 {
     "acl_version", "arch_minor", "arch_stepping",
-    "arg", "bssdata", "compile_options",
-    "call_convention", "codeversion", "config", "control_directive",
+    "arg", "bssdata", "call_convention", "codeversion",
+    "compile_options", "config", "control_directive",
     "cws", "debug_private_segment_buffer_sgpr",
     "debug_wavefront_private_segment_offset_sgpr",
     "debugmode", "dims", "driver_version", "dx10clamp", "exceptions",
@@ -58,7 +58,8 @@ static const char* amdCL2PseudoOpNamesTbl[] =
     "use_kernarg_segment_ptr", "use_ordered_append_gds",
     "use_private_segment_buffer", "use_private_segment_size",
     "use_ptr64", "use_queue_ptr", "use_xnack_enabled",
-    "useargs", "useenqueue", "usegeneric", "usesetup", "vgprsnum",
+    "useargs", "useenqueue", "usegeneric",
+    "userdatanum", "usesetup", "vgprsnum",
     "wavefront_sgpr_count", "wavefront_size",  "workgroup_fbarrier_count",
     "workgroup_group_segment_size", "workitem_private_segment_size",
     "workitem_vgpr_count"
@@ -67,9 +68,8 @@ static const char* amdCL2PseudoOpNamesTbl[] =
 enum
 {
     AMDCL2OP_ACL_VERSION = 0, AMDCL2OP_ARCH_MINOR, AMDCL2OP_ARCH_STEPPING,
-    AMDCL2OP_ARG, AMDCL2OP_BSSDATA, AMDCL2OP_COMPILE_OPTIONS,
-    AMDCL2OP_CALL_CONVENTION, AMDCL2OP_CODEVERSION, 
-    AMDCL2OP_CONFIG, AMDCL2OP_CONTROL_DIRECTIVE,
+    AMDCL2OP_ARG, AMDCL2OP_BSSDATA, AMDCL2OP_CALL_CONVENTION, AMDCL2OP_CODEVERSION, 
+    AMDCL2OP_COMPILE_OPTIONS, AMDCL2OP_CONFIG, AMDCL2OP_CONTROL_DIRECTIVE,
     AMDCL2OP_CWS, AMDCL2OP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR,
     AMDCL2OP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
     AMDCL2OP_DEBUGMODE, AMDCL2OP_DIMS,
@@ -97,7 +97,7 @@ enum
     AMDCL2OP_USE_PRIVATE_SEGMENT_BUFFER, AMDCL2OP_USE_PRIVATE_SEGMENT_SIZE,
     AMDCL2OP_USE_PTR64, AMDCL2OP_USE_QUEUE_PTR, AMDCL2OP_USE_XNACK_ENABLED,
     AMDCL2OP_USEARGS, AMDCL2OP_USEENQUEUE, AMDCL2OP_USEGENERIC,
-    AMDCL2OP_USESETUP, AMDCL2OP_VGPRSNUM,
+    AMDCL2OP_USERDATANUM, AMDCL2OP_USESETUP, AMDCL2OP_VGPRSNUM,
     AMDCL2OP_WAVEFRONT_SGPR_COUNT, AMDCL2OP_WAVEFRONT_SIZE,
     AMDCL2OP_WORKGROUP_FBARRIER_COUNT, AMDCL2OP_WORKGROUP_GROUP_SEGMENT_SIZE,
     AMDCL2OP_WORKITEM_PRIVATE_SEGMENT_SIZE, AMDCL2OP_WORKITEM_VGPR_COUNT
@@ -795,6 +795,7 @@ void AsmAmdCL2PseudoOps::doControlDirective(AsmAmdCL2Handler& handler,
     }
     asmr.goToSection(pseudoOpPlace, kernel.ctrlDirSection);
     handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    handler.output.kernels[asmr.currentKernel].hsaConfig = true;
 }
 
 
@@ -811,7 +812,8 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
         return;
     }
     const bool useHsaConfig = handler.kernelStates[asmr.currentKernel]->useHsaConfig;
-    if (!useHsaConfig && target >= AMDCL2CVAL_ONLY_HSA_FIRST_PARAM)
+    if (!useHsaConfig && (target >= AMDCL2CVAL_ONLY_HSA_FIRST_PARAM ||
+            target == AMDCL2CVAL_USERDATANUM))
     {
         asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
         return;
@@ -1502,6 +1504,7 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
     }
     asmr.goToSection(pseudoOpPlace, kernel.configSection);
     kernel.useHsaConfig = hsaConfig;
+    handler.output.kernels[asmr.currentKernel].hsaConfig = hsaConfig;
     handler.output.kernels[asmr.currentKernel].useConfig = true;
 }
 
@@ -1530,6 +1533,10 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             break;
         case AMDCL2OP_BSSDATA:
             AsmAmdCL2PseudoOps::doBssData(*this, stmtPlace, linePtr);
+            break;
+        case AMDCL2OP_CALL_CONVENTION:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             AMDCL2CVAL_CALL_CONVENTION);
             break;
         case AMDCL2OP_CODEVERSION:
             AsmAmdCL2PseudoOps::setCodeVersion(*this, stmtPlace, linePtr);
@@ -1775,6 +1782,10 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_USESETUP);
             break;
+        case AMDCL2OP_USERDATANUM:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_USERDATANUM);
+            break;
         case AMDCL2OP_VGPRSNUM:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_VGPRSNUM);
@@ -1971,15 +1982,10 @@ bool AsmAmdCL2Handler::prepareBinary()
         }
         else // setup HSA configuration
         {
-            AsmAmdHsaKernelConfig config;
+            AsmAmdHsaKernelConfig& config = *kernelStates[i]->config.get();
             const CString& kernelName = output.kernels[i].kernelName;
             
             const Kernel& kernel = *kernelStates[i];
-            if (kernelStates[i]->config != nullptr)
-                // if HSA config set in this kernel
-                ::memcpy(&config, kernel.config.get(), sizeof(AsmAmdHsaKernelConfig));
-            else
-                ::memset(&config, 0xff, 128); // fill by defaults
             
             // setup some params: pgmRSRC1 and PGMRSRC2 and others
             // setup config
@@ -2149,6 +2155,9 @@ bool AsmAmdCL2Handler::prepareBinary()
                     assembler.sections[kernel.ctrlDirSection].content.data(), 128);
             else // zeroing if not supplied
                 ::memset(config.controlDirective, 0, 128);
+            
+            output.kernels[i].setupSize = 256;
+            output.kernels[i].setup = reinterpret_cast<cxbyte*>(&config);
         }
     }
     

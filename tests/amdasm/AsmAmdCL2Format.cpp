@@ -118,7 +118,10 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
         else
         {   // when config
             const AmdCL2KernelConfig& config = kernel.config;
-            os << "    Config:\n";
+            if (!kernel.hsaConfig)
+                os << "    Config:\n";
+            else
+                os << "    HSAConfig:\n";
             for (AmdKernelArgInput arg: config.args)
                 os << "      Arg: \"" << arg.argName << "\", \"" <<
                         arg.typeName << "\", " <<
@@ -136,27 +139,87 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
                     os << " " << sampler;
                 os << '\n';
             }
-            os << "      dims=" << confValueToString(config.dimMask) << ", "
-                    "cws=" << config.reqdWorkGroupSize[0] << " " <<
-                    config.reqdWorkGroupSize[1] << " " << config.reqdWorkGroupSize[2] << ", "
-                    "SGPRS=" << config.usedSGPRsNum << ", "
-                    "VGPRS=" << config.usedVGPRsNum << "\n      "
-                    "pgmRSRC1=" << std::hex << "0x" << config.pgmRSRC1 << ", "
-                    "pgmRSRC2=0x" << config.pgmRSRC2 << ", "
-                    "ieeeMode=0x" << std::dec << config.ieeeMode << std::hex << ", "
-                    "floatMode=0x" << config.floatMode<< std::dec << "\n      "
-                    "priority=" << config.priority << ", "
-                    "exceptions=" << cxuint(config.exceptions) << ", "
-                    "localSize=" << config.localSize << ", "
-                    "scratchBuffer=" << config.scratchBufferSize << "\n      " <<
-                    (config.tgSize?"tgsize ":"") <<
-                    (config.debugMode?"debug ":"") <<
-                    (config.privilegedMode?"priv ":"") <<
-                    (config.dx10Clamp?"dx10clamp ":"") <<
-                    (config.useSetup?"useSetup ":"") <<
-                    (config.useArgs?"useArgs ":"") <<
-                    (config.useEnqueue?"useEnqueue ":"") <<
-                    (config.useGeneric?"useGeneric ":"") << "\n";
+            if (!kernel.hsaConfig)
+                os << "      dims=" << confValueToString(config.dimMask) << ", "
+                        "cws=" << config.reqdWorkGroupSize[0] << " " <<
+                            config.reqdWorkGroupSize[1] << " " <<
+                            config.reqdWorkGroupSize[2] << ", "
+                        "SGPRS=" << config.usedSGPRsNum << ", "
+                        "VGPRS=" << config.usedVGPRsNum << "\n      "
+                        "pgmRSRC1=" << std::hex << "0x" << config.pgmRSRC1 << ", "
+                        "pgmRSRC2=0x" << config.pgmRSRC2 << ", "
+                        "ieeeMode=0x" << std::dec << config.ieeeMode << std::hex << ", "
+                        "floatMode=0x" << config.floatMode<< std::dec << "\n      "
+                        "priority=" << config.priority << ", "
+                        "exceptions=" << cxuint(config.exceptions) << ", "
+                        "localSize=" << config.localSize << ", "
+                        "scratchBuffer=" << config.scratchBufferSize << "\n      " <<
+                        (config.tgSize?"tgsize ":"") <<
+                        (config.debugMode?"debug ":"") <<
+                        (config.privilegedMode?"priv ":"") <<
+                        (config.dx10Clamp?"dx10clamp ":"") <<
+                        (config.useSetup?"useSetup ":"") <<
+                        (config.useArgs?"useArgs ":"") <<
+                        (config.useEnqueue?"useEnqueue ":"") <<
+                        (config.useGeneric?"useGeneric ":"") << "\n";
+            else
+            {
+                const AmdHsaKernelConfig& config =
+                        *reinterpret_cast<const AmdHsaKernelConfig*>(kernel.setup);
+                os <<
+                    "      amdCodeVersion=" << ULEV(config.amdCodeVersionMajor) << "." <<
+                        ULEV(config.amdCodeVersionMajor) << "\n"
+                    "      amdMachine=" << ULEV(config.amdMachineKind) << ":" <<
+                        ULEV(config.amdMachineMajor) << ":" <<
+                        ULEV(config.amdMachineMinor) << ":" <<
+                        ULEV(config.amdMachineStepping) << "\n"
+                    "      kernelCodeEntryOffset=" << 
+                            ULEV(config.kernelCodeEntryOffset) << "\n"
+                    "      kernelCodePrefetchOffset=" <<
+                        ULEV(config.kernelCodePrefetchOffset) << "\n"
+                    "      kernelCodePrefetchSize=" <<
+                        ULEV(config.kernelCodePrefetchSize) << "\n"
+                    "      maxScrachBackingMemorySize=" <<
+                        ULEV(config.maxScrachBackingMemorySize) << "\n"
+                    "      computePgmRsrc1=0x" <<
+                        std::hex << ULEV(config.computePgmRsrc1) << "\n"
+                    "      computePgmRsrc2=0x" << ULEV(config.computePgmRsrc2) << "\n"
+                    "      enableSgprRegisterFlags=0x" <<
+                        ULEV(config.enableSgprRegisterFlags) << "\n"
+                    "      enableFeatureFlags=0x" <<
+                        ULEV(config.enableFeatureFlags) << std::dec << "\n"
+                    "      workitemPrivateSegmentSize=" <<
+                        ULEV(config.workitemPrivateSegmentSize) << "\n"
+                    "      workgroupGroupSegmentSize=" <<
+                        ULEV(config.workgroupGroupSegmentSize) << "\n"
+                    "      gdsSegmentSize=" << ULEV(config.gdsSegmentSize) << "\n"
+                    "      kernargSegmentSize=" << ULEV(config.kernargSegmentSize) << "\n"
+                    "      workgroupFbarrierCount=" <<
+                        ULEV(config.workgroupFbarrierCount) << "\n"
+                    "      wavefrontSgprCount=" << ULEV(config.wavefrontSgprCount) << "\n"
+                    "      workitemVgprCount=" << ULEV(config.workitemVgprCount) << "\n"
+                    "      reservedVgprFirst=" << ULEV(config.reservedVgprFirst) << "\n"
+                    "      reservedVgprCount=" << ULEV(config.reservedVgprCount) << "\n"
+                    "      reservedSgprFirst=" << ULEV(config.reservedSgprFirst) << "\n"
+                    "      reservedSgprCount=" << ULEV(config.reservedSgprCount) << "\n"
+                    "      debugWavefrontPrivateSegmentOffsetSgpr=" <<
+                        ULEV(config.debugWavefrontPrivateSegmentOffsetSgpr) << "\n"
+                    "      debugPrivateSegmentBufferSgpr=" <<
+                        ULEV(config.debugPrivateSegmentBufferSgpr) << "\n"
+                    "      kernargSegmentAlignment=" << 
+                        cxuint(config.kernargSegmentAlignment) << "\n"
+                    "      groupSegmentAlignment=" <<
+                        cxuint(config.groupSegmentAlignment) << "\n"
+                    "      privateSegmentAlignment=" <<
+                        cxuint(config.privateSegmentAlignment) << "\n"
+                    "      wavefrontSize=" << cxuint(config.wavefrontSize) << "\n"
+                    "      callConvention=0x" <<
+                        std::hex << ULEV(config.callConvention) << "\n"
+                    "      runtimeLoaderKernelSymbol=0x" <<
+                        ULEV(config.runtimeLoaderKernelSymbol) << std::dec << "\n";
+                os << "      ControlDirective:\n";
+                printHexData(os, 3, 128, config.controlDirective);
+            }
         }
         std::vector<AmdCL2RelInput> relocs(kernel.relocations.begin(),
                             kernel.relocations.end());
@@ -677,7 +740,8 @@ test.s:40:9: Error: Illegal place of configuration pseudo-op
 test.s:41:9: Error: Illegal place of configuration pseudo-op
 test.s:45:5: Error: Config can't be defined if metadata,header,setup,stub section exists
 )ffDXD", false
-    }
+    },
+    /* AMD HSA config */
 };
 
 static void testAssembler(cxuint testId, const AsmTestCase& testCase)
