@@ -1924,8 +1924,6 @@ bool AsmAmdCL2Handler::prepareBinary()
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(assembler.deviceType);
     cxuint maxTotalSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
-    const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
-    const uint32_t ldsMask = (1U<<ldsShift)-1U;
     
     // driver version setup
     if (output.driverVersion==0 && (assembler.flags&ASM_TESTRUN)==0)
@@ -2131,7 +2129,6 @@ bool AsmAmdCL2Handler::prepareBinary()
             config.computePgmRsrc2 = (config.computePgmRsrc2 & 0xffffe440U) |
                             (userSGPRsNum<<1) | ((config.tgSize) ? 0x400 : 0) |
                             ((config.workitemPrivateSegmentSize)?1:0) | dimValues |
-                            (((config.workgroupGroupSegmentSize+ldsMask)>>ldsShift)<<15) |
                             ((uint32_t(config.exceptions)&0x7f)<<24);
             
             if (config.wavefrontSgprCount == BINGEN16_DEFAULT)

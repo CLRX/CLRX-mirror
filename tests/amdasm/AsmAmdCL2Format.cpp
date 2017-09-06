@@ -934,7 +934,7 @@ test.s:45:5: Error: Config can't be defined if metadata,header,setup,stub sectio
       kernelCodePrefetchSize=0
       maxScrachBackingMemorySize=0
       computePgmRsrc1=0xac010a
-      computePgmRsrc2=0x938d
+      computePgmRsrc2=0x138d
       enableSgprRegisterFlags=0x9
       enableFeatureFlags=0xa
       workitemPrivateSegmentSize=77222
