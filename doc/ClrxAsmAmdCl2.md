@@ -88,7 +88,7 @@ ARGTYPE\[\[, STRUCTSIZE], PTRSPACE[, [ACCESS] [, unused]]]
 Syntax for constant pointer: .arg ARGNAME\[, "ARGTYPENAME"], 
 ARGTYPE\[\[, STRUCTSIZE], PTRSPACE\[, [ACCESS] [, [CONSTSIZE] [, unused]]]
 
-Adds kernel argument definition. Must be inside kernel configuration. First argument is
+Adds kernel argument definition. Must be inside any kernel configuration. First argument is
 argument name from OpenCL kernel definition. Next optional argument is argument type name
 from OpenCL kernel definition. Next arugment is argument type:
 
@@ -139,6 +139,26 @@ Syntax: .bssdata [align=ALIGNMENT]
 
 Go to global data bss section. Optional argument sets alignment of section.
 
+### .call_convention
+
+Syntax: .call_convention CALL_CONV
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`).
+Set call convention for kernel.
+
+### .codeversion
+
+Syntax .codeversion MAJOR, MINOR
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`).
+Set AMD code version.
+
+### .compile_options
+
+Syntax: .compile_options "STRING"
+
+Set compile options for this binary.
+
 ### .config
 
 Open kernel configuration. Must be inside kernel. Kernel configuration can not be
@@ -169,23 +189,43 @@ Following pseudo-ops can be inside kernel config:
 * .usesetup
 * .vgprsnum
 
+### .control_directive
+
+Open control directive section. This section must be 128 bytes. The content of this
+section will be stored in control_directive field in kernel configuration.
+Must be defined inside kernel.
+
 ### .cws
 
 Syntax: .cws SIZEHINT[, SIZEHINT[, SIZEHINT]]
 
-This pseudo-operation must be inside kernel configuration.
+This pseudo-operation must be inside any kernel configuration.
 Set reqd_work_group_size hint for this kernel.
+
+### .debug_private_segment_buffer_sgpr
+
+Syntax: .debug_private_segment_buffer_sgpr SGPRREG
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`debug_private_segment_buffer_sgpr` field in kernel configuration.
+
+### .debug_wavefront_private_segment_offset_sgpr
+
+Syntax: .debug_wavefront_private_segment_offset_sgpr SGPRREG
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`debug_wavefront_private_segment_offset_sgpr` field in kernel configuration.
 
 ### .debugmode
 
-This pseudo-operation must be inside kernel configuration.
+This pseudo-operation must be inside any kernel configuration.
 Enable usage of the DEBUG_MODE.
 
 ### .dims
 
 Syntax: .dims DIMENSIONS
 
-This pseudo-operation must be inside kernel configuration. Defines what dimensions
+This pseudo-operation must be inside any kernel configuration. Defines what dimensions
 (from list: x, y, z) will be used to determine space of the kernel execution.
 
 ### .driver_version
@@ -197,21 +237,28 @@ This pseudo-op replaces driver info.
 
 ### .dx10clamp
 
-This pseudo-operation must be inside kernel configuration.
+This pseudo-operation must be inside any kernel configuration.
 Enable usage of the DX10_CLAMP.
 
 ### .exceptions
 
 Syntax: .exceptions EXCPMASK
 
-This pseudo-operation must be inside kernel configuration.
+This pseudo-operation must be inside any kernel configuration.
 Set exception mask in PGMRSRC2 register value. Value should be 7-bit.
+
+### .gds_segment_size
+
+Syntax: .gds_segment_size SIZE
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`gds_segment_size` field in kernel configuration.
 
 ### .gdssize
 
 Syntax: .gdssize SIZE
 
-This pseudo-operation must be inside kernel configuration. Set the GDS
+This pseudo-operation must be inside any kernel configuration. Set the GDS
 (global data share) size.
 
 ### .get_driver_version
@@ -224,9 +271,21 @@ Store current driver version to SYMBOL.
 
 Go to constant global data section.
 
+### .group_segment_align
+
+Syntax: .group_segment_align ALIGN
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`group_segment_align` field in kernel configuration.
+
+### .hsaconfig
+
+Open kernel HSA configuration. Must be inside kernel. Kernel configuration can not be
+defined if any isametadata, metadata or stub was defined. Do not mix with `.config`.
+
 ### .ieeemode
 
-This pseudo-op must be inside kernel configuration. Set ieee-mode.
+This pseudo-op must be inside any kernel configuration. Set ieee-mode.
 
 ### .inner
 
@@ -237,12 +296,62 @@ Go to inner binary place. By default assembler is in main binary.
 This pseudo-operation must be inside kernel. Go to ISA metadata content
 (only older driver binaries).
 
+### .kernarg_segment_align
+
+Syntax: .kernarg_segment_align ALIGN
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`kernarg_segment_alignment` field in kernel configuration. Value must be a power of two.
+
+### .kernarg_segment_size
+
+Syntax: .kernarg_segment_size SIZE
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`kernarg_segment_byte_size` field in kernel configuration.
+
+### .kernel_code_entry_offset
+
+Syntax: .kernel_code_entry_offset OFFSET
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`kernel_code_entry_byte_offset` field in kernel configuration. This field
+store offset between configuration and kernel code. By default is 256.
+
+### .kernel_code_prefetch_offset
+
+Syntax: .kernel_code_prefetch_offset OFFSET
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`kernel_code_prefetch_byte_offset` field in kernel configuration.
+
+### .kernel_code_prefetch_size
+
+Syntax: .kernel_code_prefetch_size OFFSET
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`kernel_code_prefetch_byte_size` field in kernel configuration.
+
 ### .localsize
 
 Syntax: .localsize SIZE
 
-This pseudo-operation must be inside kernel configuration. Set the initial
+This pseudo-operation must be inside any kernel configuration. Set the initial
 local data size.
+
+### .machine
+
+Syntax: .machine KIND, MAJOR, MINOR, STEPPING
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+machine version fields in kernel configuration.
+
+### .max_scratch_backing_memory
+
+Syntax: .max_scratch_backing_memory SIZE
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`max_scratch_backing_memory_byte_size` field in kernel configuration.
 
 ### .metadata
 
@@ -260,7 +369,7 @@ Defines value of the PGMRSRC1.
 
 Syntax: .pgmrsrc2 VALUE
 
-This pseudo-operation must be inside kernel configuration. Set PGMRSRC2 value.
+This pseudo-operation must be inside any kernel configuration. Set PGMRSRC2 value.
 If dimensions is set then bits that controls dimension setup will be ignored.
 SCRATCH_EN bit will be ignored.
 
@@ -270,10 +379,48 @@ Syntax: .priority PRIORITY
 
 This pseudo-operation must be inside kernel. Defines priority (0-3).
 
+### .private_elem_size
+
+Syntax: .private_elem_size ELEMSIZE
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`).
+Set `private_element_size` field in kernel configuration.
+Must be a power of two between 2 and 16.
+
+### .private_segment_align
+
+Syntax: .private_segment ALIGN
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`private_segment_alignment` field in kernel configuration. Value must be a power of two.
+
 ### .privmode
 
 This pseudo-operation must be inside kernel.
 Enable usage of the PRIV (privileged mode).
+
+### .reserved_sgprs
+
+Syntax: .reserved_sgprs FIRSTREG, LASTREG
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`reserved_sgpr_first` and `reserved_sgpr_count` fields in kernel configuration.
+`reserved_sgpr_count` filled by number of registers (LASTREG-FIRSTREG+1).
+
+### .reserved_vgprs
+
+Syntax: .reserved_vgprs FIRSTREG, LASTREG
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`reserved_vgpr_first` and `reserved_vgpr_count` fields in kernel configuration.
+`reserved_vgpr_count` filled by number of registers (LASTREG-FIRSTREG+1).
+
+### .runtime_loader_kernel_symbol
+
+Syntax: .runtime_loader_kernel_symbol ADDRESS
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`runtime_loader_kernel_symbol` field in kernel configuration.
 
 ### .rwdata
 
@@ -301,7 +448,7 @@ Add sampler relocation that points to constant global data (rodata).
 
 Syntax: .scratchbuffer SIZE
 
-This pseudo-operation must be inside kernel configuration.
+This pseudo-operation must be inside any kernel configuration.
 Set scratchbuffer size.
 
 ### .setup
@@ -310,14 +457,14 @@ Go to kernel setup content section.
 
 ### .setupargs
 
-This pseudo-op must be inside kernel configuration. Add first kernel setup arguments.
+This pseudo-op must be inside any kernel configuration. Add first kernel setup arguments.
 This pseudo-op must be before any other arguments.
 
 ### .sgprsnum
 
 Syntax: .sgprsnum REGNUM
 
-This pseudo-op must be inside kernel configuration. Set number of scalar
+This pseudo-op must be inside any kernel configuration. Set number of scalar
 registers which can be used during kernel execution.
 
 ### .stub
@@ -326,34 +473,153 @@ Go to kernel stub content section. Only allowed for older driver version binarie
 
 ### .tgsize
 
-This pseudo-op must be inside kernel configuration.
+This pseudo-op must be inside any kernel configuration.
 Enable usage of the TG_SIZE_EN.
+
+### .use_debug_enabled
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Enable
+`is_debug_enabled` field in kernel configuration.
+
+### .use_dispatch_id
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Enable
+`enable_sgpr_dispatch_id` field in kernel configuration.
+
+### .use_dispatch_ptr
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Enable
+`enable_sgpr_dispatch_ptr` field in kernel configuration.
+
+### .use_dynamic_call_stack
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Enable
+`is_dynamic_call_stack` field in kernel configuration.
+
+### .use_flat_scratch_init
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Enable
+`enable_sgpr_flat_scratch_init` field in kernel configuration.
+
+### .use_grid_workgroup_count
+
+Syntax: .use_grid_workgroup_count DIMENSIONS
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Enable
+`enable_sgpr_grid_workgroup_count_X`, `enable_sgpr_grid_workgroup_count_Y`
+and `enable_sgpr_grid_workgroup_count_Z` fields in kernel configuration,
+respectively by given dimensions.
+
+### .use_kernarg_segment_ptr
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Enable
+`enable_sgpr_kernarg_segment_ptr` field in kernel configuration.
+
+### .use_ordered_append_gds
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Enable
+`enable_ordered_append_gds` field in kernel configuration.
+
+### .use_private_segment_buffer
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Enable
+`enable_sgpr_private_segment_buffer` field in kernel configuration.
+
+### .use_private_segment_size
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Enable
+`enable_sgpr_private_segment_size` field in kernel configuration.
+
+### .use_ptr64
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`).
+Enable `is_ptr64` field in kernel configuration.
+
+### .use_queue_ptr
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Enable
+`enable_sgpr_queue_ptr` field in kernel configuration.
+
+### .use_xnack_enabled
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Enable
+`is_xnack_enabled` field in kernel configuration.
 
 ### .useargs
 
-This pseudo-op must be inside kernel configuration. Indicate that kernel uses arguments.
+This pseudo-op must be inside any kernel (non-HSA) configuration.
+Indicate that kernel uses arguments.
 
 ### .useenqueue
 
-This pseudo-op must be inside kernel configuration. Indicate that kernel uses
-enqueue mechanism.
+This pseudo-op must be inside any kernel (non-HSA) configuration.
+Indicate that kernel uses enqueue mechanism.
 
 ### .usegeneric
 
-This pseudo-op must be inside kernel configuration. Indicate that kernel uses
-generic pointers mechanism (FLAT instructions).
+This pseudo-op must be inside any kernel (non-HSA) configuration.
+Indicate that kernel uses generic pointers mechanism (FLAT instructions).
 
 ### .usesetup
 
-This pseudo-op must be inside kernel configuration. Indicate that kernel uses
-setup data (global sizes, local sizes, work groups num).
+This pseudo-op must be inside any kernel (non-HSA) configuration.
+Indicate that kernel uses setup data (global sizes, local sizes, work groups num).
+
+### .userdatanum
+
+Syntax: .userdatanum NUMBER
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set number of
+registers for USERDATA.
 
 ### .vgprsnum
 
 Syntax: .vgprsnum REGNUM
 
-This pseudo-op must be inside kernel configuration. Set number of vector
+This pseudo-op must be inside any kernel configuration. Set number of vector
 registers which can be used during kernel execution.
+
+### .wavefront_sgpr_count
+
+Syntax: .wavefront_sgpr_count REGNUM
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`wavefront_sgpr_count` field in kernel configuration.
+
+### .wavefront_size
+
+Syntax: .wavefront_size POWEROFTWO
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`).
+Set `wavefront_size` field in kernel configuration. Value must be a power of two.
+
+### .workgroup_fbarrier_count
+
+Syntax: .workgroup_fbarrier_count COUNT
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`workgroup_fbarrier_count` field in kernel configuration.
+
+### .workgroup_group_segment_size
+
+Syntax: .workgroup_group_segment_size SIZE
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`workgroup_group_segment_byte_size` in kernel configuration.
+
+### .workitem_private_segment_size
+
+Syntax: .workitem_private_segment_size SIZE
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`workitem_private_segment_byte_size` field in kernel configuration.
+
+### .workitem_vgpr_count
+
+Syntax: .workitem_vgpr_count REGNUM
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
+`workitem_vgpr_count` field in kernel configuration.
 
 ## Sample code
 

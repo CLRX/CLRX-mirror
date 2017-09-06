@@ -225,6 +225,8 @@ Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register). Default valu
 
 ### .gds_segment_size
 
+Syntax: .gds_segment_size SIZE
+
 This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
 LLVM version is 4.0.0 or later. Set `gds_segment_size` field in kernel configuration.
 
@@ -245,6 +247,8 @@ Store current LLVM compiler version to SYMBOL.
 Go to constant global data section (`.rodata`).
 
 ### .group_segment_align
+
+Syntax: .group_segment_align ALIGN
 
 This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
 LLVM version is 4.0.0 or later. Set `group_segment_align` field in kernel configuration.
@@ -349,7 +353,7 @@ LLVM version is 4.0.0 or later. Enable usage of the TG_SIZE_EN in kernel HSA con
 
 ### .hsa_userdatanum
 
-Syntax: .userdatanum NUMBER
+Syntax: .hsa_userdatanum NUMBER
 
 This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
 LLVM version is 4.0.0 or later. Set number of registers for USERDATA in

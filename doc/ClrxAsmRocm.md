@@ -118,10 +118,14 @@ Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register). Default valu
 
 ### .gds_segment_size
 
+Syntax: .gds_segment_size SIZE
+
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `gds_segment_size` field in kernel configuration.
 
 ### .group_segment_align
+
+Syntax: .group_segment_align ALIGN
 
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `group_segment_align` field in kernel configuration.
