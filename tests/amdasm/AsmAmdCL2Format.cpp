@@ -769,7 +769,6 @@ test.s:45:5: Error: Config can't be defined if metadata,header,setup,stub sectio
         .use_kernarg_segment_ptr
         .private_elem_size 4
         .use_ptr64
-        .kernarg_segment_size 96
         .kernarg_segment_align 16
         .group_segment_align 16
         .private_segment_align 16
