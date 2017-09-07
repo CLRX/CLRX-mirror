@@ -1133,8 +1133,10 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
     uint32_t zeroes[2];
     uint16_t sgprsNumAll;
     uint16_t vgprsNum16;
-    uint32_t vgprsNum;
-    uint32_t sgprsNum;
+    uint16_t vgprReserved;
+    uint16_t vgprReservedCount;
+    uint16_t sgprReserved;
+    uint16_t sgprReservedCount;
     uint32_t zero3;
     uint32_t setup2; // ??
 };
@@ -1255,8 +1257,10 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     SLEV(setupData.kernelArgsSize, kernelArgSize);
     SLEV(setupData.sgprsNumAll, sgprsNum);
     SLEV(setupData.vgprsNum16, config.usedVGPRsNum);
-    SLEV(setupData.vgprsNum, config.usedVGPRsNum);
-    SLEV(setupData.sgprsNum, config.usedSGPRsNum);
+    SLEV(setupData.vgprReserved, config.usedVGPRsNum);
+    SLEV(setupData.vgprReservedCount, 0);
+    SLEV(setupData.sgprReserved, config.usedSGPRsNum);
+    SLEV(setupData.sgprReservedCount, 0);
     if (newBinaries)
         SLEV(setupData.setup2, 0x06040404U);
     else // old binaries
