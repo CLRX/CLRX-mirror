@@ -30,7 +30,8 @@
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/amdasm/AsmFormats.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
-#include "AsmInternals.h"
+#include "AsmROCmInternals.h"
+#include "AsmGalliumInternals.h"
 
 using namespace CLRX;
 

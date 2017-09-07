@@ -33,6 +33,10 @@
 #include <CLRX/utils/InputOutput.h>
 #include <CLRX/amdasm/Assembler.h>
 #include "AsmInternals.h"
+#include "AsmAmdInternals.h"
+#include "AsmAmdCL2Internals.h"
+#include "AsmGalliumInternals.h"
+#include "AsmROCmInternals.h"
 
 using namespace CLRX;
 

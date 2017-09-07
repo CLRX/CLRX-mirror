@@ -36,13 +36,17 @@ CLRX/utils/Utilities.h -text
 /README -text
 /README.md -text
 amdasm/AsmAmdCL2Format.cpp -text
+amdasm/AsmAmdCL2Internals.h -text
 amdasm/AsmAmdFormat.cpp -text
+amdasm/AsmAmdInternals.h -text
 amdasm/AsmExpression.cpp -text
 amdasm/AsmFormats.cpp -text
 amdasm/AsmGalliumFormat.cpp -text
+amdasm/AsmGalliumInternals.h -text
 amdasm/AsmInternals.h -text
 amdasm/AsmPseudoOps.cpp -text
 amdasm/AsmROCmFormat.cpp -text
+amdasm/AsmROCmInternals.h -text
 amdasm/AsmRegAlloc.cpp -text
 amdasm/AsmSource.cpp -text
 amdasm/Assembler.cpp -text

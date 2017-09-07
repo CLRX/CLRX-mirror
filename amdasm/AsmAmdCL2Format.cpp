@@ -28,7 +28,9 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/amdasm/AsmFormats.h>
-#include "AsmInternals.h"
+#include "AsmROCmInternals.h"
+#include "AsmAmdInternals.h"
+#include "AsmAmdCL2Internals.h"
 
 using namespace CLRX;
 
