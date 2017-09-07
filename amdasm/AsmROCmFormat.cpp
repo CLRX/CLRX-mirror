@@ -660,7 +660,6 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
     // set value
     setConfigValueMain(config, target, value);
@@ -744,7 +743,6 @@ void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
     
     setConfigBoolValueMain(config, target);
@@ -765,7 +763,6 @@ void AsmROCmPseudoOps::setDimensions(AsmROCmHandler& handler, const char* pseudo
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     handler.kernelStates[asmr.currentKernel]->config->dimMask = dimMask;
 }
 
@@ -832,7 +829,6 @@ void AsmROCmPseudoOps::setMachine(AsmROCmHandler& handler, const char* pseudoOpP
     if (!parseMachine(asmr, linePtr, kindValue, majorValue, minorValue, steppingValue))
         return;
     
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     AsmROCmKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
     config->amdMachineKind = kindValue;
     config->amdMachineMajor = majorValue;
@@ -884,7 +880,6 @@ void AsmROCmPseudoOps::setCodeVersion(AsmROCmHandler& handler, const char* pseud
     if (!parseCodeVersion(asmr, linePtr, majorValue, minorValue))
         return;
     
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     AsmROCmKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
     config->amdCodeVersionMajor = majorValue;
     config->amdCodeVersionMinor = minorValue;
@@ -959,7 +954,6 @@ void AsmROCmPseudoOps::setReservedXgprs(AsmROCmHandler& handler, const char* pse
     if (!parseReservedXgprs(asmr, linePtr, inVgpr, gprFirst, gprCount))
         return;
     
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     AsmROCmKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
     if (inVgpr)
     {
@@ -989,7 +983,6 @@ void AsmROCmPseudoOps::setUseGridWorkGroupCount(AsmROCmHandler& handler,
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     uint16_t& flags = handler.kernelStates[asmr.currentKernel]->config->
                 enableSgprRegisterFlags;
     flags = (flags & ~(7<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT)) |
