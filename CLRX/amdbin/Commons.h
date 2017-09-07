@@ -57,7 +57,7 @@ enum {
     AMDHSAFLAG_USE_PTR64 = 8,       ///< use 64-bit pointers
     AMDHSAFLAG_USE_DYNAMIC_CALL_STACK = 16,
     AMDHSAFLAG_USE_DEBUG_ENABLED = 32,  ///< debug enabled
-    AMDHSAFLAG_USE_XNACK_ENABLED = 64   ///< znack enabled
+    AMDHSAFLAG_USE_XNACK_ENABLED = 64   ///< xnack enabled
 };
 
 /// AMD HSA kernel configuration structure
