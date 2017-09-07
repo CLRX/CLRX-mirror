@@ -38,7 +38,7 @@ static const char* rocmPseudoOpNamesTbl[] =
     "call_convention", "codeversion", "config",
     "control_directive", "debug_private_segment_buffer_sgpr",
     "debug_wavefront_private_segment_offset_sgpr",
-    "debugmode", "dims", "dx10clamp",
+    "debugmode", "default_hsa_features", "dims", "dx10clamp",
     "exceptions", "fkernel", "floatmode", "gds_segment_size",
     "group_segment_align", "ieeemode", "kcode",
     "kcodeend", "kernarg_segment_align",
@@ -68,7 +68,7 @@ enum
     ROCMOP_CALL_CONVENTION, ROCMOP_CODEVERSION, ROCMOP_CONFIG,
     ROCMOP_CONTROL_DIRECTIVE, ROCMOP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR,
     ROCMOP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
-    ROCMOP_DEBUGMODE, ROCMOP_DIMS, ROCMOP_DX10CLAMP,
+    ROCMOP_DEBUGMODE, ROCMOP_DEFAULT_HSA_FEATURES, ROCMOP_DIMS, ROCMOP_DX10CLAMP,
     ROCMOP_EXCEPTIONS, ROCMOP_FKERNEL, ROCMOP_FLOATMODE, ROCMOP_GDS_SEGMENT_SIZE,
     ROCMOP_GROUP_SEGMENT_ALIGN, ROCMOP_IEEEMODE, ROCMOP_KCODE,
     ROCMOP_KCODEEND, ROCMOP_KERNARG_SEGMENT_ALIGN,
@@ -748,6 +748,29 @@ void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,
     setConfigBoolValueMain(config, target);
 }
 
+void AsmROCmPseudoOps::setDefaultHSAFeatures(AsmROCmHandler& handler,
+                    const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    AsmROCmKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
+    config->enableSgprRegisterFlags = uint16_t(ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER|
+                    ROCMFLAG_USE_DISPATCH_PTR|ROCMFLAG_USE_KERNARG_SEGMENT_PTR);
+    config->enableFeatureFlags = uint16_t(AMDHSAFLAG_USE_PTR64|2);
+}
+
 void AsmROCmPseudoOps::setDimensions(AsmROCmHandler& handler, const char* pseudoOpPlace,
                   const char* linePtr)
 {
@@ -1188,6 +1211,9 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
         case ROCMOP_GROUP_SEGMENT_ALIGN:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_GROUP_SEGMENT_ALIGN);
+            break;
+        case ROCMOP_DEFAULT_HSA_FEATURES:
+            AsmROCmPseudoOps::setDefaultHSAFeatures(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_IEEEMODE:
             AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,

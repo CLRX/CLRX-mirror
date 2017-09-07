@@ -753,6 +753,9 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     static void setConfigBoolValue(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, ROCmConfigValueTarget target);
     
+    static void setDefaultHSAFeatures(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
     static void setDimensions(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     

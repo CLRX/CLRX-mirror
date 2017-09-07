@@ -130,6 +130,11 @@ Syntax: .group_segment_align ALIGN
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `group_segment_align` field in kernel configuration.
 
+### .default_hsa_features
+
+This pseudo-op must be inside kernel configuration (`.config`).
+It sets default HSA kernel features and register features (extra SGPR registers usage).
+
 ### .ieeemode
 
 Syntax: .ieeemode
