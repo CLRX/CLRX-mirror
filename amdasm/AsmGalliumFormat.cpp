@@ -562,8 +562,8 @@ void AsmGalliumPseudoOps::setDimensions(AsmGalliumHandler& handler,
         handler.output.kernels[asmr.currentKernel].config.dimMask = dimMask;
     else
     {    // AMD HSA
-        handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
+        AsmAmdHsaKernelConfig& config =
+                *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
         config.dimMask = dimMask;
     }
 }
@@ -753,8 +753,8 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
     
     if (target >= GALLIUMCVAL_HSA_FIRST_PARAM)
     {
-        handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
+        AsmAmdHsaKernelConfig& config = *(
+                    handler.kernelStates[asmr.currentKernel]->hsaConfig);
         
         AsmROCmPseudoOps::setConfigValueMain(config,
                 ROCmConfigValueTarget(target-GALLIUMCVAL_HSA_FIRST_PARAM), value);
@@ -805,8 +805,8 @@ void AsmGalliumPseudoOps::setConfigBoolValue(AsmGalliumHandler& handler,
     
     if (target >= GALLIUMCVAL_HSA_FIRST_PARAM)
     {
-        handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
+        AsmAmdHsaKernelConfig& config =
+                *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
         
         AsmROCmPseudoOps::setConfigBoolValueMain(config,
                     ROCmConfigValueTarget(target-GALLIUMCVAL_HSA_FIRST_PARAM));
@@ -832,8 +832,8 @@ void AsmGalliumPseudoOps::setDefaultHSAFeatures(AsmGalliumHandler& handler,
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
+    AsmAmdHsaKernelConfig* config =
+            handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
     config->enableSgprRegisterFlags =
                     uint16_t(AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER|
                         AMDHSAFLAG_USE_DISPATCH_PTR|AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR);
@@ -863,8 +863,8 @@ void AsmGalliumPseudoOps::setMachine(AsmGalliumHandler& handler, const char* pse
                     majorValue, minorValue, steppingValue))
         return;
     
-    handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
+    AsmAmdHsaKernelConfig* config =
+            handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
     config->amdMachineKind = kindValue;
     config->amdMachineMajor = majorValue;
     config->amdMachineMinor = minorValue;
@@ -892,8 +892,8 @@ void AsmGalliumPseudoOps::setCodeVersion(AsmGalliumHandler& handler,
     if (!AsmROCmPseudoOps::parseCodeVersion(asmr, linePtr, majorValue, minorValue))
         return;
     
-    handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
+    AsmAmdHsaKernelConfig* config =
+            handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
     config->amdCodeVersionMajor = majorValue;
     config->amdCodeVersionMinor = minorValue;
 }
@@ -919,8 +919,8 @@ void AsmGalliumPseudoOps::setReservedXgprs(AsmGalliumHandler& handler,
     if (!AsmROCmPseudoOps::parseReservedXgprs(asmr, linePtr, inVgpr, gprFirst, gprCount))
         return;
     
-    handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
+    AsmAmdHsaKernelConfig* config =
+            handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
     if (inVgpr)
     {
         config->reservedVgprFirst = gprFirst;
@@ -955,7 +955,6 @@ void AsmGalliumPseudoOps::setUseGridWorkGroupCount(AsmGalliumHandler& handler,
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
     uint16_t& flags = handler.kernelStates[asmr.currentKernel]->hsaConfig->
                 enableSgprRegisterFlags;
     flags = (flags & ~(7<<AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_BIT)) |

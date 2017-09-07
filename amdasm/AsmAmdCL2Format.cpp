@@ -795,6 +795,7 @@ void AsmAmdCL2PseudoOps::doControlDirective(AsmAmdCL2Handler& handler,
     }
     asmr.goToSection(pseudoOpPlace, kernel.ctrlDirSection);
     handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    kernel.useHsaConfig = true;
     handler.output.kernels[asmr.currentKernel].hsaConfig = true;
 }
 
@@ -923,8 +924,8 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
     if (handler.kernelStates[asmr.currentKernel]->useHsaConfig &&
         target >= AMDCL2CVAL_HSA_FIRST_PARAM)
     {   // hsa config
-        handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
-        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
+        AsmAmdHsaKernelConfig& config =
+                *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
         
         AsmROCmPseudoOps::setConfigValueMain(config, ROCmConfigValueTarget(
                 cxuint(target) - AMDCL2CVAL_HSA_FIRST_PARAM), value);
@@ -955,7 +956,6 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                 config.localSize = value;
             else
             {
-                handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
                 AsmAmdHsaKernelConfig& hsaConfig = *(handler.
                                 kernelStates[asmr.currentKernel]->hsaConfig);
                 hsaConfig.workgroupGroupSegmentSize = value;
@@ -966,7 +966,6 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                 config.gdsSize = value;
             else
             {
-                handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
                 AsmAmdHsaKernelConfig& hsaConfig = *(handler.
                                 kernelStates[asmr.currentKernel]->hsaConfig);
                 hsaConfig.gdsSegmentSize = value;
@@ -977,7 +976,6 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                 config.scratchBufferSize = value;
             else
             {
-                handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
                 AsmAmdHsaKernelConfig& hsaConfig = *(handler.
                                 kernelStates[asmr.currentKernel]->hsaConfig);
                 hsaConfig.workitemPrivateSegmentSize = value;
@@ -1025,8 +1023,8 @@ void AsmAmdCL2PseudoOps::setConfigBoolValue(AsmAmdCL2Handler& handler,
     
     if (useHsaConfig)
     {   // hsa config
-        handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
-        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
+        AsmAmdHsaKernelConfig& config =
+                *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
         
         AsmROCmPseudoOps::setConfigBoolValueMain(config, ROCmConfigValueTarget(
                 cxuint(target) - AMDCL2CVAL_HSA_FIRST_PARAM));
@@ -1085,11 +1083,8 @@ void AsmAmdCL2PseudoOps::setDimensions(AsmAmdCL2Handler& handler,
         return;
     if (!handler.kernelStates[asmr.currentKernel]->useHsaConfig)
         handler.output.kernels[asmr.currentKernel].config.dimMask = dimMask;
-    else
-    {   // if HSA config
-        handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+    else // if HSA config
         handler.kernelStates[asmr.currentKernel]->hsaConfig->dimMask = dimMask;
-    }
 }
 
 void AsmAmdCL2PseudoOps::setMachine(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
@@ -1114,8 +1109,8 @@ void AsmAmdCL2PseudoOps::setMachine(AsmAmdCL2Handler& handler, const char* pseud
                     majorValue, minorValue, steppingValue))
         return;
     
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
-    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
+    AsmAmdHsaKernelConfig* config =
+            handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
     config->amdMachineKind = kindValue;
     config->amdMachineMajor = majorValue;
     config->amdMachineMinor = minorValue;
@@ -1142,8 +1137,8 @@ void AsmAmdCL2PseudoOps::setCodeVersion(AsmAmdCL2Handler& handler,
     if (!AsmROCmPseudoOps::parseCodeVersion(asmr, linePtr, majorValue, minorValue))
         return;
     
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
-    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
+    AsmAmdHsaKernelConfig* config =
+            handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
     config->amdCodeVersionMajor = majorValue;
     config->amdCodeVersionMinor = minorValue;
 }
@@ -1168,8 +1163,8 @@ void AsmAmdCL2PseudoOps::setReservedXgprs(AsmAmdCL2Handler& handler,
     if (!AsmROCmPseudoOps::parseReservedXgprs(asmr, linePtr, inVgpr, gprFirst, gprCount))
         return;
     
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
-    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
+    AsmAmdHsaKernelConfig* config =
+            handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
     if (inVgpr)
     {
         config->reservedVgprFirst = gprFirst;
@@ -1204,7 +1199,6 @@ void AsmAmdCL2PseudoOps::setUseGridWorkGroupCount(AsmAmdCL2Handler& handler,
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     uint16_t& flags = handler.kernelStates[asmr.currentKernel]->hsaConfig->
                 enableSgprRegisterFlags;
     flags = (flags & ~(7<<AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_BIT)) |
@@ -1511,6 +1505,8 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
     }
     asmr.goToSection(pseudoOpPlace, kernel.configSection);
     kernel.useHsaConfig = hsaConfig;
+    if (hsaConfig)
+        handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
     handler.output.kernels[asmr.currentKernel].hsaConfig = hsaConfig;
     handler.output.kernels[asmr.currentKernel].useConfig = true;
 }
