@@ -616,6 +616,9 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
     static void doControlDirective(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    static void setDefaultHSAFeatures(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
     static void doGlobalData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     static void doRwData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,

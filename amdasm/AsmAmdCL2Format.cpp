@@ -39,7 +39,8 @@ static const char* amdCL2PseudoOpNamesTbl[] =
     "compile_options", "config", "control_directive",
     "cws", "debug_private_segment_buffer_sgpr",
     "debug_wavefront_private_segment_offset_sgpr",
-    "debugmode", "dims", "driver_version", "dx10clamp", "exceptions",
+    "debugmode", "default_hsa_features",
+    "dims", "driver_version", "dx10clamp", "exceptions",
     "floatmode", "gds_segment_size", "gdssize", "get_driver_version",
     "globaldata", "group_segment_align", "hsaconfig", "ieeemode", "inner",
     "isametadata", "kernarg_segment_align",
@@ -72,8 +73,8 @@ enum
     AMDCL2OP_COMPILE_OPTIONS, AMDCL2OP_CONFIG, AMDCL2OP_CONTROL_DIRECTIVE,
     AMDCL2OP_CWS, AMDCL2OP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR,
     AMDCL2OP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
-    AMDCL2OP_DEBUGMODE, AMDCL2OP_DIMS,
-    AMDCL2OP_DRIVER_VERSION, AMDCL2OP_DX10CLAMP, AMDCL2OP_EXCEPTIONS,
+    AMDCL2OP_DEBUGMODE, AMDCL2OP_DEFAULT_HSA_FEATURES,
+    AMDCL2OP_DIMS, AMDCL2OP_DRIVER_VERSION, AMDCL2OP_DX10CLAMP, AMDCL2OP_EXCEPTIONS,
     AMDCL2OP_FLOATMODE, AMDCL2OP_GDS_SEGMENT_SIZE,
     AMDCL2OP_GDSSIZE, AMDCL2OP_GET_DRIVER_VERSION,
     AMDCL2OP_GLOBALDATA, AMDCL2OP_GROUP_SEGMENT_ALIGN,
@@ -1066,6 +1067,32 @@ void AsmAmdCL2PseudoOps::setConfigBoolValue(AsmAmdCL2Handler& handler,
     }
 }
 
+void AsmAmdCL2PseudoOps::setDefaultHSAFeatures(AsmAmdCL2Handler& handler,
+                const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    if (!handler.kernelStates[asmr.currentKernel]->useHsaConfig)
+    {
+        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
+        return;
+    }
+    
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    AsmAmdHsaKernelConfig* config =
+            handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
+    config->enableSgprRegisterFlags = uint16_t(AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER|
+                        AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR);
+    config->enableFeatureFlags = uint16_t((asmr._64bit ? AMDHSAFLAG_USE_PTR64 : 0) | 2);
+}
+
 void AsmAmdCL2PseudoOps::setDimensions(AsmAmdCL2Handler& handler,
                    const char* pseudoOpPlace, const char* linePtr)
 {
@@ -1567,6 +1594,9 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
         case AMDCL2OP_DEBUGMODE:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_DEBUGMODE);
+            break;
+        case AMDCL2OP_DEFAULT_HSA_FEATURES:
+            AsmAmdCL2PseudoOps::setDefaultHSAFeatures(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_DIMS:
             AsmAmdCL2PseudoOps::setDimensions(*this, stmtPlace, linePtr);

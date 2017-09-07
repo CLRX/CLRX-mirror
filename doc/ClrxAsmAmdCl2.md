@@ -223,6 +223,11 @@ This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
 This pseudo-operation must be inside any kernel configuration.
 Enable usage of the DEBUG_MODE.
 
+### .default_hsa_features
+
+This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`).
+It sets default HSA kernel features and register features (extra SGPR registers usage).
+
 ### .dims
 
 Syntax: .dims DIMENSIONS
