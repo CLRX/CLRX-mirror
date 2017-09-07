@@ -124,10 +124,10 @@ enum
 
 void AsmGalliumHandler::Kernel::initializeAmdHsaKernelConfig()
 {
-    if (!config)
+    if (!hsaConfig)
     {
-        config.reset(new AsmROCmKernelConfig{});
-        config->initialize();
+        hsaConfig.reset(new AsmAmdHsaKernelConfig{});
+        hsaConfig->initialize();
     }
 }
 
@@ -563,7 +563,7 @@ void AsmGalliumPseudoOps::setDimensions(AsmGalliumHandler& handler,
     else
     {    // AMD HSA
         handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
+        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
         config.dimMask = dimMask;
     }
 }
@@ -754,7 +754,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
     if (target >= GALLIUMCVAL_HSA_FIRST_PARAM)
     {
         handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
+        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
         
         AsmROCmPseudoOps::setConfigValueMain(config,
                 ROCmConfigValueTarget(target-GALLIUMCVAL_HSA_FIRST_PARAM), value);
@@ -806,7 +806,7 @@ void AsmGalliumPseudoOps::setConfigBoolValue(AsmGalliumHandler& handler,
     if (target >= GALLIUMCVAL_HSA_FIRST_PARAM)
     {
         handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
+        AsmAmdHsaKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
         
         AsmROCmPseudoOps::setConfigBoolValueMain(config,
                     ROCmConfigValueTarget(target-GALLIUMCVAL_HSA_FIRST_PARAM));
@@ -833,7 +833,7 @@ void AsmGalliumPseudoOps::setDefaultHSAFeatures(AsmGalliumHandler& handler,
         return;
     
     handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
+    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
     config->enableSgprRegisterFlags =
                     uint16_t(AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER|
                         AMDHSAFLAG_USE_DISPATCH_PTR|AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR);
@@ -864,7 +864,7 @@ void AsmGalliumPseudoOps::setMachine(AsmGalliumHandler& handler, const char* pse
         return;
     
     handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
+    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
     config->amdMachineKind = kindValue;
     config->amdMachineMajor = majorValue;
     config->amdMachineMinor = minorValue;
@@ -893,7 +893,7 @@ void AsmGalliumPseudoOps::setCodeVersion(AsmGalliumHandler& handler,
         return;
     
     handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
+    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
     config->amdCodeVersionMajor = majorValue;
     config->amdCodeVersionMinor = minorValue;
 }
@@ -920,7 +920,7 @@ void AsmGalliumPseudoOps::setReservedXgprs(AsmGalliumHandler& handler,
         return;
     
     handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->config.get();
+    AsmAmdHsaKernelConfig* config = handler.kernelStates[asmr.currentKernel]->hsaConfig.get();
     if (inVgpr)
     {
         config->reservedVgprFirst = gprFirst;
@@ -956,10 +956,10 @@ void AsmGalliumPseudoOps::setUseGridWorkGroupCount(AsmGalliumHandler& handler,
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     handler.kernelStates[asmr.currentKernel]->initializeAmdHsaKernelConfig();
-    uint16_t& flags = handler.kernelStates[asmr.currentKernel]->config->
+    uint16_t& flags = handler.kernelStates[asmr.currentKernel]->hsaConfig->
                 enableSgprRegisterFlags;
-    flags = (flags & ~(7<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT)) |
-            (dimMask<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT);
+    flags = (flags & ~(7<<AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_BIT)) |
+            (dimMask<<AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_BIT);
 }
 
 void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
@@ -1833,7 +1833,7 @@ bool AsmGalliumHandler::prepareBinary()
         
         if (llvmVersion >= 40000U && config.userDataNum == BINGEN8_DEFAULT)
         {   // fixed userdatanum for LLVM 4.0
-            const AmdHsaKernelConfig& hsaConfig  = *kernelStates[i]->config.get();
+            const AmdHsaKernelConfig& hsaConfig  = *kernelStates[i]->hsaConfig.get();
             // calcuate userSGPRs
             const uint16_t sgprFlags = hsaConfig.enableSgprRegisterFlags;
             userSGPRsNum =
@@ -1876,7 +1876,7 @@ bool AsmGalliumHandler::prepareBinary()
             cxuint allocFlags = kernelStates[i]->allocRegFlags;
             if (llvmVersion >= 40000U)
             {   // fix alloc reg flags for AMD HSA (such as ROCm)
-                const AmdHsaKernelConfig& hsaConfig  = *kernelStates[i]->config.get();
+                const AmdHsaKernelConfig& hsaConfig  = *kernelStates[i]->hsaConfig.get();
                 allocFlags = kernelStates[i]->allocRegFlags |
                     // flat_scratch_init
                     ((hsaConfig.enableSgprRegisterFlags&
@@ -1973,11 +1973,11 @@ bool AsmGalliumHandler::prepareBinary()
             ::memset(&outConfig, 0xff, 128); // fill by defaults
             
             const Kernel& kernel = *kernelStates[ki];
-            if (kernel.config != nullptr)
+            if (kernel.hsaConfig != nullptr)
             {   // replace by HSA config
-                ::memcpy(&outConfig, kernel.config.get(), sizeof(AmdHsaKernelConfig));
+                ::memcpy(&outConfig, kernel.hsaConfig.get(), sizeof(AmdHsaKernelConfig));
                 // set config from HSA config
-                const AsmAmdHsaKernelConfig& hsaConfig = *kernel.config.get();
+                const AsmAmdHsaKernelConfig& hsaConfig = *kernel.hsaConfig.get();
                 if (hsaConfig.usedSGPRsNum != BINGEN_DEFAULT)
                     config.usedSGPRsNum = hsaConfig.usedSGPRsNum;
                 if (hsaConfig.usedVGPRsNum != BINGEN_DEFAULT)

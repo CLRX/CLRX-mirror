@@ -328,7 +328,7 @@ private:
         cxuint codeSection;
         cxuint savedSection;
         bool useHsaConfig; // 
-        std::unique_ptr<AsmAmdHsaKernelConfig> config; // hsaConfig
+        std::unique_ptr<AsmAmdHsaKernelConfig> hsaConfig; // hsaConfig
         std::unordered_set<CString> argNamesSet;
         cxuint allocRegs[MAX_REGTYPES_NUM];
         Flags allocRegFlags;
@@ -404,7 +404,7 @@ private:
     struct Kernel
     {
         cxuint defaultSection;
-        std::unique_ptr<AsmAmdHsaKernelConfig> config;
+        std::unique_ptr<AsmAmdHsaKernelConfig> hsaConfig;
         cxuint ctrlDirSection;
         bool hasProgInfo;
         cxbyte progInfoEntries;
