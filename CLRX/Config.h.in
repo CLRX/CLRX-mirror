@@ -17,16 +17,24 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/*! \file Config.h
+ * \brief Configuration header
+ */
+
 #ifndef __CLRX_CONFIG_H__
 #define __CLRX_CONFIG_H__
 
+/// CLRadeonExtender version
 #define CLRX_VERSION "${CLRX_VERSION}"
 
+/// CLRadeonExtender major version
 #define CLRX_MAJOR_VERSION ${CLRX_MAJOR_VERSION}
-
+/// CLRadeonExtender minor version
 #define CLRX_MINOR_VERSION ${CLRX_MINOR_VERSION}
-
+/// CLRadeonExtender micro version
 #define CLRX_MICRO_VERSION ${CLRX_MICRO_VERSION}
+/// CLRadeonExtender revision string
+#define CLRX_REVISION "${CLRX_REVISION}"
 
 #cmakedefine HAVE_GNU11
 
@@ -129,33 +137,47 @@
 /* config setup */
 
 #ifndef HAVE_WINDOWS
+/// system configuration path
 #  define SYSTEM_CONFIG_PATH "/etc"
 
 #  ifdef HAVE_32BIT
+/// default AMDOCL name
 #    define DEFAULT_AMDOCLNAME "libamdocl32.so"
 #  else
+/// default AMDOCL name
 #    define DEFAULT_AMDOCLNAME "libamdocl64.so"
 #  endif
 
+/// native directory separator character
 #  define CLRX_NATIVE_DIR_SEP '/'
+/// native directory separator string
 #  define CLRX_NATIVE_DIR_SEP_S "/"
 
+/// alternative directory separator character
 #  define CLRX_ALT_DIR_SEP '\\'
+/// alternative directory separator string
 #  define CLRX_ALT_DIR_SEP_S "\\"
 
 #else
+/// system configuration path
 #  define SYSTEM_CONFIG_PATH "c:\\etc"
 
 #  ifdef HAVE_32BIT
+/// default AMDOCL name
 #  define DEFAULT_AMDOCLNAME "amdocl.dll"
 #  else
+/// default AMDOCL name
 #  define DEFAULT_AMDOCLNAME "amdocl64.dll"
 #  endif
 
+/// native directory separator character
 #  define CLRX_NATIVE_DIR_SEP '\\'
+/// native directory separator string
 #  define CLRX_NATIVE_DIR_SEP_S "\\"
 
+/// alternative directory separator character
 #  define CLRX_ALT_DIR_SEP '/'
+/// alternative directory separator string
 #  define CLRX_ALT_DIR_SEP_S "/"
 
 #  define strcasecmp(A,B) _stricmp(A,B)
@@ -175,16 +197,27 @@
 
 /* types and defs */
 
+/// signed character (signed byte)
 typedef signed char cxchar;
+/// unsigned character (unsigned byte)
 typedef unsigned char cxuchar;
+/// unsigned byte
 typedef unsigned char cxbyte;
+/// signed short
 typedef signed short cxshort;
+/// unsigned short
 typedef unsigned short cxushort;
+/// signed int
 typedef signed int cxint;
+/// unsigned int
 typedef unsigned int cxuint;
+/// signed long
 typedef signed long cxlong;
+/// unsigned long
 typedef unsigned long cxulong;
+/// signed long long
 typedef signed long long cxllong;
+/// unsigned long long
 typedef unsigned long long cxullong;
 #ifdef _MSC_VER
 #  ifdef HAVE_64BIT

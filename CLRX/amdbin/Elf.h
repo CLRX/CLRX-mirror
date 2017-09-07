@@ -18,6 +18,10 @@
 
 /* Original file 'elf.h' from GLIBC 2.2. Adapted for CLRadeonExtender */
 
+/*! \file amdbin/Elf.h
+ * \brief Elf.h definitions
+ */
+
 #ifndef _ELF_H
 #define	_ELF_H 1
 
