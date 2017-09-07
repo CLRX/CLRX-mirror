@@ -106,6 +106,7 @@
             <keyword>debug_private_segment_buffer_sgpr</keyword>
             <keyword>debug_wavefront_private_segment_offset_sgpr</keyword>
             <keyword>debugmode</keyword>
+            <keyword>default_hsa_features</keyword>
             <keyword>dims</keyword>
             <keyword>double</keyword>
             <keyword>driver_info</keyword>

@@ -1813,6 +1813,7 @@
             <item>.debug_private_segment_buffer_sgpr</item>
             <item>.debug_wavefront_private_segment_offset_sgpr</item>
             <item>.debugmode</item>
+            <item>.default_hsa_features</item>
             <item>.dims</item>
             <item>.double</item>
             <item>.driver_info</item>

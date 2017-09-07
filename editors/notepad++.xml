@@ -1433,6 +1433,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .debug_private_segment_buffer_sgpr
 .debug_wavefront_private_segment_offset_sgpr
 .debugmode
+.default_hsa_features
 .dims
 .double
 .driver_info
