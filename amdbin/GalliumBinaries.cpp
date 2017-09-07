@@ -163,12 +163,12 @@ uint32_t GalliumElfBinaryBase::getProgramInfoEntryIndex(const char* name) const
 
 const GalliumProgInfoEntry* GalliumElfBinaryBase::getProgramInfo(uint32_t index) const
 {
-    return progInfoEntries + index*3U;
+    return progInfoEntries + index*(llvm390 ? 5U : 3U);
 }
 
 GalliumProgInfoEntry* GalliumElfBinaryBase::getProgramInfo(uint32_t index)
 {
-    return progInfoEntries + index*3U;
+    return progInfoEntries + index*(llvm390 ? 5U : 3U);
 }
 
 /* main GalliumBinary */

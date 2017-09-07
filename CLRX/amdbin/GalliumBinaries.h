@@ -170,13 +170,11 @@ public:
     
     /// returns program info entries for specified kernel name
     const GalliumProgInfoEntry* getProgramInfo(const char* name) const
-    { return reinterpret_cast<GalliumProgInfoEntry*>(progInfoEntries) +
-        getProgramInfoEntryIndex(name); }
+    { return progInfoEntries + getProgramInfoEntryIndex(name); }
     
     /// returns program info entries for specified kernel name
     GalliumProgInfoEntry* getProgramInfo(const char* name)
-    { return reinterpret_cast<GalliumProgInfoEntry*>(progInfoEntries) +
-        getProgramInfoEntryIndex(name); }
+    { return progInfoEntries + getProgramInfoEntryIndex(name); }
     
     /// returns program info entries for specified kernel index
     const GalliumProgInfoEntry* getProgramInfo(uint32_t index) const;
