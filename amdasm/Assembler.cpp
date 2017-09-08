@@ -32,6 +32,18 @@
 #include <CLRX/amdasm/Assembler.h>
 #include "AsmInternals.h"
 
+#define THIS_FAIL_BY_ERROR(PLACE, STRING) \
+    { \
+        printError(PLACE, STRING); \
+        return false; \
+    }
+
+#define THIS_NOTGOOD_BY_ERROR(PLACE, STRING) \
+    { \
+        printError(PLACE, STRING); \
+        good = false; \
+    }
+
 using namespace CLRX;
 
 AsmSection::AsmSection(const AsmSection& section)
@@ -661,7 +673,6 @@ Assembler::~Assembler()
 
 bool Assembler::parseString(std::string& strarray, const char*& linePtr)
 {
-    Assembler& asmr = *this; // for error
     const char* end = line+lineSize;
     const char* startPlace = linePtr;
     skipSpacesToEnd(linePtr, end);
@@ -669,7 +680,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
     if (linePtr == end || *linePtr != '"')
     {
         while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
-        ASM_FAIL_BY_ERROR(startPlace, "Expected string");
+        THIS_FAIL_BY_ERROR(startPlace, "Expected string")
     }
     linePtr++;
     
@@ -680,13 +691,13 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
             linePtr++;
             uint16_t value;
             if (linePtr == end)
-                ASM_FAIL_BY_ERROR(startPlace, "Unterminated character of string")
+                THIS_FAIL_BY_ERROR(startPlace, "Unterminated character of string")
             if (*linePtr == 'x')
             {   // hex
                 const char* charPlace = linePtr-1;
                 linePtr++;
                 if (linePtr == end)
-                    ASM_FAIL_BY_ERROR(startPlace, "Unterminated character of string")
+                    THIS_FAIL_BY_ERROR(startPlace, "Unterminated character of string")
                 value = 0;
                 if (isXDigit(*linePtr))
                     for (; linePtr != end; linePtr++)
@@ -703,7 +714,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
                         value = (value<<4) + digit;
                     }
                 else
-                    ASM_FAIL_BY_ERROR(charPlace, "Expected hexadecimal character code")
+                    THIS_FAIL_BY_ERROR(charPlace, "Expected hexadecimal character code")
                 value &= 0xff;
             }
             else if (isODigit(*linePtr))
@@ -716,7 +727,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
                         break;
                     value = (value<<3) + uint64_t(*linePtr-'0');
                     if (value > 255)
-                        ASM_FAIL_BY_ERROR(charPlace, "Octal code out of range")
+                        THIS_FAIL_BY_ERROR(charPlace, "Octal code out of range")
                 }
             }
             else
@@ -764,29 +775,28 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
             strarray.push_back(*linePtr++);
     }
     if (linePtr == end)
-        ASM_FAIL_BY_ERROR(startPlace, "Unterminated string")
+        THIS_FAIL_BY_ERROR(startPlace, "Unterminated string")
     linePtr++;
     return true;
 }
 
 bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
 {
-    Assembler& asmr = *this; // for error
     const char* startPlace = linePtr;
     const char* end = line+lineSize;
     if (linePtr != end && *linePtr == '\'')
     {
         linePtr++;
         if (linePtr == end)
-            ASM_FAIL_BY_ERROR(startPlace, "Unterminated character literal")
+            THIS_FAIL_BY_ERROR(startPlace, "Unterminated character literal")
         if (*linePtr == '\'')
-            ASM_FAIL_BY_ERROR(startPlace, "Empty character literal")
+            THIS_FAIL_BY_ERROR(startPlace, "Empty character literal")
         
         if (*linePtr != '\\')
         {
             value = *linePtr++;
             if (linePtr == end || *linePtr != '\'')
-                ASM_FAIL_BY_ERROR(startPlace, "Missing ''' at end of literal")
+                THIS_FAIL_BY_ERROR(startPlace, "Missing ''' at end of literal")
             linePtr++;
             return true;
         }
@@ -794,12 +804,12 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
         {
             linePtr++;
             if (linePtr == end)
-                ASM_FAIL_BY_ERROR(startPlace, "Unterminated character literal")
+                THIS_FAIL_BY_ERROR(startPlace, "Unterminated character literal")
             if (*linePtr == 'x')
             {   // hex
                 linePtr++;
                 if (linePtr == end)
-                    ASM_FAIL_BY_ERROR(startPlace, "Unterminated character literal")
+                    THIS_FAIL_BY_ERROR(startPlace, "Unterminated character literal")
                 value = 0;
                 if (isXDigit(*linePtr))
                     for (; linePtr != end; linePtr++)
@@ -816,7 +826,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
                         value = (value<<4) + digit;
                     }
                 else
-                    ASM_FAIL_BY_ERROR(startPlace, "Expected hexadecimal character code")
+                    THIS_FAIL_BY_ERROR(startPlace, "Expected hexadecimal character code")
                 value &= 0xff;
             }
             else if (isODigit(*linePtr))
@@ -826,10 +836,10 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
                      i++, linePtr++)
                 {
                     if (!isODigit(*linePtr))
-                        ASM_FAIL_BY_ERROR(startPlace, "Expected octal character code");
+                        THIS_FAIL_BY_ERROR(startPlace, "Expected octal character code")
                     value = (value<<3) + uint64_t(*linePtr-'0');
                     if (value > 255)
-                        ASM_FAIL_BY_ERROR(startPlace, "Octal code out of range")
+                        THIS_FAIL_BY_ERROR(startPlace, "Octal code out of range")
                 }
             }
             else
@@ -872,7 +882,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
                 }
             }
             if (linePtr == end || *linePtr != '\'')
-                ASM_FAIL_BY_ERROR(startPlace, "Missing ''' at end of literal")
+                THIS_FAIL_BY_ERROR(startPlace, "Missing ''' at end of literal")
             linePtr++;
             return true;
         }
@@ -959,7 +969,6 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
 
 bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
 {
-    Assembler& asmr = *this;
     const char* end = line+lineSize;
     bool firstNonSpace = false;
     cxbyte prevTok = 0;
@@ -1004,7 +1013,7 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
             }
         }
         if (string == end) /* if unterminated string */
-            ASM_FAIL_BY_ERROR(string, "Unterminated quoted string")
+            THIS_FAIL_BY_ERROR(string, "Unterminated quoted string")
         string++;
         return true;
     }
@@ -1020,7 +1029,7 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
             outStr.push_back(*string++);
         }
         if (string == end)
-            ASM_FAIL_BY_ERROR(string, "Unterminated quoted string")
+            THIS_FAIL_BY_ERROR(string, "Unterminated quoted string")
         string++;
         return true;
     }
@@ -1053,7 +1062,6 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
 
 bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId)
 {
-    Assembler& asmr = *this;
     symEntry.second.value = value;
     symEntry.second.expression = nullptr;
     symEntry.second.sectionId = sectionId;
@@ -1128,7 +1136,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     }
                     case ASMXTGT_DATA8:
                         if (sectionId != ASMSECT_ABS)
-                            ASM_NOTGOOD_BY_ERROR(expr->getSourcePos(),
+                            THIS_NOTGOOD_BY_ERROR(expr->getSourcePos(),
                                    "Relative value is illegal in data expressions")
                         else
                         {
@@ -1139,7 +1147,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         break;
                     case ASMXTGT_DATA16:
                         if (sectionId != ASMSECT_ABS)
-                            ASM_NOTGOOD_BY_ERROR(expr->getSourcePos(),
+                            THIS_NOTGOOD_BY_ERROR(expr->getSourcePos(),
                                    "Relative value is illegal in data expressions")
                         else
                         {
@@ -1150,7 +1158,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         break;
                     case ASMXTGT_DATA32:
                         if (sectionId != ASMSECT_ABS)
-                            ASM_NOTGOOD_BY_ERROR(expr->getSourcePos(),
+                            THIS_NOTGOOD_BY_ERROR(expr->getSourcePos(),
                                    "Relative value is illegal in data expressions")
                         else
                         {
@@ -1161,7 +1169,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         break;
                     case ASMXTGT_DATA64:
                         if (sectionId != ASMSECT_ABS)
-                            ASM_NOTGOOD_BY_ERROR(expr->getSourcePos(),
+                            THIS_NOTGOOD_BY_ERROR(expr->getSourcePos(),
                                    "Relative value is illegal in data expressions")
                         else
                             SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
@@ -1169,7 +1177,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         break;
                     case ASMXTGT_CODEFLOW:
                         if (target.sectionId != sectionId)
-                            ASM_NOTGOOD_BY_ERROR(expr->getSourcePos(),
+                            THIS_NOTGOOD_BY_ERROR(expr->getSourcePos(),
                                             "Jump over current section!")
                         else
                             sections[target.sectionId].
@@ -1205,16 +1213,15 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
 bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
              const char* linePtr, bool reassign, bool baseExpr)
 {
-    Assembler& asmr = *this;
     skipSpacesToEnd(linePtr, line+lineSize);
     size_t symNameLength = symbolName.size();
     if (symNameLength >= 3 && symbolName.compare(symNameLength-3, 3, "::.")==0)
-        ASM_FAIL_BY_ERROR(symbolPlace, "Symbol '.' can be only in global scope")
+        THIS_FAIL_BY_ERROR(symbolPlace, "Symbol '.' can be only in global scope")
     
     if (linePtr!=line+lineSize && *linePtr=='%')
     {
         if (symbolName == ".")
-            ASM_FAIL_BY_ERROR(symbolPlace, "Symbol '.' requires a resolved expression")
+            THIS_FAIL_BY_ERROR(symbolPlace, "Symbol '.' requires a resolved expression")
         initializeOutputFormat();
         ++linePtr;
         cxuint regStart, regEnd;
@@ -1223,7 +1230,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
             return false;
         skipSpacesToEnd(linePtr, line+lineSize);
         if (linePtr != line+lineSize)
-            ASM_FAIL_BY_ERROR(linePtr, "Garbages at end of expression")
+            THIS_FAIL_BY_ERROR(linePtr, "Garbages at end of expression")
         
         std::pair<AsmSymbolEntry*, bool> res =
                 insertSymbolInScope(symbolName, AsmSymbol());
@@ -1286,9 +1293,9 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         return false;
     
     if (linePtr != line+lineSize)
-        ASM_FAIL_BY_ERROR(linePtr, "Garbages at end of expression")
+        THIS_FAIL_BY_ERROR(linePtr, "Garbages at end of expression")
     if (expr->isEmpty()) // empty expression, we treat as error
-        ASM_FAIL_BY_ERROR(exprPlace, "Expected assignment expression")
+        THIS_FAIL_BY_ERROR(exprPlace, "Expected assignment expression")
     
     if (symbolName == ".")
     {   // assigning '.'
@@ -1299,7 +1306,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         if (expr->getSymOccursNum()==0)
             return assignOutputCounter(symbolPlace, value, sectionId);
         else
-            ASM_FAIL_BY_ERROR(symbolPlace, "Symbol '.' requires a resolved expression")
+            THIS_FAIL_BY_ERROR(symbolPlace, "Symbol '.' requires a resolved expression")
     }
     
     std::pair<AsmSymbolEntry*, bool> res = insertSymbolInScope(symbolName, AsmSymbol());
@@ -1350,15 +1357,14 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
 bool Assembler::assignOutputCounter(const char* symbolPlace, uint64_t value,
             cxuint sectionId, cxbyte fillValue)
 {
-    Assembler& asmr = *this;
     initializeOutputFormat();
     if (currentSection != sectionId && sectionId != ASMSECT_ABS)
-        ASM_FAIL_BY_ERROR(symbolPlace, "Illegal section change for symbol '.'")
+        THIS_FAIL_BY_ERROR(symbolPlace, "Illegal section change for symbol '.'")
     if (currentSection != ASMSECT_ABS && int64_t(currentOutPos) > int64_t(value))
         /* check attempt to move backwards only for section that is not absolute */
-        ASM_FAIL_BY_ERROR(symbolPlace, "Attempt to move backwards")
+        THIS_FAIL_BY_ERROR(symbolPlace, "Attempt to move backwards")
     if (!isAddressableSection())
-        ASM_FAIL_BY_ERROR(symbolPlace,
+        THIS_FAIL_BY_ERROR(symbolPlace,
                    "Change output counter inside non-addressable section is illegal")
     if (currentSection==ASMSECT_ABS && fillValue!=0)
         printWarning(symbolPlace, "Fill value is ignored inside absolute section");
@@ -1453,7 +1459,6 @@ void Assembler::addInitialDefSym(const CString& symName, uint64_t value)
 bool Assembler::pushClause(const char* string, AsmClauseType clauseType, bool satisfied,
                bool& included)
 {
-    Assembler& asmr = *this;
     if (clauseType == AsmClauseType::MACRO || clauseType == AsmClauseType::IF ||
         clauseType == AsmClauseType::REPEAT)
     {   // add new clause
@@ -1481,11 +1486,11 @@ bool Assembler::pushClause(const char* string, AsmClauseType clauseType, bool sa
             printError(clause.prevIfPos, "here is begin of conditional clause"); 
             return false;
         case AsmClauseType::MACRO:
-            ASM_FAIL_BY_ERROR(string, clauseType == AsmClauseType::ELSEIF ?
+            THIS_FAIL_BY_ERROR(string, clauseType == AsmClauseType::ELSEIF ?
                         "No '.if' before '.elseif' inside macro" :
                         "No '.if' before '.else' inside macro")
         case AsmClauseType::REPEAT:
-            ASM_FAIL_BY_ERROR(string, clauseType == AsmClauseType::ELSEIF ?
+            THIS_FAIL_BY_ERROR(string, clauseType == AsmClauseType::ELSEIF ?
                         "No '.if' before '.elseif' inside repetition" :
                         "No '.if' before '.else' inside repetition")
         default:
@@ -1502,7 +1507,6 @@ bool Assembler::pushClause(const char* string, AsmClauseType clauseType, bool sa
 
 bool Assembler::popClause(const char* string, AsmClauseType clauseType)
 {
-    Assembler& asmr = *this;
     if (clauses.empty())
     {   // no clauses
         if (clauseType == AsmClauseType::IF)
@@ -1520,21 +1524,21 @@ bool Assembler::popClause(const char* string, AsmClauseType clauseType)
         case AsmClauseType::ELSE:
         case AsmClauseType::ELSEIF:
             if (clauseType == AsmClauseType::MACRO)
-                ASM_FAIL_BY_ERROR(string, "Ending macro across conditionals")
+                THIS_FAIL_BY_ERROR(string, "Ending macro across conditionals")
             if (clauseType == AsmClauseType::REPEAT)
-                ASM_FAIL_BY_ERROR(string, "Ending repetition across conditionals")
+                THIS_FAIL_BY_ERROR(string, "Ending repetition across conditionals")
             break;
         case AsmClauseType::MACRO:
             if (clauseType == AsmClauseType::REPEAT)
-                ASM_FAIL_BY_ERROR(string, "Ending repetition across macro")
+                THIS_FAIL_BY_ERROR(string, "Ending repetition across macro")
             if (clauseType == AsmClauseType::IF)
-                ASM_FAIL_BY_ERROR(string, "Ending conditional across macro")
+                THIS_FAIL_BY_ERROR(string, "Ending conditional across macro")
             break;
         case AsmClauseType::REPEAT:
             if (clauseType == AsmClauseType::MACRO)
-                ASM_FAIL_BY_ERROR(string, "Ending macro across repetition")
+                THIS_FAIL_BY_ERROR(string, "Ending macro across repetition")
             if (clauseType == AsmClauseType::IF)
-                ASM_FAIL_BY_ERROR(string, "Ending conditional across repetition")
+                THIS_FAIL_BY_ERROR(string, "Ending conditional across repetition")
             break;
         default:
             break;
@@ -1925,9 +1929,8 @@ bool Assembler::popScope()
 
 bool Assembler::includeFile(const char* pseudoOpPlace, const std::string& filename)
 {
-    Assembler& asmr = *this;
     if (inclusionLevel == 500)
-        ASM_FAIL_BY_ERROR(pseudoOpPlace, "Inclusion level is greater than 500")
+        THIS_FAIL_BY_ERROR(pseudoOpPlace, "Inclusion level is greater than 500")
     std::unique_ptr<AsmInputFilter> newInputFilter(new AsmStreamInputFilter(
                 getSourcePos(pseudoOpPlace), filename));
     asmInputFilters.push(newInputFilter.release());
