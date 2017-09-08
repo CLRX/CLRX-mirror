@@ -103,10 +103,8 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
                     return false;
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
-                {   // error
-                    asmr.printError(regVarPlace, "Unterminated register range");
-                    return false;
-                }
+                    // error
+                    ASM_FAIL_BY_ERROR(regVarPlace, "Unterminated register range")
                 if (linePtr!=end && *linePtr==':')
                 {
                     skipCharAndSpacesToEnd(linePtr, end);
@@ -117,21 +115,14 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
                     value2 = value1;
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr == end || *linePtr != ']')
-                {   // error
-                    asmr.printError(regVarPlace, "Unterminated register range");
-                    return false;
-                }
+                    // error
+                    ASM_FAIL_BY_ERROR(regVarPlace, "Unterminated register range")
                 ++linePtr;
                 if (value2 < value1)
-                {   // error (illegal register range)
-                    asmr.printError(regVarPlace, "Illegal register range");
-                    return false;
-                }
+                    // error (illegal register range)
+                    ASM_FAIL_BY_ERROR(regVarPlace, "Illegal register range")
                 if (value2 >= rend || value1 >= rend)
-                {
-                    asmr.printError(regVarPlace, "Regvar range out of range");
-                    return false;
-                }
+                    ASM_FAIL_BY_ERROR(regVarPlace, "Regvar range out of range")
                 rend = value2+1;
                 rstart = value1;
             }
@@ -202,10 +193,8 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                     return false;
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
-                {   // error
-                    asmr.printError(regRangePlace, "Unterminated register range");
-                    return false;
-                }
+                    // error
+                    ASM_FAIL_BY_ERROR(regRangePlace, "Unterminated register range")
                 if (linePtr!=end && *linePtr==':')
                 {
                     skipCharAndSpacesToEnd(linePtr, end);
@@ -216,21 +205,14 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                     value2 = value1;
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr == end || *linePtr != ']')
-                {   // error
-                    asmr.printError(regRangePlace, "Unterminated register range");
-                    return false;
-                }
+                    // error
+                    ASM_FAIL_BY_ERROR(regRangePlace, "Unterminated register range")
                 ++linePtr;
                 if (value2 < value1)
-                {   // error (illegal register range)
-                    asmr.printError(regRangePlace, "Illegal register range");
-                    return false;
-                }
+                    // error (illegal register range)
+                    ASM_FAIL_BY_ERROR(regRangePlace, "Illegal register range")
                 if (value2 >= rend-rstart || value1 >= rend-rstart)
-                {
-                    asmr.printError(regRangePlace, "Register range out of range");
-                    return false;
-                }
+                    ASM_FAIL_BY_ERROR(regRangePlace, "Register range out of range")
                 rend = rstart + value2+1;
                 rstart += value1;
             }
@@ -247,18 +229,13 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                 {
                     if ((rend-rstart==2 && (rstart&1)!=0) ||
                         (rend-rstart>2 && (rstart&3)!=0))
-                    {
-                        asmr.printError(regRangePlace, "Unaligned scalar register range");
-                        return false;
-                    }
+                        ASM_FAIL_BY_ERROR(regRangePlace, "Unaligned scalar register range")
                 }   
                 else if ((flags & INSTROP_UNALIGNED) == INSTROP_SGPR_UNALIGNED)
                     if ((rstart & 0xfc) != ((rend-1) & 0xfc))
-                    { // unaligned, but some restrictions
-                        asmr.printError(regRangePlace,
-                                "Scalar register range cross two register lines");
-                        return false;
-                    }
+                      // unaligned, but some restrictions
+                        ASM_FAIL_BY_ERROR(regRangePlace,
+                                "Scalar register range cross two register lines")
             }
             
             if (regField != ASMFIELD_NONE)
@@ -359,10 +336,8 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
             return false;
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
-        {   // error
-            asmr.printError(vgprRangePlace, "Unterminated vector register range");
-            return false;
-        }
+            // error
+            ASM_FAIL_BY_ERROR(vgprRangePlace, "Unterminated vector register range")
         if (linePtr!=end && *linePtr==':')
         {
             skipCharAndSpacesToEnd(linePtr, end);
@@ -374,22 +349,15 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
         
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ']')
-        {   // error
-            asmr.printError(vgprRangePlace, "Unterminated vector register range");
-            return false;
-        }
+            // error
+            ASM_FAIL_BY_ERROR(vgprRangePlace, "Unterminated vector register range")
         ++linePtr;
         
         if (value2 < value1)
-        {   // error (illegal register range)
-            asmr.printError(vgprRangePlace, "Illegal vector register range");
-            return false;
-        }
+            // error (illegal register range)
+            ASM_FAIL_BY_ERROR(vgprRangePlace, "Illegal vector register range")
         if (value1 >= 256 || value2 >= 256)
-        {
-            asmr.printError(vgprRangePlace, "Some vector register number out of range");
-            return false;
-        }
+            ASM_FAIL_BY_ERROR(vgprRangePlace, "Some vector register number out of range")
         
         if (regsNum!=0 && regsNum != value2-value1+1)
         {
@@ -465,21 +433,15 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                 if (!ttmpReg)
                 {   // if scalar register
                     if (value >= maxSGPRsNum)
-                    {
-                        asmr.printError(sgprRangePlace,
-                                        "Scalar register number out of range");
-                        return false;
-                    }
+                        ASM_FAIL_BY_ERROR(sgprRangePlace,
+                                        "Scalar register number out of range")
                 }
                 else
                 {   // ttmp register
                     if (value >= ttmpSize)
-                    {
-                        asmr.printError(sgprRangePlace,
+                        ASM_FAIL_BY_ERROR(sgprRangePlace,
                             isGCN14 ? "TTMPRegister number out of range (0-15)" :
-                            "TTMPRegister number out of range (0-11)");
-                        return false;
-                    }
+                            "TTMPRegister number out of range (0-11)")
                 }
                 if (regsNum!=0 && regsNum!=1)
                 {
@@ -634,12 +596,10 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             return false;
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
-        {   // error
-            asmr.printError(sgprRangePlace, (!ttmpReg) ?
+            // error
+            ASM_FAIL_BY_ERROR(sgprRangePlace, (!ttmpReg) ?
                         "Unterminated scalar register range" :
-                        "Unterminated TTMPRegister range");
-            return false;
-        }
+                        "Unterminated TTMPRegister range")
         if (linePtr!=end && *linePtr==':')
         {
             skipCharAndSpacesToEnd(linePtr, end);
@@ -651,42 +611,30 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ']')
-        {   // error
-            asmr.printError(sgprRangePlace, (!ttmpReg) ?
+            // error
+            ASM_FAIL_BY_ERROR(sgprRangePlace, (!ttmpReg) ?
                         "Unterminated scalar register range" :
-                        "Unterminated TTMPRegister range");
-            return false;
-        }
+                        "Unterminated TTMPRegister range")
         ++linePtr;
         
         if (!ttmpReg)
         {   // is scalar register
             if (value2 < value1)
-            {   // error (illegal register range)
-                asmr.printError(sgprRangePlace, "Illegal scalar register range");
-                return false;
-            }
+                // error (illegal register range)
+                ASM_FAIL_BY_ERROR(sgprRangePlace, "Illegal scalar register range")
             if (value1 >= maxSGPRsNum || value2 >= maxSGPRsNum)
-            {
-                asmr.printError(sgprRangePlace,
-                            "Some scalar register number out of range");
-                return false;
-            }
+                ASM_FAIL_BY_ERROR(sgprRangePlace,
+                            "Some scalar register number out of range")
         }
         else
         {   // is TTMP register
             if (value2 < value1)
-            {   // error (illegal register range)
-                asmr.printError(sgprRangePlace, "Illegal TTMPRegister range");
-                return false;
-            }
+                // error (illegal register range)
+                ASM_FAIL_BY_ERROR(sgprRangePlace, "Illegal TTMPRegister range")
             if (value1 >= ttmpSize || value2 >= ttmpSize)
-            {
-                asmr.printError(sgprRangePlace,
+                ASM_FAIL_BY_ERROR(sgprRangePlace,
                             isGCN14 ? "Some TTMPRegister number out of range (0-15)" :
-                            "Some TTMPRegister number out of range (0-11)");
-                return false;
-            }
+                            "Some TTMPRegister number out of range (0-11)")
         }
         
         if (regsNum!=0 && regsNum != value2-value1+1)
@@ -702,18 +650,13 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             {
                 if ((value2-value1==1 && (value1&1)!=0) ||
                     (value2-value1>1 && (value1&3)!=0))
-                {
-                    asmr.printError(sgprRangePlace, "Unaligned scalar register range");
-                    return false;
-                }
+                    ASM_FAIL_BY_ERROR(sgprRangePlace, "Unaligned scalar register range")
             }
             else  if ((flags & INSTROP_UNALIGNED)==INSTROP_SGPR_UNALIGNED)
                 if ((value1 & 0xfc) != ((value2) & 0xfc))
-                { // unaligned, but some restrictions
-                    asmr.printError(sgprRangePlace,
-                            "Scalar register range cross two register lines");
-                    return false;
-                }
+                  // unaligned, but some restrictions
+                    ASM_FAIL_BY_ERROR(sgprRangePlace,
+                            "Scalar register range cross two register lines")
             regPair = { value1, uint16_t(value2)+1 };
             if (regField != ASMFIELD_NONE)
                 gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
@@ -744,10 +687,7 @@ bool GCNAsmUtils::parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& o
     if (expr==nullptr) // error
         return false;
     if (expr->isEmpty())
-    {
-        asmr.printError(exprPlace, "Expected expression");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(exprPlace, "Expected expression")
     if (expr->getSymOccursNum()==0)
     {   // resolved now
         cxuint sectionId; // for getting
@@ -755,10 +695,8 @@ bool GCNAsmUtils::parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& o
         if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
             return false;
         else if (sectionId != ASMSECT_ABS)
-        {   // if not absolute value
-            asmr.printError(exprPlace, "Expression must be absolute!");
-            return false;
-        }
+            // if not absolute value
+            ASM_FAIL_BY_ERROR(exprPlace, "Expression must be absolute!")
         if (bits != UINT_MAX)
         {
             asmr.printWarningForRange(bits, value,
@@ -774,10 +712,7 @@ bool GCNAsmUtils::parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& o
         if (outTargetExpr!=nullptr)
             *outTargetExpr = std::move(expr);
         else
-        {
-            asmr.printError(exprPlace, "Unresolved expression is illegal in this place");
-            return false;
-        }
+            ASM_FAIL_BY_ERROR(exprPlace, "Unresolved expression is illegal in this place")
         return true;
     }
 }
@@ -1019,10 +954,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 ++linePtr;
             }
             else
-            {
-                asmr.printError(linePtr, "Expected '(' after sext");
-                return false;
-            }
+                ASM_FAIL_BY_ERROR(linePtr, "Expected '(' after sext")
         }
         
         const char* negPlace = linePtr;
@@ -1044,10 +976,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 ++linePtr;
             }
             else
-            {
-                asmr.printError(linePtr, "Expected '(' after abs");
-                return false;
-            }
+                ASM_FAIL_BY_ERROR(linePtr, "Expected '(' after abs")
         }
         else if (linePtr<=end && linePtr[0]=='|')
         {   // LLVM like syntax for abs modifier
@@ -1075,10 +1004,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                         (*linePtr=='|' && llvmAbs)))
                 linePtr++;
             else
-            {
-                asmr.printError(linePtr, "Unterminated abs() modifier");
-                return false;
-            }
+                ASM_FAIL_BY_ERROR(linePtr, "Unterminated abs() modifier")
         }
         if (operand.vopMods & VOPOP_SEXT)
         {
@@ -1086,10 +1012,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             if (linePtr!=end && *linePtr==')')
                 linePtr++;
             else
-            {
-                asmr.printError(linePtr, "Unterminated sext() modifier");
-                return false;
-            }
+                ASM_FAIL_BY_ERROR(linePtr, "Unterminated sext() modifier")
         }
         return good;
     }
@@ -1184,10 +1107,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             skipCharAndSpacesToEnd(linePtr, end);
         }
         if (linePtr==end || *linePtr==',')
-        {
-            asmr.printError(linePtr, "Expected instruction operand");
-            return false;
-        }
+            ASM_FAIL_BY_ERROR(linePtr, "Expected instruction operand")
         const char* exprPlace = linePtr;
         
         uint64_t value;
@@ -1426,20 +1346,15 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             if (expr==nullptr) // error
                 return false;
             if (expr->isEmpty())
-            {
-                asmr.printError(exprPlace, "Expected expression");
-                return false;
-            }
+                ASM_FAIL_BY_ERROR(exprPlace, "Expected expression")
             if (expr->getSymOccursNum()==0)
             {   // resolved now
                 cxuint sectionId; // for getting
                 if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
                     return false;
                 else if (sectionId != ASMSECT_ABS)
-                {   // if not absolute value
-                    asmr.printError(exprPlace, "Expression must be absolute!");
-                    return false;
-                }
+                    // if not absolute value
+                    ASM_FAIL_BY_ERROR(exprPlace, "Expression must be absolute!")
             }
             else
             {   // return output expression with symbols to resolve
@@ -1478,10 +1393,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         {   /* finish lit function */
             skipSpacesToEnd(linePtr, end);
             if (linePtr==end || *linePtr!=')')
-            {
-                asmr.printError(linePtr, "Expected ')' after expression at 'lit'");
-                return false;
-            }
+                ASM_FAIL_BY_ERROR(linePtr, "Expected ')' after expression at 'lit'")
             else // skip end of lit
                 linePtr++;
         }
@@ -1532,8 +1444,7 @@ bool GCNAsmUtils::parseImmWithBoolArray(Assembler& asmr, const char*& linePtr,
         {   // next bool will be, try parse ','
             if (linePtr==end || *linePtr!=',')
             {
-                asmr.printError(linePtr, "Expected ',' before bit value");
-                good = false;
+                ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ',' before bit value")
                 break;
             }
             else
@@ -1542,10 +1453,7 @@ bool GCNAsmUtils::parseImmWithBoolArray(Assembler& asmr, const char*& linePtr,
         else
         {   // end of array, try parse ']'
             if (linePtr == end || *linePtr!=']')
-            {
-                asmr.printError(linePtr, "Unterminated bit array");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(linePtr, "Unterminated bit array")
             else
                 ++linePtr;
         }
@@ -1641,16 +1549,11 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             mods = (mods&~3) | VOP3_MUL4;
                         }
                         else
-                        {
-                            asmr.printError(modPlace, "Unknown VOP3 mul:X modifier");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown VOP3 mul:X modifier")
                     }
                     else
-                    {
-                        asmr.printError(linePtr, "Expected ':' before multiplier number");
-                        good = false;
-                    }
+                        ASM_NOTGOOD_BY_ERROR(linePtr,
+                                    "Expected ':' before multiplier number")
                 }
                 else if (!vop3p && ::strcmp(mod, "div")==0)
                 {
@@ -1665,16 +1568,10 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             mods = (mods&~3) | VOP3_DIV2;
                         }
                         else
-                        {
-                            asmr.printError(modPlace, "Unknown VOP3 div:X modifier");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown VOP3 div:X modifier")
                     }
                     else
-                    {
-                        asmr.printError(linePtr, "Expected ':' before divider number");
-                        good = false;
-                    }
+                        ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before divider number")
                 }
                 else if (!vop3p && ::strcmp(mod, "omod")==0)
                 {
@@ -1689,10 +1586,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             good = false;
                     }
                     else
-                    {
-                        asmr.printError(linePtr, "Expected ':' before omod");
-                        good = false;
-                    }
+                        ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before omod")
                 }
                 else if (::strcmp(mod, "clamp")==0) // clamp
                 {
@@ -1701,10 +1595,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     if (flags & PARSEVOP_WITHCLAMP)
                         mods = (mods & ~VOP3_CLAMP) | (clamp ? VOP3_CLAMP : 0);
                     else
-                    {
-                        asmr.printError(modPlace, "Modifier CLAMP in VOP3B is illegal");
-                        good = false;
-                    }
+                        ASM_NOTGOOD_BY_ERROR(modPlace, "Modifier CLAMP in VOP3B is illegal")
                 }
                 else if (!vop3p && modOperands>1 && ::strcmp(mod, "abs")==0)
                 {
@@ -1868,10 +1759,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             }
                         }
                         else
-                        {
-                            asmr.printError(linePtr, "Expected ':' before dst_sel");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before dst_sel")
                     }
                     else if (withSDWAOperands>=1 && (flags&PARSEVOP_NODSTMODS)==0 &&
                         (::strcmp(mod, "dst_unused")==0 || ::strcmp(mod, "dst_un")==0))
@@ -1895,10 +1783,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                     else if (::strcmp(name+namePos, "preserve")==0)
                                         unused = 2;
                                     else if (::strcmp(name+namePos, "pad")!=0)
-                                    {
-                                        asmr.printError(enumPlace, "Unknown dst_unused");
-                                        good = false;
-                                    }
+                                        ASM_NOTGOOD_BY_ERROR(enumPlace,
+                                                    "Unknown dst_unused");
                                     extraMods->dstUnused = unused;
                                     if (haveDstUnused)
                                         asmr.printWarning(modPlace,
@@ -1925,10 +1811,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             }
                         }
                         else
-                        {
-                            asmr.printError(linePtr, "Expected ':' before dst_unused");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before dst_unused")
                     }
                     else if (withSDWAOperands>=2 && ::strcmp(mod, "src0_sel")==0)
                     {   /* src0_sel modifier */
@@ -1969,10 +1852,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             }
                         }
                         else
-                        {
-                            asmr.printError(linePtr, "Expected ':' before src0_sel");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before src0_sel")
                     }
                     else if (withSDWAOperands>=3 && ::strcmp(mod, "src1_sel")==0)
                     {   // src1_sel modifier
@@ -2013,10 +1893,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             }
                         }
                         else
-                        {
-                            asmr.printError(linePtr, "Expected ':' before src1_sel");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before src1_sel")
                     }
                     else if (::strcmp(mod, "quad_perm")==0)
                     {
@@ -2027,9 +1904,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             skipCharAndSpacesToEnd(linePtr, end);
                             if (linePtr==end || *linePtr!='[')
                             {
-                                asmr.printError(linePtr,
-                                        "Expected '[' before quad_perm list");
-                                goodMod = good = false;
+                                ASM_NOTGOOD_BY_ERROR1(goodMod = good, linePtr,
+                                        "Expected '[' before quad_perm list")
                                 continue;
                             }
                             cxbyte quadPerm = 0;
@@ -2046,9 +1922,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                 {
                                     if (linePtr==end || *linePtr!=',')
                                     {
-                                        asmr.printError(linePtr,
-                                            "Expected ',' before quad_perm component");
-                                        goodMod = good = false;
+                                        ASM_NOTGOOD_BY_ERROR1(goodMod = good, linePtr,
+                                            "Expected ',' before quad_perm component")
                                         break;
                                     }
                                     else
@@ -2072,10 +1947,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             }
                         }
                         else
-                        {
-                            asmr.printError(linePtr, "Expected ':' before quad_perm");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before quad_perm")
                     }
                     else if (::strcmp(mod, "bank_mask")==0)
                     {
@@ -2096,10 +1968,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                 good = false;
                         }
                         else
-                        {
-                            asmr.printError(linePtr, "Expected ':' before bank_mask");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before bank_mask")
                     }
                     else if (::strcmp(mod, "row_mask")==0)
                     {
@@ -2120,10 +1989,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                 good = false;
                         }
                         else
-                        {
-                            asmr.printError(linePtr, "Expected ':' before row_mask");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before row_mask")
                     }
                     else if (::strcmp(mod, "bound_ctrl")==0)
                     {
@@ -2171,9 +2037,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             {
                                 if (shift == 0)
                                 {
-                                    asmr.printError(shiftPlace,
-                                            "Illegal zero shift for row_XXX shift");
-                                    good = false;
+                                    ASM_NOTGOOD_BY_ERROR(shiftPlace,
+                                            "Illegal zero shift for row_XXX shift")
                                     continue;
                                 }
                                 if (haveDppCtrl)
@@ -2189,11 +2054,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                 good = false;
                         }
                         else
-                        {
-                            asmr.printError(linePtr, (std::string(
-                                        "Expected ':' before ")+mod).c_str());
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(linePtr, (std::string(
+                                        "Expected ':' before ")+mod).c_str())
                     }
                     else if (memcmp(mod, "wave_", 5)==0 &&
                         (::strcmp(mod+5, "shl")==0 || ::strcmp(mod+5, "shr")==0 ||
@@ -2207,10 +2069,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             if (linePtr!=end && *linePtr=='1')
                                 ++linePtr;
                             else
-                            {
-                                asmr.printError(linePtr, "Value must be '1'");
-                                modGood = good = false;
-                            }
+                                ASM_NOTGOOD_BY_ERROR1(modGood = good, linePtr,
+                                            "Value must be '1'")
                         }
                         if (mod[5]=='s')
                             extraMods->dppCtrl = 0x100 | ((mod[7]=='l') ? 0x30 : 0x38);
@@ -2255,17 +2115,12 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                 else if (value == 15)
                                     extraMods->dppCtrl = 0x142;
                                 else
-                                {
-                                    asmr.printError(numPlace, "Thread to broadcast must be"
-                                                " 15 or 31");
-                                    modGood = good = false;
-                                }
+                                    ASM_NOTGOOD_BY_ERROR1(modGood = good, numPlace,
+                                            "Thread to broadcast must be 15 or 31")
                             }
                             else
-                            {
-                                asmr.printError(linePtr, "Expected ':' before row_bcast");
-                                modGood = good = false;
-                            }
+                                ASM_NOTGOOD_BY_ERROR1(modGood = good, linePtr,
+                                            "Expected ':' before row_bcast")
                         }
                         if (modGood)
                         {
@@ -2286,17 +2141,11 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         good &= parseModEnable(asmr, linePtr, dpp, "vop3 modifier");
                         haveDPP = dpp;
                     }
-                    else
-                    {   /// unknown modifier
-                        asmr.printError(modPlace, "Unknown VOP modifier");
-                        good = false;
-                    }
+                    else    /// unknown modifier
+                        ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown VOP modifier")
                 }
-                else
-                {   /// unknown modifier
-                    asmr.printError(modPlace, "Unknown VOP modifier");
-                    good = false;
-                }
+                else /// unknown modifier
+                    ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown VOP modifier")
                 
                 if (alreadyModDefined)
                     asmr.printWarning(modPlace, "OMOD is already defined");
@@ -2326,10 +2175,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                 // RXVEGA: mul/div modifier are accepted in VOP_SDWA but not for VOP_DPP
                 (isGCN14 && (mods & 3)!=0 && vopDPP) ||
                 ((mods&VOP3_CLAMP)!=0 && vopDPP))
-    {
-        asmr.printError(modsPlace, "Mixing modifiers from different encodings is illegal");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(modsPlace, "Mixing modifiers from different encodings is illegal")
     return good;
 }
 
@@ -2353,10 +2199,7 @@ bool GCNAsmUtils::parseVINTRP0P10P20(Assembler& asmr, const char*& linePtr, RegR
         if (p0Code < 3) // as srcReg
             reg = { p0Code, p0Code+1 };
         else
-        {
-            asmr.printError(p0Place, "Unknown VINTRP parameter");
-            return false;
-        }
+            ASM_FAIL_BY_ERROR(p0Place, "Unknown VINTRP parameter")
         return true;
     }
     return false;
@@ -2370,10 +2213,7 @@ bool GCNAsmUtils::parseVINTRPAttr(Assembler& asmr, const char*& linePtr, cxbyte&
     bool goodAttr = true;
     const char* attrPlace = linePtr;
     if (linePtr+4 > end)
-    {
-        asmr.printError(attrPlace, "Expected 'attr' keyword");
-        goodAttr = good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR1(goodAttr = good, attrPlace, "Expected 'attr' keyword")
     char buf[5];
     if (goodAttr)
     {
@@ -2381,8 +2221,7 @@ bool GCNAsmUtils::parseVINTRPAttr(Assembler& asmr, const char*& linePtr, cxbyte&
         if (::strncmp(buf, "attr", 4)!=0)
         {
             while (linePtr!=end && *linePtr!=' ') linePtr++;
-            asmr.printError(attrPlace, "Expected 'attr' keyword");
-            goodAttr = good = false;
+            ASM_NOTGOOD_BY_ERROR1(goodAttr = good, attrPlace, "Expected 'attr' keyword")
         }
         else
             linePtr+=4;
@@ -2400,19 +2239,15 @@ bool GCNAsmUtils::parseVINTRPAttr(Assembler& asmr, const char*& linePtr, cxbyte&
             goodAttr = good = false;
         }
         if (attrVal >= 64)
-        {
-            asmr.printError(attrNumPlace, "Attribute number out of range (0-63)");
-            goodAttr = good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR1(goodAttr = good, attrNumPlace,
+                        "Attribute number out of range (0-63)")
     }
     if (goodAttr)
     {   // parse again if no error before
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!='.')
-        {
-            asmr.printError(linePtr, "Expected '.' after attribute number");
-            goodAttr = good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR1(goodAttr = good, linePtr,
+                            "Expected '.' after attribute number")
         else
             ++linePtr;
     }
@@ -2420,20 +2255,14 @@ bool GCNAsmUtils::parseVINTRPAttr(Assembler& asmr, const char*& linePtr, cxbyte&
     {   // parse again if no error before
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end)
-        {
-            asmr.printError(linePtr, "Expected attribute component");
-            goodAttr = good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR1(goodAttr = good, linePtr, "Expected attribute component")
     }
     char attrCmpName = 0;
     if (goodAttr)
     {   // parse only attribute component if no error before
         attrCmpName = toLower(*linePtr);
         if (attrCmpName!='x' && attrCmpName!='y' && attrCmpName!='z' && attrCmpName!='w')
-        {
-            asmr.printError(linePtr, "Expected attribute component");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected attribute component")
         linePtr++;
     }
     
@@ -2450,10 +2279,7 @@ bool GCNAsmUtils::getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     if (linePtr == end)
-    {
-        asmr.printError(linePtr, (std::string("Expected ")+objName).c_str());
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(linePtr, (std::string("Expected ")+objName).c_str())
     const char* nameStr = linePtr;
     if (isAlnum(*linePtr) || *linePtr == '_' || *linePtr == '.')
     {
@@ -2469,10 +2295,7 @@ bool GCNAsmUtils::getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char
         return false;
     }
     if (maxOutStrSize-1 < size_t(linePtr-nameStr))
-    {
-        asmr.printError(linePtr, (std::string(objName)+" is too long").c_str());
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(linePtr, (std::string(objName)+" is too long").c_str())
     const size_t outStrSize = std::min(maxOutStrSize-1, size_t(linePtr-nameStr));
     std::copy(nameStr, nameStr+outStrSize, outStr);
     outStr[outStrSize] = 0; // null-char
@@ -2483,15 +2306,9 @@ bool GCNAsmUtils::checkGCNEncodingSize(Assembler& asmr, const char* insnPtr,
                      GCNEncSize gcnEncSize, uint32_t wordsNum)
 {
     if (gcnEncSize==GCNEncSize::BIT32 && wordsNum!=1)
-    {
-        asmr.printError(insnPtr, "32-bit encoding specified when 64-bit encoding");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(insnPtr, "32-bit encoding specified when 64-bit encoding")
     if (gcnEncSize==GCNEncSize::BIT64 && wordsNum!=2)
-    {
-        asmr.printError(insnPtr, "64-bit encoding specified when 32-bit encoding");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(insnPtr, "64-bit encoding specified when 32-bit encoding")
     return true;
 }
 
@@ -2499,15 +2316,9 @@ bool GCNAsmUtils::checkGCNVOPEncoding(Assembler& asmr, const char* insnPtr,
                      GCNVOPEnc vopEnc, const VOPExtraModifiers* modifiers)
 {
     if (vopEnc==GCNVOPEnc::DPP && !modifiers->needDPP)
-    {
-        asmr.printError(insnPtr, "DPP encoding specified when DPP not present");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(insnPtr, "DPP encoding specified when DPP not present")
     if (vopEnc==GCNVOPEnc::SDWA && !modifiers->needSDWA)
-    {
-        asmr.printError(insnPtr, "DPP encoding specified when DPP not present");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(insnPtr, "DPP encoding specified when DPP not present")
     return true;
 }
 
@@ -2516,31 +2327,17 @@ bool GCNAsmUtils::checkGCNVOPExtraModifers(Assembler& asmr, uint16_t arch, bool 
                  VOPExtraModifiers& extraMods, const char* instrPlace)
 {
     if (needImm)
-    {
-        asmr.printError(instrPlace, "Literal with SDWA or DPP word is illegal");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Literal with SDWA or DPP word is illegal")
     if ((arch & ARCH_RXVEGA)==0 && !src0Op.range.isVGPR())
-    {
-        asmr.printError(instrPlace, "SRC0 must be a vector register with "
-                    "SDWA or DPP word");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "SRC0 must be a vector register with "
+                    "SDWA or DPP word")
     if ((arch & ARCH_RXVEGA)!=0 && extraMods.needDPP && !src0Op.range.isVGPR())
-    {
-        asmr.printError(instrPlace, "SRC0 must be a vector register with DPP word");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "SRC0 must be a vector register with DPP word")
     if (vop3)
-    {   // if VOP3 and (VOP_DPP or VOP_SDWA)
-        asmr.printError(instrPlace, "Mixing VOP3 with SDWA or WORD is illegal");
-        return false;
-    }
+        // if VOP3 and (VOP_DPP or VOP_SDWA)
+        ASM_FAIL_BY_ERROR(instrPlace, "Mixing VOP3 with SDWA or WORD is illegal")
     if (sextFlags && extraMods.needDPP)
-    {
-        asmr.printError(instrPlace, "SEXT modifiers is unavailable for DPP word");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "SEXT modifiers is unavailable for DPP word")
     if (!extraMods.needSDWA && !extraMods.needDPP)
     {
         if (gcnVOPEnc!=GCNVOPEnc::DPP)
