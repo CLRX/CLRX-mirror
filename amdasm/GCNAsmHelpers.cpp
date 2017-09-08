@@ -1784,7 +1784,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                         unused = 2;
                                     else if (::strcmp(name+namePos, "pad")!=0)
                                         ASM_NOTGOOD_BY_ERROR(enumPlace,
-                                                    "Unknown dst_unused");
+                                                    "Unknown dst_unused")
                                     extraMods->dstUnused = unused;
                                     if (haveDstUnused)
                                         asmr.printWarning(modPlace,
