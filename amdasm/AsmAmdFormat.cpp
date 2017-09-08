@@ -331,16 +331,10 @@ void AsmAmdPseudoOps::getDriverVersion(AsmAmdHandler& handler, const char* lineP
     const char* symNamePlace = linePtr;
     const CString symName = extractScopedSymName(linePtr, end, false);
     if (symName.empty())
-    {
-        asmr.printError(symNamePlace, "Illegal symbol name");
-        return;
-    }
+        ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
     size_t symNameLength = symName.size();
     if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
-    {
-        asmr.printError(symNamePlace, "Symbol '.' can be only in global scope");
-        return;
-    }
+        ASM_RETURN_BY_ERROR(symNamePlace, "Symbol '.' can be only in global scope")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -381,16 +375,9 @@ void AsmAmdPseudoOps::addMetadata(AsmAmdHandler& handler, const char* pseudoOpPl
 {
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL)
-    {
-        asmr.printError(pseudoOpPlace, "Metadata can be defined only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Metadata can be defined only inside kernel")
     if (handler.kernelStates[asmr.currentKernel]->configSection!=ASMSECT_NONE)
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Metadata can't be defined if configuration was defined");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Metadata can't be defined if configuration was defined")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -411,18 +398,12 @@ void AsmAmdPseudoOps::doConfig(AsmAmdHandler& handler, const char* pseudoOpPlace
 {
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL)
-    {
-        asmr.printError(pseudoOpPlace, "Kernel config can be defined only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Kernel config can be defined only inside kernel")
     AsmAmdHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.metadataSection!=ASMSECT_NONE || kernel.headerSection!=ASMSECT_NONE ||
         !kernel.calNoteSections.empty())
-    {
-        asmr.printError(pseudoOpPlace, "Config can't be defined if metadata,header and/or"
-                        " CALnotes section exists");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Config can't be defined if metadata,header and/or"
+                        " CALnotes section exists")
 
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -448,17 +429,10 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
     if (asmr.currentKernel==ASMKERN_GLOBAL)
-    {
-        asmr.printError(pseudoOpPlace, "CALNote can be defined only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("CALNote can be defined only inside kernel")
     AsmAmdHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.configSection!=ASMSECT_NONE)
-    {
-        asmr.printError(pseudoOpPlace,
-                    "CALNote can't be defined if configuration was defined");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("CALNote can't be defined if configuration was defined")
     
     skipSpacesToEnd(linePtr, end);
     uint64_t value = 0;
@@ -496,17 +470,10 @@ void AsmAmdPseudoOps::addCustomCALNote(AsmAmdHandler& handler, const char* pseud
     uint64_t value;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL)
-    {
-        asmr.printError(pseudoOpPlace, "CALNote can be defined only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("CALNote can be defined only inside kernel")
     AsmAmdHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.configSection!=ASMSECT_NONE)
-    {
-        asmr.printError(pseudoOpPlace,
-                    "CALNote can't be defined if configuration was defined");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("CALNote can't be defined if configuration was defined")
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
@@ -521,16 +488,9 @@ void AsmAmdPseudoOps::addHeader(AsmAmdHandler& handler, const char* pseudoOpPlac
 {
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL)
-    {
-        asmr.printError(pseudoOpPlace, "Header can be defined only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Header can be defined only inside kernel")
     if (handler.kernelStates[asmr.currentKernel]->configSection!=ASMSECT_NONE)
-    {
-        asmr.printError(pseudoOpPlace,
-                "Header can't be defined if configuration was defined");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Header can't be defined if configuration was defined")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -557,10 +517,7 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
         handler.sections[asmr.currentSection].type != AsmSectionType::AMD_CALNOTE ||
         (handler.sections[asmr.currentSection].extraId >= 32 ||
         ((1U<<handler.sections[asmr.currentSection].extraId) & requiredCalNoteIdMask))==0)
-    {
-        asmr.printError(pseudoOpPlace, (std::string("Illegal place of ")+entryName).c_str());
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR((std::string("Illegal place of ")+entryName).c_str())
     
     if (handler.sections[asmr.currentSection].extraId == CALNOTE_ATI_UAV)
     {   // special version for uav (four values per entry)
@@ -690,10 +647,7 @@ void AsmAmdPseudoOps::doSampler(AsmAmdHandler& handler, const char* pseudoOpPlac
         
         if (asmr.currentKernel==ASMKERN_GLOBAL ||
             asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-        {
-            asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-            return;
-        }
+            PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
         
         AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
         
@@ -727,10 +681,7 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
     
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
@@ -901,10 +852,7 @@ void AsmAmdPseudoOps::setConfigBoolValue(AsmAmdHandler& handler, const char* pse
     
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     
     skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
@@ -970,10 +918,7 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     
     uint64_t out[3] = { 0, 0, 0 };
     if (!parseCWS(asmr, pseudoOpPlace, linePtr, out))
@@ -1032,10 +977,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     const char* end = asmr.line + asmr.lineSize;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of UserData");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of UserData")
     
     cxuint dataClass = 0;
     bool good = true;
@@ -1088,10 +1030,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     
     AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
     if (config.userDatas.size() == 16)
-    {
-        asmr.printError(pseudoOpPlace, "Too many UserData elements");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Too many UserData elements")
     AmdUserData userData;
     userData.dataClass = dataClass;
     userData.apiSlot = apiSlot;
@@ -1106,10 +1045,7 @@ void AsmAmdPseudoOps::setDimensions(AsmAmdHandler& handler, const char* pseudoOp
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     cxuint dimMask = 0;
     if (!parseDimensions(asmr, linePtr, dimMask))
         return;
@@ -1557,10 +1493,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of kernel argument");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of kernel argument")
     
     auto& kernelState = *handler.kernelStates[asmr.currentKernel];
     AmdKernelArgInput argInput;

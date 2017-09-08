@@ -298,6 +298,24 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     static bool checkPseudoOpName(const CString& string);
 };
 
+#define PSEUDOOP_RETURN_BY_ERROR(STRING) \
+    { \
+        asmr.printError(pseudoOpPlace, STRING); \
+        return; \
+    }
+
+#define ASM_RETURN_BY_ERROR(PLACE, STRING) \
+    { \
+        asmr.printError(PLACE, STRING); \
+        return; \
+    }
+
+#define ASM_FAIL_BY_ERROR(PLACE, STRING) \
+    { \
+        asmr.printError(PLACE, STRING); \
+        return false; \
+    }
+
 extern CLRX_INTERNAL cxbyte cstrtobyte(const char*& str, const char* end);
 
 extern const cxbyte tokenCharTable[96] CLRX_INTERNAL;

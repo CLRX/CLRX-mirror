@@ -438,16 +438,10 @@ void AsmGalliumPseudoOps::getXXXVersion(AsmGalliumHandler& handler, const char* 
     const char* symNamePlace = linePtr;
     const CString symName = extractScopedSymName(linePtr, end, false);
     if (symName.empty())
-    {
-        asmr.printError(symNamePlace, "Illegal symbol name");
-        return;
-    }
+        ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
     size_t symNameLength = symName.size();
     if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
-    {
-        asmr.printError(symNamePlace, "Symbol '.' can be only in global scope");
-        return;
-    }
+        ASM_RETURN_BY_ERROR(symNamePlace, "Symbol '.' can be only in global scope")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -474,16 +468,9 @@ void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseud
 {
     Assembler& asmr = handler.assembler;
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Configuration outside kernel definition");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Configuration outside kernel definition")
     if (handler.kernelStates[asmr.currentKernel]->hasProgInfo)
-    {
-        asmr.printError(pseudoOpPlace,
-                "Configuration can't be defined if progInfo was defined");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Configuration can't be defined if progInfo was defined")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -498,16 +485,10 @@ void AsmGalliumPseudoOps::doControlDirective(AsmGalliumHandler& handler,
 {
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL)
-    {
-        asmr.printError(pseudoOpPlace, "Kernel control directive can be defined "
-                    "only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Kernel control directive can be defined "
+                    "only inside kernel")
     if (handler.determineLLVMVersion() < 40000U)
-    {
-        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -540,15 +521,9 @@ void AsmGalliumPseudoOps::setDimensions(AsmGalliumHandler& handler,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         handler.inside != AsmGalliumHandler::Inside::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (amdHsa && handler.determineLLVMVersion() < 40000U)
-    {
-        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
         
     cxuint dimMask = 0;
     if (!parseDimensions(asmr, linePtr, dimMask))
@@ -573,16 +548,9 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
     
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         handler.inside != AsmGalliumHandler::Inside::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
-    
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (target >= GALLIUMCVAL_HSA_FIRST_PARAM && handler.determineLLVMVersion() < 40000U)
-    {
-        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
@@ -765,16 +733,9 @@ void AsmGalliumPseudoOps::setConfigBoolValue(AsmGalliumHandler& handler,
     
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         handler.inside != AsmGalliumHandler::Inside::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
-    
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (target >= GALLIUMCVAL_HSA_FIRST_PARAM && handler.determineLLVMVersion() < 40000U)
-    {
-        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -816,15 +777,9 @@ void AsmGalliumPseudoOps::setDefaultHSAFeatures(AsmGalliumHandler& handler,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (handler.determineLLVMVersion() < 40000U)
-    {
-        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -844,15 +799,9 @@ void AsmGalliumPseudoOps::setMachine(AsmGalliumHandler& handler, const char* pse
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (handler.determineLLVMVersion() < 40000U)
-    {
-        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
     
     uint16_t kindValue = 0, majorValue = 0;
     uint16_t minorValue = 0, steppingValue = 0;
@@ -875,15 +824,9 @@ void AsmGalliumPseudoOps::setCodeVersion(AsmGalliumHandler& handler,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (handler.determineLLVMVersion() < 40000U)
-    {
-        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
     
     uint16_t majorValue = 0, minorValue = 0;
     if (!AsmROCmPseudoOps::parseCodeVersion(asmr, linePtr, majorValue, minorValue))
@@ -902,15 +845,9 @@ void AsmGalliumPseudoOps::setReservedXgprs(AsmGalliumHandler& handler,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (handler.determineLLVMVersion() < 40000U)
-    {
-        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
     
     uint16_t gprFirst = 0, gprCount = 0;
     if (!AsmROCmPseudoOps::parseReservedXgprs(asmr, linePtr, inVgpr, gprFirst, gprCount))
@@ -937,15 +874,9 @@ void AsmGalliumPseudoOps::setUseGridWorkGroupCount(AsmGalliumHandler& handler,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (handler.determineLLVMVersion() < 40000U)
-    {
-        asmr.printError(pseudoOpPlace, "HSA configuration pseudo-op only for LLVM>=4.0.0");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
     
     cxuint dimMask = 0;
     if (!parseDimensions(asmr, linePtr, dimMask))
@@ -963,10 +894,7 @@ void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
 {
     Assembler& asmr = handler.assembler;
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Arguments outside kernel definition");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Arguments outside kernel definition")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1002,15 +930,9 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     const char* end = asmr.line + asmr.lineSize;
     
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Argument definition outside kernel configuration");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Argument definition outside kernel configuration")
     if (handler.inside != AsmGalliumHandler::Inside::ARGS)
-    {
-        asmr.printError(pseudoOpPlace, "Argument definition outside arguments list");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Argument definition outside arguments list")
     
     skipSpacesToEnd(linePtr, end);
     char name[20];
@@ -1155,16 +1077,9 @@ void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
 {
     Assembler& asmr = handler.assembler;
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "ProgInfo outside kernel definition");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("ProgInfo outside kernel definition")
     if (handler.output.kernels[asmr.currentKernel].useConfig)
-    {
-        asmr.printError(pseudoOpPlace,
-                "ProgInfo can't be defined if configuration was exists");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("ProgInfo can't be defined if configuration was exists")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1179,15 +1094,9 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
     const char* end = asmr.line + asmr.lineSize;
     
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "ProgInfo entry outside kernel configuration");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("ProgInfo entry outside kernel configuration")
     if (handler.inside != AsmGalliumHandler::Inside::PROGINFO)
-    {
-        asmr.printError(pseudoOpPlace, "ProgInfo entry definition outside ProgInfo");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("ProgInfo entry definition outside ProgInfo")
     
     skipSpacesToEnd(linePtr, end);
     const char* addrPlace = linePtr;
@@ -1217,15 +1126,9 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
     kstate.hasProgInfo = true;
     const cxuint llvmVersion = handler.determineLLVMVersion();
     if (llvmVersion<30900U && kstate.progInfoEntries == 3)
-    {
-        asmr.printError(pseudoOpPlace, "Maximum 3 entries can be in ProgInfo");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Maximum 3 entries can be in ProgInfo")
     if (llvmVersion>=30900U && kstate.progInfoEntries == 5)
-    {
-        asmr.printError(pseudoOpPlace, "Maximum 5 entries can be in ProgInfo");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Maximum 5 entries can be in ProgInfo")
     GalliumProgInfoEntry& pentry = handler.output.kernels[asmr.currentKernel]
             .progInfo[kstate.progInfoEntries++];
     pentry.address = entryAddr;
@@ -1306,10 +1209,7 @@ void AsmGalliumPseudoOps::doKCode(AsmGalliumHandler& handler, const char* pseudo
         return;
     
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CODE)
-    {
-        asmr.printError(pseudoOpPlace, "KCode outside code");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("KCode outside code")
     if (handler.kcodeSelStack.empty())
         handler.saveKcodeCurrentAllocRegs();
     // push to stack
@@ -1338,15 +1238,9 @@ void AsmGalliumPseudoOps::doKCodeEnd(AsmGalliumHandler& handler, const char* pse
 {
     Assembler& asmr = handler.assembler;
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CODE)
-    {
-        asmr.printError(pseudoOpPlace, "KCodeEnd outside code");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("KCodeEnd outside code")
     if (handler.kcodeSelStack.empty())
-    {
-        asmr.printError(pseudoOpPlace, "'.kcodeend' without '.kcode'");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("'.kcodeend' without '.kcode'")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     

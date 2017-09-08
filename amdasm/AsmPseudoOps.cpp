@@ -214,10 +214,7 @@ bool AsmPseudoOps::parseFormat(Assembler& asmr, const char*& linePtr, BinaryForm
     else if (::strcmp(formatName, "raw")==0)
         format = BinaryFormat::RAWCODE;
     else
-    {
-        asmr.printError(formatPlace, "Unknown output format type");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(formatPlace, "Unknown output format type")
     return true;
 }
 
@@ -233,10 +230,7 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
     if (checkGarbagesAtEnd(asmr, linePtr))
     {
         if (asmr.formatHandler!=nullptr)
-        {
-            asmr.printError(formatPlace, "Output format type is already defined");
-            return;
-        }
+            ASM_RETURN_BY_ERROR(formatPlace, "Output format type is already defined")
         asmr.format = format;
     }
 }
@@ -553,11 +547,8 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
         }
     }
     if (!ifs)
-    {
-        asmr.printError(namePlace, (std::string("Binary file '") + filename +
-                    "' not found or unavailable in any directory").c_str());
-        return;
-    }
+        ASM_RETURN_BY_ERROR(namePlace, (std::string("Binary file '") + filename +
+                    "' not found or unavailable in any directory").c_str())
     // exception for checking file seeking
     bool seekingIsWorking = true;
     ifs.exceptions(std::ios::badbit | std::ios::failbit); // exceptions
@@ -579,10 +570,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
         char* output = reinterpret_cast<char*>(asmr.reserveData(toRead));
         ifs.read(output, toRead);
         if (ifs.gcount() != std::streamsize(toRead))
-        {
-            asmr.printError(namePlace, "Can't read whole needed file content");
-            return;
-        }
+            ASM_RETURN_BY_ERROR(namePlace, "Can't read whole needed file content")
     }
     else
     {   /* for sequential files, likes fifo */
@@ -674,11 +662,7 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
     if (!asmr.isWriteableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                "Writing data into non-writeable section is illegal");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Writing data into non-writeable section is illegal")
     skipSpacesToEnd(linePtr, end);
     if (linePtr == end)
         return;
@@ -760,11 +744,7 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char* pseudoOpPlace,
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
     if (!asmr.isWriteableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Writing data into non-writeable section is illegal");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Writing data into non-writeable section is illegal");
     skipSpacesToEnd(linePtr, end);
     if (linePtr == end)
         return;
@@ -793,11 +773,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char* pseudoOpPlace,
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
     if (!asmr.isWriteableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Writing data into non-writeable section is illegal");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Writing data into non-writeable section is illegal")
     skipSpacesToEnd(linePtr, end);
     if (linePtr == end)
         return;
@@ -840,11 +816,7 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char* pseudoOpPlace,
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
     if (!asmr.isWriteableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Writing data into non-writeable section is illegal");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Writing data into non-writeable section is illegal")
     skipSpacesToEnd(linePtr, end);
     if (linePtr == end)
         return;
@@ -865,11 +837,7 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char* pseudoOpPlace,
 {
     const char* end = asmr.line + asmr.lineSize;
     if (!asmr.isWriteableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Writing data into non-writeable section is illegal");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Writing data into non-writeable section is illegal")
     asmr.initializeOutputFormat();
     skipSpacesToEnd(linePtr, end);
     if (linePtr == end)
@@ -1014,11 +982,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
     const char* end = asmr.line + asmr.lineSize;
     
     if (!asmr.isWriteableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Writing data into non-writeable section is illegal");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Writing data into non-writeable section is illegal")
     
     skipSpacesToEnd(linePtr, end);
     uint64_t repeat = 0, size = 1, value = 0;
@@ -1098,11 +1062,8 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char* pseudoOpPlace, const char
     const char* end = asmr.line + asmr.lineSize;
     
     if (!asmr.isAddressableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Change output counter inside non-addressable section is illegal");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Change output counter inside non-addressable "
+                    "section is illegal");
     
     skipSpacesToEnd(linePtr, end);
     uint64_t size = 1, value = 0;
@@ -1143,11 +1104,8 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
     const char* end = asmr.line + asmr.lineSize;
     
     if (!asmr.isAddressableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Change output counter inside non-addressable section is illegal");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Change output counter inside non-addressable"
+                    " section is illegal")
     
     skipSpacesToEnd(linePtr, end);
     uint64_t alignment, value = 0, maxAlign = 0;
@@ -1224,11 +1182,8 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
     const char* end = asmr.line + asmr.lineSize;
     
     if (!asmr.isAddressableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Change output counter inside non-addressable section is illegal");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Change output counter inside non-addressable "
+                    "section is illegal")
     
     skipSpacesToEnd(linePtr, end);
     uint64_t alignment, value = 0, maxAlign = 0;
@@ -1271,10 +1226,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
     
     uint64_t outPos = asmr.currentOutPos;
     if (outPos&(sizeof(Word)-1))
-    {
-        asmr.printError(pseudoOpPlace, "Offset is not aligned to word");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Offset is not aligned to word")
     
     const uint64_t bytesToFill = ((outPos&(alignment-1))!=0) ?
             alignment - (outPos&(alignment-1)) : 0;
@@ -1482,10 +1434,7 @@ void AsmPseudoOps::doIfCmpStr(Assembler& asmr, const char* pseudoOpPlace,
     bool good = true;
     while (linePtr != end && *linePtr != ',') linePtr++;
     if (linePtr == end)
-    {
-        asmr.printError(linePtr, "Missing second string");
-        return;
-    }
+        ASM_RETURN_BY_ERROR(linePtr, "Missing second string")
     const char* firstStrEnd = linePtr;
     if (good) linePtr++; // comma
     else return;
@@ -1664,10 +1613,7 @@ void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpPlace,
         return;
     
     if (asmr.repetitionLevel == 1000)
-    {
-        asmr.printError(pseudoOpPlace, "Repetition level is greater than 1000");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Repetition level is greater than 1000")
     asmr.pushClause(pseudoOpPlace, AsmClauseType::REPEAT);
     if (repeatsNum == 0)
     {   /* skip it */
@@ -1703,10 +1649,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
     const char* macroNamePlace = linePtr;
     CString macroName = extractSymName(linePtr, end, false);
     if (macroName.empty())
-    {
-        asmr.printError(macroNamePlace, "Expected macro name");
-        return;
-    }
+        ASM_RETURN_BY_ERROR(macroNamePlace, "Expected macro name")
     if (asmr.macroCase)
         toLowerString(macroName);
     /* parse args */
@@ -1732,10 +1675,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         const char* argPlace = linePtr;
         CString argName = extractSymName(linePtr, end, false);
         if (argName.empty())
-        {
-            asmr.printError(argPlace, "Expected macro argument name");
-            return; //
-        }
+            ASM_RETURN_BY_ERROR(argPlace, "Expected macro argument name")
         bool argRequired = false;
         bool argVarArgs = false;
         bool argGood = true;
@@ -1858,10 +1798,7 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*
     const char* symNamePlace = linePtr;
     CString symName = extractSymName(linePtr, end, false);
     if (symName.empty())
-    {
-        asmr.printError(symNamePlace, "Expected argument name");
-        return;
-    }
+        ASM_RETURN_BY_ERROR(symNamePlace, "Expected argument name")
     /* parse args */
     std::vector<CString> symValues;
     std::string symValString;
@@ -1893,10 +1830,7 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*
     }
     
     if (asmr.repetitionLevel == 1000)
-    {
-        asmr.printError(pseudoOpPlace, "Repetition level is greater than 1000");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Repetition level is greater than 1000")
     
     if (symValues.empty())
         symValues.push_back("");
@@ -1930,10 +1864,7 @@ void AsmPseudoOps::purgeMacro(Assembler& asmr, const char* linePtr)
     CString macroName = extractSymName(linePtr, end, false);
     bool good = true;
     if (macroName.empty())
-    {
-        asmr.printError(macroNamePlace, "Expected macro name");
-        good = false;
-    }
+        ASM_RETURN_BY_ERROR(macroNamePlace, "Expected macro name")
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     if (asmr.macroCase)
@@ -2193,11 +2124,7 @@ void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace
     
     if (asmr.currentSection==ASMSECT_ABS ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CODE)
-    {
-        asmr.printError(pseudoOpPlace,
-                        "Defining codeflow in non-code section is illegal");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Defining codeflow in non-code section is illegal")
     
     const char* end = asmr.line+asmr.lineSize;
     if (acceptArgs)
@@ -2235,10 +2162,7 @@ void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
     const char* symNamePlace = linePtr;
     const CString symName = extractScopedSymName(linePtr, end, false);
     if (symName.empty())
-    {
-        asmr.printError(symNamePlace, "Illegal symbol name");
-        return;
-    }
+        ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
     size_t symNameLength = symName.size();
     if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
     {

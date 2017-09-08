@@ -347,10 +347,7 @@ void AsmROCmPseudoOps::doConfig(AsmROCmHandler& handler, const char* pseudoOpPla
 {
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL)
-    {
-        asmr.printError(pseudoOpPlace, "Kernel config can be defined only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Kernel config can be defined only inside kernel")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -364,11 +361,8 @@ void AsmROCmPseudoOps::doControlDirective(AsmROCmHandler& handler,
 {
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL)
-    {
-        asmr.printError(pseudoOpPlace, "Kernel control directive can be defined "
-                    "only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Kernel control directive can be defined "
+                    "only inside kernel")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -390,10 +384,7 @@ void AsmROCmPseudoOps::doFKernel(AsmROCmHandler& handler, const char* pseudoOpPl
 {
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL)
-    {
-        asmr.printError(pseudoOpPlace, ".fkernel can be only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR(".fkernel can be only inside kernel")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     handler.kernelStates[asmr.currentKernel]->isFKernel = true;
@@ -643,10 +634,7 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
     
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
@@ -732,10 +720,7 @@ void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,
     
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     
     skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
@@ -753,10 +738,7 @@ void AsmROCmPseudoOps::setDefaultHSAFeatures(AsmROCmHandler& handler,
     
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -773,10 +755,7 @@ void AsmROCmPseudoOps::setDimensions(AsmROCmHandler& handler, const char* pseudo
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     cxuint dimMask = 0;
     if (!parseDimensions(asmr, linePtr, dimMask))
         return;
@@ -838,10 +817,7 @@ void AsmROCmPseudoOps::setMachine(AsmROCmHandler& handler, const char* pseudoOpP
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     
     uint16_t kindValue = 0, majorValue = 0;
     uint16_t minorValue = 0, steppingValue = 0;
@@ -890,10 +866,7 @@ void AsmROCmPseudoOps::setCodeVersion(AsmROCmHandler& handler, const char* pseud
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     
     uint16_t majorValue = 0, minorValue = 0;
     if (!parseCodeVersion(asmr, linePtr, majorValue, minorValue))
@@ -964,10 +937,7 @@ void AsmROCmPseudoOps::setReservedXgprs(AsmROCmHandler& handler, const char* pse
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     
     uint16_t gprFirst = 0, gprCount = 0;
     if (!parseReservedXgprs(asmr, linePtr, inVgpr, gprFirst, gprCount))
@@ -993,10 +963,7 @@ void AsmROCmPseudoOps::setUseGridWorkGroupCount(AsmROCmHandler& handler,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     cxuint dimMask = 0;
     if (!parseDimensions(asmr, linePtr, dimMask))
         return;
@@ -1080,10 +1047,7 @@ void AsmROCmPseudoOps::doKCode(AsmROCmHandler& handler, const char* pseudoOpPlac
         return;
     
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CODE)
-    {
-        asmr.printError(pseudoOpPlace, "KCode outside code");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("KCode outside code")
     if (handler.kcodeSelStack.empty())
         handler.saveKcodeCurrentAllocRegs();
     // push to stack
@@ -1112,15 +1076,9 @@ void AsmROCmPseudoOps::doKCodeEnd(AsmROCmHandler& handler, const char* pseudoOpP
 {
     Assembler& asmr = handler.assembler;
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CODE)
-    {
-        asmr.printError(pseudoOpPlace, "KCodeEnd outside code");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("KCodeEnd outside code")
     if (handler.kcodeSelStack.empty())
-    {
-        asmr.printError(pseudoOpPlace, "'.kcodeend' without '.kcode'");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("'.kcodeend' without '.kcode'")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     

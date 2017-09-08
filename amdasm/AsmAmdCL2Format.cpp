@@ -475,16 +475,10 @@ void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char*
     const char* symNamePlace = linePtr;
     const CString symName = extractScopedSymName(linePtr, end, false);
     if (symName.empty())
-    {
-        asmr.printError(symNamePlace, "Illegal symbol name");
-        return;
-    }
+        ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
     size_t symNameLength = symName.size();
     if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
-    {
-        asmr.printError(symNamePlace, "Symbol '.' can be only in global scope");
-        return;
-    }
+        ASM_RETURN_BY_ERROR(symNamePlace, "Symbol '.' can be only in global scope")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -527,10 +521,7 @@ void AsmAmdCL2PseudoOps::doGlobalData(AsmAmdCL2Handler& handler, const char* pse
 {
     Assembler& asmr = handler.assembler;
     if (handler.getDriverVersion() < 191205)
-    {
-        asmr.printError(pseudoOpPlace, "Global Data allowed only for new binary format");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Global Data allowed only for new binary format")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -550,10 +541,7 @@ void AsmAmdCL2PseudoOps::doRwData(AsmAmdCL2Handler& handler, const char* pseudoO
     Assembler& asmr = handler.assembler;
     
     if (handler.getDriverVersion() < 191205)
-    {
-        asmr.printError(pseudoOpPlace, "Global RWData allowed only for new binary format");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Global RWData allowed only for new binary format")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -574,10 +562,7 @@ void AsmAmdCL2PseudoOps::doBssData(AsmAmdCL2Handler& handler, const char* pseudo
     const char* end = asmr.line + asmr.lineSize;
     
     if (handler.getDriverVersion() < 191205)
-    {
-        asmr.printError(pseudoOpPlace, "Global BSS allowed only for new binary format");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Global BSS allowed only for new binary format")
     
     uint64_t sectionAlign = 0;
     bool good = true;
@@ -628,16 +613,10 @@ void AsmAmdCL2PseudoOps::doSamplerInit(AsmAmdCL2Handler& handler, const char* ps
 {
     Assembler& asmr = handler.assembler;
     if (handler.getDriverVersion() < 191205)
-    {
-        asmr.printError(pseudoOpPlace, "SamplerInit allowed only for new binary format");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("SamplerInit allowed only for new binary format")
     if (handler.output.samplerConfig)
-    {   // error
-        asmr.printError(pseudoOpPlace,
-                "SamplerInit is illegal if sampler definitions are present");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("SamplerInit is illegal if sampler "
+                    "definitions are present")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -657,15 +636,9 @@ void AsmAmdCL2PseudoOps::doSampler(AsmAmdCL2Handler& handler, const char* pseudo
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel!=ASMKERN_GLOBAL && asmr.currentKernel!=ASMKERN_INNER &&
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op");
     if (handler.getDriverVersion() < 191205)
-    {
-        asmr.printError(pseudoOpPlace, "Sampler allowed only for new binary format");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Sampler allowed only for new binary format")
     
     bool inMain = asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER;
     const char* end = asmr.line + asmr.lineSize;
@@ -690,11 +663,8 @@ void AsmAmdCL2PseudoOps::doSampler(AsmAmdCL2Handler& handler, const char* pseudo
     else
     {   // global sampler definitions
         if (handler.samplerInitSection!=ASMSECT_NONE)
-        {   // error
-            asmr.printError(pseudoOpPlace,
-                    "Illegal sampler definition if samplerinit was defined");
-            return;
-        }
+            PSEUDOOP_RETURN_BY_ERROR("Illegal sampler definition if "
+                    "samplerinit was defined")
         handler.output.samplerConfig = true;
         if (linePtr == end)
             return; /* if no samplers */
@@ -719,15 +689,9 @@ void AsmAmdCL2PseudoOps::doSamplerReloc(AsmAmdCL2Handler& handler,
     const char* end = asmr.line + asmr.lineSize;
     
     if (asmr.currentKernel!=ASMKERN_GLOBAL && asmr.currentKernel!=ASMKERN_INNER)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of samplerreloc pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of samplerreloc pseudo-op")
     if (handler.getDriverVersion() < 191205)
-    {
-        asmr.printError(pseudoOpPlace, "SamplerReloc allowed only for new binary format");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("SamplerReloc allowed only for new binary format")
     
     skipSpacesToEnd(linePtr, end);
     const char* offsetPlace = linePtr;
@@ -742,11 +706,8 @@ void AsmAmdCL2PseudoOps::doSamplerReloc(AsmAmdCL2Handler& handler,
         return;
     
     if (sectionId != ASMSECT_ABS && sectionId != handler.rodataSection)
-    {
-        asmr.printError(offsetPlace, "Offset can be an absolute value "
-                    "or globaldata place");
-        return;
-    }
+        ASM_RETURN_BY_ERROR(offsetPlace, "Offset can be an absolute value "
+                        "or globaldata place")
     // put to sampler offsets
     if (handler.output.samplerOffsets.size() <= samplerId)
         handler.output.samplerOffsets.resize(samplerId+1);
@@ -758,24 +719,16 @@ void AsmAmdCL2PseudoOps::doControlDirective(AsmAmdCL2Handler& handler,
 {
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL)
-    {
-        asmr.printError(pseudoOpPlace, "Kernel control directive can be defined "
-                    "only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Kernel control directive can be defined "
+                    "only inside kernel")
     AsmAmdCL2Handler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.metadataSection!=ASMSECT_NONE || kernel.isaMetadataSection!=ASMSECT_NONE ||
         kernel.setupSection!=ASMSECT_NONE || kernel.stubSection!=ASMSECT_NONE)
-    {
-        asmr.printError(pseudoOpPlace, "Control directive "
-            "can't be defined if metadata,header,setup,stub section exists");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Control directive "
+            "can't be defined if metadata,header,setup,stub section exists")
     if (kernel.configSection != ASMSECT_NONE && !kernel.useHsaConfig)
-    {   // control directive only if hsa config
-        asmr.printError(pseudoOpPlace, "Config and Control directive can't be mixed");
-        return;
-    }
+        // control directive only if hsa config
+        PSEUDOOP_RETURN_BY_ERROR("Config and Control directive can't be mixed")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -803,17 +756,11 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
     
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     const bool useHsaConfig = handler.kernelStates[asmr.currentKernel]->useHsaConfig;
     if (!useHsaConfig && (target >= AMDCL2CVAL_ONLY_HSA_FIRST_PARAM ||
             target == AMDCL2CVAL_USERDATANUM))
-    {
-        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSAConfig pseudo-op only in HSAConfig")
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
@@ -994,24 +941,15 @@ void AsmAmdCL2PseudoOps::setConfigBoolValue(AsmAmdCL2Handler& handler,
     
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     
     const bool useHsaConfig = handler.kernelStates[asmr.currentKernel]->useHsaConfig;
     if (useHsaConfig &&
         (target == AMDCL2CVAL_USESETUP || target == AMDCL2CVAL_USEARGS ||
          target == AMDCL2CVAL_USEENQUEUE || target == AMDCL2CVAL_USEGENERIC))
-    {
-        asmr.printError(pseudoOpPlace, "Illegal config pseudo-op in HSAConfig");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal config pseudo-op in HSAConfig")
     if (!useHsaConfig && target >= AMDCL2CVAL_ONLY_HSA_FIRST_PARAM)
-    {
-        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSAConfig pseudo-op only in HSAConfig")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1067,15 +1005,9 @@ void AsmAmdCL2PseudoOps::setDefaultHSAFeatures(AsmAmdCL2Handler& handler,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (!handler.kernelStates[asmr.currentKernel]->useHsaConfig)
-    {
-        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSAConfig pseudo-op only in HSAConfig")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1093,10 +1025,7 @@ void AsmAmdCL2PseudoOps::setDimensions(AsmAmdCL2Handler& handler,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     cxuint dimMask = 0;
     if (!parseDimensions(asmr, linePtr, dimMask))
         return;
@@ -1114,15 +1043,9 @@ void AsmAmdCL2PseudoOps::setMachine(AsmAmdCL2Handler& handler, const char* pseud
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (!handler.kernelStates[asmr.currentKernel]->useHsaConfig)
-    {
-        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSAConfig pseudo-op only in HSAConfig")
     
     uint16_t kindValue = 0, majorValue = 0;
     uint16_t minorValue = 0, steppingValue = 0;
@@ -1144,15 +1067,9 @@ void AsmAmdCL2PseudoOps::setCodeVersion(AsmAmdCL2Handler& handler,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (!handler.kernelStates[asmr.currentKernel]->useHsaConfig)
-    {
-        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSAConfig pseudo-op only in HSAConfig")
     
     uint16_t majorValue = 0, minorValue = 0;
     if (!AsmROCmPseudoOps::parseCodeVersion(asmr, linePtr, majorValue, minorValue))
@@ -1170,15 +1087,9 @@ void AsmAmdCL2PseudoOps::setReservedXgprs(AsmAmdCL2Handler& handler,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (!handler.kernelStates[asmr.currentKernel]->useHsaConfig)
-    {
-        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSAConfig pseudo-op only in HSAConfig")
     
     uint16_t gprFirst = 0, gprCount = 0;
     if (!AsmROCmPseudoOps::parseReservedXgprs(asmr, linePtr, inVgpr, gprFirst, gprCount))
@@ -1205,15 +1116,9 @@ void AsmAmdCL2PseudoOps::setUseGridWorkGroupCount(AsmAmdCL2Handler& handler,
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (!handler.kernelStates[asmr.currentKernel]->useHsaConfig)
-    {
-        asmr.printError(pseudoOpPlace, "HSAConfig pseudo-op only in HSAConfig");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("HSAConfig pseudo-op only in HSAConfig")
     
     cxuint dimMask = 0;
     if (!parseDimensions(asmr, linePtr, dimMask))
@@ -1233,10 +1138,7 @@ void AsmAmdCL2PseudoOps::setCWS(AsmAmdCL2Handler& handler, const char* pseudoOpP
     const char* end = asmr.line + asmr.lineSize;
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     
     skipSpacesToEnd(linePtr, end);
     uint64_t out[3] = { 0, 0, 0 };
@@ -1254,10 +1156,7 @@ void AsmAmdCL2PseudoOps::doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPl
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of kernel argument");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of kernel argument")
     
     auto& kernelState = *handler.kernelStates[asmr.currentKernel];
     AmdKernelArgInput argInput;
@@ -1323,17 +1222,11 @@ void AsmAmdCL2PseudoOps::doSetupArgs(AsmAmdCL2Handler& handler, const char* pseu
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of kernel argument");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of kernel argument")
     
     auto& kernelState = *handler.kernelStates[asmr.currentKernel];
     if (!kernelState.argNamesSet.empty())
-    {
-        asmr.printError(pseudoOpPlace, "SetupArgs must be as first in argument list");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("SetupArgs must be as first in argument list")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1354,16 +1247,9 @@ void AsmAmdCL2PseudoOps::addMetadata(AsmAmdCL2Handler& handler, const char* pseu
     Assembler& asmr = handler.assembler;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
-    {
-        asmr.printError(pseudoOpPlace, "Metadata can be defined only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Metadata can be defined only inside kernel")
     if (handler.kernelStates[asmr.currentKernel]->configSection!=ASMSECT_NONE)
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Metadata can't be defined if configuration was defined");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Metadata can't be defined if configuration was defined")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1385,21 +1271,12 @@ void AsmAmdCL2PseudoOps::addISAMetadata(AsmAmdCL2Handler& handler,
     Assembler& asmr = handler.assembler;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
-    {
-        asmr.printError(pseudoOpPlace, "ISAMetadata can be defined only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("ISAMetadata can be defined only inside kernel")
     if (handler.kernelStates[asmr.currentKernel]->configSection!=ASMSECT_NONE)
-    {
-        asmr.printError(pseudoOpPlace,
-                    "ISAMetadata can't be defined if configuration was defined");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("ISAMetadata can't be defined if configuration "
+                "was defined")
     if (handler.getDriverVersion() >= 191205)
-    {
-        asmr.printError(pseudoOpPlace, "ISA Metadata allowed only for old binary format");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("ISA Metadata allowed only for old binary format")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1421,16 +1298,9 @@ void AsmAmdCL2PseudoOps::addKernelSetup(AsmAmdCL2Handler& handler,
     Assembler& asmr = handler.assembler;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
-    {
-        asmr.printError(pseudoOpPlace, "Setup can be defined only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Setup can be defined only inside kernel")
     if (handler.kernelStates[asmr.currentKernel]->configSection!=ASMSECT_NONE)
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Setup can't be defined if configuration was defined");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Setup can't be defined if configuration was defined")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1452,21 +1322,11 @@ void AsmAmdCL2PseudoOps::addKernelStub(AsmAmdCL2Handler& handler,
     Assembler& asmr = handler.assembler;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
-    {
-        asmr.printError(pseudoOpPlace, "Stub can be defined only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Stub can be defined only inside kernel")
     if (handler.kernelStates[asmr.currentKernel]->configSection!=ASMSECT_NONE)
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Stub can't be defined if configuration was defined");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Stub can't be defined if configuration was defined")
     if (handler.getDriverVersion() >= 191205)
-    {
-        asmr.printError(pseudoOpPlace, "Stub allowed only for old binary format");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Stub allowed only for old binary format")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1487,23 +1347,15 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
 {
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
-    {
-        asmr.printError(pseudoOpPlace, "Kernel config can be defined only inside kernel");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Kernel config can be defined only inside kernel")
     AsmAmdCL2Handler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.metadataSection!=ASMSECT_NONE || kernel.isaMetadataSection!=ASMSECT_NONE ||
         kernel.setupSection!=ASMSECT_NONE || kernel.stubSection!=ASMSECT_NONE)
-    {
-        asmr.printError(pseudoOpPlace, "Config can't be defined if metadata,header,setup,"
-                        "stub section exists");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Config can't be defined if metadata,header,setup,"
+                        "stub section exists")
     if (kernel.configSection != ASMSECT_NONE && kernel.useHsaConfig != hsaConfig)
-    {   // if config defined and doesn't match type of config
-        asmr.printError(pseudoOpPlace, "Config and HSAConfig can't be mixed");
-        return;
-    }
+        // if config defined and doesn't match type of config
+        PSEUDOOP_RETURN_BY_ERROR("Config and HSAConfig can't be mixed")
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
