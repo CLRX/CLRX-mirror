@@ -95,6 +95,18 @@ AsmExpression::~AsmExpression()
     }
 }
 
+#define ASMX_FAILED_BY_ERROR(PLACE, STRING) \
+    { \
+        assembler.printError(PLACE, STRING); \
+        failed = true; \
+    }
+
+#define ASMX_NOTGOOD_BY_ERROR(PLACE, STRING) \
+    { \
+        assembler.printError(PLACE, STRING); \
+        good = false; \
+    }
+
 bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                  uint64_t& outValue, cxuint& outSectionId) const
 {
@@ -167,9 +179,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                             value = value2 / value;
                         else // error
                         {
-                            assembler.printError(getSourcePos(messagePosIndex),
-                                   "Division by zero");
-                            failed = true;
+                            ASMX_FAILED_BY_ERROR(getSourcePos(messagePosIndex),
+                                   "Division by zero")
                             value = 0;
                         }
                         messagePosIndex++;
@@ -179,9 +190,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                             value = int64_t(value2) / int64_t(value);
                         else // error
                         {
-                            assembler.printError(getSourcePos(messagePosIndex),
-                                   "Division by zero");
-                            failed = true;
+                            ASMX_FAILED_BY_ERROR(getSourcePos(messagePosIndex),
+                                   "Division by zero")
                             value = 0;
                         }
                         messagePosIndex++;
@@ -191,9 +201,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                             value = value2 % value;
                         else // error
                         {
-                            assembler.printError(getSourcePos(messagePosIndex),
-                                   "Division by zero");
-                            failed = true;
+                            ASMX_FAILED_BY_ERROR(getSourcePos(messagePosIndex),
+                                   "Division by zero")
                             value = 0;
                         }
                         messagePosIndex++;
@@ -203,9 +212,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                             value = int64_t(value2) % int64_t(value);
                         else // error
                         {
-                            assembler.printError(getSourcePos(messagePosIndex),
-                                   "Division by zero");
-                            failed = true;
+                            ASMX_FAILED_BY_ERROR(getSourcePos(messagePosIndex),
+                                   "Division by zero")
                             value = 0;
                         }
                         messagePosIndex++;
@@ -421,11 +429,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                     }
                     case AsmExprOp::MULTIPLY:
                         if (!relatives.empty() && !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Multiplication is not allowed for two relative values");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Multiplication is not allowed for two relative values")
                         if (relatives2.empty())
                         {   // multiply relatives
                             if (value2 != 0)
@@ -447,11 +452,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                         break;
                     case AsmExprOp::DIVISION:
                         if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Division is not allowed for any relative value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Division is not allowed for any relative value")
                         if (value != 0)
                             value = value2 / value;
                         else // error
@@ -465,101 +467,74 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                         break;
                     case AsmExprOp::SIGNED_DIVISION:
                         if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Signed division is not allowed for any relative value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Signed division is not allowed for any relative value")
                         if (value != 0)
                             value = int64_t(value2) / int64_t(value);
                         else // error
                         {
-                            assembler.printError(getSourcePos(messagePosIndex),
-                                   "Division by zero");
-                            failed = true;
+                            ASMX_FAILED_BY_ERROR(getSourcePos(messagePosIndex),
+                                   "Division by zero")
                             value = 0;
                         }
                         messagePosIndex++;
                         break;
                     case AsmExprOp::MODULO:
                         if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Modulo is not allowed for any relative value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Modulo is not allowed for any relative value")
                         if (value != 0)
                             value = value2 % value;
                         else // error
                         {
-                            assembler.printError(getSourcePos(messagePosIndex),
-                                   "Division by zero");
-                            failed = true;
+                            ASMX_FAILED_BY_ERROR(getSourcePos(messagePosIndex),
+                                   "Division by zero")
                             value = 0;
                         }
                         messagePosIndex++;
                         break;
                     case AsmExprOp::SIGNED_MODULO:
                         if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Signed Modulo is not allowed for any relative value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Signed Modulo is not allowed for any relative value")
                         if (value != 0)
                             value = int64_t(value2) % int64_t(value);
                         else // error
                         {
-                            assembler.printError(getSourcePos(messagePosIndex),
-                                   "Division by zero");
-                            failed = true;
+                            ASMX_FAILED_BY_ERROR(getSourcePos(messagePosIndex),
+                                   "Division by zero")
                             value = 0;
                         }
                         messagePosIndex++;
                         break;
                     case AsmExprOp::BIT_AND:
                         if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Binary AND is not allowed for any relative value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Binary AND is not allowed for any relative value")
                         value = value2 & value;
                         break;
                     case AsmExprOp::BIT_OR:
                         if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Binary OR is not allowed for any relative value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Binary OR is not allowed for any relative value")
                         value = value2 | value;
                         break;
                     case AsmExprOp::BIT_XOR:
                         if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Binary XOR is not allowed for any relative value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Binary XOR is not allowed for any relative value")
                         value = value2 ^ value;
                         break;
                     case AsmExprOp::BIT_ORNOT:
                         if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Binary ORNOT is not allowed for any relative value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Binary ORNOT is not allowed for any relative value")
                         value = value2 | ~value;
                         break;
                     case AsmExprOp::SHIFT_LEFT:
                         if (!relatives.empty())
-                        {
-                            assembler.printError(sourcePos, "Shift left is not allowed "
-                                    "for any for relative second value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos, "Shift left is not allowed "
+                                    "for any for relative second value")
                         else if (value < 64)
                         {
                             relatives.assign(relatives2.begin(), relatives2.end());
@@ -577,11 +552,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                         break;
                     case AsmExprOp::SHIFT_RIGHT:
                         if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Shift right is not allowed for any relative value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Shift right is not allowed for any relative value")
                         if (value < 64)
                             value = value2 >> value;
                         else
@@ -594,11 +566,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                         break;
                     case AsmExprOp::SIGNED_SHIFT_RIGHT:
                         if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos, "Signed shift right is not "
-                                    "allowed for any relative value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos, "Signed shift right is not "
+                                    "allowed for any relative value")
                         if (value < 64)
                             value = int64_t(value2) >> value;
                         else
@@ -611,20 +580,14 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                         break;
                     case AsmExprOp::LOGICAL_AND:
                         if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Logical AND is not allowed for any relative value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Logical AND is not allowed for any relative value")
                         value = value2 && value;
                         break;
                     case AsmExprOp::LOGICAL_OR:
                         if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Logical OR is not allowed for any relative value");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Logical OR is not allowed for any relative value")
                         value = value2 || value;
                         break;
                     case AsmExprOp::EQUAL:
@@ -640,11 +603,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                     {
                         size_t requals = 0;
                         if (relatives2.size() != relatives.size())
-                        {
-                            assembler.printError(sourcePos, "For comparisons "
-                                        "two values must have this same relatives!");
-                            failed = true;
-                        }
+                            ASMX_FAILED_BY_ERROR(sourcePos, "For comparisons "
+                                        "two values must have this same relatives!")
                         else
                         {
                             for (const RelMultiply& r: relatives2)
@@ -657,11 +617,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                                         break;
                                     }
                             if (requals != relatives.size())
-                            {
-                                assembler.printError(sourcePos, "For comparisons "
-                                        "two values must have this same relatives!");
-                                failed = true;
-                            }
+                                ASMX_FAILED_BY_ERROR(sourcePos, "For comparisons "
+                                        "two values must have this same relatives!")
                         }
                         relatives.clear();
                         switch(op)
@@ -716,11 +673,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                 const Array<RelMultiply> relatives3 = stack.top().relatives;
                 stack.pop();
                 if (!relatives3.empty())
-                {
-                    assembler.printError(sourcePos,
-                         "Choice is not allowed for first relative value");
-                    failed = true;
-                }
+                    ASMX_FAILED_BY_ERROR(sourcePos,
+                         "Choice is not allowed for first relative value")
                 if (value3)
                     relatives.assign(relatives2.begin(), relatives2.end());
                 value = value3 ? value2 : value;
@@ -741,11 +695,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
         else if (relatives.size() == 1 && relatives.front().multiply == 1)
             sectionId = relatives.front().sectionId;
         else
-        {
-            assembler.printError(sourcePos,
-                     "Only one relative=1 (section) can be result of expression");
-            failed = true;
-        }
+            ASMX_FAILED_BY_ERROR(sourcePos,
+                     "Only one relative=1 (section) can be result of expression")
     }
     if (!failed)
     {   // write results only if no errors
@@ -937,11 +888,8 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                     if (nextSymEntry->second.hasValue)
                     {   // put value to argument
                         if (nextSymEntry->second.regRange)
-                        {
-                            assembler.printError(expr->getSourcePos(),
-                                                 "Expression have register symbol");
-                            good = false;
-                        }
+                            ASMX_NOTGOOD_BY_ERROR(expr->getSourcePos(),
+                                                 "Expression have register symbol")
                         ops[opIndex] = AsmExprOp::ARG_VALUE;
                         args[argIndex].relValue.value = nextSymEntry->second.value;
                         if (!assembler.isAbsoluteSymbol(nextSymEntry->second))
@@ -1096,10 +1044,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
         {
             case '(':
                 if (expectedToken == XT_OP)
-                {
-                    assembler.printError(linePtr, "Expected operator");
-                    good = false;
-                }
+                    ASMX_NOTGOOD_BY_ERROR(linePtr, "Expected operator")
                 else
                 {
                     expectedToken = XT_FIRST;
@@ -1109,10 +1054,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                 break;
             case ')':
                 if (expectedToken != XT_OP)
-                {
-                    assembler.printError(linePtr, "Expected operator or value or symbol");
-                    good = false;
-                }
+                    ASMX_NOTGOOD_BY_ERROR(linePtr, "Expected operator or value or symbol")
                 else
                 {
                     if (parenthesisCount==0)
@@ -1194,11 +1136,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                 if (expectedToken != XT_OP)
                     op = AsmExprOp::BIT_NOT;
                 else
-                {
-                    assembler.printError(linePtr,
-                        "Expected non-unary operator, '(', or end of expression");
-                    good = false;
-                }
+                    ASMX_NOTGOOD_BY_ERROR(linePtr,
+                        "Expected non-unary operator, '(', or end of expression")
                 linePtr++;
                 break;
             case '^':
@@ -1305,8 +1244,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                                      symEntry, true, dontResolveSymbolsLater);
                     if (symEntry!=nullptr && symEntry->second.regRange)
                     {
-                        assembler.printError(linePtr, "Expression have register symbol");
-                        good = false;
+                        ASMX_NOTGOOD_BY_ERROR(linePtr, "Expression have register symbol")
                         continue;
                     }
                     
@@ -1326,8 +1264,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                             std::string errorMsg("Expression have unresolved symbol '");
                             errorMsg.append(linePtr, symEndStr);
                             errorMsg += '\'';
-                            assembler.printError(linePtr, errorMsg.c_str());
-                            good = false;
+                            ASMX_NOTGOOD_BY_ERROR(linePtr, errorMsg.c_str())
                         }
                         else
                         {
@@ -1382,8 +1319,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                     else
                     {
                         linePtr++;
-                        assembler.printError(linePtr, "Garbages at end of expression");
-                        good = false;
+                        ASMX_NOTGOOD_BY_ERROR(linePtr, "Garbages at end of expression")
                     }
                 }
         }
@@ -1395,9 +1331,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
         }
         if (expectedPrimaryExpr)
         {
-            assembler.printError(beforeToken,
-                     "Expected primary expression before operator");
-            good = false;
+            ASMX_NOTGOOD_BY_ERROR(beforeToken,
+                     "Expected primary expression before operator")
             continue;
         }
         
@@ -1439,8 +1374,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                 else if (stack.top().op != AsmExprOp::CHOICE_START ||
                         stack.top().priority != priority)
                 {   // not found
-                    assembler.printError(beforeToken, "Missing '?' before ':'");
-                    good = false;
+                    ASMX_NOTGOOD_BY_ERROR(beforeToken, "Missing '?' before ':'")
                     continue; // do noy change stack and them entries
                 }
                 ConExprOpEntry& entry = stack.top();
@@ -1459,10 +1393,9 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                         break;
                     if (entry.op == AsmExprOp::CHOICE_START)
                     {   // unfinished choice
-                        assembler.printError(messagePositions[entry.lineColPos],
-                                 "Missing ':' for '?'");
                         stack.pop();
-                        good = false;
+                        ASMX_NOTGOOD_BY_ERROR(messagePositions[entry.lineColPos],
+                                 "Missing ':' for '?'")
                         break;
                     }
                     if (entry.op != AsmExprOp::PLUS)
@@ -1478,18 +1411,12 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
         if (doExit) // exit from parsing
             break;
     }
-    if (parenthesisCount != 0)
-    {   // print error
-        assembler.printError(linePtr, "Missing ')'");
-        good = false;
-    }
+    if (parenthesisCount != 0) // print error
+        ASMX_NOTGOOD_BY_ERROR(linePtr, "Missing ')'")
     if (expectedToken != XT_OP)
     {
         if (!ops.empty() || !stack.empty())
-        {
-            assembler.printError(linePtr, "Unterminated expression");
-            good = false;
-        }
+            ASMX_NOTGOOD_BY_ERROR(linePtr, "Unterminated expression")
     }
     else
     {
@@ -1498,9 +1425,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
             const ConExprOpEntry& entry = stack.top();
             if (entry.op == AsmExprOp::CHOICE_START)
             {   // unfinished choice
-                assembler.printError(messagePositions[entry.lineColPos],
-                         "Missing ':' for '?'");
-                good = false;
+                ASMX_NOTGOOD_BY_ERROR(messagePositions[entry.lineColPos],
+                         "Missing ':' for '?'")
                 break;
             }
             if (entry.op != AsmExprOp::PLUS)

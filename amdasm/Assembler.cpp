@@ -1053,6 +1053,7 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
 
 bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId)
 {
+    Assembler& asmr = *this;
     symEntry.second.value = value;
     symEntry.second.expression = nullptr;
     symEntry.second.sectionId = sectionId;
@@ -1127,11 +1128,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     }
                     case ASMXTGT_DATA8:
                         if (sectionId != ASMSECT_ABS)
-                        {
-                            printError(expr->getSourcePos(),
-                                   "Relative value is illegal in data expressions");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(expr->getSourcePos(),
+                                   "Relative value is illegal in data expressions")
                         else
                         {
                             printWarningForRange(8, value, expr->getSourcePos());
@@ -1141,11 +1139,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         break;
                     case ASMXTGT_DATA16:
                         if (sectionId != ASMSECT_ABS)
-                        {
-                            printError(expr->getSourcePos(),
-                                   "Relative value is illegal in data expressions");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(expr->getSourcePos(),
+                                   "Relative value is illegal in data expressions")
                         else
                         {
                             printWarningForRange(16, value, expr->getSourcePos());
@@ -1155,11 +1150,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         break;
                     case ASMXTGT_DATA32:
                         if (sectionId != ASMSECT_ABS)
-                        {
-                            printError(expr->getSourcePos(),
-                                   "Relative value is illegal in data expressions");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(expr->getSourcePos(),
+                                   "Relative value is illegal in data expressions")
                         else
                         {
                             printWarningForRange(32, value, expr->getSourcePos());
@@ -1169,21 +1161,16 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         break;
                     case ASMXTGT_DATA64:
                         if (sectionId != ASMSECT_ABS)
-                        {
-                            printError(expr->getSourcePos(),
-                                   "Relative value is illegal in data expressions");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(expr->getSourcePos(),
+                                   "Relative value is illegal in data expressions")
                         else
                             SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
                                     .content.data() + target.offset), uint64_t(value));
                         break;
                     case ASMXTGT_CODEFLOW:
                         if (target.sectionId != sectionId)
-                        {
-                            printError(expr->getSourcePos(), "Jump over current section!");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(expr->getSourcePos(),
+                                            "Jump over current section!")
                         else
                             sections[target.sectionId].
                                     codeFlow[target.cflowId].target = value;
@@ -1222,10 +1209,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     skipSpacesToEnd(linePtr, line+lineSize);
     size_t symNameLength = symbolName.size();
     if (symNameLength >= 3 && symbolName.compare(symNameLength-3, 3, "::.")==0)
-    {
-        printError(symbolPlace, "Symbol '.' can be only in global scope");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(symbolPlace, "Symbol '.' can be only in global scope")
     
     if (linePtr!=line+lineSize && *linePtr=='%')
     {
