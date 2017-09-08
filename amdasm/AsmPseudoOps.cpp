@@ -474,11 +474,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
     const char* end = asmr.line + asmr.lineSize;
     
     if (!asmr.isWriteableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                        "Writing data into non-writeable section is illegal");
-        return;
-    }
+        PSEUDOOP_RETURN_BY_ERROR("Writing data into non-writeable section is illegal")
     
     skipSpacesToEnd(linePtr, end);
     std::string filename, sysfilename;

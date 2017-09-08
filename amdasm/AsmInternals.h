@@ -316,6 +316,18 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
         return false; \
     }
 
+#define ASM_NOTGOOD_BY_ERROR(PLACE, STRING) \
+    { \
+        asmr.printError(PLACE, STRING); \
+        good = false; \
+    }
+
+#define ASM_NOTGOOD_BY_ERROR1(GOOD, PLACE, STRING) \
+    { \
+        asmr.printError(PLACE, STRING); \
+        GOOD = false; \
+    }
+
 extern CLRX_INTERNAL cxbyte cstrtobyte(const char*& str, const char* end);
 
 extern const cxbyte tokenCharTable[96] CLRX_INTERNAL;
