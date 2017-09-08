@@ -570,8 +570,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 {
                     char buf[64];
                     snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
                 }
                 break;
             }
@@ -584,8 +583,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 {
                     char buf[64];
                     snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
                 }
                 break;
             }
@@ -599,8 +597,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                     char buf[64];
                     snprintf(buf, 64, "Spilled SGPRs number out of range (0-%u)",
                              maxSGPRsNum);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
                 }
                 break;
             }
@@ -614,8 +611,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                     char buf[64];
                     snprintf(buf, 64, "Spilled VGPRs number out of range (0-%u)",
                              maxVGPRsNum);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
                 }
                 break;
             }
@@ -643,17 +639,13 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 {
                     char buf[64];
                     snprintf(buf, 64, "LocalSize out of range (0-%u)", maxLocalSize);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
                 }
                 break;
             }
             case GALLIUMCVAL_USERDATANUM:
                 if (value > 16)
-                {
-                    asmr.printError(valuePlace, "UserDataNum out of range (0-16)");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, "UserDataNum out of range (0-16)")
                 break;
             case GALLIUMCVAL_PGMRSRC1:
             case GALLIUMCVAL_PGMRSRC2:
@@ -964,10 +956,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
             if (index != 9) // end of this map
                 argType = galliumArgTypesMap[index].second;
             else
-            {
-                asmr.printError(nameStringPlace, "Unknown argument type");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(nameStringPlace, "Unknown argument type")
         }
     }
     else
@@ -1017,10 +1006,8 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                     asmr.printWarning(targetAlignPlace,
                                       "Target alignment of argument out of range");
                 if (targetAlign==0 || targetAlign != (1ULL<<(63-CLZ64(targetAlign))))
-                {
-                    asmr.printError(targetAlignPlace, "Target alignment is not power of 2");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(targetAlignPlace,
+                                    "Target alignment is not power of 2");
             }
             else
                 good = false;
@@ -1037,10 +1024,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                     if (::strcmp(name, "sext")==0)
                         sext = true;
                     else if (::strcmp(name, "zext")!=0 && *name!=0)
-                    {
-                        asmr.printError(numExtPlace, "Unknown numeric extension");
-                        good = false;
-                    }
+                        ASM_NOTGOOD_BY_ERROR(numExtPlace, "Unknown numeric extension")
                 }
                 else
                     good = false;

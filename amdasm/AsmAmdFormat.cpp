@@ -703,8 +703,7 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                 {
                     char buf[64];
                     snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
                 }
                 break;
             }
@@ -717,8 +716,7 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                 {
                     char buf[64];
                     snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
                 }
                 break;
             }
@@ -731,8 +729,7 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                 {
                     char buf[64];
                     snprintf(buf, 64, "HWLocalSize out of range (0-%u)", maxLocalSize);
-                    asmr.printError(valuePlace, buf);
-                    good = false;
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
                 }
                 break;
             }
@@ -748,31 +745,19 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                 break;
             case AMDCVAL_UAVID:
                 if (value != BINGEN_NOTSUPPLIED && value >= 1024)
-                {
-                    asmr.printError(valuePlace, "UAVId out of range (0-1023)");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, "UAVId out of range (0-1023)")
                 break;
             case AMDCVAL_CBID:
                 if (value != BINGEN_NOTSUPPLIED && value >= 1024)
-                {
-                    asmr.printError(valuePlace, "ConstBufferId out of range (0-1023)");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, "ConstBufferId out of range (0-1023)")
                 break;
             case AMDCVAL_PRINTFID:
                 if (value != BINGEN_NOTSUPPLIED && value >= 1024)
-                {
-                    asmr.printError(valuePlace, "PrintfId out of range (0-1023)");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, "PrintfId out of range (0-1023)")
                 break;
             case AMDCVAL_PRIVATEID:
                 if (value != BINGEN_NOTSUPPLIED && value >= 1024)
-                {
-                    asmr.printError(valuePlace, "PrivateId out of range (0-1023)");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, "PrivateId out of range (0-1023)")
                 break;
             case AMDCVAL_CONDOUT:
             case AMDCVAL_EARLYEXIT:
@@ -1003,10 +988,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     if (getAbsoluteValueArg(asmr, regStart, linePtr, true))
     {
         if (regStart > 15)
-        {
-            asmr.printError(regStartPlace, "RegStart out of range (0-15)");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(regStartPlace, "RegStart out of range (0-15)")
     }
     else
         good = false;
@@ -1017,10 +999,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     if (getAbsoluteValueArg(asmr, regSize, linePtr, true))
     {
         if (usumGt(regStart, regSize, 16U))
-        {
-            asmr.printError(regStartPlace, "RegStart+RegSize out of range (0-16)");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(regStartPlace, "RegStart+RegSize out of range (0-16)")
     }
     else
         good = false;
@@ -1167,11 +1146,9 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
     
     bool good = getNameArg(asmr, argName, linePtr, "argument name", true);
     if (argNamesSet.find(argName) != argNamesSet.end())
-    {   // if found kernel arg with this same name
-        asmr.printError(argNamePlace, (std::string("Kernel argument '")+argName.c_str()+
-                    "' is already defined").c_str());
-        good = false;
-    }
+        // if found kernel arg with this same name
+        ASM_NOTGOOD_BY_ERROR(argNamePlace, (std::string("Kernel argument '")+
+                    argName.c_str()+"' is already defined").c_str())
     
     if (!skipRequiredComma(asmr, linePtr))
         return false;
@@ -1209,25 +1186,18 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
         else
         {   // if not OpenCL 2.0 and argument type only present in OpenCL 2.0
             skipSpacesToEnd(linePtr, end);
-            asmr.printError(linePtr, "Unknown argument type");
-            good = false;
+            ASM_NOTGOOD_BY_ERROR(linePtr, "Unknown argument type")
         }
     }
     else // if failed
         good = false;
     
     if (!pointer && argType == KernelArgType::COUNTER64)
-    {
-        asmr.printError(argTypePlace, "Unsupported counter64 type");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(argTypePlace, "Unsupported counter64 type")
     if (pointer && (isKernelArgImage(argType) ||
             argType == KernelArgType::SAMPLER || argType == KernelArgType::POINTER ||
             argType == KernelArgType::COUNTER32 || argType == KernelArgType::COUNTER64))
-    {
-        asmr.printError(argTypePlace, "Illegal pointer type");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(argTypePlace, "Illegal pointer type")
     
     if (!typeNameDefined)
     {
@@ -1274,11 +1244,8 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
                 ptrSpace = KernelPtrSpace::GLOBAL;
             else if (::strcmp(name, "constant")==0)
                 ptrSpace = KernelPtrSpace::CONSTANT;
-            else
-            {   // not known or not given
-                asmr.printError(ptrSpacePlace, "Unknown pointer space");
-                good = false;
-            }
+            else // not known or not given
+                ASM_NOTGOOD_BY_ERROR(ptrSpacePlace, "Unknown pointer space")
         }
         else
             good = false;
@@ -1302,10 +1269,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
                     else if (::strcasecmp(name, "volatile")==0)
                         ptrAccess |= KARG_PTR_VOLATILE;
                     else
-                    {
-                        asmr.printError(ptrAccessPlace, "Unknown access qualifier");
-                        good = false;
-                    }
+                        ASM_NOTGOOD_BY_ERROR(ptrAccessPlace, "Unknown access qualifier")
                 }
                 else
                     good = false;
@@ -1350,8 +1314,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
                         {
                             char buf[80];
                             snprintf(buf, 80, "UAVId out of range (0-%u)", maxUavId);
-                            asmr.printError(place, buf);
-                            good = false;
+                            ASM_NOTGOOD_BY_ERROR(place, buf)
                         }
                     }
                     else
@@ -1378,11 +1341,8 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
                     ptrAccess = KARG_PTR_READ_ONLY;
                 else if (::strcmp(name, "write_only")==0 || ::strcmp(name, "wronly")==0)
                     ptrAccess = KARG_PTR_WRITE_ONLY;
-                else if (*name!=0)
-                {   // unknown
-                    asmr.printError(ptrAccessPlace, "Unknown access qualifier");
-                    good = false;
-                }
+                else if (*name!=0) // unknown
+                    ASM_NOTGOOD_BY_ERROR(ptrAccessPlace, "Unknown access qualifier")
             }
             else
                 good = false;
@@ -1401,8 +1361,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
                     {
                         char buf[80];
                         snprintf(buf, 80, "Resource Id out of range (0-%u)", maxResId);
-                        asmr.printError(place, buf);
-                        good = false;
+                        ASM_NOTGOOD_BY_ERROR(place, buf)
                     }
                 }
                 else
@@ -1423,15 +1382,9 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
             if (getAbsoluteValueArg(asmr, resIdVal, linePtr, true))
             {
                 if (resIdVal!=BINGEN_DEFAULT && (!cl20 && resIdVal > 7))
-                {
-                    asmr.printError(place, "Resource Id out of range (0-7)");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(place, "Resource Id out of range (0-7)")
                 else if (resIdVal!=BINGEN_DEFAULT && cl20 && resIdVal > 15)
-                {
-                    asmr.printError(place, "Sampler Id out of range (0-15)");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(place, "Sampler Id out of range (0-15)")
             }
             else
                 good = false;
@@ -1471,10 +1424,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
             else if (cl20 && ::strcmp(name, "wronly")==0)
                 usedArg = 2;
             else
-            {
-                asmr.printError(place, "This is not 'unused' specifier");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(place, "This is not 'unused' specifier")
         }
     }
     

@@ -330,11 +330,8 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
                 else if (c=='w')
                     sectFlags |= ASMELFSECT_WRITEABLE;
                 else if (flagsStrIsGood)
-                {
-                    asmr.printError(flagsStrPlace,
-                            "Only 'a', 'w', 'x' is accepted in flags string");
-                    flagsStrIsGood = good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR1(flagsStrIsGood = good, flagsStrPlace,
+                            "Only 'a', 'w', 'x' is accepted in flags string")
         }
         else
             good = false;
@@ -360,19 +357,13 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
                     else if (::strcmp(typeBuf, "nobits")==0)
                         sectType = AsmSectionType::EXTRA_NOBITS;
                     else
-                    {
-                        asmr.printError(typePlace, "Unknown section type");
-                        good = false;
-                    }
+                        ASM_NOTGOOD_BY_ERROR(typePlace, "Unknown section type")
                 }
                 else
                     good = false;
             }
             else
-            {
-                asmr.printError(typePlace, "Section type was not preceded by '@'");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(typePlace, "Section type was not preceded by '@'")
         }
     }
     // parse alignment
@@ -388,19 +379,13 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
             if (getAbsoluteValueArg(asmr, sectionAlign, linePtr, true))
             {
                 if (sectionAlign!=0 && (1ULL<<(63-CLZ64(sectionAlign))) != sectionAlign)
-                {
-                    asmr.printError(valuePtr, "Alignment must be power of two or zero");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(valuePtr, "Alignment must be power of two or zero")
             }
             else
                 good = false;
         }
         else
-        {
-            asmr.printError(linePtr, "Expected '=' after 'align'");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected '=' after 'align'")
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -495,10 +480,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
         if (getAbsoluteValueArg(asmr, offset, linePtr))
         {
             if (int64_t(offset) < 0)
-            {
-                asmr.printError(offsetPlace, "Offset is negative!");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(offsetPlace, "Offset is negative!")
         }
         else
             good = false;
@@ -511,10 +493,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
             countPlace = linePtr;
             good &= getAbsoluteValueArg(asmr, count, linePtr);
             if (int64_t(count) < 0)
-            {
-                asmr.printError(countPlace, "Count bytes is negative!");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(countPlace, "Count bytes is negative!")
         }
     }
     
@@ -866,10 +845,7 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char* linePtr, bool reassign
     CString symName = extractScopedSymName(linePtr, end, false);
     bool good = true;
     if (symName.empty())
-    {
-        asmr.printError(linePtr, "Expected symbol");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(linePtr, "Expected symbol")
     if (!skipRequiredComma(asmr, linePtr))
         return;
     if (good) // is not so good
@@ -886,21 +862,12 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char* linePtr, cxbyte bi
         Assembler::ParseState state = asmr.parseSymbol(linePtr, symEntry, false);
         bool good = (state != Assembler::ParseState::FAILED);
         if (symEntry == nullptr)
-        {
-            asmr.printError(symNamePlace, "Expected symbol name");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(symNamePlace, "Expected symbol name")
         else if (symEntry->second.regRange)
-        {
-            asmr.printError(symNamePlace, "Symbol must not be register symbol");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(symNamePlace, "Symbol must not be register symbol")
         else if (symEntry->second.base)
-        {
-            asmr.printError(symNamePlace,
-                "Symbol must not be set by .eqv pseudo-op or must be constant");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(symNamePlace,
+                "Symbol must not be set by .eqv pseudo-op or must be constant")
         
         if (good)
         {
@@ -924,10 +891,7 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char* linePtr)
     Assembler::ParseState state = asmr.parseSymbol(linePtr, symEntry, false);
     bool good = (state != Assembler::ParseState::FAILED);
     if (symEntry == nullptr)
-    {
-        asmr.printError(symNamePlace, "Expected symbol name");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(symNamePlace, "Expected symbol name")
     if (!skipRequiredComma(asmr, linePtr))
         return;
     // parse size
@@ -937,16 +901,10 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char* linePtr)
     if (symEntry != nullptr)
     {
         if (symEntry->second.base)
-        {
-            asmr.printError(symNamePlace,
-                    "Symbol must not be set by .eqv pseudo-op or must be constant");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(symNamePlace,
+                    "Symbol must not be set by .eqv pseudo-op or must be constant")
         else if (symEntry->second.regRange)
-        {
-            asmr.printError(symNamePlace, "Symbol must not be register symbol");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(symNamePlace, "Symbol must not be register symbol")
         else if (symEntry->first == ".")
         {
             asmr.printWarning(symNamePlace, "Symbol '.' is ignored");
@@ -1016,10 +974,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
         }
     }
     if (int64_t(size) > 0 && int64_t(repeat) > 0 && SSIZE_MAX/size < repeat)
-    {
-        asmr.printError(pseudoOpPlace, "Product of repeat and size is too big");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(pseudoOpPlace, "Product of repeat and size is too big")
     
     cxuint truncBits = std::min(uint64_t(8), size)<<3;
     /* honors old behaviour from original GNU as (just cut to 32-bit values)
@@ -1113,18 +1068,13 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
         if (powerOf2)
         {
             if (alignment > 63)
-            {
-                asmr.printError(alignPlace, "Power of 2 of alignment is greater than 63");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(alignPlace, "Power of 2 of alignment is "
+                            "greater than 63")
             else
                 alignment = (1ULL<<alignment);
         }
         else if (alignment == 0 || (1ULL<<(63-CLZ64(alignment))) != alignment)
-        {
-            asmr.printError(alignPlace, "Alignment is not power of 2");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(alignPlace, "Alignment is not power of 2")
     }
     
     bool haveValue = false;
@@ -1186,10 +1136,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
     const char* alignPlace = linePtr;
     bool good = getAbsoluteValueArg(asmr, alignment, linePtr, true);
     if (good && alignment != 0 && (1ULL<<(63-CLZ64(alignment))) != alignment)
-    {
-        asmr.printError(alignPlace, "Alignment is not power of 2");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(alignPlace, "Alignment is not power of 2")
     
     bool haveValue = false;
     if (!skipComma(asmr, haveValue, linePtr))
@@ -1346,10 +1293,7 @@ void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoOpPlace, const cha
     if (state == Assembler::ParseState::FAILED)
         return;
     if (state == Assembler::ParseState::MISSING)
-    {
-        asmr.printError(symNamePlace, "Expected symbol");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(symNamePlace, "Expected symbol")
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1655,11 +1599,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
     bool haveVarArg = false;
     
     if (asmr.macroMap.find(macroName) != asmr.macroMap.end())
-    {
-        asmr.printError(macroNamePlace, (std::string("Macro '") + macroName.c_str() +
+        ASM_NOTGOOD_BY_ERROR(macroNamePlace, (std::string("Macro '") + macroName.c_str() +
                 "' is already defined").c_str());
-        good = false;
-    }
     
     {
     std::unordered_set<CString> macroArgSet;
@@ -1678,11 +1619,9 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         std::string defaultArgValue;
         
         if (!macroArgSet.insert(argName).second)
-        {   // duplicate!
-            asmr.printError(argPlace, (std::string("Duplicated macro argument '")+
-                    argName.c_str()+'\'').c_str());
-            argGood = false;
-        }
+            // duplicate!
+            ASM_NOTGOOD_BY_ERROR1(argGood, argPlace, (std::string(
+                    "Duplicated macro argument '")+ argName.c_str()+'\'').c_str())
         
         skipSpacesToEnd(linePtr, end);
         if (linePtr != end && *linePtr == ':')
@@ -1700,11 +1639,9 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
                 argVarArgs = true;
                 linePtr += 6;
             }
-            else
-            {   // otherwise
-                asmr.printError(linePtr, "Expected qualifier 'req' or 'vararg'");
-                argGood = false;
-            }
+            else // otherwise
+                ASM_NOTGOOD_BY_ERROR1(argGood, linePtr,
+                        "Expected qualifier 'req' or 'vararg'")
         }
         skipSpacesToEnd(linePtr, end);
         if (linePtr != end && *linePtr == '=')
@@ -1725,10 +1662,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         if (argGood) // push to arguments
         {
             if (haveVarArg)
-            {
-                asmr.printError(argPlace, "Variadic argument must be last");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(argPlace, "Variadic argument must be last")
             else
                 haveVarArg = argVarArgs;
         }
@@ -1879,10 +1813,7 @@ void AsmPseudoOps::openScope(Assembler& asmr, const char* pseudoOpPlace,
     CString scopeName = extractSymName(linePtr, end, false);
     bool good = true;
     if (asmr.scopeStack.size() == 1000)
-    {
-        asmr.printError(pseudoOpPlace, "Scope level is greater than 1000");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(pseudoOpPlace, "Scope level is greater than 1000")
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1896,10 +1827,7 @@ void AsmPseudoOps::closeScope(Assembler& asmr, const char* pseudoOpPlace,
     skipSpacesToEnd(linePtr, end);
     bool good = true;
     if (asmr.scopeStack.empty())
-    {
-        asmr.printError(pseudoOpPlace, "Closing global scope is illegal");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(pseudoOpPlace, "Closing global scope is illegal")
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     asmr.popScope();
@@ -1914,10 +1842,7 @@ void AsmPseudoOps::startUsing(Assembler& asmr, const char* pseudoOpPlace,
     CString scopePath = extractScopedSymName(linePtr, end);
     bool good = true;
     if (scopePath.empty() || scopePath == "::")
-    {
-        asmr.printError(scopePathPlace, "Expected scope path");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(scopePathPlace, "Expected scope path")
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     AsmScope* scope = asmr.getRecurScope(scopePath);
@@ -1985,10 +1910,7 @@ void AsmPseudoOps::stopUsing(Assembler& asmr, const char* pseudoOpPlace,
     CString scopePath = extractScopedSymName(linePtr, end);
     bool good = true;
     if (scopePath == "::")
-    {
-        asmr.printError(scopePathPlace, "Expected scope path");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(scopePathPlace, "Expected scope path")
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     AsmScope* scope = asmr.getRecurScope(scopePath);
@@ -2006,15 +1928,9 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
     CString symName = extractScopedSymName(linePtr, end, false);
     bool good = true;
     if (symName.empty())
-    {
-        asmr.printError(symNamePlace, "Expected symbol name");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(symNamePlace, "Expected symbol name")
     else if (symName == ".")
-    {
-        asmr.printError(symNamePlace, "Symbol '.' can not be undefined");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(symNamePlace, "Symbol '.' can not be undefined")
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -2055,10 +1971,7 @@ void AsmPseudoOps::defRegVar(Assembler& asmr, const char* pseudoOpPlace,
         CString name = extractScopedSymName(linePtr, end, false);
         bool good = true;
         if (name.empty())
-        {
-            asmr.printError(regNamePlace, "Expected reg-var name");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(regNamePlace, "Expected reg-var name")
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!=':')
         {
@@ -2068,10 +1981,7 @@ void AsmPseudoOps::defRegVar(Assembler& asmr, const char* pseudoOpPlace,
         skipCharAndSpacesToEnd(linePtr, end);
         AsmRegVar var = { 0, 1 };
         if (!asmr.isaAssembler->parseRegisterType(linePtr, end, var.type))
-        {
-            asmr.printError(linePtr, "Expected name of register type");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected name of register type")
         skipSpacesToEnd(linePtr, end);
         
         if (linePtr!=end && *linePtr!=',')
@@ -2087,15 +1997,9 @@ void AsmPseudoOps::defRegVar(Assembler& asmr, const char* pseudoOpPlace,
             if (!getAbsoluteValueArg(asmr, regSize, linePtr, true))
                 continue;
             if (regSize==0)
-            {
-                asmr.printError(linePtr, "Size of reg-var is zero");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(linePtr, "Size of reg-var is zero")
             if (regSize>UINT16_MAX)
-            {
-                asmr.printError(linePtr, "Size of reg-var out of range");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(linePtr, "Size of reg-var out of range")
             var.size = regSize;
         }
         
@@ -2161,10 +2065,7 @@ void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
         ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
     size_t symNameLength = symName.size();
     if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
-    {
-        asmr.printError(symNamePlace, "Symbol '.' can be only in global scope");
-        return;
-    }
+        ASM_RETURN_BY_ERROR(symNamePlace, "Symbol '.' can be only in global scope")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     

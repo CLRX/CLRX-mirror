@@ -579,19 +579,13 @@ void AsmAmdCL2PseudoOps::doBssData(AsmAmdCL2Handler& handler, const char* pseudo
             if (getAbsoluteValueArg(asmr, sectionAlign, linePtr, true))
             {
                 if (sectionAlign!=0 && (1ULL<<(63-CLZ64(sectionAlign))) != sectionAlign)
-                {
-                    asmr.printError(valuePtr, "Alignment must be power of two or zero");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(valuePtr, "Alignment must be power of two or zero")
             }
             else
                 good = false;
         }
         else
-        {
-            asmr.printError(linePtr, "Expected '=' after 'align'");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected '=' after 'align'")
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -787,8 +781,7 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                         char buf[64];
                         snprintf(buf, 64,
                                  "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
-                        asmr.printError(valuePlace, buf);
-                        good = false;
+                        ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
                     }
                     break;
                 }
@@ -802,8 +795,7 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                         char buf[64];
                         snprintf(buf, 64,
                                  "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
-                        asmr.printError(valuePlace, buf);
-                        good = false;
+                        ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
                     }
                     break;
                 }
@@ -831,8 +823,7 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                     {
                         char buf[64];
                         snprintf(buf, 64, "LocalSize out of range (0-%u)", maxLocalSize);
-                        asmr.printError(valuePlace, buf);
-                        good = false;
+                        ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
                     }
                     break;
                 }
@@ -845,8 +836,7 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                     {
                         char buf[64];
                         snprintf(buf, 64, "GDSSize out of range (0-%u)", maxGDSSize);
-                        asmr.printError(valuePlace, buf);
-                        good = false;
+                        ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
                     }
                     break;
                 }

@@ -405,8 +405,7 @@ bool AsmROCmPseudoOps::checkConfigValue(Assembler& asmr, const char* valuePlace,
             {
                 char buf[64];
                 snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
-                asmr.printError(valuePlace, buf);
-                good = false;
+                ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
             }
             break;
         }
@@ -419,8 +418,7 @@ bool AsmROCmPseudoOps::checkConfigValue(Assembler& asmr, const char* valuePlace,
             {
                 char buf[64];
                 snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
-                asmr.printError(valuePlace, buf);
-                good = false;
+                ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
             }
             break;
         }
@@ -451,57 +449,35 @@ bool AsmROCmPseudoOps::checkConfigValue(Assembler& asmr, const char* valuePlace,
             {
                 char buf[64];
                 snprintf(buf, 64, "LocalSize out of range (0-%u)", maxLocalSize);
-                asmr.printError(valuePlace, buf);
-                good = false;
+                ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
             }
             break;
         }
         case ROCMCVAL_USERDATANUM:
             if (value > 16)
-            {
-                asmr.printError(valuePlace, "UserDataNum out of range (0-16)");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(valuePlace, "UserDataNum out of range (0-16)")
             break;
         case ROCMCVAL_PRIVATE_ELEM_SIZE:
             if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
-            {
-                asmr.printError(valuePlace,
-                                "Private element size must be power of two");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(valuePlace,
+                                "Private element size must be power of two")
             else if (value < 2 || value > 16)
-            {
-                asmr.printError(valuePlace, "Private element size out of range");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(valuePlace, "Private element size out of range")
             break;
         case ROCMCVAL_KERNARG_SEGMENT_ALIGN:
         case ROCMCVAL_GROUP_SEGMENT_ALIGN:
         case ROCMCVAL_PRIVATE_SEGMENT_ALIGN:
             if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
-            {
-                asmr.printError(valuePlace, "Alignment must be power of two");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(valuePlace, "Alignment must be power of two")
             else if (value < 16)
-            {
-                asmr.printError(valuePlace, "Alignment must be not smaller than 16");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(valuePlace, "Alignment must be not smaller than 16")
             break;
         case ROCMCVAL_WAVEFRONT_SIZE:
             if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
-            {
-                asmr.printError(valuePlace, "Wavefront size must be power of two");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(valuePlace, "Wavefront size must be power of two")
             else if (value > 256)
-            {
-                asmr.printError(valuePlace,
-                            "Wavefront size must be not greater than 256");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(valuePlace,
+                            "Wavefront size must be not greater than 256")
             break;
         case ROCMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE:
         case ROCMCVAL_GDS_SEGMENT_SIZE:
@@ -519,10 +495,7 @@ bool AsmROCmPseudoOps::checkConfigValue(Assembler& asmr, const char* valuePlace,
                         asmr.deviceType);
             cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
             if (value >= maxSGPRsNum)
-            {
-                asmr.printError(valuePlace, "SGPR register out of range");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(valuePlace, "SGPR register out of range")
             break;
         }
         default:
@@ -899,8 +872,7 @@ bool AsmROCmPseudoOps::parseReservedXgprs(Assembler& asmr, const char* linePtr,
         char buf[64];
         snprintf(buf, 64, "First reserved %s register out of range (0-%u)",
                  inVgpr ? "VGPR" : "SGPR",  maxGPRsNum-1);
-        asmr.printError(valuePlace, buf);
-        good = false;
+        ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
     }
     if (!skipRequiredComma(asmr, linePtr))
         return false;
@@ -913,14 +885,10 @@ bool AsmROCmPseudoOps::parseReservedXgprs(Assembler& asmr, const char* linePtr,
         char buf[64];
         snprintf(buf, 64, "Last reserved %s register out of range (0-%u)",
                  inVgpr ? "VGPR" : "SGPR", maxGPRsNum-1);
-        asmr.printError(valuePlace, buf);
-        good = false;
+        ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
     }
     if (haveFirstReg && haveLastReg && firstReg > lastReg)
-    {
-        asmr.printError(valuePlace, "Wrong register range");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(valuePlace, "Wrong register range")
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
