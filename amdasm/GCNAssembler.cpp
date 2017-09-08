@@ -621,16 +621,10 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             int64_t offset = (int64_t(value)-int64_t(output.size())-4);
             if (offset & 3)
-            {
-                asmr.printError(linePtr, "Jump is not aligned to word!");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(linePtr, "Jump is not aligned to word!")
             offset >>= 2;
             if (offset > INT16_MAX || offset < INT16_MIN)
-            {
-                asmr.printError(linePtr, "Jump out of range");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(linePtr, "Jump out of range")
             imm16 = offset;
             // add codeflow entry
             if (good)
@@ -650,10 +644,7 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         toLowerString(name);
         skipSpacesToEnd(linePtr, end);
         if (::strcmp(name, "hwreg")!=0 || linePtr==end || *linePtr!='(')
-        {
-            asmr.printError(funcNamePlace, "Expected hwreg function");
-            return false;
-        }
+            ASM_FAIL_BY_ERROR(funcNamePlace, "Expected hwreg function")
         ++linePtr;
         skipSpacesToEnd(linePtr, end);
         cxuint hwregId = 0;
@@ -667,10 +658,8 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             good &= getEnumeration(asmr, linePtr, "HWRegister",
                         regMapSize, regMap, hwregId, "hwreg_");
             if (good && (arch & ARCH_GCN_1_2_4) == 0 && hwregId == 13)
-            {   // if ib_dgb1 in not GCN 1.2
-                asmr.printError(hwregNamePlace, "Unknown HWRegister");
-                good = false;
-            }
+                // if ib_dgb1 in not GCN 1.2
+                ASM_NOTGOOD_BY_ERROR(hwregNamePlace, "Unknown HWRegister")
         }
         else
         {   // parametrization
@@ -706,10 +695,7 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!=')')
-        {
-            asmr.printError(linePtr, "Unterminated hwreg function");
-            return false;
-        }
+            ASM_FAIL_BY_ERROR(linePtr, "Unterminated hwreg function")
         ++linePtr;
         imm16 = hwregId | (arg2Value<<6) | ((arg3Value-1)<<11);
     }
@@ -883,10 +869,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool good = true;
     const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
     if (gcnEncSize==GCNEncSize::BIT64)
-    {
-        asmr.printError(instrPlace, "Only 32-bit size for SOPP encoding");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Only 32-bit size for SOPP encoding")
     
     uint16_t imm16 = 0;
     std::unique_ptr<AsmExpression> imm16Expr;
@@ -901,16 +884,10 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             {
                 int64_t offset = (int64_t(value)-int64_t(output.size())-4);
                 if (offset & 3)
-                {
-                    asmr.printError(linePtr, "Jump is not aligned to word!");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(linePtr, "Jump is not aligned to word!")
                 offset >>= 2;
                 if (offset > INT16_MAX || offset < INT16_MIN)
-                {
-                    asmr.printError(linePtr, "Jump out of range");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(linePtr, "Jump out of range")
                 imm16 = offset;
                 Assembler& asmr = gcnAsm->assembler;
                 // add codeflow entry
@@ -965,10 +942,8 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     haveExpCnt = true;
                 }
                 else
-                {
-                    asmr.printError(funcNamePlace, "Expected vmcnt, lgkmcnt or expcnt");
-                    goodCnt = good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR1(goodCnt = good, funcNamePlace,
+                                    "Expected vmcnt, lgkmcnt or expcnt");
                 
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr==end || *linePtr!='(')
@@ -993,10 +968,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     good = false;
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr==end || *linePtr!=')')
-                {
-                    asmr.printError(linePtr, "Unterminated function");
-                    return false;
-                }
+                    ASM_FAIL_BY_ERROR(linePtr, "Unterminated function")
                 // ampersand
                 skipCharAndSpacesToEnd(linePtr, end);
                 if (linePtr==end)
@@ -1015,10 +987,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             toLowerString(name);
             skipSpacesToEnd(linePtr, end);
             if (::strcmp(name, "sendmsg")!=0 || linePtr==end || *linePtr!='(')
-            {
-                asmr.printError(funcNamePlace, "Expected sendmsg function");
-                return false;
-            }
+                ASM_FAIL_BY_ERROR(funcNamePlace, "Expected sendmsg function")
             skipCharAndSpacesToEnd(linePtr, end);
             
             const char* funcArg1Place = linePtr;
@@ -1040,10 +1009,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                         (msgMap[index].second!=4 || (arch&ARCH_GCN_1_2_4)!=0))
                         sendMessage = msgMap[index].second;
                     else
-                    {
-                        asmr.printError(funcArg1Place, "Unknown message");
-                        good = false;
-                    }
+                        ASM_NOTGOOD_BY_ERROR(funcArg1Place, "Unknown message")
                 }
                 else
                     good = false;
@@ -1087,8 +1053,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                         if (gsopIndex == sendMsgGSOPTableSize)
                         {   // not found
                             gsopIndex = 0;
-                            asmr.printError(funcArg2Place, "Unknown GSOP");
-                            good = false;
+                            ASM_NOTGOOD_BY_ERROR(funcArg2Place, "Unknown GSOP")
                         }
                     }
                     else
@@ -1117,10 +1082,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             }
             skipSpacesToEnd(linePtr, end);
             if (linePtr==end || *linePtr!=')')
-            {
-                asmr.printError(linePtr, "Unterminated sendmsg function");
-                return false;
-            }
+                ASM_FAIL_BY_ERROR(linePtr, "Unterminated sendmsg function")
             ++linePtr;
             imm16 = sendMessage | (gsopIndex<<4) | (streamId<<8);
             break;
@@ -1159,10 +1121,7 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
     if (gcnEncSize==GCNEncSize::BIT64)
-    {
-        asmr.printError(instrPlace, "Only 32-bit size for SMRD encoding");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Only 32-bit size for SMRD encoding")
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     RegRange dstReg(0, 0);
@@ -1247,10 +1206,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
     if (gcnEncSize==GCNEncSize::BIT32)
-    {
-        asmr.printError(instrPlace, "Only 64-bit size for SMEM encoding");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Only 64-bit size for SMEM encoding")
     
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     RegRange dataReg(0, 0);
@@ -1303,11 +1259,9 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                        GCNFIELD_SMRD_SOFFSET, false, INSTROP_SYMREGRANGE|INSTROP_READ);
             if (good && (gcnInsn.mode & GCN_MLOAD) == 0 && soffsetReg &&
                     !soffsetReg.isVal(124))
-            {   // if no M0 register
-                asmr.printError(soffsetPlace,
-                        "Store/Atomic SMEM instructions accepts only M0 register");
-                good = false;
-            }
+                // if no M0 register
+                ASM_NOTGOOD_BY_ERROR(soffsetPlace,
+                        "Store/Atomic SMEM instructions accepts only M0 register")
         }
         else // '@' prefix
             skipCharAndSpacesToEnd(linePtr, end);
@@ -1354,10 +1308,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     good = false;
             }
             else
-            {
-                asmr.printError(modPlace, "Unknown SMEM modifier");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown SMEM modifier")
         }
         else
             good = false;
@@ -1575,10 +1526,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if ((src0Op.range.isVal(255) || src1Op.range.isVal(255)) &&
         (src0Op.range.isSGPR() || src0Op.range.isVal(124) ||
          src1Op.range.isSGPR() || src1Op.range.isVal(124)))
-    {
-        asmr.printError(instrPlace, "Literal with SGPR or M0 is illegal");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Literal with SGPR or M0 is illegal")
     
     if (vop3) // modify fields in reg usage
     {
@@ -1612,10 +1560,8 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     
     if (sgprsReaded >= 2)
-    {   /* include VCCs (???) */
-        asmr.printError(instrPlace, "More than one SGPR to read in instruction");
-        return false;
-    }
+        /* include VCCs (???) */
+        ASM_FAIL_BY_ERROR(instrPlace, "More than one SGPR to read in instruction")
     const bool needImm = (src0Op.range.start==255 || src1Op.range.start==255 ||
              mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM);
     
@@ -1643,15 +1589,9 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         vop3 = true;
     
     if (isGCN12 && vop3 && haveDstCC && ((src0Op.vopMods|src1Op.vopMods) & VOPOP_ABS) != 0)
-    {
-        asmr.printError(instrPlace, "Abs modifier is illegal for VOP3B encoding");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Abs modifier is illegal for VOP3B encoding")
     if (vop3 && needImm)
-    {
-        asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Literal in VOP3 encoding is illegal")
     
     if (!checkGCNVOPEncoding(asmr, instrPlace, gcnVOPEnc, &extraMods))
         return false;
@@ -1855,10 +1795,7 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         vop3 = true;
     
     if (vop3 && src0Op.range.isVal(255))
-    {
-        asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Literal in VOP3 encoding is illegal")
     
     if (!checkGCNVOPEncoding(asmr, instrPlace, gcnVOPEnc, &extraMods))
         return false;
@@ -2007,16 +1944,11 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if ((src0Op.range.isVal(255) || src1Op.range.isVal(255)) &&
         (src0Op.range.isSGPR() || src0Op.range.isVal(124) ||
          src1Op.range.isSGPR() || src1Op.range.isVal(124)))
-    {
-        asmr.printError(instrPlace, "Literal with SGPR or M0 is illegal");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Literal with SGPR or M0 is illegal")
     if (src0Op.range.isSGPR() && src1Op.range.isSGPR() &&
         !regRangeCanEqual(src0Op.range, src1Op.range))
-    {   /* include VCCs (???) */
-        asmr.printError(instrPlace, "More than one SGPR to read in instruction");
-        return false;
-    }
+        /* include VCCs (???) */
+        ASM_FAIL_BY_ERROR(instrPlace, "More than one SGPR to read in instruction")
     
     if (vop3) // modify fields in reg usage
     {
@@ -2053,19 +1985,13 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         vop3 = true;
     
     if (vop3 && (src0Op.range.isVal(255) || src1Op.range.isVal(255)))
-    {
-        asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Literal in VOP3 encoding is illegal")
     
     if (!checkGCNVOPEncoding(asmr, instrPlace, gcnVOPEnc, &extraMods))
         return false;
     
     if (isGCN14 && ((modifiers & VOP3_CLAMP)!=0 || (modifiers&3)!=0))
-    {
-        asmr.printError(instrPlace, "Modifiers CLAMP and OMOD is illegal in SDWAB");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Modifiers CLAMP and OMOD is illegal in SDWAB")
     
     if (src0OpExpr!=nullptr)
         src0OpExpr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
@@ -2164,10 +2090,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
     const bool vop3p = (gcnInsn.mode & GCN_VOP3_VOP3P) != 0;
     if (gcnVOPEnc!=GCNVOPEnc::NORMAL)
-    {
-        asmr.printError(instrPlace, "DPP and SDWA encoding is illegal for VOP3");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "DPP and SDWA encoding is illegal for VOP3")
     
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     RegRange dstReg(0, 0);
@@ -2291,10 +2214,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                         good = false;
                 }
                 else
-                {
-                    asmr.printError(modPlace, "Unknown VINTRP modifier");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown VINTRP modifier")
             }
             if (modHigh)
             {
@@ -2379,10 +2299,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
         
         if (numSgprToRead>=2)
-        {
-            asmr.printError(instrPlace, "More than one SGPR to read in instruction");
-            return false;
-        }
+            ASM_FAIL_BY_ERROR(instrPlace, "More than one SGPR to read in instruction")
     }
     
     uint32_t words[2];
@@ -2476,15 +2393,9 @@ bool GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
     RegRange dstReg(0, 0);
     RegRange srcReg(0, 0);
     if (gcnEncSize==GCNEncSize::BIT64)
-    {
-        asmr.printError(instrPlace, "Only 32-bit size for VINTRP encoding");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Only 32-bit size for VINTRP encoding")
     if (gcnVOPEnc!=GCNVOPEnc::NORMAL)
-    {
-        asmr.printError(instrPlace, "DPP and SDWA encoding is illegal for VOP3");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "DPP and SDWA encoding is illegal for VOP3")
     
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
@@ -2531,10 +2442,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
     if (gcnEncSize==GCNEncSize::BIT32)
-    {
-        asmr.printError(instrPlace, "Only 64-bit size for DS encoding");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Only 64-bit size for DS encoding")
     RegRange dstReg(0, 0);
     RegRange addrReg(0, 0);
     RegRange data0Reg(0, 0), data1Reg(0, 0);
@@ -2631,10 +2539,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     good = false;
             }
             else
-            {
-                asmr.printError(modPlace, "Expected 'offset'");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(modPlace, "Expected 'offset'")
         }
         else
         {   // two offsets (offset0, offset1)
@@ -2669,17 +2574,11 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     }
                 }
                 else
-                {
-                    asmr.printError(linePtr, "Expected ':' before offset");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before offset")
             }
             else
-            {
-                asmr.printError(modPlace,
-                                "Expected 'offset', 'offset0' or 'offset1'");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(modPlace,
+                                "Expected 'offset', 'offset0' or 'offset1'")
         }
     }
     
@@ -2690,10 +2589,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         return false;
     
     if ((gcnInsn.mode&GCN_ONLYGDS) != 0 && !haveGds)
-    {
-        asmr.printError(instrPlace, "Instruction requires GDS modifier");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Instruction requires GDS modifier")
     
     if (offsetExpr!=nullptr)
         offsetExpr->setTarget(AsmExprTarget((gcnInsn.mode & GCN_2OFFSETS) ?
@@ -2761,10 +2657,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
     if (gcnEncSize==GCNEncSize::BIT32)
-    {
-        asmr.printError(instrPlace, "Only 64-bit size for MUBUF/MTBUF encoding");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Only 64-bit size for MUBUF/MTBUF encoding")
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     RegRange vaddrReg(0, 0);
     RegRange vdataReg(0, 0);
@@ -2862,10 +2755,8 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     good = false;
             }
             else
-            {
-                asmr.printError(modPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
-                    "Unknown MUBUF modifier" : "Unknown MTBUF modifier");
-            }
+                ASM_NOTGOOD_BY_ERROR(modPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
+                    "Unknown MUBUF modifier" : "Unknown MTBUF modifier")
         }
         else if (gcnInsn.encoding==GCNENC_MTBUF && ::strcmp(name, "format")==0)
         {   // parse format
@@ -2873,16 +2764,13 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             skipSpacesToEnd(linePtr, end);
             if (linePtr==end || *linePtr!=':')
             {
-                asmr.printError(linePtr, "Expected ':' before format");
-                good = false;
+                ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before format")
                 continue;
             }
             skipCharAndSpacesToEnd(linePtr, end);
             if (linePtr==end || *linePtr!='[')
-            {
-                asmr.printError(modPlace, "Expected '[' before format");
-                modGood = good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR1(modGood = good, modPlace,
+                                "Expected '[' before format");
             if (modGood)
             {
                 skipCharAndSpacesToEnd(linePtr, end);
@@ -2918,10 +2806,8 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                             haveNFMT = true;
                         }
                         else
-                        {
-                            asmr.printError(fmtPlace, "Unknown data/number format");
-                            modGood = good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR1(modGood = good, fmtPlace,
+                                        "Unknown data/number format");
                     }
                 }
                 else
@@ -2948,10 +2834,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 if (linePtr!=end && *linePtr==']')
                     linePtr++;
                 else
-                {
-                    asmr.printError(linePtr, "Unterminated format modifier");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(linePtr, "Unterminated format modifier")
                 if (modGood)
                 {
                     if (haveFormat)
@@ -2974,11 +2857,8 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         else if (::strcmp(name, "idxen")==0)
             good &= parseModEnable(asmr, linePtr, haveIdxen, "idxen modifier");
         else
-        {
-            asmr.printError(modPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
-                    "Unknown MUBUF modifier" : "Unknown MTBUF modifier");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(modPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
+                    "Unknown MUBUF modifier" : "Unknown MTBUF modifier")
     }
     
     /* checking addr range and vdata range */
@@ -2996,27 +2876,21 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             char errorMsg[40];
             snprintf(errorMsg, 40, "Required %u vector register%s", dregsNum,
                      (dregsNum>1) ? "s" : "");
-            asmr.printError(vdataPlace, errorMsg);
-            good = false;
+            ASM_NOTGOOD_BY_ERROR(vdataPlace, errorMsg)
         }
     }
     if (vaddrReg)
     {
         if (!parsedVaddr && (haveIdxen || haveOffen || haveAddr64))
-        {   // no vaddr in instruction
-            asmr.printError(vaddrPlace, "VADDR is required if idxen, offen "
-                    "or addr64 is enabled");
-            good = false;
-        }
+            // no vaddr in instruction
+            ASM_NOTGOOD_BY_ERROR(vaddrPlace, "VADDR is required if idxen, offen "
+                    "or addr64 is enabled")
         else
         {
             const cxuint vaddrSize = ((haveOffen&&haveIdxen) || haveAddr64) ? 2 : 1;
             if (!isXRegRange(vaddrReg, vaddrSize))
-            {
-                asmr.printError(vaddrPlace, (vaddrSize==2) ? "Required 2 vector registers" : 
-                            "Required 1 vector register");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(vaddrPlace, (vaddrSize==2) ?
+                        "Required 2 vector registers" : "Required 1 vector register")
         }
     }
     // fix access for VDATA field
@@ -3047,15 +2921,9 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     
     /* checking modifiers conditions */
     if (haveAddr64 && (haveOffen || haveIdxen))
-    {
-        asmr.printError(instrPlace, "Idxen and offen must be zero in 64-bit address mode");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Idxen and offen must be zero in 64-bit address mode")
     if (haveTfe && haveLds)
-    {
-        asmr.printError(instrPlace, "Both LDS and TFE is illegal");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Both LDS and TFE is illegal")
     
     // ignore vdata if LDS
     if (haveLds)
@@ -3124,10 +2992,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 {
     const char* end = asmr.line+asmr.lineSize;
     if (gcnEncSize==GCNEncSize::BIT32)
-    {
-        asmr.printError(instrPlace, "Only 64-bit size for MIMG encoding");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Only 64-bit size for MIMG encoding")
     const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
     bool good = true;
     RegRange vaddrReg(0, 0);
@@ -3157,8 +3022,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         char buf[60];
         snprintf(buf, 60, "Required (%u-%u) vector registers", geRegRequired,
                  geRegRequired+vaddrMaxExtraRegs);
-        asmr.printError(vaddrPlace, buf);
-        good = false;
+        ASM_NOTGOOD_BY_ERROR(vaddrPlace, buf)
     }
     
     if (!skipRequiredComma(asmr, linePtr))
@@ -3222,25 +3086,16 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                             asmr.printWarning(valuePlace, "Dmask out of range (0-15)");
                         dmask = value&0xf;
                         if (dmask == 0)
-                        {
-                            asmr.printError(valuePlace, "Zero in dmask is illegal");
-                            good = false;
-                        }
+                            ASM_NOTGOOD_BY_ERROR(valuePlace, "Zero in dmask is illegal")
                     }
                     else
                         good = false;
                 }
                 else
-                {
-                    asmr.printError(linePtr, "Expected ':' before dmask");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before dmask")
             }
             else
-            {
-                asmr.printError(modPlace, "Unknown MIMG modifier");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown MIMG modifier")
         }
         else if (name[0] < 's')
         {   // glc, lwe, r128, a16 modifiers
@@ -3253,10 +3108,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             else if (isGCN14 && ::strcmp(name, "a16")==0)
                 good &= parseModEnable(asmr, linePtr, haveA16, "a16 modifier");
             else
-            {
-                asmr.printError(modPlace, "Unknown MIMG modifier");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown MIMG modifier")
         }
         // other modifiers
         else if (::strcmp(name, "tfe")==0)
@@ -3266,10 +3118,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         else if (::strcmp(name, "unorm")==0)
             good &= parseModEnable(asmr, linePtr, haveUnorm, "unorm modifier");
         else
-        {
-            asmr.printError(modPlace, "Unknown MIMG modifier");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown MIMG modifier")
     }
     
     cxuint dregsNum = 4;
@@ -3281,15 +3130,11 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         char errorMsg[40];
         snprintf(errorMsg, 40, "Required %u vector register%s", dregsNum,
                  (dregsNum>1) ? "s" : "");
-        asmr.printError(vdataPlace, errorMsg);
-        good = false;
+        ASM_NOTGOOD_BY_ERROR(vdataPlace, errorMsg)
     }
     if (!isXRegRange(srsrcReg, (haveR128)?4:8))
-    {
-        asmr.printError(srsrcPlace, (haveR128) ? "Required 4 scalar registers" :
-                    "Required 8 scalar registers");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(srsrcPlace, (haveR128) ? "Required 4 scalar registers" :
+                    "Required 8 scalar registers")
     
     const bool vdataToWrite = ((gcnInsn.mode&GCN_MLOAD) != 0 ||
                 ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc));
@@ -3344,10 +3189,8 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     /* checking modifiers conditions */
     if (!haveUnorm && ((gcnInsn.mode&GCN_MLOAD) == 0 || (gcnInsn.mode&GCN_MATOMIC)!=0))
-    {   // unorm is not set for this instruction
-        asmr.printError(instrPlace, "Unorm is not set for store or atomic instruction");
-        return false;
-    }
+        // unorm is not set for this instruction
+        ASM_FAIL_BY_ERROR(instrPlace, "Unorm is not set for store or atomic instruction")
     
     uint32_t words[2];
     SLEV(words[0], 0xf0000000U | (uint32_t(dmask&0xf)<<8) | (haveUnorm ? 0x1000U : 0) |
@@ -3374,10 +3217,7 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
 {
     const char* end = asmr.line+asmr.lineSize;
     if (gcnEncSize==GCNEncSize::BIT32)
-    {
-        asmr.printError(instrPlace, "Only 64-bit size for EXP encoding");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Only 64-bit size for EXP encoding")
     bool good = true;
     cxbyte enMask = 0xf;
     cxbyte target = 0;
@@ -3403,10 +3243,7 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
                 nameStart+=3;
                 target = cstrtobyte(nameStart, name+nameSize);
                 if (target>=8)
-                {
-                    asmr.printError(targetPlace, "MRT number out of range (0-7)");
-                    good = false;
-                }
+                    ASM_NOTGOOD_BY_ERROR(targetPlace, "MRT number out of range (0-7)")
             }
             else
                 target = 8; // mrtz
@@ -3416,10 +3253,7 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
             nameStart+=3;
             cxbyte posNum = cstrtobyte(nameStart, name+nameSize);
             if (posNum>=4)
-            {
-                asmr.printError(targetPlace, "Pos number out of range (0-3)");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(targetPlace, "Pos number out of range (0-3)")
             else
                 target = posNum+12;
         }
@@ -3430,18 +3264,12 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
             nameStart+=5;
             cxbyte posNum = cstrtobyte(nameStart, name+nameSize);
             if (posNum>=32)
-            {
-                asmr.printError(targetPlace, "Param number out of range (0-31)");
-                good = false;
-            }
+                ASM_NOTGOOD_BY_ERROR(targetPlace, "Param number out of range (0-31)")
             else
                 target = posNum+32;
         }
         else
-        {
-            asmr.printError(targetPlace, "Unknown EXP target");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(targetPlace, "Unknown EXP target")
     }
     else
         good = false;
@@ -3496,10 +3324,7 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
         else if (::strcmp(name, "compr")==0)
             good &= parseModEnable(asmr, linePtr, haveCompr, "compr modifier");
         else
-        {
-            asmr.printError(modPlace, "Unknown EXP modifier");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown EXP modifier")
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -3509,15 +3334,11 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
             !vsrcsReg[0].isRegVar() && !vsrcsReg[1].isRegVar())
     {
         if (vsrcsReg[0].start!=vsrcsReg[1].start && (enMask&3)==3)
-        {   // error (vsrc1!=vsrc0)
-            asmr.printError(vsrcPlaces[1], "VSRC1 must be equal to VSRC0 in compr mode");
-            return false;
-        }
+            // error (vsrc1!=vsrc0)
+            ASM_FAIL_BY_ERROR(vsrcPlaces[1], "VSRC1 must be equal to VSRC0 in compr mode")
         if (vsrcsReg[2].start!=vsrcsReg[3].start && (enMask&12)==12)
-        {   // error (vsrc3!=vsrc2)
-            asmr.printError(vsrcPlaces[3], "VSRC3 must be equal to VSRC2 in compr mode");
-            return false;
-        }
+            // error (vsrc3!=vsrc2)
+            ASM_FAIL_BY_ERROR(vsrcPlaces[3], "VSRC3 must be equal to VSRC2 in compr mode")
         vsrcsReg[1] = vsrcsReg[2];
         vsrcsReg[2] = vsrcsReg[3] = { 0, 0 };
     }
@@ -3543,10 +3364,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 {
     const char* end = asmr.line+asmr.lineSize;
     if (gcnEncSize==GCNEncSize::BIT32)
-    {
-        asmr.printError(instrPlace, "Only 64-bit size for FLAT encoding");
-        return false;
-    }
+        ASM_FAIL_BY_ERROR(instrPlace, "Only 64-bit size for FLAT encoding")
     const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
     const cxuint flatMode = (gcnInsn.mode & GCN_FLAT_MODEMASK);
     bool good = true;
@@ -3644,11 +3462,8 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     
     if (flatMode == GCN_FLAT_SCRATCH && !saddrOff && !vaddrOff)
-    {
-        asmr.printError(instrPlace, "Only one of VADDR and SADDR can be set in "
-                    "SCRATCH mode");
-        good = false;
-    }
+        ASM_NOTGOOD_BY_ERROR(instrPlace, "Only one of VADDR and SADDR can be set in "
+                    "SCRATCH mode")
     
     if (saddrOff)
         saddrReg.start = 0x7f;
@@ -3694,10 +3509,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 good = false;
         }
         else
-        {
-            asmr.printError(modPlace, "Unknown FLAT modifier");
-            good = false;
-        }
+            ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown FLAT modifier")
     }
     /* check register ranges */
     bool dstToWrite = vdstReg && ((gcnInsn.mode & GCN_MATOMIC)==0 || haveGlc);
@@ -3710,8 +3522,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             char errorMsg[40];
             snprintf(errorMsg, 40, "Required %u vector register%s", dstRegsNum,
                      (dstRegsNum>1) ? "s" : "");
-            asmr.printError(vdstPlace, errorMsg);
-            good = false;
+            ASM_NOTGOOD_BY_ERROR(vdstPlace, errorMsg)
         }
         
         if (haveTfe && vdstReg && gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
@@ -3902,6 +3713,12 @@ void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
         flushInstrRVUs(usageHandler);
 }
 
+#define GCN_FAIL_BY_ERROR(PLACE, STRING) \
+    { \
+        printError(PLACE, STRING); \
+        return false; \
+    }
+
 bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSectionId,
              cxbyte* sectionData, size_t offset, AsmExprTargetType targetType,
              cxuint sectionId, uint64_t value)
@@ -3910,41 +3727,29 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
     {
         case GCNTGT_LITIMM:
             if (sectionId != ASMSECT_ABS)
-            {
-                printError(sourcePos, "Relative value is illegal in literal expressions");
-                return false;
-            }
+                GCN_FAIL_BY_ERROR(sourcePos,
+                        "Relative value is illegal in literal expressions")
             SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value);
             printWarningForRange(32, value, sourcePos);
             return true;
         case GCNTGT_SOPKSIMM16:
             if (sectionId != ASMSECT_ABS)
-            {
-                printError(sourcePos, "Relative value is illegal in immediate expressions");
-                return false;
-            }
+                GCN_FAIL_BY_ERROR(sourcePos,
+                        "Relative value is illegal in immediate expressions")
             SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), value);
             printWarningForRange(16, value, sourcePos);
             return true;
         case GCNTGT_SOPJMP:
         {
             if (sectionId != targetSectionId)
-            {   // if jump outside current section (.text)
-                printError(sourcePos, "Jump over current section!");
-                return false;
-            }
+                // if jump outside current section (.text)
+                GCN_FAIL_BY_ERROR(sourcePos, "Jump over current section!")
             int64_t outOffset = (int64_t(value)-int64_t(offset)-4);
             if (outOffset & 3)
-            {
-                printError(sourcePos, "Jump is not aligned to word!");
-                return false;
-            }
+                GCN_FAIL_BY_ERROR(sourcePos, "Jump is not aligned to word!")
             outOffset >>= 2;
             if (outOffset > INT16_MAX || outOffset < INT16_MIN)
-            {
-                printError(sourcePos, "Jump out of range!");
-                return false;
-            }
+                GCN_FAIL_BY_ERROR(sourcePos, "Jump out of range!")
             SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), outOffset);
             uint16_t insnCode = ULEV(*reinterpret_cast<uint16_t*>(sectionData+offset+2));
             // add codeflow entry
@@ -3954,19 +3759,15 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
         }
         case GCNTGT_SMRDOFFSET:
             if (sectionId != ASMSECT_ABS)
-            {
-                printError(sourcePos, "Relative value is illegal in offset expressions");
-                return false;
-            }
+                GCN_FAIL_BY_ERROR(sourcePos,
+                            "Relative value is illegal in offset expressions")
             sectionData[offset] = value;
             printWarningForRange(8, value, sourcePos, WS_UNSIGNED);
             return true;
         case GCNTGT_DSOFFSET16:
             if (sectionId != ASMSECT_ABS)
-            {
-                printError(sourcePos, "Relative value is illegal in offset expressions");
-                return false;
-            }
+                GCN_FAIL_BY_ERROR(sourcePos,
+                            "Relative value is illegal in offset expressions")
             SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), value);
             printWarningForRange(16, value, sourcePos, WS_UNSIGNED);
             return true;
@@ -3974,12 +3775,9 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
         case GCNTGT_DSOFFSET8_1:
         case GCNTGT_SOPCIMM8:
             if (sectionId != ASMSECT_ABS)
-            {
-                printError(sourcePos, (targetType != GCNTGT_SOPCIMM8) ?
+                GCN_FAIL_BY_ERROR(sourcePos, (targetType != GCNTGT_SOPCIMM8) ?
                         "Relative value is illegal in offset expressions" :
-                        "Relative value is illegal in immediate expressions");
-                return false;
-            }
+                        "Relative value is illegal in immediate expressions")
             if (targetType==GCNTGT_DSOFFSET8_0)
                 sectionData[offset] = value;
             else
@@ -3988,10 +3786,8 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             return true;
         case GCNTGT_MXBUFOFFSET:
             if (sectionId != ASMSECT_ABS)
-            {
-                printError(sourcePos, "Relative value is illegal in offset expressions");
-                return false;
-            }
+                GCN_FAIL_BY_ERROR(sourcePos,
+                            "Relative value is illegal in offset expressions")
             sectionData[offset] = value&0xff;
             sectionData[offset+1] = (sectionData[offset+1]&0xf0) | ((value>>8)&0xf);
             printWarningForRange(12, value, sourcePos, WS_UNSIGNED);
@@ -3999,10 +3795,8 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
         case GCNTGT_SMEMOFFSET:
         case GCNTGT_SMEMOFFSETVEGA:
             if (sectionId != ASMSECT_ABS)
-            {
-                printError(sourcePos, "Relative value is illegal in offset expressions");
-                return false;
-            }
+                GCN_FAIL_BY_ERROR(sourcePos,
+                            "Relative value is illegal in offset expressions")
             if (targetType==GCNTGT_SMEMOFFSETVEGA)
             {
                 uint32_t oldV = ULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4));
@@ -4016,39 +3810,31 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             return true;
         case GCNTGT_SMEMOFFSET2:
             if (sectionId != ASMSECT_ABS)
-            {
-                printError(sourcePos, "Relative value is illegal in offset expressions");
-                return false;
-            }
+                GCN_FAIL_BY_ERROR(sourcePos,
+                        "Relative value is illegal in offset expressions")
             sectionData[offset+7] = value;
             printWarningForRange(8, value, sourcePos, WS_UNSIGNED);
             return true;
         case GCNTGT_SMEMIMM:
             if (sectionId != ASMSECT_ABS)
-            {
-                printError(sourcePos, "Relative value is illegal in immediate expressions");
-                return false;
-            }
+                GCN_FAIL_BY_ERROR(sourcePos,
+                        "Relative value is illegal in immediate expressions");
             sectionData[offset] = (sectionData[offset]&0x3f) | ((value<<6)&0xff);
             sectionData[offset+1] = (sectionData[offset+1]&0xe0) | ((value>>2)&0x1f);
             printWarningForRange(7, value, sourcePos, WS_UNSIGNED);
             return true;
         case GCNTGT_INSTOFFSET:
             if (sectionId != ASMSECT_ABS)
-            {
-                printError(sourcePos, "Relative value is illegal in offset expressions");
-                return false;
-            }
+                GCN_FAIL_BY_ERROR(sourcePos,
+                        "Relative value is illegal in offset expressions")
             sectionData[offset] = value;
             sectionData[offset+1] = (sectionData[offset+1]&0xf0) | ((value&0xf00)>>8);
             printWarningForRange(12, value, sourcePos, WS_UNSIGNED);
             return true;
         case GCNTGT_INSTOFFSET_S:
             if (sectionId != ASMSECT_ABS)
-            {
-                printError(sourcePos, "Relative value is illegal in offset expressions");
-                return false;
-            }
+                GCN_FAIL_BY_ERROR(sourcePos,
+                        "Relative value is illegal in offset expressions");
             sectionData[offset] = value;
             sectionData[offset+1] = (sectionData[offset+1]&0xe0) |
                     ((value&0x1f00)>>8);
