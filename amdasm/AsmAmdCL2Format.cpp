@@ -526,15 +526,13 @@ void AsmAmdCL2PseudoOps::doGlobalData(AsmAmdCL2Handler& handler, const char* pse
                       const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    if (!checkGarbagesAtEnd(asmr, linePtr))
-        return;
     if (handler.getDriverVersion() < 191205)
     {
         asmr.printError(pseudoOpPlace, "Global Data allowed only for new binary format");
         return;
     }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
     
     if (handler.rodataSection==ASMSECT_NONE)
     {   /* add this section */
@@ -550,16 +548,14 @@ void AsmAmdCL2PseudoOps::doRwData(AsmAmdCL2Handler& handler, const char* pseudoO
                       const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    if (!checkGarbagesAtEnd(asmr, linePtr))
-        return;
     
     if (handler.getDriverVersion() < 191205)
     {
         asmr.printError(pseudoOpPlace, "Global RWData allowed only for new binary format");
         return;
     }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
     
     if (handler.dataSection==ASMSECT_NONE)
     {   /* add this section */
@@ -576,7 +572,6 @@ void AsmAmdCL2PseudoOps::doBssData(AsmAmdCL2Handler& handler, const char* pseudo
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
     
     if (handler.getDriverVersion() < 191205)
     {
@@ -632,11 +627,6 @@ void AsmAmdCL2PseudoOps::doSamplerInit(AsmAmdCL2Handler& handler, const char* ps
                       const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    if (!checkGarbagesAtEnd(asmr, linePtr))
-        return;
-    
     if (handler.getDriverVersion() < 191205)
     {
         asmr.printError(pseudoOpPlace, "SamplerInit allowed only for new binary format");
@@ -648,6 +638,8 @@ void AsmAmdCL2PseudoOps::doSamplerInit(AsmAmdCL2Handler& handler, const char* ps
                 "SamplerInit is illegal if sampler definitions are present");
         return;
     }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
     
     if (handler.samplerInitSection==ASMSECT_NONE)
     {   /* add this section */
@@ -1342,6 +1334,8 @@ void AsmAmdCL2PseudoOps::doSetupArgs(AsmAmdCL2Handler& handler, const char* pseu
         asmr.printError(pseudoOpPlace, "SetupArgs must be as first in argument list");
         return;
     }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
     
     AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
     const IntAmdCL2KernelArg* argTable = asmr._64bit ? setupArgsTable64 : setupArgsTable32;
@@ -1358,7 +1352,6 @@ void AsmAmdCL2PseudoOps::addMetadata(AsmAmdCL2Handler& handler, const char* pseu
                       const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
     {
@@ -1372,7 +1365,6 @@ void AsmAmdCL2PseudoOps::addMetadata(AsmAmdCL2Handler& handler, const char* pseu
         return;
     }
     
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1391,7 +1383,6 @@ void AsmAmdCL2PseudoOps::addISAMetadata(AsmAmdCL2Handler& handler,
                 const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
     {
@@ -1410,7 +1401,6 @@ void AsmAmdCL2PseudoOps::addISAMetadata(AsmAmdCL2Handler& handler,
         return;
     }
     
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1429,7 +1419,6 @@ void AsmAmdCL2PseudoOps::addKernelSetup(AsmAmdCL2Handler& handler,
                 const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
     {
@@ -1443,7 +1432,6 @@ void AsmAmdCL2PseudoOps::addKernelSetup(AsmAmdCL2Handler& handler,
         return;
     }
     
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1462,7 +1450,6 @@ void AsmAmdCL2PseudoOps::addKernelStub(AsmAmdCL2Handler& handler,
                 const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
     {
@@ -1481,7 +1468,6 @@ void AsmAmdCL2PseudoOps::addKernelStub(AsmAmdCL2Handler& handler,
         return;
     }
     
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1500,8 +1486,6 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
                       const char* linePtr, bool hsaConfig)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    
     if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
     {
         asmr.printError(pseudoOpPlace, "Kernel config can be defined only inside kernel");
@@ -1521,7 +1505,6 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
         return;
     }
     
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     

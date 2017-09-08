@@ -363,8 +363,6 @@ void AsmAmdPseudoOps::doGlobalData(AsmAmdHandler& handler, const char* pseudoOpP
                       const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -382,8 +380,6 @@ void AsmAmdPseudoOps::addMetadata(AsmAmdHandler& handler, const char* pseudoOpPl
                       const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    
     if (asmr.currentKernel==ASMKERN_GLOBAL)
     {
         asmr.printError(pseudoOpPlace, "Metadata can be defined only inside kernel");
@@ -396,7 +392,6 @@ void AsmAmdPseudoOps::addMetadata(AsmAmdHandler& handler, const char* pseudoOpPl
         return;
     }
     
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -415,14 +410,11 @@ void AsmAmdPseudoOps::doConfig(AsmAmdHandler& handler, const char* pseudoOpPlace
                       const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    
     if (asmr.currentKernel==ASMKERN_GLOBAL)
     {
         asmr.printError(pseudoOpPlace, "Kernel config can be defined only inside kernel");
         return;
     }
-    skipSpacesToEnd(linePtr, end);
     AsmAmdHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.metadataSection!=ASMSECT_NONE || kernel.headerSection!=ASMSECT_NONE ||
         !kernel.calNoteSections.empty())
@@ -528,8 +520,6 @@ void AsmAmdPseudoOps::addHeader(AsmAmdHandler& handler, const char* pseudoOpPlac
                   const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    
     if (asmr.currentKernel==ASMKERN_GLOBAL)
     {
         asmr.printError(pseudoOpPlace, "Header can be defined only inside kernel");
@@ -542,7 +532,6 @@ void AsmAmdPseudoOps::addHeader(AsmAmdHandler& handler, const char* pseudoOpPlac
         return;
     }
     
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     

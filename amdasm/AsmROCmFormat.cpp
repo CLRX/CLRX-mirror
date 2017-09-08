@@ -346,14 +346,12 @@ void AsmROCmPseudoOps::doConfig(AsmROCmHandler& handler, const char* pseudoOpPla
                   const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     if (asmr.currentKernel==ASMKERN_GLOBAL)
     {
         asmr.printError(pseudoOpPlace, "Kernel config can be defined only inside kernel");
         return;
     }
     
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     AsmROCmHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
@@ -752,7 +750,6 @@ void AsmROCmPseudoOps::setDefaultHSAFeatures(AsmROCmHandler& handler,
                     const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
@@ -761,7 +758,6 @@ void AsmROCmPseudoOps::setDefaultHSAFeatures(AsmROCmHandler& handler,
         return;
     }
     
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1125,6 +1121,9 @@ void AsmROCmPseudoOps::doKCodeEnd(AsmROCmHandler& handler, const char* pseudoOpP
         asmr.printError(pseudoOpPlace, "'.kcodeend' without '.kcode'");
         return;
     }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
     updateKCodeSel(handler, handler.kcodeSelection);
     std::vector<cxuint> oldKCodeSel = handler.kcodeSelection;
     handler.kcodeSelection = handler.kcodeSelStack.top();

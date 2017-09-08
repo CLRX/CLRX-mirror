@@ -473,7 +473,6 @@ void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseud
                       const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "Configuration outside kernel definition");
@@ -485,7 +484,6 @@ void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseud
                 "Configuration can't be defined if progInfo was defined");
         return;
     }
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -530,8 +528,6 @@ void AsmGalliumPseudoOps::doGlobalData(AsmGalliumHandler& handler,
                    const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -966,13 +962,11 @@ void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
                const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "Arguments outside kernel definition");
         return;
     }
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1160,7 +1154,6 @@ void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
                  const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "ProgInfo outside kernel definition");
@@ -1172,7 +1165,6 @@ void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
                 "ProgInfo can't be defined if configuration was exists");
         return;
     }
-    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1355,6 +1347,9 @@ void AsmGalliumPseudoOps::doKCodeEnd(AsmGalliumHandler& handler, const char* pse
         asmr.printError(pseudoOpPlace, "'.kcodeend' without '.kcode'");
         return;
     }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
     updateKCodeSel(handler, handler.kcodeSelection);
     std::vector<cxuint> oldKCodeSel = handler.kcodeSelection;
     handler.kcodeSelection = handler.kcodeSelStack.top();
