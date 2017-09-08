@@ -764,7 +764,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
             strarray.push_back(*linePtr++);
     }
     if (linePtr == end)
-        ASM_FAIL_BY_ERROR(startPlace, "Unterminated string");
+        ASM_FAIL_BY_ERROR(startPlace, "Unterminated string")
     linePtr++;
     return true;
 }
@@ -780,7 +780,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
         if (linePtr == end)
             ASM_FAIL_BY_ERROR(startPlace, "Unterminated character literal")
         if (*linePtr == '\'')
-            ASM_FAIL_BY_ERROR(startPlace, "Empty character literal");
+            ASM_FAIL_BY_ERROR(startPlace, "Empty character literal")
         
         if (*linePtr != '\\')
         {
@@ -1483,7 +1483,7 @@ bool Assembler::pushClause(const char* string, AsmClauseType clauseType, bool sa
         case AsmClauseType::MACRO:
             ASM_FAIL_BY_ERROR(string, clauseType == AsmClauseType::ELSEIF ?
                         "No '.if' before '.elseif' inside macro" :
-                        "No '.if' before '.aelse' inside macro")
+                        "No '.if' before '.else' inside macro")
         case AsmClauseType::REPEAT:
             ASM_FAIL_BY_ERROR(string, clauseType == AsmClauseType::ELSEIF ?
                         "No '.if' before '.elseif' inside repetition" :

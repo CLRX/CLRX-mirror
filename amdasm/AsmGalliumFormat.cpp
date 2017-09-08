@@ -1007,7 +1007,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                                       "Target alignment of argument out of range");
                 if (targetAlign==0 || targetAlign != (1ULL<<(63-CLZ64(targetAlign))))
                     ASM_NOTGOOD_BY_ERROR(targetAlignPlace,
-                                    "Target alignment is not power of 2");
+                                    "Target alignment is not power of 2")
             }
             else
                 good = false;

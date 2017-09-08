@@ -630,7 +630,7 @@ void AsmAmdCL2PseudoOps::doSampler(AsmAmdCL2Handler& handler, const char* pseudo
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel!=ASMKERN_GLOBAL && asmr.currentKernel!=ASMKERN_INNER &&
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op");
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (handler.getDriverVersion() < 191205)
         PSEUDOOP_RETURN_BY_ERROR("Sampler allowed only for new binary format")
     

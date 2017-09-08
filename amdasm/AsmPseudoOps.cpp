@@ -719,7 +719,7 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char* pseudoOpPlace,
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
     if (!asmr.isWriteableSection())
-        PSEUDOOP_RETURN_BY_ERROR("Writing data into non-writeable section is illegal");
+        PSEUDOOP_RETURN_BY_ERROR("Writing data into non-writeable section is illegal")
     skipSpacesToEnd(linePtr, end);
     if (linePtr == end)
         return;
@@ -1014,7 +1014,7 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char* pseudoOpPlace, const char
     
     if (!asmr.isAddressableSection())
         PSEUDOOP_RETURN_BY_ERROR("Change output counter inside non-addressable "
-                    "section is illegal");
+                    "section is illegal")
     
     skipSpacesToEnd(linePtr, end);
     uint64_t size = 1, value = 0;
@@ -1600,7 +1600,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
     
     if (asmr.macroMap.find(macroName) != asmr.macroMap.end())
         ASM_NOTGOOD_BY_ERROR(macroNamePlace, (std::string("Macro '") + macroName.c_str() +
-                "' is already defined").c_str());
+                "' is already defined").c_str())
     
     {
     std::unordered_set<CString> macroArgSet;
@@ -1794,7 +1794,7 @@ void AsmPseudoOps::purgeMacro(Assembler& asmr, const char* linePtr)
     CString macroName = extractSymName(linePtr, end, false);
     bool good = true;
     if (macroName.empty())
-        ASM_RETURN_BY_ERROR(macroNamePlace, "Expected macro name")
+        ASM_NOTGOOD_BY_ERROR(macroNamePlace, "Expected macro name")
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     if (asmr.macroCase)

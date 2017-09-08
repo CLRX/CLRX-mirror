@@ -943,7 +943,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 }
                 else
                     ASM_NOTGOOD_BY_ERROR1(goodCnt = good, funcNamePlace,
-                                    "Expected vmcnt, lgkmcnt or expcnt");
+                                    "Expected vmcnt, lgkmcnt or expcnt")
                 
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr==end || *linePtr!='(')
@@ -2770,7 +2770,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             skipCharAndSpacesToEnd(linePtr, end);
             if (linePtr==end || *linePtr!='[')
                 ASM_NOTGOOD_BY_ERROR1(modGood = good, modPlace,
-                                "Expected '[' before format");
+                                "Expected '[' before format")
             if (modGood)
             {
                 skipCharAndSpacesToEnd(linePtr, end);
@@ -2807,7 +2807,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                         }
                         else
                             ASM_NOTGOOD_BY_ERROR1(modGood = good, fmtPlace,
-                                        "Unknown data/number format");
+                                        "Unknown data/number format")
                     }
                 }
                 else
@@ -3818,7 +3818,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
         case GCNTGT_SMEMIMM:
             if (sectionId != ASMSECT_ABS)
                 GCN_FAIL_BY_ERROR(sourcePos,
-                        "Relative value is illegal in immediate expressions");
+                        "Relative value is illegal in immediate expressions")
             sectionData[offset] = (sectionData[offset]&0x3f) | ((value<<6)&0xff);
             sectionData[offset+1] = (sectionData[offset+1]&0xe0) | ((value>>2)&0x1f);
             printWarningForRange(7, value, sourcePos, WS_UNSIGNED);
@@ -3834,7 +3834,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
         case GCNTGT_INSTOFFSET_S:
             if (sectionId != ASMSECT_ABS)
                 GCN_FAIL_BY_ERROR(sourcePos,
-                        "Relative value is illegal in offset expressions");
+                        "Relative value is illegal in offset expressions")
             sectionData[offset] = value;
             sectionData[offset+1] = (sectionData[offset+1]&0xe0) |
                     ((value&0x1f00)>>8);
