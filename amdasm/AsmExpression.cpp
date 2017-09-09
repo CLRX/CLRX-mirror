@@ -384,8 +384,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                         break;
                     case AsmExprOp::LOGICAL_NOT:
                         if (!relatives.empty())
-                            assembler.printError(sourcePos,
-                                 "Logical negation is not allowed to relative values");
+                            ASMX_FAILED_BY_ERROR(sourcePos,
+                                 "Logical negation is not allowed to relative values")
                         value = !value;
                         break;
                     default:
@@ -458,9 +458,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                             value = value2 / value;
                         else // error
                         {
-                            assembler.printError(getSourcePos(messagePosIndex),
-                                   "Division by zero");
-                            failed = true;
+                            ASMX_FAILED_BY_ERROR(getSourcePos(messagePosIndex),
+                                   "Division by zero")
                             value = 0;
                         }
                         messagePosIndex++;
