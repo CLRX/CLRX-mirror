@@ -266,7 +266,7 @@ uint32_t CLRX::calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint us
     uint32_t dimValues = 0;
     if (dimMask != UINT_MAX)
         dimValues = ((dimMask&7)<<7) | (((dimMask&4) ? 2 : (dimMask&2) ? 1 : 0)<<11);
-    else //
+    else // use default value for dimensions
         dimValues = defDimValues;
     return uint32_t(scratchEn ? 1U : 0U) | (uint32_t(userDataNum)<<1) |
             dimValues | (tgSizeEn ? 0x400U : 0U) | (trapPresent ? 0x40U : 0U) |

@@ -156,10 +156,12 @@ struct AMDGPUArchValues
     uint32_t stepping;  ///< arch stepping number
 };
 
+/// calculate PGMRSRC1 register value
 uint32_t calculatePgmRSrc1(GPUArchitecture arch, cxuint vgprsNum, cxuint sgprsNum,
             cxuint priority, cxuint floatMode, bool privMode, bool dx10clamp,
             bool debugMode, bool ieeeMode);
 
+/// calculate PGMRSRC2 register value
 uint32_t calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint userDataNum,
             bool trapPresent, cxuint dimMask, cxuint defDimValues, bool tgSizeEn,
             cxuint ldsSize, cxuint exceptions);
