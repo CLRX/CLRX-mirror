@@ -1157,8 +1157,6 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
     else
         dimValues |= (config.pgmRSRC2 & 0x1b80U);
     
-    const uint32_t localPart = (storeLocalSize) ? (((config.localSize+511)>>9)<<15) : 0;
-    
     const bool isGCN14 = arch >= GPUArchitecture::GCN1_4;
     cxuint userDatasNum = isGCN14 ? 6 : 4;
     if (config.useGeneric)
@@ -1170,9 +1168,10 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
     else if (config.useArgs)
         userDatasNum = isGCN14 ? 8 : 6;
     
-    return (config.pgmRSRC2 & 0xffffe440U) | (userDatasNum<<1) |
-            ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues |
-            (uint32_t(config.exceptions)<<24) | localPart;
+    return (config.pgmRSRC2 & 0xffffe440U) |
+            calculatePgmRSrc2(arch, (config.scratchBufferSize != 0),
+                    userDatasNum, false, BINGEN_DEFAULT, dimValues, config.tgSize,
+                    storeLocalSize ? config.localSize : 0, config.exceptions);
 }
 
 size_t AmdCL2KernelConfig::calculateKernelArgSize(bool is64Bit, bool newBinaries) const
@@ -1222,12 +1221,10 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     cxuint sgprsNum = std::max(config.usedSGPRsNum + extraSGPRsNum + 2, 1U);
     cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
     // pgmrsrc1
-    SLEV(setupData.pgmRSRC1, config.pgmRSRC1 | ((vgprsNum-1)>>2) |
-            (((sgprsNum-1)>>3)<<6) | ((uint32_t(config.floatMode)&0xff)<<12) |
-            (newBinaries ? (1U<<21) : 0) /*dx11_clamp */ |
-            (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10) |
-            (config.privilegedMode?1U<<20:0) | (config.dx10Clamp?1U<<21:0) |
-            (config.debugMode?1U<<22:0));
+    SLEV(setupData.pgmRSRC1, config.pgmRSRC1 |
+            calculatePgmRSrc1(arch, vgprsNum, sgprsNum, config.priority, config.floatMode,
+                    config.privilegedMode, config.dx10Clamp | newBinaries,
+                    config.debugMode, config.ieeeMode));
     // pgmrsrc2 - without ldssize
     uint16_t setup1 = 0x1;
     if (config.useGeneric)

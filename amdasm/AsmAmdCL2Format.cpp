@@ -1966,23 +1966,15 @@ bool AsmAmdCL2Handler::prepareBinary()
             cxuint sgprsNum = std::max(config.usedSGPRsNum, 1U);
             cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
             // computePGMRSRC1
-            config.computePgmRsrc1 |= ((vgprsNum-1)>>2) |
-                    (((sgprsNum-1)>>3)<<6) | ((uint32_t(config.floatMode)&0xff)<<12) |
-                    (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10) |
-                    (config.privilegedMode?1U<<20:0) | (config.dx10Clamp?1U<<21:0) |
-                    (config.debugMode?1U<<22:0);
-                    
-            uint32_t dimValues = 0;
-            if (config.dimMask != BINGEN_DEFAULT)
-                dimValues = ((config.dimMask&7)<<7) |
-                        (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
-            else
-                dimValues |= (config.computePgmRsrc2 & 0x1b80U);
+            config.computePgmRsrc1 |= calculatePgmRSrc1(arch, vgprsNum, sgprsNum,
+                        config.priority, config.floatMode, config.privilegedMode,
+                        config.dx10Clamp, config.debugMode, config.ieeeMode);
             // computePGMRSRC2
             config.computePgmRsrc2 = (config.computePgmRsrc2 & 0xffffe440U) |
-                            (userSGPRsNum<<1) | ((config.tgSize) ? 0x400 : 0) |
-                            ((config.workitemPrivateSegmentSize)?1:0) | dimValues |
-                            ((uint32_t(config.exceptions)&0x7f)<<24);
+                    calculatePgmRSrc2(arch, (config.workitemPrivateSegmentSize != 0),
+                            userSGPRsNum, false, config.dimMask,
+                            (config.computePgmRsrc2 & 0x1b80U), config.tgSize,
+                            0, config.exceptions);
             
             if (config.wavefrontSgprCount == BINGEN16_DEFAULT)
                 config.wavefrontSgprCount = sgprsNum;

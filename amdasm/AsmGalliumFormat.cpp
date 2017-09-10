@@ -1805,9 +1805,6 @@ bool AsmGalliumHandler::prepareBinary()
     AsmSection& asmCSection = assembler.sections[codeSection];
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
     
-    const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
-    const uint32_t ldsMask = (1U<<ldsShift)-1U;
-    
     for (size_t ki = 0; ki < output.kernels.size(); ki++)
     {
         GalliumKernelInput& kinput = output.kernels[ki];
@@ -1875,25 +1872,18 @@ bool AsmGalliumHandler::prepareBinary()
                     config.scratchBufferSize = hsaConfig.workitemPrivateSegmentSize;
             }
             
-            uint32_t dimValues = 0;
-            if (config.dimMask != BINGEN_DEFAULT)
-                dimValues = ((config.dimMask&7)<<7) |
-                        (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
-            else
-                dimValues |= (config.pgmRSRC2 & 0x1b80U);
             cxuint sgprsNum = std::max(config.usedSGPRsNum, 1U);
             cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
-            uint32_t pgmRSRC1 =  (config.pgmRSRC1) | ((vgprsNum-1)>>2) |
-                (((sgprsNum-1)>>3)<<6) | ((uint32_t(config.floatMode)&0xff)<<12) |
-                (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10) |
-                (config.privilegedMode?1U<<20:0) | (config.dx10Clamp?1U<<21:0) |
-                (config.debugMode?1U<<22:0);
+            uint32_t pgmRSRC1 =  (config.pgmRSRC1) |
+                    calculatePgmRSrc1(arch, vgprsNum, sgprsNum,
+                        config.priority, config.floatMode, config.privilegedMode,
+                        config.dx10Clamp, config.debugMode, config.ieeeMode);
             
             uint32_t pgmRSRC2 = (config.pgmRSRC2 & 0xffffe440U) |
-                        (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |
-                        ((config.scratchBufferSize)?1:0) | dimValues |
-                        (((config.localSize+ldsMask)>>ldsShift)<<15) |
-                        ((uint32_t(config.exceptions)&0x7f)<<24);
+                    calculatePgmRSrc2(arch, (config.scratchBufferSize != 0),
+                            config.userDataNum, false, config.dimMask,
+                            (config.pgmRSRC2 & 0x1b80U), config.tgSize,
+                            config.localSize, config.exceptions);
             
             size_t argSegmentSize = 0;
             for (GalliumArgInfo& argInfo: output.kernels[ki].argInfos)

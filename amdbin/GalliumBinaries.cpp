@@ -471,9 +471,6 @@ public:
     void operator()(FastOutputBuffer& fob) const
     {
         const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input.deviceType);
-        const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
-        const uint32_t ldsMask = (1U<<ldsShift)-1U;
-        
         const cxuint progInfoEntriesNum = input.isLLVM390 ? 5 : 3;
         
         for (uint32_t korder: kernelsOrder)
@@ -490,26 +487,19 @@ public:
                 outEntries[4].address = ULEV(0x00000008U);
                 
                 uint32_t scratchBlocks = ((config.scratchBufferSize<<6) + 1023)>>10;
-                uint32_t dimValues = 0;
-                if (config.dimMask != BINGEN_DEFAULT)
-                    dimValues = ((config.dimMask&7)<<7) |
-                            (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
-                else
-                    dimValues |= (config.pgmRSRC2 & 0x1b80U);
                 cxuint sgprsNum = std::max(config.usedSGPRsNum, 1U);
                 cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
-                /// pgmRSRC1
-                outEntries[0].value = (config.pgmRSRC1) | ((vgprsNum-1)>>2) |
-                        (((sgprsNum-1)>>3)<<6) | ((uint32_t(config.floatMode)&0xff)<<12) |
-                        (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10) |
-                        (config.privilegedMode?1U<<20:0) | (config.dx10Clamp?1U<<21:0) |
-                        (config.debugMode?1U<<22:0);
-                
+                /// pgmRSRC1 and pgmRSRC2
+                outEntries[0].value = (config.pgmRSRC1) |
+                    calculatePgmRSrc1(arch, vgprsNum, sgprsNum, config.priority,
+                            config.floatMode, config.privilegedMode, config.dx10Clamp,
+                            config.debugMode, config.ieeeMode);
                 outEntries[1].value = (config.pgmRSRC2 & 0xffffe440U) |
-                        (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |
-                        ((config.scratchBufferSize)?1:0) | dimValues |
-                        (((config.localSize+ldsMask)>>ldsShift)<<15) |
-                        ((uint32_t(config.exceptions)&0x7f)<<24);
+                    calculatePgmRSrc2(arch, (config.scratchBufferSize != 0),
+                            config.userDataNum, false, config.dimMask,
+                            (config.pgmRSRC2 & 0x1b80U), config.tgSize,
+                            config.localSize, config.exceptions);
+                
                 outEntries[2].value = (scratchBlocks)<<12;
                 if (input.isLLVM390)
                 {

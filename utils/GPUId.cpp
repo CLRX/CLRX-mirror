@@ -20,6 +20,8 @@
 #include <CLRX/Config.h>
 #include <cstring>
 #include <utility>
+#include <cstdint>
+#include <climits>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/GPUId.h>
 
@@ -243,3 +245,32 @@ cxuint CLRX::getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType, Fl
         return 2;
     return 0;
 }
+
+uint32_t CLRX::calculatePgmRSrc1(GPUArchitecture arch, cxuint vgprsNum, cxuint sgprsNum,
+            cxuint priority, cxuint floatMode, bool privMode, bool dx10Clamp,
+            bool debugMode, bool ieeeMode)
+{
+    return ((vgprsNum-1)>>2) | (((sgprsNum-1)>>3)<<6) |
+            ((uint32_t(floatMode)&0xff)<<12) |
+            (ieeeMode?1U<<23:0) | (uint32_t(priority&3)<<10) |
+            (privMode?1U<<20:0) | (dx10Clamp?1U<<21:0) |
+            (debugMode?1U<<22:0);
+}
+
+uint32_t CLRX::calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint userDataNum,
+            bool trapPresent, cxuint dimMask, cxuint defDimValues, bool tgSizeEn,
+            cxuint ldsSize, cxuint exceptions)
+{
+    const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
+    const uint32_t ldsMask = (1U<<ldsShift)-1U;
+    uint32_t dimValues = 0;
+    if (dimMask != UINT_MAX)
+        dimValues = ((dimMask&7)<<7) | (((dimMask&4) ? 2 : (dimMask&2) ? 1 : 0)<<11);
+    else //
+        dimValues = defDimValues;
+    return uint32_t(scratchEn ? 1U : 0U) | (uint32_t(userDataNum)<<1) |
+            dimValues | (tgSizeEn ? 0x400U : 0U) | (trapPresent ? 0x40U : 0U) |
+            (((uint32_t(ldsSize+ldsMask)>>ldsShift)&0x1ff)<<15) |
+            ((uint32_t(exceptions)&0x7f)<<24);
+}
+
