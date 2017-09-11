@@ -27,10 +27,7 @@
 
 using namespace CLRX;
 
-/* TODO: add routines to calculate pgmRSRCs and localsize.
- * use this in code */
-
-static const size_t gpuDeviceTableSize = 23;
+static const size_t gpuDeviceTableSize = 24;
 
 static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
 {
@@ -56,7 +53,8 @@ static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
     "Ellesmere",
     "Baffin",
     "GFX804",
-    "GFX900"
+    "GFX900",
+    "GFX901"
 };
 
 static std::pair<const char*, GPUDeviceType>
@@ -71,6 +69,7 @@ lowerCaseGpuDeviceEntryTable[gpuDeviceTableSize] =
     { "fiji", GPUDeviceType::FIJI },
     { "gfx804", GPUDeviceType::GFX804 },
     { "gfx900", GPUDeviceType::GFX900 },
+    { "gfx901", GPUDeviceType::GFX901 },
     { "goose", GPUDeviceType::GOOSE },
     { "hainan", GPUDeviceType::HAINAN },
     { "hawaii", GPUDeviceType::HAWAII },
@@ -111,6 +110,7 @@ static const GPUArchitecture gpuDeviceArchTable[gpuDeviceTableSize] =
     GPUArchitecture::GCN1_2, // Ellesmere
     GPUArchitecture::GCN1_2, // Baffin
     GPUArchitecture::GCN1_2, // GFX804
+    GPUArchitecture::GCN1_4, // GFX900
     GPUArchitecture::GCN1_4  // GFX900
 };
 
