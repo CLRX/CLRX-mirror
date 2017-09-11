@@ -142,7 +142,8 @@ static const AMDGPUArchValuesEntry amdGpuArchValuesTbl[] =
     { 8, 0, 3, GPUDeviceType::FIJI },
     { 8, 0, 4, GPUDeviceType::FIJI },
     { 8, 1, 0, GPUDeviceType::STONEY },
-    { 9, 0, 0, GPUDeviceType::GFX900 }
+    { 9, 0, 0, GPUDeviceType::GFX900 },
+    { 9, 0, 1, GPUDeviceType::GFX901 }
 };
 
 static const size_t amdGpuArchValuesNum = sizeof(amdGpuArchValuesTbl) /
