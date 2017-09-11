@@ -111,7 +111,7 @@ static const GPUArchitecture gpuDeviceArchTable[gpuDeviceTableSize] =
     GPUArchitecture::GCN1_2, // Baffin
     GPUArchitecture::GCN1_2, // GFX804
     GPUArchitecture::GCN1_4, // GFX900
-    GPUArchitecture::GCN1_4  // GFX900
+    GPUArchitecture::GCN1_4  // GFX901
 };
 
 static const char* gpuArchitectureNameTable[4] =
