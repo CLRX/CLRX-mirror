@@ -833,7 +833,7 @@ aa1: bb2:   # kernel labels
     },
     /* 28 - .gpu/.arch tests */
     {   ".amd\n.arch GCN1.2\n",
-        BinaryFormat::AMD, GPUDeviceType::TONGA, false,
+        BinaryFormat::AMD, GPUDeviceType::ICELAND, false,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
     },
     /* 29 - arch gpu conditionals */

@@ -134,7 +134,7 @@ static const GPUDeviceType gpuLowestDeviceFromArchTable[4] =
 {
     GPUDeviceType::CAPE_VERDE,
     GPUDeviceType::BONAIRE,
-    GPUDeviceType::TONGA,
+    GPUDeviceType::ICELAND,
     GPUDeviceType::GFX900
 };
 
