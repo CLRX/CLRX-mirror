@@ -191,6 +191,8 @@ GPUDeviceType ROCmBinary::determineGPUDeviceType(uint32_t& outArchMinor,
         deviceType = GPUDeviceType::BONAIRE;
     else if (archMajor==8)
         deviceType = GPUDeviceType::ICELAND;
+    else if (archMajor==9)
+        deviceType = GPUDeviceType::GFX900;
     
     for (cxuint i = 0; i < amdGpuArchValuesNum; i++)
         if (amdGpuArchValuesTbl[i].major==archMajor &&

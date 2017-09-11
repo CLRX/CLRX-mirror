@@ -84,6 +84,8 @@ static ROCmInput genROCmInput(const ROCmBinary& binary)
         rocmInput.deviceType = GPUDeviceType::BONAIRE;
     else if (archMajor==8)
         rocmInput.deviceType = GPUDeviceType::ICELAND;
+    else if (archMajor==9)
+        rocmInput.deviceType = GPUDeviceType::GFX900;
     
     rocmInput.codeSize = binary.getCodeSize();
     rocmInput.code = binary.getCode();
