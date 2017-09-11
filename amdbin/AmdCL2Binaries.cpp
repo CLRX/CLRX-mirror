@@ -851,7 +851,8 @@ static const CL2GPUDeviceCodeEntry cl2_2348GpuDeviceCodeTable[] =
     { 17, GPUDeviceType::BAFFIN },
     { 18, GPUDeviceType::ELLESMERE },
     { 19, GPUDeviceType::GFX804 },
-    { 20, GPUDeviceType::GFX900 }
+    { 20, GPUDeviceType::GFX900 },
+    { 21, GPUDeviceType::GFX901 }
 };
 
 struct CLRX_INTERNAL CL2GPUCodeTable
@@ -958,16 +959,20 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
                 else if (major != 9 && major != 8 && major != 7)
                     throw Exception("Unknown arch major");
                 
+                archMinor = ULEV(content[2]);
+                archStepping = ULEV(content[3]);
                 if (!knownGPUType)
                 {
                     arch = (major == 7) ? GPUArchitecture::GCN1_1 :
                             ((major == 8) ? GPUArchitecture::GCN1_2 :
                             GPUArchitecture::GCN1_4);
                     deviceType = getLowestGPUDeviceTypeFromArchitecture(arch);
+                    
+                    if (major == 9 && archMinor == 0 && archStepping == 1)
+                        deviceType = GPUDeviceType::GFX901;
+                    
                     knownGPUType = true;
                 }
-                archMinor = ULEV(content[2]);
-                archStepping = ULEV(content[3]);
             }
             size_t align = (((namesz+descsz)&3)!=0) ? 4-((namesz+descsz)&3) : 0;
             offset += sizeof(typename Types::Nhdr) + namesz + descsz + align;
