@@ -30,6 +30,8 @@
 #include <vector>
 #ifdef HAVE_LINUX
 #include <alloca.h>
+#elif defined(HAVE_MINGW)
+#include <malloc.h>
 #else
 #include <cstdlib>
 #endif

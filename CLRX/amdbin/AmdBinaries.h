@@ -36,6 +36,10 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/GPUId.h>
 
+#ifdef HAVE_MINGW
+#undef VOID
+#endif
+
 /// main namespace
 namespace CLRX
 {

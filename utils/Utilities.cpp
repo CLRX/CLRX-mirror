@@ -494,7 +494,7 @@ uint64_t CLRX::getFileTimestamp(const char* filename)
         else
             throw Exception("Can't determine whether path refers to directory");
     }
-#if _POSIX_C_SOURCE>=200800L
+#if _POSIX_C_SOURCE>=200800L && !defined(HAVE_MINGW)
     return stBuf.st_mtim.tv_sec*1000000000ULL + stBuf.st_mtim.tv_nsec;
 #else
     return stBuf.st_mtime*1000000000ULL;
