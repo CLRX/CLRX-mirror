@@ -962,7 +962,7 @@ struct OnceFlag: std::atomic<int>
 };
 
 template<class Callable, class... Args>
-void callOnce(OnceFlag& flag, Callable&& f, Args&&... args)
+inline void callOnce(OnceFlag& flag, Callable&& f, Args&&... args)
 {
     if (flag.exchange(1) == 0)
         f(args...);
