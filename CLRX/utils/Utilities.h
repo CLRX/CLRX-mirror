@@ -955,7 +955,11 @@ template<class Callable, class... Args>
 void callOnce(std::once_flag& flag, Callable&& f, Args&&... args)
 { std::call_once(flag, f, args...); }
 #else
-typedef std::atomic<int> OnceFlag;
+struct OnceFlag: std::atomic<int>
+{   // force zero initialization
+    OnceFlag(): std::atomic<int>(0)
+    { }
+};
 
 template<class Callable, class... Args>
 void callOnce(OnceFlag& flag, Callable&& f, Args&&... args)
