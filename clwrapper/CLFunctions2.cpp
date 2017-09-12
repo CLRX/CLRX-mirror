@@ -1368,7 +1368,7 @@ clrxclGetGLContextInfoKHR(const cl_context_properties * properties,
             return status;
         
         try
-        { std::call_once(platform->onceFlag, clrxPlatformInitializeDevices, platform); }
+        { callOnce(platform->onceFlag, clrxPlatformInitializeDevices, platform); }
         catch(const std::exception& ex)
         { clrxAbort("Fatal error at device initialization: ", ex.what()); }
         catch(...)

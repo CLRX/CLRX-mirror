@@ -42,7 +42,7 @@
 
 using namespace CLRX;
 
-std::once_flag clrxOnceFlag;
+OnceFlag clrxOnceFlag;
 bool useCLRXWrapper = true;
 /* use pure pointer - AMDOCL library must be available to end of program,
  * even after main routine and within atexit callback */

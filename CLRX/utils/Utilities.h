@@ -946,6 +946,25 @@ inline void toUpperString(CString& string)
 { if (!string.empty())
     toUpperString(string.begin()); }
 
+/* CALL once */
+
+#ifndef HAVE_MINGW
+typedef std::once_flag OnceFlag;
+
+template<class Callable, class... Args>
+void callOnce(std::once_flag& flag, Callable&& f, Args&&... args)
+{ std::call_once(flag, f, args...); }
+#else
+typedef std::atomic<int> OnceFlag;
+
+template<class Callable, class... Args>
+void callOnce(OnceFlag& flag, Callable&& f, Args&&... args)
+{
+    if (flag.exchange(1) == 0)
+        f(args...);
+}
+#endif
+
 };
 
 #endif

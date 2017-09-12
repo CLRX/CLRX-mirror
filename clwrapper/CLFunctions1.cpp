@@ -285,7 +285,7 @@ clrxclGetDeviceIDs(cl_platform_id   platform,
     
     CLRXPlatform* p = static_cast<CLRXPlatform*>(platform);
     try
-    { std::call_once(p->onceFlag, clrxPlatformInitializeDevices, p); }
+    { callOnce(p->onceFlag, clrxPlatformInitializeDevices, p); }
     catch(const std::exception& ex)
     { clrxAbort("Fatal error at device initialization: ", ex.what()); }
     catch(...)
@@ -618,7 +618,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
         outContext->openCLVersionNum = platform->openCLVersionNum;
         
         try
-        { std::call_once(platform->onceFlag, clrxPlatformInitializeDevices, platform); }
+        { callOnce(platform->onceFlag, clrxPlatformInitializeDevices, platform); }
         catch(const std::exception& ex)
         { clrxAbort("Fatal error at device initialization: ", ex.what()); }
         catch(...)

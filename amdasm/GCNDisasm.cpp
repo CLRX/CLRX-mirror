@@ -121,7 +121,7 @@ struct CLRX_INTERNAL GCNDisasmUtils
 
 using namespace CLRX;
 
-static std::once_flag clrxGCNDisasmOnceFlag;
+static OnceFlag clrxGCNDisasmOnceFlag;
 static std::unique_ptr<GCNInstruction[]> gcnInstrTableByCode = nullptr;
 
 struct CLRX_INTERNAL GCNEncodingSpace
@@ -246,7 +246,7 @@ static void initializeGCNDisassembler()
 GCNDisassembler::GCNDisassembler(Disassembler& disassembler)
         : ISADisassembler(disassembler), instrOutOfCode(false)
 {
-    std::call_once(clrxGCNDisasmOnceFlag, initializeGCNDisassembler);
+    callOnce(clrxGCNDisasmOnceFlag, initializeGCNDisassembler);
 }
 
 GCNDisassembler::~GCNDisassembler()

@@ -25,11 +25,12 @@
 #include <algorithm>
 #include <mutex>
 #include <CLRX/amdasm/Assembler.h>
+#include <CLRX/utils/Utilities.h>
 #include "GCNAsmInternals.h"
 
 using namespace CLRX;
 
-static std::once_flag clrxGCNAssemblerOnceFlag;
+static OnceFlag clrxGCNAssemblerOnceFlag;
 static Array<GCNAsmInstruction> gcnInstrSortedTable;
 
 static void initializeGCNAssembler()
@@ -344,7 +345,7 @@ GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
         regs({0, 0}), curArchMask(1U<<cxuint(
                     getGPUArchitectureFromDeviceType(assembler.getDeviceType())))
 {
-    std::call_once(clrxGCNAssemblerOnceFlag, initializeGCNAssembler);
+    callOnce(clrxGCNAssemblerOnceFlag, initializeGCNAssembler);
 }
 
 GCNAssembler::~GCNAssembler()

@@ -175,7 +175,7 @@ static inline uint32_t getOpenCLVersionNum(uint16_t major, uint16_t minor)
 struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id, CLRX::NonCopyableAndNonMovable
 {
     cl_platform_id amdOclPlatform;
-    std::once_flag onceFlag; // for synchronization
+    CLRX::OnceFlag onceFlag; // for synchronization
     std::unique_ptr<char[]> extensions;
     size_t extensionsSize;
     std::unique_ptr<char[]> version;
@@ -399,7 +399,7 @@ struct CLRX_INTERNAL CLRXSVMFreeCallbackUserData
 #endif
 
 /* internals */
-CLRX_INTERNAL extern std::once_flag clrxOnceFlag;
+CLRX_INTERNAL extern CLRX::OnceFlag clrxOnceFlag;
 CLRX_INTERNAL extern bool useCLRXWrapper;
 CLRX_INTERNAL extern cl_uint amdOclNumPlatforms;
 CLRX_INTERNAL extern CLRXpfn_clGetPlatformIDs amdOclGetPlatformIDs;
@@ -522,7 +522,7 @@ CLRX_INTERNAL void clrxAbort(const char* abortStr, const char* exStr);
 #define CLRX_INITIALIZE \
     { \
         try \
-        { std::call_once(clrxOnceFlag, clrxWrapperInitialize); } \
+        { CLRX::callOnce(clrxOnceFlag, clrxWrapperInitialize); } \
         catch(const std::exception& ex) \
         { \
             std::cerr << "Fatal error at wrapper initialization: " << \
@@ -542,7 +542,7 @@ CLRX_INTERNAL void clrxAbort(const char* abortStr, const char* exStr);
 #define CLRX_INITIALIZE_OBJ \
     { \
         try \
-        { std::call_once(clrxOnceFlag, clrxWrapperInitialize); } \
+        { CLRX::callOnce(clrxOnceFlag, clrxWrapperInitialize); } \
         catch(const std::exception& ex) \
         { \
             std::cerr << "Fatal error at wrapper initialization: " << \
@@ -566,7 +566,7 @@ CLRX_INTERNAL void clrxAbort(const char* abortStr, const char* exStr);
 #define CLRX_INITIALIZE_VOIDPTR \
     { \
         try \
-        { std::call_once(clrxOnceFlag, clrxWrapperInitialize); } \
+        { CLRX::callOnce(clrxOnceFlag, clrxWrapperInitialize); } \
         catch(const std::exception& ex) \
         { \
             std::cerr << "Fatal error at wrapper initialization: " << \
