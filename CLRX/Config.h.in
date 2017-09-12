@@ -134,7 +134,7 @@
 #  define HAVE_BSD 1
 #endif
 
-#ifdef defined(__MINGW32__) || defined(__MINGW64__)
+#if defined(__MINGW32__) || defined(__MINGW64__)
 #  define HAVE_MINGW 1
 #endif
 
