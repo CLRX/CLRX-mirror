@@ -24,17 +24,15 @@
 #  error "This file must be included after CL/cl.h"
 #endif
 
-#if __GNUC__ >= 4
+#if __GNUC__ >= 4 && !defined(__CYGWIN__)
 #  define CLRX_CL_INTERNAL_DECLSYM(NAME) extern decltype(NAME) clrx##NAME \
         __attribute__((visibility("hidden")));
 
 #  define CLRX_CL_PUBLIC_SYM(NAME) decltype(NAME) NAME \
         __attribute__((alias("clrx" #NAME), visibility("default")));
-#elif defined(_MSC_VER)
+#else
 #  define CLRX_CL_INTERNAL_DECLSYM(NAME) extern decltype(NAME) clrx##NAME;
 #  define CLRX_CL_PUBLIC_SYM(NAME)
-#else
-#  error "Unsupported compiler other than GCC 4"
 #endif
 
 CLRX_CL_INTERNAL_DECLSYM(clGetPlatformIDs)
