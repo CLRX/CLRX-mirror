@@ -24,7 +24,7 @@
 #  error "This file must be included after CL/cl.h"
 #endif
 
-#if __GNUC__ >= 4 && !defined(__CYGWIN__)
+#if __GNUC__ >= 4 && !defined(__CYGWIN__) && !defined(__MINGW32__) && !defined(__MINGW64__)
 #  define CLRX_CL_INTERNAL_DECLSYM(NAME) extern decltype(NAME) clrx##NAME \
         __attribute__((visibility("hidden")));
 

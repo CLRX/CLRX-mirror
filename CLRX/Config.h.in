@@ -193,7 +193,7 @@
 
 /* symbols visibility */
 
-#if __GNUC__ >= 4 && !defined(__CYGWIN__)
+#if __GNUC__ >= 4 && !defined(__CYGWIN__) && !defined(HAVE_MINGW)
 #  define CLRX_INTERNAL __attribute__((visibility("hidden")))
 #else
 #  define CLRX_INTERNAL
