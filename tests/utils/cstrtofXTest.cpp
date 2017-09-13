@@ -17,10 +17,10 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <CLRX/Config.h>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
-#include <cstdint>
 #include <cstring>
 #include <climits>
 #include <CLRX/utils/Utilities.h>
