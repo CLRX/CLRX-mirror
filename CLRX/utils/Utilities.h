@@ -948,7 +948,7 @@ inline void toUpperString(CString& string)
 
 /* CALL once */
 
-#ifndef HAVE_MINGW
+#ifdef HAVE_CALL_ONCE
 typedef std::once_flag OnceFlag;
 
 template<class Callable, class... Args>

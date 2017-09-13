@@ -42,6 +42,8 @@
 
 #cmakedefine HAVE_INT128
 
+#cmakedefine HAVE_CALL_ONCE
+
 /* architecture setup */
 
 #if defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) || \
