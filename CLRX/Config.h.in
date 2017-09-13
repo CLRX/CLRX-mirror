@@ -184,10 +184,12 @@
 /// alternative directory separator string
 #  define CLRX_ALT_DIR_SEP_S "/"
 
-#  define strcasecmp(A,B) _stricmp(A,B)
-#  define strncasecmp(A,B,N) _strnicmp(A,B,N)
-#  if defined(_MSC_VER) && _MSC_VER<1900
-#    define snprintf(B,N,F,...) _snprintf(B,N,F,__VA_ARGS__)
+#  ifndef HAVE_MINGW
+#    define strcasecmp(A,B) _stricmp(A,B)
+#    define strncasecmp(A,B,N) _strnicmp(A,B,N)
+#    if defined(_MSC_VER) && _MSC_VER<1900
+#      define snprintf(B,N,F,...) _snprintf(B,N,F,__VA_ARGS__)
+#    endif
 #  endif
 #endif
 
