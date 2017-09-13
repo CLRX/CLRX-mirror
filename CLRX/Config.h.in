@@ -239,8 +239,12 @@ typedef signed long ssize_t;
 #endif
 
 #if __cplusplus < 201103L || (__GNUC__ == 4 && __GNUC_MINOR__ < 8) || defined(HAVE_MINGW)
-#define __STDC_LIMIT_MACROS 1
-#define __STDC_FORMAT_MACROS 1
+#  ifndef (__STDC_LIMIT_MACROS)
+#    define __STDC_LIMIT_MACROS 1
+#  endif
+#  ifndef (__STDC_FORMAT_MACROS)
+#    define __STDC_FORMAT_MACROS 1
+#  endif
 #endif
 
 #endif

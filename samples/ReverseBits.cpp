@@ -18,6 +18,7 @@
  */
 
 #include <cstdio>
+#include <inttypes.h>
 #include <iostream>
 #include <memory>
 #include <CLRX/utils/Utilities.h>
@@ -420,7 +421,7 @@ void ReverseBits::run()
     {
         printf("%08x:", cl_uint(i));
         for (size_t j = i; j < size && j < i+16; j++)
-            printf(" %02hhx", outData[j]);
+            printf(" %02" PRIx8, outData[j]);
         putchar('\n');
     }
     fflush(stdout);
