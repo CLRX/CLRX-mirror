@@ -952,7 +952,7 @@ inline void toUpperString(CString& string)
 typedef std::once_flag OnceFlag;
 
 template<class Callable, class... Args>
-void callOnce(std::once_flag& flag, Callable&& f, Args&&... args)
+inline void callOnce(std::once_flag& flag, Callable&& f, Args&&... args)
 { std::call_once(flag, f, args...); }
 #else
 struct OnceFlag: std::atomic<int>
