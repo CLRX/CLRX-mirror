@@ -456,7 +456,7 @@ void VectorAdd::run()
     for (size_t i = 0; i < elemsNum; i++)
     {
         const float expected = aData[i]+bData[i];
-        if (::fabs(expected-cData[i]) >= 1.0e-7)
+        if (::fabs(expected-cData[i]) >= 5.0e-7)
         {
             std::cerr << i << ": " << aData[i] << " + " << bData[i] <<
                 ": " << expected << "!=" << cData[i] << "\n";
