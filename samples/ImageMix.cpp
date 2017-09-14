@@ -316,8 +316,8 @@ void ImageMix::run()
             bestDim = xDim;
     
     size_t localSize[2] = { workGroupSize/bestDim, bestDim };
-    size_t workSize[2] = { width/localSize[0]*localSize[0],
-        width/localSize[1]*localSize[1] };
+    size_t workSize[2] = { (width+localSize[0]-1)/localSize[0]*localSize[0],
+        (height+localSize[1]-1)/localSize[1]*localSize[1] };
     
     std::cout << "WorkSize: " << workSize[0] << "x" << workSize[1] <<
             ", LocalSize: " << localSize[0] << "x" << localSize[1] << std::endl;
