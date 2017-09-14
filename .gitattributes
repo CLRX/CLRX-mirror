@@ -30,6 +30,7 @@ CLRX/utils/Utilities.h -text
 /COPYING.DOC -text
 /COPYING.LIB -text
 /ChangeLog -text
+/Check64Bit.cpp -text
 /Doxyfile.in -text
 /INSTALL -text
 /Int128Detect.cpp -text
