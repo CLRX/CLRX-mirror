@@ -32,7 +32,7 @@ CLRX/utils/Utilities.h -text
 /ChangeLog -text
 /Doxyfile.in -text
 /INSTALL -text
-/Int128Detect.c -text
+/Int128Detect.cpp -text
 /README -text
 /README.md -text
 /ThreadOnce.cpp -text
