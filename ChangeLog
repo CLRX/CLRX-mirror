@@ -27,7 +27,7 @@ CLRadeonExtender 0.1.5:
 * add pkg-config files to installation
 * remove obsolete warnings in CMakeLists.txt
 * added GFX901 support (RX VEGA with HBCC ?)
-* add Config.h include to Doxygen
+* add Config.h and amdbin/Elf.h headers to Doxygen documentation
 * change lowest device for GCN 1.2 to Iceland in GPUId.
 * add support for Windows developments environments: CygWin and MinGW
 * make detecting of 64-bits more portable in CMakeLists.txt (use compiler to do)
