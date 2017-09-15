@@ -949,8 +949,10 @@ inline void toUpperString(CString& string)
 /* CALL once */
 
 #ifdef HAVE_CALL_ONCE
+/// Once flag type (wrapper for std::once_flag)
 typedef std::once_flag OnceFlag;
 
+/// callOnce - portable wrapper for std::call_once
 template<class Callable, class... Args>
 inline void callOnce(std::once_flag& flag, Callable&& f, Args&&... args)
 { std::call_once(flag, f, args...); }
