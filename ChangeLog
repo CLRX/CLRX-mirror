@@ -1,6 +1,39 @@
 
 Change Log
 
+CLRadeonExtender 0.1.5:
+
+* ignore case in an access qualifier name's (Amd and AmdCL2)
+* improve handling a '\()' and '\@'
+* add SDWA and DPP words to set instruction encoding
+* fixing few CLRXDocs typos
+* fixes for AMD RX VEGA (GFX900)
+* disassembler prints an instruction's position in comments
+* update GcnTimings
+* update VectorAdd and ReverseBits for LLVM 4.0 and Mesa3D 17.0.0
+* updates in ImageMix (correct workSize calculating for kernel)
+* small fixes in disassembler
+* disassembler can correctly disassemble GalliumCompute for LLVM 4.0
+* add '--llvmVersion' to clrxdisasm
+* dump AMD HSA configuration for GalliumCompute and AmdCL2 (like in ROCm format)
+* disassembler add '@' to hwreg and sendmsg to make dump compatible with clrxasm
+* add '--HSAConfig' to dump AmdCL2 kernel configuration as AMD HSA config
+* add AMD HSA configuration pseudo-ops to GalliumCompute and AmdCL2 binary formats
+* update device list for Gallium and ROCm binary formats for recognizing device
+* add pseudo-op '.default_hsa_features' to AmdCL2, Gallium and ROCm formats
+* update headers in code
+* make error handling more compact in assembler's code
+* fixed '.machine', '.codeversion' handling (do not print obsolete warnings)
+* add pkg-config files to installation
+* remove obsolete warnings in CMakeLists.txt
+* added GFX901 support (RX VEGA with HBCC ?)
+* add Config.h include to Doxygen
+* change lowest device for GCN 1.2 to Iceland in GPUId.
+* add support for Windows developments environments: CygWin and MinGW
+* make detecting of 64-bits more portable in CMakeLists.txt (use compiler to do)
+* checking whether std::call_once is available for non full supported std threads
+* use only C++ compiler to check features (Int128Detect.cpp)
+
 CLRadeonExtender 0.1.4r1:
 
 * fixed code operation in SMRD and SMEM instructions
