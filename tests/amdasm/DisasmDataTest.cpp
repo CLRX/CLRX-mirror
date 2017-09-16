@@ -240,6 +240,7 @@ struct DisasmAmdTestCase
     const char* filename;
     const char* expectedString;
     bool config;
+    bool hsaConfig;
 };
 
 static const DisasmAmdTestCase disasmDataTestCases[] =
@@ -349,7 +350,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
         .byte 0x05, 0x00, 0x00, 0x00, 0x56, 0x00, 0x00, 0x00
         .byte 0x34, 0x08, 0x00, 0x00, 0xd2, 0x01, 0x00, 0x00
     .uavopmask 4556
-)xxFxx", false
+)xxFxx", false, false
     },
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/samplekernels.clo",
         R"xxFxx(.amd
@@ -656,7 +657,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*eba41000 80040100*/ tbuffer_store_format_x v1, v0, s[16:19], 0 offen format:[32,float]
 .L128_1:
 /*bf810000         */ s_endpgm
-)xxFxx", false
+)xxFxx", false, false
     },
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/samplekernels_64.clo",
         R"xxFxx(.amd
@@ -984,7 +985,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*eba48000 80010200*/ tbuffer_store_format_x v2, v[0:1], s[4:7], 0 addr64 format:[32,float]
 .L172_1:
 /*bf810000         */ s_endpgm
-)xxFxx", false
+)xxFxx", false, false
     },
     { nullptr, &galliumDisasmData, nullptr,
         R"fxDfx(.gallium
@@ -1079,7 +1080,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
     .text
 /*bf810000         */ s_endpgm
 /*4a040501         */ v_add_i32       v2, vcc, v1, v2
-)ffDXD", true
+)ffDXD", true, false
     },
     /* amdcl2 config */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amdcl2.clo",
@@ -1184,7 +1185,167 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*7e020302         */ v_mov_b32       v1, v2
 /*4a0206b7         */ v_add_i32       v1, vcc, 55, v3
 /*bf810000         */ s_endpgm
-)ffDXD", true
+)ffDXD", true, false
+    },
+    /* amdcl2 config */
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amdcl2.clo",
+        R"ffDXD(.amdcl2
+.gpu Bonaire
+.64bit
+.arch_minor 0
+.arch_stepping 0
+.driver_version 191205
+.compile_options ""
+.acl_version "AMD-COMP-LIB-v0.8 (0.0.SC_BUILD_NUMBER)"
+.kernel aaa1
+    .hsaconfig
+        .dims x
+        .sgprsnum 16
+        .vgprsnum 4
+        .dx10clamp
+        .ieeemode
+        .floatmode 0xda
+        .priority 0
+        .userdatanum 6
+        .pgmrsrc1 0x00ada040
+        .pgmrsrc2 0x0000008c
+        .codeversion 1, 1
+        .machine 1, 0, 0, 0
+        .kernel_code_entry_offset 0x100
+        .use_private_segment_buffer
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .workgroup_group_segment_size 1000
+        .kernarg_segment_size 80
+        .wavefront_sgpr_count 14
+        .workitem_vgpr_count 1
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+        .wavefront_size 64
+        .call_convention 0x0
+    .control_directive
+        .fill 128, 1, 0x00
+    .hsaconfig
+        .arg _.global_offset_0, "size_t", long
+        .arg _.global_offset_1, "size_t", long
+        .arg _.global_offset_2, "size_t", long
+        .arg _.printf_buffer, "size_t", void*, global, , rdonly
+        .arg _.vqueue_pointer, "size_t", long
+        .arg _.aqlwrap_pointer, "size_t", long
+        .arg n, "uint", uint
+        .arg in, "uint*", uint*, global, const
+        .arg out, "uint*", uint*, global, 
+    .text
+/*8709ac05         */ s_and_b32       s9, s5, 44
+/*870a8505         */ s_and_b32       s10, s5, 5
+/*870b8505         */ s_and_b32       s11, s5, 5
+/*bf810000         */ s_endpgm
+.kernel aaa2
+    .hsaconfig
+        .dims x
+        .sgprsnum 16
+        .vgprsnum 4
+        .privmode
+        .debugmode
+        .dx10clamp
+        .ieeemode
+        .floatmode 0xda
+        .priority 2
+        .userdatanum 10
+        .pgmrsrc1 0x00fda840
+        .pgmrsrc2 0x12001095
+        .codeversion 1, 1
+        .machine 1, 0, 0, 0
+        .kernel_code_entry_offset 0x100
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .use_flat_scratch_init
+        .private_elem_size 4
+        .use_ptr64
+        .workitem_private_segment_size 2342
+        .workgroup_group_segment_size 1000
+        .kernarg_segment_size 96
+        .wavefront_sgpr_count 16
+        .workitem_vgpr_count 1
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+        .wavefront_size 64
+        .call_convention 0x0
+    .control_directive
+        .fill 128, 1, 0x00
+    .hsaconfig
+        .arg _.global_offset_0, "size_t", long
+        .arg _.global_offset_1, "size_t", long
+        .arg _.global_offset_2, "size_t", long
+        .arg _.printf_buffer, "size_t", void*, global, , rdonly
+        .arg _.vqueue_pointer, "size_t", long
+        .arg _.aqlwrap_pointer, "size_t", long
+        .arg n, "uint", uint
+        .arg in, "float*", float*, global, const
+        .arg out, "float*", float*, global, 
+        .arg q, "queue_t", queue
+        .arg piper, "pipe", pipe, rdonly
+        .arg ce, "clk_event_t", clkevent
+    .text
+/*8709ac05         */ s_and_b32       s9, s5, 44
+/*bf810000         */ s_endpgm
+.kernel gfd12
+    .hsaconfig
+        .cws 8, 5, 2
+        .dims xyz
+        .sgprsnum 32
+        .vgprsnum 80
+        .dx10clamp
+        .tgsize
+        .floatmode 0xf4
+        .priority 0
+        .exceptions 0x01
+        .localsize 210432
+        .userdatanum 12
+        .pgmrsrc1 0x012f40d3
+        .pgmrsrc2 0x0fcdf7d8
+        .codeversion 1, 1
+        .machine 1, 0, 0, 0
+        .kernel_code_entry_offset 0x100
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_queue_ptr
+        .use_kernarg_segment_ptr
+        .use_flat_scratch_init
+        .private_elem_size 4
+        .use_ptr64
+        .workgroup_group_segment_size 656
+        .kernarg_segment_size 80
+        .wavefront_sgpr_count 29
+        .workitem_vgpr_count 78
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+        .wavefront_size 64
+        .call_convention 0x0
+    .control_directive
+        .fill 128, 1, 0x00
+    .hsaconfig
+        .arg _.global_offset_0, "size_t", long
+        .arg _.global_offset_1, "size_t", long
+        .arg _.global_offset_2, "size_t", long
+        .arg _.printf_buffer, "size_t", void*, global, , rdonly
+        .arg _.vqueue_pointer, "size_t", long
+        .arg _.aqlwrap_pointer, "size_t", long
+        .arg n, "uint", uint
+        .arg in, "double*", double*, global, const
+        .arg out, "double*", double*, global, 
+        .arg v, "uchar", uchar
+        .arg v2, "uchar", uchar
+    .text
+/*7e020302         */ v_mov_b32       v1, v2
+/*4a0206b7         */ v_add_i32       v1, vcc, 55, v3
+/*bf810000         */ s_endpgm
+)ffDXD", true, true
     },
     /* gallium config */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/gallium1.clo",
@@ -1240,7 +1401,7 @@ secondx:
 one1:
 /*7e000301         */ v_mov_b32       v0, v1
 /*7e000303         */ v_mov_b32       v0, v3
-)ffDXD", true
+)ffDXD", true, false
     },
     /* rocm config */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/rocm-fiji.hsaco",
@@ -1384,7 +1545,7 @@ data2:
         .byte 0x0a, 0xd7, 0x33, 0x40, 0xd7, 0xa3, 0x98, 0x40
         .byte 0xcd, 0xcc, 0x94, 0xc1, 0x33, 0x33, 0xb3, 0xc0
         .byte 0x0a, 0xd7, 0x13, 0xc0, 0xd7, 0xa3, 0x98, 0xc0
-)ffDXD", true
+)ffDXD", true, false
     }
 };
 
@@ -1395,6 +1556,8 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
     Flags disasmFlags = DISASM_ALL&~DISASM_CODEPOS;
     if (testCase.config)
         disasmFlags |= DISASM_CONFIG;
+    if (testCase.hsaConfig)
+        disasmFlags |= DISASM_HSACONFIG;
     if (testCase.filename == nullptr)
     {
         if (testCase.amdInput != nullptr)
