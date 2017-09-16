@@ -241,6 +241,7 @@ struct DisasmAmdTestCase
     const char* expectedString;
     bool config;
     bool hsaConfig;
+    cxuint llvmVersion;
 };
 
 static const DisasmAmdTestCase disasmDataTestCases[] =
@@ -1028,7 +1029,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
         .entry 0x00234423, 0x00aaabba
         .entry 0x03bdd123, 0x00132235
         .entry 0x00011122, 0x0f3424dd
-)fxDfx", false
+)fxDfx", false, false, 0
     },
     /* configuration dump test cases */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amd1.clo",
@@ -1401,7 +1402,96 @@ secondx:
 one1:
 /*7e000301         */ v_mov_b32       v0, v1
 /*7e000303         */ v_mov_b32       v0, v3
-)ffDXD", true, false
+)ffDXD", true, false, 0
+    },
+    /* gallium config */
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/new-gallium-llvm40.clo",
+        R"ffDXD(.gallium
+.gpu CapeVerde
+.64bit
+.driver_version 170000
+.llvm_version 40000
+.kernel vectorAdd
+    .args
+        .arg scalar, 4, 4, 4, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg scalar, 4, 4, 4, zext, griddim
+        .arg scalar, 4, 4, 4, zext, gridoffset
+    .config
+        .dims x
+        .sgprsnum 24
+        .vgprsnum 4
+        .dx10clamp
+        .ieeemode
+        .floatmode 0xc0
+        .priority 0
+        .userdatanum 8
+        .pgmrsrc1 0x00ac0080
+        .pgmrsrc2 0x00000090
+        .spilledsgprs 0
+        .spilledvgprs 0
+        .hsa_dims x
+        .hsa_sgprsnum 24
+        .hsa_vgprsnum 4
+        .hsa_dx10clamp
+        .hsa_ieeemode
+        .hsa_floatmode 0xc0
+        .hsa_priority 0
+        .hsa_userdatanum 8
+        .hsa_pgmrsrc1 0x00ac0080
+        .hsa_pgmrsrc2 0x00000090
+        .codeversion 1, 0
+        .machine 1, 0, 0, 0
+        .kernel_code_entry_offset 0x100
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .kernarg_segment_size 48
+        .wavefront_sgpr_count 18
+        .workitem_vgpr_count 4
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+        .wavefront_size 64
+        .call_convention 0x0
+    .control_directive
+        .fill 128, 1, 0x00
+.text
+vectorAdd:
+.skip 256
+/*c0000501         */ s_load_dword    s0, s[4:5], 0x1
+/*c0008709         */ s_load_dword    s1, s[6:7], 0x9
+/*c0010700         */ s_load_dword    s2, s[6:7], 0x0
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*8700ff00 0000ffff*/ s_and_b32       s0, s0, 0xffff
+/*93000800         */ s_mul_i32       s0, s0, s8
+/*81000100         */ s_add_i32       s0, s0, s1
+/*4a000000         */ v_add_i32       v0, vcc, s0, v0
+/*7d880002         */ v_cmp_gt_u32    vcc, s2, v0
+/*be80246a         */ s_and_saveexec_b64 s[0:1], vcc
+/*bf880014         */ s_cbranch_execz .L384_0
+/*7e000280         */ v_mov_b32       v0, 0
+/*c0400702         */ s_load_dwordx2  s[0:1], s[6:7], 0x2
+/*be820380         */ s_mov_b32       s2, 0
+/*be8303ff 0000f000*/ s_mov_b32       s3, 0xf000
+/*c0440704         */ s_load_dwordx2  s[8:9], s[6:7], 0x4
+/*be8a0402         */ s_mov_b64       s[10:11], s[2:3]
+/*c0460706         */ s_load_dwordx2  s[12:13], s[6:7], 0x6
+/*be8e0402         */ s_mov_b64       s[14:15], s[2:3]
+/*d2c20000 00010500*/ v_lshl_b64      v[0:1], v[0:1], 2
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*e0308000 80000200*/ buffer_load_dword v2, v[0:1], s[0:3], 0 addr64
+/*e0308000 80020300*/ buffer_load_dword v3, v[0:1], s[8:11], 0 addr64
+/*bf8c0f70         */ s_waitcnt       vmcnt(0)
+/*06040503         */ v_add_f32       v2, v3, v2
+/*e0708000 80000200*/ buffer_store_dword v2, v[0:1], s[0:3], 0 addr64
+.L384_0:
+/*bf810000         */ s_endpgm
+)ffDXD", true, false, 40000U
     },
     /* rocm config */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/rocm-fiji.hsaco",
@@ -1612,7 +1702,7 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
         {   /* gallium */
             GalliumBinary galliumBin(binaryData.size(),binaryData.data(), 0);
             Disassembler disasm(GPUDeviceType::CAPE_VERDE, galliumBin,
-                            disasmOss, disasmFlags);
+                            disasmOss, disasmFlags, testCase.llvmVersion);
             disasm.disassemble();
             resultStr = disasmOss.str();
         }
