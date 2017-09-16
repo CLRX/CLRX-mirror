@@ -20,6 +20,7 @@ CLRadeonExtender 0.1.5:
 * add '--HSAConfig' to dump AmdCL2 kernel configuration as AMD HSA config
 * add AMD HSA configuration pseudo-ops to GalliumCompute and AmdCL2 binary formats
 * update device list for Gallium and ROCm binary formats for recognizing device
+* fixed support for LLVM>=3.9 and Mesa3D>=17.0.0 in GalliumCompute
 * add pseudo-op '.default_hsa_features' to AmdCL2, Gallium and ROCm formats
 * update headers in code
 * make error handling more compact in assembler's code
