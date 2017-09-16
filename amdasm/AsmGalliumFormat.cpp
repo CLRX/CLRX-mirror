@@ -551,6 +551,10 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
         PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     if (target >= GALLIUMCVAL_HSA_FIRST_PARAM && handler.determineLLVMVersion() < 40000U)
         PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
+        
+    if ((target == GALLIUMCVAL_SPILLEDSGPRS ||  target == GALLIUMCVAL_SPILLEDSGPRS) &&
+        handler.determineLLVMVersion() < 30900U)
+        PSEUDOOP_RETURN_BY_ERROR("Spilled VGPRs and SGPRs only for LLVM>=3.9.0");
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
