@@ -358,7 +358,8 @@ ATI_FLOAT32CONSTS CAL note. Add entry into CAL note.
 Syntax: .sgprsnum REGNUM
 
 This pseudo-op must be inside kernel configuration. Set number of scalar
-registers which can be used during kernel execution.
+registers which can be used during kernel execution. It counts SGPR registers excluding
+VCC, FLAT_SCRATCH and XNACK_MASK.
 
 ### .subconstantbuffers
 

@@ -472,7 +472,10 @@ This pseudo-op must be before any other arguments.
 Syntax: .sgprsnum REGNUM
 
 This pseudo-op must be inside any kernel configuration. Set number of scalar
-registers which can be used during kernel execution.
+registers which can be used during kernel execution. In old-config style,
+it counts SGPR registers excluding VCC, FLAT_SCRATCH and XNACK_MASK.
+In HSA-config style, it counts SGPR registers including VCC, FLAT_SCRATCH and XNACK_MASK
+(like ROCm).
 
 ### .stub
 
