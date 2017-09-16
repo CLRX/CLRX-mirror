@@ -41,7 +41,12 @@ for C++11 old ABI, hence you must add option -D_GLIBCXX_USE_CXX11_ABI=0 to
 compiler commands if you are using GCC 5.0 or higher or compiler that by default
 uses new C++11 ABI.
 
+7. Platform support notes
 
+CLRadeonExtender requires in original MinGW some third-party headers:
+https://github.com/meganz/mingw-std-threads. After that changes, CLRXWrapper still is
+not compilable, so you should disable it by enabling NO_CLWRAPPER option CMake while
+generating Makefiles.
 
-
-
+On CygWin environment you should point OpenCL distribution directory to AMD APP SDK or
+system distribution instead CygWin OpenCL.

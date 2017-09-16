@@ -68,6 +68,9 @@ Optional CMake configuration options for build:
 * BUILD_STATIC_EXE - build with statically linked executables
 * GCC5CXX11NEWABI - build with new GCC5 C++11 ABI
 * NO_STATIC - no static libraries
+* NO_CLWRAPPER - do not build CLRXWrapper
+* CPU_ARCH - target CPU architecture (in GCC parameter to -march, for MSVC
+  parameter to /arch:)
 * OPENCL_DIST_DIR - an OpenCL directory distribution installation (optional)
 
 You can just add one or many of these options to cmake command:
@@ -121,7 +124,7 @@ If no file specified clrxasm read source from standard input.
 Useful options:
 
 * -g DEVICETYPE - device type ('pitcairn', 'bonaire'...)
-* -A ARCH - architecture ('gcn1.0', 'gcn1.1' or 'gcn1.2')
+* -A ARCH - architecture ('gcn1.0', 'gcn1.1', 'gcn1.2' or 'gcn1.4')
 * -b BINFMT - binary format ('amd', 'amdcl2', 'gallium', 'rocm', 'rawcode')
 * -t VERSION - driver version for which a binary will be generated
 * -w - suppress warnings
@@ -141,7 +144,7 @@ Useful options for clrxdisasm:
 * -h - print hexadecimal instruction codes
 * -C - print configuration dump instead metadatas, CALnotes and setup data
 * -g DEVICETYPE - device type ('pitcairn', 'bonaire'...)
-* -A ARCH - architecture ('gcn1.0', 'gcn1.1' or 'gcn1.2')
+* -A ARCH - architecture ('gcn1.0', 'gcn1.1', 'gcn1.2' or 'gcn1.4')
 * -t VERSION - driver version for which a binary will be generated
 
 A CLRX assembler accepts source from disassembler.

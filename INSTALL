@@ -53,6 +53,9 @@ BUILD_CLRXDOC - build CLRX user documentation
 BUILD_STATIC_EXE - build with statically linked executables
 GCC5CXX11NEWABI - build with new GCC5 C++11 ABI
 NO_STATIC - no static libraries
+NO_CLWRAPPER - do not build CLRXWrapper
+CPU_ARCH - target CPU architecture (in GCC parameter to -march, for MSVC
+  parameter to /arch:)
 OPENCL_DIST_DIR - an OpenCL directory distribution installation (optional)
 
 You can just add one or many of these options to cmake command:
