@@ -176,7 +176,9 @@ Enable usage of the DEBUG_MODE.
 
 This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
 LLVM version is 4.0.0 or later. It sets default HSA kernel features and register features
-(extra SGPR registers usage).
+(extra SGPR registers usage). These default features are `.use_private_segment_buffer`,
+`.use_dispatch_ptr`, `.use_kernarg_segment_ptr`, `.use_ptr64` and
+private_elem_size to 4 bytes.
 
 ### .dims
 

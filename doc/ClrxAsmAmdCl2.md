@@ -227,6 +227,8 @@ Enable usage of the DEBUG_MODE.
 
 This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`).
 It sets default HSA kernel features and register features (extra SGPR registers usage).
+These default features are `.use_private_segment_buffer`, `.use_kernarg_segment_ptr`,
+`.use_ptr64` (if 64-bit binaries) and private_elem_size is 4 bytes.
 
 ### .dims
 
