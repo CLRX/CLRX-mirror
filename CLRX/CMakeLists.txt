@@ -39,7 +39,9 @@ IF(BUILD_DOXYGEN)
             DEPENDS "${PROJECT_BINARY_DIR}/Doxyfile" ${CLRX_HEADERS})
       # IF you do NOT want the documentation to be generated EVERY time you build the project
       # then leave out the 'ALL' keyword from the above command.
-      INSTALL(DIRECTORY "${PROJECT_BINARY_DIR}/doc/" DESTINATION share/doc/CLRX/doxygen)
+      INSTALL(DIRECTORY "${PROJECT_BINARY_DIR}/doc/" DESTINATION share/doc/CLRX/doxygen
+            PATTERN *.cmake EXCLUDE PATTERN CMakeFiles EXCLUDE
+            PATTERN Makefile EXCLUDE PATTERN doxygen.stamp EXCLUDE)
   ELSE(DOXYGEN_FOUND)
     MESSAGE(WARNING
       "Doxygen documentation will not be built, because no correct Doxygen installation")
