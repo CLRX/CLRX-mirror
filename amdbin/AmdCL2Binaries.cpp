@@ -355,7 +355,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     const typename Types::KernelArgEntry* argPtr = reinterpret_cast<
             const typename Types::KernelArgEntry*>(metadata + argOffset);
     
-    if(usumGt(argOffset, sizeof(typename Types::KernelArgEntry)*argsNum, metadataSize))
+    if(usumGt(argOffset, sizeof(typename Types::KernelArgEntry)*(argsNum+1), metadataSize))
         throw Exception("Number of arguments out of range");
     
     const char* strBase = (const char*)metadata;
