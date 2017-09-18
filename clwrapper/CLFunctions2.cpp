@@ -61,6 +61,7 @@ extern "C"
 #    pragma comment(linker,"/export:clEnqueueWaitForEvents=_clrxclEnqueueWaitForEvents@12")
 #    pragma comment(linker,"/export:clEnqueueBarrier=_clrxclEnqueueBarrier@4")
 #    pragma comment(linker,"/export:clGetExtensionFunctionAddress=_clrxclGetExtensionFunctionAddress@4")
+#    ifdef HAVE_OPENGL
 #    pragma comment(linker,"/export:clCreateFromGLBuffer=_clrxclCreateFromGLBuffer@20")
 #    pragma comment(linker,"/export:clCreateFromGLTexture2D=_clrxclCreateFromGLTexture2D@28")
 #    pragma comment(linker,"/export:clCreateFromGLTexture3D=_clrxclCreateFromGLTexture3D@28")
@@ -70,6 +71,7 @@ extern "C"
 #    pragma comment(linker,"/export:clEnqueueAcquireGLObjects=_clrxclEnqueueAcquireGLObjects@24")
 #    pragma comment(linker,"/export:clEnqueueReleaseGLObjects=_clrxclEnqueueReleaseGLObjects@24")
 #    pragma comment(linker,"/export:clGetGLContextInfoKHR=_clrxclGetGLContextInfoKHR@20")
+#    endif
 #  else
 #    pragma comment(linker,"/export:clWaitForEvents=clrxclWaitForEvents")
 #    pragma comment(linker,"/export:clGetEventInfo=clrxclGetEventInfo")
@@ -96,6 +98,7 @@ extern "C"
 #    pragma comment(linker,"/export:clEnqueueWaitForEvents=clrxclEnqueueWaitForEvents")
 #    pragma comment(linker,"/export:clEnqueueBarrier=clrxclEnqueueBarrier")
 #    pragma comment(linker,"/export:clGetExtensionFunctionAddress=clrxclGetExtensionFunctionAddress")
+#    ifdef HAVE_OPENGL
 #    pragma comment(linker,"/export:clCreateFromGLBuffer=clrxclCreateFromGLBuffer")
 #    pragma comment(linker,"/export:clCreateFromGLTexture2D=clrxclCreateFromGLTexture2D")
 #    pragma comment(linker,"/export:clCreateFromGLTexture3D=clrxclCreateFromGLTexture3D")
@@ -105,6 +108,7 @@ extern "C"
 #    pragma comment(linker,"/export:clEnqueueAcquireGLObjects=clrxclEnqueueAcquireGLObjects")
 #    pragma comment(linker,"/export:clEnqueueReleaseGLObjects=clrxclEnqueueReleaseGLObjects")
 #    pragma comment(linker,"/export:clGetGLContextInfoKHR=clrxclGetGLContextInfoKHR")
+#    endif
 #  endif
 #else
 CLRX_CL_PUBLIC_SYM(clWaitForEvents)
@@ -132,6 +136,7 @@ CLRX_CL_PUBLIC_SYM(clEnqueueMarker)
 CLRX_CL_PUBLIC_SYM(clEnqueueWaitForEvents)
 CLRX_CL_PUBLIC_SYM(clEnqueueBarrier)
 CLRX_CL_PUBLIC_SYM(clGetExtensionFunctionAddress)
+#  ifdef HAVE_OPENGL
 CLRX_CL_PUBLIC_SYM(clCreateFromGLBuffer)
 CLRX_CL_PUBLIC_SYM(clCreateFromGLTexture2D)
 CLRX_CL_PUBLIC_SYM(clCreateFromGLTexture3D)
@@ -141,6 +146,7 @@ CLRX_CL_PUBLIC_SYM(clGetGLTextureInfo)
 CLRX_CL_PUBLIC_SYM(clEnqueueAcquireGLObjects)
 CLRX_CL_PUBLIC_SYM(clEnqueueReleaseGLObjects)
 CLRX_CL_PUBLIC_SYM(clGetGLContextInfoKHR)
+#  endif
 #endif
 
 /* end of public API definitions */
@@ -1078,6 +1084,8 @@ clrxclGetExtensionFunctionAddress(const char * func_name)
     return entry->address;
 }
 
+#ifdef HAVE_OPENGL
+
 CL_API_ENTRY cl_mem CL_API_CALL
 clrxclCreateFromGLBuffer(cl_context     context,
                      cl_mem_flags   flags,
@@ -1392,5 +1400,7 @@ clrxclGetGLContextInfoKHR(const cl_context_properties * properties,
     
     return CL_SUCCESS;
 }
+
+#endif
 
 } /* extern "C" */

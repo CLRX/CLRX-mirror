@@ -20,6 +20,8 @@
 #ifndef __CLRX_CLWRAPPER_H__
 #define __CLRX_CLWRAPPER_H__
 
+#include <CLRX/Config.h>
+
 // force C interpretation
 extern "C"
 {
@@ -128,7 +130,6 @@ extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
 #endif
 }
 
-#include <CLRX/Config.h>
 #include <cstdint>
 #include <mutex>
 #include <atomic>

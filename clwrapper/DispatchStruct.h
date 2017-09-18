@@ -37,14 +37,18 @@
 #endif
 
 #ifdef _WIN32
-#define NOMINMAX
+#ifndef NOMINMAX
+#  define NOMINMAX
+#endif
 #include <windows.h>
 #undef NOMINMAX
 #endif
 #include <CL/cl.h>
-#include <GL/gl.h>
-#include <CL/cl_gl.h>
-#include <CL/cl_gl_ext.h>
+#ifdef HAVE_OPENGL
+#  include <GL/gl.h>
+#  include <CL/cl_gl.h>
+#  include <CL/cl_gl_ext.h>
+#endif
 #include <CL/cl_ext.h>
 
 #ifndef CL_VERSION_1_2
@@ -429,15 +433,18 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clEnqueueBarrier)(
 typedef CL_API_ENTRY void * (CL_API_CALL *CLRXpfn_clGetExtensionFunctionAddress)(
         const char*) CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED;
 
+#ifdef HAVE_OPENGL
 typedef CL_API_ENTRY cl_mem (CL_API_CALL *CLRXpfn_clCreateFromGLBuffer)(
         cl_context, cl_mem_flags, GLuint, int*) CL_API_SUFFIX__VERSION_1_0;
+#endif
 
-#ifdef CL_VERSION_1_2
+#if defined(CL_VERSION_1_2) && defined(HAVE_OPENGL)
 typedef CL_API_ENTRY cl_mem (CL_API_CALL *CLRXpfn_clCreateFromGLTexture)(
         cl_context, cl_mem_flags, cl_GLenum, cl_GLint, cl_GLuint, cl_int*)
         CL_API_SUFFIX__VERSION_1_2;
 #endif
 
+#ifdef HAVE_OPENGL
 typedef CL_API_ENTRY cl_mem (CL_API_CALL *CLRXpfn_clCreateFromGLTexture2D)(
         cl_context, cl_mem_flags, GLenum, GLint, GLuint, cl_int*)
         CL_API_SUFFIX__VERSION_1_0;
@@ -468,7 +475,7 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetGLContextInfoKHR)(
 
 typedef CL_API_ENTRY cl_event (CL_API_CALL *CLRXpfn_clCreateEventFromGLsyncKHR)(
         cl_context, cl_GLsync, cl_int*);
-
+#endif
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clSetEventCallback)(
         cl_event, cl_int, void(CL_CALLBACK*)(cl_event, cl_int, void*), void*)
         CL_API_SUFFIX__VERSION_1_1;
@@ -496,7 +503,7 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL * CLRXpfn_clRetainDeviceEXT)(
 typedef CL_API_ENTRY cl_int (CL_API_CALL * CLRXpfn_clReleaseDeviceEXT)(
         cl_device_id) CL_API_SUFFIX__VERSION_1_0;
 
-typedef void *CLRXpfn_emtyFunction;
+typedef void *CLRXpfn_emptyFunction;
 
 #define CLRXICD_ENTRIES_NUM (136U)
 
@@ -570,6 +577,7 @@ typedef union _CLRXIcdDispatch
         CLRXpfn_clEnqueueWaitForEvents clEnqueueWaitForEvents;
         CLRXpfn_clEnqueueBarrier clEnqueueBarrier;
         CLRXpfn_clGetExtensionFunctionAddress clGetExtensionFunctionAddress;
+#ifdef HAVE_OPENGL
         CLRXpfn_clCreateFromGLBuffer clCreateFromGLBuffer;
         CLRXpfn_clCreateFromGLTexture2D clCreateFromGLTexture2D;
         CLRXpfn_clCreateFromGLTexture3D clCreateFromGLTexture3D;
@@ -579,13 +587,24 @@ typedef union _CLRXIcdDispatch
         CLRXpfn_clEnqueueAcquireGLObjects clEnqueueAcquireGLObjects;
         CLRXpfn_clEnqueueReleaseGLObjects clEnqueueReleaseGLObjects;
         CLRXpfn_clGetGLContextInfoKHR clGetGLContextInfoKHR;
+#else
+        CLRXpfn_emptyFunction clCreateFromGLBuffer;
+        CLRXpfn_emptyFunction clCreateFromGLTexture2D;
+        CLRXpfn_emptyFunction clCreateFromGLTexture3D;
+        CLRXpfn_emptyFunction clCreateFromGLRenderbuffer;
+        CLRXpfn_emptyFunction clGetGLObjectInfo;
+        CLRXpfn_emptyFunction clGetGLTextureInfo;
+        CLRXpfn_emptyFunction clEnqueueAcquireGLObjects;
+        CLRXpfn_emptyFunction clEnqueueReleaseGLObjects;
+        CLRXpfn_emptyFunction clGetGLContextInfoKHR;
+#endif
         /* Direct3D */
-        CLRXpfn_emtyFunction clGetDeviceIDsFromD3D10KHR;
-        CLRXpfn_emtyFunction clCreateFromD3D10BufferKHR;
-        CLRXpfn_emtyFunction clCreateFromD3D10Texture2DKHR;
-        CLRXpfn_emtyFunction clCreateFromD3D10Texture3DKHR;
-        CLRXpfn_emtyFunction clEnqueueAcquireD3D10ObjectsKHR;
-        CLRXpfn_emtyFunction clEnqueueReleaseD3D10ObjectsKHR;
+        CLRXpfn_emptyFunction clGetDeviceIDsFromD3D10KHR;
+        CLRXpfn_emptyFunction clCreateFromD3D10BufferKHR;
+        CLRXpfn_emptyFunction clCreateFromD3D10Texture2DKHR;
+        CLRXpfn_emptyFunction clCreateFromD3D10Texture3DKHR;
+        CLRXpfn_emptyFunction clEnqueueAcquireD3D10ObjectsKHR;
+        CLRXpfn_emptyFunction clEnqueueReleaseD3D10ObjectsKHR;
         /* opencl 1.1 */
         CLRXpfn_clSetEventCallback clSetEventCallback;
         CLRXpfn_clCreateSubBuffer clCreateSubBuffer;
@@ -600,7 +619,11 @@ typedef union _CLRXIcdDispatch
         CLRXpfn_clRetainDeviceEXT clRetainDeviceEXT;
         CLRXpfn_clReleaseDeviceEXT clReleaseDeviceEXT;
 
+#ifdef HAVE_OPENGL
         CLRXpfn_clCreateEventFromGLsyncKHR clCreateEventFromGLsyncKHR;
+#else
+        CLRXpfn_emptyFunction clCreateEventFromGLsyncKHR;
+#endif
 #ifdef CL_VERSION_1_2
         CLRXpfn_clCreateSubDevices clCreateSubDevices;
         CLRXpfn_clRetainDevice clRetainDevice;
@@ -618,24 +641,28 @@ typedef union _CLRXIcdDispatch
         CLRXpfn_clEnqueueBarrierWithWaitList clEnqueueBarrierWithWaitList;
         CLRXpfn_clGetExtensionFunctionAddressForPlatform
                 clGetExtensionFunctionAddressForPlatform;
+#ifdef HAVE_OPENGL
         CLRXpfn_clCreateFromGLTexture clCreateFromGLTexture;
+#else
+        CLRXpfn_emptyFunction clCreateFromGLTexture;
+#endif
 
-        CLRXpfn_emtyFunction clGetDeviceIDsFromD3D11KHR;
-        CLRXpfn_emtyFunction clCreateFromD3D11BufferKHR;
-        CLRXpfn_emtyFunction clCreateFromD3D11Texture2DKHR;
-        CLRXpfn_emtyFunction clCreateFromD3D11Texture3DKHR;
-        CLRXpfn_emtyFunction clCreateFromDX9MediaSurfaceKHR;
-        CLRXpfn_emtyFunction clEnqueueAcquireD3D11ObjectsKHR;
-        CLRXpfn_emtyFunction clEnqueueReleaseD3D11ObjectsKHR;
-        CLRXpfn_emtyFunction clGetDeviceIDsFromDX9MediaAdapterKHR;
-        CLRXpfn_emtyFunction clEnqueueAcquireDX9MediaSurfacesKHR;
-        CLRXpfn_emtyFunction clEnqueueReleaseDX9MediaSurfacesKHR;
+        CLRXpfn_emptyFunction clGetDeviceIDsFromD3D11KHR;
+        CLRXpfn_emptyFunction clCreateFromD3D11BufferKHR;
+        CLRXpfn_emptyFunction clCreateFromD3D11Texture2DKHR;
+        CLRXpfn_emptyFunction clCreateFromD3D11Texture3DKHR;
+        CLRXpfn_emptyFunction clCreateFromDX9MediaSurfaceKHR;
+        CLRXpfn_emptyFunction clEnqueueAcquireD3D11ObjectsKHR;
+        CLRXpfn_emptyFunction clEnqueueReleaseD3D11ObjectsKHR;
+        CLRXpfn_emptyFunction clGetDeviceIDsFromDX9MediaAdapterKHR;
+        CLRXpfn_emptyFunction clEnqueueAcquireDX9MediaSurfacesKHR;
+        CLRXpfn_emptyFunction clEnqueueReleaseDX9MediaSurfacesKHR;
 #endif
 #ifdef CL_VERSION_2_0
-        CLRXpfn_emtyFunction clCreateFromEGLImageKHR;
-        CLRXpfn_emtyFunction clEnqueueAcquireEGLObjectsKHR;
-        CLRXpfn_emtyFunction clEnqueueReleaseEGLObjectsKHR;
-        CLRXpfn_emtyFunction clCreateEventFromEGLSyncKHR;
+        CLRXpfn_emptyFunction clCreateFromEGLImageKHR;
+        CLRXpfn_emptyFunction clEnqueueAcquireEGLObjectsKHR;
+        CLRXpfn_emptyFunction clEnqueueReleaseEGLObjectsKHR;
+        CLRXpfn_emptyFunction clCreateEventFromEGLSyncKHR;
         CLRXpfn_clCreateCommandQueueWithProperties clCreateCommandQueueWithProperties;
         CLRXpfn_clCreatePipe clCreatePipe;
         CLRXpfn_clGetPipeInfo clGetPipeInfo;

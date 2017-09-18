@@ -47,7 +47,9 @@ extern "C"
 #    pragma comment(linker,"/export:clCreateSubDevicesEXT=_clrxclCreateSubDevicesEXT@20")
 #    pragma comment(linker,"/export:clRetainDeviceEXT=_clrxclRetainDeviceEXT@4")
 #    pragma comment(linker,"/export:clReleaseDeviceEXT=_clrxclReleaseDeviceEXT@4")
+#    ifdef HAVE_OPENGL
 #    pragma comment(linker,"/export:clCreateEventFromGLsyncKHR=_clrxclCreateEventFromGLsyncKHR@12")
+#    endif
 #    ifdef CL_VERSION_1_2
 #    pragma comment(linker,"/export:clCreateSubDevices=_clrxclCreateSubDevices@20")
 #    pragma comment(linker,"/export:clRetainDevice=_clrxclRetainDevice@4")
@@ -64,7 +66,9 @@ extern "C"
 #    pragma comment(linker,"/export:clEnqueueMarkerWithWaitList=_clrxclEnqueueMarkerWithWaitList@16")
 #    pragma comment(linker,"/export:clEnqueueBarrierWithWaitList=_clrxclEnqueueBarrierWithWaitList@16")
 #    pragma comment(linker,"/export:clGetExtensionFunctionAddressForPlatform=_clrxclGetExtensionFunctionAddressForPlatform@8")
+#    ifdef HAVE_OPENGL
 #    pragma comment(linker,"/export:clCreateFromGLTexture=_clrxclCreateFromGLTexture@28")
+#    endif
 #    pragma comment(linker,"/export:clEnqueueWaitSignalAMD=_clrxclEnqueueWaitSignalAMD@24")
 #    pragma comment(linker,"/export:clEnqueueWriteSignalAMD=_clrxclEnqueueWriteSignalAMD@32")
 #    pragma comment(linker,"/export:clEnqueueMakeBuffersResidentAMD=_clrxclEnqueueMakeBuffersResidentAMD@32")
@@ -96,7 +100,9 @@ extern "C"
 #    pragma comment(linker,"/export:clCreateSubDevicesEXT=clrxclCreateSubDevicesEXT")
 #    pragma comment(linker,"/export:clRetainDeviceEXT=clrxclRetainDeviceEXT")
 #    pragma comment(linker,"/export:clReleaseDeviceEXT=clrxclReleaseDeviceEXT")
+#    ifdef HAVE_OPENGL
 #    pragma comment(linker,"/export:clCreateEventFromGLsyncKHR=clrxclCreateEventFromGLsyncKHR")
+#    endif
 #    ifdef CL_VERSION_1_2
 #    pragma comment(linker,"/export:clCreateSubDevices=clrxclCreateSubDevices")
 #    pragma comment(linker,"/export:clRetainDevice=clrxclRetainDevice")
@@ -113,7 +119,9 @@ extern "C"
 #    pragma comment(linker,"/export:clEnqueueMarkerWithWaitList=clrxclEnqueueMarkerWithWaitList")
 #    pragma comment(linker,"/export:clEnqueueBarrierWithWaitList=clrxclEnqueueBarrierWithWaitList")
 #    pragma comment(linker,"/export:clGetExtensionFunctionAddressForPlatform=clrxclGetExtensionFunctionAddressForPlatform")
+#    ifdef HAVE_OPENGL
 #    pragma comment(linker,"/export:clCreateFromGLTexture=clrxclCreateFromGLTexture")
+#    endif
 #    pragma comment(linker,"/export:clEnqueueWaitSignalAMD=clrxclEnqueueWaitSignalAMD")
 #    pragma comment(linker,"/export:clEnqueueWriteSignalAMD=clrxclEnqueueWriteSignalAMD")
 #    pragma comment(linker,"/export:clEnqueueMakeBuffersResidentAMD=clrxclEnqueueMakeBuffersResidentAMD")
@@ -146,7 +154,9 @@ CLRX_CL_PUBLIC_SYM(clEnqueueCopyBufferRect)
 CLRX_CL_PUBLIC_SYM(clCreateSubDevicesEXT)
 CLRX_CL_PUBLIC_SYM(clRetainDeviceEXT)
 CLRX_CL_PUBLIC_SYM(clReleaseDeviceEXT)
+#ifdef HAVE_OPENGL
 CLRX_CL_PUBLIC_SYM(clCreateEventFromGLsyncKHR)
+#endif
 #ifdef CL_VERSION_1_2
 CLRX_CL_PUBLIC_SYM(clCreateSubDevices)
 CLRX_CL_PUBLIC_SYM(clRetainDevice)
@@ -163,7 +173,9 @@ CLRX_CL_PUBLIC_SYM(clEnqueueMigrateMemObjects)
 CLRX_CL_PUBLIC_SYM(clEnqueueMarkerWithWaitList)
 CLRX_CL_PUBLIC_SYM(clEnqueueBarrierWithWaitList)
 CLRX_CL_PUBLIC_SYM(clGetExtensionFunctionAddressForPlatform)
+#ifdef HAVE_OPENGL
 CLRX_CL_PUBLIC_SYM(clCreateFromGLTexture)
+#endif
 CLRX_CL_PUBLIC_SYM(clEnqueueWaitSignalAMD)
 CLRX_CL_PUBLIC_SYM(clEnqueueWriteSignalAMD)
 CLRX_CL_PUBLIC_SYM(clEnqueueMakeBuffersResidentAMD)
@@ -492,6 +504,7 @@ clrxclReleaseDeviceEXT(cl_device_id device) CL_EXT_SUFFIX__VERSION_1_1
     return status;
 }
 
+#ifdef HAVE_OPENGL
 CL_API_ENTRY cl_event CL_API_CALL
 clrxclCreateEventFromGLsyncKHR(cl_context           context,
                    cl_GLsync            cl_GLsync,
@@ -517,6 +530,7 @@ clrxclCreateEventFromGLsyncKHR(cl_context           context,
     
     return outObject;
 }
+#endif
 
 #ifdef CL_VERSION_1_2
 CL_API_ENTRY cl_int CL_API_CALL
@@ -1220,6 +1234,7 @@ clrxclGetExtensionFunctionAddressForPlatform(cl_platform_id platform,
     return entry->address;
 }
 
+#ifdef HAVE_OPENGL
 CL_API_ENTRY cl_mem CL_API_CALL
 clrxclCreateFromGLTexture(cl_context      context,
                       cl_mem_flags    flags,
@@ -1248,6 +1263,7 @@ clrxclCreateFromGLTexture(cl_context      context,
     
     return outObject;
 }
+#endif
 
 /*
  * AMD extensions

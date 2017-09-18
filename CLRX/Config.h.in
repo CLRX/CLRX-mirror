@@ -44,6 +44,8 @@
 
 #cmakedefine HAVE_CALL_ONCE
 
+#cmakedefine HAVE_OPENGL
+
 /* architecture setup */
 
 #if defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) || \

@@ -102,6 +102,7 @@ CLRX_CL_INTERNAL_DECLSYM(clEnqueueMarker)
 CLRX_CL_INTERNAL_DECLSYM(clEnqueueWaitForEvents)
 CLRX_CL_INTERNAL_DECLSYM(clEnqueueBarrier)
 CLRX_CL_INTERNAL_DECLSYM(clGetExtensionFunctionAddress)
+#ifdef HAVE_OPENGL
 CLRX_CL_INTERNAL_DECLSYM(clCreateFromGLBuffer)
 CLRX_CL_INTERNAL_DECLSYM(clCreateFromGLTexture2D)
 CLRX_CL_INTERNAL_DECLSYM(clCreateFromGLTexture3D)
@@ -111,6 +112,7 @@ CLRX_CL_INTERNAL_DECLSYM(clGetGLTextureInfo)
 CLRX_CL_INTERNAL_DECLSYM(clEnqueueAcquireGLObjects)
 CLRX_CL_INTERNAL_DECLSYM(clEnqueueReleaseGLObjects)
 CLRX_CL_INTERNAL_DECLSYM(clGetGLContextInfoKHR)
+#endif
 CLRX_CL_INTERNAL_DECLSYM(clSetEventCallback)
 CLRX_CL_INTERNAL_DECLSYM(clCreateSubBuffer)
 CLRX_CL_INTERNAL_DECLSYM(clSetMemObjectDestructorCallback)
@@ -122,7 +124,9 @@ CLRX_CL_INTERNAL_DECLSYM(clEnqueueCopyBufferRect)
 CLRX_CL_INTERNAL_DECLSYM(clCreateSubDevicesEXT)
 CLRX_CL_INTERNAL_DECLSYM(clRetainDeviceEXT)
 CLRX_CL_INTERNAL_DECLSYM(clReleaseDeviceEXT)
+#ifdef HAVE_OPENGL
 CLRX_CL_INTERNAL_DECLSYM(clCreateEventFromGLsyncKHR)
+#endif
 #ifdef CL_VERSION_1_2
 CLRX_CL_INTERNAL_DECLSYM(clCreateSubDevices)
 CLRX_CL_INTERNAL_DECLSYM(clRetainDevice)
@@ -139,7 +143,9 @@ CLRX_CL_INTERNAL_DECLSYM(clEnqueueMigrateMemObjects)
 CLRX_CL_INTERNAL_DECLSYM(clEnqueueMarkerWithWaitList)
 CLRX_CL_INTERNAL_DECLSYM(clEnqueueBarrierWithWaitList)
 CLRX_CL_INTERNAL_DECLSYM(clGetExtensionFunctionAddressForPlatform)
+#ifdef HAVE_OPENGL
 CLRX_CL_INTERNAL_DECLSYM(clCreateFromGLTexture)
+#endif
 CLRX_CL_INTERNAL_DECLSYM(clEnqueueWaitSignalAMD)
 CLRX_CL_INTERNAL_DECLSYM(clEnqueueWriteSignalAMD)
 CLRX_CL_INTERNAL_DECLSYM(clEnqueueMakeBuffersResidentAMD)

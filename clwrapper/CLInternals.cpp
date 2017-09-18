@@ -66,24 +66,43 @@ CLRXpfn_clGetExtensionFunctionAddress amdOclGetExtensionFunctionAddress = nullpt
 /* extensions table - entries are sorted in function name's order */
 CLRXExtensionEntry clrxExtensionsTable[18] =
 {
+#ifdef HAVE_OPENGL
     { "clCreateEventFromGLsyncKHR", (void*)clrxclCreateEventFromGLsyncKHR },
     { "clCreateFromGLBuffer", (void*)clrxclCreateFromGLBuffer },
     { "clCreateFromGLRenderbuffer", (void*)clrxclCreateFromGLRenderbuffer },
-#ifdef CL_VERSION_1_2
+#else
+    { "clCreateEventFromGLsyncKHR", nullptr },
+    { "clCreateFromGLBuffer", nullptr },
+    { "clCreateFromGLRenderbuffer", nullptr },
+#endif
+#if defined(CL_VERSION_1_2) && defined(HAVE_OPENGL)
     { "clCreateFromGLTexture", (void*)clrxclCreateFromGLTexture },
 #else
     { "clCreateFromGLTexture", nullptr },
 #endif
+#ifdef HAVE_OPENGL
     { "clCreateFromGLTexture2D", (void*)clrxclCreateFromGLTexture2D },
     { "clCreateFromGLTexture3D", (void*)clrxclCreateFromGLTexture3D },
+#else
+    { "clCreateFromGLTexture2D", nullptr },
+    { "clCreateFromGLTexture3D", nullptr },
+#endif
     { "clCreateSubDevicesEXT", (void*)clrxclCreateSubDevicesEXT },
+#ifdef HAVE_OPENGL
     { "clEnqueueAcquireGLObjects", (void*)clrxclEnqueueAcquireGLObjects },
+#else
+    { "clEnqueueAcquireGLObjects", nullptr },
+#endif
 #ifdef CL_VERSION_1_2
     { "clEnqueueMakeBuffersResidentAMD", (void*)clrxclEnqueueMakeBuffersResidentAMD },
 #else
     { "clEnqueueMakeBuffersResidentAMD", nullptr },
 #endif
+#ifdef HAVE_OPENGL
     { "clEnqueueReleaseGLObjects", (void*)clrxclEnqueueReleaseGLObjects },
+#else
+    { "clEnqueueReleaseGLObjects", nullptr },
+#endif
 #ifdef CL_VERSION_1_2
     { "clEnqueueWaitSignalAMD", (void*)clrxclEnqueueWaitSignalAMD },
     { "clEnqueueWriteSignalAMD", (void*)clrxclEnqueueWriteSignalAMD },
@@ -91,9 +110,15 @@ CLRXExtensionEntry clrxExtensionsTable[18] =
     { "clEnqueueWaitSignalAMD", nullptr },
     { "clEnqueueWriteSignalAMD", nullptr },
 #endif
+#ifdef HAVE_OPENGL
     { "clGetGLContextInfoKHR", (void*)clrxclGetGLContextInfoKHR },
     { "clGetGLObjectInfo", (void*)clrxclGetGLObjectInfo },
     { "clGetGLTextureInfo", (void*)clrxclGetGLTextureInfo },
+#else
+    { "clGetGLContextInfoKHR", nullptr },
+    { "clGetGLObjectInfo", nullptr },
+    { "clGetGLTextureInfo", nullptr },
+#endif
     { "clIcdGetPlatformIDsKHR", (void*)clrxclIcdGetPlatformIDsKHR },
     { "clReleaseDeviceEXT", (void*)clrxclReleaseDeviceEXT },
     { "clRetainDeviceEXT", (void*)clrxclRetainDeviceEXT }
@@ -168,6 +193,7 @@ const CLRXIcdDispatch clrxDispatchRecord =
     clrxclEnqueueWaitForEvents,
     clrxclEnqueueBarrier,
     clrxclGetExtensionFunctionAddress,
+#ifdef HAVE_OPENGL
     clrxclCreateFromGLBuffer,
     clrxclCreateFromGLTexture2D,
     clrxclCreateFromGLTexture3D,
@@ -177,6 +203,17 @@ const CLRXIcdDispatch clrxDispatchRecord =
     clrxclEnqueueAcquireGLObjects,
     clrxclEnqueueReleaseGLObjects,
     clrxclGetGLContextInfoKHR,
+#else
+    nullptr, // clrxclCreateFromGLBuffer,
+    nullptr, // clrxclCreateFromGLTexture2D,
+    nullptr, // clrxclCreateFromGLTexture3D,
+    nullptr, // clrxclCreateFromGLRenderbuffer,
+    nullptr, // clrxclGetGLObjectInfo,
+    nullptr, // clrxclGetGLTextureInfo,
+    nullptr, // clrxclEnqueueAcquireGLObjects,
+    nullptr, // clrxclEnqueueReleaseGLObjects,
+    nullptr, // clrxclGetGLContextInfoKHR,
+#endif
 
     nullptr, // clGetDeviceIDsFromD3D10KHR,
     nullptr, // clCreateFromD3D10BufferKHR,
@@ -198,7 +235,11 @@ const CLRXIcdDispatch clrxDispatchRecord =
     clrxclRetainDeviceEXT,
     clrxclReleaseDeviceEXT,
 
+#ifdef HAVE_OPENGL
     clrxclCreateEventFromGLsyncKHR
+#else
+    nullptr
+#endif
 
 #ifdef CL_VERSION_1_2
     ,
@@ -217,7 +258,11 @@ const CLRXIcdDispatch clrxDispatchRecord =
     clrxclEnqueueMarkerWithWaitList,
     clrxclEnqueueBarrierWithWaitList,
     clrxclGetExtensionFunctionAddressForPlatform,
+#ifdef HAVE_OPENGL
     clrxclCreateFromGLTexture,
+#else
+    nullptr,
+#endif
 
     nullptr, // clGetDeviceIDsFromD3D11KHR,
     nullptr, // clCreateFromD3D11BufferKHR,
