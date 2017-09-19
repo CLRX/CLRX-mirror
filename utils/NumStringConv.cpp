@@ -412,7 +412,8 @@ static bool bigFPRoundToNearest(cxuint inSize, cxuint outSize, cxint& exponent,
     const cxuint roundSize = inSize-outSize;
     cxuint carry = 0;
     if ((bigNum[roundSize-1] & (1ULL<<63)) != 0)
-    {   /* apply rounding */
+    {
+        /* apply rounding */
         carry = true;
         for (cxuint i = 0; i < outSize; i++)
         {
@@ -632,7 +633,8 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
 {
     if ((power >= 0 && power < 28) ||
         (maxSize == 1 && power >= -64 && power <= 64))
-    {   /* get result from table */
+    {
+        /* get result from table */
         outPow[0] = pow5_128Table[power+64].value[1] +
                 (pow5_128Table[power+64].value[0]>>63);
         powSize = 1;
@@ -640,7 +642,8 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
         return;
     }
     if (maxSize == 2 && power >= -64 && power <= 64)
-    {   /* get result from table */
+    {
+        /* get result from table */
         outPow[0] = pow5_128Table[power+64].value[0];
         outPow[1] = pow5_128Table[power+64].value[1];
         powSize = 2;
@@ -696,7 +699,8 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
     for (; p <= (absPower>>1); p<<=1)
     {
         if ((absPower&p)!=0)
-        {   /* POW = POW2*POW */
+        {
+            /* POW = POW2*POW */
             bigMulFP(maxSize, pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
                  powSize, powBits, exponent, curPow,
                  powSize, powBits, exponent, prevPow);
@@ -711,7 +715,8 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
     }
     // last iteration
     if ((absPower&p)!=0)
-    {   /* POW = POW2*POW */
+    {
+        /* POW = POW2*POW */
         bigMulFP(maxSize, pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
              powSize, powBits, exponent, curPow,
              powSize, powBits, exponent, prevPow);
@@ -719,7 +724,8 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
     }
     // after computing we round to nearest
     if (powSize == maxSize)
-    {   /* round to nearest if result size is greater than original maxSize */
+    {
+        /* round to nearest if result size is greater than original maxSize */
         bigFPRoundToNearest(maxSize, maxSize-1, exponent, curPow);
         powSize = maxSize-1;
     }
@@ -964,7 +970,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
         bool addRoundings = false;
         
         if ((fvalue & roundBit) != 0)
-        { // rounding to nearest even
+        {
+            // rounding to nearest even
             bool isSecondHalf = true;
             if ((fvalue & (roundBit-1ULL)) != 0)
                 isSecondHalf = false;
@@ -1088,7 +1095,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
             processedDigits++;
         }
         if (processedDigits < 19)
-        {   /* align to 19 digits */
+        {
+            /* align to 19 digits */
             value *= power10sTable[19-processedDigits];
             processedDigits = 19;
         }
@@ -1100,7 +1108,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
         cxint powerof5 = decTempExp-processedDigits+1;
         bigPow5(powerof5, 1, powSize, decFacBinExp, &decFactor);
         
-        {   /* rescale value to binary exponent */
+        {
+            /* rescale value to binary exponent */
             uint64_t rescaled[2];
             if (decFacBinExp != 0)
                 mul64Full(decFactor, value, rescaled);
@@ -1117,7 +1126,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
             }
             rescaledValue = rescaled[1];
             if (!rvCarry)
-            {   /* compute rescaledValueBits */
+            {
+                /* compute rescaledValueBits */
                 rescaledValueBits = 63 - CLZ64(rescaledValue);
                 // remove integer part (lastbit) from rescaled value
                 rescaledValue &= (1ULL<<rescaledValueBits)-1ULL;
@@ -1222,7 +1232,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
             /* parsing is divided by 5-dword packets, to speeding up.
              * already parsed packed will be added to main value */
             while (isNotTooExact && processedDigits < maxDigits+3)
-            {   /* parse digits and put to bigValue */
+            {
+                /* parse digits and put to bigValue */
                 const cxuint digitsToProcess = std::min(int(maxDigits),
                         log2ByLog10Floor(bigSize<<6));
                 
@@ -1345,7 +1356,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                     rvCarry = rvCarry || carry;
                 }
                 if (!rvCarry)
-                {   /* compute rescaledValueBits */
+                {
+                    /* compute rescaledValueBits */
                     rescaledValueBits = (bigValueSize<<6) - 1 - CLZ64(
                         bigRescaled[powSize+bigValueSize-1]);
                     // remove integer part (lastbit) from rescaled value
@@ -1469,7 +1481,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
             {
                 // if even value
                 if ((fpMantisa&1) == 0)
-                {   /* parse rest of the numbers */
+                {
+                    /* parse rest of the numbers */
                     bool onlyZeros = true;
                     for (; vs != valEnd; vs++)
                     {
@@ -1530,13 +1543,15 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
             throw Exception("Max size is too small");
         
         if ((value&mantisaMask) != 0)
-        {   /* nan */
+        {
+            /* nan */
             *p++ = 'n';
             *p++ = 'a';
             *p++ = 'n';
         }
         else
-        {   /* infinity */
+        {
+            /* infinity */
             *p++ = 'i';
             *p++ = 'n';
             *p++ = 'f';
@@ -1550,7 +1565,8 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     const int binaryExp = ((value>>mantisaBits)&expMask) - (expMask>>1);
     
     if (mantisa == 0 && binaryExp == minExpNonDenorm-1)
-    {   /* if zero */
+    {
+        /* if zero */
         if (signOfValue)
         {
             if (maxSize < 3)
@@ -1574,7 +1590,8 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     
     cxuint significantBits = 0;
     if (binaryExp >= minExpNonDenorm)
-    {   /* normalized value */
+    {
+        /* normalized value */
         significantBits = mantisaBits;
         mantisa |= 1ULL<<mantisaBits;
     }
@@ -1610,7 +1627,8 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         oneBitPos++;
     }
     else
-    {   /* if one */
+    {
+        /* if one */
         powSize = 1;
         pow5[0] = 0;
         rescaled[0] = rescaled[1] = 0;
@@ -1763,7 +1781,8 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         throw Exception("Max size is too small");
         
     if (scientific || decExponent < -5 || decExponent > int(digitsNum-1))
-    {   /* print exponent */
+    {
+        /* print exponent */
         if (p >= strend) // out of string
             throw Exception("Max size is too small");
         *p++ = 'e';

@@ -197,7 +197,8 @@ void ISADisassembler::writeLocation(size_t pos)
 {
     const auto namedLabelIt = binaryMapFind(namedLabels.begin(), namedLabels.end(), pos);
     if (namedLabelIt != namedLabels.end())
-    {   /* print named label */
+    {
+        /* print named label */
         output.write(namedLabelIt->second.size(), namedLabelIt->second.c_str());
         return;
     }

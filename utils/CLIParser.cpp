@@ -765,7 +765,8 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
 }
 
 void CLIParser::parse()
-{   /* parse args */
+{
+    /* parse args */
     bool isLeftOver = false;
     for (cxuint i = 1; i < argc; i++)
     {

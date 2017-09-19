@@ -205,7 +205,8 @@ void CLRX::skipSpacesAndLabels(const char*& linePtr, const char* end)
             if (*linePtr!='\\')
                 linePtr++;
             else
-            {   /* handle \@ and \() for correct parsing */
+            {
+                /* handle \@ and \() for correct parsing */
                 linePtr++;
                 if (linePtr!=end)
                 {
@@ -1007,26 +1008,30 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
             return true;
         }
         else
-        {   /* if error */
+        {
+            /* if error */
             string = exprPlace;
             return false;
         }
     }
     
     if (alternateMacro && string != end && (*string=='<' || *string=='\'' || *string=='"'))
-    {   /* alternate string quoting */
+    {
+        /* alternate string quoting */
         const char termChar = (*string=='<') ? '>' : *string;
         string++;
         bool escape = false;
         while (string != end && (*string != termChar || escape))
         {
             if (!escape && *string=='!')
-            {   /* skip this escaping */
+            {
+                /* skip this escaping */
                 escape = true;
                 string++;
             }
             else
-            {   /* put character */
+            {
+                /* put character */
                 escape = false;
                 outStr.push_back(*string++);
             }
@@ -1365,7 +1370,8 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         symEntry.second.onceDefined = !reassign;
         symEntry.second.base = baseExpr;
         if (baseExpr && !symEntry.second.occurrencesInExprs.empty())
-        {   /* make snapshot now resolving dependencies */
+        {
+            /* make snapshot now resolving dependencies */
             AsmSymbolEntry* tempSymEntry;
             if (!AsmExpression::makeSymbolSnapshot(*this, symEntry, tempSymEntry,
                     &symEntry.second.occurrencesInExprs[0].expression->getSourcePos()))
@@ -1408,7 +1414,8 @@ bool Assembler::skipSymbol(const char*& linePtr)
     skipSpacesToEnd(linePtr, end);
     const char* start = linePtr;
     if (linePtr != end)
-    {   /* skip only symbol name */
+    {
+        /* skip only symbol name */
         if(isAlpha(*linePtr) || *linePtr == '_' || *linePtr == '.' || *linePtr == '$')
             for (linePtr++; linePtr != end && (isAlnum(*linePtr) || *linePtr == '_' ||
                  *linePtr == '.' || *linePtr == '$') ; linePtr++);
@@ -1457,7 +1464,8 @@ void Assembler::printWarningForRange(cxuint bits, uint64_t value, const AsmSourc
         cxbyte signess)
 {
     if (bits < 64)
-    {   /* signess - WS_BOTH - check value range as signed value 
+    {
+        /* signess - WS_BOTH - check value range as signed value 
          * WS_UNSIGNED - check value as unsigned value */
         if (signess == WS_BOTH &&
             !(int64_t(value) >= (1LL<<bits) || int64_t(value) < -(1LL<<(bits-1))))
@@ -1620,7 +1628,8 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
             }
         }
         else
-        {   /* parse variadic arguments, they requires ',' separator */
+        {
+            /* parse variadic arguments, they requires ',' separator */
             bool argGood = true;
             while (linePtr != end)
             {
@@ -1985,7 +1994,8 @@ bool Assembler::readLine()
     {
         // no line
         if (asmInputFilters.size() > 1)
-        {   /* decrease some level of a nesting */
+        {
+            /* decrease some level of a nesting */
             if (currentInputFilter->getType() == AsmInputFilterType::MACROSUBST)
                 macroSubstLevel--;
             else if (currentInputFilter->getType() == AsmInputFilterType::STREAM)
@@ -1998,7 +2008,8 @@ bool Assembler::readLine()
         else if (filenameIndex<filenames.size())
         {
             /* handling input assembler that have many files */
-            do { // delete previous filter
+            do {
+                // delete previous filter
                 delete asmInputFilters.top();
                 asmInputFilters.pop();
                 /// create new input filter

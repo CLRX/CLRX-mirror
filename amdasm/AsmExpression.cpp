@@ -713,7 +713,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
 }
 
 static const cxbyte asmOpPrioritiesTbl[] =
-{   /* higher value, higher priority */
+{
+    /* higher value, higher priority */
     7, // ARG_VALUE
     7, // ARG_SYMBOL
     6, // NEGATE
@@ -1299,7 +1300,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                                 ops.push_back(AsmExprOp::ARG_VALUE);
                             }
                             else
-                            {   /* add symbol */
+                            {
+                                /* add symbol */
                                 symOccursNum++;
                                 arg.symbol = symEntry;
                                 args.push_back(arg);
@@ -1372,7 +1374,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                         asmOpPrioritiesTbl[cxuint(op)];
             
             if (op == AsmExprOp::CHOICE)
-            {   /* second part of choice */
+            {
+                /* second part of choice */
                 while (!stack.empty())
                 {
                     const ConExprOpEntry& entry = stack.top();

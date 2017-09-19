@@ -159,7 +159,8 @@ struct X86_64KernelArgSym
 };
 
 enum : uint32_t
-{   /* this cal note types comes from MultiSim-4.2 sources */
+{
+    /* this cal note types comes from MultiSim-4.2 sources */
     CALNOTE_ATI_PROGINFO = 1,
     CALNOTE_ATI_INPUTS = 2,
     CALNOTE_ATI_OUTPUTS = 3,

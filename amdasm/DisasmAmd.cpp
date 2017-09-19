@@ -400,7 +400,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         try
         {
             if (pos != std::string::npos)
-            {   /* let to parse version number */
+            {
+                /* let to parse version number */
                 pos += 9;
                 const char* end;
                 driverVersion = cstrtovCStyle<cxuint>(
@@ -467,7 +468,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                         outEnd, lineEnd, outEnd);
         }
         else if (::strnecmp(linePtr, ";value:", 7, lineEnd)==0)
-        {   /* scalar value or structure */
+        {
+            /* scalar value or structure */
             AmdKernelArgInput arg;
             const char* ptr = strechr(linePtr+7, lineEnd, ':');
             if (ptr==nullptr)
@@ -508,7 +510,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             config.args.push_back(arg);
         }
         else if (::strnecmp(linePtr, ";pointer:", 9, lineEnd)==0)
-        {   /* pointer (local, global, constant */
+        {
+            /* pointer (local, global, constant */
             AmdKernelArgInput arg;
             const char* ptr = strechr(linePtr+9, lineEnd, ':');
             if (ptr==nullptr)
@@ -593,7 +596,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             config.args.push_back(arg);
         }
         else if (::strnecmp(linePtr, ";image:", 7, lineEnd)==0)
-        {   /* parse image argument entry */
+        {
+            /* parse image argument entry */
             AmdKernelArgInput arg;
             const char* ptr = strechr(linePtr+7, lineEnd, ':');
             if (ptr==nullptr)
@@ -643,7 +647,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             config.args.push_back(arg);
         }
         else if (::strnecmp(linePtr, ";counter:", 9, lineEnd)==0)
-        {   /* counter */
+        {
+            /* counter */
             AmdKernelArgInput arg;
             const char* ptr = strechr(linePtr+9, lineEnd, ':');
             if (ptr==nullptr)
@@ -666,18 +671,21 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             config.args.push_back(arg);
         }
         else if (::strnecmp(linePtr, ";constarg:", 10, lineEnd)==0)
-        {   /* constant argument to apply constant qualifier */
+        {
+            /* constant argument to apply constant qualifier */
             cxuint argNo = cstrtovCStyle<cxuint>(linePtr+10, lineEnd, outEnd);
             constArgIndices.push_back(argNo);
         }
         else if (::strnecmp(linePtr, ";sampler:", 9, lineEnd)==0)
-        {   /* image sampler */
+        {
+            /* image sampler */
             const char* ptr = strechr(linePtr+9, lineEnd, ':');
             if (ptr==nullptr)
                 throw ParseException(lineNo, "Can't parse sampler entry");
             std::string samplerName(linePtr+9, ptr);
             if (samplerName.compare(0, 8, "unknown_") == 0)
-            { // add sampler
+            {
+                // add sampler
                 ptr++;
                 cxuint sampId = cstrtovCStyle<cxuint>(ptr, lineEnd, outEnd);
                 ptr = strechr(ptr, lineEnd, ':');
@@ -698,7 +706,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             }
         }
         else if (::strnecmp(linePtr, ";reflection:", 12, lineEnd)==0)
-        {   /* reflection that have type name */
+        {
+            /* reflection that have type name */
             cxuint argNo = cstrtovCStyle<cxuint>(linePtr+12, lineEnd, outEnd);
             if (argNo >= config.args.size())
                 throw Exception("ArgNo out of range");
@@ -889,7 +898,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     // check if argument is unused
     cxuint k = 0;
     for (AmdKernelArgInput& arg: config.args)
-    {   /* apply used flag for argument */
+    {
+        /* apply used flag for argument */
         if (arg.argType == KernelArgType::POINTER &&
             (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
              (arg.ptrSpace == KernelPtrSpace::CONSTANT && driverVersion >= 134805)) &&

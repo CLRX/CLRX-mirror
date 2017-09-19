@@ -419,7 +419,8 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     
     // reduce nexts
     for (CodeBlock& block: codeBlocks)
-    { // first non-call nexts, for correct resolving SSA conflicts
+    {
+        // first non-call nexts, for correct resolving SSA conflicts
         std::sort(block.nexts.begin(), block.nexts.end(),
                   [](const NextBlock& n1, const NextBlock& n2)
                   { return int(n1.isCall)<int(n2.isCall) ||
@@ -522,7 +523,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
         
         if (entry.nextIndex == 0)
-        { // process current block
+        {
+            // process current block
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
@@ -820,7 +822,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 // join routine data
                 auto rit = routineMap.find(entry.blockIndex);
                 if (rit != routineMap.end() && rit->second.processed)
-                { // just join with selected routines
+                {
+                    // just join with selected routines
                     // if this ways to return are visited before
                     auto fcit = flowStack.end();
                     --fcit;
@@ -858,7 +861,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                  !cblock.haveReturn && !cblock.haveEnd)
         {
             if (entry.nextIndex!=0) // if back from call
-            { // expand lastMultiSSAIdMap from all calls
+            {
+                // expand lastMultiSSAIdMap from all calls
                 for (const NextBlock& next: cblock.nexts)
                 if (next.isCall)
                     {
@@ -873,7 +877,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         {
             // revert lastMultiSSAIdMap changes (add removed entries)
             if (cblock.haveCalls)
-            { //remove all return parallel ssaids
+            {
+                //remove all return parallel ssaids
                 for(const NextBlock& next: cblock.nexts)
                     if (!next.isCall)
                     {
@@ -1184,7 +1189,8 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry>& flowStack,
     const CodeBlock& cblock = codeBlocks[flowStack.back().blockIndex];
     for (const auto& entry: cblock.ssaInfoMap)
         if (entry.second.readBeforeWrite)
-        { // find last 
+        {
+            // find last 
             auto lvrit = lastVRegMap.find(entry.first);
             if (lvrit == lastVRegMap.end())
                 continue; // not found

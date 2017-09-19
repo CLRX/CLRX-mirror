@@ -205,7 +205,8 @@ void ImageMix::loadImageInt(const char* inFilename)
     file = fopen(inFilename, "rb");
     if (file==nullptr)
         throw Exception(std::string("Can't open file '")+inFilename+'\'');
-    {   /* check PNG signature */
+    {
+        /* check PNG signature */
         cxbyte header[8];
         if (fread(header, 1, 8, file)==0)
             throw Exception(std::string("Can't read file'")+inFilename+'\'');
@@ -233,7 +234,8 @@ void ImageMix::loadImageInt(const char* inFilename)
             throw Exception("Image size doesn't match!");
     }
     else
-    {   /* if not initialized (first image) */
+    {
+        /* if not initialized (first image) */
         this->width = imageWidth;
         this->height = imageHeight;
     }
@@ -254,7 +256,8 @@ void ImageMix::loadImageInt(const char* inFilename)
         outRow.reset(new cxbyte[4*imageWidth]);
     
     for (size_t y = 0; y < height; y++)
-    {   /* transfer image to CL image object */
+    {
+        /* transfer image to CL image object */
         size_t origin[3] = { 0, y, 0 };
         size_t region[3] = { imageWidth, 1, 1 };
         if (!hasAlpha)

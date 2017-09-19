@@ -312,7 +312,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             size_t pos = line.find(':', 9);
             std::string samplerName = line.substr(9, pos-9);
             if (samplerName.compare(0, 8, "unknown_") == 0)
-            { // add sampler
+            {
+                // add sampler
                 pos++;
                 cxuint sampId = cstrtovCStyle<cxuint>(line.c_str()+pos, nullptr, outEnd);
                 pos = line.find(':', pos);

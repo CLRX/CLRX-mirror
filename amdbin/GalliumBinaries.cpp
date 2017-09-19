@@ -642,14 +642,16 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     
     AmdGpuConfigContent amdGpuConfigContent(kernelsOrder, *input);
     if (!input->is64BitElf)
-    {   /* 32-bit ELF */
+    {
+        /* 32-bit ELF */
         elfBinGen32.reset(new ElfBinaryGen32({ 0, 0, ELFOSABI_SYSV, 0,  ET_REL, 0,
                     EV_CURRENT, UINT_MAX, 0, 0 }));
         putSectionsAndSymbols(*elfBinGen32, input, kernelsOrder, amdGpuConfigContent);
         elfSize = elfBinGen32->countSize();
     }
     else
-    {   /* 64-bit ELF */
+    {
+        /* 64-bit ELF */
         elfBinGen64.reset(new ElfBinaryGen64({ 0, 0, ELFOSABI_SYSV, 0,  ET_REL, 0,
                     EV_CURRENT, UINT_MAX, 0, 0 }));
         putSectionsAndSymbols(*elfBinGen64, input, kernelsOrder, amdGpuConfigContent);

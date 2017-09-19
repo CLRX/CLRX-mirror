@@ -529,7 +529,8 @@ void AsmAmdCL2PseudoOps::doGlobalData(AsmAmdCL2Handler& handler, const char* pse
         return;
     
     if (handler.rodataSection==ASMSECT_NONE)
-    {   /* add this section */
+    {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_INNER,  AsmSectionType::DATA,
             ELFSECTID_RODATA, ".rodata" });
@@ -549,7 +550,8 @@ void AsmAmdCL2PseudoOps::doRwData(AsmAmdCL2Handler& handler, const char* pseudoO
         return;
     
     if (handler.dataSection==ASMSECT_NONE)
-    {   /* add this section */
+    {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_RWDATA,
             ELFSECTID_DATA, ".data" });
@@ -596,7 +598,8 @@ void AsmAmdCL2PseudoOps::doBssData(AsmAmdCL2Handler& handler, const char* pseudo
         return;
     
     if (handler.bssSection==ASMSECT_NONE)
-    {   /* add this section */
+    {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_BSS,
             ELFSECTID_BSS, ".bss" });
@@ -619,7 +622,8 @@ void AsmAmdCL2PseudoOps::doSamplerInit(AsmAmdCL2Handler& handler, const char* ps
         return;
     
     if (handler.samplerInitSection==ASMSECT_NONE)
-    {   /* add this section */
+    {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_SAMPLERINIT,
             AMDCL2SECTID_SAMPLERINIT, nullptr });
@@ -2024,7 +2028,8 @@ bool AsmAmdCL2Handler::prepareBinary()
     
     /* put kernels relocations */
     for (const AsmRelocation& reloc: assembler.relocations)
-    {   /* put only code relocations */
+    {
+        /* put only code relocations */
         cxuint kernelId = sections[reloc.sectionId].kernelId;
         cxuint symbol = sections[reloc.relSectionId].type==AsmSectionType::DATA ? 0 :
             (sections[reloc.relSectionId].type==AsmSectionType::AMDCL2_RWDATA ? 1 : 2);

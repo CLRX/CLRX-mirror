@@ -501,7 +501,8 @@ void clrxWrapperInitialize()
                           clrxPlatform.extEntries.get());
                 
                 if (clrxPlatform.openCLVersionNum >= getOpenCLVersionNum(1, 2))
-                {   /* update p->extEntries for platform */
+                {
+                    /* update p->extEntries for platform */
                     for (size_t k = 0; k < clrxExtEntriesNum; k++)
                     {
                         // erase CLRX extension entry if not reflected in AMD extensions
@@ -722,7 +723,8 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                         amdDevices.begin(), amdDevices.begin()+k);
             std::sort(normalDevices.begin(), normalDevices.end());
             for (cl_device_id deviceId: offlineDevices)
-            {   /* broken CL_DEVICE_AVAILABLE in latest driver (Catalyst 15.7) */
+            {
+                /* broken CL_DEVICE_AVAILABLE in latest driver (Catalyst 15.7) */
                 //if (!available)
                 if (binaryFind(normalDevices.begin(), normalDevices.end(), deviceId)
                             == normalDevices.end())
@@ -954,7 +956,8 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
         amdAssocDevicesNum /= sizeof(cl_device_id); // number of amd devices
         
         if (totalDevicesNum != amdAssocDevicesNum)
-        {   /* reallocate amdAssocDevices */
+        {
+            /* reallocate amdAssocDevices */
             std::unique_ptr<cl_device_id[]> tmpAmdAssocDevices(
                         new cl_device_id[amdAssocDevicesNum]);
             std::copy(amdAssocDevices.get(), amdAssocDevices.get()+amdAssocDevicesNum,
@@ -1854,7 +1857,8 @@ try
     
     std::lock_guard<std::mutex> clock(program->mutex);
     if (program->amdOclAsmProgram!=nullptr)
-    { // release old asm program
+    {
+        // release old asm program
         if (amdp->dispatch->clReleaseProgram(program->amdOclAsmProgram) != CL_SUCCESS)
             clrxAbort("Fatal error on clReleaseProgram(amdProg)");
         program->amdOclAsmProgram = nullptr;

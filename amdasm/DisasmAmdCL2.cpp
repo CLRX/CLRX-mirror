@@ -453,7 +453,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
         arg.used = AMDCL2_ARGUSED_READ_WRITE; // default is used
         
         if (!ULEV(argPtr->isPointerOrPipe))
-        { // if not point or pipe (get regular type: scalar, image, sampler,...)
+        {
+            // if not point or pipe (get regular type: scalar, image, sampler,...)
             switch(argType)
             {
                 case 0:
@@ -608,7 +609,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                             arg.pointerType = KernelArgType::STRUCTURE;
                     }
                     else if (ptrType==18)
-                    {   /* if clkevent */
+                    {
+                        /* if clkevent */
                         arg.argType = KernelArgType::CLKEVENT;
                         arg.pointerType = KernelArgType::VOID;
                     }

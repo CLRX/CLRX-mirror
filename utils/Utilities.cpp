@@ -414,7 +414,8 @@ Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
     try
     { ifs.seekg(0, std::ios::end); /* to end of file */ }
     catch(const std::exception& ex)
-    {   /* oh, no! this is not regular file */
+    {
+        /* oh, no! this is not regular file */
         seekingIsWorking = false;
         ifs.clear();
     }
@@ -433,7 +434,8 @@ Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
             throw Exception("Can't read whole file");
     }
     else
-    {   /* growing, growing... */
+    {
+        /* growing, growing... */
         size_t prevBufSize = 0;
         size_t readBufSize = 256;
         buf.resize(readBufSize);
@@ -442,7 +444,8 @@ Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
             ifs.read((char*)(buf.data()+prevBufSize), readBufSize-prevBufSize);
             const size_t readed = ifs.gcount();
             if (readed < readBufSize-prevBufSize)
-            {   /* final resize */
+            {
+                /* final resize */
                 buf.resize(prevBufSize + readed);
                 break;
             }
@@ -597,7 +600,8 @@ CLRX::Array<cxbyte> CLRX::runExecWithOutput(const char* program, const char** ar
                     break;
             }
             if (prevBufSize < readBufSize)
-            {   /* final resize */
+            {
+                /* final resize */
                 output.resize(prevBufSize);
                 break;
             }

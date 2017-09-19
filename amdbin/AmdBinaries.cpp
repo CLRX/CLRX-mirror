@@ -245,7 +245,8 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const CString& _kernelName,
                 }
             }
             if (offset+size == encEntryOffset+encEntrySize)
-            {   /* next encoding entry */
+            {
+                /* next encoding entry */
                 encodingIndex++;
                 // if program headers table is not exhausted, but no encoding entries
                 if (i+1 < getProgramHeadersNum() && encodingIndex >= encodingEntriesNum)
@@ -397,14 +398,16 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
     bool foundInStaticSymbols = false;
     std::vector<typename Types::Size> argTypeNamesSyms;
     if (choosenSyms.empty())
-    {   /* if not found in symbol: TODO: Fix for driver 1573.4 and newer */
+    {
+        /* if not found in symbol: TODO: Fix for driver 1573.4 and newer */
         const size_t symbolsNum = elf.getSymbolsNum();
         for (typename Types::Size i = 0; i < symbolsNum; i++)
         {
             const char* symName = elf.getSymbolName(i);
             const size_t len = ::strlen(symName);
             if (::strncmp(symName, ".str", 4) == 0)
-            {   /* add arg/type name symbol to our table */
+            {
+                /* add arg/type name symbol to our table */
                 size_t index = 0;
                 if (symName[4] != 0)
                 {
@@ -715,7 +718,8 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             throw ParseException(lineNo, "Is not KernelDesc line");
         
         if (::strncmp(kptr, "value", tokPtr-kptr) == 0)
-        { // value
+        {
+            // value
             if (*tokPtr == '\n')
                 throw ParseException(lineNo, "This is not value line");
             
@@ -770,7 +774,8 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                 argIt->second.argType = KernelArgType::STRUCTURE;
         }
         else if (::strncmp(kptr, "pointer", tokPtr-kptr) == 0)
-        { // pointer
+        {
+            // pointer
             if (*tokPtr == '\n')
                 throw ParseException(lineNo, "This is not pointer line");
             
@@ -844,7 +849,8 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                 throw ParseException("Unknown value or end at restrict field");
         }
         else if (::strncmp(kptr, "image", tokPtr-kptr) == 0)
-        { // image
+        {
+            // image
             if (*tokPtr == '\n')
                 throw ParseException(lineNo, "This is not image line");
             
@@ -914,7 +920,8 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             kptr += 3;
         }
         else if (::strncmp(kptr, "sampler", tokPtr-kptr) == 0)
-        { // sampler (set up some argument as sampler
+        {
+            // sampler (set up some argument as sampler
             if (*tokPtr == '\n')
                 throw ParseException(lineNo, "This is not sampler line");
             
@@ -1001,7 +1008,8 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
     kernelInfo.argInfos.resize(argIndex);
     
     for (const auto& e: initKernelArgs)
-    {   /* initialize kernel arguments before set argument type from reflections */
+    {
+        /* initialize kernel arguments before set argument type from reflections */
         AmdKernelArg& karg = kernelInfo.argInfos[e.second.index];
         karg.argType = e.second.argType;
         karg.ptrSpace = e.second.ptrSpace;
@@ -1011,7 +1019,8 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
     
     /* reflections holds argument type names, we just retrieve from arg type names! */
     if (argIndex != 0)
-    {   /* check whether not end */
+    {
+        /* check whether not end */
         if (kptr >= kend)
             throw ParseException(lineNo, "Unexpected end of data");
         
@@ -1134,7 +1143,8 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         }
         else if (::strcmp(symName, "__OpenCL_0_global") == 0 ||
                  ::strcmp(symName, "__OpenCL_2_global") == 0)
-        {   /* global data (constant data) */
+        {
+            /* global data (constant data) */
             const typename Types::Sym& sym = mainElf.getSymbol(i);
             const uint16_t shindex = ULEV(sym.st_shndx);
             const typename Types::Shdr& shdr = mainElf.getSectionHeader(shindex);

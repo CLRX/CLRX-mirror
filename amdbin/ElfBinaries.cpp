@@ -104,7 +104,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
     if ((ULEV(ehdr->e_phoff) == 0 && ULEV(ehdr->e_phnum) != 0))
         throw Exception("Elf invalid phoff and phnum combination");
     if (ULEV(ehdr->e_phoff) != 0)
-    {   /* reading and checking program headers */
+    {
+        /* reading and checking program headers */
         if (ULEV(ehdr->e_phoff) > binaryCodeSize)
             throw Exception("ProgramHeaders offset out of range!");
         if (usumGt(ULEV(ehdr->e_phoff),
@@ -127,7 +128,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
     if ((ULEV(ehdr->e_shoff) == 0 && ULEV(ehdr->e_shnum) != 0))
         throw Exception("Elf invalid shoff and shnum combination");
     if (ULEV(ehdr->e_shoff) != 0 && ULEV(ehdr->e_shstrndx) != SHN_UNDEF)
-    {   /* indexing of sections */
+    {
+        /* indexing of sections */
         if (ULEV(ehdr->e_shoff) > binaryCodeSize)
             throw Exception("SectionHeaders offset out of range!");
         if (usumGt(ULEV(ehdr->e_shoff),
@@ -208,7 +210,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
                 symbolIndexMap.resize(symbolsNum);
             
             for (typename Types::Size i = 0; i < symbolsNum; i++)
-            {   /* verify symbol names */
+            {
+                /* verify symbol names */
                 const typename Types::Sym& sym = getSymbol(i);
                 const typename Types::Size symnameindx = ULEV(sym.st_name);
                 if (symnameindx >= ULEV(symstrShdr.sh_size))
@@ -249,7 +252,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
                 dynSymIndexMap.resize(dynSymbolsNum);
             
             for (typename Types::Size i = 0; i < dynSymbolsNum; i++)
-            {   /* verify symbol names */
+            {
+                /* verify symbol names */
                 const typename Types::Sym& sym = getDynSymbol(i);
                 const typename Types::Size symnameindx = ULEV(sym.st_name);
                 if (symnameindx >= ULEV(dynSymstrShdr.sh_size))
@@ -466,7 +470,8 @@ template<typename Types>
 static inline typename Types::Word resolveSectionAddress(
         const ElfHeaderTemplate<Types>& header, const ElfRegionTemplate<Types>& region2,
         typename Types::Word regionAddr)
-{   /* addrBase is base address of first section. if not defined
+{
+    /* addrBase is base address of first section. if not defined
      * use address base as virtual address base from elf header */
     if (region2.section.addrBase==Types::nobase)
         return regionAddr;
@@ -865,7 +870,8 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
         
         // write content
         if (region.type == ElfRegionType::PHDR_TABLE)
-        {   /* write program headers */
+        {
+            /* write program headers */
             for (const auto& progHeader: progHeaders)
             {
                 typename Types::Phdr phdr;
@@ -955,7 +961,8 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
             }
         }
         else if (region.type == ElfRegionType::SHDR_TABLE)
-        {   /* write section headers table */
+        {
+            /* write section headers table */
             if (addNullSection)
                 fob.fill(sizeof(typename Types::Shdr), 0);
             uint32_t nameOffset = (addNullSection);

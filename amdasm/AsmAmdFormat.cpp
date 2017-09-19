@@ -178,7 +178,8 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
         section.name = out.first->first.c_str();
     }
     else
-    {   /* inside kernel binary */
+    {
+        /* inside kernel binary */
         if (kernelId >= kernelStates.size())
             throw AsmFormatException("KernelId out of range");
         Kernel& kernelState = *kernelStates[kernelId];
@@ -257,7 +258,8 @@ void AsmAmdHandler::setCurrentSection(cxuint sectionId)
 }
 
 AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) const
-{   /* find section */
+{
+    /* find section */
     if (sectionId >= sections.size())
         throw AsmFormatException("Section doesn't exists");
     AsmFormatHandler::SectionInfo info;
@@ -363,7 +365,8 @@ void AsmAmdPseudoOps::doGlobalData(AsmAmdHandler& handler, const char* pseudoOpP
         return;
     
     if (handler.dataSection==ASMSECT_NONE)
-    {   /* add this section */
+    {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::DATA,
             ELFSECTID_UNDEF, nullptr });
@@ -442,7 +445,8 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
     const bool singleValue = calNoteId < 32 &&
             (singleValueCALNotesMask & (1U<<calNoteId)) && linePtr != end;
     if (singleValue)
-    {   /* if pseudo-op for this calnote accept single 32-bit value */
+    {
+        /* if pseudo-op for this calnote accept single 32-bit value */
         if (!getAbsoluteValueArg(asmr, value, linePtr, false))
             return; // error
         asmr.printWarningForRange(32, value, asmr.getSourcePos(valuePlace));
@@ -1286,7 +1290,8 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
             bool havePrevArgument = false;
             const char* place;
             if (ptrSpace == KernelPtrSpace::CONSTANT && !cl20)
-            {   /* parse constant space size for constant pointer */
+            {
+                /* parse constant space size for constant pointer */
                 if (!skipComma(asmr, haveComma, linePtr))
                     return false;
                 if (haveComma)
@@ -1305,7 +1310,8 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
                 havePrevArgument = true;
             
             if (havePrevArgument && ptrSpace != KernelPtrSpace::LOCAL && !cl20)
-            {   /* global and constant have resource id (uavId) */
+            {
+                /* global and constant have resource id (uavId) */
                 if (!skipComma(asmr, haveComma, linePtr))
                     return false;
                 if (haveComma)
@@ -1400,7 +1406,8 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
         }
     }
     else if (!pointer && argType == KernelArgType::STRUCTURE)
-    {   /* parse structure size */
+    {
+        /* parse structure size */
         if (!skipRequiredComma(asmr, linePtr))
             return false;
         skipSpacesToEnd(linePtr, end);

@@ -383,7 +383,8 @@ clrxclGetDeviceInfo(cl_device_id    device,
                 (d->platform->openCLVersionNum >= getOpenCLVersionNum(1, 1) &&
                  d->platform->dispatch->clCreateSubDevicesEXT != nullptr &&
                  param_name == CL_DEVICE_PARENT_DEVICE_EXT))
-            {   /* if OpenCL 1.2 or later or
+            {
+                /* if OpenCL 1.2 or later or
                  * clCreateSubDevicesEXT is available and OpenCL 1.1 and
                  *      CL_DEVICE_PARENT_DEVICE_EXT is param_name */
                 if (param_value != nullptr)
@@ -451,7 +452,8 @@ clrxclCreateContext(const cl_context_properties * properties,
                 {
                     amdProps[i] = properties[i];
                     if (properties[i] == CL_CONTEXT_PLATFORM)
-                    {   /* get original AMD OpenCL platform */
+                    {
+                        /* get original AMD OpenCL platform */
                         if (properties[i+1] != 0)
                             amdProps[i+1] = (cl_context_properties)
                                 (((CLRXPlatform*)(properties[i+1]))->amdOclPlatform);
@@ -573,7 +575,8 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
                 {
                     amdProps[i] = properties[i];
                     if (properties[i] == CL_CONTEXT_PLATFORM)
-                    {   /* get original AMD OpenCL platform */
+                    {
+                        /* get original AMD OpenCL platform */
                         if (properties[i+1] != 0)
                             amdProps[i+1] = (cl_context_properties)
                                 (((CLRXPlatform*)(properties[i+1]))->amdOclPlatform);
@@ -1026,7 +1029,8 @@ clrxclGetMemObjectInfo(cl_mem           memobj,
                 *param_value_size_ret = sizeof(cl_context);
             break;
         case CL_MEM_ASSOCIATED_MEMOBJECT:
-        {   /* check what is returned and translate it */
+        {
+            /* check what is returned and translate it */
             if (m->context->openCLVersionNum < getOpenCLVersionNum(1, 1))
                 return CL_INVALID_VALUE; /* if OpenCL 1.0 */
             
@@ -1078,7 +1082,8 @@ clrxclGetImageInfo(cl_mem           image,
                 param_value_size, param_value, param_value_size_ret);
 #ifdef CL_VERSION_1_2
     else if (m->context->openCLVersionNum >= getOpenCLVersionNum(1, 2))
-    {   /* only if OpenCL 1.2 or later */
+    {
+        /* only if OpenCL 1.2 or later */
         if (param_value != nullptr)
         {
             if (param_value_size < sizeof(cl_mem))
@@ -1348,7 +1353,8 @@ clrxclBuildProgram(cl_program           program,
     CLRXBuildProgramUserData* wrappedData = nullptr;
     void (CL_CALLBACK *  notifyToCall)(cl_program, void *) =  nullptr;
     try
-    { // catching system_error
+    {
+        // catching system_error
     
     if (pfn_notify != nullptr)
     {

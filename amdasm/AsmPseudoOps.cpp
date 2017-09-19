@@ -532,13 +532,15 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
     try
     { ifs.seekg(0, std::ios::end); /* to end of file */ }
     catch(const std::exception& ex)
-    {   /* oh, no! this is not regular file */
+    {
+        /* oh, no! this is not regular file */
         seekingIsWorking = false;
         ifs.clear();
     }
     ifs.exceptions(std::ios::badbit);  // exceptions for reading
     if (seekingIsWorking)
-    {   /* for regular files */
+    {
+        /* for regular files */
         const uint64_t size = ifs.tellg();
         if (size < offset)
             return; // do nothing
@@ -550,7 +552,8 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
             ASM_RETURN_BY_ERROR(namePlace, "Can't read whole needed file content")
     }
     else
-    {   /* for sequential files, likes fifo */
+    {
+        /* for sequential files, likes fifo */
         char tempBuf[256];
         /// first we skipping bytes given in offset
         for (uint64_t pos = 0; pos < offset; )
@@ -1561,7 +1564,8 @@ void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpPlace,
         PSEUDOOP_RETURN_BY_ERROR("Repetition level is greater than 1000")
     asmr.pushClause(pseudoOpPlace, AsmClauseType::REPEAT);
     if (repeatsNum == 0)
-    {   /* skip it */
+    {
+        /* skip it */
         asmr.skipClauses();
         return;
     }
@@ -2781,7 +2785,8 @@ bool Assembler::skipClauses(bool exitm)
                 else if (!insideMacroOrRepeat)
                 {
                     if (!exitm && clauseLevel == clauses.size() && isTopIfClause)
-                    {   /* set lineAlreadyRead - next line after skipped region read
+                    {
+                        /* set lineAlreadyRead - next line after skipped region read
                          * will be read */
                         lineAlreadyRead = true; // read
                         return good; // do exit

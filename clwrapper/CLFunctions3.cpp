@@ -620,7 +620,8 @@ clrxclCreateImage(cl_context              context,
         if ((imageDesc.image_type == CL_MEM_OBJECT_IMAGE1D_BUFFER ||
                 imageDesc.image_type == CL_MEM_OBJECT_IMAGE2D) &&
                 imageDesc.buffer != nullptr) // check buffer field
-        {   /* do it if buffer not null and type is CL_MEM_OBJECT_IMAGE1D_BUFFER or
+        {
+            /* do it if buffer not null and type is CL_MEM_OBJECT_IMAGE1D_BUFFER or
              * CL_MEM_OBJECT_IMAGE2D, otherwise we ignore buffer field */
             imageDesc.buffer =
                 static_cast<const CLRXMemObject*>(imageDesc.buffer)->amdOclMemObject;
@@ -1001,7 +1002,8 @@ clrxclLinkProgram(cl_context           context,
             }
             
             if (!initializedByCLCall)
-            {   /* delete if initialized by callback */
+            {
+                /* delete if initialized by callback */
                 delete transDevicesMap;
                 delete wrappedData;
                 wrappedData = nullptr;

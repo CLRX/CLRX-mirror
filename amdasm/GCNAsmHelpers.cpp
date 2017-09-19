@@ -174,7 +174,8 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
     if (asmr.parseSymbol(linePtr, symEntry, false, true)==
         Assembler::ParseState::PARSED && symEntry!=nullptr &&
         symEntry->second.regRange)
-    { // set up regrange
+    {
+        // set up regrange
         cxuint rstart = symEntry->second.value&UINT_MAX;
         cxuint rend = symEntry->second.value>>32;
         /* parse register range if:
@@ -497,12 +498,14 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             loHiReg = 106;
         }
         else if (::strncmp(regName, "exec", 4)==0)
-        {   /* exec* */
+        {
+            /* exec* */
             loHiRegSuffix = 4;
             loHiReg = 126;
         }
         else if ((arch & ARCH_RXVEGA) == 0 && regName[0]=='t')
-        {   /* tma,tba */
+        {
+            /* tma,tba */
             if (regName[1] == 'b' && regName[2] == 'a')
             {
                 loHiRegSuffix = 3;
@@ -515,7 +518,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             }
         }
         else if (regName[0] == 'm' && regName[1] == '0' && regName[2] == 0)
-        {   /* M0 */
+        {
+            /* M0 */
             if (regsNum!=0 && regsNum!=1 && regsNum!=2)
             {
                 printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
@@ -877,7 +881,8 @@ bool GCNAsmUtils::parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_
             value = v.i;
         }
         else
-        {   /* 64-bit (high 32-bits) */
+        {
+            /* 64-bit (high 32-bits) */
             uint32_t v = cstrtofXCStyle(linePtr, end, linePtr, 11, 20);
             if (linePtr!=end && toLower(*linePtr)=='l')
                 linePtr++;
@@ -962,7 +967,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         if ((arch & ARCH_GCN_1_2_4)!=0 &&
             (instrOpMask & (INSTROP_NOSEXT|INSTROP_VOP3P))==0 &&
             linePtr+4 <= end && strncasecmp(linePtr, "sext", 4)==0)
-        {   /* sext */
+        {
+            /* sext */
             linePtr += 4;
             skipSpacesToEnd(linePtr, end);
             if (linePtr!=end && *linePtr=='(')
@@ -1417,7 +1423,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             }
         }
         if (encodeAsLiteral)
-        {   /* finish lit function */
+        {
+            /* finish lit function */
             skipSpacesToEnd(linePtr, end);
             if (linePtr==end || *linePtr!=')')
                 ASM_FAIL_BY_ERROR(linePtr, "Expected ')' after expression at 'lit'")
@@ -1748,7 +1755,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     mods = (mods & ~VOP3_VOP3) | (vop3 ? VOP3_VOP3 : 0);
                 }
                 else if (extraMods!=nullptr)
-                {   /* parse specific modofier from VOP_SDWA or VOP_DPP encoding */
+                {
+                    /* parse specific modofier from VOP_SDWA or VOP_DPP encoding */
                     if (withSDWAOperands>=1 && (flags&PARSEVOP_NODSTMODS)==0 &&
                             ::strcmp(mod, "dst_sel")==0)
                     {
@@ -1774,7 +1782,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                     good = false;
                             }
                             else
-                            {   /* parametrize */
+                            {
+                                /* parametrize */
                                 linePtr++;
                                 if (parseImm(asmr, linePtr, dstSel, nullptr,
                                                  3, WS_UNSIGNED))
@@ -1794,7 +1803,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     }
                     else if (withSDWAOperands>=1 && (flags&PARSEVOP_NODSTMODS)==0 &&
                         (::strcmp(mod, "dst_unused")==0 || ::strcmp(mod, "dst_un")==0))
-                    {   /* dst_unused modifer */
+                    {
+                        /* dst_unused modifer */
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
                         {
@@ -1826,7 +1836,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                     good = false;
                             }
                             else
-                            {   /* '@' in dst_unused: parametrization */
+                            {
+                                /* '@' in dst_unused: parametrization */
                                 linePtr++;
                                 if (parseImm(asmr, linePtr, unused, nullptr,
                                                  2, WS_UNSIGNED))
@@ -1845,7 +1856,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before dst_unused")
                     }
                     else if (withSDWAOperands>=2 && ::strcmp(mod, "src0_sel")==0)
-                    {   /* src0_sel modifier */
+                    {
+                        /* src0_sel modifier */
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
                         {
@@ -1867,7 +1879,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                     good = false;
                             }
                             else
-                            {   /* parametrize by '@' */
+                            {
+                                /* parametrize by '@' */
                                 linePtr++;
                                 if (parseImm(asmr, linePtr, src0Sel, nullptr,
                                                  3, WS_UNSIGNED))
@@ -1909,7 +1922,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                     good = false;
                             }
                             else
-                            {   /* parametrize by '@' */
+                            {
+                                /* parametrize by '@' */
                                 linePtr++;
                                 if (parseImm(asmr, linePtr, src1Sel, nullptr,
                                                  3, WS_UNSIGNED))
@@ -2142,7 +2156,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         else if (mod[9] =='3') // if row_bcast31
                             extraMods->dppCtrl = 0x143;
                         else
-                        { // get number
+                        {
+                            // get number
                             skipSpacesToEnd(linePtr, end);
                             if (linePtr!=end && *linePtr==':')
                             {

@@ -223,7 +223,8 @@ static void initializeGCNDisassembler()
             else if((instr.archMask & ARCH_RXVEGA) != 0 &&
                 (instr.encoding == GCNENC_VOP2 || instr.encoding == GCNENC_VOP1 ||
                 instr.encoding == GCNENC_VOP3A || instr.encoding == GCNENC_VOP3B))
-            {   /* otherwise we for GCN1.4 */
+            {
+                /* otherwise we for GCN1.4 */
                 const bool encNoVOP2 = instr.encoding != GCNENC_VOP2;
                 const bool encVOP1 = instr.encoding == GCNENC_VOP1;
                 const GCNEncodingSpace& encSpace4 =
@@ -232,7 +233,8 @@ static void initializeGCNDisassembler()
             }
             else if((instr.archMask & ARCH_RXVEGA) != 0 &&
                 instr.encoding == GCNENC_FLAT && (instr.mode & GCN_FLAT_MODEMASK) != 0)
-            {   /* FLAT SCRATCH and GLOBAL instructions */
+            {
+                /* FLAT SCRATCH and GLOBAL instructions */
                 const cxuint encFlatMode = (instr.mode & GCN_FLAT_MODEMASK)-1;
                 const GCNEncodingSpace& encSpace4 =
                     gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+3 + encFlatMode];
@@ -304,7 +306,8 @@ void GCNDisassembler::analyzeBeforeDisassemble()
     const bool isGCN14 = (arch == GPUArchitecture::GCN1_4);
     size_t pos;
     for (pos = 0; pos < codeWordsNum; pos++)
-    {   /* scan all instructions and get jump addresses */
+    {
+        /* scan all instructions and get jump addresses */
         const uint32_t insnCode = ULEV(codeWords[pos]);
         if ((insnCode & 0x80000000U) != 0)
         {
@@ -934,7 +937,8 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                 prevLock = true;
             }
             if (((imm16>>8)&15) != 15 || isf7f)
-            {   /* LGKMCNT bits is 4 (5????) */
+            {
+                /* LGKMCNT bits is 4 (5????) */
                 const cxuint lockCnt = (imm16>>8)&15;
                 if (prevLock)
                 {
@@ -951,7 +955,8 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                 prevLock = true;
             }
             if ((!isGCN14 && (imm16&0xf080) != 0) || (isGCN14 && (imm16&0x3080) != 0))
-            {   /* additional info about imm16 */
+            {
+                /* additional info about imm16 */
                 if (prevLock)
                 {
                     *bufPtr++ = ' ';
@@ -2152,7 +2157,8 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     {
         const bool reqForVOP1Word = omod==0 && ((insnCode2&(usedMask<<29)) == 0);
         if (gcnInsn.encoding != GCNENC_VOP3B)
-        {   /* for VOPC */
+        {
+            /* for VOPC */
             if (opcode < 256 && vdst == 106 /* vcc */ && vsrc1 >= 256 && vsrc2 == 0)
                 isVOP1Word = true;
             /* for VOP1 */
@@ -2230,7 +2236,8 @@ void GCNDisasmUtils::decodeDSEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
     const cxuint vdst = insnCode2>>24;
     
     if ((gcnInsn.mode & GCN_ADDR_SRC) != 0 || (gcnInsn.mode & GCN_ONLYDST) != 0)
-    {   /* vdst is dst */
+    {
+        /* vdst is dst */
         cxuint regsNum = (gcnInsn.mode&GCN_REG_DST_64)?2:1;
         if ((gcnInsn.mode&GCN_DS_96) != 0)
             regsNum = 3;
@@ -2255,7 +2262,8 @@ void GCNDisasmUtils::decodeDSEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
     
     if ((gcnInsn.mode & GCN_ONLYDST) == 0 &&
         (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) != 0 && srcMode != GCN_NOSRC)
-    {   /* two vdata */
+    {
+        /* two vdata */
         if (vaddrUsed || vdstUsed)
         {
             // comma after previous argument (VDST, VADDR)
@@ -2578,7 +2586,8 @@ void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd
     else if (target == 9)
         putChars(bufPtr, "null", 4);
     else
-    {   /* reserved */
+    {
+        /* reserved */
         putChars(bufPtr, "ill_", 4);
         const cxuint digit2 = target/10U;
         *bufPtr++ = '0' + digit2;
@@ -2677,7 +2686,8 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         printAddr = true;
     }
     else
-    {   /* two vregs, because 64-bitness stored in PTR32 mode (at runtime) */
+    {
+        /* two vregs, because 64-bitness stored in PTR32 mode (at runtime) */
         printFLATAddr(flatMode, bufPtr, insnCode2);
         printAddr = true;
         if ((gcnInsn.mode & GCN_FLAT_NODST) == 0)
@@ -2796,7 +2806,8 @@ void GCNDisassembler::disassemble()
         cxbyte gcnEncoding = GCNENC_NONE;
         const uint32_t insnCode = ULEV(codeWords[pos++]);
         if (insnCode == 0)
-        {   /* fix for GalliumCOmpute disassemblying (assembler doesn't accep 
+        {
+            /* fix for GalliumCOmpute disassemblying (assembler doesn't accep 
              * with two scalar operands */
             size_t count;
             for (count = 1; pos < codeWordsNum && codeWords[pos]==0; count++, pos++);
@@ -3032,7 +3043,8 @@ void GCNDisassembler::disassemble()
                 (curArchMask & gcnInsn->archMask) == 0 &&
                 (gcnEncoding == GCNENC_VOP3A || gcnEncoding == GCNENC_VOP2 ||
                     gcnEncoding == GCNENC_VOP1))
-            {   /* new overrides */
+            {
+                /* new overrides */
                 const GCNEncodingSpace& encSpace4 =
                         gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 +
                                 (gcnEncoding != GCNENC_VOP2) +

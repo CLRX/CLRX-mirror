@@ -317,7 +317,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             arg.ptrAccess |= KARG_PTR_CONST;
         
         if (!ULEV(argPtr->isPointerOrPipe))
-        { // if not point or pipe (get regular type: scalar, image, sampler,...)
+        {
+            // if not point or pipe (get regular type: scalar, image, sampler,...)
             switch(argType)
             {
                 case 0:

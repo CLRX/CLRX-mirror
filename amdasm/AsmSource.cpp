@@ -308,7 +308,8 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         break;
                     }
                     else if (buffer[pos] == ';' && mode == LineMode::NORMAL)
-                    {   /* treat statement as separate line */
+                    {
+                        /* treat statement as separate line */
                         endOfLine = true;
                         pos++;
                         stmtPos += pos-joinStart;
@@ -317,7 +318,8 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         break;
                     }
                     else if (mode == LineMode::NORMAL)
-                    {   /* spaces */
+                    {
+                        /* spaces */
                         backslash = false;
                         do {
                             buffer[destPos++] = ' ';
@@ -453,7 +455,8 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
             break;
         
         if (pos >= buffer.size())
-        {   /* get from buffer */
+        {
+            /* get from buffer */
             if (lineStart != 0)
             {
                 // use backward copying for moving buffer content back to begin
@@ -605,7 +608,8 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     while (pos < contentSize && content[pos] != '\n')
     {
         if (alternateMacro && localStmtStart!=nullptr && content+pos == localStmtStart)
-        {   /* if end of labels in 'local' statement',
+        {
+            /* if end of labels in 'local' statement',
              * we just replaces character by spaces */
             // put remaining text from source (to local stmt start position)
             buffer.resize(destPos + pos-toCopyPos);
@@ -666,7 +670,8 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                 altMacroSyntax = true; // disables '@' and '()' use altmacro
             }
             else
-            {   /* otherwise consume one character */
+            {
+                /* otherwise consume one character */
                 if (wordSkip!=0)
                     // after unmatched alternate substitution, we copy unmatched name
                     wordSkip--;
@@ -725,7 +730,8 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                             localIt = localMap.find(symName);
                     }
                     if (altMacroSyntax && (it!=argMap.end() || localIt!=localMap.end()))
-                    {   /* copy previous content, missing copy before alternate
+                    {
+                        /* copy previous content, missing copy before alternate
                          * substitution */
                         buffer.resize(destPos + pos-toCopyPos);
                         std::copy(content + toCopyPos, content + pos,
@@ -1325,7 +1331,8 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                     firstDepth = false;
                 }
                 else
-                {   /* if macro */
+                {
+                    /* if macro */
                     os.write("In file included from macro content:\n", 37);
                     RefPtr<const AsmMacroSource> curMacroPos =
                             parentSource.staticCast<const AsmMacroSource>();

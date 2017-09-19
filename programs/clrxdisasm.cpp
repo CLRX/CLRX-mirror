@@ -186,7 +186,8 @@ try
                 }
             }
             else
-            {   /* raw binaries */
+            {
+                /* raw binaries */
                 Disassembler disasm(gpuDeviceType, binaryData.size(), binaryData.data(),
                         std::cout, disasmFlags);
                 disasm.disassemble();

@@ -914,7 +914,8 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             break;
         }
         case GCN_IMM_LOCKS:
-        {   /* parse locks for s_waitcnt */
+        {
+            /* parse locks for s_waitcnt */
             char name[20];
             bool haveLgkmCnt = false;
             bool haveExpCnt = false;
@@ -1056,7 +1057,8 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                                         sendMsgGSOPTable[gsopIndex])==0)
                                 break;
                         if (gsopIndex==2 && gsopNameIndex==0)
-                        {   /* 'emit-cut' handling */
+                        {
+                            /* 'emit-cut' handling */
                             if (linePtr+4<=end && ::strncasecmp(linePtr, "-cut", 4)==0 &&
                                 (linePtr==end || (!isAlnum(*linePtr) && *linePtr!='_' &&
                                 *linePtr!='$' && *linePtr!='.')))
@@ -1591,7 +1593,8 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool sextFlags = ((src0Op.vopMods|src1Op.vopMods) & VOPOP_SEXT);
     if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
                 gcnVOPEnc!=GCNVOPEnc::NORMAL))
-    {   /* if VOP_SDWA or VOP_DPP is required */
+    {
+        /* if VOP_SDWA or VOP_DPP is required */
         if (!checkGCNVOPExtraModifers(asmr, arch, needImm, sextFlags, vop3,
                     gcnVOPEnc, src0Op, extraMods, instrPlace))
             return false;
@@ -1803,7 +1806,8 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool needImm = (src0Op && src0Op.range.isVal(255));
     if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
                 gcnVOPEnc!=GCNVOPEnc::NORMAL))
-    {   /* if VOP_SDWA or VOP_DPP is required */
+    {
+        /* if VOP_SDWA or VOP_DPP is required */
         if (!checkGCNVOPExtraModifers(asmr, arch, needImm, sextFlags, vop3,
                     gcnVOPEnc, src0Op, extraMods, instrPlace))
             return false;
@@ -1993,7 +1997,8 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool sextFlags = ((src0Op.vopMods|src1Op.vopMods) & VOPOP_SEXT);
     if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
                 gcnVOPEnc!=GCNVOPEnc::NORMAL))
-    {   /* if VOP_SDWA or VOP_DPP is required */
+    {
+        /* if VOP_SDWA or VOP_DPP is required */
         if (!checkGCNVOPExtraModifers(asmr, arch, needImm, sextFlags, vop3,
                     gcnVOPEnc, src0Op, extraMods, instrPlace))
             return false;
@@ -2486,7 +2491,8 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     if ((gcnInsn.mode & GCN_ADDR_SRC) != 0 || (gcnInsn.mode & GCN_ONLYDST) != 0)
-    {   /* vdst is dst */
+    {
+        /* vdst is dst */
         cxuint regsNum = (gcnInsn.mode&GCN_REG_DST_64)?2:1;
         if ((gcnInsn.mode&GCN_DS_96) != 0)
             regsNum = 3;
@@ -2513,7 +2519,8 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     
     if ((gcnInsn.mode & GCN_ONLYDST) == 0 &&
         (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) != 0 && srcMode != GCN_NOSRC)
-    {   /* two vdata */
+    {
+        /* two vdata */
         if (beforeData)
             if (!skipRequiredComma(asmr, linePtr))
                 return false;
@@ -2587,7 +2594,8 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                 {
                     skipCharAndSpacesToEnd(linePtr, end);
                     if (name[6]=='0')
-                    {   /* offset0 */
+                    {
+                        /* offset0 */
                         if (parseImm(asmr, linePtr, offset1, &offsetExpr, 0, WS_UNSIGNED))
                         {
                             if (haveOffset)
@@ -2598,7 +2606,8 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                             good = false;
                     }
                     else
-                    {   /* offset1 */
+                    {
+                        /* offset1 */
                         if (parseImm(asmr, linePtr, offset2, &offset2Expr, 0, WS_UNSIGNED))
                         {
                             if (haveOffset2)
@@ -3118,7 +3127,8 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 // parse dmask
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr!=end && *linePtr==':')
-                {   /* parse dmask immediate */
+                {
+                    /* parse dmask immediate */
                     skipCharAndSpacesToEnd(linePtr, end);
                     const char* valuePlace = linePtr;
                     uint64_t value;
@@ -3445,7 +3455,8 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         skipSpacesToEnd(linePtr, end);
         if (flatMode == GCN_FLAT_SCRATCH && linePtr+3<=end &&
             strncasecmp(linePtr, "off", 3)==0 && (linePtr+3==end || !isAlnum(linePtr[3])))
-        { // // if 'off' word
+        {
+            // // if 'off' word
             vaddrOff = true;
             linePtr+=3;
         }
@@ -3463,7 +3474,8 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         skipSpacesToEnd(linePtr, end);
         if (flatMode == GCN_FLAT_SCRATCH && linePtr+3<=end &&
             strncasecmp(linePtr, "off", 3)==0 && (linePtr+3==end || !isAlnum(linePtr[3])))
-        { // if 'off' word
+        {
+            // if 'off' word
             vaddrOff = true;
             linePtr+=3;
         }

@@ -757,7 +757,8 @@ public:
         }
         
         if (!newBinaries)
-        { // put binary and ISA metadata symbols
+        {
+            // put binary and ISA metadata symbols
             for (size_t i = 0; i < input->kernels.size(); i++)
             {
                 const AmdCL2KernelInput& kernel = input->kernels[i];
@@ -1536,7 +1537,8 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
     fob.writeObject(LEV(3)); //?
     fob.writeObject(LEV(config.localSize!=0 ? 13 : 12)); //?
     fob.fill(0x9a0-0x16c, 0); // fill up
-    { // end of stub - kernel config?
+    {
+        // end of stub - kernel config?
         IntAmdCL2StubEnd stubEnd;
         SLEV(stubEnd.hsaTextOffset, 0xa60);
         SLEV(stubEnd.endSize, 0x100);
@@ -2197,7 +2199,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         innerBinGen->addRegion(ElfRegion64::programHeaderTable());
         
         if (is16_3Ver)
-        {   /* first is shstrab and strtab */
+        {
+            /* first is shstrab and strtab */
             innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8, ".shstrtab",
                                   SHT_STRTAB, SHF_STRINGS, 0, 0));
             innerBinSectionTable[ELFSECTID_SHSTRTAB-ELFSECTID_START] = extraSectionIndex++;
@@ -2275,7 +2278,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         }
         
         if (is16_3Ver)
-        {   /* new driver version */
+        {
+            /* new driver version */
             innerBinGen->addRegion(ElfRegion64::symtabSection());
             innerBinSectionTable[ELFSECTID_SYMTAB-ELFSECTID_START] = extraSectionIndex++;
         }
@@ -2305,7 +2309,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         }
         
         if (!is16_3Ver)
-        {   /* this order of section for 1912.05 driver version */
+        {
+            /* this order of section for 1912.05 driver version */
             /* AMD - 1 - 00000001 00000000
              * AMD - 2 - 00000001 00000000 00010101
              * AMD - 5 - size=0x19 \x16\000-hsa_call_convention=\0\0

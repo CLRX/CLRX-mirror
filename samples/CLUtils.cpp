@@ -392,7 +392,8 @@ try
         throw CLError(error, "clCreateCommandQueue");
     
     Array<cxbyte> binary;
-    {   /* assemble source code */
+    {
+        /* assemble source code */
         /// determine device type
         ArrayIStream astream(::strlen(sourceCode), sourceCode);
         // by default assembler put logs to stderr
@@ -421,7 +422,8 @@ try
                (useLegacy ? "-legacy" : ""),
                nullptr, nullptr);
     if (error != CL_SUCCESS)
-    {   /* get build logs */
+    {
+        /* get build logs */
         size_t buildLogSize;
         std::unique_ptr<char[]> buildLog;
         cl_int lerror = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG,

@@ -162,7 +162,8 @@ clrxclWaitForEvents(cl_uint             num_events,
     
     const CLRXEvent* e = static_cast<const CLRXEvent*>(event_list[0]);
     if (num_events <= maxLocalEventsNum)
-    {   /* for static allocation */
+    {
+        /* for static allocation */
         cl_event amdEvents[maxLocalEventsNum];
         for (cl_uint i = 0; i < num_events; i++)
         {
@@ -1031,7 +1032,8 @@ clrxclEnqueueWaitForEvents(cl_command_queue command_queue,
     
     const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
     if (num_events <= maxLocalEventsNum)
-    {   /* for static allocation */
+    {
+        /* for static allocation */
         cl_event amdEvents[maxLocalEventsNum];
         for (cl_uint i = 0; i < num_events; i++)
         {

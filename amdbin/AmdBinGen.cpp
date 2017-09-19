@@ -722,7 +722,8 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             }
         
         if (config.uavPrivate == BINGEN_DEFAULT)
-        {   /* compute uavPrivate */
+        {
+            /* compute uavPrivate */
             bool hasStructures = false;
             uint32_t amountOfArgs = 0;
             for (const AmdKernelArgInput& arg: config.args)
@@ -1132,7 +1133,8 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     metadata += '\n';
     
     for (cxuint sampId = 0; sampId < config.samplers.size(); sampId++)
-    {   /* constant samplers */
+    {
+        /* constant samplers */
         const cxuint samp = config.samplers[sampId];
         metadata += ";sampler:unknown_";
         itocstrCStyle(samp, numBuf, 21);
@@ -1284,7 +1286,8 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
         }
     }
     else
-    {   /* in argument order */
+    {
+        /* in argument order */
         for (cxuint k = 0; k < config.args.size(); k++)
         {
             const AmdKernelArgInput& arg = config.args[k];
@@ -1322,7 +1325,8 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     putCALNoteLE(bos, CALNOTE_ATI_CONSTANT_BUFFERS, 8*constBuffersNum);
     
     if (isOlderThan1124)
-    {   /* for driver 12.10 */
+    {
+        /* for driver 12.10 */
         for (cxuint k = config.args.size(); k > 0; k--)
         {
             const AmdKernelArgInput& arg = config.args[k-1];
@@ -1421,7 +1425,8 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
         putProgInfoEntryLE(bos, 0x8000001eU, config.reqdWorkGroupSize[2]);
     }
     else
-    {   /* default */
+    {
+        /* default */
         putProgInfoEntryLE(bos, 0x8000001cU, 256);
         putProgInfoEntryLE(bos, 0x8000001dU, 0);
         putProgInfoEntryLE(bos, 0x8000001eU, 0);
@@ -1545,7 +1550,8 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
         {
             driverInfo = input->driverInfo;
             if (pos != std::string::npos)
-            {   /* let to parse version number */
+            {
+                /* let to parse version number */
                 pos += 9;
                 const char* end;
                 driverVersion = cstrtovCStyle<cxuint>(
