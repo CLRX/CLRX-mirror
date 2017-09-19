@@ -731,8 +731,9 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                         std::copy(optArg, end, value);
                         value[end-optArg] = 0;
                     }
-                    else // normal string
+                    else
                     {
+                        // normal string
                         size_t length = ::strlen(optArg)+1;
                         value = new char[length+1];
                         ::std::copy(optArg, optArg + length+1, value);

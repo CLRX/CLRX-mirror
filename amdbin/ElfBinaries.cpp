@@ -636,8 +636,9 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             
             if (region.section.type != SHT_NOBITS && region.size != 0)
                 size += region.size;
-            else // otherwise get default size for symtab, dynsym, strtab, dynstr
+            else
             {
+                // otherwise get default size for symtab, dynsym, strtab, dynstr
                 if (region.section.type == SHT_SYMTAB)
                     size += uint64_t(symbols.size()+addNullSym)*
                                 sizeof(typename Types::Sym);

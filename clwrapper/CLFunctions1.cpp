@@ -1094,7 +1094,8 @@ clrxclGetImageInfo(cl_mem           image,
             *param_value_size_ret = sizeof(cl_mem);
         return CL_SUCCESS;
     }
-    else // CL_IMAGE_BUFFER is unsupported by earlier OpenCL version
+    else
+        // CL_IMAGE_BUFFER is unsupported by earlier OpenCL version
         return CL_INVALID_VALUE;
 #endif
 }

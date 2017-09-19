@@ -1436,12 +1436,14 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     RegRange dstCCReg(0, 0);
     RegRange srcCCReg(0, 0);
     gcnAsm->setCurrentRVU(0);
-    if (mode1 == GCN_DS1_SGPR) // if SGPRS as destination
+    if (mode1 == GCN_DS1_SGPR)
+        // if SGPRS as destination
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                        (gcnInsn.mode&GCN_REG_DST_64)?2:1, GCNFIELD_VOP_SDST, true,
                        INSTROP_SYMREGRANGE|INSTROP_SGPR_UNALIGNED|INSTROP_WRITE);
-    else // if VGPRS as destination
+    else
     {
+         // if VGPRS as destination
         bool v_mac = ::strncmp(gcnInsn.mnemonic, "v_mac_", 6)==0;
         good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
                         GCNFIELD_VOP_VDST, true, INSTROP_SYMREGRANGE|INSTROP_WRITE|
@@ -2352,8 +2354,9 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 (dstReg.bstart()&0xff) | (uint32_t(sdstReg.bstart())<<8) |
                 ((modifiers&VOP3_CLAMP) ? 0x8000 : 0));
     }
-    else // VOP3A
+    else
     {
+        // VOP3A
         if (!isGCN12)
             SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
                 (dstReg.bstart()&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800: 0) |
@@ -2445,8 +2448,9 @@ bool GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
     
     if ((gcnInsn.mode & GCN_MASK1) == GCN_P0_P10_P20)
         good &= parseVINTRP0P10P20(asmr, linePtr, srcReg);
-    else // regular vector register
+    else
     {
+        // regular vector register
         gcnAsm->setCurrentRVU(1);
         good &= parseVRegRange(asmr, linePtr, srcReg, 1, GCNFIELD_VINTRP_VSRC0, true,
                         INSTROP_SYMREGRANGE|INSTROP_READ);

@@ -521,8 +521,9 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                             imgWoMask.set(inarg.resId);
                             tempData.argResIds[k] = inarg.resId;
                         }
-                        else // read-write images
+                        else
                         {
+                            // read-write images
                             if (inarg.resId >= 64)
                                 throw Exception("RdWrImgId out of range!");
                             if (imgRWMask[inarg.resId])
@@ -1613,7 +1614,8 @@ public:
                 if (!kernel.useConfig || kernel.hsaConfig)
                     // no configuration, get from kernel data
                     fob.writeArray(tempData.setupSize, kernel.setup);
-                else // generate stub, setup from kernel config
+                else
+                    // generate stub, setup from kernel config
                     generateKernelSetup(arch, kernel.config, fob, false,
                                 tempData.useLocals, tempData.pipesUsed!=0, input->is64Bit,
                                 input->driverVersion);
@@ -1759,8 +1761,9 @@ public:
                 fob.writeObject(rela);
                 symIndex++;
             }
-        else // default in last bytes
+        else
         {
+            // default in last bytes
             size_t globalOffset = input->globalDataSize - (samplersNum<<3);
             globalOffset &= ~size_t(7); // alignment
             for (size_t i = 0; i < samplersNum; i++)

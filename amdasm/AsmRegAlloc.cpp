@@ -156,8 +156,9 @@ void ISAUsageHandler::flush()
             else // reg usages
                 regUsages.back().rwFlags |= 0x80;
         }
-        else // use reg regvarusages
+        else
         {
+            // use reg regvarusages
             if ((pushedArgs & 7) != 0) //if only not pushed args remains
                 instrStruct.push_back(argFlags);
             instrStruct[instrStruct.size() - ((pushedArgs+7) >> 3) - 1] = pushedArgs;

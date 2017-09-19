@@ -990,8 +990,9 @@ clrxclLinkProgram(cl_context           context,
                     }
                     // error occurred and no callback called, delete wrappedData
                 }
-                else // get from wrapped data our program
+                else
                 {
+                    // get from wrapped data our program
                     if (amdProgram != nullptr) // only if returned not null program
                         outProgram = static_cast<CLRXProgram*>(wrappedData->clrxProgram);
                     /* otherwise we do free own CLRXProgram and delete wrappedData if

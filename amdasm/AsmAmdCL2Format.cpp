@@ -254,8 +254,9 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
         section.name = out.first->first.c_str();
         sections.push_back(section);
     }
-    else // add inner section (even if we inside kernel)
+    else
     {
+        // add inner section (even if we inside kernel)
         if (getDriverVersion() < 191205)
             throw AsmFormatException("Inner section are allowed "
                         "only for new binary format");
@@ -1851,8 +1852,9 @@ bool AsmAmdCL2Handler::prepareBinary()
                 config.usedVGPRsNum = std::max(minRegsNum[1],
                                 kernelStates[i]->allocRegs[1]);
         }
-        else // setup HSA configuration
+        else
         {
+            // setup HSA configuration
             AsmAmdHsaKernelConfig& config = *kernelStates[i]->hsaConfig.get();
             const CString& kernelName = output.kernels[i].kernelName;
             

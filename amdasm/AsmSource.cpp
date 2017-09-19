@@ -380,8 +380,9 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         buffer[destPos++] = ' ';
                         mode = LineMode::NORMAL;
                     }
-                    else // newline
+                    else
                     {
+                        // newline
                         lineNo++;
                         endOfLine = (!backslash);
                         if (backslash)

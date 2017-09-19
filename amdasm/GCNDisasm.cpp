@@ -2607,8 +2607,9 @@ void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd
                 decodeGCNVRegOperand((insnCode2>>(i<<3))&0xff, 1, bufPtr);
                 vsrcsUsed |= 1<<i;
             }
-            else // if compr=1
+            else
             {
+                // if compr=1
                 decodeGCNVRegOperand(((i>=2)?(insnCode2>>8):insnCode2)&0xff, 1, bufPtr);
                 vsrcsUsed |= 1U<<(i>>1);
             }

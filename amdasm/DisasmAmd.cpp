@@ -1119,8 +1119,9 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
                         output.write(buf, len);
                         output.put('\n');
                     }
-                    else // otherwise if size is not 4 bytes
+                    else
                     {
+                        // otherwise if size is not 4 bytes
                         output.put('\n');
                         printDisasmData(calNote.header.descSize,
                                 calNote.data, output, true);
