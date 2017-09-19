@@ -340,7 +340,8 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
         if (!skipComma(asmr, haveComma, linePtr))
             return;
         if (haveComma)
-        {   // section type
+        {
+            // section type
             char typeBuf[20];
             skipSpacesToEnd(linePtr, end);
             const char* typePlace = linePtr;
@@ -369,7 +370,8 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
     // parse alignment
     skipSpacesToEnd(linePtr, end);
     if (linePtr+6<end && ::strncasecmp(linePtr, "align", 5)==0 && !isAlpha(linePtr[5]))
-    {   // if alignment
+    {
+        // if alignment
         linePtr+=5;
         skipSpacesToEnd(linePtr, end);
         if (linePtr!=end && *linePtr=='=')
@@ -650,7 +652,8 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
                 asmr.printWarning(linePtr, "No expression, zero has been put");
             
             if (expr->getSymOccursNum()==0)
-            {   // put directly to section
+            {
+                // put directly to section
                 uint64_t value;
                 cxuint sectionId;
                 if (expr->evaluate(asmr, value, sectionId))
@@ -669,7 +672,8 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
                 }
             }
             else // expression, we set target of expression (just data)
-            {   /// will be resolved later
+            {
+                /// will be resolved later
                 expr->setTarget(AsmExprTarget::dataTarget<T>(
                                 asmr.currentSection, asmr.currentOutPos));
                 expr.release();
@@ -770,7 +774,8 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char* pseudoOpPlace,
             catch(const ParseException& ex)
             { asmr.printError(literalPlace, ex.what()); }
             if (negative)
-            {   // negate value
+            {
+                // negate value
                 value.hi = ~value.hi + (value.lo==0);
                 value.lo = -value.lo;
             }
@@ -1565,7 +1570,8 @@ void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpPlace,
     std::unique_ptr<AsmRepeat> repeat(new AsmRepeat(
                 asmr.getSourcePos(pseudoOpPlace), repeatsNum));
     if (asmr.putRepetitionContent(*repeat))
-    {   // and input stream filter
+    {
+        // and input stream filter
         std::unique_ptr<AsmInputFilter> newInputFilter(
                     new AsmRepeatInputFilter(repeat.release()));
         asmr.asmInputFilters.push(newInputFilter.release());
@@ -1625,7 +1631,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         
         skipSpacesToEnd(linePtr, end);
         if (linePtr != end && *linePtr == ':')
-        {   // qualifier
+        {
+            // qualifier
             skipCharAndSpacesToEnd(linePtr, end);
             //extr
             if (linePtr+3 <= end && linePtr[0] == 'r' && linePtr[1] == 'e' &&
@@ -1645,7 +1652,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         }
         skipSpacesToEnd(linePtr, end);
         if (linePtr != end && *linePtr == '=')
-        {   // parse default value
+        {
+            // parse default value
             skipCharAndSpacesToEnd(linePtr, end);
             const char* defaultValueStr = linePtr;
             if (!asmr.parseMacroArgValue(linePtr, defaultArgValue))
@@ -1676,7 +1684,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
     if (good)
     {   
         if (checkPseudoOpName(macroName))
-        {   // ignore
+        {
+            // ignore
             asmr.printWarning(pseudoOpPlace, (std::string(
                         "Attempt to redefine pseudo-op '")+macroName.c_str()+
                         "' as macro. Ignoring it...").c_str());
@@ -1776,7 +1785,8 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*
                       symName, symValString));
         
         if (asmr.putRepetitionContent(*repeat))
-        {   // and input stream filter
+        {
+            // and input stream filter
             std::unique_ptr<AsmInputFilter> newInputFilter(
                         new AsmIRPInputFilter(repeat.release()));
             asmr.asmInputFilters.push(newInputFilter.release());
@@ -1885,7 +1895,8 @@ void AsmPseudoOps::doUseReg(Assembler& asmr, const char* pseudoOpPlace,
         }
         
         if (good) // if good
-        {   // create usageHandler if needed
+        {
+            // create usageHandler if needed
             if (asmr.sections[asmr.currentSection].usageHandler == nullptr)
                     asmr.sections[asmr.currentSection].usageHandler.reset(
                             asmr.isaAssembler->createUsageHandler(
@@ -2028,7 +2039,8 @@ void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace
     
     const char* end = asmr.line+asmr.lineSize;
     if (acceptArgs)
-    {   // multiple entries
+    {
+        // multiple entries
         do {
             bool good = true;
             skipSpacesToEnd(linePtr, end);
@@ -2091,7 +2103,8 @@ void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
     std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
                 AsmSymbol(ASMSECT_ABS, predefValue));
     if (!res.second)
-    {   // found
+    {
+        // found
         if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
             asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
                         "' is already defined").c_str());
@@ -2618,13 +2631,16 @@ void Assembler::parsePseudoOps(const CString& firstName,
             bool isAmdCL2PseudoOp = AsmAmdCL2PseudoOps::checkPseudoOpName(firstName);
             bool isROCmPseudoOp = AsmROCmPseudoOps::checkPseudoOpName(firstName);
             if (isGalliumPseudoOp || isAmdPseudoOp || isAmdCL2PseudoOp || isROCmPseudoOp)
-            {   // initialize only if gallium pseudo-op or AMD pseudo-op
+            {
+                // initialize only if gallium pseudo-op or AMD pseudo-op
                 initializeOutputFormat();
                 /// try to parse
                 if (!formatHandler->parsePseudoOp(firstName, stmtPlace, linePtr))
-                {   // check other
+                {
+                    // check other
                     if (format != BinaryFormat::GALLIUM)
-                    {   // check gallium pseudo-op
+                    {
+                        // check gallium pseudo-op
                         if (isGalliumPseudoOp)
                         {
                             printError(stmtPlace, "Gallium pseudo-op can be defined "
@@ -2633,7 +2649,8 @@ void Assembler::parsePseudoOps(const CString& firstName,
                         }
                     }
                     if (format != BinaryFormat::AMD)
-                    {   // check amd pseudo-op
+                    {
+                        // check amd pseudo-op
                         if (isAmdPseudoOp)
                         {
                             printError(stmtPlace, "AMD pseudo-op can be defined only in "
@@ -2642,7 +2659,8 @@ void Assembler::parsePseudoOps(const CString& firstName,
                         }
                     }
                     if (format != BinaryFormat::AMDCL2)
-                    {   // check amd pseudo-op
+                    {
+                        // check amd pseudo-op
                         if (isAmdCL2PseudoOp)
                         {
                             printError(stmtPlace, "AMDCL2 pseudo-op can be defined only in "
@@ -2651,7 +2669,8 @@ void Assembler::parsePseudoOps(const CString& firstName,
                         }
                     }
                     if (format != BinaryFormat::ROCM)
-                    {   // check rocm pseudo-op
+                    {
+                        // check rocm pseudo-op
                         if (isROCmPseudoOp)
                         {
                             printError(stmtPlace, "ROCm pseudo-op can be defined "
@@ -2684,7 +2703,8 @@ bool Assembler::skipClauses(bool exitm)
             break;
         // if exit from macro mode, exit when macro filter exits
         if (exitm && inputFilterTop > asmInputFilters.size())
-        {   // set lineAlreadyRead - next line after skipped region read will be read
+        {
+            // set lineAlreadyRead - next line after skipped region read will be read
             lineAlreadyRead  = true;
             break; // end of macro, 
         }

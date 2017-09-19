@@ -27,6 +27,7 @@
 
 using namespace CLRX;
 
+// length of GPU device table (number of recognized GPU devices)
 static const size_t gpuDeviceTableSize = 24;
 
 static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
@@ -57,6 +58,7 @@ static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
     "GFX901"
 };
 
+// sorted GPU device names with device types
 static std::pair<const char*, GPUDeviceType>
 lowerCaseGpuDeviceEntryTable[gpuDeviceTableSize] =
 {
@@ -86,6 +88,7 @@ lowerCaseGpuDeviceEntryTable[gpuDeviceTableSize] =
     { "tonga", GPUDeviceType::TONGA }
 };
 
+// table of architectures for specific GPU devices
 static const GPUArchitecture gpuDeviceArchTable[gpuDeviceTableSize] =
 {
     GPUArchitecture::GCN1_0, // CapeVerde
@@ -122,6 +125,8 @@ static const char* gpuArchitectureNameTable[4] =
     "GCN1.4"
 };
 
+/* three names for every architecture (GCN, GFX?, Shortcut) used by recognizing
+ * architecture by name */
 static const char* gpuArchitectureNameTable2[12] =
 {
     "GCN1.0", "GFX6", "SI",
@@ -130,6 +135,7 @@ static const char* gpuArchitectureNameTable2[12] =
     "GCN1.4", "GFX9", "Vega"
 };
 
+/// lowest device for architecture
 static const GPUDeviceType gpuLowestDeviceFromArchTable[4] =
 {
     GPUDeviceType::CAPE_VERDE,
@@ -195,6 +201,7 @@ cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
     if (regType == REGTYPE_VGPR)
         return 256; // VGPRS
     cxuint maxSgprs = (architecture>=GPUArchitecture::GCN1_2) ? 102 : 104;
+    // subtract from max SGPRs num number of special registers (VCC, ...)
     if ((flags & REGCOUNT_NO_FLAT)!=0 && (architecture>GPUArchitecture::GCN1_0))
         maxSgprs -= (architecture>=GPUArchitecture::GCN1_2) ? 6 : 4;
     else if ((flags & REGCOUNT_NO_XNACK)!=0 && (architecture>GPUArchitecture::GCN1_1))
@@ -233,9 +240,10 @@ size_t CLRX::getGPUMaxGDSSize(GPUArchitecture architecture)
     return 65536;
 }
 
+// get extra (special) registers depends on architectures and flags
 cxuint CLRX::getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType, Flags flags)
 {
-    if (regType == 1)
+    if (regType == REGTYPE_VGPR)
         return 0;
     if ((flags & GCN_FLAT)!=0 && (architecture>GPUArchitecture::GCN1_0))
         return (architecture>=GPUArchitecture::GCN1_2) ? 6 : 4;
@@ -261,9 +269,11 @@ uint32_t CLRX::calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint us
             bool trapPresent, cxuint dimMask, cxuint defDimValues, bool tgSizeEn,
             cxuint ldsSize, cxuint exceptions)
 {
+    // GCN1.1 and later have 512 byte banks instead 256
     const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
     const uint32_t ldsMask = (1U<<ldsShift)-1U;
     uint32_t dimValues = 0;
+    // calculate dimMask (TGID_X_EN, ..., TIDIG_COMP_CNT fields)
     if (dimMask != UINT_MAX)
         dimValues = ((dimMask&7)<<7) | (((dimMask&4) ? 2 : (dimMask&2) ? 1 : 0)<<11);
     else // use default value for dimensions

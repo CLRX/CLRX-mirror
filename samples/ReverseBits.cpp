@@ -376,7 +376,8 @@ void ReverseBits::run()
                          0, nullptr, nullptr);
     if (error != CL_SUCCESS)
         throw CLError(error, "clEnqueueWriteBuffer");
-    {   // zeroing buffer
+    {
+        // zeroing buffer
         std::unique_ptr<cxbyte[]> filledData(new cxbyte[inData.size()]);
         std::fill(filledData.get(), filledData.get() + size, cxbyte(0));
         error = clEnqueueWriteBuffer(queue, output, CL_TRUE, 0, size, filledData.get(),
@@ -406,7 +407,8 @@ void ReverseBits::run()
         throw CLError(error, "clEnqueueReadBuffer");
     
     for (size_t i = 0; i < size; i++)
-    {   // verifying
+    {
+        // verifying
         const cxbyte in = inData[i];
         const cxbyte expected = ((in>>7)&1) | ((in>>5)&2) | ((in>>3)&4) | ((in>>1)&8) |
                 ((in<<1)&16) | ((in<<3)&32) | ((in<<5)&64) | ((in<<7)&128);

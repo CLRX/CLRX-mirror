@@ -131,7 +131,8 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
             }
         }
         else
-        {   // when config
+        {
+            // when config
             const AmdKernelConfig& config = kernel.config;
             os << "    Config:\n";
             for (AmdKernelArgInput arg: config.args)

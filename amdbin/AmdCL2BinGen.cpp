@@ -432,7 +432,8 @@ static void prepareKernelTempData(const AmdCL2Input* input,
             }
         
         if (!kernel.useConfig)
-        {   // if no kernel configuration
+        {
+            // if no kernel configuration
             tempData.metadataSize = kernel.metadataSize;
             tempData.isaMetadataSize = (kernel.isaMetadata!=nullptr) ?
                         kernel.isaMetadataSize : sizeof(kernelIsaMetadata);
@@ -440,7 +441,8 @@ static void prepareKernelTempData(const AmdCL2Input* input,
             tempData.stubSize = kernel.stubSize;
         }
         else
-        {   // if kernel configuration present
+        {
+            // if kernel configuration present
             const cxuint argsNum = kernel.config.args.size();
             size_t out;
             if (input->is64Bit)
@@ -643,7 +645,8 @@ public:
             fob.write(26, "__OpenCL_compiler_options");
         
         for (const AmdCL2KernelInput& kernel: input->kernels)
-        {   // put kernel metadata symbol names
+        {
+            // put kernel metadata symbol names
             fob.write(19, "__OpenCL_&__OpenCL_");
             fob.write(kernel.kernelName.size(), kernel.kernelName.c_str());
             fob.write(17, "_kernel_metadata");
@@ -652,7 +655,8 @@ public:
             fob.write(9, "__BRIG__");
         if (!newBinaries)
             for (const AmdCL2KernelInput& kernel: input->kernels)
-            {   // put kernel ISA/binary symbol names
+            {
+                // put kernel ISA/binary symbol names
                 fob.write(16, "__ISA_&__OpenCL_");
                 fob.write(kernel.kernelName.size(), kernel.kernelName.c_str());
                 fob.write(31, "_kernel_binary\000__ISA_&__OpenCL_");
@@ -740,7 +744,8 @@ public:
             fob.writeObject(sym);
         }
         if (withBrig)
-        {   // put __BRIG__ symbol
+        {
+            // put __BRIG__ symbol
             SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, 7 + brigIndex);
             SLEV(sym.st_value, 0);
@@ -985,7 +990,8 @@ public:
             
             uint32_t argType = 0;
             if (isImage)
-            {   // if image
+            {
+                // if image
                 cxuint ptrAccMask = arg.ptrAccess & KARG_PTR_ACCESS_MASK;
                 argType = ptrAccMask==KARG_PTR_READ_ONLY ? 1 :
                         ptrAccMask==KARG_PTR_WRITE_ONLY ? 2 : 3 /* read-write */;
@@ -1192,7 +1198,8 @@ size_t AmdCL2KernelConfig::calculateKernelArgSize(bool is64Bit, bool newBinaries
             kernelArgSize += size;
         }
         else
-        {   // scalar
+        {
+            // scalar
             const ArgTypeSizes& argTypeSizes = argTypeSizesTable[cxuint(arg.argType)];
             cxuint vectorLength = argTypeSizes.vectorSize;
             if (newBinaries && vectorLength==3)
@@ -1377,19 +1384,23 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
         if ((insnCode & 0x80000000U) != 0)
         {
             if ((insnCode & 0x40000000U) == 0)
-            {   // SOP???
+            {
+                // SOP???
                 if  ((insnCode & 0x30000000U) == 0x30000000U)
-                {   // SOP1/SOPK/SOPC/SOPP
+                {
+                    // SOP1/SOPK/SOPC/SOPP
                     const uint32_t encPart = (insnCode & 0x0f800000U);
                     if (encPart == 0x0e800000U)
-                    {   // SOP1
+                    {
+                        // SOP1
                         if ((insnCode&0xff) == 0xff) // literal
                         {
                             if (pos < codeWordsNum) pos++;
                         }
                     }
                     else if (encPart == 0x0f000000U)
-                    {   // SOPC
+                    {
+                        // SOPC
                         if ((insnCode&0xff) == 0xff ||
                             (insnCode&0xff00) == 0xff00) // literal
                             if (pos < codeWordsNum) pos++;
@@ -1403,14 +1414,16 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
                     }
                 }
                 else
-                {   // SOP2
+                {
+                    // SOP2
                     if ((insnCode&0xff) == 0xff || (insnCode&0xff00) == 0xff00)
                         // literal
                         if (pos < codeWordsNum) pos++;
                 }
             }
             else
-            {   // SMRD and others
+            {
+                // SMRD and others
                 const uint32_t encPart = (insnCode&0x3c000000U)>>26;
                 if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
                     (isGCN12 && gcnSize12Table[encPart]))
@@ -1425,9 +1438,11 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
             }
         }
         else
-        {   // some vector instructions
+        {
+            // some vector instructions
             if ((insnCode & 0x7e000000U) == 0x7c000000U)
-            {   // VOPC
+            {
+                // VOPC
                 if ((insnCode&0x1ff) == 0xff || // literal
                     // SDWA, DDP
                     (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
@@ -1436,14 +1451,16 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
                 }
             }
             else if ((insnCode & 0x7e000000U) == 0x7e000000U)
-            {   // VOP1
+            {
+                // VOP1
                 if ((insnCode&0x1ff) == 0xff || // literal
                     // SDWA, DDP
                     (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
                     if (pos < codeWordsNum) pos++;
             }
             else
-            {   // VOP2
+            {
+                // VOP2
                 const cxuint opcode = (insnCode >> 25)&0x3f;
                 if ((!isGCN12 && (opcode == 32 || opcode == 33)) ||
                     (isGCN12 && (opcode == 23 || opcode == 24 ||
@@ -1786,12 +1803,14 @@ public:
         uint32_t bssSymIndex = input->kernels.size() + samplersNum + dataSymbolsNum +
             (input->driverVersion>=200406);
         if (input->rwDataSize!=0 && input->rwData!=nullptr)
-        {   // atomic data available
+        {
+            // atomic data available
             adataSymIndex = gdataSymIndex; // first is atomic data symbol index
             gdataSymIndex++;
         }
         if (input->bssSize!=0)
-        {   // bss section available
+        {
+            // bss section available
             bssSymIndex = gdataSymIndex; // first is bss data symbol index
             gdataSymIndex++;
         }
@@ -1925,7 +1944,8 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
             nameIdx++;
         }
     for (size_t i = 0; i < input->kernels.size(); i++)
-    {   // first, we put sampler objects
+    {
+        // first, we put sampler objects
         const AmdCL2KernelInput& kernel = input->kernels[i];
         const TempAmdCL2KernelData& tempData = tempDatas[i];
         if ((codePos & 255) != 0)
@@ -2139,7 +2159,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     std::vector<CString> symbolNamePool;
     std::unique_ptr<cxbyte[]> noteBuf;
     if (newBinaries)
-    {   // new binaries - .text holds inner ELF binaries
+    {
+        // new binaries - .text holds inner ELF binaries
         uint16_t innerBinSectionTable[innerBinSectonTableLen];
         cxuint extraSectionIndex = 1;
         /* check kernel text relocations */
@@ -2222,7 +2243,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinSectionTable[AMDCL2SECTID_NOTE-ELFSECTID_START] = extraSectionIndex++;
         }
         if (hasRWData)
-        {   // rw data section
+        {
+            // rw data section
             innerBinGen->addRegion(ElfRegion64(input->rwDataSize, input->rwData,
                       8, ".hsadata_global_agent", SHT_PROGBITS, 0x900003, 0, 0,
                       Elf64Types::nobase));
@@ -2357,7 +2379,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                 textSectionReg++;
             }
             if (hasGlobalData)
-            {   // textSectionReg - now is global data section
+            {
+                // textSectionReg - now is global data section
                 innerBinGen->addProgramHeader({ PT_LOOS+2, PF_W|PF_R, textSectionReg, 1,
                         true, 0, Elf64Types::nobase
                         /*(hasRWData || input->bssSize!=0) ? -0xe8ULL+ : 0*/, 0 });

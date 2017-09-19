@@ -148,7 +148,8 @@ void ISAUsageHandler::flush()
     if (pushedArgs != 0)
     {
         if (!useRegMode)
-        {   // normal regvarusages
+        {
+            // normal regvarusages
             instrStruct.push_back(argFlags);
             if ((argFlags & (1U<<(pushedArgs-1))) != 0)
                 regVarUsages.back().rwFlags |= 0x80;
@@ -173,7 +174,8 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
     bool lastRegUsage = false;
     rvu.offset = readOffset;
     if (!useRegMode && instrStruct[instrStructPos] == 0x80)
-    {   // useRegMode (begin fetching useregs)
+    {
+        // useRegMode (begin fetching useregs)
         useRegMode = true;
         argPos = 0;
         instrStructPos++;
@@ -184,7 +186,8 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
     rvu.useRegMode = useRegMode; // no ArgPos
     
     if ((instrStruct[instrStructPos] & (1U << (argPos&7))) != 0)
-    {   // regvar usage
+    {
+        // regvar usage
         const AsmRegVarUsageInt& inRVU = regVarUsages[regVarUsagesPos++];
         rvu.regVar = inRVU.regVar;
         rvu.rstart = inRVU.rstart;
@@ -196,7 +199,8 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
             lastRegUsage = ((inRVU.rwFlags&0x80) != 0);
     }
     else if (!useRegMode)
-    {   // simple reg usage
+    {
+        // simple reg usage
         const AsmRegUsageInt& inRU = regUsages[regUsagesPos++];
         rvu.regVar = nullptr;
         const std::pair<uint16_t, uint16_t> regPair =
@@ -209,7 +213,8 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
         lastRegUsage = ((inRU.rwFlags&0x80) != 0);
     }
     else
-    {   // use reg (simple reg usage, second structure)
+    {
+        // use reg (simple reg usage, second structure)
         const AsmRegUsage2Int& inRU = regUsages2[regUsages2Pos++];
         rvu.regVar = nullptr;
         rvu.rstart = inRU.rstart;
@@ -220,7 +225,8 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
     }
     argPos++;
     if (useRegMode)
-    {   // if inside useregs
+    {
+        // if inside useregs
         if (argPos == (pushedArgs&0xff))
         {
             instrStructPos++; // end
@@ -527,7 +533,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                         { entry.blockIndex, false } });
                     
                     if (res.second && sinfo.readBeforeWrite)
-                    {   // resolve conflict for this variable ssaId>
+                    {
+                        // resolve conflict for this variable ssaId>
                         auto it = stackVarMap.find(sentry.first);
                         
                         if (it != stackVarMap.end())
@@ -541,7 +548,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                 }
             }
             else
-            {   // back, already visited
+            {
+                // back, already visited
                 flowStack.pop_back();
                 continue;
             }
@@ -572,7 +580,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
         else // back
         {
             for (const auto& sentry: cblock.ssaInfoMap)
-            {   // mark resolved variables as not handled for further processing
+            {
+                // mark resolved variables as not handled for further processing
                 auto it = toResolveMap.find(sentry.first);
                 if (it != toResolveMap.end() && !it->second.handled &&
                     it->second.sourceBlock == entry.blockIndex)
@@ -682,7 +691,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         
         cbit->usagePos = usageHandler.getReadPos();
         while (rvu.offset < cbit->end)
-        {   // process rvu
+        {
+            // process rvu
             // only if regVar
             for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
             {
@@ -731,7 +741,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         CodeBlock& cblock = codeBlocks[entry.blockIndex];
         
         if (entry.nextIndex == 0)
-        {   // process current block
+        {
+            // process current block
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
@@ -741,7 +752,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
                     size_t& totalSSACount = totalSSACountMap[ssaEntry.first];
                     if (totalSSACount == 0 && ssaEntry.second.readBeforeWrite)
-                    {   // first read before write at all, need change totalcount, ssaId
+                    {
+                        // first read before write at all, need change totalcount, ssaId
                         ssaId++;
                         totalSSACount++;
                     }
@@ -773,7 +785,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                             std::vector<size_t>& ssas = regVarMap[ssaEntry.first];
                             auto lmsit = lastMultiSSAIdMap.find(ssaEntry.first);
                             if (lmsit != lastMultiSSAIdMap.end())
-                            {   // if many parallel ssaId from routine returns
+                            {
+                                // if many parallel ssaId from routine returns
                                 const std::vector<size_t>& ssaIdsToRemove = lmsit->second;
                                 for (size_t s: ssaIdsToRemove)
                                 {
@@ -803,7 +816,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 }
             }
             else
-            {   // join routine data
+            {
+                // join routine data
                 auto rit = routineMap.find(entry.blockIndex);
                 if (rit != routineMap.end() && rit->second.processed)
                 { // just join with selected routines
@@ -856,7 +870,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             entry.nextIndex++;
         }
         else // back
-        {   // revert lastMultiSSAIdMap changes (add removed entries)
+        {
+            // revert lastMultiSSAIdMap changes (add removed entries)
             if (cblock.haveCalls)
             { //remove all return parallel ssaids
                 for(const NextBlock& next: cblock.nexts)
@@ -1246,7 +1261,8 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry>& flowStack,
             Liveness& lv = livenesses[regType][ssaIdIndices[entry.second.ssaIdBefore]];
             
             if (flowPos == varMapIt->second.second)
-            {   // fill whole loop
+            {
+                // fill whole loop
                 for (auto flit2 = flitStart; flit != flitEnd; ++flit)
                 {
                     const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
@@ -1441,7 +1457,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             if (sinfo.readBeforeWrite)
                 ssaIdIndices[sinfo.ssaIdBefore] = graphVregsCount++;
             if (sinfo.ssaIdChange!=0)
-            {   // fill up ssaIdIndices (with graph Ids)
+            {
+                // fill up ssaIdIndices (with graph Ids)
                 ssaIdIndices[sinfo.ssaIdFirst] = graphVregsCount++;
                 for (size_t ssaId = sinfo.ssaId+1;
                         ssaId < sinfo.ssaId+sinfo.ssaIdChange-1; ssaId++)
@@ -1472,9 +1489,11 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
         CodeBlock& cblock = codeBlocks[entry.blockIndex];
         
         if (entry.nextIndex == 0)
-        {   // process current block
+        {
+            // process current block
             if (!blockInWay.insert(entry.blockIndex).second)
-            {   // if loop
+            {
+                // if loop
                 putCrossBlockForLoop(flowStack, codeBlocks, codeBlockLiveTimes, 
                         livenesses, vregIndexMaps, regTypesNum, regRanges);
                 flowStack.pop_back();
@@ -1496,7 +1515,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                 auto res = lastVRegMap.insert({ sentry.first, 
                             { lastSSAId, { flit } } });
                 if (!res.second) // if not first seen, just update
-                {   // update last
+                {
+                    // update last
                     res.first->second.ssaId = lastSSAId;
                     res.first->second.blockChain.push_back(flit);
                 }
@@ -1532,7 +1552,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                     }
                     size_t liveTime = oldOffset - cblock.start + curLiveTime;
                     if (!usageHandler.hasNext() || rvu.offset >= oldOffset)
-                    {   // apply to liveness
+                    {
+                        // apply to liveness
                         for (AsmSingleVReg svreg: readSVRegs)
                         {
                             Liveness& lv = getLiveness(svreg, ssaIdIdxMap[svreg],
@@ -1575,7 +1596,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                         break;
                     
                     for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
-                    {   // per register/singlvreg
+                    {
+                        // per register/singlvreg
                         AsmSingleVReg svreg{ rvu.regVar, rindex };
                         if (rvu.rwFlags == ASMRVU_WRITE && rvu.regField == ASMFIELD_NONE)
                             writtenSVRegs.push_back(svreg);
@@ -1586,7 +1608,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                 curLiveTime += cblock.end-cblock.start;
             }
             else
-            {   // back, already visited
+            {
+                // back, already visited
                 flowStack.pop_back();
                 continue;
             }
@@ -1602,7 +1625,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             entry.nextIndex++;
         }
         else // back
-        {   // revert lastSSAIdMap
+        {
+            // revert lastSSAIdMap
             blockInWay.erase(entry.blockIndex);
             flowStack.pop_back();
             if (!flowStack.empty())
@@ -1693,7 +1717,8 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
         {
             auto it = etoDepMap.find(v);
             if (it == etoDepMap.end())
-            {   // is not regvar in equalTo dependencies
+            {
+                // is not regvar in equalTo dependencies
                 v++;
                 continue;
             }
@@ -1715,12 +1740,14 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                 if (entry.nextIdx == 0)
                 {
                     if (!visited[vidx])
-                    {   // push to this equalSet
+                    {
+                        // push to this equalSet
                         equalSetMap.insert({ vidx, equalSetIndex });
                         equalSet.push_back(vidx);
                     }
                     else
-                    {   // already visited
+                    {
+                        // already visited
                         etoStack.pop();
                         continue;
                     }
@@ -1822,7 +1849,8 @@ void AsmRegAllocator::colorInterferenceGraph()
                 equalNodes = equalSetList[equalSetMapIt->second];
             
             for (color = 0; color <= colorsNum; color++)
-            {   // find first usable color
+            {
+                // find first usable color
                 bool thisSame = false;
                 for (size_t nb: interGraph[node])
                     if (gcMap[nb] == color)
@@ -1883,7 +1911,8 @@ void AsmRegAllocator::colorInterferenceGraph()
 }
 
 void AsmRegAllocator::allocateRegisters(cxuint sectionId)
-{   // before any operation, clear all
+{
+    // before any operation, clear all
     codeBlocks.clear();
     for (size_t i = 0; i < MAX_REGTYPES_NUM; i++)
     {

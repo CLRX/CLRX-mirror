@@ -520,7 +520,8 @@ clrxclCreateContext(const cl_context_properties * properties,
     { error = CL_OUT_OF_HOST_MEMORY; }
     
     if (error != CL_SUCCESS)
-    {   // release context
+    {
+        // release context
         if (d->amdOclDevice->dispatch->clReleaseContext(amdContext) != CL_SUCCESS)
             clrxAbort("Fatal Error at handling error at context creation!");
         if (errcode_ret != nullptr)
@@ -637,7 +638,8 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
     { error = CL_OUT_OF_HOST_MEMORY; }
     
     if (error != CL_SUCCESS)
-    {   // release context
+    {
+        // release context
         if (platform->amdOclPlatform->dispatch->clReleaseContext(amdContext) != CL_SUCCESS)
             clrxAbort("Fatal Error at handling error at context creation!");
         if (errcode_ret != nullptr)
@@ -1037,7 +1039,8 @@ clrxclGetMemObjectInfo(cl_mem           memobj,
             {
                 cl_mem* outMem = static_cast<cl_mem*>(param_value);
                 if (*outMem != nullptr)
-                {   // fix output memobject
+                {
+                    // fix output memobject
                     if (m->parent != nullptr && m->parent->amdOclMemObject != nullptr)
                         *outMem = m->parent;
                     else if (m->buffer != nullptr && m->buffer->amdOclMemObject != nullptr)
@@ -1383,7 +1386,8 @@ clrxclBuildProgram(cl_program           program,
             for (cl_uint i = 0; i < num_devices; i++)
             {
                 if (device_list[i] == nullptr)
-                {   // if bad device
+                {
+                    // if bad device
                     std::lock_guard<std::mutex> lock(p->mutex);
                     clrxReleaseConcurrentBuild(p);
                     delete wrappedData;
@@ -1400,7 +1404,8 @@ clrxclBuildProgram(cl_program           program,
                              notifyToCall, destUserData);
         }
         catch(std::bad_alloc& ex)
-        {   // if allocation failed
+        {
+            // if allocation failed
             std::lock_guard<std::mutex> lock(p->mutex);
             clrxReleaseConcurrentBuild(p);
             delete wrappedData;
@@ -1418,7 +1423,8 @@ clrxclBuildProgram(cl_program           program,
             (status != CL_SUCCESS || wrappedData->callDone);
     
     if (wrappedData == nullptr || !wrappedData->callDone)
-    {   // do it if callback not called
+    {
+        // do it if callback not called
         if (status != CL_INVALID_DEVICE)
         {
             const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
@@ -1494,7 +1500,8 @@ clrxclGetProgramInfo(cl_program         program,
         {
             std::lock_guard<std::mutex> lock(p->mutex);
             if (p->concurrentBuilds != 0)
-            {   // update only when concurrent builds is working
+            {
+                // update only when concurrent builds is working
                 const cl_int status = clrxUpdateProgramAssocDevices(p);
                 if (status != CL_SUCCESS)
                     return status;
@@ -1514,7 +1521,8 @@ clrxclGetProgramInfo(cl_program         program,
         {
             std::lock_guard<std::mutex> lock(p->mutex);
             if (p->concurrentBuilds != 0)
-            {   // update only when concurrent builds is working
+            {
+                // update only when concurrent builds is working
                 const cl_int status = clrxUpdateProgramAssocDevices(p);
                 if (status != CL_SUCCESS)
                     return status;
@@ -1672,7 +1680,8 @@ clrxclGetProgramBuildInfo(cl_program            program,
             return CL_INVALID_DEVICE;
     }
     else if (p->assocDevicesNum!=0)
-    {   // if not program entries
+    {
+        // if not program entries
         if (std::find(p->assocDevices.get(), p->assocDevices.get()+p->assocDevicesNum,
                         device) == p->assocDevices.get()+p->assocDevicesNum)
             return CL_INVALID_DEVICE;
@@ -1760,7 +1769,8 @@ clrxclCreateKernel(cl_program      program,
     {
         std::lock_guard<std::mutex> l(p->mutex);
         if (p->concurrentBuilds != 0)
-        {   // creating kernel is not legal when building in progress
+        {
+            // creating kernel is not legal when building in progress
             if (errcode_ret != nullptr)
                 *errcode_ret = CL_INVALID_PROGRAM_EXECUTABLE;
             return nullptr;
@@ -1860,7 +1870,8 @@ clrxclCreateKernelsInProgram(cl_program     program,
         
         status = clrxInitKernelArgFlagsMap(p);
         if (status != CL_SUCCESS)
-        {   // free if error happened
+        {
+            // free if error happened
             if (kernels != nullptr)
             {
                 for (cl_uint i = 0; i < kernelsToCreate; i++)
@@ -1922,7 +1933,8 @@ clrxclCreateKernelsInProgram(cl_program     program,
     catch(const std::bad_alloc& ex)
     {
         if (kernels != nullptr)
-        {   // already processed kernels
+        {
+            // already processed kernels
             for (cl_uint i = 0; i < kp; i++)
             {
                 CLRXKernel* outKernel = static_cast<CLRXKernel*>(kernels[i]);
@@ -1970,7 +1982,8 @@ clrxclReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
     cl_int status = 0;
     bool doDelete = false;
     try
-    {   // must be in clauses, because
+    {
+        // must be in clauses, because
         std::lock_guard<std::mutex> l(k->program->mutex);
         status = k->amdOclKernel->dispatch->clReleaseKernel(k->amdOclKernel);
         if (status == CL_SUCCESS)
@@ -1987,7 +2000,8 @@ clrxclReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
     catch(const std::exception& ex)
     { clrxAbort("Fatal Error at releasing kernel: ", ex.what()); }
     if (doDelete)
-    {   // release program and delete kernel
+    {
+        // release program and delete kernel
         clrxReleaseOnlyCLRXProgram(k->program);
         delete k;
     }

@@ -252,7 +252,8 @@ void AsmROCmHandler::restoreKcodeCurrentAllocRegs()
 void AsmROCmHandler::saveKcodeCurrentAllocRegs()
 {
     if (currentKcodeKernel != ASMKERN_GLOBAL)
-    {   // save other state
+    {
+        // save other state
         size_t regTypesNum;
         Kernel& oldKernel = *kernelStates[currentKcodeKernel];
         const cxuint* regs = assembler.isaAssembler->getAllocatedRegisters(
@@ -981,7 +982,8 @@ void AsmROCmPseudoOps::doKCode(AsmROCmHandler& handler, const char* pseudoOpPlac
         skipSpacesToEnd(linePtr, end);
         bool removeKernel = false;
         if (linePtr!=end && *linePtr=='-')
-        {   // '-' - remove this kernel from current kernel selection
+        {
+            // '-' - remove this kernel from current kernel selection
             removeKernel = true;
             linePtr++;
         }
@@ -990,7 +992,8 @@ void AsmROCmPseudoOps::doKCode(AsmROCmHandler& handler, const char* pseudoOpPlac
             linePtr++;
             skipSpacesToEnd(linePtr, end);
             if (linePtr==end)
-            {   // add all kernels
+            {
+                // add all kernels
                 for (cxuint k = 0; k < handler.kernelStates.size(); k++)
                     newSel.insert(k);
                 break;
@@ -1058,7 +1061,8 @@ void AsmROCmPseudoOps::doKCodeEnd(AsmROCmHandler& handler, const char* pseudoOpP
         asmr.handleRegionsOnKernels(handler.kcodeSelection, oldKCodeSel,
                         handler.codeSection);
     else if (handler.currentKcodeKernel != ASMKERN_GLOBAL)
-    {   // if choosen current kernel
+    {
+        // if choosen current kernel
         std::vector<cxuint> curKernelSel;
         curKernelSel.push_back(handler.currentKcodeKernel);
         asmr.handleRegionsOnKernels(curKernelSel, oldKCodeSel, handler.codeSection);
@@ -1347,12 +1351,14 @@ bool AsmROCmHandler::prepareBinary()
     output.deviceType = assembler.getDeviceType();
     
     if (assembler.isaAssembler!=nullptr)
-    {   // make last kernel registers pool updates
+    {
+        // make last kernel registers pool updates
         if (kcodeSelStack.empty())
             saveKcodeCurrentAllocRegs();
         else
             while (!kcodeSelStack.empty())
-            {   // pop from kcode stack and apply changes
+            {
+                // pop from kcode stack and apply changes
                 AsmROCmPseudoOps::updateKCodeSel(*this, kcodeSelection);
                 kcodeSelection = kcodeSelStack.top();
                 kcodeSelStack.pop();
@@ -1481,7 +1487,8 @@ bool AsmROCmHandler::prepareBinary()
         
         cxuint userSGPRsNum = 0;
         if (config.userDataNum == BINGEN8_DEFAULT)
-        {   // calcuate userSGPRs
+        {
+            // calcuate userSGPRs
             const uint16_t sgprFlags = config.enableSgprRegisterFlags;
             userSGPRsNum =
                 ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER)!=0 ? 4 : 0) +
@@ -1511,7 +1518,8 @@ bool AsmROCmHandler::prepareBinary()
                            GPUSETUP_SCRATCH_EN : 0), minRegsNum);
         
         if (config.usedSGPRsNum!=BINGEN_DEFAULT && maxSGPRsNum < config.usedSGPRsNum)
-        {   // check only if sgprsnum set explicitly
+        {
+            // check only if sgprsnum set explicitly
             char numBuf[64];
             snprintf(numBuf, 64, "(max %u)", maxSGPRsNum);
             assembler.printError(assembler.kernels[i].sourcePos, (std::string(
@@ -1582,7 +1590,8 @@ bool AsmROCmHandler::prepareBinary()
                 continue; // if kernel name
             
             if (symEntry.second.sectionId==codeSection)
-            {   // put data objects
+            {
+                // put data objects
                 dataSymbols.push_back({symEntry.first, size_t(symEntry.second.value),
                     size_t(symEntry.second.size), ROCmRegionType::DATA});
                 continue;
@@ -1605,7 +1614,8 @@ bool AsmROCmHandler::prepareBinary()
         ROCmSymbolInput& kinput = output.symbols[ki];
         auto it = symbolMap.find(kinput.symbolName);
         if (it == symbolMap.end() || !it->second.isDefined())
-        {   // error, undefined
+        {
+            // error, undefined
             assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
                         "Symbol for kernel '")+kinput.symbolName.c_str()+
                         "' is undefined").c_str());
@@ -1614,7 +1624,8 @@ bool AsmROCmHandler::prepareBinary()
         }
         const AsmSymbol& symbol = it->second;
         if (!symbol.hasValue)
-        {   // error, unresolved
+        {
+            // error, unresolved
             assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
                     "Symbol for kernel '") + kinput.symbolName.c_str() +
                     "' is not resolved").c_str());
@@ -1622,7 +1633,8 @@ bool AsmROCmHandler::prepareBinary()
             continue;
         }
         if (symbol.sectionId != codeSection)
-        {   /// error, wrong section
+        {
+            /// error, wrong section
             assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
                     "Symbol for kernel '")+kinput.symbolName.c_str()+
                     "' is defined for section other than '.text'").c_str());

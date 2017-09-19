@@ -56,7 +56,8 @@ void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary, size_t kernelsNum)
     catch(const Exception& ex)
     { }
     if (amdGpuDisasmIndex != SHN_UNDEF)
-    {   // set disassembler section
+    {
+        // set disassembler section
         const auto& shdr = elfBinary.getSectionHeader(amdGpuDisasmIndex);
         disasmOffset = ULEV(shdr.sh_offset);
         disasmSize = ULEV(shdr.sh_size);
@@ -190,7 +191,8 @@ static void verifyKernelSymbols(size_t kernelsNum, const GalliumKernel* kernels,
             // kernel symol must be defined as global and must be bound to text section
             if (ULEV(sym.st_shndx) == textIndex &&
                 ELF32_ST_BIND(sym.st_info) == STB_GLOBAL)
-            {   // names must be stored in order
+            {
+                // names must be stored in order
                 if (kernel.kernelName != symName)
                     throw Exception("Kernel symbols out of order!");
                 if (ULEV(sym.st_value) != kernel.offset)
@@ -314,19 +316,22 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
         
         if (!elfBinary && (section.type == GalliumSectionType::TEXT ||
             section.type == GalliumSectionType::TEXT_EXECUTABLE_170))
-        {   // if new Mesa3D 17.0
+        {
+            // if new Mesa3D 17.0
             mesa170 = (section.type == GalliumSectionType::TEXT_EXECUTABLE_170);
             if (section.size < sizeof(Elf32_Ehdr))
                 throw Exception("Wrong GalliumElfBinary size");
             const Elf32_Ehdr& ehdr = *reinterpret_cast<const Elf32_Ehdr*>(data);
             if (ehdr.e_ident[EI_CLASS] == ELFCLASS32)
-            {   // 32-bit
+            {
+                // 32-bit
                 elfBinary.reset(new GalliumElfBinary32(section.size, data,
                                  creationFlags>>GALLIUM_INNER_SHIFT, kernelsNum));
                 elf64BitBinary = false;
             }
             else if (ehdr.e_ident[EI_CLASS] == ELFCLASS64)
-            {   // 64-bit
+            {
+                // 64-bit
                 elfSectionId = section.sectionId;
                 elfBinary.reset(new GalliumElfBinary64(section.size, data,
                                  creationFlags>>GALLIUM_INNER_SHIFT, kernelsNum));
@@ -549,7 +554,8 @@ static void putSectionsAndSymbols(ElfBinaryGenTemplate<Types>& elfBinGen,
                 ".rodata", SHT_PROGBITS, SHF_ALLOC));
     
     if (input->comment!=nullptr)
-    {   // if comment, store comment section
+    {
+        // if comment, store comment section
         comment = input->comment;
         commentSize = input->commentSize;
         if (commentSize==0)
@@ -798,7 +804,8 @@ uint32_t CLRX::detectMesaDriverVersion()
     
     std::string clrxTimestampPath = getHomeDir();
     if (!clrxTimestampPath.empty())
-    {   // first, we check from stored version in config files
+    {
+        // first, we check from stored version in config files
         clrxTimestampPath = joinPaths(clrxTimestampPath, ".clrxmesaocltstamp");
         try
         { makeDir(clrxTimestampPath.c_str()); }
@@ -810,13 +817,15 @@ uint32_t CLRX::detectMesaDriverVersion()
         {
         std::ifstream ifs(clrxTimestampPath.c_str(), std::ios::binary);
         if (ifs)
-        {   // read driver version from stored config files
+        {
+            // read driver version from stored config files
             ifs.exceptions(std::ios::badbit | std::ios::failbit);
             uint64_t readedTimestamp = 0;
             uint32_t readedVersion = 0;
             ifs >> readedTimestamp >> readedVersion;
             if (readedTimestamp!=0 && readedVersion!=0 && timestamp==readedTimestamp)
-            {   // amdocl has not been changed
+            {
+                // Mesa3D files has not been changed
                 detectionFileTimestamp = readedTimestamp;
                 detectedDriverVersion = readedVersion;
                 return readedVersion;
@@ -865,7 +874,8 @@ uint32_t CLRX::detectMesaDriverVersion()
         
         // write to config
         if (!clrxTimestampPath.empty()) // if clrxamdocltstamp set
-        {   // write to
+        {
+            // write to
             std::ofstream ofs(clrxTimestampPath.c_str(), std::ios::binary);
             ofs << detectionFileTimestamp << " " << detectedDriverVersion;
         }
@@ -898,7 +908,8 @@ uint32_t CLRX::detectLLVMCompilerVersion()
     
     std::string clrxTimestampPath = getHomeDir();
     if (!clrxTimestampPath.empty())
-    {   // first, we check from stored version in config files
+    {
+        // first, we check from stored version in config files
         clrxTimestampPath = joinPaths(clrxTimestampPath, ".clrxllvmcfgtstamp");
         try
         { makeDir(clrxTimestampPath.c_str()); }
@@ -910,13 +921,15 @@ uint32_t CLRX::detectLLVMCompilerVersion()
         {
         std::ifstream ifs(clrxTimestampPath.c_str(), std::ios::binary);
         if (ifs)
-        {   // read driver version from stored config files
+        {
+            // read driver version from stored config files
             ifs.exceptions(std::ios::badbit | std::ios::failbit);
             uint64_t readedTimestamp = 0;
             uint32_t readedVersion = 0;
             ifs >> readedTimestamp >> readedVersion;
             if (readedTimestamp!=0 && readedVersion!=0 && timestamp==readedTimestamp)
-            {   // amdocl has not been changed
+            {
+                // LLVM files has not been changed
                 detectionLLVMFileTimestamp = readedTimestamp;
                 detectedLLVMVersion = readedVersion;
                 return readedVersion;
@@ -942,7 +955,8 @@ uint32_t CLRX::detectLLVMCompilerVersion()
         
         // write to config
         if (!clrxTimestampPath.empty()) // if clrxamdocltstamp set
-        {   // write to
+        {
+            // write to
             std::ofstream ofs(clrxTimestampPath.c_str(), std::ios::binary);
             ofs << detectionLLVMFileTimestamp << " " << detectedLLVMVersion;
         }

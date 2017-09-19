@@ -274,7 +274,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     
     // get samplers
     for (const AmdCL2RelInput& reloc: textRelocs)
-    {   // check if sampler
+    {
+        // check if sampler
         auto it = std::find(samplerOffsets.begin(), samplerOffsets.end(), reloc.addend);
         if (it!=samplerOffsets.end())
             config.samplers.push_back(it-samplerOffsets.begin());
@@ -399,7 +400,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                 arg.resId = LEV(argPtr->resId);
         }
         else
-        {   // pointer or pipe
+        {
+            // pointer or pipe
             if (argPtr->isPipe)
                 arg.used = (ULEV(argPtr->isPointerOrPipe))==3;
             else
@@ -412,7 +414,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             else if (argType == 15)
                 arg.argType = KernelArgType::POINTER;
             if (arg.argType == KernelArgType::POINTER)
-            {   // if pointer
+            {
+                // if pointer
                 if (ptrSpace==3)
                     arg.ptrSpace = KernelPtrSpace::LOCAL;
                 else if (ptrSpace==4)
@@ -606,7 +609,8 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
     }
     
     if (!isNewBinary)
-    {   // old binary
+    {
+        // old binary
         const AmdCL2OldInnerGPUBinary& innerBin = binary.getOldInnerBinary();
         for (size_t k = 0; k < kernelsNum; k++)
         {
@@ -617,7 +621,8 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
         }
     }
     else
-    {   // new binary
+    {
+        // new binary
         const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
         const size_t textRelsNum = innerBin.getTextRelaEntriesNum();
         size_t relaId = 0;

@@ -362,7 +362,8 @@ public:
             generateCALNotes(fob, input, driverVersion, *kernel, *tempConfig);
         else
             for (const CALNoteInput& calNote: kernel->calNotes)
-            {   // all fields of CALNote
+            {
+                // all fields of CALNote
                 CALNoteHeader cnHdr = { LEV(calNote.header.nameSize),
                     LEV(calNote.header.descSize), LEV(calNote.header.type) };
                 ::memcpy(cnHdr.name, &calNote.header.name, 8);
@@ -641,7 +642,8 @@ static void putMainSections(ElfBinaryGenTemplate<Types>& elfBinGen, cxuint drive
     elfBinGen.addRegion(ElfRegionTemplate<Types>(mainSymGen.size(), &mainSymGen, 8,
                  ".symtab", SHT_SYMTAB, 0));
     if (!input->kernels.empty())
-    {   // rodata and text
+    {
+        // rodata and text
         elfBinGen.addRegion(ElfRegionTemplate<Types>(rodataSize, &rodataGen, 1,
                  ".rodata", SHT_PROGBITS, SHF_ALLOC));
         elfBinGen.addRegion(ElfRegionTemplate<Types>(allInnerBinSize, &textGen, 1,
@@ -830,7 +832,8 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             }
             else if (arg.argType == KernelArgType::POINTER &&
                     arg.ptrSpace == KernelPtrSpace::CONSTANT && arg.resId != BINGEN_DEFAULT)
-            {   // old constant buffers
+            {
+                // old constant buffers
                 if (arg.resId < 2 || arg.resId >= 160)
                     throw Exception("CbId out of range!");
                 if (cbIdMask[arg.resId])
@@ -839,7 +842,8 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                 tempConfig.argResIds[k] = arg.resId;
             }
             else if (isKernelArgImage(arg.argType) && arg.resId != BINGEN_DEFAULT)
-            {   // images
+            {
+                // images
                 if (arg.ptrAccess & KARG_PTR_READ_ONLY)
                 {
                     if (arg.resId >= 128)
@@ -891,14 +895,16 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             }
             else if (arg.argType == KernelArgType::POINTER &&
                     arg.ptrSpace == KernelPtrSpace::CONSTANT && arg.resId == BINGEN_DEFAULT)
-            {   // old constant buffers
+            {
+                // old constant buffers
                 for (; cbIdsCount < 160 && cbIdMask[cbIdsCount]; cbIdsCount++);
                 if (cbIdsCount == 160)
                     throw Exception("CbId out of range!");
                 tempConfig.argResIds[k] = cbIdsCount++;
             }
             else if (isKernelArgImage(arg.argType) && arg.resId == BINGEN_DEFAULT)
-            {   // images
+            {
+                // images
                 if (arg.ptrAccess & KARG_PTR_READ_ONLY)
                 {
                     for (; rdImgsCount < 128 && rdImgMask[rdImgsCount]; rdImgsCount++);
@@ -1255,7 +1261,8 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     putCALNoteLE(bos, CALNOTE_ATI_UAV, 16*tempConfig.uavsNum);
     
     if (isOlderThan1124)
-    {   // for old drivers
+    {
+        // for old drivers
         for (cxuint k = 0; k < config.args.size(); k++)
         {
             const AmdKernelArgInput& arg = config.args[k];
@@ -1531,7 +1538,8 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
         driverVersion = input->driverVersion;
     }
     else if (input->driverVersion == 0)
-    {   // parse version
+    {
+        // parse version
         size_t pos = input->driverInfo.find("AMD-APP"); // find AMDAPP
         try
         {
@@ -1586,7 +1594,8 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
         TempAmdKernelData& tempData = tempAmdKernelDatas[i];
         tempData.kernelDataGen = KernelDataGen(&kinput);
         if (kinput.useConfig)
-        {   // get new free uniqueId
+        {
+            // get new free uniqueId
             while (std::binary_search(uniqueIds.begin(), uniqueIds.end(), uniqueId))
                 uniqueId++;
             
@@ -1845,7 +1854,8 @@ uint32_t CLRX::detectAmdDriverVersion()
     
     std::string clrxTimestampPath = getHomeDir();
     if (!clrxTimestampPath.empty())
-    {   // first, we check from stored version in config files
+    {
+        // first, we check from stored version in config files
         clrxTimestampPath = joinPaths(clrxTimestampPath, ".clrxamdocltstamp");
         try
         { makeDir(clrxTimestampPath.c_str()); }
@@ -1857,13 +1867,15 @@ uint32_t CLRX::detectAmdDriverVersion()
         {
         std::ifstream ifs(clrxTimestampPath.c_str(), std::ios::binary);
         if (ifs)
-        {   // read driver version from stored config files
+        {
+            // read driver version from stored config files
             ifs.exceptions(std::ios::badbit | std::ios::failbit);
             uint64_t readedTimestamp = 0;
             uint32_t readedVersion = 0;
             ifs >> readedTimestamp >> readedVersion;
             if (readedTimestamp!=0 && readedVersion!=0 && timestamp==readedTimestamp)
-            {   // amdocl has not been changed
+            {
+                // amdocl has not been changed
                 detectionFileTimestamp = readedTimestamp;
                 detectedDriverVersion = readedVersion;
                 return readedVersion;
@@ -1911,7 +1923,8 @@ uint32_t CLRX::detectAmdDriverVersion()
         
         // write to config
         if (!clrxTimestampPath.empty()) // if clrxamdocltstamp set
-        {   // write to
+        {
+            // write to
             std::ofstream ofs(clrxTimestampPath.c_str(), std::ios::binary);
             ofs << detectionFileTimestamp << " " << detectedDriverVersion;
         }

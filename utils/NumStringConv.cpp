@@ -83,7 +83,8 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
     if (*str == '0')
     {
         if (inend != str+1 && (str[1] == 'x' || str[1] == 'X'))
-        {   // hex
+        {
+            // hex
             if (inend == str+2)
             {
                 outend = str+2;
@@ -117,7 +118,8 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
             }
         }
         else if (inend != str+1 && (str[1] == 'b' || str[1] == 'B'))
-        {   // binary
+        {
+            // binary
             if (inend == str+2)
             {
                 outend = str+2;
@@ -141,7 +143,8 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
             }
         }
         else
-        {   // octal
+        {
+            // octal
             const uint64_t lastOct = (7ULL<<(bits-3));
             for (p = str+1; p != inend && isODigit(*p); p++)
             {
@@ -156,7 +159,8 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
         }
     }
     else
-    {   // decimal
+    {
+        // decimal
         const uint64_t mask = (bits < 64) ? ((1ULL<<bits)-1) :
                     UINT64_MAX; /* fix for shift */
         const uint64_t lastDigitValue = mask/10;
@@ -355,7 +359,8 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
            const uint64_t* bigb, uint64_t* bigc)
 {
     if (asize == 1 || bsize == 1)
-    {   // if one number is single 64-bit
+    {
+        // if one number is single 64-bit
         uint64_t ae;
         cxuint size;
         const uint64_t* bignum;
@@ -582,14 +587,16 @@ static void bigMulFP(cxuint maxSize,
     bigcBits = bigaBits + bigbBits;
     bigcExp = bigaExp + bigbExp;
     if (carry != 0)
-    {   // carry, we shift right, and increment exponent
+    {
+        // carry, we shift right, and increment exponent
         const bool lsbit = bigc[0]&1;
         bigShift64Right(bigcSize, bigc, 1);
         bigc[bigcSize-1] |= (uint64_t(carry==2)<<63);
         bigcExp++;
         bigcBits++;
         if (bigcBits == (bigcSize<<6)+1 && bigcSize < maxSize)
-        {   // push least signicant bit to first elem
+        {
+            // push least signicant bit to first elem
             /* this make sense only when number needs smaller space than maxSize */
             for (cxuint j = bigcSize; j > 0; j--)
                 bigc[j] = bigc[j-1];
@@ -598,13 +605,15 @@ static void bigMulFP(cxuint maxSize,
         }
     }
     if (bigcSize > maxSize)
-    {   /* if out of maxSize, then round this number */
+    {
+        /* if out of maxSize, then round this number */
         bigcBits = maxSize<<6;
         bigFPRoundToNearest(bigcSize, maxSize, bigcExp, bigc);
         bigcSize = maxSize;
     }
     else if (bigcSize > ((bigcBits+63)>>6))
-    {   // fix bigc size if doesnt match with bigcBits
+    {
+        // fix bigc size if doesnt match with bigcBits
         for (cxuint i = 0; i < bigcSize; i++)
             bigc[i] = bigc[i+1];
         bigcSize--;
@@ -653,7 +662,8 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
     cxuint p = 0;
     
     if (power >= 0)
-    {   // positive power
+    {
+        // positive power
         powSize = 1;
         // no rounding because all power is in single value
         curPow[0] = pow5_128Table[64+(power&15)].value[1];
@@ -667,7 +677,8 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
         p = 16;
     }
     else
-    {   // negative power (fractions)
+    {
+        // negative power (fractions)
         powSize = maxSize;
         // one in curPow
         std::fill(curPow, curPow + maxSize, uint64_t(0));
@@ -814,14 +825,16 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
     {
         if ((p[0] == 'n' || p[0] == 'N') && (p[1] == 'a' || p[1] == 'A') &&
             (p[2] == 'n' || p[2] == 'N'))
-        {   // create positive nan
+        {
+            // create positive nan
             out = (((1ULL<<expBits)-1ULL)<<mantisaBits) | (1ULL<<(mantisaBits-1));
             outend = p+3;
             return out;
         }
         else if ((p[0] == 'i' || p[0] == 'I') && (p[1] == 'n' || p[1] == 'N') &&
             (p[2] == 'f' || p[2] == 'F'))
-        {   // create +/- infinity
+        {
+            // create +/- infinity
             out |= ((1ULL<<expBits)-1ULL)<<mantisaBits;
             outend = p+3;
             return out;
@@ -834,7 +847,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
     const int maxExp = (1U<<(expBits-1))-1;
     
     if (p != inend && p+1 != inend && *p == '0' && (p[1] == 'x' || p[1] == 'X'))
-    {   // in hex format
+    {
+        // in hex format
         p+=2;
         cxint binaryExp = 0;
         const char* expstr = p;
@@ -843,7 +857,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                 (*expstr >= 'a' && *expstr <= 'f') ||
                 (*expstr >= 'A' && *expstr <= 'F')); expstr++)
             if (*expstr == '.')
-            {   // if comma found and we found next we break skipping
+            {
+                // if comma found and we found next we break skipping
                 if (comma) break;
                 comma = true;
             }
@@ -885,7 +900,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                     expOfValue += 4;
             }
             else // if fraction
-            {   // count exponent of fractional part
+            {
+                // count exponent of fractional part
                 for (p++; p != valEnd && *p == '0'; p++)
                     expOfValue -= 4; // skip zeroes
                 if (p != valEnd)
@@ -954,13 +970,16 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                 isSecondHalf = false;
             
             if (isSecondHalf && (fpMantisa&1)==0)
-            {   // check further digits if still is half and value is even
+            {
+                // check further digits if still is half and value is even
                 for (; vs != valEnd; vs++)
-                {   // digits character has been already checked, we check that is not zero
+                {
+                    // digits character has been already checked, we check that is not zero
                     if (*vs == '.')
                         continue; // skip comma
                     else if (*vs > '0')
-                    {   // if not zero (is half of value)
+                    {
+                        // if not zero (is half of value)
                         isSecondHalf = false;
                         break;
                     }
@@ -972,7 +991,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
         }
         
         if (addRoundings)
-        {   // add roundings
+        {
+            // add roundings
             fpMantisa++;
             // check promotion to next exponent
             if (fpMantisa >= (1ULL<<mantisaBits))
@@ -986,14 +1006,16 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
         out |= fpMantisa | (uint64_t(fpExponent)<<mantisaBits);
     }
     else
-    {   // in decimal format
+    {
+        // in decimal format
         cxint decimalExp = 0;
         const char* expstr = p;
         bool comma = false;
         for (;expstr != inend && (*expstr == '.' || isDigit(*expstr));
              expstr++)
             if (*expstr == '.')
-            {   // if comma found and we found next we break skipping
+            {
+                // if comma found and we found next we break skipping
                 if (comma) break;
                 comma = true;
             }
@@ -1026,13 +1048,15 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
         if (p != valEnd)
         {
             if (*p != '.') // if integer part
-            {   // count exponent of integer part
+            {
+                // count exponent of integer part
                 vs = p; // set pointer to real value
                 for (p++; p != valEnd && *p != '.'; p++)
                     decExpOfValue++;
             }
             else
-            {   // count exponent of fractional part
+            {
+                // count exponent of fractional part
                 decExpOfValue = -1;
                 for (p++; p != valEnd && *p == '0'; p++)
                     decExpOfValue--; // skip zeroes
@@ -1145,7 +1169,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                 binaryExp+(1U<<(expBits-1))-1 : 0;
         
         if (!isNotTooExact)
-        {   // value is exact (not too close half
+        {
+            // value is exact (not too close half
             if (mantSignifBits>=0)
             {
                 addRoundings = (subValue >= half);
@@ -1160,7 +1185,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
             }
         }
         else
-        {   // max digits to compute value
+        {
+            // max digits to compute value
             cxuint maxDigits;
             if (binaryExp-cxint(mantisaBits)-1 >= 0)
                 maxDigits = decTempExp+1; // when rounding bit of mantisa is not fraction
@@ -1202,7 +1228,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                 
                 /// loop that parses packets and adds to main value
                 while (processedDigits < digitsToProcess)
-                {   // digit pack is 4-dword packet of part of decimal value
+                {
+                    // digit pack is 4-dword packet of part of decimal value
                     uint64_t digitPack[4];
                     // packTens holds temporary powers of 10 for current digitPack
                     uint64_t packTens[4];
@@ -1226,7 +1253,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                             digitsOfPart++;
                         }
                         if (vs == valEnd)
-                        {   // fill first digits with zeroes, for align to dword value
+                        {
+                            // fill first digits with zeroes, for align to dword value
                             const cxuint pow10 = std::min(digitsToProcess-processedDigits,
                                         19-digitsOfPart);
                             curValue = curValue*power10sTable[pow10];
@@ -1284,7 +1312,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                 }
                 
                 if (digitsToProcess == maxDigits)
-                {   // adds three digits extra in last iteration
+                {
+                    // adds three digits extra in last iteration
                     // because threshold is needed for half equality detection
                     bigMul(1, power10sTable+3, bigValueSize, curBigValue, prevBigValue);
                     if (prevBigValue[bigValueSize]!=0)
@@ -1345,7 +1374,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                 const uint64_t halfValue = (1ULL<<halfValueShift);
                 
                 if (mantSignifBits < 0)
-                {   // smaller than smallest denormal, add half
+                {
+                    // smaller than smallest denormal, add half
                     bigRescaled[powSize+bigValueSize] = 0;
                     // add one to value
                     if (rescaledValueBits < (bigValueSize<<6))
@@ -1436,7 +1466,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
             }
             
             if (isHalfEqual) // isHalfEqual implies isNotTooExact
-            {   // if even value
+            {
+                // if even value
                 if ((fpMantisa&1) == 0)
                 {   /* parse rest of the numbers */
                     bool onlyZeros = true;
@@ -1461,7 +1492,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
         
         // add rounding if needed
         if (addRoundings)
-        {   // add roundings
+        {
+            // add roundings
             fpMantisa++;
             // check promotion to next exponent
             if (fpMantisa >= (1ULL<<mantisaBits))
@@ -1486,7 +1518,8 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     const uint64_t mantisaMask = (1ULL<<mantisaBits)-1ULL;
     
     if (((value >> mantisaBits)&expMask) == expMask)
-    {   // infinity or nans
+    {
+        // infinity or nans
         if (signOfValue)
         {
             if (maxSize < 5)
@@ -1597,7 +1630,8 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
      * then try to apply rounding. do not if binary mantisa is zero, because
      * next exponent have different value threshold and that can makes trip of rounding */
     if ((mod >= 82 || (mod <= 18 && mod != 0)) && (value&mantisaMask)!=0)
-    {   // check higher round
+    {
+        // check higher round
         uint64_t rescaledHalf[4];
         // rescaled half (ULP) minus rescaled max error + 1
         rescaledHalf[0] = 0;
@@ -1611,7 +1645,8 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         rescaledHalf[powSize+1] |= (1ULL<<(mantisaShift-1));
         
         if (-decExpOfValue < 0 || -decExpOfValue > 55)
-        {   // if not exact pow5 (rescaled value is not exact value)
+        {
+            // if not exact pow5 (rescaled value is not exact value)
             // compute max error of rescaled value ((0.5 + 2**-29)*mantisa)
             const uint64_t maxRescaledError[2] = 
             { mantisa<<(64-30), (mantisa>>1) + (mantisa>>30) };
@@ -1621,7 +1656,8 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         bigSub(powSize+2, rescaledHalf, 1, &one64);
         
         if (mod >= 82)
-        {   // we must add some bits
+        {
+            // we must add some bits
             uint64_t toAdd[4] = { 0, 0, 0, 0 };
             // (100-mod) - (rest from value beginning one) - value to add
             toAdd[powSize+1] = ((100ULL-uint64_t(mod))<<oneBitPos) +
@@ -1629,13 +1665,15 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
             bigSub(2+powSize, toAdd, 2+powSize, rescaled);
             // check if half changed
             if (!bigSub(2+powSize, rescaledHalf, 2+powSize, toAdd))
-            {   // if toAdd is smaller than rescaledHalf
+            {
+                // if toAdd is smaller than rescaledHalf
                 decValue += (100-mod);
                 roundingFix = true;
             }
         }
         else if (mod <= 18)
-        {   // we must subtract some bits
+        {
+            // we must subtract some bits
             uint64_t toSub[4];
             // value to subtract
             toSub[powSize+1] = (uint64_t(mod)<<oneBitPos) |
@@ -1646,7 +1684,8 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
             toSub[powSize] = rescaled[powSize];
             // check if half changed
             if (!bigSub(2+powSize, rescaledHalf, 2+powSize, toSub))
-            {   // if toSub is smaller than rescaledHalf
+            {
+                // if toSub is smaller than rescaledHalf
                 decValue -= mod;
                 roundingFix = true;
             }
@@ -1689,7 +1728,8 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     if (!scientific)
     {
         if (decExponent >= -5 && decExponent < 0)
-        {   // over same number
+        {
+            // over same number
             if (p+2 > strend)
                 throw Exception("Max size is too small");
             *p++ = '0';
@@ -1885,7 +1925,8 @@ UInt128 CLRX::cstrtou128CStyle(const char* str, const char* inend, const char*& 
     if (*str == '0')
     {
         if (inend != str+1 && (str[1] == 'x' || str[1] == 'X'))
-        {   // hex
+        {
+            // hex
             if (inend == str+2)
             {
                 outend = str+2;
@@ -1920,7 +1961,8 @@ UInt128 CLRX::cstrtou128CStyle(const char* str, const char* inend, const char*& 
             }
         }
         else if (inend != str+1 && (str[1] == 'b' || str[1] == 'B'))
-        {   // binary
+        {
+            // binary
             if (inend == str+2)
             {
                 outend = str+2;
@@ -1945,7 +1987,8 @@ UInt128 CLRX::cstrtou128CStyle(const char* str, const char* inend, const char*& 
             }
         }
         else
-        {   // octal
+        {
+            // octal
             const uint64_t lastOct = (7ULL<<61);
             for (p = str+1; p != inend && isODigit(*p); p++)
             {
@@ -1961,7 +2004,8 @@ UInt128 CLRX::cstrtou128CStyle(const char* str, const char* inend, const char*& 
         }
     }
     else
-    {   // decimal
+    {
+        // decimal
         const UInt128 lastDigitValue = { 11068046444225730969ULL, 1844674407370955161ULL };
         for (p = str; p != inend && isDigit(*p); p++)
         {

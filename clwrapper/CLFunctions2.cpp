@@ -627,7 +627,8 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
     if (event_wait_list != nullptr)
     {
         if (num_events_in_wait_list <= maxLocalEventsNum)
-        {   // holds original devices in array if number of devices is small
+        {
+            // holds original devices in array if number of devices is small
             cl_event amdWaitList[maxLocalEventsNum];
             for (cl_uint i = 0; i < num_events_in_wait_list; i++)
             {
@@ -680,7 +681,8 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
                 offset, size, 0, nullptr, amdEventPtr, errcode_ret);
     
     if (amdEvent != nullptr)
-    {   // if amd event has been set
+    {
+        // if amd event has been set
         outEvent->amdOclEvent = amdEvent;
         *event = outEvent.release();
         clrxRetainOnlyCLRXContext(q->context);
@@ -750,7 +752,8 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
     if (event_wait_list != nullptr)
     {
         if (num_events_in_wait_list <= maxLocalEventsNum)
-        {   // holds original devices in array if number of devices is small
+        {
+            // holds original devices in array if number of devices is small
             cl_event amdWaitList[maxLocalEventsNum];
             for (cl_uint i = 0; i < num_events_in_wait_list; i++)
             {
@@ -804,7 +807,8 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
                 0, nullptr, amdEventPtr, errcode_ret);
     
     if (amdEvent != nullptr)
-    {   // if amd event has been set
+    {
+        // if amd event has been set
         outEvent->amdOclEvent = amdEvent;
         *event = outEvent.release();
         clrxRetainOnlyCLRXContext(q->context);
@@ -949,7 +953,8 @@ clrxclEnqueueNativeKernel(cl_command_queue  command_queue,
         if (event_wait_list != nullptr)
         {
             if (num_events_in_wait_list <= maxLocalEventsNum)
-            {   // get original devices and store them into vector
+            {
+                // get original devices and store them into vector
                 cl_event amdWaitList[maxLocalEventsNum];
                 for (cl_uint i = 0; i < num_events_in_wait_list; i++)
                 {
@@ -965,7 +970,8 @@ clrxclEnqueueNativeKernel(cl_command_queue  command_queue,
                         num_events_in_wait_list, amdWaitList, amdEventPtr);
             }
             else
-            {   // get original devices and store them into vector
+            {
+                // get original devices and store them into vector
                 std::vector<cl_event> amdWaitList(num_events_in_wait_list);
                 for (cl_uint i = 0; i < num_events_in_wait_list; i++)
                 {

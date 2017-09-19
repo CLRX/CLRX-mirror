@@ -123,7 +123,8 @@ AsmFormatHandler::SectionInfo AsmRawCodeHandler::getSectionInfo(cxuint sectionId
 
 bool AsmRawCodeHandler::parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr)
-{   // not recognized any pseudo-op
+{
+    // not recognized any pseudo-op
     return false;
 }
 

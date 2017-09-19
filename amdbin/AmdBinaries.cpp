@@ -745,7 +745,8 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             const char* argType = kptr;
             ///
             if (tokPtr-kptr != 6 || ::strncmp(argType, "struct", 6)!=0)
-            {   // regular type
+            {
+                // regular type
                 kptr = ++tokPtr;
                 while (tokPtr < kend && *tokPtr != ':' && *tokPtr != '\n') tokPtr++;
                 if (tokPtr >= kend || *tokPtr =='\n')
@@ -1113,7 +1114,8 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         if (::strcmp(symName+len-7, "_kernel") == 0) // if kernel
             choosenSyms.push_back(i);
         else if (doInfoStrings && ::strcmp(symName, "__OpenCL_compile_options") == 0)
-        {   // set compile options
+        {
+            // set compile options
             const typename Types::Sym& sym = mainElf.getSymbol(i);
             compileOptionShIndex = ULEV(sym.st_shndx);
             if (compileOptionShIndex >= mainElf.getSectionHeadersNum())
@@ -1151,7 +1153,8 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
     }
     
     if (doInfoStrings)
-    {   // put driver info
+    {
+        // put driver info
         uint16_t commentShIndex = SHN_UNDEF;
         try
         { commentShIndex = mainElf.getSectionIndex(".comment"); }
@@ -1211,7 +1214,8 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         
         typename Types::Size ki = 0;
         for (typename Types::Size it: choosenSymsMetadata)
-        {   // read symbol _OpenCL..._metadata
+        {
+            // read symbol _OpenCL..._metadata
             const typename Types::Sym& sym = mainElf.getSymbol(it);
             const char* symName = mainElf.getSymbolName(it);
             if (ULEV(sym.st_shndx) >= mainElf.getSectionHeadersNum())
@@ -1417,7 +1421,8 @@ AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode
         {
             const char* symName = getSymbolName(i);
             if (::strcmp(symName, "__OpenCL_compile_options") == 0)
-            {   // set compile options
+            {
+                // set compile options
                 const Elf32_Sym& sym = getSymbol(i);
                 compileOptionShIndex = ULEV(sym.st_shndx);
                 if (compileOptionShIndex >= getSectionHeadersNum())
@@ -1498,7 +1503,8 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode
         {
             const char* symName = getSymbolName(i);
             if (::strcmp(symName, "__OpenCL_compile_options") == 0)
-            {   // set compile options
+            {
+                // set compile options
                 const Elf64_Sym& sym = getSymbol(i);
                 compileOptionShIndex = ULEV(sym.st_shndx);
                 if (compileOptionShIndex >= getSectionHeadersNum())

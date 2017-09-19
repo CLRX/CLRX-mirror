@@ -84,7 +84,8 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 bufPos += itocstrCStyle(disassembler.sectionCount,
                                 buf+bufPos, 22, 10, 0, false);
                 if (curPos != pos)
-                {   // if label shifted back by some bytes before encoded instruction
+                {
+                    // if label shifted back by some bytes before encoded instruction
                     buf[bufPos++] = '=';
                     buf[bufPos++] = '.';
                     buf[bufPos++] = '-';
@@ -110,7 +111,8 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 char* buf = output.reserve(50);
                 size_t bufPos = 0;
                 if (curPos != pos)
-                {   // if label shifted back by some bytes before encoded instruction
+                {
+                    // if label shifted back by some bytes before encoded instruction
                     buf[bufPos++] = '=';
                     buf[bufPos++] = '.';
                     buf[bufPos++] = '-';
@@ -146,7 +148,8 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
         if (numberedPos <= namedPos && labelIter != labels.end())
         {
             if (pos != *labelIter)
-            {   // print shift position to label (.org pseudo-op)
+            {
+                // print shift position to label (.org pseudo-op)
                 char* buf = output.reserve(30);
                 size_t bufPos = 0;
                 memcpy(buf+bufPos, ".org ", 5);
@@ -172,7 +175,8 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
         if (namedPos <= numberedPos && namedLabelIter != namedLabels.end())
         {
             if (pos != namedLabelIter->first)
-            {   // print shift position to label (.org pseudo-op)
+            {
+                // print shift position to label (.org pseudo-op)
                 char* buf = output.reserve(30);
                 size_t bufPos = 0;
                 memcpy(buf+bufPos, ".org ", 5);
@@ -404,7 +408,8 @@ extern void CLRX::printDisasmData(size_t size, const cxbyte* data, std::ostream&
     const char* fillPrefix = "    .fill ";
     size_t prefixSize = 10;
     if (secondAlign)
-    {   // const string for double alignment
+    {
+        // const string for double alignment
         linePrefix = "        .byte ";
         fillPrefix = "        .fill ";
         prefixSize += 4;
@@ -416,7 +421,8 @@ extern void CLRX::printDisasmData(size_t size, const cxbyte* data, std::ostream&
         // find max repetition of this element
         for (fillEnd = p+1; fillEnd < size && data[fillEnd]==data[p]; fillEnd++);
         if (fillEnd >= p+8)
-        {   // if element repeated for least 1 line
+        {
+            // if element repeated for least 1 line
             // print .fill pseudo-op
             ::memcpy(buf, fillPrefix, prefixSize);
             const size_t oldP = p;
@@ -439,7 +445,8 @@ extern void CLRX::printDisasmData(size_t size, const cxbyte* data, std::ostream&
         {
             buf[bufPos++] = '0';
             buf[bufPos++] = 'x';
-            {   // inline byte in hexadecimal
+            {
+                // inline byte in hexadecimal
                 cxuint digit = data[p]>>4;
                 if (digit < 10)
                     buf[bufPos++] = '0'+digit;
@@ -471,7 +478,8 @@ void CLRX::printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& o
     const char* fillPrefix = "    .fill ";
     size_t fillPrefixSize = 10;
     if (secondAlign)
-    {   // const string for double alignment
+    {
+        // const string for double alignment
         linePrefix = "        .int ";
         fillPrefix = "        .fill ";
         fillPrefixSize += 4;
@@ -485,7 +493,8 @@ void CLRX::printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& o
         for (fillEnd = p+1; fillEnd < size && ULEV(data[fillEnd])==ULEV(data[p]);
              fillEnd++);
         if (fillEnd >= p+4)
-        {   // if element repeated for least 1 line
+        {
+            // if element repeated for least 1 line
             // print .fill pseudo-op
             ::memcpy(buf, fillPrefix, fillPrefixSize);
             const size_t oldP = p;

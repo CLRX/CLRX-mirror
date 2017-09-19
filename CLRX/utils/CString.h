@@ -193,7 +193,8 @@ public:
     CString& assign(const char* str, size_t n)
     {
         if (n == 0)
-        {   // just clear
+        {
+            // just clear
             delete[] ptr;
             ptr = nullptr;
             return *this;
@@ -214,7 +215,8 @@ public:
     CString& assign (size_t n, char ch)
     {
         if (n == 0)
-        {   // just clear
+        {
+            // just clear
             delete[] ptr;
             ptr = nullptr;
             return *this;
@@ -232,7 +234,8 @@ public:
     {
         const size_t n = init.size();
         if (n == 0)
-        {   // just clear
+        {
+            // just clear
             delete[] ptr;
             ptr = nullptr;
             return *this;

@@ -140,7 +140,8 @@ AsmAmdCL2Handler::~AsmAmdCL2Handler()
 }
 
 void AsmAmdCL2Handler::saveCurrentSection()
-{   /// save previous section
+{
+    /// save previous section
     if (assembler.currentKernel==ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
     else if (assembler.currentKernel==ASMKERN_INNER)
@@ -371,7 +372,8 @@ AsmFormatHandler::SectionInfo AsmAmdCL2Handler::getSectionInfo(cxuint sectionId)
     else if (info.type == AsmSectionType::AMDCL2_BSS ||
             info.type == AsmSectionType::AMDCL2_RWDATA ||
             info.type == AsmSectionType::DATA)
-    {   // global data, rwdata and bss are relocatable sections (we set unresolvable flag)
+    {
+        // global data, rwdata and bss are relocatable sections (we set unresolvable flag)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_UNRESOLVABLE;
         if (info.type != AsmSectionType::AMDCL2_BSS)
             info.flags |= ASMSECT_WRITEABLE;
@@ -486,7 +488,8 @@ void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char*
     std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
                 AsmSymbol(ASMSECT_ABS, driverVersion));
     if (!res.second)
-    {   // found
+    {
+        // if symbol found
         if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
             asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
                         "' is already defined").c_str());
@@ -569,7 +572,8 @@ void AsmAmdCL2PseudoOps::doBssData(AsmAmdCL2Handler& handler, const char* pseudo
     // parse alignment
     skipSpacesToEnd(linePtr, end);
     if (linePtr+6<end && ::strncasecmp(linePtr, "align", 5)==0 && !isAlpha(linePtr[5]))
-    {   // if alignment
+    {
+        // if alignment
         linePtr+=5;
         skipSpacesToEnd(linePtr, end);
         if (linePtr!=end && *linePtr=='=')
@@ -655,7 +659,8 @@ void AsmAmdCL2PseudoOps::doSampler(AsmAmdCL2Handler& handler, const char* pseudo
         } while(skipCommaForMultipleArgs(asmr, linePtr));
     }
     else
-    {   // global sampler definitions
+    {
+        // global sampler definitions
         if (handler.samplerInitSection!=ASMSECT_NONE)
             PSEUDOOP_RETURN_BY_ERROR("Illegal sampler definition if "
                     "samplerinit was defined")
@@ -855,7 +860,8 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
     
     if (handler.kernelStates[asmr.currentKernel]->useHsaConfig &&
         target >= AMDCL2CVAL_HSA_FIRST_PARAM)
-    {   // hsa config
+    {
+        // hsa config
         AsmAmdHsaKernelConfig& config =
                 *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
         
@@ -945,7 +951,8 @@ void AsmAmdCL2PseudoOps::setConfigBoolValue(AsmAmdCL2Handler& handler,
         return;
     
     if (useHsaConfig)
-    {   // hsa config
+    {
+        // hsa config
         AsmAmdHsaKernelConfig& config =
                 *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
         
@@ -1794,7 +1801,8 @@ bool AsmAmdCL2Handler::prepareBinary()
             continue;
         
         if (!kernelStates[i]->useHsaConfig)
-        {   // previous form of config (non-HSA)
+        {
+            // previous form of config (non-HSA)
             AmdCL2KernelConfig& config = output.kernels[i].config;
             cxuint userSGPRsNum = 4;
             if (config.useGeneric)
@@ -1818,7 +1826,8 @@ bool AsmAmdCL2Handler::prepareBinary()
             const cxuint extraSGPRsNum = (config.useEnqueue || config.useGeneric) ?
                         neededExtraSGPRsNum : 2;
             if (config.usedSGPRsNum!=BINGEN_DEFAULT)
-            {   // check only if sgprsnum set explicitly
+            {
+                // check only if sgprsnum set explicitly
                 if (maxTotalSgprsNum-extraSGPRsNum < config.usedSGPRsNum)
                 {
                     char numBuf[64];
@@ -1876,7 +1885,8 @@ bool AsmAmdCL2Handler::prepareBinary()
             if (config.gdsSegmentSize == BINGEN_DEFAULT)
                 config.gdsSegmentSize = 0;
             if (config.kernargSegmentSize == BINGEN64_DEFAULT)
-            {   // calculate kernel arg size
+            {
+                // calculate kernel arg size
                 const bool newBinaries = output.driverVersion >= 191205;
                 config.kernargSegmentSize = 
                         output.kernels[i].config.calculateKernelArgSize(
@@ -1899,7 +1909,8 @@ bool AsmAmdCL2Handler::prepareBinary()
             
             cxuint userSGPRsNum = 0;
             if (config.userDataNum == BINGEN8_DEFAULT)
-            {   // calcuate userSGPRs
+            {
+                // calcuate userSGPRs
                 const uint16_t sgprFlags = config.enableSgprRegisterFlags;
                 userSGPRsNum =
                     ((sgprFlags&AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER)!=0 ? 4 : 0) +
@@ -1930,7 +1941,8 @@ bool AsmAmdCL2Handler::prepareBinary()
             
             if (config.usedSGPRsNum!=BINGEN_DEFAULT &&
                     maxTotalSgprsNum < config.usedSGPRsNum)
-            {   // check only if sgprsnum set explicitly
+            {
+                // check only if sgprsnum set explicitly
                 char numBuf[64];
                 snprintf(numBuf, 64, "(max %u)", maxTotalSgprsNum);
                 assembler.printError(assembler.kernels[i].sourcePos, (std::string(
@@ -2110,7 +2122,8 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
     if (lastOp==AsmExprOp::BIT_AND || lastOp==AsmExprOp::MODULO ||
         lastOp==AsmExprOp::SIGNED_MODULO || lastOp==AsmExprOp::DIVISION ||
         lastOp==AsmExprOp::SIGNED_DIVISION || lastOp==AsmExprOp::SHIFT_RIGHT)
-    {   // check low or high relocation
+    {
+        // check low or high relocation
         relOpStart = 0;
         relOpEnd = expr->toTop(ops.size()-2);
         /// evaluate second argument
@@ -2119,7 +2132,8 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
         if (!expr->evaluate(assembler, relOpEnd, ops.size()-1, secondArg, tmpSectionId))
             return false;
         if (tmpSectionId!=ASMSECT_ABS)
-        {   // must be absolute
+        {
+            // must be absolute
             assembler.printError(expr->getSourcePos(),
                         "Second argument for relocation operand must be absolute");
             return false;

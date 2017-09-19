@@ -100,7 +100,8 @@ cxuint AsmAmdHandler::determineDriverVersion() const
 }
 
 void AsmAmdHandler::saveCurrentSection()
-{   /// save previous section
+{
+    /// save previous section
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
     else
@@ -344,7 +345,8 @@ void AsmAmdPseudoOps::getDriverVersion(AsmAmdHandler& handler, const char* lineP
     std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
                 AsmSymbol(ASMSECT_ABS, driverVersion));
     if (!res.second)
-    {   // found
+    {
+        // if symbol found
         if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
             asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
                         "' is already defined").c_str());
@@ -456,7 +458,8 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
     asmr.goToSection(pseudoOpPlace, thisSection);
     
     if (singleValue)
-    {   // with single value
+    {
+        // with single value
         uint32_t outValue = LEV(uint32_t(value));
         asmr.putData(4, (const cxbyte*)&outValue);
     }
@@ -520,7 +523,8 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
         PSEUDOOP_RETURN_BY_ERROR((std::string("Illegal place of ")+entryName).c_str())
     
     if (handler.sections[asmr.currentSection].extraId == CALNOTE_ATI_UAV)
-    {   // special version for uav (four values per entry)
+    {
+        // special version for uav (four values per entry)
         doUavEntry(handler, pseudoOpPlace, linePtr);
         return;
     }
@@ -642,7 +646,8 @@ void AsmAmdPseudoOps::doSampler(AsmAmdHandler& handler, const char* pseudoOpPlac
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel!=ASMKERN_GLOBAL &&
         asmr.sections[asmr.currentSection].type == AsmSectionType::CONFIG)
-    {   // accepts many values (this same format like
+    {
+        // accepts many values (this same format like
         const char* end = asmr.line + asmr.lineSize;
         
         if (asmr.currentKernel==ASMKERN_GLOBAL ||
@@ -1157,7 +1162,8 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
     bool typeNameDefined = false;
     std::string typeName;
     if (linePtr!=end && *linePtr=='"')
-    {   // if type name defined by user
+    {
+        // if type name defined by user
         good &= asmr.parseString(typeName, linePtr);
         if (!skipRequiredComma(asmr, linePtr))
             return false;
@@ -1184,7 +1190,8 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
             }
         }
         else
-        {   // if not OpenCL 2.0 and argument type only present in OpenCL 2.0
+        {
+            // if not OpenCL 2.0 and argument type only present in OpenCL 2.0
             skipSpacesToEnd(linePtr, end);
             ASM_NOTGOOD_BY_ERROR(linePtr, "Unknown argument type")
         }
@@ -1253,7 +1260,8 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
         if (!skipComma(asmr, haveComma, linePtr))
             return false;
         if (haveComma)
-        {   // parse ptr access
+        {
+            // parse ptr access
             while (linePtr!=end && *linePtr!=',')
             {
                 skipSpacesToEnd(linePtr, end);
@@ -1371,7 +1379,8 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
     }
     else if (!pointer && ((!cl20 && argType == KernelArgType::COUNTER32) ||
             (cl20 && argType == KernelArgType::SAMPLER)))
-    {   // counter uavId
+    {
+        // counter uavId
         if (!skipComma(asmr, haveComma, linePtr))
             return false;
         if (haveComma)
@@ -1688,7 +1697,8 @@ bool AsmAmdHandler::prepareBinary()
                 break;
             case AsmSectionType::DATA:
                 if (section.kernelId == ASMKERN_GLOBAL)
-                {   // this is global data
+                {
+                    // this is global data
                     if (sectionSize!=0)
                     {
                         output.globalDataSize = sectionSize;
@@ -1696,7 +1706,8 @@ bool AsmAmdHandler::prepareBinary()
                     }
                 }
                 else
-                {   // this is kernel data
+                {
+                    // this is kernel data
                     kernel->dataSize = sectionSize;
                     kernel->data = sectionData;
                 }

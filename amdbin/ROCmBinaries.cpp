@@ -54,7 +54,8 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     regionsNum = 0;
     const size_t symbolsNum = getSymbolsNum();
     for (size_t i = 0; i < symbolsNum; i++)
-    {   // count regions number
+    {
+        // count regions number
         const Elf64_Sym& sym = getSymbol(i);
         const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
         const cxbyte bind = ELF64_ST_BIND(sym.st_info);
@@ -115,7 +116,8 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     }
     
     if (hasRegionMap())
-    {   // create region map
+    {
+        // create region map
         regionsMap.resize(regionsNum);
         for (size_t i = 0; i < regionsNum; i++)
             regionsMap[i] = std::make_pair(regions[i].regionName, i);
@@ -339,7 +341,8 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     const char* comment = "CLRX ROCmBinGenerator " CLRX_VERSION;
     uint32_t commentSize = ::strlen(comment);
     if (input->comment!=nullptr)
-    {   // if comment, store comment section
+    {
+        // if comment, store comment section
         comment = input->comment;
         commentSize = input->commentSize;
         if (commentSize==0)

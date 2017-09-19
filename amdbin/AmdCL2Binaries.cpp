@@ -151,7 +151,8 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             globalDataRelsNum(0), globalDataRelEntrySize(0), globalDataRela(nullptr)
 {
     if (hasKernelData())
-    {   // get kernel datas and kernel stubs 
+    {
+        // get kernel datas and kernel stubs 
         std::vector<size_t> choosenSyms;
         const size_t symbolsNum = getSymbolsNum();
         for (size_t i = 0; i < symbolsNum; i++)
@@ -462,7 +463,8 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
             else if (argType == 15)
                 arg.argType = KernelArgType::POINTER;
             if (arg.argType == KernelArgType::POINTER)
-            {   // if pointer
+            {
+                // if pointer
                 if (ptrSpace==3)
                     arg.ptrSpace = KernelPtrSpace::LOCAL;
                 else if (ptrSpace==4)
@@ -547,7 +549,8 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBi
         {
             const char* symName = elfBin.getSymbolName(i);
             if (::strcmp(symName, "__OpenCL_compiler_options")==0)
-            {   // compile options
+            {
+                // compile options
                 const typename Types::Sym& sym = elfBin.getSymbol(i);
                 if (ULEV(sym.st_shndx) >= elfBin.getSectionHeadersNum())
                     throw Exception("Compiler options section header out of range");
@@ -565,7 +568,8 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBi
                 compileOptions.assign(coData, coData + coSize);
             }
             else if (::strcmp(symName, "acl_version_string")==0)
-            {   // acl version string
+            {
+                // acl version string
                 const typename Types::Sym& sym = elfBin.getSymbol(i);
                 if (ULEV(sym.st_shndx) >= elfBin.getSectionHeadersNum())
                     throw Exception("AclVersionString section header out of range");

@@ -258,7 +258,8 @@ void ImageMix::loadImageInt(const char* inFilename)
         size_t origin[3] = { 0, y, 0 };
         size_t region[3] = { imageWidth, 1, 1 };
         if (!hasAlpha)
-        {   // convert to row for image with alpha
+        {
+            // convert to row for image with alpha
             for (size_t x = 0; x < imageWidth; x++)
             {
                 outRow[x*4] = rows[y][x*3];

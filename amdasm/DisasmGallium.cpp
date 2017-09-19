@@ -271,7 +271,8 @@ void CLRX::disassembleGallium(std::ostream& output,
                 output.write(lineBuf, pos);
             }
             if (!doDumpConfig)
-            {   /// proginfo
+            {
+                /// proginfo
                 const cxuint progInfoEntriesNum = galliumInput->isLLVM390 ? 5 : 3;
                 output.write("    .proginfo\n", 14);
                 for (cxuint k = 0; k < progInfoEntriesNum; k++)
@@ -302,7 +303,8 @@ void CLRX::disassembleGallium(std::ostream& output,
             isaDisassembler->addNamedLabel(kinput.offset, kinput.kernelName);
     }
     if (doDumpCode && galliumInput->code != nullptr && galliumInput->codeSize != 0)
-    {   // print text
+    {
+        // print text
         if (!galliumInput->isAMDHSA)
         {
             output.write(".text\n", 6);
@@ -311,7 +313,8 @@ void CLRX::disassembleGallium(std::ostream& output,
             isaDisassembler->disassemble();
         }
         else
-        {   // LLVM 4.0 - AMDHSA code
+        {
+            // LLVM 4.0 - AMDHSA code
             std::vector<ROCmDisasmRegionInput> regions(galliumInput->kernels.size());
             for (size_t i = 0; i < galliumInput->kernels.size(); i++)
             {

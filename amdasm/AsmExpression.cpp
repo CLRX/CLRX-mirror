@@ -83,7 +83,8 @@ AsmExpression::AsmExpression(const AsmSourcePos& _pos, size_t _symOccursNum,
 AsmExpression::~AsmExpression()
 {
     if (!baseExpr)
-    {   // delete all occurrences in expression at that place
+    {
+        // delete all occurrences in expression at that place
         for (size_t i = 0, j = 0; i < ops.size(); i++)
             if (ops[i] == AsmExprOp::ARG_SYMBOL)
             {
@@ -117,7 +118,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
     uint64_t value = 0; // by default is zero
     cxuint sectionId = 0;
     if (!relativeSymOccurs)
-    {   // all value is absolute
+    {
+        // all value is absolute
         std::stack<uint64_t> stack;
         
         size_t argPos = 0;
@@ -319,9 +321,11 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
         sectionId = ASMSECT_ABS;
     }
     else
-    {   // relative symbols
+    {
+        // relative symbols
         struct RelMultiply
-        {   // multiplication of section
+        {
+            // multiplication of section
             uint64_t multiply;
             cxuint sectionId;
         };
@@ -432,7 +436,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Multiplication is not allowed for two relative values")
                         if (relatives2.empty())
-                        {   // multiply relatives
+                        {
+                            // multiply relatives
                             if (value2 != 0)
                                 for (RelMultiply& r: relatives)
                                     r.multiply *= value2;
@@ -440,7 +445,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                                 relatives.clear();
                         }
                         else
-                        {   // multiply relatives2
+                        {
+                            // multiply relatives2
                             if (value != 0)
                             {
                                 relatives.assign(relatives2.begin(), relatives2.end());
@@ -698,7 +704,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                      "Only one relative=1 (section) can be result of expression")
     }
     if (!failed)
-    {   // write results only if no errors
+    {
+        // write results only if no errors
         outSectionId = sectionId;
         outValue = value;
     }
@@ -837,7 +844,8 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                     createSymbolEntryForSnapshot(symEntry, topParentSourcePos));
         auto res = snapshotMap->insert(newSymEntry.get());
         if (!res.second)
-        {   // do nothing (symbol snapshot already made)
+        {
+            // do nothing (symbol snapshot already made)
             outSymEntry = *res.first;
             outSymEntry->second.refCount++;
             return true;
@@ -861,22 +869,26 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
         {
             for (; opIndex < opsSize; opIndex++)
                 if (ops[opIndex] == AsmExprOp::ARG_SYMBOL)
-                {   // check this symbol
+                {
+                    // check this symbol
                     AsmSymbolEntry* nextSymEntry = args[argIndex].symbol;
                     if (nextSymEntry->second.base)
-                    {   // new base expression (set by using .'eqv')
+                    {
+                        // new base expression (set by using .'eqv')
                         std::unique_ptr<AsmSymbolEntry> newSymEntry(
                                     createSymbolEntryForSnapshot(*nextSymEntry,
                                      &(expr->sourcePos)));
                         auto res = snapshotMap->insert(newSymEntry.get());
                         if (!res.second)
-                        {    // replace this symEntry by symbol from tempSymbolMap
+                        {
+                            // replace this symEntry by symbol from tempSymbolMap
                             nextSymEntry = *res.first;
                             args[argIndex].symbol = nextSymEntry;
                             nextSymEntry->second.refCount++;
                         }
                         else
-                        {   // new symEntry to stack
+                        {
+                            // new symEntry to stack
                             stack.push(StackEntry(newSymEntry.release()));
                             se.argIndex = argIndex;
                             se.opIndex = opIndex;
@@ -885,7 +897,8 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                     }
                     
                     if (nextSymEntry->second.hasValue)
-                    {   // put value to argument
+                    {
+                        // put value to argument
                         if (nextSymEntry->second.regRange)
                             ASMX_NOTGOOD_BY_ERROR(expr->getSourcePos(),
                                                  "Expression have register symbol")
@@ -913,10 +926,12 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                     argIndex++;
         }
         if (opIndex == opsSize)
-        {   // check if expression is evaluatable
+        {
+            // check if expression is evaluatable
             AsmSymbolEntry* thisSymEntry = se.releaseEntry();
             if (expr->symOccursNum == 0) // no symbols, we try to evaluate
-            {   // evaluate and remove obsolete expression
+            {
+                // evaluate and remove obsolete expression
                 if (!expr->evaluate(assembler, thisSymEntry->second.value,
                             thisSymEntry->second.sectionId))
                     good = false;
@@ -928,14 +943,16 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
             thisSymEntry->second.snapshot = true;
             stack.pop();
             if (!stack.empty())
-            {   // put to place in parent expression
+            {
+                // put to place in parent expression
                 StackEntry& parentStackEntry = stack.top();
                 AsmExpression* parentExpr = parentStackEntry.entry->second.expression;
                 parentExpr->args[parentStackEntry.argIndex].symbol = thisSymEntry;
                 parentExpr->ops[parentStackEntry.opIndex] = AsmExprOp::ARG_SYMBOL;
             }
             else
-            {   // last we return it
+            {
+                // last we return it
                 outSymEntry = thisSymEntry;
                 break;
             }
@@ -1259,7 +1276,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                                       *symEntry, symEntry, &(expr->sourcePos));
                         if (symEntry==nullptr ||
                             (!symEntry->second.hasValue && dontResolveSymbolsLater))
-                        {   // no symbol not found
+                        {
+                            // no symbol not found
                             std::string errorMsg("Expression have unresolved symbol '");
                             errorMsg.append(linePtr, symEndStr);
                             errorMsg += '\'';
@@ -1268,7 +1286,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                         else
                         {
                             if (symEntry->second.hasValue && !makeBase)
-                            {   // resolve only if have symbol have value,
+                            {
+                                // resolve only if have symbol have value,
                                 // but do not that if expression will be base for snapshot
                                 if (!assembler.isAbsoluteSymbol(symEntry->second))
                                 {
@@ -1291,7 +1310,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                     }
                     else if (parenthesisCount != 0 || (*linePtr >= '0' &&
                             *linePtr <= '9') || *linePtr == '\'')
-                    {   // other we try to parse number
+                    {
+                        // other we try to parse number
                         const char* oldStr = linePtr;
                         if (!assembler.parseLiteral(arg.value, linePtr))
                         {
@@ -1312,7 +1332,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                     }
                 }
                 else
-                {   // otherwise we exit if no left parenthesis
+                {
+                    // otherwise we exit if no left parenthesis
                     if (parenthesisCount == 0)
                     { doExit = true; break; }
                     else
@@ -1344,7 +1365,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
             messagePositions.push_back(lineCol);
         
         if (op != AsmExprOp::NONE)
-        {   // if operator
+        {
+            // if operator
             const bool unaryOp = isUnaryOp(op);
             const cxuint priority = (parenthesisCount<<3) +
                         asmOpPrioritiesTbl[cxuint(op)];
@@ -1372,7 +1394,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                 }
                 else if (stack.top().op != AsmExprOp::CHOICE_START ||
                         stack.top().priority != priority)
-                {   // not found
+                {
+                    // not found
                     ASMX_NOTGOOD_BY_ERROR(beforeToken, "Missing '?' before ':'")
                     continue; // do noy change stack and them entries
                 }
@@ -1391,7 +1414,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                         (op == AsmExprOp::CHOICE_START) + unaryOp > entry.priority)
                         break;
                     if (entry.op == AsmExprOp::CHOICE_START)
-                    {   // unfinished choice
+                    {
+                        // unfinished choice
                         stack.pop();
                         ASMX_NOTGOOD_BY_ERROR(messagePositions[entry.lineColPos],
                                  "Missing ':' for '?'")
@@ -1423,7 +1447,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
         {
             const ConExprOpEntry& entry = stack.top();
             if (entry.op == AsmExprOp::CHOICE_START)
-            {   // unfinished choice
+            {
+                // unfinished choice
                 ASMX_NOTGOOD_BY_ERROR(messagePositions[entry.lineColPos],
                          "Missing ':' for '?'")
                 break;
@@ -1444,7 +1469,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                   ops.size(), ops.data(), outMsgPositions.size(), outMsgPositions.data(),
                   argsNum, args.data(), makeBase);
         if (!makeBase)
-        {   // add expression into symbol occurrences in expressions
+        {
+            // add expression into symbol occurrences in expressions
             // only for non-base expressions
             for (size_t i = 0, j = 0; j < argsNum; i++)
                 if (ops[i] == AsmExprOp::ARG_SYMBOL)
@@ -1483,7 +1509,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
     catch(...)
     {
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
-        {   // remove from assembler symbolSnapshots
+        {
+            // remove from assembler symbolSnapshots
             assembler.symbolSnapshots.erase(symEntry);
             // remove this snapshot
             delete symEntry->second.expression;

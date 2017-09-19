@@ -406,13 +406,15 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
     {
         const ROCmDisasmRegionInput& region = regions[sorted[i].second];
         if (region.type==ROCmRegionType::KERNEL && doDumpCode)
-        {   // kernel code
+        {
+            // kernel code
             isaDisassembler->setInput(region.size-256, code + region.offset+256,
                                 region.offset+256);
             isaDisassembler->analyzeBeforeDisassemble();
         }
         else if (region.type==ROCmRegionType::FKERNEL && doDumpCode)
-        {   // function code
+        {
+            // function code
             isaDisassembler->setInput(region.size, code + region.offset,
                                 region.offset);
             isaDisassembler->analyzeBeforeDisassemble();
@@ -445,6 +447,7 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
         size_t dataSize = codeSize - region.offset;
         if (i+1<regionsNum)
         {
+            // if not last region, then set size as (next_offset - this_offset)
             const ROCmDisasmRegionInput& newRegion = regions[sorted[i+1].second];
             dataSize = newRegion.offset - region.offset;
         }
@@ -460,6 +463,7 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
             
             if (doDumpCode)
             {
+                // dump code of region
                 isaDisassembler->setInput(dataSize-256, code + region.offset+256,
                                 region.offset+256, region.offset+1);
                 isaDisassembler->setDontPrintLabels(i+1<regionsNum);
@@ -479,6 +483,7 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
     
     if (regionsNum!=0 && regions[sorted[regionsNum-1].second].type==ROCmRegionType::DATA)
     {
+        // if last region is data then finishing dumping data
         const ROCmDisasmRegionInput& region = regions[sorted[regionsNum-1].second];
         // set labelIters to previous position
         isaDisassembler->setInput(prevRegionPos, code + region.offset+region.size,

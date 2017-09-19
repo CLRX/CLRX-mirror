@@ -264,7 +264,8 @@ cxuint AsmGalliumHandler::getSectionId(const char* sectionName) const
 }
 
 void AsmGalliumHandler::setCurrentKernel(cxuint kernel)
-{   // set kernel and their default section
+{
+    // set kernel and their default section
     if (kernel != ASMKERN_GLOBAL && kernel >= kernelStates.size())
         throw AsmFormatException("KernelId out of range");
     
@@ -348,7 +349,8 @@ void AsmGalliumHandler::restoreKcodeCurrentAllocRegs()
 void AsmGalliumHandler::saveKcodeCurrentAllocRegs()
 {
     if (currentKcodeKernel != ASMKERN_GLOBAL)
-    {   // save other state
+    {
+        // save other state
         size_t regTypesNum;
         Kernel& oldKernel = *kernelStates[currentKcodeKernel];
         const cxuint* regs = assembler.isaAssembler->getAllocatedRegisters(
@@ -454,7 +456,8 @@ void AsmGalliumPseudoOps::getXXXVersion(AsmGalliumHandler& handler, const char* 
     std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
                 AsmSymbol(ASMSECT_ABS, driverVersion));
     if (!res.second)
-    {   // found
+    {
+        // found
         if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
             asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
                         "' is already defined").c_str());
@@ -942,13 +945,15 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     {
         toLowerString(name);
         if (::strcmp(name, "griddim")==0)
-        {   // shortcur for grid dimension
+        {
+            // shortcur for grid dimension
             argSemantic = GalliumArgSemantic::GRID_DIMENSION;
             argType = GalliumArgType::SCALAR;
             semanticDefined = true;
         }
         else if (::strcmp(name, "gridoffset")==0)
-        {   // shortcut for grid dimension
+        {
+            // shortcut for grid dimension
             argSemantic = GalliumArgSemantic::GRID_OFFSET;
             argType = GalliumArgType::SCALAR;
             semanticDefined = true;
@@ -1034,7 +1039,8 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                     good = false;
                 
                 if (!semanticDefined)
-                {   /// if semantic has not been defined in the first argument
+                {
+                    /// if semantic has not been defined in the first argument
                     if (!skipComma(asmr, haveComma, linePtr))
                         return;
                     if (haveComma)
@@ -1163,7 +1169,8 @@ void AsmGalliumPseudoOps::doKCode(AsmGalliumHandler& handler, const char* pseudo
         skipSpacesToEnd(linePtr, end);
         bool removeKernel = false;
         if (linePtr!=end && *linePtr=='-')
-        {   // '-' - remove this kernel from current kernel selection
+        {
+            // '-' - remove this kernel from current kernel selection
             removeKernel = true;
             linePtr++;
         }
@@ -1172,7 +1179,8 @@ void AsmGalliumPseudoOps::doKCode(AsmGalliumHandler& handler, const char* pseudo
             linePtr++;
             skipSpacesToEnd(linePtr, end);
             if (linePtr==end)
-            {   // add all kernels
+            {
+                // add all kernels
                 for (cxuint k = 0; k < handler.kernelStates.size(); k++)
                     newSel.insert(k);
                 break;
@@ -1240,7 +1248,8 @@ void AsmGalliumPseudoOps::doKCodeEnd(AsmGalliumHandler& handler, const char* pse
         asmr.handleRegionsOnKernels(handler.kcodeSelection, oldKCodeSel,
                         handler.codeSection);
     else if (handler.currentKcodeKernel != ASMKERN_GLOBAL)
-    {   // if choosen current kernel
+    {
+        // if choosen current kernel
         std::vector<cxuint> curKernelSel;
         curKernelSel.push_back(handler.currentKcodeKernel);
         asmr.handleRegionsOnKernels(curKernelSel, oldKCodeSel, handler.codeSection);
@@ -1622,7 +1631,8 @@ static const AMDGPUArchValues galliumAmdGpuArchValuesTbl[] =
 };
 
 bool AsmGalliumHandler::prepareBinary()
-{   // before call we initialize pointers and datas
+{
+    // before call we initialize pointers and datas
     bool good = true;
     
     output.is64BitElf = assembler.is64Bit();
@@ -1630,12 +1640,14 @@ bool AsmGalliumHandler::prepareBinary()
     size_t kernelsNum = kernelStates.size();
     output.deviceType = assembler.getDeviceType();
     if (assembler.isaAssembler!=nullptr)
-    {   // make last kernel registers pool updates
+    {
+        // make last kernel registers pool updates
         if (kcodeSelStack.empty())
             saveKcodeCurrentAllocRegs();
         else
             while (!kcodeSelStack.empty())
-            {   // pop from kcode stack and apply changes
+            {
+                // pop from kcode stack and apply changes
                 AsmGalliumPseudoOps::updateKCodeSel(*this, kcodeSelection);
                 kcodeSelection = kcodeSelStack.top();
                 kcodeSelStack.pop();
@@ -1709,7 +1721,8 @@ bool AsmGalliumHandler::prepareBinary()
         cxuint userSGPRsNum = config.userDataNum;
         
         if (llvmVersion >= 40000U && config.userDataNum == BINGEN8_DEFAULT)
-        {   // fixed userdatanum for LLVM 4.0
+        {
+            // fixed userdatanum for LLVM 4.0
             const AmdHsaKernelConfig& hsaConfig  = *kernelStates[i]->hsaConfig.get();
             // calcuate userSGPRs
             const uint16_t sgprFlags = hsaConfig.enableSgprRegisterFlags;
@@ -1739,7 +1752,8 @@ bool AsmGalliumHandler::prepareBinary()
                    ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
         
         if (config.usedSGPRsNum!=BINGEN_DEFAULT && maxSGPRsNum < config.usedSGPRsNum)
-        {   // check only if sgprsnum set explicitly
+        {
+            // check only if sgprsnum set explicitly
             char numBuf[64];
             snprintf(numBuf, 64, "(max %u)", maxSGPRsNum);
             assembler.printError(assembler.kernels[i].sourcePos, (std::string(
@@ -1752,7 +1766,8 @@ bool AsmGalliumHandler::prepareBinary()
         {
             cxuint allocFlags = kernelStates[i]->allocRegFlags;
             if (llvmVersion >= 40000U)
-            {   // fix alloc reg flags for AMD HSA (such as ROCm)
+            {
+                // fix alloc reg flags for AMD HSA (such as ROCm)
                 const AmdHsaKernelConfig& hsaConfig  = *kernelStates[i]->hsaConfig.get();
                 allocFlags = kernelStates[i]->allocRegFlags |
                     // flat_scratch_init
@@ -1814,7 +1829,8 @@ bool AsmGalliumHandler::prepareBinary()
         GalliumKernelInput& kinput = output.kernels[ki];
         auto it = symbolMap.find(kinput.kernelName);
         if (it == symbolMap.end() || !it->second.isDefined())
-        {   // error, undefined
+        {
+            // error, undefined
             assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
                         "Symbol for kernel '")+kinput.kernelName.c_str()+
                         "' is undefined").c_str());
@@ -1823,7 +1839,8 @@ bool AsmGalliumHandler::prepareBinary()
         }
         const AsmSymbol& symbol = it->second;
         if (!symbol.hasValue)
-        {   // error, unresolved
+        {
+            // error, unresolved
             assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
                     "Symbol for kernel '") + kinput.kernelName.c_str() +
                     "' is not resolved").c_str());
@@ -1831,7 +1848,8 @@ bool AsmGalliumHandler::prepareBinary()
             continue;
         }
         if (symbol.sectionId != codeSection)
-        {   /// error, wrong section
+        {
+            /// error, wrong section
             assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
                     "Symbol for kernel '")+kinput.kernelName.c_str()+
                     "' is defined for section other than '.text'").c_str());
@@ -1840,7 +1858,8 @@ bool AsmGalliumHandler::prepareBinary()
         }
         kinput.offset = symbol.value;
         if (llvmVersion >= 40000U && output.kernels[ki].useConfig)
-        {   // requires amdhsa-gcn (with HSA header)
+        {
+            // requires amdhsa-gcn (with HSA header)
             // hotfix
             GalliumKernelConfig config = output.kernels[ki].config;
             AmdHsaKernelConfig outConfig;
@@ -1848,7 +1867,8 @@ bool AsmGalliumHandler::prepareBinary()
             
             const Kernel& kernel = *kernelStates[ki];
             if (kernel.hsaConfig != nullptr)
-            {   // replace by HSA config
+            {
+                // replace by HSA config
                 ::memcpy(&outConfig, kernel.hsaConfig.get(), sizeof(AmdHsaKernelConfig));
                 // set config from HSA config
                 const AsmAmdHsaKernelConfig& hsaConfig = *kernel.hsaConfig.get();

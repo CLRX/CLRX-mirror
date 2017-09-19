@@ -170,7 +170,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         if (i < binary.getISAMetadatasNum())
             isaMetadata = &binary.getISAMetadataEntry(i);
         if (isaMetadata == nullptr || isaMetadata->kernelName != kernelInfo.kernelName)
-        {   // fallback if not in order
+        {
+            // fallback if not in order
             try
             { isaMetadata = &binary.getISAMetadataEntry(
                             kernelInfo.kernelName.c_str()); }
@@ -208,7 +209,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
             kinput.setupSize = kernelData->setupSize;
         }
         if (!isInnerNewBinary)
-        {   // old drivers
+        {
+            // old drivers
             const AmdCL2OldInnerGPUBinary& oldInnerBin = binary.getOldInnerBinary();
             const AmdCL2GPUKernelStub* kstub = nullptr;
             if (i < innerBin.getKernelsNum())
@@ -222,7 +224,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
             }
         }
         else
-        {   // relocations
+        {
+            // relocations
             const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
             
             if (sortedRelocIter != sortedRelocs.end() &&
@@ -234,7 +237,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
                 size_t end = kinput.code+kinput.codeSize-textPtr;
                 for (; sortedRelocIter != sortedRelocs.end() &&
                     sortedRelocIter->first<=end; ++sortedRelocIter)
-                {   // add relocations
+                {
+                    // add relocations
                     const Elf64_Rela& rela = innerBin.getTextRelaEntry(
                                 sortedRelocIter->second);
                     uint32_t symIndex = ELF64_R_SYM(ULEV(rela.r_info));
@@ -368,7 +372,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
         config.reqdWorkGroupSize[i] = ULEV(mdHdr->reqdWorkGroupSize[i]);
     
     if (setup != nullptr)
-    {   // if passed to this function
+    {
+        // if passed to this function
         const IntAmdCL2SetupData* setupData =
                 reinterpret_cast<const IntAmdCL2SetupData*>(setup + 48);
         uint32_t pgmRSRC1 = ULEV(setupData->pgmRSRC1);
@@ -404,7 +409,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     
     // get samplers
     for (const AmdCL2RelaEntry& reloc: textRelocs)
-    {   // check if sampler
+    {
+        // check if sampler
         auto it = std::find(samplerOffsets.begin(), samplerOffsets.end(), reloc.addend);
         if (it!=samplerOffsets.end())
             config.samplers.push_back(it-samplerOffsets.begin());
@@ -524,7 +530,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                 arg.resId = LEV(argPtr->resId); // sampler and images have resource id
         }
         else
-        {   // pointer or pipe
+        {
+            // pointer or pipe
             if (argPtr->isPipe)
                 arg.used = (ULEV(argPtr->isPointerOrPipe))==3;
             else
@@ -537,7 +544,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             else if (argType == 15)
                 arg.argType = KernelArgType::POINTER;
             if (arg.argType == KernelArgType::POINTER)
-            {   // if pointer
+            {
+                // if pointer
                 if (ptrSpace==3)
                     arg.ptrSpace = KernelPtrSpace::LOCAL;
                 else if (ptrSpace==4)
@@ -628,7 +636,8 @@ static void dumpAmdCL2KernelConfig(std::ostream& output,
         output.write("    .config\n", 12);
     
     if (!hsaConfig)
-    {   // do not print old-config style params if HSA config enabled
+    {
+        // do not print old-config style params if HSA config enabled
         if (config.dimMask != BINGEN_DEFAULT)
         {
             strcpy(buf, "        .dims ");
@@ -657,7 +666,8 @@ static void dumpAmdCL2KernelConfig(std::ostream& output,
         output.write(buf, bufSize);
     
     if (!hsaConfig)
-    {   // do not print old-config style params if HSA config enabled
+    {
+        // do not print old-config style params if HSA config enabled
         bufSize = snprintf(buf, 100, "        .sgprsnum %u\n", config.usedSGPRsNum);
         output.write(buf, bufSize);
         bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", config.usedVGPRsNum);
@@ -772,14 +782,16 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     if (doSetup && !doDumpConfig)
     {
         if (amdCL2Input->samplerInit!=nullptr && amdCL2Input->samplerInitSize!=0)
-        {   /// sampler init entries
+        {
+            /// sampler init entries
             output.write(".samplerinit\n", 13);
             printDisasmData(amdCL2Input->samplerInitSize,
                             amdCL2Input->samplerInit, output);
         }
     }
     else if (doDumpConfig && amdCL2Input->samplerInit!=nullptr)
-    {   // print sampler values instead raw samler data in .samplerinit
+    {
+        // print sampler values instead raw samler data in .samplerinit
         char buf[50];
         const size_t samplersNum = amdCL2Input->samplerInitSize>>3;
         for (size_t i = 0; i < samplersNum; i++)
@@ -853,12 +865,14 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         if (doMetadata && !doDumpConfig)
         {
             if (kinput.metadata != nullptr && kinput.metadataSize != 0)
-            {   // if kernel metadata available
+            {
+                // if kernel metadata available
                 output.write("    .metadata\n", 14);
                 printDisasmData(kinput.metadataSize, kinput.metadata, output, true);
             }
             if (kinput.isaMetadata != nullptr && kinput.isaMetadataSize != 0)
-            {   // if kernel isametadata available
+            {
+                // if kernel isametadata available
                 output.write("    .isametadata\n", 17);
                 printDisasmData(kinput.isaMetadataSize, kinput.isaMetadata, output, true);
             }
@@ -866,12 +880,14 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         if (doSetup && !doDumpConfig)
         {
             if (kinput.stub != nullptr && kinput.stubSize != 0)
-            {   // if kernel setup available
+            {
+                // if kernel setup available
                 output.write("    .stub\n", 10);
                 printDisasmData(kinput.stubSize, kinput.stub, output, true);
             }
             if (kinput.setup != nullptr && kinput.setupSize != 0)
-            {   // if kernel setup available
+            {
+                // if kernel setup available
                 output.write("    .setup\n", 11);
                 printDisasmData(kinput.setupSize, kinput.setup, output, true);
             }
@@ -896,7 +912,8 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
             
             dumpAmdCL2KernelConfig(output, config, doHSAConfig);
             if (doHSAConfig)
-            {   // print as HSA config
+            {
+                // print as HSA config
                 dumpAMDHSAConfig(output, maxSgprsNum, arch,
                      *reinterpret_cast<const AmdHsaKernelConfig*>(kinput.setup));
                 output.write("    .hsaconfig\n", 15);
@@ -906,7 +923,8 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         }
         
         if (doDumpCode && kinput.code != nullptr && kinput.codeSize != 0)
-        {   // input kernel code (main disassembly)
+        {
+            // input kernel code (main disassembly)
             isaDisassembler->clearRelocations();
             isaDisassembler->addRelSymbol(".gdata");
             isaDisassembler->addRelSymbol(".ddata"); // rw data

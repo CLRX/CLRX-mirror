@@ -765,7 +765,8 @@ clrxclCompileProgram(cl_program           program,
         for (cl_uint i = 0; i < num_input_headers; i++)
         {
             if (input_headers[i] == nullptr)
-            {   // bad header
+            {
+                // bad header
                 std::lock_guard<std::mutex> lock(p->mutex);
                 clrxReleaseConcurrentBuild(p);
                 delete wrappedData;
@@ -786,7 +787,8 @@ clrxclCompileProgram(cl_program           program,
             for (cl_uint i = 0; i < num_devices; i++)
             {
                 if (device_list[i] == nullptr)
-                {   // bad device
+                {
+                    // bad device
                     std::lock_guard<std::mutex> lock(p->mutex);
                     clrxReleaseConcurrentBuild(p);
                     delete wrappedData;
@@ -805,7 +807,8 @@ clrxclCompileProgram(cl_program           program,
         }
     }
     catch(const std::bad_alloc& ex)
-    {   // if allocation failed
+    {
+        // if allocation failed
         std::lock_guard<std::mutex> lock(p->mutex);
         clrxReleaseConcurrentBuild(p);
         delete wrappedData;
@@ -822,7 +825,8 @@ clrxclCompileProgram(cl_program           program,
             (status != CL_SUCCESS || wrappedData->callDone);
     
     if (wrappedData == nullptr || !wrappedData->callDone)
-    {   // do it if callback not called
+    {
+        // do it if callback not called
         if (status != CL_INVALID_DEVICE)
         {
             const cl_int newStatus = clrxUpdateProgramAssocDevices(p);

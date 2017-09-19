@@ -394,7 +394,8 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
     assertTrue(testName, "good", assembler.assemble());
     // retrieve data
     if (assembler.getBinaryFormat()==BinaryFormat::AMD)
-    {   // Catalyst
+    {
+        // Catalyst
         const AmdInput* input = static_cast<const AsmAmdHandler*>(
                     assembler.getFormatHandler())->getOutput();
         assertTrue(testName, "input!=nullptr", input!=nullptr);
@@ -417,7 +418,8 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
         }
     }
     else if (assembler.getBinaryFormat()==BinaryFormat::GALLIUM)
-    {   // GalliumCompute
+    {
+        // GalliumCompute
         const GalliumInput* input = static_cast<const AsmGalliumHandler*>(
                     assembler.getFormatHandler())->getOutput();
         assertTrue(testName, "input!=nullptr", input!=nullptr);
@@ -439,7 +441,8 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
         }
     }
     else if (assembler.getBinaryFormat()==BinaryFormat::ROCM)
-    {   // ROCmCompute
+    {
+        // ROCmCompute
         const ROCmInput* input = static_cast<const AsmROCmHandler*>(
                     assembler.getFormatHandler())->getOutput();
         assertTrue(testName, "input!=nullptr", input!=nullptr);

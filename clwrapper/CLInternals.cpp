@@ -314,7 +314,8 @@ void clrxReleaseOnlyCLRXDevice(CLRXDevice* device)
 {
     if (device->parent != nullptr)
         if (device->refCount.fetch_sub(1) == 1)
-        {   // amdOclDevice has been already released, we release only our device
+        {
+            // amdOclDevice has been already released, we release only our device
             clrxReleaseOnlyCLRXDevice(device->parent);
             delete device;
         }
@@ -323,7 +324,8 @@ void clrxReleaseOnlyCLRXDevice(CLRXDevice* device)
 void clrxReleaseOnlyCLRXContext(CLRXContext* context)
 {
     if (context->refCount.fetch_sub(1) == 1)
-    {   // amdOclContext has been already released, we release only our context
+    {
+        // amdOclContext has been already released, we release only our context
         for (cl_uint i = 0; i < context->devicesNum; i++)
             clrxReleaseOnlyCLRXDevice(context->devices[i]);
         delete context;
@@ -333,7 +335,8 @@ void clrxReleaseOnlyCLRXContext(CLRXContext* context)
 void clrxReleaseOnlyCLRXMemObject(CLRXMemObject* memObject)
 {
     if (memObject->refCount.fetch_sub(1) == 1)
-    {   // amdOclContext has been already released, we release only our context
+    {
+        // amdOclContext has been already released, we release only our context
         clrxReleaseOnlyCLRXContext(memObject->context);
         if (memObject->parent != nullptr)
             clrxReleaseOnlyCLRXMemObject(memObject->parent);
@@ -500,7 +503,8 @@ void clrxWrapperInitialize()
                 if (clrxPlatform.openCLVersionNum >= getOpenCLVersionNum(1, 2))
                 {   /* update p->extEntries for platform */
                     for (size_t k = 0; k < clrxExtEntriesNum; k++)
-                    {   // erase CLRX extension entry if not reflected in AMD extensions
+                    {
+                        // erase CLRX extension entry if not reflected in AMD extensions
                         CLRXExtensionEntry& extEntry = clrxPlatform.extEntries[k];
 #ifdef CL_VERSION_1_2
                         if (amdOclPlatform->dispatch->
@@ -621,7 +625,8 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             customDevicesNum = 0;
         
         if (::strstr(platform->extensions.get(), "cl_amd_offline_devices") != nullptr)
-        {   // if amd offline devices is available
+        {
+            // if amd offline devices is available
             cl_context_properties clctxprops[5];
             clctxprops[0] = CL_CONTEXT_PLATFORM;
             clctxprops[1] = (cl_context_properties)platform->amdOclPlatform;
@@ -974,7 +979,8 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
         
         if (p->transDevicesMap != nullptr)
             for (cl_uint i = 0; i < amdAssocDevicesNum; i++)
-            {   // translate AMD device to CLRX device
+            {
+                // translate AMD device to CLRX device
                 CLRXProgramDevicesMap::const_iterator found =
                         p->transDevicesMap->find(amdAssocDevices[i]);
                 if (found == p->transDevicesMap->end())
@@ -1004,7 +1010,8 @@ void CL_CALLBACK clrxBuildProgramNotifyWrapper(cl_program program, void * user_d
     {
         std::lock_guard<std::mutex> l(p->mutex);
         if (!wrappedDataPtr->inClFunction)
-        {   // do it if not done in clBuildProgram
+        {
+            // do it if not done in clBuildProgram
             const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
             if (newStatus != CL_SUCCESS)
                 clrxAbort("Fatal error: cant update programAssocDevices");
@@ -1164,7 +1171,8 @@ cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
         }
     }
     catch(const std::bad_alloc& ex)
-    {   // revert translation
+    {
+        // revert translation
         for (cl_uint i = 0; i < dp; i++)
         {
             CLRXDevice* d = static_cast<CLRXDevice*>(out_devices[i]);
@@ -1349,7 +1357,8 @@ void clrxInitProgramTransDevicesMap(CLRXProgram* program,
 {
     /* initialize transDevicesMap if not needed */
     if (program->transDevicesMap == nullptr) // if not initialized
-    {   // initialize transDevicesMap
+    {
+        // initialize transDevicesMap
         program->transDevicesMap = new CLRXProgramDevicesMap;
         for (cl_uint i = 0; i < program->context->devicesNum; i++)
         {
@@ -1375,7 +1384,8 @@ void clrxReleaseConcurrentBuild(CLRXProgram* program)
 void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
 {
     if (program->refCount.fetch_sub(1) == 1)
-    {   // amdOclProgram has been already released, we release only our program
+    {
+        // amdOclProgram has been already released, we release only our program
         clrxReleaseOnlyCLRXContext(program->context);
         if (program->amdOclAsmProgram!=nullptr)
             if (program->amdOclAsmProgram->dispatch->clReleaseProgram(
@@ -1469,7 +1479,8 @@ static cl_int genDeviceOrder(cl_uint devicesNum, const cl_device_id* devices,
                cxuint* devAssocOrders)
 {
     if (assocDevicesNum < 16)
-    {   // small amount of devices
+    {
+        // small amount of devices
         for (cxuint i = 0; i < devicesNum; i++)
         {
             auto it = std::find(assocDevices, assocDevices+assocDevicesNum, devices[i]);
@@ -1480,7 +1491,8 @@ static cl_int genDeviceOrder(cl_uint devicesNum, const cl_device_id* devices,
         }
     }
     else
-    {   // more devices
+    {
+        // more devices
         std::unique_ptr<std::pair<cl_device_id, cxuint>[]> sortedAssocDevs(
                 new std::pair<cl_device_id, cxuint>[assocDevicesNum]);
         for (cxuint i = 0; i < assocDevicesNum; i++)
@@ -1582,7 +1594,8 @@ try
         else if (nextIsLang) // otherwise
             nextIsLang = false;
         else if (word[0] == '-')
-        {   // if option
+        {
+            // if option
             if (word == "-w")
                 asmFlags &= ~ASM_WARNINGS;
             else if (word == "-noMacroCase")
@@ -1622,7 +1635,8 @@ try
             else if (word == "-x" )
                 nextIsLang = true;
             else if (word != "-xasm")
-            {   // if not language selection to asm
+            {
+                // if not language selection to asm
                 program->asmState.store(CLRXAsmState::FAILED);
                 return CL_INVALID_BUILD_OPTIONS;
             }
@@ -1704,7 +1718,8 @@ try
         try
         { devType = cxuint(getGPUDeviceTypeFromName(entry.devName.c_str())); }
         catch(const Exception& ex)
-        {   // if assembler not available for this device
+        {
+            // if assembler not available for this device
             progDevEntry.status = CL_BUILD_ERROR;
             asmNotAvailable = true;
             prevDeviceType = devType;
@@ -1712,7 +1727,8 @@ try
         }
         // make duplicate only if not first entry
         if (i!=0 && devType == prevDeviceType)
-        {   // copy from previous device (if this same device type)
+        {
+            // copy from previous device (if this same device type)
             compiledProgBins[i] = compiledProgBins[i-1];
             progDevEntry = progDeviceEntries[i-1];
             continue; // skip if this same architecture
@@ -1746,7 +1762,8 @@ try
         try
         { good = assembler.assemble(); }
         catch(...)
-        {   // if failed
+        {
+            // if failed
             progDevEntry.log = RefPtr<CLProgLogEntry>(
                             new CLProgLogEntry(std::move(msgString)));
             progDevEntry.status = CL_BUILD_ERROR;
@@ -1767,7 +1784,8 @@ try
                             new CLProgBinEntry(std::move(output)));
             }
             catch(const Exception& ex)
-            {   // if exception during writing binary
+            {
+                // if exception during writing binary
                 compiledProgBins[i].reset();
                 msgString.append(ex.what());
                 progDevEntry.log = RefPtr<CLProgLogEntry>(
@@ -1790,7 +1808,8 @@ try
     std::unique_ptr<cl_device_id[]> amdDevices(new cl_device_id[devicesNum]);
     for (cxuint i = 0; i < devicesNum; i++)
         if (compiledProgBins[i])
-        {   // set program binaries for creating and building assembler program
+        {
+            // set program binaries for creating and building assembler program
             amdDevices[compiledNum] = sortedDevs[i]->amdOclDevice;
             programBinSizes[compiledNum] = compiledProgBins[i]->binary.size();
             programBinaries[compiledNum++] = compiledProgBins[i]->binary.data();
@@ -1804,7 +1823,8 @@ try
     cl_program newAmdAsmP = nullptr;
     cl_int errorLast = CL_SUCCESS;
     if (compiledNum != 0)
-    {   // if compilation is not zero
+    {
+        // if compilation is not zero
         // (use int32_t instead cl_int) - GCC 5 internal error!!!
         /// just create new amdAsmProgram
         newAmdAsmP = amdp->dispatch->clCreateProgramWithBinary(
@@ -1812,7 +1832,8 @@ try
                     programBinSizes.get(), (const cxbyte**)programBinaries.get(),
                     nullptr, &error);
         if (newAmdAsmP==nullptr)
-        {   // return error
+        {
+            // return error
             program->asmState.store(CLRXAsmState::FAILED);
             return error;
         }
@@ -1823,7 +1844,8 @@ try
     }
     
     if (errorLast == CL_SUCCESS)
-    {   // resolve errorLast if build program succeeded
+    {
+        // resolve errorLast if build program succeeded
         if (asmFailure)
             errorLast = CL_BUILD_PROGRAM_FAILURE;
         else if (asmNotAvailable)
@@ -1842,7 +1864,8 @@ try
     if (compiledNum!=0) // new amdAsm is set if least one device will have built program
         clrxUpdateProgramAssocDevices(program); /// update associated devices
     else
-    {   // no new binaries no good (successful) associated devices
+    {
+        // no new binaries no good (successful) associated devices
         program->assocDevicesNum = 0;
         program->assocDevices.reset();
     }
@@ -1850,7 +1873,8 @@ try
         clrxAbort("Fatal error: compiledNum!=program->assocDevicesNum");
     
     if (compiledNum!=devicesNum)
-    {   // and add extra devices (failed) to list
+    {
+        // and add extra devices (failed) to list
         std::unique_ptr<CLRXDevice*[]> newAssocDevices(new CLRXDevice*[devicesNum]);
         std::copy(program->assocDevices.get(), program->assocDevices.get()+compiledNum,
                   newAssocDevices.get());
@@ -1875,7 +1899,8 @@ try
         ProgDeviceEntry& progDevEntry = program->asmProgEntries[asmDevOrders[i]].second;
         progDevEntry = std::move(progDeviceEntries[i]);
         if (progDevEntry.status == CL_BUILD_SUCCESS)
-        {   // get real device status from original implementation
+        {
+            // get real device status from original implementation
             if (amdp->dispatch->clGetProgramBuildInfo(newAmdAsmP,
                     sortedDevs[i]->amdOclDevice, CL_PROGRAM_BUILD_STATUS,
                     sizeof(cl_build_status), &progDevEntry.status, nullptr) != CL_SUCCESS)

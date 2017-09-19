@@ -156,7 +156,8 @@ try
         CString symName;
         uint64_t value = 0;
         if (eqPlace!=nullptr)
-        {   // defsym with value
+        {
+            // defsym with value
             const char* outEnd;
             bool parsed = true;
             symName.assign(defSyms[i], eqPlace);

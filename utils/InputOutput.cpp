@@ -37,6 +37,7 @@ std::streambuf::pos_type MemoryStreamBuf::seekoff(std::streambuf::off_type offse
          std::ios_base::seekdir dir, std::ios_base::openmode which)
 {
     std::streambuf::pos_type pos = offset;
+    // calculate stream position
     if (dir == std::ios_base::cur)
     {
         if (which & std::ios_base::in)
@@ -77,6 +78,7 @@ std::streambuf::int_type MemoryStreamBuf::pbackfail(std::streambuf::int_type ch)
             const std::streambuf::char_type c = traits_type::to_char_type(ch);
             if ((openMode & std::ios_base::out)!=0 || c != gptr()[-1])
             {
+                // back one character
                 gbump(-1);
                 *gptr() = c;
                 ret = ch;

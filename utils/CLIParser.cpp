@@ -249,7 +249,8 @@ static bool parseBoolOptArg(const char* optArg)
         }
     }
     if (!value)
-    {   // if value true is not parsed, we try to parse false value
+    {
+        // if value true is not parsed, we try to parse false value
         bool isFalse = false;
         for (const char* v: { "0", "false", "f", "off", "no", "n"})
         {
@@ -423,7 +424,8 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
             break;
         case CLIArgType::UINT_ARRAY:
             if (!option.arrayFromOccurrences)
-            {   // parse array from single argument
+            {
+                // parse array from single argument
                 if (optEntry.v.u32Arr != nullptr)
                 { delete[] optEntry.v.u32Arr; optEntry.v.u32Arr = nullptr; }
                 try
@@ -704,7 +706,8 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 std::copy(sVec.begin(), sVec.end(), optEntry.v.sArr);
                 }
                 catch(...)
-                {   // delete previously parsed strings
+                {
+                    // delete previously parsed strings
                     for (const char* v: sVec)
                         delete[] v;
                     throw;
@@ -716,7 +719,8 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 try
                 {
                     if (option.argType == CLIArgType::TRIMMED_STRING_ARRAY)
-                    {   // trimmed string
+                    {
+                        // trimmed string
                         optArg = skipSpaces(optArg);
                         const char* end;
                         if (*optArg != 0)
@@ -771,9 +775,11 @@ void CLIParser::parse()
         if (!isLeftOver && arg[0] == '-' && arg[1] != 0)
         {
             if (arg[1] == '-')
-            {   // longNames
+            {
+                // longNames
                 if (arg[2] == 0)
-                {   // if '--'
+                {
+                    // if '--'
                     isLeftOver = true;
                     continue;
                 }
@@ -829,7 +835,8 @@ void CLIParser::parse()
                 }
             }
             else
-            {   // short names
+            {
+                // short names
                 for (arg++; *arg != 0; arg++)
                 {
                     const cxuint optionId = shortNameMap[cxuchar(*arg)];

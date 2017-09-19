@@ -378,7 +378,8 @@ bool AsmParseUtils::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outS
     if (maxOutStrSize-1 < size_t(linePtr-nameStr))
     {
         if (ignoreLongerName)
-        {   // return empty string
+        {
+            // return empty string
             outStr[0] = 0; // null-char
             return true;
         }
@@ -509,7 +510,8 @@ void AsmSymbol::clearOccurrencesInExpr()
     {
         auto& occur = occurrencesInExprs[i];
         if (occur.expression!=nullptr && !occur.expression->unrefSymOccursNum())
-        {   // delete and move back iteration by number of removed elements
+        {
+            // delete and move back iteration by number of removed elements
             const size_t oldSize = occurrencesInExprs.size();
             AsmExpression* occurExpr = occur.expression;
             occur.expression = nullptr;
@@ -550,7 +552,8 @@ void AsmScope::deleteSymbolsRecursively()
 }
 
 void AsmScope::startUsingScope(AsmScope* scope)
-{   // do add this
+{
+    // do add this
     auto res = usedScopesSet.insert({scope, usedScopes.end()});
     usedScopes.push_front(scope);
     if (!res.second)
@@ -687,13 +690,15 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
     while (linePtr != end && *linePtr != '"')
     {
         if (*linePtr == '\\')
-        {   // escape
+        {
+            // escape
             linePtr++;
             uint16_t value;
             if (linePtr == end)
                 THIS_FAIL_BY_ERROR(startPlace, "Unterminated character of string")
             if (*linePtr == 'x')
-            {   // hex
+            {
+                // hex
                 const char* charPlace = linePtr-1;
                 linePtr++;
                 if (linePtr == end)
@@ -718,7 +723,8 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
                 value &= 0xff;
             }
             else if (isODigit(*linePtr))
-            {   // octal
+            {
+                // octal
                 value = 0;
                 const char* charPlace = linePtr-1;
                 for (cxuint i = 0; linePtr != end && i < 3; i++, linePtr++)
@@ -731,7 +737,8 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
                 }
             }
             else
-            {   // normal escapes
+            {
+                // normal escapes
                 const char c = *linePtr++;
                 switch (c)
                 {
@@ -806,7 +813,8 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
             if (linePtr == end)
                 THIS_FAIL_BY_ERROR(startPlace, "Unterminated character literal")
             if (*linePtr == 'x')
-            {   // hex
+            {
+                // hex
                 linePtr++;
                 if (linePtr == end)
                     THIS_FAIL_BY_ERROR(startPlace, "Unterminated character literal")
@@ -830,7 +838,8 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
                 value &= 0xff;
             }
             else if (isODigit(*linePtr))
-            {   // octal
+            {
+                // octal
                 value = 0;
                 for (cxuint i = 0; linePtr != end && i < 3 && *linePtr != '\'';
                      i++, linePtr++)
@@ -843,7 +852,8 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
                 }
             }
             else
-            {   // normal escapes
+            {
+                // normal escapes
                 const char c = *linePtr++;
                 switch (c)
                 {
@@ -903,14 +913,16 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
     const char* startPlace = linePtr;
     const CString symName = extractScopedSymName(linePtr, line+lineSize, localLabel);
     if (symName.empty())
-    {   // this is not symbol or a missing symbol
+    {
+        // this is not symbol or a missing symbol
         while (linePtr != line+lineSize && !isSpace(*linePtr) && *linePtr != ',')
             linePtr++;
         entry = nullptr;
         return Assembler::ParseState::MISSING;
     }
     if (symName == ".") // any usage of '.' causes format initialization
-    {   // special case ('.' - always global)
+    {
+        // special case ('.' - always global)
         initializeOutputFormat();
         entry = &*globalScope.symbolMap.find(".");
         return Assembler::ParseState::PARSED;
@@ -924,12 +936,14 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
         CString sameSymName;
         entry = findSymbolInScope(symName, outScope, sameSymName);
         if (sameSymName == ".")
-        {   // illegal name of symbol (must be in global)
+        {
+            // illegal name of symbol (must be in global)
             printError(startPlace, "Symbol '.' can be only in global scope");
             return Assembler::ParseState::FAILED;
         }
         if (!dontCreateSymbol && entry==nullptr)
-        {   // create symbol if not found
+        {
+            // create symbol if not found
             std::pair<AsmSymbolMap::iterator, bool> res =
                     outScope->symbolMap.insert(std::make_pair(sameSymName, AsmSymbol()));
             entry = &*res.first;
@@ -939,16 +953,19 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
             symHasValue = (entry != nullptr && entry->second.hasValue);
     }
     else
-    {   // local labels is in global scope
+    {
+        // local labels is in global scope
         if (!dontCreateSymbol)
-        {   // create symbol if not found
+        {
+            // create symbol if not found
             std::pair<AsmSymbolMap::iterator, bool> res =
                     globalScope.symbolMap.insert(std::make_pair(symName, AsmSymbol()));
             entry = &*res.first;
             symHasValue = res.first->second.hasValue;
         }
         else
-        {   // only find symbol and set isDefined and entry
+        {
+            // only find symbol and set isDefined and entry
             AsmSymbolMap::iterator it = globalScope.symbolMap.find(symName);
             entry = (it != globalScope.symbolMap.end()) ? &*it : nullptr;
             symHasValue = (it != globalScope.symbolMap.end() && it->second.hasValue);
@@ -956,7 +973,8 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
     }
     
     if (isDigit(symName.front()) && symName[linePtr-startPlace-1] == 'b' && !symHasValue)
-    {   // failed at finding
+    {
+        // failed at finding
         std::string error = "Undefined previous local label '";
         error.append(symName.begin(), linePtr-startPlace);
         error += "'";
@@ -976,7 +994,8 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
     
     if ((alternateMacro && string != end && *string=='%') ||
         (!alternateMacro && string+2 <= end && *string=='\\' && string[1]=='%'))
-    {   // alternate syntax, parse expression evaluation
+    {
+        // alternate syntax, parse expression evaluation
         const char* exprPlace = string + ((alternateMacro) ? 1 : 2);
         uint64_t value;
         if (AsmParseUtils::getAbsoluteValueArg(*this, value, exprPlace, true))
@@ -1091,14 +1110,17 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
             entry.second++;
             
             if (!expr->unrefSymOccursNum())
-            {   // expresion has been fully resolved
+            {
+                // expresion has been fully resolved
                 uint64_t value;
                 cxuint sectionId;
                 const AsmExprTarget& target = expr->getTarget();
                 if (!resolvingRelocs || target.type==ASMXTGT_SYMBOL)
-                {   // standard mode
+                {
+                    // standard mode
                     if (!expr->evaluate(*this, value, sectionId))
-                    {   // if failed
+                    {
+                        // if failed
                         delete occurrence.expression; // delete expression
                         good = false;
                         continue;
@@ -1107,7 +1129,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                 // resolve expression if at resolving symbol phase
                 else if (formatHandler==nullptr ||
                         !formatHandler->resolveRelocation(expr, value, sectionId))
-                {   // if failed
+                {
+                    // if failed
                     delete occurrence.expression; // delete expression
                     good = false;
                     continue;
@@ -1236,13 +1259,15 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
                 insertSymbolInScope(symbolName, AsmSymbol());
         if (!res.second && ((res.first->second.onceDefined || !reassign) &&
             res.first->second.isDefined()))
-        {   // found and can be only once defined
+        {
+            // found and can be only once defined
             printError(symbolPlace, (std::string("Symbol '") + symbolName.c_str() +
                         "' is already defined").c_str());
             return false;
         }
         if (!res.first->second.occurrencesInExprs.empty())
-        {   // found in expressions
+        {
+            // found in expressions
             std::vector<std::pair<const AsmExpression*, size_t> > exprs;
             size_t i = 0;
             for (AsmExprSymbolOccurrence occur: res.first->second.occurrencesInExprs)
@@ -1298,7 +1323,8 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         THIS_FAIL_BY_ERROR(exprPlace, "Expected assignment expression")
     
     if (symbolName == ".")
-    {   // assigning '.'
+    {
+        // assigning '.'
         uint64_t value;
         cxuint sectionId;
         if (!expr->evaluate(*this, value, sectionId))
@@ -1312,7 +1338,8 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     std::pair<AsmSymbolEntry*, bool> res = insertSymbolInScope(symbolName, AsmSymbol());
     if (!res.second && ((res.first->second.onceDefined || !reassign) &&
         res.first->second.isDefined()))
-    {   // found and can be only once defined
+    {
+        // found and can be only once defined
         printError(symbolPlace, (std::string("Symbol '") + symbolName.c_str() +
                     "' is already defined").c_str());
         return false;
@@ -1320,7 +1347,8 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     AsmSymbolEntry& symEntry = *res.first;
     
     if (expr->getSymOccursNum()==0)
-    {   // can evalute, assign now
+    {
+        // can evalute, assign now
         uint64_t value;
         cxuint sectionId;
         if (!expr->evaluate(*this, value, sectionId))
@@ -1386,7 +1414,8 @@ bool Assembler::skipSymbol(const char*& linePtr)
                  *linePtr == '.' || *linePtr == '$') ; linePtr++);
     }
     if (start == linePtr)
-    {   // this is not symbol name
+    {
+        // this is not symbol name
         while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
         printError(start, "Expected symbol name");
         return false;
@@ -1461,13 +1490,15 @@ bool Assembler::pushClause(const char* string, AsmClauseType clauseType, bool sa
 {
     if (clauseType == AsmClauseType::MACRO || clauseType == AsmClauseType::IF ||
         clauseType == AsmClauseType::REPEAT)
-    {   // add new clause
+    {
+        // add new clause
         clauses.push({ clauseType, getSourcePos(string), satisfied, { } });
         included = satisfied;
         return true;
     }
     if (clauses.empty())
-    {   // no clauses
+    {
+        // no clauses
         if (clauseType == AsmClauseType::ELSEIF)
             printError(string, "No '.if' before '.elseif");
         else // else
@@ -1508,7 +1539,8 @@ bool Assembler::pushClause(const char* string, AsmClauseType clauseType, bool sa
 bool Assembler::popClause(const char* string, AsmClauseType clauseType)
 {
     if (clauses.empty())
-    {   // no clauses
+    {
+        // no clauses
         if (clauseType == AsmClauseType::IF)
             printError(string, "No conditional before '.endif'");
         else if (clauseType == AsmClauseType::MACRO) // macro
@@ -1618,7 +1650,8 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
         }
         argMap[i].second = macroArg;
         if (arg.required && argMap[i].second.empty())
-        {   // error, value required
+        {
+            // error, value required
             printError(argPlace, (std::string("Value required for macro argument '") +
                     arg.name.c_str() + '\'').c_str());
             good = false;
@@ -1671,7 +1704,8 @@ AsmScope* Assembler::findScopeInScope(AsmScope* scope, const CString& scopeName,
         ScopeUsingStackElem& current = usingStack.top();
         AsmScope* curScope = current.scope;
         if (current.usingIt == curScope->usedScopes.begin())
-        {   // first we found in this scope
+        {
+            // first we found in this scope
             auto it = curScope->scopeMap.find(scopeName);
             if (it != curScope->scopeMap.end())
                 return it->second;
@@ -1696,7 +1730,8 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast,
     AsmScope* scope = currentScope;
     const char* str = scopePlace.c_str();
     if (*str==':' && str[1]==':')
-    {   // choose global scope
+    {
+        // choose global scope
         scope = &globalScope;
         str += 2;
     }
@@ -1748,7 +1783,8 @@ AsmSymbolEntry* Assembler::findSymbolInScopeInt(AsmScope* scope,
         ScopeUsingStackElem& current = usingStack.top();
         AsmScope* curScope = current.scope;
         if (current.usingIt == curScope->usedScopes.begin())
-        {   // first we found in this scope
+        {
+            // first we found in this scope
             AsmSymbolMap::iterator it = curScope->symbolMap.find(symName);
             if (it != curScope->symbolMap.end())
                 return &*it;
@@ -1819,7 +1855,8 @@ AsmRegVarEntry* Assembler::findRegVarInScopeInt(AsmScope* scope, const CString& 
         ScopeUsingStackElem& current = usingStack.top();
         AsmScope* curScope = current.scope;
         if (current.usingIt == curScope->usedScopes.begin())
-        {   // first we found in this scope
+        {
+            // first we found in this scope
             AsmRegVarMap::iterator it = curScope->regVarMap.find(rvName);
             if (it != curScope->regVarMap.end())
                 return &*it;
@@ -1896,7 +1933,8 @@ bool Assembler::getScope(AsmScope* parent, const CString& scopeName, AsmScope*& 
 bool Assembler::pushScope(const CString& scopeName)
 {
     if (scopeName.empty())
-    {   // local scope
+    {
+        // local scope
         std::unique_ptr<AsmScope> newScope(new AsmScope(currentScope, true));
         currentScope->scopeMap.insert(std::make_pair("", newScope.get()));
         currentScope = newScope.release();
@@ -1912,7 +1950,8 @@ bool Assembler::popScope()
     if (scopeStack.empty())
         return false; // can't pop scope
     if (currentScope->temporary)
-    {   // delete scope
+    {
+        // delete scope
         currentScope->parent->scopeMap.erase("");
         const bool oldResolvingRelocs = resolvingRelocs;
         resolvingRelocs = true; // allow to resolve relocations
@@ -1943,7 +1982,8 @@ bool Assembler::readLine()
 {
     line = currentInputFilter->readLine(*this, lineSize);
     while (line == nullptr)
-    {   // no line
+    {
+        // no line
         if (asmInputFilters.size() > 1)
         {   /* decrease some level of a nesting */
             if (currentInputFilter->getType() == AsmInputFilterType::MACROSUBST)
@@ -1956,7 +1996,8 @@ bool Assembler::readLine()
             asmInputFilters.pop();
         }
         else if (filenameIndex<filenames.size())
-        {   /* handling input assembler that have many files */
+        {
+            /* handling input assembler that have many files */
             do { // delete previous filter
                 delete asmInputFilters.top();
                 asmInputFilters.pop();
@@ -2019,12 +2060,14 @@ void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
 {
     auto kmit = kernelMap.find(kernelName);
     if (kmit == kernelMap.end())
-    {   // not found, add new kernel
+    {
+        // not found, add new kernel
         cxuint kernelId;
         try
         { kernelId = formatHandler->addKernel(kernelName); }
         catch(const AsmFormatException& ex)
-        {   // error!
+        {
+            // error!
             printError(pseudoOpPlace, ex.what());
             return;
         }
@@ -2036,7 +2079,8 @@ void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
         currentOutPos = 0;
     }
     else
-    {   // found
+    {
+        // found
         try
         { formatHandler->setCurrentKernel(kmit->second); }
         catch(const AsmFormatException& ex) // if error
@@ -2054,12 +2098,14 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
 {
     const cxuint sectionId = formatHandler->getSectionId(sectionName);
     if (sectionId == ASMSECT_NONE)
-    {   // try to add new section
+    {
+        // try to add new section
         cxuint sectionId;
         try
         { sectionId = formatHandler->addSection(sectionName, currentKernel); }
         catch(const AsmFormatException& ex)
-        {   // error!
+        {
+            // error!
             printError(pseudoOpPlace, ex.what());
             return;
         }
@@ -2068,7 +2114,8 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
         currentOutPos = 0;
     }
     else // if section exists
-    {   // found, try to set
+    {
+        // found, try to set
         try
         { formatHandler->setCurrentSection(sectionId); }
         catch(const AsmFormatException& ex) // if error
@@ -2088,12 +2135,14 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
 {
     const cxuint sectionId = formatHandler->getSectionId(sectionName);
     if (sectionId == ASMSECT_NONE)
-    {   // try to add new section
+    {
+        // try to add new section
         cxuint sectionId;
         try
         { sectionId = formatHandler->addSection(sectionName, currentKernel); }
         catch(const AsmFormatException& ex)
-        {   // error!
+        {
+            // error!
             printError(pseudoOpPlace, ex.what());
             return;
         }
@@ -2110,7 +2159,8 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
         currentOutPos = 0;
     }
     else // if section exists
-    {   // found, try to set
+    {
+        // found, try to set
         try
         { formatHandler->setCurrentSection(sectionId); }
         catch(const AsmFormatException& ex) // if error
@@ -2193,17 +2243,20 @@ void Assembler::handleRegionsOnKernels(const std::vector<cxuint>& newKernels,
     while (oldit != olditend || newit != newitend)
     {
         if (newit == newitend || (oldit != olditend &&  *oldit < *newit))
-        {   // no kernel in new set (close this region)
+        {
+            // no kernel in new set (close this region)
             kernels[*oldit].closeCodeRegion(sections[codeSection].content.size());
             ++oldit;
         }
         else if (oldit == olditend || (newit != newitend && *newit < *oldit))
-        {   // kernel in new set but not in old (open this region)
+        {
+            // kernel in new set but not in old (open this region)
             kernels[*newit].openCodeRegion(sections[codeSection].content.size());
             ++newit;
         }
         else
-        {   // this same kernel in kernel, no changes
+        {
+            // this same kernel in kernel, no changes
             ++oldit;
             ++newit;
         }
@@ -2226,13 +2279,15 @@ void Assembler::tryToResolveSymbols(AsmScope* thisScope)
     {
         ScopeStackElem& elem = scopeStack.back();
         if (elem.childIt == elem.scope.second->scopeMap.begin())
-        {   // first we check symbol of current scope
+        {
+            // first we check symbol of current scope
             AsmScope* curScope = elem.scope.second;
             for (AsmSymbolEntry& symEntry: curScope->symbolMap)
                 if (!symEntry.second.occurrencesInExprs.empty() ||
                     (symEntry.first!="." &&
                             !isResolvableSection(symEntry.second.sectionId)))
-                {   // try to resolve symbols
+                {
+                    // try to resolve symbols
                     uint64_t value;
                     cxuint sectionId;
                     if (formatHandler!=nullptr &&
@@ -2265,7 +2320,8 @@ void Assembler::printUnresolvedSymbols(AsmScope* thisScope)
     {
         ScopeStackElem& elem = scopeStack.back();
         if (elem.childIt == elem.scope.second->scopeMap.begin())
-        {   // first we check symbol of current scope
+        {
+            // first we check symbol of current scope
             AsmScope* curScope = elem.scope.second;
             for (AsmSymbolEntry& symEntry: curScope->symbolMap)
                 if (!symEntry.second.occurrencesInExprs.empty())
@@ -2275,7 +2331,8 @@ void Assembler::printUnresolvedSymbols(AsmScope* thisScope)
                         std::string scopePath;
                         auto it = scopeStack.begin(); // skip global scope
                         for (++it; it != scopeStack.end(); ++it)
-                        {   // generate scope path
+                        {
+                            // generate scope path
                             scopePath += it->scope.first.c_str();
                             scopePath += "::";
                         }
@@ -2312,12 +2369,14 @@ bool Assembler::assemble()
     while (!endOfAssembly)
     {
         if (!lineAlreadyRead)
-        {   // read line
+        {
+            // read line
             if (!readLine())
                 break;
         }
         else
-        {   // already line is read
+        {
+            // already line is read
             lineAlreadyRead = false;
             if (line == nullptr)
                 break; // end of stream
@@ -2338,12 +2397,14 @@ bool Assembler::assemble()
         bool doNextLine = false;
         while (!firstName.empty() && linePtr != end && *linePtr == ':' &&
                     (linePtr+1==end || linePtr[1]!=':'))
-        {   // labels
+        {
+            // labels
             linePtr++;
             skipSpacesToEnd(linePtr, end);
             initializeOutputFormat();
             if (firstName.front() >= '0' && firstName.front() <= '9')
-            {   // handle local labels
+            {
+                // handle local labels
                 if (sections.empty())
                 {
                     printError(stmtPlace, "Local label can't be defined outside section");
@@ -2376,7 +2437,8 @@ bool Assembler::assemble()
                 nextLRes.second.hasValue = false;
             }
             else
-            {   // regular labels
+            {
+                // regular labels
                 if (firstName==".")
                 {
                     printError(stmtPlace, "Symbol '.' can't be a label");
@@ -2388,9 +2450,11 @@ bool Assembler::assemble()
                 std::pair<AsmSymbolEntry*, bool> res =
                             insertSymbolInScope(firstName, AsmSymbol());
                 if (!res.second)
-                {   // found
+                {
+                    // found
                     if (res.first->second.onceDefined && res.first->second.isDefined())
-                    {   // if label
+                    {
+                        // if label
                         printError(stmtPlace, (std::string("Symbol '")+firstName.c_str()+
                                     "' is already defined").c_str());
                         doNextLine = true;
@@ -2431,7 +2495,8 @@ bool Assembler::assemble()
         if (linePtr != end && *linePtr == '=' &&
             // not for local labels
             !isDigit(firstName.front()))
-        {   // assignment
+        {
+            // assignment
             skipCharAndSpacesToEnd(linePtr, line+lineSize);
             if (linePtr == end)
             {
@@ -2449,7 +2514,8 @@ bool Assembler::assemble()
         else if (firstName.size() >= 1 && isDigit(firstName[0]))
             printError(stmtPlace, "Illegal number at statement begin");
         else
-        {   // try to parse processor instruction or macro substitution
+        {
+            // try to parse processor instruction or macro substitution
             if (makeMacroSubstitution(stmtPlace) == ParseState::MISSING)
             {  
                 if (firstName.empty()) // if name is empty

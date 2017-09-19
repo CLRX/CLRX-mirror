@@ -122,7 +122,8 @@ try
                     binFlags |= AMDBIN_CREATE_INFOSTRINGS;
                 
                 if (isAmdBinary(binaryData.size(), binaryData.data()))
-                {   // if amd binary
+                {
+                    // if amd binary
                     base.reset(createAmdBinaryFromCode(binaryData.size(),
                             binaryData.data(), binFlags));
                     if (base->getType() == AmdMainType::GPU_BINARY)
@@ -169,13 +170,15 @@ try
                         throw Exception("This is not AMDGPU binary file!");
                 }
                 else if (isROCmBinary(binaryData.size(), binaryData.data()))
-                {   // ROCm binary
+                {
+                    // ROCm binary
                     ROCmBinary rocmBin(binaryData.size(), binaryData.data(), 0);
                     Disassembler disasm(rocmBin, std::cout, disasmFlags);
                     disasm.disassemble();
                 }
-                else // if gallium binary
+                else
                 {
+                    // if gallium binary
                     GalliumBinary galliumBin(binaryData.size(),binaryData.data(), 0);
                     Disassembler disasm(gpuDeviceType, galliumBin, std::cout,
                             disasmFlags, llvmVersion);

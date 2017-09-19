@@ -958,7 +958,8 @@ inline void callOnce(std::once_flag& flag, Callable&& f, Args&&... args)
 { std::call_once(flag, f, args...); }
 #else
 struct OnceFlag: std::atomic<int>
-{   // force zero initialization
+{
+    // force zero initialization
     OnceFlag(): std::atomic<int>(0)
     { }
 };

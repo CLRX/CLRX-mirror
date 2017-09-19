@@ -196,7 +196,8 @@ try
                     BinaryFormat::GALLIUM : BinaryFormat::AMD;
             
             if (binaryFormat == BinaryFormat::AMD)
-            {   // get amdappVersion
+            {
+                // get amdappVersion
                 size_t platformVersionSize;
                 std::unique_ptr<char[]> platformVersion;
                 error = clGetPlatformInfo(choosenPlatform, CL_PLATFORM_VERSION, 0, nullptr,
@@ -263,7 +264,8 @@ try
     
     cl_uint bits = 32;
     if (binaryFormat != BinaryFormat::GALLIUM)
-    {   // get address Bits from device info
+    {
+        // get address Bits from device info
         error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint),
                                  &bits, nullptr);
         if (error != CL_SUCCESS)

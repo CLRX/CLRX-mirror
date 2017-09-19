@@ -47,7 +47,8 @@ static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBi
     kernelInput.code = kernelInput.data = nullptr;
     
     if (innerBin != nullptr)
-    {   // if innerBinary exists
+    {
+        // if innerBinary exists
         bool codeFound = false;
         bool dataFound = false;
         cxuint encEntryIndex = innerBin->findCALEncodingEntryIndex(inputDeviceType);
@@ -126,7 +127,8 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
         if (i < innerBinariesNum)
             innerBin = &binary.getInnerBinary(i);
         if (innerBin == nullptr || innerBin->getKernelName() != kernelInfo.kernelName)
-        {   // fallback if not in order
+        {
+            // fallback if not in order
             try
             { innerBin = &binary.getInnerBinary(kernelInfo.kernelName.c_str()); }
             catch(const Exception& ex)
@@ -143,7 +145,8 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
         if (i < kernelHeadersNum)
             khdr = &binary.getKernelHeaderEntry(i);
         if (khdr == nullptr || khdr->kernelName != kernelInfo.kernelName)
-        {   // fallback if not in order
+        {
+            // fallback if not in order
             try
             { khdr = &binary.getKernelHeaderEntry(kernelInfo.kernelName.c_str()); }
             catch(const Exception& ex) // failed
@@ -391,7 +394,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             const cxbyte* kernelHeader)
 {
     cxuint driverVersion = 9999909U;
-    {   // parse version
+    {
+        // parse version
         size_t pos = driverInfo.find("AMD-APP"); // find AMDAPP
         try
         {
@@ -490,7 +494,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 arg.structSize = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
             }
             else
-            {   // regular type
+            {
+                // regular type
                 nextPtr = strechr(ptr, lineEnd, ':');
                 if (nextPtr==nullptr)
                     throw ParseException(lineNo, "Can't parse value argument");
@@ -739,7 +744,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     }
     
     if (argSamplers != 0 && !config.samplers.empty())
-    {   // get sampler's values
+    {
+        // get sampler's values
         for (cxuint k = argSamplers; k < config.samplers.size(); k++)
             config.samplers[k-argSamplers] = config.samplers[k];
         config.samplers.resize(config.samplers.size()-argSamplers);
@@ -771,7 +777,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 break;
             case CALNOTE_ATI_CONSTANT_BUFFERS:
                 if (driverVersion < 112402)
-                {   // older drivers holds info about constant buffer in that CALNote
+                {
+                    // older drivers holds info about constant buffer in that CALNote
                     const CALConstantBufferMask* cbMask =
                             reinterpret_cast<const CALConstantBufferMask*>(cnData);
                     const cxuint entriesNum = cnHdr.descSize/sizeof(CALConstantBufferMask);
@@ -864,7 +871,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                                 }
                             }
                             if (addr >= 0x80001843 && addr < 0x80001863)
-                            {   // get uav mask from proginfo
+                            {
+                                // get uav mask from proginfo
                                 const cxuint elIndex = (addr-0x80001843)<<2;
                                 uavMask[elIndex] = val&0xff;
                                 uavMask[elIndex+1] = (val>>8)&0xff;
@@ -922,18 +930,21 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
     if ((flags & DISASM_METADATA) != 0)
     {
         if (kinput.header != nullptr && kinput.headerSize != 0)
-        {   // if kernel header available
+        {
+            // if kernel header available
             output.write("    .header\n", 12);
             printDisasmData(kinput.headerSize, kinput.header, output, true);
         }
         if (kinput.metadata != nullptr && kinput.metadataSize != 0)
-        {   // if kernel metadata available
+        {
+            // if kernel metadata available
             output.write("    .metadata\n", 14);
             printDisasmLongString(kinput.metadataSize, kinput.metadata, output, true);
         }
     }
     if ((flags & DISASM_DUMPDATA) != 0 && kinput.data != nullptr && kinput.dataSize != 0)
-    {   // if kernel data available
+    {
+        // if kernel data available
         output.write("    .data\n", 10);
         printDisasmData(kinput.dataSize, kinput.data, output, true);
     }
@@ -963,7 +974,8 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
             }
             
             switch(calNote.header.type)
-            {   // handle CAL note types
+            {
+                // handle CAL note types
                 case CALNOTE_ATI_PROGINFO:
                 {
                     output.put('\n');
@@ -1216,13 +1228,15 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
                    kernelArgTypeNamesTbl[cxuint(arg.argType)]);
         output.write(buf, bufSize);
         if (arg.argType == KernelArgType::STRUCTURE)
-        {   // structure size
+        {
+            // structure size
             bufSize = snprintf(buf, 100, ", %u", arg.structSize);
             output.write(buf, bufSize);
         }
         bool isImage = false;
         if (isKernelArgImage(arg.argType))
-        {   // images
+        {
+            // images
             isImage = true;
             cxbyte access = arg.ptrAccess & KARG_PTR_ACCESS_MASK;
             if (access == KARG_PTR_READ_ONLY)
@@ -1236,18 +1250,21 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
         }
         if (isImage || ((!cl20 && arg.argType == KernelArgType::COUNTER32) ||
             (cl20 && arg.argType == KernelArgType::SAMPLER)))
-        {   // print resource id: only for images counters and for samplers (if CL2.0)
+        {
+            // print resource id: only for images counters and for samplers (if CL2.0)
             bufSize = snprintf(buf, 100, ", %u", arg.resId);
             output.write(buf, bufSize);
         }
     }
     else
-    {   // pointer
+    {
+        // pointer
         bufSize = snprintf(buf, 100, "\", %s*",
                    kernelArgTypeNamesTbl[cxuint(arg.pointerType)]);
         output.write(buf, bufSize);
         if (arg.pointerType == KernelArgType::STRUCTURE)
-        {   // structure size
+        {
+            // structure size
             bufSize = snprintf(buf, 100, ", %u", arg.structSize);
             output.write(buf, bufSize);
         }
@@ -1259,7 +1276,8 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
         else if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
             output.write(", global", 8);
         if ((arg.ptrAccess & (KARG_PTR_CONST|KARG_PTR_VOLATILE|KARG_PTR_RESTRICT))!=0)
-        {   // pointer access
+        {
+            // pointer access
             bufSize = snprintf(buf, 100, ",%s%s%s",
                      ((arg.ptrAccess & KARG_PTR_CONST) ? " const" : ""),
                      ((arg.ptrAccess & KARG_PTR_RESTRICT) ? " restrict" : ""),
@@ -1269,12 +1287,14 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
         else // empty
             output.write(", ", 2);
         if (arg.ptrSpace==KernelPtrSpace::CONSTANT && !cl20)
-        {   // constant size
+        {
+            // constant size
             bufSize = snprintf(buf, 100, ", %" PRIu64, uint64_t(arg.constSpaceSize));
             output.write(buf, bufSize);
         }
         if (arg.ptrSpace!=KernelPtrSpace::LOCAL && !cl20)
-        {   // resid
+        {
+            // resid
             bufSize = snprintf(buf, 100, ", %u", arg.resId);
             output.write(buf, bufSize);
         }
@@ -1457,7 +1477,8 @@ void CLRX::disassembleAmd(std::ostream& output, const AmdDisasmInput* amdInput,
         }
         
         if (doDumpCode && kinput.code != nullptr && kinput.codeSize != 0)
-        {   // input kernel code (main disassembly)
+        {
+            // input kernel code (main disassembly)
             output.write("    .text\n", 10);
             isaDisassembler->setInput(kinput.codeSize, kinput.code);
             isaDisassembler->beforeDisassemble();

@@ -116,7 +116,8 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
             }
         }
         else
-        {   // when config
+        {
+            // when config
             const AmdCL2KernelConfig& config = kernel.config;
             if (!kernel.hsaConfig)
                 os << "    Config:\n";

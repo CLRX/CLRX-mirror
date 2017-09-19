@@ -267,19 +267,22 @@ std::string CLRX::escapeStringCStyle(size_t strSize, const char* str)
             }
         }
         else  if (c == '\"')
-        {   // backslash
+        {
+            // backslash
             out.push_back('\\');
             out.push_back('\"');
             notFullOctalEscape = false;
         }
         else  if (c == '\'')
-        {   // backslash
+        {
+            // backslash
             out.push_back('\\');
             out.push_back('\'');
             notFullOctalEscape = false;
         }
         else  if (c == '\\')
-        {   // backslash
+        {
+            // backslash
             out.push_back('\\');
             out.push_back('\\');
             notFullOctalEscape = false;
@@ -326,7 +329,8 @@ size_t CLRX::escapeStringCStyle(size_t strSize, const char* str,
             }
         }
         else  if (c == '\"')
-        {   // backslash
+        {
+            // backslash
             if (d+2 >= outMaxSize)
                 break; // end
             outStr[d++] = '\\';
@@ -334,7 +338,8 @@ size_t CLRX::escapeStringCStyle(size_t strSize, const char* str,
             notFullOctalEscape = false;
         }
         else  if (c == '\'')
-        {   // backslash
+        {
+            // backslash
             if (d+2 >= outMaxSize)
                 break; // end
             outStr[d++] = '\\';
@@ -342,7 +347,8 @@ size_t CLRX::escapeStringCStyle(size_t strSize, const char* str,
             notFullOctalEscape = false;
         }
         else  if (c == '\\')
-        {   // backslash
+        {
+            // backslash
             if (d+2 >= outMaxSize)
                 break; // end
             outStr[d++] = '\\';
@@ -415,7 +421,8 @@ Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
     Array<cxbyte> buf;
     ifs.exceptions(std::ifstream::badbit); // ignore failbit for read
     if (seekingIsWorking)
-    {   // just read whole file to memory
+    {
+        // just read whole file to memory
         size = ifs.tellg();
         if (size > SIZE_MAX)
             throw Exception("File is too big to load");
@@ -557,7 +564,8 @@ CLRX::Array<cxbyte> CLRX::runExecWithOutput(const char* program, const char** ar
         throw Exception("Can't create pipe");
     int fret = fork();
     if (fret == 0)
-    {   // children
+    {
+        // children
         if (::close(1)<0)
             ::exit(-1);
         if (::dup2(pipefds[1], 1)<0) // redirection to pipe
@@ -567,7 +575,8 @@ CLRX::Array<cxbyte> CLRX::runExecWithOutput(const char* program, const char** ar
         ::exit(-1); // not
     }
     else if (fret > 0)
-    {   // parent
+    {
+        // parent
         ::close(pipefds[1]);
         /* growing, growing... */
         size_t prevBufSize = 0;
@@ -598,7 +607,8 @@ CLRX::Array<cxbyte> CLRX::runExecWithOutput(const char* program, const char** ar
         }
         }
         catch(...)
-        {   // close on error
+        {
+            // close on error
             ::waitpid(fret, nullptr, 0);
             ::close(pipefds[0]);
             throw;
@@ -630,12 +640,14 @@ static std::string findFileByEnvPaths(const char* envName, const char* fileName)
 #endif
         std::string path;
         if (nexti != std::string::npos)
-        {   // next
+        {
+            // next
             path = paths.substr(i, nexti-i);
             i = nexti+1;
         }
         else
-        {   // last
+        {
+            // last
             path = paths.substr(i);
             i = std::string::npos;
         }

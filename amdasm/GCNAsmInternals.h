@@ -260,7 +260,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
         const char* end = asmr.line+asmr.lineSize;
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!=':')
-        {   // by default is enabled
+        {
+            // by default is enabled
             value = true;
             return true;
         }
@@ -358,7 +359,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
 };
 
 static inline bool isXRegRange(RegRange pair, cxuint regsNum = 1)
-{   // second==0 - we assume that first is inline constant, otherwise we check range
+{
+    // second==0 - we assume that first is inline constant, otherwise we check range
     return (pair.end==0) || cxuint(pair.end-pair.start)==regsNum;
 }
 

@@ -93,7 +93,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             const cxbyte* kernelHeader)
 {
     cxuint driverVersion = 9999909U;
-    {   // parse version
+    {
+        // parse version
         size_t pos = driverInfo.find("AMD-APP"); // find AMDAPP
         try
         {
@@ -348,7 +349,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                     arg.pointerType = KernelArgType::UINT;
             }
             else if (arg.argType == KernelArgType::VOID)
-            {   // value
+            {
+                // value
                 cxuint found  = 0;
                 for (found = 0; found < openclArgTypeNamesTblLength; found++)
                     if (openclArgTypeNamesTbl[found]!=nullptr &&

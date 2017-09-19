@@ -188,7 +188,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
             mapSort(sectionIndexMap.begin(), sectionIndexMap.end(), CStringLess());
         
         if (symTableHdr != nullptr)
-        {   // indexing symbols
+        {
+            // indexing symbols
             if (ULEV(symTableHdr->sh_entsize) < sizeof(typename Types::Sym))
                 throw Exception("SymTable entry size is too small!");
             
@@ -226,7 +227,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
                 mapSort(symbolIndexMap.begin(), symbolIndexMap.end(), CStringLess());
         }
         if (dynSymTableHdr != nullptr)
-        {   // indexing dynamic symbols
+        {
+            // indexing dynamic symbols
             if (ULEV(dynSymTableHdr->sh_entsize) < sizeof(typename Types::Sym))
                 throw Exception("DynSymTable entry size is too small!");
             
@@ -511,7 +513,8 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             if (region.type == ElfRegionType::SECTION)
             {
                 if (hashSymSectionIdx==sectionCount)
-                {   // get smybol section
+                {
+                    // get smybol section
                     if (region.section.type==SHT_SYMTAB)
                     {
                         isHashDynSym = false;
@@ -538,7 +541,8 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     
     std::unique_ptr<typename Types::Word[]> dynValTable;
     if (haveDynamic)
-    {   // prepare dynamic structures
+    {
+        // prepare dynamic structures
         dynamicValues.reset(new typename Types::Word[dynamics.size()]);
         dynValTable.reset(new typename Types::Word[dynTableSize]);
     }
@@ -554,7 +558,8 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     {
         ElfRegionTemplate<Types>& region = regions[i];
         if (region.align > 1)
-        {   // fix alignment
+        {
+            // fix alignment
             if ((size&(region.align-1))!=0)
                 size += region.align - (size&(region.align-1));
             if ((address&(region.align-1))!=0)
@@ -598,7 +603,8 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             size += region.size;
         }
         else if (region.type == ElfRegionType::SECTION)
-        {   // if section
+        {
+            // if section
             if (region.section.link >= sectionsNum)
                 throw Exception("Section link out of range");
             
@@ -648,7 +654,8 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                 else if (region.section.type == SHT_NOTE)
                 {
                     for (const ElfNote& note: notes)
-                    {   // note size with data
+                    {
+                        // note size with data
                         size_t nameSize = ::strlen(note.name)+1;
                         if ((nameSize&3)!=0)
                             nameSize += 4 - (nameSize&3);
@@ -713,7 +720,8 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     }
     
     if (haveDynamic)
-    {   // set dynamic values
+    {
+        // set dynamic values
         for (size_t i = 0; i < dynamics.size(); i++)
             if (dynamics[i] >= 0 && dynamics[i] < dynTableSize)
                 dynamicValues[i] = dynValTable[dynamics[i]];
@@ -745,7 +753,8 @@ static void createHashTable(uint32_t bucketsNum, uint32_t hashNum, bool skipFirs
     {
         const uint32_t bucket = hashCodes[i] % bucketsNum;
         if (lastNodes[bucket] == UINT32_MAX)
-        {   // first entry of chain
+        {
+            // first entry of chain
             SLEV(buckets[bucket], i);
             lastNodes[bucket] = i;
         }
@@ -780,7 +789,8 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
         SLEV(ehdr.e_version, header.version);
         SLEV(ehdr.e_flags, header.flags);
         if (header.entryRegion != UINT_MAX)
-        {   // if have entry
+        {
+            // if have entry
             typename Types::Word entry = regionOffsets[header.entryRegion] + header.entry;
             if (regions[header.entryRegion].type == ElfRegionType::SECTION &&
                 regions[header.entryRegion].section.addrBase != 0)
@@ -1063,7 +1073,8 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                     }
                 }
                 else if (region.section.type == SHT_DYNAMIC)
-                {   // dynamic table
+                {
+                    // dynamic table
                     typename Types::Dyn dyn;
                     for (size_t k = 0; k < dynamics.size(); k++)
                     {

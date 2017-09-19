@@ -1709,7 +1709,8 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
     }
     
     if (::strcmp(testCase.expectedString, resultStr.c_str()) != 0)
-    {   // print error
+    {
+        // print error
         std::ostringstream oss;
         oss << "Failed for #" << testId << std::endl;
         oss << resultStr << std::endl;

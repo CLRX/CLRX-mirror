@@ -123,7 +123,8 @@ public:
 
 GenericPtr::GenericPtr(cl_uint deviceIndex)
             : CLFacade(deviceIndex, genericPtrSource, "genericPtr", 2)
-{   // creating buffers: two for read-only, one for output
+{
+    // creating buffers: two for read-only, one for output
     cl_int error;
     outBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(cl_uint)*2,
                         nullptr, &error);
