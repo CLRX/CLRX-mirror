@@ -279,12 +279,13 @@ struct CLRX_INTERNAL ProgDeviceEntry
     ProgDeviceEntry() : status(CL_BUILD_NONE) { }
 };
 
+// state assembler program
 enum class CLRXAsmState
 {
-    NONE = 0,
-    IN_PROGRESS,
-    FAILED,
-    SUCCESS
+    NONE = 0,   // no assembler program
+    IN_PROGRESS,    // build in progress
+    FAILED,     // failed
+    SUCCESS     // built successfully
 };
 
 typedef std::pair<cl_device_id, ProgDeviceEntry> ProgDeviceMapEntry;

@@ -451,7 +451,7 @@ void clrxWrapperInitialize()
                 clrxPlatform.extensionsSize = ::strlen(extsBuffer.get())+1;
                 clrxPlatform.extensions = std::move(extsBuffer);
                 
-                // add to version " (clrx 0.0)"
+                // add to version " (clrx x.y.z)"
                 size_t versionSize;
                 if (amdOclPlatform->dispatch->clGetPlatformInfo(amdOclPlatform,
                             CL_PLATFORM_VERSION, 0, nullptr, &versionSize) != CL_SUCCESS)
@@ -635,7 +635,8 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             clctxprops[3] = (cl_context_properties)1;
             clctxprops[4] = 0;
             offlineContext = platform->amdOclPlatform->dispatch->
-                clCreateContextFromType(clctxprops, CL_DEVICE_TYPE_ALL, NULL, NULL, &status);
+                    clCreateContextFromType(clctxprops, CL_DEVICE_TYPE_ALL,
+                                NULL, NULL, &status);
             
             if (offlineContext() == nullptr)
             {
@@ -768,7 +769,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             clrxDevice.extensionsSize = ::strlen(extsBuffer.get())+1;
             clrxDevice.extensions = std::move(extsBuffer);
             
-            // add to version " (clrx 0.0)"
+            // add to version " (clrx x.y.z)"
             size_t versionSize;
             status = amdDevices[i]->dispatch->clGetDeviceInfo(amdDevices[i],
                       CL_DEVICE_VERSION, 0, nullptr, &versionSize);
@@ -803,6 +804,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
     }
     catch(const std::bad_alloc& ex)
     {
+        // error at memory allocation
         delete[] platform->devicesArray;
         platform->devicesNum = 0;
         platform->devicesArray = nullptr;
@@ -832,7 +834,8 @@ void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
 {
     /* after it we replaces amdDevices into ours devices */
     if (allDevicesNum < 16)  //efficient for small
-    {   // 
+    {  
+        // if smaller number of devices (sorting is not needed)
         for (cl_uint i = 0; i < amdDevicesNum; i++)
         {
             cl_uint j;
@@ -1003,6 +1006,7 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
     return CL_SUCCESS;
 }
 
+/* this wrapper packages program_notify, it passes ours program to real notify */
 void CL_CALLBACK clrxBuildProgramNotifyWrapper(cl_program program, void * user_data)
 {
     CLRXBuildProgramUserData* wrappedDataPtr =
@@ -1034,6 +1038,8 @@ void CL_CALLBACK clrxBuildProgramNotifyWrapper(cl_program program, void * user_d
     wrappedData.realNotify(wrappedData.clrxProgram, wrappedData.realUserData);
 }
 
+/* this wrapper packages program_notify, it prepare new output program with
+ * translated devices to (from its device to ours devices) */
 void CL_CALLBACK clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
 {
     CLRXLinkProgramUserData* wrappedDataPtr =
@@ -1158,6 +1164,7 @@ cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
             device->amdOclDevice = out_devices[dp];
             device->platform = d->platform;
             device->parent = d;
+            // copy ours extensions and versions strings to subdevice
             if (d->extensionsSize != 0)
             {
                 device->extensionsSize = d->extensionsSize;
@@ -1414,6 +1421,7 @@ void clrxClearProgramAsmState(CLRXProgram* p)
 
 /* Bridge between Assembler and OpenCL wrapper */
 
+// check whether if option to call CLRX assembler (-xasm)
 bool detectCLRXCompilerCall(const char* compilerOptions)
 {
     bool isAsm = false;
@@ -1439,6 +1447,7 @@ bool detectCLRXCompilerCall(const char* compilerOptions)
     return isAsm;
 }
 
+// if symbol name is correct
 static bool verifySymbolName(const CString& symbolName)
 {
     if (symbolName.empty())
@@ -1477,6 +1486,7 @@ struct CLRX_INTERNAL CLProgBinEntry: public FastRefCountable
             : binary(std::move(_binary)) { }
 };
 
+// generate table with order of associated devices (from program)
 static cl_int genDeviceOrder(cl_uint devicesNum, const cl_device_id* devices,
                cl_uint assocDevicesNum, const cl_device_id* assocDevices,
                cxuint* devAssocOrders)
@@ -1751,6 +1761,7 @@ try
                     (useCL20StdByDev) ? BinaryFormat::AMDCL2 : BinaryFormat::AMD,
                     GPUDeviceType(devType), msgStream);
         
+        // get address bit - for bitness
         cl_uint addressBits;
         error = amdp->dispatch->clGetDeviceInfo(entry.second,
                     CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &addressBits, nullptr);
@@ -1780,6 +1791,7 @@ try
                             new CLProgLogEntry(std::move(msgString)));
         if (good)
         {
+            // try to write binary and keep it in compiled program binaries
             try
             {
                 progDevEntry.status = CL_BUILD_SUCCESS;
@@ -1889,7 +1901,7 @@ try
         program->assocDevices = std::move(newAssocDevices);
         program->assocDevicesNum = devicesNum;
     }
-    /// create order of devices in associated devices list
+    /// create order of devices in associated devices list (for indexing assoc devices)
     std::unique_ptr<cxuint[]> asmDevOrders(new cxuint[devicesNum]);
     if (genDeviceOrder(devicesNum, (const cl_device_id*)sortedDevs.get(),
             program->assocDevicesNum, (const cl_device_id*)program->assocDevices.get(),

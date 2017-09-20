@@ -239,6 +239,7 @@ clrxclGetPlatformInfo(cl_platform_id   platform,
                     param_value_size, param_value, param_value_size_ret);
     else
     {
+        // getting our extensions or platfom version strings
         if (param_value != nullptr)
         {
             if (param_name == CL_PLATFORM_EXTENSIONS)
@@ -338,6 +339,7 @@ clrxclGetDeviceInfo(cl_device_id    device,
                         param_value_size, param_value, param_value_size_ret);
             else
             {
+                // our extensions string size
                 if (param_value != nullptr)
                 {
                     if (param_value_size < d->extensionsSize)
@@ -355,6 +357,7 @@ clrxclGetDeviceInfo(cl_device_id    device,
                         param_value_size, param_value, param_value_size_ret);
             else
             {
+                // our version string size
                 if (param_value != nullptr)
                 {
                     if (param_value_size < d->versionSize)
@@ -434,7 +437,7 @@ clrxclCreateContext(const cl_context_properties * properties,
     try
     {
         std::vector<cl_context_properties> amdProps;
-        /* translate props if needed */
+        /* translate props if needed (translate platform to amdocl platforms) */
         if (properties != nullptr)
         {
             for (const cl_context_properties* p = properties; *p != 0; p+=2)
@@ -476,7 +479,8 @@ clrxclCreateContext(const cl_context_properties * properties,
     
         /* get amdocl devices */
         std::vector<cl_device_id> amdDevices(num_devices);
-    
+        
+        // checking whehter devices is null
         for (cl_uint i = 0; i < num_devices; i++)
         {
             if (devices[i] == nullptr)
@@ -557,7 +561,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
     try
     {
         std::vector<cl_context_properties> amdProps;
-        /* translate props if needed */
+        /* translate props if needed  (translate platform to amdocl platforms) */
         if (properties != nullptr)
         {
             for (const cl_context_properties* p = properties; *p != 0; p+=2)
@@ -620,7 +624,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
         outContext->dispatch = platform->dispatch;
         outContext->amdOclContext = amdContext;
         outContext->openCLVersionNum = platform->openCLVersionNum;
-        
+        // call once platform initialization (initialize devices)
         try
         { callOnce(platform->onceFlag, clrxPlatformInitializeDevices, platform); }
         catch(const std::exception& ex)
@@ -1359,6 +1363,7 @@ clrxclBuildProgram(cl_program           program,
     
     if (pfn_notify != nullptr)
     {
+        // prepare to call wrapper for notify
         wrappedData = new CLRXBuildProgramUserData;
         wrappedData->realNotify = pfn_notify;
         wrappedData->clrxProgram = p;
@@ -1553,9 +1558,11 @@ clrxclGetProgramInfo(cl_program         program,
             if (p->context->openCLVersionNum < getOpenCLVersionNum(1, 2))
                 return CL_INVALID_VALUE;
             cl_program prog;
+            // getting CLRX assembler program state
             {
                 std::lock_guard<std::mutex> lock(p->mutex);
                 CLRXAsmState asmState = p->asmState.load();
+                // getting program (for assembler code, real CL asm program)
                 prog = (asmState != CLRXAsmState::NONE) ? p->amdOclAsmProgram :
                             p->amdOclProgram;
                 if (asmState != CLRXAsmState::NONE && prog==nullptr)
@@ -1571,6 +1578,7 @@ clrxclGetProgramInfo(cl_program         program,
             std::lock_guard<std::mutex> lock(p->mutex);
             if (p->asmState.load()!=CLRXAsmState::NONE)
             {
+                // get this info from clrx asm programs
                 size_t expectedSize = sizeof(size_t)*p->assocDevicesNum;
                 if (param_value!=nullptr)
                 {
@@ -1603,6 +1611,7 @@ clrxclGetProgramInfo(cl_program         program,
             std::lock_guard<std::mutex> lock(p->mutex);
             if (p->asmState.load()!=CLRXAsmState::NONE)
             {
+                // get this info from clrx asm programs
                 size_t expectedSize = sizeof(unsigned char*)*p->assocDevicesNum;
                 if (param_value!=nullptr)
                 {
@@ -1672,12 +1681,14 @@ clrxclGetProgramBuildInfo(cl_program            program,
     std::unique_lock<std::mutex> lock(p->mutex);
     if (p->asmState.load() == CLRXAsmState::NONE)
     {
+        // if no assembler program then get info from amdOCL program
         lock.unlock();
         return p->amdOclProgram->dispatch->clGetProgramBuildInfo(p->amdOclProgram,
                 d->amdOclDevice, param_name, param_value_size, param_value,
                 param_value_size_ret);
     }
     
+    // get iterator to pprogram device info structure
     ProgDeviceMapEntry* progDevIt = nullptr;
     if (p->asmProgEntries!=nullptr)
     {
@@ -1696,6 +1707,7 @@ clrxclGetProgramBuildInfo(cl_program            program,
     else // otherwise no associated devices
         return CL_INVALID_DEVICE;
     
+    // get specified info from this prog device table entry
     switch(param_name)
     {
         case CL_PROGRAM_BUILD_STATUS:
@@ -1801,13 +1813,15 @@ clrxclCreateKernel(cl_program      program,
             return nullptr;
         }
         
+        /* get argflagmap for this kernel (will be used to choose correct routine to
+         * translate for  arguments */
         CLRXKernelArgFlagMap::const_iterator argFlagMapIt =
             CLRX::binaryMapFind(p->kernelArgFlagsMap.begin(), p->kernelArgFlagsMap.end(),
                               kernel_name);
         if (argFlagMapIt == p->kernelArgFlagsMap.end())
             clrxAbort("Can't find kernel arg flag!");
         outKernel = new CLRXKernel(argFlagMapIt->second);
-        p->kernelsAttached++;
+        p->kernelsAttached++; // notify clBuildProgram about attached kernels
         
         // retain original program if is assembly program
         if (p->amdOclAsmProgram!=nullptr)
@@ -1922,6 +1936,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 outKernel->program = p;
                 kernels[kp] = outKernel;
             }
+            // notify clBuildProgram about attached kernels
             p->kernelsAttached += kernelsToCreate;
             
             // retain original program if is assembly program
