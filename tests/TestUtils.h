@@ -212,7 +212,7 @@ static inline void assertCLRXException(const std::string& testName,
 
 
 template<typename Call, typename... T>
-static int callTest(const Call& call, T ...args)
+static int callTest(const Call& call, T&& ...args)
 {
     try
     { call(args...); }
