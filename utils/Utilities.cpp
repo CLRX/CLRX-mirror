@@ -76,6 +76,8 @@ ParseException::ParseException(LineNo lineNo, ColNo charNo, const std::string& m
     this->message += message;
 }
 
+/* dynamic library routines can be non-reentrant and non-multithreaded,
+ * then use global mutex   to secure these operations */
 std::mutex CLRX::DynLibrary::mutex;
 
 DynLibrary::DynLibrary() : handle(nullptr)
@@ -568,7 +570,7 @@ CLRX::Array<cxbyte> CLRX::runExecWithOutput(const char* program, const char** ar
     int fret = fork();
     if (fret == 0)
     {
-        // children
+        // if children
         if (::close(1)<0)
             ::exit(-1);
         if (::dup2(pipefds[1], 1)<0) // redirection to pipe
@@ -579,7 +581,7 @@ CLRX::Array<cxbyte> CLRX::runExecWithOutput(const char* program, const char** ar
     }
     else if (fret > 0)
     {
-        // parent
+        // if parent (this process)
         ::close(pipefds[1]);
         /* growing, growing... */
         size_t prevBufSize = 0;
@@ -587,6 +589,7 @@ CLRX::Array<cxbyte> CLRX::runExecWithOutput(const char* program, const char** ar
         output.resize(readBufSize);
         try
         {
+        // reading output from children
         while(true)
         {
             while (prevBufSize < readBufSize)
@@ -620,6 +623,7 @@ CLRX::Array<cxbyte> CLRX::runExecWithOutput(const char* program, const char** ar
         int status = 0;
         ::waitpid(fret, &status, 0);
         ::close(pipefds[0]);
+        // if children exited unsuccessfully (terminated or error code returned)
         if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
             throw Exception("Process exited abnormally");
     }
@@ -694,12 +698,14 @@ std::string CLRX::findAmdOCL()
     std::string amdOclPath = parseEnvVariable<std::string>("CLRX_AMDOCL_PATH", "");
     if (!amdOclPath.empty())
     {
+        // AMDOCL library path given in envvar (check only that place)
         if (isFileExists(amdOclPath.c_str()))
             return amdOclPath;
     }
     else
     {
 #ifndef HAVE_WINDOWS
+        // check from paths in LD_LIBRARY_PATH
         amdOclPath = findFileByEnvPaths("LD_LIBRARY_PATH", DEFAULT_AMDOCLNAME);
         if (!amdOclPath.empty())
             return amdOclPath;
@@ -738,14 +744,17 @@ std::string CLRX::findMesaOCL()
     std::string mesaOclPath = parseEnvVariable<std::string>("CLRX_MESAOCL_PATH", "");
     if (!mesaOclPath.empty())
     {
+        // MesaOpenCL library path given in envvar (check only that place)
         if (isFileExists(mesaOclPath.c_str()))
             return mesaOclPath;
     }
     else
     {
+        // otherwise find in paths given in LD_LIBRARY_PATH
         mesaOclPath = findFileByEnvPaths("LD_LIBRARY_PATH", "libMesaOpenCL.so.1");
         if (!mesaOclPath.empty())
             return mesaOclPath;
+        // otherwise in hardcoded paths
         for (const char* libPath: libMesaOCLPaths)
         {
             mesaOclPath = joinPaths(libPath, "libMesaOpenCL.so.1");
@@ -773,13 +782,14 @@ std::string CLRX::findLLVMConfig()
     std::string llvmConfigPath = parseEnvVariable<std::string>("CLRX_LLVMCONFIG_PATH", "");
     if (!llvmConfigPath.empty())
     {
+        // LLVM-config path given in envvar (check only that place)
         if (isFileExists(llvmConfigPath.c_str()))
             return llvmConfigPath;
         return "";
     }
     else
     {
-        // find by path
+        // find by PATH
         llvmConfigPath = findFileByEnvPaths("PATH", "llvm-config");
         if (!llvmConfigPath.empty())
             return llvmConfigPath;
