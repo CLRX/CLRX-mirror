@@ -683,6 +683,10 @@ Disable old and buggy behavior for floating point literals and constants.
 
 Disable ignoring letter's case in macro names.
 
+### .nooldmodparam
+
+Disable old modifier parametrization that accepts only 0 and 1 values (to 0.1.5 version).
+
 ### .octa
 
 Syntax: .octa OCTA-LITERAL,...
@@ -697,6 +701,11 @@ Syntax: .struct ABS-EXPR
 
 Set the output counter to some place in absolute section. Useful to defining
 fields of the structures.
+
+### .oldmodparam
+
+Enable old modifier parametrization that accepts only 0 and 1 values (to 0.1.5 version)
+for compatibility.
 
 ### .org
 

@@ -14,8 +14,8 @@ clrxasm [-6Swam?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
 [-g GPUDEVICE] [-A ARCH] [-t VERSION] [--defsym=SYM[=VALUE]] [--includePath=PATH]
 [--output OUTFILE] [--binaryFormat=BINFORMAT] [--64bit] [--gpuType=GPUDEVICE]
 [--arch=ARCH] [--driverVersion=VERSION] [--llvmVersion=VERSION] [--forceAddSymbols]
-[--noWarnings] [--alternate] [--buggyFPLit] [--noMacroCase] [--help] [--usage]
-[--version] [file...]
+[--noWarnings] [--alternate] [--buggyFPLit] [--oldModParam]
+[--noMacroCase] [--help] [--usage] [--version] [file...]
 
 ### Input
 
@@ -91,6 +91,11 @@ to keep compatibility with original format.
 * **--buggyFPLit**
 
     Choose old and buggy floating point literals rules (to 0.1.2 version)
+for compatibility.
+
+* **--oldModParam**
+
+    Choose old modifier parametrization that accepts only 0 and 1 values (to 0.1.5 version)
 for compatibility.
 
 * **-m**, **--noMacroCase**

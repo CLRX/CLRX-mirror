@@ -119,7 +119,8 @@ static const char* pseudoOpNamesTbl[] =
     "include", "int", "irp", "irpc", "kernel", "lflags",
     "line", "ln", "local", "long",
     "macro", "macrocase", "main", "noaltmacro",
-    "nobuggyfplit", "nomacrocase", "octa", "offset", "org",
+    "nobuggyfplit", "nomacrocase", "nooldmodparam", "octa",
+    "offset", "oldmodparam", "org",
     "p2align", "print", "purgem", "quad",
     "rawcode", "regvar", "rept", "rocm", "rodata",
     "sbttl", "scope", "section", "set",
@@ -160,7 +161,8 @@ enum
     ASMOP_INCLUDE, ASMOP_INT, ASMOP_IRP, ASMOP_IRPC, ASMOP_KERNEL, ASMOP_LFLAGS,
     ASMOP_LINE, ASMOP_LN, ASMOP_LOCAL, ASMOP_LONG,
     ASMOP_MACRO, ASMOP_MACROCASE, ASMOP_MAIN, ASMOP_NOALTMACRO,
-    ASMOP_NOBUGGYFPLIT, ASMOP_NOMACROCASE, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
+    ASMOP_NOBUGGYFPLIT, ASMOP_NOMACROCASE, ASMOP_NOOLDMODPARAM, ASMOP_OCTA,
+    ASMOP_OFFSET, ASMOP_OLDMODPARAM, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
     ASMOP_RAWCODE, ASMOP_REGVAR, ASMOP_REPT, ASMOP_ROCM, ASMOP_RODATA,
     ASMOP_SBTTL, ASMOP_SCOPE, ASMOP_SECTION, ASMOP_SET,
@@ -2535,11 +2537,19 @@ void Assembler::parsePseudoOps(const CString& firstName,
             if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
                 macroCase = false;
             break;
+        case ASMOP_NOOLDMODPARAM:
+            if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+                oldModParam = false;
+            break;
         case ASMOP_OCTA:
             AsmPseudoOps::putUInt128s(*this, stmtPlace, linePtr);
             break;
         case ASMOP_OFFSET:
             AsmPseudoOps::setAbsoluteOffset(*this, linePtr);
+            break;
+        case ASMOP_OLDMODPARAM:
+            if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+                oldModParam = true;
             break;
         case ASMOP_ORG:
             AsmPseudoOps::doOrganize(*this, linePtr);

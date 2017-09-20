@@ -1612,6 +1612,8 @@ try
                 asmFlags |= ASM_FORCE_ADD_SYMBOLS;
             else if (word == "-buggyFPLit")
                 asmFlags |= ASM_BUGGYFPLIT;
+            else if (word == "-oldModParam")
+                asmFlags |= ASM_OLDMODPARAM;
             else if (word == "-I" || word == "-includePath")
                 nextIsIncludePath = true;
             else if (word.compare(0, 2, "-I")==0)

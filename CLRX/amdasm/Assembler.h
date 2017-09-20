@@ -52,8 +52,10 @@ enum: Flags
     ASM_ALTMACRO = 4,
     ASM_BUGGYFPLIT = 8, // buggy handling of fpliterals (including fp constants)
     ASM_MACRONOCASE = 16, // disable case-insensitive naming (default)
+    ASM_OLDMODPARAM = 32,   // use old modifier parametrization (values 0 and 1 only)
     ASM_TESTRUN = (1U<<31), ///< only for running tests
-    ASM_ALL = FLAGS_ALL&~(ASM_TESTRUN|ASM_BUGGYFPLIT|ASM_MACRONOCASE)  ///< all flags
+    ASM_ALL = FLAGS_ALL&~(ASM_TESTRUN|ASM_BUGGYFPLIT|ASM_MACRONOCASE|
+                    ASM_OLDMODPARAM)  ///< all flags
 };
 
 struct AsmRegVar;
@@ -454,6 +456,7 @@ private:
     bool alternateMacro;
     bool buggyFPLit;
     bool macroCase;
+    bool oldModParam;
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;
@@ -723,6 +726,9 @@ public:
     /// set flags
     void setFlags(Flags flags)
     { this->flags = flags; }
+    // get oldModParam
+    bool isOldModParam() const
+    { return oldModParam; }
     /// get include directory list
     const std::vector<CString>& getIncludeDirs() const
     { return includeDirs; }

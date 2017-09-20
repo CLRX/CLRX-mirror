@@ -55,6 +55,8 @@ static const CLIOption programOptions[] =
         "enable alternate macro mode", nullptr }, 
     { "buggyFPLit", 0, CLIArgType::NONE, false, false,
         "use old and buggy fplit rules", nullptr },
+    { "oldModParam", 0, CLIArgType::NONE, false, false,
+        "use old modifier parametrization", nullptr },
     { "noMacroCase", 'm', CLIArgType::NONE, false, false,
         "do not ignore letter's case in macro names", nullptr },
     { "noWarnings", 'w', CLIArgType::NONE, false, false, "disable warnings", nullptr },
@@ -124,6 +126,8 @@ try
         flags |= ASM_BUGGYFPLIT;
     if (cli.hasShortOption('m'))
         flags |= ASM_MACRONOCASE;
+    if (cli.hasLongOption("oldModParam"))
+        flags |= ASM_OLDMODPARAM;
     
     cxuint argsNum = cli.getArgsNum();
     Array<CString> filenames(argsNum);

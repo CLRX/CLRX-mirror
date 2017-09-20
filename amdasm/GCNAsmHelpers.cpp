@@ -714,7 +714,7 @@ bool GCNAsmUtils::parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& o
         else if (sectionId != ASMSECT_ABS)
             // if not absolute value
             ASM_FAIL_BY_ERROR(exprPlace, "Expression must be absolute!")
-        if (bits != UINT_MAX)
+        if (bits != UINT_MAX && bits < 64)
         {
             asmr.printWarningForRange(bits, value,
                             asmr.getSourcePos(exprPlace), signess);

@@ -267,7 +267,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
         }
         
         bool ret = parseModImm(asmr, linePtr, val, nullptr, modName,
-                        UINT_MAX, WS_UNSIGNED);
+                        asmr.isOldModParam() ? 1 : UINT_MAX, WS_UNSIGNED);
         value = val!=0;
         return ret;
     }

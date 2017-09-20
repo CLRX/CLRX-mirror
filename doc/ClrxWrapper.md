@@ -53,6 +53,11 @@ to keep compatibility with original format.
     Choose old and buggy floating point literals rules (to 0.1.2 version)
 for compatibility.
 
+* **-oldModParam**
+
+    Choose old modifier parametrization that accepts only 0 and 1 values (to 0.1.5 version)
+for compatibility.
+
 * **-noMacroCase**
     Do not ignore letter's case in macro names (by default is ignored).
 

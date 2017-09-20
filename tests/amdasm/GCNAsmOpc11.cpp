@@ -2149,6 +2149,18 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    buffer_load_format_x  v61, v[18:19], s[80:83], s35 "
         "offset:603 glc:132 slc:771 addr64:-1 lds:-1",
         0xe001c25bU, 0x23543d12U, true, true, "" },
+    // nooldmodparam pseudo-op
+    { ".oldmodparam; .nooldmodparam;  buffer_load_format_x  v61, v[18:19], s[80:83], s35 "
+        "offset:603 glc:132 slc:771 addr64:-1 lds:-1",
+        0xe001c25bU, 0x23543d12U, true, true, "" },
+    // oldmodparam pseudo-op
+    { ".oldmodparam; buffer_load_format_x  v61, v[18:19], s[80:83], s35 "
+        "offset:603 glc:132 slc:771 addr64:-1 lds:-1",
+        0xe001825bU, 0x23543d12U, true, true,
+        "test.s:1:81: Warning: Value 0x84 truncated to 0x0\n"
+        "test.s:1:89: Warning: Value 0x303 truncated to 0x1\n"
+        "test.s:1:100: Warning: Value 0xffffffffffffffff truncated to 0x1\n"
+        "test.s:1:107: Warning: Value 0xffffffffffffffff truncated to 0x1\n" },
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 lds tfe", 0, 0, false, false,
         "test.s:1:5: Error: Both LDS and TFE is illegal\n" },
