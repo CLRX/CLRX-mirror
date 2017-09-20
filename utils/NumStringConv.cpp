@@ -41,6 +41,7 @@
 
 using namespace CLRX;
 
+// simple function to parse unsigned integer in decimal form
 cxuint CLRX::cstrtoui(const char* str, const char* inend, const char*& outend)
 {
     uint64_t out = 0;
@@ -189,6 +190,7 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
     return out;
 }
 
+// version for signed integers
 int64_t CLRX::cstrtoiXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint bits)
 {
@@ -269,7 +271,7 @@ static inline void mul64Full(uint64_t a, uint64_t b, uint64_t* c)
 #endif
 }
 
-static bool inline bigAdd(cxuint aSize, uint64_t* biga, const uint64_t* bigb)
+static inline bool bigAdd(cxuint aSize, uint64_t* biga, const uint64_t* bigb)
 {
     bool carry = false;
     for (cxuint i = 0; i < aSize; i++)
@@ -280,7 +282,7 @@ static bool inline bigAdd(cxuint aSize, uint64_t* biga, const uint64_t* bigb)
     return carry;
 }
 
-static bool inline bigAdd(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* bigb)
+static inline bool bigAdd(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* bigb)
 {
     cxuint carry = 0;
     cxuint minSize = std::min(aSize, bSize);
@@ -1420,6 +1422,7 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                 }
                 else
                 {
+                    // is first half
                     if (halfValuePos == 0)
                     {
                         isHalfEqual = ((bigRescaled[powSize] & (halfValue-1)) >=

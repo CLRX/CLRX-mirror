@@ -233,7 +233,7 @@ bool parseEnvVariable<bool>(const char* envVar, const bool& defaultValue)
 }
 };
 
-/// escape char names witout '\'
+/// escape char names without '\'
 static const char cstyleEscapesTable[32] =
 {
     0, 0, 0, 0, 0, 0, 0, 'a', 'b', 't', 'n', 'v', 'f', 'r', 0, 0,
