@@ -29,6 +29,7 @@
 
 using namespace CLRX;
 
+// fail when value is false
 static inline void assertTrue(const std::string& testName, const std::string& caseName,
            bool value)
 {
@@ -41,7 +42,7 @@ static inline void assertTrue(const std::string& testName, const std::string& ca
     }
 }
 
-
+// fail when value!=result
 template<typename T>
 static void assertValue(const std::string& testName, const std::string& caseName,
             const T& expected, const T& result)
@@ -56,11 +57,13 @@ static void assertValue(const std::string& testName, const std::string& caseName
     }
 }
 
+// assertion for equality of strings
 static inline void assertString(const std::string& testName, const std::string& caseName,
              const char* expected, const char* result)
 {
     if (expected == nullptr)
     {
+        // if expected is null then fail if result is non null
         if (result != nullptr)
         {
             std::ostringstream oss;
@@ -72,6 +75,7 @@ static inline void assertString(const std::string& testName, const std::string& 
     }
     else if (result == nullptr)
     {
+        // if result is null then fail if expected is non null
         if (expected != nullptr)
         {
             std::ostringstream oss;
@@ -103,12 +107,14 @@ template<typename T>
 static inline const T& printForTests(const T& v)
 { return v; }
 
+// special cases for printing byte and character as integer
 static inline const int printForTests(const cxbyte v)
 { return int(v); }
 
 static inline const int printForTests(const cxchar v)
 { return int(v); }
 
+// assertion for equality of arrays
 template<typename T>
 static void assertArray(const std::string& testName, const std::string& caseName,
             const Array<T>& expected, size_t resultSize, const T* result)
@@ -124,6 +130,7 @@ static void assertArray(const std::string& testName, const std::string& caseName
             throw Exception(oss.str());
         }
     }
+    // check size of array (must be equal)
     if (expected.size() != resultSize)
     {
         std::ostringstream oss;
@@ -155,8 +162,9 @@ static void assertArray(const std::string& testName, const std::string& caseName
             const Array<T>& expected, const std::vector<T>& result)
 { assertArray<T>(testName, caseName, expected, result.size(), result.data()); }
 
+// assertion for euqality of array of strings
 static inline void assertStrArray(const std::string& testName,
-      const std::string& caseName,const std::initializer_list<const char*>& expected,
+      const std::string& caseName, const std::initializer_list<const char*>& expected,
       size_t resultSize, const char** result)
 {
     if (expected.size() != resultSize)
@@ -179,10 +187,11 @@ static inline void assertStrArray(const std::string& testName,
         }
 }
 
+// fail when no exception occurs
 template<typename Call, typename... T>
 static inline void assertCLRXException(const std::string& testName,
            const std::string& caseName, const char* expectedWhat,
-           const Call& call, T ...args)
+           const Call& call, T&& ...args)
 {
     bool failed = false;
     std::string resultWhat;
