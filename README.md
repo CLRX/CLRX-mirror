@@ -37,8 +37,10 @@ CLRadeonExtender requires:
 Optionally, CLRXWrapper requires:
 
 * libOpenCL.so or OpenCL.dll
+* OpenCL headers
+* OpenGL headers (to 0.1.5 version)
 * OpenCL ICD (for example from AMD Catalyst driver)
-* AMD Catalyst driver.
+* AMD Catalyst driver or AMDGPU-PRO driver.
 
 ### Compilation
 
