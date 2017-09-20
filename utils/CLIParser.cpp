@@ -105,6 +105,7 @@ CLIParser::CLIParser(const char* _programName, const CLIOption* _options,
              options[i].argType > CLIArgType::ARRAY_MAX)
             throw CLIException("Illegal option argument type", options[i],
                        options[i].longName==nullptr);
+        // checking whether arrayFromOccurrences defined for array argType
         if (options[i].arrayFromOccurrences &&
             options[i].argType <= CLIArgType::SINGLE_MAX)
             throw CLIException("Array of occurrences flag can be only for arrays");
@@ -166,6 +167,8 @@ CLIParser::~CLIParser()
     }
 }
 
+/* special internal routine to handle exceptions while getting argument from option.
+ * (if argument was given, and if target argument type match to option argument type) */
 void CLIParser::handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType) const
 {
     if (optionId >= optionEntries.size())
@@ -234,6 +237,7 @@ static T parseOptArg(const char* optArg)
     return value;
 }
 
+// bool option arg parsing routine
 static bool parseBoolOptArg(const char* optArg)
 {
     optArg = skipSpaces(optArg);
@@ -271,6 +275,7 @@ static bool parseBoolOptArg(const char* optArg)
     return value;
 }
 
+// parses option's argument, choosenShortName - option was called from short name
 void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseShortName)
 {
     const CLIOption& option = options[optionId];
@@ -347,6 +352,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
         case CLIArgType::BOOL_ARRAY:
             if (!option.arrayFromOccurrences)
             {
+                // parse array from single argument
                 if (optEntry.v.bArr != nullptr)
                 optEntry.arrSize = 0;
                 { delete[] optEntry.v.bArr; optEntry.v.bArr = nullptr; }
@@ -641,6 +647,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
         case CLIArgType::TRIMMED_STRING_ARRAY:
             if (!option.arrayFromOccurrences)
             {
+                // parse array from single argument
                 if (optEntry.v.sArr != nullptr)
                 {
                     for (size_t k = 0; k < optEntry.arrSize; k++)
@@ -668,7 +675,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                          {
                              if (elemEnd[1] == ',' || elemEnd[1] == '\\')
                                  elemEnd++; // escape of ','
-                             else // bad escape
+                             else // bad escape (accepted at ',' and '\\'
                                  throw CLIException("Incorrect escape of string",
                                             option, chooseShortName);
                          }
@@ -679,7 +686,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                     }
                     
                     char* strElem = new char[elemLength+1];
-                    // copy
+                    // copy element with escaping ',' and '\\'
                     for (size_t l = 0; l < elemLength; ++optArg, ++l)
                         if (*optArg == '\\' && (optArg[1] == ',' || optArg[1] == '\\'))
                         {
@@ -742,6 +749,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 catch(const ParseException& ex)
                 { throw CLIException(ex.what(), option, chooseShortName); }
                 
+                // resize array for every 8th element
                 if ((optEntry.arrSize&7) == 0)
                 {
                     const char** oldArr = optEntry.v.sArr;
