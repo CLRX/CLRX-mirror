@@ -2145,6 +2145,10 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "offset:603 glc slc addr64 lds", 0xe001c25bU, 0x23543d12U, true, true, "" },
     { "    buffer_load_format_x  v61, v[18:19], s[80:83], s35 "
         "offset:603 glc:1 slc:1 addr64:1 lds:1", 0xe001c25bU, 0x23543d12U, true, true, "" },
+    /* parametrization with values higher than 1 */
+    { "    buffer_load_format_x  v61, v[18:19], s[80:83], s35 "
+        "offset:603 glc:132 slc:771 addr64:-1 lds:-1",
+        0xe001c25bU, 0x23543d12U, true, true, "" },
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 lds tfe", 0, 0, false, false,
         "test.s:1:5: Error: Both LDS and TFE is illegal\n" },

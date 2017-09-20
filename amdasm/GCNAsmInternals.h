@@ -256,7 +256,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool parseModEnable(Assembler& asmr, const char*& linePtr, bool& value,
             const char* modName)
     {
-        cxbyte val = 0;
+        uint64_t val = 0;
         const char* end = asmr.line+asmr.lineSize;
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!=':')
@@ -266,7 +266,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
             return true;
         }
         
-        bool ret = parseModImm(asmr, linePtr, val, nullptr, modName, 1, WS_UNSIGNED);
+        bool ret = parseModImm(asmr, linePtr, val, nullptr, modName,
+                        UINT_MAX, WS_UNSIGNED);
         value = val!=0;
         return ret;
     }
