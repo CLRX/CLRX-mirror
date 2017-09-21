@@ -898,6 +898,7 @@ clrxclLinkProgram(cl_context           context,
     
     if (pfn_notify != nullptr)
     {
+        // prepare wrapper for notify (will be called by original OpenCL call)
         wrappedData = new CLRXLinkProgramUserData;
         wrappedData->realNotify = pfn_notify;
         wrappedData->clrxProgramFilled = false;
@@ -914,6 +915,7 @@ clrxclLinkProgram(cl_context           context,
     CLRXProgramDevicesMap* transDevicesMap = nullptr;
     try
     {
+        // get original AMDOCL programs to call
         std::vector<cl_program> amdInputPrograms(num_input_programs);
         for (cl_uint i = 0; i < num_input_programs; i++)
         {
@@ -930,6 +932,7 @@ clrxclLinkProgram(cl_context           context,
         
         if (num_devices != 0)
         {
+            // get original AMDOCL devices to call and to translating devices
             std::vector<cl_device_id> amdDevices(num_devices);
             for (cl_uint i = 0; i < num_devices; i++)
             {
@@ -975,6 +978,7 @@ clrxclLinkProgram(cl_context           context,
                 {
                     if (amdProgram != nullptr)
                     {
+                        // we fill outProgram if already not filled by notify callback
                         outProgram = new CLRXProgram;
                         outProgram->dispatch = c->dispatch;
                         outProgram->amdOclProgram = amdProgram;
@@ -1361,6 +1365,7 @@ CL_API_ENTRY cl_int CL_API_CALL clrxclEnqueueMakeBuffersResidentAMD(
     
     try
     {
+        // use vector to store original AMDOCL memobjects
         std::vector<cl_mem> amdMemObjects(num_mem_objects);
         for (cl_uint i = 0; i < num_mem_objects; i++)
         {
@@ -1530,6 +1535,7 @@ clrxclEnqueueSVMFree(cl_command_queue  command_queue,
     {
         if (num_events_in_wait_list <= maxLocalEventsNum)
         {
+            // store original events in array
             cl_event amdWaitList[maxLocalEventsNum];
             for (cl_uint i = 0; i < num_events_in_wait_list; i++)
             {

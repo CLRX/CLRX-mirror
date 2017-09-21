@@ -1048,6 +1048,7 @@ clrxclEnqueueWaitForEvents(cl_command_queue command_queue,
     }
     try
     {
+        // use vector to hold oroginal AMDOCL events
         std::vector<cl_event> amdEvents(num_events);
         for (cl_uint i = 0; i < num_events; i++)
         {
@@ -1259,6 +1260,7 @@ clrxclEnqueueAcquireGLObjects(cl_command_queue      command_queue,
     
     try
     {
+        // use vector to store original AMDOCL memobjects
         std::vector<cl_mem> amdMemObjects(num_objects);
         for (cl_uint i = 0; i < num_objects; i++)
         {
@@ -1302,6 +1304,7 @@ clrxclEnqueueReleaseGLObjects(cl_command_queue      command_queue,
     
     try
     {
+        // use vector to store original AMDOCL memobjects
         std::vector<cl_mem> amdMemObjects(num_objects);
         for (cl_uint i = 0; i < num_objects; i++)
         {
