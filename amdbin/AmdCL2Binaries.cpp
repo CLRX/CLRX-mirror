@@ -105,9 +105,10 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(ElfBinaryTemplate<Types>* mainB
         const size_t setupOffset = ULEV(*reinterpret_cast<uint32_t*>(kernelStub.data));
         if (setupOffset >= binSize)
             throw Exception("Kernel setup offset out of range");
+        // get size of setup (offset 16 of setup)
         kernelStub.size = setupOffset;
         kernelData.setup = kernelStub.data + setupOffset;
-        // get size of setup (offset 16 of setup)
+        // get text (code) offset after setup (HSA config)
         const size_t textOffset = ULEV(*reinterpret_cast<uint32_t*>(kernelData.setup+16));
         if (usumGe(textOffset, setupOffset, binSize))
             throw Exception("Kernel text offset out of range");
@@ -128,6 +129,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(ElfBinaryTemplate<Types>* mainB
             kernels[ki] = kernelData;
         ki++;
     }
+    // sort kernel data map array
     if (hasKernelDataMap())
         mapSort(kernelDataMap.begin(), kernelDataMap.end());
 }
@@ -155,6 +157,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
         // get kernel datas and kernel stubs 
         std::vector<size_t> choosenSyms;
         const size_t symbolsNum = getSymbolsNum();
+        // choosen symbols to find kernels
         for (size_t i = 0; i < symbolsNum; i++)
         {
             const char* symName = getSymbolName(i);
@@ -189,7 +192,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
                 throw Exception("Kernel binary code size is too short");
             
             kernels[ki].setup = binaryCode + ULEV(dataShdr.sh_offset) + binOffset;
-            // get size of setup (offset 16 of setup)
+            // get size of setup (offset 16 of setup) and code offset
             const size_t textOffset = ULEV(*reinterpret_cast<uint32_t*>(
                             kernels[ki].setup+16));
             
@@ -199,6 +202,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             kernels[ki].code = kernels[ki].setup + textOffset;
             kernels[ki].codeSize = binSize-textOffset;
             const size_t len = ::strlen(symName);
+            // kernel name in string in form: '__OpenCL_XXXX_kernel', get name
             kernels[ki].kernelName = CString(symName+10, symName+len-7);
             if (hasKernelDataMap()) // kernel data map
                 kernelDataMap[ki] = std::make_pair(kernels[ki].kernelName, ki);
@@ -218,6 +222,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
     catch(const Exception& ex)
     { }
     
+    // get hsadata_global_agent (used by atomics)
     try
     {
         const Elf64_Shdr& rwShdr = getSectionHeader(".hsadata_global_agent");
@@ -226,7 +231,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
     }
     catch(const Exception& ex)
     { }
-    
+    // get hsabss_gobal_agent
     try
     {
         const Elf64_Shdr& bssShdr = getSectionHeader(".hsabss_global_agent");
@@ -236,6 +241,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
     catch(const Exception& ex)
     { }
     
+    // get ssection with sampler data '.hsaimage_samplerinit'
     try
     {
         const Elf64_Shdr& dataShdr = getSectionHeader(".hsaimage_samplerinit");
@@ -245,6 +251,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
     catch(const Exception& ex)
     { }
     
+    // get relocation section for text
     try
     {
         const Elf64_Shdr& relaShdr = getSectionHeader(".rela.hsatext");
@@ -257,6 +264,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
     catch(const Exception& ex)
     { }
     
+    /// get relocation for hsadata_readonly_agent (readonly data section)
     try
     {
         const Elf64_Shdr& relaShdr = getSectionHeader(".rela.hsadata_readonly_agent");
@@ -272,6 +280,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
 
 /* AmdCL2MainGPUBinary64 */
 
+/// argument type vector table for OpenCL 2.0 binary format
 static const KernelArgType cl20ArgTypeVectorTable[] =
 {
     KernelArgType::CHAR,
@@ -318,6 +327,7 @@ static const KernelArgType cl20ArgTypeVectorTable[] =
     KernelArgType::DOUBLE16
 };
 
+// table of recognized vector sizes
 static const cxuint vectorIdTable[17] =
 { UINT_MAX, 0, 1, 2, 3, UINT_MAX, UINT_MAX, UINT_MAX, 4,
   UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };
@@ -333,6 +343,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     const typename Types::MetadataHeader* hdrStruc =
             reinterpret_cast<const typename Types::MetadataHeader*>(metadata);
     kernelHeader.size = ULEV(hdrStruc->size);
+    // checking kernel header size in metadata region
     if (kernelHeader.size >= metadataSize)
         throw Exception("Metadata header size out of range");
     if (kernelHeader.size < sizeof(typename Types::MetadataHeader))
@@ -484,6 +495,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
             }
             else
             {
+                // global space for pipe
                 if (ptrSpace!=4)
                     throw Exception("Illegal pipe space");
                 arg.ptrSpace = KernelPtrSpace::GLOBAL;
@@ -558,6 +570,7 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBi
                             elfBin.getSectionHeader(ULEV(sym.st_shndx));
                 const size_t coOffset = ULEV(sym.st_value);
                 const size_t coSize = ULEV(sym.st_size);
+                // checking compile options offset and size
                 if (coOffset >= ULEV(shdr.sh_size))
                     throw Exception("Compiler options offset out of range");
                 if (usumGt(coOffset, coSize, ULEV(shdr.sh_size)))
@@ -577,6 +590,7 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBi
                         elfBin.getSectionHeader(ULEV(sym.st_shndx));
                 const size_t aclOffset = ULEV(sym.st_value);
                 const size_t aclSize = ULEV(sym.st_size);
+                // checking acl offset and acl size
                 if (aclOffset >= ULEV(shdr.sh_size))
                     throw Exception("AclVersionString offset out of range");
                 if (usumGt(aclOffset, aclSize, ULEV(shdr.sh_size)))
@@ -631,6 +645,7 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBi
                     innerBin.getSymbolName(0)[0]==0) ? 200406 : 191205;
             try
             {
+                // special detection for first AMDGPU-PRO driver (may be bug in driver)
                 const Elf64_Shdr& noteShdr = innerBin.getSectionHeader(".note");
                 const cxbyte* noteContent = innerBin.getSectionContent(".note");
                 const size_t noteSize = ULEV(noteShdr.sh_size);
@@ -693,6 +708,7 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBi
         }
         
         ki = 0;
+        // getting isa metadatas
         for (size_t index: choosenISAMetadataSyms)
         {
             const typename Types::Sym& mtsym = elfBin.getSymbol(index);
@@ -717,7 +733,7 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBi
                 isaMetadataMap[ki] = std::make_pair(kernelName, ki);
             ki++;
         }
-        
+        // sort kernel info map and isa metadata map (are arrays)
         if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
         {
             mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
@@ -733,6 +749,9 @@ struct CLRX_INTERNAL CL2GPUDeviceCodeEntry
     uint32_t elfFlags;
     GPUDeviceType deviceType;
 };
+
+// tables with GPU device codes for specific driver version
+// for almost cases are matches.
 
 /* 1912.05 driver device table list */
 static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[] =
@@ -866,6 +885,8 @@ struct CLRX_INTERNAL CL2GPUCodeTable
     size_t tableSize;
 };
 
+// table with entries which refers specific GPU device code table
+// choosen by toDriverVersion field (using lower_bound)
 static const CL2GPUCodeTable cl2CodeTables[] =
 {
     { 191205U, cl2_15_7GpuDeviceCodeTable,
@@ -901,6 +922,7 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
         inputDriverVersion = inDriverVersion;
     
     const size_t codeTablesNum = sizeof(cl2CodeTables)/sizeof(CL2GPUCodeTable);
+    // ctit - iterator to GPU device code table entry for this driver version
     auto ctit = std::upper_bound(cl2CodeTables, cl2CodeTables+codeTablesNum,
                 CL2GPUCodeTable{ inputDriverVersion },
                 [](const CL2GPUCodeTable& a, const CL2GPUCodeTable& b)
@@ -947,7 +969,8 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
             if (ULEV(nhdr->n_type) == 0x3 && namesz==4 && descsz>=0x1a &&
                 ::strcmp((const char*)noteContent+offset+
                             sizeof(typename Types::Nhdr), "AMD")==0)
-            {    // AMDGPU type
+            {
+                // get AMDGPU type and detect GPU device
                 const uint32_t* content = (const uint32_t*)
                         (noteContent+offset+sizeof(typename Types::Nhdr) + 4);
                 uint32_t major = ULEV(content[1]);
@@ -967,11 +990,12 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
                 archStepping = ULEV(content[3]);
                 if (!knownGPUType)
                 {
+                    // try again to detect if still GPU type not known
                     arch = (major == 7) ? GPUArchitecture::GCN1_1 :
                             ((major == 8) ? GPUArchitecture::GCN1_2 :
                             GPUArchitecture::GCN1_4);
                     deviceType = getLowestGPUDeviceTypeFromArchitecture(arch);
-                    
+                    // special case for GFX901
                     if (major == 9 && archMinor == 0 && archStepping == 1)
                         deviceType = GPUDeviceType::GFX901;
                     
@@ -1035,6 +1059,7 @@ AmdCL2MainGPUBinaryBase* CLRX::createAmdCL2BinaryFromCode(
 
 bool CLRX::isAmdCL2Binary(size_t binarySize, const cxbyte* binary)
 {
+    // must be ELF file and must have specific machine field value for 32-bit and 64-bit
     if (!isElfBinary(binarySize, binary))
         return false;
     if (binary[EI_CLASS] == ELFCLASS32)

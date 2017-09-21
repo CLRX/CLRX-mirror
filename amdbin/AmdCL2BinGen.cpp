@@ -93,6 +93,7 @@ void AmdCL2GPUBinGenerator::setInput(const AmdCL2Input* input)
     this->input = input;
 }
 
+// structure hold temporary Kernel data to further usage
 struct CLRX_INTERNAL TempAmdCL2KernelData
 {
     size_t metadataSize;
@@ -148,6 +149,9 @@ static const ArgTypeSizes argTypeSizesTable[] =
     { 0, 0, 0, /*counter64*/ }, { 7, 16, 1, /* pipe*/ }, { 18, 16, 1, /*cmdqueue*/ },
     { 7, 8, 1, /*clkevent*/ }
 };
+
+// tables with GPU device codes for specific driver version
+// for almost cases are matches.
 
 static const uint32_t gpuDeviceCodeTable[24] =
 {
@@ -351,6 +355,8 @@ struct CLRX_INTERNAL CL2GPUGenCodeTable
     const uint32_t* table;
 };
 
+// table with entries which refers specific GPU device code table
+// choosen by toDriverVersion field (using lower_bound)
 static const CL2GPUGenCodeTable cl2GenCodeTables[] =
 {
     { 191205U, gpuDeviceCodeTable15_7 },
@@ -390,6 +396,7 @@ static const uint16_t mainBuiltinSectionTable2[] =
     4 // ELFSECTID_COMMENT
 };
 
+// default kernel ISA metadata
 static const cxbyte kernelIsaMetadata[] =
 {
     0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -397,6 +404,7 @@ static const cxbyte kernelIsaMetadata[] =
     0x00, 0x00, 0x00, 0x00
 };
 
+// arch name in metadata
 static const char* amdcl2GPUArchNameWordTable[] =
 {
     "GFX6", "GFX7", "GFX8", "GFX9"
@@ -444,9 +452,10 @@ static void prepareKernelTempData(const AmdCL2Input* input,
         {
             // if kernel configuration present
             const cxuint argsNum = kernel.config.args.size();
-            size_t out;
+            size_t out; // output metadata size
             if (input->is64Bit)
             {
+                // calculation of size for 64-bit
                 out = ((newBinaries) ? ((is16_3Ver) ? 303 : 254) : 246) +
                             (argsNum + 1)*sizeof(AmdCL2GPUKernelArgEntry64);
                 for (const AmdKernelArgInput& arg: kernel.config.args)
@@ -455,6 +464,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
             }
             else
             {
+                // calculation of size for 32-bit
                 out = ((newBinaries) ? ((is16_3Ver) ? 195 : 174) : 166) +
                             (argsNum + 1)*sizeof(AmdCL2GPUKernelArgEntry32);
                 for (const AmdKernelArgInput& arg: kernel.config.args)
@@ -502,6 +512,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                     }
                     else if (isKernelArgImage(inarg.argType))
                     {
+                        // if kernel argument is image
                         uint32_t imgAccess = inarg.ptrAccess & KARG_PTR_ACCESS_MASK;
                         if (imgAccess == KARG_PTR_READ_ONLY)
                         {
@@ -555,6 +566,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                     }
                     else if (isKernelArgImage(inarg.argType))
                     {
+                        // if kernel argument is image
                         uint32_t imgAccess = inarg.ptrAccess & KARG_PTR_ACCESS_MASK;
                         if (imgAccess == KARG_PTR_READ_ONLY)
                         {
@@ -591,6 +603,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
             tempData.stubSize = tempData.isaMetadataSize = 0;
             if (!newBinaries)
             {
+                // size for old structures for old driver
                 tempData.stubSize = 0xa60;
                 tempData.isaMetadataSize = sizeof(kernelIsaMetadata);
             }
@@ -626,9 +639,12 @@ public:
             size += 9; // __BRIG__
         //size += 
         if (newBinaries)
+            // __OpenCL_&__OpenCL_XXXX_kernel_metadata symbols
             for (const AmdCL2KernelInput& kernel: input->kernels)
                 size += kernel.kernelName.size() + 19 + 17;
         else // old binaries
+            // '__ISA_&__OpenCL_XXX_kernel_binary' and '__ISA_&__OpenCL_XXX_kernel_metadata'
+            // symbols
             for (const AmdCL2KernelInput& kernel: input->kernels)
                 size += kernel.kernelName.size()*3 + 19 + 17 + 16*2 + 17 + 15;
         size += 19; // acl version string
@@ -695,6 +711,7 @@ public:
         for (brigIndex = 0; brigIndex < input->extraSections.size(); brigIndex++)
         {
             const BinSection& section = input->extraSections[brigIndex];
+            // indicate that '.brig' section is exists
             if (section.name==".brig")
             {
                 withBrig = true;
@@ -706,6 +723,7 @@ public:
     size_t size() const
     {
         const bool newBinaries = input->driverVersion >= 191205;
+        // brig add extra symbol
         return sizeof(typename Types::Sym)*(1 + (!input->compileOptions.empty()) +
             input->kernels.size()*(newBinaries ? 1 : 3) +
             (withBrig) + 1 /* acl_version */ + input->extraSymbols.size());
@@ -716,6 +734,7 @@ public:
         const bool newBinaries = input->driverVersion >= 191205;
         fob.fill(sizeof(typename Types::Sym), 0);
         typename Types::Sym sym;
+        // symbol name offset in strtab
         size_t nameOffset = 1;
         if (!input->compileOptions.empty())
         {
@@ -836,6 +855,7 @@ struct CLRX_INTERNAL TypeNameVecSize
 
 static const uint32_t ptrSpacesTable[4] = { 0, 3, 5, 4 };
 
+// sepcific setup for 32-bit binaries and types
 struct CLRX_INTERNAL AmdCL2Types32
 {
     typedef AmdCL2GPUMetadataHeader32 MetadataHeader;
@@ -848,6 +868,7 @@ struct CLRX_INTERNAL AmdCL2Types32
     static const size_t middleHeaderSize = 16;
 };
 
+// sepcific setup for 64-bit binaries and types
 struct CLRX_INTERNAL AmdCL2Types64
 {
     typedef AmdCL2GPUMetadataHeader64 MetadataHeader;
@@ -912,11 +933,13 @@ public:
         header.unknowny = 0;
         SLEV(header.unknown2[0], 0x0100000008ULL);
         SLEV(header.unknown2[1], 0x0200000001ULL);
+        // store reqd_work_group_size
         SLEV(header.reqdWorkGroupSize[0], config.reqdWorkGroupSize[0]);
         SLEV(header.reqdWorkGroupSize[1], config.reqdWorkGroupSize[1]);
         SLEV(header.reqdWorkGroupSize[2], config.reqdWorkGroupSize[2]);
         ::memset(header.unknown3, 0, sizeof header.unknown3);
         SLEV(header.firstNameLength, 0x15);
+        // second name is architecture name
         if (input->driverVersion < 223600U)
             SLEV(header.secondNameLength, 0x7); // generic word
         else  // GFX? word
@@ -973,6 +996,7 @@ public:
             if (!input->is64Bit && arg.argType==KernelArgType::POINTER)
                 argTypeSizes.elemSize = 4; // fix for 32-bit for pointer
             cxuint vectorLength = argTypeSizes.vectorSize;
+            // in new binaries vector length is 4 for 3 element vector type
             if (newBinaries && vectorLength==3)
                 vectorLength = 4;
             if (isImage || arg.argType==KernelArgType::SAMPLER)
@@ -1009,6 +1033,7 @@ public:
             }
             SLEV(argEntry.argType, argType);
             
+            // ptr alignment value
             uint32_t ptrAlignment = 0;
             if (arg.argType == KernelArgType::CMDQUEUE)
                 ptrAlignment = newBinaries ? 4 : 2;
@@ -1033,6 +1058,7 @@ public:
             
             SLEV(argEntry.ptrAlignment, ptrAlignment);
             
+            // specific ptrType and ptrSpace for clk_event, pointer and pipe
             if (arg.argType == KernelArgType::CLKEVENT)
             {
                 SLEV(argEntry.ptrType, 18);
@@ -1050,6 +1076,7 @@ public:
             }
             else
             {
+                // for other fields and zeroed
                 argEntry.ptrType = 0;
                 argEntry.ptrSpace = 0;
             }
@@ -1182,6 +1209,7 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
                     storeLocalSize ? config.localSize : 0, config.exceptions);
 }
 
+// calculate kernel argument segment size
 size_t AmdCL2KernelConfig::calculateKernelArgSize(bool is64Bit, bool newBinaries) const
 {
     cxuint kernelArgSize = 0;
@@ -1236,6 +1264,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
                     config.debugMode, config.ieeeMode));
     // pgmrsrc2 - without ldssize
     uint16_t setup1 = 0x1;
+    // set setup1 - features for specific uses flags
     if (config.useGeneric)
         setup1 = 0x2f;
     else if (config.useEnqueue)
@@ -1261,6 +1290,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     
     const cxuint kernelArgSize = config.calculateKernelArgSize(is64Bit, newBinaries);
     SLEV(setupData.kernelArgsSize, kernelArgSize);
+    // really is reserved_Xgprs but filled by AMDOCL
     SLEV(setupData.sgprsNumAll, sgprsNum);
     SLEV(setupData.vgprsNum16, config.usedVGPRsNum);
     SLEV(setupData.vgprReserved, config.usedVGPRsNum);
@@ -1641,6 +1671,7 @@ public:
         size_t out = 0;
         for (const TempAmdCL2KernelData& tempData: tempDatas)
         {
+            // special alignment for inner text (is correct?)
             if ((out & 255) != 0)
                 out += 256-(out&255);
             out += tempData.setupSize + tempData.codeSize;
@@ -1725,6 +1756,9 @@ public:
     }
 };
 
+// ELF64_R_INFO is same as ELF32_R_INFO - will be work for 32-bit binaries
+
+// relocation for global data section
 class CLRX_INTERNAL CL2InnerGlobalDataRelsGen: public ElfRegionContent
 {
 private:
@@ -1825,6 +1859,7 @@ public:
             const TempAmdCL2KernelData& tempData = tempDatas[i];
             
             codeOffset += tempData.setupSize;
+            // write relocations in kernel code
             for (const AmdCL2RelInput inRel: kernel.relocations)
             {
                 SLEV(rela.r_offset, inRel.offset + codeOffset);
@@ -1840,6 +1875,7 @@ public:
     }
 };
 
+// specific values in notes
 static const cxbyte noteDescType1[8] = { 1, 0, 0, 0, 0, 0, 0, 0 };
 static const cxbyte noteDescType2[12] = { 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0 };
 static const cxbyte noteDescType2_32[12] = { 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0 };
@@ -1850,30 +1886,37 @@ static const cxbyte noteDescType4[8] =
 { 0xf0, 0x83, 0x17, 0xfb, 0xfc, 0x7f, 0x00, 0x00 };
 static const cxbyte noteDescType4_32bit[4] =
 { 0xb0, 0xa6, 0xf2, 0x00 };
+// 'AMD HSA Runtime Finalizer'
 static const cxbyte noteDescType4_16_3[0x29] =
 { 0x19, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 'A', 'M', 'D', ' ', 'H', 'S', 'A', ' ',
   'R', 'u', 'n', 't', 'i', 'm', 'e', ' ',
   'F', 'i', 'n', 'a', 'l', 'i', 'z', 'e', 'r', 0, 0, 0, 0  };
+// '-hsa_call_convention=\0' ?
 static const cxbyte noteDescType5[25] =
 { 0x16, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
     'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=', 0, 0 };
+// '-hsa_call_convention=0\0' ?
 static const cxbyte noteDescType5_16_3[26] =
 { 0x16, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
     'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=', '0', 0, 0 };
+// '-hsa_call_convention=0\0t' ?
 static const cxbyte noteDescType5_gpupro[26] =
 { 0x16, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
     'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=', '0', 0, 't' };
+// '-hsa_call_convention=0 -use-buffer-for-hsa-global\0R' ???
 static const cxbyte noteDescType5_16_3_32bit[54] =
 { 0x32, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
     'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=', '0', ' ',
     '-', 'u', 's', 'e', '-', 'b', 'u', 'f', 'f', 'e', 'r', '-', 'f', 'o', 'r',
     '-', 'h', 's', 'a', '-', 'g', 'l', 'o', 'b', 'a', 'l', ' ', 0, 'R' };
+// '-hsa_call_convention=0 -use-buffer-for-hsa-globa' ???
 static const cxbyte noteDescType5_32bit[52] =
 { 0x31, 0, '-', 'h', 's', 'a', '_', 'c', 'a', 'l', 'l', '_',
     'c', 'o', 'n', 'v', 'e', 'n', 't', 'i', 'o', 'n', '=',  '0', ' ',
     '-', 'u', 's', 'e', '-', 'b', 'u', 'f', 'f', 'e', 'r', '-', 'f', 'o', 'r',
     '-', 'h', 's', 'a', '-', 'g', 'l', 'o', 'b', 'a' };
 
+// AMDGPU architecture values for specific GPU device type for AMDOCL 2.0
 static const AMDGPUArchValues amdGpuArchValuesTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
@@ -1902,6 +1945,7 @@ static const AMDGPUArchValues amdGpuArchValuesTbl[] =
     { 9, 0, 1 }  // GPUDeviceType::GFX901
 };
 
+// helper to construct name for fixing allocation/deallocation bug ??
 static CString constructName(size_t prefixSize, const char* prefix, const CString& name,
                  size_t suffixSize, const char* suffix)
 {
@@ -1914,6 +1958,8 @@ static CString constructName(size_t prefixSize, const char* prefix, const CStrin
     return out;
 }
 
+// put inner symbols
+// uses stringPool to correctly holds symbol names
 static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* input,
         const Array<TempAmdCL2KernelData>& tempDatas, const uint16_t* builtinSectionTable,
         cxuint extraSeciontIndex, std::vector<CString>& stringPool, size_t dataSymbolsNum)
@@ -1965,6 +2011,7 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
                         input->samplerOffsets[samp] : samplerOffset + samp*8;
                 char sampName[64];
                 memcpy(sampName, "&input_bc::&_.Samp", 18);
+                // add to samp name sampler id
                 itocstrCStyle<cxuint>(samp, sampName+18, 64-18);
                 stringPool[nameIdx] = sampName;
                 innerBinGen.addSymbol(ElfSymbol64(stringPool[nameIdx].c_str(), globalSectId,
@@ -1983,6 +2030,7 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
         codePos += kernel.codeSize + tempData.setupSize;
     }
     
+    // symbols for global samplers
     for (size_t i = 0; i < samplersNum; i++)
         if (!samplerMask[i])
         {
@@ -1990,6 +2038,7 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
                     input->samplerOffsets[i] : samplerOffset + i*8;
             char sampName[64];
             memcpy(sampName, "&input_bc::&_.Samp", 18);
+            // add to samp name sampler id
             itocstrCStyle<cxuint>(i, sampName+18, 64-18);
             stringPool[nameIdx] = sampName;
             innerBinGen.addSymbol(ElfSymbol64(stringPool[nameIdx].c_str(), globalSectId,
@@ -1998,6 +2047,7 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
             samplerMask[i] = true;
         }
     
+    // symbol for hsa sections
     if (input->rwDataSize!=0 && input->rwData!=nullptr)
         innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsadata_global_agent",
               atomicSectId, ELF64_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
@@ -2041,6 +2091,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     // fix for old drivers (1912.05)
     if (!is16_3Ver && input->deviceType==GPUDeviceType::FIJI)
         amdGpuArchValues.stepping = 1;
+    // replacing arch_minor and arch_stepping by values given in config
     if (input->archMinor!=UINT32_MAX)
         amdGpuArchValues.minor = input->archMinor;
     if (input->archStepping!=UINT32_MAX)
@@ -2116,6 +2167,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     cxuint mainExtraSectionIndex = 6 + (kernelsNum != 0 || newBinaries);
     const uint16_t* mainSectTable = (kernelsNum != 0 || newBinaries) ?
             mainBuiltinSectionTable : mainBuiltinSectionTable2;
+    // initializing content generators
     CL2MainStrTabGen mainStrTabGen(input);
     CL2MainSymTabGen<Elf32Types> mainSymTabGen32(input, tempDatas, aclVersion,
                      mainSectTable, mainExtraSectionIndex);
@@ -2257,6 +2309,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinSectionTable[ELFSECTID_DATA-ELFSECTID_START] =
                     extraSectionIndex++;
         }
+        // put '.bss' if present
         if (input->bssSize!=0)
         {
             innerBinGen->addRegion(ElfRegion64(input->bssSize, (const cxbyte*)nullptr,
@@ -2287,6 +2340,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinSectionTable[ELFSECTID_SYMTAB-ELFSECTID_START] = extraSectionIndex++;
         }
         
+        // put sampler datas
         if (hasSamplers)
         {
             innerBinGen->addRegion(ElfRegion64(input->samplerConfig ?
