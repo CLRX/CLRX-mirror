@@ -40,6 +40,7 @@
 
 using namespace CLRX;
 
+// X86 argument's type table
 static const KernelArgType x86ArgTypeTable[] =
 {
     KernelArgType::VOID,
@@ -83,6 +84,7 @@ static const KernelArgType x86ArgTypeTable[] =
     KernelArgType::SAMPLER
 };
 
+// GPU argument's type table
 static const KernelArgType gpuArgTypeTable[] =
 {
     KernelArgType::UCHAR,
@@ -217,6 +219,7 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const CString& _kernelName,
             {
                 Array<CALNote>& calNotes = calNotesTable[encodingIndex];
                 uint32_t calNotesCount = 0;
+                // verifying ATI CAL notes
                 for (uint32_t pos = 0; pos < size; calNotesCount++)
                 {
                     const CALNoteHeader& nhdr =
@@ -262,6 +265,7 @@ struct CLRX_INTERNAL GPUDeviceInnerCodeEntry
     GPUDeviceType deviceType;
 };
 
+// GPU device code table - code in CALEncodingEntry (machine field)
 static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[19] =
 {
     { 0x1a, GPUDeviceType::TAHITI },
@@ -483,6 +487,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                 Types::argDescsNumOffset)/Types::argDescsNumESize;
         KernelInfo& kernelInfo = kernelInfos[ki++];
         
+        // get kernel name
         const char* symName = (!foundInStaticSymbols)?elf.getDynSymbolName(i):
                 elf.getSymbolName(i);
         const size_t len = ::strlen(symName);
@@ -513,6 +518,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             const size_t rodataHdrOffset = ULEV(rodataHdr.sh_offset);
             const size_t rodataHdrSize = ULEV(rodataHdr.sh_size);
             
+            // getting kernel argument name
             // next stuff to handle different place of symbols
             if (!foundInStaticSymbols)
             {
@@ -537,6 +543,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                 karg.argName = reinterpret_cast<const char*>(binaryCode + value);
             }
             
+            // getting kernel argument type
             if (!foundInStaticSymbols)
             {
                 if (argTypeSym.getNameOffset() < rodataHdrOffset ||
@@ -642,13 +649,14 @@ static KernelArgType determineKernelArgType(const char* typeString,
         /* indexBase - choose between unsigned/signed */
         const cxuint indexBase = (typeString[0] == 'i')?6:0;
         if (typeString[1] == '8')
-        {
+        {   // 8-bit type
             if (typeString[2] != ':')
                 throw ParseException(lineNo, "Can't parse type");
             outType = gpuArgTypeTable[indexBase+vectorId];
         }
         else
         {
+            // 16,32,64 bit types
             if (typeString[1] == '1' && typeString[2] == '6')
                 outType = gpuArgTypeTable[indexBase+2*6+vectorId];
             else if (typeString[1] == '3' && typeString[2] == '2')
@@ -679,6 +687,7 @@ static inline CString stringFromCStringDelim(const char* c1, size_t maxSize, cha
 static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
           const char* kernelDesc, KernelInfo& kernelInfo)
 {
+    // internal structure to hold kernel arguments info in map
     struct InitKernelArgMapEntry
     {
         uint32_t index;
@@ -828,7 +837,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                     throw ParseException(lineNo, "No separator after field");
                 tokPtr++;
             }
-            /* volatile */
+            /* volatile specifier */
             kptr = tokPtr;
             if (kptr+2 <= kend && kptr[1] == ':' && (*kptr == '0' || *kptr == '1'))
             {
@@ -839,6 +848,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             else // error
                 throw ParseException("Unknown value or end at volatile field");
             
+            /* restrict specifier */
             if (kptr+2 <= kend && kptr[1] == '\n' && (*kptr == '0' || *kptr == '1'))
             {
                 if (*kptr == '1')
@@ -850,7 +860,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
         }
         else if (::strncmp(kptr, "image", tokPtr-kptr) == 0)
         {
-            // image
+            // parse image arg
             if (*tokPtr == '\n')
                 throw ParseException(lineNo, "This is not image line");
             
@@ -875,6 +885,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                     throw ParseException("Unknown image type");
                 if (*kptr == '1')
                 {
+                    // one dimensional image
                     if (kptr[2] == 'A')
                     { entry.argType = KernelArgType::IMAGE1D_ARRAY; kptr += 3; }
                     else if (kptr[2] == 'B')
@@ -1033,7 +1044,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             kptr++;
             if (kptr >= kend)
                 throw ParseException(lineNo, "Is not KernelDesc line");
-            
+            // finish at end of string or if no ';reflection'
             if (kptr+11 > kend || ::strncmp(kptr, "reflection:", 11) != 0)
                 break; // end!!!
             kptr += 11;
@@ -1136,6 +1147,8 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
                         mainElf.getSectionContent(compileOptionShIndex));
             if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
                 throw Exception("CompileOptions value out of range");
+            // compileOptionsEnd used later for setting offset for driver info
+            // compile options precedes driver info
             compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
             if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
                 throw Exception("CompileOptions value+size out of range");
@@ -1242,6 +1255,7 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
             if (usumGt(symvalue, symsize, ULEV(rodataHdr.sh_size)))
                 throw Exception("Metadata offset+size out of range");
             
+            // parse AMDGPU kernel metadata
             parseAmdGpuKernelMetadata(symName, symsize,
                   reinterpret_cast<const char*>(secContent + symvalue),
                   kernelInfos[ki]);
@@ -1283,12 +1297,13 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
             if (usumGt(symvalue, symsize, ULEV(rodataHdr.sh_size)))
                 throw Exception("KernelHeader offset+size out of range");
             
+            // kernel name preceded by '__OpenCL_' and precedes '_kernel'
             kernelHeaders[ki].kernelName.assign(symName + 9, symName + symNameLen-7);
             kernelHeaders[ki].size = symsize;
             kernelHeaders[ki].data = secContent + symvalue;
             ki++;
         }
-        /* maps kernel headers */
+        /* maps kernel headers and sort it */
         if ((creationFlags & AMDBIN_CREATE_KERNELHEADERMAP) != 0)
         {
             kernelHeaderMap.resize(kernelHeaders.size());
@@ -1333,6 +1348,7 @@ struct CLRX_INTERNAL GPUDeviceCodeEntry
     GPUDeviceType deviceType;
 };
 
+// GPU device code table - code in machine field in ELF header
 static const GPUDeviceCodeEntry gpuDeviceCodeTable[19] =
 {
     { 0x3fd, GPUDeviceType::TAHITI },
@@ -1442,6 +1458,8 @@ AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode
                             getSectionContent(compileOptionShIndex));
                 if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
                     throw Exception("CompileOptions value out of range");
+                // compileOptionsEnd used later for setting offset for driver info
+                // compile options precedes driver info
                 compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
                 if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
                     throw Exception("CompileOptions value+size out of range");
@@ -1524,6 +1542,8 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode
                             getSectionContent(compileOptionShIndex));
                 if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
                     throw Exception("CompileOptions value out of range");
+                // compileOptionsEnd used later for setting offset for driver info
+                // compile options precedes driver info
                 compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
                 if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
                     throw Exception("CompileOptions value+size out of range");
@@ -1583,12 +1603,14 @@ bool CLRX::isAmdBinary(size_t binarySize, const cxbyte* binary)
 AmdMainBinaryBase* CLRX::createAmdBinaryFromCode(size_t binaryCodeSize, cxbyte* binaryCode,
         Flags creationFlags)
 {
+    // checking whether is AMDOCL binary (little endian and ELF magic)
     if (binaryCodeSize < sizeof(Elf32_Ehdr) ||
         ULEV(*reinterpret_cast<const uint32_t*>(binaryCode)) != elfMagicValue)
         throw Exception("This is not ELF binary");
     if (binaryCode[EI_DATA] != ELFDATA2LSB)
         throw Exception("Other than little-endian binaries are not supported!");
     
+    // checking binary class
     if (binaryCode[EI_CLASS] == ELFCLASS32)
     {
         const Elf32_Ehdr* ehdr = reinterpret_cast<const Elf32_Ehdr*>(binaryCode);

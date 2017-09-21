@@ -37,6 +37,7 @@
 
 using namespace CLRX;
 
+// helper to writing specific CALNote entries
 static inline void putCALNoteLE(FastOutputBuffer& bos, uint32_t type, uint32_t descSize)
 {
     const CALNoteHeader nhdr = { LEV(8U), LEV(descSize), LEV(type),
@@ -218,8 +219,8 @@ enum KindOfType : cxbyte
     KT_SIGNED,
     KT_FLOAT,
     KT_DOUBLE,
-    KT_STRUCT,
-    KT_UNKNOWN
+    KT_STRUCT,  // structure
+    KT_UNKNOWN  // used by types other than number types
 };
 
 struct CLRX_INTERNAL TypeNameVecSize
@@ -413,21 +414,25 @@ public:
             : driverVersion(_driverVersion), input(_input)
     { }
     
+    // calculating size of strtab 
     size_t size() const
     {
         size_t size = 1;
         if (!input->compileOptions.empty())
             size += 25;
         if (input->globalData != nullptr)
-            size += 18;
+            size += 18; // "_OpenCL_X_global"
         
+        // storing three symbols with various names
         for (const AmdKernelInput& kernel: input->kernels)
             size += kernel.kernelName.size()*3 + 19 + 17 + 17;
+        // extra symbol's strings sizes
         for (const BinSymbol& symbol: input->extraSymbols)
             size += symbol.name.size()+1;
         return size;
     }
     
+    // fast way to write symbol name strings
     void operator()(FastOutputBuffer& fob) const
     {
         const bool isOlderThan1348 = driverVersion < 134805;
@@ -473,6 +478,7 @@ public:
                 input->extraSymbols.size());
     }
     
+    // fast way to store symbol table
     void operator()(FastOutputBuffer& fob) const
     {
         const uint16_t* mainSectTable = input->kernels.empty() ?
@@ -482,6 +488,7 @@ public:
         fob.fill(sizeof(typename Types::Sym), 0);
         typename Types::Sym sym;
         size_t nameOffset = 1;
+        // compile options symbol
         if (!input->compileOptions.empty())
         {
             SLEV(sym.st_name, nameOffset);
@@ -494,6 +501,7 @@ public:
             fob.writeObject(sym);
         }
         size_t rodataPos = 0;
+        // global data symbol
         if (input->globalData != nullptr)
         {
             SLEV(sym.st_name, nameOffset);
@@ -545,7 +553,7 @@ public:
             nameOffset += kernel.kernelName.size() + 17;
             rodataPos += headerSize;
         }
-        
+        // after this we write extra symbols
         for (const BinSymbol& symbol: input->extraSymbols)
         {
             SLEV(sym.st_name, nameOffset);
@@ -561,6 +569,7 @@ public:
     }
 };
 
+// write rodata that hold kernel's metadatas and kernel's headers
 class CLRX_INTERNAL CL1MainRoDataGen: public ElfRegionContent
 {
 private:
@@ -607,6 +616,7 @@ public:
     }
 };
 
+// writing comment (holds compile options and driver info)
 class CLRX_INTERNAL CL1MainCommentGen: public ElfRegionContent
 {
 private:
@@ -656,6 +666,7 @@ static void putMainSections(ElfBinaryGenTemplate<Types>& elfBinGen, cxuint drive
     for (const BinSection& section: input->extraSections)
         elfBinGen.addRegion(ElfRegionTemplate<Types>(section, mainSectTable,
                          ELFSECTID_STD_MAX, extraSectId));
+    // store section header table as last region
     elfBinGen.addRegion(ElfRegionTemplate<Types>::sectionHeaderTable());
 }
 
@@ -684,6 +695,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                 throw Exception("No code for kernel");
             continue; // and skip
         }
+        // checking config parameters
         const AmdKernelConfig& config = kinput.config;
         TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
         if (config.userDatas.size() > 16)
@@ -814,7 +826,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
         cxuint wrImgsCount = 0;
         std::bitset<8> wrImgMask;
         tempConfig.argResIds.resize(config.args.size());
-        
+        // main loop to fill argUavIds
         for (cxuint k = 0; k < config.args.size(); k++)
         {
             const AmdKernelArgInput& arg = config.args[k];
@@ -875,6 +887,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             }
         }
         
+        // setting argUavIds to arguments in (tempConfig.argResIds)
         for (cxuint k = 0; k < config.args.size(); k++)
         {
             const AmdKernelArgInput& arg = config.args[k];
@@ -990,6 +1003,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         const AmdKernelArgInput& arg = config.args[k];
         if (arg.argType == KernelArgType::STRUCTURE)
         {
+            // store in form: ";value:Name:struct:SIZE:1:OFFSET
             metadata += ";value:";
             metadata += arg.argName.c_str();
             metadata += ":struct:";
@@ -1003,6 +1017,9 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         }
         else if (arg.argType == KernelArgType::POINTER)
         {
+            // pointer
+            /* store: ';pointer:NAME::TYPENAME:1:1:OFFSET:
+             *           QUAL:RESID:ESIZE:ACCESS:VOLATILE:RESTRICT' */
             metadata += ";pointer:";
             metadata += arg.argName.c_str();
             metadata += ':';
@@ -1054,6 +1071,8 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         }
         else if (isKernelArgImage(arg.argType))
         {
+            // image
+            // store ';image:NAME:IMGTYPE:ACCESS:RESID:1:ARGOFFSET'
             metadata += ";image:";
             metadata += arg.argName.c_str();
             metadata += ':';
@@ -1079,6 +1098,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         }
         else if (arg.argType == KernelArgType::COUNTER32)
         {
+            // store counter: ';counter:NAME:32:RESID:1:OFFSET'
             metadata += ";counter:";
             metadata += arg.argName.c_str();
             metadata += ":32:";
@@ -1092,6 +1112,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         }
         else
         {
+            // store value: ';value:NAME:TYPE:VECSIZE:1:OFFSET'
             metadata += ";value:";
             metadata += arg.argName.c_str();
             metadata += ':';
@@ -1114,6 +1135,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         
         if (arg.ptrAccess & KARG_PTR_CONST)
         {
+            // store constarg for constant pointers
             metadata += ";constarg:";
             itocstrCStyle(k, numBuf, 21);
             metadata += numBuf;
@@ -1193,6 +1215,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     }
     for (cxuint k = 0; k < config.args.size(); k++)
     {
+        // store reflection: ';reflection:ARGINDEX:TYPENAME
         const AmdKernelArgInput& arg = config.args[k];
         metadata += ";reflection:";
         itocstrCStyle(k, numBuf, 21);
@@ -1224,6 +1247,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     cxuint constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
             (input->globalData != nullptr));
     cxuint woUsedImagesMask = 0;
+    // count used read only images, write only images,const buffers and samplers
     for (const AmdKernelArgInput& arg: config.args)
     {
         if (isKernelArgImage(arg.argType))
@@ -1376,6 +1400,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
             4*((isOlderThan1124)?16:userDataElemsNum))*8;
     putCALNoteLE(bos, CALNOTE_ATI_PROGINFO, progInfoSize);
     
+    // write USERDATA (USERSGPR specifiers) CAL notes
     putProgInfoEntryLE(bos, 0x80001000U, userDataElemsNum);
     cxuint k = 0;
     for (k = 0; k < userDataElemsNum; k++)
@@ -1386,6 +1411,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
         putProgInfoEntryLE(bos, 0x80001004U+(k<<2), config.userDatas[k].regSize);
     }
     if (isOlderThan1124)
+        // fill up empty USERDATA for older drivers
         for (k =  userDataElemsNum; k < 16; k++)
         {
             putProgInfoEntryLE(bos, 0x80001001U+(k<<2), 0);
@@ -1417,6 +1443,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     putProgInfoEntryLE(bos, 0x80001045U, (config.scratchBufferSize+3)>>2);
     putProgInfoEntryLE(bos, 0x00002e13U, curPgmRSRC2);
     
+    // write reqd_work_group_size in CALnotes
     if (config.reqdWorkGroupSize[0] != 0 && config.reqdWorkGroupSize[1] != 0 &&
         config.reqdWorkGroupSize[2] != 0)
     {
@@ -1478,6 +1505,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     bos.writeArray(32, uavMask);
 }
 
+// collect unique ids and functions ids to determine free unique id or function id later
 static std::vector<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
 {
     std::vector<cxuint> uniqueIds;
@@ -1495,6 +1523,7 @@ static std::vector<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
                 continue; // not found
             const char* outEnd;
             pos += 11;
+            // parse and push back to unique ids
             try
             { uniqueIds.push_back(cstrtovCStyle<cxuint>(metadata+pos,
                                metadata+kernel.metadataSize, outEnd)); }
@@ -1511,6 +1540,7 @@ static std::vector<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
             if (funcIdStr == nullptr || funcIdStr+1 == metadata+kernel.metadataSize)
                 continue;
             funcIdStr++;
+            // parse and push back to unique ids
             try
             { uniqueIds.push_back(cstrtovCStyle<cxuint>(funcIdStr,
                            metadata+kernel.metadataSize, outEnd)); }
@@ -1534,6 +1564,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
     uint32_t driverVersion = 99999909U;
     if (input->driverInfo.empty())
     {
+        // if driver info is not given, then format default driver info
         char drvInfoBuf[100];
         ::snprintf(drvInfoBuf, 100, "@(#) OpenCL 1.2 AMD-APP (%u.%u).  "
                 "Driver version: %u.%u (VM)",
@@ -1544,7 +1575,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
     }
     else if (input->driverVersion == 0)
     {
-        // parse version
+        // parse version from given driver_info
         size_t pos = input->driverInfo.find("AMD-APP"); // find AMDAPP
         try
         {
@@ -1613,6 +1644,8 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
             cxuint argSamplersNum = 0;
             cxuint constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
                     (input->globalData != nullptr));
+            // count UAVs, write only images, read only images, samplers
+            // to calculate CALNotes size
             for (const AmdKernelArgInput& arg: config.args)
             {
                 if (isKernelArgImage(arg.argType))
@@ -1697,6 +1730,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
                  &tempAmdKernelDatas[i].calNoteGen, 0));
         kelfBinGen.addRegion(ElfRegion32(kinput.codeSize, kinput.code, 0,
                  ".text", SHT_PROGBITS, 0));
+        // empty '.data' section (zeroed)
         kelfBinGen.addRegion(ElfRegion32((kinput.data!=nullptr)?kinput.dataSize:4736,
                  &tempData.kernelDataGen, 0, ".data",
                  SHT_PROGBITS, 0, 0, 0, 0, kinput.dataSize));
