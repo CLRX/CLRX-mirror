@@ -1194,6 +1194,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     continue;
                 }
                 
+                // resolving
                 switch(target.type)
                 {
                     case ASMXTGT_SYMBOL:
@@ -1256,6 +1257,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                             SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
                                     .content.data() + target.offset), uint64_t(value));
                         break;
+                    // special case for Code flow
                     case ASMXTGT_CODEFLOW:
                         if (target.sectionId != sectionId)
                             THIS_NOTGOOD_BY_ERROR(expr->getSourcePos(),
@@ -1264,7 +1266,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                             sections[target.sectionId].
                                     codeFlow[target.cflowId].target = value;
                         break;
-                    default: // ISA assembler resolves this dependency
+                    default:
+                        // ISA assembler resolves this dependency
                         if (!isaAssembler->resolveCode(expr->getSourcePos(),
                                 target.sectionId, sections[target.sectionId].content.data(),
                                 target.offset, target.type, sectionId, value))
@@ -1325,12 +1328,13 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         }
         if (!res.first->second.occurrencesInExprs.empty())
         {
-            // found in expressions
+            // regrange found in expressions (error)
             std::vector<std::pair<const AsmExpression*, size_t> > exprs;
             size_t i = 0;
             for (AsmExprSymbolOccurrence occur: res.first->second.occurrencesInExprs)
                 exprs.push_back(std::make_pair(occur.expression, i++));
             // remove duplicates
+            // sort by value
             std::sort(exprs.begin(), exprs.end(),
                       [](const std::pair<const AsmExpression*, size_t>& a,
                          const std::pair<const AsmExpression*, size_t>& b)
@@ -1339,16 +1343,17 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
                             return a.second<b.second;
                         return a.first<b.first;
                     });
+            // make unique and resize (remove duplicates
             exprs.resize(std::unique(exprs.begin(), exprs.end(),
                        [](const std::pair<const AsmExpression*, size_t>& a,
                          const std::pair<const AsmExpression*, size_t>& b)
                        { return a.first==b.first; })-exprs.begin());
-            
+            // sort by occurrence
             std::sort(exprs.begin(), exprs.end(),
                       [](const std::pair<const AsmExpression*, size_t>& a,
                          const std::pair<const AsmExpression*, size_t>& b)
                     { return a.second<b.second; });
-            // print errors
+            // print errors (in order without duplicates)
             for (std::pair<const AsmExpression*, size_t> elem: exprs)
                 printError(elem.first->getSourcePos(), "Expression have register symbol");
             
@@ -1445,6 +1450,7 @@ bool Assembler::assignOutputCounter(const char* symbolPlace, uint64_t value,
             cxuint sectionId, cxbyte fillValue)
 {
     initializeOutputFormat();
+    // checking conditions and fail if not satisfied
     if (currentSection != sectionId && sectionId != ASMSECT_ABS)
         THIS_FAIL_BY_ERROR(symbolPlace, "Illegal section change for symbol '.'")
     if (currentSection != ASMSECT_ABS && int64_t(currentOutPos) > int64_t(value))
@@ -1461,6 +1467,7 @@ bool Assembler::assignOutputCounter(const char* symbolPlace, uint64_t value,
     return true;
 }
 
+// skip symbol name, return false if not symbol
 bool Assembler::skipSymbol(const char*& linePtr)
 {
     const char* end = line+lineSize;
@@ -1513,6 +1520,7 @@ void Assembler::printError(const AsmSourcePos& pos, const char* message)
     messageStream.put('\n');
 }
 
+// special routine to printing warning when value out of range
 void Assembler::printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
         cxbyte signess)
 {
