@@ -1544,6 +1544,7 @@ clrxclEnqueueSVMFree(cl_command_queue  command_queue,
                     wrappedData, num_events_in_wait_list, amdWaitList, amdEventPtr);
         }
         else
+            // if events too much use vector to store original AMDOCL events
             try
             {
                 std::vector<cl_event> amdWaitList(num_events_in_wait_list);
