@@ -421,8 +421,8 @@ static uint32_t optimizeHashBucketsNum(uint32_t hashNum, bool skipFirst,
     uint64_t bestValue = UINT64_MAX;
     uint32_t firstStep = std::max(uint32_t(hashNum>>2), 1U);
     uint64_t maxSteps = (uint64_t(hashNum)<<1) - (firstStep) + 1;
-    // limit step of optimizations to 1000
-    const uint32_t steps = std::min(maxSteps, uint64_t(1000U));
+    // limit step of optimizations to 4000
+    const uint32_t steps = std::min(maxSteps, uint64_t(4000U));
     
     std::unique_ptr<uint32_t[]> chainLengths(new uint32_t[(hashNum<<2)+1]);
     const uint32_t stepSize = maxSteps / steps;
