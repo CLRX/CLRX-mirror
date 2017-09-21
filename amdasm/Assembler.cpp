@@ -46,6 +46,7 @@
 
 using namespace CLRX;
 
+// copy constructor - includes usageHandler copying
 AsmSection::AsmSection(const AsmSection& section)
 {
     name = section.name;
@@ -61,6 +62,7 @@ AsmSection::AsmSection(const AsmSection& section)
     codeFlow = section.codeFlow;
 }
 
+// copy assignment - includes usageHandler copying
 AsmSection& AsmSection::operator=(const AsmSection& section)
 {
     name = section.name;
@@ -77,6 +79,8 @@ AsmSection& AsmSection::operator=(const AsmSection& section)
     return *this;
 }
 
+// open code region - add new code region if needed
+// called when kernel label encountered or region for this kernel begins
 void AsmKernel::openCodeRegion(size_t offset)
 {
     if (!codeRegions.empty() && codeRegions.back().second == SIZE_MAX)
@@ -90,6 +94,8 @@ void AsmKernel::openCodeRegion(size_t offset)
     }
 }
 
+// open code region - set end of region or if empty remove obsolete code region
+// called when new kernel label encountered or region for this kernel ends
 void AsmKernel::closeCodeRegion(size_t offset)
 {
     if (codeRegions.empty())
@@ -102,6 +108,11 @@ void AsmKernel::closeCodeRegion(size_t offset)
     }
 }
 
+/* table of token characters
+ * value for character means:
+ * 7 bit - this character with previous character with this same
+ *   (7 lower bits) continues token
+ * 0-7 bits - class of token */
 const cxbyte CLRX::tokenCharTable[96] =
 {
     //' '   '!'   '"'   '#'   '$'   '%'   '&'   '''
@@ -190,7 +201,7 @@ CString CLRX::extractScopedSymName(const char*& string, const char* end,
     return CString(startString, lastString);
 }
 
-
+// skip spaces, labels and '\@' and \(): move to statement skipping all labels
 void CLRX::skipSpacesAndLabels(const char*& linePtr, const char* end)
 {
     const char* stmtStart;
@@ -229,6 +240,7 @@ void CLRX::skipSpacesAndLabels(const char*& linePtr, const char* end)
     linePtr = stmtStart;
 }
 
+// check whether some garbages at end of line (true if not)
 bool AsmParseUtils::checkGarbagesAtEnd(Assembler& asmr, const char* linePtr)
 {
     skipSpacesToEnd(linePtr, asmr.line + asmr.lineSize);
@@ -237,6 +249,7 @@ bool AsmParseUtils::checkGarbagesAtEnd(Assembler& asmr, const char* linePtr)
     return true;
 }
 
+// get absolute value (by evaluating expression): all symbols must be resolved at this time
 bool AsmParseUtils::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
                       const char*& linePtr, bool requiredExpr)
 {
@@ -259,6 +272,7 @@ bool AsmParseUtils::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
     return true;
 }
 
+// get any value (also position in section)
 bool AsmParseUtils::getAnyValueArg(Assembler& asmr, uint64_t& value,
                    cxuint& sectionId, const char*& linePtr)
 {
@@ -275,6 +289,8 @@ bool AsmParseUtils::getAnyValueArg(Assembler& asmr, uint64_t& value,
     return true;
 }
 
+/* get jump value - if expression have unresolved symbols, then returns output
+ * target expression to resolve later */
 bool AsmParseUtils::getJumpValueArg(Assembler& asmr, uint64_t& value,
             std::unique_ptr<AsmExpression>& outTargetExpr, const char*& linePtr)
 {
@@ -298,11 +314,14 @@ bool AsmParseUtils::getJumpValueArg(Assembler& asmr, uint64_t& value,
     }
     else
     {
+        // store out target expression (some symbols is not resolved)
         outTargetExpr = std::move(expr);
         return true;
     }
 }
 
+// get name of some object - accepts '_', '.' in name
+// skipCommaAtError - skip ',' when error
 bool AsmParseUtils::getNameArg(Assembler& asmr, CString& outStr, const char*& linePtr,
             const char* objName, bool requiredArg, bool skipCommaAtError)
 {
@@ -324,13 +343,14 @@ bool AsmParseUtils::getNameArg(Assembler& asmr, CString& outStr, const char*& li
     }
     else
     {
+        // if is not name
         if (!requiredArg)
             return true; // succeed
         asmr.printError(linePtr, (std::string("Some garbages at ")+objName+
                         " place").c_str());
         if (!skipCommaAtError)
             while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
-        else
+        else // skip comma
             while (linePtr != end && !isSpace(*linePtr)) linePtr++;
         return false;
     }
@@ -338,6 +358,8 @@ bool AsmParseUtils::getNameArg(Assembler& asmr, CString& outStr, const char*& li
     return true;
 }
 
+// get name of some object - accepts '_', '.' in name
+// like previous function: but static allocated strings
 bool AsmParseUtils::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
                const char*& linePtr, const char* objName, bool requiredArg,
                bool ignoreLongerName, bool skipCommaAtError)
@@ -392,6 +414,7 @@ bool AsmParseUtils::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outS
     return true;
 }
 
+// skip comma (can be not present), return true in haveComma if ',' encountered
 bool AsmParseUtils::skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -408,6 +431,7 @@ bool AsmParseUtils::skipComma(Assembler& asmr, bool& haveComma, const char*& lin
     return true;
 }
 
+// skip comma (must be), if comma not present then fail
 bool AsmParseUtils::skipRequiredComma(Assembler& asmr, const char*& linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -418,6 +442,8 @@ bool AsmParseUtils::skipRequiredComma(Assembler& asmr, const char*& linePtr)
     return true;
 }
 
+// skip comma, but if fail and some character at place, then skip character
+// skip also spaces after comma
 bool AsmParseUtils::skipCommaForMultipleArgs(Assembler& asmr, const char*& linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -434,6 +460,8 @@ bool AsmParseUtils::skipCommaForMultipleArgs(Assembler& asmr, const char*& lineP
     return true;
 }
 
+// get enumeration (name of specified set), return value of recognized name from table
+// prefix - optional prefix for name
 bool AsmParseUtils::getEnumeration(Assembler& asmr, const char*& linePtr,
               const char* objName, size_t tableSize,
               const std::pair<const char*, cxuint>* table, cxuint& value,
@@ -443,6 +471,7 @@ bool AsmParseUtils::getEnumeration(Assembler& asmr, const char*& linePtr,
     char name[72];
     skipSpacesToEnd(linePtr, end);
     const char* namePlace = linePtr;
+    // first, get name
     if (getNameArg(asmr, 72, name, linePtr, objName))
     {
         toLowerString(name);
@@ -463,6 +492,7 @@ bool AsmParseUtils::getEnumeration(Assembler& asmr, const char*& linePtr,
     return false;
 }
 
+// used by asm format pseudo op: '.dim' to parse dimensions (xyz)
 bool AsmParseUtils::parseDimensions(Assembler& asmr, const char*& linePtr, cxuint& dimMask)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -470,6 +500,7 @@ bool AsmParseUtils::parseDimensions(Assembler& asmr, const char*& linePtr, cxuin
     const char* dimPlace = linePtr;
     char buf[10];
     dimMask = 0;
+    // get name and try to parse dimension
     if (getNameArg(asmr, 10, buf, linePtr, "dimension set", false))
     {
         toLowerString(buf);
@@ -530,6 +561,7 @@ void AsmSymbol::undefine()
     base = false;
     if (!regRange)
     {
+        // delete expresion if symbol is not regrange
         delete expression;
         expression = nullptr;
     }
@@ -545,6 +577,7 @@ AsmScope::~AsmScope()
         entry.second.clearOccurrencesInExpr();
 }
 
+// simple way to delete symbols recursively from scope
 void AsmScope::deleteSymbolsRecursively()
 {
     symbolMap.clear();
@@ -584,6 +617,7 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
           driverVersion(0), llvmVersion(0),
           _64bit(false),
           isaAssembler(nullptr),
+          // initialize global scope: adds '.' to symbols
           globalScope({nullptr,{std::make_pair(".", AsmSymbol(0, uint64_t(0)))}}),
           currentScope(&globalScope),
           flags(_flags), 
@@ -621,6 +655,7 @@ Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
           driverVersion(0), llvmVersion(0),
           _64bit(false),
           isaAssembler(nullptr),
+          // initialize global scope: adds '.' to symbols
           globalScope({nullptr,{std::make_pair(".", AsmSymbol(0, uint64_t(0)))}}),
           currentScope(&globalScope),
           flags(_flags), 
@@ -677,6 +712,7 @@ Assembler::~Assembler()
         delete entry;
 }
 
+// routine to parse string in assembly syntax
 bool Assembler::parseString(std::string& strarray, const char*& linePtr)
 {
     const char* end = line+lineSize;
@@ -690,6 +726,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
     }
     linePtr++;
     
+    // main loop, where is character parsing
     while (linePtr != end && *linePtr != '"')
     {
         if (*linePtr == '\\')
@@ -701,7 +738,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
                 THIS_FAIL_BY_ERROR(startPlace, "Unterminated character of string")
             if (*linePtr == 'x')
             {
-                // hex
+                // hex literal
                 const char* charPlace = linePtr-1;
                 linePtr++;
                 if (linePtr == end)
@@ -727,7 +764,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
             }
             else if (isODigit(*linePtr))
             {
-                // octal
+                // octal literal
                 value = 0;
                 const char* charPlace = linePtr-1;
                 for (cxuint i = 0; linePtr != end && i < 3; i++, linePtr++)
@@ -735,6 +772,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
                     if (!isODigit(*linePtr))
                         break;
                     value = (value<<3) + uint64_t(*linePtr-'0');
+                    // checking range
                     if (value > 255)
                         THIS_FAIL_BY_ERROR(charPlace, "Octal code out of range")
                 }
@@ -790,10 +828,12 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
     return true;
 }
 
+// routine to parse single character literal
 bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
 {
     const char* startPlace = linePtr;
     const char* end = line+lineSize;
+    // if literal begins '
     if (linePtr != end && *linePtr == '\'')
     {
         linePtr++;
@@ -817,7 +857,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
                 THIS_FAIL_BY_ERROR(startPlace, "Unterminated character literal")
             if (*linePtr == 'x')
             {
-                // hex
+                // hex literal
                 linePtr++;
                 if (linePtr == end)
                     THIS_FAIL_BY_ERROR(startPlace, "Unterminated character literal")
@@ -842,7 +882,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
             }
             else if (isODigit(*linePtr))
             {
-                // octal
+                // octal literal
                 value = 0;
                 for (cxuint i = 0; linePtr != end && i < 3 && *linePtr != '\'';
                      i++, linePtr++)
@@ -850,6 +890,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
                     if (!isODigit(*linePtr))
                         THIS_FAIL_BY_ERROR(startPlace, "Expected octal character code")
                     value = (value<<3) + uint64_t(*linePtr-'0');
+                    // checking range
                     if (value > 255)
                         THIS_FAIL_BY_ERROR(startPlace, "Octal code out of range")
                 }
@@ -900,6 +941,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
             return true;
         }
     }
+    // try to parse integer value
     try
     { value = cstrtovCStyle<uint64_t>(startPlace, line+lineSize, linePtr); }
     catch(const ParseException& ex)
@@ -910,6 +952,9 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
     return true;
 }
 
+// parse symbol. return PARSED - when successfuly parsed symbol,
+// MISSING - when no symbol in this place, FAILED - when failed
+// routine try to create new unresolved symbol if not defined and if dontCreateSymbol=false
 Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
                 AsmSymbolEntry*& entry, bool localLabel, bool dontCreateSymbol)
 {
@@ -935,6 +980,7 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
     bool symHasValue;
     if (!isDigit(symName.front()))
     {
+        // regular symbol name (not local label)
         AsmScope* outScope;
         CString sameSymName;
         entry = findSymbolInScope(symName, outScope, sameSymName);
@@ -946,7 +992,7 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
         }
         if (!dontCreateSymbol && entry==nullptr)
         {
-            // create symbol if not found
+            // create unresolved symbol if not found
             std::pair<AsmSymbolMap::iterator, bool> res =
                     outScope->symbolMap.insert(std::make_pair(sameSymName, AsmSymbol()));
             entry = &*res.first;
@@ -988,6 +1034,7 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
     return state;
 }
 
+// parse argument's value 
 bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
 {
     const char* end = line+lineSize;
@@ -999,6 +1046,7 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
         (!alternateMacro && string+2 <= end && *string=='\\' && string[1]=='%'))
     {
         // alternate syntax, parse expression evaluation
+        // too in \% form
         const char* exprPlace = string + ((alternateMacro) ? 1 : 2);
         uint64_t value;
         if (AsmParseUtils::getAbsoluteValueArg(*this, value, exprPlace, true))
@@ -1045,6 +1093,7 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
     }
     else if (string != end && *string=='"')
     {
+        // if arg begins from '"'. quoting in old mode
         string++;
         while (string != end && (*string != '\"' || (backslash&1)!=0))
         {
@@ -1060,6 +1109,7 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
         return true;
     }
     
+    // argument begins from other character
     for (; string != end && *string != ','; string++)
     {
         if(*string == '"') // quoted
@@ -1103,6 +1153,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
     symbolStack.push(std::make_pair(&symEntry, 0));
     symEntry.second.resolving = true;
     
+    // recursive algorithm in loop form
     while (!symbolStack.empty())
     {
         std::pair<AsmSymbolEntry*, size_t>& entry = symbolStack.top();
