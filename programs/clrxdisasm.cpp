@@ -113,9 +113,12 @@ try
             
             if (!fromRawCode)
             {
+                // standard flags for binary format creators,
+                // needed by disassemblers to correctly getting all datas to dump
                 Flags binFlags = AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                         AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
                         AMDBIN_CREATE_KERNELHEADERMAP;
+                // supply additional flags for CALNotes and info strings
                 if ((disasmFlags & (DISASM_CALNOTES|DISASM_CONFIG)) != 0)
                     binFlags |= AMDBIN_INNER_CREATE_CALNOTES;
                 if ((disasmFlags & (DISASM_METADATA|DISASM_CONFIG)) != 0)
@@ -145,6 +148,7 @@ try
                 }
                 else if (isAmdCL2Binary(binaryData.size(), binaryData.data()))
                 {   // AMD OpenCL 2.0 binary
+                    // extra (extra data) flags for OpenCL 2.0 disassembler
                     binFlags |= AMDCL2BIN_INNER_CREATE_KERNELDATA |
                                 AMDCL2BIN_INNER_CREATE_KERNELDATAMAP |
                                 AMDCL2BIN_INNER_CREATE_KERNELSTUBS;

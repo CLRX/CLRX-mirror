@@ -64,6 +64,7 @@ static const CLIOption programOptions[] =
     { nullptr, 0 }
 };
 
+// verify whether symbol name is correct
 static bool verifySymbolName(const CString& symbolName)
 {
     if (symbolName.empty())
@@ -92,7 +93,7 @@ try
     if (cli.hasShortOption('b'))
     {
         const char* binFmtName = cli.getShortOptArg<const char*>('b');
-        
+        // choosing binary format from name
         if (::strcasecmp(binFmtName, "raw")==0 || ::strcasecmp(binFmtName, "rawcode")==0)
             binFormat = BinaryFormat::RAWCODE;
         else if (::strcasecmp(binFmtName, "gallium")==0)
@@ -110,6 +111,7 @@ try
     if (cli.hasShortOption('g'))
         deviceType = getGPUDeviceTypeFromName(cli.getShortOptArg<const char*>('g'));
     else if (cli.hasShortOption('A'))
+        // in this case, we choose lowest GPU device for choosen GPU architecture
         deviceType = getLowestGPUDeviceTypeFromArchitecture(getGPUArchitectureFromName(
                     cli.getShortOptArg<const char*>('A')));
     if (cli.hasShortOption('t'))
@@ -175,8 +177,10 @@ try
                 ret = 1;
                 parsed = false;
             }
+            // if correctly parsed value
             if (parsed)
             {
+                // check whether no garbages after value
                 while (isSpace(*outEnd)) outEnd++;
                 if (*outEnd!=0)
                 {
@@ -196,6 +200,7 @@ try
             ret = 1;
         }
     }
+    // exit if errors occurred
     if (ret!=0)
         return ret;
     /// run assembling
