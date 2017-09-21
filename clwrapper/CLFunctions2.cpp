@@ -629,7 +629,7 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
     {
         if (num_events_in_wait_list <= maxLocalEventsNum)
         {
-            // holds original devices in array if number of devices is small
+            // holds original events in array if number of events is small
             cl_event amdWaitList[maxLocalEventsNum];
             for (cl_uint i = 0; i < num_events_in_wait_list; i++)
             {
