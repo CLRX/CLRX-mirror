@@ -82,6 +82,7 @@ void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary, size_t kernelsNum)
     if (amdGPUConfigSize != 24 && amdGPUConfigSize != 40 &&
         shdrSize % amdGPUConfigSize != 0)
         throw Exception("Wrong size of .AMDGPU.config section!");
+    // detect whether is binary generated for LLVM >= 3.9.0 by amdGPUConfig size
     llvm390 = amdGPUConfigSize==40;
     const cxuint progInfoEntriesNum = amdGPUConfigSize>>3;
     
@@ -92,6 +93,7 @@ void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary, size_t kernelsNum)
     progInfosNum = 0;
     if (hasProgInfoMap)
         progInfoEntryMap.resize(symbolsNum);
+    // fill up program info entries
     for (size_t i = 0; i < symbolsNum; i++)
     {
         const auto& sym = elfBinary.getSymbol(i);
@@ -268,7 +270,7 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
             argInfo.size = ULEV(data32[1]);
             argInfo.targetSize = ULEV(data32[2]);
             argInfo.targetAlign = ULEV(data32[3]);
-            argInfo.signExtended = ULEV(data32[4])!=0;
+            argInfo.signExtended = ULEV(data32[4])!=0; // force 0 or 1
             const cxuint semType = ULEV(data32[5]);
             // accept not known semantic type by this CLRadeonExtender
             if (semType > 255)
@@ -299,6 +301,7 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
         
         section.sectionId = ULEV(data32[0]);
         const uint32_t secType = ULEV(data32[1]);
+        // section type must be lower than 256
         if (secType > 255)
             throw Exception("Type of section out of range");
         section.type = GalliumSectionType(secType);
@@ -378,6 +381,7 @@ void GalliumInput::addEmptyKernel(const char* kernelName, cxuint llvmVersion)
     kinput.config.usedVGPRsNum = BINGEN_DEFAULT;
     kinput.config.usedSGPRsNum = BINGEN_DEFAULT;
     kinput.config.floatMode = 0xc0;
+    // for binary for LLVM>=4.0.0 userDataNum will be filled by AsmGalliumFormat or user
     kinput.config.userDataNum = (llvmVersion >= 40000U) ? BINGEN8_DEFAULT : 4;
     kinput.config.spilledVGPRs = kinput.config.spilledSGPRs = 0;
     kernels.push_back(std::move(kinput));
@@ -463,6 +467,7 @@ static const uint16_t mainBuiltinSectionTable2[] =
     6  // GALLIUMSECTID_NOTEGNUSTACK
 };
 
+// helper to writing AMDGPU configuration content
 class CLRX_INTERNAL AmdGpuConfigContent: public ElfRegionContent
 {
 private:
@@ -485,6 +490,7 @@ public:
             if (kernel.useConfig)
             {
                 const GalliumKernelConfig& config = kernel.config;
+                // set entry addresses (PGM_RSRC1, PGM_RSRC2, SCRATCHSIZE, spilledSGPRS
                 outEntries[0].address = ULEV(0x0000b848U);
                 outEntries[1].address = ULEV(0x0000b84cU);
                 outEntries[2].address = ULEV(0x0000b860U);
@@ -616,6 +622,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     for (const GalliumKernelInput& kernel: input->kernels)
         if (kernel.useConfig)
         {
+            // veryfying values gallium config
             const GalliumKernelConfig& config = kernel.config;
             if (config.usedVGPRsNum > maxVGPRSNum)
                 throw Exception("Used VGPRs number out of range");
@@ -701,6 +708,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
      ****/
     FastOutputBuffer bos(256, *os);
     bos.writeObject<uint32_t>(LEV(kernelsNum));
+    // write Gallium kernel info
     for (uint32_t korder: kernelsOrder)
     {
         const GalliumKernelInput& kernel = input->kernels[korder];
@@ -713,6 +721,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
             LEV(cxuint(kernel.argInfos.size())) };
         bos.writeArray(3, other);
         
+        // put kernel arguments
         for (const GalliumArgInfo arg: kernel.argInfos)
         {
             const uint32_t argData[6] = { LEV(cxuint(arg.type)),
@@ -845,6 +854,7 @@ uint32_t CLRX::detectMesaDriverVersion()
         if (!fs) return 0;
         FastInputBuffer fib(256, fs);
         size_t index = 0;
+        // find MESA3D magic in library file
         while (mesaOclMagicString[index]!=0)
         {
             int c = fib.get();
@@ -860,12 +870,11 @@ uint32_t CLRX::detectMesaDriverVersion()
         if (mesaOclMagicString[index]==0)
         { //
             char buf[30];
-            ::memset(buf, 0, 30);
+            ::memset(buf, 0, 30); // zeroing for safe
             if (fib.get()!=' ')
                 return 0; // skip space
-            // get driver version
             fib.read(buf, 30);
-            
+            // getting version from this string (after magic)
             const char* next;
             detectedDriverVersion = cstrtoui(buf, buf+30, next)*10000;
             if (next!=buf+30 && *next=='.') // minor version
@@ -945,9 +954,11 @@ uint32_t CLRX::detectLLVMCompilerVersion()
     detectedLLVMVersion = 0;
     try
     {
+        // execute llvm-config to get version
         const char* arguments[3] = { llvmConfigPath.c_str(), "--version", nullptr };
         Array<cxbyte> out = runExecWithOutput(llvmConfigPath.c_str(), arguments);
         const char* next;
+        // parse this output (version)
         const char* end = ((const char*)out.data()) + out.size();
         detectedLLVMVersion = cstrtoui(((const char*)out.data()), end, next)*10000;
         if (next!=end && *next=='.') // minor version
