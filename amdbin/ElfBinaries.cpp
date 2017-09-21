@@ -94,6 +94,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
     const typename Types::Ehdr* ehdr =
             reinterpret_cast<const typename Types::Ehdr*>(binaryCode);
     
+    // checking ELF magic, ELFCLASS and endian (only little-endian accepted)
     if (ULEV(*reinterpret_cast<const uint32_t*>(binaryCode)) != elfMagicValue)
         throw Exception("This is not ELF binary");
     if (ehdr->e_ident[EI_CLASS] != Types::ELFCLASS)
@@ -186,6 +187,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
             if (ULEV(shdr.sh_type) == SHT_DYNAMIC)
                 dynamicTableHdr = &shdr;
         }
+        // sort section's map (really is array of sections)
         if ((creationFlags & ELF_CREATE_SECTIONMAP) != 0)
             mapSort(sectionIndexMap.begin(), sectionIndexMap.end(), CStringLess());
         
@@ -226,6 +228,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
                 if ((creationFlags & ELF_CREATE_SYMBOLMAP) != 0)
                     symbolIndexMap[i] = std::make_pair(symname, i);
             }
+            // sort symbol's map (really is array of symbols)
             if ((creationFlags & ELF_CREATE_SYMBOLMAP) != 0)
                 mapSort(symbolIndexMap.begin(), symbolIndexMap.end(), CStringLess());
         }
@@ -268,6 +271,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
                 if ((creationFlags & ELF_CREATE_DYNSYMMAP) != 0)
                     dynSymIndexMap[i] = std::make_pair(symname, i);
             }
+            // sort dynamic symbol's map (really is array of dynamic symbols)
             if ((creationFlags & ELF_CREATE_DYNSYMMAP) != 0)
                 mapSort(dynSymIndexMap.begin(), dynSymIndexMap.end(), CStringLess());
         }
@@ -296,6 +300,7 @@ uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
 {
     if (hasSectionMap())
     {
+        // find in section map (sorted array)
         SectionIndexMap::const_iterator it = binaryMapFind(
                     sectionIndexMap.begin(), sectionIndexMap.end(), name, CStringLess());
         if (it == sectionIndexMap.end())
@@ -304,6 +309,7 @@ uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
     }
     else
     {
+        // find in section headers (fallback)
         for (cxuint i = 0; i < getSectionHeadersNum(); i++)
         {
             if (::strcmp(getSectionName(i), name) == 0)
@@ -344,6 +350,7 @@ bool CLRX::isElfBinary(size_t binarySize, const cxbyte* binary)
     if ((binary[EI_CLASS] != ELFCLASS32 && binary[EI_CLASS] != ELFCLASS64) ||
         binary[EI_DATA] != ELFDATA2LSB) // only LSB elf is supported
         return false;
+    // binary must be greater than ELF header
     if ((binary[EI_CLASS] == ELFCLASS32 && binarySize < sizeof(Elf32_Ehdr)) ||
         (binary[EI_CLASS] == ELFCLASS64 && binarySize < sizeof(Elf64_Ehdr)))
         return false;
@@ -391,6 +398,7 @@ static std::unique_ptr<uint32_t[]> calculateHashValuesForSymbols(bool addNullSym
         hashCodes[0] = 0;
     for (size_t i = 0; i < symbols.size(); i++)
     {
+        // main routine of hash
         uint32_t h = 0, g;
         const cxbyte* name = reinterpret_cast<const cxbyte*>(symbols[i].name);
         while(*name!=0)
@@ -413,8 +421,8 @@ static uint32_t optimizeHashBucketsNum(uint32_t hashNum, bool skipFirst,
     uint64_t bestValue = UINT64_MAX;
     uint32_t firstStep = std::max(uint32_t(hashNum>>2), 1U);
     uint64_t maxSteps = (uint64_t(hashNum)<<1) - (firstStep) + 1;
-    const uint32_t steps = (maxSteps<=1000U) ? maxSteps :
-                hashNum<<((32-CLZ32(hashNum))>>1);
+    // limit step of optimizations to 1000
+    const uint32_t steps = std::min(maxSteps, uint64_t(1000U));
     
     std::unique_ptr<uint32_t[]> chainLengths(new uint32_t[(hashNum<<2)+1]);
     const uint32_t stepSize = maxSteps / steps;
