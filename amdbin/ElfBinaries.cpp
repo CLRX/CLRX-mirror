@@ -592,6 +592,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             size += uint64_t(progHeaders.size())*sizeof(typename Types::Phdr);
             region.size = size-regionOffsets[i];
             phdrTabRegion = i;
+            // checking program header ranges
             for (const auto& progHdr: progHeaders)
             {
                 if (progHdr.regionStart!=PHREGION_FILESTART &&
@@ -663,9 +664,11 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                     const std::vector<ElfSymbolTemplate<Types> >& hashSymbols = 
                         (isHashDynSym) ? dynSymbols : symbols;
                     bool addNullHashSym = (isHashDynSym) ? addNullDynSym : addNullSym;
+                    // calculating hashes of symbols and optimizing hash buckets
                     hashCodes = calculateHashValuesForSymbols(addNullDynSym, hashSymbols);
                     bucketsNum = optimizeHashBucketsNum(hashSymbols.size()+addNullHashSym,
                            addNullHashSym, hashCodes.get());
+                    // and add these hash size to size
                     size += 4*(bucketsNum + hashSymbols.size()+addNullHashSym + 2);
                 }
                 else if (region.section.type == SHT_DYNAMIC)
@@ -756,6 +759,7 @@ uint64_t ElfBinaryGenTemplate<Types>::countSize()
     return size;
 }
 
+// create hash table, really bucket chains and fill buckets
 static void createHashTable(uint32_t bucketsNum, uint32_t hashNum, bool skipFirst,
                            const uint32_t* hashCodes, uint32_t* output)
 {
@@ -822,6 +826,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
         else
             SLEV(ehdr.e_entry, 0);
         SLEV(ehdr.e_ehsize, sizeof(typename Types::Ehdr));
+        // if no program headers then fill by zeroes, otherwise fill fields
         if (!progHeaders.empty())
         {
             SLEV(ehdr.e_phentsize, sizeof(typename Types::Phdr));
@@ -893,7 +898,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 SLEV(phdr.p_flags, progHeader.flags);
                 const ElfRegionTemplate<Types> startRegion(sizeof(typename Types::Ehdr),
                         (const cxbyte*)nullptr, sizeof(typename Types::Word));
-                
+                // get first region of program header and it offset, index and address
                 const ElfRegionTemplate<Types>& sregion = 
                         (progHeader.regionStart==PHREGION_FILESTART) ? startRegion :
                         regions[progHeader.regionStart];
@@ -906,6 +911,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         (progHeader.regionStart!=PHREGION_FILESTART) ?
                             regionAddresses[progHeader.regionStart] : 0;
                 
+                // zero offset, allow to set zero offset of section
                 bool zeroOffset = sregion.type == ElfRegionType::SECTION &&
                         sregion.section.zeroOffset;
                 SLEV(phdr.p_offset, !zeroOffset ? sroffset : 0);
@@ -933,6 +939,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 else
                     SLEV(phdr.p_paddr, 0);
                 
+                // these same rule for vaddrBase
                 if (progHeader.vaddrBase == Types::nobase)
                     SLEV(phdr.p_vaddr, sraddress);
                 else if (progHeader.vaddrBase != 0)
@@ -1000,29 +1007,31 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                     if (region2.align != 0 || j+1 >= regions.size() ||
                         regionOffsets[j]+region2.size == regionOffsets[j+1])
                         SLEV(shdr.sh_size, region2.size);
-                    else
+                    else // otherwise if not match this size
                         SLEV(shdr.sh_size, regionOffsets[j+1]-regionOffsets[j]);
                     SLEV(shdr.sh_info, region2.section.info);
                     SLEV(shdr.sh_addralign, (region2.section.align==0) ?
                             region2.align : region2.section.align);
                     if (region2.section.link == 0)
                     {
+                        // set up link (for symtab is .strtab for .dynsym is dynstr)
                         if (::strcmp(region2.section.name, ".symtab") == 0)
                             SLEV(shdr.sh_link, strTab);
                         else if (::strcmp(region2.section.name, ".dynsym") == 0)
                             SLEV(shdr.sh_link, dynStr);
-                        else
+                        else // otherwise is value is link (zero)
                             SLEV(shdr.sh_link, region2.section.link);
                     }
                     else
                         SLEV(shdr.sh_link, region2.section.link);
                     
+                    // set up entry size for sections
                     if (region2.section.type == SHT_SYMTAB ||
                         region2.section.type == SHT_DYNSYM)
                         SLEV(shdr.sh_entsize, sizeof(typename Types::Sym));
                     else if (region2.section.type == SHT_DYNAMIC)
                         SLEV(shdr.sh_entsize, sizeof(typename Types::Dyn));
-                    else
+                    else // if not default
                         SLEV(shdr.sh_entsize, region2.section.entSize);
                     if (region2.section.name!=nullptr && region2.section.name[0]!=0)
                         nameOffset += ::strlen(region2.section.name)+1;
@@ -1044,6 +1053,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 if (region.section.type == SHT_SYMTAB || region.section.type == SHT_DYNSYM)
                 {
                     uint32_t nameOffset = 0;
+                    // put null symbol if addNullSym or addNumDynSym is true
                     if (region.section.type == SHT_SYMTAB && addNullSym)
                     {
                         fob.fill(sizeof(typename Types::Sym), 0);
@@ -1075,6 +1085,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                                 regions[sectionRegions[
                                     inSym.sectionIndex]].section.addrBase != 0)
                         {
+                            // store symbol value as address or value
                             typename Types::Word addrBase = regions[sectionRegions[
                                     inSym.sectionIndex]].section.addrBase;
                             SLEV(sym.st_value, inSym.value + regionOffsets[
@@ -1109,6 +1120,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 }
                 else if (region.section.type == SHT_HASH)
                 {
+                    // creating hash table and put it
                     const std::vector<ElfSymbolTemplate<Types> >& hashSymbols = 
                         (isHashDynSym) ? dynSymbols : symbols;
                     bool addNullHashSym = (isHashDynSym) ? addNullDynSym : addNullSym;
@@ -1120,6 +1132,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 }
                 else if (region.section.type == SHT_NOTE)
                 {
+                    // putting ELF notes
                     for (const ElfNote& note: notes)
                     {
                         typename Types::Nhdr nhdr;
@@ -1139,6 +1152,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 }
                 else if (region.section.type == SHT_STRTAB)
                 {
+                    // put symbol names and section names
                     if (::strcmp(region.section.name, ".strtab") == 0)
                     {
                         if (addNullSym)
