@@ -2218,6 +2218,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     if (newBinaries)
     {
         // new binaries - .text holds inner ELF binaries
+        // translation table for sections (for filling section field in symbols)
         uint16_t innerBinSectionTable[innerBinSectonTableLen];
         cxuint extraSectionIndex = 1;
         /* check kernel text relocations */
@@ -2458,6 +2459,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     uint64_t binarySize;
     if (input->is64Bit)
     {
+        // 64b-bit binary
         if (kernelsNum != 0 || newBinaries)
             elfBinGen64->addRegion(ElfRegion64(mainTextGen.size(), &mainTextGen,
                        1, ".text", SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR));
@@ -2470,6 +2472,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     }
     else
     {
+        // 32-bit binary
         if (kernelsNum != 0 || newBinaries)
             elfBinGen32->addRegion(ElfRegion32(mainTextGen.size(), &mainTextGen,
                        1, ".text", SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR));

@@ -43,6 +43,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     catch(const Exception& ex)
     { } // ignore failed
     uint64_t codeOffset = 0;
+    // find '.text' section
     if (textIndex!=SHN_UNDEF)
     {
         code = getSectionContent(textIndex);
@@ -51,6 +52,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         codeOffset = ULEV(textShdr.sh_offset);
     }
     
+    // counts regions (symbol or kernel)
     regionsNum = 0;
     const size_t symbolsNum = getSymbolsNum();
     for (size_t i = 0; i < symbolsNum; i++)
@@ -71,6 +73,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     typedef std::pair<uint64_t, size_t> RegionOffsetEntry;
     std::unique_ptr<RegionOffsetEntry[]> symOffsets(new RegionOffsetEntry[regionsNum]);
     
+    // get regions info
     for (size_t i = 0; i < symbolsNum; i++)
     {
         const Elf64_Sym& sym = getSymbol(i);
@@ -87,8 +90,10 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
                 (bind==STB_GLOBAL && symType==STT_OBJECT))
         {
             ROCmRegionType type = ROCmRegionType::DATA;
+            // if kernel
             if (symType==STT_GNU_IFUNC) 
                 type = ROCmRegionType::KERNEL;
+            // if function kernel
             else if (symType==STT_FUNC)
                 type = ROCmRegionType::FKERNEL;
             symOffsets[j] = std::make_pair(value, j);
@@ -97,6 +102,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             regions[j++] = { getSymbolName(i), size, value, type };
         }
     }
+    // sort regions by offset
     std::sort(symOffsets.get(), symOffsets.get()+regionsNum,
             [](const RegionOffsetEntry& a, const RegionOffsetEntry& b)
             { return a.first < b.first; });
@@ -121,6 +127,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         regionsMap.resize(regionsNum);
         for (size_t i = 0; i < regionsNum; i++)
             regionsMap[i] = std::make_pair(regions[i].regionName, i);
+        // sort region map
         mapSort(regionsMap.begin(), regionsMap.end());
     }
 }
@@ -133,6 +140,7 @@ struct AMDGPUArchValuesEntry
     GPUDeviceType deviceType;
 };
 
+// list of AMDGPU arch entries for GPU devices
 static const AMDGPUArchValuesEntry amdGpuArchValuesTbl[] =
 {
     { 0, 0, 0, GPUDeviceType::CAPE_VERDE },
@@ -152,6 +160,7 @@ static const size_t amdGpuArchValuesNum = sizeof(amdGpuArchValuesTbl) /
                 sizeof(AMDGPUArchValuesEntry);
 
 
+/// determint GPU device from ROCm notes
 GPUDeviceType ROCmBinary::determineGPUDeviceType(uint32_t& outArchMinor,
                      uint32_t& outArchStepping) const
 {
@@ -187,6 +196,7 @@ GPUDeviceType ROCmBinary::determineGPUDeviceType(uint32_t& outArchMinor,
     }
     // determine device type
     GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE;
+    // choose lowest GPU device by archMajor by default
     if (archMajor==0)
         deviceType = GPUDeviceType::CAPE_VERDE;
     else if (archMajor==7)
@@ -196,6 +206,7 @@ GPUDeviceType ROCmBinary::determineGPUDeviceType(uint32_t& outArchMinor,
     else if (archMajor==9)
         deviceType = GPUDeviceType::GFX900;
     
+    // recognize device type by arch major, minor and stepping
     for (cxuint i = 0; i < amdGpuArchValuesNum; i++)
         if (amdGpuArchValuesTbl[i].major==archMajor &&
             amdGpuArchValuesTbl[i].minor==archMinor &&
@@ -218,6 +229,7 @@ const ROCmRegion& ROCmBinary::getRegion(const char* name) const
     return regions[it->second];
 }
 
+// if ROCm binary
 bool CLRX::isROCmBinary(size_t binarySize, const cxbyte* binary)
 {
     if (!isElfBinary(binarySize, binary))
@@ -275,6 +287,7 @@ void ROCmBinGenerator::setInput(const ROCmInput* input)
     this->input = input;
 }
 
+// ELF notes contents
 static const cxbyte noteDescType1[8] =
 { 2, 0, 0, 0, 1, 0, 0, 0 };
 
@@ -351,7 +364,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     
     ElfBinaryGen64 elfBinGen64({ 0U, 0U, 0x40, 0, ET_DYN,
         0xe0, EV_CURRENT, UINT_MAX, 0, 0 }, true, true, true, PHREGION_FILESTART);
-    // add symbols
+    // add symbols (kernels, function kernels and data symbols)
     elfBinGen64.addSymbol(ElfSymbol64("_DYNAMIC", 5,
                   ELF64_ST_INFO(STB_LOCAL, STT_NOTYPE), STV_HIDDEN, true, 0, 0));
     for (const ROCmSymbolInput& symbol: input->symbols)
@@ -377,6 +390,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
             default:
                 break;
         }
+        // add to symbols and dynamic symbols table
         elfBinGen64.addSymbol(elfsym);
         elfBinGen64.addDynSymbol(elfsym);
     }
@@ -417,6 +431,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
                 ".hash", SHT_HASH, SHF_ALLOC, 1, 0, Elf64Types::nobase));
     elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".dynstr", SHT_STRTAB,
                 SHF_ALLOC, 0, 0, Elf64Types::nobase));
+    // '.text' with alignment=4096
     elfBinGen64.addRegion(ElfRegion64(input->codeSize, (const cxbyte*)input->code, 
               0x1000, ".text", SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR, 0, 0,
               Elf64Types::nobase, 0, false, 256));
