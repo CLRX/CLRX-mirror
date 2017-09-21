@@ -522,12 +522,13 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     if (hashSymSectionIdx!=UINT_MAX)
     {
         bool hashSymDetected = false;
+        // find hash symbol (or dynsymbol) section
         for (const auto& region: regions)
             if (region.type == ElfRegionType::SECTION)
             {
                 if (hashSymSectionIdx==sectionCount)
                 {
-                    // get smybol section
+                    // get symbol section
                     if (region.section.type==SHT_SYMTAB)
                     {
                         isHashDynSym = false;
@@ -548,6 +549,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     }
     
     sectionRegions.reset(new cxuint[sectionsNum+1]);
+    // first section can be null, if not null section provided this will be filed later
     sectionRegions[0] = UINT_MAX;
     sectionCount = addNullSection;
     typename Types::Word address = (addrStartRegion==PHREGION_FILESTART) ? size : 0;
@@ -560,11 +562,14 @@ void ElfBinaryGenTemplate<Types>::computeSize()
         dynValTable.reset(new typename Types::Word[dynTableSize]);
     }
     
+    // verify symbol's sections (accepts SHN_ABS and SHN_UNDEF)
     for (const auto& sym: symbols)
-        if (sym.sectionIndex >= sectionsNum)
+        if (sym.sectionIndex >= sectionsNum && sym.sectionIndex!=SHN_ABS &&
+                    sym.sectionIndex!=SHN_UNDEF)
             throw Exception("Symbol section index out of range");
     for (const auto& sym: dynSymbols)
-        if (sym.sectionIndex >= sectionsNum)
+        if (sym.sectionIndex >= sectionsNum && sym.sectionIndex!=SHN_ABS &&
+                    sym.sectionIndex!=SHN_UNDEF)
             throw Exception("DynSymbol section index out of range");
     
     for (size_t i = 0; i < regions.size(); i++)
