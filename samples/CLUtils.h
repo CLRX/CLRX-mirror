@@ -62,6 +62,7 @@ protected:
     cl_context context;
     cl_command_queue queue;
     cl_program program;
+    // mem object to retain and release while destructing
     std::vector<cl_mem> memObjects;
     std::vector<cl_kernel> kernels;
     

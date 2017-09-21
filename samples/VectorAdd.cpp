@@ -453,6 +453,7 @@ void VectorAdd::run()
     if (error != CL_SUCCESS)
         throw CLError(error, "clEnqueueReadBuffer");
     
+    // checking results (use threshold 5.0e-7)
     for (size_t i = 0; i < elemsNum; i++)
     {
         const float expected = aData[i]+bData[i];

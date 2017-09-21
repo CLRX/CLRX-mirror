@@ -224,6 +224,7 @@ void ImageMix::loadImageInt(const char* inFilename)
     png_init_io(pngStruct, file);
     png_set_sig_bytes(pngStruct, 8);
     /* read PNG file */
+    // final format is: 24-bit RGB or 32-bit RGBA
     png_read_png(pngStruct, pngInfo, PNG_TRANSFORM_EXPAND | PNG_TRANSFORM_PACKING |
                 PNG_TRANSFORM_GRAY_TO_RGB | PNG_TRANSFORM_STRIP_16, nullptr);
     imageWidth = png_get_image_width(pngStruct, pngInfo);
@@ -314,11 +315,13 @@ void ImageMix::run()
     size_t workGroupSize, workGroupSizeMul;
     getKernelInfo(kernels[0], workGroupSize, workGroupSizeMul);
     
+    // calculating best localsize dimension (nearest to square root of work group size)
     size_t bestDim = 1;
     for (size_t xDim = 1; xDim*xDim <= workGroupSize; xDim++)
         if (xDim*(workGroupSize/xDim) == workGroupSize)
             bestDim = xDim;
     
+    // calculating kernel local size and work size
     size_t localSize[2] = { workGroupSize/bestDim, bestDim };
     size_t workSize[2] = { (width+localSize[0]-1)/localSize[0]*localSize[0],
         (height+localSize[1]-1)/localSize[1]*localSize[1] };
@@ -338,6 +341,7 @@ void ImageMix::run()
     png_infop pngInfo = nullptr;
     try
     {
+        // writing ouput image
         outFile = fopen(outFileName, "wb");
         if (outFile==nullptr)
             throw Exception(std::string("Can't open file '")+outFileName+'\'');
@@ -351,6 +355,7 @@ void ImageMix::run()
         
         png_init_io(pngStruct, outFile);
         png_set_compression_level(pngStruct, Z_BEST_COMPRESSION);
+        // final output is 32-bit RGBA with interlace
         png_set_IHDR(pngStruct, pngInfo, width, height, 8, PNG_COLOR_TYPE_RGB_ALPHA,
                      PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
         png_write_info(pngStruct,pngInfo);

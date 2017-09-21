@@ -27,6 +27,10 @@
 
 using namespace CLRX;
 
+/* this sample reverse bits in bytes from input data by using conversion table.
+ * ofcourse, this can be done with instruction V_BFREV_B32,
+ * but we demonstrate constant data usage */
+
 static const char* reverseBitsSource = R"ffDXD(# ReverseBits example
 SMUL = 1
 .ifarch gcn1.2
@@ -408,7 +412,7 @@ void ReverseBits::run()
     
     for (size_t i = 0; i < size; i++)
     {
-        // verifying
+        // verifying output data
         const cxbyte in = inData[i];
         const cxbyte expected = ((in>>7)&1) | ((in>>5)&2) | ((in>>3)&4) | ((in>>1)&8) |
                 ((in<<1)&16) | ((in<<3)&32) | ((in<<5)&64) | ((in<<7)&128);

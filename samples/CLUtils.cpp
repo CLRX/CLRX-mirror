@@ -42,6 +42,9 @@ static char* stripCString(char* str)
     return str;
 }
 
+/* parse args from command line and handle options:
+ * print help, list OpenCL devices, get choosen device and choosen OpenCL standard
+ * return true if sample should exit */
 bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
                   const char** argv, cl_uint& deviceIndex, cxuint& useCL)
 {
@@ -68,7 +71,7 @@ bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
         throw CLError(error, "clGetPlatformIDs");
     
     cl_platform_id choosenPlatform = nullptr;
-    /// find platform with AMD devices
+    /// find platform with AMD or GalliumCompute devices
     for (cl_uint i = 0; i < platformsNum; i++)
     {
         size_t platformNameSize;
@@ -83,6 +86,7 @@ bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
         if (error != CL_SUCCESS)
             throw CLError(error, "clGetPlatformInfo");
         
+        // find correct platform (supported GalliumCompute and AMD APP)
         const char* splatformName = stripCString(platformName.get());
         if (::strcmp(splatformName, "AMD Accelerated Parallel Processing")==0 ||
             ::strcmp(splatformName, "Clover")==0)
@@ -97,6 +101,7 @@ bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
     
     if (argc >= 2 && ::strcmp(argv[1], "-L")==0)
     {
+        // list devices, before it get GPU devices
         cl_uint devicesNum;
         std::unique_ptr<cl_device_id[]> devices;
         error = clGetDeviceIDs(choosenPlatform, CL_DEVICE_TYPE_GPU, 0,
@@ -213,6 +218,7 @@ try
                 const char* amdappPart = strstr(platformVersion.get(), "AMD-APP (");
                 if (amdappPart!=nullptr)
                 {
+                    // parse AMDAPP version
                     try
                     {
                         const char* majorVerPart = amdappPart+9;
@@ -235,6 +241,7 @@ try
             
             if (binaryFormat == BinaryFormat::AMD && useCL==2)
                 binaryFormat = BinaryFormat::AMDCL2;
+            // for driver 2004.6 OpenCL 2.0 binary format is default
             if (binaryFormat == BinaryFormat::AMD && amdappVersion >= 200406)
                 defaultCL2ForDriver = true;
             break;
@@ -265,13 +272,14 @@ try
     cl_uint bits = 32;
     if (binaryFormat != BinaryFormat::GALLIUM)
     {
-        // get address Bits from device info
+        // get address Bits from device info (for AMDAPP)
         error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint),
                                  &bits, nullptr);
         if (error != CL_SUCCESS)
             throw CLError(error, "clGetDeviceAddressBits");
     }
     
+    // get workGroupSize and Compute Units of device
     error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t),
                              &maxWorkGroupSize, nullptr);
     if (error != CL_SUCCESS)
@@ -299,6 +307,7 @@ try
         throw CLError(error, "clGetDeviceInfoName");
     std::cout << "Device: " << deviceIndex << " - " << deviceName.get() << std::endl;
     
+    // get device version - used for getting Mesa3D version and LLVM version
     size_t deviceVersionSize;
     std::unique_ptr<char[]> deviceVersion;
     error = clGetDeviceInfo(device, CL_DEVICE_VERSION, 0, nullptr, &deviceVersionSize);
@@ -321,6 +330,7 @@ try
         {
             try
             {
+                // parse LLVM version
                 const char* majorVerPart = llvmPart+5;
                 const char* minorVerPart;
                 const char* end;
@@ -347,6 +357,7 @@ try
         {
             try
             {
+                // parse Mesa3D version
                 const char* majorVerPart = mesaPart+5;
                 const char* minorVerPart;
                 const char* end;
@@ -399,6 +410,7 @@ try
         // by default assembler put logs to stderr
         Assembler assembler("", astream, 0, binaryFormat, devType);
         assembler.set64Bit(bits==64);
+        // setting version (LLVM and driverVersion)
         if (binaryFormat == BinaryFormat::GALLIUM && llvmVersion != 0)
             assembler.setLLVMVersion(llvmVersion);
         if (binaryFormat == BinaryFormat::GALLIUM && mesaVersion != 0)
@@ -487,6 +499,7 @@ CLFacade::~CLFacade()
         clReleaseContext(context);
 }
 
+// get work group size and work group size multiple from kernel
 void CLFacade::getKernelInfo(cl_kernel kernel, size_t& workGroupSize,
                size_t& workGroupSizeMultiple)
 {

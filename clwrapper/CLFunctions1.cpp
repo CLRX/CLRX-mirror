@@ -450,7 +450,7 @@ clrxclCreateContext(const cl_context_properties * properties,
             if (doTranslateProps)
             {
                 amdProps.resize(propNums+1);
-                
+                // translate platforms in CL_CONTEXT_PLATOFRM properties
                 for (size_t i = 0; i < propNums; i+=2)
                 {
                     amdProps[i] = properties[i];
@@ -574,7 +574,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
             if (doTranslateProps)
             {
                 amdProps.resize(propNums+1);
-                
+                // translate platforms in CL_CONTEXT_PLATOFRM properties
                 for (size_t i = 0; i < propNums; i+=2)
                 {
                     amdProps[i] = properties[i];
