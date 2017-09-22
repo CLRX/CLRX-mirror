@@ -143,11 +143,13 @@ AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler): AsmFormatHandler(ass
 {
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
+    // define .text section (will be first section)
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::CODE,
                 ELFSECTID_TEXT, ".text" });
     inside = Inside::MAINLAYOUT;
     currentKcodeKernel = ASMKERN_GLOBAL;
     savedSection = 0;
+    // detect driver and LLVM version once for using many times
     detectedLLVMVersion = detectLLVMCompilerVersion();
     detectedDriverVersion = detectMesaDriverVersion();
 }
@@ -200,8 +202,9 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     Section section;
     section.kernelId = ASMKERN_GLOBAL;  // we ignore input kernelId, we go to main
     
-    if (::strcmp(sectionName, ".rodata") == 0) // data
+    if (::strcmp(sectionName, ".rodata") == 0)
     {
+         // data (global data/ rodata) section
         if (dataSection!=ASMSECT_NONE)
             throw AsmFormatException("Only section '.rodata' can be in binary");
         dataSection = thisSection;
@@ -209,8 +212,9 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
         section.elfBinSectId = ELFSECTID_RODATA;
         section.name = ".rodata"; // set static name (available by whole lifecycle)
     }
-    else if (::strcmp(sectionName, ".text") == 0) // code
+    else if (::strcmp(sectionName, ".text") == 0)
     {
+         // code section
         if (codeSection!=ASMSECT_NONE)
             throw AsmFormatException("Only one section '.text' can be in binary");
         codeSection = thisSection;
@@ -218,8 +222,9 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
         section.elfBinSectId = ELFSECTID_TEXT;
         section.name = ".text"; // set static name (available by whole lifecycle)
     }
-    else if (::strcmp(sectionName, ".comment") == 0) // comment
+    else if (::strcmp(sectionName, ".comment") == 0)
     {
+         // comment section
         if (commentSection!=ASMSECT_NONE)
             throw AsmFormatException("Only one section '.comment' can be in binary");
         commentSection = thisSection;
@@ -240,6 +245,7 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     }
     sections.push_back(section);
     
+    // sectiona are global, hence no kernel specified
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = thisSection;
     inside = Inside::MAINLAYOUT;
@@ -256,6 +262,7 @@ cxuint AsmGalliumHandler::getSectionId(const char* sectionName) const
         return commentSection;
     else
     {
+        // if user extra section defined, just find
         SectionMap::const_iterator it = extraSectionMap.find(sectionName);
         if (it != extraSectionMap.end())
             return it->second;
@@ -301,8 +308,10 @@ AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId
     AsmFormatHandler::SectionInfo info;
     info.type = sections[sectionId].type;
     info.flags = 0;
+    // code is addressable and writeable
     if (info.type == AsmSectionType::CODE)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
+    // any other section (except config) are absolute addressable and writeable
     else if (info.type != AsmSectionType::CONFIG)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     
@@ -404,6 +413,7 @@ void AsmGalliumPseudoOps::setArchStepping(AsmGalliumHandler& handler, const char
     handler.archStepping = value;
 }
 
+// internal routine to set driver version to symbol
 void AsmGalliumPseudoOps::setDriverVersion(AsmGalliumHandler& handler, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
@@ -417,6 +427,7 @@ void AsmGalliumPseudoOps::setDriverVersion(AsmGalliumHandler& handler, const cha
     asmr.driverVersion = value;
 }
 
+// internal routine to set LLVM version to symbol
 void AsmGalliumPseudoOps::setLLVMVersion(AsmGalliumHandler& handler, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
@@ -457,7 +468,7 @@ void AsmGalliumPseudoOps::getXXXVersion(AsmGalliumHandler& handler, const char* 
                 AsmSymbol(ASMSECT_ABS, driverVersion));
     if (!res.second)
     {
-        // found
+        // if symbol found,
         if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
             asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
                         "' is already defined").c_str());
@@ -498,6 +509,7 @@ void AsmGalliumPseudoOps::doControlDirective(AsmGalliumHandler& handler,
     AsmGalliumHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.ctrlDirSection == ASMSECT_NONE)
     {
+        // create control directive if not exists
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel,
             AsmSectionType::GALLIUM_CONFIG_CTRL_DIRECTIVE,
@@ -514,7 +526,7 @@ void AsmGalliumPseudoOps::doGlobalData(AsmGalliumHandler& handler,
     Assembler& asmr = handler.assembler;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    
+    // go to global data (named in ELF as '.rodata')
     asmr.goToSection(pseudoOpPlace, ".rodata");
 }
 
@@ -663,6 +675,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 break;
         }
         
+        // if HSA config parameter, use ROCm routine to check config value
         if (good && target >= GALLIUMCVAL_HSA_FIRST_PARAM)
             good = AsmROCmPseudoOps::checkConfigValue(asmr, valuePlace,
                 ROCmConfigValueTarget(target-GALLIUMCVAL_HSA_FIRST_PARAM), value);
@@ -717,6 +730,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
     
     if (target >= GALLIUMCVAL_HSA_FIRST_PARAM)
     {
+        // if this is HSA config parameter, use ROCm routine set this parameter
         AsmAmdHsaKernelConfig& config = *(
                     handler.kernelStates[asmr.currentKernel]->hsaConfig);
         
@@ -762,6 +776,7 @@ void AsmGalliumPseudoOps::setConfigBoolValue(AsmGalliumHandler& handler,
     
     if (target >= GALLIUMCVAL_HSA_FIRST_PARAM)
     {
+        // if this is HSA config parameter, use ROCm routine set this parameter
         AsmAmdHsaKernelConfig& config =
                 *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
         
@@ -804,6 +819,7 @@ void AsmGalliumPseudoOps::setMachine(AsmGalliumHandler& handler, const char* pse
     
     uint16_t kindValue = 0, majorValue = 0;
     uint16_t minorValue = 0, steppingValue = 0;
+    // use ROCM routine to parse machine
     if (!AsmROCmPseudoOps::parseMachine(asmr, linePtr, kindValue,
                     majorValue, minorValue, steppingValue))
         return;
@@ -828,6 +844,7 @@ void AsmGalliumPseudoOps::setCodeVersion(AsmGalliumHandler& handler,
         PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
     
     uint16_t majorValue = 0, minorValue = 0;
+    // use ROCM routine to parse code version
     if (!AsmROCmPseudoOps::parseCodeVersion(asmr, linePtr, majorValue, minorValue))
         return;
     
@@ -849,6 +866,7 @@ void AsmGalliumPseudoOps::setReservedXgprs(AsmGalliumHandler& handler,
         PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
     
     uint16_t gprFirst = 0, gprCount = 0;
+    // use ROCM routine to parse reserved registers
     if (!AsmROCmPseudoOps::parseReservedXgprs(asmr, linePtr, inVgpr, gprFirst, gprCount))
         return;
     
@@ -896,10 +914,11 @@ void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
         PSEUDOOP_RETURN_BY_ERROR("Arguments outside kernel definition")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    
+    // go to args (set that is inside ARGS)
     handler.inside = AsmGalliumHandler::Inside::ARGS;
 }
 
+// Gallium argument type map
 static const std::pair<const char*, GalliumArgType> galliumArgTypesMap[9] =
 {
     { "constant", GalliumArgType::CONSTANT },
@@ -913,6 +932,7 @@ static const std::pair<const char*, GalliumArgType> galliumArgTypesMap[9] =
     { "scalar", GalliumArgType::SCALAR }
 };
 
+// Gallium argument's semantic map
 static const std::pair<const char*, cxuint> galliumArgSemanticsMap[5] =
 {
     { "general", cxuint(GalliumArgSemantic::GENERAL) },
@@ -960,6 +980,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         }
         else
         {
+            // standard argument type name (without shortcuts)
             cxuint index = binaryMapFind(galliumArgTypesMap, galliumArgTypesMap + 9,
                          name, CStringLess()) - galliumArgTypesMap;
             if (index != 9) // end of this map
@@ -979,10 +1000,13 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     uint64_t size = 4;
     good &= getAbsoluteValueArg(asmr, size, linePtr, true);
     
+    // accept only 32-bit size of argument
     if (size > UINT32_MAX || size == 0)
         asmr.printWarning(sizeStrPlace, "Size of argument out of range");
     
+    // align target size to dword
     uint64_t targetSize = (size+3ULL)&~3ULL;
+    // by default set alignment over target size
     uint64_t targetAlign = (size!=0) ? 1ULL<<(63-CLZ64(targetSize)) : 1;
     if (targetSize > targetAlign)
         targetAlign <<= 1;
@@ -995,6 +1019,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     {
         skipSpacesToEnd(linePtr, end);
         const char* targetSizePlace = linePtr;
+        // parse target size
         if (getAbsoluteValueArg(asmr, targetSize, linePtr, false))
         {
             if (targetSize > UINT32_MAX || targetSize == 0)
@@ -1009,6 +1034,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         {
             skipSpacesToEnd(linePtr, end);
             const char* targetAlignPlace = linePtr;
+            // target alignment
             if (getAbsoluteValueArg(asmr, targetAlign, linePtr, false))
             {
                 if (targetAlign > UINT32_MAX || targetAlign == 0)
@@ -1077,6 +1103,7 @@ void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
+    // set that is in proginfo
     handler.inside = AsmGalliumHandler::Inside::PROGINFO;
     handler.kernelStates[asmr.currentKernel]->hasProgInfo = true;
 }
@@ -1119,8 +1146,10 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
     AsmGalliumHandler::Kernel& kstate = *handler.kernelStates[asmr.currentKernel];
     kstate.hasProgInfo = true;
     const cxuint llvmVersion = handler.determineLLVMVersion();
+    // version earlier than 3.9 accept only 3 prog info entries
     if (llvmVersion<30900U && kstate.progInfoEntries == 3)
         PSEUDOOP_RETURN_BY_ERROR("Maximum 3 entries can be in ProgInfo")
+        // version 3.9 or later, accepts only 3 prog info entries
     if (llvmVersion>=30900U && kstate.progInfoEntries == 5)
         PSEUDOOP_RETURN_BY_ERROR("Maximum 5 entries can be in ProgInfo")
     GalliumProgInfoEntry& pentry = handler.output.kernels[asmr.currentKernel]
@@ -1602,6 +1631,7 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
     return true;
 }
 
+// AMD GPU architecture for Gallium
 static const AMDGPUArchValues galliumAmdGpuArchValuesTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
@@ -1654,6 +1684,7 @@ bool AsmGalliumHandler::prepareBinary()
             }
     }
     
+    // set sections as outputs
     for (size_t i = 0; i < sectionsNum; i++)
     {
         const AsmSection& asmSection = assembler.sections[i];
@@ -1676,6 +1707,7 @@ bool AsmGalliumHandler::prepareBinary()
             case AsmSectionType::EXTRA_NOBITS:
             case AsmSectionType::EXTRA_SECTION:
             {
+                // handle extra (user) section, set section type and its flags
                 uint32_t elfSectType =
                        (asmSection.type==AsmSectionType::EXTRA_NOTE) ? SHT_NOTE :
                        (asmSection.type==AsmSectionType::EXTRA_NOBITS) ? SHT_NOBITS :
@@ -1695,6 +1727,7 @@ bool AsmGalliumHandler::prepareBinary()
                 break;
             case AsmSectionType::GALLIUM_CONFIG_CTRL_DIRECTIVE:
                 if (sectionSize != 128)
+                    // control directive accepts only 128-byte size
                     assembler.printError(AsmSourcePos(),
                          (std::string("Section '.control_directive' for kernel '")+
                           assembler.kernels[section.kernelId].name+
@@ -1705,6 +1738,7 @@ bool AsmGalliumHandler::prepareBinary()
         }
     }
     
+    // get current llvm version (if not TESTRUN)
     cxuint llvmVersion = assembler.llvmVersion;
     if (llvmVersion == 0 && (assembler.flags&ASM_TESTRUN)==0)
         llvmVersion = detectedLLVMVersion;
@@ -1724,7 +1758,7 @@ bool AsmGalliumHandler::prepareBinary()
         {
             // fixed userdatanum for LLVM 4.0
             const AmdHsaKernelConfig& hsaConfig  = *kernelStates[i]->hsaConfig.get();
-            // calcuate userSGPRs
+            // calculate userSGPRs
             const uint16_t sgprFlags = hsaConfig.enableSgprRegisterFlags;
             userSGPRsNum =
                 ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER)!=0 ? 4 : 0) +
@@ -1813,6 +1847,7 @@ bool AsmGalliumHandler::prepareBinary()
                     symEntry.second.size, binSectId, false, symEntry.second.info,
                     symEntry.second.other });
         }
+    
     // setup amd GPU arch values (for LLVM 4.0 HSA config)
     AMDGPUArchValues amdGpuArchValues = galliumAmdGpuArchValuesTbl[
                     cxuint(assembler.deviceType)];
@@ -1857,18 +1892,20 @@ bool AsmGalliumHandler::prepareBinary()
             continue;
         }
         kinput.offset = symbol.value;
+        // set up AMD HSA configuration in kernel code
         if (llvmVersion >= 40000U && output.kernels[ki].useConfig)
         {
             // requires amdhsa-gcn (with HSA header)
             // hotfix
             GalliumKernelConfig config = output.kernels[ki].config;
+            // outConfig is final HSA config
             AmdHsaKernelConfig outConfig;
             ::memset(&outConfig, 0xff, 128); // fill by defaults
             
             const Kernel& kernel = *kernelStates[ki];
             if (kernel.hsaConfig != nullptr)
             {
-                // replace by HSA config
+                // replace Gallium config by HSA config
                 ::memcpy(&outConfig, kernel.hsaConfig.get(), sizeof(AmdHsaKernelConfig));
                 // set config from HSA config
                 const AsmAmdHsaKernelConfig& hsaConfig = *kernel.hsaConfig.get();
@@ -1895,7 +1932,7 @@ bool AsmGalliumHandler::prepareBinary()
                     // scratch buffer
                     config.scratchBufferSize = hsaConfig.workitemPrivateSegmentSize;
             }
-            
+            // calculate pgmrsrcs
             cxuint sgprsNum = std::max(config.usedSGPRsNum, 1U);
             cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
             uint32_t pgmRSRC1 =  (config.pgmRSRC1) |
@@ -1909,6 +1946,7 @@ bool AsmGalliumHandler::prepareBinary()
                             (config.pgmRSRC2 & 0x1b80U), config.tgSize,
                             config.localSize, config.exceptions);
             
+            // calculating kernel argument segment size
             size_t argSegmentSize = 0;
             for (GalliumArgInfo& argInfo: output.kernels[ki].argInfos)
             {
@@ -1997,9 +2035,10 @@ bool AsmGalliumHandler::prepareBinary()
                 ::memset(outConfig.controlDirective, 0, 128);
             
             if (asmCSection.content.size() >= symbol.value+256)
+                // and store it to asm section in kernel place
                 ::memcpy(asmCSection.content.data() + symbol.value,
                         &outConfig, sizeof(AmdHsaKernelConfig));
-            else
+            else // if wrong size
                 assembler.printError(AsmSourcePos(), (
                     std::string("HSA configuration for kernel '")+
                     kinput.kernelName.c_str()+"' out of content").c_str());

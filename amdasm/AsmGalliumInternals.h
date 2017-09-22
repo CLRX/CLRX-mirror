@@ -105,16 +105,19 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
 {
     static bool checkPseudoOpName(const CString& string);
     
+    // .arch_minor
     static void setArchMinor(AsmGalliumHandler& handler, const char* linePtr);
+    // .arch_stepping
     static void setArchStepping(AsmGalliumHandler& handler, const char* linePtr);
     
+    // .control_directive
     static void doControlDirective(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
     static void setDriverVersion(AsmGalliumHandler& handler, const char* linePtr);
-    
     static void setLLVMVersion(AsmGalliumHandler& handler, const char* linePtr);
     
+    // .get_driver_version, .get_llvm_version
     static void getXXXVersion(AsmGalliumHandler& handler, const char* linePtr,
                               bool getLLVMVersion);
     
@@ -122,30 +125,32 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
     static void doConfig(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    // set condfiguration value given as integer
     static void setConfigValue(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, GalliumConfigValueTarget target);
-    
+    // set condfiguration value given as boolean
     static void setConfigBoolValue(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, GalliumConfigValueTarget target);
-    
+    // .default_hsa_features
     static void setDefaultHSAFeatures(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .dims (dimensions)
     static void setDimensions(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, bool amdHsa);
-    
+    // .machine (HSA machine)
     static void setMachine(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .code_version (HSA code version)
     static void setCodeVersion(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .reserved_sgprs, .reserved_vpgrs (in HSA config)
     static void setReservedXgprs(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, bool inVgpr);
     
+    // .use_grid_work_group_count
     static void setUseGridWorkGroupCount(AsmGalliumHandler& handler,
                       const char* pseudoOpPlace, const char* linePtr);
-    
+    // .gloabal_data
     static void doGlobalData(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     // open argument list
@@ -161,8 +166,10 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
     static void doEntry(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    // .kcode (open kernel code)
     static void doKCode(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .kcodeend (close kernel code)
     static void doKCodeEnd(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     static void updateKCodeSel(AsmGalliumHandler& handler,

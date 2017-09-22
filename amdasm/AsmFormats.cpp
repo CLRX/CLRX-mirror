@@ -32,6 +32,7 @@ using namespace CLRX;
 AsmFormatException::AsmFormatException(const std::string& message) : Exception(message)
 { }
 
+// common routine to initialize AMD HSA config (used by AMDCL2, Gallium and ROCm handlers)
 void AsmAmdHsaKernelConfig::initialize()
 {
     // set default values to kernel config
