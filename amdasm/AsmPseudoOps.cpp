@@ -88,7 +88,7 @@ enum
 { ASMMROP_ENDM = 0, ASMMROP_ENDMACRO, ASMMROP_ENDR, ASMMROP_ENDREPT,
     ASMMROP_IRP, ASMMROP_IRPC, ASMMROP_MACRO, ASMMROP_REPT };
 
-/// all main pseudo-ops
+/// all main pseudo-ops (sorted by name)
 static const char* pseudoOpNamesTbl[] =
 {
     "32bit", "64bit", "abort", "align", "altmacro",
@@ -131,6 +131,7 @@ static const char* pseudoOpNamesTbl[] =
     "warning", "weak", "word"
 };
 
+// enum for all pseudo-ops
 enum
 {
     ASMOP_32BIT = 0, ASMOP_64BIT, ASMOP_ABORT, ASMOP_ALIGN, ASMOP_ALTMACRO,
@@ -184,11 +185,13 @@ void AsmPseudoOps::setBitness(Assembler& asmr, const char* linePtr, bool _64Bit)
         asmr.printError(linePtr, "Bitness is already defined");
     else if (asmr.format == BinaryFormat::ROCM)
     {
+        // ROCm is always 64-bit, print warning about it
         if (!_64Bit)
             asmr.printWarning(linePtr, "For ROCm bitness is always 64bit");
     }
     else if (asmr.format != BinaryFormat::AMD && asmr.format != BinaryFormat::GALLIUM &&
         asmr.format != BinaryFormat::AMDCL2)
+        // print warning (for raw format) that bitness is ignored
         asmr.printWarning(linePtr, "Bitness ignored for other formats than "
                 "AMD Catalyst, ROCm and GalliumCompute");
     else
@@ -205,6 +208,7 @@ bool AsmPseudoOps::parseFormat(Assembler& asmr, const char*& linePtr, BinaryForm
         return false;
     
     toLowerString(formatName);
+    // choose correct binary format
     if (::strcmp(formatName, "catalyst")==0 || ::strcmp(formatName, "amd")==0)
         format = BinaryFormat::AMD;
     else if (::strcmp(formatName, "amdcl2")==0)
@@ -220,6 +224,7 @@ bool AsmPseudoOps::parseFormat(Assembler& asmr, const char*& linePtr, BinaryForm
     return true;
 }
 
+// .format pseudo-op
 void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -231,6 +236,7 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
     
     if (checkGarbagesAtEnd(asmr, linePtr))
     {
+        // set if no garbages at end
         if (asmr.formatHandler!=nullptr)
             ASM_RETURN_BY_ERROR(formatPlace, "Output format type is already defined")
         asmr.format = format;
@@ -249,8 +255,10 @@ void AsmPseudoOps::setGPUDevice(Assembler& asmr, const char* linePtr)
     {
         GPUDeviceType deviceType = getGPUDeviceTypeFromName(deviceName);
         if (checkGarbagesAtEnd(asmr, linePtr))
+            // set if no garbages at end
             asmr.deviceType = deviceType;
     }
+    // if exception - print error
     catch(const Exception& ex)
     { asmr.printError(deviceNamePlace, ex.what()); }
 }
@@ -268,8 +276,10 @@ void AsmPseudoOps::setGPUArchitecture(Assembler& asmr, const char* linePtr)
         GPUArchitecture arch = getGPUArchitectureFromName(deviceName);
         GPUDeviceType deviceType = getLowestGPUDeviceTypeFromArchitecture(arch);
         if (checkGarbagesAtEnd(asmr, linePtr))
+            // set if no garbages at end
             asmr.deviceType = deviceType;
     }
+    // if exception - print error
     catch(const Exception& ex)
     { asmr.printError(archNamePlace, ex.what()); }
 }
@@ -323,6 +333,7 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
         const char* flagsStrPlace = linePtr;
         if (asmr.parseString(flagsStr, linePtr))
         {
+            // parse section flags (a,x,w)
             bool flagsStrIsGood = true;
             for (const char c: flagsStr)
                 if (c=='a')
@@ -349,6 +360,7 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
             const char* typePlace = linePtr;
             if (linePtr+1<end && *linePtr=='@' && isAlpha(linePtr[1]))
             {
+                // parse section type (progbits, note, nobits)
                 linePtr++;
                 if (getNameArg(asmr, 20, typeBuf, linePtr, "section type"))
                 {
@@ -396,6 +408,7 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
         return;
     
     if (!haveFlags)
+        // if section flags and section type not supplied
         asmr.goToSection(pseudoOpPlace, sectionName.c_str(), sectionAlign);
     else
         asmr.goToSection(pseudoOpPlace, sectionName.c_str(), sectType, sectFlags,
@@ -427,6 +440,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
             return;
         sysfilename = filename;
         bool failedOpen = false;
+        // convert path to system path (with system dir separators)
         filesystemPath(sysfilename);
         try
         {
@@ -436,10 +450,12 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
         catch(const Exception& ex)
         { failedOpen = true; }
         
+        // find in include paths
         for (const CString& incDir: asmr.includeDirs)
         {
             failedOpen = false;
             std::string incDirPath(incDir.c_str());
+            // convert path to system path (with system dir separators)
             filesystemPath(incDirPath);
             try
             {
@@ -450,6 +466,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
             catch(const Exception& ex)
             { failedOpen = true; }
         }
+        // if not found
         if (failedOpen)
             asmr.printError(namePlace, (std::string("Include file '") + filename +
                     "' not found or unavailable in any directory").c_str());
@@ -480,9 +497,11 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
     if (haveComma)
     {
         skipSpacesToEnd(linePtr, end);
+        // parse offset argument
         offsetPlace = linePtr;
         if (getAbsoluteValueArg(asmr, offset, linePtr))
         {
+            // offset must not be negative
             if (int64_t(offset) < 0)
                 ASM_NOTGOOD_BY_ERROR(offsetPlace, "Offset is negative!")
         }
@@ -495,6 +514,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
         {
             skipSpacesToEnd(linePtr, end);
             countPlace = linePtr;
+            // parse count argument
             good &= getAbsoluteValueArg(asmr, count, linePtr);
             if (int64_t(count) < 0)
                 ASM_NOTGOOD_BY_ERROR(countPlace, "Count bytes is negative!")
@@ -513,9 +533,11 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
     std::ifstream ifs;
     sysfilename = filename;
     filesystemPath(sysfilename);
+    // try in this directory
     ifs.open(sysfilename.c_str(), std::ios::binary);
     if (!ifs)
     {
+        // find in include paths
         for (const CString& incDir: asmr.includeDirs)
         {
             std::string incDirPath(incDir.c_str());
@@ -546,9 +568,11 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
         const uint64_t size = ifs.tellg();
         if (size < offset)
             return; // do nothing
+        // skip offset bytes
         ifs.seekg(offset, std::ios::beg);
         const uint64_t toRead = std::min(size-offset, count);
         char* output = reinterpret_cast<char*>(asmr.reserveData(toRead));
+        // and just read directly to output
         ifs.read(output, toRead);
         if (ifs.gcount() != std::streamsize(toRead))
             ASM_RETURN_BY_ERROR(namePlace, "Can't read whole needed file content")
@@ -596,6 +620,7 @@ void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoOpPlace, const char
     const size_t pos = 6+itocstrCStyle(int64_t(value), buf+6, 50-6);
     ::memcpy(buf+pos, " encountered", 13);
     if (int64_t(value) >= 500)
+        // value >=500 treat as error
         asmr.printWarning(pseudoOpPlace, buf);
     else
         asmr.printError(pseudoOpPlace, buf);
@@ -616,6 +641,7 @@ void AsmPseudoOps::doError(Assembler& asmr, const char* pseudoOpPlace,
         asmr.printError(pseudoOpPlace, outStr.c_str());
     }
     else
+        // if without string
         asmr.printError(pseudoOpPlace, ".error encountered");
 }
 
@@ -634,6 +660,7 @@ void AsmPseudoOps::doWarning(Assembler& asmr, const char* pseudoOpPlace,
         asmr.printWarning(pseudoOpPlace, outStr.c_str());
     }
     else
+        // if without string
         asmr.printWarning(pseudoOpPlace, ".warning encountered");
 }
 
@@ -650,6 +677,7 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
         return;
     do {
         const char* exprPlace = linePtr;
+        // try parse expression for this integer
         std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr));
         if (expr)
         {
@@ -669,7 +697,7 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
                             asmr.printWarningForRange(sizeof(T)<<3, value,
                                          asmr.getSourcePos(exprPlace));
                         T out;
-                        SLEV(out, value);
+                        SLEV(out, value); // store in little-endian
                         asmr.putData(sizeof(T), reinterpret_cast<const cxbyte*>(&out));
                     }
                     else
@@ -689,6 +717,7 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
+// helper for floating point parsing (with storing in little-endian)
 template<typename T> inline
 T asmcstrtofCStyleLEV(const char* str, const char* inend, const char*& outend);
 
@@ -737,6 +766,7 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char* pseudoOpPlace,
         const char* literalPlace = linePtr;
         if (linePtr != end && *linePtr != ',')
         {
+            // try parse floating point (returns as little-endian value)
             try
             { out = asmcstrtofCStyleLEV<UIntType>(linePtr, end, linePtr); }
             catch(const ParseException& ex)
@@ -767,6 +797,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char* pseudoOpPlace,
         {
             const char* literalPlace = linePtr;
             bool negative = false;
+            // handle '+' and '-' before number
             if (*linePtr == '+')
                 linePtr++;
             else if (*linePtr == '-')
@@ -788,6 +819,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char* pseudoOpPlace,
         else // warning
             asmr.printWarning(linePtr, "No 128-bit literal, zero has been put");
         UInt128 out;
+        // and store value in little-endian
         SLEV(out.lo, value.lo);
         SLEV(out.hi, value.hi);
         asmr.putData(16, reinterpret_cast<const cxbyte*>(&out));
@@ -816,6 +848,8 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char* pseudoOpPlace,
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
+// for .string16, .string32 and .string64 pseudo-ops
+// store characters as 16-,32-,64-bit values
 template<typename T>
 void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char* pseudoOpPlace,
                     const char* linePtr)
@@ -858,7 +892,7 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char* linePtr, bool reassign
         ASM_NOTGOOD_BY_ERROR(linePtr, "Expected symbol")
     if (!skipRequiredComma(asmr, linePtr))
         return;
-    if (good) // is not so good
+    if (good) // is good
         asmr.assignSymbol(symName, strAtSymName, linePtr, reassign, baseExpr);
 }
 
@@ -871,6 +905,7 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char* linePtr, cxbyte bi
         AsmSymbolEntry* symEntry;
         Assembler::ParseState state = asmr.parseSymbol(linePtr, symEntry, false);
         bool good = (state != Assembler::ParseState::FAILED);
+        // handle errors
         if (symEntry == nullptr)
             ASM_NOTGOOD_BY_ERROR(symNamePlace, "Expected symbol name")
         else if (symEntry->second.regRange)
@@ -881,6 +916,7 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char* linePtr, cxbyte bi
         
         if (good)
         {
+            // set binding to symbol (except symbol '.')
             if (symEntry->first != ".")
                 symEntry->second.info = ELF32_ST_INFO(bind,
                       ELF32_ST_TYPE(symEntry->second.info));
@@ -917,6 +953,7 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char* linePtr)
             ASM_NOTGOOD_BY_ERROR(symNamePlace, "Symbol must not be register symbol")
         else if (symEntry->first == ".")
         {
+            // do not set size for '.' symbol
             asmr.printWarning(symNamePlace, "Symbol '.' is ignored");
             ignore = true;
         }
@@ -952,6 +989,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
     uint64_t repeat = 0, size = 1, value = 0;
     
     const char* reptStr = linePtr;
+    // parse repeat argument
     bool good = getAbsoluteValueArg(asmr, repeat, linePtr, true);
     
     if (int64_t(repeat) < 0)
@@ -966,6 +1004,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
     {
         skipSpacesToEnd(linePtr, end);
         sizePlace = linePtr; //
+        // parse size argument
         if (getAbsoluteValueArg(asmr, size, linePtr))
         {
             if (int64_t(size) < 0)
@@ -980,6 +1019,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
         {
             skipSpacesToEnd(linePtr, end);
             fillValuePlace = linePtr;
+            // parse value argument
             good &= getAbsoluteValueArg(asmr, value, linePtr);
         }
     }
@@ -1030,6 +1070,7 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char* pseudoOpPlace, const char
     uint64_t size = 1, value = 0;
     
     const char* sizePlace = linePtr;
+    // parse size argument
     bool good = getAbsoluteValueArg(asmr, size, linePtr);
     if (int64_t(size) < 0)
         asmr.printWarning(sizePlace, "Negative size has no effect");
@@ -1042,6 +1083,7 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char* pseudoOpPlace, const char
     {
         skipSpacesToEnd(linePtr, end);
         fillValuePlace = linePtr;
+        // parse value argument (optional)
         if (getAbsoluteValueArg(asmr, value, linePtr))
             asmr.printWarningForRange(8, value, asmr.getSourcePos(fillValuePlace));
         else
@@ -1075,14 +1117,17 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
     
     if (good)
     {
+        // checking alignment value
         if (powerOf2)
         {
+            // if alignment is power of 2, then must be lesser than 64
             if (alignment > 63)
                 ASM_NOTGOOD_BY_ERROR(alignPlace, "Power of 2 of alignment is "
                             "greater than 63")
             else
                 alignment = (1ULL<<alignment);
         }
+        // checking whether alignment is power of 2
         else if (alignment == 0 || (1ULL<<(63-CLZ64(alignment))) != alignment)
             ASM_NOTGOOD_BY_ERROR(alignPlace, "Alignment is not power of 2")
     }
@@ -1095,6 +1140,7 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
     {
         skipSpacesToEnd(linePtr, end);
         valuePlace = linePtr;
+        // parse value argument
         if (getAbsoluteValueArg(asmr, value, linePtr))
             asmr.printWarningForRange(8, value, asmr.getSourcePos(valuePlace));
         else
@@ -1106,6 +1152,7 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
         if (haveComma)
         {
             skipSpacesToEnd(linePtr, end);
+            // maxalign argument
             good &= getAbsoluteValueArg(asmr, maxAlign, linePtr);
         }
     }
@@ -1113,6 +1160,7 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
         return;
     
     uint64_t outPos = asmr.currentOutPos;
+    // calculate bytes to fill (to next alignment bytes)
     const uint64_t bytesToFill = ((outPos&(alignment-1))!=0) ?
             alignment - (outPos&(alignment-1)) : 0;
     if (maxAlign!=0 && bytesToFill > maxAlign)
@@ -1125,6 +1173,7 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
         asmr.reserveData(bytesToFill, value&0xff);
     else /* only if no value and is code section */
     {
+        // call routine to filling alignment from ISA assembler (to fill code by nops)
         cxbyte* output = asmr.reserveData(bytesToFill, 0);
         asmr.isaAssembler->fillAlignment(bytesToFill, output);
     }
@@ -1168,6 +1217,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
         if (haveComma)
         {
             skipSpacesToEnd(linePtr, end);
+            // maxalign argument
             good &= getAbsoluteValueArg(asmr, maxAlign, linePtr);
         }
     }
@@ -1181,6 +1231,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
     if (outPos&(sizeof(Word)-1))
         PSEUDOOP_RETURN_BY_ERROR("Offset is not aligned to word")
     
+    // calculate bytes to fill (to next alignment bytes)
     const uint64_t bytesToFill = ((outPos&(alignment-1))!=0) ?
             alignment - (outPos&(alignment-1)) : 0;
     
@@ -1202,6 +1253,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
                   reinterpret_cast<Word*>(content + bytesToFill), word);
     }
     else if (asmr.sections[asmr.currentSection].type == AsmSectionType::CODE)
+        // call routine to filling alignment from ISA assembler (to fill code by nops)
         asmr.isaAssembler->fillAlignment(bytesToFill, content);
 }
 
@@ -1220,8 +1272,9 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char* linePtr)
     if (!skipComma(asmr, haveComma, linePtr))
         return;
     const char* fillValuePlace = linePtr;
-    if (haveComma) // optional fill argument
+    if (haveComma)
     {
+        // optional fill argument
         skipSpacesToEnd(linePtr, end);
         fillValuePlace = linePtr;
         good = getAbsoluteValueArg(asmr, fillValue, linePtr, true);
@@ -1291,6 +1344,7 @@ void AsmPseudoOps::doIfInt(Assembler& asmr, const char* pseudoOpPlace, const cha
     }
 }
 
+// .ifdef (or .ifndef if negation is true)
 void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                bool negation, bool elseIfClause)
 {
@@ -1299,6 +1353,7 @@ void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoOpPlace, const cha
     const char* symNamePlace = linePtr;
     AsmSymbolEntry* entry;
     bool good = true;
+    // parse symbol
     Assembler::ParseState state = asmr.parseSymbol(linePtr, entry, false, true);
     if (state == Assembler::ParseState::FAILED)
         return;
@@ -1319,6 +1374,7 @@ void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoOpPlace, const cha
     }
 }
 
+// .ifb (or .ifnb if negation is true)
 void AsmPseudoOps::doIfBlank(Assembler& asmr, const char* pseudoOpPlace,
              const char* linePtr, bool negation, bool elseIfClause)
 {
@@ -1336,6 +1392,7 @@ void AsmPseudoOps::doIfBlank(Assembler& asmr, const char* pseudoOpPlace,
     }
 }
 
+// this routine get string to compare in rules given GNU as
 static std::string getStringToCompare(const char* strStart, const char* strEnd)
 {
     std::string firstStr;
@@ -1462,7 +1519,8 @@ void AsmPseudoOps::doIfArch(Assembler& asmr, const char* pseudoOpPlace,
             return;
     }
     catch(const Exception& ex)
-    { 
+    {
+        // if architecture not found (unknown architecture)
         asmr.printError(archNamePlace, ex.what());
         return;
     }
@@ -1497,6 +1555,7 @@ void AsmPseudoOps::doIfGpu(Assembler& asmr, const char* pseudoOpPlace, const cha
     }
     catch(const Exception& ex)
     {
+        // if GPU device name is unknown, print error
         asmr.printError(deviceNamePlace, ex.what());
         return;
     }
@@ -1519,6 +1578,7 @@ void AsmPseudoOps::doIfFmt(Assembler& asmr, const char* pseudoOpPlace, const cha
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     BinaryFormat format;
+    // parse binary format name
     if (!parseFormat(asmr, linePtr, format))
         return;
     
@@ -1602,6 +1662,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
     CString macroName = extractSymName(linePtr, end, false);
     if (macroName.empty())
         ASM_RETURN_BY_ERROR(macroNamePlace, "Expected macro name")
+    // convert to lower (name is case-insensitive)
     if (asmr.macroCase)
         toLowerString(macroName);
     /* parse args */
@@ -1638,11 +1699,11 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         skipSpacesToEnd(linePtr, end);
         if (linePtr != end && *linePtr == ':')
         {
-            // qualifier
+            // parse argument's qualifier
             skipCharAndSpacesToEnd(linePtr, end);
             //extr
             if (linePtr+3 <= end && linePtr[0] == 'r' && linePtr[1] == 'e' &&
-                    linePtr[2] == 'q') // required
+                    linePtr[2] == 'q') // reqd (if argument required)
             {
                 argRequired = true;
                 linePtr += 3;
@@ -1673,8 +1734,9 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
                         argName.c_str()+'\'').c_str());
         }
         
-        if (argGood) // push to arguments
+        if (argGood)
         {
+            // push to arguments
             if (haveVarArg)
                 ASM_NOTGOOD_BY_ERROR(argPlace, "Variadic argument must be last")
             else
@@ -1691,7 +1753,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
     {   
         if (checkPseudoOpName(macroName))
         {
-            // ignore
+            // ignore if name of macro is name of pseudo op name
             asmr.printWarning(pseudoOpPlace, (std::string(
                         "Attempt to redefine pseudo-op '")+macroName.c_str()+
                         "' as macro. Ignoring it...").c_str());
@@ -1699,7 +1761,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
             asmr.skipClauses();
             return;
         }
-        // create a macro
+        // create a macro and put macro map
         RefPtr<const AsmMacro> macro(new AsmMacro(asmr.getSourcePos(pseudoOpPlace),
                         Array<AsmMacroArg>(args.begin(), args.end())));
         asmr.pushClause(pseudoOpPlace, AsmClauseType::MACRO);
@@ -1731,6 +1793,7 @@ void AsmPseudoOps::exitMacro(Assembler& asmr, const char* pseudoOpPlace,
         if (type == AsmInputFilterType::REPEAT)
             asmr.printWarning(pseudoOpPlace, "Behavior of '.exitm' inside repeat is "
                     "undefined. Exiting from repeat...");
+        // skipping clauses to current macro
         asmr.skipClauses(true);
     }
 }
@@ -1753,11 +1816,13 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*
     if (linePtr != end && *linePtr == ',')
         skipCharAndSpacesToEnd(linePtr, end);
     
+    // parse list of symvalues for repetitions
     while(linePtr != end)
     {
         if (linePtr != end && *linePtr == ',')
         {
             if (perChar)
+                // because if value stores as character we add ','
                 symValString.push_back(',');
             skipCharAndSpacesToEnd(linePtr, end);
         }
@@ -1769,11 +1834,14 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*
         }
         skipSpacesToEnd(linePtr, end);
         if (!perChar)
+            // push single sym value
             symValues.push_back(symValue);
         else
+            // otherwise this sym value as string of values
             symValString += symValue;
     }
     
+    // check depth of repetitions
     if (asmr.repetitionLevel == 1000)
         PSEUDOOP_RETURN_BY_ERROR("Repetition level is greater than 1000")
     
@@ -1781,6 +1849,7 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*
         symValues.push_back("");
     if (good)
     {
+        // create IRP repetition
         asmr.pushClause(pseudoOpPlace, AsmClauseType::REPEAT);
         std::unique_ptr<AsmIRP> repeat;
         if (!perChar)
@@ -1813,6 +1882,7 @@ void AsmPseudoOps::purgeMacro(Assembler& asmr, const char* linePtr)
         ASM_NOTGOOD_BY_ERROR(macroNamePlace, "Expected macro name")
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
+    // convert to lower (name is case-insensitive)
     if (asmr.macroCase)
         toLowerString(macroName); // macro name is lowered
     
@@ -1828,6 +1898,7 @@ void AsmPseudoOps::openScope(Assembler& asmr, const char* pseudoOpPlace,
     skipSpacesToEnd(linePtr, end);
     CString scopeName = extractSymName(linePtr, end, false);
     bool good = true;
+    // check depth of scopes
     if (asmr.scopeStack.size() == 1000)
         ASM_NOTGOOD_BY_ERROR(pseudoOpPlace, "Scope level is greater than 1000")
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -1887,6 +1958,7 @@ void AsmPseudoOps::doUseReg(Assembler& asmr, const char* pseudoOpPlace,
         skipCharAndSpacesToEnd(linePtr, end);
         
         cxbyte rwFlags = 0;
+        // parse read/write flags (r,w,rw)
         for (; linePtr != end; linePtr++)
         {
             char c = toLower(*linePtr);
@@ -1946,6 +2018,7 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
     bool good = true;
     if (symName.empty())
         ASM_NOTGOOD_BY_ERROR(symNamePlace, "Expected symbol name")
+    // symbol '.' can not be undefined
     else if (symName == ".")
         ASM_NOTGOOD_BY_ERROR(symNamePlace, "Symbol '.' can not be undefined")
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -1958,8 +2031,10 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
         asmr.printWarning(symNamePlace, (std::string("Symbol '") + symName.c_str() +
                 "' already doesn't exist").c_str());
     else if (it->second.occurrencesInExprs.empty())
+        // remove from symbol map if no occurrences anywhere
         outScope->symbolMap.erase(sameSymName);
     else
+        // if some occurrences in expression just mark as undefined
         it->second.undefine();
 }
 
@@ -2071,6 +2146,7 @@ void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
+// get predefine value ('.get_64bit', '.get_arch', '.get_format')
 void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
                             AsmPredefined predefined)
 {
@@ -2088,6 +2164,8 @@ void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
         return;
     
     cxuint predefValue = 0;
+    // we must initialize output format before getting any arch, gpu or format
+    // must be set before
     asmr.initializeOutputFormat();
     switch (predefined)
     {
@@ -2110,7 +2188,7 @@ void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
                 AsmSymbol(ASMSECT_ABS, predefValue));
     if (!res.second)
     {
-        // found
+        // if symbol found
         if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
             asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
                         "' is already defined").c_str());
@@ -2128,6 +2206,8 @@ void AsmPseudoOps::ignoreString(Assembler& asmr, const char* linePtr)
         checkGarbagesAtEnd(asmr, linePtr);
 }
 
+// checking whether name is pseudo-op name
+// (checking any extra pseudo-op provided by format handler)
 bool AsmPseudoOps::checkPseudoOpName(const CString& string)
 {
     if (string.empty() || string[0] != '.')
@@ -2861,6 +2941,7 @@ bool Assembler::putMacroContent(RefPtr<AsmMacro> macro)
     {
         if (!readLine())
         {
+            // error, must be finished in by .endm or .endmacro
             good = false;
             break;
         }
@@ -2869,6 +2950,7 @@ bool Assembler::putMacroContent(RefPtr<AsmMacro> macro)
         const char* end = line+lineSize;
         skipSpacesAndLabels(linePtr, end);
         const char* stmtPlace = linePtr;
+        // if not pseudo-op
         if (linePtr == end || *linePtr != '.')
         {
             macro->addLine(currentInputFilter->getMacroSubst(),
@@ -2884,6 +2966,7 @@ bool Assembler::putMacroContent(RefPtr<AsmMacro> macro)
                macroRepeatPseudoOpNamesTbl + sizeof(macroRepeatPseudoOpNamesTbl) /
                sizeof(char*), pseudoOpName.c_str()+1, CStringLess()) -
                macroRepeatPseudoOpNamesTbl;
+        // handle pseudo-op in macro content
         switch(pseudoOp)
         {
             case ASMMROP_ENDM:
@@ -2910,6 +2993,7 @@ bool Assembler::putMacroContent(RefPtr<AsmMacro> macro)
                 break;
         }
         if (pseudoOp != ASMMROP_ENDM || clauses.size() >= clauseLevel)
+            // add line if is still in macro
             macro->addLine(currentInputFilter->getMacroSubst(),
                   currentInputFilter->getSource(),
                   currentInputFilter->getColTranslations(), lineSize, line);
@@ -2925,6 +3009,7 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
     {
         if (!readLine())
         {
+            // error, must be finished in by .endm or .endmacro
             good = false;
             break;
         }
@@ -2933,6 +3018,7 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
         const char* end = line+lineSize;
         skipSpacesAndLabels(linePtr, end);
         const char* stmtPlace = linePtr;
+        // if not pseudo-op
         if (linePtr == end || *linePtr != '.')
         {
             repeat.addLine(currentInputFilter->getMacroSubst(),
@@ -2947,6 +3033,7 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
                macroRepeatPseudoOpNamesTbl + sizeof(macroRepeatPseudoOpNamesTbl) /
                sizeof(char*), pseudoOpName.c_str()+1, CStringLess()) -
                macroRepeatPseudoOpNamesTbl;
+        // handle pseudo-op in macro content
         switch(pseudoOp)
         {
             case ASMMROP_ENDM:
@@ -2971,6 +3058,7 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
                 break;
         }
         if (pseudoOp != ASMMROP_ENDR || clauses.size() >= clauseLevel)
+            // add line if is still in repetition
             repeat.addLine(currentInputFilter->getMacroSubst(),
                    currentInputFilter->getSource(),
                    currentInputFilter->getColTranslations(), lineSize, line);

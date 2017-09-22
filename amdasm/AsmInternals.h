@@ -48,6 +48,8 @@ CString extractSymName(const char*& string, const char* end, bool localLabelSymN
 CString extractScopedSymName(const char*& string, const char* end,
            bool localLabelSymName = false);
 
+// extract label name from string (must be at start)
+// (but not symbol of backward of forward labels)
 static inline CString extractLabelName(const char*& string, const char* end)
 {
     if (string != end && isDigit(*string))
@@ -208,38 +210,49 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     
     static void setSymbolSize(Assembler& asmr, const char* linePtr);
     
+    // ignore .extern
     static void ignoreExtern(Assembler& asmr, const char* linePtr);
     
+    // .fill
     static void doFill(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                bool _64bit = false);
+    // .skip
     static void doSkip(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
     
+    // .align
     static void doAlign(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                     bool powerOf2 = false);
     
     template<typename Word>
     static void doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
                             const char* linePtr);
-    
+    // .org
     static void doOrganize(Assembler& asmr, const char* linePtr);
     
+    // .print
     static void doPrint(Assembler& asmr, const char* linePtr);
     
+    // .ifXX for integers
     static void doIfInt(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                 IfIntComp compType, bool elseIfClause);
-    
+    // .ifdef
     static void doIfDef(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                 bool negation, bool elseIfClause);
     
+    // .ifb
     static void doIfBlank(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                 bool negation, bool elseIfClause);
     
+    // .if64 and .if32
     static void doIf64Bit(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                 bool negation, bool elseIfClause);
+    // .ifarch
     static void doIfArch(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                 bool negation, bool elseIfClause);
+    // .ifgpu
     static void doIfGpu(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                 bool negation, bool elseIfClause);
+    // .iffmt
     static void doIfFmt(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                 bool negation, bool elseIfClause);
     /// .ifc
@@ -269,22 +282,23 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     // do IRP
     static void doIRP(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                       bool perChar = false);
-    // do open scope
+    // do open scope (.scope)
     static void openScope(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
-    // do close scope
+    // do close scope (.ends or .endscope)
     static void closeScope(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
-    // start using scope
+    // start using scope (.using)
     static void startUsing(Assembler& asmr, const char* pseudoOpPlace,
                         const char* linePtr);
-    // stop using scope
+    // stop using scope (.unusing)
     static void stopUsing(Assembler& asmr, const char* pseudoOpPlace,
                         const char* linePtr);
+    // .usereg ?
     static void doUseReg(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
-    
+    // .undef
     static void undefSymbol(Assembler& asmr, const char* linePtr);
-    
+    // .regvar
     static void defRegVar(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
-    
+    // .cf_ (code flow pseudo-ops)
     static void addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace,
                      const char* linePtr, AsmCodeFlowType type);
     
@@ -297,6 +311,8 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     
     static bool checkPseudoOpName(const CString& string);
 };
+
+// macro helper to handle printing error
 
 #define PSEUDOOP_RETURN_BY_ERROR(STRING) \
     { \

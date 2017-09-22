@@ -96,6 +96,7 @@ AsmRepeat::AsmRepeat(const AsmSourcePos& _pos, uint64_t _repeatsNum)
         : contentLineNo(0), sourcePos(_pos), repeatsNum(_repeatsNum)
 { }
 
+// add line to repetition
 void AsmRepeat::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource> source,
             const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
 {
@@ -135,6 +136,8 @@ AsmInputFilter::~AsmInputFilter()
 
 LineCol AsmInputFilter::translatePos(size_t position) const
 {
+    // find in reverse order with reverse comparison:
+    // find equal or less element (instead equal or greater)
     auto found = std::lower_bound(colTranslations.rbegin(), colTranslations.rend(),
          LineTrans({ ssize_t(position), 0 }),
          [](const LineTrans& t1, const LineTrans& t2)
@@ -192,6 +195,7 @@ AsmStreamInputFilter::AsmStreamInputFilter(const AsmSourcePos& pos,
                 RefPtr<const AsmSource>(new AsmMacroSource(pos.macro, pos.source)),
                      pos.lineNo, pos.colNo, filename));
         
+        // open file
         stream = new std::ifstream(filename.c_str(), std::ios::binary);
         if (!*stream)
             throw Exception(std::string("Can't open source file '")+filename.c_str()+"'");
@@ -249,8 +253,9 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                     do {
                         backslash = (buffer[pos] == '\\');
                         if (buffer[pos] == '*' &&
-                            destPos > 0 && buffer[destPos-1] == '/') // longComment
+                            destPos > 0 && buffer[destPos-1] == '/')
                         {
+                            // if long comment
                             prevAsterisk = false;
                             asterisk = false;
                             buffer[destPos-1] = ' ';
@@ -259,8 +264,9 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                             pos++;
                             break;
                         }
-                        if (buffer[pos] == '#') // line comment
+                        if (buffer[pos] == '#')
                         {
+                            // if line comment
                             buffer[destPos++] = ' ';
                             mode = LineMode::LINE_COMMENT;
                             pos++;
@@ -270,13 +276,15 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         const char old = buffer[pos];
                         buffer[destPos++] = buffer[pos++];
                         
-                        if (old == '"') // if string opened
+                        if (old == '"')
                         {
+                            // if string opened
                             mode = LineMode::STRING;
                             break;
                         }
-                        else if (old == '\'') // if string opened
+                        else if (old == '\'')
                         {
+                            // if string opened
                             mode = LineMode::LSTRING;
                             break;
                         }
@@ -295,6 +303,8 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         if (backslash) 
                         {
                             destPos--;
+                            /* delete col translation at this position (if exists) and
+                             * add new with new lineNo */
                             if (ssize_t(destPos-lineStart) ==
                                 colTranslations.back().position)
                                 colTranslations.pop_back();
@@ -319,7 +329,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                     }
                     else if (mode == LineMode::NORMAL)
                     {
-                        /* spaces */
+                        /* replace space character by 0x20 (space) */
                         backslash = false;
                         do {
                             buffer[destPos++] = ' ';
@@ -362,6 +372,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
             }
             case LineMode::LONG_COMMENT:
             {
+                // go to end of long comment '*/' or to end of line
                 while (pos < buffer.size() && buffer[pos] != '\n' &&
                     (!asterisk || buffer[pos] != '/'))
                 {
@@ -390,6 +401,8 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                             asterisk = prevAsterisk;
                             prevAsterisk = false;
                             destPos--;
+                            /* delete col translation at this position (if exists) and
+                             * add new with new lineNo */
                             if (ssize_t(destPos-lineStart) ==
                                 colTranslations.back().position)
                                 colTranslations.pop_back();
@@ -408,6 +421,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
             case LineMode::LSTRING:
             {
                 const char quoteChar = (mode == LineMode::STRING)?'"':'\'';
+                // go to end of string '"' or "'" or to new line
                 while (pos < buffer.size() && buffer[pos] != '\n' &&
                     ((backslash&1) || buffer[pos] != quoteChar))
                 {
@@ -570,6 +584,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
         // try to parse local statement
         const char* linePtr = stmtStartPtr;
         const char* end = content+nextLinePos;
+        // before we skip labels at current statement
         skipSpacesAndLabels(linePtr, end);
         localStmtStart = linePtr;
         if (linePtr+6 < end && ::strncasecmp(linePtr, "local", 5)==0 && linePtr[5]==' ')
@@ -1162,6 +1177,7 @@ static RefPtr<const AsmSource> printAsmRepeats(std::ostream& os,
         auto sourceRept = source.staticCast<const AsmRepeatSource>();
         printIndent(os, indentLevel);
         os.write((firstDepth)?"In repetition ":"              ", 14);
+        // print: REPEATSCOUNT/REPEATSNUM:
         char numBuf[64];
         size_t size = itocstrCStyle(sourceRept->repeatCount+1, numBuf, 32);
         numBuf[size++] = '/';
@@ -1188,6 +1204,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
     const AsmSourcePos* thisPos = this;
     bool exprFirstDepth = true;
     char numBuf[32];
+    // print expression source positions
     while (thisPos->exprSourcePos!=nullptr)
     {
         AsmSourcePos sourcePosToPrint = *(thisPos->exprSourcePos);
@@ -1202,6 +1219,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                 os.write((exprFirstDepth) ? "Expression evaluation from " :
                         "                      from ", 27);
                 os.write(file->file.c_str(), file->file.size());
+                // print: :LINENO:COLNO: (COLNO is optional)
                 numBuf[0] = ':';
                 size_t size = 1+itocstrCStyle(sourcePosToPrint.lineNo, numBuf+1, 31);
                 os.write(numBuf, size);
@@ -1260,6 +1278,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                     os.write(curFile->file.c_str(), curFile->file.size());
                 else // stdin
                     os.write("<stdin>", 7);
+                // print: :LINENO:COLNO or :LINENO:COLNO;
                 numBuf[0] = ':';
                 size_t size = 1+itocstrCStyle(curMacro->lineNo, numBuf+1, 29);
                 numBuf[size++] = ':';
@@ -1320,6 +1339,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                     else // stdin
                         os.write("<stdin>", 7);
                     
+                    // print: :LINENO:COLNO: or :LINENO:COLNO,
                     numBuf[0] = ':';
                     size_t size = 1+itocstrCStyle(curFile->lineNo, numBuf+1, 29);
                     numBuf[size++] = ':';
