@@ -34,6 +34,7 @@
 
 using namespace CLRX;
 
+// all AmdCL2 pseudo-op names (sorted)
 static const char* amdCL2PseudoOpNamesTbl[] =
 {
     "acl_version", "arch_minor", "arch_stepping",
@@ -68,6 +69,7 @@ static const char* amdCL2PseudoOpNamesTbl[] =
     "workitem_vgpr_count"
 };
 
+// all enums for AmdCL2 pseudo-ops
 enum
 {
     AMDCL2OP_ACL_VERSION = 0, AMDCL2OP_ARCH_MINOR, AMDCL2OP_ARCH_STEPPING,
@@ -127,9 +129,11 @@ AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmFormatHandler(asse
     output.archMinor = output.archStepping = UINT32_MAX;
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
+    // add .rodata section (will be default)
     sections.push_back({ ASMKERN_INNER, AsmSectionType::DATA, ELFSECTID_RODATA,
             ".rodata" });
     savedSection = innerSavedSection = 0;
+    // detect driver version once for using many times
     detectedDriverVersion = detectAmdDriverVersion();
 }
 
@@ -216,6 +220,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
     if (::strcmp(sectionName, ".rodata")==0 && (kernelId == ASMKERN_GLOBAL ||
             kernelId == ASMKERN_INNER))
     {
+        // .rodata section (main and in inner binary)
         if (getDriverVersion() < 191205)
             throw AsmFormatException("Global Data allowed only for new binary format");
         rodataSection = sections.size();
@@ -225,6 +230,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
     else if (::strcmp(sectionName, ".data")==0 && (kernelId == ASMKERN_GLOBAL ||
             kernelId == ASMKERN_INNER))
     {
+        // .data section (main and in inner binary)
         if (getDriverVersion() < 191205)
             throw AsmFormatException("Global RWData allowed only for new binary format");
         dataSection = sections.size();
@@ -234,6 +240,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
     else if (::strcmp(sectionName, ".bss")==0 && (kernelId == ASMKERN_GLOBAL ||
             kernelId == ASMKERN_INNER))
     {
+        // .bss section (main and in inner binary)
         if (getDriverVersion() < 191205)
             throw AsmFormatException("Global BSS allowed only for new binary format");
         bssSection = sections.size();
@@ -242,6 +249,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
     }
     else if (kernelId == ASMKERN_GLOBAL)
     {
+        // add extra section main binary
         Section section;
         section.kernelId = kernelId;
         auto out = extraSectionMap.insert(std::make_pair(std::string(sectionName),
@@ -294,6 +302,7 @@ cxuint AsmAmdCL2Handler::getSectionId(const char* sectionName) const
             return dataSection;
         else if (::strcmp(sectionName, ".bss")==0)
             return bssSection;
+        // find extra section by name in main binary
         SectionMap::const_iterator it = extraSectionMap.find(sectionName);
         if (it != extraSectionMap.end())
             return it->second;
@@ -307,7 +316,7 @@ cxuint AsmAmdCL2Handler::getSectionId(const char* sectionName) const
             if (::strcmp(sectionName, ".text") == 0)
                 return kernelState.codeSection;
         }
-        
+        // find extra section by name in inner binary
         SectionMap::const_iterator it = innerExtraSectionMap.find(sectionName);
         if (it != innerExtraSectionMap.end())
             return it->second;
@@ -338,6 +347,7 @@ void AsmAmdCL2Handler::setCurrentSection(cxuint sectionId)
     if (sectionId >= sections.size())
         throw AsmFormatException("SectionId out of range");
     
+    // check whether is allowed in current driver version
     if (sections[sectionId].type == AsmSectionType::DATA)
     {
         if (getDriverVersion() < 191205)
@@ -369,6 +379,7 @@ AsmFormatHandler::SectionInfo AsmAmdCL2Handler::getSectionInfo(cxuint sectionId)
     info.type = sections[sectionId].type;
     info.flags = 0;
     if (info.type == AsmSectionType::CODE)
+        // code is addressable and writeable
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
     else if (info.type == AsmSectionType::AMDCL2_BSS ||
             info.type == AsmSectionType::AMDCL2_RWDATA ||
@@ -379,6 +390,7 @@ AsmFormatHandler::SectionInfo AsmAmdCL2Handler::getSectionInfo(cxuint sectionId)
         if (info.type != AsmSectionType::AMDCL2_BSS)
             info.flags |= ASMSECT_WRITEABLE;
     }
+    // any other section (except config) are absolute addressable and writeable
     else if (info.type != AsmSectionType::CONFIG)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     info.name = sections[sectionId].name;
@@ -480,6 +492,7 @@ void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char*
     if (symName.empty())
         ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
     size_t symNameLength = symName.size();
+    // special case for '.' symbol (check whether is in global scope)
     if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
         ASM_RETURN_BY_ERROR(symNamePlace, "Symbol '.' can be only in global scope")
     if (!checkGarbagesAtEnd(asmr, linePtr))
@@ -516,7 +529,7 @@ void AsmAmdCL2PseudoOps::doInner(AsmAmdCL2Handler& handler, const char* pseudoOp
         asmr.printError(pseudoOpPlace, ex.what());
         return;
     }
-    
+    // set current position for this section
     asmr.currentOutPos = asmr.sections[asmr.currentSection].getSize();
 }
 
@@ -576,7 +589,7 @@ void AsmAmdCL2PseudoOps::doBssData(AsmAmdCL2Handler& handler, const char* pseudo
     skipSpacesToEnd(linePtr, end);
     if (linePtr+6<end && ::strncasecmp(linePtr, "align", 5)==0 && !isAlpha(linePtr[5]))
     {
-        // if alignment
+        // if alignment (align=VALUE)
         linePtr+=5;
         skipSpacesToEnd(linePtr, end);
         if (linePtr!=end && *linePtr=='=')
@@ -585,6 +598,7 @@ void AsmAmdCL2PseudoOps::doBssData(AsmAmdCL2Handler& handler, const char* pseudo
             const char* valuePtr = linePtr;
             if (getAbsoluteValueArg(asmr, sectionAlign, linePtr, true))
             {
+                // check whether is power of 2
                 if (sectionAlign!=0 && (1ULL<<(63-CLZ64(sectionAlign))) != sectionAlign)
                     ASM_NOTGOOD_BY_ERROR(valuePtr, "Alignment must be power of two or zero")
             }
@@ -652,6 +666,7 @@ void AsmAmdCL2PseudoOps::doSampler(AsmAmdCL2Handler& handler, const char* pseudo
         if (linePtr == end)
             return; /* if no samplers */
         AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+        // parse many values (sampler ids)
         do {
             uint64_t value = 0;
             const char* valuePlace = linePtr;
@@ -672,6 +687,7 @@ void AsmAmdCL2PseudoOps::doSampler(AsmAmdCL2Handler& handler, const char* pseudo
         handler.output.samplerConfig = true;
         if (linePtr == end)
             return; /* if no samplers */
+        // parse many values (sampler ids)
         do {
             uint64_t value = 0;
             const char* valuePlace = linePtr;
@@ -739,6 +755,7 @@ void AsmAmdCL2PseudoOps::doControlDirective(AsmAmdCL2Handler& handler,
     
     if (kernel.ctrlDirSection == ASMSECT_NONE)
     {
+        // create control directive if not exists
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel,
             AsmSectionType::AMDCL2_CONFIG_CTRL_DIRECTIVE,
@@ -774,7 +791,7 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
     if (good)
     {
         if (useHsaConfig && target >= AMDCL2CVAL_HSA_FIRST_PARAM)
-            // hsa config
+            // if hsa config
             good = AsmROCmPseudoOps::checkConfigValue(asmr, valuePlace, 
                     ROCmConfigValueTarget(cxuint(target) - AMDCL2CVAL_HSA_FIRST_PARAM),
                     value);
@@ -866,7 +883,7 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
     if (handler.kernelStates[asmr.currentKernel]->useHsaConfig &&
         target >= AMDCL2CVAL_HSA_FIRST_PARAM)
     {
-        // hsa config
+        // if hsa config
         AsmAmdHsaKernelConfig& config =
                 *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
         
@@ -899,6 +916,7 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                 config.localSize = value;
             else
             {
+                // if HSA config choosen, set HSA config param
                 AsmAmdHsaKernelConfig& hsaConfig = *(handler.
                                 kernelStates[asmr.currentKernel]->hsaConfig);
                 hsaConfig.workgroupGroupSegmentSize = value;
@@ -909,6 +927,7 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                 config.gdsSize = value;
             else
             {
+                // if HSA config choosen, set HSA config param
                 AsmAmdHsaKernelConfig& hsaConfig = *(handler.
                                 kernelStates[asmr.currentKernel]->hsaConfig);
                 hsaConfig.gdsSegmentSize = value;
@@ -919,6 +938,7 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                 config.scratchBufferSize = value;
             else
             {
+                // if HSA config choosen, set HSA config param
                 AsmAmdHsaKernelConfig& hsaConfig = *(handler.
                                 kernelStates[asmr.currentKernel]->hsaConfig);
                 hsaConfig.workitemPrivateSegmentSize = value;
@@ -957,7 +977,7 @@ void AsmAmdCL2PseudoOps::setConfigBoolValue(AsmAmdCL2Handler& handler,
     
     if (useHsaConfig)
     {
-        // hsa config
+        // if hsa config
         AsmAmdHsaKernelConfig& config =
                 *(handler.kernelStates[asmr.currentKernel]->hsaConfig);
         
@@ -1051,6 +1071,7 @@ void AsmAmdCL2PseudoOps::setMachine(AsmAmdCL2Handler& handler, const char* pseud
     
     uint16_t kindValue = 0, majorValue = 0;
     uint16_t minorValue = 0, steppingValue = 0;
+    // use ROCm routine to parse HSA machine
     if (!AsmROCmPseudoOps::parseMachine(asmr, linePtr, kindValue,
                     majorValue, minorValue, steppingValue))
         return;
@@ -1074,6 +1095,7 @@ void AsmAmdCL2PseudoOps::setCodeVersion(AsmAmdCL2Handler& handler,
         PSEUDOOP_RETURN_BY_ERROR("HSAConfig pseudo-op only in HSAConfig")
     
     uint16_t majorValue = 0, minorValue = 0;
+    // use ROCm routine to parse HSA code version
     if (!AsmROCmPseudoOps::parseCodeVersion(asmr, linePtr, majorValue, minorValue))
         return;
     
@@ -1094,6 +1116,7 @@ void AsmAmdCL2PseudoOps::setReservedXgprs(AsmAmdCL2Handler& handler,
         PSEUDOOP_RETURN_BY_ERROR("HSAConfig pseudo-op only in HSAConfig")
     
     uint16_t gprFirst = 0, gprCount = 0;
+    // use ROCm routine to parse HSA reserved GPRs
     if (!AsmROCmPseudoOps::parseReservedXgprs(asmr, linePtr, inVgpr, gprFirst, gprCount))
         return;
     
@@ -1144,6 +1167,7 @@ void AsmAmdCL2PseudoOps::setCWS(AsmAmdCL2Handler& handler, const char* pseudoOpP
     
     skipSpacesToEnd(linePtr, end);
     uint64_t out[3] = { 0, 0, 0 };
+    // parse CWS (1-3 values)
     if (!AsmAmdPseudoOps::parseCWS(asmr, pseudoOpPlace, linePtr, out))
         return;
     AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
@@ -1162,6 +1186,7 @@ void AsmAmdCL2PseudoOps::doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPl
     
     auto& kernelState = *handler.kernelStates[asmr.currentKernel];
     AmdKernelArgInput argInput;
+    // reuse code in AMDOCL handler (set CL2 to true, choosen OpenCL 2.0 path)
     if (!AsmAmdPseudoOps::parseArg(asmr, pseudoOpPlace, linePtr, kernelState.argNamesSet,
                     argInput, true))
         return;
@@ -1185,6 +1210,7 @@ struct CLRX_INTERNAL IntAmdCL2KernelArg
     cxbyte used;
 };
 
+// first kernel arguments for 64-bit binaries
 static const IntAmdCL2KernelArg setupArgsTable64[] =
 {
     { "_.global_offset_0", "size_t", KernelArgType::LONG, KernelArgType::VOID,
@@ -1201,6 +1227,7 @@ static const IntAmdCL2KernelArg setupArgsTable64[] =
         KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 }
 };
 
+// first kernel arguments for 32-bit binaries
 static const IntAmdCL2KernelArg setupArgsTable32[] =
 {
     { "_.global_offset_0", "size_t", KernelArgType::INT, KernelArgType::VOID,
@@ -1234,6 +1261,7 @@ void AsmAmdCL2PseudoOps::doSetupArgs(AsmAmdCL2Handler& handler, const char* pseu
     
     AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
     const IntAmdCL2KernelArg* argTable = asmr._64bit ? setupArgsTable64 : setupArgsTable32;
+    // put this argument to kernel arguments
     for (size_t i = 0; i < 6; i++)
     {
         const IntAmdCL2KernelArg& arg = argTable[i];
@@ -1259,6 +1287,7 @@ void AsmAmdCL2PseudoOps::addMetadata(AsmAmdCL2Handler& handler, const char* pseu
     cxuint& metadataSection = handler.kernelStates[asmr.currentKernel]->metadataSection;
     if (metadataSection == ASMSECT_NONE)
     {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMDCL2_METADATA,
             ELFSECTID_UNDEF, nullptr });
@@ -1286,6 +1315,7 @@ void AsmAmdCL2PseudoOps::addISAMetadata(AsmAmdCL2Handler& handler,
     cxuint& isaMDSection = handler.kernelStates[asmr.currentKernel]->isaMetadataSection;
     if (isaMDSection == ASMSECT_NONE)
     {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel,
                 AsmSectionType::AMDCL2_ISAMETADATA, ELFSECTID_UNDEF, nullptr });
@@ -1310,6 +1340,7 @@ void AsmAmdCL2PseudoOps::addKernelSetup(AsmAmdCL2Handler& handler,
     cxuint& setupSection = handler.kernelStates[asmr.currentKernel]->setupSection;
     if (setupSection == ASMSECT_NONE)
     {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMDCL2_SETUP,
             ELFSECTID_UNDEF, nullptr });
@@ -1336,6 +1367,7 @@ void AsmAmdCL2PseudoOps::addKernelStub(AsmAmdCL2Handler& handler,
     cxuint& stubSection = handler.kernelStates[asmr.currentKernel]->stubSection;
     if (stubSection == ASMSECT_NONE)
     {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMDCL2_STUB,
             ELFSECTID_UNDEF, nullptr });
@@ -1364,6 +1396,7 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
     
     if (kernel.configSection == ASMSECT_NONE)
     {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::CONFIG,
             ELFSECTID_UNDEF, nullptr });
@@ -1703,6 +1736,8 @@ bool AsmAmdCL2Handler::prepareBinary()
     /* initialize sections */
     const size_t sectionsNum = sections.size();
     const size_t kernelsNum = kernelStates.size();
+    
+    // set sections as outputs
     for (size_t i = 0; i < sectionsNum; i++)
     {
         const AsmSection& asmSection = assembler.sections[i];
@@ -1788,6 +1823,7 @@ bool AsmAmdCL2Handler::prepareBinary()
     }
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(assembler.deviceType);
+    // max SGPR number for architecture
     cxuint maxTotalSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
     
     // driver version setup
@@ -1844,7 +1880,7 @@ bool AsmAmdCL2Handler::prepareBinary()
                     good = false;
                 }
             }
-            
+            // set up used registers if not set by user
             if (config.usedSGPRsNum==BINGEN_DEFAULT)
                 config.usedSGPRsNum = std::min(maxTotalSgprsNum-extraSGPRsNum, 
                     std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]));
@@ -2058,6 +2094,7 @@ bool AsmAmdCL2Handler::prepareBinary()
             codeOffset += (kernel.codeSize+255)&~size_t(255);
         }
         
+        // put symbols
         for (const AsmSymbolEntry& symEntry: assembler.globalScope.symbolMap)
         {
             if (!symEntry.second.hasValue ||
@@ -2067,7 +2104,7 @@ bool AsmAmdCL2Handler::prepareBinary()
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
             if (binSectId==ELFSECTID_UNDEF)
                 continue; // no section
-            
+            // create binSymbol
             BinSymbol binSym = { symEntry.first, symEntry.second.value,
                         symEntry.second.size, binSectId, false, symEntry.second.info,
                         symEntry.second.other };
@@ -2080,6 +2117,7 @@ bool AsmAmdCL2Handler::prepareBinary()
                 output.innerExtraSymbols.push_back(std::move(binSym));
             else if (sections[symEntry.second.sectionId].type == AsmSectionType::CODE)
             {
+                // put to inner binary
                 binSym.value += codeOffsets[sections[symEntry.second.sectionId].kernelId];
                 output.innerExtraSymbols.push_back(std::move(binSym));
             }
@@ -2100,6 +2138,7 @@ bool AsmAmdCL2Handler::resolveSymbol(const AsmSymbol& symbol, uint64_t& value,
     return false;
 }
 
+// routine to resolve relocations (given as expression)
 bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& outValue,
                  cxuint& outSectionId)
 {
@@ -2125,6 +2164,7 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
     size_t relOpEnd = ops.size();
     RelocType relType = RELTYPE_LOW_32BIT;
     // checking what is expression
+    // get () OP () - operator between two parts
     AsmExprOp lastOp = ops.back();
     if (lastOp==AsmExprOp::BIT_AND || lastOp==AsmExprOp::MODULO ||
         lastOp==AsmExprOp::SIGNED_MODULO || lastOp==AsmExprOp::DIVISION ||
@@ -2149,20 +2189,24 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
         switch (lastOp)
         {
             case AsmExprOp::BIT_AND:
+                // handle (x&0xffffffff)
                 relType = RELTYPE_LOW_32BIT;
                 good = ((secondArg & 0xffffffffULL) == 0xffffffffULL);
                 break;
             case AsmExprOp::MODULO:
             case AsmExprOp::SIGNED_MODULO:
+                // handle (x%0x100000000)
                 relType = RELTYPE_LOW_32BIT;
                 good = ((secondArg>>32)!=0 && (secondArg & 0xffffffffULL) == 0);
                 break;
             case AsmExprOp::DIVISION:
             case AsmExprOp::SIGNED_DIVISION:
+                // handle (x/0x100000000)
                 relType = RELTYPE_HIGH_32BIT;
                 good = (secondArg == 0x100000000ULL);
                 break;
             case AsmExprOp::SHIFT_RIGHT:
+                // handle (x>>32)
                 relType = RELTYPE_HIGH_32BIT;
                 good = (secondArg == 32);
                 break;
@@ -2181,6 +2225,7 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
     uint64_t relValue = 0;
     if (expr->evaluate(assembler, relOpStart, relOpEnd, relValue, relSectionId))
     {
+        // relocation only for rodata, data and bss section
         if (relSectionId!=rodataSection && relSectionId!=dataSection &&
             relSectionId!=bssSection)
         {
@@ -2192,6 +2237,7 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
         outValue = 0x55555555U; // for filling values in code
         size_t extraOffset = (tgtType!=ASMXTGT_DATA32) ? 4 : 0;
         AsmRelocation reloc = { target.sectionId, target.offset+extraOffset, relType };
+        // set up relocation (relSectionId, addend)
         reloc.relSectionId = relSectionId;
         reloc.addend = relValue;
         assembler.relocations.push_back(reloc);

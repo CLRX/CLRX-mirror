@@ -110,75 +110,89 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
 {
     static bool checkPseudoOpName(const CString& string);
     
+    // .arch_minor
     static void setArchMinor(AsmAmdCL2Handler& handler, const char* linePtr);
+    // .arch_stepping
     static void setArchStepping(AsmAmdCL2Handler& handler, const char* linePtr);
     
+    // .acl_version
     static void setAclVersion(AsmAmdCL2Handler& handler, const char* linePtr);
+    // .compile_options
     static void setCompileOptions(AsmAmdCL2Handler& handler, const char* linePtr);
-    
+    // .driver_version
     static void setDriverVersion(AsmAmdCL2Handler& handler, const char* linePtr);
-    
+    // .get_driver_version (store driver version to symbol)
     static void getDriverVersion(AsmAmdCL2Handler& handler, const char* linePtr);
-    
+    // go to inner binary (.inner)
     static void doInner(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .control_directive)
     static void doControlDirective(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .default_hsa_features
     static void setDefaultHSAFeatures(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .global_data (
     static void doGlobalData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .rwdata
     static void doRwData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .bssdata
     static void doBssData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .samplerinit (open samplerinit)
     static void doSamplerInit(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .samplerreloc
     static void doSamplerReloc(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .sampler
     static void doSampler(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // set config value
     static void setConfigValue(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
            const char* linePtr, AmdCL2ConfigValueTarget target);
+    // set boolean config value
     static void setConfigBoolValue(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
            const char* linePtr, AmdCL2ConfigValueTarget target);
-    
+    // .dims (set dimensions)
     static void setDimensions(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .machine (set HSA machine)
     static void setMachine(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .machine (set HSA codeversion)
     static void setCodeVersion(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .reserved_sgprs or .reserved_vgprs (HSA reserved registers)
     static void setReservedXgprs(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr, bool inVgpr);
-    
+    // .use_grid_work_group_count
     static void setUseGridWorkGroupCount(AsmAmdCL2Handler& handler,
                       const char* pseudoOpPlace, const char* linePtr);
-    
+    // .cws (set reqd_work_group_size)
     static void setCWS(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .arg (kernel argument)
     static void doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .setupargs (add first kernel arguments)
     static void doSetupArgs(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                        const char* linePtr);
-    
+    // .metadata
     static void addMetadata(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .isametadata
     static void addISAMetadata(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .setup
     static void addKernelSetup(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .stub
     static void addKernelStub(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // open config (.config)
     static void doConfig(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr, bool hsaConfig);
 };
