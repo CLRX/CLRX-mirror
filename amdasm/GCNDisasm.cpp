@@ -32,20 +32,25 @@
 namespace CLRX
 {
 
+// type of floating litera
 enum FloatLitType: cxbyte
 {
-    FLTLIT_NONE,
-    FLTLIT_F32,
-    FLTLIT_F16,
+    FLTLIT_NONE,    // none
+    FLTLIT_F32,     // single precision
+    FLTLIT_F16      // half precision
 };
-    
+
+// GCN disassembler code in structure (this allow to access private code of
+// GCNDisassembler by these routines
 struct CLRX_INTERNAL GCNDisasmUtils
 {
     typedef GCNDisassembler::RelocIter RelocIter;
     static void printLiteral(GCNDisassembler& dasm, size_t codePos, RelocIter& relocIter,
               uint32_t literal, FloatLitType floatLit, bool optional);
+    // decode GCN operand (version without literal)
     static void decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op, cxuint regNum,
               char*& bufPtr, uint16_t arch, FloatLitType floatLit = FLTLIT_NONE);
+    // decodee GCN operand (include literal, can decode relocations)
     static char* decodeGCNOperand(GCNDisassembler& dasm, size_t codePos,
               RelocIter& relocIter, cxuint op, cxuint regNum, uint16_t arch,
               uint32_t literal = 0, FloatLitType floatLit = FLTLIT_NONE);
@@ -124,18 +129,22 @@ using namespace CLRX;
 static OnceFlag clrxGCNDisasmOnceFlag;
 static std::unique_ptr<GCNInstruction[]> gcnInstrTableByCode = nullptr;
 
+// GCN encoding space
 struct CLRX_INTERNAL GCNEncodingSpace
 {
-    cxuint offset;
-    cxuint instrsNum;
+    cxuint offset;  // first position instrunctions list
+    cxuint instrsNum;   // instruction list
 };
 
+// encoding names table
 static const char* gcnEncodingNames[GCNENC_MAXVAL+1] =
 {
     "NONE", "SOPC", "SOPP", "SOP1", "SOP2", "SOPK", "SMRD", "VOPC", "VOP1", "VOP2",
     "VOP3A", "VOP3B", "VINTRP", "DS", "MUBUF", "MTBUF", "MIMG", "EXP", "FLAT"
 };
 
+// table hold of GNC encoding regions in main instruction list
+// instruciton position is sum of encoding offset and instruction opcode
 static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+3+2] =
 {
     { 0, 0 },
@@ -185,8 +194,10 @@ static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+3+
     { 0x1de2, 0x80 }  /* GCNENC_FLAT_GLOBAL, opcode = (8bit)<<18 (???8bit) RXVEGA */
 };
 
+// total instruction table length
 static const size_t gcnInstrTableByCodeLength = 0x1e62;
 
+// create main instruction table
 static void initializeGCNDisassembler()
 {
     gcnInstrTableByCode.reset(new GCNInstruction[gcnInstrTableByCodeLength]);
@@ -198,6 +209,7 @@ static void initializeGCNDisassembler()
         gcnInstrTableByCode[i].encoding = GCNENC_NONE;
     }
     
+    // fill up main instruction table
     for (cxuint i = 0; gcnInstrsTable[i].mnemonic != nullptr; i++)
     {
         const GCNInstruction& instr = gcnInstrsTable[i];
@@ -206,8 +218,9 @@ static void initializeGCNDisassembler()
         {
             if (gcnInstrTableByCode[encSpace.offset + instr.code].mnemonic == nullptr)
                 gcnInstrTableByCode[encSpace.offset + instr.code] = instr;
-            else if((instr.archMask & ARCH_RX2X0) != 0) /* otherwise we for GCN1.1 */
+            else if((instr.archMask & ARCH_RX2X0) != 0)
             {
+                /* otherwise we for GCN1.1 */
                 const GCNEncodingSpace& encSpace2 =
                         gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1];
                 gcnInstrTableByCode[encSpace2.offset + instr.code] = instr;
@@ -216,6 +229,7 @@ static void initializeGCNDisassembler()
         }
         if ((instr.archMask & ARCH_GCN_1_2_4) != 0)
         {
+            // for GCN 1.2/1.4
             const GCNEncodingSpace& encSpace3 = gcnInstrTableByCodeSpaces[
                         GCNENC_MAXVAL+3+instr.encoding];
             if (gcnInstrTableByCode[encSpace3.offset + instr.code].mnemonic == nullptr)
@@ -227,6 +241,7 @@ static void initializeGCNDisassembler()
                 /* otherwise we for GCN1.4 */
                 const bool encNoVOP2 = instr.encoding != GCNENC_VOP2;
                 const bool encVOP1 = instr.encoding == GCNENC_VOP1;
+                // choose FLAT_GLOBAL or FLAT_SCRATCH space
                 const GCNEncodingSpace& encSpace4 =
                     gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 + encNoVOP2 + encVOP1];
                 gcnInstrTableByCode[encSpace4.offset + instr.code] = instr;
@@ -254,6 +269,8 @@ GCNDisassembler::GCNDisassembler(Disassembler& disassembler)
 GCNDisassembler::~GCNDisassembler()
 { }
 
+// gcn encoding sizes table: true - if 8 byte encoding, false - 4 byte encoding
+// for GCN1.0/1.1
 static const bool gcnSize11Table[16] =
 {
     false, // GCNENC_SMRD, // 0000
@@ -274,6 +291,7 @@ static const bool gcnSize11Table[16] =
     false // GCNENC_NONE   // 1111 - illegal
 };
 
+// for GCN1.2/1.4
 static const bool gcnSize12Table[16] =
 {
     true,  // GCNENC_SMEM, // 0000
@@ -457,6 +475,7 @@ struct CLRX_INTERNAL GCNEncodingOpcodeBits
     cxbyte bits;
 };
 
+// table of opcode positions in encoding (GCN1.0/1.1)
 static const GCNEncodingOpcodeBits gcnEncodingOpcodeTable[GCNENC_MAXVAL+1] =
 {
     { 0, 0 },
@@ -480,6 +499,7 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcodeTable[GCNENC_MAXVAL+1] =
     { 18, 7 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
 };
 
+// table of opcode positions in encoding (GCN1.2/1.4)
 static const GCNEncodingOpcodeBits gcnEncodingOpcode12Table[GCNENC_MAXVAL+1] =
 {
     { 0, 0 },
@@ -503,6 +523,7 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcode12Table[GCNENC_MAXVAL+1] =
     { 18, 7 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
 };
 
+// put chars to buffer (helper)
 static inline void putChars(char*& buf, const char* input, size_t size)
 {
     ::memcpy(buf, input, size);
@@ -550,6 +571,7 @@ static inline void putHexByteToBuf(cxuint op, char*& bufPtr)
     *bufPtr++ = (digit0<=9)?'0'+digit0:'a'+digit0-10;
 }
 
+// print regranges
 static void regRanges(cxuint op, cxuint vregNum, char*& bufPtr)
 {
     if (vregNum!=1)
@@ -577,6 +599,7 @@ static void decodeGCNVRegOperand(cxuint op, cxuint vregNum, char*& bufPtr)
 void GCNDisasmUtils::printLiteral(GCNDisassembler& dasm, size_t codePos,
           RelocIter& relocIter, uint32_t literal, FloatLitType floatLit, bool optional)
 {
+    // if with relocation, just write
     if (dasm.writeRelocation(dasm.startOffset + (codePos<<2)-4, relocIter))
         return;
     FastOutputBuffer& output = dasm.output;
@@ -584,6 +607,7 @@ void GCNDisasmUtils::printLiteral(GCNDisassembler& dasm, size_t codePos,
     char* bufPtr = bufStart;
     if (optional && (int32_t(literal)<=64 && int32_t(literal)>=-16)) // use lit(...)
     {
+        // use lit() to force correct encoding (avoid constants)
         putChars(bufPtr, "lit(", 4);
         bufPtr += itocstrCStyle<int32_t>(literal, bufPtr, 11, 10);
         *bufPtr++ = ')';
@@ -592,6 +616,7 @@ void GCNDisasmUtils::printLiteral(GCNDisassembler& dasm, size_t codePos,
         bufPtr += itocstrCStyle(literal, bufPtr, 11, 16);
     if (floatLit != FLTLIT_NONE)
     {
+        // print float point (FP16 or FP32) literal in comment
         FloatUnion fu;
         fu.u = literal;
         putChars(bufPtr, " /* ", 4);
@@ -613,12 +638,13 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
     const cxuint maxSgprsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
     if ((op < maxSgprsNum) || (op >= 256 && op < 512))
     {
-        // scalar
+        // vector
         if (op >= 256)
         {
             *bufPtr++ = 'v';
             op -= 256;
         }
+        // scalar
         else
             *bufPtr++ = 's';
         regRanges(op, regNum, bufPtr);
@@ -643,16 +669,19 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
                     putChars(bufPtr, "flat_scratch", 12);
                 break;
             case 106:
+                // vcc
                 *bufPtr++ = 'v';
                 *bufPtr++ = 'c';
                 *bufPtr++ = 'c';
                 break;
             case 108:
+                // tba
                 *bufPtr++ = 't';
                 *bufPtr++ = 'b';
                 *bufPtr++ = 'a';
                 break;
             case 110:
+                // tma
                 *bufPtr++ = 't';
                 *bufPtr++ = 'm';
                 *bufPtr++ = 'a';
@@ -674,6 +703,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
                 putChars(bufPtr, "&ill!", 5);
             return;
         }
+        // suffix _lo or _hi (like vcc_lo or vcc_hi)
         *bufPtr++ = '_';
         if ((op&1) == 0)
         { *bufPtr++ = 'l'; *bufPtr++ = 'o'; }
@@ -693,12 +723,14 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
     cxuint ttmpStart = (isGCN14 ? 108 : 112);
     if (op >= ttmpStart && op < 124)
     {
+        // print ttmp register
         putChars(bufPtr, "ttmp", 4);
         regRanges(op-ttmpStart, regNum, bufPtr);
         return;
     }
     if (op == 124)
     {
+        // M0 register
         *bufPtr++ = 'm';
         *bufPtr++ = '0';
         if (regNum > 1)
@@ -708,7 +740,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
     
     if (op >= 128 && op <= 192)
     {
-        // integer constant
+        // nonnegative integer constant
         op -= 128;
         const cxuint digit1 = op/10U;
         if (digit1 != 0)
@@ -718,6 +750,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
     }
     if (op > 192 && op <= 208)
     {
+        // negative integer constant
         *bufPtr++ = '-';
         if (op >= 202)
         {
@@ -740,6 +773,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
     }
     
     if (isGCN14)
+        // special registers in GCN1.4 (VEGA)
         switch(op)
         {
             case 0xeb:
@@ -778,11 +812,13 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
             putChars(bufPtr, "execz", 5);
             return;
         case 253:
+            // scc
             *bufPtr++ = 's';
             *bufPtr++ = 'c';
             *bufPtr++ = 'c';
             return;
         case 254:
+            // lds
             *bufPtr++ = 'l';
             *bufPtr++ = 'd';
             *bufPtr++ = 's';
@@ -803,7 +839,7 @@ char* GCNDisasmUtils::decodeGCNOperand(GCNDisassembler& dasm, size_t codePos,
     FastOutputBuffer& output = dasm.output;
     if (op == 255)
     {
-        // literal
+        // if literal
         printLiteral(dasm, codePos, relocIter, literal, floatLit, true);
         return output.reserve(100);
     }
@@ -814,6 +850,7 @@ char* GCNDisasmUtils::decodeGCNOperand(GCNDisassembler& dasm, size_t codePos,
     return output.reserve(100);
 }
 
+// table of values sendmsg
 static const char* sendMsgCodeMessageTable[16] =
 {
     "@0",
@@ -823,6 +860,7 @@ static const char* sendMsgCodeMessageTable[16] =
     "@4", "@5", "@6", "@7", "@8", "@9", "@10", "@11", "@12", "@13", "@14", "system"
 };
 
+// table of values sendmsg (GCN 1.4 VEGA)
 static const char* sendMsgCodeMessageTableVEGA[16] =
 {
     "@0",
@@ -845,12 +883,14 @@ static const char* sendGsOpMessageTable[4] =
 
 /* encoding routines */
 
+// add N spaces
 static void addSpaces(char*& bufPtr, cxuint spacesToAdd)
 {
     for (cxuint k = spacesToAdd; k>0; k--)
         *bufPtr++ = ' ';
 }
 
+// add N spaces (old style), return number
 static size_t addSpacesOld(char* bufPtr, cxuint spacesToAdd)
 {
     for (cxuint k = spacesToAdd; k>0; k--)
@@ -867,12 +907,15 @@ void GCNDisasmUtils::decodeSOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     output.forward(bufPtr-bufStart);
+    
+    // form: INSTR SRC0, SRC1
     bufPtr = bufStart = decodeGCNOperand(dasm, codePos, relocIter, insnCode&0xff,
                      (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, arch, literal);
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
     if ((gcnInsn.mode & GCN_SRC1_IMM) != 0)
     {
+        // if immediate in SRC1
         putHexByteToBuf((insnCode>>8)&0xff, bufPtr);
         output.forward(bufPtr-bufStart);
     }
@@ -898,6 +941,7 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     {
         case GCN_IMM_REL:
         {
+            // print relative address as label
             const size_t branchPos = dasm.startOffset + ((pos + int16_t(imm16))<<2);
             addSpaces(bufPtr, spacesToAdd);
             output.forward(bufPtr-bufStart);
@@ -910,12 +954,14 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             addSpaces(bufPtr, spacesToAdd);
             const bool isf7f = (!isGCN14 && imm16==0xf7f) ||
                     (isGCN14 && imm16==0xcf7f);
+            // print vmcnt only if not highest value and if 0x[c]f7f value
             if ((!isGCN14 && (imm16&15) != 15) ||
                 (isGCN14 && (imm16&0xc00f) != 0xc00f) || isf7f)
             {
                 const cxuint lockCnt = isGCN14 ?
                         ((imm16>>10)&0x30) + (imm16&15) : imm16&15;
                 putChars(bufPtr, "vmcnt(", 6);
+                // print value of lockCnt
                 const cxuint digit2 = lockCnt/10U;
                 if (lockCnt >= 10)
                     *bufPtr++ = '0'+digit2;
@@ -923,25 +969,30 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                 *bufPtr++ = ')';
                 prevLock = true;
             }
+            // print only if expcnt have not highest value (7)
             if (((imm16>>4)&7) != 7 || isf7f)
             {
                 if (prevLock)
                 {
+                    // print & before previous lock: vmcnt()
                     *bufPtr++ = ' ';
                     *bufPtr++ = '&';
                     *bufPtr++ = ' ';
                 }
                 putChars(bufPtr, "expcnt(", 7);
+                // print value
                 *bufPtr++ = '0' + ((imm16>>4)&7);
                 *bufPtr++ = ')';
                 prevLock = true;
             }
+            // print only if lgkmcnt have not highest value (15)
             if (((imm16>>8)&15) != 15 || isf7f)
             {
                 /* LGKMCNT bits is 4 (5????) */
                 const cxuint lockCnt = (imm16>>8)&15;
                 if (prevLock)
                 {
+                    // print & before previous lock: vmcnt()
                     *bufPtr++ = ' ';
                     *bufPtr++ = '&';
                     *bufPtr++ = ' ';
@@ -970,6 +1021,8 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         {
             cxuint illMask = 0xfff0;
             addSpaces(bufPtr, spacesToAdd);
+            
+            // print sendmsg
             putChars(bufPtr, "sendmsg(", 8);
             const cxuint msgType = imm16&15;
             const char* msgName = (isGCN14 ? sendMsgCodeMessageTableVEGA[msgType] :
@@ -980,26 +1033,32 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                 msgName = "savewave"; // 4 - savewave
                 minUnknownMsgType = 5;
             }
+            // put message name to buffer
             while (*msgName != 0)
                 *bufPtr++ = *msgName++;
+            
+            // if also some arguments supplied (gsops)
             if ((msgType&14) == 2 || (msgType >= minUnknownMsgType && msgType <= 14) ||
                 (imm16&0x3f0) != 0) // gs ops
             {
                 *bufPtr++ = ',';
                 *bufPtr++ = ' ';
-                illMask = 0xfcc0;
+                illMask = 0xfcc0; // set new illegal mask of bits
                 const cxuint gsopId = (imm16>>4)&3;
                 const char* gsopName = sendGsOpMessageTable[gsopId];
+                // put gsop name to buffer
                 while (*gsopName != 0)
                     *bufPtr++ = *gsopName++;
                 if (gsopId!=0 || ((imm16>>8)&3)!=0)
                 {
                     *bufPtr++ = ',';
                     *bufPtr++ = ' ';
+                    // print gsop value
                     *bufPtr++ = '0' + ((imm16>>8)&3);
                 }
             }
             *bufPtr++ = ')';
+            // if some bits is not zero (illegal value)
             if ((imm16&illMask) != 0)
             {
                 *bufPtr++ = ' ';
@@ -1032,6 +1091,7 @@ void GCNDisasmUtils::decodeSOP1Encoding(GCNDisassembler& dasm, size_t codePos,
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     bool isDst = (gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE;
+    // print destination if instruction have it
     if (isDst)
     {
         output.forward(bufPtr-bufStart);
@@ -1043,9 +1103,11 @@ void GCNDisasmUtils::decodeSOP1Encoding(GCNDisassembler& dasm, size_t codePos,
     {
         if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
         {
+            // put ',' if destination and source
             *bufPtr++ = ',';
             *bufPtr++ = ' ';
         }
+        // put SRC1
         output.forward(bufPtr-bufStart);
         bufPtr = bufStart = decodeGCNOperand(dasm, codePos, relocIter, insnCode&0xff,
                          (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, arch, literal);
@@ -1075,17 +1137,20 @@ void GCNDisasmUtils::decodeSOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     addSpaces(bufPtr, spacesToAdd);
     if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
     {
+        // print destination
         output.forward(bufPtr-bufStart);
         bufPtr = bufStart = decodeGCNOperand(dasm, codePos, relocIter, (insnCode>>16)&0x7f,
                          (gcnInsn.mode&GCN_REG_DST_64)?2:1, arch);
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
     }
+    // print SRC0
     output.forward(bufPtr-bufStart);
     bufPtr = bufStart = decodeGCNOperand(dasm, codePos, relocIter, insnCode&0xff,
                      (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, arch, literal);
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
+    // print SRC1
     output.forward(bufPtr-bufStart);
     bufPtr = bufStart = decodeGCNOperand(dasm, codePos, relocIter, (insnCode>>8)&0xff,
                  (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, arch, literal);
@@ -1099,6 +1164,7 @@ void GCNDisasmUtils::decodeSOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     output.forward(bufPtr-bufStart);
 }
 
+// table hwreg names
 static const char* hwregNames[20] =
 {
     "@0", "mode", "status", "trapsts",
@@ -1120,6 +1186,7 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
     addSpaces(bufPtr, spacesToAdd);
     if ((gcnInsn.mode & GCN_IMM_DST) == 0)
     {
+        // if normal destination
         output.forward(bufPtr-bufStart);
         bufPtr = bufStart = decodeGCNOperand(dasm, codePos, relocIter, (insnCode>>16)&0x7f,
                          (gcnInsn.mode&GCN_REG_DST_64)?2:1, arch);
@@ -1129,6 +1196,7 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
     const cxuint imm16 = insnCode&0xffff;
     if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL)
     {
+        // print relative address (as label)
         const size_t branchPos = dasm.startOffset + ((codePos + int16_t(imm16))<<2);
         output.forward(bufPtr-bufStart);
         dasm.writeLocation(branchPos);
@@ -1136,6 +1204,7 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
     }
     else if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_SREG)
     {
+        // print hwreg()
         putChars(bufPtr, "hwreg(", 6);
         const cxuint hwregId = imm16&0x3f;
         cxuint hwregNamesNum = 13 + ((arch&ARCH_GCN_1_2_4)!=0);
@@ -1145,6 +1214,7 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
             putChars(bufPtr, hwregNames[hwregId], ::strlen(hwregNames[hwregId]));
         else
         {
+            // parametrized hwreg: hwreg(@0
             const cxuint digit2 = hwregId/10U;
             *bufPtr++ = '@';
             *bufPtr++ = '0' + digit2;
@@ -1152,9 +1222,11 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
         }
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
+        // start bit
         putByteToBuf((imm16>>6)&31, bufPtr);
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
+        // size in bits
         putByteToBuf(((imm16>>11)&31)+1, bufPtr);
         *bufPtr++ = ')';
     }
@@ -1168,6 +1240,7 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
         // print value, if some are not used, but values is not default
         if (gcnInsn.mode & GCN_SOPK_CONST)
         {
+            // for S_SETREG_IMM32_B32
             bufPtr += itocstrCStyle(literal, bufPtr, 11, 16);
             if (((insnCode>>16)&0x7f) != 0)
             {
@@ -1177,6 +1250,7 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
         }
         else
         {
+            // for s_setreg_b32, print destination as source
             output.forward(bufPtr-bufStart);
             bufPtr = bufStart = decodeGCNOperand(dasm, codePos, relocIter,
                      (insnCode>>16)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1, arch);
@@ -1198,6 +1272,7 @@ void GCNDisasmUtils::decodeSMRDEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     bool spacesAdded = false;
     if (mode1 == GCN_SMRD_ONLYDST)
     {
+        // print only destination
         addSpaces(bufPtr, spacesToAdd);
         decodeGCNOperandNoLit(dasm, (insnCode>>15)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
                          bufPtr, arch);
@@ -1208,9 +1283,11 @@ void GCNDisasmUtils::decodeSMRDEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     {
         const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
         addSpaces(bufPtr, spacesToAdd);
+        // print destination (1,2,4,8 or 16 registers)
         decodeGCNOperandNoLit(dasm, (insnCode>>15)&0x7f, dregsNum, bufPtr, arch);
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
+        // print SBASE (base address registers) (address or resource)
         decodeGCNOperandNoLit(dasm, (insnCode>>8)&0x7e, (gcnInsn.mode&GCN_SBASE4)?4:2,
                           bufPtr, arch);
         *bufPtr++ = ',';
@@ -1219,6 +1296,7 @@ void GCNDisasmUtils::decodeSMRDEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             bufPtr += itocstrCStyle(insnCode&0xff, bufPtr, 11, 16);
         else // S register
             decodeGCNOperandNoLit(dasm, insnCode&0xff, 1, bufPtr, arch);
+        // set what is printed
         useDst = true;
         useOthers = true;
         spacesAdded = true;
@@ -1274,6 +1352,7 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     
     if (mode1 == GCN_SMRD_ONLYDST)
     {
+        // print only destination
         addSpaces(bufPtr, spacesToAdd);
         decodeGCNOperandNoLit(dasm, (insnCode>>6)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
                          bufPtr, arch);
@@ -1286,13 +1365,16 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         addSpaces(bufPtr, spacesToAdd);
         if (!(mode1 & GCN_SMEM_NOSDATA)) {
             if (mode1 & GCN_SMEM_SDATA_IMM)
+                // print immediate value
                 putHexByteToBuf((insnCode>>6)&0x7f, bufPtr);
             else
+                // print destination (1,2,4,8 or 16 registers)
                 decodeGCNOperandNoLit(dasm, (insnCode>>6)&0x7f, dregsNum, bufPtr , arch);
             *bufPtr++ = ',';
             *bufPtr++ = ' ';
             useDst = true;
         }
+        // print SBASE (base address registers) (address or resource)
         decodeGCNOperandNoLit(dasm, (insnCode<<1)&0x7e, (gcnInsn.mode&GCN_SBASE4)?4:2,
                           bufPtr, arch);
         *bufPtr++ = ',';
@@ -1301,16 +1383,18 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         {
             if (isGCN14 && (insnCode & 0x4000) != 0)
             {
+                // last 8-bit in second dword
                 bufPtr += itocstrCStyle(insnCode2 >> 24, bufPtr, 11, 16);
                 printOffset = true;
             }
             else
             {
+                // print SOFFSET
                 uint32_t immMask =  isGCN14 ? 0x1fffff : 0xfffff;
                 bufPtr += itocstrCStyle(insnCode2 & immMask, bufPtr, 11, 16);
             }
         }
-        else // S register
+        else // SOFFSET register
         {
             if (isGCN14 && (insnCode & 0x4000) != 0)
                 decodeGCNOperandNoLit(dasm, insnCode2>>25, 1, bufPtr, arch);
@@ -1326,6 +1410,7 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         if (!spacesAdded)
             addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
+        // print GLC modifier
         putChars(bufPtr, " glc", 4);
     }
     
@@ -1334,11 +1419,13 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         if (!spacesAdded)
             addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
+        // print NV modifier
         putChars(bufPtr, " nv", 3);
     }
     
     if (printOffset)
     {
+        // GCN 1.4 extra OFFSET
         if (!spacesAdded)
             addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
@@ -1382,6 +1469,7 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     output.forward(bufPtr-bufStart);
 }
 
+// temporary structure to store operand modifiers and operand SRC0
 struct CLRX_INTERNAL VOPExtraWordOut
 {
     uint16_t src0;
@@ -1394,11 +1482,13 @@ struct CLRX_INTERNAL VOPExtraWordOut
     bool scalarSrc1;
 };
 
+// SDWA SEL field value names
 static const char* sdwaSelChoicesTbl[] =
 {
     "byte0", "byte1", "byte2", "byte3", "word0", "word1", nullptr, "invalid"
 };
 
+// SDWA UNUSED field value names
 static const char* sdwaDstUnusedTbl[] =
 {
     nullptr, "sext", "preserve", "invalid"
@@ -1415,6 +1505,7 @@ static inline VOPExtraWordOut decodeVOPSDWAFlags(uint32_t insnCode2, uint16_t ar
         isGCN14 && ((insnCode2&(1U<<31))!=0) };
 }
 
+// decode and print VOP SDWA encoding
 static void decodeVOPSDWA(FastOutputBuffer& output, uint16_t arch, uint32_t insnCode2,
           bool src0Used, bool src1Used, bool vopc = false)
 {
@@ -1444,12 +1535,14 @@ static void decodeVOPSDWA(FastOutputBuffer& output, uint16_t arch, uint32_t insn
         if (insnCode2 & 0x2000)
             putChars(bufPtr, " clamp", 6);
         
+        // print dst_sel:XXXX
         if (dstSel != 6)
         {
             putChars(bufPtr, " dst_sel:", 9);
             putChars(bufPtr, sdwaSelChoicesTbl[dstSel],
                     ::strlen(sdwaSelChoicesTbl[dstSel]));
         }
+        // print dst_unused:XXX
         if (dstUnused!=0)
         {
             putChars(bufPtr, " dst_unused:", 12);
@@ -1457,6 +1550,7 @@ static void decodeVOPSDWA(FastOutputBuffer& output, uint16_t arch, uint32_t insn
                     ::strlen(sdwaDstUnusedTbl[dstUnused]));
         }
     }
+    // print src0_sel and src1_sel if used
     if (src0Sel!=6 && src0Used)
     {
         putChars(bufPtr, " src0_sel:", 10);
@@ -1489,6 +1583,7 @@ static void decodeVOPSDWA(FastOutputBuffer& output, uint16_t arch, uint32_t insn
             putChars(bufPtr, " abs1", 5);
     }
     
+    // add SDWA encoding specifier at end if needed (to avoid ambiguity)
     if (((isGCN14 && vopc) || (dstSel==6 && dstUnused==0)) &&
         src0Sel==6 && (insnCode2&(1U<<19))==0 && src1Sel==6 && (insnCode2&(1U<<27))==0)
         putChars(bufPtr, " sdwa", 5);
@@ -1496,6 +1591,7 @@ static void decodeVOPSDWA(FastOutputBuffer& output, uint16_t arch, uint32_t insn
     output.forward(bufPtr-bufStart);
 }
 
+/// DPP CTRL value table (only 
 static const char* dppCtrl130Tbl[] =
 {
     " wave_shl", nullptr, nullptr, nullptr,
@@ -1522,7 +1618,7 @@ static void decodeVOPDPP(FastOutputBuffer& output, uint32_t insnCode2,
     
     if (dppCtrl<256)
     {
-        // quadperm
+        // print quadperm: quad_perm[A:B:C:D] A,B,C,D - 2-bit values
         putChars(bufPtr, " quad_perm:[", 12);
         *bufPtr++ = '0' + (dppCtrl&3);
         *bufPtr++ = ',';
@@ -1535,18 +1631,21 @@ static void decodeVOPDPP(FastOutputBuffer& output, uint32_t insnCode2,
     }
     else if ((dppCtrl >= 0x101 && dppCtrl <= 0x12f) && ((dppCtrl&0xf) != 0))
     {
-        // row_shl
+        // row_shl, row_shr or row_ror
         if ((dppCtrl&0xf0) == 0)
             putChars(bufPtr, " row_shl:", 9);
         else if ((dppCtrl&0xf0) == 16)
             putChars(bufPtr, " row_shr:", 9);
         else
             putChars(bufPtr, " row_ror:", 9);
+        // print shift
         putByteToBuf(dppCtrl&0xf, bufPtr);
     }
     else if (dppCtrl >= 0x130 && dppCtrl <= 0x143 && dppCtrl130Tbl[dppCtrl-0x130]!=nullptr)
+        // print other dpp modifier
         putChars(bufPtr, dppCtrl130Tbl[dppCtrl-0x130],
                  ::strlen(dppCtrl130Tbl[dppCtrl-0x130]));
+    // otherwise print value of dppctrl (illegal value)
     else if (dppCtrl != 0x100)
     {
         putChars(bufPtr, " dppctrl:", 9);
@@ -1556,6 +1655,7 @@ static void decodeVOPDPP(FastOutputBuffer& output, uint32_t insnCode2,
     if (insnCode2 & (0x80000U)) // bound ctrl
         putChars(bufPtr, " bound_ctrl", 11);
     
+    // print bank_mask and row_mask
     putChars(bufPtr, " bank_mask:", 11);
     putByteToBuf((insnCode2>>24)&0xf, bufPtr);
     putChars(bufPtr, " row_mask:", 10);
@@ -1591,6 +1691,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     addSpaces(bufPtr, spacesToAdd);
     
     const cxuint src0Field = (insnCode&0x1ff);
+    // extra flags are zeroed by default
     VOPExtraWordOut extraFlags = { 0, 0, 0, 0, 0, 0, 0 };
     if ((arch & ARCH_RXVEGA) != 0 && src0Field==0xf9 && (literal & 0x8000) != 0)
     {
@@ -1601,10 +1702,12 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
     }
-    else
+    else // just vcc
         putChars(bufPtr, "vcc, ", 5);
+    
     if (isGCN12)
     {
+        // return VOP SDWA/DPP flags for operands
         if (src0Field == 0xf9)
             extraFlags = decodeVOPSDWAFlags(literal, arch);
         else if (src0Field == 0xfa)
@@ -1615,6 +1718,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     else
         extraFlags.src0 = src0Field;
     
+    // apply sext(), negation and abs() if applied
     if (extraFlags.sextSrc0)
         putChars(bufPtr, "sext(", 5);
     if (extraFlags.negSrc0)
@@ -1623,8 +1727,10 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
         putChars(bufPtr, "abs(", 4);
     
     output.forward(bufPtr-bufStart);
+    // print SRC0
     bufStart = bufPtr = decodeGCNOperand(dasm, codePos, relocIter, extraFlags.src0,
                  (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, arch, literal, displayFloatLits);
+    // closing for abs and sext
     if (extraFlags.absSrc0)
         *bufPtr++ = ')';
     if (extraFlags.sextSrc0)
@@ -1632,6 +1738,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
     
+    // apply sext(), negation and abs() if applied
     if (extraFlags.sextSrc1)
         putChars(bufPtr, "sext(", 5);
     
@@ -1640,8 +1747,10 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     if (extraFlags.absSrc1)
         putChars(bufPtr, "abs(", 4);
     
+    // print SRC1
     decodeGCNOperandNoLit(dasm, ((insnCode>>9)&0xff) + (extraFlags.scalarSrc1 ? 0 : 256),
                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr, arch);
+    // closing for abs and sext
     if (extraFlags.absSrc1)
         *bufPtr++ = ')';
     if (extraFlags.sextSrc1)
@@ -1650,6 +1759,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     output.forward(bufPtr-bufStart);
     if (isGCN12)
     {
+        // print extra SDWA/DPP modifiers
         if (src0Field == 0xf9)
             decodeVOPSDWA(output, arch, literal, true, true, true);
         else if (src0Field == 0xfa)
@@ -1668,10 +1778,12 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
     char* bufPtr = bufStart;
     
     const cxuint src0Field = (insnCode&0x1ff);
+    // extra flags are zeroed by default
     VOPExtraWordOut extraFlags = { 0, 0, 0, 0, 0, 0, 0 };
     
     if (isGCN12)
     {
+        // return extra flags from SDWA/DPP encoding
         if (src0Field == 0xf9)
             extraFlags = decodeVOPSDWAFlags(literal, arch);
         else if (src0Field == 0xfa)
@@ -1687,13 +1799,16 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
     {
         addSpaces(bufPtr, spacesToAdd);
         if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_SGPR)
+            // print DST as SGPR
             decodeGCNVRegOperand(((insnCode>>17)&0xff),
                      (gcnInsn.mode&GCN_REG_DST_64)?2:1, bufPtr);
         else
+            // print DST as normal VGPR
             decodeGCNOperandNoLit(dasm, ((insnCode>>17)&0xff),
                           (gcnInsn.mode&GCN_REG_DST_64)?2:1, bufPtr, arch);
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
+        // apply sext, negation and abs if supplied
         if (extraFlags.sextSrc0)
             putChars(bufPtr, "sext(", 5);
         
@@ -1702,8 +1817,10 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
         if (extraFlags.absSrc0)
             putChars(bufPtr, "abs(", 4);
         output.forward(bufPtr-bufStart);
+        // print SRC0
         bufStart = bufPtr = decodeGCNOperand(dasm, codePos, relocIter, extraFlags.src0,
                      (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, arch, literal, displayFloatLits);
+        // closing sext and abs
         if (extraFlags.absSrc0)
             *bufPtr++ = ')';
         if (extraFlags.sextSrc0)
@@ -1730,6 +1847,7 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
     output.forward(bufPtr-bufStart);
     if (isGCN12)
     {
+        // print extra SDWA/DPP modifiers
         if (src0Field == 0xf9)
             decodeVOPSDWA(output, arch, literal, argsUsed, false);
         else if (src0Field == 0xfa)
@@ -1751,10 +1869,12 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     
     const cxuint src0Field = (insnCode&0x1ff);
+    // extra flags are zeroed by default
     VOPExtraWordOut extraFlags = { 0, 0, 0, 0, 0, 0, 0 };
     
     if (isGCN12)
     {
+        // return extra flags from SDWA/DPP encoding
         if (src0Field == 0xf9)
             extraFlags = decodeVOPSDWAFlags(literal, arch);
         else if (src0Field == 0xfa)
@@ -1766,15 +1886,19 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
         extraFlags.src0 = src0Field;
     
     if (mode1 != GCN_DS1_SGPR)
+        // print DST as SGPR
         decodeGCNVRegOperand(((insnCode>>17)&0xff),
                      (gcnInsn.mode&GCN_REG_DST_64)?2:1, bufPtr);
     else
         decodeGCNOperandNoLit(dasm, ((insnCode>>17)&0xff),
                  (gcnInsn.mode&GCN_REG_DST_64)?2:1, bufPtr, arch);
+    
+    // add VCC if V_ADD_XXX or other instruction VCC as DST
     if (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC)
         putChars(bufPtr, ", vcc", 5);
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
+    // apply sext, negation and abs if supplied
     if (extraFlags.sextSrc0)
         putChars(bufPtr, "sext(", 5);
     if (extraFlags.negSrc0)
@@ -1782,14 +1906,17 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     if (extraFlags.absSrc0)
         putChars(bufPtr, "abs(", 4);
     output.forward(bufPtr-bufStart);
+    // print SRC0
     bufStart = bufPtr = decodeGCNOperand(dasm, codePos, relocIter, extraFlags.src0,
                  (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, arch, literal, displayFloatLits);
+    // closing sext and abs
     if (extraFlags.absSrc0)
         *bufPtr++ = ')';
     if (extraFlags.sextSrc0)
         *bufPtr++ = ')';
     if (mode1 == GCN_ARG1_IMM)
     {
+        // extra immediate (like V_MADMK_F32)
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
         output.forward(bufPtr-bufStart);
@@ -1798,6 +1925,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     }
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
+    // apply sext, negation and abs if supplied
     if (extraFlags.sextSrc1)
         putChars(bufPtr, "sext(", 5);
     
@@ -1805,6 +1933,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
         *bufPtr++ = '-';
     if (extraFlags.absSrc1)
         putChars(bufPtr, "abs(", 4);
+    // print SRC0
     if (mode1 == GCN_DS1_SGPR || mode1 == GCN_SRC1_SGPR)
     {
         output.forward(bufPtr-bufStart);
@@ -1815,12 +1944,14 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
         decodeGCNOperandNoLit(dasm, ((insnCode>>9)&0xff) +
                 (extraFlags.scalarSrc1 ? 0 : 256),
                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr, arch);
+    // closing sext and abs
     if (extraFlags.absSrc1)
         *bufPtr++ = ')';
     if (extraFlags.sextSrc1)
         *bufPtr++ = ')';
     if (mode1 == GCN_ARG2_IMM)
     {
+        // extra immediate (like V_MADAK_F32)
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
         output.forward(bufPtr-bufStart);
@@ -1828,6 +1959,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     }
     else if (mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC)
     {
+        // VCC like in V_CNDMASK_B32 or V_SUBB_B32
         putChars(bufPtr, ", vcc", 5);
         output.forward(bufPtr-bufStart);
     }
@@ -1835,6 +1967,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
         output.forward(bufPtr-bufStart);
     if (isGCN12)
     {
+        // print extra SDWA/DPP modifiers
         if (src0Field == 0xf9)
             decodeVOPSDWA(output, arch, literal, true, true);
         else if (src0Field == 0xfa)
@@ -1842,6 +1975,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     }
 }
 
+// VINTRP param names
 static const char* vintrpParamsTbl[] =
 { "p10", "p20", "p0" };
 
@@ -1885,6 +2019,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     
     if (gcnInsn.encoding == GCNENC_VOP3A && vop3Mode != GCN_VOP3_VOP3P)
         absFlags = (insnCode>>8)&7;
+    // get negation flags from insnCode (VOP3P)
     if (vop3Mode != GCN_VOP3_VOP3P)
         negFlags = (insnCode2>>29)&7;
     
@@ -1894,7 +2029,8 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     {
         addSpaces(bufPtr, spacesToAdd);
         
-        if (opcode < 256 || (gcnInsn.mode&GCN_VOP3_DST_SGPR)!=0) /* if compares */
+        if (opcode < 256 || (gcnInsn.mode&GCN_VOP3_DST_SGPR)!=0)
+            /* if compares (print DST as SDST) */
             decodeGCNOperandNoLit(dasm, vdst, ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)?2:1,
                               bufPtr, arch);
         else /* regular instruction */
@@ -1906,6 +2042,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC || mode1 == GCN_DST_VCC_VSRC2 ||
              mode1 == GCN_S0EQS12)) /* VOP3b */
         {
+            // print SDST operand (VOP3B)
             *bufPtr++ = ',';
             *bufPtr++ = ' ';
             decodeGCNOperandNoLit(dasm, ((insnCode>>8)&0x7f), 2, bufPtr, arch);
@@ -1914,12 +2051,15 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
         *bufPtr++ = ' ';
         if (vop3Mode != GCN_VOP3_VINTRP)
         {
+            // print negation or abs if supplied
             if (negFlags & 1)
                 *bufPtr++ = '-';
             if (absFlags & 1)
                 putChars(bufPtr, "abs(", 4);
+            // print VSRC0
             decodeGCNOperandNoLit(dasm, vsrc0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
                                    bufPtr, arch, displayFloatLits);
+            // closing abs
             if (absFlags & 1)
                 *bufPtr++ = ')';
             vsrc0Used = true;
@@ -1927,16 +2067,20 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
         
         if (vop3Mode == GCN_VOP3_VINTRP)
         {
+            // print negation or abs if supplied
             if (negFlags & 2)
                 *bufPtr++ = '-';
             if (absFlags & 2)
                 putChars(bufPtr, "abs(", 4);
             if (mode1 == GCN_P0_P10_P20)
+                // VINTRP param
                 decodeVINTRPParam(vsrc1, bufPtr);
             else
+                // print VSRC1
                 decodeGCNOperandNoLit(dasm, vsrc1, 1, bufPtr, arch, displayFloatLits);
             if (absFlags & 2)
                 *bufPtr++ = ')';
+            // print VINTRP attr
             putChars(bufPtr, ", attr", 6);
             const cxuint attr = vsrc0&63;
             putByteToBuf(attr, bufPtr);
@@ -1947,10 +2091,12 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             {
                 *bufPtr++ = ',';
                 *bufPtr++ = ' ';
+                // print abs and negation for VSRC2
                 if (negFlags & 4)
                     *bufPtr++ = '-';
                 if (absFlags & 4)
                     putChars(bufPtr, "abs(", 4);
+                // print VSRC2
                 decodeGCNOperandNoLit(dasm, vsrc2, 1, bufPtr, arch, displayFloatLits);
                 if (absFlags & 4)
                     *bufPtr++ = ')';
@@ -1966,10 +2112,12 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
         {
             *bufPtr++ = ',';
             *bufPtr++ = ' ';
+            // print abs and negation for VSRC1
             if (negFlags & 2)
                 *bufPtr++ = '-';
             if (absFlags & 2)
                 putChars(bufPtr, "abs(", 4);
+            // print VSRC1
             decodeGCNOperandNoLit(dasm, vsrc1, (gcnInsn.mode&GCN_REG_SRC1_64)?2:1,
                       bufPtr, arch, displayFloatLits);
             if (absFlags & 2)
@@ -1987,11 +2135,13 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
                 }
                 else
                 {
+                    // print abs and negation for VSRC2
                     if (negFlags & 4)
                         *bufPtr++ = '-';
                     if (absFlags & 4)
                         putChars(bufPtr, "abs(", 4);
                     // for V_MQSAD_U32 SRC2 is 128-bit
+                    // print VSRC2
                     decodeGCNOperandNoLit(dasm, vsrc2, is128Ops ? 4 :
                                 (gcnInsn.mode&GCN_REG_SRC2_64)?2:1,
                                  bufPtr, arch, displayFloatLits);
@@ -2010,7 +2160,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     
     if (isGCN14 && (gcnInsn.mode & GCN_VOP3_OPSEL) != 0)
     {
-        // insnCode
+        // print OPSEL
         const bool opsel2Bit = (vop3Mode!=GCN_VOP3_VOP3P && vsrc1Used) ||
             (vop3Mode==GCN_VOP3_VOP3P && vsrc2Used);
         const bool opsel3Bit = (vsrc2Used && vop3Mode!=GCN_VOP3_VOP3P);
@@ -2020,12 +2170,15 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             *bufPtr++ = (insnCode&0x800) ? '1' : '0';
             *bufPtr++ = ',';
             *bufPtr++ = (insnCode&0x1000) ? '1' : '0';
+            // print next opsel if next operand is present
+            // for VOP3P: VSRC2, non VOP3P - VSRC1
             if ((vop3Mode!=GCN_VOP3_VOP3P && vsrc1Used) ||
                 (vop3Mode==GCN_VOP3_VOP3P && vsrc2Used))
             {
                 *bufPtr++ = ',';
                 *bufPtr++ = (insnCode&0x2000) ? '1' : '0';
             }
+            // only for VOP3P and VSRC2
             if (vsrc2Used && vop3Mode!=GCN_VOP3_VOP3P)
             {
                 *bufPtr++ = ',';
@@ -2035,8 +2188,10 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
         }
     }
     
+    // fi VOP3P encoding
     if (vop3Mode==GCN_VOP3_VOP3P)
     {
+        // print OP_SEL_HI modifier
         cxuint opselHi = ((insnCode2 >> 27) & 3) | (vsrc2Used ? ((insnCode>>12)&4) : 0);
         if (opselHi != 3+(vsrc2Used?4:0))
         {
@@ -2051,6 +2206,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             }
             *bufPtr++ = ']';
         }
+        // print NEG_LO modifier
         if ((insnCode2&((3+(vsrc2Used?4:0))<<29)) != 0)
         {
             putChars(bufPtr, " neg_lo:[", 9);
@@ -2064,6 +2220,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             }
             *bufPtr++ = ']';
         }
+        // print NEG_HI modifier
         if ((insnCode & ((3+(vsrc2Used?4:0))<<8)) != 0)
         {
             putChars(bufPtr, " neg_hi:[", 9);
@@ -2135,6 +2292,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             putChars(bufPtr, " neg2", 5);
     }
     
+    // unused op_sel field
     if (isGCN14 && (gcnInsn.mode & GCN_VOP3_OPSEL) == 0 && (insnCode & 0x7800) != 0 &&
         gcnInsn.encoding != GCNENC_VOP3B)
     {
@@ -2202,12 +2360,15 @@ void GCNDisasmUtils::decodeVINTRPEncoding(GCNDisassembler& dasm, cxuint spacesTo
     char* bufStart = output.reserve(90);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
+    // print DST operand
     decodeGCNVRegOperand((insnCode>>18)&0xff, 1, bufPtr);
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
     if ((gcnInsn.mode & GCN_MASK1) == GCN_P0_P10_P20)
+        // print VINTRP param
         decodeVINTRPParam(insnCode&0xff, bufPtr);
     else
+        // or VSRC0 operand
         decodeGCNVRegOperand(insnCode&0xff, 1, bufPtr);
     putChars(bufPtr, ", attr", 6);
     const cxuint attr = (insnCode>>10)&63;
@@ -2243,6 +2404,7 @@ void GCNDisasmUtils::decodeDSEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
             regsNum = 3;
         if ((gcnInsn.mode&GCN_DS_128) != 0 || (gcnInsn.mode&GCN_DST128) != 0)
             regsNum = 4;
+        // print VDST
         decodeGCNVRegOperand(vdst, regsNum, bufPtr);
         vdstUsed = true;
     }
@@ -2263,30 +2425,34 @@ void GCNDisasmUtils::decodeDSEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
     if ((gcnInsn.mode & GCN_ONLYDST) == 0 &&
         (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) != 0 && srcMode != GCN_NOSRC)
     {
-        /* two vdata */
+        /* print two vdata */
         if (vaddrUsed || vdstUsed)
         {
             // comma after previous argument (VDST, VADDR)
             *bufPtr++ = ',';
             *bufPtr++ = ' ';
         }
+        // determine number of register for VDATA0
         cxuint regsNum = (gcnInsn.mode&GCN_REG_SRC0_64)?2:1;
         if ((gcnInsn.mode&GCN_DS_96) != 0)
             regsNum = 3;
         if ((gcnInsn.mode&GCN_DS_128) != 0)
             regsNum = 4;
+        // print VDATA0
         decodeGCNVRegOperand(vdata0, regsNum, bufPtr);
         vdata0Used = true;
         if (srcMode == GCN_2SRCS)
         {
             *bufPtr++ = ',';
             *bufPtr++ = ' ';
+            // print VDATA1
             decodeGCNVRegOperand(vdata1, (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr);
             vdata1Used = true;
         }
     }
     
     const cxuint offset = (insnCode&0xffff);
+    // printing offsets (one 16-bit or two 8-bit)
     if (offset != 0)
     {
         if ((gcnInsn.mode & GCN_2OFFSETS) == 0) /* single offset */
@@ -2296,6 +2462,7 @@ void GCNDisasmUtils::decodeDSEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
         }
         else
         {
+            // if two 8-bit offsets (if supplied)
             if ((offset&0xff) != 0)
             {
                 putChars(bufPtr, " offset0:", 9);
@@ -2336,6 +2503,7 @@ void GCNDisasmUtils::decodeDSEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
     output.forward(bufPtr-bufStart);
 }
 
+// print DATA FORMAT name table
 static const char* mtbufDFMTTable[] =
 {
     "invalid", "8", "16", "8_8", "32", "16_16", "10_11_11", "11_11_10",
@@ -2343,6 +2511,7 @@ static const char* mtbufDFMTTable[] =
     "32_32_32_32", "reserved"
 };
 
+// print NUMBER FORMAT name table
 static const char* mtbufNFMTTable[] =
 {
     "unorm", "snorm", "uscaled", "sscaled",
@@ -2367,10 +2536,11 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
         addSpaces(bufPtr, spacesToAdd);
         if (mode1 != GCN_MUBUF_NOVAD)
         {
+            // determine number of regs in VDATA
             cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
             if (insnCode2 & 0x800000U)
                 dregsNum++; // tfe
-            
+            // print VDATA
             decodeGCNVRegOperand(vdata, dregsNum, bufPtr);
             *bufPtr++ = ',';
             *bufPtr++ = ' ';
@@ -2379,19 +2549,22 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
             const cxuint aregsNum = ((insnCode & 0x3000U)==0x3000U ||
                     /* addr64 only for older GCN than 1.2 */
                     (!isGCN12 && (insnCode & 0x8000U)))? 2 : 1;
-            
+            // print VADDR
             decodeGCNVRegOperand(vaddr, aregsNum, bufPtr);
             *bufPtr++ = ',';
             *bufPtr++ = ' ';
         }
+        // print SRSRC
         decodeGCNOperandNoLit(dasm, srsrc<<2, 4, bufPtr, arch);
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
+        // print SOFFSET
         decodeGCNOperandNoLit(dasm, soffset, 1, bufPtr, arch);
     }
     else
         addSpaces(bufPtr, spacesToAdd-1);
     
+    // print modifiers: (offen and idxen, glc)
     if (insnCode & 0x1000U)
         putChars(bufPtr, " offen", 6);
     if (insnCode & 0x2000U)
@@ -2405,6 +2578,7 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
     if (insnCode & 0x4000U)
         putChars(bufPtr, " glc", 4);
     
+    // print SLD if supplied
     if (((!isGCN12 || gcnInsn.encoding==GCNENC_MTBUF) && (insnCode2 & 0x400000U)!=0) ||
         ((isGCN12 && gcnInsn.encoding!=GCNENC_MTBUF) && (insnCode & 0x20000)!=0))
         putChars(bufPtr, " slc", 4);
@@ -2422,9 +2596,11 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
         const cxuint nfmt = (insnCode>>23)&7;
         if (dfmt!=1 || nfmt!=0)
         {
+            // in shortened form: format:[DFMT, NFMT]
             putChars(bufPtr, " format:[", 9);
             if (dfmt!=1)
             {
+                // print DATA_FORMAT if not default
                 const char* dfmtStr = mtbufDFMTTable[dfmt];
                 putChars(bufPtr, dfmtStr, ::strlen(dfmtStr));
             }
@@ -2432,6 +2608,7 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
                 *bufPtr++ = ',';
             if (nfmt!=0)
             {
+                // print NUMBER_FORMAT if not default
                 const char* nfmtStr = mtbufNFMTTable[nfmt];
                 putChars(bufPtr, nfmtStr, ::strlen(nfmtStr));
             }
@@ -2452,6 +2629,7 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
             bufPtr += itocstrCStyle(vdata, bufPtr, 6, 16);
         }
     }
+    // also SRSRC and SOFFSET if no argument in instruction
     if (mode1 == GCN_ARG_NONE)
     {
         if (srsrc != 0)
@@ -2480,6 +2658,7 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     
     const cxuint dmask = (insnCode>>8)&15;
     cxuint dregsNum = 4;
+    // determine register number for VDATA
     if ((gcnInsn.mode & GCN_MIMG_VDATA4) == 0)
         dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
                 ((dmask & 8)?1:0);
@@ -2488,13 +2667,16 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     if (insnCode & 0x10000)
         dregsNum++; // tfe
     
+    // print VDATA
     decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
+    // print VADDR
     decodeGCNVRegOperand(insnCode2&0xff,
                  std::max(4, (gcnInsn.mode&GCN_MIMG_VA_MASK)+1), bufPtr);
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
+    // print SRSRC
     decodeGCNOperandNoLit(dasm, ((insnCode2>>14)&0x7c),
                 (((insnCode & 0x8000)!=0) && !isGCN14) ? 4: 8, bufPtr, arch);
     
@@ -2503,11 +2685,13 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     {
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
+        // print SSAMP if supplied
         decodeGCNOperandNoLit(dasm, ssamp<<2, 4, bufPtr, arch);
     }
     if (dmask != 1)
     {
         putChars(bufPtr, " dmask:", 7);
+        // print value dmask (0-15)
         if (dmask >= 10)
         {
             *bufPtr++ = '1';
@@ -2517,6 +2701,7 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             *bufPtr++ = '0' + dmask;
     }
     
+    // print other modifiers (unorm, glc, slc, ...)
     if (insnCode & 0x1000)
         putChars(bufPtr, " unorm", 6);
     if (insnCode & 0x2000)
@@ -2536,6 +2721,7 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         putChars(bufPtr, " lwe", 4);
     if (insnCode & 0x4000)
     {
+        // DA modifier
         *bufPtr++ = ' ';
         *bufPtr++ = 'd';
         *bufPtr++ = 'a';
@@ -2564,6 +2750,7 @@ void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd
     const cxuint target = (insnCode>>4)&63;
     if (target >= 32)
     {
+        // print paramXX
         putChars(bufPtr, "param", 5);
         const cxuint tpar = target-32;
         const cxuint digit2 = tpar/10;
@@ -2573,11 +2760,13 @@ void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd
     }
     else if (target >= 12 && target <= 15)
     {
+        // print posX
         putChars(bufPtr, "pos0", 4);
         bufPtr[-1] = '0' + target-12;
     }
     else if (target < 8)
     {
+        // print mrtX
         putChars(bufPtr, "mrt0", 4);
         bufPtr[-1] = '0' + target;
     }
@@ -2594,7 +2783,7 @@ void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd
         *bufPtr++ = '0' + target - 10U*digit2;
     }
     
-    /* vdata registers */
+    /* print vdata registers */
     cxuint vsrcsUsed = 0;
     for (cxuint i = 0; i < 4; i++)
     {
@@ -2618,12 +2807,14 @@ void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd
             putChars(bufPtr, "off", 3);
     }
     
+    // other modifiers
     if (insnCode&0x800)
         putChars(bufPtr, " done", 5);
     if (insnCode&0x400)
         putChars(bufPtr, " compr", 6);
     if (insnCode&0x1000)
     {
+        // VM modifier
         *bufPtr++ = ' ';
         *bufPtr++ = 'v';
         *bufPtr++ = 'm';
@@ -2643,6 +2834,7 @@ void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd
     output.forward(bufPtr-bufStart);
 }
 
+// routine to print FLAT address including 'off' for GCN 1.4
 void GCNDisasmUtils::printFLATAddr(cxuint flatMode, char*& bufPtr, uint32_t insnCode2)
 {
     const cxuint vaddr = insnCode2&0xff;
@@ -2673,13 +2865,14 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     /// cmpswap store only to half of number of data registers
     cxuint dstRegsNum = ((gcnInsn.mode & GCN_CMPSWAP)!=0) ? (dregsNum>>1) :  dregsNum;
     const cxuint flatMode = gcnInsn.mode & GCN_FLAT_MODEMASK;
-    // tfe
+    // add tfe extra register if needed
     dstRegsNum = (!isGCN14 && (insnCode2 & 0x800000U)) ? dstRegsNum+1 : dstRegsNum;
     
     bool printAddr = false;
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
         vdstUsed = true;
+        // print VDST
         decodeGCNVRegOperand(insnCode2>>24, dstRegsNum, bufPtr);
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
@@ -2696,6 +2889,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             vdstUsed = true;
             *bufPtr++ = ',';
             *bufPtr++ = ' ';
+            // print VDST
             decodeGCNVRegOperand(insnCode2>>24, dstRegsNum, bufPtr);
         }
     }
@@ -2705,15 +2899,18 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         vdataUsed = true;
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
+        // print DATA field
         decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     }
     
     if (flatMode != 0 && printAddr)
     {
+        // if GLOBAL_ or SCRATCH_
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
         cxuint saddr = (insnCode2>>16)&0x7f;
         if ((saddr&0x7f) != 0x7f)
+            // print SADDR (GCN 1.4)
             decodeGCNOperandNoLit(dasm, saddr, flatMode == GCN_FLAT_SCRATCH ? 1 : 2,
                         bufPtr, arch, FLTLIT_NONE);
         else // off
@@ -2730,6 +2927,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         bufPtr += itocstrCStyle(instOffset, bufPtr, 7, 10);
     }
     
+    // print other modifers
     if (isGCN14 && (insnCode & 0x2000U))
         putChars(bufPtr, " lds", 4);
     if (insnCode & 0x10000U)
@@ -2741,6 +2939,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         if (!isGCN14)
             putChars(bufPtr, " tfe", 4);
         else
+            // if GCN 1.4 this bit is NV
             putChars(bufPtr, " nv", 3);
     }
     
@@ -2767,6 +2966,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
 
 void GCNDisassembler::disassemble()
 {
+    // select current label and reloc to first
     LabelIter curLabel = std::lower_bound(labels.begin(), labels.end(), labelStartOffset);
     RelocIter curReloc = std::lower_bound(relocations.begin(), relocations.end(),
         std::make_pair(startOffset, Relocation()),
@@ -2781,6 +2981,7 @@ void GCNDisassembler::disassemble()
 
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
                 disassembler.getDeviceType());
+    // set up GCN indicators
     const bool isGCN11 = (arch == GPUArchitecture::GCN1_1);
     const bool isGCN124 = (arch >= GPUArchitecture::GCN1_2);
     const bool isGCN14 = (arch >= GPUArchitecture::GCN1_4);
@@ -2960,12 +3161,14 @@ void GCNDisassembler::disassemble()
             buf[bufPos++] = '*';
             if (disassembler.getFlags() & DISASM_CODEPOS)
             {
+                // print code position
                 bufPos += itocstrCStyle(oldPos<<2, buf+bufPos, 20, 16, 12, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = ' ';
             }
             bufPos += itocstrCStyle(insnCode, buf+bufPos, 12, 16, 8, false);
             buf[bufPos++] = ' ';
+            // if instruction is two word long
             if (prevIsTwoWord)
                 bufPos += itocstrCStyle(insnCode2, buf+bufPos, 12, 16, 8, false);
             else
@@ -2979,6 +3182,7 @@ void GCNDisassembler::disassemble()
         {
             if (disassembler.getFlags() & DISASM_CODEPOS)
             {
+                // print only code position
                 char* buf = output.reserve(30);
                 size_t bufPos = 0;
                 buf[bufPos++] = '/';
@@ -3077,6 +3281,7 @@ void GCNDisassembler::disassemble()
             }
             else
             {
+                // print illegal instruction mnemonic
                 char* bufStart = output.reserve(40);
                 char* bufPtr = bufStart;
                 if (!isGCN124 || gcnEncoding != GCNENC_SMEM)
@@ -3085,6 +3290,7 @@ void GCNDisassembler::disassemble()
                 else /* SMEM encoding */
                     putChars(bufPtr, "SMEM", 4);
                 putChars(bufPtr, "_ill_", 5);
+                // opcode value
                 bufPtr += itocstrCStyle(opcode, bufPtr , 6);
                 const size_t linePos = bufPtr-bufStart;
                 spacesToAdd = spacesToAdd >= (linePos+1)? spacesToAdd - linePos : 1;
@@ -3092,12 +3298,14 @@ void GCNDisassembler::disassemble()
                 output.forward(bufPtr-bufStart);
             }
             
+            // determine float literal type to display
             const FloatLitType displayFloatLits = 
                     ((disassembler.getFlags()&DISASM_FLOATLITS) != 0) ?
                     (((gcnInsn->mode & GCN_MASK2) == GCN_FLOATLIT) ? FLTLIT_F32 : 
                     ((gcnInsn->mode & GCN_MASK2) == GCN_F16LIT) ? FLTLIT_F16 :
                      FLTLIT_NONE) : FLTLIT_NONE;
             
+            // print instruction in correct encoding
             switch(gcnEncoding)
             {
                 case GCNENC_SOPC:

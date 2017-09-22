@@ -417,7 +417,7 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
         if ((region.type==ROCmRegionType::KERNEL ||
              region.type==ROCmRegionType::FKERNEL) && doDumpCode)
         {
-            // kernel code
+            // kernel code begin after HSA config
             isaDisassembler->setInput(region.size-256, code + region.offset+256,
                                 region.offset+256);
             isaDisassembler->analyzeBeforeDisassemble();
@@ -444,6 +444,7 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
                 [](const std::pair<size_t,CString>& a,
                                 const std::pair<size_t, CString>& b)
                 { return a.first < b.first; });
+        // write labels to current region position
         isaDisassembler->writeLabelsToPosition(0, curLabel, curNamedLabel);
         isaDisassembler->flushOutput();
         
@@ -497,9 +498,9 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
                 [](const std::pair<size_t,CString>& a,
                                 const std::pair<size_t, CString>& b)
                 { return a.first < b.first; });
+        // if last region is not kernel, then print labels after last region
         isaDisassembler->writeLabelsToPosition(0, curLabel, curNamedLabel);
         isaDisassembler->flushOutput();
-        // if last region is not kernel, then print labels after last region
         isaDisassembler->writeLabelsToEnd(region.size, curLabel, curNamedLabel);
         isaDisassembler->flushOutput();
     }
@@ -515,6 +516,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
     
     {
+        // print AMD architecture version
         char buf[40];
         size_t size = snprintf(buf, 40, ".arch_minor %u\n", rocmInput->archMinor);
         output.write(buf, size);
@@ -522,6 +524,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
         output.write(buf, size);
     }
     
+    // dump kernel config
     for (const ROCmDisasmRegionInput& rinput: rocmInput->regions)
         if (rinput.type != ROCmRegionType::DATA)
         {
@@ -536,6 +539,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                              rocmInput->code + rinput.offset));
         }
     
+    // disassembly code in HSA form
     if (rocmInput->code != nullptr && rocmInput->codeSize != 0)
         disassembleAMDHSACode(output, rocmInput->regions,
                         rocmInput->codeSize, rocmInput->code, isaDisassembler, flags);
