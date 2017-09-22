@@ -32,6 +32,7 @@
 
 using namespace CLRX;
 
+// all ROCm pseudo-op names (sorted)
 static const char* rocmPseudoOpNamesTbl[] =
 {
     "arch_minor", "arch_stepping",
@@ -62,6 +63,7 @@ static const char* rocmPseudoOpNamesTbl[] =
     "workitem_vgpr_count"
 };
 
+// all enums for ROCm pseudo-ops
 enum
 {
     ROCMOP_ARCH_MINOR, ROCMOP_ARCH_STEPPING,
@@ -103,6 +105,7 @@ AsmROCmHandler::AsmROCmHandler(Assembler& assembler): AsmFormatHandler(assembler
     output.archMinor = output.archStepping = UINT32_MAX;
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
+    // add text section as first
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::CODE,
                 ELFSECTID_TEXT, ".text" });
     currentKcodeKernel = ASMKERN_GLOBAL;
@@ -139,8 +142,9 @@ cxuint AsmROCmHandler::addSection(const char* sectionName, cxuint kernelId)
     Section section;
     section.kernelId = ASMKERN_GLOBAL;  // we ignore input kernelId, we go to main
         
-    if (::strcmp(sectionName, ".text") == 0) // code
+    if (::strcmp(sectionName, ".text") == 0)
     {
+         // code section
         if (codeSection!=ASMSECT_NONE)
             throw AsmFormatException("Only one section '.text' can be in binary");
         codeSection = thisSection;
@@ -148,8 +152,9 @@ cxuint AsmROCmHandler::addSection(const char* sectionName, cxuint kernelId)
         section.elfBinSectId = ELFSECTID_TEXT;
         section.name = ".text"; // set static name (available by whole lifecycle)
     }
-    else if (::strcmp(sectionName, ".comment") == 0) // comment
+    else if (::strcmp(sectionName, ".comment") == 0)
     {
+         // comment section
         if (commentSection!=ASMSECT_NONE)
             throw AsmFormatException("Only one section '.comment' can be in binary");
         commentSection = thisSection;
@@ -159,6 +164,7 @@ cxuint AsmROCmHandler::addSection(const char* sectionName, cxuint kernelId)
     }
     else
     {
+        // extra (user) section
         auto out = extraSectionMap.insert(std::make_pair(CString(sectionName),
                     thisSection));
         if (!out.second)
@@ -183,6 +189,7 @@ cxuint AsmROCmHandler::getSectionId(const char* sectionName) const
         return commentSection;
     else
     {
+        // if extra section, then find it
         SectionMap::const_iterator it = extraSectionMap.find(sectionName);
         if (it != extraSectionMap.end())
             return it->second;
@@ -230,8 +237,10 @@ AsmFormatHandler::SectionInfo AsmROCmHandler::getSectionInfo(cxuint sectionId) c
     AsmFormatHandler::SectionInfo info;
     info.type = sections[sectionId].type;
     info.flags = 0;
+    // code is addressable and writeable
     if (info.type == AsmSectionType::CODE)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
+    // any other section (except config) are absolute addressable and writeable
     else if (info.type != AsmSectionType::CONFIG)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     
@@ -370,6 +379,7 @@ void AsmROCmPseudoOps::doControlDirective(AsmROCmHandler& handler,
     AsmROCmHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.ctrlDirSection == ASMSECT_NONE)
     {
+        // define control directive section (if not exists)
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel,
             AsmSectionType::ROCM_CONFIG_CTRL_DIRECTIVE,
@@ -388,6 +398,7 @@ void AsmROCmPseudoOps::doFKernel(AsmROCmHandler& handler, const char* pseudoOpPl
         PSEUDOOP_RETURN_BY_ERROR(".fkernel can be only inside kernel")
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
+    // set fkernel flag for kernel
     handler.kernelStates[asmr.currentKernel]->isFKernel = true;
 }
 
@@ -753,23 +764,27 @@ bool AsmROCmPseudoOps::parseMachine(Assembler& asmr, const char* linePtr,
     uint64_t steppingValue = 0;
     const char* valuePlace = linePtr;
     bool good = getAbsoluteValueArg(asmr, kindValue, linePtr, true);
+    // parse kind
     asmr.printWarningForRange(16, kindValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!skipRequiredComma(asmr, linePtr))
         return false;
     
     valuePlace = linePtr;
     good &= getAbsoluteValueArg(asmr, majorValue, linePtr, true);
+    // parse major
     asmr.printWarningForRange(16, majorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!skipRequiredComma(asmr, linePtr))
         return false;
     
     valuePlace = linePtr;
     good &= getAbsoluteValueArg(asmr, minorValue, linePtr, true);
+    // parse minor
     asmr.printWarningForRange(16, minorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!skipRequiredComma(asmr, linePtr))
         return false;
     
     valuePlace = linePtr;
+    // parse stepping
     good &= getAbsoluteValueArg(asmr, steppingValue, linePtr, true);
     asmr.printWarningForRange(16, steppingValue,
                       asmr.getSourcePos(valuePlace), WS_UNSIGNED);
@@ -816,12 +831,14 @@ bool AsmROCmPseudoOps::parseCodeVersion(Assembler& asmr, const char* linePtr,
     uint64_t majorValue = 0;
     uint64_t minorValue = 0;
     const char* valuePlace = linePtr;
+    // parse version major
     bool good = getAbsoluteValueArg(asmr, majorValue, linePtr, true);
     asmr.printWarningForRange(32, majorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     if (!skipRequiredComma(asmr, linePtr))
         return false;
     
     valuePlace = linePtr;
+    // parse version minor 
     good &= getAbsoluteValueArg(asmr, minorValue, linePtr, true);
     asmr.printWarningForRange(32, minorValue, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     
@@ -870,6 +887,7 @@ bool AsmROCmPseudoOps::parseReservedXgprs(Assembler& asmr, const char* linePtr,
     haveFirstReg = good;
     if (haveFirstReg && firstReg > maxGPRsNum-1)
     {
+        // first register is out of range
         char buf[64];
         snprintf(buf, 64, "First reserved %s register out of range (0-%u)",
                  inVgpr ? "VGPR" : "SGPR",  maxGPRsNum-1);
@@ -883,6 +901,7 @@ bool AsmROCmPseudoOps::parseReservedXgprs(Assembler& asmr, const char* linePtr,
     good &= haveLastReg;
     if (haveLastReg && lastReg > maxGPRsNum-1)
     {
+        // if last register out of range
         char buf[64];
         snprintf(buf, 64, "Last reserved %s register out of range (0-%u)",
                  inVgpr ? "VGPR" : "SGPR", maxGPRsNum-1);
@@ -1316,6 +1335,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
     return true;
 }
 
+// AMD GPU architecture for Gallium
 static const AMDGPUArchValues rocmAmdGpuArchValuesTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
@@ -1365,6 +1385,7 @@ bool AsmROCmHandler::prepareBinary()
             }
     }
     
+    // set sections as outputs
     for (size_t i = 0; i < sectionsNum; i++)
     {
         const AsmSection& asmSection = assembler.sections[i];
@@ -1383,6 +1404,7 @@ bool AsmROCmHandler::prepareBinary()
             case AsmSectionType::EXTRA_NOBITS:
             case AsmSectionType::EXTRA_SECTION:
             {
+                // handle extra (user) section, set section type and its flags
                 uint32_t elfSectType =
                        (asmSection.type==AsmSectionType::EXTRA_NOTE) ? SHT_NOTE :
                        (asmSection.type==AsmSectionType::EXTRA_NOBITS) ? SHT_NOBITS :
@@ -1398,6 +1420,7 @@ bool AsmROCmHandler::prepareBinary()
             }
             case AsmSectionType::ROCM_CONFIG_CTRL_DIRECTIVE:
                 if (sectionSize != 128)
+                    // control directive accepts only 128-byte size
                     assembler.printError(AsmSourcePos(),
                          (std::string("Section '.control_directive' for kernel '")+
                           assembler.kernels[section.kernelId].name+
@@ -1418,6 +1441,7 @@ bool AsmROCmHandler::prepareBinary()
     
     AMDGPUArchValues amdGpuArchValues = rocmAmdGpuArchValuesTbl[
                     cxuint(assembler.deviceType)];
+    // replace arch minor and stepping by user defined values (if set)
     if (output.archMinor!=UINT32_MAX)
         amdGpuArchValues.minor = output.archMinor;
     if (output.archStepping!=UINT32_MAX)
@@ -1646,13 +1670,15 @@ bool AsmROCmHandler::prepareBinary()
         
         if (asmCSection.content.size() < symbol.value + sizeof(ROCmKernelConfig))
         {
+            // if kernel configuration out of section size
             assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
                 "Code for kernel '")+kinput.symbolName.c_str()+
                 "' is too small for configuration").c_str());
             good = false;
             continue;
         }
-        else if (kernel.config!=nullptr) // put config to code section
+        else if (kernel.config!=nullptr)
+            // put config to code section
             ::memcpy(asmCSection.content.data() + symbol.value,
                      kernel.config.get(), sizeof(ROCmKernelConfig));
         // set symbol type

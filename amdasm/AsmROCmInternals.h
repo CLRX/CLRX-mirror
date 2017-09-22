@@ -87,63 +87,72 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
 {
     static bool checkPseudoOpName(const CString& string);
     
+    // .arch_minor
     static void setArchMinor(AsmROCmHandler& handler, const char* linePtr);
+    // .arch_stepping
     static void setArchStepping(AsmROCmHandler& handler, const char* linePtr);
     
     /* user configuration pseudo-ops */
     static void doConfig(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    // .control_directive (open this seciton)
     static void doControlDirective(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    // .fkernel (define kernel as function kernel)
     static void doFKernel(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    // checkConfigValue, setConfigValueMain routines used by other handlers
+    // to check and set AMD HSA config value
     static bool checkConfigValue(Assembler& asmr, const char* valuePlace,
                     ROCmConfigValueTarget target, uint64_t value);
     static void setConfigValueMain(AsmAmdHsaKernelConfig& config,
                         ROCmConfigValueTarget target, uint64_t value);
-    
+    // set config value
     static void setConfigValue(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, ROCmConfigValueTarget target);
     
+    // setConfigBoolValueMain routines used by other handlers to set AMD HSA config values
     static void setConfigBoolValueMain(AsmAmdHsaKernelConfig& config,
                         ROCmConfigValueTarget target);
-    
+    // set boolean config value
     static void setConfigBoolValue(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, ROCmConfigValueTarget target);
     
     static void setDefaultHSAFeatures(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .dims (set dimensions)
     static void setDimensions(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // common routine used by other handlers to parse AMD HSA machine
     static bool parseMachine(Assembler& asmr, const char* linePtr,
                 uint16_t& machineKind, uint16_t& machineMajor, uint16_t& machineMinor,
                 uint16_t& machineStepping);
-    
+    // .machine
     static void setMachine(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // common routine used by other handlers to parse AMD HSA code version
     static bool parseCodeVersion(Assembler& asmr, const char* linePtr,
                 uint16_t& codeMajor, uint16_t& codeMinor);
-    
+    // .codeversion
     static void setCodeVersion(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // common routine used by other handlers to parse AMD HSA reserved registers
     static bool parseReservedXgprs(Assembler& asmr, const char* linePtr, bool inVgpr,
                 uint16_t& gprFirst, uint16_t& gprCount);
-    
+    // .reserved_sgprs or .reserved_vgprs
     static void setReservedXgprs(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, bool inVgpr);
-    
+    // .use_grid_workgroup_count
     static void setUseGridWorkGroupCount(AsmROCmHandler& handler,
                       const char* pseudoOpPlace, const char* linePtr);
     
+    // .kcode (open kernel code)
     static void doKCode(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .kcodeend (close kernel code)
     static void doKCodeEnd(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     static void updateKCodeSel(AsmROCmHandler& handler,

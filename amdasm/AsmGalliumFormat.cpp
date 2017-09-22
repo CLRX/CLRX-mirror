@@ -35,6 +35,7 @@
 
 using namespace CLRX;
 
+// all Gallium pseudo-op names (sorted)
 static const char* galliumPseudoOpNamesTbl[] =
 {
     "arch_minor", "arch_stepping",
@@ -78,6 +79,7 @@ static const char* galliumPseudoOpNamesTbl[] =
     "workitem_private_segment_size", "workitem_vgpr_count"
 };
 
+// all enums for Gallium pseudo-ops
 enum
 {
     GALLIUMOP_ARCH_MINOR = 0, GALLIUMOP_ARCH_STEPPING,
@@ -1851,6 +1853,7 @@ bool AsmGalliumHandler::prepareBinary()
     // setup amd GPU arch values (for LLVM 4.0 HSA config)
     AMDGPUArchValues amdGpuArchValues = galliumAmdGpuArchValuesTbl[
                     cxuint(assembler.deviceType)];
+    // replace arch minor and stepping by user defined values (if set)
     if (archMinor != BINGEN_DEFAULT)
         amdGpuArchValues.minor = archMinor;
     if (archStepping != BINGEN_DEFAULT)
