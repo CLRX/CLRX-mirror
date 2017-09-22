@@ -50,6 +50,7 @@ struct CLRX_INTERNAL AmdCL2Types64: Elf64Types
     typedef AmdCL2GPUKernelArgEntry64 KernelArgEntry;
 };
 
+// generate AMD CL2.0 disasm input from main binary
 template<typename AmdCL2Types>
 static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
             const typename AmdCL2Types::AmdCL2MainBinary& binary, cxuint driverVersion)
@@ -80,6 +81,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
     const cxbyte* textPtr = nullptr;
     const size_t kernelInfosNum = binary.getKernelInfosNum();
     
+    // set section indices as undefined
     uint16_t gDataSectionIdx = SHN_UNDEF;
     uint16_t rwDataSectionIdx = SHN_UNDEF;
     uint16_t bssDataSectionIdx = SHN_UNDEF;
@@ -100,6 +102,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         if (kernelInfosNum==0)
             return input.release();
         
+        // get and sort relocations by offset
         size_t relaNum = innerBin.getTextRelaEntriesNum();
         for (size_t i = 0; i < relaNum; i++)
         {
@@ -111,6 +114,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         // get code section pointer for determine relocation position kernel code
         textPtr = innerBin.getSectionContent(".hsatext");
         
+        // getting optional sections in inner binary
         try
         { gDataSectionIdx = innerBin.getSectionIndex(".hsadata_readonly_agent"); }
         catch(const Exception& ex)
@@ -132,6 +136,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         catch(const Exception& ex)
         { }
         
+        // store sampler relocations to samplerRelocs
         for (size_t i = 0; i < relaNum; i++)
         {
             const Elf64_Rela& rel = innerBin.getGlobalDataRelaEntry(i);
@@ -155,6 +160,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
     input->kernels.resize(kernelInfosNum);
     auto sortedRelocIter = sortedRelocs.begin();
     
+    // preparing kernel inputs
     for (cxuint i = 0; i < kernelInfosNum; i++)
     {
         const KernelInfo& kernelInfo = binary.getKernelInfo(i);
@@ -203,6 +209,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         
         if (kernelData!=nullptr)
         {
+            // if set kernel code and kernel setup (AMD HSA config)
             kinput.code = kernelData->code;
             kinput.codeSize = kernelData->codeSize;
             kinput.setup = kernelData->setup;
@@ -254,7 +261,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
                     addend += ULEV(sym.st_value);
                     rsym = (symShndx==rwDataSectionIdx) ? 1 : 
                         ((symShndx==bssDataSectionIdx) ? 2 : 0);
-                    
+                    // determine relocation type
                     RelocType relocType;
                     uint32_t rtype = ELF64_R_TYPE(ULEV(rela.r_info));
                     if (rtype==1)
@@ -275,18 +282,21 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
     return input.release();
 }
 
+// get AMD CL2 input from 32-bit binary
 AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary32(
                 const AmdCL2MainGPUBinary32& binary, cxuint driverVersion)
 {
     return getAmdCL2DisasmInputFromBinary<AmdCL2Types32>(binary, driverVersion);
 }
 
+// get AMD CL2 input from 64-bit binary
 AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary64(
                 const AmdCL2MainGPUBinary64& binary, cxuint driverVersion)
 {
     return getAmdCL2DisasmInputFromBinary<AmdCL2Types64>(binary, driverVersion);
 }
 
+// internal AMD OpenCL 2.0 Kernel setup (part of AMD HSA config)
 struct CLRX_INTERNAL IntAmdCL2SetupData
 {
     uint32_t pgmRSRC1;
@@ -298,6 +308,7 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
     uint32_t gdsSize;   // in bytes
     uint32_t kernelArgsSize;
     uint32_t zeroes[2];
+    // really is, reserved Xgprs, but filled by driver
     uint16_t sgprsNumAll;
     uint16_t vgprsNum16;
     uint32_t vgprsNum;
@@ -309,6 +320,7 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
 static const size_t disasmArgTypeNameMapSize = sizeof(disasmArgTypeNameMap)/
             sizeof(std::pair<const char*, KernelArgType>);
 
+// table of argument vector type
 static const KernelArgType cl20ArgTypeVectorTable[] =
 {
     KernelArgType::CHAR,
@@ -368,6 +380,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     const typename Types::MetadataHeader* mdHdr =
             reinterpret_cast<const typename Types::MetadataHeader*>(metadata);
     size_t headerSize = ULEV(mdHdr->size);
+    // get CWS (reqd_work_group_size)
     for (size_t i = 0; i < 3; i++)
         config.reqdWorkGroupSize[i] = ULEV(mdHdr->reqdWorkGroupSize[i]);
     
@@ -430,6 +443,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     const char* strBase = (const char*)metadata;
     size_t strOffset = argOffset + sizeof(typename Types::KernelArgEntry)*(argsNum+1);
     
+    // get argument type from metadata
     for (uint32_t i = 0; i < argsNum; i++, argPtr++)
     {
         AmdKernelArgInput arg{};
@@ -564,6 +578,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             }
             else
             {
+                // pointer space for pipe
                 if (ptrSpace!=4)
                     throw Exception("Illegal pipe space");
                 arg.ptrSpace = KernelPtrSpace::GLOBAL;
@@ -571,9 +586,11 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             
             if (arg.argType == KernelArgType::POINTER)
             {
+                // argument is pointer
                 size_t ptrTypeNameSize=0;
-                if (arg.typeName.empty()) // ctx_struct_fld1
+                if (arg.typeName.empty())
                 {
+                    // ctx_struct_fld1
                     if (ptrType >= 6 && ptrType <= 12)
                         arg.pointerType = cl20ArgTypeVectorTable[(ptrType-6)*6];
                     else
@@ -616,7 +633,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                     }
                     else /* unknown type of pointer */
                         arg.pointerType = KernelArgType::VOID;
-                        
+                    
+                    // if structure
                     if (arg.pointerType == KernelArgType::STRUCTURE)
                         arg.structSize = ULEV(argPtr->ptrAlignment);
                 }
@@ -655,6 +673,7 @@ static void dumpAmdCL2KernelConfig(std::ostream& output,
         }
     }
     bufSize = 0;
+    // print reqd_work_group_size: .cws XSIZE[,YSIZE[,ZSIZE]]
     if (config.reqdWorkGroupSize[2] != 0)
         bufSize = snprintf(buf, 100, "        .cws %u, %u, %u\n",
                config.reqdWorkGroupSize[0], config.reqdWorkGroupSize[1],
@@ -698,6 +717,7 @@ static void dumpAmdCL2KernelConfig(std::ostream& output,
         output.write(buf, bufSize);
         bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", config.pgmRSRC2);
         output.write(buf, bufSize);
+        // pgmrsrc1 and pgmrsrc2 flags
         if (config.privilegedMode)
             output.write("        .privmode\n", 18);
         if (config.debugMode)
@@ -759,6 +779,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         output.write(".32bit\n", 7);
     
     {
+        // print architecture version
         char buf[40];
         size_t size = snprintf(buf, 40, ".arch_minor %u\n", amdCL2Input->archMinor);
         output.write(buf, size);
@@ -771,6 +792,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     
     if (doMetadata)
     {
+        // print compile options and acl_version
         output.write(".compile_options \"", 18);
         const std::string escapedCompileOptions = 
                 escapeStringCStyle(amdCL2Input->compileOptions);
@@ -833,6 +855,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     
     if (doDumpData && amdCL2Input->bssSize)
     {
+        // print .bss with alignment and skip (content filling)
         output.write(".section .bss align=", 20);
         char buf[64];
         size_t bufPos = itocstrCStyle<size_t>(amdCL2Input->bssAlignment, buf, 22);
@@ -845,6 +868,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         output.write(buf, bufPos);
     }
     
+    // prepare sampler offsets
     std::vector<size_t> samplerOffsets;
     if (doDumpConfig)
     {

@@ -44,13 +44,14 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
     const size_t regionsNum = binary.getRegionsNum();
     input->regions.resize(regionsNum);
     size_t codeOffset = binary.getCode()-binary.getBinaryCode();
+    // ger regions of code
     for (size_t i = 0; i < regionsNum; i++)
     {
         const ROCmRegion& region = binary.getRegion(i);
         input->regions[i] = { region.regionName, size_t(region.size),
             size_t(region.offset - codeOffset), region.type };
     }
-    
+    // setup code
     input->code = binary.getCode();
     input->codeSize = binary.getCodeSize();
     return input.release();
@@ -98,6 +99,7 @@ void CLRX::dumpAMDHSAConfig(std::ostream& output, cxuint maxSgprsNum,
     const uint32_t pgmRsrc2 = computePgmRsrc2;
     
     const cxuint dimMask = (pgmRsrc2 >> 7) & 7;
+    // print dims (hsadims for gallium): .[hsa_]dims xyz
     if (!amdhsaPrefix)
     {
         strcpy(buf, "        .dims ");
@@ -119,6 +121,8 @@ void CLRX::dumpAMDHSAConfig(std::ostream& output, cxuint maxSgprsNum,
     
     if (!amdhsaPrefix)
     {
+        // print in original form
+        // get sgprsnum and vgprsnum from PGMRSRC1
         bufSize = snprintf(buf, 100, "        .sgprsnum %u\n",
                 std::min((((pgmRsrc1>>6) & 0xf)<<3)+8, maxSgprsNum));
         output.write(buf, bufSize);
@@ -161,6 +165,8 @@ void CLRX::dumpAMDHSAConfig(std::ostream& output, cxuint maxSgprsNum,
     }
     else
     {
+        // print with 'hsa_' prefix (for gallium)
+        // get sgprsnum and vgprsnum from PGMRSRC1
         bufSize = snprintf(buf, 100, "        .hsa_sgprsnum %u\n",
                 std::min((((pgmRsrc1>>6) & 0xf)<<3)+8, maxSgprsNum));
         output.write(buf, bufSize);
@@ -235,6 +241,7 @@ void CLRX::dumpAMDHSAConfig(std::ostream& output, cxuint maxSgprsNum,
     }
     
     const uint16_t sgprFlags = enableSgprRegisterFlags;
+    // print SGPRregister flags (features)
     if ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER) != 0)
         output.write("        .use_private_segment_buffer\n", 36);
     if ((sgprFlags&ROCMFLAG_USE_DISPATCH_PTR) != 0)
@@ -252,6 +259,7 @@ void CLRX::dumpAMDHSAConfig(std::ostream& output, cxuint maxSgprsNum,
     
     if ((sgprFlags&(7U<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT)) != 0)
     {
+        // print .use_grid_workgroup_count xyz (dimensions)
         strcpy(buf, "        .use_grid_workgroup_count ");
         bufSize = 34;
         if ((sgprFlags&ROCMFLAG_USE_GRID_WORKGROUP_COUNT_X) != 0)
@@ -380,6 +388,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     dumpAMDHSAConfig(output, maxSgprsNum, arch, config);
 }
 
+// routine to disassembly code in AMD HSA form (kernel with HSA config)
 void CLRX::disassembleAMDHSACode(std::ostream& output,
             const std::vector<ROCmDisasmRegionInput>& regions,
             size_t codeSize, const cxbyte* code, ISADisassembler* isaDisassembler,
@@ -405,18 +414,12 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
     for (size_t i = 0; i < regionsNum; i++)
     {
         const ROCmDisasmRegionInput& region = regions[sorted[i].second];
-        if (region.type==ROCmRegionType::KERNEL && doDumpCode)
+        if ((region.type==ROCmRegionType::KERNEL ||
+             region.type==ROCmRegionType::FKERNEL) && doDumpCode)
         {
             // kernel code
             isaDisassembler->setInput(region.size-256, code + region.offset+256,
                                 region.offset+256);
-            isaDisassembler->analyzeBeforeDisassemble();
-        }
-        else if (region.type==ROCmRegionType::FKERNEL && doDumpCode)
-        {
-            // function code
-            isaDisassembler->setInput(region.size, code + region.offset,
-                                region.offset);
             isaDisassembler->analyzeBeforeDisassemble();
         }
         isaDisassembler->addNamedLabel(region.offset, region.regionName);

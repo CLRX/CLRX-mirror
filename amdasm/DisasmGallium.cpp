@@ -35,6 +35,7 @@
 
 using namespace CLRX;
 
+// template for getting gallium input from gallium binary
 template<typename GalliumElfBinary>
 static void getGalliumDisasmInputFromBinaryBase(const GalliumBinary& binary,
             const GalliumElfBinary& elfBin, GalliumDisasmInput* input)
@@ -46,6 +47,7 @@ static void getGalliumDisasmInputFromBinaryBase(const GalliumBinary& binary,
     { }
     const uint16_t textIndex = elfBin.getSectionIndex(".text");
     
+    // set up global data (is '.rodata' section)
     if (rodataIndex != SHN_UNDEF)
     {
         input->globalData = elfBin.getSectionContent(rodataIndex);
@@ -66,6 +68,7 @@ static void getGalliumDisasmInputFromBinaryBase(const GalliumBinary& binary,
         const GalliumKernel& kernel = binary.getKernel(i);
         const GalliumProgInfoEntry* progInfo = elfBin.getProgramInfo(i);
         GalliumProgInfoEntry outProgInfo[5];
+        // get program info entries
         for (cxuint k = 0; k < progInfoEntriesNum; k++)
         {
             outProgInfo[k].address = ULEV(progInfo[k].address);
@@ -75,6 +78,7 @@ static void getGalliumDisasmInputFromBinaryBase(const GalliumBinary& binary,
             std::vector<GalliumArgInfo>(kernel.argInfos.begin(), kernel.argInfos.end()) };
         std::copy(outProgInfo, outProgInfo+progInfoEntriesNum, input->kernels[i].progInfo);
     }
+    // set code
     input->code = elfBin.getSectionContent(textIndex);
     input->codeSize = ULEV(elfBin.getSectionHeader(textIndex).sh_size);
 }
@@ -98,12 +102,14 @@ GalliumDisasmInput* CLRX::getGalliumDisasmInputFromBinary(GPUDeviceType deviceTy
     return input.release();
 }
 
+// kernel argument types names
 static const char* galliumArgTypeNamesTbl[] =
 {
     "scalar", "constant", "global", "local", "image2d_rd", "image2d_wr", "image3d_rd",
     "image3d_wr", "sampler"
 };
 
+// semantics names
 static const char* galliumArgSemTypeNamesTbl[] =
 {
     "general", "griddim", "gridoffset", "imgsize", "imgformat"
@@ -123,6 +129,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     const uint32_t spilledVGPRs = progInfo[4].value;
     
     const cxuint dimMask = (pgmRsrc2 >> 7) & 7;
+    // print .dims xyz (dimensions)
     strcpy(buf, "        .dims ");
     bufSize = 14;
     if ((dimMask & 1) != 0)
@@ -134,6 +141,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     buf[bufSize++] = '\n';
     output.write(buf, bufSize);
     
+    // print SGPR and VGPR number from PGMRSRC1
     bufSize = snprintf(buf, 100, "        .sgprsnum %u\n",
               std::min((((pgmRsrc1>>6) & 0xf)<<3)+8, maxSgprsNum));
     output.write(buf, bufSize);
@@ -180,6 +188,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     output.write(buf, bufSize);
     if (isLLVM390)
     {
+        // extra info (spilled GPRs)
         bufSize = snprintf(buf, 100, "        .spilledsgprs %d\n", spilledSGPRs);
         output.write(buf, bufSize);
         bufSize = snprintf(buf, 100, "        .spilledvgprs %d\n", spilledVGPRs);
@@ -209,6 +218,7 @@ void CLRX::disassembleGallium(std::ostream& output,
     }
     if (galliumInput->isMesa170)
         output.write(".driver_version 170000\n", 23);
+    // print correct llvm version
     if (galliumInput->isAMDHSA)
         output.write(".llvm_version 40000\n", 20);
     else if (galliumInput->isLLVM390)
@@ -231,6 +241,7 @@ void CLRX::disassembleGallium(std::ostream& output,
             output.write("    .args\n", 10);
             for (const GalliumArgInfo& arg: kinput.argInfos)
             {
+                // print kernel argument
                 ::memcpy(lineBuf, "        .arg ", 13);
                 size_t pos = 13;
                 // arg format: .arg TYPENAME, SIZE, TARGETSIZE, TALIGN, NUMEXT, SEMANTIC
@@ -246,18 +257,23 @@ void CLRX::disassembleGallium(std::ostream& output,
                 
                 lineBuf[pos++] = ',';
                 lineBuf[pos++] = ' ';
+                // arg size
                 pos += itocstrCStyle<uint32_t>(arg.size, lineBuf+pos, 16);
                 lineBuf[pos++] = ',';
                 lineBuf[pos++] = ' ';
+                // target size
                 pos += itocstrCStyle<uint32_t>(arg.targetSize, lineBuf+pos, 16);
                 lineBuf[pos++] = ',';
                 lineBuf[pos++] = ' ';
+                // target align
                 pos += itocstrCStyle<uint32_t>(arg.targetAlign, lineBuf+pos, 16);
+                // integer extension
                 if (arg.signExtended)
                     ::memcpy(lineBuf+pos, ", sext, ", 8);
                 else
                     ::memcpy(lineBuf+pos, ", zext, ", 8);
                 pos += 8;
+                // print argument semantic
                 if (arg.semantic <= GalliumArgSemantic::MAX_VALUE)
                 {
                     const char* typeStr = galliumArgSemTypeNamesTbl[cxuint(arg.semantic)];
@@ -272,11 +288,12 @@ void CLRX::disassembleGallium(std::ostream& output,
             }
             if (!doDumpConfig)
             {
-                /// proginfo
+                /// proginfo (if no config)
                 const cxuint progInfoEntriesNum = galliumInput->isLLVM390 ? 5 : 3;
                 output.write("    .proginfo\n", 14);
                 for (cxuint k = 0; k < progInfoEntriesNum; k++)
                 {
+                    // print prog info entries: .entry address, value
                     const GalliumProgInfoEntry& piEntry = kinput.progInfo[k];
                     output.write("        .entry ", 15);
                     char buf[32];
@@ -294,6 +311,7 @@ void CLRX::disassembleGallium(std::ostream& output,
                 dumpKernelConfig(output, maxSgprsNum, arch, kinput.progInfo,
                     galliumInput->isLLVM390);
                 if (galliumInput->isAMDHSA)
+                    // print AMD HSA config with special prefix for some HSA values
                     dumpAMDHSAConfig(output, maxSgprsNum, arch,
                         *reinterpret_cast<const ROCmKernelConfig*>(
                              galliumInput->code + kinput.offset), true);
@@ -307,6 +325,7 @@ void CLRX::disassembleGallium(std::ostream& output,
         // print text
         if (!galliumInput->isAMDHSA)
         {
+            // just disassembly code in simple way
             output.write(".text\n", 6);
             isaDisassembler->setInput(galliumInput->codeSize, galliumInput->code);
             isaDisassembler->beforeDisassemble();
@@ -316,6 +335,7 @@ void CLRX::disassembleGallium(std::ostream& output,
         {
             // LLVM 4.0 - AMDHSA code
             std::vector<ROCmDisasmRegionInput> regions(galliumInput->kernels.size());
+            // preparing ROCMDIsasm region inputs for dissasemblying in AMDHSA form
             for (size_t i = 0; i < galliumInput->kernels.size(); i++)
             {
                 const GalliumDisasmKernelInput& kernel = galliumInput->kernels[i];
