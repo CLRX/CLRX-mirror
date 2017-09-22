@@ -1554,6 +1554,8 @@ void Assembler::addInitialDefSym(const CString& symName, uint64_t value)
     defSyms.push_back({symName, value});
 }
 
+// push clause to stack ('.ifXXX','macro','rept'), return true if no error
+// for '.else' changes current clause
 bool Assembler::pushClause(const char* string, AsmClauseType clauseType, bool satisfied,
                bool& included)
 {
@@ -1605,6 +1607,7 @@ bool Assembler::pushClause(const char* string, AsmClauseType clauseType, bool sa
     return true;
 }
 
+// pop clause ('.endif','.endm','.endr') from stack
 bool Assembler::popClause(const char* string, AsmClauseType clauseType)
 {
     if (clauses.empty())
@@ -1619,6 +1622,8 @@ bool Assembler::popClause(const char* string, AsmClauseType clauseType)
         return false;
     }
     AsmClause& clause = clauses.top();
+    // when macro, reepats or conditional finished by wrong pseudo-op
+    // ('.macro' -> '.endif', etc)
     switch(clause.type)
     {
         case AsmClauseType::IF:
@@ -1682,6 +1687,7 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
         const char* argPlace = linePtr;
         if (!arg.vararg)
         {
+            // regular macro argument
             if (!parseMacroArgValue(linePtr, macroArg))
             {
                 good = false;
@@ -1739,6 +1745,7 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
         return ParseState::FAILED;
     }
     
+    // check depth of macro substitution
     if (macroSubstLevel == 1000)
     {
         printError(macroStartPlace, "Macro substitution level is greater than 1000");
@@ -1762,6 +1769,7 @@ struct ScopeUsingStackElem
     std::list<AsmScope*>::iterator usingIt;
 };
 
+// routine to find scope in scope (only traversing by '.using's)
 AsmScope* Assembler::findScopeInScope(AsmScope* scope, const CString& scopeName,
                   std::unordered_set<AsmScope*>& scopeSet)
 {
@@ -1841,6 +1849,7 @@ AsmScope* Assembler::getRecurScope(const CString& scopePlace, bool ignoreLast,
     return scope;
 }
 
+// internal routine to find symbol in scope (only traversing by '.using's)
 AsmSymbolEntry* Assembler::findSymbolInScopeInt(AsmScope* scope,
                     const CString& symName, std::unordered_set<AsmScope*>& scopeSet)
 {
@@ -1873,6 +1882,7 @@ AsmSymbolEntry* Assembler::findSymbolInScopeInt(AsmScope* scope,
     return nullptr;
 }
 
+// real routine to find symbol in scope (traverse by all visible scopes)
 AsmSymbolEntry* Assembler::findSymbolInScope(const CString& symName, AsmScope*& scope,
             CString& sameSymName, bool insertMode)
 {
@@ -1913,6 +1923,7 @@ std::pair<AsmSymbolEntry*, bool> Assembler::insertSymbolInScope(const CString& s
     return std::make_pair(symEntry, false);
 }
 
+// internal routine to find regvar in scope (only traversing by '.using's)
 AsmRegVarEntry* Assembler::findRegVarInScopeInt(AsmScope* scope, const CString& rvName,
                 std::unordered_set<AsmScope*>& scopeSet)
 {
@@ -1945,6 +1956,7 @@ AsmRegVarEntry* Assembler::findRegVarInScopeInt(AsmScope* scope, const CString& 
     return nullptr;
 }
 
+// real routine to find regvar in scope (traverse by all visible scopes)
 AsmRegVarEntry* Assembler::findRegVarInScope(const CString& rvName, AsmScope*& scope,
                       CString& sameRvName, bool insertMode)
 {
@@ -2004,7 +2016,7 @@ bool Assembler::pushScope(const CString& scopeName)
 {
     if (scopeName.empty())
     {
-        // local scope
+        // temporary scope
         std::unique_ptr<AsmScope> newScope(new AsmScope(currentScope, true));
         currentScope->scopeMap.insert(std::make_pair("", newScope.get()));
         currentScope = newScope.release();
@@ -2091,14 +2103,16 @@ bool Assembler::readLine()
     return true;
 }
 
+// reserve data in current section and fill values (used by '.skip' or position movement)
 cxbyte* Assembler::reserveData(size_t size, cxbyte fillValue)
 {
     if (currentSection != ASMSECT_ABS)
     {
         size_t oldOutPos = currentOutPos;
         AsmSection& section = sections[currentSection];
-        if ((section.flags & ASMSECT_WRITEABLE) == 0) // non writeable
+        if ((section.flags & ASMSECT_WRITEABLE) == 0)
         {
+             // non writeable, only change output position (do not fill)
             currentOutPos += size;
             section.size += size;
             return nullptr;
@@ -2202,6 +2216,7 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
     }
 }
 
+// go to section, when not exists create it with specified alignment and flags
 void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
         AsmSectionType type, Flags flags, uint64_t align)
 {
@@ -2246,6 +2261,7 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
     }
 }
 
+// go to section, when not exists create it with specified alignment
 void Assembler::goToSection(const char* pseudoOpPlace, cxuint sectionId, uint64_t align)
 {
     try
@@ -2263,6 +2279,7 @@ void Assembler::goToSection(const char* pseudoOpPlace, cxuint sectionId, uint64_
     currentOutPos = sections[currentSection].getSize();
 }
 
+// used in places, to initialize lazily (if needed) output format 
 void Assembler::initializeOutputFormat()
 {
     if (formatHandler!=nullptr)
@@ -2341,6 +2358,8 @@ struct ScopeStackElem
     AsmScopeMap::iterator childIt;
 };
 
+// try to resolve symbols in scope (after closing temporary scope or
+// ending assembly for global scope)
 void Assembler::tryToResolveSymbols(AsmScope* thisScope)
 {
     std::deque<ScopeStackElem> scopeStack;
@@ -2379,6 +2398,8 @@ void Assembler::tryToResolveSymbols(AsmScope* thisScope)
     }
 }
 
+// print unresolved symbols in global scope after assemblying
+// or when popping temporary scope
 void Assembler::printUnresolvedSymbols(AsmScope* thisScope)
 {
     if ((flags&ASM_TESTRUN) != 0)
@@ -2650,7 +2671,8 @@ bool Assembler::assemble()
     printUnresolvedSymbols(&globalScope);
     
     if (good && formatHandler!=nullptr)
-    {  
+    {
+        // flushing regvar usage handlers
         for(AsmSection& section: sections)
             if (section.usageHandler!=nullptr)
                 section.usageHandler->flush();
