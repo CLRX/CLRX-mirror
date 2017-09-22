@@ -51,6 +51,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
             (labelIter != labels.end() && *labelIter <= pos))
     {
         size_t curPos = SIZE_MAX;
+        // set current position (from first label)
         if (labelIter != labels.end())
             curPos = *labelIter;
         if (namedLabelIter != namedLabels.end())
@@ -77,6 +78,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 curPos = *labelIter;
                 char* buf = output.reserve(70);
                 size_t bufPos = 0;
+                // numbered label in form: '.L[POS]_[SECTION]'
                 buf[bufPos++] = '.';
                 buf[bufPos++] = 'L';
                 bufPos += itocstrCStyle(*labelIter, buf+bufPos, 22, 10, 0, false);
@@ -94,6 +96,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 }
                 else
                 {
+                    // just in this place: add ':'
                     buf[bufPos++] = ':';
                     buf[bufPos++] = '\n';
                 }
@@ -121,6 +124,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 }
                 else
                 {
+                    // just in this place: add ':'
                     buf[bufPos++] = ':';
                     buf[bufPos++] = '\n';
                 }
@@ -145,6 +149,7 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
             numberedPos = *labelIter;
         if (namedLabelIter != namedLabels.end())
             namedPos = namedLabelIter->first;
+        // print numbered label if it before named label
         if (numberedPos <= namedPos && labelIter != labels.end())
         {
             if (pos != *labelIter)
@@ -160,6 +165,7 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
             }
             char* buf = output.reserve(50);
             size_t bufPos = 0;
+            // numbered label in form: '.L[POS]_[SECTION]'
             buf[bufPos++] = '.';
             buf[bufPos++] = 'L';
             bufPos += itocstrCStyle(*labelIter, buf+bufPos, 22, 10, 0, false);
@@ -172,6 +178,7 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
             pos = *labelIter;
             ++labelIter;
         }
+        // this same for named label
         if (namedPos <= numberedPos && namedLabelIter != namedLabels.end())
         {
             if (pos != namedLabelIter->first)
@@ -220,6 +227,7 @@ bool ISADisassembler::writeRelocation(size_t pos, RelocIter& relocIter)
     if (relocIter == relocations.end() || relocIter->first != pos)
         return false;
     const Relocation& reloc = relocIter->second;
+    // put relocation symbol in parenthesis
     if (reloc.addend != 0 && 
         (reloc.type==RELTYPE_LOW_32BIT || reloc.type==RELTYPE_HIGH_32BIT))
         output.write(1, "(");
@@ -229,12 +237,14 @@ bool ISADisassembler::writeRelocation(size_t pos, RelocIter& relocIter)
     size_t bufPos = 0;
     if (reloc.addend != 0)
     {
+        // add addend
         if (reloc.addend > 0)
             buf[bufPos++] = '+';
         bufPos += itocstrCStyle(reloc.addend, buf+bufPos, 22, 10, 0, false);
         if (reloc.type==RELTYPE_LOW_32BIT || reloc.type==RELTYPE_HIGH_32BIT)
             buf[bufPos++] = ')';
     }
+    // handle relocation types
     if (reloc.type==RELTYPE_LOW_32BIT)
     {
         ::memcpy(buf+bufPos, "&0xffffffff", 11);
@@ -385,6 +395,7 @@ Disassembler::~Disassembler()
 
 GPUDeviceType Disassembler::getDeviceType() const
 {
+    // get device type from input
     switch(binaryFormat)
     {
         case BinaryFormat::AMD:
@@ -400,7 +411,7 @@ GPUDeviceType Disassembler::getDeviceType() const
     }
 }
 
-extern void CLRX::printDisasmData(size_t size, const cxbyte* data, std::ostream& output,
+void CLRX::printDisasmData(size_t size, const cxbyte* data, std::ostream& output,
                 bool secondAlign)
 {
     char buf[68];
@@ -424,7 +435,7 @@ extern void CLRX::printDisasmData(size_t size, const cxbyte* data, std::ostream&
         if (fillEnd >= p+8)
         {
             // if element repeated for least 1 line
-            // print .fill pseudo-op
+            // print .fill pseudo-op: .fill SIZE, 1, VALUE
             ::memcpy(buf, fillPrefix, prefixSize);
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(7) : fillEnd;
@@ -432,6 +443,7 @@ extern void CLRX::printDisasmData(size_t size, const cxbyte* data, std::ostream&
             bufPos += itocstrCStyle(p-oldP, buf+bufPos, 22, 10);
             memcpy(buf+bufPos, ", 1, ", 5);
             bufPos += 5;
+            // value to fill
             bufPos += itocstrCStyle(data[oldP], buf+bufPos, 6, 16, 2);
             buf[bufPos++] = '\n';
             output.write(buf, bufPos);
@@ -504,6 +516,7 @@ void CLRX::printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& o
             bufPos += itocstrCStyle(p-oldP, buf+bufPos, 22, 10);
             memcpy(buf+bufPos, ", 4, ", 5);
             bufPos += 5;
+            // print fill value
             bufPos += itocstrCStyle(ULEV(data[oldP]), buf+bufPos, 12, 16, 8);
             buf[bufPos++] = '\n';
             output.write(buf, bufPos);
@@ -538,6 +551,7 @@ void CLRX::printDisasmLongString(size_t size, const char* data, std::ostream& ou
         linePrefix = "        .ascii \"";
         prefixSize += 4;
     }
+    // we need 96 bytes
     char buffer[96];
     ::memcpy(buffer, linePrefix, prefixSize);
     
@@ -545,9 +559,11 @@ void CLRX::printDisasmLongString(size_t size, const char* data, std::ostream& ou
     {
         const size_t end = std::min(pos+72, size);
         const size_t oldPos = pos;
+        // go to end of data, or newline
         while (pos < end && data[pos] != '\n') pos++;
         if (pos < end && data[pos] == '\n') pos++; // embrace newline
         size_t escapeSize;
+        // escape this part
         pos = oldPos + escapeStringCStyle(pos-oldPos, data+oldPos, 76,
                       buffer+prefixSize, escapeSize);
         buffer[prefixSize+escapeSize] = '\"';
@@ -575,7 +591,7 @@ void Disassembler::disassemble()
     try
     {
     sectionCount = 0;
-    
+    // write pseudo to set binary format
     switch(binaryFormat)
     {
         case BinaryFormat::AMD:
@@ -594,12 +610,14 @@ void Disassembler::disassemble()
             output.write(".rawcode\n", 9);
     }
     
+    // print GPU device (.gpu name)
     const GPUDeviceType deviceType = getDeviceType();
     output.write(".gpu ", 5);
     const char* gpuName = getGPUDeviceTypeName(deviceType);
     output.write(gpuName, ::strlen(gpuName));
     output.put('\n');
     
+    // call main disasembly routine
     switch(binaryFormat)
     {
         case BinaryFormat::AMD:

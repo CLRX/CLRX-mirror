@@ -40,6 +40,7 @@
 
 using namespace CLRX;
 
+// get AMD kernel input from inner binary
 static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
         AmdDisasmKernelInput& kernelInput, Flags flags, GPUDeviceType inputDeviceType)
 {
@@ -66,6 +67,7 @@ static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBi
                     usumGt(secOffset, secSize, encEntryOffset+encEntrySize))
                 continue; // skip this section (not in choosen encoding)
             
+            // set code and data sections (if exists)
             if (!codeFound && ::strcmp(secName, ".text") == 0)
             {
                 kernelInput.codeSize = secSize;
@@ -85,6 +87,7 @@ static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBi
         
         if ((flags & DISASM_CALNOTES) != 0)
         {
+            // get ATI CAL notes
             kernelInput.calNotes.resize(innerBin->getCALNotesNum(encEntryIndex));
             cxuint j = 0;
             for (const CALNote& calNote: innerBin->getCALNotes(encEntryIndex))
@@ -101,6 +104,7 @@ static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBi
     }
 }
 
+// template for handling 32-bit and 64-bit bnaries
 template<typename AmdMainBinary>
 static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
            Flags flags)
@@ -108,6 +112,7 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
     std::unique_ptr<AmdDisasmInput> input(new AmdDisasmInput);
     input->is64BitMode = (binary.getHeader().e_ident[EI_CLASS] == ELFCLASS64);
     
+    // get global setup (device, compile options, driver info, ...)
     input->deviceType = binary.determineGPUDeviceType();
     input->compileOptions = binary.getCompileOptions();
     input->driverInfo = binary.getDriverInfo();
@@ -135,6 +140,7 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
             { innerBin = nullptr; }
         }
         AmdDisasmKernelInput& kernelInput = input->kernels[i];
+        // kernel metadata
         kernelInput.metadataSize = binary.getMetadataSize(i);
         kernelInput.metadata = binary.getMetadata(i);
         
@@ -158,6 +164,7 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
             kernelInput.header = khdr->data;
         }
         
+        // get kernek input from inner binary
         kernelInput.kernelName = kernelInfo.kernelName;
         getAmdDisasmKernelInputFromBinary(innerBin, kernelInput, innerFlags,
                   input->deviceType);
@@ -179,6 +186,7 @@ AmdDisasmInput* CLRX::getAmdDisasmInputFromBinary64(const AmdMainGPUBinary64& bi
 
 /* get AsmConfig */
 
+// AMD kernel argument types map (sorted by type names)
 const std::pair<const char*, KernelArgType> CLRX::disasmArgTypeNameMap[74] =
 {
     { "char", KernelArgType::CHAR },
@@ -260,6 +268,7 @@ const std::pair<const char*, KernelArgType> CLRX::disasmArgTypeNameMap[74] =
 static const size_t disasmArgTypeNameMapLength =
         sizeof(disasmArgTypeNameMap)/sizeof(std::pair<const char*, KernelArgType>);
 
+// GPU argument type table
 const KernelArgType gpuArgTypeTable[] =
 {
     KernelArgType::UCHAR,
@@ -328,6 +337,7 @@ static const cxuint vectorIdTable[17] =
 { UINT_MAX, 0, 1, 2, 3, UINT_MAX, UINT_MAX, UINT_MAX, 4,
   UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };        
 
+// determine kernel argument type from type name from metadata line
 static KernelArgType determineKernelArgType(const char* typeString, cxuint vectorSize,
                     LineNo lineNo)
 {
@@ -420,6 +430,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     std::unordered_map<CString, cxuint> argIndexMap;
     std::vector<cxuint> samplerArgIndices;
     std::vector<cxuint> constArgIndices;
+    // set as defaults
     config.dimMask = BINGEN_DEFAULT;
     config.printfId = BINGEN_DEFAULT;
     config.constBufferId = BINGEN_DEFAULT;
@@ -438,7 +449,9 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     cxuint argSamplers = 0;
     
     cxuint uavIdToCompare = 0;
-    /* parse arguments */
+    /* parse arguments from metadata string */
+    /* this is very similar code as in AmdBinaries, but
+     * includes type and all needed argument attributes */
     const char* linePtr = metadata;
     const char* mtEnd = metadata + metadataSize;
     LineNo lineNo = 1;
@@ -447,13 +460,15 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         const char* lineEnd = linePtr;
         while (lineEnd!=mtEnd && *lineEnd!='\n') lineEnd++;
         const char* outEnd;
-        // cws
+        // local size
         if (::strnecmp(linePtr, ";memory:hwlocal:", 16, lineEnd)==0)
             config.hwLocalSize = cstrtovCStyle<size_t>(linePtr+16, lineEnd, outEnd);
+        // hw region
         else if (::strnecmp(linePtr, ";memory:hwregion:", 17, lineEnd)==0)
             config.hwRegion = cstrtovCStyle<uint32_t>(linePtr+17, lineEnd, outEnd);
         else if (::strnecmp(linePtr, ";cws:", 5, lineEnd)==0)
-        {  // cws
+        { 
+            // cws (reqd_work_group_size)
             config.reqdWorkGroupSize[0] = cstrtovCStyle<uint32_t>(
                         linePtr+5, lineEnd, outEnd);
             if (outEnd==lineEnd || *outEnd!=':')
@@ -492,6 +507,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             ptr = nextPtr+1;
             if (::strncmp(typeStr, "struct:", 7)==0)
             {
+                // argument is structure
                 arg.argType = KernelArgType::STRUCTURE;
                 arg.structSize = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
             }
@@ -574,6 +590,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             if (ptr==nullptr)
                 throw ParseException(lineNo, "Can't parse pointer argument");
             ptr++;
+            // access qualifier
             if (::strnecmp(ptr, "RO:", 2, lineEnd)==0 &&
                     arg.ptrSpace==KernelPtrSpace::GLOBAL)
                 arg.ptrAccess |= KARG_PTR_CONST;
@@ -584,9 +601,11 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             if (ptr==nullptr || ptr+2>=lineEnd)
                 throw ParseException(lineNo, "Can't parse pointer argument");
             ptr++;
+            // volatile
             if (*ptr == '1')
                 arg.ptrAccess |= KARG_PTR_VOLATILE;
             ptr++;
+            // restrict
             if (ptr+1>=lineEnd || *ptr!=':')
                 throw ParseException(lineNo, "Can't parse pointer argument");
             ptr++;
@@ -617,6 +636,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             const char* imgType = ptr;
             const char* imgTypeEnd = nextPtr;
             ptr = nextPtr+1;
+            // parse type of image
             if (::strnecmp(imgType, "1D:", 3, imgTypeEnd+1)==0)
                 arg.argType = KernelArgType::IMAGE1D;
             else if (::strnecmp(imgType, "1DA:", 4, imgTypeEnd+1)==0)
@@ -631,6 +651,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 arg.argType = KernelArgType::IMAGE3D;
             else
                 throw ParseException(lineNo, "Can't parse image type");
+            // image access qualifier
             if (::strnecmp(ptr,"RO:", 3, lineEnd) == 0)
                 arg.ptrAccess |= KARG_PTR_READ_ONLY;
             else if (::strnecmp(ptr,"WO:", 3, lineEnd) == 0)
@@ -699,6 +720,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             }
             else
             {
+                // this argument's sampler
                 auto it = argIndexMap.find(samplerName);
                 if (it!=argIndexMap.end())
                     samplerArgIndices.push_back(it->second);
@@ -721,6 +743,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             if (arg.argType == KernelArgType::POINTER &&
                 arg.pointerType == KernelArgType::VOID)
             {
+                // get type name from reflection and find name from type name
                 CString ptrTypeName = arg.typeName.substr(0, arg.typeName.size()-1);
                 auto it = binaryMapFind(disasmArgTypeNameMap, 
                         disasmArgTypeNameMap+disasmArgTypeNameMapLength,
@@ -728,6 +751,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 
                 if (it != disasmArgTypeNameMap+disasmArgTypeNameMapLength)
                     arg.pointerType = it->second;
+                // treat enum as unsigned integer
                 else if (arg.typeName.compare(0, 5, "enum ")==0)
                     arg.pointerType = KernelArgType::UINT;
             }
@@ -740,8 +764,10 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             if (driverVersion < 134805)
                 uavIdToCompare = 9;
         }
+        // get printfif
         else if (::strnecmp(linePtr, ";printfid:", 10, lineEnd)==0)
             config.printfId = cstrtovCStyle<cxuint>(linePtr+10, lineEnd, outEnd);
+        // get privateid
         else if (::strnecmp(linePtr, ";privateid:", 11, lineEnd)==0)
             config.privateId = cstrtovCStyle<cxuint>(linePtr+11, lineEnd, outEnd);
         else if (::strnecmp(linePtr, ";cbid:", 6, lineEnd)==0)
@@ -759,17 +785,20 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             config.samplers[k-argSamplers] = config.samplers[k];
         config.samplers.resize(config.samplers.size()-argSamplers);
     }
+    // set sampler type to some arguments (if they are samplers)
     for (cxuint argIdx: samplerArgIndices)
         if (argIdx < config.args.size())
             config.args[argIdx].argType = KernelArgType::SAMPLER;
         else
             throw Exception("Sampler arg index out of range");
     
+    // apply const qualifier to some pointer arguments
     for (cxuint argIdx: constArgIndices)
         if (argIdx < config.args.size())
             config.args[argIdx].ptrAccess |= KARG_PTR_CONST;
         else
             throw Exception("Const arg index out of range");
+    
     /* from ATI CAL NOTES */
     cxbyte uavMask[128];
     std::fill(uavMask, uavMask+128, cxbyte(0));
@@ -808,11 +837,13 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 break;
             case CALNOTE_ATI_PROGINFO:
             {
+                // PROG INFO CAL notes
                 const CALProgramInfoEntry* piEntry =
                         reinterpret_cast<const CALProgramInfoEntry*>(cnData);
                 const cxuint piEntriesNum = cnHdr.descSize/sizeof(CALProgramInfoEntry);
                 for (cxuint k = 0; k < piEntriesNum; k++)
                 {
+                    // determine type by address
                     switch(ULEV(piEntry[k].address))
                     {
                         case 0x80001000:
@@ -848,6 +879,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                             break;
                         case 0x00002e13:
                         {
+                            // get PGM_RSRC2 value and set config values
                             config.pgmRSRC2 = ULEV(piEntry[k].value);
                             config.tgSize = (config.pgmRSRC2 & 0x400)!=0;
                             config.exceptions = (config.pgmRSRC2>>24)&0x7f;
@@ -860,11 +892,13 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                             const uint32_t val = ULEV(piEntry[k].value);
                             if (addr >= 0x80001001 && addr < 0x80001041)
                             {
+                                // if USER DATA's
                                 const cxuint elIndex = (addr-0x80001001)>>2;
                                 if (config.userDatas.size() <= elIndex)
                                     continue; // ignore userdata beyond specified number
                                 switch (addr&3)
                                 {
+                                    // get DATA_CLASS, APISLOIT, REGSTART and REGEND
                                     case 1:
                                         config.userDatas[elIndex].dataClass = val;
                                         break;
@@ -912,6 +946,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     return config;
 }
 
+// AMD CAL notes table by CAL note type
 static const char* disasmCALNoteNamesTable[] =
 {
     ".proginfo",
@@ -972,6 +1007,7 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
             }
             else
             {
+                // unknown CAL note type
                 const size_t len = itocstrCStyle(calNote.header.type, buf, 32, 16);
                 output.write("    .calnote ", 13);
                 output.write(buf, len);
@@ -988,6 +1024,7 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
                 // handle CAL note types
                 case CALNOTE_ATI_PROGINFO:
                 {
+                    // print cal notes as prog info entries
                     output.put('\n');
                     const cxuint progInfosNum =
                             calNote.header.descSize/sizeof(CALProgramInfoEntry);
@@ -996,6 +1033,7 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
                     ::memcpy(buf, "        .entry ", 15);
                     for (cxuint k = 0; k < progInfosNum; k++)
                     {
+                        // format: .proginfo address, value
                         const CALProgramInfoEntry& progInfo = progInfos[k];
                         size_t bufPos = 15 + itocstrCStyle(ULEV(progInfo.address),
                                      buf+15, 32, 16, 8);
@@ -1029,6 +1067,7 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
                 case CALNOTE_ATI_FLOAT32CONSTS:
                 case CALNOTE_ATI_BOOL32CONSTS:
                 {
+                    // print cal notes as segment list
                     output.put('\n');
                     const cxuint segmentsNum =
                             calNote.header.descSize/sizeof(CALDataSegmentEntry);
@@ -1038,6 +1077,7 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
                     for (cxuint k = 0; k < segmentsNum; k++)
                     {
                         const CALDataSegmentEntry& segment = segments[k];
+                        // format: .segment offset, size
                         size_t bufPos = 17 + itocstrCStyle(
                                     ULEV(segment.offset), buf + 17, 32);
                         buf[bufPos++] = ',';
@@ -1055,6 +1095,7 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
                 }
                 case CALNOTE_ATI_INPUT_SAMPLERS:
                 {
+                    // print cal notes as sampler list
                     output.put('\n');
                     const cxuint samplersNum =
                             calNote.header.descSize/sizeof(CALSamplerMapEntry);
@@ -1064,6 +1105,7 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
                     for (cxuint k = 0; k < samplersNum; k++)
                     {
                         const CALSamplerMapEntry& sampler = samplers[k];
+                        // format: .sampler input, sampler
                         size_t bufPos = 17 + itocstrCStyle(
                                     ULEV(sampler.input), buf + 17, 32);
                         buf[bufPos++] = ',';
@@ -1082,6 +1124,7 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
                 }
                 case CALNOTE_ATI_CONSTANT_BUFFERS:
                 {
+                    // print cal notes as cbmasks
                     output.put('\n');
                     const cxuint constBufMasksNum =
                             calNote.header.descSize/sizeof(CALConstantBufferMask);
@@ -1090,6 +1133,7 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
                     ::memcpy(buf, "        .cbmask ", 16);
                     for (cxuint k = 0; k < constBufMasksNum; k++)
                     {
+                        // format: .cbmask index, size
                         const CALConstantBufferMask& cbufMask = constBufMasks[k];
                         size_t bufPos = 16 + itocstrCStyle(
                                     ULEV(cbufMask.index), buf + 16, 32);
@@ -1168,6 +1212,7 @@ static void dumpAmdKernelDatas(std::ostream& output, const AmdDisasmKernelInput&
         }
 }
 
+// USER DATA class names by value
 static const char* dataClassNameTbl[] =
 {
     "imm_resource",
@@ -1205,6 +1250,7 @@ static const char* dataClassNameTbl[] =
     "imm_generic_user_data"
 };
 
+// kernel arg types table
 static const char* kernelArgTypeNamesTbl[] =
 {
     "void",
@@ -1250,6 +1296,7 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
             // images
             isImage = true;
             cxbyte access = arg.ptrAccess & KARG_PTR_ACCESS_MASK;
+            // print access qualifier
             if (access == KARG_PTR_READ_ONLY)
                 output.write(", read_only", 11);
             else if (access == KARG_PTR_WRITE_ONLY)
@@ -1286,6 +1333,7 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
             output.write(", local", 7);
         else if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
             output.write(", global", 8);
+        
         if ((arg.ptrAccess & (KARG_PTR_CONST|KARG_PTR_VOLATILE|KARG_PTR_RESTRICT))!=0)
         {
             // pointer access
@@ -1328,6 +1376,7 @@ static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& con
     output.write("    .config\n", 12);
     if (config.dimMask != BINGEN_DEFAULT)
     {
+        // print dimensions (.dims xyz)
         strcpy(buf, "        .dims ");
         bufSize = 14;
         if ((config.dimMask & 1) != 0)
@@ -1340,6 +1389,7 @@ static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& con
         output.write(buf, bufSize);
     }
     bufSize = 0;
+    // print reqd_work_group_size: .cws XSIZE[,YSIZE[,ZSIZE]]
     if (config.reqdWorkGroupSize[2] != 0)
         bufSize = snprintf(buf, 100, "        .cws %u, %u, %u\n",
                config.reqdWorkGroupSize[0], config.reqdWorkGroupSize[1],
@@ -1406,6 +1456,7 @@ static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& con
     output.write(buf, bufSize);
     bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", config.pgmRSRC2);
     output.write(buf, bufSize);
+    // flags in PGMRSRC2
     if (config.ieeeMode)
         output.write("        .ieeemode\n", 18);
     if (config.tgSize)
@@ -1455,6 +1506,7 @@ void CLRX::disassembleAmd(std::ostream& output, const AmdDisasmInput* amdInput,
     
     if (doMetadata)
     {
+        // compile options and driver info belongs to metadata
         output.write(".compile_options \"", 18);
         const std::string escapedCompileOptions = 
                 escapeStringCStyle(amdInput->compileOptions);
@@ -1481,6 +1533,7 @@ void CLRX::disassembleAmd(std::ostream& output, const AmdDisasmInput* amdInput,
             dumpAmdKernelDatas(output, kinput, flags);
         else
         {
+            // dump in human readable configuration
             AmdKernelConfig config = getAmdKernelConfig(kinput.metadataSize,
                     kinput.metadata, kinput.calNotes, amdInput->driverInfo,
                     kinput.header);

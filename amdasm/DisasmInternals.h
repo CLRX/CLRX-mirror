@@ -35,55 +35,65 @@
 namespace CLRX
 {
 
+// print data in bytes in assembler format (secondAlign add extra align)
 extern CLRX_INTERNAL void printDisasmData(size_t size, const cxbyte* data,
               std::ostream& output, bool secondAlign = false);
 
+// print data in 32-bit words in assembler format (secondAlign add extra align)
 extern CLRX_INTERNAL void printDisasmDataU32(size_t size, const uint32_t* data,
              std::ostream& output, bool secondAlign = false);
 
+// print data in string form in assembler format
 extern CLRX_INTERNAL void printDisasmLongString(size_t size, const char* data,
             std::ostream& output, bool secondAlign = false);
 
+// disassemble Amd OpenCL 1.0 binary input
 extern CLRX_INTERNAL void disassembleAmd(std::ostream& output,
        const AmdDisasmInput* amdInput, ISADisassembler* isaDisassembler,
        size_t& sectionCount, Flags flags);
 
+// disassemble Amd OpenCL 2.0 binary input
 extern CLRX_INTERNAL void disassembleAmdCL2(std::ostream& output,
         const AmdCL2DisasmInput* amdCL2Input, ISADisassembler* isaDisassembler,
         size_t& sectionCount, Flags flags);
 
+// disassemble ROCm binary input
 extern CLRX_INTERNAL void disassembleROCm(std::ostream& output,
        const ROCmDisasmInput* rocmInput, ISADisassembler* isaDisassembler,
        Flags flags);
 
+// dump AMDHSA configuration in assembler format
+// amdshaPrefix - add extra prefix for gallium HSA config params
 extern CLRX_INTERNAL void dumpAMDHSAConfig(std::ostream& output, cxuint maxSgprsNum,
              GPUArchitecture arch, const ROCmKernelConfig& config,
              bool amdhsaPrefix = false);
-
+// disassemble code in AMDHSA layout (kernel config and kernel codes)
 extern CLRX_INTERNAL void disassembleAMDHSACode(std::ostream& output,
             const std::vector<ROCmDisasmRegionInput>& regions,
             size_t codeSize, const cxbyte* code, ISADisassembler* isaDisassembler,
             Flags flags);
 
+// disassemble Gallium binary input
 extern CLRX_INTERNAL void disassembleGallium(std::ostream& output,
        const GalliumDisasmInput* galliumInput, ISADisassembler* isaDisassembler,
        Flags flags);
 
+// prepare AMD OpenCL input from AMD 32-bit binary
 extern CLRX_INTERNAL AmdDisasmInput* getAmdDisasmInputFromBinary32(
             const AmdMainGPUBinary32& binary, Flags flags);
-
+// prepare AMD OpenCL input from AMD 64-bit binary
 extern CLRX_INTERNAL AmdDisasmInput* getAmdDisasmInputFromBinary64(
             const AmdMainGPUBinary64& binary, Flags flags);
-
+// prepare AMD OpenCL 2.0 input from AMD 32-bit binary
 extern CLRX_INTERNAL AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary32(
             const AmdCL2MainGPUBinary32& binary, cxuint driverVersion);
-
+// prepare AMD OpenCL 2.0 input from AMD 64-bit binary
 extern CLRX_INTERNAL AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary64(
             const AmdCL2MainGPUBinary64& binary, cxuint driverVersion);
-
+// prepare ROCM input from ROCM binary
 extern CLRX_INTERNAL ROCmDisasmInput* getROCmDisasmInputFromBinary(
             const ROCmBinary& binary);
-
+// prepare Gallium input from Gallium binary
 extern CLRX_INTERNAL GalliumDisasmInput* getGalliumDisasmInputFromBinary(
             GPUDeviceType deviceType, const GalliumBinary& binary, cxuint llvmVersion);
 
@@ -91,6 +101,7 @@ extern CLRX_INTERNAL const std::pair<const char*, KernelArgType> disasmArgTypeNa
 
 extern CLRX_INTERNAL const KernelArgType disasmGpuArgTypeTable[];
 
+// dump kernel arguments for  kernel in AMD binaries (cl20 - OpenCL 2.0 binaries)
 extern CLRX_INTERNAL void dumpAmdKernelArg(std::ostream& output,
            const AmdKernelArgInput& arg, bool cl20);
 
