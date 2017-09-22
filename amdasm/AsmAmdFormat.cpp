@@ -31,6 +31,7 @@
 
 using namespace CLRX;
 
+// all AMD Catalyst pseudo-op names (sorted)
 static const char* amdPseudoOpNamesTbl[] =
 {
     "arg", "boolconsts", "calnote", "cbid",
@@ -48,6 +49,7 @@ static const char* amdPseudoOpNamesTbl[] =
     "useprintf", "userdata", "vgprsnum"
 };
 
+// all AMD Catalyst pseudo-op names (sorted)
 enum
 {
     AMDOP_ARG = 0, AMDOP_BOOLCONSTS, AMDOP_CALNOTE, AMDOP_CBID,
@@ -75,8 +77,10 @@ AsmAmdHandler::AsmAmdHandler(Assembler& assembler) : AsmFormatHandler(assembler)
 {
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
+    // first, add global data section (will be default)
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA, ELFSECTID_UNDEF, nullptr });
     savedSection = 0;
+    // detect amd driver version once, for using many times
     detectedDriverVersion = detectAmdDriverVersion();
 }
 
@@ -86,6 +90,7 @@ AsmAmdHandler::~AsmAmdHandler()
         delete kernel;
 }
 
+// routine to deterime driver version while assemblying
 cxuint AsmAmdHandler::determineDriverVersion() const
 {
     if (output.driverVersion==0 && output.driverInfo.empty())
@@ -157,8 +162,9 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
     const cxuint thisSection = sections.size();
     Section section;
     section.kernelId = kernelId;
-    if (::strcmp(sectionName, ".data") == 0) // data
+    if (::strcmp(sectionName, ".data") == 0)
     {
+        // .data section (only in kernels)
         if (kernelId == ASMKERN_GLOBAL)
             throw AsmFormatException("Section '.data' permitted only inside kernels");
         kernelStates[kernelId]->dataSection = thisSection;
@@ -168,6 +174,7 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
     }
     else if (kernelId == ASMKERN_GLOBAL)
     {
+        // add extra section to main binary
         auto out = extraSectionMap.insert(std::make_pair(std::string(sectionName),
                     thisSection));
         if (!out.second)
@@ -208,6 +215,7 @@ cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
 {
     if (assembler.currentKernel == ASMKERN_GLOBAL)
     {
+        // get extra section from main binary
         SectionMap::const_iterator it = extraSectionMap.find(sectionName);
         if (it != extraSectionMap.end())
             return it->second;
@@ -222,6 +230,7 @@ cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
             return kernelState.dataSection;
         else
         {
+            // if extra section, the find it
             SectionMap::const_iterator it = kernelState.extraSectionMap.find(sectionName);
             if (it != kernelState.extraSectionMap.end())
                 return it->second;
@@ -265,8 +274,10 @@ AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) co
     AsmFormatHandler::SectionInfo info;
     info.type = sections[sectionId].type;
     info.flags = 0;
+    // code is addressable and writeable
     if (info.type == AsmSectionType::CODE)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
+    // any other section (except config) are absolute addressable and writeable
     else if (info.type != AsmSectionType::CONFIG)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     info.name = sections[sectionId].name;
@@ -335,6 +346,7 @@ void AsmAmdPseudoOps::getDriverVersion(AsmAmdHandler& handler, const char* lineP
     const CString symName = extractScopedSymName(linePtr, end, false);
     if (symName.empty())
         ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
+    // special case for '.' symbol (check whether is in global scope)
     size_t symNameLength = symName.size();
     if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
         ASM_RETURN_BY_ERROR(symNamePlace, "Symbol '.' can be only in global scope")
@@ -390,6 +402,7 @@ void AsmAmdPseudoOps::addMetadata(AsmAmdHandler& handler, const char* pseudoOpPl
     cxuint& metadataSection = handler.kernelStates[asmr.currentKernel]->metadataSection;
     if (metadataSection == ASMSECT_NONE)
     {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMD_METADATA,
             ELFSECTID_UNDEF, nullptr });
@@ -415,6 +428,7 @@ void AsmAmdPseudoOps::doConfig(AsmAmdHandler& handler, const char* pseudoOpPlace
         
     if (kernel.configSection == ASMSECT_NONE)
     {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::CONFIG,
             ELFSECTID_UNDEF, nullptr });
@@ -442,6 +456,7 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
     skipSpacesToEnd(linePtr, end);
     uint64_t value = 0;
     const char* valuePlace = linePtr;
+    // check whether CAL note hold only single value
     const bool singleValue = calNoteId < 32 &&
             (singleValueCALNotesMask & (1U<<calNoteId)) && linePtr != end;
     if (singleValue)
@@ -487,6 +502,7 @@ void AsmAmdPseudoOps::addCustomCALNote(AsmAmdHandler& handler, const char* pseud
     if (!getAbsoluteValueArg(asmr, value, linePtr, true))
         return;
     asmr.printWarningForRange(32, value, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    // resue code in addCALNote
     addCALNote(handler, pseudoOpPlace, linePtr, value);
 }
 
@@ -505,6 +521,7 @@ void AsmAmdPseudoOps::addHeader(AsmAmdHandler& handler, const char* pseudoOpPlac
     cxuint& headerSection = handler.kernelStates[asmr.currentKernel]->headerSection;
     if (headerSection == ASMSECT_NONE)
     {
+        /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMD_HEADER,
             ELFSECTID_UNDEF, nullptr });
@@ -536,6 +553,7 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
     skipSpacesToEnd(linePtr, end);
     const char* value1Place = linePtr;
     uint64_t value1 = 0, value2 = 0;
+    // parse address (first value)
     bool good = getAbsoluteValueArg(asmr, value1, linePtr, true);
     if (good)
         asmr.printWarningForRange(32, value1, asmr.getSourcePos(value1Place));
@@ -543,6 +561,7 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
     if (!skipRequiredComma(asmr, linePtr))
         return;
     const char* value2Place = linePtr;
+    // parse value (second value)
     if (getAbsoluteValueArg(asmr, value2, linePtr, true))
         asmr.printWarningForRange(32, value2, asmr.getSourcePos(value2Place));
     else
@@ -868,6 +887,7 @@ bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
+    // default value is (1,0,0)
     out[0] = 1;
     out[1] = 0;
     out[2] = 0;
@@ -880,6 +900,7 @@ bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
         return false;
     if (haveComma)
     {
+        // second and third argument is optional
         skipSpacesToEnd(linePtr, end);
         valuePlace = linePtr;
         if (getAbsoluteValueArg(asmr, out[1], linePtr, false))
@@ -975,6 +996,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     
     cxuint dataClass = 0;
     bool good = true;
+    // parse user data class
     good &= getEnumeration(asmr, linePtr, "Data Class", dataClassMapSize,
                     dataClassMap, dataClass);
     
@@ -983,6 +1005,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     skipSpacesToEnd(linePtr, end);
     uint64_t apiSlot = 0;
     const char* apiSlotPlace = linePtr;
+    // api slot (is 32-bit value)
     if (getAbsoluteValueArg(asmr, apiSlot, linePtr, true))
         asmr.printWarningForRange(32, apiSlot, asmr.getSourcePos(apiSlotPlace),
                                   WS_UNSIGNED);
@@ -996,6 +1019,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     const char* regStartPlace = linePtr;
     if (getAbsoluteValueArg(asmr, regStart, linePtr, true))
     {
+        // must be in (0-15)
         if (regStart > 15)
             ASM_NOTGOOD_BY_ERROR(regStartPlace, "RegStart out of range (0-15)")
     }
@@ -1145,6 +1169,7 @@ static const char* defaultArgTypeNames[] =
 static const size_t argTypeNameMapSize = sizeof(argTypeNameMap) /
         sizeof(std::pair<const char*, KernelArgType>);
 
+// main routine to parse argument
 bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
           const char* linePtr, const std::unordered_set<CString>& argNamesSet,
           AmdKernelArgInput& argInput, bool cl20)
@@ -1212,6 +1237,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
     
     if (!typeNameDefined)
     {
+        // if type name is not supplied
         typeName = defaultArgTypeNames[cxuint(argType)];
         if (pointer)
             typeName.push_back('*');
@@ -1228,11 +1254,13 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
     bool haveLastArgument = false;
     if (pointer)
     {
+        // if type is pointer
         if (argType == KernelArgType::STRUCTURE)
         {
             if (!skipRequiredComma(asmr, linePtr))
                 return false;
             skipSpacesToEnd(linePtr, end);
+            // parse extra structure size
             const char* structSizePlace = linePtr;
             if (getAbsoluteValueArg(asmr, structSizeVal, linePtr, true))
                 asmr.printWarningForRange(sizeof(cxuint)<<3, structSizeVal,
@@ -1272,6 +1300,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
                 if (linePtr==end || *linePtr==',')
                     break;
                 const char* ptrAccessPlace = linePtr;
+                // parse acces qualifier (const,restrict,volatile)
                 if (getNameArg(asmr, 10, name, linePtr, "access qualifier", true))
                 {
                     if (::strcasecmp(name, "const")==0)
@@ -1321,6 +1350,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
                     place = linePtr;
                     if (getAbsoluteValueArg(asmr, resIdVal, linePtr, false))
                     {
+                        // for constant buffers, uavid is in range (0-159)
                         const cxuint maxUavId = (ptrSpace==KernelPtrSpace::CONSTANT) ?
                                 159 : 1023;
                         
@@ -1341,6 +1371,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
     }
     else if (!pointer && isKernelArgImage(argType))
     {
+        // if image type
         ptrSpace = KernelPtrSpace::GLOBAL;
         ptrAccess = KARG_PTR_READ_ONLY;
         if (!skipComma(asmr, haveComma, linePtr))
@@ -1349,6 +1380,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
         {
             skipSpacesToEnd(linePtr, end);
             const char* ptrAccessPlace = linePtr;
+            // access qualifier for image (rdonly,wronly)
             if (getNameArg(asmr, 15, name, linePtr, "access qualifier", false))
             {
                 if (::strcmp(name, "read_only")==0 || ::strcmp(name, "rdonly")==0)
@@ -1368,6 +1400,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
                 haveLastArgument = true;
                 skipSpacesToEnd(linePtr, end);
                 const char* place = linePtr;
+                // resid for image (0-7 for write-only images, 0-127 for read-only images)
                 if (getAbsoluteValueArg(asmr, resIdVal, linePtr, false))
                 {
                     cxuint maxResId = (ptrAccess == KARG_PTR_READ_ONLY) ? 127 : 7;
@@ -1396,8 +1429,10 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
             const char* place = linePtr;
             if (getAbsoluteValueArg(asmr, resIdVal, linePtr, true))
             {
+                // for OpenCL 1.2 is - resid in 0-7
                 if (resIdVal!=BINGEN_DEFAULT && (!cl20 && resIdVal > 7))
                     ASM_NOTGOOD_BY_ERROR(place, "Resource Id out of range (0-7)")
+                    // for OpenCL 1.2 is - resid in 0-15
                 else if (resIdVal!=BINGEN_DEFAULT && cl20 && resIdVal > 15)
                     ASM_NOTGOOD_BY_ERROR(place, "Sampler Id out of range (0-15)")
             }
@@ -1678,6 +1713,8 @@ bool AsmAmdHandler::prepareBinary()
     /* initialize sections */
     const size_t sectionsNum = sections.size();
     const size_t kernelsNum = kernelStates.size();
+    
+    // set sections as outputs
     for (size_t i = 0; i < sectionsNum; i++)
     {
         const AsmSection& asmSection = assembler.sections[i];
@@ -1721,6 +1758,7 @@ bool AsmAmdHandler::prepareBinary()
                 break;
             case AsmSectionType::AMD_CALNOTE:
             {
+                // add new CAL note to output
                 CALNoteInput calNote;
                 calNote.header.type = section.extraId;
                 calNote.header.descSize = sectionSize;
@@ -1735,6 +1773,7 @@ bool AsmAmdHandler::prepareBinary()
             case AsmSectionType::EXTRA_NOBITS:
             case AsmSectionType::EXTRA_SECTION:
             {
+                // handle extra (user) section, set section type and its flags
                 uint32_t elfSectType =
                        (asmSection.type==AsmSectionType::EXTRA_NOTE) ? SHT_NOTE :
                        (asmSection.type==AsmSectionType::EXTRA_NOBITS) ? SHT_NOBITS :
@@ -1760,6 +1799,7 @@ bool AsmAmdHandler::prepareBinary()
     }
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(assembler.deviceType);
+    // determine max SGPRs number for architecture excluding VCC
     const cxuint maxSGPRsNumWithoutVCC = getGPUMaxRegistersNum(arch, REGTYPE_SGPR,
                 REGCOUNT_NO_VCC);
     // set up number of the allocated SGPRs and VGPRs for kernel
@@ -1777,10 +1817,11 @@ bool AsmAmdHandler::prepareBinary()
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
                 ((config.pgmRSRC2>>7)&7);
         cxuint minRegsNum[2];
+        // get minimum required register by user data
         getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,
                    ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |
                    ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
-        
+        // set used SGPRs number if not specified by user
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
             config.usedSGPRsNum = std::min(maxSGPRsNumWithoutVCC,
                 std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]));

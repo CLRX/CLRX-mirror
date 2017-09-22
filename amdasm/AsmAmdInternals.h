@@ -60,27 +60,30 @@ enum AmdConfigValueTarget
 struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
 {
     static bool checkPseudoOpName(const CString& string);
-    
+    // .global_data (go to global data)
     static void doGlobalData(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // set compile options
     static void setCompileOptions(AsmAmdHandler& handler, const char* linePtr);
+    // .driver_info
     static void setDriverInfo(AsmAmdHandler& handler, const char* linePtr);
+    // .driver_version
     static void setDriverVersion(AsmAmdHandler& handler, const char* linePtr);
-    
+    // .get_driver_version
     static void getDriverVersion(AsmAmdHandler& handler, const char* linePtr);
-    
+    // .specified CAL note
     static void addCALNote(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, uint32_t calNoteId);
+    // .calnote
     static void addCustomCALNote(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .metadata (open metadata)
     static void addMetadata(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .header
     static void addHeader(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .config (open configuration)
     static void doConfig(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
@@ -93,32 +96,41 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
     /* dual pseudo-ops (for configured kernels and non-config kernels) */
     static void doCBId(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .condout
     static void doCondOut(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .early exit
     static void doEarlyExit(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .sampler
     static void doSampler(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
     /* user configuration pseudo-ops */
+    // .dims (dimensions)
     static void setDimensions(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
+    // parse argument (.arg) (used also by AMDOCL2 handler)
     static bool parseArg(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
          const std::unordered_set<CString>& argNamesSet, AmdKernelArgInput& arg, bool cl20);
+    // .arg
     static void doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // set config value
     static void setConfigValue(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, AmdConfigValueTarget target);
     
+    // parse cws (reqd_work_group_size) (used also by AMDOCL2 handler)
     static bool parseCWS(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                      uint64_t* out);
+    // set cws (reqd_work_group_size)
     static void setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // set boolean config value
     static void setConfigBoolValue(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, AmdConfigValueTarget target);
-    
+    // .userdata
     static void addUserData(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
 };

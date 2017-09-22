@@ -455,6 +455,7 @@ void AsmGalliumPseudoOps::getXXXVersion(AsmGalliumHandler& handler, const char* 
     if (symName.empty())
         ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
     size_t symNameLength = symName.size();
+    // special case for '.' symbol (check whether is in global scope)
     if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
         ASM_RETURN_BY_ERROR(symNamePlace, "Symbol '.' can be only in global scope")
     if (!checkGarbagesAtEnd(asmr, linePtr))
