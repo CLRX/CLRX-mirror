@@ -31,15 +31,17 @@ using namespace CLRX;
 
 typedef std::pair<CString, const AsmSymbol*> AsmSymbolEntryC;
 
+// recursive function to push symbols from scope adding to name scope prefixes
 static void pushSymbolsFromScopes(const AsmScope& scope,
             std::vector<AsmSymbolEntryC>& symEntries, const std::string& prefix)
 {
+    // push symbol in this scope adding to its name a prefix
     for (const AsmSymbolEntry& symEntry: scope.symbolMap)
     {
         std::string symName = prefix+symEntry.first.c_str();
         symEntries.push_back(AsmSymbolEntryC(CString(symName.c_str()), &symEntry.second));
     }
-    
+    // traverse through scopes
     for (const auto& scopeEntry: scope.scopeMap)
     {
         std::string newPrefix = prefix+scopeEntry.first.c_str()+"::";
@@ -53,15 +55,20 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     std::ostringstream errorStream;
     std::ostringstream printStream;
     
+    // create assembler with testcase input
+    // enable ASM_TESTRUN (needed while testing)
     Assembler assembler("test.s", input, (ASM_ALL|ASM_TESTRUN)&~ASM_ALTMACRO,
             BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, errorStream, printStream);
+    // include include dirs from testcase
     for (const char* incDir: testCase.includeDirs)
         assembler.addIncludeDir(incDir);
+    // just assemble
     bool good = assembler.assemble();
     /* compare results */
     char testName[30];
     snprintf(testName, 30, "Test #%u", testId);
     
+    // check whether good, format, device, bitness is match
     assertValue(testName, "good", int(testCase.good), int(good));
     assertValue(testName, "format", int(testCase.format),
                 int(assembler.getBinaryFormat()));
@@ -103,6 +110,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     }
     // check symbols
     std::vector<AsmSymbolEntryC> symEntries;
+    // push symbols recursive traversing through scopes (begins from global)
     pushSymbolsFromScopes(assembler.getGlobalScope(), symEntries, "");
     std::sort(symEntries.begin(), symEntries.end(),
                 [](const AsmSymbolEntryC& s1, const AsmSymbolEntryC& s2)
@@ -117,6 +125,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
         snprintf(buf, 32, "Symbol#%u.", i);
         std::string caseName(buf);
         
+        // compare expected symbols with result symbols
         const AsmSymbolEntryC& resSymbol = symEntries[i];
         const SymEntry& expSymbol = testCase.symbols[i];
         assertString(testName,caseName+"name", expSymbol.name, resSymbol.first);

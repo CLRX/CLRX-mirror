@@ -395,7 +395,7 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
     // retrieve data
     if (assembler.getBinaryFormat()==BinaryFormat::AMD)
     {
-        // Catalyst
+        // for AMD Catalyst binaries
         const AmdInput* input = static_cast<const AsmAmdHandler*>(
                     assembler.getFormatHandler())->getOutput();
         assertTrue(testName, "input!=nullptr", input!=nullptr);
@@ -403,6 +403,7 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
                     input->kernels.size());
         
         char buf[32];
+        // compare register counting for kernels
         for (cxuint i = 0; i < input->kernels.size(); i++)
         {
             const AmdKernelInput& kinput = input->kernels[i];
@@ -426,6 +427,7 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
         assertValue(testName, "kernels.length", testCase.regPools.size(),
                     input->kernels.size());
         char buf[32];
+        // compare register counting for kernels
         for (cxuint i = 0; i < input->kernels.size(); i++)
         {
             const GalliumKernelInput& kinput = input->kernels[i];
@@ -449,6 +451,7 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
         assertValue(testName, "kernels.length", testCase.regPools.size(),
                     input->symbols.size());
         char buf[32];
+        // compare register counting for kernels
         for (cxuint i = 0; i < input->symbols.size(); i++)
         {
             const ROCmSymbolInput& kinput = input->symbols[i];

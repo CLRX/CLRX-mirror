@@ -32,16 +32,22 @@ static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
 {
     std::ostringstream disOss;
     AmdDisasmInput input;
+    // set device type
     input.deviceType = deviceType;
     input.is64BitMode = false;
+    // set up GCN disassembler
     Disassembler disasm(&input, disOss, DISASM_FLOATLITS);
     GCNDisassembler gcnDisasm(disasm);
+    // create input code
     uint32_t inputCode[2] = { LEV(testCase.word0), LEV(testCase.word1) };
     gcnDisasm.setInput(testCase.twoWords?8:4, reinterpret_cast<cxbyte*>(inputCode));
+    // disassemble
     gcnDisasm.disassemble();
     std::string outStr = disOss.str();
+    // compare output
     if (outStr != testCase.expected)
     {
+        // throw exception with detailed info
         std::ostringstream oss;
         oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<
             " decGCNCase#" << i << ": size=" << (testCase.twoWords?2:1) <<

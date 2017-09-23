@@ -54,6 +54,7 @@ static void printHexData(std::ostream& os, cxuint indentLevel, size_t size,
 static const char* rocmRegionTypeNames[3] =
 { "data", "fkernel", "kernel" };
 
+// print dump of ROCm output to stream for comparing with testcase
 static void printROCmOutput(std::ostream& os, const ROCmInput* output)
 {
     os << "ROCmBinDump:" << std::endl;
@@ -68,6 +69,8 @@ static void printROCmOutput(std::ostream& os, const ROCmInput* output)
             continue;
         const ROCmKernelConfig& config = *reinterpret_cast<const ROCmKernelConfig*>(
                             output->code + symbol.offset);
+        
+        // print kernel configuration
         os << "    Config:\n"
             "      amdCodeVersion=" << ULEV(config.amdCodeVersionMajor) << "." <<
                 ULEV(config.amdCodeVersionMajor) << "\n"
@@ -117,17 +120,20 @@ static void printROCmOutput(std::ostream& os, const ROCmInput* output)
         os << "      ControlDirective:\n";
         printHexData(os, 3, 128, config.controlDirective);
     }
+    // print comment and code
     os << "  Comment:\n";
     printHexData(os, 1, output->commentSize, (const cxbyte*)output->comment);
     os << "  Code:\n";
     printHexData(os, 1, output->codeSize, output->code);
     
+    // print extra sections if supplied
     for (BinSection section: output->extraSections)
     {
         os << "  Section " << section.name << ", type=" << section.type <<
                         ", flags=" << section.flags << ":\n";
         printHexData(os, 1, section.size, section.data);
     }
+    // print extra symbols if supplied
     for (BinSymbol symbol: output->extraSymbols)
         os << "  Symbol: name=" << symbol.name << ", value=" << symbol.value <<
                 ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
@@ -480,6 +486,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     std::ostringstream errorStream;
     std::ostringstream printStream;
     
+    // create assembler with testcase's input and with ASM_TESTRUN flag
     Assembler assembler("test.s", input, (ASM_ALL|ASM_TESTRUN)&~ASM_ALTMACRO,
             BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, errorStream, printStream);
     bool good = assembler.assemble();
@@ -489,7 +496,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
         // get format handler and their output
         printROCmOutput(dumpOss, static_cast<const AsmROCmHandler*>(
                     assembler.getFormatHandler())->getOutput());
-    /* compare results */
+    /* compare results dump with expected dump */
     char testName[30];
     snprintf(testName, 30, "Test #%u", testId);
     

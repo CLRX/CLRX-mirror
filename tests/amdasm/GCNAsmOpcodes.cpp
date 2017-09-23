@@ -33,12 +33,15 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
     std::istringstream input(testCase.input);
     std::ostringstream errorStream;
     
+    // create assembler with input stream (content is string
     Assembler assembler("test.s", input, ASM_ALL&~ASM_ALTMACRO,
                     BinaryFormat::GALLIUM, deviceType, errorStream);
+    // try to assemble code
     bool good = assembler.assemble();
     std::ostringstream oss;
     oss << getGPUDeviceTypeName(deviceType) << " encGCNCase#" << i;
     const std::string testCaseName = oss.str();
+    // check is good match in testcase
     assertValue<bool>("testEncGCNOpcodes", testCaseName+".good", testCase.good, good);
     if (assembler.getSections().size()<1)
     {
@@ -50,6 +53,7 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
     const AsmSection& section = assembler.getSections()[0];
     const size_t codeSize = section.content.size();
     const size_t expectedSize = (testCase.good) ? ((testCase.twoWords)?8:4) : 0;
+    // check size of output content
     if (good && codeSize != expectedSize)
     {
         std::ostringstream oss;
@@ -61,6 +65,7 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
     // check content
     if (expectedSize!=0)
     {
+        // get expected words and result (output) words
         uint32_t expectedWord0 = testCase.expWord0;
         uint32_t expectedWord1 = testCase.expWord1;
         uint32_t resultWord0 = ULEV(*reinterpret_cast<const uint32_t*>(
@@ -72,6 +77,7 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
         
         if (expectedWord0!=resultWord0 || (expectedSize==8 && expectedWord1!=resultWord1))
         {
+            // if content doesn't match
             std::ostringstream oss;
             oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<
                 " encGCNCase#" << i << ". Content doesn't match: 0x" <<
@@ -82,6 +88,7 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
             throw Exception(oss.str());
         }
     }
+    // check error messages
     assertString("testEncGCNOpcodes", testCaseName+".errorMessages",
               testCase.errorMessages, errorStream.str());
 }

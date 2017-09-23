@@ -37,6 +37,7 @@ static const char* galliumArgTypeTbl[] =
 static const char* galliumArgSemanticTbl[] =
 {   "general", "griddim", "gridoffset" };
 
+// helper for printing value from kernel config (print default and notsupplied)
 static std::string confValueToString(uint32_t val)
 {
     if (val == BINGEN_DEFAULT)
@@ -48,6 +49,7 @@ static std::string confValueToString(uint32_t val)
     return oss.str();
 }
 
+// print hex data or nullptr
 static void printHexData(std::ostream& os, cxuint indentLevel, size_t size,
              const cxbyte* data)
 {
@@ -71,6 +73,7 @@ static void printHexData(std::ostream& os, cxuint indentLevel, size_t size,
     }
 }
 
+// print dump of gallium output to stream for comparing with testcase
 static void printGalliumOutput(std::ostream& os, const GalliumInput* output, bool amdHsa)
 {
     os << "GalliumBinDump:" << std::endl;
@@ -80,6 +83,7 @@ static void printGalliumOutput(std::ostream& os, const GalliumInput* output, boo
                 "offset=" << kernel.offset << "\n";
         if (!kernel.useConfig)
         {
+            // if not configuration, then print same prog info entries (only old gallium)
             os << "    ProgInfo: ";
             for (cxuint i = 0; i < 3; i++)
                 os << "0x" << std::hex << kernel.progInfo[i].address <<
@@ -88,6 +92,7 @@ static void printGalliumOutput(std::ostream& os, const GalliumInput* output, boo
         }
         else
         {
+            // print kernel config
             const GalliumKernelConfig& config = kernel.config;
             os << "    Config:\n";
             os << "      dims=" << confValueToString(config.dimMask) << ", "
@@ -101,6 +106,7 @@ static void printGalliumOutput(std::ostream& os, const GalliumInput* output, boo
                     "scratchBuffer=" << config.scratchBufferSize << std::endl;
             if (amdHsa)
             {
+                // print also AMD HSA configuration
                 const AmdHsaKernelConfig& config =
                     *reinterpret_cast<const AmdHsaKernelConfig*>(
                                 output->code + kernel.offset);
@@ -169,6 +175,7 @@ static void printGalliumOutput(std::ostream& os, const GalliumInput* output, boo
         }
         os.flush();
     }
+    // other data from output
     os << "  Comment:\n";
     printHexData(os, 1, output->commentSize, (const cxbyte*)output->comment);
     os << "  GlobalData:\n";
@@ -176,12 +183,14 @@ static void printGalliumOutput(std::ostream& os, const GalliumInput* output, boo
     os << "  Code:\n";
     printHexData(os, 1, output->codeSize, output->code);
     
+    // print extra sections when supplied
     for (BinSection section: output->extraSections)
     {
         os << "  Section " << section.name << ", type=" << section.type <<
                         ", flags=" << section.flags << ":\n";
         printHexData(os, 1, section.size, section.data);
     }
+    // print extra symbols when supplied
     for (BinSymbol symbol: output->extraSymbols)
         os << "  Symbol: name=" << symbol.name << ", value=" << symbol.value <<
                 ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
@@ -770,6 +779,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     std::ostringstream errorStream;
     std::ostringstream printStream;
     
+    // create assembler with testcase's input and with ASM_TESTRUN flag
     Assembler assembler("test.s", input, (ASM_ALL|ASM_TESTRUN)&~ASM_ALTMACRO,
             BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, errorStream, printStream);
     assembler.setLLVMVersion(1);
@@ -781,7 +791,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
         printGalliumOutput(dumpOss, static_cast<const AsmGalliumHandler*>(
                     assembler.getFormatHandler())->getOutput(),
                     assembler.getLLVMVersion() >= 40000U);
-    /* compare results */
+    /* compare result dump with expected dump */
     char testName[30];
     snprintf(testName, 30, "Test #%u", testId);
     

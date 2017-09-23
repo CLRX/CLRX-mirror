@@ -769,6 +769,7 @@ static const cxbyte asmOpPrioritiesTbl[] =
     0 // CHOICE_END
 };
 
+// method used also by AsmExprParse test co create expression from string
 AsmExpression* AsmExpression::parse(Assembler& assembler, size_t& linePos,
                 bool makeBase, bool dontResolveSymbolsLater)
 {

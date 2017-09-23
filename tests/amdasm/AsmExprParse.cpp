@@ -408,6 +408,7 @@ static AsmExprParseCase asmExprParseCases[] =
     { "123+45*,", "", false, 0, "<stdin>:1:8: Error: Unterminated expression\n", "," }
 };
 
+// generate expression string from AsmExpression (to verify)
 static std::string rpnExpression(const AsmExpression* expr)
 {
     std::ostringstream oss;
@@ -548,6 +549,7 @@ static void testAsmExprParse(cxuint i, const AsmExprParseCase& testCase, bool ma
     std::ostringstream resultErrorsOut;
     MyAssembler assembler(iss, resultErrorsOut);
     size_t linePos = 0;
+    // create Asm Expression
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(assembler, linePos, makeBase));
     std::string resultRpnExpr;
     std::string resultExtra = testCase.expression+linePos;
@@ -555,6 +557,7 @@ static void testAsmExprParse(cxuint i, const AsmExprParseCase& testCase, bool ma
     bool resultEvaluated = false;
     if (expr)
     {
+        // get string of expression
         resultRpnExpr = rpnExpression(expr.get());
         cxuint sectionId;
         if (expr->getSymOccursNum() == 0)
@@ -569,6 +572,7 @@ static void testAsmExprParse(cxuint i, const AsmExprParseCase& testCase, bool ma
         ::strcmp(testCase.errors, resultErrors.c_str()) ||
         ::strcmp(testCase.extra, resultExtra.c_str()))
     {
+        // throw exception if failed (with info)
         std::ostringstream oss;
         oss << "FAILED for parseExpr#" << i << " snapshot=" << makeBase << "\n"
                 "Result: rpnString='" << resultRpnExpr <<

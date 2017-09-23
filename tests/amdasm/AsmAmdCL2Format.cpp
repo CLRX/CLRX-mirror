@@ -51,6 +51,7 @@ static const char* argTypeNameTbl[] =
 static const char* ptrSpaceNameTbl[] =
 { "none", "local", "constant", "global" };
 
+// print hex data or nullptr
 static void printHexData(std::ostream& os, cxuint indentLevel, size_t size,
              const cxbyte* data)
 {
@@ -74,6 +75,7 @@ static void printHexData(std::ostream& os, cxuint indentLevel, size_t size,
     }
 }
 
+// helper for printing value from kernel config (print default and notsupplied)
 static std::string confValueToString(uint32_t val)
 {
     if (val == BINGEN_DEFAULT)
@@ -85,6 +87,7 @@ static std::string confValueToString(uint32_t val)
     return oss.str();
 }
 
+// print dump of AMD OpenCL2.0 output to stream for comparing with testcase
 static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
 {
     os << "AmdCL2BinDump:" << std::endl;
@@ -100,6 +103,7 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
         printHexData(os, 2, kernel.codeSize, kernel.code);
         if (!kernel.useConfig)
         {
+            // print metadata, setup and stub (if no config)
             os << "    Metadata:\n";
             printHexData(os, 2, kernel.metadataSize, (const cxbyte*)kernel.metadata);
             os << "    Setup:\n";
@@ -141,6 +145,7 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
                 os << '\n';
             }
             if (!kernel.hsaConfig)
+                // print kernel config in old style
                 os << "      dims=" << confValueToString(config.dimMask) << ", "
                         "cws=" << config.reqdWorkGroupSize[0] << " " <<
                             config.reqdWorkGroupSize[1] << " " <<
@@ -165,6 +170,7 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
                         (config.useGeneric?"useGeneric ":"") << "\n";
             else
             {
+                // print AMD HSA config
                 const AmdHsaKernelConfig& config =
                         *reinterpret_cast<const AmdHsaKernelConfig*>(kernel.setup);
                 os <<
@@ -222,16 +228,19 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
                 printHexData(os, 3, 128, config.controlDirective);
             }
         }
+        // sort relocation before printing
         std::vector<AmdCL2RelInput> relocs(kernel.relocations.begin(),
                             kernel.relocations.end());
         std::sort(relocs.begin(), relocs.end(),
                   [] (const AmdCL2RelInput& a, const AmdCL2RelInput& b)
                   { return a.offset < b.offset; });
+        // print relocations
         for (const AmdCL2RelInput& rel: relocs)
             os << "    Rel: offset=" << rel.offset << ", type=" << rel.type << ", "
                 "symbol=" << rel.symbol << ", addend=" << rel.addend << "\n";
     }
     
+    // print globaldata, rwdata, bss
     os << "  GlobalData:\n";
     printHexData(os,  1, output->globalDataSize, output->globalData);
     os << "  RwData:\n";
@@ -241,22 +250,26 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
     os << "  SamplerInit:\n";
     printHexData(os,  1, output->samplerInitSize, output->samplerInit);
     
+    // print extra sections from inner binary if supplied
     for (BinSection section: output->innerExtraSections)
     {
         os << "    ISection " << section.name << ", type=" << section.type <<
                         ", flags=" << section.flags << ":\n";
         printHexData(os, 2, section.size, section.data);
     }
+    // print extra symbols from inner binary if supplied
     for (BinSymbol symbol: output->innerExtraSymbols)
         os << "    ISymbol: name=" << symbol.name << ", value=" << symbol.value <<
                 ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
     
+    // print extra sections from main binary if supplied
     for (BinSection section: output->extraSections)
     {
         os << "  Section " << section.name << ", type=" << section.type <<
                         ", flags=" << section.flags << ":\n";
         printHexData(os, 1, section.size, section.data);
     }
+    // print extra symbols from main binary if supplied
     for (BinSymbol symbol: output->extraSymbols)
         os << "  Symbol: name=" << symbol.name << ", value=" << symbol.value <<
                 ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
@@ -978,6 +991,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     std::ostringstream errorStream;
     std::ostringstream printStream;
     
+    // create assembler with testcase's input and with ASM_TESTRUN flag
     Assembler assembler("test.s", input, (ASM_ALL|ASM_TESTRUN)&~ASM_ALTMACRO,
             BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, errorStream, printStream);
     bool good = assembler.assemble();
@@ -987,7 +1001,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
         // get format handler and their output
         printAmdCL2Output(dumpOss, static_cast<const AsmAmdCL2Handler*>(
                         assembler.getFormatHandler())->getOutput());
-    /* compare results */
+    /* compare result dump with expected dump */
     char testName[30];
     snprintf(testName, 30, "Test #%u", testId);
     

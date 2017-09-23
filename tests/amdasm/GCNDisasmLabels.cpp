@@ -274,17 +274,21 @@ static void testDecGCNLabels(cxuint i, const GCNDisasmLabelCase& testCase,
     AmdDisasmInput input;
     input.deviceType = deviceType;
     input.is64BitMode = false;
+    // set up disassembler with GCN disassembler
     Disassembler disasm(&input, disOss, DISASM_FLOATLITS);
     GCNDisassembler gcnDisasm(disasm);
     Array<uint32_t> code(testCase.words.size());
+    // get testcase's input code
     for (size_t i = 0; i < testCase.words.size(); i++)
         code[i] = LEV(testCase.words[i]);
     
     gcnDisasm.setInput(testCase.words.size()<<2,
            reinterpret_cast<const cxbyte*>(code.data()));
     gcnDisasm.beforeDisassemble();
+    // just disassemble
     gcnDisasm.disassemble();
     std::string outStr = disOss.str();
+    // compare result string with expected string
     if (outStr != testCase.expected)
     {
         std::ostringstream oss;
@@ -303,6 +307,7 @@ static const uint32_t unalignedNamedLabelCode[] =
     LEV(0xbf82fffcU)
 };
 
+// trsting disassemblying code with unaligned named labels
 static void testDecGCNNamedLabels()
 {
     std::ostringstream disOss;
@@ -320,6 +325,7 @@ static void testDecGCNNamedLabels()
     gcnDisasm.addNamedLabel(4, "nextInstr");
     gcnDisasm.beforeDisassemble();
     gcnDisasm.disassemble();
+    // compare with this expected string
     if (disOss.str() !=
         "        s_lshr_b32      s21, s4, s61\n"
         "buru=.-3\n"
@@ -373,6 +379,7 @@ struct Relocation
     uint64_t addend;
 };
 
+// relocation symbols for this testcase
 static const char* relocSymbolNames[] =
 {
     "aaa0", "aaa1", "aaa2", "aaa3", "aaa4", "aaa5",
@@ -380,6 +387,7 @@ static const char* relocSymbolNames[] =
     "bcaa0", "bca1", "bcaa2", "bcaa3", "bcaa4", "bcaa5"
 };
 
+// relocation data for this testcase
 static const Relocation relocationData[] =
 {
     { 4, 0, RELTYPE_LOW_32BIT, 0 },
@@ -423,6 +431,7 @@ static void testDecGCNRelocations()
     gcnDisasm.setInput(sizeof(relocationCode),
                    reinterpret_cast<const cxbyte*>(relocationCode));
     
+    // add relocation info for disassembler
     for (const Relocation& reloc: relocationData)
         gcnDisasm.addRelocation(reloc.offset, reloc.type, reloc.symIndex, reloc.addend);
     for (const char* symName: relocSymbolNames)
@@ -430,6 +439,7 @@ static void testDecGCNRelocations()
     
     gcnDisasm.beforeDisassemble();
     gcnDisasm.disassemble();
+    // compare output with this expected string
     if (disOss.str() !=
         "        v_sub_f32       v154, aaa0&0xffffffff, v107\n"
         "        v_sub_f32       v154, (aaa1+122)&0xffffffff, v107\n"

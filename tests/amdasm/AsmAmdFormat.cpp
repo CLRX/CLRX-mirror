@@ -59,6 +59,7 @@ static const char* calNoteNamesTbl[] =
     "uav", "uavopmask"
 };
 
+// print hex data or nullptr
 static void printHexData(std::ostream& os, cxuint indentLevel, size_t size,
              const cxbyte* data)
 {
@@ -82,6 +83,7 @@ static void printHexData(std::ostream& os, cxuint indentLevel, size_t size,
     }
 }
 
+// helper for printing value from kernel config (print default and notsupplied)
 static std::string confValueToString(uint32_t val)
 {
     if (val == BINGEN_DEFAULT)
@@ -93,6 +95,7 @@ static std::string confValueToString(uint32_t val)
     return oss.str();
 }
 
+// print dump of AMD Catalyst output to stream for comparing with testcase
 static void printAmdOutput(std::ostream& os, const AmdInput* output)
 {
     os << "AmdBinDump:" << std::endl;
@@ -104,6 +107,7 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
     
     for (const AmdKernelInput& kernel: output->kernels)
     {
+        // print kernel data and code
         os << "  Kernel: " << kernel.kernelName << "\n";
         os << "    Data:\n";
         printHexData(os, 2, kernel.dataSize, kernel.data);
@@ -111,6 +115,7 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
         printHexData(os, 2, kernel.codeSize, kernel.code);
         if (!kernel.useConfig)
         {
+            // print header, metadata
             os << "    Header:\n";
             printHexData(os, 2, kernel.headerSize, kernel.header);
             os << "    Metadata:\n";
@@ -178,12 +183,14 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
                         config.userDatas[u].regStart << ", " <<
                         config.userDatas[u].regSize << "\n";
         }
+        // print extra sections in inner binaries
         for (BinSection section: kernel.extraSections)
         {
             os << "    Section " << section.name << ", type=" << section.type <<
                         ", flags=" << section.flags << ":\n";
             printHexData(os, 2, section.size, section.data);
         }
+        // print extra symbols in inner binaries
         for (BinSymbol symbol: kernel.extraSymbols)
                 os << "    Symbol: name=" << symbol.name << ", value=" << symbol.value <<
                 ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
@@ -191,12 +198,14 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
     }
     os << "  GlobalData:\n";
     printHexData(os,  1, output->globalDataSize, output->globalData);
+    // print extra sections in main binaries
     for (BinSection section: output->extraSections)
     {
         os << "  Section " << section.name << ", type=" << section.type <<
                         ", flags=" << section.flags << ":\n";
         printHexData(os, 1, section.size, section.data);
     }
+    // print extra symbols in main binaries
     for (BinSymbol symbol: output->extraSymbols)
         os << "  Symbol: name=" << symbol.name << ", value=" << symbol.value <<
                 ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
@@ -748,6 +757,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     std::ostringstream errorStream;
     std::ostringstream printStream;
     
+    // create assembler with testcase's input and with ASM_TESTRUN flag
     Assembler assembler("test.s", input, (ASM_ALL|ASM_TESTRUN)&~ASM_ALTMACRO,
             BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, errorStream, printStream);
     bool good = assembler.assemble();
@@ -758,7 +768,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
         if (assembler.getBinaryFormat() == BinaryFormat::AMD)
             printAmdOutput(dumpOss, static_cast<const AsmAmdHandler*>(
                         assembler.getFormatHandler())->getOutput());
-    /* compare results */
+    /* compare result dump with expected dump */
     char testName[30];
     snprintf(testName, 30, "Test #%u", testId);
     

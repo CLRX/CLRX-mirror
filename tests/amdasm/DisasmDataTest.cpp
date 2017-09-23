@@ -131,6 +131,7 @@ static CALSamplerMapEntry disasmInput1Kernel1InputSamplers[6] =
 
 static uint32_t disasmInput1Kernel1UavOpMask[1] = { LEV(4556U) };
 
+/* AMD Input for disassembler for testing */
 static AmdDisasmInput disasmInput1 =
 {
     GPUDeviceType::SPOOKY,
@@ -182,6 +183,7 @@ static AmdDisasmInput disasmInput1 =
 static const cxbyte galliumInput1Global[14] =
 { 1,2,3,4,5,6,7,8,9,10,11,33,44,55 };
 
+/* Gallium Input for disassembler for testing */
 static const GalliumDisasmInput galliumDisasmData =
 {
     GPUDeviceType::PITCAIRN, false, false, false, false,
@@ -244,6 +246,7 @@ struct DisasmAmdTestCase
     cxuint llvmVersion;
 };
 
+// disasm testcases
 static const DisasmAmdTestCase disasmDataTestCases[] =
 {
     { &disasmInput1, nullptr, nullptr,
@@ -1650,6 +1653,7 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
         disasmFlags |= DISASM_HSACONFIG;
     if (testCase.filename == nullptr)
     {
+        // disassemble input provided in testcase
         if (testCase.amdInput != nullptr)
         {
             Disassembler disasm(testCase.amdInput, disasmOss, disasmFlags);
@@ -1665,9 +1669,11 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
     }
     else
     {
+        // disassemble file that filename provided by testcase
         Array<cxbyte> binaryData = loadDataFromFile(testCase.filename);
         if (isAmdBinary(binaryData.size(), binaryData.data()))
         {
+            // if AMD OpenCL binary
             std::unique_ptr<AmdMainBinaryBase> base(createAmdBinaryFromCode(
                     binaryData.size(), binaryData.data(),
                     AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
@@ -1681,6 +1687,7 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
         }
         else if (isAmdCL2Binary(binaryData.size(), binaryData.data()))
         {
+            // if AMD OpenCL 2.0 binary
             AmdCL2MainGPUBinary64 amdBin(binaryData.size(), binaryData.data(),
                 AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                 AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
@@ -1693,6 +1700,7 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
         }
         else if (isROCmBinary(binaryData.size(), binaryData.data()))
         {
+            // if ROCm (HSACO) binary
             ROCmBinary rocmBin(binaryData.size(), binaryData.data(), 0);
             Disassembler disasm(rocmBin, disasmOss, disasmFlags);
             disasm.disassemble();
@@ -1708,6 +1716,7 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
         }
     }
     
+    // compare output with expected string
     if (::strcmp(testCase.expectedString, resultStr.c_str()) != 0)
     {
         // print error
