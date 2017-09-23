@@ -3236,7 +3236,7 @@ void GCNDisassembler::disassemble()
             if (!isGCN124 && gcnInsn->mnemonic != nullptr &&
                 (curArchMask & gcnInsn->archMask) == 0 &&
                 gcnEncoding == GCNENC_VOP3A)
-            {    /* new overrides */
+            {    /* new overrides (VOP3A) */
                 const GCNEncodingSpace& encSpace2 =
                         gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1];
                 gcnInsn = gcnInstrTableByCode.get() + encSpace2.offset + opcode;
@@ -3249,7 +3249,7 @@ void GCNDisassembler::disassemble()
                 (gcnEncoding == GCNENC_VOP3A || gcnEncoding == GCNENC_VOP2 ||
                     gcnEncoding == GCNENC_VOP1))
             {
-                /* new overrides */
+                /* new overrides (VOP1/VOP3A/VOP2 for GCN 1.4) */
                 const GCNEncodingSpace& encSpace4 =
                         gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 +
                                 (gcnEncoding != GCNENC_VOP2) +
@@ -3261,6 +3261,7 @@ void GCNDisassembler::disassemble()
             }
             else if (isGCN14 && gcnEncoding == GCNENC_FLAT && ((insnCode>>14)&3)!=0)
             {
+                // GLOBAL_/SCRATCH_* instructions
                 const GCNEncodingSpace& encSpace4 =
                     gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+3 +
                         ((insnCode>>14)&3)-1];
@@ -3275,6 +3276,7 @@ void GCNDisassembler::disassemble()
             
             if (!isIllegal)
             {
+                // put spaces between mnemonic and operands
                 size_t k = ::strlen(gcnInsn->mnemonic);
                 output.writeString(gcnInsn->mnemonic);
                 spacesToAdd = spacesToAdd>=k+1?spacesToAdd-k:1;

@@ -33,6 +33,7 @@ using namespace CLRX;
  * expressions
  */
 
+// bitmask: if bit is enabled then operator can give message (error or warning)
 static const uint64_t operatorWithMessage = 
         (1ULL<<int(AsmExprOp::DIVISION)) | (1ULL<<int(AsmExprOp::SIGNED_DIVISION)) |
         (1ULL<<int(AsmExprOp::MODULO)) | (1ULL<<int(AsmExprOp::SIGNED_MODULO)) |
@@ -43,6 +44,7 @@ AsmExpression::AsmExpression() : symOccursNum(0), relativeSymOccurs(false),
             baseExpr(false)
 { }
 
+// set symbol occurrences, operators and arguments, line positions for messages
 void AsmExpression::setParams(size_t _symOccursNum,
           bool _relativeSymOccurs, size_t _opsNum, const AsmExprOp* _ops, size_t _opPosNum,
           const LineCol* _opPos, size_t _argsNum, const AsmExprArg* _args, bool _baseExpr)
@@ -96,6 +98,8 @@ AsmExpression::~AsmExpression()
     }
 }
 
+// helper for handling errors
+
 #define ASMX_FAILED_BY_ERROR(PLACE, STRING) \
     { \
         assembler.printError(PLACE, STRING); \
@@ -126,6 +130,7 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
         size_t opPos = 0;
         size_t messagePosIndex = 0;
         
+        // move messagePosIndex and argument position to opStart position
         for (opPos = 0; opPos < opStart; opPos++)
         {
             if (ops[opPos]==AsmExprOp::ARG_VALUE)
@@ -139,6 +144,7 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
             const AsmExprOp op = ops[opPos++];
             if (op == AsmExprOp::ARG_VALUE)
             {
+                // push argument to stack
                 stack.push(args[argPos++].value);
                 continue;
             }
@@ -146,6 +152,7 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
             stack.pop();
             if (isUnaryOp(op))
             {
+                // unary operator (-,~,!)
                 switch (op)
                 {
                     case AsmExprOp::NEGATE:
@@ -163,6 +170,7 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
             }
             else if (isBinaryOp(op))
             {
+                // get first argument (second in stack)
                 uint64_t value2 = stack.top();
                 stack.pop();
                 switch (op)
@@ -307,6 +315,7 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
             }
             else if (op == AsmExprOp::CHOICE)
             {
+                // get second and first (second and third in stack)
                 const uint64_t value2 = stack.top();
                 stack.pop();
                 const uint64_t value3 = stack.top();
@@ -322,7 +331,7 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
     }
     else
     {
-        // relative symbols
+        // expression with relative symbols
         struct RelMultiply
         {
             // multiplication of section
@@ -348,6 +357,7 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
         size_t messagePosIndex = 0;
         std::vector<RelMultiply> relatives;
         
+        // move messagePosIndex and argument position to opStart position
         for (opPos = 0; opPos < opStart; opPos++)
         {
             if (ops[opPos]==AsmExprOp::ARG_VALUE)
@@ -372,6 +382,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
             value = stack.top().value;
             relatives.assign(stack.top().relatives.begin(), stack.top().relatives.end());
             stack.pop();
+            
+            // handle unary operators
             if (isUnaryOp(op))
             {
                 switch (op)
@@ -432,6 +444,7 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                         break;
                     }
                     case AsmExprOp::MULTIPLY:
+                        // we do not multiply with relatives in two operands
                         if (!relatives.empty() && !relatives2.empty())
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Multiplication is not allowed for two relative values")
@@ -462,8 +475,9 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                                  "Division is not allowed for any relative value")
                         if (value != 0)
                             value = value2 / value;
-                        else // error
+                        else
                         {
+                            // error
                             ASMX_FAILED_BY_ERROR(getSourcePos(messagePosIndex),
                                    "Division by zero")
                             value = 0;
@@ -476,8 +490,9 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                                  "Signed division is not allowed for any relative value")
                         if (value != 0)
                             value = int64_t(value2) / int64_t(value);
-                        else // error
+                        else
                         {
+                            // error
                             ASMX_FAILED_BY_ERROR(getSourcePos(messagePosIndex),
                                    "Division by zero")
                             value = 0;
@@ -490,8 +505,9 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                                  "Modulo is not allowed for any relative value")
                         if (value != 0)
                             value = value2 % value;
-                        else // error
+                        else
                         {
+                            // error
                             ASMX_FAILED_BY_ERROR(getSourcePos(messagePosIndex),
                                    "Division by zero")
                             value = 0;
@@ -504,8 +520,9 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                                  "Signed Modulo is not allowed for any relative value")
                         if (value != 0)
                             value = int64_t(value2) % int64_t(value);
-                        else // error
+                        else
                         {
+                            // error
                             ASMX_FAILED_BY_ERROR(getSourcePos(messagePosIndex),
                                    "Division by zero")
                             value = 0;
@@ -612,6 +629,7 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                                         "two values must have this same relatives!")
                         else
                         {
+                            // check whether relatives as same in two operands
                             for (const RelMultiply& r: relatives2)
                                 for (RelMultiply& r2: relatives)
                                     if (r.multiply == r2.multiply &&
@@ -1034,11 +1052,12 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
     bool good = true;
     bool relativeSymOccurs = false;
     
+    // indicate what is expected at current place
     enum ExpectedToken
     {
-        XT_FIRST = 0,
-        XT_OP = 1,
-        XT_ARG = 2
+        XT_FIRST = 0,   // operator or argument
+        XT_OP = 1,  // expected operator
+        XT_ARG = 2  // expected argument
     };
     ExpectedToken expectedToken = XT_FIRST;
     std::unique_ptr<AsmExpression> expr(new AsmExpression);
@@ -1110,7 +1129,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                     op = AsmExprOp::MODULO;
                     linePtr++;
                 }
-                else // standard GNU as signed division
+                else // standard GNU as signed modulo
                     op = AsmExprOp::SIGNED_MODULO;
                 linePtr++;
                 break;
@@ -1120,7 +1139,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                     op = AsmExprOp::LOGICAL_AND;
                     linePtr++;
                 }
-                else // standard GNU as signed division
+                else // standard bitwise AND
                     op = AsmExprOp::BIT_AND;
                 linePtr++;
                 break;
@@ -1130,7 +1149,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                     op = AsmExprOp::LOGICAL_OR;
                     linePtr++;
                 }
-                else // standard GNU as signed division
+                else // standard bitwise OR
                     op = AsmExprOp::BIT_OR;
                 linePtr++;
                 break;
@@ -1139,6 +1158,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                 {
                     if (linePtr+1 != end && linePtr[1] == '=')
                     {
+                        // we have != (inequality operator)
                         op = AsmExprOp::NOT_EQUAL;
                         linePtr++;
                     }
@@ -1175,6 +1195,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                 }
                 else if (linePtr+1 != end && linePtr[1] == '=')
                 {
+                    // less or equal than (signed and unsigned)
                     if (linePtr+2 != end && linePtr[2] == '@')
                     {
                         op = AsmExprOp::BELOW_EQ;
@@ -1184,6 +1205,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                         op = AsmExprOp::LESS_EQ;
                     linePtr++;
                 }
+                // less than (signed and unsigned)
                 else if (linePtr+1 != end && linePtr[1] == '@')
                 {
                     op = AsmExprOp::BELOW;
@@ -1208,6 +1230,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                 }
                 else if (linePtr+1 != end && linePtr[1] == '=')
                 {
+                    // greater or equal than (signed and unsigned)
                     if (linePtr+2 != end && linePtr[2] == '@')
                     {
                         op = AsmExprOp::ABOVE_EQ;
@@ -1217,6 +1240,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                         op = AsmExprOp::GREATER_EQ;
                     linePtr++;
                 }
+                // greater than (signed and unsigned)
                 else if (linePtr+1 != end && linePtr[1] == '@')
                 {
                     op = AsmExprOp::ABOVE;
@@ -1327,8 +1351,9 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                         args.push_back(arg);
                         ops.push_back(AsmExprOp::ARG_VALUE);
                     }
-                    else // otherwise we finish parsing
+                    else
                     {
+                        // otherwise we finish parsing
                         expectedToken = oldExpectedToken;
                         doExit = true; break;
                     }
@@ -1351,6 +1376,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
             expectedPrimaryExpr = true;
             op = AsmExprOp::NONE;
         }
+        // when no argument before binary/ternary operator
         if (expectedPrimaryExpr)
         {
             ASMX_NOTGOOD_BY_ERROR(beforeToken,
@@ -1358,6 +1384,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
             continue;
         }
         
+        // determine what is next expected
         if (op != AsmExprOp::NONE && !isUnaryOp(op))
             expectedToken = (expectedToken == XT_OP) ? XT_ARG : XT_OP;
         
@@ -1490,6 +1517,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                 assembler.symbolSnapshots.insert(symEntry);
             else
             {
+                // delete symbol snapshoft if have new value
                 delete symEntry->second.expression;
                 symEntry->second.expression = nullptr;
                 delete symEntry;
@@ -1500,6 +1528,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
     }
     else
     {
+        // delete symbol snapshots if error
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
         {
             delete symEntry->second.expression;
@@ -1511,6 +1540,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
     }
     catch(...)
     {
+        // delete symbol snapshots if exception occurred
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
         {
             // remove from assembler symbolSnapshots
@@ -1524,6 +1554,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
     }
 }
 
+// go to top in expression from specified operator index (can be used to divide expression)
 size_t AsmExpression::toTop(size_t opIndex) const
 {
     std::stack<cxbyte> stack;
