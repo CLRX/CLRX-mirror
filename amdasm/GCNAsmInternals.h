@@ -66,12 +66,14 @@ enum : Flags {
     INSTROP_SYMREGRANGE = 1
 };
 
+// standard VOP operand modifers
 enum: cxbyte {
     VOPOP_ABS = 1,
     VOPOP_NEG = 2,
     VOPOP_SEXT = 4
 };
 
+// VOP3 modifiers
 enum: cxbyte {
     VOP3_MUL2 = 1,
     VOP3_MUL4 = 2,
@@ -81,6 +83,7 @@ enum: cxbyte {
     VOP3_BOUNDCTRL = 64
 };
 
+// represent register range with regvar
 struct CLRX_INTERNAL RegRange
 {
     uint16_t start, end;
@@ -97,13 +100,13 @@ struct CLRX_INTERNAL RegRange
     { return start==0 && end==0; }
     operator bool() const
     { return start!=0 || end!=0; }
-    
+    // return start register or zero if regvar (start is not specified)
     uint16_t bstart() const
     { return (regVar==nullptr) ? start : 0; }
     
     bool isRegVar() const
     { return regVar!=nullptr; }
-    
+    // return if start register is reg
     bool isVal(uint16_t reg) const
     { return (regVar==nullptr && start==reg); }
     
@@ -118,6 +121,7 @@ struct CLRX_INTERNAL RegRange
                 regVar->type==REGTYPE_VGPR); }
 };
 
+// GCN operand (can be regrange or value) with VOP modifiers
 struct CLRX_INTERNAL GCNOperand
 {
     RegRange range;
@@ -130,6 +134,7 @@ struct CLRX_INTERNAL GCNOperand
     { return range; }
 };
 
+// VOP extra modifiers
 struct CLRX_INTERNAL VOPExtraModifiers
 {
     cxbyte dstSel;
@@ -143,6 +148,7 @@ struct CLRX_INTERNAL VOPExtraModifiers
     bool needDPP;
 };
 
+// VOP operand modifiers (booleans)
 struct CLRX_INTERNAL VOPOpModifiers
 {
     cxbyte absMod;
@@ -151,6 +157,7 @@ struct CLRX_INTERNAL VOPOpModifiers
     cxbyte opselMod; // lo (low 4-bits) and hi (high 4-bits)
 };
 
+// GCN encoding sizes
 enum class GCNEncSize
 {
     UNKNOWN,
@@ -165,26 +172,30 @@ enum class GCNVOPEnc
     SDWA
 };
 
+// flags for parse VOP modifiers (specifies what will be parsed)
 enum {
     PARSEVOP_WITHCLAMP = 1,
     PARSEVOP_WITHSEXT = 2,
     PARSEVOP_WITHOPSEL = 4,
-    PARSEVOP_VOP3P = 8,
+    PARSEVOP_VOP3P = 8, // VOP3P modifiers
+    // do not parse dst_unused and dst_sel (for GCN1.4 SDWAB encoding)
     PARSEVOP_NODSTMODS = 16
 };
 
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
 {
+    // helper that print error that specified regrange expected
     static bool printRegisterRangeExpected(Assembler& asmr, const char* linePtr,
                const char* regPoolName, cxuint regsNum, bool required);
-    
+    // helper that print error that specified regrange required
     static void printXRegistersRequired(Assembler& asmr, const char* linePtr,
                const char* regPoolName, cxuint requiredRegsNum);
     
+    // parse register variable range
     static bool parseRegVarRange(Assembler& asmr, const char*& linePtr,
                  RegRange& regPair, uint16_t arch, cxuint regsNum, AsmRegField regField,
                  Flags flags, bool required = true);
-    
+    // parse symbol register range
     static bool parseSymRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
                  uint16_t arch, cxuint regsNum, AsmRegField regField, Flags flags,
                  bool required = true);
@@ -203,6 +214,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
             std::unique_ptr<AsmExpression>* outTargetExpr, cxuint bits = 0,
             cxbyte signess = WS_BOTH);
     
+    // parse immediate value (for field) with specified bits (can be signed)
     template<typename T>
     static bool parseImm(Assembler& asmr, const char*& linePtr, T& value,
             std::unique_ptr<AsmExpression>* outTargetExpr, cxuint bits = 0,
@@ -216,6 +228,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
         return ret;
     }
     
+    // parse array of booleans
     static bool parseImmWithBoolArray(Assembler& asmr, const char*& linePtr,
             uint32_t& value, cxuint bits = 0, cxbyte signess = WS_BOTH);
     
@@ -253,6 +266,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
         return false;
     }
     
+    // parse modifier parameter (to enable or disable modifier: mod:[0:1])
     static bool parseModEnable(Assembler& asmr, const char*& linePtr, bool& value,
             const char* modName)
     {
@@ -265,7 +279,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
             value = true;
             return true;
         }
-        
+        // OldModParam choice between old parametrization rules and new rules
+        // in old rules (accepts only 0 or 1), in new can any value
         bool ret = parseModImm(asmr, linePtr, val, nullptr, modName,
                         asmr.isOldModParam() ? 1 : UINT_MAX, WS_UNSIGNED);
         value = val!=0;
@@ -278,15 +293,19 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
                const char*& linePtr, const char* objName);
     
+    // checking whether encoding size is match
     static bool checkGCNEncodingSize(Assembler& asmr, const char* insnPtr,
                      GCNEncSize gcnEncSize, uint32_t wordsNum);
+    // checking whether VOP encoding is match
     static bool checkGCNVOPEncoding(Assembler& asmr, const char* insnPtr,
                      GCNVOPEnc vopEnc, const VOPExtraModifiers* modifiers);
+    // checking whether VOP extra modifiers match
     static bool checkGCNVOPExtraModifers(Assembler& asmr, uint16_t arch,
                  bool needImm, bool sextFlags, bool vop3, GCNVOPEnc gcnVOPEnc,
                  const GCNOperand& src0Op, VOPExtraModifiers& extraMods,
                  const char* instrPlace);
     
+    // routines to parse GCN encodings
     static bool parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* instrPlace, const char* linePtr, uint16_t arch,
                       std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,

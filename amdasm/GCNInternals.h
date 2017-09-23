@@ -28,6 +28,7 @@
 namespace CLRX
 {
 
+// enums for GCN encodings
 enum : cxbyte
 {
     GCNENC_NONE,
@@ -53,6 +54,7 @@ enum : cxbyte
     GCNENC_MAXVAL = GCNENC_FLAT
 };
 
+// GCN architecture masks (bit represents architecture)
 enum : uint16_t
 {
     ARCH_SOUTHERN_ISLANDS = 1,
@@ -69,6 +71,7 @@ enum : uint16_t
     ARCH_GCN_ALL = 0xffff
 };
 
+// modes for GCN instructions
 enum : uint16_t
 {
     GCN_STDMODE = 0,    /// standard mode
@@ -216,6 +219,7 @@ struct CLRX_INTERNAL GCNInstruction
     uint16_t archMask; // mask of architectures whose have instruction
 };
 
+// version GCNInstruction for assembler (with two code: for VOPX and VOP3)
 struct CLRX_INTERNAL GCNAsmInstruction
 {
     const char* mnemonic;
