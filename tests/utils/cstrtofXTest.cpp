@@ -27,6 +27,7 @@
 
 using namespace CLRX;
 
+// type of float
 enum FloatType
 {
     FT_H, FT_F, FT_D
@@ -61,6 +62,7 @@ static void testCStrtofX(cxuint testId, const CStrtofXTestCase& testCase)
     {
         case FT_H:
         {
+            // parse half float (FP16)
             uint16_t result16 = cstrtohCStyle(testCase.string,
                     testCase.string+::strlen(testCase.string), end);
             result = result16;
@@ -70,6 +72,7 @@ static void testCStrtofX(cxuint testId, const CStrtofXTestCase& testCase)
         }
         case FT_F:
         {
+            // parse float (FP32)
             FloatUnion resultU;
             resultU.f = cstrtovCStyle<float>(testCase.string,
                     testCase.string+::strlen(testCase.string), end);
@@ -80,6 +83,7 @@ static void testCStrtofX(cxuint testId, const CStrtofXTestCase& testCase)
         }
         case FT_D:
         {
+            // parse double (FP32)
             DoubleUnion resultU;
             resultU.d = cstrtovCStyle<double>(testCase.string,
                     testCase.string+::strlen(testCase.string), end);
@@ -93,6 +97,7 @@ static void testCStrtofX(cxuint testId, const CStrtofXTestCase& testCase)
             break;
     }
     
+    // if end is null or is not end of string
     if (end == nullptr || *end != 0)
     {
         std::ostringstream oss;
@@ -103,6 +108,7 @@ static void testCStrtofX(cxuint testId, const CStrtofXTestCase& testCase)
     }
     if (testCase.expected != result)
     {
+        // result doesn't match
         std::ostringstream oss;
         oss << "Failed for #" << testId << " with string='" << testCase.string <<
                "' and type=" << typeName << ". Result: 0x";
@@ -113,6 +119,7 @@ static void testCStrtofX(cxuint testId, const CStrtofXTestCase& testCase)
     }
 }
 
+// testing floating point tripping between conversion from/to string
 static void testTripping(cxuint testId, const CStrtofXTestCase& testCase)
 {
     const char* end = nullptr;
@@ -126,6 +133,7 @@ static void testTripping(cxuint testId, const CStrtofXTestCase& testCase)
     {
         case FT_H:
         {
+            // for half float (FP16)
             uint16_t result16 = cstrtohCStyle(testCase.string,
                     testCase.string+::strlen(testCase.string), end);
             result = result16;
@@ -141,6 +149,7 @@ static void testTripping(cxuint testId, const CStrtofXTestCase& testCase)
         }
         case FT_F:
         {
+            // for float (FP32)
             FloatUnion resultU;
             resultU.f = cstrtovCStyle<float>(testCase.string,
                     testCase.string+::strlen(testCase.string), end);
@@ -157,6 +166,7 @@ static void testTripping(cxuint testId, const CStrtofXTestCase& testCase)
         }
         case FT_D:
         {
+            // for (FP64)
             DoubleUnion resultU;
             resultU.d = cstrtovCStyle<double>(testCase.string,
                     testCase.string+::strlen(testCase.string), end);
@@ -177,6 +187,7 @@ static void testTripping(cxuint testId, const CStrtofXTestCase& testCase)
     }
     if (result != tripped1 || result != tripped2)
     {
+        // if result doesn't match (not this sample values)
         std::ostringstream oss;
         oss << "Failed tripping for #" << testId << " with string='" << testCase.string <<
                "' and type=" << typeName << ". Result: 0x";

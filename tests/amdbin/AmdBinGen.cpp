@@ -133,7 +133,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     cxuint argSamplers = 0;
     
     cxuint uavIdToCompare = 0;
-    /* parse arguments */
+    /* parse arguments from metadata
+     * very similar code as from AmdBinaries to parse kernel metadata */
     while (!iss.eof())
     {
         std::string line;
@@ -145,7 +146,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         else if (line.compare(0, 17, ";memory:hwregion:")==0)
             config.hwRegion = cstrtovCStyle<uint32_t>(line.c_str()+17, nullptr, outEnd);
         else if (line.compare(0, 5, ";cws:")==0)
-        {  // cws
+        {
+            // cws (reqd_work_group_size)
             config.reqdWorkGroupSize[0] = cstrtovCStyle<uint32_t>(
                         line.c_str()+5, nullptr, outEnd);
             outEnd++;
@@ -157,6 +159,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         }
         else if (line.compare(0, 7, ";value:")==0)
         {
+            // parse single value argument
             AmdKernelArgInput arg;
             size_t pos = line.find(':', 7);
             arg.argName = line.substr(7, pos-7);
@@ -219,6 +222,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             //arg.resId = AMDBIN_DEFAULT;
             pos = line.find(':', pos);
             pos++;
+            // set structure type for opaque or struct
             if (typeName == "opaque")
             {
                 arg.pointerType = KernelArgType::STRUCTURE;
@@ -232,15 +236,18 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             else
                 pos = line.find(':', pos);
             pos++;
+            // accesss qualifier (RO,RW)
             if (line.compare(pos, 2, "RO") == 0 && arg.ptrSpace == KernelPtrSpace::GLOBAL)
                 arg.ptrAccess |= KARG_PTR_CONST;
             else if (line.compare(pos, 2, "RW") == 0)
                 arg.ptrAccess |= KARG_PTR_NORMAL;
             pos = line.find(':', pos);
             pos++;
+            // volatile qualifier
             if (line[pos] == '1')
                 arg.ptrAccess |= KARG_PTR_VOLATILE;
             pos+=2;
+            // restrict qualifier
             if (line[pos] == '1')
                 arg.ptrAccess |= KARG_PTR_RESTRICT;
             config.args.push_back(arg);
@@ -261,12 +268,15 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             size_t nextPos = line.find(':', pos);
             std::string imgType = line.substr(pos, nextPos-pos);
             pos = nextPos+1;
+            // parse image type:
+            // image 1D
             if (imgType == "1D")
                 arg.argType = KernelArgType::IMAGE1D;
             else if (imgType == "1DA")
                 arg.argType = KernelArgType::IMAGE1D_ARRAY;
             else if (imgType == "1DB")
                 arg.argType = KernelArgType::IMAGE1D_BUFFER;
+            // image 2d
             else if (imgType == "2D")
                 arg.argType = KernelArgType::IMAGE2D;
             else if (imgType == "2DA")
@@ -274,6 +284,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             else if (imgType == "3D")
                 arg.argType = KernelArgType::IMAGE3D;
             std::string accessStr = line.substr(pos, 2);
+            // access qualifier
             if (line.compare(pos, 2, "RO") == 0)
                 arg.ptrAccess |= KARG_PTR_READ_ONLY;
             else if (line.compare(pos, 2, "WO") == 0)
@@ -371,12 +382,14 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 uavIdToCompare = 9;
         }
     }
+    // add samplers to config
     if (argSamplers != 0 && !config.samplers.empty())
     {
         for (cxuint k = argSamplers; k < config.samplers.size(); k++)
             config.samplers[k-argSamplers] = config.samplers[k];
         config.samplers.resize(config.samplers.size()-argSamplers);
     }
+    
     /* from ATI CAL NOTES */
     size_t encId = innerBin.getCALEncodingEntriesNum()-1;
     const cxuint calNotesNum = innerBin.getCALNotesNum(encId);
@@ -558,6 +571,7 @@ static AmdInput genAmdInput(bool useConfig, const AmdGpuBin* amdGpuBin,
         size_t codeSize = 0;
         for (cxint k = sectionsNum-1; k >= 0 ; k--)
         {
+            // set kernel code size and kernel data (from inner binary)
             if (::strcmp(".text", innerBin.getSectionName(k)) == 0)
             {
                 const auto& secHdr = innerBin.getSectionHeader(k);
@@ -590,11 +604,13 @@ static AmdInput genAmdInput(bool useConfig, const AmdGpuBin* amdGpuBin,
         }
         
         if (!useConfig)
+            // generate from data
             amdInput.addKernel(innerBin.getKernelName().c_str(), codeSize, code, calNotes,
                     amdGpuBin->getKernelHeader(i), amdGpuBin->getMetadataSize(i),
                     amdGpuBin->getMetadata(i), dataSize, data/*0, nullptr*/);
         else
         {
+            // generate from config
             AmdKernelConfig config = getAmdKernelConfig(amdGpuBin->getMetadataSize(i), 
                     amdGpuBin->getMetadata(i), innerBin, amdGpuBin->getDriverInfo(),
                     amdGpuBin->getKernelHeader(i));
@@ -613,6 +629,7 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
     AmdInput amdInput;
     
     inputData = loadDataFromFile(origBinaryFilename);
+    // load binary file
     const Flags binFlags = AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                 AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
                 AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_INNER_CREATE_CALNOTES |
@@ -622,12 +639,14 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
     
     if (base->getType() == AmdMainType::GPU_BINARY)
     {
+        // generate input from 32-bit binary
         AmdMainGPUBinary32* amdGpuBin = static_cast<AmdMainGPUBinary32*>(base.get());
         amdInput = genAmdInput(reconf, amdGpuBin, false, false);
         amdInput.is64Bit = false;
     }
     else if (base->getType() == AmdMainType::GPU_64_BINARY)
     {
+        // generate input from 64-bit binary
         AmdMainGPUBinary64* amdGpuBin = static_cast<AmdMainGPUBinary64*>(base.get());
         amdInput = genAmdInput(reconf, amdGpuBin, false, false);
         amdInput.is64Bit = true;
@@ -638,6 +657,7 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
     AmdGPUBinGenerator binGen(&amdInput);
     binGen.generate(output);
     
+    // compare result output binary
     if (output.size() != inputData.size())
     {
         std::ostringstream oss;

@@ -151,6 +151,7 @@ static const char* programArgv1_5[] =
     nullptr
 };
 
+// testing CLI parser
 static void testCLI1(const char* name, int argc, const char** argv)
 {
     std::ostringstream oss;
@@ -269,6 +270,7 @@ static void testCLI1(const char* name, int argc, const char** argv)
             "xxx", "radeon" }, namesArrLength, (const char**)namesArr);
 }
 
+// check type in option
 template<typename T1>
 bool isTypeMatch(const CLIParser& cli, cxuint optId)
 {
@@ -283,6 +285,7 @@ bool isTypeMatch(const CLIParser& cli, cxuint optId)
     return true;
 }
 
+// testin type matching
 static void testCLI1TypeMatch(const char* name, int argc, const char** argv)
 {
     std::ostringstream oss;
@@ -337,6 +340,7 @@ static const char* programArgvLong_4[] =
     "--x=x=x=x=x", "832", "--x=x=x=x=x=x", "637", nullptr
 };
 
+// testing long options
 static void testCLILong(const char* name, int argc, const char** argv)
 {
     std::ostringstream oss;

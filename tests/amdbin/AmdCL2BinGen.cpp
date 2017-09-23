@@ -232,6 +232,7 @@ struct CLRX_INTERNAL AmdCL2Types64 : Elf64Types
     static const KernelArgType wordType = KernelArgType::LONG;
 };
 
+// generate kernel config
 template<typename Types>
 static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* metadata,
         size_t setupSize, const cxbyte* setup, const std::vector<size_t> samplerOffsets,
@@ -247,6 +248,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             reinterpret_cast<const IntAmdCL2SetupData*>(setup + 48);
     uint32_t pgmRSRC1 = ULEV(setupData->pgmRSRC1);
     uint32_t pgmRSRC2 = ULEV(setupData->pgmRSRC2);
+    // get config values
     config.dimMask = (pgmRSRC2>>7)&7;
     config.ieeeMode = (pgmRSRC1>>23)&1;
     config.exceptions = (pgmRSRC2>>24)&0xff;
@@ -295,6 +297,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     const char* strBase = (const char*)metadata;
     size_t strOffset = argOffset + sizeof(typename Types::KernelArgEntry)*(argsNum+1);
     
+    // get kernel arguments
+    /* copy from AmdCL2Binaries */
     for (uint32_t i = 0; i < argsNum; i++, argPtr++)
     {
         AmdKernelArgInput arg{};
@@ -539,6 +543,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
         amdCL2Input.bssAlignment = innerBin.getBssAlignment();
         amdCL2Input.bssSize = innerBin.getBssSize();
         
+        // get note, for architecture (arch major, minor, stepping)
         {
             const cxbyte* noteContent = innerBin.getSectionContent(".note");
             size_t notesSize = innerBin.getSectionHeader(".note").sh_size;
@@ -561,6 +566,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
             }
         }
         
+        // get sampler config
         amdCL2Input.samplerConfig = samplerConfig;
         if (samplerConfig)
         {
@@ -632,6 +638,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
         uint16_t gDataSectionIdx = SHN_UNDEF;
         uint16_t rwDataSectionIdx = SHN_UNDEF;
         uint16_t bssDataSectionIdx = SHN_UNDEF;
+        // get section indices in which can be symbols from relocations
         try
         { gDataSectionIdx = innerBin.getSectionIndex(".hsadata_readonly_agent"); }
         catch(const Exception& ex)
@@ -645,6 +652,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
         catch(const Exception& ex)
         { }
         
+        // get symbol relocations
         for (size_t k = 0; k < kernelsNum; k++)
         {
             AmdCL2KernelInput& kernel = amdCL2Input.kernels[k];
@@ -687,6 +695,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
     }
     
     if (useConfig)
+        // generate config if input will use kernel config
         for (AmdCL2KernelInput& kernel: amdCL2Input.kernels)
         {
             kernel.config = genKernelConfig<Types>(kernel.metadataSize, kernel.metadata,
@@ -699,7 +708,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
             kernel.stubSize = kernel.setupSize = 0;
         }
     
-    // add brig
+    // add BRIG content
     uint16_t brigIndex = binary.getSectionIndex(".brig");
     const typename Types::Shdr& brigShdr = binary.getSectionHeader(brigIndex);
     const cxbyte* brigContent = binary.getSectionContent(brigIndex);
@@ -719,6 +728,8 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
     inputData = loadDataFromFile(origBinaryFilename);
     if (!isAmdCL2Binary(inputData.size(), inputData.data()))
         throw Exception("This is not AMD OpenCL2.0 binary");
+    
+    // load AMD CL2 binary
     std::unique_ptr<AmdCL2MainGPUBinaryBase> amdCL2GpuBin(
             createAmdCL2BinaryFromCode(inputData.size(), inputData.data(), 
                 AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
@@ -729,20 +740,23 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
     
     if (amdCL2GpuBin->getType()==AmdMainType::GPU_CL2_64_BINARY)
     {
+        // generate input from 64-bit binary
         const AmdCL2MainGPUBinary64& binary = *reinterpret_cast<
                         const AmdCL2MainGPUBinary64*>(amdCL2GpuBin.get());
         amdCL2Input = genAmdCL2Input<AmdCL2Types64>(reconf, binary, false, false);
     }
-    else // 32-bit
+    else
     {
+        // generate input from 32-bit binary
         const AmdCL2MainGPUBinary32& binary = *reinterpret_cast<
                         const AmdCL2MainGPUBinary32*>(amdCL2GpuBin.get());
         amdCL2Input = genAmdCL2Input<AmdCL2Types32>(reconf, binary, false, false);
     }
-    
+    // generate output binary
     AmdCL2GPUBinGenerator binGen(&amdCL2Input);
     binGen.generate(output);
     
+    // compare generated binary with input
     if (output.size() != inputData.size())
     {
         std::ostringstream oss;

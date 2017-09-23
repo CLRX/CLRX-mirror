@@ -36,6 +36,7 @@ static ROCmInput genROCmInput(const ROCmBinary& binary)
 {
     uint32_t archMajor = 0;
     ROCmInput rocmInput;
+    // try to get comment
     try
     {
         const auto& commentHdr = binary.getSectionHeader(".comment");
@@ -51,6 +52,7 @@ static ROCmInput genROCmInput(const ROCmBinary& binary)
     rocmInput.archStepping = 0;
     
     {
+        // load .note to determine architecture (major, minor and stepping)
         const cxbyte* noteContent = (const cxbyte*)binary.getNotes();
         if (noteContent==nullptr)
             throw Exception("Missing notes in inner binary!");
@@ -86,7 +88,7 @@ static ROCmInput genROCmInput(const ROCmBinary& binary)
         rocmInput.deviceType = GPUDeviceType::ICELAND;
     else if (archMajor==9)
         rocmInput.deviceType = GPUDeviceType::GFX900;
-    
+    // set main code to input
     rocmInput.codeSize = binary.getCodeSize();
     rocmInput.code = binary.getCode();
     
@@ -108,13 +110,15 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename)
     std::string origBinFilenameStr(origBinaryFilename);
     filesystemPath(origBinFilenameStr); // convert to system path (native separators)
     
+    // load input binary
     inputData = loadDataFromFile(origBinFilenameStr.c_str());
     ROCmBinary rocmBin(inputData.size(), inputData.data(), 0);
-    
+    // generate input from binary
     ROCmInput rocmInput = genROCmInput(rocmBin);
     ROCmBinGenerator binGen(&rocmInput);
     binGen.generate(output);
     
+    // compare generated output with input
     if (output.size() != inputData.size())
     {
         std::ostringstream oss;

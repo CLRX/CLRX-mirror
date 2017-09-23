@@ -29,6 +29,7 @@
 
 using namespace CLRX;
 
+// test results for AMD kernel argument types
 static const AmdKernelArg expectedKernelArgs1[] =
 {
     { KernelArgType::UCHAR, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uchar", "v0" },
@@ -453,7 +454,7 @@ static const AmdKernelArg expectedCL2KernelArgs2[] =
         "image2d_t", "rwimg" }
 };
 
-
+// testing kernel argument types for binaries
 static void testKernelArgs(const char* filename, const char* kernelName,
                size_t expKernelArgsNum, const AmdKernelArg* expKernelArgs)
 {
@@ -512,6 +513,7 @@ static void tryGenAmdBinWithMetadata(const std::string& metadata)
     std::unique_ptr<AmdMainGPUBinaryBase>(genAmdBinWithMetadata(metadata));
 }
 
+// checking parsing of AMD GPU metadata
 static void testAmdGPUMetadataGen()
 {
     const std::string testName = "testAmdGPUMetadataGen";
@@ -573,6 +575,7 @@ static const BinLoadingFailCase binLoadingTestCases[] =
       0x4a0, { 0x20, 0x22 }, "globalData value+size out of range" }
 };
 
+// checking failures on AMD GPU binary loading
 static void testBinLoadingFailCase(cxuint testCaseId, const BinLoadingFailCase& testCase)
 {
     Array<cxbyte> data = loadDataFromFile(testCase.filename);

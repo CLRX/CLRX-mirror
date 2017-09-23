@@ -51,6 +51,7 @@ static GalliumInput getGalliumInputBase(bool disassembly, const GalliumBinary* g
     input.deviceType = GPUDeviceType::CAPE_VERDE;
     if (rodataIndex != SHN_UNDEF)
     {
+        // add rodata (global data)
         const auto& rodataHdr = elfBin.getSectionHeader(rodataIndex);
         input.globalDataSize = ULEV(rodataHdr.sh_size);
         input.globalData = elfBin.getSectionContent(rodataIndex);
@@ -61,6 +62,7 @@ static GalliumInput getGalliumInputBase(bool disassembly, const GalliumBinary* g
         input.globalData = nullptr;
     }
     
+    // global settings
     input.commentSize = ULEV(commentHdr.sh_size);
     input.comment = (const char*)elfBin.getSectionContent(".comment");
     input.isMesa170 = galliumBin->isMesa170();
@@ -75,6 +77,7 @@ static GalliumInput getGalliumInputBase(bool disassembly, const GalliumBinary* g
         const GalliumKernel& kernel = galliumBin->getKernel(ii);
         const GalliumProgInfoEntry* progInfo = elfBin.getProgramInfo(ii);
         GalliumProgInfoEntry outProgInfo[5];
+        // get program info entries
         for (cxuint k = 0; k < progInfoEntriesNum; k++)
         {
             outProgInfo[k].address = ULEV(progInfo[k].address);
@@ -85,7 +88,7 @@ static GalliumInput getGalliumInputBase(bool disassembly, const GalliumBinary* g
         std::copy(outProgInfo, outProgInfo + progInfoEntriesNum, kinput.progInfo);
         input.kernels.push_back(kinput);
     }
-    
+    // set code data
     input.codeSize = ULEV(elfBin.getSectionHeader(".text").sh_size);
     input.code = elfBin.getSectionContent(".text");
     return input;
@@ -107,15 +110,18 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename)
     std::string origBinFilenameStr(origBinaryFilename);
     filesystemPath(origBinFilenameStr); // convert to system path (native separators)
     
+    // loading data gallium binary
     inputData = loadDataFromFile(origBinFilenameStr.c_str());
     galliumBin.reset(new GalliumBinary(inputData.size(), inputData.data(),
             GALLIUM_INNER_CREATE_SECTIONMAP |
             GALLIUM_INNER_CREATE_SYMBOLMAP | GALLIUM_INNER_CREATE_PROGINFOMAP));
     
+    // get GalliumInput
     GalliumInput galliumInput = getGalliumInput(true, galliumBin.get());
     GalliumBinGenerator binGen(&galliumInput);
     binGen.generate(output);
     
+    // compare (result) generated binary
     if (output.size() != inputData.size())
     {
         std::ostringstream oss;
