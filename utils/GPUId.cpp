@@ -162,7 +162,7 @@ GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
     auto it = binaryMapFind(lowerCaseGpuDeviceEntryTable,
                  lowerCaseGpuDeviceEntryTable+lowerCaseGpuDeviceEntryTableSize,
                  name, CStringCaseLess());
-    if (it == lowerCaseGpuDeviceEntryTable+gpuDeviceTableSize)
+    if (it == lowerCaseGpuDeviceEntryTable+lowerCaseGpuDeviceEntryTableSize)
         throw Exception("Unknown GPU device type");
     return it->second;
 }
