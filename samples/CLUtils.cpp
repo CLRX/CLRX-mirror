@@ -376,8 +376,21 @@ try
     /* assemble source code */
     /// determine device type
     char* sdeviceName = stripCString(deviceName.get());
-    char* devNamePtr = (binaryFormat==BinaryFormat::GALLIUM &&
-            ::strncmp(sdeviceName, "AMD ", 4)==0) ? sdeviceName+4 : sdeviceName;
+    char* devNamePtr = sdeviceName;
+    if (binaryFormat==BinaryFormat::GALLIUM)
+    {
+        char* sptr = ::strstr(sdeviceName, "(AMD ");
+        // if form 'AMD Radeon xxx (AMD CODENAME /...)
+        if (sptr != nullptr) // if found 'AMD ';
+            devNamePtr = sptr+5;
+        else
+        {
+            // if form 'AMD CODENAME (....
+            sptr = ::strstr(sdeviceName, "AMD ");
+            if (sptr != nullptr) // if found 'AMD ';
+                devNamePtr = sptr+4;
+        }
+    }
     char* devNameEnd = devNamePtr;
     while (isAlnum(*devNameEnd)) devNameEnd++;
     *devNameEnd = 0; // finish at first word
