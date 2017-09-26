@@ -59,8 +59,8 @@ static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
 };
 
 // sorted GPU device names with device types
-static std::pair<const char*, GPUDeviceType>
-lowerCaseGpuDeviceEntryTable[gpuDeviceTableSize] =
+static const std::pair<const char*, GPUDeviceType>
+lowerCaseGpuDeviceEntryTable[] =
 {
     { "baffin", GPUDeviceType::BAFFIN },
     { "bonaire", GPUDeviceType::BONAIRE },
@@ -81,12 +81,25 @@ lowerCaseGpuDeviceEntryTable[gpuDeviceTableSize] =
     { "mullins", GPUDeviceType::MULLINS },
     { "oland", GPUDeviceType::OLAND },
     { "pitcairn", GPUDeviceType::PITCAIRN },
+    { "polaris10", GPUDeviceType::ELLESMERE },
+    { "polaris11", GPUDeviceType::BAFFIN },
+    { "polaris12", GPUDeviceType::GFX804 },
+    { "polaris20", GPUDeviceType::ELLESMERE },
+    { "polaris21", GPUDeviceType::BAFFIN },
+    { "polaris22", GPUDeviceType::GFX804 },
+    { "raven", GPUDeviceType::GFX901 },
     { "spectre", GPUDeviceType::SPECTRE },
     { "spooky", GPUDeviceType::SPOOKY },
     { "stoney", GPUDeviceType::STONEY },
     { "tahiti", GPUDeviceType::TAHITI },
-    { "tonga", GPUDeviceType::TONGA }
+    { "tonga", GPUDeviceType::TONGA },
+    { "topaz", GPUDeviceType::ICELAND },
+    { "vega10", GPUDeviceType::GFX900 },
+    { "vega11", GPUDeviceType::GFX901 }
 };
+
+static const size_t lowerCaseGpuDeviceEntryTableSize =
+    sizeof(lowerCaseGpuDeviceEntryTable) / sizeof(std::pair<const char*, GPUDeviceType>);
 
 // table of architectures for specific GPU devices
 static const GPUArchitecture gpuDeviceArchTable[gpuDeviceTableSize] =
@@ -147,7 +160,8 @@ static const GPUDeviceType gpuLowestDeviceFromArchTable[4] =
 GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
 {
     auto it = binaryMapFind(lowerCaseGpuDeviceEntryTable,
-                 lowerCaseGpuDeviceEntryTable+gpuDeviceTableSize, name, CStringCaseLess());
+                 lowerCaseGpuDeviceEntryTable+lowerCaseGpuDeviceEntryTableSize,
+                 name, CStringCaseLess());
     if (it == lowerCaseGpuDeviceEntryTable+gpuDeviceTableSize)
         throw Exception("Unknown GPU device type");
     return it->second;
