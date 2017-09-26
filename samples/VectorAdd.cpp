@@ -264,7 +264,7 @@ R"ffDXD(.elseiffmt gallium   # GalliumCompute code
 .text
 vectorAdd:
 .if LLVM_VERSION>=40000
-                .skip 256
+        .skip 256
         s_load_dword s0, s[4:5], 1*SMUL        # s0 - local size X
         s_load_dword s1, s[6:7], 9*SMUL        # s1 - global offset
         s_load_dword s2, s[6:7], 0             # s2 - n
