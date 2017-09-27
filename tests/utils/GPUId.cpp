@@ -22,6 +22,7 @@
 #include <sstream>
 #include <cstring>
 #include <cstdio>
+#include <utility>
 #include <initializer_list>
 #include <CLRX/utils/GPUId.h>
 #include "../TestUtils.h"
@@ -109,6 +110,7 @@ static const size_t gpuDeviceEntryTableSize =
 static void testGetGPUDeviceFromName()
 {
     char descBuf[60];
+    // checking device type names
     for (cxuint i = 0; i < gpuDeviceEntryTableSize; i++)
     {
         snprintf(descBuf, sizeof descBuf, "Test %d %s", i,
@@ -163,6 +165,7 @@ static const size_t gpuArchitectureEntryTableSize =
 static void testGetGPUArchitectureFromName()
 {
     char descBuf[60];
+    // checking architecture names
     for (cxuint i = 0; i < gpuArchitectureEntryTableSize; i++)
     {
         snprintf(descBuf, sizeof descBuf, "Test %d %s", i,
@@ -181,11 +184,96 @@ static void testGetGPUArchitectureFromName()
             "Unknown GPU architecture", getGPUArchitectureFromName, "");
 }
 
+struct GPUMaxRegTestCase
+{
+    GPUArchitecture arch;
+    cxuint regType;
+    Flags flags;
+    cxuint regsNum;
+};
+
+// getGPUMaxRegistersNum testcase table
+static const GPUMaxRegTestCase gpuMaxRegTestTable[] =
+{
+    { GPUArchitecture::GCN1_0, REGTYPE_VGPR, 0, 256 },
+    { GPUArchitecture::GCN1_1, REGTYPE_VGPR, 0, 256 },
+    { GPUArchitecture::GCN1_2, REGTYPE_VGPR, 0, 256 },
+    { GPUArchitecture::GCN1_4, REGTYPE_VGPR, 0, 256 },
+    { GPUArchitecture::GCN1_0, REGTYPE_SGPR, 0, 104 },
+    { GPUArchitecture::GCN1_1, REGTYPE_SGPR, 0, 104 },
+    { GPUArchitecture::GCN1_2, REGTYPE_SGPR, 0, 102 },
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, 0, 102 },
+    { GPUArchitecture::GCN1_0, REGTYPE_SGPR, REGCOUNT_NO_VCC, 102 },
+    { GPUArchitecture::GCN1_1, REGTYPE_SGPR, REGCOUNT_NO_VCC, 102 },
+    { GPUArchitecture::GCN1_2, REGTYPE_SGPR, REGCOUNT_NO_VCC, 100 },
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_VCC, 100 },
+    { GPUArchitecture::GCN1_1, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 100 },
+    { GPUArchitecture::GCN1_2, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 96 },
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 96 },
+    { GPUArchitecture::GCN1_2, REGTYPE_SGPR, REGCOUNT_NO_XNACK, 98 },
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_XNACK, 98 }
+};
+
+static void testGetGPUMaxRegistersNum()
+{
+    char descBuf[60];
+    // checking architecture names
+    for (cxuint i = 0; i < sizeof gpuMaxRegTestTable/ sizeof(GPUMaxRegTestCase); i++)
+    {
+        const GPUMaxRegTestCase testCase = gpuMaxRegTestTable[i];
+        snprintf(descBuf, sizeof descBuf, "Test %d", i);
+        const cxuint result = getGPUMaxRegistersNum(testCase.arch, testCase.regType,
+                                testCase.flags);
+        assertValue("testGetGPUMaxRegistersNum", descBuf,
+                    testCase.regsNum, result);
+    }
+}
+
+// getGPUExtraRegsNum testcase table
+static const GPUMaxRegTestCase gpuExtraRegsTestTable[] =
+{
+    { GPUArchitecture::GCN1_0, REGTYPE_VGPR, 0, 0 },
+    { GPUArchitecture::GCN1_1, REGTYPE_VGPR, 0, 0 },
+    { GPUArchitecture::GCN1_2, REGTYPE_VGPR, 0, 0 },
+    { GPUArchitecture::GCN1_4, REGTYPE_VGPR, 0, 0 },
+    { GPUArchitecture::GCN1_0, REGTYPE_SGPR, 0, 0 },
+    { GPUArchitecture::GCN1_1, REGTYPE_SGPR, 0, 0 },
+    { GPUArchitecture::GCN1_2, REGTYPE_SGPR, 0, 0 },
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, 0, 0 },
+    { GPUArchitecture::GCN1_0, REGTYPE_SGPR, GCN_VCC, 2 },
+    { GPUArchitecture::GCN1_1, REGTYPE_SGPR, GCN_VCC, 2 },
+    { GPUArchitecture::GCN1_2, REGTYPE_SGPR, GCN_VCC, 2 },
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, GCN_VCC, 2 },
+    { GPUArchitecture::GCN1_1, REGTYPE_SGPR, GCN_FLAT, 4 },
+    { GPUArchitecture::GCN1_2, REGTYPE_SGPR, GCN_FLAT, 6 },
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, GCN_FLAT, 6 },
+    { GPUArchitecture::GCN1_2, REGTYPE_SGPR, GCN_XNACK, 4 },
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, GCN_XNACK, 4 }
+};
+
+static void testGetGPUExtraRegsNum()
+{
+    char descBuf[60];
+    // checking architecture names
+    for (cxuint i = 0; i < sizeof gpuExtraRegsTestTable/ sizeof(GPUMaxRegTestCase); i++)
+    {
+        const GPUMaxRegTestCase testCase = gpuExtraRegsTestTable[i];
+        snprintf(descBuf, sizeof descBuf, "Test %d", i);
+        const cxuint result = getGPUExtraRegsNum(testCase.arch, testCase.regType,
+                                testCase.flags);
+        assertValue("testGetGPUExtraRegsNum", descBuf,
+                    testCase.regsNum, result);
+    }
+}
+
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
     retVal |= callTest(testGetGPUDeviceFromName);
     retVal |= callTest(testGetGPUArchitectureFromName);
+    retVal |= callTest(testGetGPUMaxRegistersNum);
+    retVal |= callTest(testGetGPUExtraRegsNum);
     return retVal;
 }
 
