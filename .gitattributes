@@ -363,6 +363,7 @@ tests/amdbin/rocmbins/consttest1-kaveri.hsaco.regen -text svneol=unset#applicati
 tests/amdbin/rocmbins/rijndael.hsaco.regen -text svneol=unset#application/x-sharedlib
 tests/utils/CLIParser.cpp -text
 tests/utils/CMakeLists.txt -text svneol=unset#text/plain
+tests/utils/GPUId.cpp -text
 tests/utils/cstrtofXTest.cpp -text
 utils/CLIParser.cpp -text
 utils/CMakeLists.txt -text svneol=unset#text/plain
