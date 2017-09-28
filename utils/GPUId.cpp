@@ -316,9 +316,9 @@ static const AMDGPUArchVersion galliumGpuArchVersionTbl[] =
     { 7, 0, 0 }, // GPUDeviceType::MULLINS
     { 8, 0, 3 }, // GPUDeviceType::FIJI
     { 8, 0, 1 }, // GPUDeviceType::CARRIZO
-    { 0, 0, 0 }, // GPUDeviceType::DUMMY
-    { 0, 0, 0 }, // GPUDeviceType::GOOSE
-    { 0, 0, 0 }, // GPUDeviceType::HORSE
+    { 8, 0, 1 }, // GPUDeviceType::DUMMY
+    { 8, 0, 4 }, // GPUDeviceType::GOOSE
+    { 8, 0, 4 }, // GPUDeviceType::HORSE
     { 8, 0, 1 }, // GPUDeviceType::STONEY
     { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
     { 8, 0, 4 }, // GPUDeviceType::BAFFIN
