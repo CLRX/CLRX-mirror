@@ -132,7 +132,7 @@ GalliumElfBinary32::~GalliumElfBinary32()
 
 GalliumElfBinary32::GalliumElfBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
            Flags creationFlags, size_t kernelsNum) :
-           ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
+           ElfBinary32(binaryCodeSize, binaryCode, creationFlags|ELF_CREATE_SYMBOLMAP)
        
 {
     loadFromElf(static_cast<const ElfBinary32&>(*this), kernelsNum);
@@ -146,7 +146,7 @@ GalliumElfBinary64::~GalliumElfBinary64()
 
 GalliumElfBinary64::GalliumElfBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
            Flags creationFlags, size_t kernelsNum) :
-           ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
+           ElfBinary64(binaryCodeSize, binaryCode, creationFlags|ELF_CREATE_SYMBOLMAP)
        
 {
     loadFromElf(static_cast<const ElfBinary64&>(*this), kernelsNum);
@@ -180,33 +180,24 @@ template<typename GalliumElfBinary>
 static void verifyKernelSymbols(size_t kernelsNum, const GalliumKernel* kernels,
                 const GalliumElfBinary& elfBinary)
 {
-    size_t symIndex = 0;
-    const size_t symsNum = elfBinary.getSymbolsNum();
     uint16_t textIndex = elfBinary.getSectionIndex(".text");
     for (uint32_t i = 0; i < kernelsNum; i++)
     {
         const GalliumKernel& kernel = kernels[i];
-        for (; symIndex < symsNum; symIndex++)
+        const size_t symIndex = elfBinary.getSymbolIndex(kernel.kernelName.c_str());
+        const auto& sym = elfBinary.getSymbol(symIndex);
+        const char* symName = elfBinary.getSymbolName(symIndex);
+        // kernel symol must be defined as global and must be bound to text section
+        if (ULEV(sym.st_shndx) == textIndex &&
+            ELF32_ST_BIND(sym.st_info) == STB_GLOBAL)
         {
-            const auto& sym = elfBinary.getSymbol(symIndex);
-            const char* symName = elfBinary.getSymbolName(symIndex);
-            // kernel symol must be defined as global and must be bound to text section
-            if (ULEV(sym.st_shndx) == textIndex &&
-                ELF32_ST_BIND(sym.st_info) == STB_GLOBAL)
-            {
-                // names must be stored in order
-                if (kernel.kernelName != symName)
-                    throw Exception("Kernel symbols out of order!");
-                if (ULEV(sym.st_value) != kernel.offset)
-                    throw Exception("Kernel symbol value and Kernel "
-                                "offset doesn't match");
-                break;
-            }
+            // names must be stored in order
+            if (kernel.kernelName != symName)
+                throw Exception("Kernel symbols out of order!");
+            if (ULEV(sym.st_value) != kernel.offset)
+                throw Exception("Kernel symbol value and Kernel "
+                            "offset doesn't match");
         }
-        if (symIndex >= symsNum)
-            throw Exception("Number of kernels in ElfBinary and "
-                        "MainBinary doesn't match");
-        symIndex++;
     }
 }
 
@@ -237,10 +228,6 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
             throw Exception("Kernel name length is too long!");
         
         kernel.kernelName.assign((const char*)data, symNameLen);
-        
-        /// check kernel name order (sorted order is required by Mesa3D radeon driver)
-        if (i != 0 && kernel.kernelName < kernels[i-1].kernelName)
-            throw Exception("Unsorted kernel table!");
         
         data += symNameLen;
         if (usumGt(uint32_t(data-binaryCode), 12U, binaryCodeSize))
