@@ -167,7 +167,7 @@ GPUDeviceType ROCmBinary::determineGPUDeviceType(uint32_t& outArchMinor,
         }
     }
     // determine device type
-    GPUDeviceType deviceType = getGPUDeviceTypeFromArchValues(archMajor, archMinor,
+    GPUDeviceType deviceType = getGPUDeviceTypeFromArchVersion(archMajor, archMinor,
                                     archStepping);
     outArchMinor = archMinor;
     outArchStepping = archStepping;
@@ -271,8 +271,8 @@ static const uint16_t mainBuiltinSectionTable[] =
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
 {
-    AMDGPUArchValues amdGpuArchValues = getGPUArchValues(input->deviceType,
-                GPUArchValuesTable::OPENSOURCE);
+    AMDGPUArchVersion amdGpuArchValues = getGPUArchVersion(input->deviceType,
+                GPUArchVersionTable::OPENSOURCE);
     if (input->archMinor!=UINT32_MAX)
         amdGpuArchValues.minor = input->archMinor;
     if (input->archStepping!=UINT32_MAX)

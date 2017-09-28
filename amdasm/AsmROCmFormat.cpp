@@ -1410,8 +1410,8 @@ bool AsmROCmHandler::prepareBinary()
     // set up number of the allocated SGPRs and VGPRs for kernel
     cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
     
-    AMDGPUArchValues amdGpuArchValues = getGPUArchValues(assembler.deviceType,
-                                GPUArchValuesTable::OPENSOURCE);
+    AMDGPUArchVersion amdGpuArchValues = getGPUArchVersion(assembler.deviceType,
+                                GPUArchVersionTable::OPENSOURCE);
     // replace arch minor and stepping by user defined values (if set)
     if (output.archMinor!=UINT32_MAX)
         amdGpuArchValues.minor = output.archMinor;

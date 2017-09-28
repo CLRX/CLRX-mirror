@@ -2058,8 +2058,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         throw Exception("OpenCL 2.0 supported only for GCN1.1 or later");
     
     const bool is16_3Ver = (input->driverVersion>=200406);
-    AMDGPUArchValues amdGpuArchValues = getGPUArchValues(input->deviceType,
-                                GPUArchValuesTable::AMDCL2);
+    AMDGPUArchVersion amdGpuArchValues = getGPUArchVersion(input->deviceType,
+                                GPUArchVersionTable::AMDCL2);
     // fix for old drivers (1912.05)
     if (!is16_3Ver && input->deviceType==GPUDeviceType::FIJI)
         amdGpuArchValues.stepping = 1;

@@ -299,7 +299,7 @@ uint32_t CLRX::calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint us
 }
 
 // AMD GPU architecture for Gallium and ROCm
-static const AMDGPUArchValues galliumGpuArchValuesTbl[] =
+static const AMDGPUArchVersion galliumGpuArchVersionTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
     { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
@@ -328,7 +328,7 @@ static const AMDGPUArchValues galliumGpuArchValuesTbl[] =
 };
 
 // AMDGPU architecture values for specific GPU device type for AMDOCL 2.0
-static const AMDGPUArchValues amdCL2GpuArchValuesTbl[] =
+static const AMDGPUArchVersion amdCL2GpuArchVersionTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
     { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
@@ -356,18 +356,18 @@ static const AMDGPUArchValues amdCL2GpuArchValuesTbl[] =
     { 9, 0, 1 }  // GPUDeviceType::GFX901
 };
 
-AMDGPUArchValues CLRX::getGPUArchValues(GPUDeviceType deviceType, GPUArchValuesTable table)
+AMDGPUArchVersion CLRX::getGPUArchVersion(GPUDeviceType deviceType, GPUArchVersionTable table)
 {
     if (deviceType > GPUDeviceType::GPUDEVICE_MAX)
         throw Exception("Unknown GPU device type");
     // choose correct GPU arch values table
-    const AMDGPUArchValues* archValuesTable = (table == GPUArchValuesTable::AMDCL2) ?
-            amdCL2GpuArchValuesTbl : galliumGpuArchValuesTbl;
+    const AMDGPUArchVersion* archValuesTable = (table == GPUArchVersionTable::AMDCL2) ?
+            amdCL2GpuArchVersionTbl : galliumGpuArchVersionTbl;
     return archValuesTable[cxuint(deviceType)];
 }
 
-// GPU arch values with device type
-struct AMDGPUArchValuesEntry
+// GPU arch version with device type
+struct AMDGPUArchVersionEntry
 {
     uint32_t major;
     uint32_t minor;
@@ -376,7 +376,7 @@ struct AMDGPUArchValuesEntry
 };
 
 // list of AMDGPU arch entries for GPU devices
-static const AMDGPUArchValuesEntry amdGpuArchValueEntriesTbl[] =
+static const AMDGPUArchVersionEntry amdGpuArchVersionEntriesTbl[] =
 {
     { 0, 0, 0, GPUDeviceType::CAPE_VERDE },
     { 7, 0, 0, GPUDeviceType::BONAIRE },
@@ -391,10 +391,10 @@ static const AMDGPUArchValuesEntry amdGpuArchValueEntriesTbl[] =
     { 9, 0, 1, GPUDeviceType::GFX901 }
 };
 
-static const size_t amdGpuArchValueEntriesNum = sizeof(amdGpuArchValueEntriesTbl) /
-                sizeof(AMDGPUArchValuesEntry);
+static const size_t amdGpuArchVersionEntriesNum = sizeof(amdGpuArchVersionEntriesTbl) /
+                sizeof(AMDGPUArchVersionEntry);
 
-GPUDeviceType CLRX::getGPUDeviceTypeFromArchValues(cxuint archMajor, cxuint archMinor,
+GPUDeviceType CLRX::getGPUDeviceTypeFromArchVersion(cxuint archMajor, cxuint archMinor,
                             cxuint archStepping)
 {
     // determine device type
@@ -410,12 +410,12 @@ GPUDeviceType CLRX::getGPUDeviceTypeFromArchValues(cxuint archMajor, cxuint arch
         deviceType = GPUDeviceType::GFX900;
     
     // recognize device type by arch major, minor and stepping
-    for (cxuint i = 0; i < amdGpuArchValueEntriesNum; i++)
-        if (amdGpuArchValueEntriesTbl[i].major==archMajor &&
-            amdGpuArchValueEntriesTbl[i].minor==archMinor &&
-            amdGpuArchValueEntriesTbl[i].stepping==archStepping)
+    for (cxuint i = 0; i < amdGpuArchVersionEntriesNum; i++)
+        if (amdGpuArchVersionEntriesTbl[i].major==archMajor &&
+            amdGpuArchVersionEntriesTbl[i].minor==archMinor &&
+            amdGpuArchVersionEntriesTbl[i].stepping==archStepping)
         {
-            deviceType = amdGpuArchValueEntriesTbl[i].deviceType;
+            deviceType = amdGpuArchVersionEntriesTbl[i].deviceType;
             break;
         }
     return deviceType;

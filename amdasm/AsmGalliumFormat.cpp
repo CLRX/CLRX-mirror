@@ -1823,8 +1823,8 @@ bool AsmGalliumHandler::prepareBinary()
         }
     
     // setup amd GPU arch values (for LLVM 4.0 HSA config)
-    AMDGPUArchValues amdGpuArchValues = getGPUArchValues(assembler.deviceType,
-                                GPUArchValuesTable::OPENSOURCE);
+    AMDGPUArchVersion amdGpuArchValues = getGPUArchVersion(assembler.deviceType,
+                                GPUArchVersionTable::OPENSOURCE);
     // replace arch minor and stepping by user defined values (if set)
     if (archMinor != BINGEN_DEFAULT)
         amdGpuArchValues.minor = archMinor;

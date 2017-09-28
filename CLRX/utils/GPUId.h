@@ -149,7 +149,7 @@ extern cxuint getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType,
               Flags flags);
 
 /// structure helper for AMDGPU architecture version
-struct AMDGPUArchValues
+struct AMDGPUArchVersion
 {
     uint32_t major;     ///< arch major number
     uint32_t minor;     ///< arch minor number
@@ -168,18 +168,18 @@ extern uint32_t calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint u
 
 
 /// ADMGPUArchValues table type
-enum class GPUArchValuesTable: cxuint
+enum class GPUArchVersionTable: cxuint
 {
     AMDCL2 = 0, ///< AMD OpenCL 2.0 driver
     OPENSOURCE ///< ROCm and Gallium
 };
 
-/// get AMD GPU architecture values (version) for specific device type and driver
-extern AMDGPUArchValues getGPUArchValues(GPUDeviceType deviceType,
-                        GPUArchValuesTable table);
+/// get AMD GPU architecture version for specific device type and driver
+extern AMDGPUArchVersion getGPUArchVersion(GPUDeviceType deviceType,
+                        GPUArchVersionTable table);
 
-// get GPU device type from Architecture values (version)
-extern GPUDeviceType getGPUDeviceTypeFromArchValues(cxuint archMajor, cxuint archMinor,
+// get GPU device type from architecture version
+extern GPUDeviceType getGPUDeviceTypeFromArchVersion(cxuint archMajor, cxuint archMinor,
                             cxuint archStepping);
 
 };
