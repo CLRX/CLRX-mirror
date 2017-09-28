@@ -1335,35 +1335,6 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
     return true;
 }
 
-// AMD GPU architecture for Gallium
-static const AMDGPUArchValues rocmAmdGpuArchValuesTbl[] =
-{
-    { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
-    { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
-    { 0, 0, 0 }, // GPUDeviceType::TAHITI
-    { 0, 0, 0 }, // GPUDeviceType::OLAND
-    { 7, 0, 0 }, // GPUDeviceType::BONAIRE
-    { 7, 0, 0 }, // GPUDeviceType::SPECTRE
-    { 7, 0, 0 }, // GPUDeviceType::SPOOKY
-    { 7, 0, 0 }, // GPUDeviceType::KALINDI
-    { 0, 0, 0 }, // GPUDeviceType::HAINAN
-    { 7, 0, 1 }, // GPUDeviceType::HAWAII
-    { 8, 0, 0 }, // GPUDeviceType::ICELAND
-    { 8, 0, 0 }, // GPUDeviceType::TONGA
-    { 7, 0, 0 }, // GPUDeviceType::MULLINS
-    { 8, 0, 3 }, // GPUDeviceType::FIJI
-    { 8, 0, 1 }, // GPUDeviceType::CARRIZO
-    { 0, 0, 0 }, // GPUDeviceType::DUMMY
-    { 0, 0, 0 }, // GPUDeviceType::GOOSE
-    { 0, 0, 0 }, // GPUDeviceType::HORSE
-    { 8, 0, 1 }, // GPUDeviceType::STONEY
-    { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
-    { 8, 0, 4 }, // GPUDeviceType::BAFFIN
-    { 8, 0, 4 }, // GPUDeviceType::GFX804
-    { 9, 0, 0 }, // GPUDeviceType::GFX900
-    { 9, 0, 1 }  // GPUDeviceType::GFX901
-};
-
 bool AsmROCmHandler::prepareBinary()
 {
     bool good = true;
@@ -1439,8 +1410,8 @@ bool AsmROCmHandler::prepareBinary()
     // set up number of the allocated SGPRs and VGPRs for kernel
     cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
     
-    AMDGPUArchValues amdGpuArchValues = rocmAmdGpuArchValuesTbl[
-                    cxuint(assembler.deviceType)];
+    AMDGPUArchValues amdGpuArchValues = getGPUArchValues(assembler.deviceType,
+                                GPUArchValuesTable::OPENSOURCE);
     // replace arch minor and stepping by user defined values (if set)
     if (output.archMinor!=UINT32_MAX)
         amdGpuArchValues.minor = output.archMinor;

@@ -1916,35 +1916,6 @@ static const cxbyte noteDescType5_32bit[52] =
     '-', 'u', 's', 'e', '-', 'b', 'u', 'f', 'f', 'e', 'r', '-', 'f', 'o', 'r',
     '-', 'h', 's', 'a', '-', 'g', 'l', 'o', 'b', 'a' };
 
-// AMDGPU architecture values for specific GPU device type for AMDOCL 2.0
-static const AMDGPUArchValues amdGpuArchValuesTbl[] =
-{
-    { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
-    { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
-    { 0, 0, 0 }, // GPUDeviceType::TAHITI
-    { 0, 0, 0 }, // GPUDeviceType::OLAND
-    { 7, 0, 0 }, // GPUDeviceType::BONAIRE
-    { 7, 0, 0 }, // GPUDeviceType::SPECTRE
-    { 7, 0, 0 }, // GPUDeviceType::SPOOKY
-    { 7, 0, 0 }, // GPUDeviceType::KALINDI
-    { 0, 0, 0 }, // GPUDeviceType::HAINAN
-    { 7, 0, 1 }, // GPUDeviceType::HAWAII
-    { 8, 0, 0 }, // GPUDeviceType::ICELAND
-    { 8, 0, 0 }, // GPUDeviceType::TONGA
-    { 7, 0, 0 }, // GPUDeviceType::MULLINS
-    { 8, 0, 4 }, // GPUDeviceType::FIJI
-    { 8, 0, 1 }, // GPUDeviceType::CARRIZO
-    { 8, 0, 1 }, // GPUDeviceType::DUMMY
-    { 8, 0, 4 }, // GPUDeviceType::GOOSE
-    { 8, 0, 4 }, // GPUDeviceType::HORSE
-    { 8, 1, 0 }, // GPUDeviceType::STONEY
-    { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
-    { 8, 0, 4 }, // GPUDeviceType::BAFFIN
-    { 8, 0, 4 }, // GPUDeviceType::GFX804
-    { 9, 0, 0 }, // GPUDeviceType::GFX900
-    { 9, 0, 1 }  // GPUDeviceType::GFX901
-};
-
 // helper to construct name for fixing allocation/deallocation bug ??
 static CString constructName(size_t prefixSize, const char* prefix, const CString& name,
                  size_t suffixSize, const char* suffix)
@@ -2087,7 +2058,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         throw Exception("OpenCL 2.0 supported only for GCN1.1 or later");
     
     const bool is16_3Ver = (input->driverVersion>=200406);
-    AMDGPUArchValues amdGpuArchValues = amdGpuArchValuesTbl[cxuint(input->deviceType)];
+    AMDGPUArchValues amdGpuArchValues = getGPUArchValues(input->deviceType,
+                                GPUArchValuesTable::AMDCL2);
     // fix for old drivers (1912.05)
     if (!is16_3Ver && input->deviceType==GPUDeviceType::FIJI)
         amdGpuArchValues.stepping = 1;

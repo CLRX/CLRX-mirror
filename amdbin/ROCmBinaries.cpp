@@ -132,34 +132,6 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     }
 }
 
-struct AMDGPUArchValuesEntry
-{
-    uint32_t major;
-    uint32_t minor;
-    uint32_t stepping;
-    GPUDeviceType deviceType;
-};
-
-// list of AMDGPU arch entries for GPU devices
-static const AMDGPUArchValuesEntry amdGpuArchValuesTbl[] =
-{
-    { 0, 0, 0, GPUDeviceType::CAPE_VERDE },
-    { 7, 0, 0, GPUDeviceType::BONAIRE },
-    { 7, 0, 1, GPUDeviceType::HAWAII },
-    { 8, 0, 0, GPUDeviceType::ICELAND },
-    { 8, 0, 1, GPUDeviceType::CARRIZO },
-    { 8, 0, 2, GPUDeviceType::ICELAND },
-    { 8, 0, 3, GPUDeviceType::FIJI },
-    { 8, 0, 4, GPUDeviceType::FIJI },
-    { 8, 1, 0, GPUDeviceType::STONEY },
-    { 9, 0, 0, GPUDeviceType::GFX900 },
-    { 9, 0, 1, GPUDeviceType::GFX901 }
-};
-
-static const size_t amdGpuArchValuesNum = sizeof(amdGpuArchValuesTbl) /
-                sizeof(AMDGPUArchValuesEntry);
-
-
 /// determint GPU device from ROCm notes
 GPUDeviceType ROCmBinary::determineGPUDeviceType(uint32_t& outArchMinor,
                      uint32_t& outArchStepping) const
@@ -195,26 +167,8 @@ GPUDeviceType ROCmBinary::determineGPUDeviceType(uint32_t& outArchMinor,
         }
     }
     // determine device type
-    GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE;
-    // choose lowest GPU device by archMajor by default
-    if (archMajor==0)
-        deviceType = GPUDeviceType::CAPE_VERDE;
-    else if (archMajor==7)
-        deviceType = GPUDeviceType::BONAIRE;
-    else if (archMajor==8)
-        deviceType = GPUDeviceType::ICELAND;
-    else if (archMajor==9)
-        deviceType = GPUDeviceType::GFX900;
-    
-    // recognize device type by arch major, minor and stepping
-    for (cxuint i = 0; i < amdGpuArchValuesNum; i++)
-        if (amdGpuArchValuesTbl[i].major==archMajor &&
-            amdGpuArchValuesTbl[i].minor==archMinor &&
-            amdGpuArchValuesTbl[i].stepping==archStepping)
-        {
-            deviceType = amdGpuArchValuesTbl[i].deviceType;
-            break;
-        }
+    GPUDeviceType deviceType = getGPUDeviceTypeFromArchValues(archMajor, archMinor,
+                                    archStepping);
     outArchMinor = archMinor;
     outArchStepping = archStepping;
     return deviceType;
@@ -314,38 +268,11 @@ static const uint16_t mainBuiltinSectionTable[] =
     7 // ROCMSECTID_GPUCONFIG
 };
 
-static const AMDGPUArchValues rocmAmdGpuArchValuesTbl[] =
-{
-    { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
-    { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
-    { 0, 0, 0 }, // GPUDeviceType::TAHITI
-    { 0, 0, 0 }, // GPUDeviceType::OLAND
-    { 7, 0, 0 }, // GPUDeviceType::BONAIRE
-    { 7, 0, 0 }, // GPUDeviceType::SPECTRE
-    { 7, 0, 0 }, // GPUDeviceType::SPOOKY
-    { 7, 0, 0 }, // GPUDeviceType::KALINDI
-    { 0, 0, 0 }, // GPUDeviceType::HAINAN
-    { 7, 0, 1 }, // GPUDeviceType::HAWAII
-    { 8, 0, 0 }, // GPUDeviceType::ICELAND
-    { 8, 0, 0 }, // GPUDeviceType::TONGA
-    { 7, 0, 0 }, // GPUDeviceType::MULLINS
-    { 8, 0, 3 }, // GPUDeviceType::FIJI
-    { 8, 0, 1 }, // GPUDeviceType::CARRIZO
-    { 8, 0, 1 }, // GPUDeviceType::DUMMY
-    { 8, 0, 4 }, // GPUDeviceType::GOOSE
-    { 8, 0, 4 }, // GPUDeviceType::HORSE
-    { 8, 0, 1 }, // GPUDeviceType::STONEY
-    { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
-    { 8, 0, 4 }, // GPUDeviceType::BAFFIN
-    { 8, 0, 4 }, // GPUDeviceType::GFX804
-    { 9, 0, 0 }, // GPUDeviceType::GFX900
-    { 9, 0, 1 }  // GPUDeviceType::GFX901
-};
-
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
 {
-    AMDGPUArchValues amdGpuArchValues = rocmAmdGpuArchValuesTbl[cxuint(input->deviceType)];
+    AMDGPUArchValues amdGpuArchValues = getGPUArchValues(input->deviceType,
+                GPUArchValuesTable::OPENSOURCE);
     if (input->archMinor!=UINT32_MAX)
         amdGpuArchValues.minor = input->archMinor;
     if (input->archStepping!=UINT32_MAX)

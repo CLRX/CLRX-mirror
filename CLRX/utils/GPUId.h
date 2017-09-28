@@ -157,14 +157,30 @@ struct AMDGPUArchValues
 };
 
 /// calculate PGMRSRC1 register value
-uint32_t calculatePgmRSrc1(GPUArchitecture arch, cxuint vgprsNum, cxuint sgprsNum,
+extern uint32_t calculatePgmRSrc1(GPUArchitecture arch, cxuint vgprsNum, cxuint sgprsNum,
             cxuint priority, cxuint floatMode, bool privMode, bool dx10clamp,
             bool debugMode, bool ieeeMode);
 
 /// calculate PGMRSRC2 register value
-uint32_t calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint userDataNum,
+extern uint32_t calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint userDataNum,
             bool trapPresent, cxuint dimMask, cxuint defDimValues, bool tgSizeEn,
             cxuint ldsSize, cxuint exceptions);
+
+
+/// ADMGPUArchValues table type
+enum class GPUArchValuesTable: cxuint
+{
+    AMDCL2 = 0, ///< AMD OpenCL 2.0 driver
+    OPENSOURCE ///< ROCm and Gallium
+};
+
+/// get AMD GPU architecture values (version) for specific device type and driver
+extern AMDGPUArchValues getGPUArchValues(GPUDeviceType deviceType,
+                        GPUArchValuesTable table);
+
+// get GPU device type from Architecture values (version)
+extern GPUDeviceType getGPUDeviceTypeFromArchValues(cxuint archMajor, cxuint archMinor,
+                            cxuint archStepping);
 
 };
 

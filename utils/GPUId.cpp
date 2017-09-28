@@ -298,3 +298,125 @@ uint32_t CLRX::calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint us
             ((uint32_t(exceptions)&0x7f)<<24);
 }
 
+// AMD GPU architecture for Gallium and ROCm
+static const AMDGPUArchValues galliumGpuArchValuesTbl[] =
+{
+    { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
+    { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
+    { 0, 0, 0 }, // GPUDeviceType::TAHITI
+    { 0, 0, 0 }, // GPUDeviceType::OLAND
+    { 7, 0, 0 }, // GPUDeviceType::BONAIRE
+    { 7, 0, 0 }, // GPUDeviceType::SPECTRE
+    { 7, 0, 0 }, // GPUDeviceType::SPOOKY
+    { 7, 0, 0 }, // GPUDeviceType::KALINDI
+    { 0, 0, 0 }, // GPUDeviceType::HAINAN
+    { 7, 0, 1 }, // GPUDeviceType::HAWAII
+    { 8, 0, 0 }, // GPUDeviceType::ICELAND
+    { 8, 0, 0 }, // GPUDeviceType::TONGA
+    { 7, 0, 0 }, // GPUDeviceType::MULLINS
+    { 8, 0, 3 }, // GPUDeviceType::FIJI
+    { 8, 0, 1 }, // GPUDeviceType::CARRIZO
+    { 0, 0, 0 }, // GPUDeviceType::DUMMY
+    { 0, 0, 0 }, // GPUDeviceType::GOOSE
+    { 0, 0, 0 }, // GPUDeviceType::HORSE
+    { 8, 0, 1 }, // GPUDeviceType::STONEY
+    { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
+    { 8, 0, 4 }, // GPUDeviceType::BAFFIN
+    { 8, 0, 4 }, // GPUDeviceType::GFX804
+    { 9, 0, 0 }, // GPUDeviceType::GFX900
+    { 9, 0, 1 }  // GPUDeviceType::GFX901
+};
+
+// AMDGPU architecture values for specific GPU device type for AMDOCL 2.0
+static const AMDGPUArchValues amdCL2GpuArchValuesTbl[] =
+{
+    { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
+    { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
+    { 0, 0, 0 }, // GPUDeviceType::TAHITI
+    { 0, 0, 0 }, // GPUDeviceType::OLAND
+    { 7, 0, 0 }, // GPUDeviceType::BONAIRE
+    { 7, 0, 0 }, // GPUDeviceType::SPECTRE
+    { 7, 0, 0 }, // GPUDeviceType::SPOOKY
+    { 7, 0, 0 }, // GPUDeviceType::KALINDI
+    { 0, 0, 0 }, // GPUDeviceType::HAINAN
+    { 7, 0, 1 }, // GPUDeviceType::HAWAII
+    { 8, 0, 0 }, // GPUDeviceType::ICELAND
+    { 8, 0, 0 }, // GPUDeviceType::TONGA
+    { 7, 0, 0 }, // GPUDeviceType::MULLINS
+    { 8, 0, 4 }, // GPUDeviceType::FIJI
+    { 8, 0, 1 }, // GPUDeviceType::CARRIZO
+    { 8, 0, 1 }, // GPUDeviceType::DUMMY
+    { 8, 0, 4 }, // GPUDeviceType::GOOSE
+    { 8, 0, 4 }, // GPUDeviceType::HORSE
+    { 8, 1, 0 }, // GPUDeviceType::STONEY
+    { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
+    { 8, 0, 4 }, // GPUDeviceType::BAFFIN
+    { 8, 0, 4 }, // GPUDeviceType::GFX804
+    { 9, 0, 0 }, // GPUDeviceType::GFX900
+    { 9, 0, 1 }  // GPUDeviceType::GFX901
+};
+
+AMDGPUArchValues CLRX::getGPUArchValues(GPUDeviceType deviceType, GPUArchValuesTable table)
+{
+    if (deviceType > GPUDeviceType::GPUDEVICE_MAX)
+        throw Exception("Unknown GPU device type");
+    // choose correct GPU arch values table
+    const AMDGPUArchValues* archValuesTable = (table == GPUArchValuesTable::AMDCL2) ?
+            amdCL2GpuArchValuesTbl : galliumGpuArchValuesTbl;
+    return archValuesTable[cxuint(deviceType)];
+}
+
+// GPU arch values with device type
+struct AMDGPUArchValuesEntry
+{
+    uint32_t major;
+    uint32_t minor;
+    uint32_t stepping;
+    GPUDeviceType deviceType;
+};
+
+// list of AMDGPU arch entries for GPU devices
+static const AMDGPUArchValuesEntry amdGpuArchValueEntriesTbl[] =
+{
+    { 0, 0, 0, GPUDeviceType::CAPE_VERDE },
+    { 7, 0, 0, GPUDeviceType::BONAIRE },
+    { 7, 0, 1, GPUDeviceType::HAWAII },
+    { 8, 0, 0, GPUDeviceType::ICELAND },
+    { 8, 0, 1, GPUDeviceType::CARRIZO },
+    { 8, 0, 2, GPUDeviceType::ICELAND },
+    { 8, 0, 3, GPUDeviceType::FIJI },
+    { 8, 0, 4, GPUDeviceType::FIJI },
+    { 8, 1, 0, GPUDeviceType::STONEY },
+    { 9, 0, 0, GPUDeviceType::GFX900 },
+    { 9, 0, 1, GPUDeviceType::GFX901 }
+};
+
+static const size_t amdGpuArchValueEntriesNum = sizeof(amdGpuArchValueEntriesTbl) /
+                sizeof(AMDGPUArchValuesEntry);
+
+GPUDeviceType CLRX::getGPUDeviceTypeFromArchValues(cxuint archMajor, cxuint archMinor,
+                            cxuint archStepping)
+{
+    // determine device type
+    GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE;
+    // choose lowest GPU device by archMajor by default
+    if (archMajor==0)
+        deviceType = GPUDeviceType::CAPE_VERDE;
+    else if (archMajor==7)
+        deviceType = GPUDeviceType::BONAIRE;
+    else if (archMajor==8)
+        deviceType = GPUDeviceType::ICELAND;
+    else if (archMajor==9)
+        deviceType = GPUDeviceType::GFX900;
+    
+    // recognize device type by arch major, minor and stepping
+    for (cxuint i = 0; i < amdGpuArchValueEntriesNum; i++)
+        if (amdGpuArchValueEntriesTbl[i].major==archMajor &&
+            amdGpuArchValueEntriesTbl[i].minor==archMinor &&
+            amdGpuArchValueEntriesTbl[i].stepping==archStepping)
+        {
+            deviceType = amdGpuArchValueEntriesTbl[i].deviceType;
+            break;
+        }
+    return deviceType;
+}
