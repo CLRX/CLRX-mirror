@@ -3162,7 +3162,8 @@ void GCNDisassembler::disassemble()
             if (disassembler.getFlags() & DISASM_CODEPOS)
             {
                 // print code position
-                bufPos += itocstrCStyle(oldPos<<2, buf+bufPos, 20, 16, 12, false);
+                bufPos += itocstrCStyle(startOffset+(oldPos<<2),
+                                buf+bufPos, 20, 16, 12, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = ' ';
             }
@@ -3187,7 +3188,8 @@ void GCNDisassembler::disassemble()
                 size_t bufPos = 0;
                 buf[bufPos++] = '/';
                 buf[bufPos++] = '*';
-                bufPos += itocstrCStyle(oldPos<<2, buf+bufPos, 20, 16, 12, false);
+                bufPos += itocstrCStyle(startOffset+(oldPos<<2),
+                                buf+bufPos, 20, 16, 12, false);
                 buf[bufPos++] = '*';
                 buf[bufPos++] = '/';
                 buf[bufPos++] = ' ';
