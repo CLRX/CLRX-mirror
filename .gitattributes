@@ -17,6 +17,7 @@ CLRX/amdbin/Elf.h -text
 CLRX/amdbin/ElfBinaries.h -text
 CLRX/amdbin/GalliumBinaries.h -text
 CLRX/amdbin/ROCmBinaries.h -text
+CLRX/clhelper/CLHelper.h -text
 CLRX/utils/CLIParser.h -text
 CLRX/utils/CString.h -text
 CLRX/utils/Containers.h -text
@@ -73,6 +74,8 @@ amdbin/CMakeLists.txt -text svneol=unset#text/plain
 amdbin/ElfBinaries.cpp -text
 amdbin/GalliumBinaries.cpp -text
 amdbin/ROCmBinaries.cpp -text
+clhelper/CLHelper.cpp -text
+clhelper/CMakeLists.txt -text svneol=unset#text/plain
 clwrapper/CLFunctions1.cpp -text
 clwrapper/CLFunctions2.cpp -text
 clwrapper/CLFunctions3.cpp -text
@@ -134,6 +137,7 @@ editors/notepad++.xml -text svneol=unset#text/xml
 pkgconfig/CMakeLists.txt -text svneol=unset#text/plain
 pkgconfig/clrxamdasm.pc.in -text
 pkgconfig/clrxamdbin.pc.in -text
+pkgconfig/clrxclhelper.pc.in -text
 pkgconfig/clrxutils.pc.in -text
 programs/CMakeLists.txt -text svneol=unset#text/plain
 programs/clrxasm.cpp -text

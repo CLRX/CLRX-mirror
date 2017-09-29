@@ -28,19 +28,10 @@
 #include <memory>
 #include <CL/cl.h>
 #include <CLRX/amdasm/Assembler.h>
+#include <CLRX/clhelper/CLHelper.h>
 #include "CLUtils.h"
 
 using namespace CLRX;
-
-static char* stripCString(char* str)
-{
-    while (*str==' ') str++;
-    char* last = str+::strlen(str);
-    while (last!=str && (*last==0||*last==' '))
-        last--;
-    if (*last!=0) last[1] = 0;
-    return str;
-}
 
 /* parse args from command line and handle options:
  * print help, list OpenCL devices, get choosen device and choosen OpenCL standard
@@ -59,45 +50,8 @@ bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
         return true;
     }
     
-    cl_uint platformsNum;
-    std::unique_ptr<cl_platform_id[]> platforms;
-    cl_int error = 0;
-    error = clGetPlatformIDs(0, nullptr, &platformsNum);
-    if (error != CL_SUCCESS)
-        throw CLError(error, "clGetPlatformIDs");
-    platforms.reset(new cl_platform_id[platformsNum]);
-    error = clGetPlatformIDs(platformsNum, platforms.get(), nullptr);
-    if (error != CL_SUCCESS)
-        throw CLError(error, "clGetPlatformIDs");
-    
-    cl_platform_id choosenPlatform = nullptr;
-    /// find platform with AMD or GalliumCompute devices
-    for (cl_uint i = 0; i < platformsNum; i++)
-    {
-        size_t platformNameSize;
-        std::unique_ptr<char[]> platformName;
-        error = clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, 0, nullptr,
-                           &platformNameSize);
-        if (error != CL_SUCCESS)
-            throw CLError(error, "clGetPlatformInfo");
-        platformName.reset(new char[platformNameSize]);
-        error = clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, platformNameSize,
-                   platformName.get(), nullptr);
-        if (error != CL_SUCCESS)
-            throw CLError(error, "clGetPlatformInfo");
-        
-        // find correct platform (supported GalliumCompute and AMD APP)
-        const char* splatformName = stripCString(platformName.get());
-        if (::strcmp(splatformName, "AMD Accelerated Parallel Processing")==0 ||
-            ::strcmp(splatformName, "Clover")==0)
-        {
-            choosenPlatform = platforms[i];
-            break;
-        }
-    }
-    
-    if (choosenPlatform==nullptr)
-        throw Exception("PlatformNotFound");
+    cl_int error = CL_SUCCESS;
+    cl_platform_id choosenPlatform = chooseCLPlatformForCLRX();
     
     if (argc >= 2 && ::strcmp(argv[1], "-L")==0)
     {
@@ -158,98 +112,12 @@ CLFacade::CLFacade(cl_uint deviceIndex, const char* sourceCode, const char* kern
 try
 {
     context = nullptr;
+    device = nullptr;
     queue = nullptr;
     program = nullptr;
     
-    cl_uint platformsNum;
-    std::unique_ptr<cl_platform_id[]> platforms;
-    cl_int error = 0;
-    error = clGetPlatformIDs(0, nullptr, &platformsNum);
-    if (error != CL_SUCCESS)
-        throw CLError(error, "clGetPlatformIDs");
-    platforms.reset(new cl_platform_id[platformsNum]);
-    error = clGetPlatformIDs(platformsNum, platforms.get(), nullptr);
-    if (error != CL_SUCCESS)
-        throw CLError(error, "clGetPlatformIDs");
-    
-    cxuint amdappVersion = 0;
-    
-    BinaryFormat binaryFormat = BinaryFormat::GALLIUM;
-    cl_platform_id choosenPlatform = nullptr;
-    bool defaultCL2ForDriver = false;
-    /// find platform with AMD devices
-    for (cl_uint i = 0; i < platformsNum; i++)
-    {
-        size_t platformNameSize;
-        std::unique_ptr<char[]> platformName;
-        error = clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, 0, nullptr,
-                           &platformNameSize);
-        if (error != CL_SUCCESS)
-            throw CLError(error, "clGetPlatformInfo");
-        platformName.reset(new char[platformNameSize]);
-        error = clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, platformNameSize,
-                   platformName.get(), nullptr);
-        if (error != CL_SUCCESS)
-            throw CLError(error, "clGetPlatformInfo");
-        
-        const char* splatformName = stripCString(platformName.get());
-        if (::strcmp(splatformName, "AMD Accelerated Parallel Processing")==0 ||
-            ::strcmp(splatformName, "Clover")==0)
-        {
-            choosenPlatform = platforms[i];
-            binaryFormat = ::strcmp(platformName.get(), "Clover")==0 ?
-                    BinaryFormat::GALLIUM : BinaryFormat::AMD;
-            
-            if (binaryFormat == BinaryFormat::AMD)
-            {
-                // get amdappVersion
-                size_t platformVersionSize;
-                std::unique_ptr<char[]> platformVersion;
-                error = clGetPlatformInfo(choosenPlatform, CL_PLATFORM_VERSION, 0, nullptr,
-                                        &platformVersionSize);
-                if (error != CL_SUCCESS)
-                    throw CLError(error, "clGetPlatformInfoVersion");
-                platformVersion.reset(new char[platformVersionSize]);
-                error = clGetPlatformInfo(choosenPlatform, CL_PLATFORM_VERSION,
-                                platformVersionSize, platformVersion.get(), nullptr);
-                if (error != CL_SUCCESS)
-                    throw CLError(error, "clGetPlatformInfoVersion");
-                
-                const char* amdappPart = strstr(platformVersion.get(), "AMD-APP (");
-                if (amdappPart!=nullptr)
-                {
-                    // parse AMDAPP version
-                    try
-                    {
-                        const char* majorVerPart = amdappPart+9;
-                        const char* minorVerPart;
-                        const char* end;
-                        cxuint majorVersion = cstrtoui(majorVerPart, nullptr,
-                                        minorVerPart);
-                        
-                        if (*minorVerPart!=0)
-                        {
-                            minorVerPart++; // skip '.'
-                            cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
-                            amdappVersion = majorVersion*100U + minorVersion;
-                        }
-                    }
-                    catch(const ParseException& ex)
-                    { } // ignore error
-                }
-            }
-            
-            if (binaryFormat == BinaryFormat::AMD && useCL==2)
-                binaryFormat = BinaryFormat::AMDCL2;
-            // for driver 2004.6 OpenCL 2.0 binary format is default
-            if (binaryFormat == BinaryFormat::AMD && amdappVersion >= 200406)
-                defaultCL2ForDriver = true;
-            break;
-        }
-    }
-    
-    if (choosenPlatform==nullptr)
-        throw Exception("PlatformNotFound");
+    cl_int error = CL_SUCCESS;
+    const cl_platform_id choosenPlatform = chooseCLPlatformForCLRX();
     
     // find device
     cl_uint devicesNum;
@@ -269,15 +137,8 @@ try
     
     device = devices[deviceIndex];
     
-    cl_uint bits = 32;
-    if (binaryFormat != BinaryFormat::GALLIUM)
-    {
-        // get address Bits from device info (for AMDAPP)
-        error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint),
-                                 &bits, nullptr);
-        if (error != CL_SUCCESS)
-            throw CLError(error, "clGetDeviceAddressBits");
-    }
+    const CLAsmSetup asmSetup = assemblerSetupForCLDevice(device, useCL==1 ?
+            CLHELPER_USEAMDLEGACY : useCL==2 ? CLHELPER_USEAMDCL2 : 0);
     
     // get workGroupSize and Compute Units of device
     error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t),
@@ -307,161 +168,24 @@ try
         throw CLError(error, "clGetDeviceInfoName");
     std::cout << "Device: " << deviceIndex << " - " << deviceName.get() << std::endl;
     
-    // get device version - used for getting Mesa3D version and LLVM version
-    size_t deviceVersionSize;
-    std::unique_ptr<char[]> deviceVersion;
-    error = clGetDeviceInfo(device, CL_DEVICE_VERSION, 0, nullptr, &deviceVersionSize);
-    if (error != CL_SUCCESS)
-        throw CLError(error, "clGetDeviceInfoVersion");
-    deviceVersion.reset(new char[deviceVersionSize]);
-    error = clGetDeviceInfo(device, CL_DEVICE_VERSION, deviceVersionSize,
-                            deviceVersion.get(), nullptr);
-    if (error != CL_SUCCESS)
-        throw CLError(error, "clGetDeviceInfoVersion");
-    
-    // get bits from device name (LLVM version)
-    cxuint llvmVersion = 0;
-    cxuint mesaVersion = 0;
-    
-    if (binaryFormat == BinaryFormat::GALLIUM)
-    {
-        const char* llvmPart = strstr(deviceName.get(), "LLVM ");
-        if (llvmPart!=nullptr)
-        {
-            try
-            {
-                // parse LLVM version
-                const char* majorVerPart = llvmPart+5;
-                const char* minorVerPart;
-                const char* end;
-                cxuint majorVersion = cstrtoui(majorVerPart, nullptr, minorVerPart);
-                if (*minorVerPart!=0)
-                {
-                    minorVerPart++; // skip '.'
-                    cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
-                    llvmVersion = majorVersion*10000U + minorVersion*100U;
-#if HAVE_64BIT
-                    if (majorVersion*10000U + minorVersion*100U >= 30900U)
-                        bits = 64; // use 64-bit
-#endif
-                }
-            }
-            catch(const ParseException& ex)
-            { } // ignore error
-        }
-        
-        const char* mesaPart = strstr(deviceVersion.get(), "Mesa ");
-        if (mesaPart==nullptr)
-            mesaPart = strstr(deviceVersion.get(), "MESA ");
-        if (mesaPart!=nullptr)
-        {
-            try
-            {
-                // parse Mesa3D version
-                const char* majorVerPart = mesaPart+5;
-                const char* minorVerPart;
-                const char* end;
-                cxuint majorVersion = cstrtoui(majorVerPart, nullptr, minorVerPart);
-                if (*minorVerPart!=0)
-                {
-                    minorVerPart++; // skip '.'
-                    cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
-                    mesaVersion = majorVersion*10000U + minorVersion*100U;
-                }
-            }
-            catch(const ParseException& ex)
-            { } // ignore error
-        }
-    }
-    /* assemble source code */
-    /// determine device type
-    char* sdeviceName = stripCString(deviceName.get());
-    char* devNamePtr = sdeviceName;
-    if (binaryFormat==BinaryFormat::GALLIUM)
-    {
-        char* sptr = ::strstr(sdeviceName, "(AMD ");
-        // if form 'AMD Radeon xxx (AMD CODENAME /...)
-        if (sptr != nullptr) // if found 'AMD ';
-            devNamePtr = sptr+5;
-        else
-        {
-            // if form 'AMD CODENAME (....
-            sptr = ::strstr(sdeviceName, "AMD ");
-            if (sptr != nullptr) // if found 'AMD ';
-                devNamePtr = sptr+4;
-        }
-    }
-    char* devNameEnd = devNamePtr;
-    while (isAlnum(*devNameEnd)) devNameEnd++;
-    *devNameEnd = 0; // finish at first word
-    const GPUDeviceType devType = getGPUDeviceTypeFromName(devNamePtr);
-    /* change binary format to AMDCL2 if default for this driver version and 
-     * architecture >= GCN 1.1 */
-    bool useLegacy = false;
-    if (defaultCL2ForDriver &&
-        getGPUArchitectureFromDeviceType(devType) >= GPUArchitecture::GCN1_1)
-    {
-        if (useCL!=1) // if not cl1/old
-            binaryFormat = BinaryFormat::AMDCL2;
-        else // use legacy
-            useLegacy = true;
-    }
-
-    std::cout << "BinaryFormat: " << binaryFormatNamesTbl[cxuint(binaryFormat)] << "\n"
-        "Bitness: " << bits << std::endl;
+    std::cout << "BinaryFormat: " <<
+        binaryFormatNamesTbl[cxuint(asmSetup.binaryFormat)] << "\n"
+        "Bitness: " << (asmSetup.is64Bit ? 64U : 32U) << std::endl;
     
     /// create command queue
     queue = clCreateCommandQueue(context, device, 0, &error);
     if (queue==nullptr)
         throw CLError(error, "clCreateCommandQueue");
     
-    Array<cxbyte> binary;
+    CString buildLog;
+    try
+    { program = createProgramForCLDevice(context, device,
+                    asmSetup, sourceCode, 0, &buildLog); }
+    // function throw exception when fail
+    catch(const CLError& error)
     {
-        /* assemble source code */
-        /// determine device type
-        ArrayIStream astream(::strlen(sourceCode), sourceCode);
-        // by default assembler put logs to stderr
-        Assembler assembler("", astream, 0, binaryFormat, devType);
-        assembler.set64Bit(bits==64);
-        // setting version (LLVM and driverVersion)
-        if (binaryFormat == BinaryFormat::GALLIUM && llvmVersion != 0)
-            assembler.setLLVMVersion(llvmVersion);
-        if (binaryFormat == BinaryFormat::GALLIUM && mesaVersion != 0)
-            assembler.setDriverVersion(mesaVersion);
-        else if ((binaryFormat == BinaryFormat::AMD ||
-                binaryFormat == BinaryFormat::AMDCL2) && amdappVersion != 0)
-            assembler.setDriverVersion(amdappVersion);
-        assembler.assemble();
-        assembler.writeBinary(binary);
-    }
-    
-    size_t binarySize = binary.size();
-    const cxbyte* binaryContent = binary.data();
-    program = clCreateProgramWithBinary(context, 1, &device, &binarySize,
-                        &binaryContent, nullptr, &error);
-    if (program==nullptr)
-        throw CLError(error, "clCreateProgramWithBinary");
-    // build program
-    error = clBuildProgram(program, 1, &device,
-               (binaryFormat==BinaryFormat::AMDCL2) ? "-cl-std=CL2.0" :
-               (useLegacy ? "-legacy" : ""),
-               nullptr, nullptr);
-    if (error != CL_SUCCESS)
-    {
-        /* get build logs */
-        size_t buildLogSize;
-        std::unique_ptr<char[]> buildLog;
-        cl_int lerror = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG,
-                           0, nullptr, &buildLogSize);
-        if (lerror == CL_SUCCESS)
-        {
-            buildLog.reset(new char[buildLogSize]);
-            lerror = clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG,
-                           buildLogSize, buildLog.get(), nullptr);
-            if (lerror == CL_SUCCESS) // print build log
-                std::cerr << "BuildLog:\n" << buildLog.get() << std::endl;
-        }
-        throw CLError(error, "clBuildProgram");
+        std::cerr << "BuildLog:\n" << buildLog << std::endl;
+        throw;
     }
     
     if (kernelNames!=nullptr)

@@ -24,36 +24,8 @@
 #include <string>
 #include <vector>
 #include <exception>
+#include <CLRX/clhelper/CLHelper.h>
 #include <CL/cl.h>
-
-/// error class based on std::exception
-class CLError: public std::exception
-{
-private:
-    cl_int error;
-    std::string description;
-public:
-    /// empty constructor
-    CLError() : error(0)
-    { }
-    explicit CLError(const char* _description) : error(0), description(_description)
-    { }
-    CLError(cl_int _error, const char* _description) : error(_error)
-    {
-        char buf[20];
-        ::snprintf(buf, 20, "%d", _error);
-        description = "Error code: ";
-        description += buf;
-        description += ", Desc: ";
-        description += _description;
-    }
-    virtual ~CLError() noexcept
-    { }
-    const char* what() const noexcept
-    { return (!description.empty()) ? description.c_str() : "No error!"; }
-    int code() const
-    { return error; }
-};
 
 class CLFacade
 {
