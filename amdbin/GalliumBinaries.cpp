@@ -184,7 +184,11 @@ static void verifyKernelSymbols(size_t kernelsNum, const GalliumKernel* kernels,
     for (uint32_t i = 0; i < kernelsNum; i++)
     {
         const GalliumKernel& kernel = kernels[i];
-        const size_t symIndex = elfBinary.getSymbolIndex(kernel.kernelName.c_str());
+        size_t symIndex = 0;
+        try 
+        { symIndex = elfBinary.getSymbolIndex(kernel.kernelName.c_str()); }
+        catch(const Exception& ex)
+        { throw Exception("Kernel symbol not found"); }
         const auto& sym = elfBinary.getSymbol(symIndex);
         const char* symName = elfBinary.getSymbolName(symIndex);
         // kernel symol must be defined as global and must be bound to text section
@@ -198,6 +202,8 @@ static void verifyKernelSymbols(size_t kernelsNum, const GalliumKernel* kernels,
                 throw Exception("Kernel symbol value and Kernel "
                             "offset doesn't match");
         }
+        else
+            throw Exception("Wrong section or binding for kernel symbol");
     }
 }
 
