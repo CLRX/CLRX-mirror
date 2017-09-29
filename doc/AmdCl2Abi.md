@@ -1,6 +1,9 @@
 ## AMD Catalyst OpenCL 2.0 ABI description
 
-This chapter describes how kernel gets its argument, how access to constant data.
+This chapter describes how kernel gets its argument, how access to constant data. Because
+Kernel setup is AMD HSA configuration, hence we recommend to refer to ROCm-ABI documentation
+to get information about kernel setup and kernel arguments passing. Now assembler have
+all the AMD HSA configuration's pseudo-ops to do it.
 
 In this chapter, size is given in dwords. Dword is 4-byte value.
 
@@ -27,6 +30,8 @@ setup pointer. 6-7 user data regs are argument's pointer.
 are kernel setup pointer. 6-7 user data regs are argument's pointer.
 * if usegeneric enabled, then 12 user data registers will be used. 4-5 user data regs
 are kernel setup pointer. 8-9 user data regs are argument's pointer.
+* for VEGA (GFX9) architecture, then 10 user data registers will be used. 4-5 user data regs
+are kernel setup pointer. 6-7 user data regs are argument's pointer.
 
 ### Argument passing and kernel setup
 
