@@ -1945,5 +1945,19 @@ label2: .int 3,6,7
             { "_64bitZZ", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
         }, true, "", ""
     },
+    /* 69 - get_version */
+    {   R"ffDXD(.amdcl2
+            .get_version CLRX_VERSION
+)ffDXD",
+        BinaryFormat::AMDCL2, GPUDeviceType::CAPE_VERDE, false, { },
+        {
+            { ".rodata", ASMKERN_GLOBAL, AsmSectionType::DATA, { } }
+        },
+        {
+            { ".", 0U, 0, 0U, true, false, false, 0, 0 },
+            { "CLRX_VERSION", CLRX_MAJOR_VERSION*10000U + CLRX_MINOR_VERSION*100U +
+                    CLRX_MICRO_VERSION, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+        }, true, "", ""
+    },
     { nullptr }
 };

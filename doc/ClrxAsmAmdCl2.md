@@ -274,7 +274,7 @@ This pseudo-operation must be inside any kernel configuration. Set the GDS
 
 Syntax: .get_driver_version SYMBOL
 
-Store current driver version to SYMBOL.
+Store current driver version to SYMBOL. Version in form `version*100 + revision`.
 
 ### .globaldata
 

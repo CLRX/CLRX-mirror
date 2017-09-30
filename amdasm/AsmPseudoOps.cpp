@@ -110,7 +110,7 @@ static const char* pseudoOpNamesTbl[] =
     "err", "error", "exitm", "extern",
     "fail", "file", "fill", "fillq",
     "float", "format", "gallium", "get_64bit", "get_arch",
-    "get_format", "get_gpu", "global",
+    "get_format", "get_gpu", "get_version", "global",
     "globl", "gpu", "half", "hword", "if", "if32", "if64",
     "ifarch", "ifb", "ifc", "ifdef", "ifeq",
     "ifeqs", "iffmt", "ifge", "ifgpu", "ifgt", "ifle",
@@ -153,7 +153,7 @@ enum
     ASMOP_ERR, ASMOP_ERROR, ASMOP_EXITM, ASMOP_EXTERN,
     ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FILLQ,
     ASMOP_FLOAT, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GET_64BIT, ASMOP_GET_ARCH,
-    ASMOP_GET_FORMAT, ASMOP_GET_GPU, ASMOP_GLOBAL,
+    ASMOP_GET_FORMAT, ASMOP_GET_GPU, ASMOP_GET_VERSION, ASMOP_GLOBAL,
     ASMOP_GLOBL, ASMOP_GPU, ASMOP_HALF, ASMOP_HWORD, ASMOP_IF, ASMOP_IF32, ASMOP_IF64,
     ASMOP_IFARCH, ASMOP_IFB, ASMOP_IFC, ASMOP_IFDEF, ASMOP_IFEQ,
     ASMOP_IFEQS, ASMOP_IFFMT, ASMOP_IFGE, ASMOP_IFGPU, ASMOP_IFGT, ASMOP_IFLE,
@@ -2181,6 +2181,10 @@ void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
         case AsmPredefined::FORMAT:
             predefValue = cxuint(asmr.format);
             break;
+        case AsmPredefined::VERSION:
+            predefValue = CLRX_MAJOR_VERSION*10000U + CLRX_MINOR_VERSION*100U +
+                    CLRX_MICRO_VERSION;
+            break;
         default:
             break;
     }
@@ -2475,6 +2479,9 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_GET_GPU:
             AsmPseudoOps::getPredefinedValue(*this, linePtr, AsmPredefined::GPU);
+            break;
+        case ASMOP_GET_VERSION:
+            AsmPseudoOps::getPredefinedValue(*this, linePtr, AsmPredefined::VERSION);
             break;
         case ASMOP_GLOBAL:
         case ASMOP_GLOBL:

@@ -135,7 +135,8 @@ enum class AsmPredefined: cxbyte
     ARCH,
     BIT64,
     FORMAT,
-    GPU
+    GPU,
+    VERSION
 };
 
 struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils

@@ -234,7 +234,7 @@ Value shall to be byte value. Default value is 0xc0.
 
 Syntax: .get_driver_version SYMBOL
 
-Store current driver version to SYMBOL.
+Store current driver version to SYMBOL. Version in form `version*100 + revision`.
 
 ### .globalbuffers
 

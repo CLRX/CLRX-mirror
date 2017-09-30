@@ -317,11 +317,15 @@ Choose binary format. Binary can be one of following list:
 This pseudo-operation should to be at begin of source.
 Choose GalliumCompute OpenCL program binary format.
 
-### .get_64bit SYMBOL
+### .get_64bit
+
+Syntax: .get_64bit SYMBOL
 
 Store 64-bitness in specified symbol. Store 1 to symbol if 64-bit mode enabled.
 
-### .get_arch SYMBOL
+### .get_arch
+
+Syntax: .get_arch SYMBOL
 
 Store GPU architecture identifier to symbol. List of architecture ids:
 
@@ -332,7 +336,9 @@ Id | Description
  2 | GCN1.2 (Tonga, Fiji, Ellesmere)
  3 | VEGA (AMD RX VEGA)
 
-### .get_format SYMBOL
+### .get_format
+
+Syntax: .get_format SYMBOL
 
 Store binary format identifier to symbol. List of format ids:
 
@@ -344,7 +350,9 @@ Id | Description
  3 | AMD OpenCL 2.0 (new driver) binary format
  4 | ROCm binary format
 
-### .get_gpu SYMBOL
+### .get_gpu
+
+Syntax: .get_gpu SYMBOL
 
 Store GPU device identifier to symbol. List of GPU device ids:
 
@@ -373,6 +381,13 @@ Id  | Description
  20 | Baffin (Radeon 460)
  21 | Gfx804
  22 | Gfx900 (Radeon RX VEGA)
+
+### .get_version
+
+Syntax: .get_version SYMBOL
+
+Store CLRadeonExtender version to symbol. Version stored as integer in form:
+`major_version*10000 + minor_version*100 + micro_version`.
 
 ### .global, .globl
 

@@ -236,13 +236,15 @@ LLVM version is 4.0.0 or later. Set `gds_segment_size` field in kernel configura
 
 Syntax: .get_driver_version SYMBOL
 
-Store current driver version to SYMBOL.
+Store current driver version to SYMBOL. Version in form:
+`major_version*10000 + minor_version*100 + micro_version`.
 
 ### .get_llvm_version
 
 Syntax: .get_llvm_version SYMBOL
 
-Store current LLVM compiler version to SYMBOL.
+Store current LLVM compiler version to SYMBOL. Version in form:
+`major_version*10000 + minor_version*100 + micro_version`.
 
 ### .globaldata
 
