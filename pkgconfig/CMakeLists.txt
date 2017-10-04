@@ -25,12 +25,16 @@ CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/pkgconfig/clrxamdbin.pc.in"
         "${PROJECT_BINARY_DIR}/pkgconfig/clrxamdbin.pc" @ONLY)
 CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/pkgconfig/clrxutils.pc.in"
         "${PROJECT_BINARY_DIR}/pkgconfig/clrxutils.pc" @ONLY)
-CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/pkgconfig/clrxclhelper.pc.in"
-        "${PROJECT_BINARY_DIR}/pkgconfig/clrxclhelper.pc" @ONLY)
 
 SET(PKGCONFIG_INSTALL_DIR ${LIB_INSTALL_DIR}/pkgconfig)
 INSTALL(FILES "${PROJECT_BINARY_DIR}/pkgconfig/clrxamdasm.pc"
               "${PROJECT_BINARY_DIR}/pkgconfig/clrxamdbin.pc"
               "${PROJECT_BINARY_DIR}/pkgconfig/clrxutils.pc"
-              "${PROJECT_BINARY_DIR}/pkgconfig/clrxclhelper.pc"
               DESTINATION "${PKGCONFIG_INSTALL_DIR}")
+              
+IF(HAVE_OPENCL)
+    CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/pkgconfig/clrxclhelper.pc.in"
+            "${PROJECT_BINARY_DIR}/pkgconfig/clrxclhelper.pc" @ONLY)
+    INSTALL(FILES "${PROJECT_BINARY_DIR}/pkgconfig/clrxclhelper.pc"
+              DESTINATION "${PKGCONFIG_INSTALL_DIR}")
+ENDIF(HAVE_OPENCL)
