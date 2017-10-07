@@ -67,7 +67,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             regionsNum++;
     }
     if (code==nullptr && regionsNum!=0)
-        throw Exception("No code if regions number is not zero");
+        throw BinException("No code if regions number is not zero");
     regions.reset(new ROCmRegion[regionsNum]);
     size_t j = 0;
     typedef std::pair<uint64_t, size_t> RegionOffsetEntry;
@@ -81,7 +81,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             continue;   // if not in '.text' section
         const size_t value = ULEV(sym.st_value);
         if (value < codeOffset)
-            throw Exception("Region offset is too small!");
+            throw BinException("Region offset is too small!");
         const size_t size = ULEV(sym.st_size);
         
         const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
@@ -98,7 +98,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
                 type = ROCmRegionType::FKERNEL;
             symOffsets[j] = std::make_pair(value, j);
             if (type!=ROCmRegionType::DATA && value+0x100 > codeOffset+codeSize)
-                throw Exception("Kernel or code offset is too big!");
+                throw BinException("Kernel or code offset is too big!");
             regions[j++] = { getSymbolName(i), size, value, type };
         }
     }
@@ -112,7 +112,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         size_t end = (i<regionsNum) ? symOffsets[i].first : codeOffset+codeSize;
         ROCmRegion& region = regions[symOffsets[i-1].second];
         if (region.type==ROCmRegionType::KERNEL && symOffsets[i-1].first+0x100 > end)
-            throw Exception("Kernel size is too small!");
+            throw BinException("Kernel size is too small!");
         
         const size_t regSize = end - symOffsets[i-1].first;
         if (region.size==0)
@@ -143,7 +143,7 @@ GPUDeviceType ROCmBinary::determineGPUDeviceType(uint32_t& outArchMinor,
     {
         const cxbyte* noteContent = (const cxbyte*)getNotes();
         if (noteContent==nullptr)
-            throw Exception("Missing notes in inner binary!");
+            throw BinException("Missing notes in inner binary!");
         size_t notesSize = getNotesSize();
         // find note about AMDGPU
         for (size_t offset = 0; offset < notesSize; )
@@ -152,7 +152,7 @@ GPUDeviceType ROCmBinary::determineGPUDeviceType(uint32_t& outArchMinor,
             size_t namesz = ULEV(nhdr->n_namesz);
             size_t descsz = ULEV(nhdr->n_descsz);
             if (usumGt(offset, namesz+descsz, notesSize))
-                throw Exception("Note offset+size out of range");
+                throw BinException("Note offset+size out of range");
             if (ULEV(nhdr->n_type) == 0x3 && namesz==4 && descsz>=0x1a &&
                 ::strcmp((const char*)noteContent+offset+sizeof(Elf64_Nhdr), "AMD")==0)
             {    // AMDGPU type
@@ -179,7 +179,7 @@ const ROCmRegion& ROCmBinary::getRegion(const char* name) const
     RegionMap::const_iterator it = binaryMapFind(regionsMap.begin(),
                              regionsMap.end(), name);
     if (it == regionsMap.end())
-        throw Exception("Can't find region name");
+        throw BinException("Can't find region name");
     return regions[it->second];
 }
 

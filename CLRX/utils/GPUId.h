@@ -30,6 +30,19 @@
 /// main namespace
 namespace CLRX
 {
+
+/// GPUId exception class
+class GPUIdException: public Exception
+{
+public:
+    /// empty constructor
+    GPUIdException() = default;
+    /// constructor with messasge
+    explicit GPUIdException(const std::string& message);
+    /// destructor
+    virtual ~GPUIdException() noexcept = default;
+};
+
 /*
  * GPU identification utilities
  */

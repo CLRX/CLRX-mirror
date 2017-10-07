@@ -43,6 +43,18 @@
 namespace CLRX
 {
 
+/// Disassembler exception class
+class DisasmException: public Exception
+{
+public:
+    /// empty constructor
+    DisasmException() = default;
+    /// constructor with messasge
+    explicit DisasmException(const std::string& message);
+    /// destructor
+    virtual ~DisasmException() noexcept = default;
+};
+
 class Disassembler;
 
 enum: Flags

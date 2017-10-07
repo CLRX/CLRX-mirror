@@ -73,6 +73,30 @@ enum : Flags {
     ELF_CREATE_ALL = 0xf  ///< creation flags for ELF binaries
 };
 
+/// Bin exception class
+class BinException: public Exception
+{
+public:
+    /// empty constructor
+    BinException() = default;
+    /// constructor with messasge
+    explicit BinException(const std::string& message);
+    /// destructor
+    virtual ~BinException() noexcept = default;
+};
+
+/// Binary generator exception class
+class BinGenException: public Exception
+{
+public:
+    /// empty constructor
+    BinGenException() = default;
+    /// constructor with messasge
+    explicit BinGenException(const std::string& message);
+    /// destructor
+    virtual ~BinGenException() noexcept = default;
+};
+
 /// ELF 32-bit types
 struct Elf32Types
 {
@@ -309,7 +333,7 @@ public:
         SectionIndexMap::const_iterator it = binaryMapFind(
                     sectionIndexMap.begin(), sectionIndexMap.end(), name, CStringLess());
         if (it == sectionIndexMap.end())
-            throw Exception(std::string("Can't find Elf")+Types::bitName+" Section");
+            throw BinException(std::string("Can't find Elf")+Types::bitName+" Section");
         return it;
     }
     
@@ -336,7 +360,7 @@ public:
         SymbolIndexMap::const_iterator it = binaryMapFind(
                     symbolIndexMap.begin(), symbolIndexMap.end(), name, CStringLess());
         if (it == symbolIndexMap.end())
-            throw Exception(std::string("Can't find Elf")+Types::bitName+" Symbol");
+            throw BinException(std::string("Can't find Elf")+Types::bitName+" Symbol");
         return it;
     }
 
@@ -346,7 +370,7 @@ public:
         SymbolIndexMap::const_iterator it = binaryMapFind(
                     dynSymIndexMap.begin(), dynSymIndexMap.end(), name, CStringLess());
         if (it == dynSymIndexMap.end())
-            throw Exception(std::string("Can't find Elf")+Types::bitName+" DynSymbol");
+            throw BinException(std::string("Can't find Elf")+Types::bitName+" DynSymbol");
         return it;
     }
     

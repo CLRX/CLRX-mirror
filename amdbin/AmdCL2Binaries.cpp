@@ -42,7 +42,7 @@ const AmdCL2GPUKernel& AmdCL2InnerGPUBinaryBase::getKernelData(const char* name)
     KernelDataMap::const_iterator it = binaryMapFind(
             kernelDataMap.begin(), kernelDataMap.end(), name);
     if (it == kernelDataMap.end())
-        throw Exception("Can't find kernel name");
+        throw BinException("Can't find kernel name");
     return kernels[it->second];
 }
 
@@ -90,13 +90,13 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(ElfBinaryTemplate<Types>* mainB
         const size_t binSize = ULEV(sym.st_size);
         /// check conditions for symbol
         if (textIndex != ULEV(sym.st_shndx))
-            throw Exception("Kernel symbol outside text section");
+            throw BinException("Kernel symbol outside text section");
         if (binOffset >= binaryCodeSize)
-            throw Exception("Kernel binary code offset out of range");
+            throw BinException("Kernel binary code offset out of range");
         if (usumGt(binOffset, binSize, binaryCodeSize))
-            throw Exception("Kernel binary code offset and size out of range");
+            throw BinException("Kernel binary code offset and size out of range");
         if (binSize < 256+192)
-            throw Exception("Kernel binary code size is too short");
+            throw BinException("Kernel binary code size is too short");
         
         AmdCL2GPUKernelStub kernelStub;
         AmdCL2GPUKernel kernelData;
@@ -104,14 +104,14 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(ElfBinaryTemplate<Types>* mainB
         kernelStub.data = binaryCode + binOffset;
         const size_t setupOffset = ULEV(*reinterpret_cast<uint32_t*>(kernelStub.data));
         if (setupOffset >= binSize)
-            throw Exception("Kernel setup offset out of range");
+            throw BinException("Kernel setup offset out of range");
         // get size of setup (offset 16 of setup)
         kernelStub.size = setupOffset;
         kernelData.setup = kernelStub.data + setupOffset;
         // get text (code) offset after setup (HSA config)
         const size_t textOffset = ULEV(*reinterpret_cast<uint32_t*>(kernelData.setup+16));
         if (usumGe(textOffset, setupOffset, binSize))
-            throw Exception("Kernel text offset out of range");
+            throw BinException("Kernel text offset out of range");
         kernelData.setupSize = textOffset;
         kernelData.code = kernelData.setup + textOffset;
         kernelData.codeSize = binSize - (kernelData.code - kernelStub.data);
@@ -139,7 +139,7 @@ const AmdCL2GPUKernelStub& AmdCL2OldInnerGPUBinary::getKernelStub(const char* na
     KernelDataMap::const_iterator it = binaryMapFind(
             kernelDataMap.begin(), kernelDataMap.end(), name);
     if (it == kernelDataMap.end())
-        throw Exception("Can't find kernel name");
+        throw BinException("Can't find kernel name");
     return kernelStubs[it->second];
 }
 
@@ -179,17 +179,17 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             const Elf64_Sym& sym = getSymbol(index);
             const Elf64_Shdr& dataShdr = getSectionHeader(ULEV(sym.st_shndx));
             if (ULEV(sym.st_shndx) >= getSectionHeadersNum())
-                throw Exception("Kernel section index out of range");
+                throw BinException("Kernel section index out of range");
             const char* symName = getSymbolName(index);
             const size_t binOffset = ULEV(sym.st_value);
             const size_t binSize = ULEV(sym.st_size);
             /// check conditions for symbol
             if (binOffset >= ULEV(dataShdr.sh_size))
-                throw Exception("Kernel binary code offset out of range");
+                throw BinException("Kernel binary code offset out of range");
             if (usumGt(binOffset, binSize, ULEV(dataShdr.sh_size)))
-                throw Exception("Kernel binary code offset and size out of range");
+                throw BinException("Kernel binary code offset and size out of range");
             if (binSize < 192)
-                throw Exception("Kernel binary code size is too short");
+                throw BinException("Kernel binary code size is too short");
             
             kernels[ki].setup = binaryCode + ULEV(dataShdr.sh_offset) + binOffset;
             // get size of setup (offset 16 of setup) and code offset
@@ -197,7 +197,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
                             kernels[ki].setup+16));
             
             if (textOffset >= binSize)
-                throw Exception("Kernel text offset out of range");
+                throw BinException("Kernel text offset out of range");
             kernels[ki].setupSize = textOffset;
             kernels[ki].code = kernels[ki].setup + textOffset;
             kernels[ki].codeSize = binSize-textOffset;
@@ -338,22 +338,22 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
 {
     crimson16 = false;
     if (metadataSize < 8+32+32)
-        throw Exception("Kernel metadata is too short");
+        throw BinException("Kernel metadata is too short");
     
     const typename Types::MetadataHeader* hdrStruc =
             reinterpret_cast<const typename Types::MetadataHeader*>(metadata);
     kernelHeader.size = ULEV(hdrStruc->size);
     // checking kernel header size in metadata region
     if (kernelHeader.size >= metadataSize)
-        throw Exception("Metadata header size out of range");
+        throw BinException("Metadata header size out of range");
     if (kernelHeader.size < sizeof(typename Types::MetadataHeader))
-        throw Exception("Metadata header is too short");
+        throw BinException("Metadata header is too short");
     kernelHeader.data = metadata;
     const uint32_t argsNum = ULEV(hdrStruc->argsNum);
     
     if (usumGt(ULEV(hdrStruc->firstNameLength), ULEV(hdrStruc->secondNameLength),
                 metadataSize-kernelHeader.size-2))
-        throw Exception("KernelArgEntries offset out of range");
+        throw BinException("KernelArgEntries offset out of range");
     
     size_t argOffset = kernelHeader.size +
             ULEV(hdrStruc->firstNameLength)+ULEV(hdrStruc->secondNameLength)+2;
@@ -368,7 +368,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
             const typename Types::KernelArgEntry*>(metadata + argOffset);
     
     if(usumGt(argOffset, sizeof(typename Types::KernelArgEntry)*(argsNum+1), metadataSize))
-        throw Exception("Number of arguments out of range");
+        throw BinException("Number of arguments out of range");
     
     const char* strBase = (const char*)metadata;
     size_t strOffset = argOffset + sizeof(typename Types::KernelArgEntry)*(argsNum+1);
@@ -378,17 +378,17 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     {
         AmdKernelArg& arg = kernelInfo.argInfos[i];
         if (ULEV(argPtr->size)!=sizeof(typename Types::KernelArgEntry))
-            throw Exception("Kernel ArgEntry size doesn't match");
+            throw BinException("Kernel ArgEntry size doesn't match");
         // get name of argument
         size_t nameSize = ULEV(argPtr->argNameSize);
         if (usumGt(strOffset, nameSize+1, metadataSize))
-            throw Exception("Kernel ArgEntry name size out of range");
+            throw BinException("Kernel ArgEntry name size out of range");
         arg.argName.assign(strBase+strOffset, nameSize);
         // get name of type of argument
         strOffset += nameSize+1;
         nameSize = ULEV(argPtr->typeNameSize);
         if (usumGt(strOffset, nameSize+1, metadataSize))
-            throw Exception("Kernel ArgEntry typename size out of range");
+            throw BinException("Kernel ArgEntry typename size out of range");
         arg.typeName.assign(strBase+strOffset, nameSize);
         strOffset += nameSize+1;
         
@@ -406,7 +406,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
             {
                 case 0:
                     if (kindOfType!=1) // not sampler
-                        throw Exception("Wrong kernel argument type");
+                        throw BinException("Wrong kernel argument type");
                     arg.argType = KernelArgType::SAMPLER;
                     break;
                 case 1:  // read_only image
@@ -422,17 +422,17 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                     else if (argType==2 || argType == 3)
                     {
                         if (kindOfType!=4) // not scalar
-                            throw Exception("Wrong kernel argument type");
+                            throw BinException("Wrong kernel argument type");
                         arg.argType = (argType==3) ?
                             KernelArgType::SHORT : KernelArgType::CHAR;
                     }
                     else
-                        throw Exception("Wrong kernel argument type");
+                        throw BinException("Wrong kernel argument type");
                     break;
                 case 4: // int
                 case 5: // long
                     if (kindOfType!=4) // not scalar
-                        throw Exception("Wrong kernel argument type");
+                        throw BinException("Wrong kernel argument type");
                     arg.argType = (argType==5) ?
                         KernelArgType::LONG : KernelArgType::INT;
                     break;
@@ -444,25 +444,25 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                 case 12: // double
                 {
                     if (kindOfType!=4) // not scalar
-                        throw Exception("Wrong kernel argument type");
+                        throw BinException("Wrong kernel argument type");
                     const cxuint vectorId = vectorIdTable[vectorSize];
                     if (vectorId == UINT_MAX)
-                        throw Exception("Wrong vector size");
+                        throw BinException("Wrong vector size");
                     arg.argType = cl20ArgTypeVectorTable[(argType-6)*6 + vectorId];
                     break;
                 }
                 case 15:
                     if (kindOfType!=4) // not scalar
-                        throw Exception("Wrong kernel argument type");
+                        throw BinException("Wrong kernel argument type");
                     arg.argType = KernelArgType::STRUCTURE;
                     break;
                 case 18:
                     if (kindOfType!=7) // not scalar
-                        throw Exception("Wrong kernel argument type");
+                        throw BinException("Wrong kernel argument type");
                     arg.argType = KernelArgType::CMDQUEUE;
                     break;
                 default:
-                    throw Exception("Wrong kernel argument type");
+                    throw BinException("Wrong kernel argument type");
                     break;
             }
         else // otherwise is pointer or pipe
@@ -483,7 +483,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                 else if (ptrSpace==5)
                     arg.ptrSpace = KernelPtrSpace::CONSTANT;
                 else
-                    throw Exception("Illegal pointer space");
+                    throw BinException("Illegal pointer space");
                 // set access qualifiers (volatile, restrict, const)
                 arg.ptrAccess = KARG_PTR_NORMAL;
                 if (ULEV(argPtr->isConst))
@@ -497,7 +497,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
             {
                 // global space for pipe
                 if (ptrSpace!=4)
-                    throw Exception("Illegal pipe space");
+                    throw BinException("Illegal pipe space");
                 arg.ptrSpace = KernelPtrSpace::GLOBAL;
             }
         }
@@ -530,7 +530,7 @@ const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinaryBase::getMetadataEntry(
 {
     auto it = binaryMapFind(kernelInfosMap.begin(), kernelInfosMap.end(), name);
     if (it == kernelInfosMap.end())
-        throw Exception("Can't find kernel metadata by name");
+        throw BinException("Can't find kernel metadata by name");
     return metadatas[it->second];
 }
 
@@ -539,7 +539,7 @@ const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinaryBase::getISAMetadataEntry(
 {
     auto it = binaryMapFind(isaMetadataMap.begin(), isaMetadataMap.end(), name);
     if (it == isaMetadataMap.end())
-        throw Exception("Can't find kernel ISA metadata by name");
+        throw BinException("Can't find kernel ISA metadata by name");
     return isaMetadatas[it->second];
 }
 
@@ -565,16 +565,16 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBi
                 // compile options
                 const typename Types::Sym& sym = elfBin.getSymbol(i);
                 if (ULEV(sym.st_shndx) >= elfBin.getSectionHeadersNum())
-                    throw Exception("Compiler options section header out of range");
+                    throw BinException("Compiler options section header out of range");
                 const typename Types::Shdr& shdr =
                             elfBin.getSectionHeader(ULEV(sym.st_shndx));
                 const size_t coOffset = ULEV(sym.st_value);
                 const size_t coSize = ULEV(sym.st_size);
                 // checking compile options offset and size
                 if (coOffset >= ULEV(shdr.sh_size))
-                    throw Exception("Compiler options offset out of range");
+                    throw BinException("Compiler options offset out of range");
                 if (usumGt(coOffset, coSize, ULEV(shdr.sh_size)))
-                    throw Exception("Compiler options offset and size out of range");
+                    throw BinException("Compiler options offset and size out of range");
                 
                 const char* coData = reinterpret_cast<const char*>(binaryCode) +
                             ULEV(shdr.sh_offset) + coOffset;
@@ -585,16 +585,16 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBi
                 // acl version string
                 const typename Types::Sym& sym = elfBin.getSymbol(i);
                 if (ULEV(sym.st_shndx) >= elfBin.getSectionHeadersNum())
-                    throw Exception("AclVersionString section header out of range");
+                    throw BinException("AclVersionString section header out of range");
                 const typename Types::Shdr& shdr =
                         elfBin.getSectionHeader(ULEV(sym.st_shndx));
                 const size_t aclOffset = ULEV(sym.st_value);
                 const size_t aclSize = ULEV(sym.st_size);
                 // checking acl offset and acl size
                 if (aclOffset >= ULEV(shdr.sh_size))
-                    throw Exception("AclVersionString offset out of range");
+                    throw BinException("AclVersionString offset out of range");
                 if (usumGt(aclOffset, aclSize, ULEV(shdr.sh_size)))
-                    throw Exception("AclVersionString offset and size out of range");
+                    throw BinException("AclVersionString offset and size out of range");
                 
                 const char* aclVersionData = reinterpret_cast<const char*>(binaryCode) +
                             ULEV(shdr.sh_offset) + aclOffset;
@@ -680,16 +680,16 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBi
             const typename Types::Sym& mtsym = elfBin.getSymbol(index);
             const char* mtName = elfBin.getSymbolName(index);
             if (ULEV(mtsym.st_shndx) >= elfBin.getSectionHeadersNum())
-                throw Exception("Kernel Metadata section header out of range");
+                throw BinException("Kernel Metadata section header out of range");
             const typename Types::Shdr& shdr =
                     elfBin.getSectionHeader(ULEV(mtsym.st_shndx));
             const size_t mtOffset = ULEV(mtsym.st_value);
             const size_t mtSize = ULEV(mtsym.st_size);
             /// offset and size verifying
             if (mtOffset >= ULEV(shdr.sh_size))
-                throw Exception("Kernel Metadata offset out of range");
+                throw BinException("Kernel Metadata offset out of range");
             if (usumGt(mtOffset, mtSize, ULEV(shdr.sh_size)))
-                throw Exception("Kernel Metadata offset and size out of range");
+                throw BinException("Kernel Metadata offset and size out of range");
             
             cxbyte* metadata = binaryCode + ULEV(shdr.sh_offset) + mtOffset;
             bool crimson16 = false;
@@ -714,16 +714,16 @@ void AmdCL2MainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& elfBi
             const typename Types::Sym& mtsym = elfBin.getSymbol(index);
             const char* mtName = elfBin.getSymbolName(index);
             if (ULEV(mtsym.st_shndx) >= elfBin.getSectionHeadersNum())
-                throw Exception("Kernel ISAMetadata section header out of range");
+                throw BinException("Kernel ISAMetadata section header out of range");
             const typename Types::Shdr& shdr =
                         elfBin.getSectionHeader(ULEV(mtsym.st_shndx));
             const size_t mtOffset = ULEV(mtsym.st_value);
             const size_t mtSize = ULEV(mtsym.st_size);
             /// offset and size verifying
             if (mtOffset >= ULEV(shdr.sh_size))
-                throw Exception("Kernel ISAMetadata offset out of range");
+                throw BinException("Kernel ISAMetadata offset out of range");
             if (usumGt(mtOffset, mtSize, ULEV(shdr.sh_size)))
-                throw Exception("Kernel ISAMetadata offset and size out of range");
+                throw BinException("Kernel ISAMetadata offset and size out of range");
             
             cxbyte* metadata = binaryCode + ULEV(shdr.sh_offset) + mtOffset;
             size_t len = ::strlen(mtName);
@@ -955,7 +955,7 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
         
         const cxbyte* noteContent = (const cxbyte*)innerBin.getNotes();
         if (noteContent==nullptr)
-            throw Exception("Missing notes in inner binary!");
+            throw BinException("Missing notes in inner binary!");
         size_t notesSize = innerBin.getNotesSize();
         // find note about AMDGPU
         for (size_t offset = 0; offset < notesSize; )
@@ -965,7 +965,7 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
             size_t namesz = ULEV(nhdr->n_namesz);
             size_t descsz = ULEV(nhdr->n_descsz);
             if (usumGt(offset, namesz+descsz, notesSize))
-                throw Exception("Note offset+size out of range");
+                throw BinException("Note offset+size out of range");
             if (ULEV(nhdr->n_type) == 0x3 && namesz==4 && descsz>=0x1a &&
                 ::strcmp((const char*)noteContent+offset+
                             sizeof(typename Types::Nhdr), "AMD")==0)
@@ -978,13 +978,13 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
                 {
                     if ((arch==GPUArchitecture::GCN1_2 && major<8) ||
                         (arch==GPUArchitecture::GCN1_1 && major!=7))
-                        throw Exception("Wrong arch major for GPU architecture");
+                        throw BinException("Wrong arch major for GPU architecture");
                     // fix for GFX900 - we don't know what is type of device
                     if (arch==GPUArchitecture::GCN1_2 && major!=8)
                         knownGPUType = false;
                 }
                 else if (major != 9 && major != 8 && major != 7)
-                    throw Exception("Unknown arch major");
+                    throw BinException("Unknown arch major");
                 
                 archMinor = ULEV(content[2]);
                 archStepping = ULEV(content[3]);
@@ -1008,7 +1008,7 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
     }
     
     if (!knownGPUType)
-        throw Exception("Can't determine GPU device type");
+        throw BinException("Can't determine GPU device type");
     
     outArchMinor = archMinor;
     outArchStepping = archStepping;

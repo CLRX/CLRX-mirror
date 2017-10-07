@@ -27,6 +27,9 @@
 
 using namespace CLRX;
 
+GPUIdException::GPUIdException(const std::string& message) : Exception(message)
+{ }
+
 // length of GPU device table (number of recognized GPU devices)
 static const size_t gpuDeviceTableSize = 24;
 
@@ -163,7 +166,7 @@ GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
                  lowerCaseGpuDeviceEntryTable+lowerCaseGpuDeviceEntryTableSize,
                  name, CStringCaseLess());
     if (it == lowerCaseGpuDeviceEntryTable+lowerCaseGpuDeviceEntryTableSize)
-        throw Exception("Unknown GPU device type");
+        throw GPUIdException("Unknown GPU device type");
     return it->second;
 }
 
@@ -175,35 +178,35 @@ GPUArchitecture CLRX::getGPUArchitectureFromName(const char* name)
         if (::strcasecmp(name, gpuArchitectureNameTable2[found]) == 0)
             break;
     if (found == sizeof(gpuArchitectureNameTable2) / sizeof(const char*))
-        throw Exception("Unknown GPU architecture");
+        throw GPUIdException("Unknown GPU architecture");
     return GPUArchitecture(found/3);
 }
 
 GPUArchitecture CLRX::getGPUArchitectureFromDeviceType(GPUDeviceType deviceType)
 {
     if (deviceType > GPUDeviceType::GPUDEVICE_MAX)
-        throw Exception("Unknown GPU device type");
+        throw GPUIdException("Unknown GPU device type");
     return gpuDeviceArchTable[cxuint(deviceType)];
 }
 
 GPUDeviceType CLRX::getLowestGPUDeviceTypeFromArchitecture(GPUArchitecture architecture)
 {
     if (architecture > GPUArchitecture::GPUARCH_MAX)
-        throw Exception("Unknown GPU architecture");
+        throw GPUIdException("Unknown GPU architecture");
     return gpuLowestDeviceFromArchTable[cxuint(architecture)];
 }
 
 const char* CLRX::getGPUDeviceTypeName(GPUDeviceType deviceType)
 {
     if (deviceType > GPUDeviceType::GPUDEVICE_MAX)
-        throw Exception("Unknown GPU device type");
+        throw GPUIdException("Unknown GPU device type");
     return gpuDeviceNameTable[cxuint(deviceType)];
 }
 
 const char* CLRX::getGPUArchitectureName(GPUArchitecture architecture)
 {
     if (architecture > GPUArchitecture::GPUARCH_MAX)
-        throw Exception("Unknown GPU architecture");
+        throw GPUIdException("Unknown GPU architecture");
     return gpuArchitectureNameTable[cxuint(architecture)];
 }
 
@@ -211,7 +214,7 @@ cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
                          Flags flags)
 {
     if (architecture > GPUArchitecture::GPUARCH_MAX)
-        throw Exception("Unknown GPU architecture");
+        throw GPUIdException("Unknown GPU architecture");
     if (regType == REGTYPE_VGPR)
         return 256; // VGPRS
     cxuint maxSgprs = (architecture>=GPUArchitecture::GCN1_2) ? 102 : 104;
@@ -359,7 +362,7 @@ static const AMDGPUArchVersion amdCL2GpuArchVersionTbl[] =
 AMDGPUArchVersion CLRX::getGPUArchVersion(GPUDeviceType deviceType, GPUArchVersionTable table)
 {
     if (deviceType > GPUDeviceType::GPUDEVICE_MAX)
-        throw Exception("Unknown GPU device type");
+        throw GPUIdException("Unknown GPU device type");
     // choose correct GPU arch values table
     const AMDGPUArchVersion* archValuesTable = (table == GPUArchVersionTable::AMDCL2) ?
             amdCL2GpuArchVersionTbl : galliumGpuArchVersionTbl;

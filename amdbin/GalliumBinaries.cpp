@@ -81,7 +81,7 @@ void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary, size_t kernelsNum)
     size_t amdGPUConfigSize = (shdrSize / kernelsNum);
     if (amdGPUConfigSize != 24 && amdGPUConfigSize != 40 &&
         shdrSize % amdGPUConfigSize != 0)
-        throw Exception("Wrong size of .AMDGPU.config section!");
+        throw BinException("Wrong size of .AMDGPU.config section!");
     // detect whether is binary generated for LLVM >= 3.9.0 by amdGPUConfig size
     llvm390 = amdGPUConfigSize==40;
     const cxuint progInfoEntriesNum = amdGPUConfigSize>>3;
@@ -101,7 +101,7 @@ void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary, size_t kernelsNum)
         if (ULEV(sym.st_shndx) == textIndex && ELF32_ST_BIND(sym.st_info) == STB_GLOBAL)
         {
             if (ULEV(sym.st_value) >= textSize)
-                throw Exception("kernel symbol offset out of range");
+                throw BinException("kernel symbol offset out of range");
             if (hasProgInfoMap)
                 progInfoEntryMap[progInfosNum] = std::make_pair(symName,
                                 progInfoEntriesNum*progInfosNum);
@@ -109,7 +109,7 @@ void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary, size_t kernelsNum)
         }
     }
     if (progInfosNum*amdGPUConfigSize != ULEV(shdr.sh_size))
-        throw Exception("Number of symbol kernels doesn't match progInfos number!");
+        throw BinException("Number of symbol kernels doesn't match progInfos number!");
     cxbyte* binaryCode = (cxbyte*)elfBinary.getBinaryCode();
     progInfoEntries = reinterpret_cast<GalliumProgInfoEntry*>(binaryCode +
                 ULEV(shdr.sh_offset));
@@ -160,7 +160,7 @@ uint32_t GalliumElfBinaryBase::getProgramInfoEntryIndex(const char* name) const
     ProgInfoEntryIndexMap::const_iterator it = binaryMapFind(progInfoEntryMap.begin(),
                          progInfoEntryMap.end(), name, CStringLess());
     if (it == progInfoEntryMap.end())
-        throw Exception("Can't find GalliumElf ProgInfoEntry");
+        throw BinException("Can't find GalliumElf ProgInfoEntry");
     return it->second;
 }
 
@@ -188,7 +188,7 @@ static void verifyKernelSymbols(size_t kernelsNum, const GalliumKernel* kernels,
         try 
         { symIndex = elfBinary.getSymbolIndex(kernel.kernelName.c_str()); }
         catch(const Exception& ex)
-        { throw Exception("Kernel symbol not found"); }
+        { throw BinException("Kernel symbol not found"); }
         const auto& sym = elfBinary.getSymbol(symIndex);
         const char* symName = elfBinary.getSymbolName(symIndex);
         // kernel symol must be defined as global and must be bound to text section
@@ -197,13 +197,13 @@ static void verifyKernelSymbols(size_t kernelsNum, const GalliumKernel* kernels,
         {
             // names must be stored in order
             if (kernel.kernelName != symName)
-                throw Exception("Kernel symbols out of order!");
+                throw BinException("Kernel symbols out of order!");
             if (ULEV(sym.st_value) != kernel.offset)
-                throw Exception("Kernel symbol value and Kernel "
+                throw BinException("Kernel symbol value and Kernel "
                             "offset doesn't match");
         }
         else
-            throw Exception("Wrong section or binding for kernel symbol");
+            throw BinException("Wrong section or binding for kernel symbol");
     }
 }
 
@@ -214,11 +214,11 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
          elf64BitBinary(false), mesa170(false)
 {
     if (binaryCodeSize < 4)
-        throw Exception("GalliumBinary is too small!!!");
+        throw BinException("GalliumBinary is too small!!!");
     uint32_t* data32 = reinterpret_cast<uint32_t*>(binaryCode);
     kernelsNum = ULEV(*data32);
     if (binaryCodeSize < uint64_t(kernelsNum)*16U)
-        throw Exception("Kernels number is too big!");
+        throw BinException("Kernels number is too big!");
     kernels.reset(new GalliumKernel[kernelsNum]);
     cxbyte* data = binaryCode + 4;
     // parse kernels symbol info and their arguments
@@ -226,18 +226,18 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
     {
         GalliumKernel& kernel = kernels[i];
         if (usumGt(uint32_t(data-binaryCode), 4U, binaryCodeSize))
-            throw Exception("GalliumBinary is too small!!!");
+            throw BinException("GalliumBinary is too small!!!");
         
         const cxuint symNameLen = ULEV(*reinterpret_cast<const uint32_t*>(data));
         data+=4;
         if (usumGt(uint32_t(data-binaryCode), symNameLen, binaryCodeSize))
-            throw Exception("Kernel name length is too long!");
+            throw BinException("Kernel name length is too long!");
         
         kernel.kernelName.assign((const char*)data, symNameLen);
         
         data += symNameLen;
         if (usumGt(uint32_t(data-binaryCode), 12U, binaryCodeSize))
-            throw Exception("GalliumBinary is too small!!!");
+            throw BinException("GalliumBinary is too small!!!");
         
         data32 = reinterpret_cast<uint32_t*>(data);
         kernel.sectionId = ULEV(data32[0]);
@@ -247,9 +247,9 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
         data = reinterpret_cast<cxbyte*>(data32);
         
         if (UINT32_MAX/24U < argsNum)
-            throw Exception("Number of arguments number is too high!");
+            throw BinException("Number of arguments number is too high!");
         if (usumGt(uint32_t(data-binaryCode), 24U*argsNum, binaryCodeSize))
-            throw Exception("GalliumBinary is too small!!!");
+            throw BinException("GalliumBinary is too small!!!");
         
         kernel.argInfos.resize(argsNum);
         for (uint32_t j = 0; j < argsNum; j++)
@@ -258,7 +258,7 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
             const cxuint type = ULEV(data32[0]);
             // accept not known arg type by this CLRadeonExtender
             if (type > 255)
-                throw Exception("Type of kernel argument out of handled range");
+                throw BinException("Type of kernel argument out of handled range");
             argInfo.type = GalliumArgType(type);
             argInfo.size = ULEV(data32[1]);
             argInfo.targetSize = ULEV(data32[2]);
@@ -267,7 +267,7 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
             const cxuint semType = ULEV(data32[5]);
             // accept not known semantic type by this CLRadeonExtender
             if (semType > 255)
-                throw Exception("Semantic of kernel argument out of handled range");
+                throw BinException("Semantic of kernel argument out of handled range");
             argInfo.semantic = GalliumArgSemantic(semType);
             data32 += 6;
         }
@@ -275,11 +275,11 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
     }
     
     if (usumGt(uint32_t(data-binaryCode), 4U, binaryCodeSize))
-        throw Exception("GalliumBinary is too small!!!");
+        throw BinException("GalliumBinary is too small!!!");
     
     sectionsNum = ULEV(data32[0]);
     if (binaryCodeSize-(data-binaryCode) < uint64_t(sectionsNum)*20U)
-        throw Exception("Sections number is too big!");
+        throw BinException("Sections number is too big!");
     sections.reset(new GalliumSection[sectionsNum]);
     // parse sections and their content
     data32++;
@@ -290,23 +290,23 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
     {
         GalliumSection& section = sections[i];
         if (usumGt(uint32_t(data-binaryCode), 20U, binaryCodeSize))
-            throw Exception("GalliumBinary is too small!!!");
+            throw BinException("GalliumBinary is too small!!!");
         
         section.sectionId = ULEV(data32[0]);
         const uint32_t secType = ULEV(data32[1]);
         // section type must be lower than 256
         if (secType > 255)
-            throw Exception("Type of section out of range");
+            throw BinException("Type of section out of range");
         section.type = GalliumSectionType(secType);
         section.size = ULEV(data32[2]);
         const uint32_t sizeOfData = ULEV(data32[3]);
         const uint32_t sizeFromHeader = ULEV(data32[4]); // from LLVM binary
         if (section.size != sizeOfData-4 || section.size != sizeFromHeader)
-            throw Exception("Section size fields doesn't match itself!");
+            throw BinException("Section size fields doesn't match itself!");
         
         data = reinterpret_cast<cxbyte*>(data32+5);
         if (usumGt(uint32_t(data-binaryCode), section.size, binaryCodeSize))
-            throw Exception("Section size is too big!!!");
+            throw BinException("Section size is too big!!!");
         
         section.offset = data-binaryCode;
         
@@ -316,7 +316,7 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
             // if new Mesa3D 17.0
             mesa170 = (section.type == GalliumSectionType::TEXT_EXECUTABLE_170);
             if (section.size < sizeof(Elf32_Ehdr))
-                throw Exception("Wrong GalliumElfBinary size");
+                throw BinException("Wrong GalliumElfBinary size");
             const Elf32_Ehdr& ehdr = *reinterpret_cast<const Elf32_Ehdr*>(data);
             if (ehdr.e_ident[EI_CLASS] == ELFCLASS32)
             {
@@ -334,17 +334,17 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
                 elf64BitBinary = true;
             }
             else // wrong class
-                throw Exception("Wrong GalliumElfBinary class");
+                throw BinException("Wrong GalliumElfBinary class");
         }
         data += section.size;
         data32 = reinterpret_cast<uint32_t*>(data);
     }
     
     if (!elfBinary)
-        throw Exception("Gallium Elf binary not found!");
+        throw BinException("Gallium Elf binary not found!");
     for (uint32_t i = 0; i < kernelsNum; i++)
         if (kernels[i].sectionId != elfSectionId)
-            throw Exception("Kernel not in text section!");
+            throw BinException("Kernel not in text section!");
     // verify kernel offsets
     if (!elf64BitBinary)
         verifyKernelSymbols(kernelsNum, kernels.get(), getElfBinary32());
@@ -359,7 +359,7 @@ uint32_t GalliumBinary::getKernelIndex(const char* name) const
        [](const GalliumKernel& k1, const GalliumKernel& k2)
        { return k1.kernelName < k2.kernelName; });
     if (it == kernels.get()+kernelsNum || it->kernelName != name)
-        throw Exception("Can't find Gallium Kernel Index");
+        throw BinException("Can't find Gallium Kernel Index");
     return it-kernels.get();
 }
 
@@ -618,15 +618,15 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
             // veryfying values gallium config
             const GalliumKernelConfig& config = kernel.config;
             if (config.usedVGPRsNum > maxVGPRSNum)
-                throw Exception("Used VGPRs number out of range");
+                throw BinGenException("Used VGPRs number out of range");
             if (config.usedSGPRsNum > maxSGPRSNum)
-                throw Exception("Used SGPRs number out of range");
+                throw BinGenException("Used SGPRs number out of range");
             if (config.localSize > 32768)
-                throw Exception("LocalSize out of range");
+                throw BinGenException("LocalSize out of range");
             if (config.priority >= 4)
-                throw Exception("Priority out of range");
+                throw BinGenException("Priority out of range");
             if (config.userDataNum > 16)
-                throw Exception("UserDataNum out of range");
+                throw BinGenException("UserDataNum out of range");
         }
     
     // sort kernels by name (for correct order in binary file) */
@@ -665,11 +665,11 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
         !input->is64BitElf &&
 #endif
         elfSize > UINT32_MAX)
-        throw Exception("Elf binary size is too big!");
+        throw BinGenException("Elf binary size is too big!");
     
 #ifdef HAVE_32BIT
     if (binarySize > UINT32_MAX)
-        throw Exception("Binary size is too big!");
+        throw BinGenException("Binary size is too big!");
 #endif
     /****
      * prepare for write binary to output
@@ -706,7 +706,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     {
         const GalliumKernelInput& kernel = input->kernels[korder];
         if (kernel.offset >= input->codeSize)
-            throw Exception("Kernel offset out of range");
+            throw BinGenException("Kernel offset out of range");
         
         bos.writeObject<uint32_t>(LEV(uint32_t(kernel.kernelName.size())));
         bos.writeArray(kernel.kernelName.size(), kernel.kernelName.c_str());

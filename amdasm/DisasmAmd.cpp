@@ -732,7 +732,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             /* reflection that have type name */
             cxuint argNo = cstrtovCStyle<cxuint>(linePtr+12, lineEnd, outEnd);
             if (argNo >= config.args.size())
-                throw Exception("ArgNo out of range");
+                throw DisasmException("ArgNo out of range");
             const char* ptr = strechr(linePtr+12, lineEnd, ':');
             if (ptr==nullptr)
                 throw ParseException(lineNo, "Can't parse reflection entry");
@@ -790,14 +790,14 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         if (argIdx < config.args.size())
             config.args[argIdx].argType = KernelArgType::SAMPLER;
         else
-            throw Exception("Sampler arg index out of range");
+            throw DisasmException("Sampler arg index out of range");
     
     // apply const qualifier to some pointer arguments
     for (cxuint argIdx: constArgIndices)
         if (argIdx < config.args.size())
             config.args[argIdx].ptrAccess |= KARG_PTR_CONST;
         else
-            throw Exception("Const arg index out of range");
+            throw DisasmException("Const arg index out of range");
     
     /* from ATI CAL NOTES */
     cxbyte uavMask[128];

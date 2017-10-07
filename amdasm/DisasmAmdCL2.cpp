@@ -144,12 +144,12 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
             const Elf64_Sym& sym = innerBin.getSymbol(symIndex);
             // check symbol type, section and value
             if (ELF64_ST_TYPE(sym.st_info) != 12)
-                throw Exception("Wrong sampler symbol");
+                throw DisasmException("Wrong sampler symbol");
             uint64_t value = ULEV(sym.st_value);
             if (ULEV(sym.st_shndx) != samplerInitSecIndex)
-                throw Exception("Wrong section for sampler symbol");
+                throw DisasmException("Wrong section for sampler symbol");
             if ((value&7) != 0)
-                throw Exception("Wrong value of sampler symbol");
+                throw DisasmException("Wrong value of sampler symbol");
             input->samplerRelocs.push_back({ size_t(ULEV(rel.r_offset)),
                 size_t(value>>3) });
         }
@@ -237,7 +237,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
             
             if (sortedRelocIter != sortedRelocs.end() &&
                     sortedRelocIter->first < size_t(kinput.code-textPtr))
-                throw Exception("Code relocation offset outside kernel code");
+                throw DisasmException("Code relocation offset outside kernel code");
             
             if (sortedRelocIter != sortedRelocs.end())
             {
@@ -256,7 +256,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
                     uint16_t symShndx = ULEV(sym.st_shndx);
                     if (symShndx!=gDataSectionIdx && symShndx!=rwDataSectionIdx &&
                         symShndx!=bssDataSectionIdx)
-                        throw Exception("Symbol is not placed in global or "
+                        throw DisasmException("Symbol is not placed in global or "
                                 "rwdata data or bss is illegal");
                     addend += ULEV(sym.st_value);
                     rsym = (symShndx==rwDataSectionIdx) ? 1 : 
@@ -269,7 +269,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
                     else if (rtype==2)
                         relocType = RELTYPE_HIGH_32BIT;
                     else
-                        throw Exception("Unknown relocation type");
+                        throw DisasmException("Unknown relocation type");
                     // put text relocs. compute offset by subtracting current code offset
                     kinput.textRelocs.push_back(AmdCL2RelaEntry{sortedRelocIter->first-
                         (kinput.code-textPtr), relocType, rsym, addend });
@@ -278,7 +278,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         }
     }
     if (sortedRelocIter != sortedRelocs.end())
-        throw Exception("Code relocation offset outside kernel code");
+        throw DisasmException("Code relocation offset outside kernel code");
     return input.release();
 }
 
@@ -473,7 +473,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             {
                 case 0:
                     if (kindOfType!=1) // not sampler
-                        throw Exception("Wrong kernel argument type");
+                        throw DisasmException("Wrong kernel argument type");
                     arg.argType = KernelArgType::SAMPLER;
                     break;
                 case 1:  // read_only image
@@ -489,17 +489,17 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                     else if (argType==2 || argType == 3)
                     {
                         if (kindOfType!=4) // not scalar
-                            throw Exception("Wrong kernel argument type");
+                            throw DisasmException("Wrong kernel argument type");
                         arg.argType = (argType==3) ?
                             KernelArgType::SHORT : KernelArgType::CHAR;
                     }
                     else
-                        throw Exception("Wrong kernel argument type");
+                        throw DisasmException("Wrong kernel argument type");
                     break;
                 case 4: // int
                 case 5: // long
                     if (kindOfType!=4) // not scalar
-                        throw Exception("Wrong kernel argument type");
+                        throw DisasmException("Wrong kernel argument type");
                     arg.argType = (argType==5) ?
                         KernelArgType::LONG : KernelArgType::INT;
                     break;
@@ -511,25 +511,25 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                 case 12: // double
                 {
                     if (kindOfType!=4) // not scalar
-                        throw Exception("Wrong kernel argument type");
+                        throw DisasmException("Wrong kernel argument type");
                     const cxuint vectorId = vectorIdTable[vectorSize];
                     if (vectorId == UINT_MAX)
-                        throw Exception("Wrong vector size");
+                        throw DisasmException("Wrong vector size");
                     arg.argType = cl20ArgTypeVectorTable[(argType-6)*6 + vectorId];
                     break;
                 }
                 case 15:
                     if (kindOfType!=4) // not scalar
-                        throw Exception("Wrong kernel argument type");
+                        throw DisasmException("Wrong kernel argument type");
                     arg.argType = KernelArgType::STRUCTURE;
                     break;
                 case 18:
                     if (kindOfType!=7) // not scalar
-                        throw Exception("Wrong kernel argument type");
+                        throw DisasmException("Wrong kernel argument type");
                     arg.argType = KernelArgType::CMDQUEUE;
                     break;
                 default:
-                    throw Exception("Wrong kernel argument type");
+                    throw DisasmException("Wrong kernel argument type");
                     break;
             }
             
@@ -568,7 +568,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                 else if (ptrSpace==5)
                     arg.ptrSpace = KernelPtrSpace::CONSTANT;
                 else
-                    throw Exception("Illegal pointer space");
+                    throw DisasmException("Illegal pointer space");
                 // set access qualifiers (volatile, restrict, const)
                 arg.ptrAccess |= KARG_PTR_NORMAL;
                 if (argPtr->isRestrict)
@@ -580,7 +580,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             {
                 // pointer space for pipe
                 if (ptrSpace!=4)
-                    throw Exception("Illegal pipe space");
+                    throw DisasmException("Illegal pipe space");
                 arg.ptrSpace = KernelPtrSpace::GLOBAL;
             }
             

@@ -46,6 +46,10 @@
 
 using namespace CLRX;
 
+// Assembler Exception costuctor
+AsmException::AsmException(const std::string& message) : Exception(message)
+{ }
+
 // copy constructor - includes usageHandler copying
 AsmSection::AsmSection(const AsmSection& section)
 {
@@ -2706,13 +2710,13 @@ void Assembler::writeBinary(const char* filename) const
             if (ofs)
                 formatHandler->writeBinary(ofs);
             else
-                throw Exception(std::string("Can't open output file '")+filename+"'");
+                throw AsmException(std::string("Can't open output file '")+filename+"'");
         }
         else
-            throw Exception("No output binary");
+            throw AsmException("No output binary");
     }
     else // failed
-        throw Exception("Assembler failed!");
+        throw AsmException("Assembler failed!");
 }
 
 void Assembler::writeBinary(std::ostream& outStream) const
@@ -2723,10 +2727,10 @@ void Assembler::writeBinary(std::ostream& outStream) const
         if (formatHandler!=nullptr)
             formatHandler->writeBinary(outStream);
         else
-            throw Exception("No output binary");
+            throw AsmException("No output binary");
     }
     else // failed
-        throw Exception("Assembler failed!");
+        throw AsmException("Assembler failed!");
 }
 
 void Assembler::writeBinary(Array<cxbyte>& array) const
@@ -2737,8 +2741,8 @@ void Assembler::writeBinary(Array<cxbyte>& array) const
         if (formatHandler!=nullptr)
             formatHandler->writeBinary(array);
         else
-            throw Exception("No output binary");
+            throw AsmException("No output binary");
     }
     else // failed
-        throw Exception("Assembler failed!");
+        throw AsmException("Assembler failed!");
 }

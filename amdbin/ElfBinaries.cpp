@@ -40,6 +40,14 @@ static const uint32_t elfMagicValue = 0x464c457fU;
 
 using namespace CLRX;
 
+// BinException costuctor
+BinException::BinException(const std::string& message) : Exception(message)
+{ }
+
+// BinGenException costuctor
+BinGenException::BinGenException(const std::string& message) : Exception(message)
+{ }
+
 /* determine unfinished strings region in string table for checking further consistency */
 static size_t unfinishedRegionOfStringTable(const cxbyte* table, size_t size)
 {
@@ -89,30 +97,30 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
         dynamicEntSize(0)     
 {
     if (binaryCodeSize < sizeof(typename Types::Ehdr))
-        throw Exception("Binary is too small!!!");
+        throw BinException("Binary is too small!!!");
     
     const typename Types::Ehdr* ehdr =
             reinterpret_cast<const typename Types::Ehdr*>(binaryCode);
     
     // checking ELF magic, ELFCLASS and endian (only little-endian accepted)
     if (ULEV(*reinterpret_cast<const uint32_t*>(binaryCode)) != elfMagicValue)
-        throw Exception("This is not ELF binary");
+        throw BinException("This is not ELF binary");
     if (ehdr->e_ident[EI_CLASS] != Types::ELFCLASS)
-        throw Exception(std::string("This is not ")+Types::bitName+"bit ELF binary");
+        throw BinException(std::string("This is not ")+Types::bitName+"bit ELF binary");
     if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB)
-        throw Exception("Other than little-endian binaries are not supported!");
+        throw BinException("Other than little-endian binaries are not supported!");
     
     if ((ULEV(ehdr->e_phoff) == 0 && ULEV(ehdr->e_phnum) != 0))
-        throw Exception("Elf invalid phoff and phnum combination");
+        throw BinException("Elf invalid phoff and phnum combination");
     if (ULEV(ehdr->e_phoff) != 0)
     {
         /* reading and checking program headers */
         if (ULEV(ehdr->e_phoff) > binaryCodeSize)
-            throw Exception("ProgramHeaders offset out of range!");
+            throw BinException("ProgramHeaders offset out of range!");
         if (usumGt(ULEV(ehdr->e_phoff),
                    ((typename Types::Word)ULEV(ehdr->e_phentsize))*ULEV(ehdr->e_phnum),
                    binaryCodeSize))
-            throw Exception("ProgramHeaders offset+size out of range!");
+            throw BinException("ProgramHeaders offset+size out of range!");
         
         cxuint phnum = ULEV(ehdr->e_phnum);
         // checking program header segment offset ranges
@@ -120,25 +128,25 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
         {
             const typename Types::Phdr& phdr = getProgramHeader(i);
             if (ULEV(phdr.p_offset) > binaryCodeSize)
-                throw Exception("Segment offset out of range!");
+                throw BinException("Segment offset out of range!");
             if (usumGt(ULEV(phdr.p_offset), ULEV(phdr.p_filesz), binaryCodeSize))
-                throw Exception("Segment offset+size out of range!");
+                throw BinException("Segment offset+size out of range!");
         }
     }
     
     if ((ULEV(ehdr->e_shoff) == 0 && ULEV(ehdr->e_shnum) != 0))
-        throw Exception("Elf invalid shoff and shnum combination");
+        throw BinException("Elf invalid shoff and shnum combination");
     if (ULEV(ehdr->e_shoff) != 0 && ULEV(ehdr->e_shstrndx) != SHN_UNDEF)
     {
         /* indexing of sections */
         if (ULEV(ehdr->e_shoff) > binaryCodeSize)
-            throw Exception("SectionHeaders offset out of range!");
+            throw BinException("SectionHeaders offset out of range!");
         if (usumGt(ULEV(ehdr->e_shoff),
                   ((typename Types::Word)ULEV(ehdr->e_shentsize))*ULEV(ehdr->e_shnum),
                   binaryCodeSize))
-            throw Exception("SectionHeaders offset+size out of range!");
+            throw BinException("SectionHeaders offset+size out of range!");
         if (ULEV(ehdr->e_shstrndx) >= ULEV(ehdr->e_shnum))
-            throw Exception("Shstrndx out of range!");
+            throw BinException("Shstrndx out of range!");
         
         typename Types::Shdr& shstrShdr = getSectionHeader(ULEV(ehdr->e_shstrndx));
         sectionStringTable = binaryCode + ULEV(shstrShdr.sh_offset);
@@ -158,19 +166,19 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
             const typename Types::Shdr& shdr = getSectionHeader(i);
             /// checking section offset ranges
             if (ULEV(shdr.sh_offset) > binaryCodeSize)
-                throw Exception("Section offset out of range!");
+                throw BinException("Section offset out of range!");
             if (ULEV(shdr.sh_type) != SHT_NOBITS)
                 if (usumGt(ULEV(shdr.sh_offset), ULEV(shdr.sh_size), binaryCodeSize))
-                    throw Exception("Section offset+size out of range!");
+                    throw BinException("Section offset+size out of range!");
             if (ULEV(shdr.sh_link) >= ULEV(ehdr->e_shnum))
-                throw Exception("Section link out of range!");
+                throw BinException("Section link out of range!");
             
             const typename Types::Size sh_nameindx = ULEV(shdr.sh_name);
             if (sh_nameindx >= ULEV(shstrShdr.sh_size))
-                throw Exception("Section name index out of range!");
+                throw BinException("Section name index out of range!");
             
             if (sh_nameindx >= unfinishedShstrPos)
-                throw Exception("Unfinished section name!");
+                throw BinException("Unfinished section name!");
             
             const char* shname =
                 reinterpret_cast<const char*>(sectionStringTable + sh_nameindx);
@@ -195,12 +203,12 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
         {
             // indexing symbols
             if (ULEV(symTableHdr->sh_entsize) < sizeof(typename Types::Sym))
-                throw Exception("SymTable entry size is too small!");
+                throw BinException("SymTable entry size is too small!");
             
             symbolEntSize = ULEV(symTableHdr->sh_entsize);
             symbolTable = binaryCode + ULEV(symTableHdr->sh_offset);
             if (ULEV(symTableHdr->sh_link) == SHN_UNDEF)
-                throw Exception("Symbol table doesn't have string table");
+                throw BinException("Symbol table doesn't have string table");
             
             typename Types::Shdr& symstrShdr = getSectionHeader(ULEV(symTableHdr->sh_link));
             symbolStringTable = binaryCode + ULEV(symstrShdr.sh_offset);
@@ -217,10 +225,10 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
                 const typename Types::Sym& sym = getSymbol(i);
                 const typename Types::Size symnameindx = ULEV(sym.st_name);
                 if (symnameindx >= ULEV(symstrShdr.sh_size))
-                    throw Exception("Symbol name index out of range!");
+                    throw BinException("Symbol name index out of range!");
                 // check whether name is finished in string section content
                 if (symnameindx >= unfinishedSymstrPos)
-                    throw Exception("Unfinished symbol name!");
+                    throw BinException("Unfinished symbol name!");
                 
                 const char* symname =
                     reinterpret_cast<const char*>(symbolStringTable + symnameindx);
@@ -236,12 +244,12 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
         {
             // indexing dynamic symbols
             if (ULEV(dynSymTableHdr->sh_entsize) < sizeof(typename Types::Sym))
-                throw Exception("DynSymTable entry size is too small!");
+                throw BinException("DynSymTable entry size is too small!");
             
             dynSymEntSize = ULEV(dynSymTableHdr->sh_entsize);
             dynSymTable = binaryCode + ULEV(dynSymTableHdr->sh_offset);
             if (ULEV(dynSymTableHdr->sh_link) == SHN_UNDEF)
-                throw Exception("DynSymbol table doesn't have string table");
+                throw BinException("DynSymbol table doesn't have string table");
             
             typename Types::Shdr& dynSymstrShdr =
                     getSectionHeader(ULEV(dynSymTableHdr->sh_link));
@@ -260,10 +268,10 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
                 const typename Types::Sym& sym = getDynSymbol(i);
                 const typename Types::Size symnameindx = ULEV(sym.st_name);
                 if (symnameindx >= ULEV(dynSymstrShdr.sh_size))
-                    throw Exception("DynSymbol name index out of range!");
+                    throw BinException("DynSymbol name index out of range!");
                 // check whether name is finished in string section content
                 if (symnameindx >= unfinishedSymstrPos)
-                    throw Exception("Unfinished dynsymbol name!");
+                    throw BinException("Unfinished dynsymbol name!");
                 
                 const char* symname =
                     reinterpret_cast<const char*>(dynSymStringTable + symnameindx);
@@ -286,9 +294,9 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
             const typename Types::Size entSize = ULEV(dynamicTableHdr->sh_entsize);
             const typename Types::Size size = ULEV(dynamicTableHdr->sh_size);
             if (entSize < sizeof(typename Types::Dyn))
-                throw Exception("Size of dynamic entry is too small!");
+                throw BinException("Size of dynamic entry is too small!");
             if (size % entSize != 0)
-                throw Exception("Size of dynamic section is not match!");
+                throw BinException("Size of dynamic section is not match!");
             dynamicsNum = entSize / size;
             dynamicEntSize = entSize;
         }
@@ -304,7 +312,7 @@ uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
         SectionIndexMap::const_iterator it = binaryMapFind(
                     sectionIndexMap.begin(), sectionIndexMap.end(), name, CStringLess());
         if (it == sectionIndexMap.end())
-            throw Exception(std::string("Can't find Elf")+Types::bitName+" Section");
+            throw BinException(std::string("Can't find Elf")+Types::bitName+" Section");
         return it->second;
     }
     else
@@ -315,7 +323,7 @@ uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
             if (::strcmp(getSectionName(i), name) == 0)
                 return i;
         }
-        throw Exception(std::string("Can't find Elf")+Types::bitName+" Section");
+        throw BinException(std::string("Can't find Elf")+Types::bitName+" Section");
     }
 }
 
@@ -325,7 +333,7 @@ typename Types::Size ElfBinaryTemplate<Types>::getSymbolIndex(const char* name) 
     SymbolIndexMap::const_iterator it = binaryMapFind(
                     symbolIndexMap.begin(), symbolIndexMap.end(), name, CStringLess());
     if (it == symbolIndexMap.end())
-        throw Exception(std::string("Can't find Elf")+Types::bitName+" Symbol");
+        throw BinException(std::string("Can't find Elf")+Types::bitName+" Symbol");
     return it->second;
 }
 
@@ -335,7 +343,7 @@ typename Types::Size ElfBinaryTemplate<Types>::getDynSymbolIndex(const char* nam
     SymbolIndexMap::const_iterator it = binaryMapFind(
                     dynSymIndexMap.begin(), dynSymIndexMap.end(), name, CStringLess());
     if (it == dynSymIndexMap.end())
-        throw Exception(std::string("Can't find Elf")+Types::bitName+" DynSymbol");
+        throw BinException(std::string("Can't find Elf")+Types::bitName+" DynSymbol");
     return it->second;
 }
 
@@ -378,11 +386,11 @@ uint16_t CLRX::convertSectionId(cxuint sectionIndex, const uint16_t* builtinSect
     {
         const uint16_t shndx = builtinSections[sectionIndex-ELFSECTID_START];
         if (shndx == SHN_UNDEF) // if table entry for sectionIndex is not defined
-            throw Exception("Wrong BinSection:sectionId");
+            throw BinGenException("Wrong BinSection:sectionId");
         return builtinSections[sectionIndex-ELFSECTID_START];
     }
     else // failed
-        throw Exception("Wrong BinSection:sectionId");
+        throw BinGenException("Wrong BinSection:sectionId");
 }
 
 ElfRegionContent::~ElfRegionContent()
@@ -498,7 +506,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     
     /* verify data */
     if (header.entryRegion != UINT_MAX && header.entryRegion >= regions.size())
-        throw Exception("Header entry region out of range");
+        throw BinGenException("Header entry region out of range");
     
     regionOffsets.reset(new typename Types::Word[regions.size()]);
     regionAddresses.reset(new typename Types::Word[regions.size()]);
@@ -540,12 +548,12 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                         hashSymDetected = true;
                     }
                     else
-                        throw Exception("Wrong Hash Sym section!");
+                        throw BinGenException("Wrong Hash Sym section!");
                 }
                 sectionCount++;
             }
         if (!hashSymDetected)
-            throw Exception("Wrong Hash Sym is not detected!");
+            throw BinGenException("Wrong Hash Sym is not detected!");
     }
     
     sectionRegions.reset(new cxuint[sectionsNum+1]);
@@ -566,11 +574,11 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     for (const auto& sym: symbols)
         if (sym.sectionIndex >= sectionsNum && sym.sectionIndex!=SHN_ABS &&
                     sym.sectionIndex!=SHN_UNDEF)
-            throw Exception("Symbol section index out of range");
+            throw BinGenException("Symbol section index out of range");
     for (const auto& sym: dynSymbols)
         if (sym.sectionIndex >= sectionsNum && sym.sectionIndex!=SHN_ABS &&
                     sym.sectionIndex!=SHN_UNDEF)
-            throw Exception("DynSymbol section index out of range");
+            throw BinGenException("DynSymbol section index out of range");
     
     for (size_t i = 0; i < regions.size(); i++)
     {
@@ -597,12 +605,12 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             {
                 if (progHdr.regionStart!=PHREGION_FILESTART &&
                             progHdr.regionStart >= regions.size())
-                    throw Exception("Region start out of range");
+                    throw BinGenException("Region start out of range");
                 if ((progHdr.regionStart==PHREGION_FILESTART &&
                      progHdr.regionsNum > regions.size()) ||
                     (progHdr.regionStart!=PHREGION_FILESTART &&
                      uint64_t(progHdr.regionStart) + progHdr.regionsNum > regions.size()))
-                    throw Exception("Region end out of range");
+                    throw BinGenException("Region end out of range");
             }
             if (addrStartRegion==PHREGION_FILESTART)
                 address = size;
@@ -625,7 +633,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
         {
             // if section
             if (region.section.link >= sectionsNum)
-                throw Exception("Section link out of range");
+                throw BinGenException("Section link out of range");
             
             if (haveDynamic)
             {

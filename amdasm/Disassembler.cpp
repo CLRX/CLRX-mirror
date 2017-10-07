@@ -35,6 +35,9 @@
 
 using namespace CLRX;
 
+DisasmException::DisasmException(const std::string& message) : Exception(message)
+{ }
+
 ISADisassembler::ISADisassembler(Disassembler& _disassembler, cxuint outBufSize)
         : disassembler(_disassembler), startOffset(0), labelStartOffset(0),
           dontPrintLabelsAfterCode(false), output(outBufSize, _disassembler.getOutput())

@@ -38,6 +38,18 @@
 namespace CLRX
 {
 
+/// Assembler exception class
+class AsmException: public Exception
+{
+public:
+    /// empty constructor
+    AsmException() = default;
+    /// constructor with messasge
+    explicit AsmException(const std::string& message);
+    /// destructor
+    virtual ~AsmException() noexcept = default;
+};
+
 enum: cxbyte {
     WS_UNSIGNED = 0,  // only unsigned
     WS_BOTH = 1,  // both signed and unsigned range checking

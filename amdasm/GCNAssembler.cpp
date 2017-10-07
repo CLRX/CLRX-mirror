@@ -300,7 +300,7 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
             rstart = code2&0xff;
             break;
         default:
-            throw Exception("Unknown GCNField");
+            throw AsmException("Unknown GCNField");
     }
     return { rstart, rstart+regSize };
 }

@@ -688,26 +688,26 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
         if (!kinput.useConfig)
         {
             if (kinput.metadata == nullptr || kinput.metadataSize == 0)
-                throw Exception("No metadata for kernel");
+                throw BinGenException("No metadata for kernel");
             if (kinput.header == nullptr || kinput.headerSize == 0)
-                throw Exception("No header for kernel");
+                throw BinGenException("No header for kernel");
             if (kinput.code == nullptr)
-                throw Exception("No code for kernel");
+                throw BinGenException("No code for kernel");
             continue; // and skip
         }
         // checking config parameters
         const AmdKernelConfig& config = kinput.config;
         TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
         if (config.userDatas.size() > 16)
-            throw Exception("UserDataElemsNum must not be greater than 16");
+            throw BinGenException("UserDataElemsNum must not be greater than 16");
         if (config.usedVGPRsNum > maxVGPRSNum)
-            throw Exception("Used VGPRs number out of range");
+            throw BinGenException("Used VGPRs number out of range");
         if (config.usedSGPRsNum > maxSGPRSNum)
-            throw Exception("Used SGPRs number out of range");
+            throw BinGenException("Used SGPRs number out of range");
         if (config.hwLocalSize > 32768)
-            throw Exception("HWLocalSize out of range");
+            throw BinGenException("HWLocalSize out of range");
         if (config.floatMode >= 256)
-            throw Exception("FloatMode out of range");
+            throw BinGenException("FloatMode out of range");
         
         /* filling input */
         if (config.hwRegion == BINGEN_DEFAULT)
@@ -718,19 +718,19 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
         /* checking arg types */
         for (const AmdKernelArgInput& arg: config.args)
             if (arg.argType > KernelArgType::MAX_VALUE)
-                throw Exception("Unknown argument type");
+                throw BinGenException("Unknown argument type");
             else if (arg.argType == KernelArgType::POINTER)
             {
                 if (arg.pointerType > KernelArgType::MAX_VALUE)
-                    throw Exception("Unknown argument's pointer type");
+                    throw BinGenException("Unknown argument's pointer type");
                 if (arg.ptrSpace > KernelPtrSpace::MAX_VALUE ||
                     arg.ptrSpace == KernelPtrSpace::NONE)
-                    throw Exception("Wrong pointer space type");
+                    throw BinGenException("Wrong pointer space type");
             }
             else if (isKernelArgImage(arg.argType))
             {
                 if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == 0)
-                    throw Exception("Invalid access qualifier for image");
+                    throw BinGenException("Invalid access qualifier for image");
             }
         
         if (config.uavPrivate == BINGEN_DEFAULT)
@@ -805,14 +805,14 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             tempConfig.privateId = config.privateId;
         
         if (tempConfig.uavId != BINGEN_NOTSUPPLIED && tempConfig.uavId >= 1024)
-            throw Exception("UavId out of range");
+            throw BinGenException("UavId out of range");
         if (tempConfig.constBufferId != BINGEN_NOTSUPPLIED &&
             tempConfig.constBufferId >= 1024)
-            throw Exception("ConstBufferId out of range");
+            throw BinGenException("ConstBufferId out of range");
         if (tempConfig.printfId != BINGEN_NOTSUPPLIED && tempConfig.printfId >= 1024)
-            throw Exception("PrintfId out of range");
+            throw BinGenException("PrintfId out of range");
         if (tempConfig.privateId != BINGEN_NOTSUPPLIED && tempConfig.privateId >= 1024)
-            throw Exception("PrivateId out of range");
+            throw BinGenException("PrivateId out of range");
         
         /* fill argUavIds for global/constant pointers */
         cxuint puavIdsCount = tempConfig.uavId+1;
@@ -837,9 +837,9 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             {
                 if ((arg.resId < 9 && arg.used) ||
                     (!arg.used && arg.resId != tempConfig.uavId) || arg.resId >= 1024)
-                    throw Exception("UavId out of range!");
+                    throw BinGenException("UavId out of range!");
                 if (puavMask[arg.resId] && arg.resId != tempConfig.uavId)
-                    throw Exception("UavId already used!");
+                    throw BinGenException("UavId already used!");
                 puavMask.set(arg.resId);
                 tempConfig.argResIds[k] = arg.resId;
             }
@@ -848,9 +848,9 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             {
                 // old constant buffers
                 if (arg.resId < 2 || arg.resId >= 160)
-                    throw Exception("CbId out of range!");
+                    throw BinGenException("CbId out of range!");
                 if (cbIdMask[arg.resId])
-                    throw Exception("CbId already used!");
+                    throw BinGenException("CbId already used!");
                 cbIdMask.set(arg.resId);
                 tempConfig.argResIds[k] = arg.resId;
             }
@@ -860,18 +860,18 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                 if (arg.ptrAccess & KARG_PTR_READ_ONLY)
                 {
                     if (arg.resId >= 128)
-                        throw Exception("RdImgId out of range!");
+                        throw BinGenException("RdImgId out of range!");
                     if (rdImgMask[arg.resId])
-                        throw Exception("RdImgId already used!");
+                        throw BinGenException("RdImgId already used!");
                     rdImgMask.set(arg.resId);
                     tempConfig.argResIds[k] = arg.resId;
                 }
                 else if (arg.ptrAccess & KARG_PTR_WRITE_ONLY)
                 {
                     if (arg.resId >= 8)
-                        throw Exception("WrImgId out of range!");
+                        throw BinGenException("WrImgId out of range!");
                     if (wrImgMask[arg.resId])
-                        throw Exception("WrImgId already used!");
+                        throw BinGenException("WrImgId already used!");
                     wrImgMask.set(arg.resId);
                     tempConfig.argResIds[k] = arg.resId;
                 }
@@ -879,9 +879,9 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             else if (arg.argType == KernelArgType::COUNTER32 && arg.resId != BINGEN_DEFAULT)
             {
                 if (arg.resId >= 8)
-                    throw Exception("CounterId out of range!");
+                    throw BinGenException("CounterId out of range!");
                 if (cntIdMask[arg.resId])
-                    throw Exception("CounterId already used!");
+                    throw BinGenException("CounterId already used!");
                 cntIdMask.set(arg.resId);
                 tempConfig.argResIds[k] = arg.resId;
             }
@@ -901,7 +901,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                     for (; puavIdsCount < 1024 && puavMask[puavIdsCount];
                          puavIdsCount++);
                     if (puavIdsCount == 1024)
-                        throw Exception("UavId out of range!");
+                        throw BinGenException("UavId out of range!");
                     tempConfig.argResIds[k] = puavIdsCount++;
                 }
                 else // use unused uavId (9 or 11)
@@ -913,7 +913,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                 // old constant buffers
                 for (; cbIdsCount < 160 && cbIdMask[cbIdsCount]; cbIdsCount++);
                 if (cbIdsCount == 160)
-                    throw Exception("CbId out of range!");
+                    throw BinGenException("CbId out of range!");
                 tempConfig.argResIds[k] = cbIdsCount++;
             }
             else if (isKernelArgImage(arg.argType) && arg.resId == BINGEN_DEFAULT)
@@ -923,14 +923,14 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                 {
                     for (; rdImgsCount < 128 && rdImgMask[rdImgsCount]; rdImgsCount++);
                     if (rdImgsCount == 128)
-                        throw Exception("RdImgId out of range!");
+                        throw BinGenException("RdImgId out of range!");
                     tempConfig.argResIds[k] = rdImgsCount++;
                 }
                 else if (arg.ptrAccess & KARG_PTR_WRITE_ONLY)
                 {
                     for (; wrImgsCount < 8 && wrImgMask[wrImgsCount]; wrImgsCount++);
                     if (wrImgsCount == 8)
-                        throw Exception("WrImgId out of range!");
+                        throw BinGenException("WrImgId out of range!");
                     tempConfig.argResIds[k] = wrImgsCount++;
                 }
             }
@@ -938,7 +938,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             {
                 for (; cntIdsCount < 8 && cntIdMask[cntIdsCount]; cntIdsCount++);
                 if (cntIdsCount == 8)
-                    throw Exception("CounterId out of range!");
+                    throw BinGenException("CounterId out of range!");
                 tempConfig.argResIds[k] = cntIdsCount++;
             }
         }
@@ -1025,7 +1025,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
             metadata += ':';
             const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.pointerType)];
             if (tp.kindOfType == KT_UNKNOWN)
-                throw Exception("Type not supported!");
+                throw BinGenException("Type not supported!");
             const cxuint typeSize =
                 cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*tp.elemSize;
             if (arg.structSize == 0 && arg.pointerType == KernelArgType::STRUCTURE)
@@ -1053,7 +1053,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
                 metadata += numBuf;
             }
             else
-                throw Exception("Other memory spaces are not supported");
+                throw BinGenException("Other memory spaces are not supported");
             metadata += ':';
             const size_t elemSize = (arg.pointerType==KernelArgType::STRUCTURE)?
                 ((arg.structSize!=0)?arg.structSize:4) : typeSize;
@@ -1086,7 +1086,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
             else if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_WRITE)
                 metadata += "RW";
             else
-                throw Exception("Invalid image access qualifier!");
+                throw BinGenException("Invalid image access qualifier!");
             metadata += ':';
             itocstrCStyle(tempConfig.argResIds[k], numBuf, 21);
             metadata += numBuf;
@@ -1118,7 +1118,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
             metadata += ':';
             const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.argType)];
             if (tp.kindOfType == KT_UNKNOWN)
-                throw Exception("Type not supported!");
+                throw BinGenException("Type not supported!");
             // type size is aligned (fix for 3 length vectors)
             const cxuint typeSize =
                 cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*std::max(cxbyte(4), tp.elemSize);
@@ -1599,7 +1599,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
     const bool isOlderThan1348 = driverVersion < 134805;
     /* checking input */
     if (input->deviceType > GPUDeviceType::GPUDEVICE_MAX)
-        throw Exception("Unknown GPU device type");
+        throw BinGenException("Unknown GPU device type");
     
     Array<TempAmdKernelConfig> tempAmdKernelConfigs(kernelsNum);
     prepareTempConfigs(driverVersion, input, tempAmdKernelConfigs);
@@ -1608,7 +1608,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
     std::unique_ptr<ElfBinaryGen64> elfBinGen64;
     
     if (gpuDeviceCodeTable[cxuint(input->deviceType)] == 0xffff)
-        throw Exception("Unsupported GPU device type by OpenCL 1.2 binary format");
+        throw BinGenException("Unsupported GPU device type by OpenCL 1.2 binary format");
     
     if (input->is64Bit)
         elfBinGen64.reset(new ElfBinaryGen64({ 0, 0, ELFOSABI_SYSV, 0, ET_EXEC, 
@@ -1657,7 +1657,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
                         uavsNum++;
                         writeOnlyImages++;
                         if (writeOnlyImages > 8)
-                            throw Exception("Too many write only images");
+                            throw BinGenException("Too many write only images");
                     }
                 }
                 else if (arg.argType == KernelArgType::POINTER)
@@ -1759,7 +1759,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
         
         const uint64_t innerBinSize = kelfBinGen.countSize();
         if (innerBinSize > UINT32_MAX)
-            throw Exception("Inner binary size is too big!");
+            throw BinGenException("Inner binary size is too big!");
         allInnerBinSize += tempAmdKernelDatas[i].innerBinSize = innerBinSize;
         
         tempAmdKernelDatas[i].calEncEntry =
@@ -1793,7 +1793,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
         !input->is64Bit &&
 #endif
         binarySize > UINT32_MAX)
-        throw Exception("Binary size is too big!");
+        throw BinGenException("Binary size is too big!");
     /****
      * prepare for write binary to output
      ****/

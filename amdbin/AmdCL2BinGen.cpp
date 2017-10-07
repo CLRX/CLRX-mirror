@@ -426,17 +426,17 @@ static void prepareKernelTempData(const AmdCL2Input* input,
         const AmdCL2KernelInput& kernel = input->kernels[i];
         TempAmdCL2KernelData& tempData = tempDatas[i];
         if (newBinaries && (kernel.isaMetadataSize!=0 || kernel.isaMetadata!=nullptr))
-            throw Exception("ISA metadata allowed for old driver binaries");
+            throw BinGenException("ISA metadata allowed for old driver binaries");
         if (newBinaries && (kernel.stubSize!=0 || kernel.stub!=nullptr))
-            throw Exception("Kernel stub allowed for old driver binaries");
+            throw BinGenException("Kernel stub allowed for old driver binaries");
         /* check relocations */
         if (newBinaries)
             for (const AmdCL2RelInput& rel: kernel.relocations)
             {
                 if (rel.type > RELTYPE_HIGH_32BIT || rel.symbol > 2)
-                    throw Exception("Wrong relocation symbol or type");
+                    throw BinGenException("Wrong relocation symbol or type");
                 if (rel.offset+4 > kernel.codeSize)
-                    throw Exception("Relocation offset outside code size");
+                    throw BinGenException("Relocation offset outside code size");
             }
         
         if (!kernel.useConfig)
@@ -504,9 +504,9 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                     if (inarg.argType == KernelArgType::SAMPLER)
                     {
                         if (inarg.resId >= 16)
-                            throw Exception("SamplerId out of range!");
+                            throw BinGenException("SamplerId out of range!");
                         if (samplerMask[inarg.resId])
-                            throw Exception("SamplerId already used!");
+                            throw BinGenException("SamplerId already used!");
                         samplerMask.set(inarg.resId);
                         tempData.argResIds[k] = inarg.resId;
                     }
@@ -517,18 +517,18 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                         if (imgAccess == KARG_PTR_READ_ONLY)
                         {
                             if (inarg.resId >= 128)
-                                throw Exception("RdOnlyImgId out of range!");
+                                throw BinGenException("RdOnlyImgId out of range!");
                             if (imgRoMask[inarg.resId])
-                                throw Exception("RdOnlyImgId already used!");
+                                throw BinGenException("RdOnlyImgId already used!");
                             imgRoMask.set(inarg.resId);
                             tempData.argResIds[k] = inarg.resId;
                         }
                         else if (imgAccess == KARG_PTR_WRITE_ONLY)
                         {
                             if (inarg.resId >= 64)
-                                throw Exception("WrOnlyImgId out of range!");
+                                throw BinGenException("WrOnlyImgId out of range!");
                             if (imgWoMask[inarg.resId])
-                                throw Exception("WrOnlyImgId already used!");
+                                throw BinGenException("WrOnlyImgId already used!");
                             imgWoMask.set(inarg.resId);
                             tempData.argResIds[k] = inarg.resId;
                         }
@@ -536,9 +536,9 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                         {
                             // read-write images
                             if (inarg.resId >= 64)
-                                throw Exception("RdWrImgId out of range!");
+                                throw BinGenException("RdWrImgId out of range!");
                             if (imgRWMask[inarg.resId])
-                                throw Exception("RdWrImgId already used!");
+                                throw BinGenException("RdWrImgId already used!");
                             imgRWMask.set(inarg.resId);
                             tempData.argResIds[k] = inarg.resId;
                         }
@@ -561,7 +561,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                         for (; samplerCount < 16 && samplerMask[samplerCount];
                              samplerCount++);
                         if (samplerCount == 16)
-                            throw Exception("SamplerId out of range!");
+                            throw BinGenException("SamplerId out of range!");
                         tempData.argResIds[k] = samplerCount++;
                     }
                     else if (isKernelArgImage(inarg.argType))
@@ -572,21 +572,21 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                         {
                             for (; imgRoCount < 128 && imgRoMask[imgRoCount]; imgRoCount++);
                             if (imgRoCount == 128)
-                                throw Exception("RdOnlyImgId out of range!");
+                                throw BinGenException("RdOnlyImgId out of range!");
                             tempData.argResIds[k] = imgRoCount++;
                         }
                         else if (imgAccess == KARG_PTR_WRITE_ONLY)
                         {
                             for (; imgWoCount < 64 && imgWoMask[imgWoCount]; imgWoCount++);
                             if (imgWoCount == 64)
-                                throw Exception("WrOnlyImgId out of range!");
+                                throw BinGenException("WrOnlyImgId out of range!");
                             tempData.argResIds[k] = imgWoCount++;
                         }
                         else // read-write images
                         {
                             for (; imgRWCount < 64 && imgRWMask[imgRWCount]; imgRWCount++);
                             if (imgRWCount == 128)
-                                throw Exception("RdWrImgId out of range!");
+                                throw BinGenException("RdWrImgId out of range!");
                             tempData.argResIds[k] = imgRWCount++;
                         }
                     }
@@ -596,7 +596,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
             // check sampler list
             for (cxuint sampler: kernel.config.samplers)
                 if (sampler >= samplersNum)
-                    throw Exception("SamplerId out of range");
+                    throw BinGenException("SamplerId out of range");
             
             tempData.metadataSize = out;
             tempData.setupSize = 256;
@@ -2055,7 +2055,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
     if (arch == GPUArchitecture::GCN1_0)
-        throw Exception("OpenCL 2.0 supported only for GCN1.1 or later");
+        throw BinGenException("OpenCL 2.0 supported only for GCN1.1 or later");
     
     const bool is16_3Ver = (input->driverVersion>=200406);
     AMDGPUArchVersion amdGpuArchValues = getGPUArchVersion(input->deviceType,
@@ -2070,27 +2070,27 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         amdGpuArchValues.stepping = input->archStepping;
     
     if ((hasGlobalData || hasRWData || hasSamplers) && !newBinaries)
-        throw Exception("Old driver binaries doesn't support "
+        throw BinGenException("Old driver binaries doesn't support "
                         "global/atomic data or samplers");
     
     if (newBinaries)
     {
         if (!hasGlobalData && hasSamplers)
-            throw Exception("Global data must be defined if samplers present");
+            throw BinGenException("Global data must be defined if samplers present");
         // check sampler offset range
         for (size_t sampOffset: input->samplerOffsets)
             if (sampOffset+8 > input->globalDataSize)
-                throw Exception("Sampler offset outside global data");
+                throw BinGenException("Sampler offset outside global data");
     }
     /* check samplers */
     const cxuint samplersNum = (input->samplerConfig) ? input->samplers.size() :
                 (input->samplerInitSize>>3);
     if (!input->samplerOffsets.empty() && input->samplerOffsets.size() != samplersNum)
-        throw Exception("SamplerOffset number doesn't match to samplers number");
+        throw BinGenException("SamplerOffset number doesn't match to samplers number");
     
     for (size_t sampOffset: input->samplerOffsets)
         if ((sampOffset&7) != 0 && sampOffset >= input->globalDataSize)
-            throw Exception("Wrong sampler offset (out of range of unaligned)");
+            throw BinGenException("Wrong sampler offset (out of range of unaligned)");
     
     const bool gpuProDriver = (input->driverVersion == 203603 ||
             input->driverVersion == 207903);
@@ -2107,7 +2107,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     
     // if GPU type is not supported by driver version
     if (deviceCodeTable[cxuint(input->deviceType)] == UINT_MAX)
-        throw Exception("Unsupported GPU device type by driver version");
+        throw BinGenException("Unsupported GPU device type by driver version");
     
     std::unique_ptr<ElfBinaryGen32> elfBinGen32;
     std::unique_ptr<ElfBinaryGen64> elfBinGen64;
@@ -2197,7 +2197,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         for (const AmdCL2KernelInput& kernel: input->kernels)
             for (const AmdCL2RelInput& rel: kernel.relocations)
                 if (rel.offset >= kernel.codeSize)
-                    throw Exception("Kernel text relocation offset outside kernel code");
+                    throw BinGenException("Kernel text relocation offset outside kernel code");
         
         std::fill(innerBinSectionTable,
                   innerBinSectionTable+innerBinSectonTableLen, SHN_UNDEF);
@@ -2461,7 +2461,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         !input->is64Bit &&
 #endif
         binarySize > UINT32_MAX)
-        throw Exception("Binary size is too big!");
+        throw BinGenException("Binary size is too big!");
     /****
      * prepare for write binary to output
      ****/

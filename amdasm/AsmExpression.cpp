@@ -116,7 +116,8 @@ bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                  uint64_t& outValue, cxuint& outSectionId) const
 {
     if (symOccursNum != 0)
-        throw Exception("Expression can't be evaluated if symbols still are unresolved!");
+        throw AsmException("Expression can't be evaluated if "
+                    "symbols still are unresolved!");
     
     bool failed = false;
     uint64_t value = 0; // by default is zero

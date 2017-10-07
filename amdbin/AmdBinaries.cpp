@@ -175,11 +175,11 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const CString& _kernelName,
         const size_t encTableOffset = ULEV(ephdr.p_offset);
         const size_t encTableSize = ULEV(ephdr.p_filesz);
         if (ULEV(ephdr.p_type) != 0x70000002)
-            throw Exception("Missing encodings table");
+            throw BinException("Missing encodings table");
         if (encTableSize%sizeof(CALEncodingEntry) != 0)
-            throw Exception("Wrong size of encodings table");
+            throw BinException("Wrong size of encodings table");
         if (usumGt(encTableOffset, encTableSize, binaryCodeSize))
-            throw Exception("Offset+Size of encodings table out of range");
+            throw BinException("Offset+Size of encodings table out of range");
         
         encodingEntriesNum = encTableSize/sizeof(CALEncodingEntry);
         encodingEntries = reinterpret_cast<CALEncodingEntry*>(
@@ -191,9 +191,9 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const CString& _kernelName,
             const size_t offset = ULEV(entry.offset);
             const size_t size = ULEV(entry.size);
             if (offset >= binaryCodeSize)
-                throw Exception("Encoding entry offset out of range");
+                throw BinException("Encoding entry offset out of range");
             if (usumGt(offset, size, binaryCodeSize))
-                throw Exception("Encoding entry offset+size out of range");
+                throw BinException("Encoding entry offset+size out of range");
         }
         
         cxuint encodingIndex = 0;
@@ -210,9 +210,9 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const CString& _kernelName,
             const size_t size = ULEV(phdr.p_filesz);
             // check offset and ranges of program header
             if (offset < encEntryOffset)
-                throw Exception("Kernel program offset out of encoding");
+                throw BinException("Kernel program offset out of encoding");
             if (usumGt(offset, size, encEntryOffset+encEntrySize))
-                throw Exception("Kernel program offset+size out of encoding");
+                throw BinException("Kernel program offset+size out of encoding");
             
             if ((creationFlags & AMDBIN_CREATE_CALNOTES) != 0 &&
                         ULEV(phdr.p_type) == PT_NOTE)
@@ -225,12 +225,12 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const CString& _kernelName,
                     const CALNoteHeader& nhdr =
                         *reinterpret_cast<const CALNoteHeader*>(binaryCode+offset+pos);
                     if (ULEV(nhdr.nameSize) != 8)
-                        throw Exception("Wrong name size in Note header!");
+                        throw BinException("Wrong name size in Note header!");
                     if (::memcmp(nhdr.name, "ATI CAL", 8) != 0)
-                        throw Exception("Wrong name in Note header!");
+                        throw BinException("Wrong name in Note header!");
                     if (usumGt(uint32_t(pos + sizeof(CALNoteHeader)),
                                 ULEV(nhdr.descSize), size))
-                        throw Exception("CAL Note desc size out of range");
+                        throw BinException("CAL Note desc size out of range");
                     pos += sizeof(CALNoteHeader) + ULEV(nhdr.descSize);
                 }
                 
@@ -253,7 +253,7 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const CString& _kernelName,
                 encodingIndex++;
                 // if program headers table is not exhausted, but no encoding entries
                 if (i+1 < getProgramHeadersNum() && encodingIndex >= encodingEntriesNum)
-                    throw Exception("ProgramHeaders out of encodings!");
+                    throw BinException("ProgramHeaders out of encodings!");
             }
         }
     }
@@ -310,7 +310,7 @@ cxuint AmdInnerGPUBinary32::findCALEncodingEntryIndex(GPUDeviceType deviceType) 
             break; // if found
     }
     if (encEntryIndex == encodingEntriesNum)
-        throw Exception("Can't find suitable CALEncodingEntry!");
+        throw BinException("Can't find suitable CALEncodingEntry!");
     return encEntryIndex;
 }
 
@@ -328,7 +328,7 @@ static size_t skipStructureArgX86(const ArgSym* argDescTable,
             nestedLevel--;
     } while (nestedLevel != 0 && pos < argDescsNum);
     if (nestedLevel != 0)
-        throw Exception("Unfinished kernel argument structure");
+        throw BinException("Unfinished kernel argument structure");
     return pos;
 }
 
@@ -418,27 +418,27 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                     const char* outend;
                     index = cstrtovCStyle<size_t>(symName+4, nullptr, outend);
                     if (*outend != 0)
-                        throw Exception("Garbages in .str symbol name!");
+                        throw BinException("Garbages in .str symbol name!");
                 }
                 if (argTypeNamesSyms.size() <= index)
                     argTypeNamesSyms.resize(index+1);
                 
                 const typename Types::Sym& sym = elf.getSymbol(i);
                 if (ULEV(sym.st_shndx) >= elf.getSectionHeadersNum())
-                    throw Exception("ArgTypeNameSymStr section index out of range");
+                    throw BinException("ArgTypeNameSymStr section index out of range");
                 const typename Types::Shdr& secHdr = 
                         elf.getSectionHeader(ULEV(sym.st_shndx)); // from symbol
                 
                 if (ULEV(sym.st_value) >= ULEV(secHdr.sh_size))
-                    throw Exception("ArgTypeNameSymStr value out of range");
+                    throw BinException("ArgTypeNameSymStr value out of range");
                 if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(secHdr.sh_size)))
-                    throw Exception("ArgTypeNameSymStr value+size out of range");
+                    throw BinException("ArgTypeNameSymStr value+size out of range");
                 
                 argTypeNamesSyms[index] = ULEV(secHdr.sh_offset) + ULEV(sym.st_value);
                 if (ULEV(sym.st_shndx) == rodataIndex)
                 {
                     if (ULEV(sym.st_value) >= unfinishedRegion)
-                        throw Exception("Arg name/type is unfinished!");
+                        throw BinException("Arg name/type is unfinished!");
                 }
                 else // is not roData
                 {
@@ -447,7 +447,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                                 binaryCode + ULEV(secHdr.sh_offset), ULEV(secHdr.sh_size));
                     
                     if (ULEV(sym.st_value) >= unfinishedRegionArgNameSym)
-                        throw Exception("Arg name/type is unfinished!");
+                        throw BinException("Arg name/type is unfinished!");
                 }
                 continue;
             }
@@ -468,7 +468,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
         const typename Types::Sym& sym = (!foundInStaticSymbols)?elf.getDynSymbol(i):
                 elf.getSymbol(i);
         if (ULEV(sym.st_shndx) >= elf.getSectionHeadersNum())
-            throw Exception("Metadata section index out of range");
+            throw BinException("Metadata section index out of range");
         
         const typename Types::Shdr& dataHdr = 
                 elf.getSectionHeader(ULEV(sym.st_shndx)); // from symbol
@@ -478,7 +478,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
         
         if (fileOffset < ULEV(dataHdr.sh_offset) ||
             fileOffset >= ULEV(dataHdr.sh_offset) + ULEV(dataHdr.sh_size))
-            throw Exception("File offset of kernelMetadata out of range!");
+            throw BinException("File offset of kernelMetadata out of range!");
         const cxbyte* data = binaryCode + fileOffset;
         
         /* parse number of args */
@@ -513,7 +513,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             const typename Types::KernelArgSym& argTypeSym = argDescTable[ai];
             
             if (realArgsNum >= kernelInfo.argInfos.size())
-                throw Exception("Kernel ArgInfo index out of range");
+                throw BinException("Kernel ArgInfo index out of range");
             AmdKernelArg& karg = kernelInfo.argInfos[realArgsNum++];
             const size_t rodataHdrOffset = ULEV(rodataHdr.sh_offset);
             const size_t rodataHdrSize = ULEV(rodataHdr.sh_size);
@@ -524,10 +524,10 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             {
                 if (argNameSym.getNameOffset() < rodataHdrOffset ||
                     argNameSym.getNameOffset() >= rodataHdrOffset+rodataHdrSize)
-                    throw Exception("Kernel arg name offset out of range!");
+                    throw BinException("Kernel arg name offset out of range!");
                 
                 if (argNameSym.getNameOffset()-rodataHdrOffset >= unfinishedRegion)
-                    throw Exception("Arg name is unfinished!");
+                    throw BinException("Arg name is unfinished!");
                 
                 karg.argName = reinterpret_cast<const char*>(
                     binaryCode + argNameSym.getNameOffset());
@@ -535,10 +535,10 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             else /* otherwise get from our table */
             {
                 if (argNameTypeNameIdx >= argTypeNamesSyms.size())
-                    throw Exception("ArgName sym index out of range");
+                    throw BinException("ArgName sym index out of range");
                 const typename Types::Size value = argTypeNamesSyms[argNameTypeNameIdx++];
                 if (value >= elf.getSize())
-                    throw Exception("ArgName sym offset out of range");
+                    throw BinException("ArgName sym offset out of range");
                 
                 karg.argName = reinterpret_cast<const char*>(binaryCode + value);
             }
@@ -548,10 +548,10 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             {
                 if (argTypeSym.getNameOffset() < rodataHdrOffset ||
                     argTypeSym.getNameOffset() >= rodataHdrOffset+rodataHdrSize)
-                    throw Exception("Kernel arg type offset out of range!");
+                    throw BinException("Kernel arg type offset out of range!");
                 
                 if (argTypeSym.getNameOffset()-rodataHdrOffset >= unfinishedRegion)
-                    throw Exception("Type name is unfinished!");
+                    throw BinException("Type name is unfinished!");
                 
                 karg.typeName = reinterpret_cast<const char*>(
                     binaryCode + argTypeSym.getNameOffset());
@@ -559,10 +559,10 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             else /* otherwise get from our table */
             {
                 if (argNameTypeNameIdx >= argTypeNamesSyms.size())
-                    throw Exception("ArgType sym index out of range");
+                    throw BinException("ArgType sym index out of range");
                 const typename Types::Size value = argTypeNamesSyms[argNameTypeNameIdx++];
                 if (value >= elf.getSize())
-                    throw Exception("ArgType sym offset out of range");
+                    throw BinException("ArgType sym offset out of range");
                 
                 karg.typeName = reinterpret_cast<const char*>(binaryCode + value);
             }
@@ -570,7 +570,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             if (argType != 0x28)
             {
                 if (argType > 0x26)
-                    throw Exception("Unknown kernel arg type");
+                    throw BinException("Unknown kernel arg type");
                 karg.argType = x86ArgTypeTable[argType];
                 if (karg.argType == KernelArgType::POINTER &&
                     (ULEV(argNameSym.ptrAccess) &
@@ -621,7 +621,7 @@ const KernelInfo& AmdMainBinaryBase::getKernelInfo(const char* name) const
     KernelInfoMap::const_iterator it = binaryMapFind(
         kernelInfosMap.begin(), kernelInfosMap.end(), name);
     if (it == kernelInfosMap.end())
-        throw Exception("Can't find kernel name");
+        throw BinException("Can't find kernel name");
     return kernelInfos[it->second];
 }
 
@@ -1139,19 +1139,19 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
             const typename Types::Sym& sym = mainElf.getSymbol(i);
             compileOptionShIndex = ULEV(sym.st_shndx);
             if (compileOptionShIndex >= mainElf.getSectionHeadersNum())
-                throw Exception("CompileOptions section index out of range");
+                throw BinException("CompileOptions section index out of range");
             const typename Types::Shdr& shdr =
                     mainElf.getSectionHeader(compileOptionShIndex);
             
             char* sectionContent = reinterpret_cast<char*>(
                         mainElf.getSectionContent(compileOptionShIndex));
             if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
-                throw Exception("CompileOptions value out of range");
+                throw BinException("CompileOptions value out of range");
             // compileOptionsEnd used later for setting offset for driver info
             // compile options precedes driver info
             compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
             if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
-                throw Exception("CompileOptions value+size out of range");
+                throw BinException("CompileOptions value+size out of range");
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
         }
         else if (::strcmp(symName, "__OpenCL_0_global") == 0 ||
@@ -1162,9 +1162,9 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
             const uint16_t shindex = ULEV(sym.st_shndx);
             const typename Types::Shdr& shdr = mainElf.getSectionHeader(shindex);
             if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
-                throw Exception("globalData value out of range");
+                throw BinException("globalData value out of range");
             if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
-                throw Exception("globalData value+size out of range");
+                throw BinException("globalData value+size out of range");
             globalDataSize = ULEV(sym.st_size);
             globalData = mainElf.getSectionContent(shindex) + ULEV(sym.st_value);
         }
@@ -1213,9 +1213,9 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
             const typename Types::Word symvalue = ULEV(sym.st_value);
             const typename Types::Word symsize = ULEV(sym.st_size);
             if (symvalue > ULEV(textHdr.sh_size))
-                throw Exception("Inner binary offset out of range!");
+                throw BinException("Inner binary offset out of range!");
             if (usumGt(symvalue, symsize, ULEV(textHdr.sh_size)))
-                throw Exception("Inner binary offset+size out of range!");
+                throw BinException("Inner binary offset+size out of range!");
             
             innerBinaries[ki++] = AmdInnerGPUBinary32(CString(symName+9, len-16),
                 symsize, textContent+symvalue,
@@ -1242,7 +1242,7 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
             const typename Types::Sym& sym = mainElf.getSymbol(it);
             const char* symName = mainElf.getSymbolName(it);
             if (ULEV(sym.st_shndx) >= mainElf.getSectionHeadersNum())
-                throw Exception("Metadata section index out of range");
+                throw BinException("Metadata section index out of range");
             
             const typename Types::Shdr& rodataHdr =
                     mainElf.getSectionHeader(ULEV(sym.st_shndx));
@@ -1251,9 +1251,9 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
             const typename Types::Word symvalue = ULEV(sym.st_value);
             const typename Types::Word symsize = ULEV(sym.st_size);
             if (symvalue > ULEV(rodataHdr.sh_size))
-                throw Exception("Metadata offset out of range");
+                throw BinException("Metadata offset out of range");
             if (usumGt(symvalue, symsize, ULEV(rodataHdr.sh_size)))
-                throw Exception("Metadata offset+size out of range");
+                throw BinException("Metadata offset+size out of range");
             
             // parse AMDGPU kernel metadata
             parseAmdGpuKernelMetadata(symName, symsize,
@@ -1284,7 +1284,7 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
             const char* symName = mainElf.getSymbolName(it);
             const size_t symNameLen = ::strlen(symName);
             if (ULEV(sym.st_shndx) >= mainElf.getSectionHeadersNum())
-                throw Exception("KernelHeader section index out of range");
+                throw BinException("KernelHeader section index out of range");
             
             const typename Types::Shdr& rodataHdr =
                     mainElf.getSectionHeader(ULEV(sym.st_shndx));
@@ -1293,9 +1293,9 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
             const typename Types::Word symvalue = ULEV(sym.st_value);
             const typename Types::Word symsize = ULEV(sym.st_size);
             if (symvalue > ULEV(rodataHdr.sh_size))
-                throw Exception("KernelHeader offset out of range");
+                throw BinException("KernelHeader offset out of range");
             if (usumGt(symvalue, symsize, ULEV(rodataHdr.sh_size)))
-                throw Exception("KernelHeader offset+size out of range");
+                throw BinException("KernelHeader offset+size out of range");
             
             // kernel name preceded by '__OpenCL_' and precedes '_kernel'
             kernelHeaders[ki].kernelName.assign(symName + 9, symName + symNameLen-7);
@@ -1319,7 +1319,7 @@ const AmdInnerGPUBinary32& AmdMainGPUBinaryBase::getInnerBinary(const char* name
     InnerBinaryMap::const_iterator it = binaryMapFind(innerBinaryMap.begin(),
                   innerBinaryMap.end(), name);
     if (it == innerBinaryMap.end())
-        throw Exception("Can't find inner binary");
+        throw BinException("Can't find inner binary");
     return innerBinaries[it->second];
 }
 
@@ -1329,7 +1329,7 @@ const AmdGPUKernelHeader& AmdMainGPUBinaryBase::getKernelHeaderEntry(
     KernelHeaderMap::const_iterator it = binaryMapFind(kernelHeaderMap.begin(),
                    kernelHeaderMap.end(), name);
     if (it == kernelHeaderMap.end())
-        throw Exception("Can't find kernel header");
+        throw BinException("Can't find kernel header");
     return kernelHeaders[it->second];
 }
 
@@ -1382,7 +1382,7 @@ static GPUDeviceType findGPUDeviceType(uint16_t elfMachine)
         [] (const GPUDeviceCodeEntry& l, const GPUDeviceCodeEntry& r) -> bool
         { return l.elfMachine < r.elfMachine;}) - gpuDeviceCodeTable;
     if (gpuDeviceCodeTableSize == index)
-        throw Exception("Can't determine GPU device type");
+        throw BinException("Can't determine GPU device type");
     return gpuDeviceCodeTable[index].deviceType;
 }
 
@@ -1452,17 +1452,17 @@ AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode
                 const Elf32_Sym& sym = getSymbol(i);
                 compileOptionShIndex = ULEV(sym.st_shndx);
                 if (compileOptionShIndex >= getSectionHeadersNum())
-                    throw Exception("CompileOptions section index out of range");
+                    throw BinException("CompileOptions section index out of range");
                 const Elf32_Shdr& shdr = getSectionHeader(compileOptionShIndex);
                 const char* sectionContent = reinterpret_cast<char*>(
                             getSectionContent(compileOptionShIndex));
                 if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
-                    throw Exception("CompileOptions value out of range");
+                    throw BinException("CompileOptions value out of range");
                 // compileOptionsEnd used later for setting offset for driver info
                 // compile options precedes driver info
                 compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
                 if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
-                    throw Exception("CompileOptions value+size out of range");
+                    throw BinException("CompileOptions value+size out of range");
                 compileOptions.assign(sectionContent + ULEV(sym.st_value),
                                       ULEV(sym.st_size));
             }
@@ -1536,17 +1536,17 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode
                 const Elf64_Sym& sym = getSymbol(i);
                 compileOptionShIndex = ULEV(sym.st_shndx);
                 if (compileOptionShIndex >= getSectionHeadersNum())
-                    throw Exception("CompileOptions section index out of range");
+                    throw BinException("CompileOptions section index out of range");
                 const Elf64_Shdr& shdr = getSectionHeader(compileOptionShIndex);
                 const char* sectionContent = reinterpret_cast<char*>(
                             getSectionContent(compileOptionShIndex));
                 if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
-                    throw Exception("CompileOptions value out of range");
+                    throw BinException("CompileOptions value out of range");
                 // compileOptionsEnd used later for setting offset for driver info
                 // compile options precedes driver info
                 compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
                 if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
-                    throw Exception("CompileOptions value+size out of range");
+                    throw BinException("CompileOptions value+size out of range");
                 compileOptions.assign(sectionContent + ULEV(sym.st_value),
                                       ULEV(sym.st_size));
             }
@@ -1606,9 +1606,9 @@ AmdMainBinaryBase* CLRX::createAmdBinaryFromCode(size_t binaryCodeSize, cxbyte* 
     // checking whether is AMDOCL binary (little endian and ELF magic)
     if (binaryCodeSize < sizeof(Elf32_Ehdr) ||
         ULEV(*reinterpret_cast<const uint32_t*>(binaryCode)) != elfMagicValue)
-        throw Exception("This is not ELF binary");
+        throw BinException("This is not ELF binary");
     if (binaryCode[EI_DATA] != ELFDATA2LSB)
-        throw Exception("Other than little-endian binaries are not supported!");
+        throw BinException("Other than little-endian binaries are not supported!");
     
     // checking binary class
     if (binaryCode[EI_CLASS] == ELFCLASS32)
@@ -1626,5 +1626,5 @@ AmdMainBinaryBase* CLRX::createAmdBinaryFromCode(size_t binaryCodeSize, cxbyte* 
         return new AmdMainX86Binary64(binaryCodeSize, binaryCode, creationFlags);
     }
     else // fatal error
-        throw Exception("Unsupported ELF class");
+        throw BinException("Unsupported ELF class");
 }

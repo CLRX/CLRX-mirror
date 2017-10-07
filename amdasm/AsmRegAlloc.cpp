@@ -76,9 +76,9 @@ void ISAUsageHandler::putSpace(size_t offset)
         // useReg immediately before instruction regusages
         size_t defaultInstrSize = (!useRegMode ? this->defaultInstrSize : 0);
         if (lastOffset > offset)
-            throw Exception("Offset before previous instruction");
+            throw AsmException("Offset before previous instruction");
         if (!instrStruct.empty() && offset - lastOffset < defaultInstrSize)
-            throw Exception("Offset between previous instruction");
+            throw AsmException("Offset between previous instruction");
         size_t toSkip = !instrStruct.empty() ? 
                 offset - lastOffset - defaultInstrSize : offset;
         while (toSkip > 0)
@@ -169,7 +169,7 @@ void ISAUsageHandler::flush()
 AsmRegVarUsage ISAUsageHandler::nextUsage()
 {
     if (!isNext)
-        throw Exception("No reg usage in this code");
+        throw AsmException("No reg usage in this code");
     AsmRegVarUsage rvu;
     // get regvarusage
     bool lastRegUsage = false;
@@ -1871,7 +1871,7 @@ void AsmRegAllocator::colorInterferenceGraph()
             if (color==colorsNum) // add new color if needed
             {
                 if (colorsNum >= maxColorsNum)
-                    throw Exception("Too many register is needed");
+                    throw AsmException("Too many register is needed");
                 colorsNum++;
             }
             
