@@ -1,6 +1,24 @@
 
 Change Log
 
+CLRadeonExtender 0.1.5r1:
+
+* add detection of OpenGL while configuring a building scripts
+* add more comments in the source code
+* fixed hanging when ROCm code have hundreds or more kernels
+* parameter in modifier can have any value
+* add 'get_version' pseudo-operation
+* add oldModParam mode (old modifier parameter's policy)
+* fixes for ROCm disassembler module
+* fixes for Gallium binary reader (accept new binaries with many kernels)
+* added support for Mesa3D 17.2.x
+* added Mesa3D/Gallium device names for AMD Polaris
+* add new exceptions to code (to distinguish type of exception)
+* fixed position in disassembler code in comments (mainly for Gallium/ROCm)
+* add CLRXCLHelper library to facilitate running assembler code on the OpenCL
+* move some GPU architecture versions tables to GPUId
+* add new testcase GPUId
+
 CLRadeonExtender 0.1.5:
 
 * ignore case in an access qualifier name's (Amd and AmdCL2)
