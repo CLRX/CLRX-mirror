@@ -317,8 +317,30 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags)
     }
     char* devNameEnd = devNamePtr;
     while (isAlnum(*devNameEnd)) devNameEnd++;
+    const char oldChar = *devNameEnd; // for revert changes
     *devNameEnd = 0; // finish at first word
-    const GPUDeviceType devType = getGPUDeviceTypeFromName(devNamePtr);
+    GPUDeviceType devType = GPUDeviceType::CAPE_VERDE;
+    try
+    { devType = getGPUDeviceTypeFromName(devNamePtr); }
+    catch(const GPUIdException& ex)
+    {
+        // yet another fallback for gallium device name
+        if (binaryFormat==BinaryFormat::GALLIUM)
+        {
+            *devNameEnd = oldChar;
+            char* sptr = ::strstr(sdeviceName, "(");
+            if (sptr == nullptr)
+                throw; // nothing found
+            devNamePtr = sptr+1;
+            // try again
+            devNameEnd = devNamePtr;
+            while (isAlnum(*devNameEnd)) devNameEnd++;
+            *devNameEnd = 0; // finish at first word
+            devType = getGPUDeviceTypeFromName(devNamePtr);
+        }
+        else
+            throw;
+    }
     /* change binary format to AMDCL2 if default for this driver version and 
      * architecture >= GCN 1.1 */
     bool useLegacy = false;
