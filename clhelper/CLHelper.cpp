@@ -328,7 +328,7 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags)
         if (binaryFormat==BinaryFormat::GALLIUM)
         {
             *devNameEnd = oldChar;
-            char* sptr = ::strstr(sdeviceName, "(");
+            char* sptr = ::strchr(sdeviceName, '(');
             if (sptr == nullptr)
                 throw; // nothing found
             devNamePtr = sptr+1;
