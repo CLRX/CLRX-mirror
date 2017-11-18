@@ -317,7 +317,7 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags)
     }
     char* devNameEnd = devNamePtr;
     while (isAlnum(*devNameEnd)) devNameEnd++;
-    const char oldChar = *devNameEnd; // for revert changes
+    char oldChar = *devNameEnd; // for revert changes
     *devNameEnd = 0; // finish at first word
     GPUDeviceType devType = GPUDeviceType::CAPE_VERDE;
     try
@@ -327,16 +327,27 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags)
         // yet another fallback for gallium device name
         if (binaryFormat==BinaryFormat::GALLIUM)
         {
-            *devNameEnd = oldChar;
-            char* sptr = ::strchr(sdeviceName, '(');
-            if (sptr == nullptr)
-                throw; // nothing found
-            devNamePtr = sptr+1;
-            // try again
-            devNameEnd = devNamePtr;
-            while (isAlnum(*devNameEnd)) devNameEnd++;
-            *devNameEnd = 0; // finish at first word
-            devType = getGPUDeviceTypeFromName(devNamePtr);
+            char* sptr = sdeviceName;
+            while (true)
+            {
+                *devNameEnd = oldChar;
+                sptr = ::strchr(sptr, '(');
+                if (sptr == nullptr)
+                    throw; // nothing found
+                devNamePtr = sptr+1;
+                // try again
+                devNameEnd = devNamePtr;
+                while (isAlnum(*devNameEnd)) devNameEnd++;
+                oldChar = *devNameEnd;
+                *devNameEnd = 0; // finish at first word
+                try
+                {
+                    devType = getGPUDeviceTypeFromName(devNamePtr);
+                    break; // if found
+                }
+                catch(const GPUIdException& ex2)
+                { sptr++; /* not found skip this '(' */ }
+            }
         }
         else
             throw;
