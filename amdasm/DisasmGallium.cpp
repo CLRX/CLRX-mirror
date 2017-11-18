@@ -335,6 +335,17 @@ void CLRX::disassembleGallium(std::ostream& output,
         {
             // LLVM 4.0 - AMDHSA code
             std::vector<ROCmDisasmRegionInput> regions(galliumInput->kernels.size());
+            Array<size_t> sortedIndices(galliumInput->kernels.size());
+            for (size_t i = 0; i < sortedIndices.size(); i++)
+                sortedIndices[i] = i;
+            // sort by offset (sortedRegions is indices of sorted regions)
+            std::sort(sortedIndices.begin(), sortedIndices.end(), [&galliumInput]
+                    (size_t a, size_t b)
+                    {
+                        return galliumInput->kernels[a].offset <
+                                galliumInput->kernels[b].offset;
+                    });
+            
             // preparing ROCMDIsasm region inputs for dissasemblying in AMDHSA form
             for (size_t i = 0; i < galliumInput->kernels.size(); i++)
             {
@@ -342,10 +353,18 @@ void CLRX::disassembleGallium(std::ostream& output,
                 ROCmDisasmRegionInput& region = regions[i];
                 region.regionName = kernel.kernelName;
                 region.offset = kernel.offset;
-                const size_t end = (i+1 < galliumInput->kernels.size()) ?
-                        galliumInput->kernels[i+1].offset : galliumInput->codeSize;
-                region.size = end - kernel.offset;
                 region.type = ROCmRegionType::KERNEL;
+            }
+            
+            // set correct region size using sorted indices by region offsets
+            for (size_t i = 0; i < sortedIndices.size(); i++)
+            {
+                const size_t index = sortedIndices[i];
+                const size_t end = (i+1 < galliumInput->kernels.size()) ?
+                        galliumInput->kernels[sortedIndices[i+1]].offset :
+                        galliumInput->codeSize;
+                ROCmDisasmRegionInput& region = regions[index];
+                region.size = end - galliumInput->kernels[index].offset;
             }
             
             disassembleAMDHSACode(output, regions, galliumInput->codeSize,
