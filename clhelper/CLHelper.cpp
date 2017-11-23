@@ -381,6 +381,7 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags)
     // base OpenCL options for program
     asmSetup.options = (binaryFormat==BinaryFormat::AMDCL2) ? "-cl-std=CL2.0" :
                (useLegacy ? "-legacy" : "");
+    asmSetup.asmFlags = 0;
     return asmSetup;
 }
 
@@ -398,7 +399,8 @@ Array<cxbyte> CLRX::createBinaryForOpenCL(const CLAsmSetup& asmSetup,
     const size_t scodeLen = (sourceCodeLen == 0) ? ::strlen(sourceCode) : sourceCodeLen;
     ArrayIStream astream(scodeLen, sourceCode);
     // by default assembler put logs to stderr
-    Assembler assembler("", astream, 0, asmSetup.binaryFormat, asmSetup.deviceType);
+    Assembler assembler("", astream, asmSetup.asmFlags, asmSetup.binaryFormat,
+                        asmSetup.deviceType);
     assembler.set64Bit(asmSetup.is64Bit);
     // setting version (LLVM and driverVersion)
     const BinaryFormat binaryFormat = asmSetup.binaryFormat;

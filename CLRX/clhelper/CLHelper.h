@@ -81,6 +81,7 @@ struct CLAsmSetup
     cxuint llvmVersion;     ///< LLVM version
     bool is64Bit;        ///< if binary is 64-bit
     CString options; ///< OpenCL base options
+    Flags asmFlags;     ///< assembler flags
 };
 
 /// get assembler setup(compile assembler code) binary for OpenCL device
