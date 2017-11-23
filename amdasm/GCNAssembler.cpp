@@ -1332,7 +1332,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             const char* soffsetPlace = linePtr;
             good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1,
                        GCNFIELD_SMRD_SOFFSET, false, INSTROP_SYMREGRANGE|INSTROP_READ);
-            if (good && (gcnInsn.mode & GCN_MLOAD) == 0 && soffsetReg &&
+            if (good && !isGCN14 && (gcnInsn.mode & GCN_MLOAD) == 0 && soffsetReg &&
                     !soffsetReg.isVal(124))
                 // if no M0 register
                 ASM_NOTGOOD_BY_ERROR(soffsetPlace,

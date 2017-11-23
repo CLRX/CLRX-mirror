@@ -6,11 +6,15 @@ Bits  | Name     | Description
 ------|----------|------------------------------
 0-5   | SBASE    | Number of aligned SGPR pair.
 6-12  | SDATA    | Scalar destination/data operand
+14    | SOE      | Scalar offset enable (GCN 1.4)
+15    | NV       | Non-volative (GCN 1.4)
 16    | GLC      | Operation globally coherent
 17    | IMM      | IMM indicator
 18-25 | OPCODE   | Operation code
 26-31 | ENCODING | Encoding type. Must be 0b110000
 32-51 | OFFSET   | Unsigned 20-bit byte offset or SGPR number that holds byte offset
+32-52 | OFFSET   | Unsigned 21-bit byte offset or SGPR number (byte offset) (GCN 1.4)
+57-63 | SOFFSET  | SGPR offset (only if SOE=1)
 
 Value of the IMM determines meaning of the OFFSET field:
 
@@ -34,32 +38,34 @@ is required least one instruction (vector or scalar) due to delay.
 
 List of the instructions by opcode:
 
- Opcode     | Mnemonic (GCN1.2)
-------------|--------------------------
- 0 (0x0)    | S_LOAD_DWORD
- 1 (0x1)    | S_LOAD_DWORDX2
- 2 (0x2)    | S_LOAD_DWORDX4
- 3 (0x3)    | S_LOAD_DWORDX8
- 4 (0x4)    | S_LOAD_DWORDX16
- 8 (0x8)    | S_BUFFER_LOAD_DWORD
- 9 (0x9)    | S_BUFFER_LOAD_DWORDX2
- 10 (0xa)   | S_BUFFER_LOAD_DWORDX4
- 11 (0xb)   | S_BUFFER_LOAD_DWORDX8
- 12 (0xc)   | S_BUFFER_LOAD_DWORDX16
- 16 (0x10)  | S_STORE_DWORD
- 17 (0x11)  | S_STORE_DWORDX2
- 18 (0x12)  | S_STORE_DWORDX4
- 24 (0x18)  | S_BUFFER_LOAD_DWORD
- 25 (0x19)  | S_BUFFER_LOAD_DWORDX2
- 27 (0x1a)  | S_BUFFER_LOAD_DWORDX4
- 32 (0x20)  | S_DCACHE_INV
- 33 (0x21)  | S_DCACHE_WB
- 34 (0x22)  | S_DCACHE_INV_VOL
- 35 (0x23)  | S_DCACHE_WB_VOL
- 36 (0x24)  | S_MEMTIME
- 37 (0x25)  | S_MEMREALTIME
- 38 (0x26)  | S_ATC_PROBE
- 39 (0x27)  | S_ATC_PROBE_BUFFER
+ Opcode     |GCN 1.2|GCN 1.4| Mnemonic (GCN1.2/1.4)
+------------|----------------------------------------------
+ 0 (0x0)    |   ✓   |   ✓   | S_LOAD_DWORD
+ 1 (0x1)    |   ✓   |   ✓   | S_LOAD_DWORDX2
+ 2 (0x2)    |   ✓   |   ✓   | S_LOAD_DWORDX4
+ 3 (0x3)    |   ✓   |   ✓   | S_LOAD_DWORDX8
+ 4 (0x4)    |   ✓   |   ✓   | S_LOAD_DWORDX16
+ 8 (0x8)    |   ✓   |   ✓   | S_BUFFER_LOAD_DWORD
+ 9 (0x9)    |   ✓   |   ✓   | S_BUFFER_LOAD_DWORDX2
+ 10 (0xa)   |   ✓   |   ✓   | S_BUFFER_LOAD_DWORDX4
+ 11 (0xb)   |   ✓   |   ✓   | S_BUFFER_LOAD_DWORDX8
+ 12 (0xc)   |   ✓   |   ✓   | S_BUFFER_LOAD_DWORDX16
+ 16 (0x10)  |   ✓   |   ✓   | S_STORE_DWORD
+ 17 (0x11)  |   ✓   |   ✓   | S_STORE_DWORDX2
+ 18 (0x12)  |   ✓   |   ✓   | S_STORE_DWORDX4
+ 24 (0x18)  |   ✓   |   ✓   | S_BUFFER_LOAD_DWORD
+ 25 (0x19)  |   ✓   |   ✓   | S_BUFFER_LOAD_DWORDX2
+ 27 (0x1a)  |   ✓   |   ✓   | S_BUFFER_LOAD_DWORDX4
+ 32 (0x20)  |   ✓   |   ✓   | S_DCACHE_INV
+ 33 (0x21)  |   ✓   |   ✓   | S_DCACHE_WB
+ 34 (0x22)  |   ✓   |   ✓   | S_DCACHE_INV_VOL
+ 35 (0x23)  |   ✓   |   ✓   | S_DCACHE_WB_VOL
+ 36 (0x24)  |   ✓   |   ✓   | S_MEMTIME
+ 37 (0x25)  |   ✓   |   ✓   | S_MEMREALTIME
+ 38 (0x26)  |   ✓   |   ✓   | S_ATC_PROBE
+ 39 (0x27)  |   ✓   |   ✓   | S_ATC_PROBE_BUFFER
+ 40 (0x28)  |       |   ✓   | S_DCACHE_DISCARD
+ 41 (0x29)  |       |   ✓   | S_DCACHE_DISCARD_X2
 
 ### Instruction set
 
@@ -156,6 +162,22 @@ Operation:
 for (BYTE i = 0; i < 4; i++)
     *(UINT32*)(SMEM + i*4 + (OFFSET & ~3)) = SDATA[i]
 ```
+
+#### S_DCACHE_DISCARD
+
+Opcode 40 (0x28) only for GCN 1.4  
+Syntax: S_DCACHE_DISCARD SBASE(2), SOFFSET1  
+Description: Discard one dirty scalar data cache line. A cache line is 64
+bytes. Address calculated as S_STORE_DWORD with alignment to 64-byte boundary.
+LGKM count is incremented by 1 for this opcode.
+
+#### S_DCACHE_DISCARD_X2
+
+Opcode 41 (0x29) only for GCN 1.4  
+Syntax: S_DCACHE_DISCARD_X2 SBASE(2), SOFFSET1  
+Description: Discard two dirty scalar data cache lines. A cache line is 64
+bytes. Address calculated as S_STORE_DWORD with alignment to 64-byte boundary.
+LGKM count is incremented by 1 for this opcode.
 
 #### S_DCACHE_INV
 
