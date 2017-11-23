@@ -118,7 +118,8 @@ cl_platform_id CLRX::chooseCLPlatformForCLRX()
     return choosenPlatform;
 }
 
-CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags)
+CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags,
+            Flags asmFlags)
 {
     cl_int error = CL_SUCCESS;
     cl_platform_id platform;
@@ -381,7 +382,7 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags)
     // base OpenCL options for program
     asmSetup.options = (binaryFormat==BinaryFormat::AMDCL2) ? "-cl-std=CL2.0" :
                (useLegacy ? "-legacy" : "");
-    asmSetup.asmFlags = 0;
+    asmSetup.asmFlags = asmFlags;
     return asmSetup;
 }
 

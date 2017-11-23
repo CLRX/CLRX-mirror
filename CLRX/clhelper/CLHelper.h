@@ -85,7 +85,8 @@ struct CLAsmSetup
 };
 
 /// get assembler setup(compile assembler code) binary for OpenCL device
-extern CLAsmSetup assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags = 0);
+extern CLAsmSetup assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags = 0,
+            Flags asmFlags = 0);
 
 /// create program binary for OpenCL
 extern Array<cxbyte> createBinaryForOpenCL(const CLAsmSetup& asmSetup,
