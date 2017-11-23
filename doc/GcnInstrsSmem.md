@@ -24,7 +24,8 @@ Value of the IMM determines meaning of the OFFSET field:
 For S_LOAD_DWORD\* instructions, 2 SBASE SGPRs holds an base 48-bit address and a
 16-bit size. For S_BUFFER_LOAD_DWORD\* instructions, 4 SBASE SGPRs holds a
 buffer descriptor. In this case, SBASE must be a multipla of 2.
-S_STORE_\* and S_BUFFER_STORE_\* accepts only M0 as offset register.
+S_STORE_\* and S_BUFFER_STORE_\* accepts only M0 as offset register for GCN 1.2.
+In GCN 1.4 S_STORE_\* and S_BUFFER_STORE_\* accepts also SGPR as offset register.
 
 The SMEM instructions can return the result data out of the order. Any SMEM operation
 (including S_MEMTIME) increments LGKM_CNT counter. The best way to wait for results
@@ -66,6 +67,32 @@ List of the instructions by opcode:
  39 (0x27)  |   ✓   |   ✓   | S_ATC_PROBE_BUFFER
  40 (0x28)  |       |   ✓   | S_DCACHE_DISCARD
  41 (0x29)  |       |   ✓   | S_DCACHE_DISCARD_X2
+ 128 (0x80) |       |   ✓   | S_ATOMIC_SWAP
+ 129 (0x81) |       |   ✓   | S_ATOMIC_CMPSWAP
+ 130 (0x82) |       |   ✓   | S_ATOMIC_ADD
+ 131 (0x83) |       |   ✓   | S_ATOMIC_SUB
+ 132 (0x84) |       |   ✓   | S_ATOMIC_SMIN
+ 133 (0x85) |       |   ✓   | S_ATOMIC_UMIN
+ 134 (0x86) |       |   ✓   | S_ATOMIC_SMAX
+ 135 (0x87) |       |   ✓   | S_ATOMIC_UMAX
+ 136 (0x88) |       |   ✓   | S_ATOMIC_AND
+ 137 (0x89) |       |   ✓   | S_ATOMIC_OR
+ 138 (0x8a) |       |   ✓   | S_ATOMIC_XOR
+ 139 (0x8b) |       |   ✓   | S_ATOMIC_INC
+ 140 (0x8c) |       |   ✓   | S_ATOMIC_DEC
+ 160 (0xa0) |       |   ✓   | S_ATOMIC_SWAP_X2
+ 161 (0xa1) |       |   ✓   | S_ATOMIC_CMPSWAP_X2
+ 162 (0xa2) |       |   ✓   | S_ATOMIC_ADD_X2
+ 163 (0xa3) |       |   ✓   | S_ATOMIC_SUB_X2
+ 164 (0xa4) |       |   ✓   | S_ATOMIC_SMIN_X2
+ 165 (0xa5) |       |   ✓   | S_ATOMIC_UMIN_X2
+ 166 (0xa6) |       |   ✓   | S_ATOMIC_SMAX_X2
+ 167 (0xa7) |       |   ✓   | S_ATOMIC_UMAX_X2
+ 168 (0xa8) |       |   ✓   | S_ATOMIC_AND_X2
+ 169 (0xa9) |       |   ✓   | S_ATOMIC_OR_X2
+ 170 (0xaa) |       |   ✓   | S_ATOMIC_XOR_X2
+ 171 (0xab) |       |   ✓   | S_ATOMIC_INC_X2
+ 172 (0xac) |       |   ✓   | S_ATOMIC_DEC_X2
 
 ### Instruction set
 
@@ -272,7 +299,6 @@ SDATA = CLOCKCNT
 Opcode: 16 (0x10)  
 Syntax: S_STORE_DWORD SDATA, SBASE(2), OFFSET  
 Description: Store single dword to memory. It accepts only offset as M0 or any immediate.  
-SBASE is buffer descriptor.  
 Operation:  
 ```
 *(UINT32*)(SMEM + (OFFSET & ~3)) = SDATA
