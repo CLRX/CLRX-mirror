@@ -24,6 +24,8 @@
 #define __CLRX_CLHELPER_H__
 
 #include <CLRX/Config.h>
+#include <vector>
+#include <utility>
 #include <CL/cl.h>
 #include <CLRX/amdasm/Commons.h>
 #include <CLRX/utils/Containers.h>
@@ -88,6 +90,11 @@ extern CLAsmSetup assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags =
 extern Array<cxbyte> createBinaryForOpenCL(const CLAsmSetup& asmSetup,
                 const char* sourceCode, size_t sourceCodeLen = 0);
 
+/// create program binary for OpenCL
+extern Array<cxbyte> createBinaryForOpenCL(const CLAsmSetup& asmSetup,
+                const std::vector<std::pair<CString, uint64_t> >& defSymbols,
+                const char* sourceCode, size_t sourceCodeLen = 0);
+
 /// create (build program) binary for OpenCL device
 extern cl_program createProgramForCLDevice(cl_context clContext, cl_device_id clDevice,
             const CLAsmSetup& asmSetup, const Array<cxbyte>& binary,
@@ -96,6 +103,13 @@ extern cl_program createProgramForCLDevice(cl_context clContext, cl_device_id cl
 /// create (compile assembler code and build program) binary for OpenCL device
 extern cl_program createProgramForCLDevice(cl_context clContext, cl_device_id clDevice,
             const CLAsmSetup& asmSetup, const char* sourceCode, size_t sourceCodeLen = 0,
+            CString* buildLog = nullptr);
+
+/// create (compile assembler code and build program) binary for OpenCL device
+extern cl_program createProgramForCLDevice(cl_context clContext, cl_device_id clDevice,
+            const CLAsmSetup& asmSetup,
+            const std::vector<std::pair<CString, uint64_t> >& defSymbols,
+            const char* sourceCode, size_t sourceCodeLen = 0,
             CString* buildLog = nullptr);
 
 };

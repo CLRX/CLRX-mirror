@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <cstring>
 #include <memory>
+#include <utility>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/clhelper/CLHelper.h>
 
@@ -386,6 +387,13 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags)
 Array<cxbyte> CLRX::createBinaryForOpenCL(const CLAsmSetup& asmSetup,
                 const char* sourceCode, size_t sourceCodeLen)
 {
+    return createBinaryForOpenCL(asmSetup, {}, sourceCode, sourceCodeLen);
+}
+
+Array<cxbyte> CLRX::createBinaryForOpenCL(const CLAsmSetup& asmSetup,
+                const std::vector<std::pair<CString, uint64_t> >& defSymbols,
+                const char* sourceCode, size_t sourceCodeLen)
+{
     /// determine device type
     const size_t scodeLen = (sourceCodeLen == 0) ? ::strlen(sourceCode) : sourceCodeLen;
     ArrayIStream astream(scodeLen, sourceCode);
@@ -398,12 +406,17 @@ Array<cxbyte> CLRX::createBinaryForOpenCL(const CLAsmSetup& asmSetup,
         assembler.setLLVMVersion(asmSetup.llvmVersion);
     if (asmSetup.driverVersion != 0)
         assembler.setDriverVersion(asmSetup.driverVersion);
+    // initial def symbols
+    for (const auto& symbol: defSymbols)
+        assembler.addInitialDefSym(symbol.first, symbol.second);
+    
     assembler.assemble();
     // write binary
     Array<cxbyte> binary;
     assembler.writeBinary(binary);
     return binary;
 }
+
 
 cl_program CLRX::createProgramForCLDevice(cl_context clContext, cl_device_id clDevice,
             const CLAsmSetup& asmSetup, const Array<cxbyte>& binary,
@@ -449,9 +462,19 @@ cl_program CLRX::createProgramForCLDevice(cl_context clContext, cl_device_id clD
 // simple helper for this two stage of building
 cl_program CLRX::createProgramForCLDevice(cl_context clContext, cl_device_id clDevice,
             const CLAsmSetup& asmSetup, const char* sourceCode, size_t sourceCodeLen,
-            CString* buildLogs)
+            CString* buildLog)
 {
     const Array<cxbyte>& binary = createBinaryForOpenCL(asmSetup,
                             sourceCode, sourceCodeLen);
-    return createProgramForCLDevice(clContext, clDevice, asmSetup, binary, buildLogs);
+    return createProgramForCLDevice(clContext, clDevice, asmSetup, binary, buildLog);
+}
+
+cl_program CLRX::createProgramForCLDevice(cl_context clContext, cl_device_id clDevice,
+            const CLAsmSetup& asmSetup,
+            const std::vector<std::pair<CString, uint64_t> >& defSymbols,
+            const char* sourceCode, size_t sourceCodeLen, CString* buildLog)
+{
+    const Array<cxbyte>& binary = createBinaryForOpenCL(asmSetup, defSymbols,
+                            sourceCode, sourceCodeLen);
+    return createProgramForCLDevice(clContext, clDevice, asmSetup, binary, buildLog);
 }
