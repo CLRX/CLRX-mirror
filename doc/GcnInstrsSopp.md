@@ -16,38 +16,39 @@ RELADDR = NEXTPC + SIMM16, NEXTPC - PC for next instruction.
 
 List of the instructions by opcode:
 
- Opcode     |GCN 1.0|GCN 1.1|GCN 1.2| Mnemonic
-------------|-------|-------|-------|-----------------
- 0 (0x0)    |   ✓   |   ✓   |   ✓   | S_NOP
- 1 (0x1)    |   ✓   |   ✓   |   ✓   | S_ENDPGM
- 2 (0x2)    |   ✓   |   ✓   |   ✓   | S_BRANCH
- 3 (0x3)    |       |       |   ✓   | S_WAKEUP
- 4 (0x4)    |   ✓   |   ✓   |   ✓   | S_CBRANCH_SCC0
- 5 (0x5)    |   ✓   |   ✓   |   ✓   | S_CBRANCH_SCC1
- 6 (0x6)    |   ✓   |   ✓   |   ✓   | S_CBRANCH_VCCZ
- 7 (0x7)    |   ✓   |   ✓   |   ✓   | S_CBRANCH_VCCNZ
- 8 (0x8)    |   ✓   |   ✓   |   ✓   | S_CBRANCH_EXECZ
- 9 (0x9)    |   ✓   |   ✓   |   ✓   | S_CBRANCH_EXECNZ
- 10 (0xa)   |   ✓   |   ✓   |   ✓   | S_BARRIER
- 11 (0xb)   |       |   ✓   |   ✓   | S_SETKILL
- 12 (0xc)   |   ✓   |   ✓   |   ✓   | S_WAITCNT
- 13 (0xd)   |   ✓   |   ✓   |   ✓   | S_SETHALT
- 14 (0xe)   |   ✓   |   ✓   |   ✓   | S_SLEEP
- 15 (0xf)   |   ✓   |   ✓   |   ✓   | S_SETPRIO
- 16 (0x10)  |   ✓   |   ✓   |   ✓   | S_SENDMSG
- 17 (0x11)  |   ✓   |   ✓   |   ✓   | S_SENDMSGHALT
- 18 (0x12)  |   ✓   |   ✓   |   ✓   | S_TRAP
- 19 (0x13)  |   ✓   |   ✓   |   ✓   | S_ICACHE_INV
- 20 (0x14)  |   ✓   |   ✓   |   ✓   | S_INCPERFLEVEL
- 21 (0x15)  |   ✓   |   ✓   |   ✓   | S_DECPERFLEVEL
- 22 (0x16)  |   ✓   |   ✓   |   ✓   | S_TTRACEDATA
- 23 (0x17)  |       |   ✓   |   ✓   | S_CBRANCH_CDBGSYS
- 24 (0x18)  |       |   ✓   |   ✓   | S_CBRANCH_CDBGUSER
- 25 (0x19)  |       |   ✓   |   ✓   | S_CBRANCH_CDBGSYS_OR_USER
- 26 (0x1a)  |       |   ✓   |   ✓   | S_CBRANCH_CDBGSYS_AND_USER
- 27 (0x1b)  |       |       |   ✓   | S_ENDPGM_SAVED
- 28 (0x1c)  |       |       |   ✓   | S_SET_GPR_IDX_OFF
- 29 (0x1d)  |       |       |   ✓   | S_SET_GPR_IDX_MODE
+ Opcode     |GCN 1.0|GCN 1.1|GCN 1.2|GCN 1.4| Mnemonic
+------------|-------|-------|-------|-------|-----------------
+ 0 (0x0)    |   ✓   |   ✓   |   ✓   |   ✓   | S_NOP
+ 1 (0x1)    |   ✓   |   ✓   |   ✓   |   ✓   | S_ENDPGM
+ 2 (0x2)    |   ✓   |   ✓   |   ✓   |   ✓   | S_BRANCH
+ 3 (0x3)    |       |       |   ✓   |   ✓   | S_WAKEUP
+ 4 (0x4)    |   ✓   |   ✓   |   ✓   |   ✓   | S_CBRANCH_SCC0
+ 5 (0x5)    |   ✓   |   ✓   |   ✓   |   ✓   | S_CBRANCH_SCC1
+ 6 (0x6)    |   ✓   |   ✓   |   ✓   |   ✓   | S_CBRANCH_VCCZ
+ 7 (0x7)    |   ✓   |   ✓   |   ✓   |   ✓   | S_CBRANCH_VCCNZ
+ 8 (0x8)    |   ✓   |   ✓   |   ✓   |   ✓   | S_CBRANCH_EXECZ
+ 9 (0x9)    |   ✓   |   ✓   |   ✓   |   ✓   | S_CBRANCH_EXECNZ
+ 10 (0xa)   |   ✓   |   ✓   |   ✓   |   ✓   | S_BARRIER
+ 11 (0xb)   |       |   ✓   |   ✓   |   ✓   | S_SETKILL
+ 12 (0xc)   |   ✓   |   ✓   |   ✓   |   ✓   | S_WAITCNT
+ 13 (0xd)   |   ✓   |   ✓   |   ✓   |   ✓   | S_SETHALT
+ 14 (0xe)   |   ✓   |   ✓   |   ✓   |   ✓   | S_SLEEP
+ 15 (0xf)   |   ✓   |   ✓   |   ✓   |   ✓   | S_SETPRIO
+ 16 (0x10)  |   ✓   |   ✓   |   ✓   |   ✓   | S_SENDMSG
+ 17 (0x11)  |   ✓   |   ✓   |   ✓   |   ✓   | S_SENDMSGHALT
+ 18 (0x12)  |   ✓   |   ✓   |   ✓   |   ✓   | S_TRAP
+ 19 (0x13)  |   ✓   |   ✓   |   ✓   |   ✓   | S_ICACHE_INV
+ 20 (0x14)  |   ✓   |   ✓   |   ✓   |   ✓   | S_INCPERFLEVEL
+ 21 (0x15)  |   ✓   |   ✓   |   ✓   |   ✓   | S_DECPERFLEVEL
+ 22 (0x16)  |   ✓   |   ✓   |   ✓   |   ✓   | S_TTRACEDATA
+ 23 (0x17)  |       |   ✓   |   ✓   |   ✓   | S_CBRANCH_CDBGSYS
+ 24 (0x18)  |       |   ✓   |   ✓   |   ✓   | S_CBRANCH_CDBGUSER
+ 25 (0x19)  |       |   ✓   |   ✓   |   ✓   | S_CBRANCH_CDBGSYS_OR_USER
+ 26 (0x1a)  |       |   ✓   |   ✓   |   ✓   | S_CBRANCH_CDBGSYS_AND_USER
+ 27 (0x1b)  |       |       |   ✓   |   ✓   | S_ENDPGM_SAVED
+ 28 (0x1c)  |       |       |   ✓   |   ✓   | S_SET_GPR_IDX_OFF
+ 29 (0x1d)  |       |       |   ✓   |   ✓   | S_SET_GPR_IDX_MODE
+ 30 (0x1e)  |       |       |       |   ✓   | S_ENDPGM_ORDERED_PS_DONE
 
 ### Instruction set
 
@@ -167,6 +168,15 @@ PERFCNT[SIMM16 & 15]--
 Opcode: 1 (0x1)  
 Syntax: S_ENDPGM  
 Description: End program.
+
+#### S_ENDPGM_ORDERED_PS_DONE
+
+Opcode: 30 (0x1e) only for GCN 1.4  
+Description: End of program; signal that a wave has exited its POPS critical section
+and terminate wavefront.  The hardware implicitly
+executes S_WAITCNT 0 before executing this instruction. This
+instruction is an optimization that combines
+S_SENDMSG(MSG_ORDERED_PS_DONE) and S_ENDPGM. (from ISA manual)
 
 #### S_ENDPGM_SAVED
 

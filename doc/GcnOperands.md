@@ -31,7 +31,8 @@ Code     | Name              | Description
 110-111  | TMA               | Pointer to data in memory used by trap handler
 110      | TMA_LO            | Low half of TMA register
 111      | TMA_HI            | High half of TMA register
-112-123  | TTMP0 - TTMP11    | Trap handler temporary registers
+112-123  | TTMP0 - TTMP11    | Trap handler temporary registers (GCN 1.0/1.1/1.2)
+108-123  | TTMP0 - TTMP15    | Trap handler temporary registers (GCN 1.4)
 124      | M0                | M0. Memory register
 125      | -                 | reserved
 126-127  | EXEC              | EXEC register
@@ -41,6 +42,11 @@ Code     | Name              | Description
 129-192  | 1-64              | 1 to 64 constant value
 193-208  | -1 - -16          | -1 to -16 constant value
 209-239  | -                 | reserved
+235      | SRC_SHARED_BASE   | Memory aperture
+236      | SRC_SHARED_LIMIT  | Memory aperture
+237      | SRC_PRIVATE_BASE  | Memory aperture
+238      | SRC_PRIVATE_LIMIT | Memory aperture
+239      | POPS_EXITING_WAVE_ID | Primitive Ordered Pixel Shading wave ID
 240      | 0.5               | 0.5 floating point value
 241      | -0.5              | -0.5 floating point value
 242      | 1.0               | 1.0 floating point value
