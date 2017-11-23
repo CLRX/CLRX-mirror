@@ -298,7 +298,8 @@ SDATA = CLOCKCNT
 
 Opcode: 16 (0x10)  
 Syntax: S_STORE_DWORD SDATA, SBASE(2), OFFSET  
-Description: Store single dword to memory. It accepts only offset as M0 or any immediate.  
+Description: Store single dword to memory.
+It accepts only offset as M0 or any immediate (only GCN 1.2).  
 Operation:  
 ```
 *(UINT32*)(SMEM + (OFFSET & ~3)) = SDATA
@@ -308,7 +309,8 @@ Operation:
 
 Opcode: 17 (0x11)  
 Syntax: S_STORE_DWORDX2 SDATA(2), SBASE(2), OFFSET  
-Description: Store two dwords to memory. It accepts only offset as M0 or any immediate.  
+Description: Store two dwords to memory.
+It accepts only offset as M0 or any immediate (only GCN 1.2).  
 Operation:  
 ```
 *(UINT64*)(SMEM + (OFFSET & ~3)) = SDATA
@@ -318,7 +320,8 @@ Operation:
 
 Opcode: 18 (0x12)  
 Syntax: S_STORE_DWORDX4 SDATA(4), SBASE(2), OFFSET  
-Description: Store four dwords to memory. It accepts only offset as M0 or any immediate.  
+Description: Store four dwords to memory.
+It accepts only offset as M0 or any immediate (only GCN 1.2).  
 Operation:  
 ```
 for (BYTE i = 0; i < 4; i++)
