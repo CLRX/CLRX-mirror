@@ -1076,6 +1076,68 @@ Operation:
 SDATA = CLOCKCNT
 ```
 
+#### S_SCRATCH_LOAD_DWORD
+
+Opcode: 5 (0x5) only for GCN 1.4  
+Syntax: S_SCRATCH_LOAD_DWORD SDATA, SBASE(2), SGPROFFSET OFFSET:OFFSET  
+Description: Load single dword from read-only memory through constant cache (kcache).  
+Operation:  
+```
+SDATA = *(UINT32*)(SMEM + (OFFSET & ~3) + (SGPROFFSET & ~3)*64)
+```
+
+#### S_SCRATCH_LOAD_DWORDX2
+
+Opcode: 6 (0x6) only for GCN 1.4  
+Syntax: S_SCRATCH_LOAD_DWORDX2 SDATA, SBASE(2), SGPROFFSET OFFSET:OFFSET  
+Description: Load two dwords from read-only memory through constant cache (kcache).  
+Operation:  
+```
+SDATA = *(UINT64*)(SMEM + (OFFSET & ~3) + (SGPROFFSET & ~3)*64)
+```
+
+#### S_SCRATCH_LOAD_DWORDX4
+
+Opcode: 7 (0x7) only for GCN 1.4  
+Syntax: S_SCRATCH_LOAD_DWORDX4 SDATA, SBASE(2), SGPROFFSET OFFSET:OFFSET  
+Description: Load four dwords from read-only memory through constant cache (kcache).  
+Operation:  
+```
+for (BYTE i = 0; i < 4; i++)
+    SDATA[i] = *(UINT32*)(SMEM + i*4 + (OFFSET & ~3) + (SGPROFFSET & ~3)*64)
+```
+
+#### S_SCRATCH_STORE_DWORD
+
+Opcode: 21 (0x15) only for GCN 1.4  
+Syntax: S_SCRATCH_STORE_DWORD SDATA, SBASE(2), SGPROFFSET OFFSET:OFFSET  
+Description: Store single dword to memory.  
+Operation:  
+```
+*(UINT32*)(SMEM + (OFFSET & ~3) + (SGPROFFSET & ~3)*64) = SDATA
+```
+
+#### S_SCRATCH_STORE_DWORDX2
+
+Opcode: 22 (0x16) only for GCN 1.4  
+Syntax: S_SCRATCH_STORE_DWORDX2 SDATA(2), SBASE(2), SGPROFFSET OFFSET:OFFSET  
+Description: Store two dwords to memory.  
+Operation:  
+```
+*(UINT64*)(SMEM + (OFFSET & ~3) + (SGPROFFSET & ~3)*64) = SDATA
+```
+
+#### S_SCRATCH_STORE_DWORDX4
+
+Opcode: 23 (0x17) only for GCN 1.4  
+Syntax: S_SCRATCH_STORE_DWORDX4 SDATA(4), SBASE(2), SGPROFFSET OFFSET:OFFSET  
+Description: Store four dwords to memory.  
+Operation:  
+```
+for (BYTE i = 0; i < 4; i++)
+    *(UINT32*)(SMEM + i*4 + (OFFSET & ~3) + (SGPROFFSET & ~3)*64) = SDATA[i]
+```
+
 #### S_STORE_DWORD
 
 Opcode: 16 (0x10)  
