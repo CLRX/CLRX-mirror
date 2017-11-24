@@ -21,8 +21,8 @@ Value of the IMM determines meaning of the OFFSET field:
 * IMM=1 - OFFSET holds a byte offset to SBASE.
 * IMM=0 - OFFSET holds number of SGPR that holds byte offset to SBASE.
 
-For S_LOAD_DWORD\* instructions, 2 SBASE SGPRs holds an base 48-bit address and a
-16-bit size. For S_BUFFER_LOAD_DWORD\* instructions, 4 SBASE SGPRs holds a
+For S_LOAD_DWORD\* instructions, 2 SBASE SGPRs holds an base 48-bit address.
+For S_BUFFER_LOAD_DWORD\* instructions, 4 SBASE SGPRs holds a
 buffer descriptor. In this case, SBASE must be a multipla of 2.
 S_STORE_\* and S_BUFFER_STORE_\* accepts only M0 as offset register for GCN 1.2.
 In GCN 1.4 S_STORE_\* and S_BUFFER_STORE_\* accepts also SGPR as offset register.
@@ -314,7 +314,7 @@ INT32 P = *VM; *VM = MAX(*VM, (INT32)SDATA); SDATA = (GLC) ? P : SDATA // atomic
 
 #### S_ATOMIC_SMAX_X2
 
-Opcode: 166 (0x86) only for GCN 1.4  
+Opcode: 166 (0xa6) only for GCN 1.4  
 Syntax: S_ATOMIC_SMAX_X2 SDATA(2), SBASE(2), OFFSET  
 Description: Choose largest signed 64-bit value from SDATA and from memory address,
 and store result to this memory address.
@@ -486,6 +486,374 @@ Description: Do bitwise XOR on 64-bit SDATA and 64-bit value from memory address
 and store result to memory address.
 If GLC flag is set then return previous value from memory address to SDATA,
 otherwise keep SDATA value. Operation is atomic.  
+Operation:  
+```
+UINT64* VM = (UINT64*)((SMEM + (OFFSET & ~3))
+UINT64 P = *VM; *VM = *VM ^ SDATA; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_ADD
+
+Opcode: 66 (0x42) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_ADD SDATA, SBASE(4), OFFSET  
+Description: Add SDATA to value from memory address, and store result to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT32* VM = (UINT32*)((SMEM + (OFFSET & ~3))
+UINT32 P = *VM; *VM = *VM + SDATA; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_ADD_X2
+
+Opcode: 98 (0x62) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_ADD_X2 SDATA(2), SBASE(4), OFFSET  
+Description: Add 64-bit SDATA to 64-bit value from memory address,
+and store result to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT64* VM = (UINT64*)((SMEM + (OFFSET & ~3))
+UINT64 P = *VM; *VM = *VM + SDATA; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_AND
+
+Opcode: 72 (0x48) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_AND SDATA, SBASE(4), OFFSET  
+Description: Do bitwise AND on SDATA and value from memory address,
+and store result to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT32* VM = (UINT32*)((SMEM + (OFFSET & ~3))
+UINT32 P = *VM; *VM = *VM & SDATA; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_AND_X2
+
+Opcode: 104 (0x68) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_AND_X2 SDATA(2), SBASE(4), OFFSET  
+Description: Do bitwise AND on 64-bit SDATA and 64-bit value from memory address,
+and store result to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT64* VM = (UINT64*)((SMEM + (OFFSET & ~3))
+UINT64 P = *VM; *VM = *VM & SDATA; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_CMPSWAP
+
+Opcode: 65 (0x41) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_CMPSWAP SDATA(2), SBASE(4), OFFSET  
+Description: Store lower SDATA dword into memory address if previous value
+from memory address is equal SDATA>>32, otherwise keep old value from memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT32* VM = (UINT32*)((SMEM + (OFFSET & ~3))
+UINT32 P = *VM; *VM = *VM = *VM==(SDATA>>32) ? SDATA&0xffffffff : *VM // atomic
+SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_CMPSWAP_X2
+
+Opcode: 97 (0x61) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_CMPSWAP_X2 SDATA(4), SBASE(4), OFFSET  
+Description: Store lower SDATA quadword into memory address if previous value
+from memory address is equal last SDATA quadword,
+otherwise keep old value from memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT64* VM = (UINT64*)((SMEM + (OFFSET & ~3))
+UINT64 P = *VM; *VM = *VM = *VM==(SDATA[2:3]) ? SDATA[0:1] : *VM // atomic
+SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_DEC
+
+Opcode: 76 (0x4c) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_DEC SDATA, SBASE(4), OFFSET  
+Description: Compare value from memory address and if less or equal than SDATA
+and this value is not zero, then decrement value from memory address,
+otherwise store SDATA to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT32* VM = (UINT32*)((SMEM + (OFFSET & ~3))
+UINT32 P = *VM; *VM = (*VM <= VDATA && *VM!=0) ? *VM-1 : VDATA; // atomic
+SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_DEC_X2
+
+Opcode: 108 (0x6c) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_DEC_X2 SDATA, SBASE(4), OFFSET  
+Description: Compare 64-bit value from memory address and if less or equal than
+64-bit SDATA and this value is not zero, then decrement value from memory address,
+otherwise store SDATA to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT64* VM = (UINT64*)((SMEM + (OFFSET & ~3))
+UINT64 P = *VM; *VM = (*VM <= VDATA && *VM!=0) ? *VM-1 : VDATA; // atomic
+SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_INC
+
+Opcode: 75 (0x4b) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_INC SDATA, SBASE(4), OFFSET  
+Description: Compare value from memory address and if less than SDATA,
+then increment value from memory address, otherwise store zero to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT32* VM = (UINT32*)((SMEM + (OFFSET & ~3))
+UINT32 P = *VM; *VM = (*VM < SDATA) ? *VM+1 : 0; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_INC_X2
+
+Opcode: 107 (0x6b) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_INC_X2 SDATA(2), SBASE(4), OFFSET  
+Description: Compare 64-bit value from memory address and if less than 64-bit SDATA,
+then increment value from memory address, otherwise store zero to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT64* VM = (UINT64*)((SMEM + (OFFSET & ~3))
+UINT64 P = *VM; *VM = (*VM < SDATA) ? *VM+1 : 0; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_OR
+
+Opcode: 73 (0x49) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_OR SDATA, SBASE(4), OFFSET  
+Description: Do bitwise OR on SDATA and value from memory address,
+and store result to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT32* VM = (UINT32*)((SMEM + (OFFSET & ~3))
+UINT32 P = *VM; *VM = *VM | SDATA; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_OR_X2
+
+Opcode: 105 (0x69) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_OR_X2 SDATA(2), SBASE(4), OFFSET  
+Description: Do bitwise OR on 64-bit SDATA and 64-bit value from memory address,
+and store result to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT64* VM = (UINT64*)((SMEM + (OFFSET & ~3))
+UINT64 P = *VM; *VM = *VM | SDATA; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_SMAX
+
+Opcode: 72 (0x46) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_SMAX SDATA, SBASE(4), OFFSET  
+Description: Choose largest signed 32-bit value from SDATA and from memory address,
+and store result to this memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+INT32* VM = (INT32*)((SMEM + (OFFSET & ~3))
+INT32 P = *VM; *VM = MAX(*VM, (INT32)SDATA); SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_SMAX_X2
+
+Opcode: 102 (0x66) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_SMAX_X2 SDATA(2), SBASE(4), OFFSET  
+Description: Choose largest signed 64-bit value from SDATA and from memory address,
+and store result to this memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+INT64* VM = (INT64*)((SMEM + (OFFSET & ~3))
+INT64 P = *VM; *VM = MAX(*VM, (INT64)SDATA); SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_SMIN
+
+Opcode: 70 (0x44) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_SMIN SDATA, SBASE(4), OFFSET  
+Description: Choose smallest signed 32-bit value from SDATA and from memory address,
+and store result to this memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+INT32* VM = (INT32*)((SMEM + (OFFSET & ~3))
+INT32 P = *VM; *VM = MIN(*VM, (INT32)SDATA); SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_SMIN_X2
+
+Opcode: 100 (0x64) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_SMIN_X2 SDATA(2), SBASE(4), OFFSET  
+Description: Choose smallest signed 64-bit value from SDATA and from memory address,
+and store result to this memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+INT64* VM = (INT64*)((SMEM + (OFFSET & ~3))
+INT64 P = *VM; *VM = MIN(*VM, (INT64)SDATA); SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_SUB
+
+Opcode: 69 (0x43) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_SUB SDATA, SBASE(4), OFFSET  
+Description: Subtract SDATA from value from memory address,
+and store result to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT32* VM = (UINT32*)((SMEM + (OFFSET & ~3))
+UINT32 P = *VM; *VM = *VM - SDATA; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_SUB_X2
+
+Opcode: 99 (0x63) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_SUB_X2 SDATA(2), SBASE(4), OFFSET  
+Description: Subtract 64-bit SDATA from 64-bit value from memory address,
+and store result to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT64* VM = (UINT64*)((SMEM + (OFFSET & ~3))
+UINT64 P = *VM; *VM = *VM - SDATA; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_SWAP
+
+Opcode: 64 (0x40) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_SWAP SDATA, SBASE(4), OFFSET  
+Description: Store SDATA into memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT32* VM = (UINT32*)((SMEM + (OFFSET & ~3))
+UINT32 P = *VM; *VM = SDATA; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_SWAP_X2
+
+Opcode: 96 (0x60) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_SWAP_X2 SDATA(2), SBASE(4), OFFSET  
+Description: Store 64-bit SDATA into memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT64* VM = (UINT64*)((SMEM + (OFFSET & ~3))
+UINT64 P = *VM; *VM = SDATA; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_UMAX
+
+Opcode: 71 (0x47) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_UMAX SDATA, SBASE(4), OFFSET  
+Description: Choose largest unsigned 32-bit value from SDATA and from memory address,
+and store result to this memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT32* VM = (UINT32*)((SMEM + (OFFSET & ~3))
+UINT32 P = *VM; *VM = MAX(*VM, SDATA); SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_UMAX_X2
+
+Opcode: 103 (0x67) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_UMAX_X2 SDATA(2), SBASE(4), OFFSET  
+Description: Choose largest unsigned 64-bit value from SDATA and from memory address,
+and store result to this memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT64* VM = (UINT64*)((SMEM + (OFFSET & ~3))
+UINT64 P = *VM; *VM = MAX(*VM, SDATA); SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_UMIN
+
+Opcode: 69 (0x45) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_UMIN SDATA, SBASE(4), OFFSET  
+Description: Choose smallest unsigned 32-bit value from SDATA and from memory address,
+and store result to this memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT32* VM = (UINT32*)((SMEM + (OFFSET & ~3))
+UINT32 P = *VM; *VM = MIN(*VM, SDATA); SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_UMIN_X2
+
+Opcode: 101 (0x65) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_UMIN_X2 SDATA(2), SBASE(4), OFFSET  
+Description: Choose smallest unsigned 64-bit value from SDATA and from memory address,
+and store result to this memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT64* VM = (UINT64*)((SMEM + (OFFSET & ~3))
+UINT64 P = *VM; *VM = MIN(*VM, SDATA); SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_XOR
+
+Opcode: 74 (0x4a) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_XOR SDATA, SBASE(4), OFFSET  
+Description: Do bitwise XOR on SDATA and value from memory address,
+and store result to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
+Operation:  
+```
+UINT32* VM = (UINT32*)((SMEM + (OFFSET & ~3))
+UINT32 P = *VM; *VM = *VM ^ SDATA; SDATA = (GLC) ? P : SDATA // atomic
+```
+
+#### S_BUFFER_ATOMIC_XOR_X2
+
+Opcode: 106 (0x6a) only for GCN 1.4  
+Syntax: S_BUFFER_ATOMIC_XOR_X2 SDATA(2), SBASE(4), OFFSET  
+Description: Do bitwise XOR on 64-bit SDATA and 64-bit value from memory address,
+and store result to memory address.
+If GLC flag is set then return previous value from memory address to SDATA,
+otherwise keep SDATA value. Operation is atomic. SBASE is buffer descriptor.  
 Operation:  
 ```
 UINT64* VM = (UINT64*)((SMEM + (OFFSET & ~3))
