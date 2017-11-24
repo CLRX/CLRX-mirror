@@ -119,9 +119,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
     { 0xc0020c9dU, 0x13da5b, true, "        s_load_dword    s50, s[58:59], 0x13da5b\n" },
     { 0xc0028c9dU, 0x5b, true, "        s_load_dword    s50, s[58:59], 0x5b nv\n" },
     { 0xc0024c9dU, 0x3200005b, true, "        s_load_dword    "
-        "s50, s[58:59], 0x32 offset:0x5b\n" },
+        "s50, s[58:59], s25 offset:0x5b\n" },
     { 0xc002cc9dU, 0x3200005b, true, "        s_load_dword    "
-        "s50, s[58:59], 0x32 nv offset:0x5b\n" },
+        "s50, s[58:59], s25 nv offset:0x5b\n" },
     { 0xc0004c9dU, 0xb6000000U, true, "        s_load_dword    s50, s[58:59], s91\n" },
     /* SMEM instructions */
     { 0xc0140c9d, 0x5b, true, "        s_scratch_load_dword s50, s[58:59], s91\n" },

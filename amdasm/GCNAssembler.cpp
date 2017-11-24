@@ -1284,10 +1284,8 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     RegRange sbaseReg(0, 0);
     RegRange soffsetReg(0, 0);
     uint32_t soffsetVal = 0;
-    uint32_t soffset2Val = 0;
     std::unique_ptr<AsmExpression> soffsetExpr;
     std::unique_ptr<AsmExpression> simm7Expr;
-    std::unique_ptr<AsmExpression> soffset2Expr;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const bool isGCN14 = (arch & ARCH_RXVEGA) != 0;
     
@@ -1349,8 +1347,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             soffsetPlace = linePtr;
             soffsetPos = asmr.getSourcePos(soffsetPlace);
             good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr,
-                // for VEGA we check range later
-                isGCN14 ? UINT_MAX : 20, WS_UNSIGNED);
+                        isGCN14 ? 21 : 20, isGCN14 ? WS_BOTH : WS_UNSIGNED);
         }
     }
     bool haveGlc = false;
@@ -1374,12 +1371,15 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             else if (isGCN14 && ::strcmp(name, "offset")==0)
             {
                 // parse offset and it parameter: offset:XXX
-                if (parseModImm(asmr, linePtr, soffset2Val, &soffset2Expr, "offset",
-                        21, WS_UNSIGNED))
+                if (parseModImm(asmr, linePtr, soffsetVal, &soffsetExpr, "offset",
+                        21, WS_BOTH))
                 {
                     if (haveOffset)
                         asmr.printWarning(modPlace, "Offset is already defined");
                     haveOffset = true;
+                    if (soffsetReg.isVal(255))
+                        // illegal second offset
+                        ASM_NOTGOOD_BY_ERROR(modPlace, "Illegal second offset");
                 }
                 else
                     good = false;
@@ -1390,16 +1390,6 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         else
             good = false;
     }
-    // check range for offset
-    if (isGCN14)
-        asmr.printWarningForRange(haveOffset ? 8 : 21, soffsetVal,
-                    soffsetPos, WS_UNSIGNED);
-    if (haveOffset)
-    {
-        // swap (offset2 is first offset)
-        std::swap(soffsetVal, soffset2Val);
-        std::swap(soffsetExpr, soffset2Expr);
-    }
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
@@ -1408,9 +1398,6 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (soffsetExpr!=nullptr)
         soffsetExpr->setTarget(AsmExprTarget(isGCN14 ?
                     GCNTGT_SMEMOFFSETVEGA : GCNTGT_SMEMOFFSET,
-                    asmr.currentSection, output.size()));
-    if (soffset2Expr!=nullptr)
-        soffset2Expr->setTarget(AsmExprTarget(GCNTGT_SMEMOFFSET2,
                     asmr.currentSection, output.size()));
     if (simm7Expr!=nullptr)
         simm7Expr->setTarget(AsmExprTarget(GCNTGT_SMEMIMM, asmr.currentSection,
@@ -1447,16 +1434,20 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     // put data (2 instruction words)
     uint32_t words[2];
     SLEV(words[0], 0xc0000000U | (uint32_t(gcnInsn.code1)<<18) | (dataReg.bstart()<<6) |
-            (sbaseReg.bstart()>>1) | ((soffsetReg.isVal(255)) ? 0x20000 : 0) |
+            (sbaseReg.bstart()>>1) |
+            // enable IMM if soffset is immediate or haveOffset with SGPR
+            ((soffsetReg.isVal(255) || haveOffset) ? 0x20000 : 0) |
             (haveGlc ? 0x10000 : 0) | (haveNv ? 0x8000 : 0) | (haveOffset ? 0x4000 : 0));
-    SLEV(words[1], ((soffsetReg.isVal(255)) ?
-                (soffsetVal | (uint32_t(soffset2Val)<<24)) : soffsetReg.bstart()));
+    SLEV(words[1], (
+            // store IMM OFFSET if offset: or IMM offset instead SGPR
+            ((soffsetReg.isVal(255) || haveOffset) ? soffsetVal : soffsetReg.bstart())) |
+            // store SGPR in SOFFSET if have offset and have SGPR offset
+                ((haveOffset && !soffsetReg.isVal(255)) ? (soffsetReg.bstart()<<25) : 0));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
             reinterpret_cast<cxbyte*>(words+2));
     /// prevent freeing expression
     soffsetExpr.release();
-    soffset2Expr.release();
     simm7Expr.release();
     
     // update SGPR counting and VCC usage (regflags)
@@ -4049,14 +4040,6 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                 SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value&0xfffffU);
             printWarningForRange(targetType==GCNTGT_SMEMOFFSETVEGA ? 21 : 20,
                                  value, sourcePos, WS_UNSIGNED);
-            return true;
-        case GCNTGT_SMEMOFFSET2:
-            // second offset in SMEM instruction
-            if (sectionId != ASMSECT_ABS)
-                GCN_FAIL_BY_ERROR(sourcePos,
-                        "Relative value is illegal in offset expressions")
-            sectionData[offset+7] = value;
-            printWarningForRange(8, value, sourcePos, WS_UNSIGNED);
             return true;
         case GCNTGT_SMEMIMM:
             if (sectionId != ASMSECT_ABS)

@@ -1384,7 +1384,7 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             if (isGCN14 && (insnCode & 0x4000) != 0)
             {
                 // last 8-bit in second dword
-                bufPtr += itocstrCStyle(insnCode2 >> 24, bufPtr, 11, 16);
+                decodeGCNOperandNoLit(dasm, (insnCode2>>25), 1, bufPtr , arch);
                 printOffset = true;
             }
             else

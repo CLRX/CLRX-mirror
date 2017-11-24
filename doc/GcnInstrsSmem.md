@@ -21,7 +21,7 @@ Value of the IMM determines meaning of the OFFSET field:
 * IMM=1 - OFFSET holds a byte offset to SBASE.
 * IMM=0 - OFFSET holds number of SGPR that holds byte offset to SBASE.
 
-For S_LOAD_DWORD\* instructions, 2 SBASE SGPRs holds an base 64-bit address.
+For S_LOAD_DWORD\* instructions, 2 SBASE SGPRs holds a base 64-bit address.
 For S_BUFFER_LOAD_DWORD\* instructions, 4 SBASE SGPRs holds a
 buffer descriptor. In this case, SBASE must be a multipla of 2.
 S_STORE_\* and S_BUFFER_STORE_\* accepts only M0 as offset register for GCN 1.2.
@@ -46,6 +46,9 @@ List of the instructions by opcode:
  2 (0x2)    |   ✓   |   ✓   | S_LOAD_DWORDX4
  3 (0x3)    |   ✓   |   ✓   | S_LOAD_DWORDX8
  4 (0x4)    |   ✓   |   ✓   | S_LOAD_DWORDX16
+ 5 (0x5)    |       |   ✓   | S_SCRATCH_LOAD_DWORD
+ 6 (0x6)    |       |   ✓   | S_SCRATCH_LOAD_DWORDX2
+ 7 (0x7)    |       |   ✓   | S_SCRATCH_LOAD_DWORDX4
  8 (0x8)    |   ✓   |   ✓   | S_BUFFER_LOAD_DWORD
  9 (0x9)    |   ✓   |   ✓   | S_BUFFER_LOAD_DWORDX2
  10 (0xa)   |   ✓   |   ✓   | S_BUFFER_LOAD_DWORDX4
@@ -54,9 +57,12 @@ List of the instructions by opcode:
  16 (0x10)  |   ✓   |   ✓   | S_STORE_DWORD
  17 (0x11)  |   ✓   |   ✓   | S_STORE_DWORDX2
  18 (0x12)  |   ✓   |   ✓   | S_STORE_DWORDX4
+ 21 (0x15)  |       |   ✓   | S_SCRATCH_STORE_DWORD
+ 22 (0x16)  |       |   ✓   | S_SCRATCH_STORE_DWORDX2
+ 23 (0x17)  |       |   ✓   | S_SCRATCH_STORE_DWORDX4
  24 (0x18)  |   ✓   |   ✓   | S_BUFFER_LOAD_DWORD
  25 (0x19)  |   ✓   |   ✓   | S_BUFFER_LOAD_DWORDX2
- 27 (0x1a)  |   ✓   |   ✓   | S_BUFFER_LOAD_DWORDX4
+ 26 (0x1a)  |   ✓   |   ✓   | S_BUFFER_LOAD_DWORDX4
  32 (0x20)  |   ✓   |   ✓   | S_DCACHE_INV
  33 (0x21)  |   ✓   |   ✓   | S_DCACHE_WB
  34 (0x22)  |   ✓   |   ✓   | S_DCACHE_INV_VOL
