@@ -13,13 +13,22 @@ Bits  | Name     | Description
 18-25 | OPCODE   | Operation code
 26-31 | ENCODING | Encoding type. Must be 0b110000
 32-51 | OFFSET   | Unsigned 20-bit byte offset or SGPR number that holds byte offset
-32-52 | OFFSET   | Unsigned 21-bit byte offset or SGPR number (byte offset) (GCN 1.4)
+32-52 | OFFSET   | Signed 21-bit byte offset or SGPR number (byte offset) (GCN 1.4)
 57-63 | SOFFSET  | SGPR offset (only if SOE=1)
 
-Value of the IMM determines meaning of the OFFSET field:
+Value of the IMM determines meaning of the OFFSET field (GCN 1.2):
 
 * IMM=1 - OFFSET holds a byte offset to SBASE.
 * IMM=0 - OFFSET holds number of SGPR that holds byte offset to SBASE.
+
+Value of the IMM and SOE determines encoding of OFFSET and SGPR offset (GCN 1.4):
+
+ IMM | SOE | Address                            | Syntax
+-----|-----|------------------------------------|--------------------
+  0  |  0  | SGPR[base] + SGPR[OFFSET]
+  0  |  1  | SGPR[base] + SGPR[SOFFSET]
+  1  |  0  | SGPR[base] + OFFSET
+  1  |  1  | SGPR[base] + OFFSET + SGPR[SOFFSET]
 
 For S_LOAD_DWORD\* instructions, 2 SBASE SGPRs holds a base 64-bit address.
 For S_BUFFER_LOAD_DWORD\* instructions, 4 SBASE SGPRs holds a
@@ -34,7 +43,12 @@ is `S_WAITCNT LGKMCNT(0)`.
 * LGKM_CNT incremented by one for every fetch of single Dword
 * LGKM_CNT incremented by two for every fetch of two or more Dwords
 
-NOTE: Between setting third dword from buffer resource and S_BUFFER_* instruction
+Instruction syntax: INSTRUCTION SDATA, SBASE(2,4), OFFSET|SGPR [MODIFIERS]
+
+Modifiers can be supplied in any order. Modifiers list: GLC, NV (GCN 1.4),
+OFFSET:OFFSET (GCN 1.4).
+
+NOTE: Between setting third dword from buffer resource and S_BUFFER_\* instruction
 is required least one instruction (vector or scalar) due to delay.
 
 List of the instructions by opcode:
