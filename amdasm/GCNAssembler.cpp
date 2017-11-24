@@ -4039,7 +4039,8 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             else
                 SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value&0xfffffU);
             printWarningForRange(targetType==GCNTGT_SMEMOFFSETVEGA ? 21 : 20,
-                                 value, sourcePos, WS_UNSIGNED);
+                            value, sourcePos,
+                            targetType==GCNTGT_SMEMOFFSETVEGA ? WS_BOTH : WS_UNSIGNED);
             return true;
         case GCNTGT_SMEMIMM:
             if (sectionId != ASMSECT_ABS)
