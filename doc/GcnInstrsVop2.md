@@ -133,6 +133,66 @@ List of the instructions by opcode:
  50 (0x32)  | 306 (0x132) | --                   | V_MIN_I16
  51 (0x33)  | 307 (0x133) | --                   | V_LDEXP_F16
 
+List of the instructions by opcode (GCN 1.4):
+
+ Opcode     | Opcode(VOP3)| Mnemonic (GCN 1.4)
+------------|-------------|------------------------
+ 0 (0x0)    | 256 (0x100) | V_CNDMASK_B32
+ 1 (0x1)    | 257 (0x101) | V_ADD_F32
+ 2 (0x2)    | 258 (0x102) | V_SUB_F32
+ 3 (0x3)    | 259 (0x103) | V_SUBREV_F32
+ 4 (0x4)    | 260 (0x104) | V_MUL_LEGACY_F32
+ 5 (0x5)    | 261 (0x105) | V_MUL_F32
+ 6 (0x6)    | 262 (0x106) | V_MUL_I32_I24
+ 7 (0x7)    | 263 (0x107) | V_MUL_HI_I32_I24
+ 8 (0x8)    | 264 (0x108) | V_MUL_U32_U24
+ 9 (0x9)    | 265 (0x109) | V_MUL_HI_U32_U24
+ 10 (0xa)   | 266 (0x10a) | V_MIN_F32
+ 11 (0xb)   | 267 (0x10b) | V_MAX_F32
+ 12 (0xc)   | 268 (0x10c) | V_MIN_I32
+ 13 (0xd)   | 269 (0x10d) | V_MAX_I32
+ 14 (0xe)   | 270 (0x10e) | V_MIN_U32
+ 15 (0xf)   | 271 (0x10f) | V_MAX_U32
+ 16 (0x10)  | 272 (0x110) | V_LSHRREV_B32
+ 17 (0x11)  | 273 (0x111) | V_ASHRREV_I32
+ 18 (0x12)  | 274 (0x112) | V_LSHLREV_B32
+ 19 (0x13)  | 275 (0x113) | V_AND_B32
+ 20 (0x14)  | 276 (0x114) | V_OR_B32
+ 21 (0x15)  | 277 (0x115) | V_XOR_B32
+ 22 (0x16)  | 278 (0x116) | V_MAC_F32
+ 23 (0x17)  | 279 (0x117) | V_MADMK_F32
+ 24 (0x18)  | 280 (0x118) | V_MADAK_F32
+ 25 (0x19)  | 281 (0x119) | V_ADD_CO_U32 (VOP3B)
+ 26 (0x1a)  | 282 (0x11a) | V_SUB_CO_U32 (VOP3B)
+ 27 (0x1b)  | 283 (0x11b) | V_SUBREV_CO_U32 (VOP3B)
+ 28 (0x1c)  | 284 (0x11c) | V_ADDC_CO_U32 (VOP3B)
+ 29 (0x1d)  | 285 (0x11d) | V_SUBB_CO_U32 (VOP3B)
+ 30 (0x1e)  | 286 (0x11e) | V_SUBBREV_CO_U32 (VOP3B)
+ 31 (0x1f)  | 287 (0x11f) | V_ADD_F16
+ 32 (0x20)  | 288 (0x120) | V_SUB_F16
+ 33 (0x21)  | 289 (0x121) | V_SUBREV_F16
+ 34 (0x22)  | 290 (0x122) | V_MUL_F16
+ 35 (0x23)  | 291 (0x123) | V_MAC_F16
+ 36 (0x24)  | 292 (0x124) | V_MADMK_F16
+ 37 (0x25)  | 293 (0x125) | V_MADAK_F16
+ 38 (0x26)  | 294 (0x126) | V_ADD_U16
+ 39 (0x27)  | 295 (0x127) | V_SUB_U16
+ 40 (0x28)  | 296 (0x128) | V_SUBREV_U16
+ 41 (0x29)  | 297 (0x129) | V_MUL_LO_U16
+ 42 (0x2a)  | 298 (0x12a) | V_LSHLREV_B16
+ 43 (0x2b)  | 299 (0x12b) | V_LSHRREV_B16
+ 44 (0x2c)  | 300 (0x12c) | V_ASHRREV_I16
+ 45 (0x2d)  | 301 (0x12d) | V_MAX_F16
+ 46 (0x2e)  | 302 (0x12e) | V_MIN_F16
+ 47 (0x2f)  | 303 (0x12f) | V_MAX_U16
+ 48 (0x30)  | 304 (0x130) | V_MAX_I16
+ 49 (0x31)  | 305 (0x131) | V_MIN_U16
+ 50 (0x32)  | 306 (0x132) | V_MIN_I16
+ 51 (0x33)  | 307 (0x133) | V_LDEXP_F16
+ 52 (0x34)  | 308 (0x134) | V_ADD_U32
+ 53 (0x35)  | 309 (0x135) | V_SUB_U32
+ 54 (0x36)  | 310 (0x136) | V_SUBREV_U32
+
 ### Instruction set
 
 Alphabetically sorted instruction list:
@@ -159,7 +219,25 @@ Operation:
 VDST = ASFLOAT(SRC0) + ASFLOAT(SRC1)
 ```
 
-#### V_ADD_I32, V_ADD_U32
+#### V_ADD_CO_U32
+
+Opcode VOP2: 25 (0x19) for GCN 1.4  
+Opcode VOP3B: 281 (0x119) for GCN 1.4  
+Syntax VOP2: V_ADD_CO_U32 VDST, VCC, SRC0, SRC1  
+Syntax VOP3B: V_ADD_CO_U32 VDST, SDST(2), SRC0, SRC1  
+Description: Add SRC0 to SRC1 and store result to VDST and store carry flag to
+SDST (or VCC) bit with number that equal to lane id. SDST is 64-bit.
+Bits for inactive threads in SDST are always zeroed.  
+Operation:  
+```
+UINT64 temp = (UINT64)SRC0 + (UINT64)SRC1
+VDST = temp
+SDST = 0
+UINT64 mask = (1ULL<<LANEID)
+SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
+```
+
+#### V_ADD_I32, V_ADD_U32 (GCN 1.0/1.1/1.2)
 
 Opcode VOP2: 37 (0x25) for GCN 1.0/1.1; 25 (0x19) for GCN 1.2  
 Opcode VOP3B: 293 (0x125) for GCN 1.0/1.1; 281 (0x119) for GCN 1.2  
@@ -191,12 +269,43 @@ Operation:
 VDST = (SRC0 + SRC1) & 0xffff
 ```
 
-#### V_ADDC_U32
+#### V_ADD_U32 (GCN 1.4)
+
+Opcode VOP2: 52 (0x34) for GCN 1.4  
+Opcode VOP3B: 308 (0x134) for GCN 1.4  
+Syntax: V_ADD_U32 VDST, SRC0, SRC1  
+Description: Add SRC0 to SRC1 and store result to VDST.  
+Operation:  
+```
+VDST = SRC0 + SRC1
+```
+
+#### V_ADDC_CO_U32
+
+Opcode VOP2: 28 (0x1c) for GCN 1.4  
+Opcode VOP3B: 284 (0x11c) for GCN 1.4  
+Syntax VOP2: V_ADDC_CO_U32 VDST, VCC, SRC0, SRC1, VCC  
+Syntax VOP3B: V_ADDC_CO_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
+Description: Add SRC0 to SRC1 with carry stored in SSRC2 bit with number that equal lane id,
+and store result to VDST and store carry flag to SDST (or VCC) bit with number
+that equal to lane id. SDST and SSRC2 are 64-bit.
+Bits for inactive threads in SDST are always zeroed.  
+Operation:  
+```
+UINT64 mask = (1ULL<<LANEID)
+UINT8 CC = ((SSRC2&mask) ? 1 : 0)
+UINT64 temp = (UINT64)SRC0 + (UINT64)SRC1 + CC
+SDST = 0
+VDST = temp
+SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
+```
+
+#### V_ADDC_U32 (GCN 1.0/1.1/1.2)
 
 Opcode VOP2: 40 (0x28) for GCN 1.0/1.1; 28 (0x1c) for GCN 1.2  
 Opcode VOP3B: 296 (0x128) for GCN 1.0/1.1; 284 (0x11c) for GCN 1.2  
-Syntax VOP2 GCN 1.0/1.1: V_ADDC_U32 VDST, VCC, SRC0, SRC1, VCC  
-Syntax VOP3B GCN 1.2: V_ADDC_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
+Syntax VOP2: V_ADDC_U32 VDST, VCC, SRC0, SRC1, VCC  
+Syntax VOP3B: V_ADDC_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
 Description: Add SRC0 to SRC1 with carry stored in SSRC2 bit with number that equal lane id,
 and store result to VDST and store carry flag to SDST (or VCC) bit with number
 that equal to lane id. SDST and SSRC2 are 64-bit.
@@ -937,7 +1046,25 @@ Operation:
 VDST = (SRC0 - SRC1) & 0xffff
 ```
 
-#### V_SUB_I32, V_SUB_U32
+#### V_SUB_CO_U32
+
+Opcode VOP2: 26 (0x1a) for GCN 1.4  
+Opcode VOP3B: 282 (0x11a) for GCN 1.4  
+Syntax VOP2: V_SUB_CO_U32 VDST, VCC, SRC0, SRC1  
+Syntax VOP3B: V_SUB_CO_U32 VDST, SDST(2), SRC0, SRC1  
+Description: Subtract SRC1 from SRC0 and store result to VDST and store borrow flag to
+SDST (or VCC) bit with number that equal to lane id. SDST is 64-bit.
+Bits for inactive threads in SDST are always zeroed.  
+Operation:  
+```
+UINT64 temp = (UINT64)SRC0 - (UINT64)SRC1
+VDST = temp
+SDST = 0
+UINT64 mask = (1ULL<<LANEID)
+SDST = (SDST&~mask) | ((temp>>32) ? mask : 0)
+```
+
+#### V_SUB_I32, V_SUB_U32 (GCN 1.0/1.1/1.2)
 
 Opcode VOP2: 38 (0x26) for GCN 1.0/1.1; 26 (0x1a) for GCN 1.2  
 Opcode VOP3B: 294 (0x126) for GCN 1.0/1.1; 282 (0x11a) for GCN 1.2  
@@ -957,12 +1084,23 @@ UINT64 mask = (1ULL<<LANEID)
 SDST = (SDST&~mask) | ((temp>>32) ? mask : 0)
 ```
 
-#### V_SUBB_U32
+#### V_SUB_U32 (GCN 1.4)
 
-Opcode VOP2: 41 (0x29) for GCN 1.0/1.1; 29 (0x1d) for GCN 1.2  
-Opcode VOP3B: 297 (0x129) for GCN 1.0/1.1; 285 (0x11d) for GCN 1.2  
-Syntax VOP2 GCN 1.0/1.1: V_SUBB_U32 VDST, VCC, SRC0, SRC1, VCC  
-Syntax VOP3B GCN 1.2: V_SUBB_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
+Opcode VOP2: 53 (0x35) for GCN 1.4  
+Opcode VOP3B: 309 (0x135) for GCN 1.4  
+Syntax: V_SUB_U32 VDST, SRC0, SRC1  
+Description: Subtract SRC1 with borrow from SRC0, and store result to VDST.  
+Operation:  
+```
+VDST = SRC0 - SRC1
+```
+
+#### V_SUBB_CO_U32
+
+Opcode VOP2: 29 (0x1d) for GCN 1.4  
+Opcode VOP3B: 285 (0x11d) for GCN 1.4  
+Syntax VOP2: V_SUBB_CO_U32 VDST, VCC, SRC0, SRC1, VCC  
+Syntax VOP3B: V_SUBB_CO_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
 Description: Subtract SRC1 with borrow from SRC0,
 and store result to VDST and store carry flag to SDST (or VCC) bit with number
 that equal to lane id. Borrow is stored in SSRC2 bit with number of lane id.
@@ -977,12 +1115,52 @@ VDST = temp
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 ```
 
-#### V_SUBBREV_U32
+#### V_SUBB_U32 (GCN 1.0/1.1/1.2)
+
+Opcode VOP2: 41 (0x29) for GCN 1.0/1.1; 29 (0x1d) for GCN 1.2  
+Opcode VOP3B: 297 (0x129) for GCN 1.0/1.1; 285 (0x11d) for GCN 1.2  
+Syntax VOP2: V_SUBB_U32 VDST, VCC, SRC0, SRC1, VCC  
+Syntax VOP3B: V_SUBB_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
+Description: Subtract SRC1 with borrow from SRC0,
+and store result to VDST and store carry flag to SDST (or VCC) bit with number
+that equal to lane id. Borrow is stored in SSRC2 bit with number of lane id.
+SDST and SSRC2 are 64-bit. Bits for inactive threads in SDST are always zeroed.  
+Operation:  
+```
+UINT64 mask = (1ULL<<LANEID)
+UINT8 CC = ((SSRC2&mask) ? 1 : 0)
+UINT64 temp = (UINT64)SRC0 - (UINT64)SRC1 - CC
+SDST = 0
+VDST = temp
+SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
+```
+
+#### V_SUBBREV_CO_U32
+
+Opcode VOP2: 30 (0x1e) for GCN 1.4  
+Opcode VOP3B: 286 (0x11e) for GCN 1.4  
+Syntax VOP2: V_SUBBREV_CO_U32 VDST, VCC, SRC0, SRC1, VCC  
+Syntax VOP3B: V_SUBBREV_CO_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
+Description: Subtract SRC0 with borrow from SRC1,
+and store result to VDST and store carry flag to SDST (or VCC) bit with number
+that equal to lane id. Borrow is stored in SSRC2 bit with number of lane id.
+SDST and SSRC2 are 64-bit. Bits for inactive threads in SDST are always zeroed.  
+Operation:  
+```
+UINT64 mask = (1ULL<<LANEID)
+UINT8 CC = ((SSRC2&mask) ? 1 : 0)
+UINT64 temp = (UINT64)SRC1 - (UINT64)SRC0 - CC
+SDST = 0
+VDST = temp
+SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
+```
+
+#### V_SUBBREV_U32 (GCN 1.0/1.1/1.2)
 
 Opcode VOP2: 42 (0x2a) for GCN 1.0/1.1; 30 (0x1e) for GCN 1.2  
 Opcode VOP3B: 298 (0x12a) for GCN 1.0/1.1; 286 (0x11e) for GCN 1.2  
-Syntax VOP2 GCN 1.0/1.1: V_SUBBREV_U32 VDST, VCC, SRC0, SRC1, VCC  
-Syntax VOP3B GCN 1.2: V_SUBBREV_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
+Syntax VOP2: V_SUBBREV_U32 VDST, VCC, SRC0, SRC1, VCC  
+Syntax VOP3B: V_SUBBREV_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
 Description: Subtract SRC0 with borrow from SRC1,
 and store result to VDST and store carry flag to SDST (or VCC) bit with number
 that equal to lane id. Borrow is stored in SSRC2 bit with number of lane id.
@@ -1019,7 +1197,7 @@ Operation:
 VDST = ASFLOAT(SRC1) - ASFLOAT(SRC0)
 ```
 
-#### V_SUBREV_I32, V_SUBREV_U32
+#### V_SUBREV_I32, V_SUBREV_U32 (GCN 1.0/1.1/1.2)
 
 Opcode VOP2: 39 (0x27) for GCN 1.0/1.1; 27 (0x1b) for GCN 1.2  
 Opcode VOP3B: 295 (0x127) for GCN 1.0/1.1; 283 (0x11b) for GCN 1.2  
@@ -1049,6 +1227,17 @@ Description: Subtract unsigned 16-bit value of SRC0 from SRC1 and store
 Operation:  
 ```
 VDST = (SRC1 - SRC0) & 0xffff
+```
+
+#### V_SUBREV_U32 (GCN 1.4)
+
+Opcode VOP2: 54 (0x36) for GCN 1.4  
+Opcode VOP3B: 310 (0x136) for GCN 1.4  
+Syntax: V_SUBREV_U32 VDST, SRC0, SRC1  
+Description: Subtract SRC0 with borrow from SRC1, and store result to VDST.  
+Operation:  
+```
+VDST = SRC1 - SRC0
 ```
 
 #### V_XOR_B32
