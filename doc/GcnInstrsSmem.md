@@ -21,7 +21,7 @@ Value of the IMM determines meaning of the OFFSET field:
 * IMM=1 - OFFSET holds a byte offset to SBASE.
 * IMM=0 - OFFSET holds number of SGPR that holds byte offset to SBASE.
 
-For S_LOAD_DWORD\* instructions, 2 SBASE SGPRs holds an base 48-bit address.
+For S_LOAD_DWORD\* instructions, 2 SBASE SGPRs holds an base 64-bit address.
 For S_BUFFER_LOAD_DWORD\* instructions, 4 SBASE SGPRs holds a
 buffer descriptor. In this case, SBASE must be a multipla of 2.
 S_STORE_\* and S_BUFFER_STORE_\* accepts only M0 as offset register for GCN 1.2.
