@@ -40,7 +40,7 @@ is required least one instruction (vector or scalar) due to delay.
 List of the instructions by opcode:
 
  Opcode     |GCN 1.2|GCN 1.4| Mnemonic (GCN1.2/1.4)
-------------|----------------------------------------------
+------------|-------|-------|------------------------------
  0 (0x0)    |   ✓   |   ✓   | S_LOAD_DWORD
  1 (0x1)    |   ✓   |   ✓   | S_LOAD_DWORDX2
  2 (0x2)    |   ✓   |   ✓   | S_LOAD_DWORDX4
