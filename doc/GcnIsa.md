@@ -9,6 +9,17 @@ The most CPU architectures provides an unified memory access approach. By contra
 the most GPU's have few different resource types for which access is different. Hence,
 few instruction's kinds: scalar, vector, main memory access instructions.
 
+### GCN architecture versions
+
+List of known GCN versions:
+
+CLRX Version | AMD Version  | Example devices
+-------------|--------------|-------------------------------------
+ GCN 1.0     | GCN 1        | Pitcairn (HD 7850), Tahiti (HD 7970), Cape verde
+ GCN 1.1     | GCN 2        | Bonaire (R7 260), Hawaii (R9 290)
+ GCN 1.2     | GCN 3, GCN 4 | Tonga (R9 285), Fiji (Fury X), Ellesmere (RX 480), Baffin
+ GCN 1.4     | GCN 5        | VEGA (GFX900) (RX VEGA 64)
+
 ### Instruction suffixes
 
 Optionally, suffixes can be appended to instruction mnemonic to indicate encoding size.

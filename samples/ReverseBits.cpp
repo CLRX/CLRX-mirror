@@ -202,7 +202,7 @@ end:
         s_cbranch_execz end                     # no active threads, we jump to end
         s_movk_i32 s8, 0                        # memory buffer (base=0)
         s_movk_i32 s9, 0
-        s_movk_i32 s10, 0xffff                  # infinite number of records
+        s_movk_i32 s10, -1                      # infinite number of records ((1<<32)-1)
         s_mov_b32 s11, 0x8027fac                # set dstsel, nfmt and dfmt
         v_add_i32 v1, vcc, s0, v0           # input+global_id(0)
         buffer_load_ubyte v2, v1, s[8:11], 0 offen   # load byte

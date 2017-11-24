@@ -187,7 +187,7 @@ end:
         
         s_movk_i32 s8, 0                        # memory buffer (base=0)
         s_movk_i32 s9, 0
-        s_movk_i32 s10, 0xffff                  # infinite number of records
+        s_movk_i32 s10, -1                  # infinite number of records ((1<<32)-1)
         s_mov_b32 s11, 0x8027fac                # set dstsel, nfmt and dfmt
         
         v_lshlrev_b32 v0, 2, v0                 # v0 - global_id(0)*4

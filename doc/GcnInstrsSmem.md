@@ -67,6 +67,32 @@ List of the instructions by opcode:
  39 (0x27)  |   ✓   |   ✓   | S_ATC_PROBE_BUFFER
  40 (0x28)  |       |   ✓   | S_DCACHE_DISCARD
  41 (0x29)  |       |   ✓   | S_DCACHE_DISCARD_X2
+ 64 (0x40)  |       |   ✓   | S_BUFFER_ATOMIC_SWAP
+ 65 (0x41)  |       |   ✓   | S_BUFFER_ATOMIC_CMPSWAP
+ 66 (0x42)  |       |   ✓   | S_BUFFER_ATOMIC_ADD
+ 67 (0x43)  |       |   ✓   | S_BUFFER_ATOMIC_SUB
+ 68 (0x44)  |       |   ✓   | S_BUFFER_ATOMIC_SMIN
+ 69 (0x45)  |       |   ✓   | S_BUFFER_ATOMIC_UMIN
+ 70 (0x46)  |       |   ✓   | S_BUFFER_ATOMIC_SMAX
+ 71 (0x47)  |       |   ✓   | S_BUFFER_ATOMIC_UMAX
+ 72 (0x48)  |       |   ✓   | S_BUFFER_ATOMIC_AND
+ 73 (0x49)  |       |   ✓   | S_BUFFER_ATOMIC_OR
+ 74 (0x4a)  |       |   ✓   | S_BUFFER_ATOMIC_XOR
+ 75 (0x4b)  |       |   ✓   | S_BUFFER_ATOMIC_INC
+ 76 (0x4c)  |       |   ✓   | S_BUFFER_ATOMIC_DEC
+ 96 (0x60)  |       |   ✓   | S_BUFFER_ATOMIC_SWAP_X2
+ 97 (0x61)  |       |   ✓   | S_BUFFER_ATOMIC_CMPSWAP_X2
+ 98 (0x62)  |       |   ✓   | S_BUFFER_ATOMIC_ADD_X2
+ 99 (0x63)  |       |   ✓   | S_BUFFER_ATOMIC_SUB_X2
+ 100 (0x64) |       |   ✓   | S_BUFFER_ATOMIC_SMIN_X2
+ 101 (0x65) |       |   ✓   | S_BUFFER_ATOMIC_UMIN_X2
+ 102 (0x66) |       |   ✓   | S_BUFFER_ATOMIC_SMAX_X2
+ 103 (0x67) |       |   ✓   | S_BUFFER_ATOMIC_UMAX_X2
+ 104 (0x68) |       |   ✓   | S_BUFFER_ATOMIC_AND_X2
+ 105 (0x69) |       |   ✓   | S_BUFFER_ATOMIC_OR_X2
+ 106 (0x6a) |       |   ✓   | S_BUFFER_ATOMIC_XOR_X2
+ 107 (0x6b) |       |   ✓   | S_BUFFER_ATOMIC_INC_X2
+ 108 (0x6c) |       |   ✓   | S_BUFFER_ATOMIC_DEC_X2
  128 (0x80) |       |   ✓   | S_ATOMIC_SWAP
  129 (0x81) |       |   ✓   | S_ATOMIC_CMPSWAP
  130 (0x82) |       |   ✓   | S_ATOMIC_ADD
