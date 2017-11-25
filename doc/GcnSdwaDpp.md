@@ -82,7 +82,7 @@ switch(SRC0_SEL)
         SRC0_DST = (SRC0_SEXT) ? INT32(INT8((SRC0_SRC>>16) & 0xff)) :
                     (SRC0_SRC>>16) & 0xff
         break;
-    case SDWA_BYTE_1:
+    case SDWA_BYTE_3:
         SRC0_DST = (SRC0_SEXT) ? INT32(INT8(SRC0_SRC>>24)) : SRC0_SRC>>24
         break;
     case SDWA_WORD_0:
@@ -110,7 +110,7 @@ if (HAVE_SRC1)
             SRC1_DST = (SRC1_SEXT) ? INT32(INT8((SRC1_SRC>>16) & 0xff)) :
                         (SRC1_SRC>>16) & 0xff
             break;
-        case SDWA_BYTE_1:
+        case SDWA_BYTE_3:
             SRC1_DST = (SRC1_SEXT) ? INT32(INT8(SRC1_SRC>>24)) : SRC1_SRC>>24
             break;
         case SDWA_WORD_0:
