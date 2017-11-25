@@ -588,7 +588,7 @@ store result to VDST. Conversion depends on rounding mode.
 ```
 VDST = 0
 if (!ISNAN(ASHALF(SRC0)))
-    VDST = (INT16)(MAX(MIN(RNDINT(ASHALF(SRC0*32768.0)), 32769.0, -32767.0)))
+    VDST = (INT16)(MAX(MIN(RNDINT(ASHALF(SRC0*32767.0)), 32767.0, -32767.0)))
 ```
 
 #### V_CVT_NORM_U16_F16

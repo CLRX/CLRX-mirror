@@ -227,11 +227,12 @@ Syntax VOP2: V_ADD_CO_U32 VDST, VCC, SRC0, SRC1
 Syntax VOP3B: V_ADD_CO_U32 VDST, SDST(2), SRC0, SRC1  
 Description: Add SRC0 to SRC1 and store result to VDST and store carry flag to
 SDST (or VCC) bit with number that equal to lane id. SDST is 64-bit.
-Bits for inactive threads in SDST are always zeroed.  
+Bits for inactive threads in SDST are always zeroed.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
 UINT64 temp = (UINT64)SRC0 + (UINT64)SRC1
-VDST = temp
+VDST = CLAMP ? MIN(temp, 0xffffffff) : temp
 SDST = 0
 UINT64 mask = (1ULL<<LANEID)
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
@@ -247,11 +248,12 @@ Syntax VOP2 GCN 1.2: V_ADD_U32 VDST, VCC, SRC0, SRC1
 Syntax VOP3B GCN 1.2: V_ADD_U32 VDST, SDST(2), SRC0, SRC1  
 Description: Add SRC0 to SRC1 and store result to VDST and store carry flag to
 SDST (or VCC) bit with number that equal to lane id. SDST is 64-bit.
-Bits for inactive threads in SDST are always zeroed.  
+Bits for inactive threads in SDST are always zeroed.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
 UINT64 temp = (UINT64)SRC0 + (UINT64)SRC1
-VDST = temp
+VDST = CLAMP ? MIN(temp, 0xffffffff) : temp
 SDST = 0
 UINT64 mask = (1ULL<<LANEID)
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
@@ -263,10 +265,12 @@ Opcode VOP2: 38 (0x26) for GCN 1.2
 Opcode VOP3A: 294 (0x126) for GCN 1.2  
 Syntax: V_ADD_U16 VDST, SRC0, SRC1  
 Description: Add two 16-bit unsigned values from SRC0 and SRC1 and
-store 16-bit unsigned result to VDST.  
+store 16-bit unsigned result to VDST.
+If CLAMP modifier supplied, then result is saturated to 16-bit unsigned value.  
 Operation:  
 ```
-VDST = (SRC0 + SRC1) & 0xffff
+UINT32 TEMP = (SRC0 & 0xffff) + (SRC1 & 0xffff)
+VDST = CLAMP ? MIN(0xffff, TEMP) : TEMP
 ```
 
 #### V_ADD_U32 (GCN 1.4)
@@ -274,10 +278,12 @@ VDST = (SRC0 + SRC1) & 0xffff
 Opcode VOP2: 52 (0x34) for GCN 1.4  
 Opcode VOP3B: 308 (0x134) for GCN 1.4  
 Syntax: V_ADD_U32 VDST, SRC0, SRC1  
-Description: Add SRC0 to SRC1 and store result to VDST.  
+Description: Add SRC0 to SRC1 and store result to VDST.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
-VDST = SRC0 + SRC1
+UINT64 TEMP = (UINT64)SRC0 + SRC1
+VDST = CLAMP ? MIN(TEMP, 0xffffffff) : TEMP
 ```
 
 #### V_ADDC_CO_U32
@@ -289,14 +295,15 @@ Syntax VOP3B: V_ADDC_CO_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)
 Description: Add SRC0 to SRC1 with carry stored in SSRC2 bit with number that equal lane id,
 and store result to VDST and store carry flag to SDST (or VCC) bit with number
 that equal to lane id. SDST and SSRC2 are 64-bit.
-Bits for inactive threads in SDST are always zeroed.  
+Bits for inactive threads in SDST are always zeroed.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
 UINT64 mask = (1ULL<<LANEID)
 UINT8 CC = ((SSRC2&mask) ? 1 : 0)
 UINT64 temp = (UINT64)SRC0 + (UINT64)SRC1 + CC
 SDST = 0
-VDST = temp
+VDST = CLAMP ? MIN(temp, 0xffffffff) : temp
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 ```
 
@@ -309,14 +316,15 @@ Syntax VOP3B: V_ADDC_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)
 Description: Add SRC0 to SRC1 with carry stored in SSRC2 bit with number that equal lane id,
 and store result to VDST and store carry flag to SDST (or VCC) bit with number
 that equal to lane id. SDST and SSRC2 are 64-bit.
-Bits for inactive threads in SDST are always zeroed.  
+Bits for inactive threads in SDST are always zeroed.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
 UINT64 mask = (1ULL<<LANEID)
 UINT8 CC = ((SSRC2&mask) ? 1 : 0)
 UINT64 temp = (UINT64)SRC0 + (UINT64)SRC1 + CC
 SDST = 0
-VDST = temp
+VDST = CLAMP ? MIN(temp, 0xffffffff) : temp
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 ```
 
@@ -1040,10 +1048,12 @@ Opcode VOP2: 39 (0x27) for GCN 1.2
 Opcode VOP3A: 295 (0x127) for GCN 1.2  
 Syntax: V_SUB_U16 VDST, SRC0, SRC1  
 Description: Subtract unsigned 16-bit value of SRC1 from SRC0 and store
-16-bit unsigned result to VDST.  
+16-bit unsigned result to VDST.
+If CLAMP modifier supplied, then result is saturated to 16-bit unsigned value.  
 Operation:  
 ```
-VDST = (SRC0 - SRC1) & 0xffff
+INT32 TEMP = (SRC0 & 0xffff) - (SRC1 & 0xffff)
+VDST = CLAMP ? MAX(TEMP, 0) : TEMP
 ```
 
 #### V_SUB_CO_U32
@@ -1054,11 +1064,12 @@ Syntax VOP2: V_SUB_CO_U32 VDST, VCC, SRC0, SRC1
 Syntax VOP3B: V_SUB_CO_U32 VDST, SDST(2), SRC0, SRC1  
 Description: Subtract SRC1 from SRC0 and store result to VDST and store borrow flag to
 SDST (or VCC) bit with number that equal to lane id. SDST is 64-bit.
-Bits for inactive threads in SDST are always zeroed.  
+Bits for inactive threads in SDST are always zeroed.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
 UINT64 temp = (UINT64)SRC0 - (UINT64)SRC1
-VDST = temp
+VDST = CLAMP ? (temp>>32 ? 0 : temp) : temp
 SDST = 0
 UINT64 mask = (1ULL<<LANEID)
 SDST = (SDST&~mask) | ((temp>>32) ? mask : 0)
@@ -1074,11 +1085,12 @@ Syntax VOP2 GCN 1.2: V_SUB_U32 VDST, VCC, SRC0, SRC1
 Syntax VOP3B GCN 1.2: V_SUB_U32 VDST, SDST(2), SRC0, SRC1  
 Description: Subtract SRC1 from SRC0 and store result to VDST and store borrow flag to
 SDST (or VCC) bit with number that equal to lane id. SDST is 64-bit.
-Bits for inactive threads in SDST are always zeroed.  
+Bits for inactive threads in SDST are always zeroed.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
 UINT64 temp = (UINT64)SRC0 - (UINT64)SRC1
-VDST = temp
+VDST = CLAMP ? (temp>>32 ? 0 : temp) : temp
 SDST = 0
 UINT64 mask = (1ULL<<LANEID)
 SDST = (SDST&~mask) | ((temp>>32) ? mask : 0)
@@ -1089,10 +1101,12 @@ SDST = (SDST&~mask) | ((temp>>32) ? mask : 0)
 Opcode VOP2: 53 (0x35) for GCN 1.4  
 Opcode VOP3B: 309 (0x135) for GCN 1.4  
 Syntax: V_SUB_U32 VDST, SRC0, SRC1  
-Description: Subtract SRC1 with borrow from SRC0, and store result to VDST.  
+Description: Subtract SRC1 with borrow from SRC0, and store result to VDST.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
-VDST = SRC0 - SRC1
+INT64 TEMP = (UINT64)SRC0 - SRC1
+VDST = CLAMP ? MAX(0, TEMP) : TEMP
 ```
 
 #### V_SUBB_CO_U32
@@ -1104,14 +1118,15 @@ Syntax VOP3B: V_SUBB_CO_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)
 Description: Subtract SRC1 with borrow from SRC0,
 and store result to VDST and store carry flag to SDST (or VCC) bit with number
 that equal to lane id. Borrow is stored in SSRC2 bit with number of lane id.
-SDST and SSRC2 are 64-bit. Bits for inactive threads in SDST are always zeroed.  
+SDST and SSRC2 are 64-bit. Bits for inactive threads in SDST are always zeroed.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
 UINT64 mask = (1ULL<<LANEID)
 UINT8 CC = ((SSRC2&mask) ? 1 : 0)
 UINT64 temp = (UINT64)SRC0 - (UINT64)SRC1 - CC
 SDST = 0
-VDST = temp
+VDST = CLAMP ? (temp>>32 ? 0 : temp) : temp
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 ```
 
@@ -1124,14 +1139,15 @@ Syntax VOP3B: V_SUBB_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)
 Description: Subtract SRC1 with borrow from SRC0,
 and store result to VDST and store carry flag to SDST (or VCC) bit with number
 that equal to lane id. Borrow is stored in SSRC2 bit with number of lane id.
-SDST and SSRC2 are 64-bit. Bits for inactive threads in SDST are always zeroed.  
+SDST and SSRC2 are 64-bit. Bits for inactive threads in SDST are always zeroed.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
 UINT64 mask = (1ULL<<LANEID)
 UINT8 CC = ((SSRC2&mask) ? 1 : 0)
 UINT64 temp = (UINT64)SRC0 - (UINT64)SRC1 - CC
 SDST = 0
-VDST = temp
+VDST = CLAMP ? (temp>>32 ? 0 : temp) : temp
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 ```
 
@@ -1144,14 +1160,15 @@ Syntax VOP3B: V_SUBBREV_CO_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)
 Description: Subtract SRC0 with borrow from SRC1,
 and store result to VDST and store carry flag to SDST (or VCC) bit with number
 that equal to lane id. Borrow is stored in SSRC2 bit with number of lane id.
-SDST and SSRC2 are 64-bit. Bits for inactive threads in SDST are always zeroed.  
+SDST and SSRC2 are 64-bit. Bits for inactive threads in SDST are always zeroed.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
 UINT64 mask = (1ULL<<LANEID)
 UINT8 CC = ((SSRC2&mask) ? 1 : 0)
 UINT64 temp = (UINT64)SRC1 - (UINT64)SRC0 - CC
 SDST = 0
-VDST = temp
+VDST = CLAMP ? (temp>>32 ? 0 : temp) : temp
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 ```
 
@@ -1164,14 +1181,15 @@ Syntax VOP3B: V_SUBBREV_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)
 Description: Subtract SRC0 with borrow from SRC1,
 and store result to VDST and store carry flag to SDST (or VCC) bit with number
 that equal to lane id. Borrow is stored in SSRC2 bit with number of lane id.
-SDST and SSRC2 are 64-bit. Bits for inactive threads in SDST are always zeroed.  
+SDST and SSRC2 are 64-bit. Bits for inactive threads in SDST are always zeroed.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
 UINT64 mask = (1ULL<<LANEID)
 UINT8 CC = ((SSRC2&mask) ? 1 : 0)
 UINT64 temp = (UINT64)SRC1 - (UINT64)SRC0 - CC
 SDST = 0
-VDST = temp
+VDST = CLAMP ? (temp>>32 ? 0 : temp) : temp
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 ```
 
@@ -1207,11 +1225,12 @@ Syntax VOP2 GCN 1.2: V_SUBREV_U32 VDST, VCC, SRC0, SRC1
 Syntax VOP3B GCN 1.2: V_SUBREV_U32 VDST, SDST(2), SRC0, SRC1  
 Description: Subtract SRC0 from SRC1 and store result to VDST and store borrow flag to
 SDST (or VCC) bit with number that equal to lane id. SDST is 64-bit.
-Bits for inactive threads in SDST are always zeroed.  
+Bits for inactive threads in SDST are always zeroed.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
 UINT64 temp = (UINT64)SRC1 - (UINT64)SRC0
-VDST = temp
+VDST = CLAMP ? (temp>>32 ? 0 : temp) : temp
 SDST = 0
 UINT64 mask = (1ULL<<LANEID)
 SDST = (SDST&~mask) | ((temp>>32) ? mask : 0)
@@ -1223,10 +1242,12 @@ Opcode VOP2: 40 (0x28) for GCN 1.2
 Opcode VOP3A: 296 (0x128) for GCN 1.2  
 Syntax: V_SUBREV_U16 VDST, SRC0, SRC1  
 Description: Subtract unsigned 16-bit value of SRC0 from SRC1 and store
-16-bit unsigned result to VDST.  
+16-bit unsigned result to VDST.
+If CLAMP modifier supplied, then result is saturated to 16-bit unsigned value.  
 Operation:  
 ```
-VDST = (SRC1 - SRC0) & 0xffff
+INT32 TEMP = (SRC1 & 0xffff) - (SRC0 & 0xffff)
+VDST = CLAMP ? MAX(0, TEMP) : TEMP
 ```
 
 #### V_SUBREV_U32 (GCN 1.4)
@@ -1234,10 +1255,12 @@ VDST = (SRC1 - SRC0) & 0xffff
 Opcode VOP2: 54 (0x36) for GCN 1.4  
 Opcode VOP3B: 310 (0x136) for GCN 1.4  
 Syntax: V_SUBREV_U32 VDST, SRC0, SRC1  
-Description: Subtract SRC0 with borrow from SRC1, and store result to VDST.  
+Description: Subtract SRC0 with borrow from SRC1, and store result to VDST.
+If CLAMP modifier supplied, then result is saturated to 32-bit unsigned value.  
 Operation:  
 ```
-VDST = SRC1 - SRC0
+INT64 TEMP = (UINT64)SRC1 - SRC0
+VDST = CLAMP ? MAX(0, TEMP) : TEMP
 ```
 
 #### V_XOR_B32

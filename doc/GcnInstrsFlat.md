@@ -29,7 +29,6 @@ SEG | Prefix  | Description
  0  | FLAT    | FLAT instruction (global, private or scratch memory)
  1  | SCRATCH | SCRATCH instruction (only for scratch memory access)
  2  | GLOBAL  | GLOBAL instruction (only for global memory access)
- 
 
 Instruction syntax: INSTRUCTION VDST, VADDR(2) [MODIFIERS]  
 Instruction syntax: INSTRUCTION VADDR(2), VDATA [MODIFIERS]
