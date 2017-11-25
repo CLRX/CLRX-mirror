@@ -48,6 +48,7 @@ Modifiers:
 2.0, 4.0 or 0.5 respectively. Clamping applied after OMOD modifier.
 * -SRC - negate floating point value from source operand. Applied after ABS modifier.
 * ABS(SRC), |SRC| - apply absolute value to source operand
+* OPSEL:VALUE|[B0,...] - operand half selection (0 - lower 16-bits, 1 - bits)
 
 NOTE: OMOD modifier doesn't work if output denormals are allowed
 (5 bit of MODE register for single precision or 7 bit for double precision).  
@@ -57,6 +58,11 @@ NOTE: ABS and negation is applied to source operand for any instruction.
 
 Negation and absolute value can be combined: `-ABS(V0)`. Modifiers CLAMP and
 OMOD (MUL:2, MUL:4 and DIV:2) can be given in random order.
+
+Operand half selection (OPSEL) take value with bits number depends of number operands.
+Last bit control destination operand. Zero in bit choose lower 16-bits in dword,
+one choose higher 16-bits. Example: op_sel:[0,1,1] - higher 16-bits in second source and
+in destination.
 
 Limitations for operands:
 
