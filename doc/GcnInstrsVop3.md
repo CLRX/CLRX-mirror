@@ -188,6 +188,18 @@ List of the instructions by opcode (GCN 1.2/1.4):
  494 (0x1ee) |   ✓   |   ✓   | V_FMA_F16
  495 (0x1ef) |   ✓   |   ✓   | V_DIV_FIXUP_F16
  496 (0x1f0) |   ✓   |   ✓   | V_CVT_PKACCUM_U8_F32
+ 497 (0x1f1) |       |   ✓   | V_MAD_U32_U16
+ 498 (0x1f2) |       |   ✓   | V_MAD_I32_I16
+ 499 (0x1f3) |       |   ✓   | V_XAD_U32
+ 500 (0x1f4) |       |   ✓   | V_MIN3_F16
+ 501 (0x1f5) |       |   ✓   | V_MIN3_I16
+ 502 (0x1f6) |       |   ✓   | V_MIN3_U16
+ 503 (0x1f7) |       |   ✓   | V_MAX3_F16
+ 504 (0x1f8) |       |   ✓   | V_MAX3_I16
+ 505 (0x1f9) |       |   ✓   | V_MAX3_U16
+ 506 (0x1fa) |       |   ✓   | V_MED3_F16
+ 507 (0x1fb) |       |   ✓   | V_MED3_I16
+ 508 (0x1fc) |       |   ✓   | V_MED3_U16
  624 (0x270) |   ✓   |   ✓   | V_INTERP_P1_F32 (VINTRP)
  625 (0x271) |   ✓   |   ✓   | V_INTERP_P2_F32 (VINTRP)
  626 (0x272) |   ✓   |   ✓   | V_INTERP_MOV_F32 (VINTRP)
@@ -991,6 +1003,17 @@ Operation:
 VDST = (INT16)((INT16)SRC0*(INT16)SRC1 + (INT16)SRC2)
 ```
 
+#### V_MAD_I32_I16
+
+Opcode: 498 (0x1f2) for GCN 1.4  
+Syntax: V_MAD_I32_I16 VDST, SRC0, SRC1, SRC2  
+Description: Multiply 16-bit signed value from SRC0 by 16-bit signed value from
+SRC1 and add 32-bit value from SRC2, and store 32-bit result to VDST.  
+Operation:  
+```
+VDST = (UINT32)(SEXT32((INT16)SRC0)*(INT16)SRC1) + SRC2
+```
+
 #### V_MAD_I32_I24
 
 Opcode: 322 (0x142) for GCN 1.0/1.1; 450 (0x1c2) for GCN 1.2  
@@ -1045,6 +1068,17 @@ Operation:
 VDST = ((UINT16)SRC0*(UINT16)SRC1 + (UINT16)SRC2) & 0xffff
 ```
 
+#### V_MAD_U32_U16
+
+Opcode: 497 (0x1f1) for GCN 1.4  
+Syntax: V_MAD_U32_U16 VDST, SRC0, SRC1, SRC2  
+Description: Multiply 16-bit unsigned value from SRC0 by 16-bit unsigned value from
+SRC1 and add 32-bit unsigned value from SRC2, and store 32-bit result to VDST.  
+Operation:  
+```
+VDST = (UINT32)((SRC0&0xffff)*(SRC1&0xffff)) + SRC2
+```
+
 #### V_MAD_U32_U24
 
 Opcode: 323 (0x143) for GCN 1.0/1.1; 451 (0x1c3) for GCN 1.2  
@@ -1082,6 +1116,29 @@ Operation:
 VDST = MAX((ASDOUBLE(SRC0), ASDOUBLE(SRC1))
 ```
 
+#### V_MAX3_F16
+
+Opcode: 503 (0x1f7) for GCN 1.4  
+Syntax: V_MAX3_F16 VDST, SRC0, SRC1, SRC2  
+Description: Choose largest value from half FP values SRC0, SRC1, SRC2,
+and store it to VDST.  
+Operation:  
+```
+HALF SF0 = ASHALF(SRC0)
+HALF SF1 = ASHALF(SRC1)
+HALF SF2 = ASHALF(SRC2)
+if (ISNAN(SF0))
+    VDST = MAX(SF1, SF2)
+else if (ISNAN(SF1))
+    VDST = MAX(SF0, SF2)
+else if (ISNAN(SF2))
+    VDST = MAX(SF0, SF1)
+else if (SF2 > SF0 && SF2 > SF1)
+    VDST = SF2
+else
+    VDST = MAX(SF1, SF0)
+```
+
 #### V_MAX3_F32
 
 Opcode: 340 (0x154) for GCN 1.0/1.1; 467 (0x1d3) for GCN 1.2  
@@ -1104,6 +1161,20 @@ else
     VDST = MAX(SF1, SF0)
 ```
 
+#### V_MAX3_I16
+
+Opcode: 504 (0x1f8) for GCN 1.4  
+Syntax: V_MAX3_I16 VDST, SRC0, SRC1, SRC2  
+Description: Choose largest value from signed 16-bit integer values SRC0, SRC1, SRC2,
+and store it to VDST.  
+Operation:  
+```
+if ((INT16)SRC2 > (INT16)SRC0 && (INT16)SRC2 > (INT16)SRC1)
+    VDST = (UINT16)SRC2
+else
+    VDST = (UINT16)MAX((INT16)SRC1, (INT16)SRC0)
+```
+
 #### V_MAX3_I32
 
 Opcode: 341 (0x155) for GCN 1.0/1.1; 468 (0x1d4) for GCN 1.2  
@@ -1116,6 +1187,20 @@ if ((INT32)SRC2 > (INT32)SRC0 && (INT32)SRC2 > (INT32)SRC1)
     VDST = SRC2
 else
     VDST = MAX((INT32)SRC1, (INT32)SRC0)
+```
+
+#### V_MAX3_U16
+
+Opcode: 505 (0x1f9) for GCN 1.4  
+Syntax: V_MAX3_U16 VDST, SRC0, SRC1, SRC2  
+Description: Choose largest value from unsigned 16-bit integer values SRC0, SRC1, SRC2,
+and store it to VDST.  
+Operation:  
+```
+if ((UINT16)SRC2 > (UINT16)SRC0 && (UINT16)SRC2 > (UINT16)SRC1)
+    VDST = (UINT16)SRC2
+else
+    VDST = MAX((UINT16)SRC1, (UINT16)SRC0)
 ```
 
 #### V_MAX3_U32
@@ -1158,6 +1243,31 @@ UINT32 MASK = ((1ULL << LANEID) - 1ULL) & SRC0
 VDST = SRC1 + BITCOUNT(MASK)
 ```
 
+#### V_MED3_F16
+
+Opcode: 506 (0x1fa) for GCN 1.4  
+Syntax: V_MED3_F16 VDST, SRC0, SRC1, SRC2  
+Description: Choose medium value from half FP values SRC0, SRC1, SRC2,
+and store it to VDST.  
+Operation:  
+```
+HALF SF0 = ASHALF(SRC0)
+HALF SF1 = ASHALF(SRC1)
+HALF SF2 = ASHALF(SRC2)
+if (ISNAN(SF0))
+    VDST = MIN(SF1, SF2)
+else if (ISNAN(SF1))
+    VDST = MIN(SF0, SF2)
+else if (ISNAN(SF2))
+    VDST = MIN(SF0, SF1)
+else if ((SF2 > SF1 && SF2 < SF0) || (SF2 < SF1 && SF2 > SF0))
+    VDST = SF2
+else if ((SF1 > SF2 && SF1 < SF0) || (SF1 < SF2 && SF1 > SF0))
+    VDST = SF1
+else
+    VDST = SF0
+```
+
 #### V_MED3_F32
 
 Opcode: 343 (0x157) for GCN 1.0/1.1; 470 (0x1d6) for GCN 1.2  
@@ -1182,6 +1292,25 @@ else
     VDST = SF0
 ```
 
+#### V_MED3_I16
+
+Opcode: 507 (0x1fb) for GCN 1.4  
+Syntax: V_MED3_I16 VDST, SRC0, SRC1, SRC2  
+Description: Choose medium value from signed 16-bit integer values SRC0, SRC1, SRC2,
+and store it to VDST.  
+Operation:  
+```
+INT16 S0 = (INT16)SRC0
+INT16 S1 = (INT32)SRC1
+INT16 S2 = (INT32)SRC2
+if ((S2 > S1 && S2 < S0) || (S2 < S1 && S2 > S0))
+    VDST = (UINT16)S2
+else if ((S1 > S2 && S1 < S0) || (S1 < S2 && S1 > S0))
+    VDST = (UINT16)S1
+else
+    VDST = (UINT16)S0
+```
+
 #### V_MED3_I32
 
 Opcode: 344 (0x158) for GCN 1.0/1.1; 471 (0x1d7) for GCN 1.2  
@@ -1193,6 +1322,25 @@ Operation:
 INT32 S0 = (INT32)SRC0
 INT32 S1 = (INT32)SRC1
 INT32 S2 = (INT32)SRC2
+if ((S2 > S1 && S2 < S0) || (S2 < S1 && S2 > S0))
+    VDST = S2
+else if ((S1 > S2 && S1 < S0) || (S1 < S2 && S1 > S0))
+    VDST = S1
+else
+    VDST = S0
+```
+
+#### V_MED3_U16
+
+Opcode: 508 (0x1fc) for GCN 1.4  
+Syntax: V_MED3_U16 VDST, SRC0, SRC1, SRC2  
+Description: Choose medium value from unsigned 16-bit integer values SRC0, SRC1, SRC2,
+and store it to VDST.  
+Operation:  
+```
+UINT16 S0 = (UINT16)SRC0
+UINT16 S1 = (UINT16)SRC1
+UINT16 S2 = (UINT16)SRC2
 if ((S2 > S1 && S2 < S0) || (S2 < S1 && S2 > S0))
     VDST = S2
 else if ((S1 > S2 && S1 < S0) || (S1 < S2 && S1 > S0))
@@ -1227,6 +1375,29 @@ Operation:
 VDST = MIN((ASDOUBLE(SRC0), ASDOUBLE(SRC1))
 ```
 
+#### V_MIN3_F16
+
+Opcode: 500 (0x1f4) for GCN 1.4  
+Syntax: V_MIN3_F16 VDST, SRC0, SRC1, SRC2  
+Description: Choose smallest value from half FP values SRC0, SRC1, SRC2,
+and store it to VDST.  
+Operation:  
+```
+HALF SF0 = ASHALF(SRC0)
+HALF SF1 = ASHALF(SRC1)
+HALF SF2 = ASHALF(SRC2)
+if (ISNAN(SF0))
+    VDST = MIN(SF1, SF2)
+else if (ISNAN(SF1))
+    VDST = MIN(SF0, SF2)
+else if (ISNAN(SF2))
+    VDST = MIN(SF0, SF1)
+else if (SF2 < SF0 && SF2 < SF1)
+    VDST = SF2
+else
+    VDST = MIN(SF1, SF0)
+```
+
 #### V_MIN3_F32
 
 Opcode: 337 (0x151) for GCN 1.0/1.1; 464 (0x1d0) for GCN 1.2  
@@ -1249,6 +1420,20 @@ else
     VDST = MIN(SF1, SF0)
 ```
 
+#### V_MIN3_I16
+
+Opcode: 501 (0x1f5) for GCN 1.4  
+Syntax: V_MIN3_I16 VDST, SRC0, SRC1, SRC2  
+Description: Choose smallest value from signed 16-bit integer values SRC0, SRC1, SRC2,
+and store it to VDST.  
+Operation:  
+```
+if ((INT16)SRC2 < (INT16)SRC0 && (INT16)SRC2 < (INT16)SRC1)
+    VDST = (UINT16)SRC2
+else
+    VDST = (UINT16)MIN((INT16)SRC1, (INT16)SRC0)
+```
+
 #### V_MIN3_I32
 
 Opcode: 338 (0x152) for GCN 1.0/1.1; 465 (0x1d1) for GCN 1.2  
@@ -1261,6 +1446,20 @@ if ((INT32)SRC2 < (INT32)SRC0 && (INT32)SRC2 < (INT32)SRC1)
     VDST = SRC2
 else
     VDST = MIN((INT32)SRC1, (INT32)SRC0)
+```
+
+#### V_MIN3_U16
+
+Opcode: 502 (0x1f6) for GCN 1.4  
+Syntax: V_MIN3_U16 VDST, SRC0, SRC1, SRC2  
+Description: Choose smallest value from unsigned 16-bit integer values SRC0, SRC1, SRC2,
+and store it to VDST.  
+Operation:  
+```
+if ((UINT16)SRC2 < (UINT16)SRC0 && (UINT16)SRC2 < (UINT16)SRC1)
+    VDST = (UINT16)SRC2
+else
+    VDST = MIN(S(UINT16)RC1, (UINT16)SRC0)
 ```
 
 #### V_MIN3_U32
@@ -1611,4 +1810,15 @@ SSRC1 can be SGPR or M0. Ignores EXEC mask.
 Operation:  
 ```
 VDST[SSRC1 & 63] = SSRC0
+```
+
+#### V_XAD_U32
+
+Opcode: 499 (0x1f3) for GCN 1.4  
+Syntax: V_XAD_U32 VDST, SRC0, SRC1, SRC2  
+Description: Make XOR bitwise operation on SRC0 and SRC1, add SRC2 and store result to VDST.
+Instruction added to speed up SHA256 sum.  
+Operation:  
+```
+VDST = (SRC0 ^ SRC1) + SRC2
 ```
