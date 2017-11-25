@@ -200,6 +200,9 @@ List of the instructions by opcode (GCN 1.2/1.4):
  506 (0x1fa) |       |   ✓   | V_MED3_F16
  507 (0x1fb) |       |   ✓   | V_MED3_I16
  508 (0x1fc) |       |   ✓   | V_MED3_U16
+ 509 (0x1fd) |       |   ✓   | V_LSHL_ADD_U32
+ 510 (0x1fe) |       |   ✓   | V_ADD_LSHL_U32
+ 511 (0x1ff) |       |   ✓   | V_ADD3_U32
  624 (0x270) |   ✓   |   ✓   | V_INTERP_P1_F32 (VINTRP)
  625 (0x271) |   ✓   |   ✓   | V_INTERP_P2_F32 (VINTRP)
  626 (0x272) |   ✓   |   ✓   | V_INTERP_MOV_F32 (VINTRP)
@@ -292,6 +295,26 @@ if (CLAMP)
     if temp < (-1LL<<31)
         VDST = 0x80000000
 }
+```
+
+#### V_ADD3_U32
+
+Opcode: 511 (0x1ff) for GCN 1.4  
+Syntax: V_ADD3_U32 VDST, SRC0, SRC1, SRC2  
+Description: Make sum from SRC0, SRC1, and SRC2 and store final result to VDST.  
+Operation:  
+```
+VDST = SRC0 + SRC1 + SRC2
+```
+
+#### V_ADD_LSHL_U32
+
+Opcode: 510 (0x1fe) for GCN 1.4  
+Syntax: V_ADD_LSHL_U32 VDST, SRC0, SRC1, SRC2  
+Description: Add SRC0 and SRC1 and shift left by (SRC2&31) bits and store result to VDST.  
+Operation:  
+```
+VDST = (SRC0 + SRC1) << (SRC2&31)
 ```
 
 #### V_ALIGNBIT_B32
@@ -915,6 +938,16 @@ for (UINT8 i = 0; i < 4; i++)
     UINT8 S2 = (SRC2 >> (i*8)) & 1
     VDST = (VDST & ~(255U<<(i*8))) | (((S0+S1+S2) >> 1) << (i*8)) 
 }
+```
+
+#### V_LSHL_ADD_U32
+
+Opcode: 509 (0x1fd) for GCN 1.4  
+Syntax: V_LSHL_ADD_U32 VDST, SRC0, SRC1, SRC2  
+Description: Shift left SRC0 by (SRC1&31) bits and add to SRC2 and store result to VDST.  
+Operation:  
+```
+VDST = (SRC0 << (SRC1&31)) + SRC2
 ```
 
 #### V_LSHL_B64
