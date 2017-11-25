@@ -2169,11 +2169,23 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             putChars(bufPtr, " op_sel:[", 9);
             *bufPtr++ = (insnCode&0x800) ? '1' : '0';
             *bufPtr++ = ',';
-            *bufPtr++ = (insnCode&0x1000) ? '1' : '0';
+            if (vop3Mode==GCN_VOP3_VOP3P || vsrc1Used)
+                *bufPtr++ = (insnCode&0x1000) ? '1' : '0';
+            else
+                // last bit 14-bit dest (for one operand instr)
+                *bufPtr++ = (insnCode&0x4000) ? '1' : '0';
             // print next opsel if next operand is present
             // for VOP3P: VSRC2, non VOP3P - VSRC1
-            if ((vop3Mode!=GCN_VOP3_VOP3P && vsrc1Used) ||
-                (vop3Mode==GCN_VOP3_VOP3P && vsrc2Used))
+            if (vop3Mode!=GCN_VOP3_VOP3P && vsrc1Used)
+            {
+                *bufPtr++ = ',';
+                if (vsrc2Used)
+                    *bufPtr++ = (insnCode&0x2000) ? '1' : '0';
+                else
+                    // last bit 14-bit dest (no third source operand)
+                    *bufPtr++ = (insnCode&0x4000) ? '1' : '0';
+            }
+            else if (vop3Mode==GCN_VOP3_VOP3P && vsrc2Used)
             {
                 *bufPtr++ = ',';
                 *bufPtr++ = (insnCode&0x2000) ? '1' : '0';

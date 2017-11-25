@@ -22,12 +22,13 @@ Bits  | Name     | Description
 59-60 | OMOD     | OMOD modifier. Multiplication modifier
 61-63 | NEG      | Negation modifier for source operands
 
-List of fields for VOP3A/VOP3B encoding (GCN 1.2):
+List of fields for VOP3A/VOP3B encoding (GCN 1.2/1.4):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
 0-7   | VDST     | Destination vector operand
 8-10  | ABS      | Absolute modifiers for source operands (VOP3A)
+11-14 | OPSEL    | Operand selection: (0 - low 16-bits, 1 - high 16 bits)
 8-14  | SDST     | Scalar destination operand (VOP3B)
 15    | CLAMP    | CLAMP modifier
 16-25 | OPCODE   | Operation code

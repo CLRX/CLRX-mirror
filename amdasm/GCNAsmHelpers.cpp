@@ -1797,6 +1797,11 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                                 (vop3p ? modOperands-1 : modOperands),
                                     WS_UNSIGNED))
                         {
+                            if (!vop3p && modOperands<4)
+                                /* move last bit to dest (fourth bit)
+                                 * if less than 4 operands */
+                                opselVal = (opselVal & ((1U<<(modOperands-1))-1)) |
+                                        ((opselVal & (1U<<(modOperands-1))) ? 8 : 0);
                             opMods.opselMod = (opMods.opselMod&0xf0) | opselVal;
                             if (haveOpsel)
                                 asmr.printWarning(modPlace, "Opsel is already defined");
