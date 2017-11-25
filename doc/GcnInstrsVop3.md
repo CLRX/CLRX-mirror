@@ -215,6 +215,12 @@ List of the instructions by opcode (GCN 1.2/1.4):
  664 (0x298) |   ✓   |   ✓   | V_CVT_PK_I16_I32
  665 (0x299) |       |   ✓   | V_CVT_PKNORM_I16_F16
  666 (0x29a) |       |   ✓   | V_CVT_PKNORM_U16_F16
+ 667 (0x29b) |       |   ✓   | V_READLANE_REGRD_B32
+ 668 (0x29c) |       |   ✓   | V_ADD_I32
+ 669 (0x29d) |       |   ✓   | V_SUB_I32
+ 670 (0x29e) |       |   ✓   | V_ADD_I16
+ 671 (0x29f) |       |   ✓   | V_SUB_I16
+ 672 (0x2a0) |       |   ✓   | V_PACK_B32_F16
 
 ### Instruction set
 
@@ -228,6 +234,46 @@ Description: Add two double FP value from SRC0 and SRC1 and store result to VDST
 Operation:  
 ```
 VDST = ASDOUBLE(SRC0) + ASDOUBLE(SRC1)
+```
+
+#### V_ADD_I16
+
+Opcode: 670 (0x29e) for GCN 1.4  
+Syntax: V_ADD_I16 VDST, SRC0, SRC1  
+Description: Add 16-bit signed value from SRC0 to 16-bit signed value from SRC1 and
+store result to VDST. If CLAMP modifier supplied, then result is saturated to
+16-bit signed value.  
+Operation:  
+```
+UINT16 result = (SRC0&0xffff) + (SRC1&0xffff)
+if (CLAMP)
+{
+    INT32 temp = SEXT32((INT16)SRC0&0xffff) + SEXT32((INT16)SRC1&0xffff)
+    if (temp > ((1<<16)-1))
+        result = 0x7fff
+    if temp < (-1<<16)
+        result = 0x8000
+}
+VDST = (VDST & 0xffff0000) | result
+```
+
+#### V_ADD_I32
+
+Opcode: 668 (0x29c) for GCN 1.4  
+Syntax: V_ADD_I32 VDST, SRC0, SRC1  
+Description: Add signed value from SRC0 to signed value from SRC1 and store result to VDST.
+If CLAMP modifier supplied, then result is saturated to 32-bit signed value.  
+Operation:  
+```
+VDST = SRC0 + SRC1
+if (CLAMP)
+{
+    INT64 temp = SEXT64(SRC0) + SEXT64(SRC1)
+    if (temp > ((1LL<<31)-1))
+        VDST = 0x7fffffff
+    if temp < (-1LL<<31)
+        VDST = 0x80000000
+}
 ```
 
 #### V_ALIGNBIT_B32
@@ -1361,6 +1407,17 @@ if (ASFLOAT(SRC2) > 0.0 && !ISNAN(ASFLOAT(SRC2)))
 }
 ```
 
+#### V_PACK_B32_F16
+
+Opcode: 672 (0x2a0) for GCN 1.4  
+Syntax: V_PACK_B32_F16 VDST, SRC0, SRC1  
+Description: Get lower 16-bits from SRC0 and put to lower 16-bits in VDST, 
+get lower 16-bits from SRC1 and put to higher 16-bits in VDST.  
+Operation:  
+```
+VDST = (SRC0&0xffff) | (SRC1<<16)
+```
+
 #### V_PERM_B32
 
 Opcode: 493 (0x1ed) for GCN 1.2  
@@ -1472,6 +1529,47 @@ Operation:
 VDST = SRC2
 for (UINT8 i = 0; i < 4; i++)
     VDST += ABS(((SRC0 >> (i*8)) & 0xff) - ((SRC1 >> (i*8)) & 0xff))
+```
+
+#### V_SUB_I16
+
+Opcode: 671 (0x29f) for GCN 1.4  
+Syntax: V_SUB_I16 VDST, SRC0, SRC1  
+Description: Subtract 16-bit signed value from SRC1 from 16-bit signed value from SRC0 and
+store result to VDST. If CLAMP modifier supplied, then result is saturated to
+16-bit signed value.  
+Operation:  
+```
+UINT16 result = (SRC0&0xffff) - (SRC1&0xffff)
+if (CLAMP)
+{
+    INT32 temp = SEXT32((INT16)SRC0&0xffff) - SEXT32((INT16)SRC1&0xffff)
+    if (temp > ((1<<16)-1))
+        result = 0x7fff
+    if temp < (-1<<16)
+        result = 0x8000
+}
+VDST = (VDST & 0xffff0000) | result
+```
+
+#### V_SUB_I32
+
+Opcode: 669 (0x29d) for GCN 1.4  
+Syntax: V_SUB_I32 VDST, SRC0, SRC1  
+Description: Subtract signed value from SRC1 from signed value from SRC0 and
+store result to VDST. If CLAMP modifier supplied, then result is saturated to
+32-bit signed value.  
+Operation:  
+```
+VDST = SRC0 - SRC1
+if (CLAMP)
+{
+    INT64 temp = SEXT64(SRC0) - SEXT64(SRC1)
+    if (temp > ((1LL<<31)-1))
+        VDST = 0x7fffffff
+    if temp < (-1LL<<31)
+        VDST = 0x80000000
+}
 ```
 
 #### V_TRIG_PREOP_F64
