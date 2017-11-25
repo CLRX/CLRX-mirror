@@ -51,7 +51,7 @@ Modifiers:
 NOTE: OMOD modifier doesn't work if output denormals are allowed
 (5 bit of MODE register for single precision or 7 bit for double precision).  
 NOTE: OMOD and CLAMP modifier affects only for instruction that output is
-floating point value.  
+floating point value or for addition/subtraction instructions.  
 NOTE: ABS and negation is applied to source operand for any instruction.
 
 Negation and absolute value can be combined: `-ABS(V0)`. Modifiers CLAMP and

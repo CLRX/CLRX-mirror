@@ -20,7 +20,6 @@ Bits  | Name     | Description
 8-10  | ABS      | Absolute modifiers for source operands (VOP3A)
 8-14  | SDST     | Scalar destination operand (VOP3B)
 11    | CLAMP    | CLAMP modifier (VOP3A)
-15    | CLAMP    | CLAMP modifier (VOP3B)
 17-25 | OPCODE   | Operation code
 26-31 | ENCODING | Encoding type. Must be 0b110100
 32-40 | SRC0     | First (scalar or vector) source operand
