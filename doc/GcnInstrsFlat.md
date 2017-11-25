@@ -8,24 +8,47 @@ List of fields for the FLAT encoding (GCN 1.1):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
+0-12  | OFFSET   | Byte offset (GCN 1.4)
+13    | LDS      | transfer DATA to LDS and memory (GCN 1.4)
+14-15 | SEG      | Memory segment (instrunction type) (GCN 1.4)
 16    | GLC      | Operation globally coherent
 17    | SLC      | System level coherent
 18-24 | OPCODE   | Operation code
 25-31 | ENCODING | Encoding type. Must be 0b110111
 32-39 | VADDR    | Vector address registers
 40-47 | VDATA    | Vector data register
-55    | TFE      | Texture Fail Enable ???
+48-54 | SADDR    | Scalar SGPR offset (0x7f value disables it) (GCN 1.4)
+55    | TFE      | Texture Fail Enable ??? (GCN 1.1/1.2)
+55    | NV       | Non-Volatile (GCN 1.4)
 56-63 | VDST     | Vector destination register
+
+Instruction types:
+
+SEG | Prefix  | Description
+----|---------|-------------------------
+ 0  | FLAT    | FLAT instruction (global, private or scratch memory)
+ 1  | SCRATCH | SCRATCH instruction (only for scratch memory access)
+ 2  | GLOBAL  | GLOBAL instruction (only for global memory access)
+ 
 
 Instruction syntax: INSTRUCTION VDST, VADDR(2) [MODIFIERS]  
 Instruction syntax: INSTRUCTION VADDR(2), VDATA [MODIFIERS]
 
-Modifiers can be supplied in any order. Modifiers list: SLC, GLC, TFE.
-The TFE flag requires additional the VDATA register.
+GLOBAL instruction syntax: INSTRUCTION VDST, VADDR(2), SADDR(2)|OFF [MODIFIERS]  
+GLOBAL instruction syntax: INSTRUCTION VADDR(2), VDATA, SADDR(2)|OFF [MODIFIERS]  
+SCRATCH instruction syntax: INSTRUCTION VDST, VADDR(2), SADDR|OFF [MODIFIERS]  
+SCRATCH instruction syntax: INSTRUCTION VADDR(2), VDATA, SADDR|OFF [MODIFIERS]
+
+Modifiers can be supplied in any order. Modifiers list: SLC, GLC, TFE,
+LDS, NV, OFFSET:OFFSET. The TFE flag requires additional the VDATA register.
+LDS, NV and OFFSET are available only in GCN 1.4 architecture.
 
 FLAT instruction can complete out of order with each other. This can be caused by different
 resources from/to that instruction can load/store. FLAT instruction increase VMCNT if access
 to main memory, or LKGMCNT if accesses to LDS.
+
+OFFSET can be 13-bit signed for GLOBAL_\* and SCRATCH_\* instructions or
+12-bit unsigned for FLAT_\* instructions.
 
 ### Instructions by opcode
 

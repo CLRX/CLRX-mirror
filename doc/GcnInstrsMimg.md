@@ -11,7 +11,8 @@ Bits  | Name     | Description
 12    | UNORM    | Accepts unnormalized coordinates
 13    | GLC      | Globally coherent
 14    | DA       | Data array (required by array of 1D and 2D images)
-15    | R128     | Image resource size = 128
+15    | R128     | Image resource size = 128 bits (GCN 1.0/1.1/1.2)
+15    | A16      | Address components are 16-bits (GCN 1.4)
 16    | TFE      | Texture Fail Enable (for partially resident textures).
 17    | LWE      | LOD Warning Enable (for partially resident textures).
 18-24 | OPCODE   | Operation code

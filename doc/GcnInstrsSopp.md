@@ -310,8 +310,10 @@ Opcode: 12 (0xc)
 Syntax: S_WAITCNT VMCNT(X)|EXPCNT(X)|LGKMCNT(X) [&....]  
 Description: Waits for vector memory operations (VMCNT);
 LDS, GDS, memory operations (LGKMCNT); export memory-write-data operations (EXPCNT).
-(SIMM16&15) specifies how many VMCNT operations can be unfinished,
+(SIMM16&15) specifies how many VMCNT operations can be unfinished (GCN 1.0/1.1/1.2),
 value 0xf - no wait for VMCNT operations.
+(SIMM16&15)|((SIMM16>>10)&0x30) specifies how many VMCNT operations can be unfinished
+(GCN 1.4), value 0x3f - no wait for VMCNT operations.
 (SIMM16>>4)&7 specifies how many EXPCNT operations can be unfinished,
 0x7 - no wait for EXPCNT operations.
 (SIMM16>>8)&31 specifies how many LGKMCNT operations can be unfinished,
