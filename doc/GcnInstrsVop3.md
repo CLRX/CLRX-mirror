@@ -28,7 +28,7 @@ Bits  | Name     | Description
 ------|----------|------------------------------
 0-7   | VDST     | Destination vector operand
 8-10  | ABS      | Absolute modifiers for source operands (VOP3A)
-11-14 | OPSEL    | Operand selection: (0 - low 16-bits, 1 - high 16 bits)
+11-14 | OPSEL    | Operand selection (VOP3A) (GCN 1.4)
 8-14  | SDST     | Scalar destination operand (VOP3B)
 15    | CLAMP    | CLAMP modifier
 16-25 | OPCODE   | Operation code

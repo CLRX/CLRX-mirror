@@ -28,13 +28,14 @@ Bits  | Name     | Description
 59-60 | OMOD     | OMOD modifier. Multiplication modifier
 61-63 | NEG      | Negation modifier for source operands
 
-List of fields for VOP3A/VOP3B encoding (GCN 1.2):
+List of fields for VOP3A/VOP3B encoding (GCN 1.2/1.4):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
 0-7   | VDST     | Destination vector operand
 8-10  | ABS      | Absolute modifiers for source operands (VOP3A)
 8-14  | SDST     | Scalar destination operand (VOP3B)
+11-14 | OPSEL    | Operand selection (VOP3A) (GCN 1.4)
 15    | CLAMP    | CLAMP modifier
 16-25 | OPCODE   | Operation code
 26-31 | ENCODING | Encoding type. Must be 0b110100
@@ -62,6 +63,11 @@ NOTE: ABS and negation is applied to source operand for any instruction.
 
 Negation and absolute value can be combined: `-ABS(V0)`. Modifiers CLAMP and
 OMOD (MUL:2, MUL:4 and DIV:2) can be given in random order.
+
+Operand half selection (OPSEL) take value with bits number depends of number operands.
+Last bit control destination operand. Zero in bit choose lower 16-bits in dword,
+one choose higher 16-bits. Example: op_sel:[0,1,1] - higher 16-bits in second source and
+in destination.
 
 Limitations for operands:
 
