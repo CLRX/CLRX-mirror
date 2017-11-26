@@ -57,7 +57,14 @@ Negation and absolute value can be combined: `-ABS(V0)`.
 Operand half selection (OP_SEL) take value with bits number depends of number operands.
 Last bit control destination operand. Zero in bit choose lower 16-bits in dword,
 one choose higher 16-bits. Example: op_sel:[0,1,1] - higher 16-bits in second source and
-in destination.
+in destination. List of bits of OP_SEL field:
+
+Bit | Operand | Description
+----|---------|----------------------
+ 11 | SRC0    | Choose part of SRC0 (first source operand)
+ 12 | SRC1    | Choose part of SRC1 (second source operand)
+ 13 | SRC2    | Choose part of SRC2 (third source operand)
+ 14 | VDST    | Choose part of VDST (destination)
 
 Limitations for operands:
 
