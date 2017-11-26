@@ -118,6 +118,7 @@ doc/GcnInstrsVintrp.md -text
 doc/GcnInstrsVop1.md -text
 doc/GcnInstrsVop2.md -text
 doc/GcnInstrsVop3.md -text
+doc/GcnInstrsVop3p.md -text
 doc/GcnInstrsVopc.md -text
 doc/GcnIsa.md -text
 doc/GcnMemHandling.md -text

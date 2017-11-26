@@ -48,7 +48,7 @@ Modifiers:
 2.0, 4.0 or 0.5 respectively. Clamping applied after OMOD modifier.
 * -SRC - negate floating point value from source operand. Applied after ABS modifier.
 * ABS(SRC), |SRC| - apply absolute value to source operand
-* OPSEL:VALUE|[B0,...] - operand half selection (0 - lower 16-bits, 1 - bits)
+* OP_SEL:VALUE|[B0,...] - operand half selection (0 - lower 16-bits, 1 - bits)
 
 NOTE: OMOD modifier doesn't work if output denormals are allowed
 (5 bit of MODE register for single precision or 7 bit for double precision).  

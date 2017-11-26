@@ -49,6 +49,7 @@ Modifiers:
 
 * -SRC - negate floating point value from source operand. Applied after ABS modifier.
 * ABS(SRC), |SRC| - apply absolute value to source operand
+* OP_SEL:VALUE|[B0,...] - operand half selection (0 - lower 16-bits, 1 - bits)
 
 NOTE: ABS and negation is applied to source operand for any instruction.
 
@@ -96,7 +97,7 @@ Opcode range        | Instruction        | Description
 96-111 (0x60-0x6f)  | V_CMPS_{OP16}_F64  | Signal on any sNAN. Double FP values.
 112-127 (0x70-0x7f) | V_CMPSX_{OP16}_F64 | Signal on any sNAN. Also write result to EXEC. Double FP values.
 
-Table of floating point comparison instructions by opcode (GCN 1.2):
+Table of floating point comparison instructions by opcode (GCN 1.2/1.4):
 
 Opcode range        | Instruction        | Description
 --------------------|--------------------|---------------------------
@@ -155,7 +156,7 @@ Opcode range        | Instruction        | Description
 224-231 (0xe0-0xe7) | V_CMP_{OP8}_U64    | Unsigned 64-bit values.
 240-247 (0xf0-0xf7) | V_CMPX_{OP8}_U64   | Also write result to EXEC. Unsigned 64-bit values.
 
-Table of integer comparison instructions by opcode (GCN 1.2):
+Table of integer comparison instructions by opcode (GCN 1.2/1.4):
 
 Opcode range        | Instruction        | Description
 --------------------|--------------------|---------------------------
@@ -224,7 +225,7 @@ Bit | Description
 
 #### V_CMPX_CLASS_F16
 
-Opcode: 21 (0x15) for GCN 1.2  
+Opcode: 21 (0x15) for GCN 1.2/1.4  
 Syntax VOPC: V_CMPX_CLASS_F16 VCC, SRC0, SRC1  
 Syntax VOP3: V_CMPX_CLASS_F16 SDST, SRC0, SRC1  
 Operation: Check whether SRC0 half floating point value belongs to one of specified class.
@@ -249,7 +250,7 @@ Bit | Description
 
 #### V_CMP_CLASS_F32
 
-Opcode: 136 (0x88) for GCN 1.0/1.1; 16 (0x10) for GCN 1.2  
+Opcode: 136 (0x88) for GCN 1.0/1.1; 16 (0x10) for GCN 1.2/1.4  
 Syntax VOPC: V_CMP_CLASS_F32 VCC, SRC0, SRC1  
 Syntax VOP3: V_CMP_CLASS_F32 SDST, SRC0, SRC1  
 Operation: Check whether SRC0 single floating point value belongs to one of specified class.
@@ -273,7 +274,7 @@ Bit | Description
 
 #### V_CMPX_CLASS_F32
 
-Opcode: 152 (0x98) for GCN 1.0/1.1; 17 (0x11) for GCN 1.2  
+Opcode: 152 (0x98) for GCN 1.0/1.1; 17 (0x11) for GCN 1.2/1.4  
 Syntax VOPC: V_CMPX_CLASS_F32 VCC, SRC0, SRC1  
 Syntax VOP3: V_CMPX_CLASS_F32 SDST, SRC0, SRC1  
 Operation: Check whether SRC0 single floating point value belongs to one of specified class.
@@ -297,7 +298,7 @@ Bit | Description
 
 #### V_CMP_CLASS_F64
 
-Opcode: 168 (0xa8) for GCN 1.0/1.1; 18 (0x12) for GCN 1.2  
+Opcode: 168 (0xa8) for GCN 1.0/1.1; 18 (0x12) for GCN 1.2/1.4  
 Syntax VOPC: V_CMP_CLASS_F64 VCC, SRC0, SRC1(2)  
 Syntax VOP3: V_CMP_CLASS_F64 SDST, SRC0(2), SRC1(2)  
 Operation: Check whether SRC0 double floating point value belongs to one of specified class.
@@ -321,7 +322,7 @@ Bit | Description
 
 #### V_CMPX_CLASS_F64
 
-Opcode: 184 (0xb8) for GCN 1.01/1.1; 19 (0x13) for GCN 1.2  
+Opcode: 184 (0xb8) for GCN 1.01/1.1; 19 (0x13) for GCN 1.2/1.4  
 Syntax VOPC: V_CMPX_CLASS_F64 VCC, SRC0(2), SRC1(2)  
 Syntax VOP3: V_CMPX_CLASS_F64 SDST, SRC0(2), SRC1(2)  
 Operation: Check whether SRC0 double floating point value belongs to one of specified class.

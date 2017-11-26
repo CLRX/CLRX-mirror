@@ -53,6 +53,7 @@ IF(BUILD_CLRXDOC)
           "${PROJECT_SOURCE_DIR}/doc/GcnInstrsVop1.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnInstrsVop2.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnInstrsVop3.md"
+          "${PROJECT_SOURCE_DIR}/doc/GcnInstrsVop3p.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnInstrsVopc.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnIsa.md"
           "${PROJECT_SOURCE_DIR}/doc/GcnMemHandling.md"
