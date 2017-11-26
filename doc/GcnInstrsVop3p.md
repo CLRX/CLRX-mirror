@@ -79,6 +79,21 @@ List of the instructions by opcode:
 
 Alphabetically sorted instruction list:
 
+#### V_PK_ADD_F16
+
+Opcode: 15 (0xf)  
+Syntax: V_PK_ADD_F16 VDST, SRC0, SRC1  
+Description: Add two 16-bit FP values from SRC0 to
+16-bit FP values from SRC1, and store result to VDST.  
+Operation:  
+```
+HALF S0_0 = ASHALF(SRC0&0xffff), S0_1 = ASHALF(SRC0>>16)
+HALF S1_0 = ASHALF(SRC1&0xffff), S1_1 = ASHALF(SRC1>>16)
+HALF temp0 = S0_0 + S1_0
+HALF temp1 = S0_1 + S1_1
+VDST = ASINT16(temp0) | (ASINT16(temp1)<<16)
+```
+
 #### V_PK_ADD_I16
 
 Opcode: 2 (0x2)  
@@ -119,6 +134,22 @@ if (CLAMP)
     temp1 = MIN(temp1, 65535)
 }
 VDST = (temp0&0xffff) | (temp1<<16)
+```
+
+#### V_PK_FMA_F16
+
+Opcode: 14 (0xe)  
+Syntax: V_PK_FMA_F16 VDST, SRC0, SRC1, SRC2  
+Description:  Two fused multiplies-adds on two 16-bit FP values from SRC0, SRC1 and SRC2
+and store result to VDST.  
+Operation:  
+```
+HALF S0_0 = ASHALF(SRC0&0xffff), S0_1 = ASHALF(SRC0>>16)
+HALF S1_0 = ASHALF(SRC1&0xffff), S1_1 = ASHALF(SRC1>>16)
+HALF S2_0 = ASHALF(SRC2&0xffff), S2_1 = ASHALF(SRC2>>16)
+HALF temp0 = FMA(S0_0, S1_0, S2_0)
+HALF temp1 = FMA(S0_1, S1_1, S2_1)
+VDST = ASINT16(temp0) | (ASINT16(temp1)<<16)
 ```
 
 #### V_PK_ASHRREV_I16
@@ -209,6 +240,21 @@ if (CLAMP)
 VDST = (temp0&0xffff) | (temp1<<16)
 ```
 
+#### V_PK_MAX_F16
+
+Opcode: 18 (0x12)  
+Syntax: V_PK_MAX_F16 VDST, SRC0, SRC1  
+Description: Choose greatest 16-bit floating point values between values from SRC0 and SRC1,
+and store result to VDST.  
+Operation:  
+```
+HALF S0_0 = ASHALF(SRC0&0xffff), S0_1 = ASHALF(SRC0>>16)
+HALF S1_0 = ASHALF(SRC1&0xffff), S1_1 = ASHALF(SRC1>>16)
+HALF temp0 = MAX(S0_0, S1_0)
+HALF temp1 = MAX(S0_1, S1_1)
+VDST = ASINT16(temp0) | (ASINT16(temp1)<<16)
+```
+
 #### V_PK_MAX_I16
 
 Opcode: 7 (0x7)  
@@ -239,6 +285,21 @@ UINT16 temp1 = MAX(S0_1, S1_1)
 VDST = temp0 | (temp1<<16)
 ```
 
+#### V_PK_MIN_F16
+
+Opcode: 17 (0x11)  
+Syntax: V_PK_MIN_F16 VDST, SRC0, SRC1  
+Description: Choose smallest 16-bit floating point values between values from SRC0 and SRC1,
+and store result to VDST.  
+Operation:  
+```
+HALF S0_0 = ASHALF(SRC0&0xffff), S0_1 = ASHALF(SRC0>>16)
+HALF S1_0 = ASHALF(SRC1&0xffff), S1_1 = ASHALF(SRC1>>16)
+HALF temp0 = MIN(S0_0, S1_0)
+HALF temp1 = MIN(S0_1, S1_1)
+VDST = ASINT16(temp0) | (ASINT16(temp1)<<16)
+```
+
 #### V_PK_MIN_I16
 
 Opcode: 8 (0x8)  
@@ -267,6 +328,21 @@ UINT16 S1_0 = SRC1&0xffff, S1_1 = SRC1>>16
 UINT16 temp0 = MIN(S0_0, S1_0)
 UINT16 temp1 = MIN(S0_1, S1_1)
 VDST = temp0 | (temp1<<16)
+```
+
+#### V_PK_MUL_F16
+
+Opcode: 16 (0x10)  
+Syntax: V_PK_MUL_F16 VDST, SRC0, SRC1  
+Description: Multiply two 16-bit FP values from SRC0 by
+16-bit FP values from SRC1, and store result to VDST.  
+Operation:  
+```
+HALF S0_0 = ASHALF(SRC0&0xffff), S0_1 = ASHALF(SRC0>>16)
+HALF S1_0 = ASHALF(SRC1&0xffff), S1_1 = ASHALF(SRC1>>16)
+HALF temp0 = S0_0 * S1_0
+HALF temp1 = S0_1 * S1_1
+VDST = ASINT16(temp0) | (ASINT16(temp1)<<16)
 ```
 
 #### V_PK_MUL_LO_U16
