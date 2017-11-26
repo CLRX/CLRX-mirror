@@ -127,9 +127,7 @@ enum : uint16_t
     GCN_VOP3_MASK2 = 0x8300,    // mask for VOPx in VOP2 encodings
     GCN_VINTRP_SRC2 = 0x1000,   /// VOP3/VINTRP with source2 (third source)
     GCN_VOP3_MASK3 = 0x3000,    /// mask for VINTRP in VOP2 encodings
-    GCN_VOP3_OPSEL = 0x4000,    /// if instruction uses op_sel modifier
     GCN_VOP3_VOP3P = 0x8000,    /// VOP3P encoding
-    GCN_VOP3P_OPSEL = 0xc000,    /// VOP3P encoding with opsel
     // DS encoding modes
     GCN_ADDR_STD = 0x0,    /// standard place of address
     GCN_ADDR_DST = 0x10,    /// address operand in destination place
