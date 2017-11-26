@@ -20,7 +20,7 @@ Bits  | Name     | Description
 50-58 | SRC2     | Third (scalar or vector) source operand
 61-63 | NEG      | Negation modifier for lower part of source operands
 
-Typical syntax: INSTRUCTION VDST, SRC0, SRC1, SRC2 [MODIFIERS]
+Typical syntax: INSTRUCTION VDST, SRC0, SRC1, SRC2 [MODifIERS]
 
 Modifiers:
 
@@ -92,10 +92,31 @@ INT16 S0_0 = SRC0&0xffff, S0_1 = SRC0>>16
 INT16 S1_0 = SRC1&0xffff, S1_1 = SRC1>>16
 INT32 temp0 = S0_0 + S1_0
 INT32 temp1 = S0_1 + S1_1
-IF (CLAMP)
+if (CLAMP)
 {
-    temp0 = (UINT16)MAX(MIN((INT16)temp0, 32767), -32768)
-    temp1 = (UINT16)MAX(MIN((INT16)temp1, 32767), -32768)
+    temp0 = (UINT16)MAX(MIN(temp0, 32767), -32768)
+    temp1 = (UINT16)MAX(MIN(temp1, 32767), -32768)
+}
+VDST = (temp0&0xffff) | (temp1<<16)
+```
+
+#### V_PK_ADD_U16
+
+Opcode: 10 (0xa)  
+Syntax: V_PK_ADD_U16 VDST, SRC0, SRC1  
+Description: Add two 16-bit unsigned integers from SRC0 to
+16-bit unsigned integers from SRC1, and store result to VDST.
+If CLAMP modifier supplied, then results are saturated to 16-bit unsigned values.  
+Operation:  
+```
+UINT16 S0_0 = SRC0&0xffff, S0_1 = SRC0>>16
+UINT16 S1_0 = SRC1&0xffff, S1_1 = SRC1>>16
+UINT32 temp0 = S0_0 + S1_0
+UINT32 temp1 = S0_1 + S1_1
+if (CLAMP)
+{
+    temp0 = MIN(temp0, 65535)
+    temp1 = MIN(temp1, 65535)
 }
 VDST = (temp0&0xffff) | (temp1<<16)
 ```
@@ -157,10 +178,33 @@ INT16 S1_0 = SRC1&0xffff, S1_1 = SRC1>>16
 INT16 S2_0 = SRC2&0xffff, S2_1 = SRC2>>16
 INT32 temp0 = S0_0 * S1_0 + S2_0
 INT32 temp1 = S0_1 * S1_1 + S2_1
-IF (CLAMP)
+if (CLAMP)
 {
-    temp0 = (UINT16)MAX(MIN((INT16)temp0, 32767), -32768)
-    temp1 = (UINT16)MAX(MIN((INT16)temp1, 32767), -32768)
+    temp0 = (UINT16)MAX(MIN(temp0, 32767), -32768)
+    temp1 = (UINT16)MAX(MIN(temp1, 32767), -32768)
+}
+VDST = (temp0&0xffff) | (temp1<<16)
+```
+
+#### V_PK_MAD_U16
+
+Opcode: 9 (0x9)  
+Syntax: V_PK_MAD_U16 VDST, SRC0, SRC1, SRC2  
+Description: Multiply two 16-bit unsigned integers from SRC0 by two 16-bit unsigned
+integers from SRC1 and add two 16-bit unsigned integers from SRC2,
+and store result to VDST.
+If CLAMP modifier supplied, then results are saturated to 16-bit unsigned values.  
+Operation:  
+```
+UINT16 S0_0 = SRC0&0xffff, S0_1 = SRC0>>16
+UINT16 S1_0 = SRC1&0xffff, S1_1 = SRC1>>16
+UINT16 S2_0 = SRC2&0xffff, S2_1 = SRC2>>16
+UINT32 temp0 = S0_0 * S1_0 + S2_0
+UINT32 temp1 = S0_1 * S1_1 + S2_1
+if (CLAMP)
+{
+    temp0 = MIN((UINT16)temp0, 65535)
+    temp1 = MIN((UINT16)temp1, 65535)
 }
 VDST = (temp0&0xffff) | (temp1<<16)
 ```
@@ -175,9 +219,24 @@ Operation:
 ```
 INT16 S0_0 = SRC0&0xffff, S0_1 = SRC0>>16
 INT16 S1_0 = SRC1&0xffff, S1_1 = SRC1>>16
-INT32 temp0 = MAX(S0_0, S1_0)
-INT32 temp1 = MAX(S0_1, S1_1)
-VDST = (temp0&0xffff) | (temp1<<16)
+UINT16 temp0 = MAX(S0_0, S1_0)
+UINT16 temp1 = MAX(S0_1, S1_1)
+VDST = temp0 | (temp1<<16)
+```
+
+#### V_PK_MAX_U16
+
+Opcode: 12 (0xc)  
+Syntax: V_PK_MAX_U16 VDST, SRC0, SRC1  
+Description: Choose greatest 16-bit unsigned integers between values from SRC0 and SRC1,
+and store result to VDST.  
+Operation:  
+```
+UINT16 S0_0 = SRC0&0xffff, S0_1 = SRC0>>16
+UINT16 S1_0 = SRC1&0xffff, S1_1 = SRC1>>16
+UINT16 temp0 = MAX(S0_0, S1_0)
+UINT16 temp1 = MAX(S0_1, S1_1)
+VDST = temp0 | (temp1<<16)
 ```
 
 #### V_PK_MIN_I16
@@ -190,9 +249,24 @@ Operation:
 ```
 INT16 S0_0 = SRC0&0xffff, S0_1 = SRC0>>16
 INT16 S1_0 = SRC1&0xffff, S1_1 = SRC1>>16
-INT32 temp0 = MIN(S0_0, S1_0)
-INT32 temp1 = MIN(S0_1, S1_1)
-VDST = (temp0&0xffff) | (temp1<<16)
+UINT16 temp0 = MIN(S0_0, S1_0)
+UINT16 temp1 = MIN(S0_1, S1_1)
+VDST = temp0 | (temp1<<16)
+```
+
+#### V_PK_MIN_U16
+
+Opcode: 13 (0xd)  
+Syntax: V_PK_MIN_U16 VDST, SRC0, SRC1  
+Description: Choose smallest 16-bit unsigned integers between values from SRC0 and SRC1,
+and store result to VDST.  
+Operation:  
+```
+UINT16 S0_0 = SRC0&0xffff, S0_1 = SRC0>>16
+UINT16 S1_0 = SRC1&0xffff, S1_1 = SRC1>>16
+UINT16 temp0 = MIN(S0_0, S1_0)
+UINT16 temp1 = MIN(S0_1, S1_1)
+VDST = temp0 | (temp1<<16)
 ```
 
 #### V_PK_MUL_LO_U16
@@ -223,10 +297,31 @@ INT16 S0_0 = SRC0&0xffff, S0_1 = SRC0>>16
 INT16 S1_0 = SRC1&0xffff, S1_1 = SRC1>>16
 INT32 temp0 = S0_0 - S1_0
 INT32 temp1 = S0_1 - S1_1
-IF (CLAMP)
+if (CLAMP)
 {
-    temp0 = (UINT16)MAX(MIN((INT16)temp0, 32767), -32768)
-    temp1 = (UINT16)MAX(MIN((INT16)temp1, 32767), -32768)
+    temp0 = (UINT16)MAX(MIN(temp0, 32767), -32768)
+    temp1 = (UINT16)MAX(MIN(temp1, 32767), -32768)
+}
+VDST = (temp0&0xffff) | (temp1<<16)
+```
+
+#### V_PK_SUB_U16
+
+Opcode: 11 (0xb)  
+Syntax: V_PK_SUB_U16 VDST, SRC0, SRC1  
+Description: Subtract two 16-bit unsigned integers from SRC1 from
+16-bit unsigned integers from SRC0, and store result to VDST.
+If CLAMP modifier supplied, then results are saturated to 16-bit unsigned values.  
+Operation:  
+```
+UINT16 S0_0 = SRC0&0xffff, S0_1 = SRC0>>16
+UINT16 S1_0 = SRC1&0xffff, S1_1 = SRC1>>16
+UINT32 temp0 = S0_0 - S1_0
+UINT32 temp1 = S0_1 - S1_1
+if (CLAMP)
+{
+    temp0 = MAX(temp0, 0)
+    temp1 = MAX(temp1, 0)
 }
 VDST = (temp0&0xffff) | (temp1<<16)
 ```
