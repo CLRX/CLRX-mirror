@@ -2158,13 +2158,27 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     else
         addSpaces(bufPtr, spacesToAdd-1);
     
-    if (isGCN14 && (gcnInsn.mode & GCN_VOP3_OPSEL) != 0)
+    uint32_t opselBaseMask = 0;
+    uint32_t opselMask = 1;
+    if (isGCN14 && gcnInsn.encoding != GCNENC_VOP3B)
     {
         // print OPSEL
         const bool opsel2Bit = (vop3Mode!=GCN_VOP3_VOP3P && vsrc1Used) ||
             (vop3Mode==GCN_VOP3_VOP3P && vsrc2Used);
         const bool opsel3Bit = (vsrc2Used && vop3Mode!=GCN_VOP3_VOP3P);
-        if ((insnCode & ((3 + (opsel2Bit?4:0) + (opsel3Bit?8:0))<<11)) != 0)
+        if (vop3Mode!=GCN_VOP3_VOP3P)
+        {
+            opselMask |= (opsel2Bit?2:0) | (opsel3Bit?4:0) | 8;
+            opselBaseMask = (15U<<11);
+        }
+        else // VOP3P
+        {
+            opselMask |= (opsel2Bit?6:2);
+            opselBaseMask = (7U<<11);
+        }
+        
+        if ((insnCode & (opselMask<<11)) != 0 &&
+            ((insnCode & opselBaseMask) & ~(opselMask<<11)) == 0)
         {
             putChars(bufPtr, " op_sel:[", 9);
             *bufPtr++ = (insnCode&0x800) ? '1' : '0';
@@ -2305,7 +2319,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     }
     
     // unused op_sel field
-    if (isGCN14 && (gcnInsn.mode & GCN_VOP3_OPSEL) == 0 && (insnCode & 0x7800) != 0 &&
+    if (isGCN14 && ((insnCode & opselBaseMask) & ~(opselMask<<11)) != 0 &&
         gcnInsn.encoding != GCNENC_VOP3B)
     {
         putChars(bufPtr, " op_sel=", 8);

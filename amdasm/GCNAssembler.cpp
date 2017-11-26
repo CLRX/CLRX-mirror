@@ -2387,7 +2387,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         good &= parseVOPModifiers(asmr, linePtr, arch, modifiers, opMods, operands,
                     nullptr, ((isGCN12 || gcnInsn.encoding!=GCNENC_VOP3B) ?
                             PARSEVOP_WITHCLAMP : 0) |
-                    ((isGCN14 && (gcnInsn.mode & GCN_VOP3_OPSEL) != 0) ?
+                    ((isGCN14 && gcnInsn.encoding!=GCNENC_VOP3B) ?
                             PARSEVOP_WITHOPSEL : 0) | (vop3p ? PARSEVOP_VOP3P : 0), 3);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
