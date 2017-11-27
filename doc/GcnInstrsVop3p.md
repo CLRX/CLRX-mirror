@@ -95,8 +95,36 @@ UINT32 SS1 = OP_SEL_HI&2 ? SRC1<<16 : SRC1
 UINT32 SS2 = OP_SEL_HI&4 ? SRC2<<16 : SRC2
 FLOAT S0 = NEG_HI&1 ? ABS(ASFLOAT(SS0)) : ASFLOAT(SS0)
 FLOAT S1 = NEG_HI&2 ? ABS(ASFLOAT(SS1)) : ASFLOAT(SS1)
-FLOAT S2 = NEG_HI&3 ? ABS(ASFLOAT(SS2)) : ASFLOAT(SS2)
+FLOAT S2 = NEG_HI&4 ? ABS(ASFLOAT(SS2)) : ASFLOAT(SS2)
 VDST = S0 * S1 + S2
+```
+
+#### V_MAD_MIXLO_F16
+
+Opcode: 33 (0x21)  
+Syntax: V_MAD_MIXLO_F16 VDST, SRC0, SRC1, SRC2  
+Description: Multiply half FP value from SRC0 by half FP value SRC1 and add
+half FP value from SRC2, and store result to lower 16-bit of VDST. NEG_HI changes meaning
+to absolute-value modifier.  
+```
+HALF S0 = NEG_HI&1 ? ABS(ASHALF(SRC0)) : ASHALF(SRC0)
+HALF S1 = NEG_HI&2 ? ABS(ASHALF(SRC1)) : ASHALF(SRC1)
+HALF S2 = NEG_HI&4 ? ABS(ASHALF(SRC2)) : ASHALF(SRC2)
+VDST = (ASUINT16(S0 * S1 + S2)&0xfff) | (VDST&0xffff0000)
+```
+
+#### V_MAD_MIXHI_F16
+
+Opcode: 34 (0x22)  
+Syntax: V_MAD_MIXHI_F16 VDST, SRC0, SRC1, SRC2  
+Description: Multiply half FP value from SRC0 by half FP value SRC1 and add
+half FP value from SRC2, and store result to higher 16-bit part of VDST.
+NEG_HI changes meaning to absolute-value modifier.  
+```
+HALF S0 = NEG_HI&1 ? ABS(ASHALF(SRC0)) : ASHALF(SRC0)
+HALF S1 = NEG_HI&2 ? ABS(ASHALF(SRC1)) : ASHALF(SRC1)
+HALF S2 = NEG_HI&4 ? ABS(ASHALF(SRC2)) : ASHALF(SRC2)
+VDST = (ASUINT16(S0 * S1 + S2)<<16)) | (VDST&0xffff)
 ```
 
 #### V_PK_ADD_F16
