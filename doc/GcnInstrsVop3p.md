@@ -86,16 +86,35 @@ Alphabetically sorted instruction list:
 Opcode: 32 (0x20)  
 Syntax: V_MAD_MIX_F32 VDST, SRC0, SRC1, SRC2  
 Description: Multiply single FP value from SRC0 by single FP value SRC1 and add
-single FP value from SRC2, and store result to VDST. NEG_HI changes meaning
-to absolute-value modifier. The OP_SEL_HI controls left-shifting of source operands by
-16 bits (???).  
+single FP value from SRC2, and store result to VDST.
+OP_SEL and OP_SEL_HI controls type and place of sources:
+
+OP_SEL | OP_SEL_HI  | Meaning
+-------|------------|---------------------
+  0    |  0         | FP32
+  1    |  0         | FP32
+  0    |  1         | FP16 in lower part
+  1    |  1         | FP32 in higher part
+
+NEG_HI changes meaning to absolute-value modifier.  
 ```
-UINT32 SS0 = OP_SEL_HI&1 ? SRC0<<16 : SRC0
-UINT32 SS1 = OP_SEL_HI&2 ? SRC1<<16 : SRC1
-UINT32 SS2 = OP_SEL_HI&4 ? SRC2<<16 : SRC2
-FLOAT S0 = NEG_HI&1 ? ABS(ASFLOAT(SS0)) : ASFLOAT(SS0)
-FLOAT S1 = NEG_HI&2 ? ABS(ASFLOAT(SS1)) : ASFLOAT(SS1)
-FLOAT S2 = NEG_HI&4 ? ABS(ASFLOAT(SS2)) : ASFLOAT(SS2)
+FLOAT getSource(UINT32 S, BYTE OP_SEL, BYTE OP_SEL_HI, SRCINDEX)
+{
+    BYTE mask = 1<<SRCINDEX
+    if ((OP_SEL_HI&mask) == 0)
+        return ASFLOAT(S)
+    if ((OP_SEL&mask) == 0 && (OP_SEL_HI&mask) == 1)
+        return (FLOAT)ASHALF(S&0xffff)
+    else
+        return (FLOAT)ASHALF(S>>16)
+}
+
+FLOAT SS0 = getSource(SRC0, OP_SEL, OP_SEL_HI, 0)
+FLOAT SS1 = getSource(SRC1, OP_SEL, OP_SEL_HI, 1)
+FLOAT SS2 = getSource(SRC2, OP_SEL, OP_SEL_HI, 2)
+FLOAT S0 = NEG_HI&1 ? ABS(SS0) : SS0
+FLOAT S1 = NEG_HI&2 ? ABS(SS1) : SS1
+FLOAT S2 = NEG_HI&4 ? ABS(SS2) : SS2
 VDST = S0 * S1 + S2
 ```
 
@@ -103,14 +122,37 @@ VDST = S0 * S1 + S2
 
 Opcode: 33 (0x21)  
 Syntax: V_MAD_MIXLO_F16 VDST, SRC0, SRC1, SRC2  
-Description: Multiply half FP value from SRC0 by half FP value SRC1 and add
-half FP value from SRC2, and store result to lower 16-bit of VDST. NEG_HI changes meaning
-to absolute-value modifier.  
+Description: Multiply FP value from SRC0 by FP value SRC1 and add
+half FP value from SRC2, and store result to lower 16-bit of VDST.
+OP_SEL and OP_SEL_HI controls type and place of sources:
+
+OP_SEL | OP_SEL_HI  | Meaning
+-------|------------|---------------------
+  0    |  0         | FP32
+  1    |  0         | FP32
+  0    |  1         | FP16 in lower part
+  1    |  1         | FP32 in higher part
+
+NEG_HI changes meaning to absolute-value modifier.  
 ```
-HALF S0 = NEG_HI&1 ? ABS(ASHALF(SRC0)) : ASHALF(SRC0)
-HALF S1 = NEG_HI&2 ? ABS(ASHALF(SRC1)) : ASHALF(SRC1)
-HALF S2 = NEG_HI&4 ? ABS(ASHALF(SRC2)) : ASHALF(SRC2)
-VDST = (ASUINT16(S0 * S1 + S2)&0xfff) | (VDST&0xffff0000)
+FLOAT getSource(UINT32 S, BYTE OP_SEL, BYTE OP_SEL_HI, SRCINDEX)
+{
+    BYTE mask = 1<<SRCINDEX
+    if ((OP_SEL_HI&mask) == 0)
+        return ASFLOAT(S)
+    if ((OP_SEL&mask) == 0 && (OP_SEL_HI&mask) == 1)
+        return (FLOAT)ASHALF(S&0xffff)
+    else
+        return (FLOAT)ASHALF(S>>16)
+}
+
+FLOAT SS0 = getSource(SRC0, OP_SEL, OP_SEL_HI, 0)
+FLOAT SS1 = getSource(SRC1, OP_SEL, OP_SEL_HI, 1)
+FLOAT SS2 = getSource(SRC2, OP_SEL, OP_SEL_HI, 2)
+FLOAT S0 = NEG_HI&1 ? ABS(SS0) : SS0
+FLOAT S1 = NEG_HI&2 ? ABS(SS1) : SS1
+FLOAT S2 = NEG_HI&4 ? ABS(SS2) : SS2
+VDST = (ASUINT32((HALF)(S0 * S1 + S2))&0xfff) | (VDST&0xffff0000)
 ```
 
 #### V_MAD_MIXHI_F16
@@ -119,12 +161,35 @@ Opcode: 34 (0x22)
 Syntax: V_MAD_MIXHI_F16 VDST, SRC0, SRC1, SRC2  
 Description: Multiply half FP value from SRC0 by half FP value SRC1 and add
 half FP value from SRC2, and store result to higher 16-bit part of VDST.
+OP_SEL and OP_SEL_HI controls type and place of sources:
+
+OP_SEL | OP_SEL_HI  | Meaning
+-------|------------|---------------------
+  0    |  0         | FP32
+  1    |  0         | FP32
+  0    |  1         | FP16 in lower part
+  1    |  1         | FP32 in higher part
+
 NEG_HI changes meaning to absolute-value modifier.  
 ```
-HALF S0 = NEG_HI&1 ? ABS(ASHALF(SRC0)) : ASHALF(SRC0)
-HALF S1 = NEG_HI&2 ? ABS(ASHALF(SRC1)) : ASHALF(SRC1)
-HALF S2 = NEG_HI&4 ? ABS(ASHALF(SRC2)) : ASHALF(SRC2)
-VDST = (ASUINT16(S0 * S1 + S2)<<16)) | (VDST&0xffff)
+FLOAT getSource(UINT32 S, BYTE OP_SEL, BYTE OP_SEL_HI, SRCINDEX)
+{
+    BYTE mask = 1<<SRCINDEX
+    if ((OP_SEL_HI&mask) == 0)
+        return ASFLOAT(S)
+    if ((OP_SEL&mask) == 0 && (OP_SEL_HI&mask) == 1)
+        return (FLOAT)ASHALF(S&0xffff)
+    else
+        return (FLOAT)ASHALF(S>>16)
+}
+
+FLOAT SS0 = getSource(SRC0, OP_SEL, OP_SEL_HI, 0)
+FLOAT SS1 = getSource(SRC1, OP_SEL, OP_SEL_HI, 1)
+FLOAT SS2 = getSource(SRC2, OP_SEL, OP_SEL_HI, 2)
+FLOAT S0 = NEG_HI&1 ? ABS(SS0) : SS0
+FLOAT S1 = NEG_HI&2 ? ABS(SS1) : SS1
+FLOAT S2 = NEG_HI&4 ? ABS(SS2) : SS2
+VDST = (ASUINT32((HALF)(S0 * S1 + S2))<<16) | (VDST&0xffff)
 ```
 
 #### V_PK_ADD_F16
