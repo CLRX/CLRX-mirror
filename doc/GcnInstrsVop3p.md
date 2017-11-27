@@ -108,7 +108,6 @@ FLOAT getSource(UINT32 S, BYTE OP_SEL, BYTE OP_SEL_HI, SRCINDEX)
     else
         return (FLOAT)ASHALF(S>>16)
 }
-
 FLOAT SS0 = getSource(SRC0, OP_SEL, OP_SEL_HI, 0)
 FLOAT SS1 = getSource(SRC1, OP_SEL, OP_SEL_HI, 1)
 FLOAT SS2 = getSource(SRC2, OP_SEL, OP_SEL_HI, 2)
@@ -145,7 +144,6 @@ FLOAT getSource(UINT32 S, BYTE OP_SEL, BYTE OP_SEL_HI, SRCINDEX)
     else
         return (FLOAT)ASHALF(S>>16)
 }
-
 FLOAT SS0 = getSource(SRC0, OP_SEL, OP_SEL_HI, 0)
 FLOAT SS1 = getSource(SRC1, OP_SEL, OP_SEL_HI, 1)
 FLOAT SS2 = getSource(SRC2, OP_SEL, OP_SEL_HI, 2)
@@ -182,7 +180,6 @@ FLOAT getSource(UINT32 S, BYTE OP_SEL, BYTE OP_SEL_HI, SRCINDEX)
     else
         return (FLOAT)ASHALF(S>>16)
 }
-
 FLOAT SS0 = getSource(SRC0, OP_SEL, OP_SEL_HI, 0)
 FLOAT SS1 = getSource(SRC1, OP_SEL, OP_SEL_HI, 1)
 FLOAT SS2 = getSource(SRC2, OP_SEL, OP_SEL_HI, 2)
