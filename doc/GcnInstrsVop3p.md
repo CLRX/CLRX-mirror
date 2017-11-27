@@ -28,6 +28,8 @@ Modifiers:
 * -SRC - negate floating point value from source operand. Applied after ABS modifier.
 * OP_SEL:VALUE|[B0,...] - operand lower half selection (0 - lower 16-bits, 1 - bits)
 * OP_SEL_HI:VALUE|[B0,...] - operand higher half selection (0 - lower 16-bits, 1 - bits)
+* NEG - negate floating point value from lower part.
+* NEG_HI - negate floating point value from higher part.
 
 Operand half selection (OP_SEL) take value with bits number depends of number operands.
 Zero in bit choose lower 16-bits in dword, one choose higher 16-bits.
@@ -78,6 +80,24 @@ List of the instructions by opcode:
 ### Instruction set
 
 Alphabetically sorted instruction list:
+
+#### V_MAD_MIX_F32
+
+Opcode: 32 (0x20)  
+Syntax: V_MAD_MIX_F32 VDST, SRC0, SRC1, SRC2  
+Description: Multiply single FP value from SRC0 by single FP value SRC1 and add
+single FP value from SRC2, and store result to VDST. NEG_HI changes meaning
+to absolute-value modifier. The OP_SEL_HI controls left-shifting of source operands by
+16 bits (???).  
+```
+UINT32 SS0 = OP_SEL_HI&1 ? SRC0<<16 : SRC0
+UINT32 SS1 = OP_SEL_HI&2 ? SRC1<<16 : SRC1
+UINT32 SS2 = OP_SEL_HI&4 ? SRC2<<16 : SRC2
+FLOAT S0 = NEG_HI&1 ? ABS(ASFLOAT(SS0)) : ASFLOAT(SS0)
+FLOAT S1 = NEG_HI&2 ? ABS(ASFLOAT(SS1)) : ASFLOAT(SS1)
+FLOAT S2 = NEG_HI&3 ? ABS(ASFLOAT(SS2)) : ASFLOAT(SS2)
+VDST = S0 * S1 + S2
+```
 
 #### V_PK_ADD_F16
 

@@ -226,6 +226,11 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
     { 0xd1340037U, 0x0002b41bU, true, "        v_add_u32       v55, s27, v90 vop3\n" },
     { 0xd1350037U, 0x0002b41bU, true, "        v_sub_u32       v55, s27, v90 vop3\n" },
     { 0xd1360037U, 0x0002b41bU, true, "        v_subrev_u32    v55, s27, v90 vop3\n" },
+    /* opsel */
+    { 0xd1014837U, 0x0002b41bU, true,
+        "        v_add_f32       v55, s27, v90 op_sel:[1,0,1]\n" },
+    { 0xd1011837U, 0x0002b41bU, true,
+        "        v_add_f32       v55, s27, v90 op_sel:[1,1,0]\n" },
     /* VOP1 instructions */
     { 0x7f3c6d4fU, 0, false, "        v_mov_prsv_b32  v158, v79\n" },
     { 0x7f3c6f4fU, 0, false, "        v_screen_partition_4se_b32 v158, v79\n" },
@@ -249,6 +254,14 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
     { 0xd18f0037U, 0x0000011bU, true, "        v_sat_pk_u8_i16 v55, v27 vop3\n" },
     { 0xd1900037U, 0x0000011bU, true, "        v_writelane_regwr_b32 v55, v27 vop3\n" },
     { 0xd1910037U, 0x0000011bU, true, "        v_swap_b32      v55, v27 vop3\n" },
+    /* opsel */
+    { 0xd14a0837U, 0x0000011bU, true, "        v_cvt_f16_f32   v55, v27 op_sel:[1,0]\n" },
+    { 0xd14a4037U, 0x0000011bU, true, "        v_cvt_f16_f32   v55, v27 op_sel:[0,1]\n" },
+    /* VOPC opsel */
+    { 0xd0cc182aU, 0x0002d732U, true,
+            "        v_cmp_gt_u32    s[42:43], v50, v107 op_sel:[1,1,0]\n" },
+    { 0xd0cc402aU, 0x0002d732U, true,
+            "        v_cmp_gt_u32    s[42:43], v50, v107 op_sel:[0,0,1]\n" },
     /* VOP3 instructions */
     { 0xd1f10037U, 0x07974d4fU, true, "        v_mad_u32_u16   v55, v79, v166, v229\n" },
     { 0xd1f20037U, 0x07974d4fU, true, "        v_mad_i32_i16   v55, v79, v166, v229\n" },

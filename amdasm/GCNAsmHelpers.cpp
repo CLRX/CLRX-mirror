@@ -2319,7 +2319,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
             haveDPP);
     const bool isGCN14 = (arch & ARCH_RXVEGA) != 0;
     // mul/div modifier does not apply to vop3 if RXVEGA (this case will be checked later)
-    const bool vop3 = (mods & ((isGCN14 ? 0 : 3)|VOP3_VOP3))!=0;
+    const bool vop3 = (mods & ((isGCN14 ? 0 : 3)|VOP3_VOP3))!=0 ||
+                ((opMods.opselMod&15)!=0);
     if (extraMods!=nullptr)
     {
         extraMods->needSDWA = vopSDWA;

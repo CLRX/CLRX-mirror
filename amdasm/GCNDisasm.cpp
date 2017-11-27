@@ -2160,8 +2160,10 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     
     uint32_t opselBaseMask = 0;
     uint32_t opselMask = 1;
+    uint32_t opsel = 0;
     if (isGCN14 && gcnInsn.encoding != GCNENC_VOP3B)
     {
+        opsel = (insnCode >> 11) & 15;
         // print OPSEL
         const bool opsel2Bit = (vop3Mode!=GCN_VOP3_VOP3P && vsrc1Used) ||
             (vop3Mode==GCN_VOP3_VOP3P && vsrc2Used);
@@ -2368,6 +2370,8 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             isVOP1Word = true;
         
         if (isVOP1Word && !reqForVOP1Word)
+            isVOP1Word = false;
+        if (opsel != 0)
             isVOP1Word = false;
     }
     else // force for v_madmk_f32 and v_madak_f32
