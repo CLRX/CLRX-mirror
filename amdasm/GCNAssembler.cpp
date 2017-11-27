@@ -1580,7 +1580,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     good &= parseVOPModifiers(asmr, linePtr, arch, modifiers, opMods, 3,
                     (isGCN12) ? &extraMods : nullptr,
                     ((!haveDstCC || isGCN12) ? PARSEVOP_WITHCLAMP : 0)|PARSEVOP_WITHSEXT|
-                    (isGCN14 ? PARSEVOP_WITHOPSEL : 0));
+                    ((isGCN14 && !haveDstCC) ? PARSEVOP_WITHOPSEL : 0));
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     

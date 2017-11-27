@@ -377,6 +377,9 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         0xd14a0837U, 0x0000011bU, true, true, "" },
     { "        v_cvt_f16_f32   v55, v27 op_sel:[0,1]\n",
         0xd14a4037U, 0x0000011bU, true, true, "" },
+    { "v_add_co_u32    v154, vcc, v21, v107 op_sel:[1,1,1]\n", 0, 0, false, false,
+        "test.s:1:38: Error: Unknown VOP modifier\n"
+        "test.s:1:44: Error: Some garbages at VOP modifier place\n" },
     /* VOPC opsel */
     { "        v_cmp_gt_u32    s[42:43], v50, v107 op_sel:[1,1,0]\n",
         0xd0cc182aU, 0x0002d732U, true, true, "" },
