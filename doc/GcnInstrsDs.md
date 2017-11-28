@@ -1410,20 +1410,28 @@ VDST[2:3] = *(UINT64*)(DS + ((ADDR+OFFSET)&~15) + 8)
 
 Opcode: 54 (0x36)  
 Syntax: DS_READ_B32 VDST, ADDR [OFFSET:OFFSET]  
-Description: Read dword from LDS/GDS at address (ADDR+OFFSET) & ~3, store into VDST.  
+Description: Read dword from LDS/GDS at address (ADDR+OFFSET) & ~3 or
+(ADDR+OFFSET) for GCN 1.2, store into VDST.  
 Operation:  
 ```
-VDST = *(UINT32*)(DS + ((ADDR+OFFSET)&~3))
+if (GCN14)
+    VDST = *(UINT32*)(DS + (ADDR+OFFSET))
+else
+    VDST = *(UINT32*)(DS + ((ADDR+OFFSET)&~3))
 ```
 
 #### DS_READ_B64
 
 Opcode: 118 (0x76)  
 Syntax: DS_READ_B64 VDST(2), ADDR [OFFSET:OFFSET]  
-Description: Read two dwords from LDS/GDS at address (ADDR+OFFSET) & ~7, store into VDST.  
+Description: Read two dwords from LDS/GDS at address (ADDR+OFFSET) & ~7 or
+(ADDR+OFFSET) for GCN 1.4, store into VDST.  
 Operation:  
 ```
-VDST = *(UINT64*)(DS + ((ADDR+OFFSET)&~7))
+if (GCN14)
+    VDST = *(UINT64*)(DS + (ADDR+OFFSET))
+else
+    VDST = *(UINT64*)(DS + ((ADDR+OFFSET)&~7))
 ```
 
 #### DS_READ_B96
@@ -1781,10 +1789,15 @@ else
 
 Opcode: 13 (0xd)  
 Syntax: DS_WRITE_B32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Description: Store value from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & ~3.  
+Description: Store value from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & ~3 or
+(ADDR+OFFSET) if GCN 1.4.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
+UINT32* V
+if (GCN1.4)
+    V = (UINT32*)(DS + (ADDR+OFFSET))
+else
+    V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = VDATA0
 ```
 
@@ -1792,10 +1805,15 @@ UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 
 Opcode: 77 (0x4d)  
 Syntax: DS_WRITE_B64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
-Description: Store 64-bit value from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & ~7.  
+Description: Store 64-bit value from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & ~7 or
+ADDR+OFFSET for GCN 1.4.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
+UINT64* V
+if (GCN1.4)
+    UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)) // ???
+else
+    UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = VDATA0
 ```
 
