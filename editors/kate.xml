@@ -628,6 +628,7 @@
             <item>ds_read_i8_d16_hi</item>
             <item>ds_read_u16</item>
             <item>ds_read_u16_d16</item>
+            <item>ds_read_u16_d16_hi</item>
             <item>ds_read_u8</item>
             <item>ds_read_u8_d16</item>
             <item>ds_read_u8_d16_hi</item>

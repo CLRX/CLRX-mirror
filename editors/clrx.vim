@@ -586,6 +586,7 @@ syntax keyword asmInstr ds_read_i8_d16
 syntax keyword asmInstr ds_read_i8_d16_hi
 syntax keyword asmInstr ds_read_u16
 syntax keyword asmInstr ds_read_u16_d16
+syntax keyword asmInstr ds_read_u16_d16_hi
 syntax keyword asmInstr ds_read_u8
 syntax keyword asmInstr ds_read_u8_d16
 syntax keyword asmInstr ds_read_u8_d16_hi

@@ -221,6 +221,7 @@ ds_read_i8_d16
 ds_read_i8_d16_hi
 ds_read_u16
 ds_read_u16_d16
+ds_read_u16_d16_hi
 ds_read_u8
 ds_read_u8_d16
 ds_read_u8_d16_hi
