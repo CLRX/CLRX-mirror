@@ -305,6 +305,7 @@ List of the instructions by opcode (GCN 1.2/1.3):
  155 (0x9b) |   ✓   |   ✓   | DS_GWS_SEMA_BR
  156 (0x9c) |   ✓   |   ✓   | DS_GWS_SEMA_P
  157 (0x9d) |   ✓   |   ✓   | DS_GWS_BARRIER
+ 182 (0xb6) |       |   ✓   | DS_READ_ADDTID_B32
  189 (0xbd) |   ✓   |   ✓   | DS_CONSUME
  190 (0xbe) |   ✓   |   ✓   | DS_APPEND
  191 (0xbf) |   ✓   |   ✓   | DS_ORDERED_COUNT
@@ -1534,6 +1535,17 @@ for (BYTE i = 0; i < 64; i++)
         DST[i] = tmp[i]
 ```
 
+#### DS_READ_ADDTID_B32
+
+Opcode: 182 (0xb6) for GCN 1.4  
+Syntax: DS_READ_ADDTID_B32 VDST  
+Operation: Read single dword from LDS/GDS at address (M0&0xffff) + OFFSET + LANEID*4 and
+store into VDST.  
+Operation:  
+```
+VDST = *(UINT32*)(DS + (M0&0xffff) + OFFSET + LANEID*4)
+```
+
 #### DS_READ_B128
 
 Opcode: 255 (0xff) for GCN 1.1/1.2/1.4  
@@ -1904,7 +1916,7 @@ Description: Store single dword value from VDATA0 into LDS/GDS at address
 ((M0&0xffff) + OFFSET + 4*LANEID).  
 Operation:  
 ```
-VDST = (UINT32*)((M0&0xffff) + OFFSET + LANEID*4)
+(UINT32*)(DS + (M0&0xffff) + OFFSET + LANEID*4) = VDATA0
 ```
 
 #### DS_WRITE_B128
