@@ -122,7 +122,7 @@ List of the MUBUF instructions by opcode (GCN 1.0/1.1):
 
 List of the MUBUF instructions by opcode (GCN 1.2/1.4):
 
- Opcode     |GCN 1.0|GCN 1.1| Mnemonic
+ Opcode     |GCN 1.2|GCN 1.4| Mnemonic
 ------------|-------|-------|------------------------------
  0 (0x0)    |   ✓   |   ✓   | BUFFER_LOAD_FORMAT_X
  1 (0x1)    |   ✓   |   ✓   | BUFFER_LOAD_FORMAT_XY
