@@ -35,7 +35,7 @@ Any operation increments LGKM by one, and decremented by one if it will be finis
 
 List of the instructions by opcode:
 
- Opcode     |GCN 1.0|GCN 1.1| Mnemonic (GCN 1.0/1.1) | Mnemonic (GCN 1.2)
+ Opcode     |GCN 1.0|GCN 1.1| Mnemonic (GCN 1.0/1.1) | Mnemonic (GCN 1.2/1.4)
 ------------|-------|-------|------------------------|-----------------------------
  0 (0x0)    |   ✓   |   ✓   | DS_ADD_U32             | DS_ADD_U32
  1 (0x1)    |   ✓   |   ✓   | DS_SUB_U32             | DS_SUB_U32
@@ -1442,11 +1442,14 @@ VDST[2] = *(UINT32*)(DS + ((ADDR+OFFSET)&~15) + 8)
 
 Opcode: 59 (0x3b)  
 Syntax: DS_READ_I16 VDST, ADDR [OFFSET:OFFSET]  
-Description: Read signed 16-bit word from LDS/GDS at address (ADDR+OFFSET) & ~1,
-store into VDST. The value's sign will be extended to higher bits.  
+Description: Read signed 16-bit word from LDS/GDS at address (ADDR+OFFSET) & ~1 or
+(ADDR+OFFSET) for GCN 1.4, store into VDST. The value's sign will be extended to higher bits.  
 Operation:  
 ```
-VDST = (INT32)*(INT16*)(DS + ((ADDR+OFFSET)&~1))
+if (GCN14)
+    VDST = (INT32)*(INT16*)(DS + (ADDR+OFFSET))
+else
+    VDST = (INT32)*(INT16*)(DS + ((ADDR+OFFSET)&~1))
 ```
 
 #### DS_READ_I8
@@ -1464,11 +1467,14 @@ VDST = (INT32)*(INT8*)(DS + (ADDR+OFFSET))
 
 Opcode: 60 (0x3c)  
 Syntax: DS_READ_U16 VDST, ADDR [OFFSET:OFFSET]  
-Description: Read unsigned 16-bit word from LDS/GDS at address (ADDR+OFFSET) & ~1,
-store into VDST.  
+Description: Read unsigned 16-bit word from LDS/GDS at address (ADDR+OFFSET) & ~1 or
+(ADDR+OFFSET) for GCN 1.4, store into VDST.  
 Operation:  
 ```
-VDST = *(UINT16*)(DS + ((ADDR+OFFSET)&~1))
+if (GCN14)
+    VDST = *(UINT16*)(DS + (ADDR+OFFSET))
+else
+    VDST = *(UINT16*)(DS + ((ADDR+OFFSET)&~1))
 ```
 
 #### DS_READ_U8
@@ -1759,10 +1765,15 @@ UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~15))
 
 Opcode: 31 (0x1f)  
 Syntax: DS_WRITE_B16 ADDR, VDATA0 [OFFSET:OFFSET]  
-Description: Store low 16 bits from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & 1.  
+Description: Store low 16 bits from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & 1
+or (ADDR+OFFSET) for GCN 1.4.  
 Operation:  
 ```
-UINT16* V = (UINT16*)(DS + (ADDR+OFFSET)&~1)
+UINT16* V
+if (GCN14)
+    V = (UINT16*)(DS + ADDR+OFFSET)
+else
+    V = (UINT16*)(DS + (ADDR+OFFSET)&~1)
 *V = VDATA0&0xffff
 ```
 
