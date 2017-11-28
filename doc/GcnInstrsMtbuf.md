@@ -101,7 +101,7 @@ VDATA = LOAD_FORMAT_D16_X(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT)
 #### TBUFFER_LOAD_FORMAT_D16_XY
 
 Opcode: 9 (0x9) for GCN 1.2  
-Syntax: TBUFFER_LOAD_FORMAT_D16_XY VDATA(2), VADDR(1:2), SRSRC(4), SOFFSET  
+Syntax: TBUFFER_LOAD_FORMAT_D16_XY VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Load the two first components of the element from SRSRC including format from
 instruction fields. Store results as 16-bit value (half FP or 16-bit integer).  
 Operation:  
@@ -112,7 +112,7 @@ VDATA = LOAD_FORMAT_D16_XY(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT)
 #### TBUFFER_LOAD_FORMAT_D16_XYZ
 
 Opcode: 10 (0xa) for GCN 1.2  
-Syntax: TBUFFER_LOAD_FORMAT_XYZ VDATA(3), VADDR(1:2), SRSRC(4), SOFFSET  
+Syntax: TBUFFER_LOAD_FORMAT_XYZ VDATA(2), VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Load the three first components of the element from SRSRC including format
 from instruction fields. Store results as 16-bit value (half FP or 16-bit integer).  
 Operation:  
@@ -123,7 +123,7 @@ VDATA = LOAD_FORMAT_D16_XYZ(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT)
 #### TBUFFER_LOAD_FORMAT_D16_XYZW
 
 Opcode: 11 (0xb) for GCN 1.2  
-Syntax: TBUFFER_LOAD_FORMAT_D16_XYZW VDATA(4), VADDR(1:2), SRSRC(4), SOFFSET  
+Syntax: TBUFFER_LOAD_FORMAT_D16_XYZW VDATA(2), VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Load four components of the element from SRSRC including format
 from instruction fields. Store results as 16-bit value (half FP or 16-bit integer).  
 Operation:  
@@ -190,7 +190,7 @@ STORE_FORMAT_D16_X(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT, VDATA)
 #### TBUFFER_STORE_FORMAT_D16_XY
 
 Opcode: 13 (0xd) for GCN 1.2  
-Syntax: TBUFFER_STORE_FORMAT_D16_XY VDATA(2), VADDR(1:2), SRSRC(4), SOFFSET  
+Syntax: TBUFFER_STORE_FORMAT_D16_XY VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Store the first two components of the element into SRSRC resource
 including format from instruction fields.
 Treat input as 16-bit value (half FP or 16-bit integer).  
@@ -202,7 +202,7 @@ STORE_FORMAT_D16_XY(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT, VDATA)
 #### TBUFFER_STORE_FORMAT_D16_XYZ
 
 Opcode: 14 (0xe) for GCN 1.2  
-Syntax: TBUFFER_STORE_FORMAT_D16_XYZ VDATA(3), VADDR(1:2), SRSRC(4), SOFFSET  
+Syntax: TBUFFER_STORE_FORMAT_D16_XYZ VDATA(2), VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Store the first three components of the element into SRSRC resource
 including format from instruction fields.
 Treat input as 16-bit value (half FP or 16-bit integer).  
@@ -214,7 +214,7 @@ STORE_FORMAT_D16_XYZ(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT, VDATA)
 #### TBUFFER_STORE_FORMAT_D16_XYZW
 
 Opcode: 15 (0xf) for GCN 1.2  
-Syntax: TBUFFER_STORE_FORMAT_D16_XYZW VDATA(4), VADDR(1:2), SRSRC(4), SOFFSET  
+Syntax: TBUFFER_STORE_FORMAT_D16_XYZW VDATA(2), VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Store the all components of the element into SRSRC resource
 including format from instruction fields.
 Treat input as 16-bit value (half FP or 16-bit integer).  
