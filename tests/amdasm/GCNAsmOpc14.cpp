@@ -621,7 +621,7 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
     { "   v_interp_mov_f32 v93, p20, attr26.w", 0xd5766b01U, 0, false, true, "" },
     { "   v_interp_mov_f32 v93, p0, attr26.w", 0xd5766b02U, 0, false, true, "" },
     /* DS instructions */
-    { "ds_write_addtid_b32 v71 offset:52583\n", 0xd83acd67U, 0x00000047U, true, true, "" },
+    { "ds_write_addtid_b32 v71 offset:52583\n", 0xd83acd67U, 0x00004700U, true, true, "" },
     { "ds_write_b8_d16_hi v71, v169 offset:52583\n",
         0xd8a8cd67U, 0x0000a947U, true, true, "" },
     { "ds_write_b16_d16_hi v71, v169 offset:52583\n",

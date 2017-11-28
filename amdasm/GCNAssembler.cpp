@@ -2600,7 +2600,8 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
-    if ((gcnInsn.mode & GCN_ADDR_SRC) != 0 || (gcnInsn.mode & GCN_ONLYDST) != 0)
+    if (((gcnInsn.mode & GCN_ADDR_SRC) != 0 || (gcnInsn.mode & GCN_ONLYDST) != 0) &&
+            (gcnInsn.mode & GCN_ONLY_SRC) == 0)
     {
         /* vdst is dst */
         cxuint regsNum = (gcnInsn.mode&GCN_REG_DST_64)?2:1;
@@ -2614,7 +2615,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         vdstUsed = beforeData = true;
     }
     
-    if ((gcnInsn.mode & GCN_ONLYDST) == 0)
+    if ((gcnInsn.mode & GCN_ONLYDST) == 0 && (gcnInsn.mode & GCN_ONLY_SRC) == 0)
     {
         // parse ADDR as first (VGPR)
         if (vdstUsed)

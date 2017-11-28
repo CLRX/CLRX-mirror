@@ -2426,7 +2426,8 @@ void GCNDisasmUtils::decodeDSEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
     const cxuint vdata1 = (insnCode2>>16)&0xff;
     const cxuint vdst = insnCode2>>24;
     
-    if ((gcnInsn.mode & GCN_ADDR_SRC) != 0 || (gcnInsn.mode & GCN_ONLYDST) != 0)
+    if (((gcnInsn.mode & GCN_ADDR_SRC) != 0 || (gcnInsn.mode & GCN_ONLYDST) != 0) &&
+            (gcnInsn.mode & GCN_ONLY_SRC) == 0)
     {
         /* vdst is dst */
         cxuint regsNum = (gcnInsn.mode&GCN_REG_DST_64)?2:1;
@@ -2438,7 +2439,7 @@ void GCNDisasmUtils::decodeDSEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
         decodeGCNVRegOperand(vdst, regsNum, bufPtr);
         vdstUsed = true;
     }
-    if ((gcnInsn.mode & GCN_ONLYDST) == 0)
+    if ((gcnInsn.mode & GCN_ONLYDST) == 0 && (gcnInsn.mode & GCN_ONLY_SRC) == 0)
     {
         /// print VADDR
         if (vdstUsed)

@@ -2040,7 +2040,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "ds_gws_sema_br",      GCNENC_DS,     GCN_ADDR_DST|GCN_NOSRC|GCN_ONLYGDS, 27, ARCH_GCN_1_0_1  },
     { "ds_gws_sema_p",       GCNENC_DS,     GCN_ADDR_DST|GCN_NOSRC|GCN_ONLYGDS, 28, ARCH_GCN_1_0_1  },
     { "ds_gws_barrier",      GCNENC_DS,     GCN_ADDR_DST|GCN_NOSRC|GCN_ONLYGDS, 29, ARCH_GCN_1_0_1  },
-    { "ds_write_addtid_b32", GCNENC_DS,     GCN_ADDR_DST|GCN_NOSRC,   29,   ARCH_RXVEGA  },
+    { "ds_write_addtid_b32", GCNENC_DS,     GCN_ADDR_SRC|GCN_ONLY_SRC, 29,   ARCH_RXVEGA  },
     { "ds_write_b8",         GCNENC_DS,     GCN_ADDR_DST,             30,   ARCH_GCN_ALL  },
     { "ds_write_b16",        GCNENC_DS,     GCN_ADDR_DST,             31,   ARCH_GCN_ALL  },
     { "ds_add_rtn_u32",      GCNENC_DS,     GCN_ADDR_SRC,             32,   ARCH_GCN_ALL  },
