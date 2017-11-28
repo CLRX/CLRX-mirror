@@ -2,7 +2,7 @@
 
 These instructions allow to access to main memory, LDS and scratch buffer.
 FLAT instructions fetch address from 2 vector registers that hold 64-bit address.
-FLAT instruction presents only in GCN 1.1 or later architecture.
+FLAT instructions presents only in GCN 1.1 or later architecture.
 
 List of fields for the FLAT encoding (GCN 1.1 - 1.4):
 
