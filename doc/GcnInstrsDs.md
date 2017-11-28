@@ -178,9 +178,9 @@ List of the instructions by opcode (GCN 1.0/1.1):
  254 (0xfe) |       |   ✓   | DS_READ_B96
  255 (0xff) |       |   ✓   | DS_READ_B128
 
-List of the instructions by opcode (GCN 1.2/1.3):
+List of the instructions by opcode (GCN 1.2/1.4):
 
- Opcode     |GCN 1.0|GCN 1.1| Mnemonic
+ Opcode     |GCN 1.2|GCN 1.4| Mnemonic
 ------------|-------|-------|-----------------------------
  0 (0x0)    |   ✓   |   ✓   | DS_ADD_U32
  1 (0x1)    |   ✓   |   ✓   | DS_SUB_U32
@@ -226,7 +226,7 @@ List of the instructions by opcode (GCN 1.2/1.3):
  48 (0x30)  |   ✓   |   ✓   | DS_CMPST_RTN_B32
  49 (0x31)  |   ✓   |   ✓   | DS_CMPST_RTN_F32
  50 (0x32)  |   ✓   |   ✓   | DS_MIN_RTN_F32
- 51 (0x33)  |       |   ✓   | DS_MAX_RTN_F32
+ 51 (0x33)  |   ✓   |   ✓   | DS_MAX_RTN_F32
  52 (0x34)  |   ✓   |   ✓   | DS_WRAP_RTN_B32
  53 (0x35)  |   ✓   |   ✓   | DS_ADD_RTN_F32
  54 (0x36)  |   ✓   |   ✓   | DS_READ_B32
@@ -259,6 +259,14 @@ List of the instructions by opcode (GCN 1.2/1.3):
  81 (0x51)  |   ✓   |   ✓   | DS_CMPST_F64
  82 (0x52)  |   ✓   |   ✓   | DS_MIN_F64
  83 (0x53)  |   ✓   |   ✓   | DS_MAX_F64
+ 84 (0x54)  |       |   ✓   | DS_WRITE_B8_D16_HI
+ 85 (0x55)  |       |   ✓   | DS_WRITE_B16_D16_HI
+ 86 (0x56)  |       |   ✓   | DS_READ_U8_D16
+ 87 (0x57)  |       |   ✓   | DS_READ_U8_D16_HI
+ 88 (0x58)  |       |   ✓   | DS_READ_I8_D16
+ 89 (0x59)  |       |   ✓   | DS_READ_I8_D16_HI
+ 90 (0x5a)  |       |   ✓   | DS_READ_U16_D16
+ 91 (0x5b)  |       |   ✓   | DS_READ_U16_D16_HI
  96 (0x60)  |   ✓   |   ✓   | DS_ADD_RTN_U64
  97 (0x61)  |   ✓   |   ✓   | DS_SUB_RTN_U64
  98 (0x62)  |   ✓   |   ✓   | DS_RSUB_RTN_U64
@@ -1538,7 +1546,7 @@ for (BYTE i = 0; i < 64; i++)
 #### DS_READ_ADDTID_B32
 
 Opcode: 182 (0xb6) for GCN 1.4  
-Syntax: DS_READ_ADDTID_B32 VDST  
+Syntax: DS_READ_ADDTID_B32 VDST [OFFSET:OFFSET]  
 Operation: Read single dword from LDS/GDS at address (M0&0xffff) + OFFSET + LANEID*4 and
 store into VDST.  
 Operation:  
@@ -1612,6 +1620,28 @@ else
     VDST = (INT32)*(INT16*)(DS + ((ADDR+OFFSET)&~1))
 ```
 
+#### DS_READ_I8_D16
+
+Opcode: 88 (0x58) for GCN 1.4  
+Syntax: DS_READ_I8_D16 VDST, ADDR [OFFSET:OFFSET]  
+Description: Read signed byte from LDS/GDS at address (ADDR+OFFSET) and store as
+16-bit unsigned value to lower 16-bits of VDST.  
+Operation:  
+```
+VDST = SEXT16(*(INT8*)(DS + (ADDR+OFFSET))) | (VDST&0xffff0000)
+```
+
+#### DS_READ_I8_D16_HI
+
+Opcode: 88 (0x59) for GCN 1.4  
+Syntax: DS_READ_I8_D16_HI VDST, ADDR [OFFSET:OFFSET]  
+Description: Read signed byte from LDS/GDS at address (ADDR+OFFSET) and store as
+16-bit unsigned value to higher16-bits of VDST.  
+Operation:  
+```
+VDST = (((UINT32)SEXT16(*(INT8*)(DS + (ADDR+OFFSET))))<<16) | (VDST&0xffff)
+```
+
 #### DS_READ_I8
 
 Opcode: 57 (0x39)  
@@ -1637,6 +1667,28 @@ else
     VDST = *(UINT16*)(DS + ((ADDR+OFFSET)&~1))
 ```
 
+#### DS_READ_U16_D16
+
+Opcode: 90 (0x5a) for GCN 1.4  
+Syntax: DS_READ_U16_D16 VDST, ADDR [OFFSET:OFFSET]  
+Description Read unsigned 16-bit word from LDS/DDS at address ADDR+OFFSET and store
+into lower part of VDST.  
+Operation:  
+```
+VDST = *(UINT16*)(DS + (ADDR+OFFSET)) | (VDST & 0xffff0000)
+```
+
+#### DS_READ_U16_D16_HI
+
+Opcode: 91 (0x5b) for GCN 1.4  
+Syntax: DS_READ_U16_D16_HI VDST, ADDR [OFFSET:OFFSET]  
+Description Read unsigned 16-bit word from LDS/DDS at address ADDR+OFFSET and store
+into higher part of VDST.  
+Operation:  
+```
+VDST = (((UINT32)*(UINT16*)(DS + (ADDR+OFFSET)))<<16) | (VDST & 0xffff)
+```
+
 #### DS_READ_U8
 
 Opcode: 58 (0x3a)  
@@ -1645,6 +1697,28 @@ Description: Read unsigned byte from LDS/GDS at address (ADDR+OFFSET), store int
 Operation:  
 ```
 VDST = *(UINT8*)(DS + (ADDR+OFFSET))
+```
+
+#### DS_READ_U8_D16
+
+Opcode: 86 (0x56) for GCN 1.4  
+Syntax: DS_READ_U8_D16 VDST, ADDR [OFFSET:OFFSET]  
+Description: Read unsigned byte from LDS/GDS at address (ADDR+OFFSET) and store as
+16-bit unsigned value to lower 16-bits of VDST.  
+Operation:  
+```
+VDST = (UINT16)(*(UINT8*)(DS + (ADDR+OFFSET))) | (VDST&0xffff0000)
+```
+
+#### DS_READ_U8_D16_HI
+
+Opcode: 87 (0x57) for GCN 1.4  
+Syntax: DS_READ_U8_D16_HI VDST, ADDR [OFFSET:OFFSET]  
+Description: Read unsigned byte from LDS/GDS at address (ADDR+OFFSET) and store as
+16-bit unsigned value to higher16-bits of VDST.  
+Operation:  
+```
+VDST = (((UINT32)(*(UINT8*)(DS + (ADDR+OFFSET))))<<16) | (VDST&0xffff)
 ```
 
 #### DS_READ2_B32
@@ -1911,7 +1985,7 @@ VDST = *V; *V = (*V >= VDATA0) ? (*V-VDATA0) : (*V+VDATA1) // atomic operation
 #### DS_WRITE_ADDTID_B32
 
 Opcode 29 (0x1d) for GCN 1.4  
-Syntax: DS_WRITE_ADDTID_B32 VDATA0  
+Syntax: DS_WRITE_ADDTID_B32 VDATA0 [OFFSET:OFFSET]  
 Description: Store single dword value from VDATA0 into LDS/GDS at address
 ((M0&0xffff) + OFFSET + 4*LANEID).  
 Operation:  
@@ -1946,6 +2020,16 @@ if (GCN14)
 else
     V = (UINT16*)(DS + (ADDR+OFFSET)&~1)
 *V = VDATA0&0xffff
+```
+
+#### DS_WRITE_B16_D16_HI
+
+Opcode: 85 (0x55) for GCN 1.4  
+Syntax: DS_WRITE_B16_D16_HI ADDR, VDATA0 [OFFSET:OFFSET]  
+Description: Store high 16 bits from VDATA0 into LDS/GDS at address (ADDR+OFFSET).  
+```
+V = (UINT16*)(DS + ADDR+OFFSET)
+*V = VDATA0>>16
 ```
 
 #### DS_WRITE_B32
@@ -1989,6 +2073,16 @@ Operation:
 ```
 UINT8* V = (UINT8*)(DS + (ADDR+OFFSET))
 *V = VDATA0&0xff
+```
+
+#### DS_WRITE_B8_D16_HI
+
+Opcode: 84 (0x54) for GCN 1.4  
+Syntax: DS_WRITE_B8_D16_HI ADDR, VDATA0 [OFFSET:OFFSET]  
+Description: Store high 16-23 bits from VDATA0 into LDS/GDS at address (ADDR+OFFSET).  
+```
+V = (UINT8*)(DS + ADDR+OFFSET)
+*V = (VDATA0>>16)&0xff
 ```
 
 #### DS_WRITE_B96

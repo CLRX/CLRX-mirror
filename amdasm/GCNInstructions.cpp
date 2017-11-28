@@ -2106,6 +2106,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "ds_read_i8_d16",      GCNENC_DS,     GCN_ADDR_SRC|GCN_NOSRC,   88,   ARCH_RXVEGA  },
     { "ds_read_i8_d16_hi",   GCNENC_DS,     GCN_ADDR_SRC|GCN_NOSRC,   89,   ARCH_RXVEGA  },
     { "ds_read_u16_d16",     GCNENC_DS,     GCN_ADDR_SRC|GCN_NOSRC,   90,   ARCH_RXVEGA  },
+    { "ds_read_u16_d16_hi",  GCNENC_DS,     GCN_ADDR_SRC|GCN_NOSRC,   91,   ARCH_RXVEGA  },
     { "ds_add_rtn_u64",      GCNENC_DS,     GCN_ADDR_SRC64,           96,   ARCH_GCN_ALL  },
     { "ds_sub_rtn_u64",      GCNENC_DS,     GCN_ADDR_SRC64,           97,   ARCH_GCN_ALL  },
     { "ds_rsub_rtn_u64",     GCNENC_DS,     GCN_ADDR_SRC64,           98,   ARCH_GCN_ALL  },
