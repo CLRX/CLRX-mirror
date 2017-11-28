@@ -26,7 +26,7 @@ Bits  | Name     | Description
 55    | TFE      | Texture Fail Enable ???
 56-63 | SOFFSET  | Scalar base offset operand
 
-List of fields for the MUBUF encoding (GCN 1.2):
+List of fields for the MUBUF encoding (GCN 1.2/1.4):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -120,7 +120,7 @@ List of the MUBUF instructions by opcode (GCN 1.0/1.1):
  112 (0x70) |   ✓   |   ✓   | BUFFER_WBINVL1_SC
  113 (0x71) |   ✓   |   ✓   | BUFFER_WBINVL1
 
-List of the MUBUF instructions by opcode (GCN 1.2):
+List of the MUBUF instructions by opcode (GCN 1.2/1.4):
 
  Opcode     | Mnemonic
 ------------|------------------------------
@@ -154,6 +154,8 @@ List of the MUBUF instructions by opcode (GCN 1.2):
  29 (0x1d)  | BUFFER_STORE_DWORDX2
  30 (0x1e)  | BUFFER_STORE_DWORDX3
  31 (0x1f)  | BUFFER_STORE_DWORDX4
+ 38 (0x26)  | BUFFER_LOAD_FORMAT_D16_HI_X
+ 39 (0x27)  | BUFFER_STORE_FORMAT_D16_HI_X
  61 (0x3d)  | BUFFER_STORE_LDS_DWORD
  62 (0x3e)  | BUFFER_WBINVL1
  63 (0x3f)  | BUFFER_WBINVL1_VOL

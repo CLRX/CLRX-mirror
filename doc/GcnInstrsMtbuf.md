@@ -25,7 +25,7 @@ Bits  | Name     | Description
 55    | TFE      | Texture Fail Enable ???
 56-63 | SOFFSET  | Scalar base offset operand
 
-List of fields for the MTBUF encoding (GCN 1.2):
+List of fields for the MTBUF encoding (GCN 1.2/1.4):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -57,7 +57,7 @@ and it decrements EXPCNT after reading data from VDATA.
 
 ### Instructions by opcode
 
-List of the MTBUF instructions by opcode (GCN 1.0/1.1):
+List of the MTBUF instructions by opcode:
 
  Opcode     |GCN 1.0|GCN 1.1|GCN 1.2| Mnemonic
 ------------|-------|-------|-------|---------------------------
