@@ -122,69 +122,77 @@ List of the MUBUF instructions by opcode (GCN 1.0/1.1):
 
 List of the MUBUF instructions by opcode (GCN 1.2/1.4):
 
- Opcode     | Mnemonic
-------------|------------------------------
- 0 (0x0)    | BUFFER_LOAD_FORMAT_X
- 1 (0x1)    | BUFFER_LOAD_FORMAT_XY
- 2 (0x2)    | BUFFER_LOAD_FORMAT_XYZ
- 3 (0x3)    | BUFFER_LOAD_FORMAT_XYZW
- 4 (0x4)    | BUFFER_STORE_FORMAT_X
- 5 (0x5)    | BUFFER_STORE_FORMAT_XY
- 6 (0x6)    | BUFFER_STORE_FORMAT_XYZ
- 7 (0x7)    | BUFFER_STORE_FORMAT_XYZW
- 8 (0x8)    | BUFFER_LOAD_FORMAT_D16_X
- 9 (0x9)    | BUFFER_LOAD_FORMAT_D16_XY
- 10 (0xa)   | BUFFER_LOAD_FORMAT_D16_XYZ
- 11 (0xb)   | BUFFER_LOAD_FORMAT_D16_XYZW
- 12 (0xc)   | BUFFER_STORE_FORMAT_D16_X
- 13 (0xd)   | BUFFER_STORE_FORMAT_D16_XY
- 14 (0xe)   | BUFFER_STORE_FORMAT_D16_XYZ
- 15 (0xf)   | BUFFER_STORE_FORMAT_D16_XYZW
- 16 (0x10)  | BUFFER_LOAD_UBYTE
- 17 (0x11)  | BUFFER_LOAD_SBYTE
- 18 (0x12)  | BUFFER_LOAD_USHORT
- 19 (0x13)  | BUFFER_LOAD_SSHORT
- 20 (0x14)  | BUFFER_LOAD_DWORD
- 21 (0x15)  | BUFFER_LOAD_DWORDX2
- 22 (0x16)  | BUFFER_LOAD_DWORDX3
- 23 (0x17)  | BUFFER_LOAD_DWORDX4
- 24 (0x18)  | BUFFER_STORE_BYTE
- 26 (0x1a)  | BUFFER_STORE_SHORT
- 28 (0x1c)  | BUFFER_STORE_DWORD
- 29 (0x1d)  | BUFFER_STORE_DWORDX2
- 30 (0x1e)  | BUFFER_STORE_DWORDX3
- 31 (0x1f)  | BUFFER_STORE_DWORDX4
- 38 (0x26)  | BUFFER_LOAD_FORMAT_D16_HI_X
- 39 (0x27)  | BUFFER_STORE_FORMAT_D16_HI_X
- 61 (0x3d)  | BUFFER_STORE_LDS_DWORD
- 62 (0x3e)  | BUFFER_WBINVL1
- 63 (0x3f)  | BUFFER_WBINVL1_VOL
- 64 (0x40)  | BUFFER_ATOMIC_SWAP
- 65 (0x41)  | BUFFER_ATOMIC_CMPSWAP
- 66 (0x42)  | BUFFER_ATOMIC_ADD
- 67 (0x43)  | BUFFER_ATOMIC_SUB
- 68 (0x44)  | BUFFER_ATOMIC_SMIN
- 69 (0x45)  | BUFFER_ATOMIC_UMIN
- 70 (0x46)  | BUFFER_ATOMIC_SMAX
- 71 (0x47)  | BUFFER_ATOMIC_UMAX
- 72 (0x48)  | BUFFER_ATOMIC_AND
- 73 (0x49)  | BUFFER_ATOMIC_OR
- 74 (0x4a)  | BUFFER_ATOMIC_XOR
- 75 (0x4b)  | BUFFER_ATOMIC_INC
- 76 (0x4c)  | BUFFER_ATOMIC_DEC
- 96 (0x60)  | BUFFER_ATOMIC_SWAP_X2
- 97 (0x61)  | BUFFER_ATOMIC_CMPSWAP_X2
- 98 (0x62)  | BUFFER_ATOMIC_ADD_X2
- 99 (0x63)  | BUFFER_ATOMIC_SUB_X2
- 100 (0x64) | BUFFER_ATOMIC_SMIN_X2
- 101 (0x65) | BUFFER_ATOMIC_UMIN_X2
- 102 (0x66) | BUFFER_ATOMIC_SMAX_X2
- 103 (0x67) | BUFFER_ATOMIC_UMAX_X2
- 104 (0x68) | BUFFER_ATOMIC_AND_X2
- 105 (0x69) | BUFFER_ATOMIC_OR_X2
- 106 (0x6a) | BUFFER_ATOMIC_XOR_X2
- 107 (0x6b) | BUFFER_ATOMIC_INC_X2
- 108 (0x6c) | BUFFER_ATOMIC_DEC_X2
+ Opcode     |GCN 1.0|GCN 1.1| Mnemonic
+------------|-------|-------|------------------------------
+ 0 (0x0)    |   ✓   |   ✓   | BUFFER_LOAD_FORMAT_X
+ 1 (0x1)    |   ✓   |   ✓   | BUFFER_LOAD_FORMAT_XY
+ 2 (0x2)    |   ✓   |   ✓   | BUFFER_LOAD_FORMAT_XYZ
+ 3 (0x3)    |   ✓   |   ✓   | BUFFER_LOAD_FORMAT_XYZW
+ 4 (0x4)    |   ✓   |   ✓   | BUFFER_STORE_FORMAT_X
+ 5 (0x5)    |   ✓   |   ✓   | BUFFER_STORE_FORMAT_XY
+ 6 (0x6)    |   ✓   |   ✓   | BUFFER_STORE_FORMAT_XYZ
+ 7 (0x7)    |   ✓   |   ✓   | BUFFER_STORE_FORMAT_XYZW
+ 8 (0x8)    |   ✓   |   ✓   | BUFFER_LOAD_FORMAT_D16_X
+ 9 (0x9)    |   ✓   |   ✓   | BUFFER_LOAD_FORMAT_D16_XY
+ 10 (0xa)   |   ✓   |   ✓   | BUFFER_LOAD_FORMAT_D16_XYZ
+ 11 (0xb)   |   ✓   |   ✓   | BUFFER_LOAD_FORMAT_D16_XYZW
+ 12 (0xc)   |   ✓   |   ✓   | BUFFER_STORE_FORMAT_D16_X
+ 13 (0xd)   |   ✓   |   ✓   | BUFFER_STORE_FORMAT_D16_XY
+ 14 (0xe)   |   ✓   |   ✓   | BUFFER_STORE_FORMAT_D16_XYZ
+ 15 (0xf)   |   ✓   |   ✓   | BUFFER_STORE_FORMAT_D16_XYZW
+ 16 (0x10)  |   ✓   |   ✓   | BUFFER_LOAD_UBYTE
+ 17 (0x11)  |   ✓   |   ✓   | BUFFER_LOAD_SBYTE
+ 18 (0x12)  |   ✓   |   ✓   | BUFFER_LOAD_USHORT
+ 19 (0x13)  |   ✓   |   ✓   | BUFFER_LOAD_SSHORT
+ 20 (0x14)  |   ✓   |   ✓   | BUFFER_LOAD_DWORD
+ 21 (0x15)  |   ✓   |   ✓   | BUFFER_LOAD_DWORDX2
+ 22 (0x16)  |   ✓   |   ✓   | BUFFER_LOAD_DWORDX3
+ 23 (0x17)  |   ✓   |   ✓   | BUFFER_LOAD_DWORDX4
+ 24 (0x18)  |   ✓   |   ✓   | BUFFER_STORE_BYTE
+ 25 (0x19)  |       |   ✓   | BUFFER_STORE_BYTE_D16
+ 26 (0x1a)  |   ✓   |   ✓   | BUFFER_STORE_SHORT
+ 27 (0x1b)  |       |   ✓   | BUFFER_STORE_SHORT_D16
+ 28 (0x1c)  |   ✓   |   ✓   | BUFFER_STORE_DWORD
+ 29 (0x1d)  |   ✓   |   ✓   | BUFFER_STORE_DWORDX2
+ 30 (0x1e)  |   ✓   |   ✓   | BUFFER_STORE_DWORDX3
+ 31 (0x1f)  |   ✓   |   ✓   | BUFFER_STORE_DWORDX4
+ 32 (0x20)  |       |   ✓   | BUFFER_LOAD_UBYTE_D16
+ 33 (0x21)  |       |   ✓   | BUFFER_LOAD_UBYTE_D16_HI
+ 34 (0x22)  |       |   ✓   | BUFFER_LOAD_SBYTE_D16
+ 35 (0x23)  |       |   ✓   | BUFFER_LOAD_SBYTE_D16_HI
+ 36 (0x24)  |       |   ✓   | BUFFER_LOAD_SHORT_D16
+ 37 (0x25)  |       |   ✓   | BUFFER_LOAD_SHORT_D16_HI
+ 38 (0x26)  |       |   ✓   | BUFFER_LOAD_FORMAT_D16_HI_X
+ 39 (0x27)  |       |   ✓   | BUFFER_STORE_FORMAT_D16_HI_X
+ 61 (0x3d)  |   ✓   |   ✓   | BUFFER_STORE_LDS_DWORD
+ 62 (0x3e)  |   ✓   |   ✓   | BUFFER_WBINVL1
+ 63 (0x3f)  |   ✓   |   ✓   | BUFFER_WBINVL1_VOL
+ 64 (0x40)  |   ✓   |   ✓   | BUFFER_ATOMIC_SWAP
+ 65 (0x41)  |   ✓   |   ✓   | BUFFER_ATOMIC_CMPSWAP
+ 66 (0x42)  |   ✓   |   ✓   | BUFFER_ATOMIC_ADD
+ 67 (0x43)  |   ✓   |   ✓   | BUFFER_ATOMIC_SUB
+ 68 (0x44)  |   ✓   |   ✓   | BUFFER_ATOMIC_SMIN
+ 69 (0x45)  |   ✓   |   ✓   | BUFFER_ATOMIC_UMIN
+ 70 (0x46)  |   ✓   |   ✓   | BUFFER_ATOMIC_SMAX
+ 71 (0x47)  |   ✓   |   ✓   | BUFFER_ATOMIC_UMAX
+ 72 (0x48)  |   ✓   |   ✓   | BUFFER_ATOMIC_AND
+ 73 (0x49)  |   ✓   |   ✓   | BUFFER_ATOMIC_OR
+ 74 (0x4a)  |   ✓   |   ✓   | BUFFER_ATOMIC_XOR
+ 75 (0x4b)  |   ✓   |   ✓   | BUFFER_ATOMIC_INC
+ 76 (0x4c)  |   ✓   |   ✓   | BUFFER_ATOMIC_DEC
+ 96 (0x60)  |   ✓   |   ✓   | BUFFER_ATOMIC_SWAP_X2
+ 97 (0x61)  |   ✓   |   ✓   | BUFFER_ATOMIC_CMPSWAP_X2
+ 98 (0x62)  |   ✓   |   ✓   | BUFFER_ATOMIC_ADD_X2
+ 99 (0x63)  |   ✓   |   ✓   | BUFFER_ATOMIC_SUB_X2
+ 100 (0x64) |   ✓   |   ✓   | BUFFER_ATOMIC_SMIN_X2
+ 101 (0x65) |   ✓   |   ✓   | BUFFER_ATOMIC_UMIN_X2
+ 102 (0x66) |   ✓   |   ✓   | BUFFER_ATOMIC_SMAX_X2
+ 103 (0x67) |   ✓   |   ✓   | BUFFER_ATOMIC_UMAX_X2
+ 104 (0x68) |   ✓   |   ✓   | BUFFER_ATOMIC_AND_X2
+ 105 (0x69) |   ✓   |   ✓   | BUFFER_ATOMIC_OR_X2
+ 106 (0x6a) |   ✓   |   ✓   | BUFFER_ATOMIC_XOR_X2
+ 107 (0x6b) |   ✓   |   ✓   | BUFFER_ATOMIC_INC_X2
+ 108 (0x6c) |   ✓   |   ✓   | BUFFER_ATOMIC_DEC_X2
 
 ### Details
 
@@ -725,6 +733,18 @@ Operation:
 VDATA = LOAD_FORMAT_D16_X(SRSRC, VADDR(1:2), SOFFSET, OFFSET)
 ```
 
+#### BUFFER_LOAD_FORMAT_D16_HI_X
+
+Opcode: 38 (0x26) for GCN 1.4  
+Syntax: BUFFER_LOAD_FORMAT_D16_HI_X VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Load the first component of the element from SRSRC including format from
+buffer resource. Store result as 16-bit value to higher part of VDATA register
+(half FP or 16-bit integer).  
+Operation:  
+```
+VDATA = LOAD_FORMAT_D16_X(SRSRC, VADDR(1:2), SOFFSET, OFFSET)<<16
+```
+
 #### BUFFER_LOAD_FORMAT_D16_XY
 
 Opcode: 9 (0x9)  
@@ -812,6 +832,52 @@ Operation:
 VDATA = *(INT8*)VMEM(SRSRC, VADDR(1:2), SOFFSET, OFFSET)
 ```
 
+#### BUFFER_LOAD_SBYTE_D16
+
+Opcode: 34 (0x22) for GCN 1.4  
+Syntax: BUFFER_LOAD_SBYTE_D16 VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Load byte to VDATA from SRSRC resource with sign extending to
+lower 16-bit part of VDATA.  
+Operation:  
+```
+VDATA &= 0xffff0000
+VDATA |= (UINT32)*(INT8*)VMEM(SRSRC, VADDR(1:2), SOFFSET, OFFSET)&0xffff
+```
+
+#### BUFFER_LOAD_SBYTE_D16_HI
+
+Opcode: 35 (0x23) for GCN 1.4  
+Syntax: BUFFER_LOAD_SBYTE_D16_HI VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Load byte to VDATA from SRSRC resource with sign extending to
+higher 16-bit part of VDATA.  
+Operation:  
+```
+VDATA &= 0xffff
+VDATA |= (UINT32)*(INT8*)VMEM(SRSRC, VADDR(1:2), SOFFSET, OFFSET)<<16
+```
+
+#### BUFFER_LOAD_SHORT_D16
+
+Opcode: 36 (0x24) for GCN 1.4  
+Syntax: BUFFER_LOAD_SHORT_D16 VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Load 16-bit word to VDATA from SRSRC resource to lower part of VDATA.  
+Operation:  
+```
+VDATA &= 0xffff0000
+VDATA |= *(UINT16*)VMEM(SRSRC, VADDR(1:2), SOFFSET, OFFSET)
+```
+
+#### BUFFER_LOAD_SHORT_D16
+
+Opcode: 37 (0x25) for GCN 1.4  
+Syntax: BUFFER_LOAD_SHORT_D16_HI VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Load 16-bit word to VDATA from SRSRC resource to part part of VDATA.  
+Operation:  
+```
+VDATA &= 0xffff
+VDATA |= *(UINT16*)VMEM(SRSRC, VADDR(1:2), SOFFSET, OFFSET)<<16
+```
+
 #### BUFFER_LOAD_SSHORT
 
 Opcode: 11 (0xb) for GCN 1.0/1.1; 19 (0x13) for GCN 1.2  
@@ -832,6 +898,30 @@ Operation:
 VDATA = *(UINT8*)VMEM(SRSRC, VADDR(1:2), SOFFSET, OFFSET)
 ```
 
+#### BUFFER_LOAD_UBYTE_D16
+
+Opcode: 32 (0x20) for GCN 1.4  
+Syntax: BUFFER_LOAD_UBYTE_D16 VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Load byte to VDATA from SRSRC resource with zero extending to
+lower 16-bit part of VDATA.  
+Operation:  
+```
+VDATA &= 0xffff0000
+VDATA |= (UINT32)*(UINT8*)VMEM(SRSRC, VADDR(1:2), SOFFSET, OFFSET)&0xffff
+```
+
+#### BUFFER_LOAD_UBYTE_D16_HI
+
+Opcode: 33 (0x21) for GCN 1.4  
+Syntax: BUFFER_LOAD_UBYTE_D16_HI VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Load byte to VDATA from SRSRC resource with zero extending to
+higher 16-bit part of VDATA.  
+Operation:  
+```
+VDATA &= 0xffff
+VDATA |= (UINT32)*(UINT8*)VMEM(SRSRC, VADDR(1:2), SOFFSET, OFFSET)<<16
+```
+
 #### BUFFER_LOAD_USHORT
 
 Opcode: 10 (0xa) for GCN 1.0/1.1; 18 (0x12) for GCN 1.2  
@@ -850,6 +940,16 @@ Description: Store byte from VDATA into SRSRC resource.
 Operation:  
 ```
 *(UINT8*)VMEM(SRSRC, VADDR(1:2), SOFFSET, OFFSET) = VDATA&0xff
+```
+
+#### BUFFER_STORE_BYTE
+
+Opcode: 25 (0x19)  
+Syntax: BUFFER_STORE_BYTE_D16_HI VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Store byte from 16-23 bits of VDATA into SRSRC resource.  
+Operation:  
+```
+*(UINT8*)VMEM(SRSRC, VADDR(1:2), SOFFSET, OFFSET) = (VDATA>>16)&0xff
 ```
 
 #### BUFFER_STORE_DWORD
@@ -910,6 +1010,18 @@ including format from SRSRC. Treat input as 16-bit value (half FP or 16-bit inte
 Operation:  
 ```
 STORE_FORMAT_D16_X(SRSRC, VADDR(1:2), SOFFSET, OFFSET, VDATA)
+```
+
+#### BUFFER_STORE_FORMAT_D16_HI_X
+
+Opcode: 39 (0x27) for GCN 1.4  
+Syntax: BUFFER_STORE_FORMAT_D16_HI_X VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Store the first component of the element into SRSRC resource
+including format from SRSRC. Treat input as 16-bit value stored in higher part of VDATA
+(half FP or 16-bit integer).  
+Operation:  
+```
+STORE_FORMAT_D16_X(SRSRC, VADDR(1:2), SOFFSET, OFFSET, VDATA>>16)
 ```
 
 #### BUFFER_STORE_FORMAT_D16_XY
@@ -1008,4 +1120,14 @@ Description: Store 16-bit word from VDATA into SRSRC resource.
 Operation:  
 ```
 *(UINT16*)VMEM(SRSRC, VADDR(1:2), SOFFSET, OFFSET) = VDATA&0xffff
+```
+
+#### BUFFER_STORE_SHORT
+
+Opcode: 27 (0x1b) for GCN 1.4  
+Syntax: BUFFER_STORE_SHORT_D16 VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
+Description: Store higher 16-bit word from VDATA into SRSRC resource.  
+Operation:  
+```
+*(UINT16*)VMEM(SRSRC, VADDR(1:2), SOFFSET, OFFSET) = VDATA>>16
 ```
