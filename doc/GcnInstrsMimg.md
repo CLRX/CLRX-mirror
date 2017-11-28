@@ -134,7 +134,7 @@ List of the MIMG instructions by opcode (GCN 1.0/1.1):
  110 (0x6e) |   ✓   |   ✓   | IMAGE_SAMPLE_C_CD_O
  111 (0x6f) |   ✓   |   ✓   | IMAGE_SAMPLE_C_CD_CL_O
 
-List of the MIMG instructions by opcode (GCN 1.2):
+List of the MIMG instructions by opcode (GCN 1.2/1.4):
 
  Opcode     | Mnemonic
 ------------|-----------------------
