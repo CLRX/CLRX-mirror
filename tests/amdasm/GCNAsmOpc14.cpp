@@ -658,6 +658,40 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         "offset:603 glc slc lds\n", 0xe09b725bU, 0x23143d12U, true, true, "" },
     { "buffer_store_format_d16_hi_x v61, v[18:19], s[80:83], s35 offen idxen "
         "offset:603 glc slc lds\n", 0xe09f725bU, 0x23143d12U, true, true, "" },
+    /* MUBUF D16 FORMAT instrs */
+    { "    buffer_load_format_d16_x v61, v18, s[80:83], s35 idxen offset:603",
+        0xe020225bU, 0x23143d12U, true, true, "" },
+    { "    buffer_load_format_d16_xy v61, v18, s[80:83], s35 idxen offset:603",
+        0xe024225bU, 0x23143d12U, true, true, "" },
+    { "    buffer_load_format_d16_xyz v[61:62], v18, s[80:83], s35 idxen offset:603",
+        0xe028225bU, 0x23143d12U, true, true, "" },
+    { "    buffer_load_format_d16_xyzw v[61:62], v18, s[80:83], s35 idxen offset:603",
+        0xe02c225bU, 0x23143d12U, true, true, "" },
+    { "    buffer_store_format_d16_x v61, v18, s[80:83], s35 idxen offset:603",
+        0xe030225bU, 0x23143d12U, true, true, "" },
+    { "    buffer_store_format_d16_xy v61, v18, s[80:83], s35 idxen offset:603",
+        0xe034225bU, 0x23143d12U, true, true, "" },
+    { "    buffer_store_format_d16_xyz v[61:62], v18, s[80:83], s35 idxen offset:603",
+        0xe038225bU, 0x23143d12U, true, true, "" },
+    { "    buffer_store_format_d16_xyzw v[61:62], v18, s[80:83], s35 idxen offset:603",
+        0xe03c225bU, 0x23143d12U, true, true, "" },
+    /* MTBUF D16 FORMAT instrs */
+    { "    tbuffer_load_format_d16_x v61, v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc", 0xe80c67d4U, 0x23543d12U, true, true, "" },
+    { "    tbuffer_load_format_d16_xy v61, v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc", 0xe80ce7d4U, 0x23543d12U, true, true, "" },
+    { "    tbuffer_load_format_d16_xyz v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc", 0xe80d67d4U, 0x23543d12U, true, true, "" },
+    { "    tbuffer_load_format_d16_xyzw v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc", 0xe80de7d4U, 0x23543d12U, true, true, "" },
+    { "    tbuffer_store_format_d16_x v61, v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc", 0xe80e67d4U, 0x23543d12U, true, true, "" },
+    { "    tbuffer_store_format_d16_xy v61, v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc", 0xe80ee7d4U, 0x23543d12U, true, true, "" },
+    { "    tbuffer_store_format_d16_xyz v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc", 0xe80f67d4U, 0x23543d12U, true, true, "" },
+    { "    tbuffer_store_format_d16_xyzw v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc", 0xe80fe7d4U, 0x23543d12U, true, true, "" },
     /* MIMG instructions */
     { "image_gather4h  v[157:160], v[121:124], s[84:91], s[0:3] dmask:11 "
         "unorm glc a16 da\n", 0xf108fb00U, 0x00159d79U, true, true, "" },

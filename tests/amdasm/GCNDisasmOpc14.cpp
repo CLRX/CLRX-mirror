@@ -499,6 +499,48 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
         "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
     { 0xe09f725bU, 0x23343d12U, true, "        buffer_store_format_d16_hi_x "
         "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+    /* MUBUF D16 FORMAT instrs */
+    { 0xe020325bU, 0x23343d12U, true, "        buffer_load_format_d16_x "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe024325bU, 0x23343d12U, true, "        buffer_load_format_d16_xy "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe028325bU, 0x23343d12U, true, "        buffer_load_format_d16_xyz "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe02c325bU, 0x23343d12U, true, "        buffer_load_format_d16_xyzw "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe030325bU, 0x23343d12U, true, "        buffer_store_format_d16_x "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe034325bU, 0x23343d12U, true, "        buffer_store_format_d16_xy "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe038325bU, 0x23343d12U, true, "        buffer_store_format_d16_xyz "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe03c325bU, 0x23343d12U, true, "        buffer_store_format_d16_xyzw "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    /* MTBUF D16 FORMAT instrs */
+    { 0xea8c77d4U, 0x23f43d12U, true, "        tbuffer_load_format_d16_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:[sint]\n" },
+    { 0xea8cf7d4U, 0x23f43d12U, true, "        tbuffer_load_format_d16_xy "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:[sint]\n" },
+    { 0xea8d77d4U, 0x23f43d12U, true, "        tbuffer_load_format_d16_xyz "
+        "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:[sint]\n" },
+    { 0xea8df7d4U, 0x23f43d12U, true, "        tbuffer_load_format_d16_xyzw "
+        "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:[sint]\n" },
+    { 0xea8e77d4U, 0x23f43d12U, true, "        tbuffer_store_format_d16_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:[sint]\n" },
+    { 0xea8ef7d4U, 0x23f43d12U, true, "        tbuffer_store_format_d16_xy "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:[sint]\n" },
+    { 0xea8f77d4U, 0x23f43d12U, true, "        tbuffer_store_format_d16_xyz "
+        "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:[sint]\n" },
+    { 0xea8ff7d4U, 0x23f43d12U, true, "        tbuffer_store_format_d16_xyzw "
+        "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:[sint]\n" },
     /* MIMG instructions */
     /* TODO: check register ranges */
     { 0xf108fb00U, 0x00159d79U, true, "        image_gather4h  "

@@ -2830,6 +2830,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     GCNOperand soffsetOp{};
     RegRange srsrcReg(0, 0);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
+    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     skipSpacesToEnd(linePtr, end);
@@ -3054,7 +3055,11 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         vdataToRead = (gcnInsn.mode&GCN_MLOAD)==0 ||
                 (gcnInsn.mode&GCN_MATOMIC)!=0;
         // check register range (number of register) in VDATA
-        cxuint dregsNum = (((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1) + (haveTfe);
+        cxuint dregsNum = (((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1);
+        if ((gcnInsn.mode & GCN_MUBUF_D16)!=0 && isGCN14)
+            // 16-bit values packed into half of number of registers
+            dregsNum = (dregsNum+1)>>1;
+        dregsNum += (haveTfe);
         if (!isXRegRange(vdataReg, dregsNum))
         {
             char errorMsg[40];

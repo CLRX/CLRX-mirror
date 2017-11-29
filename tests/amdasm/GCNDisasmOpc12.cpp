@@ -2532,19 +2532,19 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0xe020325bU, 0x23343d12U, true, "        buffer_load_format_d16_x "
                 "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe024325bU, 0x23343d12U, true, "        buffer_load_format_d16_xy "
-                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe028325bU, 0x23343d12U, true, "        buffer_load_format_d16_xyz "
-                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+                "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe02c325bU, 0x23343d12U, true, "        buffer_load_format_d16_xyzw "
-                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+                "v[61:64], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe030325bU, 0x23343d12U, true, "        buffer_store_format_d16_x "
                 "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe034325bU, 0x23343d12U, true, "        buffer_store_format_d16_xy "
-                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe038325bU, 0x23343d12U, true, "        buffer_store_format_d16_xyz "
-                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+                "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe03c325bU, 0x23343d12U, true, "        buffer_store_format_d16_xyzw "
-                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+                "v[61:64], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe040325bU, 0x23343d12U, true, "        buffer_load_ubyte "
                 "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe044325bU, 0x23343d12U, true, "        buffer_load_sbyte "
@@ -2700,25 +2700,25 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
         "format:[sint]\n" },
     { 0xea8cf7d4U, 0x23f43d12U, true, "        tbuffer_load_format_d16_xy "
-        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
         "format:[sint]\n" },
     { 0xea8d77d4U, 0x23f43d12U, true, "        tbuffer_load_format_d16_xyz "
-        "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "v[61:64], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
         "format:[sint]\n" },
     { 0xea8df7d4U, 0x23f43d12U, true, "        tbuffer_load_format_d16_xyzw "
-        "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "v[61:65], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
         "format:[sint]\n" },
     { 0xea8e77d4U, 0x23f43d12U, true, "        tbuffer_store_format_d16_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
         "format:[sint]\n" },
     { 0xea8ef7d4U, 0x23f43d12U, true, "        tbuffer_store_format_d16_xy "
-        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
         "format:[sint]\n" },
     { 0xea8f77d4U, 0x23f43d12U, true, "        tbuffer_store_format_d16_xyz "
-        "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "v[61:64], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
         "format:[sint]\n" },
     { 0xea8ff7d4U, 0x23f43d12U, true, "        tbuffer_store_format_d16_xyzw "
-        "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "v[61:65], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
         "format:[sint]\n" },
     /* MIMG encoding */
     { 0xf203fb00U, 0x02d59d79U, true, "        image_load      v[157:160], "

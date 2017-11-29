@@ -172,6 +172,11 @@ enum : uint16_t
     GCN_MUBUF_MX2 = 0x100,  /// vdata requires 2 registers
     GCN_MUBUF_MX3 = 0x200,  /// vdata requires 3 registers
     GCN_MUBUF_MX4 = 0x300,  /// vdata requires 4 registers
+    GCN_MUBUF_D16 = 0x800,  /// vdata size depends on arch (GCN 1.4 - half of size)
+    GCN_MUBUF_X_D16 = 0x800,    /// vdata requires 1 register
+    GCN_MUBUF_XY_D16 = 0x900,  /// vdata requires 2 registers (or 1 for GCN 1.4)
+    GCN_MUBUF_XYZ_D16 = 0xa00,  /// vdata requires 3 registers (or 2 for GCN 1.4)
+    GCN_MUBUF_XYZW_D16 = 0xb00,  /// vdata requires 4 registers (or 2 for GCN 1.4)
     GCN_MIMG_SAMPLE = 0x100,    /// last operand is SSAMP (4 sregisters)
     GCN_MIMG_VDATA4 = 0x200,    /// gather requires 4 vdata registers
     GCN_MIMG_GATHER = 0x300,    /// gather requires 4 vdata registers

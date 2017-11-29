@@ -2557,6 +2557,7 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
     char* bufStart = output.reserve(170);
     char* bufPtr = bufStart;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
+    const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
     const cxuint vaddr = insnCode2&0xff;
     const cxuint vdata = (insnCode2>>8)&0xff;
     const cxuint srsrc = (insnCode2>>16)&0x1f;
@@ -2569,6 +2570,9 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
         {
             // determine number of regs in VDATA
             cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
+            if ((gcnInsn.mode & GCN_MUBUF_D16)!=0 && isGCN14)
+                // 16-bit values packed into half of number of registers
+                dregsNum = (dregsNum+1)>>1;
             if (insnCode2 & 0x800000U)
                 dregsNum++; // tfe
             // print VDATA
