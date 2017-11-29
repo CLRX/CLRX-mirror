@@ -1499,3 +1499,247 @@ Operation:
 ```
 *(UINT16*)(VADDR + SADDR + INST_OFFSET) = VDATA>>16
 ```
+
+#### SCRATCH_LOAD_DWORD
+
+Opcode: 20 (0x14) for GCN 1.4  
+Syntax: SCRATCH_LOAD_DWORD VDST, VADDR|OFF, SADDR|OFF  
+Description Load dword to VDST from scratch memory address.  
+Operation:  
+```
+VDST = *(UINT32*)SWIZZLE(ADDR, INST_OFFSET, LANEID)
+```
+
+#### SCRATCH_LOAD_DWORDX2
+
+Opcode: 21 (0x15) for GCN 1.4  
+Syntax: SCRATCH_LOAD_DWORDX2 VDST(, VADDR|OFF, SADDR|OFF  
+Description Load two dwords to VDST from scratch memory address.  
+Operation:  
+```
+VDST = *(UINT64*)SWIZZLE(ADDR, INST_OFFSET, LANEID)
+```
+
+#### SCRATCH_LOAD_DWORDX3
+
+Opcode: 22 (0x16) for GCN 1.4  
+Syntax: SCRATCH_LOAD_DWORDX3 VDST(3), VADDR|OFF, SADDR|OFF  
+Description Load three dwords to VDST from scratch memory address.  
+Operation:  
+```
+BYTE* VM = SWIZZLE(ADDR, INST_OFFSET, LANEID)
+VDST[0] = *(UINT32*)VM
+VDST[1] = *(UINT32*)(VM+4)
+VDST[2] = *(UINT32*)(VM+8)
+```
+
+#### SCRATCH_LOAD_DWORDX4
+
+Opcode: 23 (0x17) for GCN 1.4  
+Syntax: SCRATCH_LOAD_DWORDX4 VDST(4), VADDR|OFF, SADDR|OFF  
+Description Load four dwords to VDST from scratch memory address.  
+Operation:  
+```
+BYTE* VM = SWIZZLE(ADDR, INST_OFFSET, LANEID)
+VDST[0] = *(UINT32*)VM
+VDST[1] = *(UINT32*)(VM+4)
+VDST[2] = *(UINT32*)(VM+8)
+VDST[3] = *(UINT32*)(VM+12)
+```
+
+#### SCRATCH_LOAD_SBYTE
+
+Opcode: 17 (0x11) for GCN 1.4  
+Syntax: SCRATCH_LOAD_SBYTE VDST, VADDR|OFF, SADDR|OFF  
+Description: Load byte to VDST from scratch memory address with sign extending.  
+Operation:  
+```
+VDST = *(INT8*)SWIZZLE(ADDR, INST_OFFSET, LANEID)
+```
+
+#### SCRATCH_LOAD_SBYTE_D16
+
+Opcode: 34 (0x22) for GCN 1.4  
+Syntax: SCRATCH_LOAD_SBYTE_D16 VDST, VADDR|OFF, SADDR|OFF  
+Description: Load byte to lower 16-bit part of VDST from
+scratch memory address with sign extending.  
+Operation:  
+```
+BYTE* VM = SWIZZLE(ADDR, INST_OFFSET, LANEID)
+VDST = ((UINT16)*(INT8*)VM) | (VDST&0xffff0000)
+```
+
+#### SCRATCH_LOAD_SBYTE_D16_HI
+
+Opcode: 35 (0x23) for GCN 1.4  
+Syntax: SCRATCH_LOAD_SBYTE_D16_HI VDST, VADDR|OFF, SADDR|OFF  
+Description: Load byte to higher 16-bit part of VDST from
+scratch memory address with sign extending.  
+Operation:  
+```
+BYTE* VM = SWIZZLE(ADDR, INST_OFFSET, LANEID)
+VDST = (((UINT32)*(INT8*)VM)<<16) | (VDST&0xffff)
+```
+
+#### SCRATCH_LOAD_SHORT_D16
+
+Opcode: 36 (0x24) for GCN 1.4  
+Syntax: SCRATCH_LOAD_SHORT_D16 VDST, VADDR|OFF, SADDR|OFF  
+Description: Load 16-bit word to lower 16-bit part of VDST from scratch memory address.  
+Operation:  
+```
+BYTE* VM = SWIZZLE(ADDR, INST_OFFSET, LANEID)
+VDST = *(UINT16*)VM | (VDST & 0xffff0000)
+```
+
+#### SCRATCH_LOAD_SHORT_D16_HI
+
+Opcode: 36 (0x24) for GCN 1.4  
+Syntax: SCRATCH_LOAD_SHORT_D16_HI VDST, VADDR|OFF, SADDR|OFF  
+Description: Load 16-bit word to lower 16-bit part of VDST from scratch memory address.  
+Operation:  
+```
+BYTE* VM = SWIZZLE(ADDR, INST_OFFSET, LANEID)
+VDST = (((UINT32)*(UINT16*)VM)<<16) | (VDST & 0xffff)
+```
+
+#### SCRATCH_LOAD_SSHORT
+
+Opcode: 19 (0x13) for GCN 1.4  
+Syntax: SCRATCH_LOAD_SSHORT VDST, VADDR|OFF, SADDR|OFF  
+Description: Load 16-bit word to VDST from scratch memory address with sign extending.  
+Operation:  
+```
+VDST = *(INT16*)SWIZZLE(ADDR, INST_OFFSET, LANEID)
+```
+
+#### SCRATCH_LOAD_UBYTE
+
+Opcode: 16 (0x10) for GCN 1.4  
+Syntax: SCRATCH_LOAD_UBYTE VDST, VADDR|OFF, SADDR|OFF  
+Description: Load byte to VDST from scratch memory address with zero extending.  
+Operation:  
+```
+VDST = *(UINT8*)SWIZZLE(ADDR, INST_OFFSET, LANEID)
+```
+
+#### SCRATCH_LOAD_UBYTE_D16
+
+Opcode: 32 (0x20) for GCN 1.4  
+Syntax: SCRATCH_LOAD_UBYTE_D16 VDST, VADDR|OFF, SADDR|OFF  
+Description: Load byte to lower 16-bit part of VDST from
+scratch memory address with zero extending.  
+Operation:  
+```
+BYTE* VM = SWIZZLE(ADDR, INST_OFFSET, LANEID)
+VDST = ((UINT16)*(UINT8*)VM) | (VDST&0xffff0000)
+```
+
+#### SCRATCH_LOAD_UBYTE_D16_HI
+
+Opcode: 33 (0x21) for GCN 1.4  
+Syntax: SCRATCH_LOAD_UBYTE_D16_HI VDST, VADDR|OFF, SADDR|OFF  
+Description: Load byte to higher 16-bit part of VDST from
+scratch memory address with zero extending.  
+Operation:  
+```
+BYTE* VM = SWIZZLE(ADDR, INST_OFFSET, LANEID)
+VDST = (((UINT32)*(UINT8*)VM)<<16) | (VDST&0xffff)
+```
+
+#### SCRATCH_LOAD_USHORT
+
+Opcode: 18 (0x12) for GCN 1.4  
+Syntax: SCRATCH_LOAD_USHORT VDST, VADDR|OFF, SADDR|OFF  
+Description: Load 16-bit word to VDST from scratch memory address with zero extending.  
+Operation:  
+```
+VDST = *(UINT16*)SWIZZLE(ADDR, INST_OFFSET, LANEID)
+```
+
+#### SCRATCH_STORE_BYTE
+
+Opcode: 24 (0x18) for GCN 1.4  
+Syntax: SCRATCH_STORE_BYTE VADDR|OFF, VDATA, SADDR|OFF  
+Description: Store byte from VDATA to scratch memory address.  
+Operation:  
+```
+*(UINT8*)SWIZZLE(ADDR, INST_OFFSET, LANEID) = VDATA&0xff
+```
+
+#### SCRATCH_STORE_BYTE_D16_HI
+
+Opcode: 25 (0x19) for GCN 1.4  
+Syntax: SCRATCH_STORE_BYTE_D16_HI VADDR|OFF, VDATA, SADDR|OFF  
+Description: Store byte from 16-23 bits of VDATA to scratch memory address.  
+Operation:  
+```
+*(UINT8*)SWIZZLE(ADDR, INST_OFFSET, LANEID) = (VDATA>>16)&0xff
+```
+
+#### SCRATCH_STORE_DWORD
+
+Opcode: 28 (0x1c) for GCN 1.4  
+Syntax: SCRATCH_STORE_DWORD VADDR|OFF, VDATA, SADDR|OFF  
+Description: Store dword from VDATA to scratch memory address.  
+Operation:  
+```
+*(UINT32*)SWIZZLE(ADDR, INST_OFFSET, LANEID) = VDATA
+```
+
+#### SCRATCH_STORE_DWORDX2
+
+Opcode: 29 (0x1d) for GCN 1.4  
+Syntax: SCRATCH_STORE_DWORDX2 VADDR|OFF, VDATA(2), SADDR|OFF  
+Description: Store two dwords from VDATA to scratch memory address.  
+Operation:  
+```
+*(UINT64*)SWIZZLE(ADDR, INST_OFFSET, LANEID) = VDATA
+```
+
+#### SCRATCH_STORE_DWORDX3
+
+Opcode: 30 (0x1e) for GCN 1.4  
+Syntax: SCRATCH_STORE_DWORDX3 VADDR|OFF, VDATA(3), SADDR|OFF  
+Description: Store three dwords from VDATA to scratch memory address.  
+Operation:  
+```
+BYTE* VM = SWIZZLE(ADDR, INST_OFFSET, LANEID)
+*(UINT32*)(VM) = VDATA[0]
+*(UINT32*)(VM+4) = VDATA[1]
+*(UINT32*)(VM+8) = VDATA[2]
+```
+
+#### SCRATCH_STORE_DWORDX4
+
+Opcode: 31 (0x1d) for GCN 1.4  
+Syntax: SCRATCH_STORE_DWORDX4 VADDR|OFF, VDATA(4), SADDR|OFF  
+Description: Store four dwords from VDATA to scratch memory address.  
+Operation:  
+```
+BYTE* VM = SWIZZLE(ADDR, INST_OFFSET, LANEID)
+*(UINT32*)(VM) = VDATA[0]
+*(UINT32*)(VM+4) = VDATA[1]
+*(UINT32*)(VM+8) = VDATA[2]
+*(UINT32*)(VM+12) = VDATA[3]
+```
+
+#### SCRATCH_STORE_SHORT
+
+Opcode: 26 (0x1a) for GCN 1.4  
+Syntax: SCRATCH_STORE_SHORT VADDR|OFF, VDATA, SADDR|OFF  
+Description: Store 16-bit word from VDATA to scratch memory address.  
+Operation:  
+```
+*(UINT16*)SWIZZLE(ADDR, INST_OFFSET, LANEID) = VDATA&0xffff
+```
+
+#### SCRATCH_STORE_SHORT_D16_HI
+
+Opcode: 27 (0x1b) for GCN 1.4  
+Syntax: SCRATCH_STORE_SHORT_D16_HI VADDR|OFF, VDATA, SADDR|OFF  
+Description: Store 16-bit word from higher 16-bit part of VDATA to scratch memory address.  
+Operation:  
+```
+*(UINT16*)SWIZZLE(ADDR, INST_OFFSET, LANEID) = VDATA>>16
+```
