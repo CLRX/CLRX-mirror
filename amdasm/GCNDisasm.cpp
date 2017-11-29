@@ -2873,8 +2873,12 @@ void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd
 void GCNDisasmUtils::printFLATAddr(cxuint flatMode, char*& bufPtr, uint32_t insnCode2)
 {
     const cxuint vaddr = insnCode2&0xff;
-    if (flatMode == 0 || flatMode == GCN_FLAT_GLOBAL)
-        decodeGCNVRegOperand(vaddr, 2, bufPtr); // addr
+    if (flatMode == 0)
+        decodeGCNVRegOperand(vaddr, 2 , bufPtr); // addr
+    else if (flatMode == GCN_FLAT_GLOBAL)
+        decodeGCNVRegOperand(vaddr,
+                // if off in SADDR, then single VGPR offset
+                ((insnCode2>>16)&0x7f) == 0x7f ? 2 : 1, bufPtr); // addr
     else if (flatMode == GCN_FLAT_SCRATCH)
     {
         if (((insnCode2>>16)&0x7f) == 0x7f)

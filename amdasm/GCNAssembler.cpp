@@ -3598,6 +3598,10 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     bool vaddrOff = false;
     const cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
+    
+    const cxuint addrRegsNum = (flatMode != GCN_FLAT_SCRATCH ?
+                (flatMode==GCN_FLAT_FLAT ? 2 : 0)  : 1);
+    const char* addrPlace = nullptr;
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
         // first is destination
@@ -3609,6 +3613,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!skipRequiredComma(asmr, linePtr))
             return false;
         skipSpacesToEnd(linePtr, end);
+        addrPlace = linePtr;
         if (flatMode == GCN_FLAT_SCRATCH && linePtr+3<=end &&
             strncasecmp(linePtr, "off", 3)==0 && (linePtr+3==end || !isAlnum(linePtr[3])))
         {
@@ -3620,15 +3625,15 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             gcnAsm->setCurrentRVU(1);
             // parse VADDR (1 or 2 VGPR's)
-            good &= parseVRegRange(asmr, linePtr, vaddrReg,
-                    (flatMode != GCN_FLAT_SCRATCH ? 2 : 1), GCNFIELD_FLAT_ADDR, true,
-                    INSTROP_SYMREGRANGE|INSTROP_READ);
+            good &= parseVRegRange(asmr, linePtr, vaddrReg, addrRegsNum,
+                    GCNFIELD_FLAT_ADDR, true, INSTROP_SYMREGRANGE|INSTROP_READ);
         }
     }
     else
     {
         // first is data
         skipSpacesToEnd(linePtr, end);
+        addrPlace = linePtr;
         if (flatMode == GCN_FLAT_SCRATCH && linePtr+3<=end &&
             strncasecmp(linePtr, "off", 3)==0 && (linePtr+3==end || !isAlnum(linePtr[3])))
         {
@@ -3640,9 +3645,8 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             gcnAsm->setCurrentRVU(1);
             // parse VADDR (1 or 2 VGPR's)
-            good &= parseVRegRange(asmr, linePtr, vaddrReg, 
-                        (flatMode != GCN_FLAT_SCRATCH ? 2 : 1), GCNFIELD_FLAT_ADDR, true,
-                        INSTROP_SYMREGRANGE|INSTROP_READ);
+            good &= parseVRegRange(asmr, linePtr, vaddrReg, addrRegsNum,
+                        GCNFIELD_FLAT_ADDR, true, INSTROP_SYMREGRANGE|INSTROP_READ);
         }
         if ((gcnInsn.mode & GCN_FLAT_NODST) == 0)
         {
@@ -3686,6 +3690,20 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             good &= parseSRegRange(asmr, linePtr, saddrReg, arch,
                         (flatMode==GCN_FLAT_SCRATCH ? 1 : 2), GCNFIELD_FLAT_SADDR, true,
                         INSTROP_SYMREGRANGE|INSTROP_READ);
+        }
+    }
+    
+    if (addrRegsNum == 0)
+    {
+        // check size of addrRange
+        // if SADDR then 1 VADDR offset register, otherwise 2 VADDR VGPRs
+        cxuint reqAddrRegsNum = saddrOff ? 2 : 1;
+        if (!isXRegRange(vaddrReg, reqAddrRegsNum))
+        {
+            char errorMsg[40];
+            snprintf(errorMsg, 40, "Required %u vector register%s", reqAddrRegsNum,
+                     (reqAddrRegsNum>1) ? "s" : "");
+            ASM_NOTGOOD_BY_ERROR(addrPlace, errorMsg)
         }
     }
     

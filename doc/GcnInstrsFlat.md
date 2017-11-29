@@ -51,9 +51,9 @@ Instruction syntax: INSTRUCTION VDST, VADDR(2) [MODIFIERS]
 Instruction syntax: INSTRUCTION VADDR(2), VDATA [MODIFIERS]
 
 GLOBAL instruction syntax: INSTRUCTION VDST, VADDR(2), SADDR(2)|OFF [MODIFIERS]  
-GLOBAL instruction syntax: INSTRUCTION VADDR(2), VDATA, SADDR(2)|OFF [MODIFIERS]  
+GLOBAL instruction syntax: INSTRUCTION VADDR(1:2), VDATA, SADDR(2)|OFF [MODIFIERS]  
 SCRATCH instruction syntax: INSTRUCTION VDST, VADDR(2), SADDR|OFF [MODIFIERS]  
-SCRATCH instruction syntax: INSTRUCTION VADDR(2), VDATA, SADDR|OFF [MODIFIERS]
+SCRATCH instruction syntax: INSTRUCTION VADDR, VDATA, SADDR|OFF [MODIFIERS]
 
 Modifiers can be supplied in any order. Modifiers list: SLC, GLC, TFE,
 LDS, NV, INST_OFFSET:OFFSET. The TFE flag requires additional the VDATA register.
@@ -65,6 +65,9 @@ to main memory, or LKGMCNT if accesses to LDS.
 
 OFFSET (INST_OFFSET modifier) can be 13-bit signed for GLOBAL_\* and SCRATCH_\*
 instructions or 12-bit unsigned for FLAT_\* instructions.
+
+For GLOBAL instruction VADDR have 2 registers if SADDR is OFF, otherwise VADDR holds
+32-bit offset in single VGPR register.
 
 ### Instructions by opcode
 
@@ -900,7 +903,7 @@ Operation:
 #### GLOBAL_ATOMIC_ADD
 
 Opcode: 66 (0x42) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_ADD VDST, VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_ADD VDST, VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Add VDATA to value of global address, and store result to this address.
 If GLC flag is set then return previous value from this address to VDST,
 otherwise keep VDST value. Operation is atomic.  
@@ -913,7 +916,7 @@ UINT32 P = *VM; *VM = *VM + VDATA; VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_ADD_X2
 
 Opcode: 98 (0x62) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_ADD_X2 VDST(2), VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_ADD_X2 VDST(2), VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Add 64-bit VDATA to 64-bit value of global address, and store result
 to this address. If GLC flag is set then return previous value from address to VDST,
 otherwise keep VDST value. Operation is atomic.  
@@ -926,7 +929,7 @@ UINT64 P = *VM; *VM = *VM + VDATA; VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_AND
 
 Opcode: 72 (0x48) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_AND VDST, VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_AND VDST, VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Do bitwise AND on VDATA and value of global address,
 and store result to this address. If GLC flag is set then return previous value
 from this address to VDST, otherwise keep VDST value. Operation is atomic.  
@@ -939,7 +942,7 @@ UINT32 P = *VM; *VM = *VM & VDATA; VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_AND_X2
 
 Opcode: 104 (0x68) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_AND_X2 VDST(2), VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_AND_X2 VDST(2), VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Do 64-bit bitwise AND on VDATA and value of global address,
 and store result to this address. If GLC flag is set then return previous value
 from this address to VDST, otherwise keep VDST value. Operation is atomic.  
@@ -952,7 +955,7 @@ UINT64 P = *VM; *VM = *VM & VDATA; VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_CMPSWAP
 
 Opcode: 65 (0x41) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_CMPSWAP VDST, VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_CMPSWAP VDST, VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Store lower VDATA dword into global address  if previous value
 from that address is equal VDATA>>32, otherwise keep old value from address.
 If GLC flag is set then return previous value from address to VDST,
@@ -967,7 +970,7 @@ VDST = (GLC) ? P : VDST // last part of atomic
 #### GLOBAL_ATOMIC_CMPSWAP_X2
 
 Opcode: 97 (0x61) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_CMPSWAP_X2 VDST(2), VADDR(2), VDATA(4), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_CMPSWAP_X2 VDST(2), VADDR(1:2), VDATA(4), SADDR(2)|OFF  
 Description: Store lower VDATA 64-bit word into global address if previous value
 from address is equal VDATA>>64, otherwise keep old value from VADDR.
 If GLC flag is set then return previous value from VADDR to VDST,
@@ -982,7 +985,7 @@ VDST = (GLC) ? P : VDST // last part of atomic
 #### GLOBAL_ATOMIC_DEC
 
 Opcode: 76 (0x4c) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_DEC VDST, VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_DEC VDST, VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Compare value from global address and if less or equal than VDATA
 and this value is not zero, then decrement value from global address,
 otherwise store VDATA to this address. If GLC flag is set then return previous value
@@ -997,7 +1000,7 @@ VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_DEC_X2
 
 Opcode: 108 (0x6c) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_DEC_X2 VDST(2), VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_DEC_X2 VDST(2), VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Compare 64-bit value from global address and if less or equal than VDATA
 and this value is not zero, then decrement value from global address,
 otherwise store VDATA to this address. If GLC flag is set then return previous value
@@ -1012,7 +1015,7 @@ VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_INC
 
 Opcode: 75 (0x4b) for GCN 1.4  
-Syntax: FLT_ATOMIC_INC VDST, VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: FLT_ATOMIC_INC VDST, VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Compare value from global address and if less than VDATA,
 then increment value from address, otherwise store zero to address.
 If GLC flag is set then return previous value from this address to VDST,
@@ -1026,7 +1029,7 @@ UINT32 P = *VM; *VM = (*VM < VDATA) ? *VM+1 : 0; VDST = (GLC) ? P : VDST // atom
 #### GLOBAL_ATOMIC_INC_X2
 
 Opcode: 107 (0x9b) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_INC_X2 VDST(2), VADDR(2), VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_INC_X2 VDST(2), VADDR(1:2), VADDR(1:2), SADDR(2)|OFF  
 Description: Compare 64-bit value from global address and if less than VDATA,
 then increment value from address, otherwise store zero to address.
 If GLC flag is set then return previous value from this address to VDST,
@@ -1040,7 +1043,7 @@ UINT64 P = *VM; *VM = (*VM < VDATA) ? *VM+1 : 0; VDST = (GLC) ? P : VDST // atom
 #### GLOBAL_ATOMIC_OR
 
 Opcode: 73 (0x49) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_OR VDST, VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_OR VDST, VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Do bitwise OR on VDATA and value of global address,
 and store result to this address. If GLC flag is set then return previous value
 from this address to VDST, otherwise keep VDST value. Operation is atomic.  
@@ -1053,7 +1056,7 @@ UINT32 P = *VM; *VM = *VM | VDATA; VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_OR_X2
 
 Opcode: 105 (0x69) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_OR_X2 VDST(2), VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_OR_X2 VDST(2), VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Do 64-bit bitwise OR on VDATA and value of global address,
 and store result to this address. If GLC flag is set then return previous value
 from this address to VDST, otherwise keep VDST value. Operation is atomic.  
@@ -1066,7 +1069,7 @@ UINT64 P = *VM; *VM = *VM | VDATA; VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_SMAX
 
 Opcode: 70 (0x46) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_SMAX VDST, VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_SMAX VDST, VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Choose greatest signed 32-bit value from VDATA and from global address,
 and store result to this address.
 If GLC flag is set then return previous value from this address to VDST, otherwise keep
@@ -1080,7 +1083,7 @@ UINT32 P = *VM; *VM = MAX(*VM, (INT32)VDATA); VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_SMAX_X2
 
 Opcode: 102 (0x66) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_SMAX_X2 VDST(2), VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_SMAX_X2 VDST(2), VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Choose greatest signed 64-bit value from VDATA and from global address,
 and store result to this address.
 If GLC flag is set then return previous value from this address to VDST, otherwise keep
@@ -1094,7 +1097,7 @@ UINT64 P = *VM; *VM = MAX(*VM, (INT64)VDATA); VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_SMIN
 
 Opcode: 68 (0x44) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_SMIN VDST, VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_SMIN VDST, VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Choose smallest signed 32-bit value from VDATA and from global address,
 and store result to this address.
 If GLC flag is set then return previous value from this address to VDST, otherwise keep
@@ -1108,7 +1111,7 @@ UINT32 P = *VM; *VM = MIN(*VM, (INT32)VDATA); VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_SMIN_X2
 
 Opcode: 100 (0x64) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_SMIN_X2 VDST(2), VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_SMIN_X2 VDST(2), VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Choose smallest signed 64-bit value from VDATA and from global address,
 and store result to this address.
 If GLC flag is set then return previous value from this address to VDST, otherwise keep
@@ -1122,7 +1125,7 @@ UINT64 P = *VM; *VM = MIN(*VM, (INT64)VDATA); VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_SUB
 
 Opcode: 67 (0x43) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_SUB VDST, VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_SUB VDST, VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Subtract VDATA from value of global address, and store result to this address.
 If GLC flag is set then return previous value from this address to VDST,
 otherwise keep VDST value. Operation is atomic.  
@@ -1135,7 +1138,7 @@ UINT32 P = *VM; *VM = *VM - VDATA; VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_SUB_X2
 
 Opcode: 99 (0x63) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_SUB_X2 VDST(2), VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_SUB_X2 VDST(2), VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Subtract 64-bit VDATA from 64-bit value of global address, and store result
 to this address. If GLC flag is set then return previous value from address to VDST,
 otherwise keep VDST value. Operation is atomic.  
@@ -1148,7 +1151,7 @@ UINT64 P = *VM; *VM = *VM - VDATA; VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_SWAP
 
 Opcode: 64 (0x40) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_SWAP VDST, VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_SWAP VDST, VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Store VDATA dword into global address. If GLC flag is set then
 return previous value from global address to VDST, otherwise keep old value from VDST.
 Operation is atomic.  
@@ -1161,7 +1164,7 @@ UINT32 P = *VM; *VM = VDATA; VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_SWAP_X2
 
 Opcode: 96 (0x60) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_SWAP_X2 VDST(2), VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_SWAP_X2 VDST(2), VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Store VDATA 64-bit word into global address. If GLC flag is set then
 return previous value from global address to VDST, otherwise keep old value from VDST.
 Operation is atomic.  
@@ -1174,7 +1177,7 @@ UINT64 P = *VM; *VM = VDATA; VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_UMAX
 
 Opcode: 71 (0x47) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_UMAX VDST, VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_UMAX VDST, VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Choose greatest unsigned 32-bit value from VDATA and from global address,
 and store result to this address.
 If GLC flag is set then return previous value from this address to VDST, otherwise keep
@@ -1188,7 +1191,7 @@ UINT32 P = *VM; *VM = MAX(*VM, (UINT32)VDATA); VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_UMAX_X2
 
 Opcode: 103 (0x67) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_UMAX_X2 VDST(2), VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_UMAX_X2 VDST(2), VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Choose greatest unsigned 64-bit value from VDATA and from global address,
 and store result to this address.
 If GLC flag is set then return previous value from this address to VDST, otherwise keep
@@ -1202,7 +1205,7 @@ UINT64 P = *VM; *VM = MAX(*VM, (UINT64)VDATA); VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_UMIN
 
 Opcode: 69 (0x45) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_UMIN VDST, VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_UMIN VDST, VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Choose smallest unsigned 32-bit value from VDATA and from global address,
 and store result to this address.
 If GLC flag is set then return previous value from this address to VDST, otherwise keep
@@ -1216,7 +1219,7 @@ UINT32 P = *VM; *VM = MIN(*VM, (UINT32)VDATA); VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_UMIN_X2
 
 Opcode: 101 (0x65) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_UMIN_X2 VDST(2), VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_UMIN_X2 VDST(2), VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Choose smallest unsigned 64-bit value from VDATA and from global address,
 and store result to this address.
 If GLC flag is set then return previous value from this address to VDST, otherwise keep
@@ -1230,7 +1233,7 @@ UINT64 P = *VM; *VM = MIN(*VM, (UINT64)VDATA); VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_XOR
 
 Opcode: 74 (0x4a) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_XOR VDST, VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_XOR VDST, VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Do bitwise XOR on VDATA and value of global address,
 and store result to this address. If GLC flag is set then return previous value
 from this address to VDST, otherwise keep VDST value. Operation is atomic.  
@@ -1243,7 +1246,7 @@ UINT32 P = *VM; *VM = *VM ^ VDATA; VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_ATOMIC_XOR_X2
 
 Opcode: 106 (0x6a) for GCN 1.4  
-Syntax: GLOBAL_ATOMIC_XOR_X2 VDST(2), VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_ATOMIC_XOR_X2 VDST(2), VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Do 64-bit bitwise XOR on VDATA and value of global address,
 and store result to this address. If GLC flag is set then return previous value
 from this address to VDST, otherwise keep VDST value. Operation is atomic.  
@@ -1256,7 +1259,7 @@ UINT64 P = *VM; *VM = *VM ^ VDATA; VDST = (GLC) ? P : VDST // atomic
 #### GLOBAL_LOAD_DWORD
 
 Opcode: 20 (0x14) for GCN 1.4  
-Syntax: GLOBAL_LOAD_DWORD VDST, VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_DWORD VDST, VADDR(1:2), SADDR(2)|OFF  
 Description Load dword to VDST from global address.  
 Operation:  
 ```
@@ -1266,7 +1269,7 @@ VDST = *(UINT32*)(VADDR + SADDR + INST_OFFSET)
 #### GLOBAL_LOAD_DWORDX2
 
 Opcode: 21 (0x15) for GCN 1.4  
-Syntax: GLOBAL_LOAD_DWORDX2 VDST(, VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_DWORDX2 VDST(, VADDR(1:2), SADDR(2)|OFF  
 Description Load two dwords to VDST from global address.  
 Operation:  
 ```
@@ -1276,7 +1279,7 @@ VDST = *(UINT64*)(VADDR + SADDR + INST_OFFSET)
 #### GLOBAL_LOAD_DWORDX3
 
 Opcode: 22 (0x16) for GCN 1.4  
-Syntax: GLOBAL_LOAD_DWORDX3 VDST(3), VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_DWORDX3 VDST(3), VADDR(1:2), SADDR(2)|OFF  
 Description Load three dwords to VDST from global address.  
 Operation:  
 ```
@@ -1289,7 +1292,7 @@ VDST[2] = *(UINT32*)(VM+8)
 #### GLOBAL_LOAD_DWORDX4
 
 Opcode: 23 (0x17) for GCN 1.4  
-Syntax: GLOBAL_LOAD_DWORDX4 VDST(4), VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_DWORDX4 VDST(4), VADDR(1:2), SADDR(2)|OFF  
 Description Load four dwords to VDST from global address.  
 Operation:  
 ```
@@ -1303,7 +1306,7 @@ VDST[3] = *(UINT32*)(VM+12)
 #### GLOBAL_LOAD_SBYTE
 
 Opcode: 17 (0x11) for GCN 1.4  
-Syntax: GLOBAL_LOAD_SBYTE VDST, VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_SBYTE VDST, VADDR(1:2), SADDR(2)|OFF  
 Description: Load byte to VDST from global address with sign extending.  
 Operation:  
 ```
@@ -1313,7 +1316,7 @@ VDST = *(INT8*)(VADDR + SADDR + INST_OFFSET)
 #### GLOBAL_LOAD_SBYTE_D16
 
 Opcode: 34 (0x22) for GCN 1.4  
-Syntax: GLOBAL_LOAD_SBYTE_D16 VDST, VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_SBYTE_D16 VDST, VADDR(1:2), SADDR(2)|OFF  
 Description: Load byte to lower 16-bit part of VDST from
 global address with sign extending.  
 Operation:  
@@ -1325,7 +1328,7 @@ VDST = ((UINT16)*(INT8*)VM) | (VDST&0xffff0000)
 #### GLOBAL_LOAD_SBYTE_D16_HI
 
 Opcode: 35 (0x23) for GCN 1.4  
-Syntax: GLOBAL_LOAD_SBYTE_D16_HI VDST, VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_SBYTE_D16_HI VDST, VADDR(1:2), SADDR(2)|OFF  
 Description: Load byte to higher 16-bit part of VDST from
 global address with sign extending.  
 Operation:  
@@ -1337,7 +1340,7 @@ VDST = (((UINT32)*(INT8*)VM)<<16) | (VDST&0xffff)
 #### GLOBAL_LOAD_SHORT_D16
 
 Opcode: 36 (0x24) for GCN 1.4  
-Syntax: GLOBAL_LOAD_SHORT_D16 VDST, VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_SHORT_D16 VDST, VADDR(1:2), SADDR(2)|OFF  
 Description: Load 16-bit word to lower 16-bit part of VDST from global address.  
 Operation:  
 ```
@@ -1348,7 +1351,7 @@ VDST = *(UINT16*)VM | (VDST & 0xffff0000)
 #### GLOBAL_LOAD_SHORT_D16_HI
 
 Opcode: 36 (0x24) for GCN 1.4  
-Syntax: GLOBAL_LOAD_SHORT_D16_HI VDST, VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_SHORT_D16_HI VDST, VADDR(1:2), SADDR(2)|OFF  
 Description: Load 16-bit word to lower 16-bit part of VDST from global address.  
 Operation:  
 ```
@@ -1359,7 +1362,7 @@ VDST = (((UINT32)*(UINT16*)VM)<<16) | (VDST & 0xffff)
 #### GLOBAL_LOAD_SSHORT
 
 Opcode: 19 (0x13) for GCN 1.4  
-Syntax: GLOBAL_LOAD_SSHORT VDST, VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_SSHORT VDST, VADDR(1:2), SADDR(2)|OFF  
 Description: Load 16-bit word to VDST from global address with sign extending.  
 Operation:  
 ```
@@ -1369,7 +1372,7 @@ VDST = *(INT16*)(VADDR + SADDR + INST_OFFSET)
 #### GLOBAL_LOAD_UBYTE
 
 Opcode: 16 (0x10) for GCN 1.4  
-Syntax: GLOBAL_LOAD_UBYTE VDST, VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_UBYTE VDST, VADDR(1:2), SADDR(2)|OFF  
 Description: Load byte to VDST from global address with zero extending.  
 Operation:  
 ```
@@ -1379,7 +1382,7 @@ VDST = *(UINT8*)(VADDR + SADDR + INST_OFFSET)
 #### GLOBAL_LOAD_UBYTE_D16
 
 Opcode: 32 (0x20) for GCN 1.4  
-Syntax: GLOBAL_LOAD_UBYTE_D16 VDST, VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_UBYTE_D16 VDST, VADDR(1:2), SADDR(2)|OFF  
 Description: Load byte to lower 16-bit part of VDST from
 global address with zero extending.  
 Operation:  
@@ -1391,7 +1394,7 @@ VDST = ((UINT16)*(UINT8*)VM) | (VDST&0xffff0000)
 #### GLOBAL_LOAD_UBYTE_D16_HI
 
 Opcode: 33 (0x21) for GCN 1.4  
-Syntax: GLOBAL_LOAD_UBYTE_D16_HI VDST, VADDR(2), SADDR(2)|OFF  
+Syntax: GLOBAL_LOAD_UBYTE_D16_HI VDST, VADDR(1:2), SADDR(2)|OFF  
 Description: Load byte to higher 16-bit part of VDST from
 global address with zero extending.  
 Operation:  
@@ -1413,7 +1416,7 @@ VDST = *(UINT16*)(VADDR + SADDR + INST_OFFSET)
 #### GLOBAL_STORE_BYTE
 
 Opcode: 24 (0x18) for GCN 1.4  
-Syntax: GLOBAL_STORE_BYTE VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_STORE_BYTE VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Store byte from VDATA to global address.  
 Operation:  
 ```
@@ -1423,7 +1426,7 @@ Operation:
 #### GLOBAL_STORE_BYTE_D16_HI
 
 Opcode: 25 (0x19) for GCN 1.4  
-Syntax: GLOBAL_STORE_BYTE_D16_HI VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_STORE_BYTE_D16_HI VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Store byte from 16-23 bits of VDATA to global address.  
 Operation:  
 ```
@@ -1433,7 +1436,7 @@ Operation:
 #### GLOBAL_STORE_DWORD
 
 Opcode: 28 (0x1c) for GCN 1.4  
-Syntax: GLOBAL_STORE_DWORD VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_STORE_DWORD VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Store dword from VDATA to global address.  
 Operation:  
 ```
@@ -1443,7 +1446,7 @@ Operation:
 #### GLOBAL_STORE_DWORDX2
 
 Opcode: 29 (0x1d) for GCN 1.4  
-Syntax: GLOBAL_STORE_DWORDX2 VADDR(2), VDATA(2), SADDR(2)|OFF  
+Syntax: GLOBAL_STORE_DWORDX2 VADDR(1:2), VDATA(2), SADDR(2)|OFF  
 Description: Store two dwords from VDATA to global address.  
 Operation:  
 ```
@@ -1453,7 +1456,7 @@ Operation:
 #### GLOBAL_STORE_DWORDX3
 
 Opcode: 30 (0x1e) for GCN 1.4  
-Syntax: GLOBAL_STORE_DWORDX3 VADDR(2), VDATA(3), SADDR(2)|OFF  
+Syntax: GLOBAL_STORE_DWORDX3 VADDR(1:2), VDATA(3), SADDR(2)|OFF  
 Description: Store three dwords from VDATA to global address.  
 Operation:  
 ```
@@ -1466,7 +1469,7 @@ BYTE* VM = (VADDR + SADDR + INST_OFFSET)
 #### GLOBAL_STORE_DWORDX4
 
 Opcode: 31 (0x1d) for GCN 1.4  
-Syntax: GLOBAL_STORE_DWORDX4 VADDR(2), VDATA(4), SADDR(2)|OFF  
+Syntax: GLOBAL_STORE_DWORDX4 VADDR(1:2), VDATA(4), SADDR(2)|OFF  
 Description: Store four dwords from VDATA to global address.  
 Operation:  
 ```
@@ -1480,7 +1483,7 @@ BYTE* VM = (VADDR + SADDR + INST_OFFSET)
 #### GLOBAL_STORE_SHORT
 
 Opcode: 26 (0x1a) for GCN 1.4  
-Syntax: GLOBAL_STORE_SHORT VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_STORE_SHORT VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Store 16-bit word from VDATA to global address.  
 Operation:  
 ```
@@ -1490,7 +1493,7 @@ Operation:
 #### GLOBAL_STORE_SHORT_D16_HI
 
 Opcode: 27 (0x1b) for GCN 1.4  
-Syntax: GLOBAL_STORE_SHORT_D16_HI VADDR(2), VDATA, SADDR(2)|OFF  
+Syntax: GLOBAL_STORE_SHORT_D16_HI VADDR(1:2), VDATA, SADDR(2)|OFF  
 Description: Store 16-bit word from higher 16-bit part of VDATA to global address.  
 Operation:  
 ```
