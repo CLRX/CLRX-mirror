@@ -22,7 +22,7 @@ Bits  | Name     | Description
 40-47 | VDATA    | Vector data registers
 48-52 | SRSRC    | Scalar registers with buffer resource (SGPR# is 4*value)
 53-57 | SSAMP    | Scalar registers with sampler resource (SGPR# is 4*value)
-63    | D16      | Convert 32-bit data to 16-bit data (GCN 1.2)
+63    | D16      | Convert 32-bit data to 16-bit data (GCN 1.2/1.4)
 
 Instruction syntax: INSTRUCTION VDATA, VADDR, SRSRC [MODIFIERS]  
 Instruction syntax: INSTRUCTION VDATA, VADDR, SRSRC, SSAMP [MODIFIERS]
@@ -260,7 +260,7 @@ Alphabetically sorted instruction list:
 
 #### IMAGE_ATOMIC_ADD
 
-Opcode: 17 (0x11) for GCN 1.0/1.1; 18 (0x12) for GCN 1.2  
+Opcode: 17 (0x11) for GCN 1.0/1.1; 18 (0x12) for GCN 1.2/1.4  
 Syntax: IMAGE_ATOMIC_ADD VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Add VDATA dwords or 64-bit words (if VDATA size is greater than 32-bit)
 to values of image SRSRC at address VADDR, and store result into image.
@@ -298,7 +298,7 @@ VDATA = (GLC) ? P : VDATA // atomic
 
 #### IMAGE_ATOMIC_CMPSWAP
 
-Opcode: 16 (0x10) for GCN 1.0/1.1; 17 (0x11) for GCN 1.2  
+Opcode: 16 (0x10) for GCN 1.0/1.1; 17 (0x11) for GCN 1.2/1.4  
 Syntax: IMAGE_ATOMIC_CMPSWAP VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Store first half of VDATA into image SRSRC to pixel at address VADDR if
 second half of VDATA is equal old value from image's pixel, otherwise keep
@@ -510,7 +510,7 @@ VDATA = (GLC) ? P : VDATA // atomic
 
 #### IMAGE_ATOMIC_SUB
 
-Opcode: 18 (0x12) for GCN 1.0/1.1; 19 (0x13) for GCN 1.2  
+Opcode: 18 (0x12) for GCN 1.0/1.1; 19 (0x13) for GCN 1.2/1.4  
 Syntax: IMAGE_ATOMIC_SUB VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Subtract VDATA dwords or 64-bit words (if VDATA size is greater than 32-bit)
 from values of image SRSRC at address VADDR, and store result into image.
@@ -531,7 +531,7 @@ VDATA = (GLC) ? P : VDATA // atomic
 
 #### IMAGE_ATOMIC_SWAP
 
-Opcode: 15 (0xf) for GCN 1.0/1.1; 16 (0x10) for GCN 1.2  
+Opcode: 15 (0xf) for GCN 1.0/1.1; 16 (0x10) for GCN 1.2/1.4  
 Syntax: IMAGE_ATOMIC_SWAP VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Store VDATA into image SRSRC to pixel at address VADDR. If GLC is set then
 return old values from image, otherwise keep VDATA value. Operation is atomic.  
