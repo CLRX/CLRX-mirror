@@ -52,11 +52,16 @@ SMUL = 1
         .error "this example doesn't work in 32-bit OpenCL 2.0!"
     .endif
         # initialize flat_scratch
+    .ifarch GCN1.4
+        s_add_u32 flat_scratch_lo, s10, s13
+        s_addc_u32 flat_scratch_hi, s11, 0
+    .else
         s_add_u32 s5, s10, s13      # flat scratch offset
         s_lshr_b32 s5, s5, 8        # for bitfield
         s_mov_b32 s10, s11          # flat scratch size
         s_mov_b32 s11, s5
         s_mov_b64 flat_scratch, s[10:11]    # store to flat_scratch
+    .endif
         
         s_load_dwordx2 s[10:11], s[6:7], 16*SMUL # load localptr base and scratchptr base
     .if32
