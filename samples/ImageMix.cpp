@@ -99,9 +99,11 @@ end:
         .arg outimg, image, write_only    # write_only image2d_t outimg
     .text
     .ifarch GCN1.4
-        GID = %s10
+        GIDX = %s10
+        GIDY = %s11
     .else
-        GID = %s8
+        GIDX = %s8
+        GIDY = %s9
     .endif
     .if32
         s_load_dwordx2 s[0:1], s[6:7], 6*SMUL   # load img1
@@ -118,9 +120,9 @@ end:
         s_waitcnt lgkmcnt(0)
         s_lshr_b32 s5, s4, 16               # localsize(1)
         s_and_b32 s4, s4, 0xffff            # localsize(0)
-        s_mul_i32 s4, GID, s4                # localsize(0)*groupid(0)
+        s_mul_i32 s4, GIDX, s4              # localsize(0)*groupid(0)
         s_add_u32 s4, s4, s2                # +global_offset(0)
-        s_mul_i32 s5, s9, s5                # localsize(1)*groupid(1)
+        s_mul_i32 s5, GIDY, s5              # localsize(1)*groupid(1)
         s_add_u32 s5, s5, s3                # +global_offset(1)
     .ifarch GCN1.4
         v_add_co_u32 v0, vcc, s4, v0           # globalid(0)
