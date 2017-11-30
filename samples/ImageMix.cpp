@@ -33,6 +33,8 @@ static const char* imageMixSource = R"ffDXD(# ImageMix example
 SMUL = 1
 .ifarch GCN1.2
     SMUL = 4
+.elseifarch GCN1.4
+    SMUL = 4
 .endif
 .iffmt amd    # if AMD Catalyst
 .kernel imageMix
@@ -55,8 +57,13 @@ SMUL = 1
         s_mul_i32  s1, s15, s1
         s_add_u32  s0, s4, s0           # s[0:1] + global_offset(0,1)
         s_add_u32  s1, s5, s1
+    .ifarch GCN1.4
+        v_add_co_u32  v0, vcc, s0, v0      #  v[0:1] - global_id(0,1)
+        v_add_co_u32  v1, vcc, s1, v1
+    .else
         v_add_i32  v0, vcc, s0, v0      #  v[0:1] - global_id(0,1)
         v_add_i32  v1, vcc, s1, v1
+    .endif
         v_cmp_gt_i32  s[0:1], s7, v1    # global_id(1) < img1.height
         v_cmp_gt_i32  vcc, s6, v0       # global_id(0) < img1.width
         s_and_b64  vcc, s[0:1], vcc
@@ -91,6 +98,11 @@ end:
         .arg img2, image, read_only     # read_only image2d_t img2
         .arg outimg, image, write_only    # write_only image2d_t outimg
     .text
+    .ifarch GCN1.4
+        GID = %s10
+    .else
+        GID = %s8
+    .endif
     .if32
         s_load_dwordx2 s[0:1], s[6:7], 6*SMUL   # load img1
     .else
@@ -106,12 +118,17 @@ end:
         s_waitcnt lgkmcnt(0)
         s_lshr_b32 s5, s4, 16               # localsize(1)
         s_and_b32 s4, s4, 0xffff            # localsize(0)
-        s_mul_i32 s4, s8, s4                # localsize(0)*groupid(0)
+        s_mul_i32 s4, GID, s4                # localsize(0)*groupid(0)
         s_add_u32 s4, s4, s2                # +global_offset(0)
         s_mul_i32 s5, s9, s5                # localsize(1)*groupid(1)
         s_add_u32 s5, s5, s3                # +global_offset(1)
+    .ifarch GCN1.4
+        v_add_co_u32 v0, vcc, s4, v0           # globalid(0)
+        v_add_co_u32 v1, vcc, s5, v1           # globalid(1)
+    .else
         v_add_i32 v0, vcc, s4, v0           # globalid(0)
         v_add_i32 v1, vcc, s5, v1           # globalid(1)
+    .endif
         s_load_dword s8, s[0:1], 0          # load first image desc dword
         s_waitcnt lgkmcnt(0)
         s_and_b32 s4, s8, (1<<14)-1         # img width-1

@@ -32,6 +32,8 @@ static const char* genericPtrSource = R"ffDXD(
 SMUL = 1
 .ifarch gcn1.2
     SMUL = 4
+.elseifarch gcn1.4
+    SMUL = 4
 .endif
 .ifnfmt amdcl2  # AMD OpenCL 2.0 code
     .error "Only AMD OpenCL 2.0 binary format is supported"
@@ -103,8 +105,13 @@ SMUL = 1
     .if32
         buffer_store_dword v2, v0, s[12:15], s8 offset:4 # store value
     .else
+    .ifarch GCN1.4
+        v_add_co_u32 v3, vcc, 4, v3        # next entry in output buffer
+        v_addc_co_u32 v4, vcc, 0, v4, vcc
+    .else
         v_add_i32 v3, vcc, 4, v3        # next entry in output buffer
         v_addc_u32 v4, vcc, 0, v4, vcc
+    .endif
         flat_store_dword v[3:4], v2     # store value
     .endif
         s_endpgm
