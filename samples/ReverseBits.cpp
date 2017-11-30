@@ -33,9 +33,57 @@ using namespace CLRX;
 
 static const char* reverseBitsSource = R"ffDXD(# ReverseBits example
 SMUL = 1
+GCN1_2_4 = 0
 .ifarch gcn1.2
     SMUL = 4
+    GCN1_2_4 = 1
+.elseifarch gcn1.4
+    SMUL = 4
+    GCN1_2_4 = 1
 .endif
+
+.ifarch GCN1.4
+    # helper macros for integer add/sub instructions
+    .macro VADD_U32 dest, cdest, src0, src1, mods:vararg
+        v_add_co_u32 \dest, \cdest, \src0, \src1 \mods
+    .endm
+    .macro VADDC_U32 dest, cdest, src0, src1, csrc, mods:vararg
+        v_addc_co_u32 \dest, \cdest, \src0, \src1, \csrc \mods
+    .endm
+    .macro VSUB_U32 dest, cdest, src0, src1, mods:vararg
+        v_sub_co_u32 \dest, \cdest, \src0, \src1 \mods
+    .endm
+    .macro VSUBB_U32 dest, cdest, src0, src1, csrc, mods:vararg
+        v_subb_co_u32 \dest, \cdest, \src0, \src1, \csrc \mods
+    .endm
+    .macro VSUBREV_U32 dest, cdest, src0, src1, mods:vararg
+        v_subrev_co_u32 \dest, \cdest, \src0, \src1 \mods
+    .endm
+    .macro VSUBBREV_U32 dest, cdest, src0, src1, csrc, mods:vararg
+        v_subbrev_co_u32 \dest, \cdest, \src0, \src1, \csrc \mods
+    .endm
+.else
+    # helper macros for integer add/sub instructions
+    .macro VADD_U32 dest, cdest, src0, src1, mods:vararg
+        v_add_u32 \dest, \cdest, \src0, \src1 \mods
+    .endm
+    .macro VADDC_U32 dest, cdest, src0, src1, csrc, mods:vararg
+        v_addc_u32 \dest, \cdest, \src0, \src1, \csrc \mods
+    .endm
+    .macro VSUB_U32 dest, cdest, src0, src1, mods:vararg
+        v_sub_u32 \dest, \cdest, \src0, \src1 \mods
+    .endm
+    .macro VSUBB_U32 dest, cdest, src0, src1, csrc, mods:vararg
+        v_subb_u32 \dest, \cdest, \src0, \src1, \csrc \mods
+    .endm
+    .macro VSUBREV_U32 dest, cdest, src0, src1, mods:vararg
+        v_subrev_u32 \dest, \cdest, \src0, \src1 \mods
+    .endm
+    .macro VSUBBREV_U32 dest, cdest, src0, src1, csrc, mods:vararg
+        v_subbrev_u32 \dest, \cdest, \src0, \src1, \csrc \mods
+    .endm
+.endif
+
 .globaldata     # const data (conversion table)
 revTable:
     .byte 0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0
@@ -93,7 +141,7 @@ revTable:
         s_waitcnt  lgkmcnt(0)
         s_mul_i32  s0, s0, s12              # local_size(0)*group_id(0)
         s_add_u32  s0, s1, s0               # + global_offset(0)
-        v_add_i32  v0, vcc, s0, v0          # global_id(0)
+        VADD_U32  v0, vcc, s0, v0          # global_id(0)
         v_cmp_gt_u32  vcc, s4, v0           # n<global_id(0)
         s_and_saveexec_b64  s[0:1], vcc     # deactive thread with id(0)>=n
         s_cbranch_execz  end                # skip if no active thread
@@ -115,30 +163,30 @@ revTable:
         s_waitcnt  lgkmcnt(0)
         s_mul_i32  s0, s0, s12              # local_size(0)*group_id(0)
         s_add_u32  s0, s1, s0               # + global_offset(0)
-        v_add_i32  v0, vcc, s0, v0          # global_id(0)
+        VADD_U32  v0, vcc, s0, v0          # global_id(0)
         v_cmp_gt_u32  vcc, s4, v0           # n<global_id(0)
         s_and_saveexec_b64  s[0:1], vcc     # deactive thread with id(0)>=n
         s_cbranch_execz  end                # skip if no active thread
-    .ifnarch GCN1.2
+    .ifeq GCN1_2_4 # GCN 1.0/1.1
         s_load_dwordx4 s[12:15], s[2:3], 0x50       # load constant buffer descriptor
         s_buffer_load_dwordx2 s[0:1], s[8:11], 4  # input buffer offset
         s_buffer_load_dwordx2 s[4:5], s[8:11], 8  # output buffer offset
         s_load_dwordx4 s[8:11], s[2:3], 0x60        # load input buffer descriptor
         s_waitcnt  lgkmcnt(0)
-        v_add_i32  v2, vcc, s0, v0          # v[2:3] - input_offset+global_id(0)
+        VADD_U32  v2, vcc, s0, v0          # v[2:3] - input_offset+global_id(0)
         v_mov_b32 v3, s1                    # move to vector reg
-        v_addc_u32  v3, vcc, v3, 0, vcc     # v_addc_u32 with only vector regs
+        VADDC_U32  v3, vcc, v3, 0, vcc     # VADDC_U32 with only vector regs
         buffer_load_ubyte  v1, v[2:3], s[8:11], 0 addr64 # load ubyte from input
         s_waitcnt  vmcnt(0)
         s_load_dwordx4 s[8:11], s[2:3], 0x68        # load output buffer
-        v_add_i32  v4, vcc, s6, v1          # v[4:5] - constbuf_offset+char
+        VADD_U32  v4, vcc, s6, v1          # v[4:5] - constbuf_offset+char
         v_mov_b32 v5, s7                    # move to vector reg
-        v_addc_u32  v5, vcc, v5, 0, vcc     # v_addc_u32 with only vector regs
+        VADDC_U32  v5, vcc, v5, 0, vcc     # VADDC_U32 with only vector regs
         # convert byte (convert table in global const buffer)
         buffer_load_ubyte  v1, v[4:5], s[12:15], 0 addr64
-        v_add_i32  v2, vcc, s4, v0          # v[2:3] - output_offset+global_id(0)
+        VADD_U32  v2, vcc, s4, v0          # v[2:3] - output_offset+global_id(0)
         v_mov_b32 v3, s5                    # move to vector reg
-        v_addc_u32  v3, vcc, v3, 0, vcc     # v_addc_u32 with only vector regs
+        VADDC_U32  v3, vcc, v3, 0, vcc     # VADDC_U32 with only vector regs
         s_waitcnt  vmcnt(0) & lgkmcnt(0)            # wait for result and descriptor
         buffer_store_byte  v1, v[2:3], s[8:11], 0 addr64 # write byte to output
     .else # GCN1.2
@@ -154,13 +202,13 @@ revTable:
         s_add_u32 s12, s12, s6          # add offset to constant base pointer
         s_addc_u32 s13, s13, s7
         v_mov_b32 v3, s9
-        v_add_u32 v2, vcc, s8, v0       # add gid(0) to input pointer
-        v_addc_u32 v3, vcc, 0, v3, vcc
+        VADD_U32 v2, vcc, s8, v0       # add gid(0) to input pointer
+        VADDC_U32 v3, vcc, 0, v3, vcc
         flat_load_ubyte v1, v[2:3]      # load input byte
         s_waitcnt vmcnt(0)
         v_mov_b32 v3, s13
-        v_add_u32 v2, vcc, s12, v1      # add input byte to constant pointer
-        v_addc_u32 v3, vcc, 0, v3, vcc
+        VADD_U32 v2, vcc, s12, v1      # add input byte to constant pointer
+        VADDC_U32 v3, vcc, 0, v3, vcc
         flat_load_ubyte v1, v[2:3]      # load constantData[byte]
         s_waitcnt vmcnt(0)
         s_load_dwordx4 s[8:11], s[2:3], 0x68*SMUL    # load output buffer
@@ -169,8 +217,8 @@ revTable:
         s_add_u32 s8, s8, s4            # add offset to output base pointer
         s_addc_u32 s9, s9, s5
         v_mov_b32 v3, s9
-        v_add_u32 v2, vcc, s8, v0       # add gid(0) to output pointer
-        v_addc_u32 v3, vcc, 0, v3, vcc
+        VADD_U32 v2, vcc, s8, v0       # add gid(0) to output pointer
+        VADDC_U32 v3, vcc, 0, v3, vcc
         flat_store_byte v[2:3], v1      # store converted byte
     .endif
     .endif
@@ -187,6 +235,11 @@ end:
         .arg input, uchar*, global, const   # const global uint* input
         .arg output, uchar*, global         # global uint* output
     .text
+    .ifarch GCN1.4
+        GID = %s10
+    .else
+        GID = %s8
+    .endif
     .if32 # 32-bit
         s_load_dwordx2 s[0:1], s[6:7], 7*SMUL   # get input and output pointers
         s_load_dword s4, s[4:5], 1*SMUL         # get local info dword
@@ -194,9 +247,9 @@ end:
         s_load_dword s3, s[6:7], 6*SMUL         # get n - number of elems
         s_waitcnt lgkmcnt(0)        # wait
         s_and_b32 s4, s4, 0xffff            # only first localsize(0)
-        s_mul_i32 s4, s8, s4                # localsize*groupId
+        s_mul_i32 s4, GID, s4                # localsize*groupId
         s_add_u32 s4, s2, s4                # localsize*groupId+offset
-        v_add_i32 v0, vcc, s4, v0           # final global_id
+        VADD_U32 v0, vcc, s4, v0           # final global_id
         v_cmp_gt_u32 vcc, s3, v0            # global_id(0) < n
         s_and_saveexec_b64 s[4:5], vcc          # lock all threads with id>=n
         s_cbranch_execz end                     # no active threads, we jump to end
@@ -204,14 +257,14 @@ end:
         s_movk_i32 s9, 0
         s_movk_i32 s10, -1                      # infinite number of records ((1<<32)-1)
         s_mov_b32 s11, 0x8027fac                # set dstsel, nfmt and dfmt
-        v_add_i32 v1, vcc, s0, v0           # input+global_id(0)
+        VADD_U32 v1, vcc, s0, v0           # input+global_id(0)
         buffer_load_ubyte v2, v1, s[8:11], 0 offen   # load byte
         s_waitcnt vmcnt(0)
         v_mov_b32 v1, revTable&0xffffffff       # get revTable
-        v_add_i32 v1, vcc, v1, v2               # revTable+v
+        VADD_U32 v1, vcc, v1, v2               # revTable+v
         buffer_load_ubyte v2, v1, s[8:11], 0 offen   # revTable[v] converted byte
         s_waitcnt vmcnt(0)
-        v_add_i32 v1, vcc, s1, v0               # output+global_id(0)
+        VADD_U32 v1, vcc, s1, v0               # output+global_id(0)
         buffer_store_byte v2, v1, s[8:11], 0 offen
         
     .else # 64-bit
@@ -221,26 +274,26 @@ end:
         s_load_dword s5, s[6:7], 12*SMUL        # get n - number of elems
         s_waitcnt lgkmcnt(0)        # wait
         s_and_b32 s4, s4, 0xffff            # only first localsize(0)
-        s_mul_i32 s4, s8, s4                # localsize*groupId
+        s_mul_i32 s4, GID, s4                # localsize*groupId
         s_add_u32 s4, s9, s4                # localsize*groupId+offset
-        v_add_i32 v0, vcc, s4, v0           # final global_id
+        VADD_U32 v0, vcc, s4, v0           # final global_id
         v_cmp_gt_u32 vcc, s5, v0            # global_id(0) < n
         s_and_saveexec_b64 s[4:5], vcc          # lock all threads with id>=n
         s_cbranch_execz end                     # no active threads, we jump to end
-        v_add_i32 v1, vcc, s0, v0           # input+global_id(0)
+        VADD_U32 v1, vcc, s0, v0           # input+global_id(0)
         v_mov_b32 v2, s1
-        v_addc_u32 v2, vcc, 0, v2, vcc      # higher part
+        VADDC_U32 v2, vcc, 0, v2, vcc      # higher part
         flat_load_ubyte v3, v[1:2]          # load byte
         s_waitcnt lgkmcnt(0) & vmcnt(0)
         v_mov_b32 v1, revTable&0xffffffff   # get revTable
         v_mov_b32 v2, revTable>>32          # revTable - higher part
-        v_add_i32 v1, vcc, v1, v3           # get revTable+v
-        v_addc_u32 v2, vcc, 0, v2, vcc      # get revTable+v
+        VADD_U32 v1, vcc, v1, v3           # get revTable+v
+        VADDC_U32 v2, vcc, 0, v2, vcc      # get revTable+v
         flat_load_ubyte v3, v[1:2]           # get converted byte
         s_waitcnt lgkmcnt(0) & vmcnt(0)
-        v_add_i32 v1, vcc, s2, v0           # output+global_id(0)
+        VADD_U32 v1, vcc, s2, v0           # output+global_id(0)
         v_mov_b32 v2, s3
-        v_addc_u32 v2, vcc, 0, v2, vcc      # higher part
+        VADDC_U32 v2, vcc, 0, v2, vcc      # higher part
         flat_store_byte v[1:2], v3          # store converted byte to output
     .endif
 end:
@@ -280,7 +333,7 @@ reverseBits:
         s_mul_i32 s0, s2, s8            # s0 - local_size(0)*group_id(0)
         s_mov_b64 s[8:9], s[10:11]      # move input pointer to proper place
         s_add_u32 s0, s0, s1            # s0 - local_size(0)*group_id(0)+global_offset(0)
-        v_add_i32 v0, vcc, s0, v0       # v0 - s0+local_id(0) -> global_id(0)
+        VADD_U32 v0, vcc, s0, v0       # v0 - s0+local_id(0) -> global_id(0)
         v_cmp_gt_u32 vcc, s3, v0                # global_id(0) < n
         s_and_saveexec_b64 s[0:1], vcc          # lock all threads with id>=n
         s_cbranch_execz end                     # no active threads, we jump to end
@@ -293,12 +346,12 @@ reverseBits:
         s_waitcnt lgkmcnt(0)            # wait for results
         s_mul_i32 s0, s2, s4            # s0 - local_size(0)*group_id(0)
         s_add_u32 s0, s0, s1            # s0 - local_size(0)*group_id(0)+global_offset(0)
-        v_add_i32 v0, vcc, s0, v0       # v0 - s0+local_id(0) -> global_id(0)
+        VADD_U32 v0, vcc, s0, v0       # v0 - s0+local_id(0) -> global_id(0)
         v_cmp_gt_u32 vcc, s3, v0                # global_id(0) < n
         s_and_saveexec_b64 s[0:1], vcc          # lock all threads with id>=n
         s_cbranch_execz end                     # no active threads, we jump to end
     .endif
-    .ifnarch GCN1.2
+    .ifeq GCN1_2_4 # GCN 1.4
         s_mov_b32 s4, s6
         s_mov_b32 s5, s7
         v_mov_b32 v1, 0                 # zeroing high bits global_id(0)
@@ -322,18 +375,18 @@ reverseBits:
         s_add_u32  s0, s0, constData-.  # 
         s_addc_u32 s1, s1, 0        # should be always zero
         v_mov_b32 v3, s9
-        v_add_u32 v2, vcc, s8, v0       # input pointer + gid(0)
-        v_addc_u32 v3, vcc, 0, v3, vcc
+        VADD_U32 v2, vcc, s8, v0       # input pointer + gid(0)
+        VADDC_U32 v3, vcc, 0, v3, vcc
         flat_load_ubyte v1, v[2:3]            # load input byte
         s_waitcnt vmcnt(0)
         v_mov_b32 v3, s1
-        v_add_u32 v2, vcc, s0, v1           # constant buffer + byte
-        v_addc_u32 v3, vcc, 0, v3, vcc
+        VADD_U32 v2, vcc, s0, v1           # constant buffer + byte
+        VADDC_U32 v3, vcc, 0, v3, vcc
         flat_load_ubyte v1, v[2:3]          # load revBits[byte]
         s_waitcnt vmcnt(0)
         v_mov_b32 v3, s7
-        v_add_u32 v2, vcc, s6, v0          # output pointer + gid(0)
-        v_addc_u32 v3, vcc, 0, v3, vcc
+        VADD_U32 v2, vcc, s6, v0          # output pointer + gid(0)
+        VADDC_U32 v3, vcc, 0, v3, vcc
         flat_store_byte v[2:3], v1          # store byte to output buffer
     .endif
 end:
