@@ -298,7 +298,8 @@ end:
     .endif
 end:
         s_endpgm
-.elseiffmt gallium   # GalliumCompute code
+)ffDXD"
+R"ffDXD(.elseiffmt gallium   # GalliumCompute code
 .get_llvm_version LLVM_VERSION
 .kernel reverseBits
     .args
