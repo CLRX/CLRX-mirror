@@ -463,12 +463,14 @@ The sampling of the mipmaps requires normalized coordinates.
 ### Flat addressing
 
 By default, FLAT instructions read or write values from main memory.
-Special register FLAT scratch defines size and offset of scratch buffer to access
+Special register FLAT_SCRATCH defines size and offset of scratch buffer to access
 scratch space for current wave. Bit fields:
 
  Bits  | Description
 -------|-------------------------------------
  0-23  | Scratch offset without first 8 bits
  32-50 | Scratch size in bytes.
- 
+
+In GCN 1.4 (GFX900, VEGA) architecture FLAT_SCRATCH is 64-bit address of scratch buffer.
+
 The base addresses to access scratch and LDS must be given by driver to some user place.
