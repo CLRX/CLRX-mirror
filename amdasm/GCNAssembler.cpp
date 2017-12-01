@@ -2110,7 +2110,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!checkGCNVOPEncoding(asmr, instrPlace, gcnVOPEnc, &extraMods))
         return false;
     
-    if (isGCN14 && ((modifiers & VOP3_CLAMP)!=0 || (modifiers&3)!=0))
+    if (isGCN14 && extraMods.needSDWA && ((modifiers & VOP3_CLAMP)!=0 || (modifiers&3)!=0))
         ASM_FAIL_BY_ERROR(instrPlace, "Modifiers CLAMP and OMOD is illegal in SDWAB")
     
     if (src0OpExpr!=nullptr)

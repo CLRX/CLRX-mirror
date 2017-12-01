@@ -195,6 +195,9 @@ V_CMP_LT_U32 VCC, V0, V1  # V0<V1
 V_CMPX_EQ_U32 VCC, V0, V1 # V0==V1, store result to EXEC, signal for any sNaN
 ```
 
+NOTE: In GCN 1.4 architecture, CLAMP modifier enabled signalling exception when NaN in
+inputs was encountered.
+
 ### Class instructions
 
 List of class instructions:
