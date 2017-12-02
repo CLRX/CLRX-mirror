@@ -2335,7 +2335,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     {
         if (mode1 != GCN_NEW_OPCODE) /* check clamp and abs flags */
             isVOP1Word = !((insnCode&(7<<8)) != 0 || (insnCode2&(7<<29)) != 0 ||
-                    clamp || ((vsrc1 < 256 && mode1!=GCN_P0_P10_P20) ||
+                    clamp || omod!=0 || ((vsrc1 < 256 && mode1!=GCN_P0_P10_P20) ||
                     (mode1==GCN_P0_P10_P20 && vsrc1 >= 256)) ||
                     vsrc0 >= 256 || vsrc2 != 0);
     }

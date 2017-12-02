@@ -1130,6 +1130,10 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     /* VINTRP in VOP3 encoding */
     { "   v_interp_p1_f32 v42, v16, attr39.z vop3",
         0xd270002aU, 0x000220a7U, true, true, "" },
+    { "   v_interp_p1_f32 v42, v16, attr39.z clamp",
+        0xd270802aU, 0x000220a7U, true, true, "" },
+    { "   v_interp_p1_f32 v42, v16, attr39.z mul:2",
+        0xd270002aU, 0x080220a7U, true, true, "" },
     { "a=1; b=0;   v_interp_p1_f32 v42, v16, attr39.z vop3:a high:b",
         0xd270002aU, 0x000220a7U, true, true, "" },
     { "   v_interp_p1_f32 v42, v16, attr39.z high",

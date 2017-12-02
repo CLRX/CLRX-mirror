@@ -2046,6 +2046,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
         "        v_interp_p1_f32 v93, v16, attr39.z clamp\n" },
     { 0xd270805dU, 0x0002206dU, true,
         "        v_interp_p1_f32 v93, v16, attr45.y clamp\n" },
+    { 0xd270005dU, 0x0802206dU, true,
+        "        v_interp_p1_f32 v93, v16, attr45.y mul:2\n" },
     { 0xd270002aU, 0x002e20a7U, true,
         "        v_interp_p1_f32 v42, v16, attr39.z vsrc2=0xb\n" },
     { 0xd270002aU, 0x000026a7U, true, "        v_interp_p1_f32 v42, s19, attr39.z\n" },
