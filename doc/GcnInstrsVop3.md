@@ -221,9 +221,9 @@ List of the instructions by opcode (GCN 1.2/1.4):
  624 (0x270) | V_INTERP_P1_F32 (VINTRP) | V_INTERP_P1_F32 (VINTRP)
  625 (0x271) | V_INTERP_P2_F32 (VINTRP) | V_INTERP_P2_F32 (VINTRP)
  626 (0x272) | V_INTERP_MOV_F32 (VINTRP) | V_INTERP_MOV_F32 (VINTRP)
- 627 (0x273) | V_INTERP_P1LL_F16 (VINTRP) | V_INTERP_P1LL_F16 (VINTRP)
- 628 (0x274) | V_INTERP_P1LV_F16 (VINTRP) | V_INTERP_P1LV_F16 (VINTRP)
- 629 (0x275) | V_INTERP_P2_F16 (VINTRP)| V_INTERP_P2_F16 (VINTRP)
+ 628 (0x274) | V_INTERP_P1LL_F16 (VINTRP) | V_INTERP_P1LL_F16 (VINTRP)
+ 629 (0x275) | V_INTERP_P1LV_F16 (VINTRP) | V_INTERP_P1LV_F16 (VINTRP)
+ 630 (0x276) | V_INTERP_P2_F16 (VINTRP)| V_INTERP_P2_F16 (VINTRP)
  640 (0x280) | V_ADD_F64               | V_ADD_F64
  641 (0x281) | V_MUL_F64               | V_MUL_F64
  642 (0x282) | V_MIN_F64               | V_MIN_F64
@@ -967,42 +967,12 @@ Operation:
 VDST = FMA(ASHALF(SRC0), ASHALF(SRC1), ASHALF(SRC2))
 ```
 
-#### V_INTERP_P1_F32
-
-Opcode: 624 (0x270) for GCN 1.2/1.4  
-Syntax: V_INTERP_P1_F32 VDST, VSRC, ATTR.ATTRCHAN  
-Description: Instruction does the first step of the interpolation (P0 + P10*I). The I
-coordinate given in VSRC register.  
-NOTE: The indices in LDS is dword indices.  
-NOTE: VDST and VSRC registers must not be same.  
-Operation:  
-```
-UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
-FLOAT P0[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2])
-FLOAT P10[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2 + 1])
-VDST[LANEID] = P0[LANEID] + ASFLOAT(VSRC[LANEID]) * P10[LANEID]
-```
-
-#### V_INTERP_P2_F32
-
-Opcode: 625 (0x271) for GCN 1.2/1.4  
-Syntax: V_INTERP_P1_F32 VDST, VSRC, ATTR.ATTRCHAN  
-Description: Instruction does the second step of the interpolation (P20*J + D). The J
-coordinate given in VSRC register.  
-NOTE: The indices in LDS is dword indices.  
-NOTE: VDST and VSRC registers must not be same.  
-Operation:  
-```
-UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
-FLOAT P20[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8])
-VDST[LANEID] = ASFLOAT(VDST[LANEID]) + ASFLOAT(VSRC[LANEID]) * P20[LANEID]
-```
-
 #### V_INTERP_MOV_F32
 
 Opcode: 626 (0x272) for GCN 1.2/1.4  
 Syntax: V_INTERP_MOV_F32 VDST, PARAMTYPE, ATTR.ATTRCHAN  
-Description: Move parameter value into VDST. The PARAMTYPE is P0, P10 or P20.  
+Description: Move parameter value into VDST. The PARAMTYPE is P0, P10 or P20.
+Refer to [VINTRP instructions](GcnInstrsVintrp).  
 NOTE: The indices in LDS is dword indices.  
 Operation:  
 ```
@@ -1013,6 +983,112 @@ else if (PARAMTYPE==P10)
     VDST[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2 + 1])
 else if (PARAMTYPE==P20)
     VDST[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8])
+```
+
+#### V_INTERP_P1_F32
+
+Opcode: 624 (0x270) for GCN 1.2/1.4  
+Syntax: V_INTERP_P1_F32 VDST, VSRC, ATTR.ATTRCHAN  
+Description: Instruction does the first step of the interpolation (P0 + P10*I). The I
+coordinate given in VSRC register. Refer to [VINTRP instructions](GcnInstrsVintrp).  
+NOTE: The indices in LDS is dword indices.  
+NOTE: VDST and VSRC registers must not be same.  
+Operation:  
+```
+UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
+FLOAT P0[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2])
+FLOAT P10[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2 + 1])
+VDST[LANEID] = P0[LANEID] + ASFLOAT(VSRC[LANEID]) * P10[LANEID]
+```
+
+#### V_INTERP_P1LL_F16
+
+Opcode: 628 (0x274) for GCN 1.2/1.4  
+Syntax: V_INTERP_P1LL_F16 VDST, VSRC, ATTR.ATTRCHAN [HIGH]  
+Description: Instruction does the first step of the interpolation (P0 + P10*I). The I
+coordinate given in VSRC register. P0 and P10 factors are half floating point values stored
+in lower or higher (if 'HIGH' given) part of 32-bit dword.
+Refer to [VINTRP instructions](GcnInstrsVintrp).  
+NOTE: The indices in LDS is dword indices.  
+NOTE: VDST and VSRC registers must not be same.  
+Operation:  
+```
+UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
+HALF P0[LANEID], P10[LANEID]
+if (HIGH)
+{
+    P0[LANEID] = ASHALF(LDS[S + ATTRCHAN*2] >> 16)
+    P10[LANEID] = ASHALF(LDS[S + ATTRCHAN*2 + 1] >> 16)
+}
+else
+{
+    P0[LANEID] = ASHALF(LDS[S + ATTRCHAN*2] & 0xffff)
+    P10[LANEID] = ASHALF(LDS[S + ATTRCHAN*2 + 1] & 0xffff)
+}
+VDST[LANEID] = P0[LANEID] + ASFLOAT(VSRC[LANEID]) * P10[LANEID]
+```
+
+#### V_INTERP_P1LV_F16
+
+Opcode: 629 (0x275) for GCN 1.2/1.4  
+Syntax: V_INTERP_P1LL_F16 VDST, VSRC, ATTR.ATTRCHAN, VSRC1 [HIGH]  
+Description: Instruction does the first step of the interpolation (P0 + P10*I). The I
+coordinate given in VSRC register. P10 and P0 factors are half floating point values stored
+in lower or higher (if 'HIGH' given) part of 32-bit dword. P0 is stored in VSRC1.
+Refer to [VINTRP instructions](GcnInstrsVintrp).  
+NOTE: The indices in LDS is dword indices.  
+NOTE: VDST and VSRC registers must not be same.  
+Operation:  
+```
+UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
+HALF P0[LANEID], P10[LANEID]
+if (HIGH)
+{
+    P0[LANEID] = ASHALF(VSRC1[LANEID] >> 16)
+    P10[LANEID] = ASHALF(LDS[S + ATTRCHAN*2 + 1] >> 16)
+}
+else
+{
+    P0[LANEID] = ASHALF(VSRC1[LANEID] & 0xffff)
+    P10[LANEID] = ASHALF(LDS[S + ATTRCHAN*2 + 1] & 0xffff)
+}
+VDST[LANEID] = P0 + ASFLOAT(VSRC[LANEID]) * P10[LANEID]
+```
+
+#### V_INTERP_P2_F32
+
+Opcode: 625 (0x271) for GCN 1.2/1.4  
+Syntax: V_INTERP_P1_F32 VDST, VSRC, ATTR.ATTRCHAN  
+Description: Instruction does the second step of the interpolation (P20*J + D). The J
+coordinate given in VSRC register. Refer to [VINTRP instructions](GcnInstrsVintrp).  
+NOTE: The indices in LDS is dword indices.  
+NOTE: VDST and VSRC registers must not be same.  
+Operation:  
+```
+UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
+FLOAT P20[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8])
+VDST[LANEID] = ASFLOAT(VDST[LANEID]) + ASFLOAT(VSRC[LANEID]) * P20[LANEID]
+```
+
+#### V_INTERP_P2_F16
+
+Opcode: 630 (0x276) for GCN 1.2/1.4  
+Syntax: V_INTERP_P1_F16 VDST, VSRC, ATTR.ATTRCHAN [HIGH], VSRC1  
+Description: Instruction does the second step of the interpolation (P20*J + D). The J
+coordinate given in VSRC register. P2 factor is half floating point value stored in
+lower or higher (if HIGH given) part of dword.
+Refer to [VINTRP instructions](GcnInstrsVintrp).  
+NOTE: The indices in LDS is dword indices.  
+NOTE: VDST and VSRC registers must not be same.  
+Operation:  
+```
+UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
+HALF P20[LANEID]
+if (HIGH)
+    HALF P20[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8] >> 16)
+else
+    HALF P20[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8] & 0xffff)
+VDST[LANEID] = ASFLOAT(VSRC1[LANEID]) + ASFLOAT(VSRC[LANEID]) * P20[LANEID]
 ```
 
 #### V_LDEXP_F32

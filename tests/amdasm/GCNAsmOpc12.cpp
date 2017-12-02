@@ -1170,6 +1170,8 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         0xd270002aU, 0x400220a7U, true, true, "" },
     { "   v_interp_p1_f32 v42, v16, attr39.z abs:2",
         0xd270022aU, 0x000220a7U, true, true, "" },
+    { "    v_interp_p1lv_f16 v42, -abs(v22), attr39.z, -s29",
+        0xd275022aU, 0xc0762ca7, true, true, "" },
     /* VOP3 rest instructions */
     { "v_add_f64  v[55:56], v[79:80], v[166:167]",
         0xd2800037U, 0x00034d4fU, true, true, "" },

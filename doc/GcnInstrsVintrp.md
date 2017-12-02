@@ -15,7 +15,7 @@ Bits  | Name     | Description
 18-25 | VDST     | Destination vector register
 26-31 | ENCODING | Encoding type.
 
-Encoding type is 0b110010 for GCN 1.0/1.1 or 0b110101 for GCN 1.2.
+Encoding type is 0b110010 for GCN 1.0/1.1 or 0b110101 for GCN 1.2/1.4.
 
 Syntax: INSTRUCTION VDST, VSRC, ATTR{ATTR_NUM}.{ATTRCHAN}
 
@@ -97,6 +97,23 @@ The offset does not include offset given in M0 register (you must add to it).
 
 Alphabetically sorted instruction list:
 
+#### V_INTERP_MOV_F32
+
+Opcode: 2 (0x2)  
+Syntax: V_INTERP_MOV_F32 VDST, PARAMTYPE, ATTR.ATTRCHAN  
+Description: Move parameter value into VDST. The PARAMTYPE is P0, P10 or P20.  
+NOTE: The indices in LDS is dword indices.  
+Operation:  
+```
+UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
+if (PARAMTYPE==P0)
+    VDST[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2])
+else if (PARAMTYPE==P10)
+    VDST[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2 + 1])
+else if (PARAMTYPE==P20)
+    VDST[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8])
+```
+
 #### V_INTERP_P1_F32
 
 Opcode: 0 (0x0)  
@@ -126,21 +143,4 @@ Operation:
 UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
 FLOAT P20[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8])
 VDST[LANEID] = ASFLOAT(VDST[LANEID]) + ASFLOAT(VSRC[LANEID]) * P20[LANEID]
-```
-
-#### V_INTERP_MOV_F32
-
-Opcode: 2 (0x2)  
-Syntax: V_INTERP_MOV_F32 VDST, PARAMTYPE, ATTR.ATTRCHAN  
-Description: Move parameter value into VDST. The PARAMTYPE is P0, P10 or P20.  
-NOTE: The indices in LDS is dword indices.  
-Operation:  
-```
-UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
-if (PARAMTYPE==P0)
-    VDST[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2])
-else if (PARAMTYPE==P10)
-    VDST[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2 + 1])
-else if (PARAMTYPE==P20)
-    VDST[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8])
 ```

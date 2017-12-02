@@ -2083,6 +2083,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
         "        v_interp_p2_f16 v42, s1, attr39.z, s29\n" },
     { 0xd276002aU, 0x007403a7, true,
         "        v_interp_p2_f16 v42, s1, attr39.z, s29 high\n" },
+    { 0xd275022aU, 0xc07402a7, true,
+        "        v_interp_p1lv_f16 v42, -abs(s1), attr39.z, -s29\n" },
     /* others */
     { 0xd2800037U, 0x00034d4fU, true, "        v_add_f64       "
                 "v[55:56], v[79:80], v[166:167]\n" },

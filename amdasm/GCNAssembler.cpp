@@ -2305,7 +2305,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 // parse SRC2 (VGPR, SGPR)
                 gcnAsm->setCurrentRVU(4);
                 good &= parseOperand(asmr, linePtr, src2Op, nullptr, arch,
-                    (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, INSTROP_SGPR_UNALIGNED|
+                    (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, vop3Mods|INSTROP_SGPR_UNALIGNED|
                     INSTROP_VREGS|INSTROP_SREGS|INSTROP_READ, GCNFIELD_VOP3_SRC2);
             }
             // high and vop3
@@ -2332,7 +2332,8 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                     modifiers = (modifiers & ~VOP3_VOP3) | (vop3Mod ? VOP3_VOP3 : 0);
                 }
                 else if (parseSingleOMODCLAMP(asmr, linePtr, modPlace, modName, arch,
-                        modifiers, opMods, 3, PARSEVOP_WITHCLAMP, haveAbs, haveNeg,
+                        modifiers, opMods, 
+                        (gcnInsn.mode & GCN_VOP3_MASK3) == GCN_VINTRP_SRC2 ? 4 : 3, PARSEVOP_WITHCLAMP, haveAbs, haveNeg,
                         alreadyModDefined, good))
                 {   // do nothing
                 }
@@ -2476,7 +2477,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             (gcnInsn.mode & GCN_VOP3_MASK3) == GCN_VINTRP_SRC2 ||
             (modifiers & VOP3_VOP3)!=0 || (src0Op.range.bstart()&0x100)!=0/* high */ ||
             (modifiers & (VOP3_CLAMP|3)) != 0 || opMods.opselMod != 0 ||
-            src1Op.vopMods!=0)
+            src1Op.vopMods!=0 || src2Op.vopMods!=0)
             // new VOP3 for GCN 1.2
             SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<16) |
                 (dstReg.bstart()&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000: 0) |
