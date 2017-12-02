@@ -1563,6 +1563,86 @@ bool GCNAsmUtils::parseImmWithBoolArray(Assembler& asmr, const char*& linePtr,
     return good;
 }
 
+bool GCNAsmUtils::parseSingleOMODCLAMP(Assembler& asmr, const char*& linePtr,
+                    const char* modPlace, const char* mod, uint16_t arch,
+                    cxbyte& mods, cxuint flags, bool& alreadyModDefined, bool& good)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    const bool vop3p = (flags & PARSEVOP_VOP3P)!=0;
+    if (!vop3p && ::strcmp(mod, "mul")==0)
+    {
+        // if 'mul:xx'
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr!=end && *linePtr==':')
+        {
+            skipCharAndSpacesToEnd(linePtr, end);
+            cxbyte count = cstrtobyte(linePtr, end);
+            if (count==2)
+            {
+                alreadyModDefined = mods&3;
+                mods = (mods&~3) | VOP3_MUL2;
+            }
+            else if (count==4)
+            {
+                alreadyModDefined = mods&3;
+                mods = (mods&~3) | VOP3_MUL4;
+            }
+            else
+                ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown VOP3 mul:X modifier")
+        }
+        else
+            ASM_NOTGOOD_BY_ERROR(linePtr,
+                        "Expected ':' before multiplier number")
+    }
+    else if (!vop3p && ::strcmp(mod, "div")==0)
+    {
+        // if 'div:2'
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr!=end && *linePtr==':')
+        {
+            skipCharAndSpacesToEnd(linePtr, end);
+            cxbyte count = cstrtobyte(linePtr, end);
+            if (count==2)
+            {
+                alreadyModDefined = mods&3;
+                mods = (mods&~3) | VOP3_DIV2;
+            }
+            else
+                ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown VOP3 div:X modifier")
+        }
+        else
+            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before divider number")
+    }
+    else if (!vop3p && ::strcmp(mod, "omod")==0)
+    {
+        // if omod (parametrization of div or mul)
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr!=end && *linePtr==':')
+        {
+            linePtr++;
+            cxbyte omod = 0;
+            if (parseImm(asmr, linePtr, omod, nullptr, 2, WS_UNSIGNED))
+                mods = (mods & ~3) | omod;
+            else
+                good = false;
+        }
+        else
+            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before omod")
+    }
+    else if (::strcmp(mod, "clamp")==0) // clamp
+    {
+        bool clamp = false;
+        good &= parseModEnable(asmr, linePtr, clamp, "clamp modifier");
+        if (flags & PARSEVOP_WITHCLAMP)
+            mods = (mods & ~VOP3_CLAMP) | (clamp ? VOP3_CLAMP : 0);
+        else
+            ASM_NOTGOOD_BY_ERROR(modPlace, "Modifier CLAMP in VOP3B is illegal")
+    }
+    else // other modifier
+        return false;
+    return true;
+}
+
 // sorted list of VOP SDWA DST_SEL names
 static const std::pair<const char*, cxuint> vopSDWADSTSelNamesMap[] =
 {
@@ -1589,7 +1669,7 @@ static const std::pair<const char*, cxuint> vopSDWADSTSelNamesMap[] =
 
 static const size_t vopSDWADSTSelNamesNum = sizeof(vopSDWADSTSelNamesMap)/
             sizeof(std::pair<const char*, cxuint>);
-
+            
 /* main routine to parse VOP modifiers: basic modifiers stored in mods parameter,
  * modifier specific for VOP_SDWA and VOP_DPP stored in extraMods structure
  * withSDWAOperands - specify number of operand for that modifier will be parsed */
@@ -1635,74 +1715,9 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
             {
                 // check what is VOP modifier
                 bool alreadyModDefined = false;
-                if (!vop3p && ::strcmp(mod, "mul")==0)
-                {
-                    // if 'mul:xx'
-                    skipSpacesToEnd(linePtr, end);
-                    if (linePtr!=end && *linePtr==':')
-                    {
-                        skipCharAndSpacesToEnd(linePtr, end);
-                        cxbyte count = cstrtobyte(linePtr, end);
-                        if (count==2)
-                        {
-                            alreadyModDefined = mods&3;
-                            mods = (mods&~3) | VOP3_MUL2;
-                        }
-                        else if (count==4)
-                        {
-                            alreadyModDefined = mods&3;
-                            mods = (mods&~3) | VOP3_MUL4;
-                        }
-                        else
-                            ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown VOP3 mul:X modifier")
-                    }
-                    else
-                        ASM_NOTGOOD_BY_ERROR(linePtr,
-                                    "Expected ':' before multiplier number")
-                }
-                else if (!vop3p && ::strcmp(mod, "div")==0)
-                {
-                    // if 'div:2'
-                    skipSpacesToEnd(linePtr, end);
-                    if (linePtr!=end && *linePtr==':')
-                    {
-                        skipCharAndSpacesToEnd(linePtr, end);
-                        cxbyte count = cstrtobyte(linePtr, end);
-                        if (count==2)
-                        {
-                            alreadyModDefined = mods&3;
-                            mods = (mods&~3) | VOP3_DIV2;
-                        }
-                        else
-                            ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown VOP3 div:X modifier")
-                    }
-                    else
-                        ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before divider number")
-                }
-                else if (!vop3p && ::strcmp(mod, "omod")==0)
-                {
-                    // if omod (parametrization of div or mul)
-                    skipSpacesToEnd(linePtr, end);
-                    if (linePtr!=end && *linePtr==':')
-                    {
-                        linePtr++;
-                        cxbyte omod = 0;
-                        if (parseImm(asmr, linePtr, omod, nullptr, 2, WS_UNSIGNED))
-                            mods = (mods & ~3) | omod;
-                        else
-                            good = false;
-                    }
-                    else
-                        ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before omod")
-                }
-                else if (::strcmp(mod, "clamp")==0) // clamp
-                {
-                    bool clamp = false;
-                    good &= parseModEnable(asmr, linePtr, clamp, "clamp modifier");
-                    if (flags & PARSEVOP_WITHCLAMP)
-                        mods = (mods & ~VOP3_CLAMP) | (clamp ? VOP3_CLAMP : 0);
-                    else
-                        ASM_NOTGOOD_BY_ERROR(modPlace, "Modifier CLAMP in VOP3B is illegal")
+                if (parseSingleOMODCLAMP(asmr, linePtr, modPlace, mod, arch, mods, flags,
+                        alreadyModDefined, good))
+                {   // do nothing
                 }
                 else if (!vop3p && modOperands>1 && ::strcmp(mod, "abs")==0)
                 {

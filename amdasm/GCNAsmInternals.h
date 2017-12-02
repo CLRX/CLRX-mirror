@@ -235,6 +235,10 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_t& value,
             std::unique_ptr<AsmExpression>* outTargetExpr, Flags instropMask = 0);
     
+    static bool parseSingleOMODCLAMP(Assembler& asmr, const char*& linePtr,
+                const char* modPlace, const char* mod, uint16_t arch, cxbyte& mods,
+                cxuint flags, bool& alreadyDefined, bool& good);
+    
     /* withSDWAOperands - number operand that will be handled by SDWA modifer parser,
      * modOperands - number of operands for abs,neg,sext
      * (includes destination at begin) */

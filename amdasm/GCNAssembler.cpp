@@ -2309,10 +2309,10 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             // high and vop3
             const char* end = asmr.line+asmr.lineSize;
             bool haveOpsel = false;
-            bool alreadyModDefined = false;
             // own parse VINTRP modifiers with some VOP3 modifiers
             while (true)
             {
+                bool alreadyModDefined = false;
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr==end)
                     break;
@@ -2328,71 +2328,9 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                     good &= parseModEnable(asmr, linePtr, vop3Mod, "vop3 modifier");
                     modifiers = (modifiers & ~VOP3_VOP3) | (vop3Mod ? VOP3_VOP3 : 0);
                 }
-                else if (::strcmp(modName, "clamp")==0)
-                {
-                    bool clamp = false;
-                    good &= parseModEnable(asmr, linePtr, clamp, "clamp modifier");
-                    modifiers = (modifiers & ~VOP3_CLAMP) | (clamp ? VOP3_CLAMP : 0);
-                }
-                else if (::strcmp(modName, "mul")==0)
-                {
-                    // if 'mul:xx'
-                    skipSpacesToEnd(linePtr, end);
-                    if (linePtr!=end && *linePtr==':')
-                    {
-                        skipCharAndSpacesToEnd(linePtr, end);
-                        cxbyte count = cstrtobyte(linePtr, end);
-                        if (count==2)
-                        {
-                            alreadyModDefined = modifiers&3;
-                            modifiers = (modifiers&~3) | VOP3_MUL2;
-                        }
-                        else if (count==4)
-                        {
-                            alreadyModDefined = modifiers&3;
-                            modifiers = (modifiers&~3) | VOP3_MUL4;
-                        }
-                        else
-                            ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown VOP3 mul:X modifier")
-                    }
-                    else
-                        ASM_NOTGOOD_BY_ERROR(linePtr,
-                                    "Expected ':' before multiplier number")
-                }
-                else if (::strcmp(modName, "div")==0)
-                {
-                    // if 'div:2'
-                    skipSpacesToEnd(linePtr, end);
-                    if (linePtr!=end && *linePtr==':')
-                    {
-                        skipCharAndSpacesToEnd(linePtr, end);
-                        cxbyte count = cstrtobyte(linePtr, end);
-                        if (count==2)
-                        {
-                            alreadyModDefined = modifiers&3;
-                            modifiers = (modifiers&~3) | VOP3_DIV2;
-                        }
-                        else
-                            ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown VOP3 div:X modifier")
-                    }
-                    else
-                        ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before divider number")
-                }
-                else if (!vop3p && ::strcmp(modName, "omod")==0)
-                {
-                    // if omod (parametrization of div or mul)
-                    skipSpacesToEnd(linePtr, end);
-                    if (linePtr!=end && *linePtr==':')
-                    {
-                        linePtr++;
-                        cxbyte omod = 0;
-                        if (parseImm(asmr, linePtr, omod, nullptr, 2, WS_UNSIGNED))
-                            modifiers = (modifiers & ~3) | omod;
-                        else
-                            good = false;
-                    }
-                    else
-                        ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before omod")
+                else if (parseSingleOMODCLAMP(asmr, linePtr, modPlace, modName, arch,
+                        modifiers, PARSEVOP_WITHCLAMP, alreadyModDefined, good))
+                {   // do nothing
                 }
                 else if (::strcmp(modName, "op_sel")==0)
                 {
