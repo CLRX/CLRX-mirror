@@ -144,7 +144,7 @@ List of the instructions by opcode (GCN 1.0/1.1):
 
 List of the instructions by opcode (GCN 1.2/1.4):
 
- Opcode      | Mnemonic (GCN 1.4)      | Mnemonic (GCN 1.4)
+ Opcode      | Mnemonic (GCN 1.2)      | Mnemonic (GCN 1.4)
 -------------|-------------------------|-------------------------
  448 (0x1c0) | V_MAD_LEGACY_F32        | V_MAD_LEGACY_F32
  449 (0x1c1) | V_MAD_F32               | V_MAD_F32
@@ -965,6 +965,54 @@ Operation:
 ```
 // SRC0*SRC1+SRC2
 VDST = FMA(ASHALF(SRC0), ASHALF(SRC1), ASHALF(SRC2))
+```
+
+#### V_INTERP_P1_F32
+
+Opcode: 624 (0x270) for GCN 1.2/1.4  
+Syntax: V_INTERP_P1_F32 VDST, VSRC, ATTR.ATTRCHAN  
+Description: Instruction does the first step of the interpolation (P0 + P10*I). The I
+coordinate given in VSRC register.  
+NOTE: The indices in LDS is dword indices.  
+NOTE: VDST and VSRC registers must not be same.  
+Operation:  
+```
+UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
+FLOAT P0[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2])
+FLOAT P10[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2 + 1])
+VDST[LANEID] = P0[LANEID] + ASFLOAT(VSRC[LANEID]) * P10[LANEID]
+```
+
+#### V_INTERP_P2_F32
+
+Opcode: 625 (0x271) for GCN 1.2/1.4  
+Syntax: V_INTERP_P1_F32 VDST, VSRC, ATTR.ATTRCHAN  
+Description: Instruction does the second step of the interpolation (P20*J + D). The J
+coordinate given in VSRC register.  
+NOTE: The indices in LDS is dword indices.  
+NOTE: VDST and VSRC registers must not be same.  
+Operation:  
+```
+UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
+FLOAT P20[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8])
+VDST[LANEID] = ASFLOAT(VDST[LANEID]) + ASFLOAT(VSRC[LANEID]) * P20[LANEID]
+```
+
+#### V_INTERP_MOV_F32
+
+Opcode: 626 (0x272) for GCN 1.2/1.4  
+Syntax: V_INTERP_MOV_F32 VDST, PARAMTYPE, ATTR.ATTRCHAN  
+Description: Move parameter value into VDST. The PARAMTYPE is P0, P10 or P20.  
+NOTE: The indices in LDS is dword indices.  
+Operation:  
+```
+UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
+if (PARAMTYPE==P0)
+    VDST[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2])
+else if (PARAMTYPE==P10)
+    VDST[LANEID] = ASFLOAT(LDS[S + ATTRCHAN*2 + 1])
+else if (PARAMTYPE==P20)
+    VDST[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8])
 ```
 
 #### V_LDEXP_F32
