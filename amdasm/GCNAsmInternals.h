@@ -237,7 +237,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     
     static bool parseSingleOMODCLAMP(Assembler& asmr, const char*& linePtr,
                 const char* modPlace, const char* mod, uint16_t arch, cxbyte& mods,
-                cxuint flags, bool& alreadyDefined, bool& good);
+                VOPOpModifiers& opMods, cxuint modOperands, cxuint flags,
+                bool& haveAbs, bool& haveNeg, bool& alreadyDefined, bool& good);
     
     /* withSDWAOperands - number operand that will be handled by SDWA modifer parser,
      * modOperands - number of operands for abs,neg,sext

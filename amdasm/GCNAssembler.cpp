@@ -2283,8 +2283,10 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             // if VINTRP instruction
             gcnAsm->setCurrentRVU(3);
             if (mode1 != GCN_P0_P10_P20)
-                good &= parseVRegRange(asmr, linePtr, src1Op.range, 1, GCNFIELD_VOP3_SRC1,
-                            true, INSTROP_SYMREGRANGE|INSTROP_READ);
+            {
+                good &= parseOperand(asmr, linePtr, src1Op, nullptr, arch, 1,
+                        INSTROP_VREGS|vop3Mods|INSTROP_READ, GCNFIELD_VOP3_SRC1);
+            }
             else /* P0_P10_P20 */
                 good &= parseVINTRP0P10P20(asmr, linePtr, src1Op.range);
             
@@ -2309,6 +2311,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             // high and vop3
             const char* end = asmr.line+asmr.lineSize;
             bool haveOpsel = false;
+            bool haveNeg = false, haveAbs = false;
             // own parse VINTRP modifiers with some VOP3 modifiers
             while (true)
             {
@@ -2329,7 +2332,8 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                     modifiers = (modifiers & ~VOP3_VOP3) | (vop3Mod ? VOP3_VOP3 : 0);
                 }
                 else if (parseSingleOMODCLAMP(asmr, linePtr, modPlace, modName, arch,
-                        modifiers, PARSEVOP_WITHCLAMP, alreadyModDefined, good))
+                        modifiers, opMods, 3, PARSEVOP_WITHCLAMP, haveAbs, haveNeg,
+                        alreadyModDefined, good))
                 {   // do nothing
                 }
                 else if (::strcmp(modName, "op_sel")==0)
@@ -2471,7 +2475,8 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         else if (mode2 != GCN_VOP3_VINTRP || mode1 == GCN_NEW_OPCODE ||
             (gcnInsn.mode & GCN_VOP3_MASK3) == GCN_VINTRP_SRC2 ||
             (modifiers & VOP3_VOP3)!=0 || (src0Op.range.bstart()&0x100)!=0/* high */ ||
-            (modifiers & (VOP3_CLAMP|3)) != 0)
+            (modifiers & (VOP3_CLAMP|3)) != 0 || opMods.opselMod != 0 ||
+            src1Op.vopMods!=0)
             // new VOP3 for GCN 1.2
             SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<16) |
                 (dstReg.bstart()&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000: 0) |

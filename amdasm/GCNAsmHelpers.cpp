@@ -1565,7 +1565,9 @@ bool GCNAsmUtils::parseImmWithBoolArray(Assembler& asmr, const char*& linePtr,
 
 bool GCNAsmUtils::parseSingleOMODCLAMP(Assembler& asmr, const char*& linePtr,
                     const char* modPlace, const char* mod, uint16_t arch,
-                    cxbyte& mods, cxuint flags, bool& alreadyModDefined, bool& good)
+                    cxbyte& mods, VOPOpModifiers& opMods, cxuint modOperands,
+                    cxuint flags, bool& haveAbs, bool& haveNeg,
+                    bool& alreadyModDefined, bool& good)
 {
     const char* end = asmr.line+asmr.lineSize;
     const bool vop3p = (flags & PARSEVOP_VOP3P)!=0;
@@ -1637,6 +1639,46 @@ bool GCNAsmUtils::parseSingleOMODCLAMP(Assembler& asmr, const char*& linePtr,
             mods = (mods & ~VOP3_CLAMP) | (clamp ? VOP3_CLAMP : 0);
         else
             ASM_NOTGOOD_BY_ERROR(modPlace, "Modifier CLAMP in VOP3B is illegal")
+    }
+    else if (!vop3p && modOperands>1 && ::strcmp(mod, "abs")==0)
+    {
+        // abs modifiers for source operands (bit per operand in array)
+        uint32_t absVal = 0;
+        if (linePtr!=end && *linePtr==':')
+        {
+            linePtr++;
+            if (parseImmWithBoolArray(asmr, linePtr, absVal, modOperands-1,
+                        WS_UNSIGNED))
+            {
+                opMods.absMod = absVal;
+                if (haveAbs)
+                    asmr.printWarning(modPlace, "Abs is already defined");
+                haveAbs = true;
+            }
+        }
+        else
+            good = false;
+    }
+    else if (modOperands>1 && (::strcmp(mod, "neg")==0 ||
+            (vop3p && ::strcmp(mod, "neg_lo")==0)))
+    {
+        // neg or neg_lo modifiers for source operands 
+        // (bit per operand in array)
+        uint32_t negVal = 0;
+        if (linePtr!=end && *linePtr==':')
+        {
+            linePtr++;
+            if (parseImmWithBoolArray(asmr, linePtr, negVal, modOperands-1,
+                            WS_UNSIGNED))
+            {
+                opMods.negMod = (opMods.negMod&0xf0) | negVal;
+                if (haveNeg)
+                    asmr.printWarning(modPlace, "Neg is already defined");
+                haveNeg = true;
+            }
+        }
+        else
+            good = false;
     }
     else // other modifier
         return false;
@@ -1715,49 +1757,10 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
             {
                 // check what is VOP modifier
                 bool alreadyModDefined = false;
-                if (parseSingleOMODCLAMP(asmr, linePtr, modPlace, mod, arch, mods, flags,
+                if (parseSingleOMODCLAMP(asmr, linePtr, modPlace, mod, arch, mods,
+                        opMods, modOperands, flags, haveAbs, haveNeg,
                         alreadyModDefined, good))
                 {   // do nothing
-                }
-                else if (!vop3p && modOperands>1 && ::strcmp(mod, "abs")==0)
-                {
-                    // abs modifiers for source operands (bit per operand in array)
-                    uint32_t absVal = 0;
-                    if (linePtr!=end && *linePtr==':')
-                    {
-                        linePtr++;
-                        if (parseImmWithBoolArray(asmr, linePtr, absVal, modOperands-1,
-                                    WS_UNSIGNED))
-                        {
-                            opMods.absMod = absVal;
-                            if (haveAbs)
-                                asmr.printWarning(modPlace, "Abs is already defined");
-                            haveAbs = true;
-                        }
-                    }
-                    else
-                        good = false;
-                }
-                else if (modOperands>1 && (::strcmp(mod, "neg")==0 ||
-                        (vop3p && ::strcmp(mod, "neg_lo")==0)))
-                {
-                    // neg or neg_lo modifiers for source operands 
-                    // (bit per operand in array)
-                    uint32_t negVal = 0;
-                    if (linePtr!=end && *linePtr==':')
-                    {
-                        linePtr++;
-                        if (parseImmWithBoolArray(asmr, linePtr, negVal, modOperands-1,
-                                        WS_UNSIGNED))
-                        {
-                            opMods.negMod = (opMods.negMod&0xf0) | negVal;
-                            if (haveNeg)
-                                asmr.printWarning(modPlace, "Neg is already defined");
-                            haveNeg = true;
-                        }
-                    }
-                    else
-                        good = false;
                 }
                 else if (modOperands>1 && vop3p && ::strcmp(mod, "neg_hi")==0)
                 {
