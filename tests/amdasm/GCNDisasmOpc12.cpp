@@ -2055,6 +2055,10 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
         "        v_interp_p1_f32 v42, -abs(s19), attr39.z\n" },
     { 0xd270022aU, 0x400220a7U, true,
         "        v_interp_p1_f32 v42, -abs(v16), attr39.z\n" },
+    { 0xd270022aU, 0x000220a7U, true,
+        "        v_interp_p1_f32 v42, abs(v16), attr39.z\n" },
+    { 0xd270022aU, 0x400220a7U, true,
+        "        v_interp_p1_f32 v42, -abs(v16), attr39.z\n" },
     /* other VINTRP opcodes */
     { 0xd271002aU, 0x00022ca7U, true,
         "        v_interp_p2_f32 v42, v22, attr39.z vop3\n" },
