@@ -15,7 +15,7 @@ Example: s_cmp_eq_i32 s0, s1
 
 List of the instructions by opcode:
 
- Opcode     | Mnemonic (GCN1.0/1.1) | Mnemonic (GCN 1.2)
+ Opcode     | Mnemonic (GCN1.0/1.1) | Mnemonic (GCN 1.2/1.4)
 ------------|----------------------|------------------------
  0 (0x0)    | S_CMP_EQ_I32         | S_CMP_EQ_I32
  1 (0x1)    | S_CMP_LG_I32         | S_CMP_LG_I32
@@ -109,7 +109,7 @@ SCC = SSRC0==SSRC1
 
 #### S_CMP_EQ_U64
 
-Opcode: 18 (0x12) for GCN 1.2  
+Opcode: 18 (0x12) for GCN 1.2/1.4  
 Syntax: S_CMP_EQ_U64 SSRC0(2), SSRC1(2)  
 Description: Compare SSRC0 to SSRC1. If SSRC0 and SSRC1 are equal, store 1 to SCC,
 otherwise store 0 to SCC. SSRC0 and SSRC1 are 64-bit.  
@@ -208,7 +208,7 @@ SCC = SSRC0!=SSRC1
 
 #### S_CMP_LG_U64, S_CMP_NE_U64
 
-Opcode: 19 (0x13) for GCN 1.2  
+Opcode: 19 (0x13) for GCN 1.2/1.4  
 Syntax: S_CMP_LG_U64 SSRC0(2), SSRC1(2)  
 Syntax: S_CMP_NE_U64 SSRC0(2), SSRC1(2)  
 Description: Compare SSRC0 to SSRC1. If SSRC0 and SSRC1 are equal, store 1 to SCC,
@@ -242,7 +242,7 @@ SCC = SSRC0 < SSRC1
 
 #### S_SET_GPR_IDX_ON
 
-Opcode: 17 (0x11) for GCN 1.2  
+Opcode: 17 (0x11) for GCN 1.2/1.4  
 Syntax:S_SET_GPR_IDX_ON SSRC0(0), IMM8  
 Description: Enable GPR indexing mode. Set mode and index for GPR indexing. The mode
 and index for GPR indexing are in M0. Refer to GPR indexing mode in [GcnOperands]  

@@ -72,25 +72,25 @@ PC = RELADDR
 
 #### S_CBRANCH_CDBGSYS
 
-Opcode: 23 (0x17) for GCN 1.1/1.2  
+Opcode: 23 (0x17) for GCN 1.1/1.2/1.4  
 Syntax: S_CBRANCH_CDBGSYS RELADDR  
 Description: Jump to address RELADDR if COND_DBG_SYS status bit is set.
 
 #### S_CBRANCH_CDBGSYS_AND_USER
 
-Opcode: 26 (0x1a) for GCN 1.1/1.2  
+Opcode: 26 (0x1a) for GCN 1.1/1.2/1.4  
 Syntax: S_CBRANCH_CDBGSYS_AND_USER RELADDR  
 Description: Jump to address RELADDR if COND_DBG_SYS and COND_DBG_USER status bit is set.
 
 #### S_CBRANCH_CDBGSYS_OR_USER
 
-Opcode: 25 (0x19) for GCN 1.1/1.2  
+Opcode: 25 (0x19) for GCN 1.1/1.2/1.4  
 Syntax: S_CBRANCH_CDBGSYS_OR_USER RELADDR  
 Description: Jump to address RELADDR if COND_DBG_SYS or COND_DBG_USER status bit is set.
 
 #### S_CBRANCH_CDBGUSER
 
-Opcode: 24 (0x18) for GCN 1.1/1.2  
+Opcode: 24 (0x18) for GCN 1.1/1.2/1.4  
 Syntax: S_CBRANCH_CDBGUSER RELADDR  
 Description: Jump to address RELADDR if COND_DBG_USER status bit is set.
 
@@ -180,7 +180,7 @@ S_SENDMSG(MSG_ORDERED_PS_DONE) and S_ENDPGM. (from ISA manual)
 
 #### S_ENDPGM_SAVED
 
-Opcode: 27 (0x1b) only for GCN 1.2  
+Opcode: 27 (0x1b) only for GCN 1.2/1.4  
 Syntax: S_ENDPGM_SAVED  
 Description: End of program; signal that a wave has been saved by the context-switch trap handler, and
 terminate wavefront. The hardware implicitly executes S_WAITCNT 0 before executing this
@@ -237,7 +237,7 @@ Description: Send message and halt.
 
 #### S_SET_GPR_IDX_MODE
 
-Opcode: 29 (0x1d) only for GCN 1.2  
+Opcode: 29 (0x1d) only for GCN 1.2/1.4  
 Syntax: S_SET_GPR_IDX_MODE SIMM16  
 Description: Set GPR indexing mode (12-15 bits in MO).  
 Operation:  
@@ -247,7 +247,7 @@ M0 = (M0 & 0xffff0fff) | ((SIMM16 & 15)<<12)
 
 #### S_SET_GPR_IDX_OFF
 
-Opcode: 28 (0x1c) only for GCN 1.2  
+Opcode: 28 (0x1c) only for GCN 1.2/1.4  
 Syntax: S_SET_GPR_IDX_OFF  
 Description: Disables GPR indexing.  
 Operation:  
@@ -268,7 +268,7 @@ HALT = SIMM16&1
 
 #### S_SETKILL
 
-Opcode: 11 (0xb) only GCN 1.1/1.2  
+Opcode: 11 (0xb) only for GCN 1.1/1.2/1.4  
 Syntax: S_SETKILL SIMM16  
 Description: Store SIMM16&1 to KILL.  
 Operation:  
