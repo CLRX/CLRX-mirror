@@ -223,7 +223,8 @@ List of the instructions by opcode (GCN 1.2/1.4):
  626 (0x272) | V_INTERP_MOV_F32 (VINTRP) | V_INTERP_MOV_F32 (VINTRP)
  628 (0x274) | V_INTERP_P1LL_F16 (VINTRP) | V_INTERP_P1LL_F16 (VINTRP)
  629 (0x275) | V_INTERP_P1LV_F16 (VINTRP) | V_INTERP_P1LV_F16 (VINTRP)
- 630 (0x276) | V_INTERP_P2_F16 (VINTRP)| V_INTERP_P2_F16 (VINTRP)
+ 630 (0x276) | V_INTERP_P2_F16 (VINTRP)| V_INTERP_P2_F16_LEGACY (VINTRP)
+ 631 (0x277) | --                      | V_INTERP_P2_F16 (VINTRP)
  640 (0x280) | V_ADD_F64               | V_ADD_F64
  641 (0x281) | V_MUL_F64               | V_MUL_F64
  642 (0x282) | V_MIN_F64               | V_MIN_F64
@@ -1070,13 +1071,36 @@ FLOAT P20[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8])
 VDST[LANEID] = ASFLOAT(VDST[LANEID]) + ASFLOAT(VSRC[LANEID]) * P20[LANEID]
 ```
 
-#### V_INTERP_P2_F16
+#### V_INTERP_P2_F16 (GCN 1.2)
 
 Opcode: 630 (0x276) for GCN 1.2/1.4  
-Syntax: V_INTERP_P1_F16 VDST, VSRC, ATTR.ATTRCHAN [HIGH], VSRC1  
+Syntax: V_INTERP_P1_F16 VDST, VSRC, ATTR.ATTRCHAN, VSRC1 [HIGH]  
+Syntax (GCN 1.4): V_INTERP_P1_F16_LEGACY VDST, VSRC, ATTR.ATTRCHAN [HIGH], VSRC1  
 Description: Instruction does the second step of the interpolation (P20*J + D). The J
 coordinate given in VSRC register. P2 factor is half floating point value stored in
 lower or higher (if HIGH given) part of dword.
+Refer to [VINTRP instructions](GcnInstrsVintrp).  
+NOTE: The indices in LDS is dword indices.  
+NOTE: VDST and VSRC registers must not be same.  
+Operation:  
+```
+UINT S = 12*(ATTR*NUMPRIM + PRIMID(LANEID>>2))
+HALF P20[LANEID]
+if (HIGH)
+    HALF P20[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8] >> 16)
+else
+    HALF P20[LANEID] = ASFLOAT(LDS[S + ATTRCHAN + 8] & 0xffff)
+VDST[LANEID] = ASFLOAT(VSRC1[LANEID]) + ASFLOAT(VSRC[LANEID]) * P20[LANEID]
+```
+
+#### V_INTERP_P2_F16 (GCN 1.4)
+
+Opcode: 631 (0x277) for GCN 1.4  
+Syntax: V_INTERP_P1_F16 VDST, VSRC, ATTR.ATTRCHAN, VSRC1 [HIGH]  
+Description: Instruction does the second step of the interpolation (P20*J + D). The J
+coordinate given in VSRC register. P2 factor is half floating point value stored in
+lower or higher (if HIGH given) part of dword.
+The 3-bit in OPSEL choose 16-bit part of destination (other part is preserved).
 Refer to [VINTRP instructions](GcnInstrsVintrp).  
 NOTE: The indices in LDS is dword indices.  
 NOTE: VDST and VSRC registers must not be same.  
