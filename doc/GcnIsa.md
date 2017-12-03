@@ -35,6 +35,7 @@ This language is very similar to C/C++ and uses this same expresion's syntax
 (these same operators and their precedence). In this language, we use types there are
 to similar C/C++ types:
 
+* BYTE - unsigned byte
 * UINT8, INT8 - unsigned and signed byte
 * UINT16, INT16 - unsigned and signed 16-bit word
 * UINT32, INT32 - unsigned and signed dword (32-bit word)
