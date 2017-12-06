@@ -204,7 +204,7 @@ List of class instructions:
 
 #### V_CMP_CLASS_F16
 
-Opcode: 20 (0x14) for GCN 1.2  
+Opcode: 20 (0x14) for GCN 1.2/1.4  
 Syntax VOPC: V_CMP_CLASS_F16 VCC, SRC0, SRC1  
 Syntax VOP3: V_CMP_CLASS_F16 SDST, SRC0, SRC1  
 Operation: Check whether SRC0 half floating point value belongs to one of specified class.
