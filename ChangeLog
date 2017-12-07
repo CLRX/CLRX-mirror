@@ -1,6 +1,24 @@
 
 Change Log
 
+CLRadeonExtender 0.1.6:
+
+* add support for Mesa3D 17.3.0 (GPU detection)
+* fixed segfaults during disassemblying new Gallium binaries with AMD HSA
+* add ability to supply defined symbols during using the CLHelper
+* fixed CLRXDocs mistakes in GcnSrmdInstrs, GcmSmemInstrs, GcnVopXInstrs chapters.
+* add GCN1.4 (VEGA) instruction's descriptons to CLRXDocs
+* add support for GCN 1.4 (VEGA) to samples
+* fixed encoding/decoding of SMEM instructions with SGPR offset (GCN 1.4)
+* add a missing GCN 1.4 instructions
+* fixed encoding/decoding of OP_SEL (GCN 1.4)
+* fixed encoding/decoding of DS_READ_ADDTID_B32 (GCN 1.4)
+* fixed encoding/decoding of TBUFFER_x_D16/BUFFER_x_D16 instructions for GCN 1.4
+* fixed encoding CLAMP VOP3/VOPC instructions (GCN 1.4)
+* allow to use OMOD, NEG, ABS, CLAMP modifiers in VOP3/VINTRP instructions
+* add new VOP3/VINTRP instruction's descriptions to CLRXDocs
+* update GCN timings chapter in CLRXDocs
+
 CLRadeonExtender 0.1.5r1:
 
 * add detection of OpenGL to CMakeLists.txt
@@ -120,4 +138,3 @@ CLRadeonExtender 0.1.1:
 CLRadeonExtender 0.1:
 
 * first published version
-
