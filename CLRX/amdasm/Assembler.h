@@ -714,10 +714,10 @@ public:
     /// set binary format
     void setBinaryFormat(BinaryFormat binFormat)
     { format = binFormat; }
-    /// get bitness
+    /// get bitness (true if 64-bit)
     bool is64Bit() const
     { return _64bit; }
-    /// set bitness
+    /// set bitness (true if 64-bit)
     void set64Bit(bool this64Bit)
     {  _64bit = this64Bit; }
     /// get flags
@@ -726,9 +726,18 @@ public:
     /// set flags
     void setFlags(Flags flags)
     { this->flags = flags; }
-    // get oldModParam
+    /// get true if altMacro enabled
+    bool isAltMacro() const
+    { return alternateMacro; }
+    /// get true if macroCase enabled
+    bool isMacroCase() const
+    { return macroCase; }
+    /// get true if oldModParam enabled (old modifier parametrization)
     bool isOldModParam() const
     { return oldModParam; }
+    /// get true if buggyFPLit enabled
+    bool isBuggyFPLit() const
+    { return buggyFPLit; }
     /// get include directory list
     const std::vector<CString>& getIncludeDirs() const
     { return includeDirs; }
