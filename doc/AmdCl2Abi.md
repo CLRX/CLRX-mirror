@@ -47,9 +47,9 @@ dwords:
 Second pointer is argument's pointer. This pointer points to argument's buffer.
 First argument are setup arguments.
 
-* size_t global_offset_0 - 64-bit global offset for X
-* size_t global_offset_1 - 64-bit global offset for Y
-* size_t global_offset_2 - 64-bit global offset for Z
+* size_t global_offset_0 - 32-bit or 64-bit global offset for X
+* size_t global_offset_1 - 32-bit or 64-bit global offset for Y
+* size_t global_offset_2 - 32-bit or 64-bit global offset for Z
 
 Further arguments in that buffer are an user arguments defined for kernel. Any pointer,
 command queue, image, sampler, structure tooks 8 bytes (64-bit pointer) or
