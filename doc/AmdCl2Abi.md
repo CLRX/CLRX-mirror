@@ -47,17 +47,19 @@ dwords:
 Second pointer is argument's pointer. This pointer points to argument's buffer.
 First argument are setup arguments.
 
-* ulong global_offset_0 - 64-bit global offset for X
-* ulong global_offset_1 - 64-bit global offset for Y
-* ulong global_offset_2 - 64-bit global offset for Z
+* size_t global_offset_0 - 64-bit global offset for X
+* size_t global_offset_1 - 64-bit global offset for Y
+* size_t global_offset_2 - 64-bit global offset for Z
 
 Further arguments in that buffer are an user arguments defined for kernel. Any pointer,
-command queue, image, sampler, structure tooks 8 bytes (64-bit pointer).
-3 componet vector tooks number of bytes  of 4 element vector.
+command queue, image, sampler, structure tooks 8 bytes (64-bit pointer) or
+4 bytes (32-bit pointer) in 32-bit AMD OpenCL 2.0.
+3 component vector tooks number of bytes  of 4 element vector.
 Smaller types likes (char, short) tooks 1-3 bytes. Alignment depends on same type
 or type of element (for vectors).
 
-For 32-bit AMD OpenCL 2.0 all setup arguments are 32-bit.
+For 64-bit AMD OpenCL 2.0 all setup arguments and pointers are 64-bit.
+For 32-bit AMD OpenCL 2.0 all setup arguments and pointers are 32-bit.
 
 ### Image arguments
 
