@@ -441,7 +441,9 @@ test.s:16:23: Error: Used VGPRs number out of range (0-256)
         .llvm_version 40000
             .kernel aa22
             .args
-            .arg scalar, 8,,,SEXT,griddim
+            .arg scalar, 8,,,SEXT
+            .arg griddim,4
+            .arg gridoffset,4
             .config
             .priority 1
             .floatmode 43
@@ -465,7 +467,9 @@ test.s:16:23: Error: Used VGPRs number out of range (0-256)
         
             .kernel aa23
             .args
-            .arg scalar, 8,,,SEXT,griddim
+            .arg scalar, 8,,,SEXT
+            .arg griddim,4
+            .arg gridoffset,4
             .config
             .dims yz
             .priority 3
@@ -509,7 +513,7 @@ aa23:
       workitemPrivateSegmentSize=230
       workgroupGroupSegmentSize=22
       gdsSegmentSize=100
-      kernargSegmentSize=16
+      kernargSegmentSize=24
       workgroupFbarrierCount=3324
       wavefrontSgprCount=79
       workitemVgprCount=139
@@ -530,7 +534,9 @@ aa23:
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
-    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+    Arg: scalar, true, general, size=8, tgtSize=8, tgtAlign=8
+    Arg: scalar, false, griddim, size=4, tgtSize=4, tgtAlign=4
+    Arg: scalar, false, gridoffset, size=4, tgtSize=4, tgtAlign=4
   Kernel: name=aa23, offset=256
     Config:
       dims=6, SGPRS=12, VGPRS=3, pgmRSRC2=0x0, ieeeMode=0x1
@@ -570,7 +576,9 @@ aa23:
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
-    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+    Arg: scalar, true, general, size=8, tgtSize=8, tgtAlign=8
+    Arg: scalar, false, griddim, size=4, tgtSize=4, tgtAlign=4
+    Arg: scalar, false, gridoffset, size=4, tgtSize=4, tgtAlign=4
   Comment:
   nullptr
   GlobalData:
@@ -578,7 +586,7 @@ aa23:
   Code:
   0100000000000000010000000000000000010000000000000000000000000000
   0000000000000000000000000000000062b68e00d1fb07000b000a00e6000000
-  16000000640000001000000000000000fc0c00004f008b000000000000000000
+  16000000640000001800000000000000fc0c00004f008b000000000000000000
   6000620005040406ac4d03000000000000000000000000000000000000000000
   0100000002000000040000000000000000000000000000000000000000000000
   0000000000000000000000000000000000000000000000000000000000000000
@@ -600,7 +608,9 @@ aa23:
         .llvm_version 40000
             .kernel aa22
             .args
-            .arg scalar, 8,,,SEXT,griddim
+            .arg scalar, 8,,,SEXT
+            .arg griddim,4
+            .arg gridoffset,4
             .config
             .priority 1
             .floatmode 43
@@ -640,7 +650,7 @@ aa22:
       workitemPrivateSegmentSize=230
       workgroupGroupSegmentSize=22
       gdsSegmentSize=100
-      kernargSegmentSize=16
+      kernargSegmentSize=24
       workgroupFbarrierCount=3324
       wavefrontSgprCount=61
       workitemVgprCount=139
@@ -661,7 +671,9 @@ aa22:
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
-    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+    Arg: scalar, true, general, size=8, tgtSize=8, tgtAlign=8
+    Arg: scalar, false, griddim, size=4, tgtSize=4, tgtAlign=4
+    Arg: scalar, false, gridoffset, size=4, tgtSize=4, tgtAlign=4
   Comment:
   nullptr
   GlobalData:
@@ -669,7 +681,7 @@ aa22:
   Code:
   0100000000000000010008000000030000010000000000000000000000000000
   00000000000000000000000000000000e2b58e00c5fb070020000000e6000000
-  16000000640000001000000000000000fc0c00003d008b000000000000000000
+  16000000640000001800000000000000fc0c00003d008b000000000000000000
   6000620005040406ac4d03000000000000000000000000000000000000000000
   0000000000000000000000000000000000000000000000000000000000000000
   0000000000000000000000000000000000000000000000000000000000000000
@@ -683,7 +695,9 @@ aa22:
         .llvm_version 40000
             .kernel aa22
             .args
-            .arg scalar, 8,,,SEXT,griddim
+            .arg scalar, 8,,,SEXT
+            .arg griddim,4
+            .arg gridoffset,4
             .config
             .priority 1
             .floatmode 0x12
@@ -734,7 +748,7 @@ aa22:
       workitemPrivateSegmentSize=786
       workgroupGroupSegmentSize=22
       gdsSegmentSize=100
-      kernargSegmentSize=16
+      kernargSegmentSize=24
       workgroupFbarrierCount=3324
       wavefrontSgprCount=79
       workitemVgprCount=167
@@ -755,7 +769,9 @@ aa22:
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
-    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+    Arg: scalar, true, general, size=8, tgtSize=8, tgtAlign=8
+    Arg: scalar, false, griddim, size=4, tgtSize=4, tgtAlign=4
+    Arg: scalar, false, gridoffset, size=4, tgtSize=4, tgtAlign=4
   Comment:
   nullptr
   GlobalData:
@@ -763,7 +779,7 @@ aa22:
   Code:
   0100000000000000010000000000000000010000000000000000000000000000
   0000000000000000000000000000000069fa8d00d1e907000b000a0012030000
-  16000000640000001000000000000000fc0c00004f00a7000000000000000000
+  16000000640000001800000000000000fc0c00004f00a7000000000000000000
   6000000005040406ac4d03000000000000000000000000000000000000000000
   0100000002000000040000000000000000000000000000000000000000000000
   0000000000000000000000000000000000000000000000000000000000000000

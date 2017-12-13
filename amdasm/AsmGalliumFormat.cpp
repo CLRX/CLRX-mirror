@@ -1923,17 +1923,21 @@ bool AsmGalliumHandler::prepareBinary()
             
             // calculating kernel argument segment size
             size_t argSegmentSize = 0;
-            for (GalliumArgInfo& argInfo: output.kernels[ki].argInfos)
+            for (const GalliumArgInfo& argInfo: output.kernels[ki].argInfos)
             {
+                uint32_t targetAlign = argInfo.targetAlign;
+                uint32_t targetSize = std::max(argInfo.size, argInfo.targetSize);
                 if (argInfo.semantic == GalliumArgSemantic::GRID_DIMENSION ||
                         argInfo.semantic == GalliumArgSemantic::GRID_OFFSET)
-                    continue; // skip
+                    // handle grid dimensions
+                    targetSize = argInfo.semantic == GalliumArgSemantic::GRID_OFFSET ?
+                            12 : targetSize;
+                
                 if (argInfo.targetAlign != 0)
-                    argSegmentSize = (argSegmentSize + argInfo.targetAlign-1) &
-                            ~size_t(argInfo.targetAlign-1);
-                argSegmentSize += argInfo.targetSize;
+                    argSegmentSize = (argSegmentSize + targetAlign-1) &
+                            ~size_t(targetAlign-1);
+                argSegmentSize += targetSize;
             }
-            argSegmentSize += 16; // gridOffset and gridDim
             
             if (outConfig.amdCodeVersionMajor == BINGEN_DEFAULT)
                 outConfig.amdCodeVersionMajor = 1;
