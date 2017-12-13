@@ -50,6 +50,9 @@ First argument are setup arguments.
 * size_t global_offset_0 - 32-bit or 64-bit global offset for X
 * size_t global_offset_1 - 32-bit or 64-bit global offset for Y
 * size_t global_offset_2 - 32-bit or 64-bit global offset for Z
+* void* printf_buffer - 32-bit or 64-bit printf buffer
+* void* vqueue_pointer - 32-bit or 64-bit
+* void* aqlwrap_pointer - 32-bit or 64-bit
 
 Further arguments in that buffer are an user arguments defined for kernel. Any pointer,
 command queue, image, sampler, structure tooks 8 bytes (64-bit pointer) or
