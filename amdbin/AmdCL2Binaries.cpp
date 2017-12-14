@@ -878,6 +878,30 @@ static const CL2GPUDeviceCodeEntry cl2_2348GpuDeviceCodeTable[] =
     { 21, GPUDeviceType::GFX901 }
 };
 
+static const CL2GPUDeviceCodeEntry cl2_2527GpuDeviceCodeTable[] =
+{
+    { 1, GPUDeviceType::SPECTRE },
+    { 2, GPUDeviceType::SPOOKY },
+    { 3, GPUDeviceType::KALINDI },
+    { 4, GPUDeviceType::MULLINS },
+    { 6, GPUDeviceType::BONAIRE },
+    { 7, GPUDeviceType::HAWAII },
+    { 8, GPUDeviceType::ICELAND },
+    { 9, GPUDeviceType::TONGA },
+    { 12, GPUDeviceType::CARRIZO },
+    { 13, GPUDeviceType::FIJI },
+    { 14, GPUDeviceType::STONEY },
+    { 16, GPUDeviceType::BAFFIN },
+    { 18, GPUDeviceType::ELLESMERE },
+    { 21, GPUDeviceType::GFX804 },
+    { 20, GPUDeviceType::GFX900 },
+    { 23, GPUDeviceType::GFX901 },
+    { 24, GPUDeviceType::GFX902 },
+    { 25, GPUDeviceType::GFX903 },
+    { 26, GPUDeviceType::GFX904 },
+    { 27, GPUDeviceType::GFX905 }
+};
+
 struct CLRX_INTERNAL CL2GPUCodeTable
 {
     cxuint toDriverVersion;   // to driver version
@@ -901,8 +925,10 @@ static const CL2GPUCodeTable cl2CodeTables[] =
         sizeof(cl2_2236GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
     { 234800U, cl2_2264GpuDeviceCodeTable,
         sizeof(cl2_2264GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
-    { UINT_MAX, cl2_2348GpuDeviceCodeTable,
-        sizeof(cl2_2348GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) }
+    { 252700U, cl2_2348GpuDeviceCodeTable,
+        sizeof(cl2_2348GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
+    { UINT_MAX, cl2_2527GpuDeviceCodeTable,
+        sizeof(cl2_2527GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) }
 };
 
 template<typename Types>

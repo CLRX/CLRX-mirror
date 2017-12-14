@@ -74,7 +74,7 @@ static inline void putProgInfoEntryLE(FastOutputBuffer& bos,
 }
 
 // e_type (16-bit)
-static const uint16_t gpuDeviceCodeTable[24] =
+static const uint16_t gpuDeviceCodeTable[28] =
 {
     0x3ff, // GPUDeviceType::CAPE_VERDE
     0x3fe, // GPUDeviceType::PITCAIRN
@@ -99,11 +99,15 @@ static const uint16_t gpuDeviceCodeTable[24] =
     0x40f, // GPUDeviceType::BAFFIN
     0x412, // GPUDeviceType::GFX804
     0xffff, // GPUDeviceType::GFX900
-    0xffff  // GPUDeviceType::GFX901
+    0xffff, // GPUDeviceType::GFX901
+    0xffff, // GPUDeviceType::GFX902
+    0xffff, // GPUDeviceType::GFX903
+    0xffff, // GPUDeviceType::GFX904
+    0xffff  // GPUDeviceType::GFX905
 };
 
 /// CALNoteEntry (32-bit)
-static const uint32_t gpuDeviceInnerCodeTable[24] =
+static const uint32_t gpuDeviceInnerCodeTable[28] =
 {
     0x1c, // GPUDeviceType::CAPE_VERDE
     0x1b, // GPUDeviceType::PITCAIRN
@@ -128,7 +132,11 @@ static const uint32_t gpuDeviceInnerCodeTable[24] =
     0x2c, // GPUDeviceType::BAFFIN
     0x32, // GPUDeviceType::GFX804
     UINT_MAX, // GPUDeviceType::GFX900
-    UINT_MAX  // GPUDeviceType::GFX901
+    UINT_MAX, // GPUDeviceType::GFX901
+    UINT_MAX, // GPUDeviceType::GFX902
+    UINT_MAX, // GPUDeviceType::GFX903
+    UINT_MAX, // GPUDeviceType::GFX904
+    UINT_MAX  // GPUDeviceType::GFX905
 };
 
 void AmdInput::addKernel(const AmdKernelInput& kernelInput)

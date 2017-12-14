@@ -31,7 +31,7 @@ GPUIdException::GPUIdException(const std::string& message) : Exception(message)
 { }
 
 // length of GPU device table (number of recognized GPU devices)
-static const size_t gpuDeviceTableSize = 24;
+static const size_t gpuDeviceTableSize = 28;
 
 static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
 {
@@ -58,7 +58,11 @@ static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
     "Baffin",
     "GFX804",
     "GFX900",
-    "GFX901"
+    "GFX901",
+    "GFX902",
+    "GFX903",
+    "GFX904",
+    "GFX905"
 };
 
 // sorted GPU device names with device types
@@ -75,6 +79,10 @@ lowerCaseGpuDeviceEntryTable[] =
     { "gfx804", GPUDeviceType::GFX804 },
     { "gfx900", GPUDeviceType::GFX900 },
     { "gfx901", GPUDeviceType::GFX901 },
+    { "gfx902", GPUDeviceType::GFX902 },
+    { "gfx903", GPUDeviceType::GFX903 },
+    { "gfx904", GPUDeviceType::GFX904 },
+    { "gfx905", GPUDeviceType::GFX905 },
     { "goose", GPUDeviceType::GOOSE },
     { "hainan", GPUDeviceType::HAINAN },
     { "hawaii", GPUDeviceType::HAWAII },
@@ -130,7 +138,11 @@ static const GPUArchitecture gpuDeviceArchTable[gpuDeviceTableSize] =
     GPUArchitecture::GCN1_2, // Baffin
     GPUArchitecture::GCN1_2, // GFX804
     GPUArchitecture::GCN1_4, // GFX900
-    GPUArchitecture::GCN1_4  // GFX901
+    GPUArchitecture::GCN1_4, // GFX901
+    GPUArchitecture::GCN1_4, // GFX902
+    GPUArchitecture::GCN1_4, // GFX903
+    GPUArchitecture::GCN1_4, // GFX904
+    GPUArchitecture::GCN1_4  // GFX905
 };
 
 static const char* gpuArchitectureNameTable[4] =
@@ -327,7 +339,11 @@ static const AMDGPUArchVersion galliumGpuArchVersionTbl[] =
     { 8, 0, 4 }, // GPUDeviceType::BAFFIN
     { 8, 0, 4 }, // GPUDeviceType::GFX804
     { 9, 0, 0 }, // GPUDeviceType::GFX900
-    { 9, 0, 1 }  // GPUDeviceType::GFX901
+    { 9, 0, 1 }, // GPUDeviceType::GFX901
+    { 9, 0, 2 }, // GPUDeviceType::GFX902
+    { 9, 0, 3 }, // GPUDeviceType::GFX903
+    { 9, 0, 4 }, // GPUDeviceType::GFX904
+    { 9, 0, 5 }  // GPUDeviceType::GFX905
 };
 
 // AMDGPU architecture values for specific GPU device type for AMDOCL 2.0
@@ -356,7 +372,11 @@ static const AMDGPUArchVersion amdCL2GpuArchVersionTbl[] =
     { 8, 0, 4 }, // GPUDeviceType::BAFFIN
     { 8, 0, 4 }, // GPUDeviceType::GFX804
     { 9, 0, 0 }, // GPUDeviceType::GFX900
-    { 9, 0, 1 }  // GPUDeviceType::GFX901
+    { 9, 0, 1 }, // GPUDeviceType::GFX901
+    { 9, 0, 2 }, // GPUDeviceType::GFX902
+    { 9, 0, 3 }, // GPUDeviceType::GFX903
+    { 9, 0, 4 }, // GPUDeviceType::GFX904
+    { 9, 0, 5 }  // GPUDeviceType::GFX905
 };
 
 AMDGPUArchVersion CLRX::getGPUArchVersion(GPUDeviceType deviceType, GPUArchVersionTable table)
@@ -391,7 +411,11 @@ static const AMDGPUArchVersionEntry amdGpuArchVersionEntriesTbl[] =
     { 8, 0, 4, GPUDeviceType::FIJI },
     { 8, 1, 0, GPUDeviceType::STONEY },
     { 9, 0, 0, GPUDeviceType::GFX900 },
-    { 9, 0, 1, GPUDeviceType::GFX901 }
+    { 9, 0, 1, GPUDeviceType::GFX901 },
+    { 9, 0, 2, GPUDeviceType::GFX902 },
+    { 9, 0, 3, GPUDeviceType::GFX903 },
+    { 9, 0, 4, GPUDeviceType::GFX904 },
+    { 9, 0, 5, GPUDeviceType::GFX905 }
 };
 
 static const size_t amdGpuArchVersionEntriesNum = sizeof(amdGpuArchVersionEntriesTbl) /
