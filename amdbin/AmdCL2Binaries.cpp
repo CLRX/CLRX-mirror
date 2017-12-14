@@ -878,6 +878,46 @@ static const CL2GPUDeviceCodeEntry cl2_2348GpuDeviceCodeTable[] =
     { 21, GPUDeviceType::GFX901 }
 };
 
+static const CL2GPUDeviceCodeEntry cl2_2442GpuDeviceCodeTable[] =
+{
+    { 1, GPUDeviceType::SPECTRE },
+    { 2, GPUDeviceType::SPOOKY },
+    { 3, GPUDeviceType::KALINDI },
+    { 4, GPUDeviceType::MULLINS },
+    { 6, GPUDeviceType::BONAIRE },
+    { 7, GPUDeviceType::HAWAII },
+    { 8, GPUDeviceType::ICELAND },
+    { 9, GPUDeviceType::TONGA },
+    { 12, GPUDeviceType::CARRIZO },
+    { 13, GPUDeviceType::FIJI },
+    { 14, GPUDeviceType::STONEY },
+    { 15, GPUDeviceType::BAFFIN },
+    { 18, GPUDeviceType::ELLESMERE },
+    { 18, GPUDeviceType::GFX804 },
+    { 17, GPUDeviceType::GFX900 },
+    { 19, GPUDeviceType::GFX901 }
+};
+
+static const CL2GPUDeviceCodeEntry cl2_2482GpuDeviceCodeTable[] =
+{
+    { 1, GPUDeviceType::SPECTRE },
+    { 2, GPUDeviceType::SPOOKY },
+    { 3, GPUDeviceType::KALINDI },
+    { 4, GPUDeviceType::MULLINS },
+    { 6, GPUDeviceType::BONAIRE },
+    { 7, GPUDeviceType::HAWAII },
+    { 8, GPUDeviceType::ICELAND },
+    { 9, GPUDeviceType::TONGA },
+    { 12, GPUDeviceType::CARRIZO },
+    { 13, GPUDeviceType::FIJI },
+    { 14, GPUDeviceType::STONEY },
+    { 16, GPUDeviceType::BAFFIN },
+    { 18, GPUDeviceType::ELLESMERE },
+    { 20, GPUDeviceType::GFX804 },
+    { 19, GPUDeviceType::GFX900 },
+    { 21, GPUDeviceType::GFX901 }
+};
+
 static const CL2GPUDeviceCodeEntry cl2_2527GpuDeviceCodeTable[] =
 {
     { 1, GPUDeviceType::SPECTRE },
@@ -925,8 +965,12 @@ static const CL2GPUCodeTable cl2CodeTables[] =
         sizeof(cl2_2236GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
     { 234800U, cl2_2264GpuDeviceCodeTable,
         sizeof(cl2_2264GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
-    { 252700U, cl2_2348GpuDeviceCodeTable,
+    { 244200U, cl2_2348GpuDeviceCodeTable,
         sizeof(cl2_2348GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
+    { 248200U, cl2_2442GpuDeviceCodeTable,
+        sizeof(cl2_2442GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
+    { 252700U, cl2_2482GpuDeviceCodeTable,
+        sizeof(cl2_2482GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) },
     { UINT_MAX, cl2_2527GpuDeviceCodeTable,
         sizeof(cl2_2527GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) }
 };

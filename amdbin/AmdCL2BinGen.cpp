@@ -377,6 +377,70 @@ static const uint32_t gpuDeviceCodeTable2348[28] =
     UINT_MAX  // GPUDeviceType::GFX905
 };
 
+static const uint32_t gpuDeviceCodeTable2442[28] =
+{
+    UINT_MAX, // GPUDeviceType::CAPE_VERDE
+    UINT_MAX, // GPUDeviceType::PITCAIRN
+    UINT_MAX, // GPUDeviceType::TAHITI
+    UINT_MAX, // GPUDeviceType::OLAND
+    6, // GPUDeviceType::BONAIRE
+    1, // GPUDeviceType::SPECTRE
+    2, // GPUDeviceType::SPOOKY
+    3, // GPUDeviceType::KALINDI
+    UINT_MAX, // GPUDeviceType::HAINAN
+    7, // GPUDeviceType::HAWAII
+    8, // GPUDeviceType::ICELAND
+    9, // GPUDeviceType::TONGA
+    4, // GPUDeviceType::MULLINS
+    13, // GPUDeviceType::FIJI
+    12, // GPUDeviceType::CARRIZO
+    14, // GPUDeviceType::DUMMY
+    15, // GPUDeviceType::GOOSE
+    16, // GPUDeviceType::HORSE
+    14, // GPUDeviceType::STONEY
+    16, // GPUDeviceType::ELLESMERE
+    15, // GPUDeviceType::BAFFIN
+    18, // GPUDeviceType::GFX804
+    17, // GPUDeviceType::GFX900
+    19, // GPUDeviceType::GFX901
+    UINT_MAX, // GPUDeviceType::GFX902
+    UINT_MAX, // GPUDeviceType::GFX903
+    UINT_MAX, // GPUDeviceType::GFX904
+    UINT_MAX  // GPUDeviceType::GFX905
+};
+
+static const uint32_t gpuDeviceCodeTable2482[28] =
+{
+    UINT_MAX, // GPUDeviceType::CAPE_VERDE
+    UINT_MAX, // GPUDeviceType::PITCAIRN
+    UINT_MAX, // GPUDeviceType::TAHITI
+    UINT_MAX, // GPUDeviceType::OLAND
+    6, // GPUDeviceType::BONAIRE
+    1, // GPUDeviceType::SPECTRE
+    2, // GPUDeviceType::SPOOKY
+    3, // GPUDeviceType::KALINDI
+    UINT_MAX, // GPUDeviceType::HAINAN
+    7, // GPUDeviceType::HAWAII
+    8, // GPUDeviceType::ICELAND
+    9, // GPUDeviceType::TONGA
+    4, // GPUDeviceType::MULLINS
+    13, // GPUDeviceType::FIJI
+    12, // GPUDeviceType::CARRIZO
+    14, // GPUDeviceType::DUMMY
+    16, // GPUDeviceType::GOOSE
+    18, // GPUDeviceType::HORSE
+    14, // GPUDeviceType::STONEY
+    18, // GPUDeviceType::ELLESMERE
+    16, // GPUDeviceType::BAFFIN
+    20, // GPUDeviceType::GFX804
+    19, // GPUDeviceType::GFX900
+    21, // GPUDeviceType::GFX901
+    UINT_MAX, // GPUDeviceType::GFX902
+    UINT_MAX, // GPUDeviceType::GFX903
+    UINT_MAX, // GPUDeviceType::GFX904
+    UINT_MAX  // GPUDeviceType::GFX905
+};
+
 static const uint32_t gpuDeviceCodeTable2527[28] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
@@ -425,7 +489,9 @@ static const CL2GPUGenCodeTable cl2GenCodeTables[] =
     { 223600U, gpuDeviceCodeTableGPUPRO },
     { 226400U, gpuDeviceCodeTable2236 },
     { 234800U, gpuDeviceCodeTable2264 },
-    { 252700U, gpuDeviceCodeTable2348 },
+    { 244200U, gpuDeviceCodeTable2348 },
+    { 248200U, gpuDeviceCodeTable2442 },
+    { 252700U, gpuDeviceCodeTable2482 },
     { UINT_MAX, gpuDeviceCodeTable2527 }
 };
 
