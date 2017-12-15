@@ -133,6 +133,18 @@ public:
     
     /// get symbol
     void* getSymbol(const char* symbolName);
+    
+    /// returns true if  loaded
+    operator bool() const
+    { return handle!=nullptr; }
+    
+    /// returns true if not loaded
+    bool operator!() const
+    { return handle==nullptr; }
+    
+    // return true if loaded
+    bool isLoaded() const
+    { return handle!=nullptr; }
 };
 
 /* parse utilities */

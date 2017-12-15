@@ -96,8 +96,12 @@ DynLibrary::~DynLibrary()
 void DynLibrary::load(const char* filename, Flags flags)
 {
     std::lock_guard<std::mutex> lock(mutex);
+    // if already loaded
+    if (handle != nullptr)
+        throw Exception("DynLibrary already loaded");
 #if defined(HAVE_LINUX) || defined(HAVE_BSD)
-    dlerror(); // clear old errors
+    // clear old errors
+    dlerror();
     int outFlags = (flags & DYNLIB_GLOBAL) ? RTLD_GLOBAL : RTLD_LOCAL;
     if ((flags & DYNLIB_MODE1_MASK) == DYNLIB_LAZY)
         outFlags |= RTLD_LAZY;
