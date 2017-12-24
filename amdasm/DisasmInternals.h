@@ -78,25 +78,6 @@ extern CLRX_INTERNAL void disassembleGallium(std::ostream& output,
        const GalliumDisasmInput* galliumInput, ISADisassembler* isaDisassembler,
        Flags flags);
 
-// prepare AMD OpenCL input from AMD 32-bit binary
-extern CLRX_INTERNAL AmdDisasmInput* getAmdDisasmInputFromBinary32(
-            const AmdMainGPUBinary32& binary, Flags flags);
-// prepare AMD OpenCL input from AMD 64-bit binary
-extern CLRX_INTERNAL AmdDisasmInput* getAmdDisasmInputFromBinary64(
-            const AmdMainGPUBinary64& binary, Flags flags);
-// prepare AMD OpenCL 2.0 input from AMD 32-bit binary
-extern CLRX_INTERNAL AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary32(
-            const AmdCL2MainGPUBinary32& binary, cxuint driverVersion);
-// prepare AMD OpenCL 2.0 input from AMD 64-bit binary
-extern CLRX_INTERNAL AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary64(
-            const AmdCL2MainGPUBinary64& binary, cxuint driverVersion);
-// prepare ROCM input from ROCM binary
-extern CLRX_INTERNAL ROCmDisasmInput* getROCmDisasmInputFromBinary(
-            const ROCmBinary& binary);
-// prepare Gallium input from Gallium binary
-extern CLRX_INTERNAL GalliumDisasmInput* getGalliumDisasmInputFromBinary(
-            GPUDeviceType deviceType, const GalliumBinary& binary, cxuint llvmVersion);
-
 extern CLRX_INTERNAL const std::pair<const char*, KernelArgType> disasmArgTypeNameMap[74];
 
 extern CLRX_INTERNAL const KernelArgType disasmGpuArgTypeTable[];

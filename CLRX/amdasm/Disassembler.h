@@ -496,6 +496,27 @@ public:
     { return output; }
 };
 
+// routines to get binary config inputs
+
+/// prepare AMD OpenCL input from AMD 32-bit binary
+extern AmdDisasmInput* getAmdDisasmInputFromBinary32(
+            const AmdMainGPUBinary32& binary, Flags flags);
+/// prepare AMD OpenCL input from AMD 64-bit binary
+extern AmdDisasmInput* getAmdDisasmInputFromBinary64(
+            const AmdMainGPUBinary64& binary, Flags flags);
+/// prepare AMD OpenCL 2.0 input from AMD 32-bit binary
+extern AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary32(
+            const AmdCL2MainGPUBinary32& binary, cxuint driverVersion);
+/// prepare AMD OpenCL 2.0 input from AMD 64-bit binary
+extern AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary64(
+            const AmdCL2MainGPUBinary64& binary, cxuint driverVersion);
+/// prepare ROCM input from ROCM binary
+extern ROCmDisasmInput* getROCmDisasmInputFromBinary(
+            const ROCmBinary& binary);
+/// prepare Gallium input from Gallium binary
+extern GalliumDisasmInput* getGalliumDisasmInputFromBinary(
+            GPUDeviceType deviceType, const GalliumBinary& binary, cxuint llvmVersion);
+
 };
 
 #endif
