@@ -828,17 +828,27 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             { argIt->second.ptrSpace = KernelPtrSpace::CONSTANT; kptr += 2; }
             else //if not match
                 throw ParseException(lineNo, "Unknown pointer type");
-            /* skip RW */
+            
             tokPtr = kptr;
-            for (cxuint k = 0; k < 3; k++) // // skip three fields
+            for (cxuint k = 0; k < 2; k++) // // skip two fields
             {
                 while (tokPtr < kend && *tokPtr != ':' && *tokPtr != '\n') tokPtr++;
                 if (tokPtr >= kend || *tokPtr =='\n')
                     throw ParseException(lineNo, "No separator after field");
                 tokPtr++;
             }
-            /* volatile specifier */
+            // RO/RW
             kptr = tokPtr;
+            while (tokPtr < kend && *tokPtr != ':' && *tokPtr != '\n') tokPtr++;
+            if (tokPtr >= kend || *tokPtr =='\n')
+                throw ParseException(lineNo, "No separator after access qualifier");
+            if (kptr+3 <= kend && *kptr=='R' && kptr[1]=='O' && kptr[2]==':' &&
+                argIt->second.ptrSpace==KernelPtrSpace::GLOBAL)
+                argIt->second.ptrAccess |= KARG_PTR_CONST;
+            else if (kptr+3 <= kend && *kptr=='R' && kptr[1]=='W' && kptr[2]==':')
+                argIt->second.ptrAccess |= KARG_PTR_NORMAL;
+            /* volatile specifier */
+            kptr = ++tokPtr;
             if (kptr+2 <= kend && kptr[1] == ':' && (*kptr == '0' || *kptr == '1'))
             {
                 if (*kptr == '1')

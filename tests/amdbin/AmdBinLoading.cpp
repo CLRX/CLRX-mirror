@@ -484,9 +484,9 @@ static void testKernelArgs(const char* filename, const char* kernelName,
                     cxuint(argInfos[i].ptrSpace));
         assertValue(testName, caseName+" ptrAccess", expKernelArgs[i].ptrAccess,
                     argInfos[i].ptrAccess);
-        assertValue(testName, caseName+" ptrAccess", expKernelArgs[i].argName,
+        assertValue(testName, caseName+" argName", expKernelArgs[i].argName,
                     argInfos[i].argName);
-        assertValue(testName, caseName+" ptrAccess", expKernelArgs[i].typeName,
+        assertValue(testName, caseName+" typeName", expKernelArgs[i].typeName,
                     argInfos[i].typeName);
     }
 }

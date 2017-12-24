@@ -548,7 +548,12 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             const char* typeName = ptr;
             const char* typeNameEnd = nextPtr;
             ptr = nextPtr;
-            ptr += 5; // to argOffset
+            //ptr += 5; // to argOffset
+            ptr++;
+            ptr = strechr(ptr, lineEnd, ':');
+            ptr++;
+            ptr = strechr(ptr, lineEnd, ':');
+            ptr++;
             ptr = strechr(ptr, lineEnd, ':');
             if (ptr==nullptr)
                 throw ParseException(lineNo, "Can't parse pointer argument");
