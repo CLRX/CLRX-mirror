@@ -115,6 +115,7 @@ struct Elf32Types
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name
     static const Word nobase = Word(0)-1;   ///< address with zero base
+    static const cxuint relSymShift = 8;
 };
 
 /// ELF 32-bit types
@@ -135,6 +136,7 @@ struct Elf64Types
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name
     static const Word nobase = Word(0)-1;   ///< address with zero base
+    static const cxuint relSymShift = 32;
 };
 
 /// ELF binary class
@@ -447,7 +449,28 @@ public:
     /// get section content pointer
     cxbyte* getSectionContent(const char* name)
     {  return getSectionContent(getSectionIndex(name)); }
+    
+    static inline uint32_t getElfRelType(typename Types::Word info);
+    static inline uint32_t getElfRelSym(typename Types::Word info);
+
 };
+
+template<>
+inline uint32_t ElfBinaryTemplate<Elf32Types>::getElfRelType(typename Elf32Types::Word info)
+{ return ELF32_R_TYPE(info); }
+
+template<>
+inline uint32_t ElfBinaryTemplate<Elf32Types>::getElfRelSym(typename Elf32Types::Word info)
+{ return ELF32_R_SYM(info); }
+
+template<>
+inline uint32_t ElfBinaryTemplate<Elf64Types>::getElfRelType(typename Elf64Types::Word info)
+{ return ELF64_R_TYPE(info); }
+
+template<>
+inline uint32_t ElfBinaryTemplate<Elf64Types>::getElfRelSym(typename Elf64Types::Word info)
+{ return ELF64_R_SYM(info); }
+
 
 extern template class ElfBinaryTemplate<Elf32Types>;
 extern template class ElfBinaryTemplate<Elf64Types>;

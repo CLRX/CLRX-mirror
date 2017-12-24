@@ -342,6 +342,7 @@ struct GalliumDisasmInput
     std::vector<GalliumDisasmKernelInput> kernels;    ///< list of input kernels
     size_t codeSize;    ///< code size
     const cxbyte* code; ///< code
+    std::vector<GalliumScratchReloc> scratchRelocs; ///< scratch buffer text relocations
 };
 
 /// disassembler input for raw code

@@ -30,6 +30,7 @@
 #include <ostream>
 #include <utility>
 #include <memory>
+#include <CLRX/amdbin/Commons.h>
 #include <CLRX/amdbin/Elf.h>
 #include <CLRX/amdbin/ElfBinaries.h>
 #include <CLRX/utils/MemAccess.h>
@@ -135,6 +136,13 @@ struct GalliumSection
     uint32_t size;      ///< size of section
 };
 
+// scratch buffer relocation entry
+struct GalliumScratchReloc
+{
+    size_t offset;  ///< offset
+    RelocType type; ///< relocation type
+};
+
 /// Gallium elf binary base (for 32-bit and 64-bit)
 class GalliumElfBinaryBase
 {
@@ -148,6 +156,7 @@ protected:
     size_t disasmSize;  ///< disassembly size
     size_t disasmOffset;    ///< disassembly offset
     bool llvm390;   ///< true if >= LLVM 3.9
+    Array<GalliumScratchReloc> scratchRelocs;
     
     /// routine to load binary fro internal ELF 
     template<typename ElfBinary>
@@ -191,6 +200,18 @@ public:
     /// returns true binary for if >=LLVM 3.9
     bool isLLVM390() const
     { return llvm390; }
+    
+    /// return scratch buffer relocations number
+    size_t getScratchRelocsNum() const
+    { return scratchRelocs.size(); }
+    
+    /// return scratch buffer relocation by index
+    const GalliumScratchReloc& getScratchReloc(size_t i) const
+    { return scratchRelocs[i]; }
+    
+    /// return all scratch buffer relocations
+    const Array<GalliumScratchReloc>& getScratchRelocs() const
+    { return scratchRelocs; }
 };
 
 /* INFO: in this file is used ULEV function for conversion
@@ -202,6 +223,10 @@ public:
 /** ULEV function is required to access programInfoEntry fields */
 class GalliumElfBinary32: public GalliumElfBinaryBase, public ElfBinary32
 {
+private:
+    size_t textRelsNum;
+    size_t textRelEntrySize;
+    cxbyte* textRel;
 public:
     /// empty constructor
     GalliumElfBinary32();
@@ -218,11 +243,25 @@ public:
     /// return disassembly content (without null-character)
     const char* getDisassembly() const
     { return reinterpret_cast<const char*>(binaryCode + disasmOffset); }
+    
+    /// get text rel entries number
+    size_t getTextRelEntriesNum() const
+    { return textRelsNum; }
+    /// get text rel entry
+    const Elf32_Rel& getTextRelEntry(size_t index) const
+    { return *reinterpret_cast<const Elf32_Rel*>(textRel + textRelEntrySize*index); }
+    /// get text rel entry
+    Elf32_Rel& getTextRelEntry(size_t index)
+    { return *reinterpret_cast<Elf32_Rel*>(textRel + textRelEntrySize*index); }
 };
 
 /// 64-bit Gallium ELF binary
 class GalliumElfBinary64: public GalliumElfBinaryBase, public ElfBinary64
 {
+private:
+    size_t textRelsNum;
+    size_t textRelEntrySize;
+    cxbyte* textRel;
 public:
     /// empty constructor
     GalliumElfBinary64();
@@ -239,6 +278,15 @@ public:
     /// return disassembly content (without null-character)
     const char* getDisassembly() const
     { return reinterpret_cast<const char*>(binaryCode + disasmOffset); }
+    /// get text rel entries number
+    size_t getTextRelEntriesNum() const
+    { return textRelsNum; }
+    /// get text rel entry
+    const Elf64_Rel& getTextRelEntry(size_t index) const
+    { return *reinterpret_cast<const Elf64_Rel*>(textRel + textRelEntrySize*index); }
+    /// get text rel entry
+    Elf64_Rel& getTextRelEntry(size_t index)
+    { return *reinterpret_cast<Elf64_Rel*>(textRel + textRelEntrySize*index); }
 };
 
 /** GalliumBinary object. This object converts to host-endian fields and
@@ -406,6 +454,7 @@ struct GalliumInput
     const char* comment; ///< comment
     std::vector<BinSection> extraSections;  ///< extra sections
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
+    std::vector<GalliumScratchReloc> scratchRelocs; ///< scratchbuffer relocations
     
     /// add empty kernel with default values
     void addEmptyKernel(const char* kernelName, cxuint llvmVersion);

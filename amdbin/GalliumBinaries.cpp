@@ -121,10 +121,46 @@ void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary, size_t kernelsNum)
     }
 }
 
+template<typename GalliumElfBinary>
+static void innerBinaryGetScratchRelocs(const GalliumElfBinary& binary,
+                    Array<GalliumScratchReloc>& scratchRelocs)
+{
+    if (binary.getTextRelEntriesNum() != 0)
+    {
+        size_t scratchRSRCDword0Sym = SIZE_MAX;
+        size_t scratchRSRCDword1Sym = SIZE_MAX;
+        // parse scratch buffer relocations
+        scratchRelocs.resize(binary.getTextRelEntriesNum());
+        size_t j = 0;
+        for (size_t i = 0; i < binary.getTextRelEntriesNum(); i++)
+        {
+            const auto& rel = binary.getTextRelEntry(i);
+            const size_t symIndex = GalliumElfBinary::getElfRelSym(ULEV(rel.r_info));
+            const char* symName = binary.getSymbolName(symIndex);
+            const auto& sym = binary.getSymbol(symIndex);
+            // if scratch RSRC symbol is not defined (just set if found)
+            if (scratchRSRCDword0Sym == SIZE_MAX && ULEV(sym.st_shndx == SHN_UNDEF) &&
+                    ::strcmp(symName, "SCRATCH_RSRC_DWORD0")==0)
+                scratchRSRCDword0Sym = symIndex;
+            else if (scratchRSRCDword1Sym == SIZE_MAX && ULEV(sym.st_shndx == SHN_UNDEF) &&
+                    ::strcmp(symName, "SCRATCH_RSRC_DWORD1")==0)
+                scratchRSRCDword1Sym = symIndex;
+            
+            if (scratchRSRCDword0Sym == symIndex)
+                scratchRelocs[j++] = { ULEV(rel.r_offset), RELTYPE_LOW_32BIT };
+            else if (scratchRSRCDword1Sym == symIndex)
+                scratchRelocs[j++] = { ULEV(rel.r_offset), RELTYPE_HIGH_32BIT };
+        }
+        // final resizing
+        scratchRelocs.resize(j);
+    }
+}
+
 GalliumElfBinaryBase::~GalliumElfBinaryBase()
 { }
 
 GalliumElfBinary32::GalliumElfBinary32()
+    : textRelsNum(0), textRelEntrySize(0), textRel(nullptr)
 { }
 
 GalliumElfBinary32::~GalliumElfBinary32()
@@ -132,13 +168,29 @@ GalliumElfBinary32::~GalliumElfBinary32()
 
 GalliumElfBinary32::GalliumElfBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
            Flags creationFlags, size_t kernelsNum) :
-           ElfBinary32(binaryCodeSize, binaryCode, creationFlags|ELF_CREATE_SYMBOLMAP)
-       
+           ElfBinary32(binaryCodeSize, binaryCode, creationFlags|ELF_CREATE_SYMBOLMAP),
+           textRelsNum(0), textRelEntrySize(0), textRel(nullptr)
 {
     loadFromElf(static_cast<const ElfBinary32&>(*this), kernelsNum);
+    
+    // get relocation section for text
+    try
+    {
+        const Elf32_Shdr& relShdr = getSectionHeader(".rel.text");
+        textRelEntrySize = ULEV(relShdr.sh_entsize);
+        if (textRelEntrySize==0)
+            textRelEntrySize = sizeof(Elf32_Rel);
+        textRelsNum = ULEV(relShdr.sh_size)/textRelEntrySize;
+        textRel = binaryCode + ULEV(relShdr.sh_offset);
+    }
+    catch(const Exception& ex)
+    { }
+    
+    innerBinaryGetScratchRelocs(*this, scratchRelocs);
 }
 
 GalliumElfBinary64::GalliumElfBinary64()
+    : textRelsNum(0), textRelEntrySize(0), textRel(nullptr)
 { }
 
 GalliumElfBinary64::~GalliumElfBinary64()
@@ -146,10 +198,24 @@ GalliumElfBinary64::~GalliumElfBinary64()
 
 GalliumElfBinary64::GalliumElfBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
            Flags creationFlags, size_t kernelsNum) :
-           ElfBinary64(binaryCodeSize, binaryCode, creationFlags|ELF_CREATE_SYMBOLMAP)
-       
+           ElfBinary64(binaryCodeSize, binaryCode, creationFlags|ELF_CREATE_SYMBOLMAP),
+           textRelsNum(0), textRelEntrySize(0), textRel(nullptr)
 {
     loadFromElf(static_cast<const ElfBinary64&>(*this), kernelsNum);
+    // get relocation section for text
+    try
+    {
+        const Elf64_Shdr& relShdr = getSectionHeader(".rel.text");
+        textRelEntrySize = ULEV(relShdr.sh_entsize);
+        if (textRelEntrySize==0)
+            textRelEntrySize = sizeof(Elf64_Rel);
+        textRelsNum = ULEV(relShdr.sh_size)/textRelEntrySize;
+        textRel = binaryCode + ULEV(relShdr.sh_offset);
+    }
+    catch(const Exception& ex)
+    { }
+    
+    innerBinaryGetScratchRelocs(*this, scratchRelocs);
 }
 
 uint32_t GalliumElfBinaryBase::getProgramInfoEntriesNum(uint32_t index) const

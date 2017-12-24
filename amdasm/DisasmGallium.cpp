@@ -81,6 +81,12 @@ static void getGalliumDisasmInputFromBinaryBase(const GalliumBinary& binary,
     // set code
     input->code = elfBin.getSectionContent(textIndex);
     input->codeSize = ULEV(elfBin.getSectionHeader(textIndex).sh_size);
+    // scratch relocations
+    const Array<GalliumScratchReloc>& scratchRelocs = elfBin.getScratchRelocs();
+    input->scratchRelocs.assign(scratchRelocs.begin(), scratchRelocs.end());
+    std::sort(input->scratchRelocs.begin(), input->scratchRelocs.end(),
+              [](const GalliumScratchReloc& r1, const GalliumScratchReloc& r2)
+              { return r1.offset < r2.offset; });
 }
 
 GalliumDisasmInput* CLRX::getGalliumDisasmInputFromBinary(GPUDeviceType deviceType,
@@ -224,6 +230,9 @@ void CLRX::disassembleGallium(std::ostream& output,
     else if (galliumInput->isLLVM390)
         output.write(".llvm_version 30900\n", 20);
     
+    if (!galliumInput->scratchRelocs.empty())
+        output.write(".scratchsym .scratchaddr\n", 25);
+    
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(galliumInput->deviceType);
     const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
     
@@ -320,6 +329,15 @@ void CLRX::disassembleGallium(std::ostream& output,
         if (!galliumInput->isAMDHSA)
             isaDisassembler->addNamedLabel(kinput.offset, kinput.kernelName);
     }
+    
+    if (!galliumInput->scratchRelocs.empty())
+    {
+        // put scratch relocations and scratch symbol
+        isaDisassembler->addRelSymbol(".scratchaddr");
+        for (const GalliumScratchReloc& entry: galliumInput->scratchRelocs)
+            isaDisassembler->addRelocation(entry.offset, entry.type, 0, 0);
+    }
+    
     if (doDumpCode && galliumInput->code != nullptr && galliumInput->codeSize != 0)
     {
         // print text
