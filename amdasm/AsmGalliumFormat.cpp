@@ -64,7 +64,7 @@ static const char* galliumPseudoOpNamesTbl[] =
     "private_elem_size", "private_segment_align",
     "privmode", "proginfo", "reserved_sgprs", "reserved_vgprs",
     "runtime_loader_kernel_symbol",
-    "scratchbuffer", "sgprsnum",
+    "scratchbuffer", "scratchsym", "sgprsnum",
     "spilledsgprs", "spilledvgprs", "tgsize",
     "use_debug_enabled", "use_dispatch_id",
     "use_dispatch_ptr", "use_dynamic_call_stack",
@@ -110,7 +110,7 @@ enum
     GALLIUMOP_PRIVMODE, GALLIUMOP_PROGINFO,
     GALLIUMOP_RESERVED_SGPRS, GALLIUMOP_RESERVED_VGPRS,
     GALLIUMOP_RUNTIME_LOADER_KERNEL_SYMBOL,
-    GALLIUMOP_SCRATCHBUFFER, GALLIUMOP_SGPRSNUM,
+    GALLIUMOP_SCRATCHBUFFER, GALLIUMOP_SCRATCHSYM, GALLIUMOP_SGPRSNUM,
     GALLIUMOP_SPILLEDSGPRS, GALLIUMOP_SPILLEDVGPRS, GALLIUMOP_TGSIZE,
     GALLIUMOP_USE_DEBUG_ENABLED, GALLIUMOP_USE_DISPATCH_ID,
     GALLIUMOP_USE_DISPATCH_PTR, GALLIUMOP_USE_DYNAMIC_CALL_STACK,
@@ -140,8 +140,8 @@ void AsmGalliumHandler::Kernel::initializeAmdHsaKernelConfig()
 
 AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler): AsmFormatHandler(assembler),
              output{}, codeSection(0), dataSection(ASMSECT_NONE),
-             commentSection(ASMSECT_NONE), extraSectionCount(0),
-             archMinor(BINGEN_DEFAULT), archStepping(BINGEN_DEFAULT)
+             commentSection(ASMSECT_NONE), scratchSection(ASMSECT_NONE),
+             extraSectionCount(0), archMinor(BINGEN_DEFAULT), archStepping(BINGEN_DEFAULT)
 {
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
@@ -313,6 +313,9 @@ AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId
     // code is addressable and writeable
     if (info.type == AsmSectionType::CODE)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
+    else if (info.type == AsmSectionType::GALLIUM_SCRATCH)
+        // scratch is unresolvable (for relocation)
+        info.flags = ASMSECT_UNRESOLVABLE;
     // any other section (except config) are absolute addressable and writeable
     else if (info.type != AsmSectionType::CONFIG)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
@@ -1292,6 +1295,49 @@ void AsmGalliumPseudoOps::doKCodeEnd(AsmGalliumHandler& handler, const char* pse
         handler.restoreKcodeCurrentAllocRegs();
 }
 
+void AsmGalliumPseudoOps::scratchSymbol(AsmGalliumHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    
+    const char* symNamePlace = linePtr;
+    const CString symName = extractScopedSymName(linePtr, end, false);
+    if (symName.empty())
+        ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
+    size_t symNameLength = symName.size();
+    // special case for '.' symbol (check whether is in global scope)
+    if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
+        ASM_RETURN_BY_ERROR(symNamePlace, "Symbol '.' can be only in global scope")
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (handler.scratchSection == ASMSECT_NONE)
+    {
+        // add scratch section if not added
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ ASMKERN_GLOBAL,
+                AsmSectionType::GALLIUM_SCRATCH, ELFSECTID_UNDEF, nullptr });
+        handler.scratchSection = thisSection;
+        asmr.sections.push_back({ "", ASMKERN_GLOBAL, AsmSectionType::GALLIUM_SCRATCH,
+            ASMSECT_UNRESOLVABLE, 0 });
+    }
+    
+    std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
+                AsmSymbol(handler.scratchSection, 0));
+    if (!res.second)
+    {
+        // if symbol found,
+        if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
+            asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
+                        "' is already defined").c_str());
+        else
+            asmr.setSymbol(*res.first, 0, handler.scratchSection);
+    }
+    else
+        res.first->second.hasValue = false; // make
+}
+
 }
 
 bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
@@ -1529,6 +1575,9 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_SCRATCHBUFFER);
             break;
+        case GALLIUMOP_SCRATCHSYM:
+            AsmGalliumPseudoOps::scratchSymbol(*this, linePtr);
+            break;
         case GALLIUMOP_SGPRSNUM:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_SGPRSNUM);
@@ -1632,6 +1681,130 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             return false;
     }
     return true;
+}
+
+bool AsmGalliumHandler::resolveSymbol(const AsmSymbol& symbol,
+                    uint64_t& value, cxuint& sectionId)
+{
+    if (!assembler.isResolvableSection(symbol.sectionId))
+    {
+        value = symbol.value;
+        sectionId = symbol.sectionId;
+        return true;
+    }
+    return false;
+}
+
+bool AsmGalliumHandler::resolveRelocation(const AsmExpression* expr, uint64_t& outValue,
+                    cxuint& outSectionId)
+{
+    const AsmExprTarget& target = expr->getTarget();
+    const AsmExprTargetType tgtType = target.type;
+    if ((tgtType!=ASMXTGT_DATA32 &&
+        !assembler.isaAssembler->relocationIsFit(32, tgtType)))
+    {
+        assembler.printError(expr->getSourcePos(),
+                        "Can't resolve expression for non 32-bit integer");
+        return false;
+    }
+    if (target.sectionId==ASMSECT_ABS ||
+        assembler.sections[target.sectionId].type!=AsmSectionType::CODE)
+    {
+        assembler.printError(expr->getSourcePos(), "Can't resolve expression outside "
+                "code section");
+        return false;
+    }
+    const Array<AsmExprOp>& ops = expr->getOps();
+    
+    size_t relOpStart = 0;
+    size_t relOpEnd = ops.size();
+    RelocType relType = RELTYPE_LOW_32BIT;
+    // checking what is expression
+    // get () OP () - operator between two parts
+    AsmExprOp lastOp = ops.back();
+    if (lastOp==AsmExprOp::BIT_AND || lastOp==AsmExprOp::MODULO ||
+        lastOp==AsmExprOp::SIGNED_MODULO || lastOp==AsmExprOp::DIVISION ||
+        lastOp==AsmExprOp::SIGNED_DIVISION || lastOp==AsmExprOp::SHIFT_RIGHT)
+    {
+        // check low or high relocation
+        relOpStart = 0;
+        relOpEnd = expr->toTop(ops.size()-2);
+        /// evaluate second argument
+        cxuint tmpSectionId;
+        uint64_t secondArg;
+        if (!expr->evaluate(assembler, relOpEnd, ops.size()-1, secondArg, tmpSectionId))
+            return false;
+        if (tmpSectionId!=ASMSECT_ABS)
+        {
+            // must be absolute
+            assembler.printError(expr->getSourcePos(),
+                        "Second argument for relocation operand must be absolute");
+            return false;
+        }
+        bool good = true;
+        switch (lastOp)
+        {
+            case AsmExprOp::BIT_AND:
+                // handle (x&0xffffffff)
+                relType = RELTYPE_LOW_32BIT;
+                good = ((secondArg & 0xffffffffULL) == 0xffffffffULL);
+                break;
+            case AsmExprOp::MODULO:
+            case AsmExprOp::SIGNED_MODULO:
+                // handle (x%0x100000000)
+                relType = RELTYPE_LOW_32BIT;
+                good = ((secondArg>>32)!=0 && (secondArg & 0xffffffffULL) == 0);
+                break;
+            case AsmExprOp::DIVISION:
+            case AsmExprOp::SIGNED_DIVISION:
+                // handle (x/0x100000000)
+                relType = RELTYPE_HIGH_32BIT;
+                good = (secondArg == 0x100000000ULL);
+                break;
+            case AsmExprOp::SHIFT_RIGHT:
+                // handle (x>>32)
+                relType = RELTYPE_HIGH_32BIT;
+                good = (secondArg == 32);
+                break;
+            default:
+                break;
+        }
+        if (!good)
+        {
+            assembler.printError(expr->getSourcePos(),
+                        "Can't resolve relocation for this expression");
+            return false;
+        }
+    }
+    // 
+    cxuint relSectionId = 0;
+    uint64_t relValue = 0;
+    if (expr->evaluate(assembler, relOpStart, relOpEnd, relValue, relSectionId))
+    {
+        // relocation only for rodata, data and bss section
+        if (relSectionId!=scratchSection)
+        {
+            assembler.printError(expr->getSourcePos(),
+                     "Section of this expression must be a scratch");
+            return false;
+        }
+        if (relValue != 0)
+        {
+            assembler.printError(expr->getSourcePos(),
+                     "Expression must point to start of section");
+            return false;
+        }
+        outSectionId = ASMSECT_ABS;   // for filling values in code
+        outValue = 4U; // for filling values in code
+        size_t extraOffset = (tgtType!=ASMXTGT_DATA32) ? 4 : 0;
+        AsmRelocation reloc = { target.sectionId, target.offset+extraOffset, relType };
+        // set up relocation (relSectionId, addend)
+        reloc.relSectionId = relSectionId;
+        reloc.addend = 0;
+        assembler.relocations.push_back(reloc);
+        return true;
+    }
+    return false;
 }
 
 bool AsmGalliumHandler::prepareBinary()
@@ -1794,6 +1967,10 @@ bool AsmGalliumHandler::prepareBinary()
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
             config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i]->allocRegs[1]);
     }
+    
+    // put scratch relocations
+    for (const AsmRelocation& reloc: assembler.relocations)
+        output.scratchRelocs.push_back({reloc.offset, reloc.type});
     
     // if set adds symbols to binary
     if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)

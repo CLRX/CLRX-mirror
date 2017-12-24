@@ -65,6 +65,7 @@ enum class AsmSectionType: cxbyte
     
     GALLIUM_COMMENT = LAST_COMMON+1,    ///< gallium comment section
     GALLIUM_CONFIG_CTRL_DIRECTIVE,
+    GALLIUM_SCRATCH,    ///< empty section for scratch symbol
     
     ROCM_COMMENT = LAST_COMMON+1,        ///< ROCm comment section
     ROCM_CONFIG_CTRL_DIRECTIVE,
@@ -422,6 +423,7 @@ private:
     cxuint codeSection;
     cxuint dataSection;
     cxuint commentSection;
+    cxuint scratchSection;
     cxuint savedSection;
     Inside inside;
     cxuint extraSectionCount;
@@ -455,6 +457,8 @@ public:
            const char* stmtPlace, const char* linePtr);
     void handleLabel(const CString& label);
     
+    bool resolveSymbol(const AsmSymbol& symbol, uint64_t& value, cxuint& sectionId);
+    bool resolveRelocation(const AsmExpression* expr, uint64_t& value, cxuint& sectionId);
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;
     void writeBinary(Array<cxbyte>& array) const;

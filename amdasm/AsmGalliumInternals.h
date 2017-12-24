@@ -176,6 +176,8 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
                       const char* linePtr);
     static void updateKCodeSel(AsmGalliumHandler& handler,
           const std::vector<cxuint>& oldset);
+    
+    static void scratchSymbol(AsmGalliumHandler& handler, const char* linePtr);
 };
 
 };

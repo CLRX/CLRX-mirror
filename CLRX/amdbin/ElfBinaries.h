@@ -450,9 +450,8 @@ public:
     cxbyte* getSectionContent(const char* name)
     {  return getSectionContent(getSectionIndex(name)); }
     
-    static inline uint32_t getElfRelType(typename Types::Word info);
-    static inline uint32_t getElfRelSym(typename Types::Word info);
-
+    static uint32_t getElfRelType(typename Types::Word info);
+    static uint32_t getElfRelSym(typename Types::Word info);
 };
 
 template<>
@@ -895,7 +894,19 @@ public:
         FastOutputBuffer fob(256, os);
         generate(fob);
     }
+    
+    static typename Types::Word getRelInfo(size_t symbolIndex, uint32_t rtype);
 };
+
+template<>
+inline uint32_t ElfBinaryGenTemplate<Elf32Types>::getRelInfo(
+            size_t symbolIndex, uint32_t rtype)
+{ return ELF32_R_INFO(symbolIndex, rtype); }
+
+template<>
+inline uint64_t ElfBinaryGenTemplate<Elf64Types>::getRelInfo(
+            size_t symbolIndex, uint32_t rtype)
+{ return ELF64_R_INFO(symbolIndex, rtype); }
 
 extern template class ElfBinaryGenTemplate<Elf32Types>;
 extern template class ElfBinaryGenTemplate<Elf64Types>;
