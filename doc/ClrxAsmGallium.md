@@ -553,6 +553,13 @@ Syntax: .scratchbuffer SIZE
 
 This pseudo-op must be inside kernel configuration (`.config`). Defines scratchbuffer size.
 
+### .scratchsym
+
+Syntax: .scratchsym SYMBOL
+
+Set symbol as scratch symbol. This symbol points to scratch buffer offset an will be used
+while generating scratch buffer relocations.
+
 ### .sgprsnum
 
 Syntax: .sgprsnum REGNUM
