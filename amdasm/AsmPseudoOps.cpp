@@ -2150,19 +2150,6 @@ void AsmPseudoOps::addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace
 void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
                             AsmPredefined predefined)
 {
-    const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    
-    const char* symNamePlace = linePtr;
-    const CString symName = extractScopedSymName(linePtr, end, false);
-    if (symName.empty())
-        ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
-    size_t symNameLength = symName.size();
-    if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
-        ASM_RETURN_BY_ERROR(symNamePlace, "Symbol '.' can be only in global scope")
-    if (!checkGarbagesAtEnd(asmr, linePtr))
-        return;
-    
     cxuint predefValue = 0;
     // we must initialize output format before getting any arch, gpu or format
     // must be set before
@@ -2188,17 +2175,7 @@ void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
         default:
             break;
     }
-    std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
-                AsmSymbol(ASMSECT_ABS, predefValue));
-    if (!res.second)
-    {
-        // if symbol found
-        if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
-            asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
-                        "' is already defined").c_str());
-        else
-            asmr.setSymbol(*res.first, predefValue, ASMSECT_ABS);
-    }
+    AsmParseUtils::setSymbolValue(asmr, linePtr, predefValue, ASMSECT_ABS);
 }
 
 void AsmPseudoOps::ignoreString(Assembler& asmr, const char* linePtr)

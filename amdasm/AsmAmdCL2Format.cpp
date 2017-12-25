@@ -483,33 +483,8 @@ void AsmAmdCL2PseudoOps::setDriverVersion(AsmAmdCL2Handler& handler, const char*
 
 void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char* linePtr)
 {
-    Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    
-    const char* symNamePlace = linePtr;
-    const CString symName = extractScopedSymName(linePtr, end, false);
-    if (symName.empty())
-        ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
-    size_t symNameLength = symName.size();
-    // special case for '.' symbol (check whether is in global scope)
-    if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
-        ASM_RETURN_BY_ERROR(symNamePlace, "Symbol '.' can be only in global scope")
-    if (!checkGarbagesAtEnd(asmr, linePtr))
-        return;
-    
-    cxuint driverVersion = handler.getDriverVersion();
-    std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
-                AsmSymbol(ASMSECT_ABS, driverVersion));
-    if (!res.second)
-    {
-        // if symbol found
-        if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
-            asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
-                        "' is already defined").c_str());
-        else // set value of symbol
-            asmr.setSymbol(*res.first, driverVersion, ASMSECT_ABS);
-    }
+    AsmParseUtils::setSymbolValue(handler.assembler, linePtr,
+                    handler.getDriverVersion(), ASMSECT_ABS);
 }
 
 // go to inner binary
