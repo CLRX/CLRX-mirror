@@ -175,6 +175,13 @@ static void printGalliumOutput(std::ostream& os, const GalliumInput* output, boo
         }
         os.flush();
     }
+    // scratch relocations
+    if (!output->scratchRelocs.empty())
+    {
+        os << "  Scratch relocations:\n";
+        for (const GalliumScratchReloc& rel: output->scratchRelocs)
+            os << "    Rel: offset=" << rel.offset << ", type: " << rel.type << "\n";
+    }
     // other data from output
     os << "  Comment:\n";
     printHexData(os, 1, output->commentSize, (const cxbyte*)output->comment);
@@ -786,6 +793,89 @@ aa22:
   0000000000000000000000000000000000000000000000000000000000000000
   0000000000000000000000000000000000000000000000000000000000000000
 )ffDXD", "", true
+    },
+    /* scratch relocations */
+    /* 1 - gallium scratch relocation */
+    { R"ffDXD(            .gallium
+            .kernel aa22
+            .args
+            .arg scalar, 8,,,SEXT,griddim
+            .config
+            .priority 1
+            .floatmode 43
+            .ieeemode
+            .sgprsnum 36
+            .vgprsnum 139
+            .pgmrsrc2 523243
+            .scratchbuffer 230
+        .scratchsym scratch
+.text
+aa22:
+        s_and_b32 s9,s5,44
+        s_and_b32 s10,s5,5
+        s_mov_b32 s1, scratch
+        s_mov_b32 s1, scratch+7*3-21
+        s_mov_b32 s1, (scratch+7*3-21)&(1<<32-1)
+        s_mov_b32 s1, ((scratch)*2-scratch)&(4096*4096*256-1)
+        s_mov_b32 s1, (-scratch+2*(scratch))%(4096*4096*256)
+        s_mov_b32 s1, (-scratch+2*(scratch))%%(4096*4096*256)
+        s_mov_b32 s1, (-scratch+2*(scratch))%%(4096*4096*256*9)
+        s_mov_b32 s1, (-scratch+2*(scratch))%(4096*4096*256*9)
+        s_mov_b32 s1, (scratch+6-6)>>(31-5+6)
+        s_mov_b32 s1, (scratch+6-3*2)>>(234%101)
+        s_mov_b32 s1, (scratch)>>(235%101-1)
+        s_mov_b32 s1, (scratch)/(4096*4096*256)
+        s_mov_b32 s1, (scratch+6-3*2)//(4096*4096*256)
+        s_mov_b32 s1, scratch>>32
+        s_mov_b32 s1, scratch&0xffffffff
+)ffDXD",
+       R"ffDXD(GalliumBinDump:
+  Kernel: name=aa22, offset=0
+    Config:
+      dims=default, SGPRS=36, VGPRS=139, pgmRSRC2=0x7fbeb, ieeeMode=0x1
+      floatMode=0x2b, priority=1, localSize=0, scratchBuffer=230
+    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+  Scratch relocations:
+    Rel: offset=12, type: 1
+    Rel: offset=20, type: 1
+    Rel: offset=28, type: 1
+    Rel: offset=36, type: 1
+    Rel: offset=44, type: 1
+    Rel: offset=52, type: 1
+    Rel: offset=60, type: 1
+    Rel: offset=68, type: 1
+    Rel: offset=76, type: 2
+    Rel: offset=84, type: 2
+    Rel: offset=92, type: 2
+    Rel: offset=100, type: 2
+    Rel: offset=108, type: 2
+    Rel: offset=116, type: 2
+    Rel: offset=124, type: 1
+  Comment:
+  nullptr
+  GlobalData:
+  nullptr
+  Code:
+  05ac098705850a87ff0381be04000000ff0381be04000000ff0381be04000000
+  ff0381be04000000ff0381be04000000ff0381be04000000ff0381be04000000
+  ff0381be04000000ff0381be04000000ff0381be04000000ff0381be04000000
+  ff0381be04000000ff0381be04000000ff0381be04000000ff0381be04000000
+)ffDXD", "", true
+    },
+    { R"ffDXD(            .gallium
+            .kernel aa22
+            .args
+            .arg scalar, 8,,,SEXT,griddim
+            .config
+            .priority 1
+            .scratchbuffer 230
+        .scratchsym scratch
+.text
+aa22:
+        s_and_b32 s9,s5,44
+        s_and_b32 s10,s5,5
+        s_mov_b32 s1, (scratch+6)&0xffffffff
+)ffDXD", "", "test.s:13:23: Error: Expression must point to start of section\n", false
     }
 };
 
