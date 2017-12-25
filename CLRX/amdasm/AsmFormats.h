@@ -130,6 +130,10 @@ protected:
     
     /// constructor
     explicit AsmFormatHandler(Assembler& assembler);
+    
+    // resolve LO32BIT/HI32BIT relocations (partially, helper)
+    bool resolveLoHiRelocExpression(const AsmExpression* expr, RelocType& relType,
+                    cxuint& relSectionId, uint64_t& relValue);
 public:
     virtual ~AsmFormatHandler();
     
