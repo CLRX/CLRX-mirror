@@ -473,7 +473,7 @@ private:
 public:
     GalliumBinGenerator();
     /// constructor with gallium input
-    GalliumBinGenerator(const GalliumInput* galliumInput);
+    explicit GalliumBinGenerator(const GalliumInput* galliumInput);
     
     /// constructor
     /**

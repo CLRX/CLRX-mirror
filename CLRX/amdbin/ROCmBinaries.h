@@ -192,7 +192,7 @@ public:
     /// constructor
     ROCmBinGenerator();
     /// constructor with ROCm input
-    ROCmBinGenerator(const ROCmInput* rocmInput);
+    explicit ROCmBinGenerator(const ROCmInput* rocmInput);
     
     /// constructor
     /**

@@ -215,7 +215,7 @@ public:
     AmdGPUBinGenerator();
     
     /// constructor from amdInput
-    AmdGPUBinGenerator(const AmdInput* amdInput);
+    explicit AmdGPUBinGenerator(const AmdInput* amdInput);
     /// constructor
     /**
      * \param _64bitMode true if binary will be 64-bit
