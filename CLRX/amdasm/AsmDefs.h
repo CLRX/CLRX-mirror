@@ -423,6 +423,12 @@ public:
     /// make symbol snapshot (required to implement .eqv pseudo-op)    
     static bool makeSymbolSnapshot(Assembler& assembler, const AsmSymbolEntry& symEntry,
                AsmSymbolEntry*& outSymEntry, const AsmSourcePos* parentExprSourcePos);
+    
+    /// fast expression parse and evaluate
+    static bool fastExprEvaluate(Assembler& assembler, const char*& linePtr,
+                uint64_t& value);
+    static bool fastExprEvaluate(Assembler& assembler, size_t& linePos,
+                uint64_t& value);
 };
 
 inline AsmSymbol::~AsmSymbol()

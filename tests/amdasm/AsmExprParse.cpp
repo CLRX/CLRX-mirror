@@ -23,6 +23,7 @@
 #include <cstring>
 #include <sstream>
 #include <CLRX/amdasm/Assembler.h>
+#include "../TestUtils.h"
 
 using namespace CLRX;
 
@@ -408,6 +409,70 @@ static AsmExprParseCase asmExprParseCases[] =
     { "123+45*,", "", false, 0, "<stdin>:1:8: Error: Unterminated expression\n", "," }
 };
 
+/* fast expression evaluation test cases */
+struct FastExprEvalCase
+{
+    const char* expression;
+    uint64_t evaluated;
+    const char* extra;
+    bool good;
+};
+
+static const FastExprEvalCase fastExprEvalCases[] =
+{
+    { "1324 + 2", 1326, "", true },
+    { "  1324+ 2  ", 1326, "", true },
+    { "1324 + 2xxx", 1326, "xxx", true },
+    { "-1324 + 2", -1322ULL, "", true },
+    { " - 1324+2  ", -1322ULL, "", true },
+    { "+ 1324 + 2", 1326, "", true },
+    { " 0xffa -0xe  ", 0xfec, "", true },
+    { " 'g' - 'a'", 6, "", true },
+    { " 4 - 7 + 11-54", -46ULL, "", true },
+    { " -1 +7+8 + 1 + 124 + 7", 146, "", true },
+    { " 15 + 12;", 27, ";", true },
+    { " 15 + 12 ( ", 27, "( ", true },
+    { " 15 + 12 : ", 27, ": ", true },
+    { " 15 + 12 [ ", 27, "[ ", true },
+    { " 15 + 12 } ", 27, "} ", true },
+    { " 15 + 12 { ", 27, "{ ", true },
+    { " 15 + 12 } ", 27, "} ", true },
+    { " 15 + 12 \" ", 27, "\" ", true },
+    { " 15 + 12 @ ", 27, "@ ", true },
+    { " 15 + 12 _ ", 27, "_ ", true },
+    { " 15 + 12 ' ", 27, "' ", true },
+    { " 15 + 12 $ ", 27, "$ ", true },
+    { " 15 + 12 \\ ", 27, "\\ ", true },
+    { " 15 + 12 ` ", 27, "` ", true },
+    /* failed (if can be complex expression */
+    { " 15 + 12 * ", 0, " 15 + 12 * ", false },
+    { " 15 + 12 / ", 0, " 15 + 12 / ", false },
+    { " 15 + 12 & ", 0, " 15 + 12 & ", false },
+    { " 15 + 12 | ", 0, " 15 + 12 | ", false },
+    { " 15 + 12 ^ ", 0, " 15 + 12 ^ ", false },
+    { " 15 + 12 % ", 0, " 15 + 12 % ", false },
+    { " 15 + 12 ? ", 0, " 15 + 12 ? ", false },
+    { " 15 + 12 ! ", 0, " 15 + 12 ! ", false },
+    { " 15 + 12 ~ ", 0, " 15 + 12 ~ ", false },
+    { " 15 + 12 == ", 0, " 15 + 12 == ", false },
+    { " 15 + 12 <= ", 0, " 15 + 12 <= ", false },
+    { " 15 + 12 >= ", 0, " 15 + 12 >= ", false },
+    { " 15 + sym ", 0, " 15 + sym ", false },
+    { " 15 + ::sym ", 0, " 15 + ::sym ", false },
+    { " 15 + $$$ ", 0, " 15 + $$$ ", false },
+    { " 15 + . ", 0, " 15 + . ", false },
+    { "b", 0, "b", false },
+    { "$a", 0, "$a", false },
+    { "  $a", 0, "  $a", false },
+    { "2b", 0, "2b", false },
+    // local labels
+    { "   21b", 0, "   21b", false },
+    { "   21f", 0, "   21f", false },
+    // not local labels
+    { "   0x21b", 0x21b, "", true },
+    { "   0x21f", 0x21f, "", true }
+};
+
 // generate expression string from AsmExpression (to verify)
 static std::string rpnExpression(const AsmExpression* expr)
 {
@@ -588,6 +653,24 @@ static void testAsmExprParse(cxuint i, const AsmExprParseCase& testCase, bool ma
     }
 }
 
+static void testFastExprEval(cxuint i, const FastExprEvalCase& testCase)
+{
+    std::istringstream iss(testCase.expression);
+    std::ostringstream resultErrorsOut;
+    MyAssembler assembler(iss, resultErrorsOut);
+    size_t linePos = 0;
+    uint64_t resValue = 0;
+    const bool resGood = AsmExpression::fastExprEvaluate(assembler, linePos, resValue);
+    
+    const char* resExtra = testCase.expression + linePos;
+    
+    char testName[40];
+    snprintf(testName, 40, "FastExprEvalTest #%u", i);
+    assertValue(testName, "value", testCase.evaluated, resValue);
+    assertValue(testName, "good", cxuint(testCase.good), cxuint(resGood));
+    assertString(testName, "extra", testCase.extra, resExtra);
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -608,5 +691,15 @@ int main(int argc, const char** argv)
             retVal = 1;
         }
     }
+    
+    for (cxuint i = 0; i < sizeof(fastExprEvalCases)/sizeof(FastExprEvalCase); i++)
+        try
+        { testFastExprEval(i, fastExprEvalCases[i]); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    
     return retVal;
 }

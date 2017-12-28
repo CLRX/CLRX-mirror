@@ -728,7 +728,23 @@ bool GCNAsmUtils::parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& o
     if (outTargetExpr!=nullptr)
         outTargetExpr->reset();
     skipSpacesToEnd(linePtr, end);
+    
+    uint64_t value;
     const char* exprPlace = linePtr;
+    // if fast expression
+    if (AsmExpression::fastExprEvaluate(asmr, linePtr, value))
+    {
+        if (bits != UINT_MAX && bits < 64)
+        {
+            asmr.printWarningForRange(bits, value,
+                            asmr.getSourcePos(exprPlace), signess);
+            outValue = value & ((1ULL<<bits)-1ULL);
+        }
+        else // just copy
+            outValue = value;
+        return true;
+    }
+    
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr));
     if (expr==nullptr) // error
         return false;
@@ -738,7 +754,6 @@ bool GCNAsmUtils::parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& o
     {
         // resolved now
         cxuint sectionId; // for getting
-        uint64_t value;
         if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
             return false;
         else if (sectionId != ASMSECT_ABS)
@@ -1431,6 +1446,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         }
         else
         {
+            if (!AsmExpression::fastExprEvaluate(asmr, linePtr, value))
+            {
             // if expression
             std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr));
             if (expr==nullptr) // error
@@ -1466,6 +1483,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                     *outTargetExpr = std::move(expr);
                 operand.range = { 255, 0 };
                 exprToResolve = true;
+            }
             }
             
             if (!encodeAsLiteral && !exprToResolve)

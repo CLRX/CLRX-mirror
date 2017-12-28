@@ -260,6 +260,8 @@ bool AsmParseUtils::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* exprPlace = linePtr;
+    if (AsmExpression::fastExprEvaluate(asmr, linePtr, value))
+        return true;
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr, false, true));
     if (expr == nullptr)
         return false;
@@ -283,6 +285,11 @@ bool AsmParseUtils::getAnyValueArg(Assembler& asmr, uint64_t& value,
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* exprPlace = linePtr;
+    if (AsmExpression::fastExprEvaluate(asmr, linePtr, value))
+    {
+        sectionId = ASMSECT_ABS;
+        return true;
+    }
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr, false, true));
     if (expr == nullptr)
         return false;
@@ -988,6 +995,124 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
     return true;
 }
 
+bool Assembler::parseLiteralNoError(uint64_t& value, const char*& linePtr)
+{
+    const char* startPlace = linePtr;
+    const char* end = line+lineSize;
+    // if literal begins '
+    if (linePtr != end && *linePtr == '\'')
+    {
+        linePtr++;
+        if (linePtr == end || *linePtr == '\'')
+            return false;
+        
+        if (*linePtr != '\\')
+        {
+            value = *linePtr++;
+            if (linePtr == end || *linePtr != '\'')
+                return false;
+            linePtr++;
+            return true;
+        }
+        else // escapes
+        {
+            linePtr++;
+            if (linePtr == end)
+                return false;
+            if (*linePtr == 'x')
+            {
+                // hex literal
+                linePtr++;
+                if (linePtr == end)
+                    return false;
+                value = 0;
+                if (isXDigit(*linePtr))
+                    for (; linePtr != end; linePtr++)
+                    {
+                        cxuint digit;
+                        if (*linePtr >= '0' && *linePtr <= '9')
+                            digit = *linePtr-'0';
+                        else if (*linePtr >= 'a' && *linePtr <= 'f')
+                            digit = *linePtr-'a'+10;
+                        else if (*linePtr >= 'A' && *linePtr <= 'F')
+                            digit = *linePtr-'A'+10;
+                        else
+                            break; // end of literal
+                        value = (value<<4) + digit;
+                    }
+                else
+                    return false;
+                value &= 0xff;
+            }
+            else if (isODigit(*linePtr))
+            {
+                // octal literal
+                value = 0;
+                for (cxuint i = 0; linePtr != end && i < 3 && *linePtr != '\'';
+                     i++, linePtr++)
+                {
+                    if (!isODigit(*linePtr))
+                        return false;
+                    value = (value<<3) + uint64_t(*linePtr-'0');
+                    // checking range
+                    if (value > 255)
+                        return false;
+                }
+            }
+            else
+            {
+                // normal escapes
+                const char c = *linePtr++;
+                switch (c)
+                {
+                    case 'a':
+                        value = '\a';
+                        break;
+                    case 'b':
+                        value = '\b';
+                        break;
+                    case 'r':
+                        value = '\r';
+                        break;
+                    case 'n':
+                        value = '\n';
+                        break;
+                    case 'f':
+                        value = '\f';
+                        break;
+                    case 'v':
+                        value = '\v';
+                        break;
+                    case 't':
+                        value = '\t';
+                        break;
+                    case '\\':
+                        value = '\\';
+                        break;
+                    case '\'':
+                        value = '\'';
+                        break;
+                    case '\"':
+                        value = '\"';
+                        break;
+                    default:
+                        value = c;
+                }
+            }
+            if (linePtr == end || *linePtr != '\'')
+                return false;
+            linePtr++;
+            return true;
+        }
+    }
+    // try to parse integer value
+    try
+    { value = cstrtovCStyle<uint64_t>(startPlace, line+lineSize, linePtr); }
+    catch(const ParseException& ex)
+    { return false; }
+    return true;
+}
+
 // parse symbol. return PARSED - when successfuly parsed symbol,
 // MISSING - when no symbol in this place, FAILED - when failed
 // routine try to create new unresolved symbol if not defined and if dontCreateSymbol=false
@@ -1412,20 +1537,27 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     const char* exprPlace = linePtr;
     // make base expr if baseExpr=true and symbolName is not output counter
     bool makeBaseExpr = (baseExpr && symbolName != ".");
-    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(*this, linePtr, makeBaseExpr));
-    if (!expr) // no expression, errors
-        return false;
+    
+    std::unique_ptr<AsmExpression> expr;
+    uint64_t value;
+    cxuint sectionId = ASMSECT_ABS;
+    if (makeBaseExpr || !AsmExpression::fastExprEvaluate(*this, linePtr, value))
+    {
+        expr.reset(AsmExpression::parse(*this, linePtr, makeBaseExpr));
+        if (!expr) // no expression, errors
+            return false;
+    }
     
     if (linePtr != line+lineSize)
         THIS_FAIL_BY_ERROR(linePtr, "Garbages at end of expression")
-    if (expr->isEmpty()) // empty expression, we treat as error
+    if (expr && expr->isEmpty()) // empty expression, we treat as error
         THIS_FAIL_BY_ERROR(exprPlace, "Expected assignment expression")
     
     if (symbolName == ".")
     {
         // assigning '.'
-        uint64_t value;
-        cxuint sectionId;
+        if (!expr) // if fast path
+            return assignOutputCounter(symbolPlace, value, sectionId);
         if (!expr->evaluate(*this, value, sectionId))
             return false;
         if (expr->getSymOccursNum()==0)
@@ -1445,7 +1577,12 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     }
     AsmSymbolEntry& symEntry = *res.first;
     
-    if (expr->getSymOccursNum()==0)
+    if (!expr)
+    {
+        setSymbol(symEntry, value, sectionId);
+        symEntry.second.onceDefined = !reassign;
+    }
+    else if (expr->getSymOccursNum()==0)
     {
         // can evalute, assign now
         uint64_t value;

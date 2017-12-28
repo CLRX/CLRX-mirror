@@ -678,6 +678,17 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
     do {
         const char* exprPlace = linePtr;
         // try parse expression for this integer
+        uint64_t value;
+        if (AsmExpression::fastExprEvaluate(asmr, linePtr, value))
+        {   // fast path (expression)
+            if (sizeof(T) < 8)
+                asmr.printWarningForRange(sizeof(T)<<3, value,
+                                asmr.getSourcePos(exprPlace));
+            T out;
+            SLEV(out, value); // store in little-endian
+            asmr.putData(sizeof(T), reinterpret_cast<const cxbyte*>(&out));
+            continue;
+        }
         std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr));
         if (expr)
         {
@@ -687,7 +698,6 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
             if (expr->getSymOccursNum()==0)
             {
                 // put directly to section
-                uint64_t value;
                 cxuint sectionId;
                 if (expr->evaluate(asmr, value, sectionId))
                 {

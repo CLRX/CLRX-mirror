@@ -512,6 +512,7 @@ private:
     { return currentInputFilter->translatePos(pos); }
     
     bool parseLiteral(uint64_t& value, const char*& linePtr);
+    bool parseLiteralNoError(uint64_t& value, const char*& linePtr);
     bool parseString(std::string& outString, const char*& linePtr);
     
     enum class ParseState

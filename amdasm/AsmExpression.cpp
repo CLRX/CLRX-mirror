@@ -1576,3 +1576,76 @@ size_t AsmExpression::toTop(size_t opIndex) const
     }
     return opIndex;
 }
+
+static const uint32_t acceptedCharsAfterFastExpr =
+    (1U<<('!'-32)) | (1U<<('%'-32)) | (1U<<('&'-32)) | (1U<<('*'-32)) | (1U<<('!'-32)) |
+        (1U<<('+'-32)) | (1U<<('-'-32)) | (1U<<('/'-32)) | (1U<<('<'-32)) |
+        (1U<<('='-32)) | (1U<<('>'-32)) | (1U<<('?'-32));
+
+bool AsmExpression::fastExprEvaluate(Assembler& assembler, const char*& linePtr,
+                        uint64_t& value)
+{
+    const char* end = assembler.line + assembler.lineSize;
+    uint64_t sum = 0;
+    bool addition = true;
+    const char* tmpLinePtr = linePtr;
+    skipSpacesToEnd(tmpLinePtr, end);
+    // check first operator '+' or '-'
+    if (tmpLinePtr!=end)
+    {
+        if (*tmpLinePtr=='+' || *tmpLinePtr=='-')
+        {
+            addition = (*tmpLinePtr=='+');
+            skipCharAndSpacesToEnd(tmpLinePtr, end);
+        }
+    }
+    else
+        return false;
+    
+    // main loop
+    while (true)
+    {
+        uint64_t tmp = 0;
+        if (!isDigit(*tmpLinePtr) && *tmpLinePtr!='\'')
+            return false;
+        if (!assembler.parseLiteralNoError(tmp, tmpLinePtr))
+            return false;
+        if (tmpLinePtr!=end && (*tmpLinePtr=='f' || *tmpLinePtr=='b'))
+        {   // if local label
+            const char* t = tmpLinePtr-1;
+            while (t!=linePtr-1 && isDigit(*t)) t--;
+            if (t==linePtr-1 || isSpace(*t)) // if local label
+                return false;
+        }
+        // add or subtract
+        sum += addition ? tmp : -tmp;
+        // skip to next '+' or '-'
+        skipSpacesToEnd(tmpLinePtr, end);
+        if (tmpLinePtr==end || (*tmpLinePtr!='+' && *tmpLinePtr!='-'))
+            break; // end
+        // otherwise we continue
+        addition = (*tmpLinePtr=='+');
+        skipCharAndSpacesToEnd(tmpLinePtr, end);
+    }
+    if (tmpLinePtr==end ||
+        // check whether is not other operator
+        (*tmpLinePtr!='~' && *tmpLinePtr!='^' && *tmpLinePtr!='|' &&
+        (*tmpLinePtr<32 || *tmpLinePtr>=64 ||
+        // check whether is not other operator (by checking rest of characters)
+        ((1U<<(*tmpLinePtr-32)) & acceptedCharsAfterFastExpr)==0)))
+    {
+        value = sum;
+        linePtr = tmpLinePtr;
+        return true;
+    }
+    return false;
+}
+
+bool AsmExpression::fastExprEvaluate(Assembler& assembler, size_t& linePos,
+                        uint64_t& value)
+{
+    const char* linePtr = assembler.line + linePos;
+    bool res = fastExprEvaluate(assembler, linePtr, value);
+    linePos = linePtr - assembler.line;
+    return res;
+}

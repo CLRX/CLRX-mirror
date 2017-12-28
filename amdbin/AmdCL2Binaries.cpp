@@ -752,6 +752,7 @@ struct CLRX_INTERNAL CL2GPUDeviceCodeEntry
 
 // tables with GPU device codes for specific driver version
 // for almost cases are matches.
+// IMPORTANT: gpu device code tables must be sorted by elfflag
 
 /* 1912.05 driver device table list */
 static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[] =
@@ -892,9 +893,9 @@ static const CL2GPUDeviceCodeEntry cl2_2442GpuDeviceCodeTable[] =
     { 13, GPUDeviceType::FIJI },
     { 14, GPUDeviceType::STONEY },
     { 15, GPUDeviceType::BAFFIN },
-    { 18, GPUDeviceType::ELLESMERE },
-    { 18, GPUDeviceType::GFX804 },
+    { 16, GPUDeviceType::ELLESMERE },
     { 17, GPUDeviceType::GFX900 },
+    { 18, GPUDeviceType::GFX804 },
     { 19, GPUDeviceType::GFX901 }
 };
 
@@ -913,8 +914,8 @@ static const CL2GPUDeviceCodeEntry cl2_2482GpuDeviceCodeTable[] =
     { 14, GPUDeviceType::STONEY },
     { 16, GPUDeviceType::BAFFIN },
     { 18, GPUDeviceType::ELLESMERE },
-    { 20, GPUDeviceType::GFX804 },
     { 19, GPUDeviceType::GFX900 },
+    { 20, GPUDeviceType::GFX804 },
     { 21, GPUDeviceType::GFX901 }
 };
 
@@ -933,8 +934,8 @@ static const CL2GPUDeviceCodeEntry cl2_2527GpuDeviceCodeTable[] =
     { 14, GPUDeviceType::STONEY },
     { 16, GPUDeviceType::BAFFIN },
     { 18, GPUDeviceType::ELLESMERE },
-    { 21, GPUDeviceType::GFX804 },
     { 20, GPUDeviceType::GFX900 },
+    { 21, GPUDeviceType::GFX804 },
     { 23, GPUDeviceType::GFX901 },
     { 24, GPUDeviceType::GFX902 },
     { 25, GPUDeviceType::GFX903 },
