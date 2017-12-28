@@ -147,9 +147,9 @@ static void innerBinaryGetScratchRelocs(const GalliumElfBinary& binary,
                 scratchRSRCDword1Sym = symIndex;
             
             if (scratchRSRCDword0Sym == symIndex)
-                scratchRelocs[j++] = { ULEV(rel.r_offset), RELTYPE_LOW_32BIT };
+                scratchRelocs[j++] = { size_t(ULEV(rel.r_offset)), RELTYPE_LOW_32BIT };
             else if (scratchRSRCDword1Sym == symIndex)
-                scratchRelocs[j++] = { ULEV(rel.r_offset), RELTYPE_HIGH_32BIT };
+                scratchRelocs[j++] = { size_t(ULEV(rel.r_offset)), RELTYPE_HIGH_32BIT };
         }
         // final resizing
         scratchRelocs.resize(j);
