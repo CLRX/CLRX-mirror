@@ -268,7 +268,7 @@ VDST = REVBIT(SRC0)
 Opcode VOP1: 69 (0x45) for GCN 1.2  
 Opcode VOP3A: 389 (0x185) for GCN 1.2  
 Syntax: V_CEIL_F16 VDST, SRC0  
-Description: Truncate half floating point valu from SRC0 with rounding to positive infinity
+Description: Truncate half floating point value from SRC0 with rounding to positive infinity
 (ceilling), and store result to VDST. Implemented by flooring.
 If SRC0 is infinity or NaN then copy SRC0 to VDST.  
 Operation:  
@@ -284,7 +284,7 @@ VDST = F
 Opcode VOP1: 34 (0x22) for GCN 1.0/1.1; 29 (0x1d) for GCN 1.2  
 Opcode VOP3A: 418 (0x1a2) for GCN 1.0/1.1; 349 (0x15d) for GCN 1.2  
 Syntax: V_CEIL_F32 VDST, SRC0  
-Description: Truncate floating point valu from SRC0 with rounding to positive infinity
+Description: Truncate floating point value from SRC0 with rounding to positive infinity
 (ceilling), and store result to VDST. Implemented by flooring.
 If SRC0 is infinity or NaN then copy SRC0 to VDST.  
 Operation:  
@@ -300,7 +300,7 @@ VDST = F
 Opcode VOP1: 24 (0x18) for GCN 1.1/1.2  
 Opcode VOP3A: 408 (0x198) for GCN 1.1; 344 (0x158) for GCN 1.2  
 Syntax: V_CEIL_F64 VDST(2), SRC0(2)  
-Description: Truncate double floating point valu from SRC0 with rounding to
+Description: Truncate double floating point value from SRC0 with rounding to
 positive infinity (ceilling), and store result to VDST. Implemented by flooring.
 If SRC0 is infinity or NaN then copy SRC0 to VDST.  
 Operation:  
@@ -968,7 +968,7 @@ else
 Opcode VOP1: 38 (0x26) for GCN 1.0/1.1  
 Opcode VOP3A: 422 (0x1a6) for GCN 1.0/1.1  
 Syntax: V_LOG_CLAMP_F32 VDST, SRC0  
-Description: Approximate logarithm of base 2 from floating point value SRC0 with
+Description: Approximate logarithm of the base 2 from floating point value SRC0 with
 clamping infinities to -MAX_FLOAT. Result is stored in VDST.
 If SRC0 is negative then store -NaN to VDST. This instruction doesn't handle denormalized
 values regardless FLOAT MODE register setup.  
@@ -992,8 +992,8 @@ else
 Opcode VOP1: 64 (0x40) for GCN 1.2  
 Opcode VOP3A: 384 (0x180) for GCN 1.2  
 Syntax: V_LOG_F16 VDST, SRC0  
-Description: Approximate logarithm of base 2 from half floating point value SRC0, and store
-result to VDST. If SRC0 is negative then store -NaN to VDST.  
+Description: Approximate logarithm of the base 2 from half floating point value SRC0,
+and store result to VDST. If SRC0 is negative then store -NaN to VDST.  
 Operation:  
 ```
 HALF F = ASHALF(SRC0)
@@ -1010,7 +1010,7 @@ else
 Opcode VOP1: 39 (0x27) for GCN 1.0/1.1; 33 (0x21) for GCN 1.2  
 Opcode VOP3A: 423 (0x1a7) for GCN 1.0/1.1; 353 (0x161) for GCN 1.2  
 Syntax: V_LOG_F32 VDST, SRC0  
-Description: Approximate logarithm of base 2 from floating point value SRC0, and store
+Description: Approximate logarithm of base the 2 from floating point value SRC0, and store
 result to VDST. If SRC0 is negative then store -NaN to VDST.
 This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.  
 Operation:  
@@ -1029,7 +1029,7 @@ else
 Opcode VOP1: 69 (0x45) for GCN 1.1; 76 (0x4c) for GCN 1.2  
 Opcode VOP3A: 453 (0x1c5) for GCN 1.1; 396 (0x18c) for GCN 1.2  
 Syntax: V_LOG_LEGACY_F32 VDST, SRC0  
-Description: Approximate logarithm of base 2 from floating point value SRC0, and store
+Description: Approximate logarithm of the base 2 from floating point value SRC0, and store
 result to VDST. If SRC0 is negative then store -NaN to VDST.
 This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.
 This instruction returns slightly different results than V_LOG_F32.  

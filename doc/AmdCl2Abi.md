@@ -2,7 +2,7 @@
 
 This chapter describes how kernel gets its argument, how access to constant data. Because
 Kernel setup is AMD HSA configuration, hence we recommend to refer to ROCm-ABI documentation
-to get information about kernel setup and kernel arguments passing. Now assembler have
+to get information about kernel setup and kernel arguments passing. Now an assembler have
 all the AMD HSA configuration's pseudo-ops to do it.
 
 In this chapter, size is given in dwords. Dword is 4-byte value.
@@ -18,7 +18,7 @@ to user data registers.
 * useenqueue - enable enqueue mechanism support
 * usegeneric - enable generic pointers support
 
-Number of user data registers depends on set of an enabled features. Following rules will
+The number of user data registers depends on set of an enabled features. Following rules will
 be applied:
 
 * if no feature enabled only 4 user data registers will be used.
@@ -54,11 +54,11 @@ First argument are setup arguments.
 * void* vqueue_pointer - 32-bit or 64-bit
 * void* aqlwrap_pointer - 32-bit or 64-bit
 
-Further arguments in that buffer are an user arguments defined for kernel. Any pointer,
+Further arguments in that buffer are an user arguments defined for a kernel. Any pointer,
 command queue, image, sampler, structure tooks 8 bytes (64-bit pointer) or
 4 bytes (32-bit pointer) in 32-bit AMD OpenCL 2.0.
 3 component vector tooks number of bytes  of 4 element vector.
-Smaller types likes (char, short) tooks 1-3 bytes. Alignment depends on same type
+Smaller types likes (char, short) tooks 1-3 bytes. An alignment depends on same type
 or type of element (for vectors).
 
 For 64-bit AMD OpenCL 2.0 all setup arguments and pointers are 64-bit.

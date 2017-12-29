@@ -6,7 +6,7 @@ In this chapter, size is given in dwords. Dword is 4-byte value.
 
 ### User data classes
 
-User data is stored in first scalar registers. Data class indicates what data are stored.
+User data is stored in first scalar registers. Data class indicates what a data are stored.
 Following data classes:
 
 * IMM_RESOURCE - data for read_only image descriptors. ApiSlot determines uavid.
@@ -62,7 +62,7 @@ First const buffer (id=0) holds:
 
 Second const buffer (id=1) holds arguments aligned to 4 dwords.
 
-Global pointers holds vector offset (64-bit for 64-bit binary) to memory.
+Global pointers holds vector offset (64-bit for 64-bit binary) to the memory.
 Local pointers holds its offset in bytes (1 dword).
 
 ### Image arguments

@@ -1,11 +1,11 @@
 ### Operand encoding
 
 The GCN1.0/1.1 delivers maximum 104 registers (with VCC). Basic list of destination
-scalar operands have 128 entries. Source operands codes is in range 0-255.
+scalar operands have 128 entries. The source operands codes is in range 0-255.
 
 **Important**: Two SGPR's must be aligned to 2. Four or more SGPR's must be aligned to 4.
-This rule do not apply to vector instruction where is more complex rule:
-SGPR's can be unaligned only if SGPR register range do not cross line (4 SGPR registers).
+This rule do not apply to the vector instruction where is more complex rule:
+SGPR's can be unaligned only if SGPR register range do not cross a line (4 SGPR registers).
 
 Following list describes all operand codes values:
 
@@ -69,15 +69,16 @@ Code     | Name              | Description
 
 ### Operand syntax
 
-Single operands can be given by their name: `s0`, `v54`. CLRX assemblers accepts syntax with
+THe Single operands can be given by their name: `s0`, `v54`.
+CLRX assembler accepts the syntax with
 brackets: `s[0]`, `s[z]`, `v[66]`. In many instructions operands are
 64-bit, 96-bit or even 128-bit. These operands consists several registers that can be
 expressed by ranges: `v[3:4]`, `s[8:11]`, `s[16:23]`, where second value is
 last register's number.
 
-Names of the registers are case-insensitive.
+The names of the registers are case-insensitive.
 
-Constant values are automatically resolved if expression have already value.
+The constant values are automatically resolved if an expression have already value.
 The 1/(2*PI), 1.0, -2.0 and other floating point constant values will be
 resolved if that accurate floating point value will be given.
 
