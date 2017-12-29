@@ -5,7 +5,7 @@
 1. About project.
 
 Currently, main goal is low-level development tools for Radeon GPU's based on
-the GCN 1.0/1.1/1.2/1.4 (AMD VEGA) architecture likes assembler, disassembler, optionally
+GCN 1.0/1.1/1.2/1.4 (AMD VEGA) architecture likes assembler, disassembler, optionally
 linker. These utilities will be designed to be compatible with AMD Catalyst
 drivers and an open-source Gallium drivers.
 CLRadeonExtender doesn't require AMD Catalyst drivers and any other drivers
@@ -20,19 +20,19 @@ Text of the license is in the COPYING, COPYING.LIB and COPYING.DOC files
 
 CLRadeonExtender provides two tools:
 
-* clrxasm - an GCN assembler (compatible with GNU as).
-* clrxdisasm - an GCN disassembler
+* clrxasm - GCN assembler (compatible with GNU as).
+* clrxdisasm - GCN disassembler
 
-Currently, these tools can handle the AMD Catalyst OpenCL binaries,
-the GalliumCompute binaries, AMD OpenCL 2.0 binaries and ROCm binaries.
+Currently, these tools can handle AMD Catalyst OpenCL binaries,
+GalliumCompute binaries, AMD OpenCL 2.0 binaries and ROCm binaries.
 
 4. Documentation
 
-Currently, the Doxygen documentation and onlint CLRX documentation available.
+Currently, Doxygen documentation and onlint CLRX documentation available.
 
 5. Installation
 
-Read the INSTALL file.
+Read INSTALL file.
 
 6. Usage of libraries in binaries
 

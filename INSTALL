@@ -5,8 +5,8 @@
 1. Installation prerequisities.
 
 CLRadeonExtender doesn't require many libraries and dependencies.
-It can be installed on the 32-bit/64-bit machines.
-Currently, the OpenCL support for AMD Catalyst (for the OpenCL applications)
+It can be installed on 32-bit/64-bit machines.
+Currently, OpenCL support for AMD Catalyst (for the OpenCL applications)
 is disabled by default (enablement is not recommended in current development
 stage).
 
@@ -25,7 +25,7 @@ behaviour) requires:
 * OpenCL ICD (for example from AMD Catalyst driver)
 * AMD Catalyst driver.
 
-These utilities is working with an OpenCL kernel binaries compiled for the
+These utilities is working with an OpenCL kernel binaries compiled for
 Radeon GPU's based on GCN 1.0/1.1/1.2 architecture. Any binaries compiled
 for older Radeons (VLIW architecture) has not been handled.
 
@@ -83,7 +83,7 @@ Installation is easy. Just run command:
   
 4. clwrapper
 
-CLWrapper integrates the CLRX assembler with the AMD Catalyst driver by using
+CLWrapper integrates CLRX assembler with AMD Catalyst driver by using
 wrapper mechanism and embeds an assembler to AMD OpenCL implementation.
 Building an assembler programs will be possible by passing an '-xasm' option which
 should be appended to build options, like following example:
@@ -99,8 +99,8 @@ Create the 'clrx.icd' file on /etc/OpenCL/vendors/ with content: 'libCLRXWrapper
 That's all. Now you can call an assembler through clBuildProgram on your applications.
 
 Important Attention: CLWrapper make some changes on the program environment and changes
-behaviour of the OpenCL routines. This is still an experimental stuff and
-we recommend to not using its on the deployed/production systems.
+behaviour of OpenCL routines. This is still an experimental stuff and
+we recommend to not using its on deployed/production systems.
 
 DO NOT FORGET to revert these changes before uninstallation.
 
