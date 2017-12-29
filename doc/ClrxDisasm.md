@@ -117,7 +117,7 @@ for compatibility.
 
 `clrxdisasm` prints a disassembled code to standard output and errors to
 standard error output. `clrxdisasm` returns 0 if succeeded, otherwise it returns 1
-and prints an error messages to stderr
+and prints the error messages to stderr
     
 ### Sample usage
 

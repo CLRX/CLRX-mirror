@@ -137,5 +137,5 @@ shared library.
 
 An assembler generates single output binary. If no output specified an assembler will
 generate `a.out` binary file. `clrxasm` returns 0 if succeeded, otherwise
-it returns 1 and prints an error messages to stderr.
+it returns 1 and prints the error messages to stderr.
 

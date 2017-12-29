@@ -25,13 +25,13 @@ behaviour) requires:
 * OpenCL ICD (for example from AMD Catalyst driver)
 * AMD Catalyst driver.
 
-These utilities is working with an OpenCL kernel binaries compiled for the
+These utilities is working with the OpenCL kernel binaries compiled for the
 Radeon GPU's based on GCN 1.0/1.1/1.2 architecture. Any binaries compiled
 for older Radeons (VLIW architecture) has not been handled.
 
 2. Compilation
 
-To build system you should create a build directory in source code package:
+To build system you should create the build directory in source code package:
 
   mkdir build
 
@@ -99,14 +99,14 @@ Create the 'clrx.icd' file on /etc/OpenCL/vendors/ with content: 'libCLRXWrapper
 That's all. Now you can call an assembler through clBuildProgram on your applications.
 
 Important Attention: CLWrapper make some changes on the program environment and changes
-behaviour of the OpenCL routines. This is still an experimental stuff and
+behaviour of the OpenCL routines. This is still the experimental stuff and
 we recommend to not using its on the deployed/production systems.
 
 DO NOT FORGET to revert these changes before uninstallation.
 
 5. Uninstallation
 
-In a build directory is a 'install_manifest.txt' file that contains all installed files.
+In the build directory is the 'install_manifest.txt' file that contains all installed files.
 You can remove these files by using command:
 
   rm -f `cat install_manifest.txt`

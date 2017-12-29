@@ -83,7 +83,7 @@ The 1/(2*PI), 1.0, -2.0 and other floating point constant values will be
 resolved if that accurate floating point value will be given.
 
 In instruction syntax, operands are listed by name of the encoding field. Optionally, in
-parentheses is given number of the registers. The ranges of number of a registers are in
+parentheses is given number of the registers. The ranges of number of registers are in
 form 'START:LAST'. Example:
 
 Syntax: S_SUB_I32 SDST, SSRC0, SSRC1  

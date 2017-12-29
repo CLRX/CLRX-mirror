@@ -148,7 +148,7 @@ Example of 'usings':
 ```
 
 The names of the object can have the scope path. Scope path is way to particular scope in
-tree. If searching scope should start from global scope, an scope path should be begins
+tree. If searching scope should start from global scope, a scope path should be begins
 from `::`. The `::` is separator (likes `/` in file system path) for path elements.
 
 ```

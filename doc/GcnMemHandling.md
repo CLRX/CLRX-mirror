@@ -167,7 +167,7 @@ The hardware checks range for buffer resources with STRIDE=0 in following way:
 if BUFOFFSET >= NUMRECORDS-SGPR_OFFSET then an address is out of range.
 For STRIDE!=0 if AINDEX >= NUMRECORDS or OFFSET >= STRIDE when IDXEN or
 TID_ENABLE is set, then an address is out of range. Reads are zero and writes are ignored
-for an addresses out of range.
+for addresses out of range.
 
 For 32-bit and wider operations, an address are aligned to 4 bytes.
 For 16-bit operations, an address are aligned to 2 bytes.
@@ -408,7 +408,7 @@ The main addressing rules for the images are defined by the tiling registers.
 The TILINGINDEX choose what register control addressing of image. Index 8 (by default)
 choose the linear access. In the most cases images are splitted into the tiles which
 organizes image's data in efficient manner for GPU memory subsystem. Unfortunatelly,
-the fields of a tiling registers and their meanigful are not known (for me).
+the fields of the tiling registers and their meanigful are not known (for me).
 
 The address of image's pixel is stored in VADDR registers. Number of used registers and
 data type depends on the instruction type and image type. Following table describes
@@ -451,7 +451,7 @@ Image dimensions | Comp. 0 | Comp. 1 | Comp. 2 | Comp. 3 | Comp. 4 | Comp. 5
 * clamp - for IMAGE_*_CL - clamp
 * lod - for IMAGE_*_L - LOD
 
-The LOD (Level of details) parameter choose MIPMAP: just a LOD reflects mipmap index.
+The LOD (Level of details) parameter choose MIPMAP: just the LOD reflects mipmap index.
 By default, LOD are calculated as maximum value of image's MIN_LOD and sampler's MIN_LOD.
 The linear MIP filtering get value from two nearest mipmaps to choosen LOD.
 
