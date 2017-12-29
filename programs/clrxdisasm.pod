@@ -13,13 +13,13 @@ clrxdisasm [-mdcCfsHhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--
 
 =head1 DESCRIPTION
 
-This is CLRadeonExtender utility to disassemble Radeon GPU code.
+This is CLRadeonExtender utility to disassemble the Radeon GPU code.
 This disassembler can disassemble code for GCN 1.0/1.1/1.2/1.4 (AMD VEGA)
-architectures, but not for VLIW architecture.
+architectures, but not for the VLIW architecture.
 
-Disassembler can handle AMD Catalyst(tm) OpenCL(tm) kernel binaries and the
+Disassembler can handle the AMD Catalyst(tm) OpenCL(tm) kernel binaries and the
 GalliumCompute kernel binaries. It displays instructions of the code and optionally
-structure of binaries (kernels and their configuration). Output of that program
+structure of the binaries (kernels and their configuration). Output of that program
 can be used as input to the CLRX assembler if option '--all' will be used.
 
 =head1 OPTIONS
@@ -30,15 +30,15 @@ Following options clrxdisasm can recognize:
 
 =item B<-m>, B<--metadata>
 
-Print metadata from AMD Catalyst binaries to output. For AMD Catalyst binaries,
-disassembler prints internal metadata. For GalliumCompute binaries disassembler
+Print metadata from AMD Catalyst binaries to output. For a AMD Catalyst binaries,
+disassembler prints internal metadata. For a GalliumCompute binaries disassembler
 prints argument of the kernel and proginfo entries.
 
 =item B<-d>, B<--data>
 
 Print data section from binaries. For AMD Catalyst binaries disassembler prints
 global constant data, and '.data' section for particular kernel executables.
-For GalliumCompute binaries disassembler prints global constant data.
+For GalliumCompute binaries disassembler prints a global constant data.
 
 =item B<-c>, B<--calNotes>
 
@@ -59,7 +59,7 @@ Print AMD OpenCL 2.0 kernel setup configuration as AMD HSA configuration.
 =item B<-f>, B<--float>
 
 Print floating point literals in instructions if instructions accept float point values
-and their has constant literal. Floating point values will be inside comment.
+and their has a constant literal. Floating point values will be inside comment.
 
 =item B<-h>, B<--hexcode>
 
@@ -107,7 +107,7 @@ Choose old and buggy floating point literals rules (to 0.1.2 version) for compat
 
 =item B<-?>, B<--help>
 
-Print help and list of options.
+Print help and list of the options.
 
 =item B<--usage>
 

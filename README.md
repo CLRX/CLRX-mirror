@@ -4,7 +4,7 @@ This is mirror of the CLRadeonExtender project.
 
 Original site is here [http://clrx.nativeboinc.org](http://clrx.nativeboinc.org).
 
-CLRadeonExtender provides tools to develop software in low-level for Radeon GPU's
+CLRadeonExtender provides tools to develop software in low-level for the Radeon GPU's
 compatible with GCN 1.0/1.1/1.2/1.4 (AMD VEGA) architecture.
 Currently, this project have two tools
 to develop that software:
@@ -137,7 +137,7 @@ Usage of the clrxdisasm:
 clrxdisasm [options] [file ...]
 ```
 
-and clrxdisasm will print disassembled code to standard output.
+and clrxdisasm will print a disassembled code to standard output.
 
 Useful options for clrxdisasm:
 
