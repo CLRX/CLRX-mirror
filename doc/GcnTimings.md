@@ -53,16 +53,16 @@ Aligmnent Rules for 2-dword instructions (GCN 1.0/1.1):
 * program divided by in 32-byte blocks
 * only the first 3 dwords in the 32-byte block incur no penalty. Any 2-dword
 instruction outside these first 3 dwords adds a single penalty.
-* if instructions is longer (more than four cycles) then last cycles/4 dwords are free
+* if the instructions is longer (more than four cycles) then the last cycles/4 dwords are free
 * if 16 or more cycle 2-dword instruction and 2-dword instruction in 4 dword, then there is
-no penalty for second 2-dword instruction.
-* best place to jump is 5 first dwords in 32-byte block. Jump to rest of dwords causes
-1-3 penalties, depending on number of dwords (N-4, where N is a dword number). This rule
+no penalty for the second 2-dword instruction.
+* best place to jump is the 5 first dwords in the 32-byte block. Jump to rest of the dwords causes
+1-3 penalties, depending on number of dwords (N-4, where N is the dword number). This rule
 does not apply to backward jumps (???)
-* any conditional jump instruction should be in first half of 32-byte block, otherwise
+* any conditional jump instruction should be in first half of the 32-byte block, otherwise
 1-4 penalties are added if jump is not taken, depending on dword number (N-3, where N is dword number).
 
-IMPORTANT: If the occupancy is greater than 1 wave per compute unit, then penalties,
+IMPORTANT: If the occupancy is greater than 1 wave per compute unit, then the penalties,
 branches, and scalar instructions will be masked while executing
 more waves than 4\*CUs. For best results is recommended to execute many waves
 (multiple of 4\*CUs) with occupancy greater than 1.
@@ -401,8 +401,8 @@ Timings of DS instructions are in this table:
  DS_XOR_SRC2_B64        | 8      | 1/8
 
 About bank conflicts: The LDS memory is partitioned in 32 banks. The bank number is in
-bits 2-6 of the address. A bank conflict occurs when two addresses hit same
-bank, but addresses are different starting from 7bit
+bits 2-6 of the address. A bank conflict occurs when two addresses hit the same
+bank, but the addresses are different starting from the 7bit
 (the first 2 bits of the address doesn't matter).
 Any bank conflict adds penalty to timing and throughput. In the worst case, the throughput
 can be not greater 1/32 requests per cycle.

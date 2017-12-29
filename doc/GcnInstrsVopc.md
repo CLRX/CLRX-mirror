@@ -79,7 +79,7 @@ Unaligned pairs of SGPRs are allowed in source and destination operands.
 
 VOPC opcodes (0-255) and VOP3 opcodes are same.
 
-NOTE: Bits for inactive threads in 64-bit scalar destination
+NOTE: Bits for inactive threads in the 64-bit scalar destination
 (VCC or pair of SGPRs) are always zeroed.
 
 ### Tables of opcodes and their descriptions

@@ -50,7 +50,7 @@ SGPR is allowed
 source operands
 * only SRC0 can holds LDS_DIRECT
 
-List of instructions by opcode:
+List of the instructions by opcode:
 
  Opcode    | Mnemonic
 -----------|-----------------------------------

@@ -69,7 +69,7 @@ Code     | Name              | Description
 
 ### Operand syntax
 
-Single operands can be given by their name: `s0`, `v54`.
+THe Single operands can be given by their name: `s0`, `v54`.
 CLRX assembler accepts the syntax with
 brackets: `s[0]`, `s[z]`, `v[66]`. In many instructions operands are
 64-bit, 96-bit or even 128-bit. These operands consists several registers that can be
@@ -78,12 +78,12 @@ last register's number.
 
 The names of the registers are case-insensitive.
 
-Constant values are automatically resolved if an expression have already value.
+The constant values are automatically resolved if an expression have already value.
 The 1/(2*PI), 1.0, -2.0 and other floating point constant values will be
 resolved if that accurate floating point value will be given.
 
 In instruction syntax, operands are listed by name of the encoding field. Optionally, in
-parentheses is given number of the registers. The ranges of number of registers are in
+parentheses is given number of the registers. The ranges of number of a registers are in
 form 'START:LAST'. Example:
 
 Syntax: S_SUB_I32 SDST, SSRC0, SSRC1  

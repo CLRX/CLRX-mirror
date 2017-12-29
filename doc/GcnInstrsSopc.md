@@ -1,6 +1,6 @@
 ## GCN ISA SOPC instructions
 
-The basic encoding of SOPC instructions needs 4 bytes (dword). List of fields:
+The basic encoding of the SOPC instructions needs 4 bytes (dword). List of fields:
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -13,7 +13,7 @@ Syntax for almost instructions: INSTRUCTION SSRC0, SSRC1
 
 Example: s_cmp_eq_i32 s0, s1
 
-List of instructions by opcode:
+List of the instructions by opcode:
 
  Opcode     | Mnemonic (GCN1.0/1.1) | Mnemonic (GCN 1.2/1.4)
 ------------|----------------------|------------------------

@@ -81,7 +81,7 @@ source operands
 
 Unaligned pairs of SGPRs are allowed in source operands.
 
-List of instructions by opcode (GCN 1.0/1.1):
+List of the instructions by opcode (GCN 1.0/1.1):
 
  Opcode      | Mnemonic (GCN 1.0) | Mnemonic (GCN 1.1)
 -------------|--------------------|-----------------------------
@@ -142,7 +142,7 @@ List of instructions by opcode (GCN 1.0/1.1):
  374 (0x176) | --                 | V_MAD_U64_U32 (VOP3B)
  375 (0x177) | --                 | V_MAD_I64_I32 (VOP3B)
 
-List of instructions by opcode (GCN 1.2/1.4):
+List of the instructions by opcode (GCN 1.2/1.4):
 
  Opcode      | Mnemonic (GCN 1.2)      | Mnemonic (GCN 1.4)
 -------------|-------------------------|-------------------------

@@ -82,19 +82,19 @@ s_add_u32 s1,s2,lit(4.0)    # encode 4.0 as literal (two 32-bit words)
 
 ### Scopes
 
-New feature is the visibility's scopes. Scopes concerns symbols, labels
-(except local labels), regvars. Macros, kernels and sections are still global.
+New feature is the visibility's scopes. The scopes concerns symbols, labels
+(except local labels), regvars. The macros, kernels and sections are still global.
  At start, the assembler create the global scope, that
 is root of next defined scopes. The scope can be opened by using `.scope` pseudo-op and
 they can be closed by using `.ends` or `.endscope`. We distinguish scope to two types:
 normal and temporary scopes.
-Temporary scopes doesn't have name and they exists until first close.
+The temporary scopes doesn't have name and they exists until first close.
 
 If scope will be opened, any object in this scope will directly available (by simple name).
 Next available object is in used scopes (declared by `.using` pseudo-op)
 begins from last 'using' to 'first'.
 
-Scopes are organized in tree where global scope is root of tree.
+The scopes are organized in tree where global scope is root of tree.
 This feature, allow to nest scopes (even named scopes inside temporary scopes).
 During searching object, an assembler begins from
 top (current) scope and ends at global scope. In every scope, it is possible to
@@ -147,9 +147,9 @@ Example of 'usings':
 ::ala::sym2 = 7 # redefine sym2 in scope 'ala'
 ```
 
-Names of the object can have the scope path. Scope path is way to particular scope in
+The names of the object can have the scope path. Scope path is way to particular scope in
 tree. If searching scope should start from global scope, an scope path should be begins
-from `::`. `::` is separator (likes `/` in file system path) for path elements.
+from `::`. The `::` is separator (likes `/` in file system path) for path elements.
 
 ```
 sym1 = 9
@@ -166,7 +166,7 @@ sym1 = 9
 .ends
 ```
 
-Setting symbols, labels, if simple name is given (without scope path) always
+The setting symbols, labels, if simple name is given (without scope path) always
 create object in the current scope. Any call of object (even if not defined) always
 start searching through scope tree. It is possible to call to symbols
 in scope which doesn't already exists (just they will be created with object while calling).
@@ -196,7 +196,7 @@ Section is some part of the binary that contains some data. Type of the data dep
 type of the section. Main program code is in the `.text` section which holds
 program's instructions. Section `.rodata` holds read-only data (mainly constant data)
 that can be used by program. Section can be divided by type of the access.
-Most sections are writeable (any data can be put into them) and
+The most sections are writeable (any data can be put into them) and
 addressable (we can define symbols inside these sections or move forward).
 
 Absolute section is only addressable section. It can be used for defining structures.
@@ -229,7 +229,7 @@ Literal types:
 * string literals: `"ala ma kota", "some\n"
 
 For character literals and string literals, escape can be used to put special characters
-likes newline, tab. List of escapes:
+likes newline, tab. List of the escapes:
 
 Escape   |  Description    | Value
 :-------:|-----------------|-------------
@@ -246,16 +246,16 @@ Escape   |  Description    | Value
  `\aaa`  | Octal code      | Various
  `\HHH..`|Hexadecimal code | Various
 
-Floating point literals in instruction operands can have the suffix ('l', 'h' or 's').
+The floating point literals in instruction operands can have the suffix ('l', 'h' or 's').
 Suffix 's' indicates that given value is single floating point value.
 Suffix 'h' indicates that given value is half floating point value.
 Suffix 'l' indicates that given value is double floating point value.
 
 ### Expressions
 
-CLRX assembler get this same the operator ordering as in GNU as.
+The CLRX assembler get this same the operator ordering as in GNU as.
 CLRX assembler treat any literal or symbol's value as 64-bit integer value.
-List of operators:
+List of the operators:
 
 Type  | Operator | Order | Description
 ------|:--------:|:-----:|--------------------
@@ -301,7 +301,7 @@ right to left side.
 Symbol refering to some place can be added, subtracted, compared or negated if
 final result of the expression can be represented as place of the code or absolute value
 (without refering to any place). An assembler performs this same operations
-on sections during evaluating an expression. Division, modulo,
+on the sections during evaluating an expression. Division, modulo,
 binary operations (except negation), logical operations is not legal.
 
 ### Instruction operands

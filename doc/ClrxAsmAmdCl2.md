@@ -45,7 +45,7 @@ s_mov_b32       s15, (gdata+160)>>32
 s_mov_b32       s14, (gdata+160)&0xffffffff
 ```
 
-## Layout of source code
+## Layout of the source code
 
 The CLRX assembler allow to use one of two ways to configure kernel setup:
 for human (`.config`) and for quick recompilation (kernel setup, stub, metadata content).
@@ -57,7 +57,7 @@ Depend on configuration options, an assembler add VCC and FLAT_SCRATCH
 In HSA configuration mode, a special fields determines
 what extra SGPR extra has been added.
 
-## List of specific pseudo-operations
+## List of the specific pseudo-operations
 
 ### .acl_version
 

@@ -7,7 +7,7 @@ These instructions are untyped, and they get number/data format from an resource
 or that format are determined by operation (data format is not encoded in
 instruction's format). 
 
-List of fields for MUBUF encoding (GCN 1.0/1.1):
+List of fields for the MUBUF encoding (GCN 1.0/1.1):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -26,7 +26,7 @@ Bits  | Name     | Description
 55    | TFE      | Texture Fail Enable ???
 56-63 | SOFFSET  | Scalar base offset operand
 
-List of fields for MUBUF encoding (GCN 1.2/1.4):
+List of fields for the MUBUF encoding (GCN 1.2/1.4):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -57,7 +57,7 @@ and it decrements EXPCNT after reading data from VDATA.
 
 ### Instructions by opcode
 
-List of MUBUF instructions by opcode (GCN 1.0/1.1):
+List of the MUBUF instructions by opcode (GCN 1.0/1.1):
 
  Opcode     |GCN 1.0|GCN 1.1| Mnemonic
 ------------|-------|-------|------------------------------
@@ -120,7 +120,7 @@ List of MUBUF instructions by opcode (GCN 1.0/1.1):
  112 (0x70) |   ✓   |   ✓   | BUFFER_WBINVL1_SC
  113 (0x71) |   ✓   |   ✓   | BUFFER_WBINVL1
 
-List of MUBUF instructions by opcode (GCN 1.2/1.4):
+List of the MUBUF instructions by opcode (GCN 1.2/1.4):
 
  Opcode     |GCN 1.2|GCN 1.4| Mnemonic
 ------------|-------|-------|------------------------------

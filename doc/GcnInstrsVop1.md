@@ -90,7 +90,7 @@ Unaligned pairs of SGPRs are allowed in source operands.
 VOP1 opcodes (0-127) are reflected in VOP3 in range: 384-511 for GCN 1.0/1.1 or
 320-447 for GCN 1.2.
 
-List of instructions by opcode (GCN 1.0/1.1):
+List of the instructions by opcode (GCN 1.0/1.1):
 
  Opcode     | Opcode(VOP3)|GCN 1.0|GCN 1.1| Mnemonic
 ------------|-------------|-------|-------|-----------------------------
@@ -161,7 +161,7 @@ List of instructions by opcode (GCN 1.0/1.1):
  69 (0x45)  | 453 (0x1c5) |       |   ✓   | V_LOG_LEGACY_F32
  70 (0x46)  | 454 (0x1c6) |       |   ✓   | V_EXP_LEGACY_F32
 
-List of instructions by opcode (GCN 1.2/1.4):
+List of the instructions by opcode (GCN 1.2/1.4):
 
  Opcode     | Opcode(VOP3)| Mnemonic (GCN 1.2)  | Mnemonic (GCN 1.4)
 ------------|-------------|---------------------|------------------------
@@ -968,7 +968,7 @@ else
 Opcode VOP1: 38 (0x26) for GCN 1.0/1.1  
 Opcode VOP3A: 422 (0x1a6) for GCN 1.0/1.1  
 Syntax: V_LOG_CLAMP_F32 VDST, SRC0  
-Description: Approximate logarithm of base 2 from floating point value SRC0 with
+Description: Approximate logarithm of the base 2 from floating point value SRC0 with
 clamping infinities to -MAX_FLOAT. Result is stored in VDST.
 If SRC0 is negative then store -NaN to VDST. This instruction doesn't handle denormalized
 values regardless FLOAT MODE register setup.  
@@ -992,7 +992,7 @@ else
 Opcode VOP1: 64 (0x40) for GCN 1.2  
 Opcode VOP3A: 384 (0x180) for GCN 1.2  
 Syntax: V_LOG_F16 VDST, SRC0  
-Description: Approximate logarithm of base 2 from half floating point value SRC0,
+Description: Approximate logarithm of the base 2 from half floating point value SRC0,
 and store result to VDST. If SRC0 is negative then store -NaN to VDST.  
 Operation:  
 ```
@@ -1010,7 +1010,7 @@ else
 Opcode VOP1: 39 (0x27) for GCN 1.0/1.1; 33 (0x21) for GCN 1.2  
 Opcode VOP3A: 423 (0x1a7) for GCN 1.0/1.1; 353 (0x161) for GCN 1.2  
 Syntax: V_LOG_F32 VDST, SRC0  
-Description: Approximate logarithm of base 2 from floating point value SRC0, and store
+Description: Approximate logarithm of base the 2 from floating point value SRC0, and store
 result to VDST. If SRC0 is negative then store -NaN to VDST.
 This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.  
 Operation:  
@@ -1029,7 +1029,7 @@ else
 Opcode VOP1: 69 (0x45) for GCN 1.1; 76 (0x4c) for GCN 1.2  
 Opcode VOP3A: 453 (0x1c5) for GCN 1.1; 396 (0x18c) for GCN 1.2  
 Syntax: V_LOG_LEGACY_F32 VDST, SRC0  
-Description: Approximate logarithm of base 2 from floating point value SRC0, and store
+Description: Approximate logarithm of the base 2 from floating point value SRC0, and store
 result to VDST. If SRC0 is negative then store -NaN to VDST.
 This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.
 This instruction returns slightly different results than V_LOG_F32.  

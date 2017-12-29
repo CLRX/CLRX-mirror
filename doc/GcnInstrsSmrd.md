@@ -1,6 +1,6 @@
 ## GCN ISA SMRD instructions
 
-The basic encoding of SMRD instructions needs 4 bytes (dword). List of fields:
+The basic encoding of the SMRD instructions needs 4 bytes (dword). List of fields:
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -30,7 +30,7 @@ is `S_WAITCNT LGKMCNT(0)`.
 NOTE: Between setting third dword from buffer resource and S_BUFFER_* instruction
 is required least one instruction (vector or scalar) due to delay.
 
-List of instructions by opcode:
+List of the instructions by opcode:
 
  Opcode     | Mnemonic (GCN1.0)        | Mnemonic (GCN1.1)
 ------------|--------------------------|--------------------------
