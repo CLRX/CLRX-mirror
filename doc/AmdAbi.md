@@ -62,7 +62,7 @@ First const buffer (id=0) holds:
 
 Second const buffer (id=1) holds arguments aligned to 4 dwords.
 
-Global pointers holds vector offset (64-bit for 64-bit binary) to the memory.
+Global pointers holds vector offset (64-bit for 64-bit binary) to memory.
 Local pointers holds its offset in bytes (1 dword).
 
 ### Image arguments

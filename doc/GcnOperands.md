@@ -69,7 +69,7 @@ Code     | Name              | Description
 
 ### Operand syntax
 
-THe Single operands can be given by their name: `s0`, `v54`.
+Single operands can be given by their name: `s0`, `v54`.
 CLRX assembler accepts the syntax with
 brackets: `s[0]`, `s[z]`, `v[66]`. In many instructions operands are
 64-bit, 96-bit or even 128-bit. These operands consists several registers that can be
@@ -78,7 +78,7 @@ last register's number.
 
 The names of the registers are case-insensitive.
 
-The constant values are automatically resolved if an expression have already value.
+Constant values are automatically resolved if an expression have already value.
 The 1/(2*PI), 1.0, -2.0 and other floating point constant values will be
 resolved if that accurate floating point value will be given.
 
