@@ -2,7 +2,7 @@
 
 ### Encoding
 
-The basic encoding of the SOP2 instructions needs 4 bytes (dword). List of fields:
+The basic encoding of SOP2 instructions needs 4 bytes (dword). List of fields:
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -16,7 +16,7 @@ Syntax for almost instructions: INSTRUCTION SDST, SSRC0, SSRC1
 
 Example: s_and_b32 s0, s1, s2
 
-List of the instructions by opcode:
+List of instructions by opcode:
 
  Opcode     | Mnemonic (GCN1.0/1.1) | Mnemonic (GCN 1.2)  | Mnemonic (GCN 1.4)
 ------------|----------------------|----------------------|---------------------

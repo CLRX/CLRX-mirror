@@ -16,8 +16,8 @@ clrxasm [-6Swam?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
 =head1 DESCRIPTION
 
 This is CLRadeonExtender assembler. This assembler can assemble code for all Radeon GPU's
-that based on the GCN1.0/1.1/1.2 architecture and it can generate AMD Catalyst
-OpenCL binaries and the GalliumCompute OpenCL binaries. It is compatible with GNU assembler
+that based on GCN1.0/1.1/1.2 architecture and it can generate AMD Catalyst
+OpenCL binaries and GalliumCompute OpenCL binaries. It is compatible with GNU assembler
 and support the almost GNU assembler's pseudo-operations (directives) including macros and
 repetitions.
 
@@ -52,7 +52,7 @@ Assembler accepts following formats: 'amd', 'amdcl2', 'gallium', 'rocm', 'rawcod
 
 =item B<-6>, B<--64bit>
 
-Enable generating of the 64-bit binaries (only for AMD catalyst format).
+Enable generating of 64-bit binaries (only for AMD catalyst format).
 
 =item B<-g GPUDEVICE>, B<--gpuType=GPUDEVICE>
 
@@ -108,7 +108,7 @@ Do not ignore letter's case in macro names (by default is ignored).
 
 =item B<-?>, B<--help>
 
-Print help and list of the options.
+Print help and list of options.
 
 =item B<--usage>
 

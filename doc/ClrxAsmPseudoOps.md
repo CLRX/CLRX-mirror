@@ -5,7 +5,7 @@ This chapter lists and explains standard pseudo-operations.
 
 A CLRX assembler stores values greater than byte in the little-endian ordering.
 
-## List of the pseudo-operations
+## List of pseudo-operations
 
 ### .32bit
 

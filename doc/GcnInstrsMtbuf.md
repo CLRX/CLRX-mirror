@@ -5,7 +5,7 @@ operates on the buffer resources. The buffer resources are 4 dwords which holds 
 base address, buffer size, their structure and format of their data.
 The buffer data format are encoding in instructions (instructions are typed).
 
-List of fields for the MTBUF encoding (GCN 1.0/1.1):
+List of fields for MTBUF encoding (GCN 1.0/1.1):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -25,7 +25,7 @@ Bits  | Name     | Description
 55    | TFE      | Texture Fail Enable ???
 56-63 | SOFFSET  | Scalar base offset operand
 
-List of fields for the MTBUF encoding (GCN 1.2/1.4):
+List of fields for MTBUF encoding (GCN 1.2/1.4):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -57,7 +57,7 @@ and it decrements EXPCNT after reading data from VDATA.
 
 ### Instructions by opcode
 
-List of the MTBUF instructions by opcode:
+List of MTBUF instructions by opcode:
 
  Opcode     |GCN 1.0|GCN 1.1|GCN 1.2| Mnemonic
 ------------|-------|-------|-------|---------------------------

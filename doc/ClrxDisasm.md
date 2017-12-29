@@ -1,12 +1,12 @@
 ## CLRadeonExtender Disassembler
 
 The CLRadeonExtender provides a disassembler that can disassemble code
-for the Radeon GPU's based on the GCN 1.0/1.1/1.2/1.4 (AMD VEGA) architecture.
+for Radeon GPU's based on the GCN 1.0/1.1/1.2/1.4 (AMD VEGA) architecture.
 Program is called `clrxdisasm`.
 
 Disassembler can handle the AMD Catalyst(tm) OpenCL(tm) kernel binaries and the
 GalliumCompute kernel binaries. It displays instructions of the code and optionally
-structure of the binaries (kernels and their configuration). Output of that program
+structure of binaries (kernels and their configuration). Output of that program
 can be used as input to the CLRX assembler if option '--all' will be used.
 
 ### Invoking a disassembler
@@ -24,19 +24,19 @@ Following options `clrxdisasm` can recognize:
 
 * **<-m>**, **--metadata>**
 
-    Print metadata from AMD Catalyst binaries to output. For a AMD Catalyst binaries,
-disassembler prints internal metadata. For a GalliumCompute binaries disassembler
+    Print metadata from AMD Catalyst binaries to output. For AMD Catalyst binaries,
+disassembler prints internal metadata. For GalliumCompute binaries disassembler
 prints argument of the kernel and proginfo entries.
 
 * **-d**, **--data**
 
     Print data section from binaries. For AMD Catalyst binaries disassembler prints
 global constant data, and '.data' section for particular kernel executables.
-For GalliumCompute binaries disassembler prints a global constant data.
+For GalliumCompute binaries disassembler prints global constant data.
 
 * **-c**, **--calNotes**
 
-    Print list of the ATI CAL notes and their content from AMD Catalyst binaries to output.
+    Print list of ATI CAL notes and their content from AMD Catalyst binaries to output.
 
 * **-C**, **--config**
 
@@ -45,7 +45,7 @@ For GalliumCompute binaries disassembler prints a global constant data.
 * **-f**, **--float**
 
     Print floating point literals in instructions if instructions accept float point values
-and their has a constant literal. Floating point values will be inside comment.
+and their has constant literal. Floating point values will be inside comment.
 
 * **-h**, **--hexcode**
 
@@ -67,7 +67,7 @@ will be printed in 4-byte words.
 * **-r**, **--raw**
 
     Treat input as raw code. By default, disassembler assumes that input code is for
-the GCN1.0 architecture.
+GCN1.0 architecture.
 
 * **-g GPUDEVICE**, **--gpuType=GPUDEVICE**
 
@@ -103,7 +103,7 @@ for compatibility.
 
 * **-?**, **--help**
 
-    Print help and list of the options.
+    Print help and list of options.
 
 * **--usage**
 
@@ -115,13 +115,13 @@ for compatibility.
 
 ### Output
 
-`clrxdisasm` prints a disassembled code to standard output and errors to
+`clrxdisasm` prints disassembled code to standard output and errors to
 standard error output. `clrxdisasm` returns 0 if succeeded, otherwise it returns 1
 and prints an error messages to stderr
     
 ### Sample usage
 
-Below is sample usage of the `clrxdisasm`:
+Below is sample usage of `clrxdisasm`:
 
 ```
 clrxdisasm -a DCT.amd.0

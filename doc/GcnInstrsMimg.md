@@ -3,7 +3,7 @@
 These instructions allow to access to images. MIMG instructions
 operates on the image resources and on the sampler resources.
 
-List of fields for the MIMG encoding:
+List of fields for MIMG encoding:
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -36,7 +36,7 @@ and it decrements EXPCNT after reading data from VDATA.
 
 ### Instructions by opcode
 
-List of the MIMG instructions by opcode (GCN 1.0/1.1):
+List of MIMG instructions by opcode (GCN 1.0/1.1):
 
  Opcode     |GCN 1.0|GCN 1.1| Mnemonic
 ------------|-------|-------|---------------------------
@@ -134,7 +134,7 @@ List of the MIMG instructions by opcode (GCN 1.0/1.1):
  110 (0x6e) |   ✓   |   ✓   | IMAGE_SAMPLE_C_CD_O
  111 (0x6f) |   ✓   |   ✓   | IMAGE_SAMPLE_C_CD_CL_O
 
-List of the MIMG instructions by opcode (GCN 1.2/1.4):
+List of MIMG instructions by opcode (GCN 1.2/1.4):
 
  Opcode     | Mnemonic
 ------------|-----------------------

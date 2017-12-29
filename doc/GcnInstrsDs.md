@@ -2,7 +2,7 @@
 
 These instructions access to local or global data share (LDS/GDS) memory.
 
-List of fields for the DS encoding:
+List of fields for DS encoding:
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -33,7 +33,7 @@ that can be accessed by kernel, and a GDS base offset (in bytes) in bits 16-31.
 Any DS instruction return data in order (including DS_SWIZZLE_B32) and increments LGKM_CNT.
 Any operation increments LGKM by one, and decremented by one if it will be finished.
 
-List of the instructions by opcode (GCN 1.0/1.1):
+List of instructions by opcode (GCN 1.0/1.1):
 
  Opcode     |GCN 1.0|GCN 1.1| Mnemonic
 ------------|-------|-------|------------------------
@@ -178,7 +178,7 @@ List of the instructions by opcode (GCN 1.0/1.1):
  254 (0xfe) |       |   ✓   | DS_READ_B96
  255 (0xff) |       |   ✓   | DS_READ_B128
 
-List of the instructions by opcode (GCN 1.2/1.4):
+List of instructions by opcode (GCN 1.2/1.4):
 
  Opcode     |GCN 1.2|GCN 1.4| Mnemonic
 ------------|-------|-------|-----------------------------

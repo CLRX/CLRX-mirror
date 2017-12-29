@@ -1,6 +1,6 @@
 ## GCN ISA SOPK instructions
 
-The basic encoding of the SOPK instructions needs 4 bytes (dword). List of fields:
+The basic encoding of SOPK instructions needs 4 bytes (dword). List of fields:
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -15,7 +15,7 @@ SIMM16 - signed 16-bit immediate. IMM16 - unsigned 16-bit immediate.
 RELADDR - relative offset to this instruction (can be label or relative expresion).
 RELADDR = NEXTPC + SIMM16, NEXTPC - PC for next instruction.
 
-List of the instructions by opcode:
+List of instructions by opcode:
 
  Opcode     | Mnemonic (GCN1.0/1.1) | Mnemonic (GCN 1.2) | Mnemonic (GCN 1.4)
 ------------|----------------------|---------------------|-----------------------

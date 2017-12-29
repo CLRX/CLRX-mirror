@@ -18,7 +18,7 @@ like register usage, UAV usage, floating point setup.
 
 A `.data` section inside kernel is usable section and holds same zeroes.
 
-## Layout of the source code
+## Layout of source code
 
 The CLRX assembler allow to use one of two ways to configure kernel setup:
 for human (`.config`) and for quick recompilation (ATI CALNotes and the metadata string).
@@ -27,7 +27,7 @@ for human (`.config`) and for quick recompilation (ATI CALNotes and the metadata
 
 To used scalar registers, assembler add 2 additional registers for handling VCC.
 
-## List of the specific pseudo-operations
+## List of specific pseudo-operations
 
 ### .arg
 

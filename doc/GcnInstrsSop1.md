@@ -1,6 +1,6 @@
 ## GCN ISA SOP1 instructions
 
-The basic encoding of the SOP1 instructions needs 4 bytes (dword). List of fields:
+The basic encoding of SOP1 instructions needs 4 bytes (dword). List of fields:
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -13,7 +13,7 @@ Syntax for almost instructions: INSTRUCTION SDST, SSRC0
 
 Example: s_mov_b32 s0, s1
 
-List of the instructions by opcode:
+List of instructions by opcode:
 
  Opcode     | Mnemonic (GCN1.0/1.1) | Mnemonic (GCN 1.2)  | Mnemonic (GCN 1.4)
 ------------|----------------------|----------------------|------------------------

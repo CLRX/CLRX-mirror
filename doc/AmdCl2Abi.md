@@ -3,7 +3,7 @@
 This chapter describes how kernel gets its argument, how access to constant data. Because
 Kernel setup is AMD HSA configuration, hence we recommend to refer to ROCm-ABI documentation
 to get information about kernel setup and kernel arguments passing. Now, an assembler have
-all the AMD HSA configuration's pseudo-ops to do it.
+all AMD HSA configuration's pseudo-ops to do it.
 
 In this chapter, size is given in dwords. Dword is 4-byte value.
 

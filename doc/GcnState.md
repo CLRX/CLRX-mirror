@@ -37,7 +37,7 @@ First three vector registers holds local ids for each dimension.
 ### Scalar registers layout
 
 The user data registers hold execution setup (global offset, pointers, arguments pointers,
-the same arguments). User data can allow to pass any constant data to kernel from host.
+same arguments). User data can allow to pass any constant data to kernel from host.
 The register 1-5 bits of PGM_RSRC2 indicates how many first scalar registers hold user data.
 Further scalar registers store group id and it are different for every wavefront.
 Number of that registers determined from number of enabled dimensions (fields TGID_X_EN,

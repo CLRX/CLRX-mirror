@@ -4,7 +4,7 @@ These instructions allow to access to main memory, LDS and scratch buffer.
 FLAT instructions fetch address from 2 vector registers that hold 64-bit address.
 FLAT instructions presents only in GCN 1.1 or later architecture.
 
-List of fields for the FLAT encoding (GCN 1.1/1.2):
+List of fields for FLAT encoding (GCN 1.1/1.2):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -22,7 +22,7 @@ Bits  | Name     | Description
 55    | NV       | Non-Volatile (GCN 1.4)
 56-63 | VDST     | Vector destination register
 
-List of fields for the FLAT encoding (GCN 1.4):
+List of fields for FLAT encoding (GCN 1.4):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -71,7 +71,7 @@ For GLOBAL instruction VADDR have 2 registers if SADDR is OFF, otherwise VADDR h
 
 ### Instructions by opcode
 
-List of the FLAT instructions by opcode (GCN 1.1/1.2):
+List of FLAT instructions by opcode (GCN 1.1/1.2):
 
  Opcode     | Mnemonic (GCN1.1)      | Mnemonic (GCN1.2)
 ------------|------------------------|------------------------
@@ -154,7 +154,7 @@ List of the FLAT instructions by opcode (GCN 1.1/1.2):
  107 (0x6b) | --                     | FLAT_ATOMIC_INC_X2
  108 (0x6c) | --                     | FLAT_ATOMIC_DEC_X2
 
-List of the FLAT/GLOBAL/SCRATCH instructions by opcode (GCN 1.4):
+List of FLAT/GLOBAL/SCRATCH instructions by opcode (GCN 1.4):
 
  Opcode     | FLAT | GLOBAL | SCRATCH | Mnemonic
 ------------|------|--------|---------|------------------------

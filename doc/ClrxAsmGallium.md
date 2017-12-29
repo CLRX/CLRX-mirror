@@ -32,7 +32,7 @@ Assembler for GalliumCompute format counts all SGPR registers and add extra regi
 In AMDHSA configuration (LLVM >= 4.0.0) then special fields determines
 what extra SGPR extra has been added.
 
-## List of the specific pseudo-operations
+## List of specific pseudo-operations
 
 ### .arch_minor
 

@@ -1,6 +1,6 @@
 ## GCN ISA VOP2/VOP3 instructions
 
-VOP2 instructions can be encoded in the VOP2 encoding and the VOP3A/VOP3B encoding.
+VOP2 instructions can be encoded in VOP2 encoding and the VOP3A/VOP3B encoding.
 List of fields for VOP2 encoding:
 
 Bits  | Name     | Description
@@ -89,7 +89,7 @@ source operands
 Unaligned pairs of SGPRs are allowed in source and destination operands.
 
 VOP2 opcodes (0-63) are reflected in VOP3 in range: 256-319.
-List of the instructions by opcode:
+List of instructions by opcode:
 
  Opcode     | Opcode(VOP3)| Mnemonic (GCN1.0/1.1) | Mnemonic (GCN 1.2)
 ------------|-------------|----------------------|------------------------
@@ -146,7 +146,7 @@ List of the instructions by opcode:
  50 (0x32)  | 306 (0x132) | --                   | V_MIN_I16
  51 (0x33)  | 307 (0x133) | --                   | V_LDEXP_F16
 
-List of the instructions by opcode (GCN 1.4):
+List of instructions by opcode (GCN 1.4):
 
  Opcode     | Opcode(VOP3)| Mnemonic (GCN 1.4)
 ------------|-------------|------------------------

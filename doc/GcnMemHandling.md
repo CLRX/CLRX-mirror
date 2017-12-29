@@ -404,11 +404,11 @@ Code | Name          | Description
 
 ### Image addressing
 
-The main addressing rules for the images are defined by the tiling registers.
+The main addressing rules for images are defined by tiling registers.
 The TILINGINDEX choose what register control addressing of image. Index 8 (by default)
-choose the linear access. In the most cases images are splitted into the tiles which
+choose the linear access. In the most cases images are splitted into tiles which
 organizes image's data in efficient manner for GPU memory subsystem. Unfortunatelly,
-the fields of a tiling registers and their meanigful are not known (for me).
+fields of tiling registers and their meanigful are not known (for me).
 
 The address of image's pixel is stored in VADDR registers. Number of used registers and
 data type depends on the instruction type and image type. Following table describes
@@ -451,14 +451,14 @@ Image dimensions | Comp. 0 | Comp. 1 | Comp. 2 | Comp. 3 | Comp. 4 | Comp. 5
 * clamp - for IMAGE_*_CL - clamp
 * lod - for IMAGE_*_L - LOD
 
-The LOD (Level of details) parameter choose MIPMAP: just a LOD reflects mipmap index.
+The LOD (Level of details) parameter choose MIPMAP: just the LOD reflects mipmap index.
 By default, LOD are calculated as maximum value of image's MIN_LOD and sampler's MIN_LOD.
 The linear MIP filtering get value from two nearest mipmaps to choosen LOD.
 
 About accuracy: Threshold of coordinates for image's sampling are 1/256 of distance
 between pixels.
 
-The sampling of the mipmaps requires normalized coordinates.
+The sampling of mipmaps requires normalized coordinates.
 
 ### Flat addressing
 

@@ -90,7 +90,7 @@ Unaligned pairs of SGPRs are allowed in source operands.
 VOP1 opcodes (0-127) are reflected in VOP3 in range: 384-511 for GCN 1.0/1.1 or
 320-447 for GCN 1.2.
 
-List of the instructions by opcode (GCN 1.0/1.1):
+List of instructions by opcode (GCN 1.0/1.1):
 
  Opcode     | Opcode(VOP3)|GCN 1.0|GCN 1.1| Mnemonic
 ------------|-------------|-------|-------|-----------------------------
@@ -161,7 +161,7 @@ List of the instructions by opcode (GCN 1.0/1.1):
  69 (0x45)  | 453 (0x1c5) |       |   ✓   | V_LOG_LEGACY_F32
  70 (0x46)  | 454 (0x1c6) |       |   ✓   | V_EXP_LEGACY_F32
 
-List of the instructions by opcode (GCN 1.2/1.4):
+List of instructions by opcode (GCN 1.2/1.4):
 
  Opcode     | Opcode(VOP3)| Mnemonic (GCN 1.2)  | Mnemonic (GCN 1.4)
 ------------|-------------|---------------------|------------------------

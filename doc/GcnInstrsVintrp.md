@@ -24,7 +24,7 @@ Syntax: INSTRUCTION VDST, VSRC, ATTR{ATTR_NUM}.{ATTRCHAN}
 
 Attribute and attribute channel are case-insensitive.
 
-List of the instructions by opcode:
+List of instructions by opcode:
 
  Opcode      | Mnemonic
 -------------|-----------------------
@@ -39,7 +39,7 @@ The VINTRP instructions does the barycentric interpolation by using formulae:
 'I' and  'J' supplied in instruction source operand. P0, P10, and P20 are loaded from
 LDS (local memory).
 
-Initial configuration is specified in the M0 registers in form:
+Initial configuration is specified in M0 registers in form:
 
 * 0-15 bits - local memory offset
 * 16-30 bits - newprimmask - mask that specify what quad of lane process what primitive
