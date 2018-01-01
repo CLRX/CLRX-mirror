@@ -90,8 +90,8 @@ enum : AsmExprTargetType
 /// assembler expression operator
 enum class AsmExprOp : cxbyte
 {
-    ARG_VALUE = 0,  ///< absolute value
-    ARG_SYMBOL = 1,  ///< absolute symbol without defined value
+    ARG_VALUE = 0,  ///< value
+    ARG_SYMBOL = 1,  ///< symbol without defined value
     NEGATE = 2, ///< negation
     BIT_NOT,    ///< binary negation
     LOGICAL_NOT,    ///< logical negation

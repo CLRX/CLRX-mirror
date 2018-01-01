@@ -289,7 +289,7 @@ Binary|   >@     |   4   | Greater than (unsigned)
 Binary|   >=@    |   4   | Greater or equal (unsigned)
 Binary|   &&     |   5   | Logical AND
 Binary|dbl-vert-line|   5   | Logical OR
-Binary|   ?:     |   6   | Choice (this same as C++)
+Binary|   ?:     |   6   | Choice (this same as in C++)
 
 'vert-line' is `|`, and 'dbl-vert-line' is `||`.
 
