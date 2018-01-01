@@ -658,10 +658,12 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             imm16 = offset;
             // add codeflow entry
             if (good)
+            {
                 asmr.sections[asmr.currentSection].addCodeFlowEntry({ 
                     size_t(asmr.currentOutPos), size_t(value),
-                    (arch&ARCH_RXVEGA && gcnInsn.code1==21) ? AsmCodeFlowType::CALL :
+                    (isGCN14 && gcnInsn.code1==21) ? AsmCodeFlowType::CALL :
                             AsmCodeFlowType::CJUMP });
+            }
         }
     }
     else if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_SREG)
@@ -4033,7 +4035,11 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             uint16_t insnCode = ULEV(*reinterpret_cast<uint16_t*>(sectionData+offset+2));
             // add codeflow entry
             addCodeFlowEntry(sectionId, { size_t(offset), size_t(value),
-                    insnCode==0xbf82U ? AsmCodeFlowType::JUMP : AsmCodeFlowType::CJUMP });
+                    insnCode==0xbf82U ? AsmCodeFlowType::JUMP :
+                    // CALL from S_CALL_B64
+                    (((insnCode&0xff80)==0xba80 &&
+                            (curArchMask&ARCH_RXVEGA)!=0) ? AsmCodeFlowType::CALL :
+                                AsmCodeFlowType::CJUMP) });
             return true;
         }
         case GCNTGT_SMRDOFFSET:

@@ -111,7 +111,45 @@ label3: v_madak_f32 v3, v4, v6, 1.453
             { 60U, 80U, AsmCodeFlowType::CJUMP },
             { 64U, 80U, AsmCodeFlowType::CJUMP },
         }, true, ""
-    }
+    },
+    // RX VEGA (CALL)
+    {
+        R"ffDXD(.gpu gfx900
+        .text
+        v_mov_b32 v3, v1
+        v_mov_b32 v3, v2
+label1:
+        v_mov_b32 v3, v6
+label2:
+        v_mov_b32 v3, v2
+        v_mov_b32 v3, v2
+        s_branch label1
+        s_cbranch_vccz label1
+        s_cbranch_i_fork s[4:5], label1
+        s_nop 5
+        s_branch label2
+        s_cbranch_vccz label2
+        s_cbranch_i_fork s[6:7], label2
+        v_mov_b32 v5, v3
+        v_sub_f32 v6, v2, v1
+        s_call_b64 s[10:11], label2
+        s_call_b64 s[10:11], label3
+        s_cbranch_i_fork s[6:7], label3
+        v_nop; v_nop; v_nop
+label3: v_madak_f32 v3, v4, v6, 1.453
+)ffDXD",
+        {
+            { 20U, 8U, AsmCodeFlowType::JUMP },
+            { 24U, 8U, AsmCodeFlowType::CJUMP },
+            { 28U, 8U, AsmCodeFlowType::CJUMP },
+            { 36U, 12U, AsmCodeFlowType::JUMP },
+            { 40U, 12U, AsmCodeFlowType::CJUMP },
+            { 44U, 12U, AsmCodeFlowType::CJUMP },
+            { 56U, 12U, AsmCodeFlowType::CALL },
+            { 60U, 80U, AsmCodeFlowType::CALL },
+            { 64U, 80U, AsmCodeFlowType::CJUMP },
+        }, true, ""
+    },
 };
 
 struct AsmKernelData
