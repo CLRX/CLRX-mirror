@@ -299,6 +299,9 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
         case GCNFIELD_DPPSDWA_SSRC0:
             rstart = code2&0xff;
             break;
+        case GCNFIELD_SDWAB_SDST:
+            rstart = (code2>>8)&0x7f;
+            break;
         default:
             throw AsmException("Unknown GCNField");
     }
@@ -1671,7 +1674,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
             if (rvus[2].regField != ASMFIELD_NONE && src0Op.range.isNonVGPR())
                 rvus[2].regField = GCNFIELD_DPPSDWA_SSRC0;
-            if (rvus[3].regField != ASMFIELD_NONE)
+            if (rvus[3].regField != ASMFIELD_NONE && src1Op.range.isNonVGPR())
                 rvus[3].regField = GCNFIELD_VOP_SSRC1;
         }
     }
@@ -2094,9 +2097,11 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             // fix for extra type operand from SDWA
             AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
+            if (rvus[0].regField != ASMFIELD_NONE)
+                rvus[0].regField = GCNFIELD_SDWAB_SDST;
             if (rvus[1].regField != ASMFIELD_NONE && src0Op.range.isNonVGPR())
                 rvus[1].regField = GCNFIELD_DPPSDWA_SSRC0;
-            if (rvus[2].regField != ASMFIELD_NONE)
+            if (rvus[2].regField != ASMFIELD_NONE && src1Op.range.isNonVGPR())
                 rvus[2].regField = GCNFIELD_VOP_SSRC1;
         }
     }

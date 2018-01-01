@@ -1665,6 +1665,61 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         },
         true, ""
     },
+    {   /* 27: SSRC0 in SDWA, SDST in SDWAB (GFX900) */
+        ".gpu gfx900\n"
+        ".regvar rax:v, rbx:v, rcx:s, rex:s\n"
+        ".regvar cc1:s:2\n"
+        "v_mov_b32 rax, rbx dst_sel:w1 src0_sel:b2\n"
+        "v_mov_b32 rax, rcx dst_sel:w1 src0_sel:b2\n"
+        "v_cmp_gt_u32 cc1, rax, rbx src0_sel:b2\n"
+        "v_cmp_gt_u32 cc1, rex, rbx src0_sel:b2\n"
+        "v_add_f32 rax, rex, rbx dst_sel:w1 src0_sel:b2\n"
+        
+        "v_mov_b32 v2, v7 dst_sel:w1 src0_sel:b2\n"
+        "v_mov_b32 v3, s8 dst_sel:w1 src0_sel:b2\n"
+        "v_cmp_gt_u32 s[5:6], v5, v10 src0_sel:b2\n"
+        "v_cmp_gt_u32 s[5:6], s9, v10 src0_sel:b2\n"
+        "v_add_f32 v4, s9, v10 dst_sel:w1 src0_sel:b2\n",
+        {
+            // v_mov_b32 rax, rbx dst_sel:w1 src0_sel:b2
+            { 0, "rax", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 0, "rbx", 0, 1, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 1 },
+            // v_mov_b32 rax, rcx dst_sel:w1 src0_sel:b2
+            { 8, "rax", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 8, "rcx", 0, 1, GCNFIELD_DPPSDWA_SSRC0, ASMRVU_READ, 1 },
+            // v_cmp_gt_u32 cc1, rax, rbx dst_sel:w1 src0_sel:b2
+            { 16, "cc1", 0, 2, GCNFIELD_SDWAB_SDST, ASMRVU_WRITE, 1 },
+            { 16, "rax", 0, 1, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 1 },
+            { 16, "rbx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_cmp_gt_u32 cc1, rax, rex src0_sel:b2
+            { 24, "cc1", 0, 2, GCNFIELD_SDWAB_SDST, ASMRVU_WRITE, 1 },
+            { 24, "rex", 0, 1, GCNFIELD_DPPSDWA_SSRC0, ASMRVU_READ, 1 },
+            { 24, "rbx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_add_f32 rax, rex, rbx dst_sel:w1 src0_sel:b2
+            { 32, "rax", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 32, "rex", 0, 1, GCNFIELD_DPPSDWA_SSRC0, ASMRVU_READ, 1 },
+            { 32, "rbx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_mov_b32 v2, v7 dst_sel:w1 src0_sel:b2
+            { 40, nullptr, 256+2, 256+3, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 0 },
+            { 40, nullptr, 256+7, 256+8, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 0 },
+            // v_mov_b32 v3, s8 dst_sel:w1 src0_sel:b2
+            { 48, nullptr, 256+3, 256+4, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 0 },
+            { 48, nullptr, 8, 9, GCNFIELD_DPPSDWA_SSRC0, ASMRVU_READ, 0 },
+            // v_cmp_gt_u32 s[5:6], v5, v10 src0_sel:b2
+            { 56, nullptr, 5, 7, GCNFIELD_SDWAB_SDST, ASMRVU_WRITE, 0 },
+            { 56, nullptr, 256+5, 256+6, GCNFIELD_DPPSDWA_SRC0, ASMRVU_READ, 0 },
+            { 56, nullptr, 256+10, 256+11, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 },
+            // v_cmp_gt_u32 s[5:6], s9, v10 src0_sel:b2
+            { 64, nullptr, 5, 7, GCNFIELD_SDWAB_SDST, ASMRVU_WRITE, 0 },
+            { 64, nullptr, 9, 10, GCNFIELD_DPPSDWA_SSRC0, ASMRVU_READ, 0 },
+            { 64, nullptr, 256+10, 256+11, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 },
+            // v_add_f32 v4, s9, v10 dst_sel:w1 src0_sel:b2
+            { 72, nullptr, 256+4, 256+5, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 0 },
+            { 72, nullptr, 9, 10, GCNFIELD_DPPSDWA_SSRC0, ASMRVU_READ, 0 },
+            { 72, nullptr, 256+10, 256+11, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 }
+        },
+        true, ""
+    }
 };
 
 static void pushRegVarsFromScopes(const AsmScope& scope,
@@ -1739,10 +1794,10 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"align",
                     cxuint(expectedRvu.align), cxuint(resultRvu.align));
     }
-    assertTrue("testGCNRegVarUsages", testCaseName+"length",
-                   j == testCase.regVarUsages.size());
     assertString("testGCNRegVarUsages", testCaseName+".errorMessages",
               testCase.errorMessages, errorStream.str());
+    assertTrue("testGCNRegVarUsages", testCaseName+"length",
+                   j == testCase.regVarUsages.size());
 }
 
 int main(int argc, const char** argv)
