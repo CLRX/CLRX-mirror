@@ -1590,23 +1590,19 @@ bool AsmExpression::fastExprEvaluate(Assembler& assembler, const char*& linePtr,
     bool addition = true;
     const char* tmpLinePtr = linePtr;
     skipSpacesToEnd(tmpLinePtr, end);
-    // check first operator '+' or '-'
-    if (tmpLinePtr!=end)
-    {
-        if (*tmpLinePtr=='+' || *tmpLinePtr=='-')
-        {
-            addition = (*tmpLinePtr=='+');
-            skipCharAndSpacesToEnd(tmpLinePtr, end);
-        }
-    }
-    else
-        return false;
     
     // main loop
     while (true)
     {
+        // loop for chain of unary '+' and '-'
+        while (tmpLinePtr != end && (*tmpLinePtr=='+' || *tmpLinePtr=='-'))
+        {
+            if (*tmpLinePtr=='-')
+                addition = !addition;
+            skipCharAndSpacesToEnd(tmpLinePtr, end);
+        }
         uint64_t tmp = 0;
-        if (!isDigit(*tmpLinePtr) && *tmpLinePtr!='\'')
+        if (tmpLinePtr == end || (!isDigit(*tmpLinePtr) && *tmpLinePtr!='\''))
             return false;
         if (!assembler.parseLiteralNoError(tmp, tmpLinePtr))
             return false;
