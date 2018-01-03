@@ -936,24 +936,18 @@ void AsmRegAllocator::applySSAReplaces()
         {
             auto itEnd = std::upper_bound(it, replaces.end(),
                             std::make_pair(it->first, size_t(SIZE_MAX)));
-            auto prevIt = it;
             {
                 MinSSAGraphNode& node = ssaGraphNodes[it->first];
                 node.minSSAId = std::min(node.minSSAId, it->second);
-                for (auto it2 = ++it; it2 != itEnd; ++it2)
-                        node.nexts.insert(it->second);
-            }
-            for (; it != itEnd; ++it)
-            {
-                MinSSAGraphNode& node = ssaGraphNodes[it->second];
-                for (auto it2 = prevIt; it2 != it; ++it2)
+                for (auto it2 = it; it2 != itEnd; ++it2)
                     node.nexts.insert(it->second);
             }
+            it = itEnd;
         }
         // propagate min value
         std::stack<MinSSAGraphStackEntry> minSSAStack;
         for (auto ssaGraphNodeIt = ssaGraphNodes.begin();
-                 ssaGraphNodeIt!=ssaGraphNodes.begin(); )
+                 ssaGraphNodeIt!=ssaGraphNodes.end(); )
         {
             minSSAStack.push({ ssaGraphNodeIt, ssaGraphNodeIt->second.nexts.begin() });
             // traverse with minimalize SSA id
