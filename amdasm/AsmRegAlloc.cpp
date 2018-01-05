@@ -608,7 +608,7 @@ static void joinRoutineData(LastSSAIdMap& dest, const LastSSAIdMap& src,
             continue; // added new
         auto ssaInfoIt = prevSSAInfoMap.find(entry.first);
         std::vector<size_t>& destEntry = res.first->second;
-        if (ssaInfoIt->second.ssaIdChange!=0)
+        if (ssaInfoIt == prevSSAInfoMap.end() || ssaInfoIt->second.ssaIdChange!=0)
         {
             if (ssaInfoIt != prevSSAInfoMap.end())
             {
@@ -861,11 +861,11 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
                  !cblock.haveReturn && !cblock.haveEnd)
         {
-            if (entry.nextIndex!=0) // if back from call
+            if (entry.nextIndex!=0) // if back from call (just return from call)
             {
                 // expand lastMultiSSAIdMap from all calls
                 for (const NextBlock& next: cblock.nexts)
-                if (next.isCall)
+                    if (next.isCall)
                     {
                         auto it = routineMap.find(next.block); // must find
                         joinLastSSAIdMap(lastMultiSSAIdMap, it->second.regVarMap);
