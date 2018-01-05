@@ -504,7 +504,56 @@ c1:         v_add_f32 v6, v1, v4    # 92
             { 92, 104, { }, false, true, true }
         },
         true, ""
-    }
+    },
+    {   /* 13 - subroutines 2 (one is jump) */
+        R"ffDXD(
+        v_mov_b32 v1, v2
+        v_mov_b32 v1, v3
+        .cf_call l0, l1
+        .cf_jump l2
+        s_setpc_b64 s[0:1]
+        v_sub_f32 v1, v3, v6    # 12
+        s_branch j0
+b0:     v_add_u32 v4, vcc, v6, v11  # 20
+        v_mac_f32 v6, v6, v6
+        s_endpgm
+l0:     # 32
+        v_add_f32 v1, v2, v3
+        v_add_f32 v1, v2, v3
+        .cf_ret
+        s_swappc_b64 s[0:1], s[0:1]
+l1:     # 44
+        v_add_f32 v1, v2, v3
+        v_add_f32 v1, v2, v3
+        v_add_f32 v1, v2, v3
+        .cf_ret
+        s_swappc_b64 s[0:1], s[0:1]
+l2:     # 60
+        v_add_f32 v1, v2, v3
+        v_add_f32 v1, v2, v3
+        v_add_f32 v1, v2, v3
+        v_add_f32 v1, v2, v3
+        v_add_f32 v1, v2, v3
+        .cf_ret
+        s_swappc_b64 s[0:1], s[0:1]
+j0:     # 84
+        v_lshrrev_b32 v4, 3, v2
+        v_lshrrev_b32 v4, 3, v2
+        s_branch b0
+)ffDXD",
+        {
+            { 0, 12,
+                { { 1, false }, { 5, false }, { 3, true }, { 4, true } },
+                true, false, true },
+            { 12, 20, { { 6, false } }, false, false, true },
+            { 20, 32, { }, false, false, true },
+            { 32, 44, { }, false, true, true },
+            { 44, 60, { }, false, true, true },
+            { 60, 84, { }, false, true, true },
+            { 84, 96, { { 2, false } }, false, false, true }
+        },
+        true, ""
+    },
 };
 
 static void testCreateCodeStructure(cxuint i, const AsmCodeStructCase& testCase)
