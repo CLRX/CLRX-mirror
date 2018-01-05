@@ -777,18 +777,23 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 if (rit != routineMap.end() && !rit->second.processed)
                     selectedRoutines.insert(entry.blockIndex);
                 // add routine regvar map
-                for (size_t routine: selectedRoutines)
+                for (const auto& ssaEntry: cblock.ssaInfoMap)
                 {
-                    LastSSAIdMap& regVarMap = routineMap.find(routine)->second.regVarMap;
-                    for (const auto& ssaEntry: cblock.ssaInfoMap)
+                    const SSAInfo& sinfo = ssaEntry.second;
+                    // add to routine regvarmap if new SSA genered
+                    // just add only new SSAs inside routines
+                    if (sinfo.ssaIdChange!=0 && ssaEntry.first.regVar!=nullptr)
                     {
-                        const SSAInfo& sinfo = ssaEntry.second;
-                        if (sinfo.ssaIdChange!=0 && ssaEntry.first.regVar!=nullptr)
+                        auto lmsit = lastMultiSSAIdMap.find(ssaEntry.first);
+                        if (lmsit != lastMultiSSAIdMap.end())
                         {
-                            std::vector<size_t>& ssas = regVarMap[ssaEntry.first];
-                            auto lmsit = lastMultiSSAIdMap.find(ssaEntry.first);
-                            if (lmsit != lastMultiSSAIdMap.end())
+                            // update last SSAId inside previously called routines
+                            for (size_t routine: selectedRoutines)
                             {
+                                LastSSAIdMap& regVarMap =
+                                    routineMap.find(routine)->second.regVarMap;
+                                    
+                                std::vector<size_t>& ssas = regVarMap[ssaEntry.first];
                                 // if many parallel ssaId from routine returns
                                 const std::vector<size_t>& ssaIdsToRemove = lmsit->second;
                                 for (size_t s: ssaIdsToRemove)
@@ -799,12 +804,17 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                                     // add new
                                     ssas.push_back(sinfo.ssaIdLast);
                                 }
-                                // add to replaced ssaid to revert changes at pop
-                                entry.replacedMultiSSAIds.insert(*lmsit);
-                                lastMultiSSAIdMap.erase(lmsit);
                             }
-                            else
+                            // add to replaced ssaid to revert changes at pop
+                            entry.replacedMultiSSAIds.insert(*lmsit);
+                            lastMultiSSAIdMap.erase(lmsit);
+                        }
+                        else
+                            for (size_t routine: selectedRoutines)
                             {
+                                LastSSAIdMap& regVarMap =
+                                    routineMap.find(routine)->second.regVarMap;
+                                std::vector<size_t>& ssas = regVarMap[ssaEntry.first];
                                 auto ssaIt = std::find(ssas.begin(), ssas.end(),
                                             sinfo.ssaId-1);
                                 if (ssaIt != ssas.end()) // update this point
@@ -814,7 +824,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                                     // otherwise add new way
                                     ssas.push_back(sinfo.ssaIdLast);
                             }
-                        }
                     }
                 }
             }
@@ -861,7 +870,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
                  !cblock.haveReturn && !cblock.haveEnd)
         {
-            if (entry.nextIndex!=0) // if back from call (just return from call)
+            if (entry.nextIndex!=0) // if back from calls (just return from calls)
             {
                 // expand lastMultiSSAIdMap from all calls
                 for (const NextBlock& next: cblock.nexts)
