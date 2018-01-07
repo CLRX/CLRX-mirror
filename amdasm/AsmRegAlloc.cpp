@@ -844,6 +844,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         joinRoutineData(routineMap.find(routine)->second.regVarMap,
                                 rit->second.regVarMap, prevSSAInfoMap);
                 }
+                else if (rit != routineMap.end())
+                    // if not already processed, just mark it
+                    rit->second.processed = true;
+                    
                 resolveSSAConflicts(flowStack, callStack, visited, routineMap, codeBlocks,
                                     ssaReplacesMap);
                 // back, already visited
