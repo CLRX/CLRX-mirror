@@ -710,6 +710,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 if (rvu.regVar!=nullptr && rvu.rwFlags == ASMRVU_WRITE &&
                             rvu.regField!=ASMFIELD_NONE)
                     sinfo.ssaIdChange++;
+                if (rvu.regVar==nullptr)
+                    sinfo.ssaIdBefore = sinfo.ssaIdFirst =
+                            sinfo.ssaId = sinfo.ssaIdLast = 0;
             }
             // get next rvusage
             if (!usageHandler.hasNext())
@@ -752,33 +755,23 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 
                 for (auto& ssaEntry: cblock.ssaInfoMap)
                 {
+                    if (ssaEntry.first.regVar==nullptr)
+                        continue; // no change for registers
+                    
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
                     size_t& totalSSACount = totalSSACountMap[ssaEntry.first];
                     if (totalSSACount == 0 && ssaEntry.second.readBeforeWrite)
                     {
-                        if (ssaEntry.first.regVar!=nullptr)
-                        {
-                            /* first read before write at all,
-                             * need change totalcount, ssaId */
-                            ssaId++;
-                            totalSSACount++;
-                        }
-                        else // ssaIdBefore is zero (first ssaId), ssaIdFirst is NONE
-                            ssaEntry.second.ssaIdBefore = 0;
-                    }
-                    else if (ssaEntry.first.regVar==nullptr)
-                        // if write, then ssaIdFirst is zero, ssaIdBefore is NONE
-                        ssaEntry.second.ssaIdFirst = 0;
-                        
+                        // first read before write at all, need change totalcount, ssaId
+                        ssaId++;
+                        totalSSACount++;
+                    }   
                     if (ssaId != totalSSACount) // save old ssaId
                         entry.prevSSAIds.insert({ ssaEntry.first, ssaId });
                     ssaEntry.second.ssaId = totalSSACount;
-                    if (ssaEntry.first.regVar!=nullptr)
-                    {
-                        ssaEntry.second.ssaIdFirst = ssaEntry.second.ssaIdChange!=0 ?
-                            totalSSACount : SIZE_MAX;
-                        ssaEntry.second.ssaIdBefore = ssaId-1;
-                    }
+                    ssaEntry.second.ssaIdFirst = ssaEntry.second.ssaIdChange!=0 ?
+                        totalSSACount : SIZE_MAX;
+                    ssaEntry.second.ssaIdBefore = ssaId-1;
                     
                     totalSSACount += ssaEntry.second.ssaIdChange;
                     ssaEntry.second.ssaIdLast = ssaEntry.second.ssaIdChange!=0 ?
@@ -1171,7 +1164,9 @@ static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
         const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges)
 {
     size_t ssaId;
-    if (ssaIdIdx==0)
+    if (svreg.regVar==nullptr)
+        ssaId = 0;
+    else if (ssaIdIdx==0)
         ssaId = ssaInfo.ssaIdBefore;
     else if (ssaIdIdx==1)
         ssaId = ssaInfo.ssaIdFirst;
