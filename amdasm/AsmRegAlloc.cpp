@@ -764,11 +764,11 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                             totalSSACount++;
                         }
                         else // ssaIdBefore is zero (first ssaId), ssaIdFirst is NONE
-                            ssaEntry.second.ssaIdLast = ssaEntry.second.ssaIdBefore = 0;
+                            ssaEntry.second.ssaIdBefore = 0;
                     }
                     else if (ssaEntry.first.regVar==nullptr)
                         // if write, then ssaIdFirst is zero, ssaIdBefore is NONE
-                        ssaEntry.second.ssaIdLast = ssaEntry.second.ssaIdFirst = 0;
+                        ssaEntry.second.ssaIdFirst = 0;
                         
                     if (ssaId != totalSSACount) // save old ssaId
                         entry.prevSSAIds.insert({ ssaEntry.first, ssaId });
@@ -778,11 +778,11 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         ssaEntry.second.ssaIdFirst = ssaEntry.second.ssaIdChange!=0 ?
                             totalSSACount : SIZE_MAX;
                         ssaEntry.second.ssaIdBefore = ssaId-1;
-                    
-                        totalSSACount += ssaEntry.second.ssaIdChange;
-                        ssaEntry.second.ssaIdLast = ssaEntry.second.ssaIdChange!=0 ?
-                                totalSSACount-1 : SIZE_MAX;
                     }
+                    
+                    totalSSACount += ssaEntry.second.ssaIdChange;
+                    ssaEntry.second.ssaIdLast = ssaEntry.second.ssaIdChange!=0 ?
+                            totalSSACount-1 : SIZE_MAX;
                     //totalSSACount = std::max(totalSSACount, ssaId);
                     ssaId = totalSSACount;
                 }
