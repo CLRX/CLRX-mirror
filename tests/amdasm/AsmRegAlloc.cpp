@@ -554,6 +554,11 @@ j0:     # 84
         },
         true, ""
     },
+    {   /* 14 - empty */
+        ".regvar sa:s:8, va:v:12, vb:v:10\n",
+        { },
+        true, ""
+    }
 };
 
 static void testCreateCodeStructure(cxuint i, const AsmCodeStructCase& testCase)
@@ -1016,6 +1021,14 @@ wx3:    v_nop
             { 224, 232,
                 { },
                 { }, false, false, true }
+        },
+        { },
+        true, ""
+    },
+    {   /* 4 - empty! */
+        R"ffDXD(.regvar sa:s:8, va:v:12, vb:v:10
+)ffDXD",
+        {
         },
         { },
         true, ""

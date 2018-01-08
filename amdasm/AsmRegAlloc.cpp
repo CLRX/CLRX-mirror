@@ -264,6 +264,8 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
              size_t codeSize, const cxbyte* code)
 {
     ISAAssembler* isaAsm = assembler.isaAssembler;
+    if (codeSize == 0)
+        return;
     std::vector<size_t> splits;
     std::vector<size_t> codeStarts;
     std::vector<size_t> codeEnds;
@@ -664,6 +666,8 @@ static void removeLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src)
 
 void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
 {
+    if (codeBlocks.empty())
+        return;
     usageHandler.rewind();
     auto cbit = codeBlocks.begin();
     AsmRegVarUsage rvu;
