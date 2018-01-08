@@ -772,17 +772,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
                     size_t& totalSSACount = totalSSACountMap[ssaEntry.first];
-                    if (totalSSACount == 0 && ssaEntry.second.readBeforeWrite)
+                    if (totalSSACount == 0)
                     {
                         // first read before write at all, need change totalcount, ssaId
-                        entry.prevSSAIds.insert({ ssaEntry.first, ssaId });
                         ssaId++;
                         totalSSACount++;
-                    }
-                    else if (ssaId == 0 && ssaEntry.second.readBeforeWrite)
-                    {
                         entry.prevSSAIds.insert({ ssaEntry.first, ssaId });
-                        ssaId++;
                     }
                     else if (ssaId != totalSSACount) // save old ssaId
                         entry.prevSSAIds.insert({ ssaEntry.first, ssaId });
