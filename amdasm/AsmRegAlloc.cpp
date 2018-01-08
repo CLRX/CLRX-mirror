@@ -772,8 +772,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         entry.prevSSAIds.insert({ ssaEntry.first, ssaId });
                         ssaId++;
                     }
-                    
-                    if (ssaId != totalSSACount) // save old ssaId
+                    else if (ssaId != totalSSACount) // save old ssaId
                         entry.prevSSAIds.insert({ ssaEntry.first, ssaId });
                     ssaEntry.second.ssaId = totalSSACount;
                     ssaEntry.second.ssaIdFirst = ssaEntry.second.ssaIdChange!=0 ?
