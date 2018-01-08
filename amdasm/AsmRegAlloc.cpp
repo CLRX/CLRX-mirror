@@ -711,8 +711,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     sinfo.firstPos = rvu.offset;
                 if ((rvu.rwFlags & ASMRVU_READ) != 0 && sinfo.ssaIdChange == 0)
                     sinfo.readBeforeWrite = true;
-                if (rvu.regVar!=nullptr && rvu.rwFlags == ASMRVU_WRITE &&
-                            rvu.regField!=ASMFIELD_NONE)
+                if (rvu.rwFlags == ASMRVU_WRITE && rvu.regField!=ASMFIELD_NONE)
                     sinfo.ssaIdChange++;
                 if (rvu.regVar==nullptr)
                     sinfo.ssaIdBefore = sinfo.ssaIdFirst =
@@ -760,7 +759,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 for (auto& ssaEntry: cblock.ssaInfoMap)
                 {
                     if (ssaEntry.first.regVar==nullptr)
+                    {
+                        ssaEntry.second.ssaIdChange = 0; // zeroing SSA changes
                         continue; // no change for registers
+                    }
                     
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
                     size_t& totalSSACount = totalSSACountMap[ssaEntry.first];

@@ -1026,9 +1026,56 @@ wx3:    v_nop
         true, ""
     },
     {   /* 4 - empty! */
+        ".regvar sa:s:8, va:v:12, vb:v:10\n",
+        { },
+        { },
+        true, ""
+    },
+    {   /* 5 - longer blocks (tree) */
         R"ffDXD(.regvar sa:s:8, va:v:12, vb:v:10
+        # block 0, offset - 0 
+        s_mov_b32 s0, 0x11
+        s_mov_b32 s1, 0x11
+        s_mov_b64 s[2:3], 3344
+        v_mov_b32 v1, v0
+        v_add_f32 v2, v1, v0
+        v_and_b32 v1, v1, v2
+        
+        s_mov_b32 sa[0], 1
+        s_mov_b32 sa[1], 1
+        s_mov_b32 sa[2], 1
+        s_mov_b32 sa[3], 1
+        
+.rept 4
+        s_xor_b32 sa[0], sa[1], sa[3]
+        s_and_b32 sa[1], sa[2], sa[3]
+        s_xor_b32 sa[3], sa[0], sa[2]
+        s_xor_b32 sa[2], sa[1], sa[3]
+.endr
+        
+        #.cf_jump b1, b2, b3
+        s_setpc_b64 s[4:5]
+        # block 1, offset - 0
+        
 )ffDXD",
         {
+            { 0, 112,
+                { },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 5 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 256+0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 256+1 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 256+2 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "sa", 0 }, SSAInfo(SIZE_MAX, 0, 0, 4, 5, false) },
+                    { { "sa", 1 }, SSAInfo(SIZE_MAX, 0, 0, 4, 5, false) },
+                    { { "sa", 2 }, SSAInfo(SIZE_MAX, 0, 0, 4, 5, false) },
+                    { { "sa", 3 }, SSAInfo(SIZE_MAX, 0, 0, 4, 5, false) },
+                }, false, false, true }
         },
         { },
         true, ""
