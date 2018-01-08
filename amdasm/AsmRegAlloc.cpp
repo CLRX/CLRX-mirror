@@ -363,6 +363,11 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
             start = end;
         }
     }
+    // force empty block at end if some jumps goes to its
+    if (!codeEnds.empty() && !codeStarts.empty() && !splits.empty() &&
+        codeStarts.back()==codeEnds.back() && codeStarts.back() == splits.back())
+        codeBlocks.push_back({ codeStarts.back(), codeStarts.back(), { },
+                             false, false, false });
     
     // construct flow-graph
     for (const AsmCodeFlowEntry& entry: codeFlow)

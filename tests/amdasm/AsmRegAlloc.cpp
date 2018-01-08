@@ -558,7 +558,46 @@ j0:     # 84
         ".regvar sa:s:8, va:v:12, vb:v:10\n",
         { },
         true, ""
-    }
+    },
+    {   // 15 - switch (empty block at end)
+        R"ffDXD(
+            v_mac_f32 v6, v9, v8    # 0
+            v_xor_b32 v3, v9, v8
+            .cf_jump j1, j2, j3, j4
+            s_setpc_b64 s[0:1]
+            
+j1:         v_xor_b32 v3, v9, v8    # 12
+            v_xor_b32 v3, v9, v8
+            v_xor_b32 v3, v9, v8
+            s_branch b0
+
+j2:         v_xor_b32 v3, v9, v8    # 28
+            v_xor_b32 v1, v5, v8
+            v_and_b32 v2, v9, v8
+            v_xor_b32 v3, v9, v8
+            s_branch b0
+
+j3:         v_xor_b32 v3, v9, v8    # 48
+            v_xor_b32 v1, v5, v8
+            s_branch b0
+
+j4:         v_xor_b32 v3, v9, v8    # 60
+            v_xor_b32 v1, v5, v8
+            v_xor_b32 v1, v5, v8
+b0:         # 72
+)ffDXD",
+        {
+            { 0, 12,
+                { { 1, false }, { 2, false }, { 3, false }, { 4, false } },
+                false, false, true },
+            { 12, 28, { { 5, false } }, false, false, true },
+            { 28, 48, { { 5, false } }, false, false, true },
+            { 48, 60, { { 5, false } }, false, false, true },
+            { 60, 72, { }, false, false, false },
+            { 72, 72, { }, false, false, true }
+        },
+        true, ""
+    },
 };
 
 static void testCreateCodeStructure(cxuint i, const AsmCodeStructCase& testCase)
@@ -1052,15 +1091,34 @@ wx3:    v_nop
         s_xor_b32 sa[3], sa[0], sa[2]
         s_xor_b32 sa[2], sa[1], sa[3]
 .endr
+        s_and_b32 sa[1], sa[2], sa[3]
+        s_xor_b32 sa[2], sa[1], sa[3]
+        s_xor_b32 sa[2], sa[1], sa[3]
         
-        #.cf_jump b1, b2, b3
+        .cf_jump b1, b2, b3
         s_setpc_b64 s[4:5]
-        # block 1, offset - 0
         
+        # block 1, offset - 124
+b1:     s_add_u32 s4, s1, sa[2]
+        s_add_u32 sa[4], s2, sa[3]
+        
+        s_mov_b32 sa[6], s[4]
+.rept 3
+        s_xor_b32 sa[0], sa[6], sa[3]
+        s_and_b32 sa[5], sa[2], sa[3]
+        s_and_b32 sa[6], sa[0], sa[5]
+.endr
+        .cf_jump b11
+        s_setpc_b64 s[6:7]
+b2:     v_nop
+        s_endpgm
+b3:     v_nop
+        s_endpgm
+b11:    s_endpgm
 )ffDXD",
         {
-            { 0, 112,
-                { },
+            { 0, 124,
+                { { 1, false }, { 2, false }, { 3, false } },
                 {
                     { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, false) },
                     { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, false) },
@@ -1072,10 +1130,34 @@ wx3:    v_nop
                     { { "", 256+1 }, SSAInfo(0, 0, 0, 0, 0, false) },
                     { { "", 256+2 }, SSAInfo(0, 0, 0, 0, 0, false) },
                     { { "sa", 0 }, SSAInfo(SIZE_MAX, 0, 0, 4, 5, false) },
-                    { { "sa", 1 }, SSAInfo(SIZE_MAX, 0, 0, 4, 5, false) },
-                    { { "sa", 2 }, SSAInfo(SIZE_MAX, 0, 0, 4, 5, false) },
-                    { { "sa", 3 }, SSAInfo(SIZE_MAX, 0, 0, 4, 5, false) },
-                }, false, false, true }
+                    { { "sa", 1 }, SSAInfo(SIZE_MAX, 0, 0, 5, 6, false) },
+                    { { "sa", 2 }, SSAInfo(SIZE_MAX, 0, 0, 6, 7, false) },
+                    { { "sa", 3 }, SSAInfo(SIZE_MAX, 0, 0, 4, 5, false) }
+                }, false, false, true },
+            { 124, 176,
+                { { 4, false } },
+                {
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 6 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 7 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 0 }, SSAInfo(4, 5, 5, 7, 3, false) },
+                    { { "sa", 2 }, SSAInfo(6, SIZE_MAX, 7, SIZE_MAX, 0, true) },
+                    { { "sa", 3 }, SSAInfo(4, SIZE_MAX, 5, SIZE_MAX, 0, true) },
+                    { { "sa", 4 }, SSAInfo(SIZE_MAX, 0, 0, 0, 1, false) },
+                    { { "sa", 5 }, SSAInfo(SIZE_MAX, 0, 0, 2, 3, false) },
+                    { { "sa", 6 }, SSAInfo(SIZE_MAX, 0, 0, 3, 4, false) }
+                }, false, false, true },
+            { 176, 184,
+                { },
+                { }, false, false, true },
+            { 184, 192,
+                { },
+                { }, false, false, true },
+            { 192, 196,
+                { },
+                { }, false, false, true },
         },
         { },
         true, ""
