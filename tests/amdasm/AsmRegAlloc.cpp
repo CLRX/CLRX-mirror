@@ -1255,6 +1255,8 @@ loop:
         s_cmp_lt_u32 sa[0], sa[1]
         s_cbranch_scc1 loop
         
+        v_xor_b32 va[0], 33, va[0]
+        s_add_u32 sa[0], 14, sa[0]
         s_endpgm
 )ffDXD",
         {
@@ -1280,9 +1282,12 @@ loop:
                     { { "va", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
                     { { "va", 3 }, SSAInfo(1, SIZE_MAX, 2, SIZE_MAX, 0, true) }
                 }, false, false, false },
-            { 64, 68,
+            { 64, 76,
                 { },
-                { }, false, false, true, }
+                {
+                    { { "sa", 0 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "va", 0 }, SSAInfo(4, 5, 5, 5, 1, true) }
+                }, false, false, true, }
         },
         {   // SSA replaces
             { { "sa", 0 }, { { 2, 1 } } },
