@@ -1244,11 +1244,15 @@ b12:    v_mov_b32 va[4], 122
         v_mov_b32 va[0], v0
         v_mov_b32 va[1], v1
         v_mov_b32 va[3], 0
+        v_mov_b32 va[4], 11
 loop:
         ds_read_b32 va[2], va[3]
         v_xor_b32 va[0], va[1], va[2]
         v_not_b32 va[0], va[0]
         v_xor_b32 va[0], 0xfff, va[0]
+        v_xor_b32 va[4], va[4], va[2]
+        v_not_b32 va[4], va[0]
+        v_xor_b32 va[4], 0xfff, va[0]
         v_add_u32 va[1], vcc, 1001, va[1]
         
         s_add_u32 sa[0], sa[0], 1
@@ -1260,7 +1264,7 @@ loop:
         s_endpgm
 )ffDXD",
         {
-            { 0, 20,
+            { 0, 24,
                 { },
                 {
                     { { "", 10 }, SSAInfo(0, 0, 0, 0, 0, true) },
@@ -1270,9 +1274,10 @@ loop:
                     { { "sa", 1 }, SSAInfo(0, 1, 1, 1, 1, false) },
                     { { "va", 0 }, SSAInfo(0, 1, 1, 1, 1, false) },
                     { { "va", 1 }, SSAInfo(0, 1, 1, 1, 1, false) },
-                    { { "va", 3 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                    { { "va", 3 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "va", 4 }, SSAInfo(0, 1, 1, 1, 1, false) }
                 }, false, false, false },
-            { 20, 64,
+            { 24, 84,
                 { { 1, false }, { 2, false } },
                 {
                     { { "sa", 0 }, SSAInfo(1, 2, 2, 2, 1, true) },
@@ -1280,9 +1285,10 @@ loop:
                     { { "va", 0 }, SSAInfo(1, 2, 2, 4, 3, false) },
                     { { "va", 1 }, SSAInfo(1, 2, 2, 2, 1, true) },
                     { { "va", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
-                    { { "va", 3 }, SSAInfo(1, SIZE_MAX, 2, SIZE_MAX, 0, true) }
+                    { { "va", 3 }, SSAInfo(1, SIZE_MAX, 2, SIZE_MAX, 0, true) },
+                    { { "va", 4 }, SSAInfo(1, 2, 2, 4, 3, true) }
                 }, false, false, false },
-            { 64, 76,
+            { 84, 96,
                 { },
                 {
                     { { "sa", 0 }, SSAInfo(2, 3, 3, 3, 1, true) },
@@ -1291,7 +1297,8 @@ loop:
         },
         {   // SSA replaces
             { { "sa", 0 }, { { 2, 1 } } },
-            { { "va", 1 }, { { 2, 1 } } }
+            { { "va", 1 }, { { 2, 1 } } },
+            { { "va", 4 }, { { 4, 1 } } }
         },
         true, ""
     },
