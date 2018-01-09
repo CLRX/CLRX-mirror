@@ -945,7 +945,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         }
     }
 }
-    
+
 void AsmRegAllocator::applySSAReplaces()
 {
     /* prepare SSA id replaces */
