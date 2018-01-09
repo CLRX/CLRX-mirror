@@ -1236,6 +1236,60 @@ b12:    v_mov_b32 va[4], 122
         },
         { },
         true, ""
+    },
+    {   // 6: simple loop
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[0], 0
+        s_mov_b32 sa[1], s10
+        v_mov_b32 va[0], v0
+        v_mov_b32 va[1], v1
+        v_mov_b32 va[3], 0
+loop:
+        ds_read_b32 va[2], va[3]
+        v_xor_b32 va[0], va[1], va[2]
+        v_not_b32 va[0], va[0]
+        v_xor_b32 va[0], 0xfff, va[0]
+        v_add_u32 va[1], vcc, 1001, va[1]
+        
+        s_add_u32 sa[0], sa[0], 1
+        s_cmp_lt_u32 sa[0], sa[1]
+        s_cbranch_scc1 loop
+        
+        s_endpgm
+)ffDXD",
+        {
+            { 0, 20,
+                { },
+                {
+                    { { "", 10 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 256 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 256+1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 0 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 1 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "va", 0 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "va", 1 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "va", 3 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, false, false, false },
+            { 20, 64,
+                { { 1, false }, { 2, false } },
+                {
+                    { { "sa", 0 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 1 }, SSAInfo(1, SIZE_MAX, 2, SIZE_MAX, 0, true) },
+                    { { "va", 0 }, SSAInfo(1, 2, 2, 4, 3, false) },
+                    { { "va", 1 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "va", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "va", 3 }, SSAInfo(1, SIZE_MAX, 2, SIZE_MAX, 0, true) }
+                }, false, false, false },
+            { 64, 68,
+                { },
+                { }, false, false, true, }
+        },
+        {   // SSA replaces
+            { { "sa", 0 }, { { 2, 1 } } },
+            { { "va", 0 }, { { 4, 2 } } },
+            { { "va", 1 }, { { 2, 1 } } }
+        },
+        true, ""
     }
 };
 
@@ -1366,7 +1420,8 @@ static void testCreateSSAData(cxuint i, const AsmSSADataCase& testCase)
     const SSAReplacesMap& ssaReplacesMap = regAlloc.getSSAReplacesMap();
     assertValue("testAsmSSAData", testCaseName + "ssaReplacesSize",
                     testCase.ssaReplaces.size(), ssaReplacesMap.size());
-    Array<std::pair<TestSingleVReg, Array<SSAReplace> > > resSSAReplaces;
+    Array<std::pair<TestSingleVReg, Array<SSAReplace> > >
+                        resSSAReplaces(ssaReplacesMap.size());
     std::transform(ssaReplacesMap.begin(), ssaReplacesMap.end(),
             resSSAReplaces.begin(),
             [&regVarNamesMap](const std::pair<AsmSingleVReg, std::vector<SSAReplace> >& a)
