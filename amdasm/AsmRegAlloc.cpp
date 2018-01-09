@@ -542,7 +542,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                     auto res = toResolveMap.insert({ sentry.first,
                         { entry.blockIndex, false } });
                     
-                    if (res.second)
+                    if (res.second && sinfo.readBeforeWrite)
                     {
                         // resolve conflict for this variable ssaId>
                         auto it = stackVarMap.find(sentry.first);
@@ -550,14 +550,9 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                         if (it != stackVarMap.end())
                             // found, resolve by set ssaIdLast
                             for (size_t ssaId: it->second)
-                            {
-                                if (sinfo.readBeforeWrite && ssaId > sinfo.ssaIdBefore)
+                                if (ssaId > sinfo.ssaIdBefore)
                                     insertReplace(replacesMap, sentry.first, ssaId,
                                                 sinfo.ssaIdBefore);
-                                else if (ssaId > sinfo.ssaIdFirst)
-                                    insertReplace(replacesMap, sentry.first, ssaId,
-                                                sinfo.ssaIdFirst);
-                            }
                         res.first->second.handled = true;
                     }
                 }
