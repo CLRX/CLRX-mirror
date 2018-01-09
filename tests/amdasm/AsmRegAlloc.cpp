@@ -1095,7 +1095,7 @@ wx3:    v_nop
         s_xor_b32 sa[2], sa[1], sa[3]
         s_xor_b32 sa[2], sa[1], sa[3]
         
-        .cf_jump b1, b2, b3
+        .cf_jump b1, b2
         s_setpc_b64 s[4:5]
         
         # block 1, offset - 124
@@ -1110,12 +1110,26 @@ b1:     s_add_u32 s4, s1, sa[2]
 .endr
         .cf_jump b11, b12
         s_setpc_b64 s[6:7]
-b2:     v_nop
-        s_endpgm
-b3:     v_nop
+        
+        # block 2, offset - 176
+b2:     v_mul_lo_u32 va[1], va[1], va[4]
+        v_mul_lo_u32 va[2], sa[1], va[1]
+        v_mov_b32 va[3], 2343
+.rept 3
+        v_mul_lo_u32 va[3], sa[1], va[3]
+        v_mul_lo_u32 va[1], sa[0], va[4]
+        v_mul_lo_u32 va[2], sa[2], va[1]
+.endr
+.rept 4
+        v_mul_lo_u32 va[1], sa[0], va[4]
+.endr
+.rept 2
+        v_mul_lo_u32 va[2], v1, v4
+.endr
+        v_and_b32 v3, v3, v2
         s_endpgm
         
-        # block 4, offset - xx
+        # block 2, offset - xx
 b11:    v_mov_b32 va[0], 122
         v_mov_b32 va[1], 122
         v_mov_b32 va[2], 122
@@ -1128,7 +1142,7 @@ b11:    v_mov_b32 va[0], 122
         s_xor_b32 sa[1], sa[2], s3
         s_endpgm
         
-        # block 5, offset - xx
+        # block 3, offset - xx
 b12:    v_mov_b32 va[4], 122
         v_xor_b32 va[1], 112, va[1]
         v_xor_b32 va[0], v2, va[0]
@@ -1143,7 +1157,7 @@ b12:    v_mov_b32 va[4], 122
 )ffDXD",
         {
             { 0, 124,
-                { { 1, false }, { 2, false }, { 3, false } },
+                { { 1, false }, { 2, false } },
                 {
                     { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, false) },
                     { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, false) },
@@ -1159,8 +1173,9 @@ b12:    v_mov_b32 va[4], 122
                     { { "sa", 2 }, SSAInfo(0, 1, 1, 7, 7, false) },
                     { { "sa", 3 }, SSAInfo(0, 1, 1, 5, 5, false) }
                 }, false, false, true },
+            // block 1
             { 124, 176,
-                { { 4, false }, { 5, false } },
+                { { 3, false }, { 4, false } },
                 {
                     { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
                     { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
@@ -1174,14 +1189,24 @@ b12:    v_mov_b32 va[4], 122
                     { { "sa", 5 }, SSAInfo(0, 1, 1, 3, 3, false) },
                     { { "sa", 6 }, SSAInfo(0, 1, 1, 4, 4, false) }
                 }, false, false, true },
-            { 176, 184,
+            // block 2
+            { 176, 328,
                 { },
-                { }, false, false, true },
-            { 184, 192,
-                { },
-                { }, false, false, true },
-            // block 4
-            { 192, 276,
+                {
+                    { { "", 256+1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 256+2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 256+3 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 256+4 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 0 }, SSAInfo(5, SIZE_MAX, 9, SIZE_MAX, 0, true) },
+                    { { "sa", 1 }, SSAInfo(6, SIZE_MAX, 9, SIZE_MAX, 0, true) },
+                    { { "sa", 2 }, SSAInfo(7, SIZE_MAX, 8, SIZE_MAX, 0, true) },
+                    { { "va", 1 }, SSAInfo(0, 13, 13, 20, 8, true) },
+                    { { "va", 2 }, SSAInfo(0, 6, 6, 11, 6, false) },
+                    { { "va", 3 }, SSAInfo(0, 1, 1, 4, 4, false) },
+                    { { "va", 4 }, SSAInfo(0, SIZE_MAX, 8, SIZE_MAX, 0, true) },
+                }, false, false, true },
+            // block 3
+            { 328, 412,
                 { },
                 {
                     { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, true) },
@@ -1194,8 +1219,8 @@ b12:    v_mov_b32 va[4], 122
                     { { "va", 1 }, SSAInfo(0, 1, 1, 6, 6, false) },
                     { { "va", 2 }, SSAInfo(0, 1, 1, 5, 5, false) }
                 }, false, false, true },
-            // block 5
-            { 276, 368,
+            // block 4
+            { 412, 504,
                 { },
                 {
                     { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, true) },
@@ -1207,7 +1232,7 @@ b12:    v_mov_b32 va[4], 122
                     { { "va", 0 }, SSAInfo(0, 6, 6, 11, 6, true) },
                     { { "va", 1 }, SSAInfo(0, 7, 7, 12, 6, true) },
                     { { "va", 4 }, SSAInfo(0, 1, 1, 7, 7, false) }
-                }, false, false, true },
+                }, false, false, true }
         },
         { },
         true, ""

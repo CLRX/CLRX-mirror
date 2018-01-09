@@ -715,8 +715,11 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 if (res.second)
                     sinfo.firstPos = rvu.offset;
                 if ((rvu.rwFlags & ASMRVU_READ) != 0 && (sinfo.ssaIdChange == 0 ||
+                    // if first write RVU instead read RVU
                     (sinfo.ssaIdChange == 1 && sinfo.firstPos==rvu.offset)))
                     sinfo.readBeforeWrite = true;
+                /* change SSA id only for write-only regvars -
+                 *   read-write place can not have two different variables */
                 if (rvu.rwFlags == ASMRVU_WRITE && rvu.regField!=ASMFIELD_NONE)
                     sinfo.ssaIdChange++;
                 if (rvu.regVar==nullptr)
