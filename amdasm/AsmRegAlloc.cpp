@@ -544,7 +544,9 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                     
                     if (res.second && sinfo.readBeforeWrite)
                     {
-                        // resolve conflict for this variable ssaId>
+                        // resolve conflict for this variable ssaId>.
+                        // only if in previous block previous SSAID is
+                        // read before all writes
                         auto it = stackVarMap.find(sentry.first);
                         
                         if (it != stackVarMap.end())
