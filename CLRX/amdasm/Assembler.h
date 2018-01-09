@@ -48,13 +48,14 @@ namespace CLRX
 enum: Flags
 {
     ASM_WARNINGS = 1,   ///< enable all warnings for assembler
-    ASM_FORCE_ADD_SYMBOLS = 2,
-    ASM_ALTMACRO = 4,
-    ASM_BUGGYFPLIT = 8, // buggy handling of fpliterals (including fp constants)
-    ASM_MACRONOCASE = 16, // disable case-insensitive naming (default)
-    ASM_OLDMODPARAM = 32,   // use old modifier parametrization (values 0 and 1 only)
+    ASM_FORCE_ADD_SYMBOLS = 2,  ///< force add symbols to binary
+    ASM_ALTMACRO = 4,   ///< enable altmacro mode
+    ASM_BUGGYFPLIT = 8, ///< buggy handling of fpliterals (including fp constants)
+    ASM_MACRONOCASE = 16, /// disable case-insensitive naming (default)
+    ASM_OLDMODPARAM = 32,   ///< use old modifier parametrization (values 0 and 1 only)
+    ASM_TESTRESOLVE = (1U<<30), ///< enable resolving symbols if ASM_TESTRUN enabled
     ASM_TESTRUN = (1U<<31), ///< only for running tests
-    ASM_ALL = FLAGS_ALL&~(ASM_TESTRUN|ASM_BUGGYFPLIT|ASM_MACRONOCASE|
+    ASM_ALL = FLAGS_ALL&~(ASM_TESTRUN|ASM_TESTRESOLVE|ASM_BUGGYFPLIT|ASM_MACRONOCASE|
                     ASM_OLDMODPARAM)  ///< all flags
 };
 

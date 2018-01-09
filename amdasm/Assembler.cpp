@@ -2575,7 +2575,7 @@ void Assembler::tryToResolveSymbols(AsmScope* thisScope)
 // or when popping temporary scope
 void Assembler::printUnresolvedSymbols(AsmScope* thisScope)
 {
-    if ((flags&ASM_TESTRUN) != 0)
+    if ((flags&ASM_TESTRUN) != 0 && (flags&ASM_TESTRESOLVE) == 0)
         return;
     
     std::deque<ScopeStackElem> scopeStack;

@@ -1256,7 +1256,8 @@ static void testCreateSSAData(cxuint i, const AsmSSADataCase& testCase)
     std::istringstream input(testCase.input);
     std::ostringstream errorStream;
     
-    Assembler assembler("test.s", input, (ASM_ALL&~ASM_ALTMACRO) | ASM_TESTRUN,
+    Assembler assembler("test.s", input,
+                    (ASM_ALL&~ASM_ALTMACRO) | ASM_TESTRUN | ASM_TESTRESOLVE,
                     BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, errorStream);
     bool good = assembler.assemble();
     if (assembler.getSections().size()<1)
