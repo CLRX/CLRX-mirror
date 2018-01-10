@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+//#include <iostream>
 #include <stack>
 #include <deque>
 #include <vector>
@@ -530,13 +531,14 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
+                //std::cout << "  resolv: " << entry.blockIndex << std::endl;
                 for (auto& sentry: cblock.ssaInfoMap)
                 {
                     const SSAInfo& sinfo = sentry.second;
                     auto res = toResolveMap.insert({ sentry.first,
                         { entry.blockIndex, false } });
                     
-                    if (res.second && sinfo.readBeforeWrite)
+                    if (res.second && !res.first->second.handled && sinfo.readBeforeWrite)
                     {
                         // resolve conflict for this variable ssaId>.
                         // only if in previous block previous SSAID is
@@ -547,9 +549,15 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                             // found, resolve by set ssaIdLast
                             for (size_t ssaId: it->second)
                                 if (ssaId > sinfo.ssaIdBefore)
+                                {
+                                    //std::cout << "  insertreplace" << std::endl;
                                     insertReplace(replacesMap, sentry.first, ssaId,
                                                 sinfo.ssaIdBefore);
-                        res.first->second.handled = true;
+                                    res.first->second.handled = true;
+                                }
+                                /*else
+                                    std::cout << "  noinsertreplace: " <<
+                                        ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
                     }
                 }
             }
@@ -594,6 +602,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                     // remove if not handled yet
                     toResolveMap.erase(it);
             }
+            //std::cout << "  popresolv" << std::endl;
             flowStack.pop_back();
         }
     }
@@ -759,6 +768,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             // process current block
             if (!visited[entry.blockIndex])
             {
+                //std::cout << "proc: " << entry.blockIndex << std::endl;
                 visited[entry.blockIndex] = true;
                 
                 for (auto& ssaEntry: cblock.ssaInfoMap)
@@ -932,6 +942,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 else // if found
                     curSSAIdMap[ssaEntry.first] = it->second;
             }
+            //std::cout << "pop" << std::endl;
             flowStack.pop_back();
         }
     }

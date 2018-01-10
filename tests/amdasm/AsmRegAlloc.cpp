@@ -1790,6 +1790,91 @@ bb1:    s_xor_b32 sa[2], sa[2], sa[0]
             { { "sa", 3 }, { { 6, 1 } } }
         },
         true, ""
+    },
+    {   // 11 - with trap: first branch have unhandled SSA replace
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        # block 0
+        s_mov_b32 sa[0], s2
+        s_mov_b32 sa[1], s3
+        s_mov_b32 sa[2], s4
+        s_mov_b32 sa[3], s5
+        s_cmp_lt_u32 s0, s1
+        s_cbranch_scc1 bb1
+        
+        # bb0
+bb0:    s_add_u32 sa[3], sa[3], s1      # SSAID replace
+        s_add_u32 sa[3], sa[3], s2
+        s_endpgm
+        
+bb3:    s_add_u32 sa[3], sa[3], s2      # no SSAID replace (this same SSAID)
+        s_endpgm
+        
+bb1:    s_add_u32 sa[3], sa[3], s2
+bb1x:   .cf_jump bb3, bb2, bb4
+        s_setpc_b64 s[0:1]
+
+bb2:    s_branch bb0
+        
+bb4:    s_branch bb1x       # jump to point to resolve conflict (bb1x)
+)ffDXD",
+        {
+            // block 0
+            { 0, 24,
+                { { 1, false }, { 3, false } },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 5 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 0 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 1 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 3 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, false, false, false },
+            // block 1
+            { 24, 36,
+                { },
+                {
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 3 }, SSAInfo(1, 2, 2, 3, 2, true) }
+                }, false, false, true },
+            // block 2
+            { 36, 44,
+                { },
+                {
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 3 }, SSAInfo(4, 5, 5, 5, 1, true) }
+                }, false, false, true },
+            // block 3 - bb1 - main part
+            { 44, 48,
+                { },
+                {
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 3 }, SSAInfo(1, 4, 4, 4, 1, true) }
+                }, false, false, false },
+            // block 4 - bb1x - jmp part
+            { 48, 52,
+                { { 2, false }, { 5, false }, { 6, false } },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) }
+                }, false, false, true },
+            // block 5
+            { 52, 56,
+                { { 1, false } },
+                { }, false, false, true },
+            // block 6
+            { 56, 60,
+                { { 4, false } },
+                { }, false, false, true }
+        },
+        {
+            { { "sa", 3 }, { { 4, 1 }, { 4, 1 } } }
+        },
+        true, ""
     }
 };
 
