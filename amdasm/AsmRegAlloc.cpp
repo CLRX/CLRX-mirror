@@ -440,15 +440,9 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     }
 }
 
-struct SSAId
-{
-    size_t ssaId;
-    size_t blockIndex;
-};
-
 // map of last SSAId for routine, key - varid, value - last SSA ids
-
 typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > LastSSAIdMap;
+
 struct RoutineData
 {
     bool processed;
