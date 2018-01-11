@@ -225,7 +225,7 @@ j0:     # 84
 )ffDXD",
         {
             { 0, 12,
-                { { 1, false }, { 3, true }, { 4, true }, { 5, true } },
+                { { 3, true }, { 4, true }, { 5, true } },
                 true, false, false },
             { 12, 20, { { 6, false } }, false, false, true },
             { 20, 32, { }, false, false, true },
@@ -289,11 +289,11 @@ c6: loop2:
         {
             { 0, 8, { }, false, false, false },
             { 8, 16,
-                { { 2, false }, { 5, true }, { 6, true }, { 9, true } },
+                { { 5, true }, { 6, true }, { 9, true } },
                 true, false, false },
             // 2
             { 16, 32,
-                { { 3, false }, { 7, true }, { 11, true } },
+                { { 7, true }, { 11, true } },
                 true, false, false },
             { 32, 48,
                 { { 1, false }, { 4, false } },
@@ -304,7 +304,7 @@ c6: loop2:
             { 64, 80, { }, false, true, true },
             // 6 - c2 subroutine
             { 80, 88, { }, false, false, false },
-            { 88, 96, { { 8, false }, { 10, true } },
+            { 88, 96, { { 10, true } },
                 true, false, false },
             { 96, 104, { }, false, true, true },
             // 9 - c3 subroutine
@@ -494,10 +494,10 @@ c1:         v_add_f32 v6, v1, v4    # 92
             // 5
             { 56, 64, { }, false, false, true },
             { 64, 76,
-                { { 7, false }, { 9, true } },
+                { { 9, true } },
                 true, false, false },
             { 76, 84,
-                { { 8, false }, { 9, true } },
+                { { 9, true } },
                 true, false, false },
             { 84, 92, { }, false, false, true },
             // 9 - subroutine
@@ -543,7 +543,7 @@ j0:     # 84
 )ffDXD",
         {
             { 0, 12,
-                { { 1, false }, { 5, false }, { 3, true }, { 4, true } },
+                { { 5, false }, { 3, true }, { 4, true } },
                 true, false, true },
             { 12, 20, { { 6, false } }, false, false, true },
             { 20, 32, { }, false, false, true },
@@ -1965,6 +1965,62 @@ bb2:    s_add_u32 sa[3], sa[3], sa[2]
         },
         true, ""
     }
+#if 0
+    ,
+    {   // 13 - simple call
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4
+        s_mov_b32 sa[3], s5
+        
+        s_getpc_b64 s[2:3]
+        s_add_u32 s2, s2, routine-.
+        s_add_u32 s3, s3, routine-.+4
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]
+        
+        s_lshl_b32 sa[2], sa[2], 3
+        s_lshl_b32 sa[3], sa[3], 4
+        s_endpgm
+        
+routine:
+        s_xor_b32 sa[2], sa[2], sa[4]
+        s_xor_b32 sa[3], sa[3], sa[4]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+)ffDXD",
+        {
+            { 0, 32,
+                { { 2, true } },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 5 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 3 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, true, false, false },
+            { 32, 44,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "sa", 3 }, SSAInfo(2, 3, 3, 3, 1, true) }
+                }, false, false, true },
+            { 44, 56,
+                { },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, true, true }
+        },
+        { },
+        true, ""
+    }
+#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,

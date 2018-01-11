@@ -406,8 +406,8 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                  entry.type == AsmCodeFlowType::CALL)
             {
                 curIt->haveEnd = false; // revert haveEnd if block have cond jump or call
-                if (it2 != codeBlocks.end())
-                    // add next next block
+                if (it2 != codeBlocks.end() && entry.type == AsmCodeFlowType::CJUMP)
+                    // add next next block (only for cond jump)
                     curIt->nexts.push_back({ size_t(it2 - codeBlocks.begin()), false });
             }
             else if (entry.type == AsmCodeFlowType::JUMP)
@@ -881,12 +881,18 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         if (!callStack.empty() &&
             entry.blockIndex == callStack.top().callBlock &&
             entry.nextIndex-1 == callStack.top().callNextIndex)
+        {
+            //std::cout << " ret: " << entry.blockIndex << std::endl;
             callStack.pop(); // just return from call
+        }
         
         if (entry.nextIndex < cblock.nexts.size())
         {
             if (cblock.nexts[entry.nextIndex].isCall)
+            {
+                //std::cout << " call: " << entry.blockIndex << std::endl;
                 callStack.push({ entry.blockIndex, entry.nextIndex });
+            }
             
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
             entry.nextIndex++;
