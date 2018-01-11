@@ -741,10 +741,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     // routine map - routine datas map, value - last SSA ids map
     std::unordered_map<size_t, RoutineData> routineMap;
     // initialize routineMap
-    for (const CodeBlock& cblock: codeBlocks)
+    /*for (const CodeBlock& cblock: codeBlocks)
         for (const NextBlock& next: cblock.nexts)
             // all forks and calls
-            routineMap[next.block].processed = false;
+            routineMap[next.block].processed = false;*/
     
     LastSSAIdMap lastMultiSSAIdMap; // current SSA id from visited calls
     std::unordered_set<size_t> selectedRoutines;
@@ -798,6 +798,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 auto rit = routineMap.find(entry.blockIndex);
                 if (rit != routineMap.end() && !rit->second.processed)
                     selectedRoutines.insert(entry.blockIndex);
+                
                 // add routine regvar map
                 for (const auto& ssaEntry: cblock.ssaInfoMap)
                 {
@@ -809,6 +810,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         auto lmsit = lastMultiSSAIdMap.find(ssaEntry.first);
                         if (lmsit != lastMultiSSAIdMap.end())
                         {
+                            /*std::cout << "lmsit:";
+                            for (size_t r: lmsit->second)
+                                std::cout << " " << r;
+                            std::cout << std::endl;*/
                             // update last SSAId inside previously called routines
                             for (size_t routine: selectedRoutines)
                             {
@@ -824,6 +829,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                                     if (ssaIt != ssas.end())
                                         ssas.erase(ssaIt);
                                     // add new
+                                    /*std::cout <<
+                                        "addsass: " << sinfo.ssaIdLast << std::endl;*/
                                     ssas.push_back(sinfo.ssaIdLast);
                                 }
                             }
@@ -839,12 +846,21 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                                 std::vector<size_t>& ssas = regVarMap[ssaEntry.first];
                                 auto ssaIt = std::find(ssas.begin(), ssas.end(),
                                             sinfo.ssaId-1);
+                                entry.replacedMultiSSAIds.insert({ssaEntry.first, ssas});
                                 if (ssaIt != ssas.end()) // update this point
+                                {
+                                    /*std::cout <<
+                                        "chsass2: " << sinfo.ssaIdLast << std::endl;*/
                                     *ssaIt = sinfo.ssaIdLast;
+                                }
                                 else if (std::find(ssas.begin(), ssas.end(),
                                         sinfo.ssaIdLast) == ssas.end())
+                                {
+                                    /*std::cout <<
+                                        "addsass2: " << sinfo.ssaIdLast << std::endl;*/
                                     // otherwise add new way
                                     ssas.push_back(sinfo.ssaIdLast);
+                                }
                             }
                     }
                 }
@@ -892,6 +908,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             {
                 //std::cout << " call: " << entry.blockIndex << std::endl;
                 callStack.push({ entry.blockIndex, entry.nextIndex });
+                routineMap.insert({ cblock.nexts[entry.nextIndex].block, { false } });
             }
             
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
@@ -922,7 +939,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             {
                 //remove all return parallel ssaids
                 for(const NextBlock& next: cblock.nexts)
-                    if (!next.isCall)
+                    if (next.isCall)
                     {
                         auto it = routineMap.find(next.block); // must find
                         removeLastSSAIdMap(lastMultiSSAIdMap, it->second.regVarMap);
