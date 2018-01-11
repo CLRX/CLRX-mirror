@@ -406,7 +406,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                  entry.type == AsmCodeFlowType::CALL)
             {
                 curIt->haveEnd = false; // revert haveEnd if block have cond jump or call
-                if (it2 != codeBlocks.end() && entry.type == AsmCodeFlowType::CJUMP)
+                if (it2 != codeBlocks.end())
                     // add next next block (only for cond jump)
                     curIt->nexts.push_back({ size_t(it2 - codeBlocks.begin()), false });
             }
