@@ -465,12 +465,6 @@ struct CallStackEntry
     size_t callNextIndex; // index of call next
 };
 
-struct ResolveEntry
-{
-    size_t sourceBlock;
-    bool handled;
-};
-
 typedef AsmRegAllocator::SSAReplace SSAReplace; // first - orig ssaid, second - dest ssaid
 typedef AsmRegAllocator::SSAReplacesMap SSAReplacesMap;
 
@@ -518,7 +512,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
     flowStack.push_back({ nextBlock, 0 });
     std::vector<bool> visited(codeBlocks.size(), false);
     
-    std::unordered_map<AsmSingleVReg, ResolveEntry> toResolveMap;
+    // key - vreg, value - source block where vreg of conflict found
+    std::unordered_map<AsmSingleVReg, size_t> toResolveMap;
     
     while (!flowStack.empty())
     {
@@ -535,10 +530,9 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                 for (auto& sentry: cblock.ssaInfoMap)
                 {
                     const SSAInfo& sinfo = sentry.second;
-                    auto res = toResolveMap.insert({ sentry.first,
-                        { entry.blockIndex, false } });
+                    auto res = toResolveMap.insert({ sentry.first, entry.blockIndex, });
                     
-                    if (res.second && !res.first->second.handled && sinfo.readBeforeWrite)
+                    if (res.second && sinfo.readBeforeWrite)
                     {
                         // resolve conflict for this variable ssaId>.
                         // only if in previous block previous SSAID is
@@ -548,17 +542,16 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                         if (it != stackVarMap.end())
                             // found, resolve by set ssaIdLast
                             for (size_t ssaId: it->second)
+                            {
                                 if (ssaId > sinfo.ssaIdBefore)
-                                {
                                     /*std::cout << "  insertreplace: " <<
                                         ssaId << ", " << sinfo.ssaIdBefore << std::endl;*/
                                     insertReplace(replacesMap, sentry.first, ssaId,
                                                 sinfo.ssaIdBefore);
-                                    res.first->second.handled = true;
-                                }
                                 /*else
                                     std::cout << "  noinsertreplace: " <<
                                         ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
+                            }
                     }
                 }
             }
@@ -598,8 +591,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
             {
                 // mark resolved variables as not handled for further processing
                 auto it = toResolveMap.find(sentry.first);
-                if (it != toResolveMap.end() &&
-                    it->second.sourceBlock == entry.blockIndex)
+                if (it != toResolveMap.end() && it->second == entry.blockIndex)
                     // remove if not handled yet
                     toResolveMap.erase(it);
             }
