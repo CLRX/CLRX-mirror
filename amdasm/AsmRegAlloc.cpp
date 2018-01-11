@@ -550,7 +550,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                             for (size_t ssaId: it->second)
                                 if (ssaId > sinfo.ssaIdBefore)
                                 {
-                                    //std::cout << "  insertreplace" << std::endl;
+                                    /*std::cout << "  insertreplace: " <<
+                                        ssaId << ", " << sinfo.ssaIdBefore << std::endl;*/
                                     insertReplace(replacesMap, sentry.first, ssaId,
                                                 sinfo.ssaIdBefore);
                                     res.first->second.handled = true;
@@ -597,7 +598,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
             {
                 // mark resolved variables as not handled for further processing
                 auto it = toResolveMap.find(sentry.first);
-                if (it != toResolveMap.end() && !it->second.handled &&
+                if (it != toResolveMap.end() &&
                     it->second.sourceBlock == entry.blockIndex)
                     // remove if not handled yet
                     toResolveMap.erase(it);
