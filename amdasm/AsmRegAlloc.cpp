@@ -406,7 +406,7 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
                  entry.type == AsmCodeFlowType::CALL)
             {
                 curIt->haveEnd = false; // revert haveEnd if block have cond jump or call
-                if (it2 != codeBlocks.end())
+                if (it2 != codeBlocks.end() && entry.type == AsmCodeFlowType::CJUMP)
                     // add next next block (only for cond jump)
                     curIt->nexts.push_back({ size_t(it2 - codeBlocks.begin()), false });
             }
@@ -737,7 +737,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     // total SSA count
     std::unordered_map<AsmSingleVReg, size_t> totalSSACountMap;
     // last SSA ids in current way in code flow
-    std::unordered_map<AsmSingleVReg, size_t> curSSAIdMap;
+    std::unordered_map<AsmSingleVReg, std::vector<size_t> > curSSAIdMap;
     // routine map - routine datas map, value - last SSA ids map
     std::unordered_map<size_t, RoutineData> routineMap;
     // initialize routineMap
@@ -772,7 +772,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         continue; // no change for registers
                     }
                     
-                    size_t& ssaId = curSSAIdMap[ssaEntry.first];
+                    auto& ssaIds = curSSAIdMap[ssaEntry.first];
+                    if (ssaIds.empty())
+                        ssaIds.resize(1);
+                    size_t& ssaId = ssaIds.front();
                     size_t& totalSSACount = totalSSACountMap[ssaEntry.first];
                     if (totalSSACount == 0)
                     {
@@ -953,10 +956,13 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             for (const auto& ssaEntry: cblock.ssaInfoMap)
             {
                 auto it = entry.prevSSAIds.find(ssaEntry.first);
+                auto& ssaIds = curSSAIdMap[ssaEntry.first];
+                if (ssaIds.empty())
+                    ssaIds.resize(1);
                 if (it == entry.prevSSAIds.end())
-                    curSSAIdMap[ssaEntry.first] -= ssaEntry.second.ssaIdChange;
+                    ssaIds.front() -= ssaEntry.second.ssaIdChange;
                 else // if found
-                    curSSAIdMap[ssaEntry.first] = it->second;
+                    ssaIds.front() = it->second;
             }
             //std::cout << "pop" << std::endl;
             flowStack.pop_back();

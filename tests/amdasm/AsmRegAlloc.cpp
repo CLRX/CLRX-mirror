@@ -225,7 +225,7 @@ j0:     # 84
 )ffDXD",
         {
             { 0, 12,
-                { { 1, false }, { 3, true }, { 4, true }, { 5, true } },
+                { { 3, true }, { 4, true }, { 5, true } },
                 true, false, false },
             { 12, 20, { { 6, false } }, false, false, true },
             { 20, 32, { }, false, false, true },
@@ -289,11 +289,11 @@ c6: loop2:
         {
             { 0, 8, { }, false, false, false },
             { 8, 16,
-                { { 2, false }, { 5, true }, { 6, true }, { 9, true } },
+                { { 5, true }, { 6, true }, { 9, true } },
                 true, false, false },
             // 2
             { 16, 32,
-                { { 3, false }, { 7, true }, { 11, true } },
+                { { 7, true }, { 11, true } },
                 true, false, false },
             { 32, 48,
                 { { 1, false }, { 4, false } },
@@ -304,7 +304,7 @@ c6: loop2:
             { 64, 80, { }, false, true, true },
             // 6 - c2 subroutine
             { 80, 88, { }, false, false, false },
-            { 88, 96, { { 8, false }, { 10, true } },
+            { 88, 96, { { 10, true } },
                 true, false, false },
             { 96, 104, { }, false, true, true },
             // 9 - c3 subroutine
@@ -494,10 +494,10 @@ c1:         v_add_f32 v6, v1, v4    # 92
             // 5
             { 56, 64, { }, false, false, true },
             { 64, 76,
-                { { 7, false }, { 9, true } },
+                { { 9, true } },
                 true, false, false },
             { 76, 84,
-                { { 8, false }, { 9, true } },
+                { { 9, true } },
                 true, false, false },
             { 84, 92, { }, false, false, true },
             // 9 - subroutine
@@ -543,7 +543,7 @@ j0:     # 84
 )ffDXD",
         {
             { 0, 12,
-                { { 1, false }, { 5, false }, { 3, true }, { 4, true } },
+                { { 5, false }, { 3, true }, { 4, true } },
                 true, false, true },
             { 12, 20, { { 6, false } }, false, false, true },
             { 20, 32, { }, false, false, true },
@@ -2055,7 +2055,9 @@ b3:     s_xor_b32 sa[2], sa[2], sa[4]
             { { "sa", 3 }, { { 3, 1 }, { 4, 1 }, { 5, 1 } } }
         },
         true, ""
-    },
+    }
+#if 0
+    ,
     {   // 14 - simple call
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
@@ -2197,6 +2199,7 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
         },
         true, ""
     }
+#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
