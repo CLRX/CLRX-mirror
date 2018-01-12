@@ -1965,7 +1965,98 @@ bb2:    s_add_u32 sa[3], sa[3], sa[2]
         },
         true, ""
     },
-    {   // 13 - simple call
+    {   // 13 - yet another branch example
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4
+        s_mov_b32 sa[3], s5
+        
+        .cf_cjump b1, b2, b3
+        s_setpc_b64 s[0:1]
+
+b0:     s_xor_b32 sa[2], sa[2], sa[4]
+        s_xor_b32 sa[3], sa[3], sa[4]
+        s_endpgm
+        
+b1:     s_xor_b32 sa[2], sa[2], sa[4]
+        s_xor_b32 sa[3], sa[3], sa[4]
+b1x:    s_xor_b32 sa[2], sa[2], sa[4]
+        s_branch b0
+        
+b2:     s_xor_b32 sa[2], sa[2], sa[4]
+        s_xor_b32 sa[3], sa[3], sa[4]
+b2x:    s_xor_b32 sa[2], sa[2], sa[4]
+        s_branch b1x
+        
+b3:     s_xor_b32 sa[2], sa[2], sa[4]
+        s_xor_b32 sa[3], sa[3], sa[4]
+        s_branch b2x
+)ffDXD",
+        {
+            // block 0
+            { 0, 12,
+                { { 1, false }, { 2, false }, { 4, false }, { 6, false } },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 5 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 3 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, false, false, false },
+            // block 1 - b0
+            { 12, 24,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, true },
+            // block 2 - b1
+            { 24, 32,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 3, 3, 3, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 3, 3, 3, 1, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, false },
+            // block 3 - b1x
+            { 32, 40,
+                { { 1, false } },
+                {
+                    { { "sa", 2 }, SSAInfo(3, 4, 4, 4, 1, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, true },
+            // block 4 - b2
+            { 40, 48,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 5, 5, 5, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 4, 4, 4, 1, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, false },
+            // block 5 - b2x
+            { 48, 56,
+                { { 3, false } },
+                {
+                    { { "sa", 2 }, SSAInfo(5, 6, 6, 6, 1, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, true },
+            // block 6 - b3
+            { 56, 68,
+                { { 5, false } },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 7, 7, 7, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 5, 5, 5, 1, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, true }
+        },
+        {   // SSA replaces
+            { { "sa", 2 }, { { 4, 1 }, { 6, 3 }, { 7, 5 } } },
+            { { "sa", 3 }, { { 3, 1 }, { 4, 1 }, { 5, 1 } } }
+        },
+        true, ""
+    },
+    {   // 14 - simple call
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -2021,7 +2112,7 @@ routine:
         },
         true, ""
     },
-    {   // 14 - simple call, more complex routine
+    {   // 15 - simple call, more complex routine
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
