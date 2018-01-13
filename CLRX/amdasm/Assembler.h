@@ -73,7 +73,7 @@ public:
         size_t regUsagesPos;    ///< position in reg usage
         size_t regUsages2Pos;   ///< position in regUsage2
         size_t regVarUsagesPos;    ///< position in regVarUsage
-        uint16_t pushedArgs;    ///< pused argds number
+        uint16_t pushedArgs;    ///< pushed argds number
         bool useRegMode;        ///< true if in usereg mode
     };
 protected:
@@ -88,7 +88,7 @@ protected:
     size_t regUsagesPos;    ///< position in reg usage
     size_t regUsages2Pos;   ///< position in reg usage 2
     size_t regVarUsagesPos; ///< position in regvar usage
-    uint16_t pushedArgs;    ///< pushed args 
+    uint16_t pushedArgs;    ///< pushed args
     cxbyte argPos;      ///< argument position
     cxbyte argFlags;    ///< ???
     cxbyte defaultInstrSize;    ///< default instruction size
