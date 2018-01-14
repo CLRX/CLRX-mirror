@@ -444,15 +444,11 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
 // map of last SSAId for routine, key - varid, value - last SSA ids
 typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > LastSSAIdMap;
 
-// map of ReadBeforeWrite - value - SSAId, count of occurrences
-typedef std::unordered_map<AsmSingleVReg, std::pair<size_t, size_t> > RBWSSAIdMap;
-
 struct RoutineData
 {
     bool processed;
-    size_t cfReturns;   // number of returns in routine
     // rbwSSAIdMap - read before write SSAId's map
-    RBWSSAIdMap rbwSSAIdMap;
+    std::unordered_map<AsmSingleVReg, size_t> rbwSSAIdMap;
     LastSSAIdMap lastSSAIdMap;
 };
 
@@ -460,7 +456,6 @@ struct FlowStackEntry
 {
     size_t blockIndex;
     size_t nextIndex;
-    bool fromCall;
     std::unordered_map<AsmSingleVReg, size_t> prevSSAIds;
 };
 
@@ -493,7 +488,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
         const std::vector<bool>& prevVisited,
         const std::unordered_map<size_t, RoutineData>& routineMap,
         const std::vector<CodeBlock>& codeBlocks,
-        SSAReplacesMap& replacesMap)
+        SSAReplacesMap& replacesMap,
+        std::unordered_set<AsmSingleVReg>* joinedRegs = nullptr)
 {
     size_t nextBlock = prevFlowStack.back().blockIndex;
     auto pfEnd = prevFlowStack.end();
@@ -542,6 +538,9 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                 //std::cout << "  resolv: " << entry.blockIndex << std::endl;
                 for (auto& sentry: cblock.ssaInfoMap)
                 {
+                    if (joinedRegs != nullptr)
+                        joinedRegs->insert(sentry.first);
+                    
                     const SSAInfo& sinfo = sentry.second;
                     auto res = toResolveMap.insert({ sentry.first, entry.blockIndex, });
                     
@@ -553,6 +552,9 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                         auto it = stackVarMap.find(sentry.first);
                         
                         if (it != stackVarMap.end())
+                        {
+                            
+                            
                             // found, resolve by set ssaIdLast
                             for (size_t ssaId: it->second)
                             {
@@ -574,6 +576,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                                     std::cout << "  noinsertreplace: " <<
                                         ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
                             }
+                        }
                     }
                 }
             }
@@ -741,8 +744,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::unordered_map<AsmSingleVReg, size_t> curSSAIdMap;
     // routine map - routine datas map, value - last SSA ids map
     std::unordered_map<size_t, RoutineData> routineMap;
-    // indicator for code block - number of ways that have return
-    std::vector<size_t> waysHaveReturn(codeBlocks.size(), 0);
     
     std::vector<bool> visited(codeBlocks.size(), false);
     flowStack.push_back({ 0, 0 });
@@ -759,9 +760,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             {
                 //std::cout << "proc: " << entry.blockIndex << std::endl;
                 visited[entry.blockIndex] = true;
-                
-                if (cblock.haveReturn)
-                    waysHaveReturn[entry.blockIndex] = 1;
                 
                 for (auto& ssaEntry: cblock.ssaInfoMap)
                 {
@@ -858,12 +856,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                                 routineMap.find(callStack.back().routineBlock)->second;
                         // put first SSAId before write
                         if (sinfo.readBeforeWrite)
-                        {
-                            auto res = rdata.rbwSSAIdMap.insert({ ssaEntry.first,
-                                { sinfo.ssaIdBefore, 1 } });
-                            if (!res.second && res.first->second.first == sinfo.ssaIdBefore)
-                                res.first->second.second++; // increase count
-                        }
+                            rdata.rbwSSAIdMap.insert({ ssaEntry.first, sinfo.ssaIdBefore });
                         
                         if (sinfo.ssaIdChange != 0)
                         {
@@ -876,16 +869,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                                 std::vector<size_t>& ssaIds = res.first->second;
                                 auto ssaIdIt = ssaIds.end();
                                 if (sinfo.readBeforeWrite)
-                                {
                                     ssaIdIt = std::find(ssaIds.begin(), ssaIds.end(),
                                             sinfo.ssaIdBefore);
-                                    // found in readBeforeWrite decrease when replaced
-                                    // by new SSAId
-                                    auto rbwit = rdata.rbwSSAIdMap.find(ssaEntry.first);
-                                    if (rbwit != rdata.rbwSSAIdMap.end() &&
-                                        rbwit->second.first == sinfo.ssaIdBefore)
-                                        rbwit->second.second--; // decrease used
-                                }
                                 if (ssaIdIt == ssaIds.end())
                                     ssaIds.push_back(sinfo.ssaIdLast);
                                 else
@@ -915,15 +900,32 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 else if (rit != routineMap.end())
                     // if not already processed, just mark it
                     rit->second.processed = true;*/
-                    
+                
+                std::unordered_set<AsmSingleVReg> joinedRegs;
                 resolveSSAConflicts(flowStack, callStack, visited, routineMap, codeBlocks,
-                                    ssaReplacesMap);
+                                    ssaReplacesMap, &joinedRegs);
+                if (!callStack.empty())
+                {
+                    RoutineData& rdata = 
+                        (routineMap.find(callStack.back().routineBlock)->second);
+                    for (const AsmSingleVReg& vreg: joinedRegs)
+                    {
+                        auto cssaIdIt = curSSAIdMap.find(vreg);
+                        if (cssaIdIt == curSSAIdMap.end())
+                            continue;
+                        auto rlit = rdata.lastSSAIdMap.find(vreg);
+                        if (rlit == rdata.lastSSAIdMap.end())
+                            continue;
+                        // remove old SSAId from list (if used in this way)
+                        // TODO: compare first SSAId in this way and current last SSAId
+                        auto rllit = std::find(rlit->second.begin(),
+                                    rlit->second.end(), cssaIdIt->second-1);
+                        if (rllit != rlit->second.end())
+                            rlit->second.erase(rllit);
+                    }
+                }
                 // back, already visited
-                const size_t prevReturns = waysHaveReturn[entry.blockIndex];
-                const bool fromCall = entry.fromCall;
                 flowStack.pop_back();
-                if (!flowStack.empty() && !fromCall)
-                    waysHaveReturn[flowStack.back().blockIndex] += prevReturns;
                 continue;
             }
         }
@@ -952,11 +954,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 //std::cout << " call: " << entry.blockIndex << std::endl;
                 callStack.push_back({ entry.blockIndex, entry.nextIndex,
                             cblock.nexts[entry.nextIndex].block });
-                routineMap.insert({ cblock.nexts[entry.nextIndex].block, { false, 0 } });
+                routineMap.insert({ cblock.nexts[entry.nextIndex].block, { false } });
             }
             
-            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0,
-                        cblock.nexts[entry.nextIndex].isCall });
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
             entry.nextIndex++;
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
@@ -974,7 +975,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         joinLastSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap);
                     }
             }
-            flowStack.push_back({ entry.blockIndex+1, 0, false });
+            flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
         }
         else // back
@@ -994,25 +995,37 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 lastMultiSSAIdMap.insert(entry.replacedMultiSSAIds.begin(),
                                 entry.replacedMultiSSAIds.end());*/
             
+            RoutineData* rdata = nullptr;
+            if (!callStack.empty())
+                rdata = &(routineMap.find(callStack.back().routineBlock)->second);
+            
             for (const auto& ssaEntry: cblock.ssaInfoMap)
             {
                 auto it = entry.prevSSAIds.find(ssaEntry.first);
+                size_t& curSSAId = curSSAIdMap[ssaEntry.first];
+                const size_t nextSSAId = curSSAId;
                 if (it == entry.prevSSAIds.end())
-                    curSSAIdMap[ssaEntry.first] -= ssaEntry.second.ssaIdChange;
+                    curSSAId -= ssaEntry.second.ssaIdChange;
                 else // if found
-                    curSSAIdMap[ssaEntry.first] = it->second;
+                    curSSAId = it->second;
+                if (rdata!=nullptr)
+                {
+                    std::vector<size_t>& ssaIds = rdata->lastSSAIdMap
+                            .find(ssaEntry.first)->second;
+                    if (!cblock.nexts.empty() || (!cblock.haveEnd && !cblock.haveReturn))
+                    {   // if cblock with some children
+                        auto nit = std::find(ssaIds.begin(), ssaIds.end(), nextSSAId-1);
+                        if (nit != ssaIds.end())
+                            ssaIds.erase(nit);  // just remove
+                    }
+                    // push previous SSAId to lastSSAIdMap (later will be replaced)
+                    if (std::find(ssaIds.begin(), ssaIds.end(), curSSAId-1) == ssaIds.end())
+                        ssaIds.push_back(curSSAId-1);
+                }
             }
             
-            if (!callStack.empty() && codeBlocks[entry.blockIndex].haveReturn)
-                // add return to routine cfReturns (number of return ways)
-                routineMap[callStack.back().routineBlock].cfReturns++;
-            
-            const size_t prevReturns = waysHaveReturn[entry.blockIndex];
-            const bool fromCall = entry.fromCall;
             //std::cout << "pop" << std::endl;
             flowStack.pop_back();
-            if (!flowStack.empty() && !fromCall)
-                waysHaveReturn[flowStack.back().blockIndex] += prevReturns;
         }
     }
 }
