@@ -1961,7 +1961,7 @@ bb2:    s_add_u32 sa[3], sa[3], sa[2]
                 }, false, false, true }
         },
         {
-            { { "sa", 3 }, { { 3, 1 }, { 5, 3 }, { 5, 1 } } }
+            { { "sa", 3 }, { { 3, 1 }, { 3, 1 }, { 5, 3 }, { 5, 1 } } }
         },
         true, ""
     },
@@ -2055,10 +2055,61 @@ b3:     s_xor_b32 sa[2], sa[2], sa[4]
             { { "sa", 3 }, { { 3, 1 }, { 4, 1 }, { 5, 1 } } }
         },
         true, ""
+    },
+    {
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4
+        s_mov_b32 sa[3], s5
+        .cf_jump b1, b2
+        s_setpc_b64 s[0:1]
+        
+b11:    s_xor_b32 sa[2], sa[2], sa[3]
+        s_endpgm
+        
+b1:     s_xor_b32 sa[2], sa[2], sa[3]
+        s_branch b11
+        
+b2:     s_branch b11
+)ffDXD",
+        {
+            // block 0 - start
+            { 0, 12,
+                { { 2, false }, { 3, false } },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 5 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 3 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, false, false, true },
+            // block 1 - b11
+            { 12, 20,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, SIZE_MAX, 2, SIZE_MAX, 0, true) }
+                }, false, false, true },
+            // block 2 - b1
+            { 20, 28,
+                { { 1, false } },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, SIZE_MAX, 2, SIZE_MAX, 0, true) }
+                }, false, false, true },
+            // block 3 - b2
+            { 28, 32,
+                { { 1, false } },
+                { }, false, false, true }
+        },
+        {
+            { { "sa", 2 }, { { 2, 1 } } }
+        },
+        true, ""
     }
 #if 0
     ,
-    {   // 14 - simple call
+    {   // 15 - simple call
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -2114,7 +2165,7 @@ routine:
         },
         true, ""
     },
-    {   // 15 - simple call, more complex routine
+    {   // 16 - simple call, more complex routine
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
