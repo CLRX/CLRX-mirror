@@ -444,6 +444,8 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
 // map of last SSAId for routine, key - varid, value - last SSA ids
 typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > LastSSAIdMap;
 
+typedef std::unordered_map<AsmSingleVReg, std::vector<bool> > LastOccurMap;
+
 struct RoutineData
 {
     // rbwSSAIdMap - read before write SSAId's map
@@ -870,6 +872,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     // routine map - routine datas map, value - last SSA ids map
     std::unordered_map<size_t, RoutineData> routineMap;
     
+    LastOccurMap lastOccurMap;
+    
     std::vector<bool> visited(codeBlocks.size(), false);
     flowStack.push_back({ 0, 0 });
     
@@ -894,6 +898,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         sinfo.ssaIdChange = 0; // zeroing SSA changes
                         continue; // no change for registers
                     }
+                    
+                    if (sinfo.ssaIdChange != 0)
+                        lastOccurMap[ssaEntry.first].push_back(false);
                     
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
                     auto ssaIdsIt = retSSAIdMap.find(ssaEntry.first);
@@ -1116,11 +1123,17 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 if (rdata!=nullptr)
                 {
                     std::vector<size_t>& ssaIds = rdata->lastSSAIdMap[ssaEntry.first];
-                    if (!cblock.nexts.empty() || (!cblock.haveEnd && !cblock.haveReturn))
+                    if (ssaEntry.second.ssaIdChange != 0 &&
+                        lastOccurMap[ssaEntry.first].back())
                     {   // if cblock with some children
                         auto nit = std::find(ssaIds.begin(), ssaIds.end(), nextSSAId-1);
-                        if (nit != ssaIds.end())
+                        if (nit != ssaIds.end() && nextSSAId != curSSAId)
+                        {
+                            /*std::cout << "erase in blk2: " << ssaEntry.first.regVar <<
+                                    ":" << ssaEntry.first.index << ": " <<
+                                        entry.blockIndex << "=" << *nit << std::endl;*/
                             ssaIds.erase(nit);  // just remove
+                        }
                     }
                     // push previous SSAId to lastSSAIdMap (later will be replaced)
                     /*std::cout << "call back: " << nextSSAId << "," <<
@@ -1129,11 +1142,26 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     if (entry.blockIndex == callStack.back().routineBlock)
                     {   // just erase if end of traverse in routine
                         if (fit != ssaIds.end())
+                        {
+                            /*std::cout << "erase in blk: " << ssaEntry.first.regVar <<
+                                    ":" << ssaEntry.first.index << ": " <<
+                                    entry.blockIndex << "=" << *fit << std::endl;*/
                             ssaIds.erase(fit);
+                        }
                     }
                     else
                         if (fit == ssaIds.end())
                             ssaIds.push_back(curSSAId-1);
+                }
+                
+                if (ssaEntry.second.ssaIdChange != 0)
+                {
+                    std::vector<bool>& lastOccur = lastOccurMap[ssaEntry.first];
+                    // erase indicator for last SSAEntry
+                    lastOccur.pop_back();
+                    if (!lastOccur.empty())
+                        // mark that parent have children
+                        lastOccur.back() = true;
                 }
             }
             
