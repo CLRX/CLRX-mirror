@@ -2159,9 +2159,7 @@ routine:
         },
         { },
         true, ""
-    }
-#if 0
-    ,
+    },
     {   // 16 - simple call, more complex routine
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
@@ -2194,7 +2192,7 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
 )ffDXD",
         {
             { 0, 32,
-                { {1, false }, { 2, true } },
+                { { 2, true } },
                 {
                     { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, false) },
                     { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, false) },
@@ -2209,15 +2207,15 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
             { 32, 44,
                 { },
                 {
-                    { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
-                    { { "sa", 3 }, SSAInfo(1, 2, 2, 2, 1, true) }
+                    { { "sa", 2 }, SSAInfo(3, 5, 5, 5, 1, true) },
+                    { { "sa", 3 }, SSAInfo(3, 5, 5, 5, 1, true) }
                 }, false, false, true },
             // block 2 - routine
             { 44, 56,
                 { { 3, false }, { 4, false } },
                 {
-                    { { "sa", 2 }, SSAInfo(1, 3, 3, 3, 1, true) },
-                    { { "sa", 3 }, SSAInfo(1, 3, 3, 3, 1, true) },
+                    { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 2, 2, 2, 1, true) },
                     { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
                 }, false, false, false },
             // block 3 - first return
@@ -2226,8 +2224,8 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
                 {
                     { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
                     { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
-                    { { "sa", 2 }, SSAInfo(3, 4, 4, 4, 1, true) },
-                    { { "sa", 3 }, SSAInfo(3, 4, 4, 4, 1, true) },
+                    { { "sa", 2 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "sa", 3 }, SSAInfo(2, 3, 3, 3, 1, true) },
                     { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
                 }, false, true, true },
             // block 4 - second return
@@ -2236,18 +2234,17 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
                 {
                     { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
                     { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
-                    { { "sa", 2 }, SSAInfo(3, 5, 5, 5, 1, true) },
-                    { { "sa", 3 }, SSAInfo(3, 5, 5, 5, 1, true) },
+                    { { "sa", 2 }, SSAInfo(2, 4, 4, 4, 1, true) },
+                    { { "sa", 3 }, SSAInfo(2, 4, 4, 4, 1, true) },
                     { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
                 }, false, true, true }
         },
         {
-            { { "sa", 2 }, { { 4, 1 }, { 5, 1 } } },
-            { { "sa", 3 }, { { 4, 1 }, { 5, 1 } } }
+            { { "sa", 2 }, { { 4, 3 } } },
+            { { "sa", 3 }, { { 4, 3 } } }
         },
         true, ""
     }
-#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
