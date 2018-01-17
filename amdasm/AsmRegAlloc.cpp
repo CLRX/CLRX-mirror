@@ -508,6 +508,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
         for (const NextBlock& next: cblock.nexts)
             if (next.isCall)
             {
+                if (next.block == nextBlock)
+                    break; // if call to this next routine (stop)
                 const LastSSAIdMap& regVarMap =
                         routineMap.find(next.block)->second.lastSSAIdMap;
                 for (const auto& sentry: regVarMap)
@@ -556,13 +558,17 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                                 if (ssaId > sinfo.ssaIdBefore)
                                 {
                                     /*std::cout << "  insertreplace: " <<
+                                        sentry.first.regVar << ":" <<
+                                        sentry.first.index  << ": " <<
                                         ssaId << ", " << sinfo.ssaIdBefore << std::endl;*/
                                     insertReplace(replacesMap, sentry.first, ssaId,
                                                 sinfo.ssaIdBefore);
                                 }
                                 else if (ssaId < sinfo.ssaIdBefore)
                                 {
-                                    /*std::cout << "  insertreplace: " <<
+                                    /*std::cout << "  insertreplace2: " <<
+                                        sentry.first.regVar << ":" <<
+                                        sentry.first.index  << ": " <<
                                         ssaId << ", " << sinfo.ssaIdBefore << std::endl;*/
                                     insertReplace(replacesMap, sentry.first,
                                                   sinfo.ssaIdBefore, ssaId);
@@ -1009,18 +1015,18 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             else
             {
+                resolveSSAConflicts(flowStack, callStack, visited, routineMap, codeBlocks,
+                                    ssaReplacesMap);
+                
                 // join routine data
-                auto rit = routineMap.find(entry.blockIndex);
+                /*auto rit = routineMap.find(entry.blockIndex);
                 if (rit != routineMap.end())
                     // just join with current routine data
                     joinRoutineData(routineMap.find(
-                            callStack.back().routineBlock)->second, rit->second);
-                
-                resolveSSAConflicts(flowStack, callStack, visited, routineMap, codeBlocks,
-                                    ssaReplacesMap);
-                if (!callStack.empty())
+                            callStack.back().routineBlock)->second, rit->second);*/
+                /*if (!callStack.empty())
                     collectSSAIdsForCall(flowStack, callStack, visited,
-                            routineMap, codeBlocks);
+                            routineMap, codeBlocks);*/
                 // back, already visited
                 flowStack.pop_back();
                 continue;
