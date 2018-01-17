@@ -884,7 +884,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     }
                     
                     if (sinfo.ssaIdChange != 0)
+                    {
+                        /*std::cout << "loccurpush: " << ssaEntry.first.regVar << ":" <<
+                                ssaEntry.first.index << ": " <<
+                                entry.blockIndex << std::endl;*/
                         lastOccurMap[ssaEntry.first].push_back(false);
+                    }
                     
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
                     auto ssaIdsIt = retSSAIdMap.find(ssaEntry.first);
@@ -1139,6 +1144,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 
                 if (ssaEntry.second.ssaIdChange != 0)
                 {
+                    /*std::cout << "loccurpop: " << ssaEntry.first.regVar << ":" <<
+                                ssaEntry.first.index << ": " <<
+                                entry.blockIndex << std::endl;*/
                     std::vector<bool>& lastOccur = lastOccurMap[ssaEntry.first];
                     // erase indicator for last SSAEntry
                     lastOccur.pop_back();
