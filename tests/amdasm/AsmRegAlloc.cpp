@@ -717,7 +717,6 @@ struct AsmSSADataCase
 
 static const AsmSSADataCase ssaDataTestCases1Tbl[] =
 {
-#if 0
     {   /* 0 - simple */
         ".regvar sa:s:8, va:v:10\n"
         "s_mov_b32 sa[4], sa[2]\n"
@@ -2603,7 +2602,6 @@ bb11_:  s_xor_b32 sa[2], sa[2], sa[0]
         },
         true, ""
     },
-#endif
     {   // 20 - multiple call of routine
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
