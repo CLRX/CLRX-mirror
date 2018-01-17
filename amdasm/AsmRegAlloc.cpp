@@ -657,22 +657,6 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src)
     joinLastSSAIdMap(dest.lastSSAIdMap, src.lastSSAIdMap);
 }
 
-static void removeLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src)
-{
-    for (const auto& entry: src)
-    {
-        auto destIt = dest.find(entry.first); // find
-        std::vector<size_t>& destEntry = destIt->second;
-        // add new ways
-        for (size_t ssaId: entry.second)
-        {
-            auto it = std::find(destEntry.begin(), destEntry.end(), ssaId);
-            if (it != destEntry.end())
-                destEntry.erase(it);
-        }
-    }
-}
-
 static void collectSSAIdsForCall(const std::deque<FlowStackEntry>& prevFlowStack,
         const std::deque<CallStackEntry>& prevCallStack,
         const std::vector<bool>& prevVisited,
@@ -1131,7 +1115,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         {
                             /*std::cout << "erase in blk2: " << ssaEntry.first.regVar <<
                                     ":" << ssaEntry.first.index << ": " <<
-                                        entry.blockIndex << "=" << *nit << std::endl;*/
+                                    entry.blockIndex << " ssaId=" << *nit << std::endl;*/
                             ssaIds.erase(nit);  // just remove
                         }
                     }
@@ -1145,13 +1129,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         {
                             /*std::cout << "erase in blk: " << ssaEntry.first.regVar <<
                                     ":" << ssaEntry.first.index << ": " <<
-                                    entry.blockIndex << "=" << *fit << std::endl;*/
+                                    entry.blockIndex << " ssaId=" << *fit << std::endl;*/
                             ssaIds.erase(fit);
                         }
                     }
-                    else
-                        if (fit == ssaIds.end())
-                            ssaIds.push_back(curSSAId-1);
+                    else if (fit == ssaIds.end())
+                        ssaIds.push_back(curSSAId-1);
                 }
                 
                 if (ssaEntry.second.ssaIdChange != 0)
