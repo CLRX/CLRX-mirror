@@ -943,7 +943,7 @@ until COND-EXPR returns zero. Example:
 x=1
 .while x<16
     .int x
-    x=x+1
+    x=x+x
 .endr
 ```
 
