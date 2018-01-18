@@ -608,6 +608,7 @@ void AsmSymbol::undefine()
         delete expression;
         expression = nullptr;
     }
+    value = 0;
     onceDefined = false;
 }
 

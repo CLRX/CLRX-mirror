@@ -39,6 +39,7 @@ namespace CLRX
 {
 
 class Assembler;
+class AsmExpression;
 
 /// line and column
 struct LineCol
@@ -286,6 +287,29 @@ public:
     { return repeatsNum; }
 };
 
+/// assembler repeat 'for'
+class AsmFor: public AsmRepeat
+{
+private:
+    void* iterSymEntry;
+    std::unique_ptr<const AsmExpression> condExpr;
+    std::unique_ptr<const AsmExpression> nextExpr;
+public:
+    /// constructor
+    explicit AsmFor(const AsmSourcePos& pos, void* iterSymEntry,
+            const AsmExpression* condExpr, const AsmExpression* nextExpr);
+    
+    /// get iteration symbol entry
+    const void* getIterSymEntry() const
+    { return iterSymEntry; }
+    /// get condition expression
+    const AsmExpression* getCondExpr() const
+    { return condExpr.get(); }
+    /// get next expression
+    const AsmExpression* getNextExpr() const
+    { return nextExpr.get(); }
+};
+
 /// assembler IRP
 class AsmIRP: public AsmRepeat
 {
@@ -454,7 +478,7 @@ public:
 /// assembler repeat input filter
 class AsmRepeatInputFilter: public AsmInputFilter
 {
-private:
+protected:
     std::unique_ptr<const AsmRepeat> repeat;
     uint64_t repeatCount;
     LineNo contentLineNo;
@@ -469,6 +493,16 @@ public:
     /// get current repeat count
     uint64_t getRepeatCount() const
     { return repeatCount; }
+};
+
+/// assembler 'for' pseudo-op input filter
+class AsmForInputFilter: public AsmRepeatInputFilter
+{
+public:
+    /// constructor
+    explicit AsmForInputFilter(const AsmFor* forRpt);
+    
+    const char* readLine(Assembler& assembler, size_t& lineSize);
 };
 
 /// assembler IRP pseudo-op input filter

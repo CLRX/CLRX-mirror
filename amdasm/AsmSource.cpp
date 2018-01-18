@@ -111,6 +111,12 @@ void AsmRepeat::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSourc
     contentLineNo++;
 }
 
+AsmFor::AsmFor(const AsmSourcePos& _pos, void* _iterSymEntry,
+                const AsmExpression* _condExpr, const AsmExpression* _nextExpr)
+        : AsmRepeat(_pos, 0), iterSymEntry(_iterSymEntry), condExpr(_condExpr),
+                    nextExpr(_nextExpr)
+{ }
+
 AsmIRP::AsmIRP(const AsmSourcePos& _pos, const CString& _symbolName,
                const Array<CString>& _symValues)
         : AsmRepeat(_pos, _symValues.size()), irpc(false),
@@ -948,6 +954,62 @@ const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSiz
     return content + oldPos;
 }
 
+AsmForInputFilter::AsmForInputFilter(const AsmFor* forRpt) :
+        AsmRepeatInputFilter(forRpt)
+{ }
+
+const char* AsmForInputFilter::readLine(Assembler& assembler, size_t& lineSize)
+{
+    colTranslations.clear();
+    const std::vector<LineTrans>& repeatColTrans = repeat->getColTranslations();
+    const LineTrans* colTransEnd = repeatColTrans.data()+ repeatColTrans.size();
+    const size_t contentSize = repeat->getContent().size();
+    if (pos == contentSize)
+    {
+        repeatCount++;
+        if (repeatCount == repeat->getRepeatsNum() || contentSize==0)
+        {
+            lineSize = 0;
+            return nullptr;
+        }
+        sourceTransIndex = 0;
+        curColTrans = repeat->getColTranslations().data();
+        pos = 0;
+        contentLineNo = 0;
+        source = RefPtr<const AsmSource>(new AsmRepeatSource(
+            repeat->getSourceTrans(0).source, repeatCount, repeat->getRepeatsNum()));
+    }
+    const char* content = repeat->getContent().data();
+    size_t oldPos = pos;
+    while (pos < contentSize && content[pos] != '\n')
+        pos++;
+    
+    lineSize = pos - oldPos; // set new linesize
+    if (pos < contentSize)
+        pos++; // skip newline
+    
+    const LineTrans* oldCurColTrans = curColTrans;
+    curColTrans++;
+    while (curColTrans != colTransEnd && curColTrans->position > 0)
+        curColTrans++;
+    colTranslations.assign(oldCurColTrans, curColTrans);
+    
+    lineNo = (curColTrans != colTransEnd) ? curColTrans->lineNo : repeatColTrans[0].lineNo;
+    if (sourceTransIndex+1 < repeat->getSourceTransSize())
+    {
+        const AsmRepeat::SourceTrans& fpos = repeat->getSourceTrans(sourceTransIndex+1);
+        if (fpos.lineNo == contentLineNo)
+        {
+            macroSubst = fpos.macro;
+            sourceTransIndex++;
+            source = RefPtr<const AsmSource>(new AsmRepeatSource(
+                fpos.source, repeatCount, repeat->getRepeatsNum()));
+        }
+    }
+    contentLineNo++;
+    return content + oldPos;
+}
+
 AsmIRPInputFilter::AsmIRPInputFilter(const AsmIRP* _irp) :
         AsmInputFilter(AsmInputFilterType::REPEAT), irp(_irp),
         repeatCount(0), contentLineNo(0), sourceTransIndex(0), realLinePos(0)
@@ -1183,7 +1245,10 @@ static RefPtr<const AsmSource> printAsmRepeats(std::ostream& os,
         char numBuf[64];
         size_t size = itocstrCStyle(sourceRept->repeatCount+1, numBuf, 32);
         numBuf[size++] = '/';
-        size += itocstrCStyle(sourceRept->repeatsNum, numBuf+size, 32-size);
+        if (sourceRept->repeatsNum!=0)
+            size += itocstrCStyle(sourceRept->repeatsNum, numBuf+size, 32-size);
+        else // print '?'. we don't know where is end
+            numBuf[size++] = '?';
         numBuf[size++] = ':';
         numBuf[size++] = '\n';
         os.write(numBuf, size);

@@ -330,7 +330,7 @@ public:
     /// return true if expression is empty
     bool isEmpty() const
     { return ops.empty(); }
-
+    
     /// helper to create symbol snapshot. Creates initial expression for symbol snapshot
     AsmExpression* createForSnapshot(const AsmSourcePos* exprSourcePos) const;
     

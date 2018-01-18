@@ -50,7 +50,7 @@ static const char* offlinePseudoOpNamesTbl[] =
     "elseifle", "elseiflt", "elseifnarch", "elseifnb", "elseifnc",
     "elseifndef", "elseifne", "elseifnes",
     "elseifnfmt", "elseifngpu", "elseifnotdef",
-    "endif", "endm", "endmacro", "endr", "endrept",
+    "endif", "endm", "endmacro", "endr", "endrept", "for",
     "if", "if32", "if64", "ifarch", "ifb", "ifc", "ifdef", "ifeq",
     "ifeqs", "iffmt", "ifge", "ifgpu", "ifgt", "ifle",
     "iflt", "ifnarch", "ifnb", "ifnc", "ifndef",
@@ -61,7 +61,7 @@ static const char* offlinePseudoOpNamesTbl[] =
 /// pseudo-ops not ignored while putting macro content
 static const char* macroRepeatPseudoOpNamesTbl[] =
 {
-    "endm", "endmacro", "endr", "endrept", "irp", "irpc", "macro", "rept"
+    "endm", "endmacro", "endr", "endrept", "for", "irp", "irpc", "macro", "rept"
 };
 
 // pseudo-ops used while skipping clauses
@@ -75,7 +75,7 @@ enum
     ASMCOP_ELSEIFNDEF, ASMCOP_ELSEIFNE, ASMCOP_ELSEIFNES,
     ASMCOP_ELSEIFNFMT, ASMCOP_ELSEIFNGPU, ASMCOP_ELSEIFNOTDEF,
     ASMCOP_ENDIF, ASMCOP_ENDM, ASMCOP_ENDMACRO, ASMCOP_ENDR, ASMCOP_ENDREPT,
-    ASMCOP_IF, ASMCOP_IF32, ASMCOP_IF64, ASMCOP_IFARCH, ASMCOP_IFB,
+    ASMCOP_FOR, ASMCOP_IF, ASMCOP_IF32, ASMCOP_IF64, ASMCOP_IFARCH, ASMCOP_IFB,
     ASMCOP_IFC, ASMCOP_IFDEF, ASMCOP_IFEQ,
     ASMCOP_IFEQS, ASMCOP_IFFMT, ASMCOP_IFGE, ASMCOP_IFGPU, ASMCOP_IFGT, ASMCOP_IFLE,
     ASMCOP_IFLT, ASMCOP_IFNARCH, ASMCOP_IFNB, ASMCOP_IFNC, ASMCOP_IFNDEF,
@@ -86,7 +86,7 @@ enum
 /// pseudo-ops not ignored while putting macro content
 enum
 { ASMMROP_ENDM = 0, ASMMROP_ENDMACRO, ASMMROP_ENDR, ASMMROP_ENDREPT,
-    ASMMROP_IRP, ASMMROP_IRPC, ASMMROP_MACRO, ASMMROP_REPT };
+    ASMMROP_FOR, ASMMROP_IRP, ASMMROP_IRPC, ASMMROP_MACRO, ASMMROP_REPT };
 
 /// all main pseudo-ops (sorted by name)
 static const char* pseudoOpNamesTbl[] =
@@ -109,7 +109,7 @@ static const char* pseudoOpNamesTbl[] =
     "equ", "equiv", "eqv",
     "err", "error", "exitm", "extern",
     "fail", "file", "fill", "fillq",
-    "float", "format", "gallium", "get_64bit", "get_arch",
+    "float", "for", "format", "gallium", "get_64bit", "get_arch",
     "get_format", "get_gpu", "get_version", "global",
     "globl", "gpu", "half", "hword", "if", "if32", "if64",
     "ifarch", "ifb", "ifc", "ifdef", "ifeq",
@@ -152,7 +152,7 @@ enum
     ASMOP_EQU, ASMOP_EQUIV, ASMOP_EQV,
     ASMOP_ERR, ASMOP_ERROR, ASMOP_EXITM, ASMOP_EXTERN,
     ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FILLQ,
-    ASMOP_FLOAT, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GET_64BIT, ASMOP_GET_ARCH,
+    ASMOP_FLOAT, ASMOP_FOR, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GET_64BIT, ASMOP_GET_ARCH,
     ASMOP_GET_FORMAT, ASMOP_GET_GPU, ASMOP_GET_VERSION, ASMOP_GLOBAL,
     ASMOP_GLOBL, ASMOP_GPU, ASMOP_HALF, ASMOP_HWORD, ASMOP_IF, ASMOP_IF32, ASMOP_IF64,
     ASMOP_IFARCH, ASMOP_IFB, ASMOP_IFC, ASMOP_IFDEF, ASMOP_IFEQ,
@@ -2040,11 +2040,7 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
     if (it == nullptr || !it->second.isDefined())
         asmr.printWarning(symNamePlace, (std::string("Symbol '") + symName.c_str() +
                 "' already doesn't exist").c_str());
-    else if (it->second.occurrencesInExprs.empty())
-        // remove from symbol map if no occurrences anywhere
-        outScope->symbolMap.erase(sameSymName);
-    else
-        // if some occurrences in expression just mark as undefined
+    else // always undefine (do not remove, due to .eqv evaluation)
         it->second.undefine();
 }
 
@@ -2451,6 +2447,8 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_FLOAT:
             AsmPseudoOps::putFloats<uint32_t>(*this, stmtPlace, linePtr);
+            break;
+        case ASMOP_FOR:
             break;
         case ASMOP_FORMAT:
             AsmPseudoOps::setOutFormat(*this, linePtr);
@@ -2917,6 +2915,7 @@ bool Assembler::skipClauses(bool exitm)
             case ASMCOP_IRP:
             case ASMCOP_IRPC:
             case ASMCOP_REPT:
+            case ASMCOP_FOR:
                 if (!pushClause(stmtPlace, AsmClauseType::REPEAT))
                     good = false;
                 break;
@@ -2980,6 +2979,7 @@ bool Assembler::putMacroContent(RefPtr<AsmMacro> macro)
             case ASMMROP_IRP:
             case ASMMROP_IRPC:
             case ASMMROP_REPT:
+            case ASMMROP_FOR:
                 if (!pushClause(stmtPlace, AsmClauseType::REPEAT))
                     good = false;
                 break;
@@ -3045,6 +3045,7 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
             case ASMMROP_IRP:
             case ASMMROP_IRPC:
             case ASMMROP_REPT:
+            case ASMMROP_FOR:
                 if (!pushClause(stmtPlace, AsmClauseType::REPEAT))
                     good = false;
                 break;
