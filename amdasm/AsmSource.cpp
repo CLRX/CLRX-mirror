@@ -96,6 +96,9 @@ AsmRepeat::AsmRepeat(const AsmSourcePos& _pos, uint64_t _repeatsNum)
         : contentLineNo(0), sourcePos(_pos), repeatsNum(_repeatsNum)
 { }
 
+AsmRepeat::~AsmRepeat()
+{ }
+
 // add line to repetition
 void AsmRepeat::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource> source,
             const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
@@ -112,9 +115,12 @@ void AsmRepeat::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSourc
 }
 
 AsmFor::AsmFor(const AsmSourcePos& _pos, void* _iterSymEntry,
-                const AsmExpression* _condExpr, const AsmExpression* _nextExpr)
+                AsmExpression* _condExpr, AsmExpression* _nextExpr)
         : AsmRepeat(_pos, 0), iterSymEntry(_iterSymEntry), condExpr(_condExpr),
                     nextExpr(_nextExpr)
+{ }
+
+AsmFor::~AsmFor()
 { }
 
 AsmIRP::AsmIRP(const AsmSourcePos& _pos, const CString& _symbolName,
@@ -970,27 +976,30 @@ const char* AsmForInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         repeatCount++;
         uint64_t value = 0;
         cxuint sectionId = ASMSECT_ABS;
-        {
-            std::unique_ptr<AsmExpression> condEvExpr(asmFor->getCondExpr()->
-                        createExprToEvaluate(assembler));
-            if (!condEvExpr->evaluate(assembler, value, sectionId) ||
-                        sectionId != ASMSECT_ABS)
-                value = 0;
-        }
+        bool good = true;
         {
             std::unique_ptr<AsmExpression> nextEvExpr(asmFor->getNextExpr()->
                         createExprToEvaluate(assembler));
             uint64_t nextValue = 0;
             cxuint nextSectionId = ASMSECT_ABS;
-            if (nextEvExpr->evaluate(assembler, nextValue, nextSectionId) &&
+            if (nextEvExpr != nullptr &&
+                nextEvExpr->evaluate(assembler, nextValue, nextSectionId) &&
                         nextSectionId == ASMSECT_ABS)
                 assembler.setSymbol(*(AsmSymbolEntry*)asmFor->getIterSymEntry(),
                                     nextValue, ASMSECT_ABS);
             else
+                good = false;
+        }
+        if (good)
+        {
+            std::unique_ptr<AsmExpression> condEvExpr(asmFor->getCondExpr()->
+                        createExprToEvaluate(assembler));
+            if (condEvExpr==nullptr || !condEvExpr->evaluate(assembler, value, sectionId) ||
+                        sectionId != ASMSECT_ABS)
                 value = 0;
         }
         
-        if (value==0 || contentSize==0)
+        if (!good || value==0 || contentSize==0)
         {
             lineSize = 0;
             return nullptr;

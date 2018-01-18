@@ -286,6 +286,8 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     // do IRP
     static void doIRP(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                       bool perChar = false);
+    // do 'for'
+    static void doFor(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
     // do open scope (.scope)
     static void openScope(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
     // do close scope (.ends or .endscope)

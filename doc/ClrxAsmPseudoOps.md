@@ -299,6 +299,30 @@ Emit single-precision floating point values. If no value between comma then an
 assembler stores 0 and warn about no value.
 This pseudo-operation accepts only single precision floating point literals.
 
+### .for
+
+Syntax: .for SYMBOL=INITVALUE, COND-EXPR, NEXT-EXPR
+
+Open 'for' repetition. Before repetition, SYMBOL is initialized by INITVALUE.
+For every repetition SYMBOL value will be replaced by value evaluted by NEXT-EXPR.
+The code between this pseudo-operation and `.endr` will be repeated
+until COND-EXPR returns zero. Example:
+
+```
+.for x=1,x<16,x+x
+    .int x
+.endr
+```
+
+generates:
+
+```
+.int x      # x=1
+.int x      # x=2
+.int x      # x=4
+.int x      # x=8
+```
+
 ### .format
 
 Syntax: .format BINFORMAT

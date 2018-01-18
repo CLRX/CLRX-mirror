@@ -256,6 +256,7 @@ protected:
 public:
     /// constructor
     explicit AsmRepeat(const AsmSourcePos& pos, uint64_t repeatsNum);
+    virtual ~AsmRepeat();
     
     /// adds line to repeat from source
     /**
@@ -292,12 +293,14 @@ class AsmFor: public AsmRepeat
 {
 private:
     void* iterSymEntry;
-    std::unique_ptr<const AsmExpression> condExpr;
-    std::unique_ptr<const AsmExpression> nextExpr;
+    std::unique_ptr<AsmExpression> condExpr;
+    std::unique_ptr<AsmExpression> nextExpr;
 public:
     /// constructor
     explicit AsmFor(const AsmSourcePos& pos, void* iterSymEntry,
-            const AsmExpression* condExpr, const AsmExpression* nextExpr);
+            AsmExpression* condExpr, AsmExpression* nextExpr);
+    
+    virtual ~AsmFor();
     
     /// get iteration symbol entry
     const void* getIterSymEntry() const

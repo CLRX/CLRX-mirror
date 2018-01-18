@@ -1959,5 +1959,102 @@ label2: .int 3,6,7
                     CLRX_MICRO_VERSION, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
         }, true, "", ""
     },
+    /* 70 - '.for' repetition */
+    {
+        R"ffDXD(
+            .for  x = 1  ,  x<  16,  x+x
+                .int x
+            .endr
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            {
+                0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+                0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00
+            } } },
+        {
+            { ".", 16U, 0, 0U, true, false, false, 0, 0 },
+            { "x", 16U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
+    /* 71 - '.for' repetition (error if x is onceDefined) */
+    {
+        R"ffDXD(
+            .equiv x, 0
+            .for  x = 1  ,  x<  16,  x+x
+                .int x
+            .endr
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            {
+                0x00, 0x00, 0x00, 0x00
+            } } },
+        {
+            { ".", 4U, 0, 0U, true, false, false, 0, 0 },
+            { "x", 0U, ASMSECT_ABS, 0U, true, true, false, 0, 0 }
+        }, false, "test.s:3:19: Error: Symbol 'x' is already defined\n"
+            "test.s:5:13: Error: No '.rept' before '.endr'\n", ""
+    },
+    /* 72 - '.for' repetition (error due to undefined symbols) */
+    {
+        R"ffDXD(
+            .for  x = 1  ,  x<  16,  x+x+vv
+                .int x
+            .endr
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            {
+                0x01, 0x00, 0x00, 0x00
+            } } },
+        {
+            { ".", 4U, 0, 0U, true, false, false, 0, 0 },
+            { "vv", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, false, "test.s:2:36: Error: Expression have unresolved symbol 'vv'\n", ""
+    },
+    /* 73 - '.for' repetition (error due to undefined symbols) */
+    {
+        R"ffDXD(
+            .for  x = 1  ,  x<  16+vv ,  x+x
+                .int x
+            .endr
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            {
+                0x01, 0x00, 0x00, 0x00
+            } } },
+        {
+            { ".", 4U, 0, 0U, true, false, false, 0, 0 },
+            { "vv", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x", 2U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, false, "test.s:2:27: Error: Expression have unresolved symbol 'vv'\n", ""
+    },
+    /* 74 - '.for' repetition - with expr symbol */
+    {   R"ffDXD(
+        .eqv c,11+d
+        d=7
+        .for x =  1,x<16+c,x+x
+            .int x
+        .endr
+        .int c
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            {
+                0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+                0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00,
+                0x10, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00,
+                0x12, 0x00, 0x00, 0x00
+            } } },
+        {
+            { ".", 28U, 0, 0U, true, false, false, 0, 0 },
+            { "c", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "d", 7U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x", 64U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
     { nullptr }
 };

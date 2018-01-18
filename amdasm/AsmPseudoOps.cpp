@@ -1881,6 +1881,83 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*
     }
 }
 
+void AsmPseudoOps::doFor(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    const char* symNamePlace = linePtr;
+    AsmSymbolEntry* iterSymbol = nullptr;
+    const CString symName = extractScopedSymName(linePtr, end, false);
+    if (symName.empty())
+        ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
+    size_t symNameLength = symName.size();
+    // special case for '.' symbol (check whether is in global scope)
+    if (symNameLength >= 3 && symName.compare(symNameLength-3, 3, "::.")==0)
+        ASM_RETURN_BY_ERROR(symNamePlace, "Symbol '.' can be only in global scope")
+    
+    bool good = true;
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr==end || *linePtr!='=')
+        ASM_NOTGOOD_BY_ERROR(linePtr, "Expected '='")
+    skipCharAndSpacesToEnd(linePtr, end);
+    uint64_t value = 0;
+    cxuint sectionId = ASMSECT_ABS;
+    good &= AsmParseUtils::getAnyValueArg(asmr, value, sectionId, linePtr);
+    if (good)
+    {
+        std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
+                    AsmSymbol(sectionId, value));
+        if (!res.second)
+        {
+            // if symbol found
+            if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
+            {
+                asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
+                            "' is already defined").c_str());
+                good = false;
+            }
+            else // set value of symbol
+                asmr.setSymbol(*res.first, value, sectionId);
+        }
+        else // set hasValue (by isResolvableSection
+            res.first->second.hasValue = asmr.isResolvableSection(sectionId);
+        iterSymbol = res.first;
+    }
+    
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    std::unique_ptr<AsmExpression> condExpr(AsmExpression::parse(asmr, linePtr, true));
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    std::unique_ptr<AsmExpression> nextExpr(AsmExpression::parse(asmr, linePtr, true));
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (condExpr==nullptr || nextExpr==nullptr)
+        return; // if no expressions
+    
+    // check depth of repetitions
+    if (asmr.repetitionLevel == 1000)
+        PSEUDOOP_RETURN_BY_ERROR("Repetition level is greater than 1000")
+    
+    // create AsmFor
+    asmr.pushClause(pseudoOpPlace, AsmClauseType::REPEAT);
+    std::unique_ptr<AsmFor> repeat(new AsmFor(
+                asmr.getSourcePos(pseudoOpPlace), iterSymbol, condExpr.get(), nextExpr.get()));
+    condExpr.release();
+    nextExpr.release();
+    if (asmr.putRepetitionContent(*repeat))
+    {
+        // and input stream filter
+        std::unique_ptr<AsmInputFilter> newInputFilter(
+                    new AsmForInputFilter(repeat.release()));
+        asmr.asmInputFilters.push(newInputFilter.release());
+        asmr.currentInputFilter = asmr.asmInputFilters.top();
+        asmr.repetitionLevel++;
+    }
+}
+
 void AsmPseudoOps::purgeMacro(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
@@ -2449,6 +2526,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::putFloats<uint32_t>(*this, stmtPlace, linePtr);
             break;
         case ASMOP_FOR:
+            AsmPseudoOps::doFor(*this, stmtPlace, linePtr);
             break;
         case ASMOP_FORMAT:
             AsmPseudoOps::setOutFormat(*this, linePtr);

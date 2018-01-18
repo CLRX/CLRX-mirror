@@ -1046,7 +1046,7 @@ AsmExpression* AsmExpression::createExprToEvaluate(Assembler& assembler) const
     argsNum = 0;
     bool good = true;
     // try to resolve symbols
-    for (AsmExprOp op: ops)
+    for (AsmExprOp& op: newExpr->ops)
         if (AsmExpression::isArg(op))
         {
             if (op == AsmExprOp::ARG_SYMBOL) // if
@@ -1079,22 +1079,16 @@ AsmExpression* AsmExpression::createExprToEvaluate(Assembler& assembler) const
                         }
                         arg.relValue.value = symEntry->second.value;
                         newExpr->symOccursNum--;
+                        op = AsmExprOp::ARG_VALUE;
                     }
                 }
             }
             argsNum++;
         }
     
+    if (!good)
+        return nullptr;
     // add expression into symbol occurrences in expressions
-    for (size_t i = 0, j = 0; j < argsNum; i++)
-        if (newExpr->ops[i] == AsmExprOp::ARG_SYMBOL)
-        {
-            newExpr->args[j].symbol->second.addOccurrenceInExpr(newExpr.get(), j, i);
-            j++;
-        }
-        else if (newExpr->ops[i]==AsmExprOp::ARG_VALUE)
-            j++;
-    
     for (AsmSymbolEntry* symEntry: symbolSnapshots)
     {
         if (!symEntry->second.hasValue)
