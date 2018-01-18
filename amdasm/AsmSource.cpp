@@ -977,6 +977,7 @@ const char* AsmForInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         uint64_t value = 0;
         cxuint sectionId = ASMSECT_ABS;
         bool good = true;
+        if (asmFor->getNextExpr() != nullptr)
         {
             std::unique_ptr<AsmExpression> nextEvExpr(asmFor->getNextExpr()->
                         createExprToEvaluate(assembler));

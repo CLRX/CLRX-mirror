@@ -55,13 +55,13 @@ static const char* offlinePseudoOpNamesTbl[] =
     "ifeqs", "iffmt", "ifge", "ifgpu", "ifgt", "ifle",
     "iflt", "ifnarch", "ifnb", "ifnc", "ifndef",
     "ifne", "ifnes", "ifnfmt", "ifngpu", "ifnotdef",
-    "irp", "irpc", "macro", "rept"
+    "irp", "irpc", "macro", "rept", "while"
 };
 
 /// pseudo-ops not ignored while putting macro content
 static const char* macroRepeatPseudoOpNamesTbl[] =
 {
-    "endm", "endmacro", "endr", "endrept", "for", "irp", "irpc", "macro", "rept"
+    "endm", "endmacro", "endr", "endrept", "for", "irp", "irpc", "macro", "rept", "while"
 };
 
 // pseudo-ops used while skipping clauses
@@ -80,13 +80,14 @@ enum
     ASMCOP_IFEQS, ASMCOP_IFFMT, ASMCOP_IFGE, ASMCOP_IFGPU, ASMCOP_IFGT, ASMCOP_IFLE,
     ASMCOP_IFLT, ASMCOP_IFNARCH, ASMCOP_IFNB, ASMCOP_IFNC, ASMCOP_IFNDEF,
     ASMCOP_IFNE, ASMCOP_IFNES, ASMCOP_IFNFMT, ASMCOP_IFNGPU, ASMCOP_IFNOTDEF,
-    ASMCOP_IRP, ASMCOP_IRPC, ASMCOP_MACRO, ASMCOP_REPT
+    ASMCOP_IRP, ASMCOP_IRPC, ASMCOP_MACRO, ASMCOP_REPT, ASMCOP_WHILE
 };
 
 /// pseudo-ops not ignored while putting macro content
 enum
 { ASMMROP_ENDM = 0, ASMMROP_ENDMACRO, ASMMROP_ENDR, ASMMROP_ENDREPT,
-    ASMMROP_FOR, ASMMROP_IRP, ASMMROP_IRPC, ASMMROP_MACRO, ASMMROP_REPT };
+    ASMMROP_FOR, ASMMROP_IRP, ASMMROP_IRPC, ASMMROP_MACRO, ASMMROP_REPT,
+    ASMMROP_WHILE };
 
 /// all main pseudo-ops (sorted by name)
 static const char* pseudoOpNamesTbl[] =
@@ -128,7 +129,7 @@ static const char* pseudoOpNamesTbl[] =
     "space", "string", "string16", "string32",
     "string64", "struct", "text", "title",
     "undef", "unusing", "usereg", "using", "version",
-    "warning", "weak", "word"
+    "warning", "weak", "while", "word"
 };
 
 // enum for all pseudo-ops
@@ -171,7 +172,7 @@ enum
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
     ASMOP_STRING64, ASMOP_STRUCT, ASMOP_TEXT, ASMOP_TITLE,
     ASMOP_UNDEF, ASMOP_UNUSING, ASMOP_USEREG, ASMOP_USING, ASMOP_VERSION,
-    ASMOP_WARNING, ASMOP_WEAK, ASMOP_WORD
+    ASMOP_WARNING, ASMOP_WEAK, ASMOP_WHILE, ASMOP_WORD
 };
 
 namespace CLRX
@@ -1944,9 +1945,39 @@ void AsmPseudoOps::doFor(Assembler& asmr, const char* pseudoOpPlace, const char*
     // create AsmFor
     asmr.pushClause(pseudoOpPlace, AsmClauseType::REPEAT);
     std::unique_ptr<AsmFor> repeat(new AsmFor(
-                asmr.getSourcePos(pseudoOpPlace), iterSymbol, condExpr.get(), nextExpr.get()));
+                asmr.getSourcePos(pseudoOpPlace), iterSymbol, condExpr.get(),
+                nextExpr.get()));
     condExpr.release();
     nextExpr.release();
+    if (asmr.putRepetitionContent(*repeat))
+    {
+        // and input stream filter
+        std::unique_ptr<AsmInputFilter> newInputFilter(
+                    new AsmForInputFilter(repeat.release()));
+        asmr.asmInputFilters.push(newInputFilter.release());
+        asmr.currentInputFilter = asmr.asmInputFilters.top();
+        asmr.repetitionLevel++;
+    }
+}
+
+void AsmPseudoOps::doWhile(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr)
+{
+    std::unique_ptr<AsmExpression> condExpr(AsmExpression::parse(asmr, linePtr, true));
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (condExpr==nullptr)
+        return; // if no expressions
+    
+    // check depth of repetitions
+    if (asmr.repetitionLevel == 1000)
+        PSEUDOOP_RETURN_BY_ERROR("Repetition level is greater than 1000")
+    
+    // create AsmFor
+    asmr.pushClause(pseudoOpPlace, AsmClauseType::REPEAT);
+    std::unique_ptr<AsmFor> repeat(new AsmFor(
+                asmr.getSourcePos(pseudoOpPlace), nullptr, condExpr.get(), nullptr));
+    condExpr.release();
     if (asmr.putRepetitionContent(*repeat))
     {
         // and input stream filter
@@ -2785,6 +2816,9 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_WEAK:
             AsmPseudoOps::setSymbolBind(*this, linePtr, STB_WEAK);
             break;
+        case ASMOP_WHILE:
+            AsmPseudoOps::doWhile(*this, stmtPlace, linePtr);
+            break;
         case ASMOP_WORD:
             AsmPseudoOps::putIntegers<uint32_t>(*this, stmtPlace, linePtr);
             break;
@@ -2994,6 +3028,7 @@ bool Assembler::skipClauses(bool exitm)
             case ASMCOP_IRPC:
             case ASMCOP_REPT:
             case ASMCOP_FOR:
+            case ASMCOP_WHILE:
                 if (!pushClause(stmtPlace, AsmClauseType::REPEAT))
                     good = false;
                 break;
@@ -3058,6 +3093,7 @@ bool Assembler::putMacroContent(RefPtr<AsmMacro> macro)
             case ASMMROP_IRPC:
             case ASMMROP_REPT:
             case ASMMROP_FOR:
+            case ASMMROP_WHILE:
                 if (!pushClause(stmtPlace, AsmClauseType::REPEAT))
                     good = false;
                 break;

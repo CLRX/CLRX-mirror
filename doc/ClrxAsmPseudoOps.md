@@ -932,6 +932,30 @@ Syntax: .weak SYMBOL,...
 Indicates that symbols will be a weak. Currently, unused feature of the symbol by
 the CLRX assembler.
 
+### .while
+
+Syntax: .while COND-EXPR
+
+Open 'while' repetition.The code between this pseudo-operation and `.endr` will be repeated
+until COND-EXPR returns zero. Example:
+
+```
+x=1
+.while x<16
+    .int x
+    x=x+1
+.endr
+```
+
+generates:
+
+```
+.int x      # x=1
+.int x      # x=2
+.int x      # x=4
+.int x      # x=8
+```
+
 ### .word
 
 Syntax: .word ABS-EXPR,....

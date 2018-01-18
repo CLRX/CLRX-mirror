@@ -2056,5 +2056,25 @@ label2: .int 3,6,7
             { "x", 64U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
         }, true, "", ""
     },
+    /* 75 - '.while' repetition */
+    {
+        R"ffDXD(
+            x=1
+            .while  x  <  16
+                .int x
+                x=x+x
+            .endr
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            {
+                0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+                0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00
+            } } },
+        {
+            { ".", 16U, 0, 0U, true, false, false, 0, 0 },
+            { "x", 16U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
     { nullptr }
 };
