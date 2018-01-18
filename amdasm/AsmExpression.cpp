@@ -1027,6 +1027,105 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
     return good;
 }
 
+AsmExpression* AsmExpression::createExprToEvaluate(Assembler& assembler) const
+{
+    TempSymbolSnapshotMap symbolSnapshots;
+    
+    try
+    {
+    size_t argsNum = 0;
+    size_t msgPosNum = 0;
+    for (AsmExprOp op: ops)
+        if (AsmExpression::isArg(op))
+            argsNum++;
+    else if (operatorWithMessage & (1ULL<<int(op)))
+        msgPosNum++;
+    std::unique_ptr<AsmExpression> newExpr(new AsmExpression(
+            sourcePos, symOccursNum, relativeSymOccurs, ops.size(), ops.data(),
+            msgPosNum, messagePositions.get(), argsNum, args.get(), false));
+    argsNum = 0;
+    bool good = true;
+    // try to resolve symbols
+    for (AsmExprOp op: ops)
+        if (AsmExpression::isArg(op))
+        {
+            if (op == AsmExprOp::ARG_SYMBOL) // if
+            {
+                AsmExprArg& arg = newExpr->args[argsNum];
+                AsmSymbolEntry* symEntry = arg.symbol;
+                if (symEntry!=nullptr && symEntry->second.base)
+                    // create symbol snapshot if symbol is base
+                    // only if for regular expression (not base
+                    good &= newExpr->makeSymbolSnapshot(assembler, &symbolSnapshots,
+                                *symEntry, symEntry, &sourcePos);
+                if (symEntry==nullptr || !symEntry->second.hasValue)
+                {
+                    // no symbol not found
+                    std::string errorMsg("Expression have unresolved symbol '");
+                    errorMsg += symEntry->first.c_str();
+                    errorMsg += '\'';
+                    ASMX_NOTGOOD_BY_ERROR(sourcePos, errorMsg.c_str())
+                }
+                else
+                {
+                    if (symEntry->second.hasValue)
+                    {
+                        // resolve only if have symbol have value,
+                        // but do not that if expression will be base for snapshot
+                        if (!assembler.isAbsoluteSymbol(symEntry->second))
+                        {
+                            newExpr->relativeSymOccurs = true;
+                            arg.relValue.sectionId = symEntry->second.sectionId;
+                        }
+                        arg.relValue.value = symEntry->second.value;
+                        newExpr->symOccursNum--;
+                    }
+                }
+            }
+            argsNum++;
+        }
+    
+    // add expression into symbol occurrences in expressions
+    for (size_t i = 0, j = 0; j < argsNum; i++)
+        if (newExpr->ops[i] == AsmExprOp::ARG_SYMBOL)
+        {
+            newExpr->args[j].symbol->second.addOccurrenceInExpr(newExpr.get(), j, i);
+            j++;
+        }
+        else if (newExpr->ops[i]==AsmExprOp::ARG_VALUE)
+            j++;
+    
+    for (AsmSymbolEntry* symEntry: symbolSnapshots)
+    {
+        if (!symEntry->second.hasValue)
+            assembler.symbolSnapshots.insert(symEntry);
+        else
+        {
+            // delete symbol snapshoft if have new value
+            delete symEntry->second.expression;
+            symEntry->second.expression = nullptr;
+            delete symEntry;
+        }
+    }
+    symbolSnapshots.clear();
+    return newExpr.release();
+    }
+    catch(...)
+    {
+        // delete symbol snapshots if exception occurred
+        for (AsmSymbolEntry* symEntry: symbolSnapshots)
+        {
+            // remove from assembler symbolSnapshots
+            assembler.symbolSnapshots.erase(symEntry);
+            // remove this snapshot
+            delete symEntry->second.expression;
+            symEntry->second.expression = nullptr;
+            delete symEntry;
+        }
+        throw;
+    }
+}
+
 AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
             bool makeBase, bool dontResolveSymbolsLater)
 {
@@ -1299,7 +1398,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                         if (symEntry!=nullptr && symEntry->second.base && !makeBase)
                             // create symbol snapshot if symbol is base
                             // only if for regular expression (not base
-                            good = makeSymbolSnapshot(assembler, &symbolSnapshots,
+                            good &= makeSymbolSnapshot(assembler, &symbolSnapshots,
                                       *symEntry, symEntry, &(expr->sourcePos));
                         if (symEntry==nullptr ||
                             (!symEntry->second.hasValue && dontResolveSymbolsLater))

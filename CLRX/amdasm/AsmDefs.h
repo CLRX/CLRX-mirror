@@ -420,6 +420,9 @@ public:
     /// for internal usage
     size_t toTop(size_t opIndex) const;
     
+    /// create an expression to evaluate from base expression
+    AsmExpression* createExprToEvaluate(Assembler& assembler) const;
+    
     /// make symbol snapshot (required to implement .eqv pseudo-op)    
     static bool makeSymbolSnapshot(Assembler& assembler, const AsmSymbolEntry& symEntry,
                AsmSymbolEntry*& outSymEntry, const AsmSourcePos* parentExprSourcePos);

@@ -411,6 +411,7 @@ public:
 private:
     friend class AsmStreamInputFilter;
     friend class AsmMacroInputFilter;
+    friend class AsmForInputFilter;
     friend class AsmExpression;
     friend class AsmFormatHandler;
     friend class AsmRawCodeHandler;

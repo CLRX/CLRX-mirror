@@ -962,16 +962,40 @@ const char* AsmForInputFilter::readLine(Assembler& assembler, size_t& lineSize)
 {
     colTranslations.clear();
     const std::vector<LineTrans>& repeatColTrans = repeat->getColTranslations();
+    const AsmFor* asmFor = static_cast<const AsmFor*>(repeat.get());
     const LineTrans* colTransEnd = repeatColTrans.data()+ repeatColTrans.size();
     const size_t contentSize = repeat->getContent().size();
     if (pos == contentSize)
     {
         repeatCount++;
-        if (repeatCount == repeat->getRepeatsNum() || contentSize==0)
+        uint64_t value = 0;
+        cxuint sectionId = ASMSECT_ABS;
+        {
+            std::unique_ptr<AsmExpression> condEvExpr(asmFor->getCondExpr()->
+                        createExprToEvaluate(assembler));
+            if (!condEvExpr->evaluate(assembler, value, sectionId) ||
+                        sectionId != ASMSECT_ABS)
+                value = 0;
+        }
+        {
+            std::unique_ptr<AsmExpression> nextEvExpr(asmFor->getNextExpr()->
+                        createExprToEvaluate(assembler));
+            uint64_t nextValue = 0;
+            cxuint nextSectionId = ASMSECT_ABS;
+            if (nextEvExpr->evaluate(assembler, nextValue, nextSectionId) &&
+                        nextSectionId == ASMSECT_ABS)
+                assembler.setSymbol(*(AsmSymbolEntry*)asmFor->getIterSymEntry(),
+                                    nextValue, ASMSECT_ABS);
+            else
+                value = 0;
+        }
+        
+        if (value==0 || contentSize==0)
         {
             lineSize = 0;
             return nullptr;
         }
+        
         sourceTransIndex = 0;
         curColTrans = repeat->getColTranslations().data();
         pos = 0;
