@@ -210,25 +210,28 @@ Close visibility's scope.
 
 ### .equ, .set
 
-Syntax: .equ SYMBOL, EXPR  
-Syntax: .set SYMBOL, EXPR
+Syntax: .equ SYMBOL, EXPR|REG  
+Syntax: .set SYMBOL, EXPR|REG
 
-Define symbol with specified value of the expression given in second operand. Symbol
-defined by using these pseudo-operations can be redefined many times.
+Define symbol with specified value of the expression or register or register range
+given in second operand. Symbol defined by using these pseudo-operations can be
+redefined many times.
 
 ### .equiv
 
-Syntax: .equiv SYMBOL, EXPR
+Syntax: .equiv SYMBOL, EXPR|REG
 
-Define symbol with specified value of the expression given in second operand.
+Define symbol with specified value of the expression or register or register range
+given in second operand given in second operand.
 Symbol defined by using `.equiv` can not be redefined. If symbol was already defined
 this pseudo-operations causes an error.
 
 ### .eqv
 
-Syntax: .eqv SYMBOL, EXPR
+Syntax: .eqv SYMBOL, EXPR|REG
 
-Define symbol with specified expression given in second operand.
+Define symbol with specified expression or register or register range
+given in second operand given in second operand.
 Symbol defined by using `.eqv` can not be redefined.
 If symbol was already defined this pseudo-operations causes an error.
 The expression of symbol will be evaluated any time when symbol will be used.
