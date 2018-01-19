@@ -1491,6 +1491,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .float
 .floatconsts
 .floatmode
+.for
 .format
 .gallium
 .gds_segment_size
@@ -1680,6 +1681,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .wavefront_sgpr_count
 .wavefront_size
 .weak
+.while
 .word
 .workgroup_fbarrier_count
 .workgroup_group_segment_size

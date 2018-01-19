@@ -2128,5 +2128,31 @@ label2: .int 3,6,7
         }, false,
         "test.s:2:27: Error: Value of conditional expression is not absolute\n", ""
     },
+    {   /* 79 - '.for' and nested '.while' */
+        R"ffDXD(
+    .for x =  1,x<16,x+x
+        y = 1
+        .while y<7
+            .byte x,y
+            y=y+1
+        .endr
+    .endr
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            {
+                0x01, 0x01, 0x01, 0x02, 0x01, 0x03, 0x01, 0x04,
+                0x01, 0x05, 0x01, 0x06, 0x02, 0x01, 0x02, 0x02,
+                0x02, 0x03, 0x02, 0x04, 0x02, 0x05, 0x02, 0x06,
+                0x04, 0x01, 0x04, 0x02, 0x04, 0x03, 0x04, 0x04,
+                0x04, 0x05, 0x04, 0x06, 0x08, 0x01, 0x08, 0x02,
+                0x08, 0x03, 0x08, 0x04, 0x08, 0x05, 0x08, 0x06
+            } } },
+        {
+            { ".", 48U, 0, 0U, true, false, false, 0, 0 },
+            { "x", 16U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y", 7U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
     { nullptr }
 };

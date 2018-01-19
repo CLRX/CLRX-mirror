@@ -1871,6 +1871,7 @@
             <item>.float</item>
             <item>.floatconsts</item>
             <item>.floatmode</item>
+            <item>.for</item>
             <item>.format</item>
             <item>.gallium</item>
             <item>.gds_segment_size</item>
@@ -2060,6 +2061,7 @@
             <item>.wavefront_sgpr_count</item>
             <item>.wavefront_size</item>
             <item>.weak</item>
+            <item>.while</item>
             <item>.word</item>
             <item>.workgroup_fbarrier_count</item>
             <item>.workgroup_group_segment_size</item>

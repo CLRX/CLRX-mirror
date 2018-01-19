@@ -163,6 +163,7 @@
             <keyword>float</keyword>
             <keyword>floatconsts</keyword>
             <keyword>floatmode</keyword>
+            <keyword>for</keyword>
             <keyword>format</keyword>
             <keyword>gallium</keyword>
             <keyword>gds_segment_size</keyword>
@@ -352,6 +353,7 @@
             <keyword>wavefront_sgpr_count</keyword>
             <keyword>wavefront_size</keyword>
             <keyword>weak</keyword>
+            <keyword>while</keyword>
             <keyword>word</keyword>
             <keyword>workgroup_fbarrier_count</keyword>
             <keyword>workgroup_group_segment_size</keyword>
