@@ -75,7 +75,7 @@ the GCN1.0 architecture.
 Currently is supported: 
 CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
 Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose, Horse, Stoney,
-Ellesmere, Baffin, GFX804 and GFX900.
+Ellesmere, Baffin, GFX804, GFX900, GFX901, GFX902, GFX903, GFX904 and GFX905.
 
 * **-A ARCH**, **--arch=ARCH**
 
