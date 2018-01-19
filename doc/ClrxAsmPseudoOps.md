@@ -406,8 +406,13 @@ Id  | Description
  18 | Stoney
  19 | Ellesmere (Radeon RX 470/480)
  20 | Baffin (Radeon 460)
- 21 | Gfx804
- 22 | Gfx900 (Radeon RX VEGA)
+ 21 | gfx804
+ 22 | gfx900 (Radeon RX VEGA)
+ 23 | gfx901 (Radeon RX VEGA)
+ 24 | gfx902 (Radeon RX VEGA)
+ 25 | gfx903 (Radeon RX VEGA)
+ 26 | gfx904 (Radeon RX VEGA)
+ 27 | gfx905 (Radeon RX VEGA)
 
 ### .get_version
 
