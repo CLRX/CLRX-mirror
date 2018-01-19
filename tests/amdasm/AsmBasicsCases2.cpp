@@ -2076,5 +2076,39 @@ label2: .int 3,6,7
             { "x", 16U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
         }, true, "", ""
     },
+    /* 76 - '.for' repetition (error due to division by zero) */
+    {
+        R"ffDXD(
+            .for  x = 1  ,  x<  16,  x+x+(x/0)
+                .int x
+            .endr
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            {
+                0x01, 0x00, 0x00, 0x00
+            } } },
+        {
+            { ".", 4U, 0, 0U, true, false, false, 0, 0 },
+            { "x", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, false, "test.s:2:44: Error: Division by zero\n", ""
+    },
+    /* 77 - '.for' repetition (error due to division by zero) */
+    {
+        R"ffDXD(
+            .for  x = 1  ,  x<  16+(x/0),  x+x
+                .int x
+            .endr
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            {
+                0x01, 0x00, 0x00, 0x00
+            } } },
+        {
+            { ".", 4U, 0, 0U, true, false, false, 0, 0 },
+            { "x", 2U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, false, "test.s:2:38: Error: Division by zero\n", ""
+    },
     { nullptr }
 };

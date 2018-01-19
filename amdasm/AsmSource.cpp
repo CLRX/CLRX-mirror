@@ -987,7 +987,7 @@ const char* AsmForInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                 nextEvExpr->evaluate(assembler, nextValue, nextSectionId) &&
                         nextSectionId == ASMSECT_ABS)
                 assembler.setSymbol(*(AsmSymbolEntry*)asmFor->getIterSymEntry(),
-                                    nextValue, ASMSECT_ABS);
+                                    nextValue, nextSectionId);
             else
                 good = false;
         }
@@ -995,9 +995,14 @@ const char* AsmForInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         {
             std::unique_ptr<AsmExpression> condEvExpr(asmFor->getCondExpr()->
                         createExprToEvaluate(assembler));
-            if (condEvExpr==nullptr || !condEvExpr->evaluate(assembler, value, sectionId) ||
-                        sectionId != ASMSECT_ABS)
+            if (condEvExpr==nullptr || !condEvExpr->evaluate(assembler, value, sectionId))
                 value = 0;
+            else if (sectionId != ASMSECT_ABS)
+            {
+                assembler.printError(asmFor->getCondExpr()->getSourcePos(),
+                        "Value of conditional expression is not absolute");
+                value = 0;
+            }
         }
         
         if (!good || value==0 || contentSize==0)
