@@ -3160,6 +3160,7 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
             case ASMMROP_IRPC:
             case ASMMROP_REPT:
             case ASMMROP_FOR:
+            case ASMMROP_WHILE:
                 if (!pushClause(stmtPlace, AsmClauseType::REPEAT))
                     good = false;
                 break;
