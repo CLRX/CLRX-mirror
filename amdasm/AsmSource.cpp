@@ -979,12 +979,14 @@ const char* AsmForInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         bool good = true;
         if (asmFor->getNextExpr() != nullptr)
         {
+            // create next expression to evaluate
             std::unique_ptr<AsmExpression> nextEvExpr(asmFor->getNextExpr()->
                         createExprToEvaluate(assembler));
             uint64_t nextValue = 0;
             cxuint nextSectionId = ASMSECT_ABS;
             if (nextEvExpr != nullptr &&
                 nextEvExpr->evaluate(assembler, nextValue, nextSectionId))
+                // set symbol if evaluated without errors
                 assembler.setSymbol(*(AsmSymbolEntry*)asmFor->getIterSymEntry(),
                                     nextValue, nextSectionId);
             else
@@ -992,15 +994,19 @@ const char* AsmForInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         }
         if (good)
         {
+            // create conditional expression to evaluate
             std::unique_ptr<AsmExpression> condEvExpr(asmFor->getCondExpr()->
                         createExprToEvaluate(assembler));
             if (condEvExpr==nullptr || !condEvExpr->evaluate(assembler, value, sectionId))
+                // zeroing condition if evaluation failed
                 value = 0;
             else if (sectionId != ASMSECT_ABS)
             {
+                // failed if no absolute value
                 assembler.printError(asmFor->getCondExpr()->getSourcePos(),
                         "Value of conditional expression is not absolute");
                 value = 0;
+                good = false;
             }
         }
         

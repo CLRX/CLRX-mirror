@@ -2110,5 +2110,23 @@ label2: .int 3,6,7
             { "x", 2U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
         }, false, "test.s:2:38: Error: Division by zero\n", ""
     },
+    /* 78 - '.for' - error: conditional is not absolute */
+    {
+        R"ffDXD(.gallium
+            .for  x = 1  ,  x + 16+.,  x+x
+                .int x
+            .endr
+)ffDXD",
+        BinaryFormat::GALLIUM, GPUDeviceType::CAPE_VERDE, false, { },
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
+            {
+                0x01, 0x00, 0x00, 0x00
+            } } },
+        {
+            { ".", 4U, 0, 0U, true, false, false, 0, 0 },
+            { "x", 2U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, false,
+        "test.s:2:27: Error: Value of conditional expression is not absolute\n", ""
+    },
     { nullptr }
 };
