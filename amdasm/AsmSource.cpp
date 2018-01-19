@@ -984,8 +984,7 @@ const char* AsmForInputFilter::readLine(Assembler& assembler, size_t& lineSize)
             uint64_t nextValue = 0;
             cxuint nextSectionId = ASMSECT_ABS;
             if (nextEvExpr != nullptr &&
-                nextEvExpr->evaluate(assembler, nextValue, nextSectionId) &&
-                        nextSectionId == ASMSECT_ABS)
+                nextEvExpr->evaluate(assembler, nextValue, nextSectionId))
                 assembler.setSymbol(*(AsmSymbolEntry*)asmFor->getIterSymEntry(),
                                     nextValue, nextSectionId);
             else
