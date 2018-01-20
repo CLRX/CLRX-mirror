@@ -2802,7 +2802,89 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
         { },
         true, ""
     },
-    {   // 22 - nested calls
+    {   // 22 - simple call, more complex routine
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4
+        s_mov_b32 sa[3], s5
+        
+        s_getpc_b64 s[2:3]
+        s_add_u32 s2, s2, routine-.
+        s_add_u32 s3, s3, routine-.+4
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]
+        
+        s_lshl_b32 sa[2], sa[2], 3
+        s_lshl_b32 sa[3], sa[3], 4
+        s_endpgm
+        
+routine:
+        s_xor_b32 sa[2], sa[2], sa[4]
+        s_xor_b32 sa[3], sa[3], sa[4]
+        s_cbranch_scc1 bb2
+
+        s_min_u32 sa[3], sa[3], sa[4]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+        
+bb2:    s_min_u32 sa[2], sa[2], sa[4]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+)ffDXD",
+        {
+            { 0, 32,
+                { { 2, true } },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 5 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 3 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, true, false, false },
+            // block 1 - after call
+            { 32, 44,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(2, 4, 4, 4, 1, true) },
+                    { { "sa", 3 }, SSAInfo(2, 4, 4, 4, 1, true) }
+                }, false, false, true },
+            // block 2 - routine
+            { 44, 56,
+                { { 3, false }, { 4, false } },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, false },
+            // block 3 - first return
+            { 56, 64,
+                { },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 3 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, true, true },
+            // block 4 - second return
+            { 64, 72,
+                { },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, true, true }
+        },
+        {   // SSA replaces
+            { { "sa", 2 }, { { 3, 2 } } },
+            { { "sa", 3 }, { { 3, 2 } } }
+        },
+        true, ""
+    },
+#if 0
+    {   // 23 - nested calls
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -2960,6 +3042,7 @@ bb2:    s_min_u32 sa[2], sa[2], sa[4]
             { { "sa", 3 }, { { 5, 2 } } }
         }, true, ""
     }
+#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
