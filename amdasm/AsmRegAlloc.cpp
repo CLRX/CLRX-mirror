@@ -643,7 +643,7 @@ static void joinRetSSAIdMap(RetSSAIdMap& dest, const LastSSAIdMap& src,
 {
     for (const auto& entry: src)
     {
-        std::cout << "entry2: " << entry.first.regVar << ":" <<
+        std::cout << "  entry2: " << entry.first.regVar << ":" <<
                 cxuint(entry.first.index) << ":";
         for (size_t v: entry.second)
             std::cout << " " << v;
@@ -661,7 +661,7 @@ static void joinRetSSAIdMap(RetSSAIdMap& dest, const LastSSAIdMap& src,
             if (it == destEntry.end())
                 destEntry.push_back(ssaId);
         }
-        std::cout << "  :";
+        std::cout << "    :";
         for (size_t v: destEntry)
             std::cout << " " << v;
         std::cout << std::endl;
@@ -700,7 +700,39 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src)
     // insert readBeforeWrite only if doesnt exists in destination
     dest.rbwSSAIdMap.insert(src.rbwSSAIdMap.begin(), src.rbwSSAIdMap.end());
     
-    joinLastSSAIdMap(dest.curSSAIdMap, src.curSSAIdMap);
+    //joinLastSSAIdMap(dest.curSSAIdMap, src.lastSSAIdMap);
+    
+    for (const auto& entry: src.lastSSAIdMap)
+    {
+        std::cout << "  entry3: " << entry.first.regVar << ":" <<
+                cxuint(entry.first.index) << ":";
+        for (size_t v: entry.second)
+            std::cout << " " << v;
+        std::cout << std::endl;
+        auto res = dest.curSSAIdMap.insert(entry); // find
+        std::vector<size_t>& destEntry = res.first->second;
+        if (!res.second)
+        {
+            // add new ways
+            for (size_t ssaId: entry.second)
+            {
+                auto it = std::find(destEntry.begin(), destEntry.end(), ssaId);
+                if (it == destEntry.end())
+                    destEntry.push_back(ssaId);
+            }
+        }
+        auto rbwit = src.rbwSSAIdMap.find(entry.first);
+        if (rbwit != src.rbwSSAIdMap.end())
+        {
+            auto deit = std::find(destEntry.begin(), destEntry.end(), rbwit->second);
+            if (deit != destEntry.end())
+                destEntry.erase(deit);
+        }
+        std::cout << "    :";
+        for (size_t v: destEntry)
+            std::cout << " " << v;
+        std::cout << std::endl;
+    }
 }
 
 static void collectSSAIdsForCall(const std::deque<FlowStackEntry>& prevFlowStack,
@@ -1084,7 +1116,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     {
                         //std::cout << "joincall:"<< next.block << std::endl;
                         auto it = routineMap.find(next.block); // must find
-                        for (const auto& v: it->second.curSSAIdMap)
+                        for (const auto& v: it->second.lastSSAIdMap)
                         {
                             auto res = entry.prevRetSSAIdSets.insert({v.first, {}});
                             if (!res.second)
@@ -1116,13 +1148,43 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             // revert retSSAIdMap
             for (auto v: entry.prevRetSSAIdSets)
             {
-                if (!v.second.ssaIds.empty())
+                auto rfit = retSSAIdMap.find(v.first);
+                if (rdata!=nullptr)
                 {
-                    auto rfit = retSSAIdMap.find(v.first);
-                    rfit->second = v.second;
+                    std::vector<size_t>& ssaIds = rdata->curSSAIdMap[v.first];
+                    for (size_t ssaId: rfit->second.ssaIds)
+                    {
+                        auto ssaIdsIt = std::find(ssaIds.begin(), ssaIds.end(), ssaId);
+                        if (ssaIdsIt != ssaIds.end())
+                            ssaIds.erase(ssaIdsIt);
+                    }
                 }
+                
+                if (!v.second.ssaIds.empty())
+                    rfit->second = v.second;
                 else // erase if empty
                     retSSAIdMap.erase(v.first);
+                
+                if (rdata!=nullptr)
+                {
+                    std::vector<size_t>& ssaIds = rdata->curSSAIdMap[v.first];
+                    for (size_t ssaId: v.second.ssaIds)
+                    {
+                        auto ssaIdsIt = std::find(ssaIds.begin(), ssaIds.end(), ssaId);
+                        if (ssaIdsIt == ssaIds.end())
+                            ssaIds.push_back(ssaId);
+                    }
+                    if (v.second.ssaIds.empty())
+                        ssaIds.push_back(curSSAIdMap[v.first]-1);
+                    
+                    std::cout << " popentry2 " << entry.blockIndex << ": " <<
+                            v.first.regVar << ":" <<
+                            v.first.index << ":";
+                    for (size_t v: ssaIds)
+                            std::cout << " " << v;
+                        std::cout << std::endl;
+                    
+                }
             }
             //
             
@@ -1205,7 +1267,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 }
             }
             
-            std::cout << "pop" << std::endl;
+            std::cout << "pop: " << entry.blockIndex << std::endl;
             flowStack.pop_back();
         }
     }
