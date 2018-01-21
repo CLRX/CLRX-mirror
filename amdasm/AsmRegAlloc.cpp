@@ -18,7 +18,7 @@
  */
 
 #include <CLRX/Config.h>
-//#include <iostream>
+#include <iostream>
 #include <stack>
 #include <deque>
 #include <vector>

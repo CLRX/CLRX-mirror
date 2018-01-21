@@ -3036,9 +3036,7 @@ bb2:    s_min_u32 sa[2], sa[2], sa[4]
                 }, false, true, true }
         },
         {   // SSA replaces
-            // BUG - wrong replaces from first call
             { { "sa", 2 }, { { 5, 4 }, { 6, 4 }, { 7, 3 }, { 5, 4 } } },
-            //{ { "sa", 2 }, { { 6, 3 }, { 7, 3 }, { 5, 4 }, { 0, 0 } } },
             { { "sa", 3 }, { { 3, 2 }, { 4, 2 }, { 5, 2 }, { 4, 3 } } }
         }, true, ""
     }
