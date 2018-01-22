@@ -502,6 +502,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
     size_t nextBlock = prevFlowStack.back().blockIndex;
     auto pfEnd = prevFlowStack.end();
     --pfEnd;
+    std::cout << "startResolv: " << (pfEnd-1)->blockIndex << "," << nextBlock << std::endl;
     LastSSAIdMap stackVarMap;
     for (auto pfit = prevFlowStack.begin(); pfit != pfEnd; ++pfit)
     {
@@ -592,6 +593,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
             else
             {
                 // back, already visited
+                std::cout << "resolv already: " << entry.blockIndex << std::endl;
                 flowStack.pop_back();
                 continue;
             }
