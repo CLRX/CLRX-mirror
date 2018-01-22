@@ -507,6 +507,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
     for (auto pfit = prevFlowStack.begin(); pfit != pfEnd; ++pfit)
     {
         const FlowStackEntry& entry = *pfit;
+        std::cout << "  apply: " << entry.blockIndex << std::endl;
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
         for (const auto& sentry: cblock.ssaInfoMap)
         {
@@ -514,16 +515,17 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
             if (sinfo.ssaIdChange != 0)
                 stackVarMap[sentry.first] = { sinfo.ssaId + sinfo.ssaIdChange - 1 };
         }
-        for (const NextBlock& next: cblock.nexts)
-            if (next.isCall)
-            {
-                if (next.block == nextBlock)
-                    break; // if call to this next routine (stop)
-                const LastSSAIdMap& regVarMap =
-                        routineMap.find(next.block)->second.lastSSAIdMap;
-                for (const auto& sentry: regVarMap)
-                    stackVarMap[sentry.first] = sentry.second;
-            }
+        if (entry.nextIndex > cblock.nexts.size())
+            for (const NextBlock& next: cblock.nexts)
+                if (next.isCall)
+                {
+                    std::cout << "  applycall: " << entry.blockIndex << ": " <<
+                            entry.nextIndex << ": " << next.block << std::endl;
+                    const LastSSAIdMap& regVarMap =
+                            routineMap.find(next.block)->second.lastSSAIdMap;
+                    for (const auto& sentry: regVarMap)
+                        stackVarMap[sentry.first] = sentry.second;
+                }
     }
     
     //std::stack<CallStackEntry> callStack = prevCallStack;
