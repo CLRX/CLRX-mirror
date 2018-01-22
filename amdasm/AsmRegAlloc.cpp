@@ -495,8 +495,6 @@ static inline void insertReplace(SSAReplacesMap& rmap, const AsmSingleVReg& vreg
 }
 
 static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
-        const std::deque<CallStackEntry>& prevCallStack,
-        const std::vector<bool>& prevVisited,
         const std::unordered_map<size_t, RoutineData>& routineMap,
         const std::vector<CodeBlock>& codeBlocks,
         SSAReplacesMap& replacesMap)
@@ -604,8 +602,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
             entry.nextIndex-1 == callStack.top().callNextIndex)
             callStack.pop(); // just return from call
         */
-        if (entry.nextIndex < cblock.nexts.size() &&
-            prevVisited[cblock.nexts[entry.nextIndex].block])
+        if (entry.nextIndex < cblock.nexts.size())
         {
             /*if (cblock.nexts[entry.nextIndex].isCall)
                 callStack.push({ entry.blockIndex, entry.nextIndex,
@@ -616,8 +613,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
                 // if have any call then go to next block
                 (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
-                 !cblock.haveReturn && !cblock.haveEnd &&
-                 prevVisited[entry.blockIndex+1])
+                 !cblock.haveReturn && !cblock.haveEnd)
         {
             flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
@@ -1061,8 +1057,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             else
             {
                 // BUG - it does not resolve conflicts beyond this in rest ways
-                resolveSSAConflicts(flowStack, callStack, visited, routineMap, codeBlocks,
-                                    ssaReplacesMap);
+                /*resolveSSAConflicts(flowStack, callStack, visited, routineMap, codeBlocks,
+                                    ssaReplacesMap);*/
                 
                 // join routine data
                 /*auto rit = routineMap.find(entry.blockIndex);
@@ -1272,6 +1268,59 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             std::cout << "pop: " << entry.blockIndex << std::endl;
             flowStack.pop_back();
         }
+    }
+    
+    /**********
+     * after that, we find points to resolve conflicts
+     **********/
+    flowStack.clear();
+    std::fill(visited.begin(), visited.end(), false);
+    flowStack.push_back({ 0, 0 });
+    
+    while (!flowStack.empty())
+    {
+        FlowStackEntry& entry = flowStack.back();
+        CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        {
+            // process current block
+            if (!visited[entry.blockIndex])
+                visited[entry.blockIndex] = true;
+            else
+            {
+                resolveSSAConflicts(flowStack, routineMap, codeBlocks, ssaReplacesMap);
+                
+                // join routine data
+                /*auto rit = routineMap.find(entry.blockIndex);
+                if (rit != routineMap.end())
+                    // just join with current routine data
+                    joinRoutineData(routineMap.find(
+                            callStack.back().routineBlock)->second, rit->second);*/
+                /*if (!callStack.empty())
+                    collectSSAIdsForCall(flowStack, callStack, visited,
+                            routineMap, codeBlocks);*/
+                // back, already visited
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            flowStack.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else // back
+            flowStack.pop_back();
     }
 }
 

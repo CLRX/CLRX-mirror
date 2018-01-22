@@ -2107,7 +2107,67 @@ b2:     s_branch b11
         },
         true, ""
     },
-    {   // 15 - simple call
+    {   // 15 - trick - SSA replaces beyond visited point
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4
+        s_mov_b32 sa[3], s5
+        
+loop:   s_xor_b32 sa[2], sa[2], sa[4]
+        s_cbranch_scc0 end
+        
+        s_xor_b32 sa[3], sa[2], sa[4]
+        s_cbranch_scc0 loop
+        
+        s_endpgm
+        
+end:    s_xor_b32 sa[3], sa[3], sa[4]
+        s_endpgm
+)ffDXD",
+        {
+            // block 0 - start
+            { 0, 8,
+                { },
+                {
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 5 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 3 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, false, false, false },
+            // block 1 - loop
+            { 8, 16,
+                { { 2, false }, { 4, false } },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, false },
+            // block 2 - loop part 2
+            { 16, 24,
+                { { 1, false }, { 3, false } },
+                {
+                    { { "sa", 2 }, SSAInfo(2, SIZE_MAX, 3, SIZE_MAX, 0, true) },
+                    { { "sa", 3 }, SSAInfo(1, 2, 2, 2, 1, false) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, false },
+            // block 3 - end 2
+            { 24, 28,
+                { },
+                { }, false, false, true },
+            // block 4 - end
+            { 28, 36,
+                { },
+                {
+                    { { "sa", 3 }, SSAInfo(1, 3, 3, 3, 1, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, true }
+        },
+        {
+            { { "sa", 2 }, { { 2, 1 } } },
+            // must be
+            { { "sa", 3 }, { { 2, 1 } } }
+        },
+        true, ""
+    },
+    {   // 16 - simple call
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -2160,7 +2220,7 @@ routine:
         { },
         true, ""
     },
-    {   // 16 - simple call, more complex routine
+    {   // 17 - simple call, more complex routine
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -2245,7 +2305,7 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
         },
         true, ""
     },
-    {   // 17 - simple call, more complex routine
+    {   // 18 - simple call, more complex routine
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -2326,7 +2386,7 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
         },
         true, ""
     },
-    {   // 18 - simple call, more complex routine
+    {   // 19 - simple call, more complex routine
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -2406,7 +2466,7 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
         },
         true, ""
     },
-    {   // 19 - simple call, many deep returns
+    {   // 20 - simple call, many deep returns
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -2602,7 +2662,7 @@ bb11_:  s_xor_b32 sa[2], sa[2], sa[0]
         },
         true, ""
     },
-    {   // 20 - multiple call of routine
+    {   // 21 - multiple call of routine
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -2726,7 +2786,7 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
         },
         true, ""
     },
-    {   // 21 - simple call, more complex routine (no use return)
+    {   // 22 - simple call, more complex routine (no use return)
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -2802,7 +2862,7 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
         { },
         true, ""
     },
-    {   // 22 - simple call, more complex routine
+    {   // 23 - simple call, more complex routine
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -2883,7 +2943,7 @@ bb2:    s_min_u32 sa[2], sa[2], sa[4]
         },
         true, ""
     },
-    {   // 23 - nested calls
+    {   // 24 - nested calls
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -3036,11 +3096,11 @@ bb2:    s_min_u32 sa[2], sa[2], sa[4]
                 }, false, true, true }
         },
         {   // SSA replaces
-            { { "sa", 2 }, { { 5, 4 }, { 6, 4 }, { 7, 3 }, { 5, 4 } } },
-            { { "sa", 3 }, { { 3, 2 }, { 4, 2 }, { 5, 2 }, { 4, 3 } } }
+            { { "sa", 2 }, { { 5, 4 }, { 6, 4 }, { 5, 4 }, { 7, 3 } } },
+            { { "sa", 3 }, { { 3, 2 }, { 4, 2 }, { 4, 3 }, { 5, 2 } } }
         }, true, ""
     },
-    {   // 24 - many routines in single calls
+    {   // 25 - many routines in single calls
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
