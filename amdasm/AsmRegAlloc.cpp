@@ -549,10 +549,11 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
             {
                 visited[entry.blockIndex] = true;
                 std::cout << "  resolv: " << entry.blockIndex << std::endl;
+                
                 for (auto& sentry: cblock.ssaInfoMap)
                 {
                     const SSAInfo& sinfo = sentry.second;
-                    auto res = toResolveMap.insert({ sentry.first, entry.blockIndex, });
+                    auto res = toResolveMap.insert({ sentry.first, entry.blockIndex });
                     
                     if (res.second && sinfo.readBeforeWrite)
                     {
@@ -619,11 +620,43 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                 (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
                  !cblock.haveReturn && !cblock.haveEnd)
         {
+            // add toResolveMap ssaIds inside called routines
+            for (const auto& next: cblock.nexts)
+                if (next.isCall)
+                {
+                    const RoutineData& rdata = routineMap.find(next.block)->second;
+                    for (const auto& v: rdata.rbwSSAIdMap)
+                        toResolveMap.insert({v.first, entry.blockIndex });
+                    for (const auto& v: rdata.lastSSAIdMap)
+                        toResolveMap.insert({v.first, entry.blockIndex });
+                }
+            
             flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
         }
         else // back
         {
+            // mark resolved variables as not handled for further processing
+            for (const auto& next: cblock.nexts)
+                if (next.isCall)
+                {
+                    const RoutineData& rdata = routineMap.find(next.block)->second;
+                    for (const auto& v: rdata.rbwSSAIdMap)
+                    {
+                        auto it = toResolveMap.find(v.first);
+                        if (it != toResolveMap.end() && it->second == entry.blockIndex)
+                            // remove if not handled yet
+                            toResolveMap.erase(it);
+                    }
+                    for (const auto& v: rdata.lastSSAIdMap)
+                    {
+                        auto it = toResolveMap.find(v.first);
+                        if (it != toResolveMap.end() && it->second == entry.blockIndex)
+                            // remove if not handled yet
+                            toResolveMap.erase(it);
+                    }
+                }
+            
             for (const auto& sentry: cblock.ssaInfoMap)
             {
                 // mark resolved variables as not handled for further processing
