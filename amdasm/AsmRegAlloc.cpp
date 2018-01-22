@@ -521,7 +521,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                 if (next.block == nextBlock)
                     break; // if call to this next routine (stop)
                 const LastSSAIdMap& regVarMap =
-                        routineMap.find(next.block)->second.curSSAIdMap;
+                        routineMap.find(next.block)->second.lastSSAIdMap;
                 for (const auto& sentry: regVarMap)
                     stackVarMap[sentry.first] = sentry.second;
             }
@@ -957,6 +957,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     SSAInfo& sinfo = ssaEntry.second;
                     if (ssaEntry.first.regVar==nullptr)
                     {
+                        // TODO - pass registers through SSA marking and resolving
                         sinfo.ssaIdChange = 0; // zeroing SSA changes
                         continue; // no change for registers
                     }
@@ -1059,6 +1060,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             else
             {
+                // BUG - it does not resolve conflicts beyond this in rest ways
                 resolveSSAConflicts(flowStack, callStack, visited, routineMap, codeBlocks,
                                     ssaReplacesMap);
                 
