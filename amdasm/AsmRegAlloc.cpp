@@ -1093,19 +1093,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             else
             {
-                // BUG - it does not resolve conflicts beyond this in rest ways
-                /*resolveSSAConflicts(flowStack, callStack, visited, routineMap, codeBlocks,
-                                    ssaReplacesMap);*/
-                
-                // join routine data
-                /*auto rit = routineMap.find(entry.blockIndex);
-                if (rit != routineMap.end())
-                    // just join with current routine data
-                    joinRoutineData(routineMap.find(
-                            callStack.back().routineBlock)->second, rit->second);*/
-                /*if (!callStack.empty())
-                    collectSSAIdsForCall(flowStack, callStack, visited,
-                            routineMap, codeBlocks);*/
                 // back, already visited
                 flowStack.pop_back();
                 continue;
