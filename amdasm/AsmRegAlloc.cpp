@@ -1031,7 +1031,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         // reduce SSAIds replaces
                         for (size_t rblock: ssaIdsIt->second.routines)
                             routineMap.find(rblock)->second.lastSSAIdMap[ssaEntry.first] =
-                                    { ssaId-1 };
+                                    std::vector<size_t>({ ssaId-1 });
                         // finally remove from container (because obsolete)
                         retSSAIdMap.erase(ssaIdsIt);
                     }
