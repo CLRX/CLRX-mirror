@@ -161,7 +161,7 @@ LineCol AsmInputFilter::translatePos(size_t position) const
  * AsmStreamInputFilter
  */
 
-static const size_t AsmParserLineMaxSize = 100;
+static const size_t AsmParserLineMaxSize = 200;
 
 AsmStreamInputFilter::AsmStreamInputFilter(const CString& filename)
     : AsmInputFilter(AsmInputFilterType::STREAM), managed(true),
