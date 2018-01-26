@@ -1820,6 +1820,7 @@
             <item>.driver_info</item>
             <item>.driver_version</item>
             <item>.dx10clamp</item>
+            <item>.eflags</item>
             <item>.earlyexit</item>
             <item>.else</item>
             <item>.elseif</item>
@@ -2002,6 +2003,7 @@
             <item>.scope</item>
             <item>.scratchbuffer</item>
             <item>.scratchbuffers</item>
+            <item>.scratchsym</item>
             <item>.section</item>
             <item>.segment</item>
             <item>.set</item>

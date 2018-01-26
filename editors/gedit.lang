@@ -112,6 +112,7 @@
             <keyword>driver_info</keyword>
             <keyword>driver_version</keyword>
             <keyword>dx10clamp</keyword>
+            <keyword>eflags</keyword>
             <keyword>earlyexit</keyword>
             <keyword>else</keyword>
             <keyword>elseif</keyword>
@@ -294,6 +295,7 @@
             <keyword>scope</keyword>
             <keyword>scratchbuffer</keyword>
             <keyword>scratchbuffers</keyword>
+            <keyword>scratchsym</keyword>
             <keyword>section</keyword>
             <keyword>segment</keyword>
             <keyword>set</keyword>

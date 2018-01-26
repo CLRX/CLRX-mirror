@@ -1441,6 +1441,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .driver_version
 .dx10clamp
 .earlyexit
+.eflags
 .else
 .elseif
 .elseif32
@@ -1622,6 +1623,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .scope
 .scratchbuffer
 .scratchbuffers
+.scratchsym
 .section
 .segment
 .set
