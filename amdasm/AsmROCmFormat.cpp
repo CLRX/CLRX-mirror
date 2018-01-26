@@ -46,11 +46,11 @@ static const char* rocmPseudoOpNamesTbl[] =
     "kernarg_segment_size", "kernel_code_entry_offset",
     "kernel_code_prefetch_offset", "kernel_code_prefetch_size",
     "localsize", "machine", "max_scratch_backing_memory",
-    "pgmrsrc1", "pgmrsrc2", "priority",
+    "metadata", "pgmrsrc1", "pgmrsrc2", "priority",
     "private_elem_size", "private_segment_align",
     "privmode", "reserved_sgprs", "reserved_vgprs",
     "runtime_loader_kernel_symbol",
-    "scratchbuffer", "sgprsnum", "tgsize",
+    "scratchbuffer", "sgprsnum", "target", "tgsize",
     "use_debug_enabled", "use_dispatch_id",
     "use_dispatch_ptr", "use_dynamic_call_stack",
     "use_flat_scratch_init", "use_grid_workgroup_count",
@@ -78,11 +78,11 @@ enum
     ROCMOP_KERNARG_SEGMENT_SIZE, ROCMOP_KERNEL_CODE_ENTRY_OFFSET,
     ROCMOP_KERNEL_CODE_PREFETCH_OFFSET, ROCMOP_KERNEL_CODE_PREFETCH_SIZE,
     ROCMOP_LOCALSIZE, ROCMOP_MACHINE, ROCMOP_MAX_SCRATCH_BACKING_MEMORY,
-    ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PRIORITY,
+    ROCMOP_METADATA, ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PRIORITY,
     ROCMOP_PRIVATE_ELEM_SIZE, ROCMOP_PRIVATE_SEGMENT_ALIGN,
     ROCMOP_PRIVMODE, ROCMOP_RESERVED_SGPRS, ROCMOP_RESERVED_VGPRS,
     ROCMOP_RUNTIME_LOADER_KERNEL_SYMBOL,
-    ROCMOP_SCRATCHBUFFER, ROCMOP_SGPRSNUM, ROCMOP_TGSIZE,
+    ROCMOP_SCRATCHBUFFER, ROCMOP_SGPRSNUM, ROCMOP_TARGET, ROCMOP_TGSIZE,
     ROCMOP_USE_DEBUG_ENABLED, ROCMOP_USE_DISPATCH_ID,
     ROCMOP_USE_DISPATCH_PTR, ROCMOP_USE_DYNAMIC_CALL_STACK,
     ROCMOP_USE_FLAT_SCRATCH_INIT, ROCMOP_USE_GRID_WORKGROUP_COUNT,
@@ -101,7 +101,7 @@ enum
 
 AsmROCmHandler::AsmROCmHandler(Assembler& assembler): AsmFormatHandler(assembler),
              output{}, codeSection(0), commentSection(ASMSECT_NONE),
-             extraSectionCount(0)
+             metadataSection(ASMSECT_NONE), extraSectionCount(0)
 {
     output.archMinor = output.archStepping = UINT32_MAX;
     assembler.currentKernel = ASMKERN_GLOBAL;
@@ -367,6 +367,19 @@ void AsmROCmPseudoOps::setEFlags(AsmROCmHandler& handler, const char* linePtr)
         return;
     handler.output.eflags = value;
 }
+
+void AsmROCmPseudoOps::setTarget(AsmROCmHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    std::string out;
+    if (!asmr.parseString(out, linePtr))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.target = out;
+}
     
 void AsmROCmPseudoOps::doConfig(AsmROCmHandler& handler, const char* pseudoOpPlace,
                   const char* linePtr)
@@ -404,6 +417,26 @@ void AsmROCmPseudoOps::doControlDirective(AsmROCmHandler& handler,
     }
     asmr.goToSection(pseudoOpPlace, kernel.ctrlDirSection);
     handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+}
+
+void AsmROCmPseudoOps::addMetadata(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    cxuint& metadataSection = handler.metadataSection;
+    if (metadataSection == ASMSECT_NONE)
+    {
+        /* add this section */
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::ROCM_METADATA,
+            ELFSECTID_UNDEF, nullptr });
+        metadataSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, metadataSection);
 }
 
 void AsmROCmPseudoOps::doFKernel(AsmROCmHandler& handler, const char* pseudoOpPlace,
@@ -1223,6 +1256,9 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_MAX_SCRATCH_BACKING_MEMORY);
             break;
+        case ROCMOP_METADATA:
+            AsmROCmPseudoOps::addMetadata(*this, stmtPlace, linePtr);
+            break;
         case ROCMOP_PGMRSRC1:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_PGMRSRC1);
             break;
@@ -1261,6 +1297,9 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
         case ROCMOP_SGPRSNUM:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_SGPRSNUM);
+            break;
+        case ROCMOP_TARGET:
+            AsmROCmPseudoOps::setTarget(*this, linePtr);
             break;
         case ROCMOP_TGSIZE:
             AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
@@ -1419,6 +1458,10 @@ bool AsmROCmHandler::prepareBinary()
             case AsmSectionType::ROCM_COMMENT:
                 output.commentSize = sectionSize;
                 output.comment = (const char*)sectionData;
+                break;
+            case AsmSectionType::ROCM_METADATA:
+                output.metadataSize = sectionSize;
+                output.metadata = (const char*)sectionData;
                 break;
             default:
                 break;

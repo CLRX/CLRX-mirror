@@ -51,6 +51,8 @@ static ROCmInput genROCmInput(const ROCmBinary& binary)
     }
     rocmInput.archMinor = 0;
     rocmInput.archStepping = 0;
+    rocmInput.metadataSize = 0;
+    rocmInput.metadata = nullptr;
     
     {
         // load .note to determine architecture (major, minor and stepping)

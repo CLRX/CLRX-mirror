@@ -315,10 +315,14 @@ struct ROCmDisasmInput
     GPUDeviceType deviceType;   ///< GPU device type
     uint32_t archMinor;     ///< GPU arch minor
     uint32_t archStepping;     ///< GPU arch stepping
+    uint32_t eflags;   ///< ELF header e_flags field
+    bool newBinFormat;  ///< new binary format
     std::vector<ROCmDisasmRegionInput> regions;  ///< regions
     size_t codeSize;    ///< code size
     const cxbyte* code; ///< code
-    uint32_t eflags;   ///< ELF header e_flags field
+    CString target;     ///< LLVM target triple
+    size_t metadataSize;    ///< metadata size
+    const char* metadata;   ///< metadata
 };
 
 /// disasm kernel info structure (Gallium binaries)

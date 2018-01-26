@@ -35,7 +35,7 @@ using namespace CLRX;
 
 ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags)
         : ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
-          regionsNum(0), codeSize(0), code(nullptr)
+          regionsNum(0), codeSize(0), code(nullptr), metadataSize(0), metadata(nullptr)
 {
     cxuint textIndex = SHN_UNDEF;
     try
@@ -119,6 +119,34 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             region.size = regSize;
         else
             region.size = std::min(regSize, region.size);
+    }
+    
+    // get metadata
+    const size_t notesSize = getNotesSize();
+    const cxbyte* noteContent = (const cxbyte*)getNotes();
+    
+    for (size_t offset = 0; offset < notesSize; )
+    {
+        const Elf64_Nhdr* nhdr = (const Elf64_Nhdr*)(noteContent + offset);
+        size_t namesz = ULEV(nhdr->n_namesz);
+        size_t descsz = ULEV(nhdr->n_descsz);
+        if (usumGt(offset, namesz+descsz, notesSize))
+            throw BinException("Note offset+size out of range");
+        
+        if (namesz==4 &&
+            ::strcmp((const char*)noteContent+offset+ sizeof(Elf64_Nhdr), "AMD")==0)
+        {
+            const uint32_t noteType = ULEV(nhdr->n_type);
+            if (noteType == 0xa)
+            {
+                metadata = (char*)(noteContent+offset+sizeof(Elf64_Nhdr) + 4);
+                metadataSize = descsz;
+            }
+            else if (noteType == 0xb)
+                target.assign((char*)(noteContent+offset+sizeof(Elf64_Nhdr) + 4), descsz);
+        }
+        size_t align = (((namesz+descsz)&3)!=0) ? 4-((namesz+descsz)&3) : 0;
+        offset += sizeof(Elf64_Nhdr) + namesz + descsz + align;
     }
     
     if (hasRegionMap())
@@ -216,15 +244,16 @@ ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
         uint32_t archMinor, uint32_t archStepping, size_t codeSize, const cxbyte* code,
         const std::vector<ROCmSymbolInput>& symbols)
 {
-    input = new ROCmInput{ deviceType, archMinor, archStepping, symbols, codeSize, code };
+    input = new ROCmInput{ deviceType, archMinor, archStepping, 0, false,
+            symbols, codeSize, code };
 }
 
 ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
         uint32_t archMinor, uint32_t archStepping, size_t codeSize, const cxbyte* code,
         std::vector<ROCmSymbolInput>&& symbols)
 {
-    input = new ROCmInput{ deviceType, archMinor, archStepping, std::move(symbols),
-                codeSize, code };
+    input = new ROCmInput{ deviceType, archMinor, archStepping, 0, false,
+            std::move(symbols), codeSize, code };
 }
 
 ROCmBinGenerator::~ROCmBinGenerator()
@@ -350,6 +379,12 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
     SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);
     elfBinGen64.addNote({"AMD", 0x1b, noteBuf.get(), 3U});
+    if (!input->target.empty())
+        elfBinGen64.addNote({"AMD", input->target.size(),
+                (const cxbyte*)input->target.c_str(), 0xbU});
+    if (input->metadataSize != 0)
+        elfBinGen64.addNote({"AMD", input->metadataSize,
+                (const cxbyte*)input->metadata, 0xaU});
     
     /// region and sections
     elfBinGen64.addRegion(ElfRegion64::programHeaderTable());

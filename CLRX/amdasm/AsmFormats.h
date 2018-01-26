@@ -69,6 +69,7 @@ enum class AsmSectionType: cxbyte
     
     ROCM_COMMENT = LAST_COMMON+1,        ///< ROCm comment section
     ROCM_CONFIG_CTRL_DIRECTIVE,
+    ROCM_METADATA,
     
     EXTRA_FIRST = 0xfc,
     EXTRA_PROGBITS = 0xfc,
@@ -507,6 +508,7 @@ private:
     SectionMap extraSectionMap;
     cxuint codeSection;
     cxuint commentSection;
+    cxuint metadataSection;
     cxuint savedSection;
     cxuint extraSectionCount;
     

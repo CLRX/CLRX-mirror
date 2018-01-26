@@ -78,6 +78,9 @@ private:
     RegionMap regionsMap;
     size_t codeSize;
     cxbyte* code;
+    CString target;
+    size_t metadataSize;
+    char* metadata;
 public:
     /// constructor
     ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode,
@@ -106,6 +109,16 @@ public:
     /// get code
     const cxbyte* getCode() const
     { return code; }
+    
+    /// get metadata size
+    size_t getMetadataSize() const
+    { return metadataSize; }
+    /// get metadata
+    const char* getMetadata() const
+    { return metadata; }
+    
+    const CString& getTarget() const
+    { return target; }
     
     /// returns true if kernel map exists
     bool hasRegionMap() const
@@ -166,14 +179,18 @@ struct ROCmInput
     GPUDeviceType deviceType;   ///< GPU device type
     uint32_t archMinor;         ///< GPU arch minor
     uint32_t archStepping;      ///< GPU arch stepping
+    uint32_t eflags;    ///< ELF headef e_flags field
+    bool newBinFormat;       ///< use new binary format for ROCm
     std::vector<ROCmSymbolInput> symbols;   ///< symbols
     size_t codeSize;        ///< code size
     const cxbyte* code;     ///< code
     size_t commentSize; ///< comment size (can be null)
     const char* comment; ///< comment
+    CString target;     ///< LLVM target triple
+    size_t metadataSize;    ///< metadata size
+    const char* metadata;   ///< metadata
     std::vector<BinSection> extraSections;  ///< extra sections
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
-    uint32_t eflags;    ///< ELF headef e_flags field
     
     /// add empty kernel with default values
     void addEmptyKernel(const char* kernelName);
