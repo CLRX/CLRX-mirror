@@ -318,6 +318,7 @@ struct ROCmDisasmInput
     std::vector<ROCmDisasmRegionInput> regions;  ///< regions
     size_t codeSize;    ///< code size
     const cxbyte* code; ///< code
+    uint32_t eflags;   ///< ELF header e_flags field
 };
 
 /// disasm kernel info structure (Gallium binaries)

@@ -173,6 +173,7 @@ struct ROCmInput
     const char* comment; ///< comment
     std::vector<BinSection> extraSections;  ///< extra sections
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
+    uint32_t eflags;    ///< ELF headef e_flags field
     
     /// add empty kernel with default values
     void addEmptyKernel(const char* kernelName);

@@ -36,6 +36,7 @@ static ROCmInput genROCmInput(const ROCmBinary& binary)
 {
     uint32_t archMajor = 0;
     ROCmInput rocmInput;
+    rocmInput.eflags = ULEV(binary.getHeader().e_flags);
     // try to get comment
     try
     {

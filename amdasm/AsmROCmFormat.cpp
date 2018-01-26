@@ -40,7 +40,7 @@ static const char* rocmPseudoOpNamesTbl[] =
     "control_directive", "debug_private_segment_buffer_sgpr",
     "debug_wavefront_private_segment_offset_sgpr",
     "debugmode", "default_hsa_features", "dims", "dx10clamp",
-    "exceptions", "fkernel", "floatmode", "gds_segment_size",
+    "eflags", "exceptions", "fkernel", "floatmode", "gds_segment_size",
     "group_segment_align", "ieeemode", "kcode",
     "kcodeend", "kernarg_segment_align",
     "kernarg_segment_size", "kernel_code_entry_offset",
@@ -71,7 +71,8 @@ enum
     ROCMOP_CONTROL_DIRECTIVE, ROCMOP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR,
     ROCMOP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
     ROCMOP_DEBUGMODE, ROCMOP_DEFAULT_HSA_FEATURES, ROCMOP_DIMS, ROCMOP_DX10CLAMP,
-    ROCMOP_EXCEPTIONS, ROCMOP_FKERNEL, ROCMOP_FLOATMODE, ROCMOP_GDS_SEGMENT_SIZE,
+    ROCMOP_EFLAGS, ROCMOP_EXCEPTIONS, ROCMOP_FKERNEL,
+    ROCMOP_FLOATMODE, ROCMOP_GDS_SEGMENT_SIZE,
     ROCMOP_GROUP_SEGMENT_ALIGN, ROCMOP_IEEEMODE, ROCMOP_KCODE,
     ROCMOP_KCODEEND, ROCMOP_KERNARG_SEGMENT_ALIGN,
     ROCMOP_KERNARG_SEGMENT_SIZE, ROCMOP_KERNEL_CODE_ENTRY_OFFSET,
@@ -351,6 +352,21 @@ void AsmROCmPseudoOps::setArchStepping(AsmROCmHandler& handler, const char* line
     handler.output.archStepping = value;
 }
 
+void AsmROCmPseudoOps::setEFlags(AsmROCmHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value;
+    const char* valuePlace = linePtr;
+    if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+        return;
+    asmr.printWarningForRange(sizeof(uint32_t)<<3, value,
+                 asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.eflags = value;
+}
     
 void AsmROCmPseudoOps::doConfig(AsmROCmHandler& handler, const char* pseudoOpPlace,
                   const char* linePtr)
@@ -1140,6 +1156,9 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
         case ROCMOP_DX10CLAMP:
             AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_DX10CLAMP);
+            break;
+        case ROCMOP_EFLAGS:
+            AsmROCmPseudoOps::setEFlags(*this, linePtr);
             break;
         case ROCMOP_EXCEPTIONS:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,

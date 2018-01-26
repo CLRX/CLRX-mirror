@@ -52,6 +52,7 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
             size_t(region.offset - codeOffset), region.type };
     }
     // setup code
+    input->eflags = ULEV(binary.getHeader().e_flags);
     input->code = binary.getCode();
     input->codeSize = binary.getCodeSize();
     return input.release();
@@ -514,6 +515,14 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(rocmInput->deviceType);
     const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    
+    if (rocmInput->eflags != 0)
+    {
+        // print eflags if not zero
+        char buf[40];
+        size_t size = snprintf(buf, 40, ".eflags %u\n", rocmInput->eflags);
+        output.write(buf, size);
+    }
     
     {
         // print AMD architecture version

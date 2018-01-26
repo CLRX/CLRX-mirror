@@ -125,6 +125,8 @@ static void printROCmOutput(std::ostream& os, const ROCmInput* output)
     printHexData(os, 1, output->commentSize, (const cxbyte*)output->comment);
     os << "  Code:\n";
     printHexData(os, 1, output->codeSize, output->code);
+    if (output->eflags != 0)
+        os << "  EFlags=" << output->eflags << std::endl;
     
     // print extra sections if supplied
     for (BinSection section: output->extraSections)
@@ -477,6 +479,92 @@ test.s:19:25: Error: Wavefront size must be power of two
 test.s:20:25: Error: Wavefront size must be not greater than 256
 test.s:21:19: Warning: Value 0xaa1fd3da2313 truncated to 0xd3da2313
 )ffDXD", false
+    },
+    {   // different eflags
+        R"ffDXD(.rocm
+        .gpu Fiji
+        .eflags 3
+.kernel kxx1
+    .config
+        .dims x
+        .codeversion 1,0
+        .call_convention 0x34dac
+        .debug_private_segment_buffer_sgpr 98
+        .debug_wavefront_private_segment_offset_sgpr 96
+        .gds_segment_size 100
+        .kernarg_segment_align 32
+        .workgroup_group_segment_size 22
+        .workgroup_fbarrier_count 3324
+        .dx10clamp
+        .exceptions 10
+        .private_segment_align 128
+        .privmode
+        .reserved_sgprs 5,14
+        .runtime_loader_kernel_symbol 0x4dc98b3a
+        .scratchbuffer 77222
+        .reserved_sgprs 9,12
+        .reserved_vgprs 7,17
+        .private_elem_size 16
+    .control_directive
+        .int 1,2,3
+        .fill 116,1,0
+.text
+kxx1:
+        .skip 256
+        s_mov_b32 s7, 0
+        s_endpgm
+)ffDXD",
+        R"ffDXD(ROCmBinDump:
+  ROCmSymbol: name=kxx1, offset=0, size=0, type=kernel
+    Config:
+      amdCodeVersion=1.1
+      amdMachine=1:8:0:3
+      kernelCodeEntryOffset=256
+      kernelCodePrefetchOffset=0
+      kernelCodePrefetchSize=0
+      maxScrachBackingMemorySize=0
+      computePgmRsrc1=0x3c0040
+      computePgmRsrc2=0xa008081
+      enableSgprRegisterFlags=0x0
+      enableFeatureFlags=0x6
+      workitemPrivateSegmentSize=77222
+      workgroupGroupSegmentSize=22
+      gdsSegmentSize=100
+      kernargSegmentSize=0
+      workgroupFbarrierCount=3324
+      wavefrontSgprCount=10
+      workitemVgprCount=1
+      reservedVgprFirst=7
+      reservedVgprCount=11
+      reservedSgprFirst=9
+      reservedSgprCount=4
+      debugWavefrontPrivateSegmentOffsetSgpr=96
+      debugPrivateSegmentBufferSgpr=98
+      kernargSegmentAlignment=5
+      groupSegmentAlignment=4
+      privateSegmentAlignment=7
+      wavefrontSize=6
+      callConvention=0x34dac
+      runtimeLoaderKernelSymbol=0x4dc98b3a
+      ControlDirective:
+      0100000002000000030000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+  Comment:
+  nullptr
+  Code:
+  0100000000000000010008000000030000010000000000000000000000000000
+  0000000000000000000000000000000040003c008180000a00000600a62d0100
+  16000000640000000000000000000000fc0c00000a00010007000b0009000400
+  6000620005040706ac4d03000000000000000000000000003a8bc94d00000000
+  0100000002000000030000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  800087be000081bf
+  EFlags=3
+)ffDXD", "", true
     }
 };
 

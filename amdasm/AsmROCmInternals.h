@@ -91,6 +91,8 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     static void setArchMinor(AsmROCmHandler& handler, const char* linePtr);
     // .arch_stepping
     static void setArchStepping(AsmROCmHandler& handler, const char* linePtr);
+    // set elf elfags
+    static void setEFlags(AsmROCmHandler& handler, const char* linePtr);
     
     /* user configuration pseudo-ops */
     static void doConfig(AsmROCmHandler& handler, const char* pseudoOpPlace,
