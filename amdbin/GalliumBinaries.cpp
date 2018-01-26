@@ -799,8 +799,12 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     if (!input->is64BitElf)
     {
         /* 32-bit ELF */
-        elfBinGen32.reset(new ElfBinaryGen32({ 0, 0, ELFOSABI_SYSV, 0,  ET_REL, 0,
-                    EV_CURRENT, UINT_MAX, 0, 0 }));
+        if (!input->isMesa170)
+            elfBinGen32.reset(new ElfBinaryGen32({ 0, 0, ELFOSABI_SYSV, 0,  ET_REL, 0,
+                        EV_CURRENT, UINT_MAX, 0, 0 }));
+        else
+            elfBinGen32.reset(new ElfBinaryGen32({ 0, 0, 0x40, 0,  ET_REL, 0xe0,
+                        EV_CURRENT, UINT_MAX, 0, 0 }));
         putSectionsAndSymbols(*elfBinGen32, input, kernelsOrder, amdGpuConfigContent,
                         relTextContent32);
         elfSize = elfBinGen32->countSize();
@@ -808,8 +812,12 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     else
     {
         /* 64-bit ELF */
-        elfBinGen64.reset(new ElfBinaryGen64({ 0, 0, ELFOSABI_SYSV, 0,  ET_REL, 0,
-                    EV_CURRENT, UINT_MAX, 0, 0 }));
+        if (!input->isMesa170)
+            elfBinGen64.reset(new ElfBinaryGen64({ 0, 0, ELFOSABI_SYSV, 0,  ET_REL, 0,
+                        EV_CURRENT, UINT_MAX, 0, 0 }));
+        else // new Mesa3D 17.0.0
+            elfBinGen64.reset(new ElfBinaryGen64({ 0, 0, 0x40, 0,  ET_REL, 0xe0,
+                        EV_CURRENT, UINT_MAX, 0, 0 }));
         putSectionsAndSymbols(*elfBinGen64, input, kernelsOrder, amdGpuConfigContent,
                         relTextContent64);
         elfSize = elfBinGen64->countSize();
