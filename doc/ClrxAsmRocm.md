@@ -98,6 +98,12 @@ This pseudo-op must be inside kernel configuration (`.config`). Defines what dim
 This pseudo-op must be inside kernel configuration (`.config`).
 Enable usage of the DX10_CLAMP.
 
+### .eflags
+
+Syntax: .eflags EFLAGS
+
+Set value of ELF header e_flags field.
+
 ### .exceptions
 
 Syntax: .exceptions EXCPMASK
