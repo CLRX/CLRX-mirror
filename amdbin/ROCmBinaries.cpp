@@ -335,40 +335,6 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     ElfBinaryGen64 elfBinGen64({ 0U, 0U, 0x40, 0, ET_DYN,
             0xe0, EV_CURRENT, UINT_MAX, 0, eflags },
             true, true, true, PHREGION_FILESTART);
-    // add symbols (kernels, function kernels and data symbols)
-    elfBinGen64.addSymbol(ElfSymbol64("_DYNAMIC", 5,
-                  ELF64_ST_INFO(STB_LOCAL, STT_NOTYPE), STV_HIDDEN, true, 0, 0));
-    for (const ROCmSymbolInput& symbol: input->symbols)
-    {
-        ElfSymbol64 elfsym;
-        switch (symbol.type)
-        {
-            case ROCmRegionType::KERNEL:
-                elfsym = ElfSymbol64(symbol.symbolName.c_str(), 4,
-                      ELF64_ST_INFO(STB_GLOBAL, STT_GNU_IFUNC), 0, true,
-                      symbol.offset, symbol.size);
-                break;
-            case ROCmRegionType::FKERNEL:
-                elfsym = ElfSymbol64(symbol.symbolName.c_str(), 4,
-                      ELF64_ST_INFO(STB_GLOBAL, STT_FUNC), 0, true,
-                      symbol.offset, symbol.size);
-                break;
-            case ROCmRegionType::DATA:
-                elfsym = ElfSymbol64(symbol.symbolName.c_str(), 4,
-                      ELF64_ST_INFO(STB_GLOBAL, STT_OBJECT), 0, true,
-                      symbol.offset, symbol.size);
-                break;
-            default:
-                break;
-        }
-        // add to symbols and dynamic symbols table
-        elfBinGen64.addSymbol(elfsym);
-        elfBinGen64.addDynSymbol(elfsym);
-    }
-    
-    static const int32_t dynTags[] = {
-        DT_SYMTAB, DT_SYMENT, DT_STRTAB, DT_STRSZ, DT_HASH };
-    elfBinGen64.addDynamics(sizeof(dynTags)/sizeof(int32_t), dynTags);
     
     uint16_t mainBuiltinSectTable[ROCMSECTID_MAX-ELFSECTID_START+1];
     std::fill(mainBuiltinSectTable,
@@ -395,6 +361,43 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_SYMTAB);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_SHSTRTAB);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_STRTAB);
+    
+    // add symbols (kernels, function kernels and data symbols)
+    elfBinGen64.addSymbol(ElfSymbol64("_DYNAMIC",
+                  mainBuiltinSectTable[ROCMSECTID_DYNAMIC-ELFSECTID_START],
+                  ELF64_ST_INFO(STB_LOCAL, STT_NOTYPE), STV_HIDDEN, true, 0, 0));
+    const uint16_t textSectIndex = mainBuiltinSectTable[ELFSECTID_TEXT-ELFSECTID_START];
+    for (const ROCmSymbolInput& symbol: input->symbols)
+    {
+        ElfSymbol64 elfsym;
+        switch (symbol.type)
+        {
+            case ROCmRegionType::KERNEL:
+                elfsym = ElfSymbol64(symbol.symbolName.c_str(), textSectIndex,
+                      ELF64_ST_INFO(STB_GLOBAL, STT_GNU_IFUNC), 0, true,
+                      symbol.offset, symbol.size);
+                break;
+            case ROCmRegionType::FKERNEL:
+                elfsym = ElfSymbol64(symbol.symbolName.c_str(), textSectIndex,
+                      ELF64_ST_INFO(STB_GLOBAL, STT_FUNC), 0, true,
+                      symbol.offset, symbol.size);
+                break;
+            case ROCmRegionType::DATA:
+                elfsym = ElfSymbol64(symbol.symbolName.c_str(), textSectIndex,
+                      ELF64_ST_INFO(STB_GLOBAL, STT_OBJECT), 0, true,
+                      symbol.offset, symbol.size);
+                break;
+            default:
+                break;
+        }
+        // add to symbols and dynamic symbols table
+        elfBinGen64.addSymbol(elfsym);
+        elfBinGen64.addDynSymbol(elfsym);
+    }
+    
+    static const int32_t dynTags[] = {
+        DT_SYMTAB, DT_SYMENT, DT_STRTAB, DT_STRSZ, DT_HASH };
+    elfBinGen64.addDynamics(sizeof(dynTags)/sizeof(int32_t), dynTags);
     
     // elf program headers
     elfBinGen64.addProgramHeader({ PT_PHDR, PF_R, 0, 1,
