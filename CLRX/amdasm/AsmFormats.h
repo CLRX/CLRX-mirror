@@ -509,6 +509,7 @@ private:
     cxuint codeSection;
     cxuint commentSection;
     cxuint metadataSection;
+    cxuint dataSection;
     cxuint savedSection;
     cxuint extraSectionCount;
     

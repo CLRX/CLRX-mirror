@@ -110,6 +110,11 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     // .fkernel (define kernel as function kernel)
     static void doFKernel(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .globaldata (go to global data (.rodata))
+    static void doGlobalData(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    // .newbinfmt
+    static void setNewBinFormat(AsmROCmHandler& handler, const char* linePtr);
     
     // checkConfigValue, setConfigValueMain routines used by other handlers
     // to check and set AMD HSA config value

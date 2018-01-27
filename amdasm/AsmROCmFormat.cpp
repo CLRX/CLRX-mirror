@@ -41,12 +41,12 @@ static const char* rocmPseudoOpNamesTbl[] =
     "debug_wavefront_private_segment_offset_sgpr",
     "debugmode", "default_hsa_features", "dims", "dx10clamp",
     "eflags", "exceptions", "fkernel", "floatmode", "gds_segment_size",
-    "group_segment_align", "ieeemode", "kcode",
+    "globaldata", "group_segment_align", "ieeemode", "kcode",
     "kcodeend", "kernarg_segment_align",
     "kernarg_segment_size", "kernel_code_entry_offset",
     "kernel_code_prefetch_offset", "kernel_code_prefetch_size",
     "localsize", "machine", "max_scratch_backing_memory",
-    "metadata", "pgmrsrc1", "pgmrsrc2", "priority",
+    "metadata", "newbinfmt", "pgmrsrc1", "pgmrsrc2", "priority",
     "private_elem_size", "private_segment_align",
     "privmode", "reserved_sgprs", "reserved_vgprs",
     "runtime_loader_kernel_symbol",
@@ -72,13 +72,13 @@ enum
     ROCMOP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
     ROCMOP_DEBUGMODE, ROCMOP_DEFAULT_HSA_FEATURES, ROCMOP_DIMS, ROCMOP_DX10CLAMP,
     ROCMOP_EFLAGS, ROCMOP_EXCEPTIONS, ROCMOP_FKERNEL,
-    ROCMOP_FLOATMODE, ROCMOP_GDS_SEGMENT_SIZE,
+    ROCMOP_FLOATMODE, ROCMOP_GDS_SEGMENT_SIZE, ROCMOP_GLOBALDATA,
     ROCMOP_GROUP_SEGMENT_ALIGN, ROCMOP_IEEEMODE, ROCMOP_KCODE,
     ROCMOP_KCODEEND, ROCMOP_KERNARG_SEGMENT_ALIGN,
     ROCMOP_KERNARG_SEGMENT_SIZE, ROCMOP_KERNEL_CODE_ENTRY_OFFSET,
     ROCMOP_KERNEL_CODE_PREFETCH_OFFSET, ROCMOP_KERNEL_CODE_PREFETCH_SIZE,
     ROCMOP_LOCALSIZE, ROCMOP_MACHINE, ROCMOP_MAX_SCRATCH_BACKING_MEMORY,
-    ROCMOP_METADATA, ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PRIORITY,
+    ROCMOP_METADATA, ROCMOP_NEWBINFMT, ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PRIORITY,
     ROCMOP_PRIVATE_ELEM_SIZE, ROCMOP_PRIVATE_SEGMENT_ALIGN,
     ROCMOP_PRIVMODE, ROCMOP_RESERVED_SGPRS, ROCMOP_RESERVED_VGPRS,
     ROCMOP_RUNTIME_LOADER_KERNEL_SYMBOL,
@@ -101,7 +101,7 @@ enum
 
 AsmROCmHandler::AsmROCmHandler(Assembler& assembler): AsmFormatHandler(assembler),
              output{}, codeSection(0), commentSection(ASMSECT_NONE),
-             metadataSection(ASMSECT_NONE), extraSectionCount(0)
+             metadataSection(ASMSECT_NONE), dataSection(ASMSECT_NONE), extraSectionCount(0)
 {
     output.archMinor = output.archStepping = UINT32_MAX;
     output.eflags = BINGEN_DEFAULT;
@@ -143,8 +143,18 @@ cxuint AsmROCmHandler::addSection(const char* sectionName, cxuint kernelId)
     const cxuint thisSection = sections.size();
     Section section;
     section.kernelId = ASMKERN_GLOBAL;  // we ignore input kernelId, we go to main
-        
-    if (::strcmp(sectionName, ".text") == 0)
+    
+    if (::strcmp(sectionName, ".rodata") == 0)
+    {
+         // data (global data/ rodata) section
+        if (dataSection!=ASMSECT_NONE)
+            throw AsmFormatException("Only section '.rodata' can be in binary");
+        dataSection = thisSection;
+        section.type = AsmSectionType::DATA;
+        section.elfBinSectId = ELFSECTID_RODATA;
+        section.name = ".rodata"; // set static name (available by whole lifecycle)
+    }
+    else if (::strcmp(sectionName, ".text") == 0)
     {
          // code section
         if (codeSection!=ASMSECT_NONE)
@@ -185,7 +195,9 @@ cxuint AsmROCmHandler::addSection(const char* sectionName, cxuint kernelId)
 
 cxuint AsmROCmHandler::getSectionId(const char* sectionName) const
 {
-    if (::strcmp(sectionName, ".text") == 0) // code
+    if (::strcmp(sectionName, ".rodata") == 0) // data
+        return dataSection;
+    else if (::strcmp(sectionName, ".text") == 0) // code
         return codeSection;
     else if (::strcmp(sectionName, ".comment") == 0) // comment
         return commentSection;
@@ -418,6 +430,24 @@ void AsmROCmPseudoOps::doControlDirective(AsmROCmHandler& handler,
     }
     asmr.goToSection(pseudoOpPlace, kernel.ctrlDirSection);
     handler.kernelStates[asmr.currentKernel]->initializeKernelConfig();
+}
+
+void AsmROCmPseudoOps::doGlobalData(AsmROCmHandler& handler,
+                   const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    // go to global data (named in ELF as '.rodata')
+    asmr.goToSection(pseudoOpPlace, ".rodata");
+}
+
+void AsmROCmPseudoOps::setNewBinFormat(AsmROCmHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.newBinFormat = true;
 }
 
 void AsmROCmPseudoOps::addMetadata(AsmROCmHandler& handler, const char* pseudoOpPlace,
@@ -1205,6 +1235,9 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_FLOATMODE);
             break;
+        case ROCMOP_GLOBALDATA:
+            AsmROCmPseudoOps::doGlobalData(*this, stmtPlace, linePtr);
+            break;
         case ROCMOP_GDS_SEGMENT_SIZE:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_GDS_SEGMENT_SIZE);
@@ -1259,6 +1292,9 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             break;
         case ROCMOP_METADATA:
             AsmROCmPseudoOps::addMetadata(*this, stmtPlace, linePtr);
+            break;
+        case ROCMOP_NEWBINFMT:
+            AsmROCmPseudoOps::setNewBinFormat(*this, linePtr);
             break;
         case ROCMOP_PGMRSRC1:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_PGMRSRC1);
@@ -1459,6 +1495,10 @@ bool AsmROCmHandler::prepareBinary()
             case AsmSectionType::ROCM_COMMENT:
                 output.commentSize = sectionSize;
                 output.comment = (const char*)sectionData;
+                break;
+            case AsmSectionType::DATA:
+                output.globalDataSize = sectionSize;
+                output.globalData = sectionData;
                 break;
             case AsmSectionType::ROCM_METADATA:
                 output.metadataSize = sectionSize;

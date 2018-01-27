@@ -1966,6 +1966,7 @@
             <item>.main</item>
             <item>.max_scratch_backing_memory</item>
             <item>.metadata</item>
+            <item>.newbinfmt</item>
             <item>.noaltmacro</item>
             <item>.nobuggyfplit</item>
             <item>.nomacrocase</item>

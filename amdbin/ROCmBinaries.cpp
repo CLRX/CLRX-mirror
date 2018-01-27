@@ -415,7 +415,8 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     
     if (input->newBinFormat)
         // program header for note (new binary format)
-        elfBinGen64.addProgramHeader({ PT_NOTE, PF_R, 1, 1, true, 0, 0, 0 });
+        elfBinGen64.addProgramHeader({ PT_NOTE, PF_R, 1, 1, true,
+                    Elf64Types::nobase, Elf64Types::nobase, 0, 4 });
     
     // elf notes
     elfBinGen64.addNote({"AMD", sizeof noteDescType1, noteDescType1, 1U});

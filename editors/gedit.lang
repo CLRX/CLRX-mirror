@@ -257,6 +257,7 @@
             <keyword>macrocase</keyword>
             <keyword>main</keyword>
             <keyword>max_scratch_backing_memory</keyword>
+            <keyword>newbinfmt</keyword>
             <keyword>metadata</keyword>
             <keyword>noaltmacro</keyword>
             <keyword>nobuggyfplit</keyword>

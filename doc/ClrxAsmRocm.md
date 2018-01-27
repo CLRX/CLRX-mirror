@@ -129,6 +129,10 @@ Syntax: .gds_segment_size SIZE
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `gds_segment_size` field in kernel configuration.
 
+### .globaldata
+
+Go to constant global data section (`.rodata`).
+
 ### .group_segment_align
 
 Syntax: .group_segment_align ALIGN
@@ -232,6 +236,10 @@ Syntax: .max_scratch_backing_memory SIZE
 
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `max_scratch_backing_memory_byte_size` field in kernel configuration.
+
+### .newbinfmt
+
+This pseudo-ops set new binary format.
 
 ### .pgmrsrc1
 
