@@ -57,7 +57,10 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
     input->codeSize = binary.getCodeSize();
     input->metadata = binary.getMetadata();
     input->metadataSize = binary.getMetadataSize();
+    input->globalData = binary.getGlobalData();
+    input->globalDataSize = binary.getGlobalDataSize();
     input->target = binary.getTarget();
+    input->newBinFormat = binary.isNewBinaryFormat();
     return input.release();
 }
 
@@ -515,6 +518,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
 {
     const bool doMetadata = ((flags & (DISASM_METADATA|DISASM_CONFIG)) != 0);
     const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
+    const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(rocmInput->deviceType);
     const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
@@ -526,12 +530,24 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
         size_t size = snprintf(buf, 40, ".eflags %u\n", rocmInput->eflags);
         output.write(buf, size);
     }
+    
+    if (rocmInput->newBinFormat)
+        output.write(".newbinfmt\n", 11);
+    
     if (!rocmInput->target.empty())
     {
         output.write(".target \"", 9);
         const std::string escapedTarget = escapeStringCStyle(rocmInput->target);
         output.write(escapedTarget.c_str(), escapedTarget.size());
         output.write("\"\n", 2);
+    }
+    
+    if (doDumpData && rocmInput->globalData != nullptr &&
+        rocmInput->globalDataSize != 0)
+    {
+        output.write(".globaldata\n", 12);
+        output.write(".gdata:\n", 8); /// symbol used by text relocations
+        printDisasmData(rocmInput->globalDataSize, rocmInput->globalData, output);
     }
     
     if (doMetadata && !doDumpConfig &&

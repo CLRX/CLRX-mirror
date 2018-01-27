@@ -104,6 +104,7 @@ AsmROCmHandler::AsmROCmHandler(Assembler& assembler): AsmFormatHandler(assembler
              metadataSection(ASMSECT_NONE), extraSectionCount(0)
 {
     output.archMinor = output.archStepping = UINT32_MAX;
+    output.eflags = BINGEN_DEFAULT;
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
     // add text section as first

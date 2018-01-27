@@ -78,9 +78,12 @@ private:
     RegionMap regionsMap;
     size_t codeSize;
     cxbyte* code;
+    size_t globalDataSize;
+    cxbyte* globalData;
     CString target;
     size_t metadataSize;
     char* metadata;
+    bool newBinFormat;
 public:
     /// constructor
     ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode,
@@ -109,6 +112,20 @@ public:
     /// get code
     const cxbyte* getCode() const
     { return code; }
+    /// get code
+    cxbyte* getCode()
+    { return code; }
+    
+    /// get global data size
+    size_t getGlobalDataSize() const
+    { return globalDataSize; }
+    
+    /// get global data
+    const cxbyte* getGlobalData() const
+    { return globalData; }
+    /// get global data
+    cxbyte* getGlobalData()
+    { return globalData; }
     
     /// get metadata size
     size_t getMetadataSize() const
@@ -116,9 +133,16 @@ public:
     /// get metadata
     const char* getMetadata() const
     { return metadata; }
+    /// get metadata
+    char* getMetadata()
+    { return metadata; }
     
     const CString& getTarget() const
     { return target; }
+    
+    /// return true is new binary format
+    bool isNewBinaryFormat() const
+    { return newBinFormat; }
     
     /// returns true if kernel map exists
     bool hasRegionMap() const
@@ -181,6 +205,8 @@ struct ROCmInput
     uint32_t archStepping;      ///< GPU arch stepping
     uint32_t eflags;    ///< ELF headef e_flags field
     bool newBinFormat;       ///< use new binary format for ROCm
+    size_t globalDataSize;  ///< global data size
+    const cxbyte* globalData;   ///< global data
     std::vector<ROCmSymbolInput> symbols;   ///< symbols
     size_t codeSize;        ///< code size
     const cxbyte* code;     ///< code
@@ -219,14 +245,18 @@ public:
      * \param archStepping architecture stepping number
      * \param codeSize size of code
      * \param code code pointer
+     * \param globalDataSize size of global data
+     * \param globalData global data pointer
      * \param symbols symbols (kernels, datas,...)
      */
     ROCmBinGenerator(GPUDeviceType deviceType, uint32_t archMinor, uint32_t archStepping,
             size_t codeSize, const cxbyte* code,
+            size_t globalDataSize, const cxbyte* globalData,
             const std::vector<ROCmSymbolInput>& symbols);
     /// constructor
     ROCmBinGenerator(GPUDeviceType deviceType, uint32_t archMinor, uint32_t archStepping,
             size_t codeSize, const cxbyte* code,
+            size_t globalDataSize, const cxbyte* globalData,
             std::vector<ROCmSymbolInput>&& symbols);
     /// destructor
     ~ROCmBinGenerator();

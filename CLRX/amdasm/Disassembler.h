@@ -320,6 +320,8 @@ struct ROCmDisasmInput
     std::vector<ROCmDisasmRegionInput> regions;  ///< regions
     size_t codeSize;    ///< code size
     const cxbyte* code; ///< code
+    size_t globalDataSize;    ///< global data size
+    const cxbyte* globalData; ///< global data
     CString target;     ///< LLVM target triple
     size_t metadataSize;    ///< metadata size
     const char* metadata;   ///< metadata

@@ -125,7 +125,7 @@ static void printROCmOutput(std::ostream& os, const ROCmInput* output)
     printHexData(os, 1, output->commentSize, (const cxbyte*)output->comment);
     os << "  Code:\n";
     printHexData(os, 1, output->codeSize, output->code);
-    if (output->eflags != 0)
+    if (output->eflags != BINGEN_DEFAULT)
         os << "  EFlags=" << output->eflags << std::endl;
     
     // print extra sections if supplied
