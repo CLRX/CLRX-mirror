@@ -383,6 +383,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_DYNSYM);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ROCMSECTID_HASH);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_DYNSTR);
+    const cxuint execProgHeaderRegionIndex = mainSectionsNum;
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_TEXT);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ROCMSECTID_DYNAMIC);
     if (!input->newBinFormat)
@@ -398,18 +399,23 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     // elf program headers
     elfBinGen64.addProgramHeader({ PT_PHDR, PF_R, 0, 1,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0 });
-    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R, PHREGION_FILESTART, 4,
+    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R, PHREGION_FILESTART,
+                    execProgHeaderRegionIndex,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0, 0x1000 });
-    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_X, 4, 1,
+    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_X, execProgHeaderRegionIndex, 1,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0 });
-    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_W, 5, 1,
+    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_W, execProgHeaderRegionIndex+1, 1,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0 });
-    elfBinGen64.addProgramHeader({ PT_DYNAMIC, PF_R|PF_W, 5, 1,
+    elfBinGen64.addProgramHeader({ PT_DYNAMIC, PF_R|PF_W, execProgHeaderRegionIndex+1, 1,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0, 8 });
-    elfBinGen64.addProgramHeader({ PT_GNU_RELRO, PF_R, 5, 1,
+    elfBinGen64.addProgramHeader({ PT_GNU_RELRO, PF_R, execProgHeaderRegionIndex+1, 1,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0, 1 });
     elfBinGen64.addProgramHeader({ PT_GNU_STACK, PF_R|PF_W, PHREGION_FILESTART, 0,
                     true, 0, 0, 0 });
+    
+    if (input->newBinFormat)
+        // program header for note (new binary format)
+        elfBinGen64.addProgramHeader({ PT_NOTE, PF_R, 1, 1, true, 0, 0, 0 });
     
     // elf notes
     elfBinGen64.addNote({"AMD", sizeof noteDescType1, noteDescType1, 1U});
