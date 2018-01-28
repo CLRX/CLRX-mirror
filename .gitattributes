@@ -366,6 +366,7 @@ tests/amdbin/galliumbins/vectoradd-64bit.clo.reconf -text
 tests/amdbin/galliumbins/vectoradd-llvm4.clrx.clo -text
 tests/amdbin/rocmbins/consttest1-kaveri.hsaco.regen -text svneol=unset#application/x-sharedlib
 tests/amdbin/rocmbins/rijndael.hsaco.regen -text svneol=unset#application/x-sharedlib
+tests/amdbin/rocmbins/vectoradd-rocm.clo.regen -text svneol=unset#application/x-sharedlib
 tests/utils/CLIParser.cpp -text
 tests/utils/CMakeLists.txt -text svneol=unset#text/plain
 tests/utils/GPUId.cpp -text

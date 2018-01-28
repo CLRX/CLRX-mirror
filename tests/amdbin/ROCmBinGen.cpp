@@ -26,10 +26,11 @@
 
 using namespace CLRX;
 
-static const char* origBinaryFiles[2] =
+static const char* origBinaryFiles[3] =
 {
     CLRX_SOURCE_DIR "/tests/amdbin/rocmbins/consttest1-kaveri.hsaco.regen",
-    CLRX_SOURCE_DIR "/tests/amdbin/rocmbins/rijndael.hsaco.regen"
+    CLRX_SOURCE_DIR "/tests/amdbin/rocmbins/rijndael.hsaco.regen",
+    CLRX_SOURCE_DIR "/tests/amdbin/rocmbins/vectoradd-rocm.clo.regen"
 };
 
 static ROCmInput genROCmInput(const ROCmBinary& binary)
@@ -51,6 +52,7 @@ static ROCmInput genROCmInput(const ROCmBinary& binary)
     }
     rocmInput.archMinor = 0;
     rocmInput.archStepping = 0;
+    rocmInput.target = binary.getTarget();
     rocmInput.metadataSize = binary.getMetadataSize();
     rocmInput.metadata = binary.getMetadata();
     rocmInput.newBinFormat = binary.isNewBinaryFormat();
