@@ -2025,9 +2025,11 @@
             <item>.struct</item>
             <item>.stub</item>
             <item>.subconstantbuffers</item>
+            <item>.target</item>
             <item>.text</item>
             <item>.tgsize</item>
             <item>.title</item>
+            <item>.tripple</item>
             <item>.uav</item>
             <item>.uavid</item>
             <item>.uavmailboxsize</item>

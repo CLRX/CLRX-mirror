@@ -317,9 +317,11 @@
             <keyword>struct</keyword>
             <keyword>stub</keyword>
             <keyword>subconstantbuffers</keyword>
+            <keyword>target</keyword>
             <keyword>text</keyword>
             <keyword>tgsize</keyword>
             <keyword>title</keyword>
+            <keyword>tripple</keyword>
             <keyword>uav</keyword>
             <keyword>uavid</keyword>
             <keyword>uavmailboxsize</keyword>
