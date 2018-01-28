@@ -212,7 +212,8 @@ struct ROCmInput
     const cxbyte* code;     ///< code
     size_t commentSize; ///< comment size (can be null)
     const char* comment; ///< comment
-    CString target;     ///< LLVM target triple
+    CString target;     ///< LLVM target triple with device name
+    CString targetTripple; ///< same LLVM target tripple
     size_t metadataSize;    ///< metadata size
     const char* metadata;   ///< metadata
     std::vector<BinSection> extraSections;  ///< extra sections

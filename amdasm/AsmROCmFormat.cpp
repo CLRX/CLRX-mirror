@@ -50,7 +50,7 @@ static const char* rocmPseudoOpNamesTbl[] =
     "private_elem_size", "private_segment_align",
     "privmode", "reserved_sgprs", "reserved_vgprs",
     "runtime_loader_kernel_symbol",
-    "scratchbuffer", "sgprsnum", "target", "tgsize",
+    "scratchbuffer", "sgprsnum", "target", "tgsize", "tripple",
     "use_debug_enabled", "use_dispatch_id",
     "use_dispatch_ptr", "use_dynamic_call_stack",
     "use_flat_scratch_init", "use_grid_workgroup_count",
@@ -82,7 +82,8 @@ enum
     ROCMOP_PRIVATE_ELEM_SIZE, ROCMOP_PRIVATE_SEGMENT_ALIGN,
     ROCMOP_PRIVMODE, ROCMOP_RESERVED_SGPRS, ROCMOP_RESERVED_VGPRS,
     ROCMOP_RUNTIME_LOADER_KERNEL_SYMBOL,
-    ROCMOP_SCRATCHBUFFER, ROCMOP_SGPRSNUM, ROCMOP_TARGET, ROCMOP_TGSIZE,
+    ROCMOP_SCRATCHBUFFER, ROCMOP_SGPRSNUM,
+    ROCMOP_TARGET, ROCMOP_TGSIZE, ROCMOP_TRIPPLE,
     ROCMOP_USE_DEBUG_ENABLED, ROCMOP_USE_DISPATCH_ID,
     ROCMOP_USE_DISPATCH_PTR, ROCMOP_USE_DYNAMIC_CALL_STACK,
     ROCMOP_USE_FLAT_SCRATCH_INIT, ROCMOP_USE_GRID_WORKGROUP_COUNT,
@@ -381,7 +382,8 @@ void AsmROCmPseudoOps::setEFlags(AsmROCmHandler& handler, const char* linePtr)
     handler.output.eflags = value;
 }
 
-void AsmROCmPseudoOps::setTarget(AsmROCmHandler& handler, const char* linePtr)
+void AsmROCmPseudoOps::setTarget(AsmROCmHandler& handler, const char* linePtr,
+                        bool tripple)
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
@@ -391,9 +393,12 @@ void AsmROCmPseudoOps::setTarget(AsmROCmHandler& handler, const char* linePtr)
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    handler.output.target = out;
+    if (tripple)
+        handler.output.targetTripple = out;
+    else
+        handler.output.target = out;
 }
-    
+
 void AsmROCmPseudoOps::doConfig(AsmROCmHandler& handler, const char* pseudoOpPlace,
                   const char* linePtr)
 {
@@ -1336,11 +1341,14 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
                              ROCMCVAL_SGPRSNUM);
             break;
         case ROCMOP_TARGET:
-            AsmROCmPseudoOps::setTarget(*this, linePtr);
+            AsmROCmPseudoOps::setTarget(*this, linePtr, false);
             break;
         case ROCMOP_TGSIZE:
             AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_TGSIZE);
+            break;
+        case ROCMOP_TRIPPLE:
+            AsmROCmPseudoOps::setTarget(*this, linePtr, true);
             break;
         case ROCMOP_USE_DEBUG_ENABLED:
             AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,

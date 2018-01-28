@@ -318,10 +318,23 @@ This pseudo-op must be inside kernel configuration (`.config`). Set number of sc
 registers which can be used during kernel execution.
 It counts SGPR registers including VCC, FLAT_SCRATCH and XNACK_MASK.
 
+### .target
+
+Syntax: .target "TARGET"
+
+Set LLVM target with device name. For example: "amdgcn-amd-amdhsa-amdgizcl-gfx803".
+
 ### .tgsize
 
 This pseudo-op must be inside kernel configuration (`.config`).
 Enable usage of the TG_SIZE_EN.
+
+### .tripple
+
+Syntax: .tripple "TRIPPLE"
+
+Set LLVM target without device name. For example "amdgcn-amd-amdhsa-amdgizcl" with
+Fiji device generates target "amdgcn-amd-amdhsa-amdgizcl-gfx803".
 
 ### .use_debug_enabled
 

@@ -19,6 +19,7 @@
 
 #include <CLRX/Config.h>
 #include <cassert>
+#include <cstdio>
 #include <cstdint>
 #include <algorithm>
 #include <utility>
@@ -421,6 +422,15 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
         elfBinGen64.addProgramHeader({ PT_NOTE, PF_R, 1, 1, true,
                     Elf64Types::nobase, Elf64Types::nobase, 0, 4 });
     
+    std::string target = input->target.c_str();
+    if (target.empty() && !input->targetTripple.empty())
+    {
+        target = input->targetTripple.c_str();
+        char dbuf[20];
+        snprintf(dbuf, 20, "-gfx%u%u%u", amdGpuArchValues.major, amdGpuArchValues.minor,
+                 amdGpuArchValues.stepping);
+        target += dbuf;
+    }
     // elf notes
     elfBinGen64.addNote({"AMD", sizeof noteDescType1, noteDescType1, 1U});
     std::unique_ptr<cxbyte[]> noteBuf(new cxbyte[0x1b]);
@@ -429,9 +439,8 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
     SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);
     elfBinGen64.addNote({"AMD", 0x1b, noteBuf.get(), 3U});
-    if (!input->target.empty())
-        elfBinGen64.addNote({"AMD", input->target.size(),
-                (const cxbyte*)input->target.c_str(), 0xbU});
+    if (!target.empty())
+        elfBinGen64.addNote({"AMD", target.size(), (const cxbyte*)target.c_str(), 0xbU});
     if (input->metadataSize != 0)
         elfBinGen64.addNote({"AMD", input->metadataSize,
                 (const cxbyte*)input->metadata, 0xaU});

@@ -95,7 +95,7 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     static void setEFlags(AsmROCmHandler& handler, const char* linePtr);
     
     // .target
-    static void setTarget(AsmROCmHandler& handler, const char* linePtr);
+    static void setTarget(AsmROCmHandler& handler, const char* linePtr, bool tripple);
     
     /* user configuration pseudo-ops */
     static void doConfig(AsmROCmHandler& handler, const char* pseudoOpPlace,
