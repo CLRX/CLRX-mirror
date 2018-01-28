@@ -478,7 +478,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     elfBinGen64.addRegion(ElfRegion64(commentSize, (const cxbyte*)comment, 1, ".comment",
               SHT_PROGBITS, SHF_MERGE|SHF_STRINGS, 0, 0, 0, 1));
     elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
-                ".symtab", SHT_SYMTAB, 0, 0, 1));
+                ".symtab", SHT_SYMTAB, 0, 0, 2));
     elfBinGen64.addRegion(ElfRegion64::shstrtabSection());
     elfBinGen64.addRegion(ElfRegion64::strtabSection());
     elfBinGen64.addRegion(ElfRegion64::sectionHeaderTable());
