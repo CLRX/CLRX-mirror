@@ -687,6 +687,12 @@ struct TestSingleVReg
     { return name<b.name || (name==b.name && index<b.index); }
 };
 
+struct TestSingleVReg2
+{
+    const char* name;
+    uint16_t index;
+};
+
 std::ostream& operator<<(std::ostream& os, const TestSingleVReg& vreg)
 {
     if (!vreg.name.empty())
@@ -700,7 +706,7 @@ struct CCodeBlock2
 {
     size_t start, end; // place in code
     Array<NextBlock> nexts; ///< nexts blocks
-    Array<std::pair<TestSingleVReg, SSAInfo> > ssaInfos;
+    Array<std::pair<TestSingleVReg2, SSAInfo> > ssaInfos;
     bool haveCalls;
     bool haveReturn;
     bool haveEnd;
@@ -710,7 +716,7 @@ struct AsmSSADataCase
 {
     const char* input;
     Array<CCodeBlock2> codeBlocks;
-    Array<std::pair<TestSingleVReg, Array<SSAReplace> > > ssaReplaces;
+    Array<std::pair<TestSingleVReg2, Array<SSAReplace> > > ssaReplaces;
     bool good;
     const char* errorMessages;
 };
@@ -3612,8 +3618,11 @@ static void testCreateSSAData(cxuint i, const AsmSSADataCase& testCase)
             ssaOss.flush();
             std::string ssaName(ssaOss.str());
             
+            const TestSingleVReg expVReg = { expCBlock.ssaInfos[k].first.name,
+                    expCBlock.ssaInfos[k].first.index };
+            
             assertValue("testAsmSSAData", testCaseName + cbname + ssaName + "svreg",
-                        expCBlock.ssaInfos[k].first, resSSAInfos[k].first);
+                        expVReg, resSSAInfos[k].first);
             const SSAInfo& expSInfo = expCBlock.ssaInfos[k].second;
             const SSAInfo& resSInfo = resSSAInfos[k].second;
             assertValue("testAsmSSAData", testCaseName + cbname + ssaName + "ssaIdBefore",
@@ -3662,8 +3671,10 @@ static void testCreateSSAData(cxuint i, const AsmSSADataCase& testCase)
         const auto& expEntry = testCase.ssaReplaces[j];
         const auto& resEntry = resSSAReplaces[j];
         
+        const TestSingleVReg expVReg = { expEntry.first.name, expEntry.first.index };
+        
         assertValue("testAsmSSAData", testCaseName + ssaName + "svreg",
-                        expEntry.first, resEntry.first);
+                        expVReg, resEntry.first);
         assertValue("testAsmSSAData", testCaseName + ssaName + "replacesSize",
                         expEntry.second.size(), resEntry.second.size());
         for (size_t k = 0; k < expEntry.second.size(); k++)
