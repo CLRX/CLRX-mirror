@@ -312,7 +312,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
              Array<cxbyte>* aPtr) const
 {
     AMDGPUArchVersion amdGpuArchValues = getGPUArchVersion(input->deviceType,
-                GPUArchVersionTable::OPENSOURCE);
+                GPUArchVersionTable::ROCM);
     if (input->archMinor!=UINT32_MAX)
         amdGpuArchValues.minor = input->archMinor;
     if (input->archStepping!=UINT32_MAX)

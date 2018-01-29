@@ -318,7 +318,7 @@ uint32_t CLRX::calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint us
             ((uint32_t(exceptions)&0x7f)<<24);
 }
 
-// AMD GPU architecture for Gallium and ROCm
+// AMD GPU architecture for Gallium
 static const AMDGPUArchVersion galliumGpuArchVersionTbl[] =
 {
     { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
@@ -342,6 +342,39 @@ static const AMDGPUArchVersion galliumGpuArchVersionTbl[] =
     { 8, 0, 1 }, // GPUDeviceType::STONEY
     { 8, 0, 4 }, // GPUDeviceType::ELLESMERE
     { 8, 0, 4 }, // GPUDeviceType::BAFFIN
+    { 8, 0, 4 }, // GPUDeviceType::GFX804
+    { 9, 0, 0 }, // GPUDeviceType::GFX900
+    { 9, 0, 1 }, // GPUDeviceType::GFX901
+    { 9, 0, 2 }, // GPUDeviceType::GFX902
+    { 9, 0, 3 }, // GPUDeviceType::GFX903
+    { 9, 0, 4 }, // GPUDeviceType::GFX904
+    { 9, 0, 5 }  // GPUDeviceType::GFX905
+};
+
+// AMD GPU architecture for ROCm
+static const AMDGPUArchVersion rocmGpuArchVersionTbl[] =
+{
+    { 0, 0, 0 }, // GPUDeviceType::CAPE_VERDE
+    { 0, 0, 0 }, // GPUDeviceType::PITCAIRN
+    { 0, 0, 0 }, // GPUDeviceType::TAHITI
+    { 0, 0, 0 }, // GPUDeviceType::OLAND
+    { 7, 0, 0 }, // GPUDeviceType::BONAIRE
+    { 7, 0, 0 }, // GPUDeviceType::SPECTRE
+    { 7, 0, 0 }, // GPUDeviceType::SPOOKY
+    { 7, 0, 0 }, // GPUDeviceType::KALINDI
+    { 0, 0, 0 }, // GPUDeviceType::HAINAN
+    { 7, 0, 1 }, // GPUDeviceType::HAWAII
+    { 8, 0, 0 }, // GPUDeviceType::ICELAND
+    { 8, 0, 2 }, // GPUDeviceType::TONGA
+    { 7, 0, 0 }, // GPUDeviceType::MULLINS
+    { 8, 0, 3 }, // GPUDeviceType::FIJI
+    { 8, 0, 1 }, // GPUDeviceType::CARRIZO
+    { 8, 0, 1 }, // GPUDeviceType::DUMMY
+    { 8, 0, 3 }, // GPUDeviceType::GOOSE
+    { 8, 0, 3 }, // GPUDeviceType::HORSE
+    { 8, 1, 0 }, // GPUDeviceType::STONEY
+    { 8, 0, 3 }, // GPUDeviceType::ELLESMERE
+    { 8, 0, 3 }, // GPUDeviceType::BAFFIN
     { 8, 0, 4 }, // GPUDeviceType::GFX804
     { 9, 0, 0 }, // GPUDeviceType::GFX900
     { 9, 0, 1 }, // GPUDeviceType::GFX901
@@ -390,7 +423,9 @@ AMDGPUArchVersion CLRX::getGPUArchVersion(GPUDeviceType deviceType, GPUArchVersi
         throw GPUIdException("Unknown GPU device type");
     // choose correct GPU arch values table
     const AMDGPUArchVersion* archValuesTable = (table == GPUArchVersionTable::AMDCL2) ?
-            amdCL2GpuArchVersionTbl : galliumGpuArchVersionTbl;
+            amdCL2GpuArchVersionTbl :
+            ((table == GPUArchVersionTable::OPENSOURCE) ? galliumGpuArchVersionTbl :
+            rocmGpuArchVersionTbl);
     return archValuesTable[cxuint(deviceType)];
 }
 

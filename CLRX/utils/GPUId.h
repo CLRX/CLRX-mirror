@@ -188,7 +188,8 @@ extern uint32_t calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint u
 enum class GPUArchVersionTable: cxuint
 {
     AMDCL2 = 0, ///< AMD OpenCL 2.0 driver
-    OPENSOURCE ///< ROCm and Gallium
+    OPENSOURCE, ///< Gallium
+    ROCM  ///< ROCm
 };
 
 /// get AMD GPU architecture version for specific device type and driver
