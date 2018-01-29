@@ -1991,6 +1991,7 @@
             <item>.rawcode</item>
             <item>.regvar</item>
             <item>.rept</item>
+            <item>.reqd_work_group_size</item>
             <item>.reserved_sgprs</item>
             <item>.reserved_vgprs</item>
             <item>.rocm</item>

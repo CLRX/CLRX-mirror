@@ -43,6 +43,7 @@ static const char* amdPseudoOpNamesTbl[] =
     "hwregion", "ieeemode", "inputs", "inputsamplers",
     "intconsts", "localsize", "metadata", "outputs", "persistentbuffers",
     "pgmrsrc2", "printfid", "privateid", "proginfo",
+    "reqd_work_group_size",
     "sampler", "scratchbuffer", "scratchbuffers", "segment",
     "sgprsnum", "subconstantbuffers", "tgsize", "uav", "uavid",
     "uavmailboxsize", "uavopmask", "uavprivate", "useconstdata",
@@ -62,6 +63,7 @@ enum
     AMDOP_INTCONSTS, AMDOP_LOCALSIZE, AMDOP_METADATA,
     AMDOP_OUTPUTS,AMDOP_PERSISTENTBUFFERS, AMDOP_PGMRSRC2,
     AMDOP_PRINTFID, AMDOP_PRIVATEID, AMDOP_PROGINFO,
+    AMDOP_REQD_WORK_GROUP_SIZE,
     AMDOP_SAMPLER, AMDOP_SCRATCHBUFFER, AMDOP_SCRATCHBUFFERS, AMDOP_SEGMENT,
     AMDOP_SGPRSNUM, AMDOP_SUBCONSTANTBUFFERS, AMDOP_TGSIZE, AMDOP_UAV, AMDOP_UAVID,
     AMDOP_UAVMAILBOXSIZE, AMDOP_UAVOPMASK, AMDOP_UAVPRIVATE, AMDOP_USECONSTDATA,
@@ -1523,6 +1525,7 @@ bool AsmAmdHandler::parsePseudoOp(const CString& firstName,
                             CALNOTE_ATI_CONSTANT_BUFFERS);
             break;
         case AMDOP_CWS:
+        case AMDOP_REQD_WORK_GROUP_SIZE:
             AsmAmdPseudoOps::setCWS(*this, stmtPlace, linePtr);
             break;
         case AMDOP_DIMS:

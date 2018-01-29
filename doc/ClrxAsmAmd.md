@@ -164,9 +164,10 @@ This pseudo-operation must be inside kernel.
 Open ATI_CONSTANT_BUFFERS CAL note. Next occurrence in this same kernel,
 add new CAL note.
 
-### .cws
+### .cws, .reqd_work_group_size
 
 Syntax: .cws SIZEHINT[, SIZEHINT[, SIZEHINT]]
+Syntax: .reqd_work_group_size SIZEHINT[, SIZEHINT[, SIZEHINT]]
 
 This pseudo-operation must be inside kernel configuration.
 Set reqd_work_group_size hint for this kernel.

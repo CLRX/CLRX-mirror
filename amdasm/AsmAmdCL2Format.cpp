@@ -52,7 +52,8 @@ static const char* amdCL2PseudoOpNamesTbl[] =
     "localsize", "machine", "max_scratch_backing_memory",
     "metadata", "pgmrsrc1", "pgmrsrc2", "priority",
     "private_elem_size", "private_segment_align",
-    "privmode", "reserved_sgprs", "reserved_vgprs",
+    "privmode", "reqd_work_group_size",
+    "reserved_sgprs", "reserved_vgprs",
     "runtime_loader_kernel_symbol", "rwdata", "sampler",
     "samplerinit", "samplerreloc", "scratchbuffer", "setup",
     "setupargs", "sgprsnum", "stub", "tgsize",
@@ -90,7 +91,8 @@ enum
     AMDCL2OP_MACHINE, AMDCL2OP_MAX_SCRATCH_BACKING_MEMORY,
     AMDCL2OP_METADATA, AMDCL2OP_PGMRSRC1, AMDCL2OP_PGMRSRC2, AMDCL2OP_PRIORITY,
     AMDCL2OP_PRIVATE_ELEM_SIZE, AMDCL2OP_PRIVATE_SEGMENT_ALIGN,
-    AMDCL2OP_PRIVMODE, AMDCL2OP_RESERVED_SGPRS, AMDCL2OP_RESERVED_VGPRS,
+    AMDCL2OP_PRIVMODE, AMDCL2OP_REQD_WORK_GROUP_SIZE,
+    AMDCL2OP_RESERVED_SGPRS, AMDCL2OP_RESERVED_VGPRS,
     AMDCL2OP_RUNTIME_LOADER_KERNEL_SYMBOL, AMDCL2OP_RWDATA,
     AMDCL2OP_SAMPLER, AMDCL2OP_SAMPLERINIT,
     AMDCL2OP_SAMPLERRELOC, AMDCL2OP_SCRATCHBUFFER, AMDCL2OP_SETUP, AMDCL2OP_SETUPARGS,
@@ -1428,6 +1430,7 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::doControlDirective(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_CWS:
+        case AMDCL2OP_REQD_WORK_GROUP_SIZE:
             AsmAmdCL2PseudoOps::setCWS(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:

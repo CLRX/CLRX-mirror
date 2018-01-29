@@ -283,6 +283,7 @@
             <keyword>rawcode</keyword>
             <keyword>regvar</keyword>
             <keyword>rept</keyword>
+            <keyword>reqd_work_group_size</keyword>
             <keyword>reserved_sgprs</keyword>
             <keyword>reserved_vgprs</keyword>
             <keyword>rocm</keyword>

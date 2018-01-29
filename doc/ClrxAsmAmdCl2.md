@@ -197,9 +197,10 @@ Open control directive section. This section must be 128 bytes. The content of t
 section will be stored in control_directive field in kernel configuration.
 Must be defined inside kernel.
 
-### .cws
+### .cws, .reqd_work_group_size
 
 Syntax: .cws SIZEHINT[, SIZEHINT[, SIZEHINT]]
+Syntax: .reqd_work_group_size SIZEHINT[, SIZEHINT[, SIZEHINT]]
 
 This pseudo-operation must be inside any kernel configuration.
 Set reqd_work_group_size hint for this kernel.
