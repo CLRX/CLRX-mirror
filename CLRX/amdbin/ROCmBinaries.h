@@ -43,6 +43,7 @@ namespace CLRX
 
 enum : Flags {
     ROCMBIN_CREATE_REGIONMAP = 0x10,    ///< create region map
+    ROCMBIN_CREATE_KERNELINFOMAP = 0x20,    ///< create kernel metadata info map
     ROCMBIN_CREATE_ALL = ELF_CREATE_ALL | 0xfff0 ///< all ROCm binaries flags
 };
 
@@ -61,6 +62,122 @@ struct ROCmRegion
     size_t size;    ///< data size
     size_t offset;     ///< data
     ROCmRegionType type; ///< type
+};
+
+/// ROCm Value kind
+enum class ROCmValueKind : cxbyte
+{
+    BY_VALUE = 0,       ///< value is just value
+    GLOBAL_BUFFER,      ///< passed in global buffer
+    DYN_SHARED_PTR,     ///< passed as dynamic shared pointer
+    SAMPLER,            ///< sampler
+    IMAGE,              ///< image
+    PIPE,               ///< OpenCL pipe
+    QUEUE,              ///< OpenCL queue
+    HIDDEN_GLOBAL_OFFSET_X, ///< OpenCL global offset X
+    HIDDEN_GLOBAL_OFFSET_Y, ///< OpenCL global offset Y
+    HIDDEN_GLOBAL_OFFSET_Z, ///< OpenCL global offset Z
+    HIDDEN_NONE,            ///< none (not used)
+    HIDDEN_PRINTF_BUFFER,   ///< buffer for printf calls
+    HIDDEN_DEFAULT_QUEUE,   ///< OpenCL default queue
+    HIDDEN_COMPLETION_ACTION    ///< ???
+};
+
+/// ROCm argument's value type
+enum class ROCmValueType : cxbyte
+{
+    STRUCTURE = 0,  ///< structure
+    INT8,       ///< 8-bit signed integer
+    UINT8,      ///< 8-bit unsigned integer
+    INT16,      ///< 16-bit signed integer
+    UINT16,     ///< 16-bit unsigned integer
+    FLOAT16,    ///< half floating point
+    INT32,      ///< 32-bit signed integer
+    UINT32,     ///< 32-bit unsigned integer
+    FLOAT32,    ///< single floating point
+    INT64,      ///< 64-bit signed integer
+    UINT64,     ///< 64-bit unsigned integer
+    FLOAT64     ///< double floating point
+};
+
+/// ROCm argument address space
+enum class ROCmAddressSpace : cxbyte
+{
+    PRIVATE = 0,
+    GLOBAL,
+    CONSTANT,
+    LOCAL,
+    GENERIC,
+    REGION
+};
+
+/// ROCm access qualifier
+enum class ROCmAccessQual: cxbyte
+{
+    READ_ONLY = 0,
+    WRITE_ONLY,
+    READ_WRITE,
+    DEFAULT
+};
+
+/// ROCm kernel argument
+struct ROCmKernelArgInfo
+{
+    CString name;       ///< name
+    CString typeName;   ///< type name
+    uint64_t size;      ///< argument size in bytes
+    uint64_t align;     ///< argument alignment in bytes
+    uint64_t pointeeAlign;      ///< alignemnt of pointed data of pointer
+    ROCmValueKind valueKind;    ///< value kind
+    ROCmValueType valueType;    ///< value type
+    ROCmAddressSpace addressSpace;  ///< pointer address space
+    ROCmAccessQual accessQual;      ///< access qualifier (for images and values)
+    ROCmAccessQual actualAccessQual;    ///< access qualifier to resource data
+    bool isConst;       ///< is constant
+    bool isRestrict;    ///< is restrict
+    bool isVolatile;    ///< is volatile
+    bool isPipe;        ///< is pipe
+};
+
+/// ROCm kernel metadata
+struct ROCmKernelMetadata
+{
+    CString name;       ///< kernel name
+    CString symbolName; ///< symbol name
+    Array<ROCmKernelArgInfo> argInfos;  ///< kernel arguments
+    CString language;       ///< language
+    cxuint langVersion[2];  ///< language version
+    cxuint reqdWorkGroupSize[3];    ///< required work group size
+    cxuint workGroupSizeHint[3];    ///< work group size hint
+    CString vecTypeHint;    ///< vector type hint
+    CString runtimeHandle;  ///< symbol of runtime handle
+    uint64_t kernargSegmentSize;    ///< kernel argument segment size
+    uint64_t groupSegmentFixedSize; ///< group segment size (fixed)
+    uint64_t privateSegmentFixedSize;   ///< private segment size (fixed)
+    uint64_t kernargSegmentAlign;       ///< alignment of kernel argument segment
+    cxuint wavefrontSize;       ///< wavefront size
+    cxuint sgprsNum;        ///< number of SGPRs
+    cxuint vgprsNum;        ///< number of VGPRs
+    uint64_t maxFlatWorkGroupSize;
+    uint64_t fixedWorkGroupSize[3];
+    cxuint spilledSgprs;    ///< number of spilled SGPRs
+    cxuint spilledVgprs;    ///< number of spilled VGPRs
+};
+
+/// ROCm printf call info
+struct ROCmPrintfInfo
+{
+    uint32_t id;    /// unique id of call
+    Array<uint32_t> argSizes;   ///< argument sizes
+    CString format;     ///< printf format
+};
+
+/// ROCm binary metadata
+struct ROCmMetadata
+{
+    cxuint version[2];  ///< version
+    Array<ROCmPrintfInfo> printfInfos;  ///< printf calls infos
+    Array<ROCmKernelMetadata> kernels;  ///< kernel metadatas
 };
 
 /// ROCm main binary for GPU for 64-bit mode
@@ -83,6 +200,8 @@ private:
     CString target;
     size_t metadataSize;
     char* metadata;
+    std::unique_ptr<ROCmMetadata> metadataInfo;
+    RegionMap kernelInfosMap;
     bool newBinFormat;
 public:
     /// constructor
@@ -137,6 +256,26 @@ public:
     char* getMetadata()
     { return metadata; }
     
+    /// get metadata info
+    bool hasMetadataInfo() const
+    { return metadataInfo!=nullptr; }
+    
+    /// get metadata info
+    const ROCmMetadata& getMetadataInfo() const
+    { return *metadataInfo; }
+    
+    /// get kernel metadata infos number
+    size_t getKernelInfosNum() const
+    { return metadataInfo->kernels.size(); }
+    
+    /// get kernel metadata info
+    const ROCmKernelMetadata& getKernelInfo(size_t index) const
+    { return metadataInfo->kernels[index]; }
+    
+    /// get kernel metadata info by name
+    const ROCmKernelMetadata& getKernelInfo(const char* name) const;
+    
+    /// get target
     const CString& getTarget() const
     { return target; }
     
@@ -146,7 +285,10 @@ public:
     
     /// returns true if kernel map exists
     bool hasRegionMap() const
-    { return (creationFlags & ROCMBIN_CREATE_REGIONMAP) != 0; };
+    { return (creationFlags & ROCMBIN_CREATE_REGIONMAP) != 0; }
+    /// returns true if object has kernel map
+    bool hasKernelInfoMap() const
+    { return (creationFlags & ROCMBIN_CREATE_KERNELINFOMAP) != 0; }
 };
 
 enum {
