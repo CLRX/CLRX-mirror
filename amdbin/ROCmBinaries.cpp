@@ -20,7 +20,10 @@
 #include <CLRX/Config.h>
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 #include <cstdint>
+#include <string>
+#include <vector>
 #include <algorithm>
 #include <utility>
 #include <CLRX/amdbin/ElfBinaries.h>
@@ -31,6 +34,917 @@
 #include <CLRX/amdbin/ROCmBinaries.h>
 
 using namespace CLRX;
+
+/*
+ * ROCm metadata YAML parser
+ */
+
+// return trailing spaces
+static size_t skipSpacesAndComments(const char*& ptr, const char* end, size_t& lineNo)
+{
+    const char* lineStart = ptr;
+    while (ptr != end)
+    {
+        lineStart = ptr;
+        while (ptr != end && *ptr!='\n' && isSpace(*ptr)) ptr++;
+        if (ptr == end)
+            break; // end of stream
+        if (*ptr=='#')
+        {
+            // skip comment
+            while (ptr != end && *ptr!='\n') ptr++;
+            if (ptr == end)
+                return 0; // no trailing spaces and end
+        }
+        else if (*ptr!='\n')
+            break; // no comment and no end of line
+        else
+            lineNo++; // next line
+    }
+    return lineStart - ptr;
+}
+
+static inline void skipSpacesToEnd(const char*& ptr, const char* end)
+{
+    while (ptr != end && *ptr!='\n' && isSpace(*ptr)) ptr++;
+}
+
+static size_t parseYAMLKey(const char*& ptr, const char* end, size_t lineNo,
+            size_t keywordsNum, const char** keywords)
+{
+    const char* keyPtr = ptr;
+    while (ptr != end && (isAlnum(*ptr) || *ptr=='_')) ptr++;
+    if (keyPtr == end)
+        throw ParseException(lineNo, "Expected key name");
+    const char* keyEnd = ptr;
+    while (ptr != end && *ptr!='\n' && isSpace(*ptr)) ptr++;
+    if (ptr == end || *ptr==':')
+        throw ParseException(lineNo, "Expected colon");
+    ptr++;
+    const char* afterColon = ptr;
+    skipSpacesToEnd(ptr, end);
+    if (afterColon == ptr)
+        throw ParseException("After key and colon must be space");
+    CString keyword(keyPtr, keyEnd);
+    const size_t index = binaryFind(keywords, keywords+keywordsNum,
+                        keyword.c_str(), CStringLess()) - keywords;
+    if (index == keywordsNum)
+        throw ParseException(lineNo, "Unknown keyword");
+    return index;
+}
+
+template<typename T>
+static T parseYAMLIntValue(const char*& ptr, const char* end, size_t lineNo)
+{
+    skipSpacesToEnd(ptr, end);
+    if (ptr == end || *ptr=='\n')
+        throw ParseException(lineNo, "Expected integer value");
+    try
+    { return cstrtovCStyle<T>(ptr, end, ptr); }
+    catch(const ParseException& ex)
+    { throw ParseException(lineNo, ex.what()); }
+}
+
+static bool parseYAMLBoolValue(const char*& ptr, const char* end, size_t lineNo)
+{
+    skipSpacesToEnd(ptr, end);
+    if (ptr == end || *ptr=='\n')
+        throw ParseException(lineNo, "Expected boolean value");
+    
+    const char* wordPtr = ptr;
+    while(ptr == end && isAlnum(*ptr)) ptr++;
+    CString word(wordPtr, ptr);
+    
+    for (const char* v: { "1", "true", "t", "on", "yes", "y"})
+        if (::strcasecmp(word.c_str(), v) == 0)
+            return true;
+    for (const char* v: { "0", "false", "f", "off", "no", "n"})
+        if (::strcasecmp(word.c_str(), v) == 0)
+            return false;
+    throw ParseException(lineNo, "Is not boolean value");
+}
+
+static std::string trimStrSpaces(const std::string& str)
+{
+    size_t i = 0;
+    const size_t sz = str.size();
+    while (i!=sz && isSpace(str[i])) i++;
+    if (i == sz) return "";
+    size_t j = sz-1;
+    while (j>i && isSpace(str[j])) j--;
+    return str.substr(i, j-i+1);
+}
+
+static std::string parseYAMLString(const char*& linePtr, const char* end,
+            size_t& lineNo)
+{
+    std::string strarray;
+    if (linePtr == end || (*linePtr != '"' && *linePtr != '\''))
+    {
+        while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
+        throw ParseException(lineNo, "Expected string");
+    }
+    const char termChar = *linePtr;
+    linePtr++;
+    
+    // main loop, where is character parsing
+    while (linePtr != end && *linePtr != termChar)
+    {
+        if (*linePtr == '\\')
+        {
+            // escape
+            linePtr++;
+            uint16_t value;
+            if (linePtr == end)
+                throw ParseException(lineNo, "Unterminated character of string");
+            if (*linePtr == 'x')
+            {
+                // hex literal
+                linePtr++;
+                if (linePtr == end)
+                    throw ParseException(lineNo, "Unterminated character of string");
+                value = 0;
+                if (isXDigit(*linePtr))
+                    for (; linePtr != end; linePtr++)
+                    {
+                        cxuint digit;
+                        if (*linePtr >= '0' && *linePtr <= '9')
+                            digit = *linePtr-'0';
+                        else if (*linePtr >= 'a' && *linePtr <= 'f')
+                            digit = *linePtr-'a'+10;
+                        else if (*linePtr >= 'A' && *linePtr <= 'F')
+                            digit = *linePtr-'A'+10;
+                        else
+                            break;
+                        value = (value<<4) + digit;
+                    }
+                else
+                    throw ParseException(lineNo, "Expected hexadecimal character code");
+                value &= 0xff;
+            }
+            else if (isODigit(*linePtr))
+            {
+                // octal literal
+                value = 0;
+                for (cxuint i = 0; linePtr != end && i < 3; i++, linePtr++)
+                {
+                    if (!isODigit(*linePtr))
+                        break;
+                    value = (value<<3) + uint64_t(*linePtr-'0');
+                    // checking range
+                    if (value > 255)
+                        throw ParseException(lineNo, "Octal code out of range");
+                }
+            }
+            else
+            {
+                // normal escapes
+                const char c = *linePtr++;
+                switch (c)
+                {
+                    case 'a':
+                        value = '\a';
+                        break;
+                    case 'b':
+                        value = '\b';
+                        break;
+                    case 'r':
+                        value = '\r';
+                        break;
+                    case 'n':
+                        value = '\n';
+                        break;
+                    case 'f':
+                        value = '\f';
+                        break;
+                    case 'v':
+                        value = '\v';
+                        break;
+                    case 't':
+                        value = '\t';
+                        break;
+                    case '\\':
+                        value = '\\';
+                        break;
+                    case '\'':
+                        value = '\'';
+                        break;
+                    case '\"':
+                        value = '\"';
+                        break;
+                    default:
+                        value = c;
+                }
+            }
+            strarray.push_back(value);
+        }
+        else // regular character
+        {
+            if (*linePtr=='\n')
+                lineNo++;
+            strarray.push_back(*linePtr++);
+        }
+    }
+    if (linePtr == end)
+        throw ParseException(lineNo, "Unterminated string");
+    linePtr++;
+    return strarray;
+}
+
+static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_t& lineNo,
+                    cxuint prevIndent)
+{
+    skipSpacesToEnd(ptr, end);
+    if (ptr == end)
+        return "";
+    if (*ptr=='"' || *ptr== '\'')
+        return parseYAMLString(ptr, end, lineNo);
+    
+    // otherwise parse stream
+    if (*ptr == '|' || *ptr == '>')
+    {
+        // multiline
+        bool newLineFold = *ptr=='>';
+        while (ptr != end && *ptr!='\n') ptr++;
+        if (ptr == end)
+            return ""; // end
+        lineNo++;
+        ptr++; // skip newline
+        const char* lineStart = ptr;
+        skipSpacesToEnd(ptr, end);
+        size_t indent = ptr - lineStart;
+        if (indent <= prevIndent)
+            throw ParseException(lineNo, "Unindented string block");
+        
+        std::string buf;
+        while(ptr != end)
+        {
+            const char* strStart = ptr;
+            while (ptr != end && *ptr!='\n') ptr++;
+            buf.append(strStart, end);
+            
+            lineNo++;
+            const char* lineStart = ptr;
+            skipSpacesToEnd(ptr, end);
+            if (size_t(ptr - lineStart) < indent)
+            {
+                if (ptr == end || *ptr=='\n')
+                {
+                    if (!newLineFold)
+                        buf.append("\n");
+                    continue;
+                }
+                // if smaller indent
+                ptr = lineStart;
+                return buf;
+            }
+            ptr = lineStart + indent;
+            if (!newLineFold)
+                buf.append("\n");
+        }
+        return buf;
+    }
+    const char* strStart = ptr;
+    while (ptr != end && *ptr!='\n') ptr++;
+    return std::string(strStart, ptr);
+}
+
+class CLRX_INTERNAL YAMLElemConsumer
+{
+public:
+    virtual void consume(const char*& ptr, const char* end, size_t& lineNo,
+                cxuint prevIndent) = 0;
+};
+
+static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
+            size_t prevIndent, YAMLElemConsumer* elemConsumer)
+{
+    skipSpacesToEnd(ptr, end);
+    if (ptr == end)
+        return;
+    
+    if (*ptr == '[')
+    {
+        ptr++;
+        skipSpacesAndComments(ptr, end, lineNo);
+        while (ptr != end)
+        {
+            // parse in line
+            elemConsumer->consume(ptr, end, lineNo, 0);
+            if (ptr!=end && *ptr==',')
+                throw ParseException(lineNo, "Expected ','");
+            else if (ptr!=end && *ptr==']')
+                // just end
+                break;
+            ptr++;
+            skipSpacesAndComments(ptr, end, lineNo);
+        }
+        if (ptr == end)
+            throw ParseException(lineNo, "Unterminated array");
+        ptr++;
+        return;
+    }
+    // sequence
+    size_t oldLineNo = lineNo;
+    size_t indent0 = skipSpacesAndComments(ptr, end, lineNo);
+    if (ptr == end || lineNo == oldLineNo)
+        throw ParseException(lineNo, "Expected sequence of values");
+    
+    if (indent0 < prevIndent)
+        throw ParseException(lineNo, "Unindented sequence of objects");
+    
+    while (ptr != end)
+    {
+        if (*ptr != '-')
+            throw ParseException(lineNo, "No '-' before element value");
+        ptr++;
+        const char* afterMinus = ptr;
+        skipSpacesToEnd(ptr, end);
+        if (afterMinus == ptr)
+            throw ParseException(lineNo, "No spaces after '-'");
+        elemConsumer->consume(ptr, end, lineNo, indent0+1 + afterMinus-ptr);
+        
+        size_t indent = skipSpacesAndComments(ptr, end, lineNo);
+        if (indent < indent0)
+        {
+            // if parent level
+            ptr -= indent;
+            break;
+        }
+        if (indent != indent0)
+            throw ParseException(lineNo, "Wrong indentation of element");
+    }
+}
+
+template<typename T>
+class CLRX_INTERNAL YAMLIntArrayConsumer: public YAMLElemConsumer
+{
+private:
+    size_t elemsNum;
+    size_t requiredElemsNum;
+public:
+    T* array;
+    
+    YAMLIntArrayConsumer(size_t reqElemsNum, T* _array)
+            : elemsNum(0), requiredElemsNum(reqElemsNum), array(_array)
+    { }
+    
+    virtual void consume(const char*& ptr, const char* end, size_t& lineNo,
+                cxuint prevIndent)
+    {
+        if (elemsNum == requiredElemsNum)
+            throw ParseException(lineNo, "Too many elements");
+        try
+        { array[elemsNum] = cstrtovCStyle<T>(ptr, end, ptr); }
+        catch(const ParseException& ex)
+        { throw ParseException(lineNo, ex.what()); }
+        elemsNum++;
+    }
+};
+
+// printf info string consumer
+
+class CLRX_INTERNAL YAMLPrintfVectorConsumer: public YAMLElemConsumer
+{
+public:
+    std::vector<ROCmPrintfInfo> printInfos;
+    
+    YAMLPrintfVectorConsumer()
+    { }
+    
+    virtual void consume(const char*& ptr, const char* end, size_t& lineNo,
+                cxuint prevIndent)
+    {
+        std::string str = parseYAMLStringValue(ptr, end, lineNo, prevIndent);
+        // parse printf string
+        ROCmPrintfInfo printfInfo;
+        
+        const char* ptr2 = str.c_str();
+        const char* end2 = str.c_str() + str.size();
+        skipSpacesToEnd(ptr2, end2);
+        printfInfo.id = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
+        skipSpacesToEnd(ptr2, end2);
+        if (ptr2==end || *ptr2!=':')
+            throw ParseException(lineNo, "No colon after printf callId");
+        ptr2++;
+        skipSpacesToEnd(ptr2, end2);
+        uint32_t argsNum = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
+        skipSpacesToEnd(ptr2, end2);
+        if (ptr2==end || *ptr2!=':')
+            throw ParseException(lineNo, "No colon after printf argsNum");
+        ptr2++;
+        
+        printfInfo.argSizes.resize(argsNum);
+        
+        // parse arg sizes
+        for (size_t i = 0; i < argsNum; i++)
+        {
+            skipSpacesToEnd(ptr2, end2);
+            printfInfo.argSizes[i] = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
+            skipSpacesToEnd(ptr2, end2);
+            if (ptr2==end || *ptr2!=':')
+                throw ParseException(lineNo, "No colon after printf argsNum");
+            ptr2++;
+        }
+        // format
+        printfInfo.format.assign(ptr2, end2);
+    }
+};
+
+enum {
+    ROCMMT_MAIN_KERNELS = 0, ROCMMT_MAIN_PRINTF,  ROCMMT_MAIN_VERSION
+};
+
+static const char* mainMetadataKeywords[] =
+{
+    "Kernels", "Printf", "Version"
+};
+
+static const size_t mainMetadataKeywordsNum =
+        sizeof(mainMetadataKeywords) / sizeof(const char*);
+
+enum {
+    ROCMMT_KERNEL_ARGS = 0, ROCMMT_KERNEL_ATTRS, ROCMMT_KERNEL_CODEPROPS,
+    ROCMMT_KERNEL_LANGUAGE, ROCMMT_KERNEL_LANGUAGE_VERSION,
+    ROCMMT_KERNEL_NAME, ROCMMT_KERNEL_SYMBOLNAME
+};
+
+static const char* kernelMetadataKeywords[] =
+{
+    "Args", "Attrs", "CodeProps", "Language", "LanguageVersion", "Name", "SymbolName"
+};
+
+static const size_t kernelMetadataKeywordsNum =
+        sizeof(kernelMetadataKeywords) / sizeof(const char*);
+
+enum {
+    ROCMMT_ATTRS_REQD_WORK_GROUP_SIZE = 0, ROCMMT_ATTRS_RUNTIME_HANDLE,
+    ROCMMT_ATTRS_VECTYPEHINT, ROCMMT_ATTRS_WORK_GROUP_SIZE_HINT
+};
+
+static const char* kernelAttrMetadataKeywords[] =
+{
+    "ReqdWorkGroupSize", "RuntimeHandle", "VecTypeHint", "WorkGroupSizeHint"
+};
+
+static const size_t kernelAttrMetadataKeywordsNum =
+        sizeof(kernelAttrMetadataKeywords) / sizeof(const char*);
+
+enum {
+    ROCMMT_CODEPROPS_FIXED_WORK_GROUP_SIZE = 0, ROCMMT_CODEPROPS_GROUP_SEGMENT_FIXED_SIZE,
+    ROCMMT_CODEPROPS_KERNARG_SEGMENT_ALIGN, ROCMMT_CODEPROPS_KERNARG_SEGMENT_SIZE,
+    ROCMMT_CODEPROPS_MAX_FLAT_WORK_GROUP_SIZE, ROCMMT_CODEPROPS_NUM_SGPRS,
+    ROCMMT_CODEPROPS_NUM_SPILLED_SGPRS, ROCMMT_CODEPROPS_NUM_SPILLED_VGPRS,
+    ROCMMT_CODEPROPS_NUM_VGPRS, ROCMMT_CODEPROPS_PRIVATE_SEGMENT_FIXED_SIZE,
+    ROCMMT_CODEPROPS_WAVEFRONT_SIZE
+};
+
+static const char* kernelCodePropsKeywords[] =
+{
+    "FixedWorkGroupSize", "GroupSegmentFixedSize", "KernargSegmentAlign",
+    "KernargSegmentSize", "MaxFlatWorkGroupSize", "NumSGPRs",
+    "NumSpilledSGPRs", "NumSpilledVGPRs", "NumVGPRs", "PrivateSegmentFixedSize",
+    "WavefrontSize"
+};
+
+static const size_t kernelCodePropsKeywordsNum =
+        sizeof(kernelCodePropsKeywords) / sizeof(const char*);
+
+enum {
+    ROCMMT_ARGS_ACCQUAL = 0, ROCMMT_ARGS_ACTUALACCQUAL, ROCMMT_ARGS_ADDRSPACEQUAL,
+    ROCMMT_ARGS_ALIGN, ROCMMT_ARGS_ISCONST, ROCMMT_ARGS_ISPIPE, ROCMMT_ARGS_ISRESTRICT,
+    ROCMMT_ARGS_ISVOLATILE, ROCMMT_ARGS_NAME, ROCMMT_ARGS_POINTEE_ALIGN,
+    ROCMMT_ARGS_SIZE, ROCMMT_ARGS_TYPENAME, ROCMMT_ARGS_VALUEKIND,
+    ROCMMT_ARGS_VALUETYPE
+};
+
+static const char* kernelArgInfosKeywords[] =
+{
+    "AccQual", "ActualAccQual", "AddrSpaceQual", "Align", "IsConst", "IsPipe",
+    "IsRestrict", "IsVolatile", "Name", "PointeeAlign", "Size", "TypeName",
+    "ValueKind", "ValueType"
+};
+
+static const size_t kernelArgInfosKeywordsNum =
+        sizeof(kernelArgInfosKeywords) / sizeof(const char*);
+
+static const std::pair<const char*, ROCmValueKind> rocmValueKindNames[] =
+{
+    { "ByValue", ROCmValueKind::BY_VALUE },
+    { "DynamicSharedPointer", ROCmValueKind::DYN_SHARED_PTR },
+    { "GlobalBuffer", ROCmValueKind::GLOBAL_BUFFER },
+    { "HiddenCompletionAction", ROCmValueKind::HIDDEN_COMPLETION_ACTION },
+    { "HiddenDefaultQueue", ROCmValueKind::HIDDEN_DEFAULT_QUEUE },
+    { "HiddenGlobalOffsetX", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X },
+    { "HiddenGlobalOffsetY", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y },
+    { "HiddenglobalOffsetZ", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z },
+    { "HiddenNone", ROCmValueKind::HIDDEN_NONE },
+    { "HiddenPrintfBuffer", ROCmValueKind::HIDDEN_PRINTF_BUFFER },
+    { "Image", ROCmValueKind::IMAGE },
+    { "Pipe", ROCmValueKind::PIPE },
+    { "Queue", ROCmValueKind::QUEUE },
+    { "Sampler", ROCmValueKind::SAMPLER }
+};
+
+static const size_t rocmValueKindNamesNum =
+        sizeof(rocmValueKindNames) / sizeof(std::pair<const char*, ROCmValueKind>);
+
+static const std::pair<const char*, ROCmValueType> rocmValueTypeNames[] =
+{
+    { "F16", ROCmValueType::FLOAT16 },
+    { "F32", ROCmValueType::FLOAT32 },
+    { "F64", ROCmValueType::FLOAT64 },
+    { "I16", ROCmValueType::INT16 },
+    { "I8", ROCmValueType::INT8 },
+    { "I32", ROCmValueType::INT32 },
+    { "I64", ROCmValueType::INT64 },
+    { "U8", ROCmValueType::UINT8 },
+    { "U16", ROCmValueType::UINT16 },
+    { "U32", ROCmValueType::UINT32 },
+    { "U64", ROCmValueType::UINT64 },
+    { "Struct", ROCmValueType::STRUCTURE }
+};
+
+static const size_t rocmValueTypeNamesNum =
+        sizeof(rocmValueTypeNames) / sizeof(std::pair<const char*, ROCmValueType>);
+
+static const char* rocmAddrSpaceTypesTbl[] =
+{ "Private", "Global", "Constant", "Local", "Generic", "Region" };
+
+static const char* rocmAccessQualifierTbl[] =
+{ "ReadOnly", "WriteOnly", "ReadWrite", "Default" };
+
+void parseROCmMetadata(size_t metadataSize, const char* metadata,
+                ROCmMetadata& metadataInfo)
+{
+    const char* ptr = metadata;
+    const char* end = metadata + metadataSize;
+    size_t lineNo = 1;
+    // init metadata info object
+    metadataInfo.kernels.clear();
+    metadataInfo.printfInfos.clear();
+    metadataInfo.version[0] = metadataInfo.version[1] = 0;
+    
+    std::vector<ROCmKernelMetadata> kernels;
+    std::vector<ROCmKernelArgInfo> kernelArgs;
+    
+    cxuint levels[6] = { UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX };
+    cxuint curLevel = 0;
+    bool inKernels = false;
+    bool inKernel = false;
+    bool inKernelArgs = false;
+    bool inKernelArg = false;
+    bool inKernelCodeProps = false;
+    bool inKernelAttrs = false;
+    bool canToNextLevel = false;
+    
+    size_t oldLineNo = 0;
+    while (ptr != end)
+    {
+        cxuint level = skipSpacesAndComments(ptr, end, lineNo);
+        if (ptr == end || lineNo == oldLineNo)
+            throw ParseException(lineNo, "Expected new line");
+        
+        if (levels[curLevel] == UINT_MAX)
+            levels[curLevel] = level;
+        else if (levels[curLevel] < level)
+        {
+            if (canToNextLevel)
+                // go to next nesting level
+                levels[++curLevel] = level;
+            else
+                throw ParseException(lineNo, "Unexpected nesting level");
+            canToNextLevel = false;
+        }
+        else if (levels[curLevel] > level)
+        {
+            while (curLevel != UINT_MAX && levels[curLevel] > level)
+                curLevel--;
+            if (curLevel == UINT_MAX)
+                throw ParseException(lineNo, "Indentation smaller than in main level");
+            
+            // pop from previous level
+            if (curLevel < 3)
+            {
+                if (inKernelArgs)
+                {
+                    // leave from kernel args
+                    ROCmKernelMetadata& kernel = kernels.back();
+                    kernel.argInfos.assign(kernelArgs.begin(), kernelArgs.end());
+                    kernelArgs.clear();
+                    inKernelArgs = false;
+                    inKernelArg = false;
+                }
+            
+                inKernelCodeProps = false;
+                inKernelAttrs = false;
+            }
+            if (curLevel < 1 && inKernels)
+            {
+                // leave from kernels
+                metadataInfo.kernels.assign(kernels.begin(), kernels.end());
+                kernels.clear();
+                inKernels = false;
+                inKernel = false;
+            }
+            
+            if (levels[curLevel] != level)
+                throw ParseException(lineNo, "Unexpected nesting level");
+        }
+        
+        oldLineNo = lineNo;
+        if (curLevel == 0)
+        {
+            const size_t keyIndex = parseYAMLKey(ptr, end, lineNo,
+                        mainMetadataKeywordsNum, mainMetadataKeywords);
+            
+            switch(keyIndex)
+            {
+                case ROCMMT_MAIN_KERNELS:
+                    inKernels = true;
+                    canToNextLevel = true;
+                    break;
+                case ROCMMT_MAIN_PRINTF:
+                {
+                    YAMLPrintfVectorConsumer consumer;
+                    parseYAMLValArray(ptr, end, lineNo, levels[curLevel], &consumer);
+                    metadataInfo.printfInfos.assign(consumer.printInfos.begin(),
+                                    consumer.printInfos.end());
+                    break;
+                }
+                case ROCMMT_MAIN_VERSION:
+                {
+                    YAMLIntArrayConsumer<uint32_t> consumer(2, metadataInfo.version);
+                    parseYAMLValArray(ptr, end, lineNo, levels[curLevel], &consumer);
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+        
+        if (curLevel==1 && inKernels)
+        {
+            // enter to kernel level
+            if (ptr == end || *ptr != '-')
+                throw ParseException(lineNo, "No '-' before kernel object");
+            ptr++;
+            const char* afterMinus = ptr;
+            skipSpacesToEnd(ptr, end);
+            levels[++curLevel] = level + 1 + ptr-afterMinus;
+            level = levels[curLevel];
+            inKernel = true;
+            
+            kernels.push_back(ROCmKernelMetadata());
+        }
+        
+        if (curLevel==2 && inKernel)
+        {
+            // in kernel
+            const size_t keyIndex = parseYAMLKey(ptr, end, lineNo,
+                        kernelMetadataKeywordsNum, kernelMetadataKeywords);
+            
+            ROCmKernelMetadata& kernel = kernels.back();
+            switch(keyIndex)
+            {
+                case ROCMMT_KERNEL_ARGS:
+                    kernelArgs.clear();
+                    inKernelArgs = true;
+                    canToNextLevel = true;
+                    break;
+                case ROCMMT_KERNEL_ATTRS:
+                    inKernelAttrs = true;
+                    canToNextLevel = true;
+                    break;
+                case ROCMMT_KERNEL_CODEPROPS:
+                    inKernelCodeProps = true;
+                    canToNextLevel = true;
+                    break;
+                case ROCMMT_KERNEL_LANGUAGE:
+                    kernel.language = parseYAMLStringValue(ptr, end, lineNo, level);
+                    break;
+                case ROCMMT_KERNEL_LANGUAGE_VERSION:
+                {
+                    YAMLIntArrayConsumer<uint32_t> consumer(2, kernel.langVersion);
+                    parseYAMLValArray(ptr, end, lineNo, levels[curLevel], &consumer);
+                    break;
+                }
+                case ROCMMT_KERNEL_NAME:
+                    kernel.name = parseYAMLStringValue(ptr, end, lineNo, level);
+                    break;
+                case ROCMMT_KERNEL_SYMBOLNAME:
+                    kernel.symbolName = parseYAMLStringValue(ptr, end, lineNo, level);
+                    break;
+                default:
+                    break;
+            }
+        }
+        
+        if (curLevel==3 && inKernelAttrs)
+        {
+            // in kernel attributes
+            const size_t keyIndex = parseYAMLKey(ptr, end, lineNo,
+                        kernelAttrMetadataKeywordsNum, kernelAttrMetadataKeywords);
+            
+            ROCmKernelMetadata& kernel = kernels.back();
+            switch(keyIndex)
+            {
+                case ROCMMT_ATTRS_REQD_WORK_GROUP_SIZE:
+                {
+                    YAMLIntArrayConsumer<cxuint> consumer(3, kernel.reqdWorkGroupSize);
+                    parseYAMLValArray(ptr, end, lineNo, levels[curLevel], &consumer);
+                    break;
+                }
+                case ROCMMT_ATTRS_RUNTIME_HANDLE:
+                    kernel.runtimeHandle = parseYAMLStringValue(ptr, end, lineNo, level);
+                    break;
+                case ROCMMT_ATTRS_VECTYPEHINT:
+                    kernel.vecTypeHint = parseYAMLStringValue(ptr, end, lineNo, level);
+                    break;
+                case ROCMMT_ATTRS_WORK_GROUP_SIZE_HINT:
+                {
+                    YAMLIntArrayConsumer<cxuint> consumer(3, kernel.workGroupSizeHint);
+                    parseYAMLValArray(ptr, end, lineNo, levels[curLevel], &consumer);
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+        
+        if (curLevel==3 && inKernelCodeProps)
+        {
+            // in kernel codeProps
+            const size_t keyIndex = parseYAMLKey(ptr, end, lineNo,
+                        kernelCodePropsKeywordsNum, kernelCodePropsKeywords);
+            
+            ROCmKernelMetadata& kernel = kernels.back();
+            switch(keyIndex)
+            {
+                case ROCMMT_CODEPROPS_FIXED_WORK_GROUP_SIZE:
+                {
+                    YAMLIntArrayConsumer<uint64_t> consumer(3, kernel.fixedWorkGroupSize);
+                    parseYAMLValArray(ptr, end, lineNo, level, &consumer);
+                    break;
+                }
+                case ROCMMT_CODEPROPS_GROUP_SEGMENT_FIXED_SIZE:
+                    kernel.groupSegmentFixedSize =
+                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                    break;
+                case ROCMMT_CODEPROPS_KERNARG_SEGMENT_ALIGN:
+                    kernel.kernargSegmentAlign =
+                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                    break;
+                case ROCMMT_CODEPROPS_KERNARG_SEGMENT_SIZE:
+                    kernel.kernargSegmentSize =
+                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                    break;
+                case ROCMMT_CODEPROPS_MAX_FLAT_WORK_GROUP_SIZE:
+                    kernel.maxFlatWorkGroupSize =
+                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                    break;
+                case ROCMMT_CODEPROPS_NUM_SGPRS:
+                    kernel.sgprsNum = parseYAMLIntValue<cxuint>(ptr, end, lineNo);
+                    break;
+                case ROCMMT_CODEPROPS_NUM_SPILLED_SGPRS:
+                    kernel.spilledSgprs = parseYAMLIntValue<cxuint>(ptr, end, lineNo);
+                    break;
+                case ROCMMT_CODEPROPS_NUM_SPILLED_VGPRS:
+                    kernel.spilledVgprs = parseYAMLIntValue<cxuint>(ptr, end, lineNo);
+                    break;
+                case ROCMMT_CODEPROPS_NUM_VGPRS:
+                    kernel.vgprsNum = parseYAMLIntValue<cxuint>(ptr, end, lineNo);
+                    break;
+                case ROCMMT_CODEPROPS_PRIVATE_SEGMENT_FIXED_SIZE:
+                    kernel.privateSegmentFixedSize =
+                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                    break;
+                case ROCMMT_CODEPROPS_WAVEFRONT_SIZE:
+                    kernel.wavefrontSize = parseYAMLIntValue<cxuint>(ptr, end, lineNo);
+                    break;
+                default:
+                    break;
+            }
+        }
+        
+        if (curLevel==3 && inKernelArgs)
+        {
+            // enter to kernel argument level
+            if (ptr == end || *ptr != '-')
+                throw ParseException(lineNo, "No '-' before argument object");
+            ptr++;
+            const char* afterMinus = ptr;
+            skipSpacesToEnd(ptr, end);
+            levels[++curLevel] = level + 1 + ptr-afterMinus;
+            level = levels[curLevel];
+            inKernelArg = true;
+            
+            kernelArgs.push_back(ROCmKernelArgInfo());
+        }
+        
+        if (curLevel==4 && inKernelArg)
+        {
+            // in kernel argument
+            const size_t keyIndex = parseYAMLKey(ptr, end, lineNo,
+                        kernelArgInfosKeywordsNum, kernelArgInfosKeywords);
+            
+            ROCmKernelArgInfo& kernelArg = kernelArgs.back();
+            switch(keyIndex)
+            {
+                case ROCMMT_ARGS_ACCQUAL:
+                case ROCMMT_ARGS_ACTUALACCQUAL:
+                {
+                    const std::string acc = trimStrSpaces(parseYAMLStringValue(
+                                    ptr, end, lineNo, level));
+                    size_t accIndex = 0;
+                    for (; accIndex < 6; accIndex++)
+                        if (::strcmp(rocmAccessQualifierTbl[accIndex], acc.c_str())==0)
+                            break;
+                    if (accIndex == 4)
+                        throw ParseException(lineNo, "Wrong access qualifier");
+                    if (keyIndex == ROCMMT_ARGS_ACCQUAL)
+                        kernelArg.accessQual = ROCmAccessQual(accIndex);
+                    else
+                        kernelArg.actualAccessQual = ROCmAccessQual(accIndex);
+                    break;
+                }
+                case ROCMMT_ARGS_ADDRSPACEQUAL:
+                {
+                    const std::string aspace = trimStrSpaces(parseYAMLStringValue(
+                                    ptr, end, lineNo, level));
+                    size_t aspaceIndex = 0;
+                    for (; aspaceIndex < 6; aspaceIndex++)
+                        if (::strcmp(rocmAddrSpaceTypesTbl[aspaceIndex],
+                                    aspace.c_str())==0)
+                            break;
+                    if (aspaceIndex == 6)
+                        throw ParseException(lineNo, "Wrong address space");
+                    kernelArg.addressSpace = ROCmAddressSpace(aspaceIndex);
+                    break;
+                }
+                case ROCMMT_ARGS_ALIGN:
+                    kernelArg.align = parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                    break;
+                case ROCMMT_ARGS_ISCONST:
+                    kernelArg.isConst = parseYAMLBoolValue(ptr, end, lineNo);
+                    break;
+                case ROCMMT_ARGS_ISPIPE:
+                    kernelArg.isPipe = parseYAMLBoolValue(ptr, end, lineNo);
+                    break;
+                case ROCMMT_ARGS_ISRESTRICT:
+                    kernelArg.isRestrict = parseYAMLBoolValue(ptr, end, lineNo);
+                    break;
+                case ROCMMT_ARGS_ISVOLATILE:
+                    kernelArg.isVolatile = parseYAMLBoolValue(ptr, end, lineNo);
+                    break;
+                case ROCMMT_ARGS_NAME:
+                    kernelArg.name = parseYAMLStringValue(ptr, end, lineNo, level);
+                    break;
+                case ROCMMT_ARGS_POINTEE_ALIGN:
+                    kernelArg.pointeeAlign = parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                    break;
+                case ROCMMT_ARGS_SIZE:
+                    kernelArg.size = parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                    break;
+                case ROCMMT_ARGS_TYPENAME:
+                    kernelArg.typeName = parseYAMLStringValue(ptr, end, lineNo, level);
+                    break;
+                case ROCMMT_ARGS_VALUEKIND:
+                {
+                    const std::string vkind = trimStrSpaces(parseYAMLStringValue(
+                                ptr, end, lineNo, level));
+                    const size_t vkindIndex = binaryMapFind(rocmValueKindNames,
+                            rocmValueKindNames + rocmValueKindNamesNum, vkind.c_str(),
+                            CStringLess()) - rocmValueKindNames;
+                    // if unknown kind
+                    if (vkindIndex == rocmValueKindNamesNum)
+                        throw ParseException(lineNo, "Wrong argument value kind");
+                    kernelArg.valueKind = rocmValueKindNames[vkindIndex].second;
+                    break;
+                }
+                case ROCMMT_ARGS_VALUETYPE:
+                {
+                    const std::string vtype = trimStrSpaces(parseYAMLStringValue(
+                                    ptr, end, lineNo, level));
+                    const size_t vtypeIndex = binaryMapFind(rocmValueTypeNames,
+                            rocmValueTypeNames + rocmValueTypeNamesNum, vtype.c_str(),
+                            CStringLess()) - rocmValueTypeNames;
+                    // if unknown type
+                    if (vtypeIndex == rocmValueTypeNamesNum)
+                        throw ParseException(lineNo, "Wrong argument value type");
+                    kernelArg.valueKind = rocmValueKindNames[vtypeIndex].second;
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+/*
+ * ROCm binary reader and generator
+ */
 
 /* TODO: add support for various kernel code offset (now only 256 is supported) */
 
