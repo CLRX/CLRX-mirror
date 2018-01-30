@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 #include <CLRX/amdbin/Elf.h>
 #include <CLRX/amdbin/ElfBinaries.h>
 #include <CLRX/amdbin/Commons.h>
@@ -144,7 +145,7 @@ struct ROCmKernelMetadata
 {
     CString name;       ///< kernel name
     CString symbolName; ///< symbol name
-    Array<ROCmKernelArgInfo> argInfos;  ///< kernel arguments
+    std::vector<ROCmKernelArgInfo> argInfos;  ///< kernel arguments
     CString language;       ///< language
     cxuint langVersion[2];  ///< language version
     cxuint reqdWorkGroupSize[3];    ///< required work group size
@@ -176,8 +177,8 @@ struct ROCmPrintfInfo
 struct ROCmMetadata
 {
     cxuint version[2];  ///< version
-    Array<ROCmPrintfInfo> printfInfos;  ///< printf calls infos
-    Array<ROCmKernelMetadata> kernels;  ///< kernel metadatas
+    std::vector<ROCmPrintfInfo> printfInfos;  ///< printf calls infos
+    std::vector<ROCmKernelMetadata> kernels;  ///< kernel metadatas
 };
 
 /// ROCm main binary for GPU for 64-bit mode

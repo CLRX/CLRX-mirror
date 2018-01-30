@@ -407,9 +407,10 @@ public:
 class CLRX_INTERNAL YAMLPrintfVectorConsumer: public YAMLElemConsumer
 {
 public:
-    std::vector<ROCmPrintfInfo> printInfos;
+    std::vector<ROCmPrintfInfo>& printfInfos;
     
-    YAMLPrintfVectorConsumer()
+    YAMLPrintfVectorConsumer(std::vector<ROCmPrintfInfo>& _printInfos)
+        : printfInfos(_printInfos)
     { }
     
     virtual void consume(const char*& ptr, const char* end, size_t& lineNo,
@@ -417,7 +418,7 @@ public:
     {
         std::string str = parseYAMLStringValue(ptr, end, lineNo, prevIndent);
         // parse printf string
-        ROCmPrintfInfo printfInfo;
+        ROCmPrintfInfo printfInfo{};
         
         const char* ptr2 = str.c_str();
         const char* end2 = str.c_str() + str.size();
@@ -585,8 +586,7 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
     metadataInfo.printfInfos.clear();
     metadataInfo.version[0] = metadataInfo.version[1] = 0;
     
-    std::vector<ROCmKernelMetadata> kernels;
-    std::vector<ROCmKernelArgInfo> kernelArgs;
+    std::vector<ROCmKernelMetadata>& kernels = metadataInfo.kernels;
     
     cxuint levels[6] = { UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX };
     cxuint curLevel = 0;
@@ -629,9 +629,6 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 if (inKernelArgs)
                 {
                     // leave from kernel args
-                    ROCmKernelMetadata& kernel = kernels.back();
-                    kernel.argInfos.assign(kernelArgs.begin(), kernelArgs.end());
-                    kernelArgs.clear();
                     inKernelArgs = false;
                     inKernelArg = false;
                 }
@@ -666,10 +663,8 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                     break;
                 case ROCMMT_MAIN_PRINTF:
                 {
-                    YAMLPrintfVectorConsumer consumer;
+                    YAMLPrintfVectorConsumer consumer(metadataInfo.printfInfos);
                     parseYAMLValArray(ptr, end, lineNo, levels[curLevel], &consumer);
-                    metadataInfo.printfInfos.assign(consumer.printInfos.begin(),
-                                    consumer.printInfos.end());
                     break;
                 }
                 case ROCMMT_MAIN_VERSION:
@@ -695,7 +690,7 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
             level = levels[curLevel];
             inKernel = true;
             
-            kernels.push_back(ROCmKernelMetadata());
+            kernels.push_back(ROCmKernelMetadata{});
         }
         
         if (curLevel==2 && inKernel)
@@ -708,7 +703,6 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
             switch(keyIndex)
             {
                 case ROCMMT_KERNEL_ARGS:
-                    kernelArgs.clear();
                     inKernelArgs = true;
                     canToNextLevel = true;
                     break;
@@ -839,7 +833,7 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
             level = levels[curLevel];
             inKernelArg = true;
             
-            kernelArgs.push_back(ROCmKernelArgInfo());
+            kernels.back().argInfos.push_back(ROCmKernelArgInfo{});
         }
         
         if (curLevel==4 && inKernelArg)
@@ -848,7 +842,7 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
             const size_t keyIndex = parseYAMLKey(ptr, end, lineNo,
                         kernelArgInfosKeywordsNum, kernelArgInfosKeywords);
             
-            ROCmKernelArgInfo& kernelArg = kernelArgs.back();
+            ROCmKernelArgInfo& kernelArg = kernels.back().argInfos.back();
             switch(keyIndex)
             {
                 case ROCMMT_ARGS_ACCQUAL:
