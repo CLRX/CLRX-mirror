@@ -796,6 +796,15 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
         oldLineNo = lineNo;
         if (curLevel == 0)
         {
+            if (lineNo==1 && ptr+3 <= end && *ptr=='-' && ptr[1]=='-' && ptr[2]=='-' &&
+                (ptr+3==end || (ptr+3 < end && ptr[3]=='\n')))
+            {
+                ptr += 3;
+                if (ptr!=end)
+                    ptr++; // to newline
+                continue; // skip document start
+            }
+            
             if (ptr+3 <= end && *ptr=='.' && ptr[1]=='.' && ptr[2]=='.' &&
                 (ptr+3==end || (ptr+3 < end && ptr[3]=='\n')))
                 break; // end of the document
