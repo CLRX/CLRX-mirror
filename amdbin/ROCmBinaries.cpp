@@ -718,11 +718,11 @@ static const std::pair<const char*, ROCmValueType> rocmValueTypeNames[] =
     { "I32", ROCmValueType::INT32 },
     { "I64", ROCmValueType::INT64 },
     { "I8", ROCmValueType::INT8 },
+    { "Struct", ROCmValueType::STRUCTURE },
     { "U16", ROCmValueType::UINT16 },
     { "U32", ROCmValueType::UINT32 },
     { "U64", ROCmValueType::UINT64 },
-    { "U8", ROCmValueType::UINT8 },
-    { "Struct", ROCmValueType::STRUCTURE }
+    { "U8", ROCmValueType::UINT8 }
 };
 
 static const size_t rocmValueTypeNamesNum =
