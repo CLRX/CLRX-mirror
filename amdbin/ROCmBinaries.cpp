@@ -719,7 +719,7 @@ static const char* rocmAddrSpaceTypesTbl[] =
 static const char* rocmAccessQualifierTbl[] =
 { "Default", "ReadOnly", "WriteOnly", "ReadWrite" };
 
-void parseROCmMetadata(size_t metadataSize, const char* metadata,
+static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 ROCmMetadata& metadataInfo)
 {
     const char* ptr = metadata;
@@ -796,6 +796,10 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
         oldLineNo = lineNo;
         if (curLevel == 0)
         {
+            if (ptr+3 <= end && *ptr=='.' && ptr[1]=='.' && ptr[2]=='.' &&
+                (ptr+3==end || (ptr+3 < end && ptr[3]=='\n')))
+                break; // end of the document
+            
             const size_t keyIndex = parseYAMLKey(ptr, end, lineNo,
                         mainMetadataKeywordsNum, mainMetadataKeywords);
             
@@ -1253,6 +1257,22 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         // sort region map
         mapSort(regionsMap.begin(), regionsMap.end());
     }
+    
+    if (hasMetadataInfo() && metadata != nullptr && metadataSize != 0)
+    {
+        metadataInfo.reset(new ROCmMetadata());
+        parseROCmMetadata(metadataSize, metadata, *metadataInfo);
+        
+        if (hasKernelInfoMap())
+        {
+            const std::vector<ROCmKernelMetadata>& kernels = metadataInfo->kernels;
+            kernelInfosMap.resize(kernels.size());
+            for (size_t i = 0; i < kernelInfosMap.size(); i++)
+                kernelInfosMap[i] = std::make_pair(kernels[i].name, i);
+            // sort region map
+            mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
+        }
+    }
 }
 
 /// determint GPU device from ROCm notes
@@ -1304,6 +1324,17 @@ const ROCmRegion& ROCmBinary::getRegion(const char* name) const
     if (it == regionsMap.end())
         throw BinException("Can't find region name");
     return regions[it->second];
+}
+
+const ROCmKernelMetadata& ROCmBinary::getKernelInfo(const char* name) const
+{
+    if (!hasMetadataInfo())
+        throw BinException("Can't find kernel info name");
+    RegionMap::const_iterator it = binaryMapFind(kernelInfosMap.begin(),
+                             kernelInfosMap.end(), name);
+    if (it == kernelInfosMap.end())
+        throw BinException("Can't find kernel info name");
+    return metadataInfo->kernels[it->second];
 }
 
 // if ROCm binary
