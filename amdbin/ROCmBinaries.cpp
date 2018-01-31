@@ -83,9 +83,24 @@ static size_t skipSpacesAndComments(const char*& ptr, const char* end, size_t& l
     return lineStart - ptr;
 }
 
-static inline void skipSpacesToEnd(const char*& ptr, const char* end)
+static inline void skipSpacesToLineEnd(const char*& ptr, const char* end)
 {
     while (ptr != end && *ptr!='\n' && isSpace(*ptr)) ptr++;
+}
+
+static void skipSpacesToNextLine(const char*& ptr, const char* end, size_t& lineNo)
+{
+    skipSpacesToLineEnd(ptr, end);
+    if (ptr != end && *ptr != '\n' && *ptr!='#')
+        throw ParseException(lineNo, "Garbages at line");
+    if (ptr != end && *ptr == '#')
+        // skip comment at end of line
+        while (ptr!=end && *ptr!='\n') ptr++;
+    if (ptr!=end)
+    {   // newline
+        ptr++;
+        lineNo++;
+    }
 }
 
 static size_t parseYAMLKey(const char*& ptr, const char* end, size_t lineNo,
@@ -101,32 +116,37 @@ static size_t parseYAMLKey(const char*& ptr, const char* end, size_t lineNo,
         throw ParseException(lineNo, "Expected colon");
     ptr++;
     const char* afterColon = ptr;
-    skipSpacesToEnd(ptr, end);
+    skipSpacesToLineEnd(ptr, end);
     if (afterColon == ptr)
         throw ParseException("After key and colon must be space");
     CString keyword(keyPtr, keyEnd);
     const size_t index = binaryFind(keywords, keywords+keywordsNum,
                         keyword.c_str(), CStringLess()) - keywords;
-    if (index == keywordsNum)
-        throw ParseException(lineNo, "Unknown keyword");
     return index;
 }
 
 template<typename T>
-static T parseYAMLIntValue(const char*& ptr, const char* end, size_t lineNo)
+static T parseYAMLIntValue(const char*& ptr, const char* end, size_t& lineNo,
+                bool singleValue = false)
 {
-    skipSpacesToEnd(ptr, end);
+    skipSpacesToLineEnd(ptr, end);
     if (ptr == end || *ptr=='\n')
         throw ParseException(lineNo, "Expected integer value");
+    T value = 0;
     try
-    { return cstrtovCStyle<T>(ptr, end, ptr); }
+    { value = cstrtovCStyle<T>(ptr, end, ptr); }
     catch(const ParseException& ex)
     { throw ParseException(lineNo, ex.what()); }
+    
+    if (singleValue)
+        skipSpacesToNextLine(ptr, end, lineNo);
+    return value;
 }
 
-static bool parseYAMLBoolValue(const char*& ptr, const char* end, size_t lineNo)
+static bool parseYAMLBoolValue(const char*& ptr, const char* end, size_t& lineNo,
+        bool singleValue = false)
 {
-    skipSpacesToEnd(ptr, end);
+    skipSpacesToLineEnd(ptr, end);
     if (ptr == end || *ptr=='\n')
         throw ParseException(lineNo, "Expected boolean value");
     
@@ -134,13 +154,28 @@ static bool parseYAMLBoolValue(const char*& ptr, const char* end, size_t lineNo)
     while(ptr == end && isAlnum(*ptr)) ptr++;
     CString word(wordPtr, ptr);
     
+    bool value = false;
+    bool isSet = false;
     for (const char* v: { "1", "true", "t", "on", "yes", "y"})
         if (::strcasecmp(word.c_str(), v) == 0)
-            return true;
+        {
+            isSet = true;
+            value = true;
+            break;
+        }
     for (const char* v: { "0", "false", "f", "off", "no", "n"})
         if (::strcasecmp(word.c_str(), v) == 0)
-            return false;
-    throw ParseException(lineNo, "Is not boolean value");
+        {
+            isSet = true;
+            value = false;
+            break;
+        }
+    if (!isSet)
+        throw ParseException(lineNo, "Is not boolean value");
+    
+    if (singleValue)
+        skipSpacesToNextLine(ptr, end, lineNo);
+    return value;
 }
 
 static std::string trimStrSpaces(const std::string& str)
@@ -271,16 +306,15 @@ static std::string parseYAMLString(const char*& linePtr, const char* end,
 }
 
 static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_t& lineNo,
-                    cxuint prevIndent)
+                    cxuint prevIndent, bool singleValue = false)
 {
-    skipSpacesToEnd(ptr, end);
+    skipSpacesToLineEnd(ptr, end);
     if (ptr == end)
         return "";
     if (*ptr=='"' || *ptr== '\'')
-        return parseYAMLString(ptr, end, lineNo);
-    
+        std::string buf = parseYAMLString(ptr, end, lineNo);
     // otherwise parse stream
-    if (*ptr == '|' || *ptr == '>')
+    else if (*ptr == '|' || *ptr == '>')
     {
         // multiline
         bool newLineFold = *ptr=='>';
@@ -290,7 +324,7 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
         lineNo++;
         ptr++; // skip newline
         const char* lineStart = ptr;
-        skipSpacesToEnd(ptr, end);
+        skipSpacesToLineEnd(ptr, end);
         size_t indent = ptr - lineStart;
         if (indent <= prevIndent)
             throw ParseException(lineNo, "Unindented string block");
@@ -304,7 +338,7 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
             
             lineNo++;
             const char* lineStart = ptr;
-            skipSpacesToEnd(ptr, end);
+            skipSpacesToLineEnd(ptr, end);
             if (size_t(ptr - lineStart) < indent)
             {
                 if (ptr == end || *ptr=='\n')
@@ -323,22 +357,27 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
         }
         return buf;
     }
+    // single line string (unquoted)
     const char* strStart = ptr;
-    while (ptr != end && *ptr!='\n') ptr++;
-    return std::string(strStart, ptr);
+    while (ptr != end && *ptr!='\n' && *ptr!='#') ptr++;
+    std::string buf(strStart, ptr);
+    
+    if (singleValue)
+        skipSpacesToNextLine(ptr, end, lineNo);
+    return buf;
 }
 
 class CLRX_INTERNAL YAMLElemConsumer
 {
 public:
     virtual void consume(const char*& ptr, const char* end, size_t& lineNo,
-                cxuint prevIndent) = 0;
+                cxuint prevIndent, bool singleValue) = 0;
 };
 
 static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
-            size_t prevIndent, YAMLElemConsumer* elemConsumer)
+            size_t prevIndent, YAMLElemConsumer* elemConsumer, bool singleValue = false)
 {
-    skipSpacesToEnd(ptr, end);
+    skipSpacesToLineEnd(ptr, end);
     if (ptr == end)
         return;
     
@@ -349,7 +388,7 @@ static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
         while (ptr != end)
         {
             // parse in line
-            elemConsumer->consume(ptr, end, lineNo, 0);
+            elemConsumer->consume(ptr, end, lineNo, 0, false);
             if (ptr!=end && *ptr==',')
                 throw ParseException(lineNo, "Expected ','");
             else if (ptr!=end && *ptr==']')
@@ -361,6 +400,9 @@ static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
         if (ptr == end)
             throw ParseException(lineNo, "Unterminated array");
         ptr++;
+        
+        if (singleValue)
+            skipSpacesToNextLine(ptr, end, lineNo);
         return;
     }
     // sequence
@@ -378,10 +420,10 @@ static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
             throw ParseException(lineNo, "No '-' before element value");
         ptr++;
         const char* afterMinus = ptr;
-        skipSpacesToEnd(ptr, end);
+        skipSpacesToLineEnd(ptr, end);
         if (afterMinus == ptr)
             throw ParseException(lineNo, "No spaces after '-'");
-        elemConsumer->consume(ptr, end, lineNo, indent0+1 + afterMinus-ptr);
+        elemConsumer->consume(ptr, end, lineNo, indent0+1 + afterMinus-ptr, true);
         
         size_t indent = skipSpacesAndComments(ptr, end, lineNo);
         if (indent < indent0)
@@ -409,7 +451,7 @@ public:
     { }
     
     virtual void consume(const char*& ptr, const char* end, size_t& lineNo,
-                cxuint prevIndent)
+                cxuint prevIndent, bool singleValue)
     {
         if (elemsNum == requiredElemsNum)
             throw ParseException(lineNo, "Too many elements");
@@ -418,6 +460,8 @@ public:
         catch(const ParseException& ex)
         { throw ParseException(lineNo, ex.what()); }
         elemsNum++;
+        if (singleValue)
+            skipSpacesToNextLine(ptr, end, lineNo);
     }
 };
 
@@ -433,23 +477,23 @@ public:
     { }
     
     virtual void consume(const char*& ptr, const char* end, size_t& lineNo,
-                cxuint prevIndent)
+                cxuint prevIndent, bool singleValue)
     {
-        std::string str = parseYAMLStringValue(ptr, end, lineNo, prevIndent);
+        std::string str = parseYAMLStringValue(ptr, end, lineNo, prevIndent, singleValue);
         // parse printf string
         ROCmPrintfInfo printfInfo{};
         
         const char* ptr2 = str.c_str();
         const char* end2 = str.c_str() + str.size();
-        skipSpacesToEnd(ptr2, end2);
+        skipSpacesToLineEnd(ptr2, end2);
         printfInfo.id = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
-        skipSpacesToEnd(ptr2, end2);
+        skipSpacesToLineEnd(ptr2, end2);
         if (ptr2==end || *ptr2!=':')
             throw ParseException(lineNo, "No colon after printf callId");
         ptr2++;
-        skipSpacesToEnd(ptr2, end2);
+        skipSpacesToLineEnd(ptr2, end2);
         uint32_t argsNum = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
-        skipSpacesToEnd(ptr2, end2);
+        skipSpacesToLineEnd(ptr2, end2);
         if (ptr2==end || *ptr2!=':')
             throw ParseException(lineNo, "No colon after printf argsNum");
         ptr2++;
@@ -459,9 +503,9 @@ public:
         // parse arg sizes
         for (size_t i = 0; i < argsNum; i++)
         {
-            skipSpacesToEnd(ptr2, end2);
+            skipSpacesToLineEnd(ptr2, end2);
             printfInfo.argSizes[i] = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
-            skipSpacesToEnd(ptr2, end2);
+            skipSpacesToLineEnd(ptr2, end2);
             if (ptr2==end || *ptr2!=':')
                 throw ParseException(lineNo, "No colon after printf argsNum");
             ptr2++;
@@ -470,6 +514,87 @@ public:
         printfInfo.format.assign(ptr2, end2);
     }
 };
+
+static void skipYAMLValue(const char* ptr, const char* end, size_t& lineNo,
+                cxuint prevIndent)
+{
+    skipSpacesToLineEnd(ptr, end);
+    if (ptr == end || *ptr=='\n')
+        return;
+    if (ptr==end || (*ptr!='\'' && *ptr!='"' && *ptr!='|' && *ptr!='>' && *ptr !='['))
+    {
+        skipSpacesToLineEnd(ptr, end);
+        if (ptr!=end) ptr++;
+        return;
+    }
+    // string
+    if (*ptr=='\'' || *ptr=='"')
+    {
+        const char delim = *ptr++;
+        bool escape = false;
+        while(ptr!=end && (escape || *ptr!=delim))
+        {
+            if (!escape && *ptr=='\\')
+                escape = true;
+            else if (escape)
+                escape = false;
+            if (*ptr=='\n') lineNo++;
+            ptr++;
+        }
+        if (ptr==end)
+            throw ParseException(lineNo, "Unterminated string");
+        ptr++;
+        skipSpacesToNextLine(ptr, end, lineNo);
+    }
+    else if (*ptr=='[')
+    {   // otherwise [array]
+        ptr++;
+        skipSpacesAndComments(ptr, end, lineNo);
+        while (ptr != end)
+        {
+            // parse in line
+            skipYAMLValue(ptr, end, lineNo, 0);
+            if (ptr!=end && *ptr==',')
+                throw ParseException(lineNo, "Expected ','");
+            else if (ptr!=end && *ptr==']')
+                // just end
+                break;
+            ptr++;
+            skipSpacesAndComments(ptr, end, lineNo);
+        }
+        if (ptr == end)
+            throw ParseException(lineNo, "Unterminated array");
+        ptr++;
+        skipSpacesToNextLine(ptr, end, lineNo);
+    }
+    else
+    {   // block value
+        if (ptr!=end && (*ptr=='|' || *ptr=='>'))
+            ptr++; // skip '|' or '>'
+        skipSpacesToLineEnd(ptr, end);
+        if (ptr!=end && *ptr!='\n')
+            throw ParseException(lineNo, "Garbages before block or children");
+        ptr++;
+        lineNo++;
+        // skip all lines indented beyound previous level
+        while (ptr != end)
+        {
+            const char* lineStart = ptr;
+            skipSpacesToLineEnd(ptr, end);
+            if (ptr == end)
+            {
+                ptr++;
+                lineNo++;
+                continue;
+            }
+            if (ptr-lineStart < prevIndent)
+            {
+                ptr = lineStart;
+                break;
+            }
+        }
+    }
+}
 
 enum {
     ROCMMT_MAIN_KERNELS = 0, ROCMMT_MAIN_PRINTF,  ROCMMT_MAIN_VERSION
@@ -683,16 +808,17 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 case ROCMMT_MAIN_PRINTF:
                 {
                     YAMLPrintfVectorConsumer consumer(metadataInfo.printfInfos);
-                    parseYAMLValArray(ptr, end, lineNo, levels[curLevel], &consumer);
+                    parseYAMLValArray(ptr, end, lineNo, levels[curLevel], &consumer, true);
                     break;
                 }
                 case ROCMMT_MAIN_VERSION:
                 {
                     YAMLIntArrayConsumer<uint32_t> consumer(2, metadataInfo.version);
-                    parseYAMLValArray(ptr, end, lineNo, levels[curLevel], &consumer);
+                    parseYAMLValArray(ptr, end, lineNo, levels[curLevel], &consumer, true);
                     break;
                 }
                 default:
+                    skipYAMLValue(ptr, end, lineNo, level);
                     break;
             }
         }
@@ -704,7 +830,7 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 throw ParseException(lineNo, "No '-' before kernel object");
             ptr++;
             const char* afterMinus = ptr;
-            skipSpacesToEnd(ptr, end);
+            skipSpacesToLineEnd(ptr, end);
             levels[++curLevel] = level + 1 + ptr-afterMinus;
             level = levels[curLevel];
             inKernel = true;
@@ -742,7 +868,7 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                     canToNextLevel = true;
                     break;
                 case ROCMMT_KERNEL_LANGUAGE:
-                    kernel.language = parseYAMLStringValue(ptr, end, lineNo, level);
+                    kernel.language = parseYAMLStringValue(ptr, end, lineNo, level, true);
                     break;
                 case ROCMMT_KERNEL_LANGUAGE_VERSION:
                 {
@@ -751,12 +877,13 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                     break;
                 }
                 case ROCMMT_KERNEL_NAME:
-                    kernel.name = parseYAMLStringValue(ptr, end, lineNo, level);
+                    kernel.name = parseYAMLStringValue(ptr, end, lineNo, level, true);
                     break;
                 case ROCMMT_KERNEL_SYMBOLNAME:
-                    kernel.symbolName = parseYAMLStringValue(ptr, end, lineNo, level);
+                    kernel.symbolName = parseYAMLStringValue(ptr, end, lineNo, level, true);
                     break;
                 default:
+                    skipYAMLValue(ptr, end, lineNo, level);
                     break;
             }
         }
@@ -773,22 +900,25 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 case ROCMMT_ATTRS_REQD_WORK_GROUP_SIZE:
                 {
                     YAMLIntArrayConsumer<cxuint> consumer(3, kernel.reqdWorkGroupSize);
-                    parseYAMLValArray(ptr, end, lineNo, levels[curLevel], &consumer);
+                    parseYAMLValArray(ptr, end, lineNo, level, &consumer);
                     break;
                 }
                 case ROCMMT_ATTRS_RUNTIME_HANDLE:
-                    kernel.runtimeHandle = parseYAMLStringValue(ptr, end, lineNo, level);
+                    kernel.runtimeHandle = parseYAMLStringValue(
+                                ptr, end, lineNo, level, true);
                     break;
                 case ROCMMT_ATTRS_VECTYPEHINT:
-                    kernel.vecTypeHint = parseYAMLStringValue(ptr, end, lineNo, level);
+                    kernel.vecTypeHint = parseYAMLStringValue(
+                                ptr, end, lineNo, level, true);
                     break;
                 case ROCMMT_ATTRS_WORK_GROUP_SIZE_HINT:
                 {
                     YAMLIntArrayConsumer<cxuint> consumer(3, kernel.workGroupSizeHint);
-                    parseYAMLValArray(ptr, end, lineNo, levels[curLevel], &consumer);
+                    parseYAMLValArray(ptr, end, lineNo, level, &consumer, true);
                     break;
                 }
                 default:
+                    skipYAMLValue(ptr, end, lineNo, level);
                     break;
             }
         }
@@ -810,40 +940,44 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 }
                 case ROCMMT_CODEPROPS_GROUP_SEGMENT_FIXED_SIZE:
                     kernel.groupSegmentFixedSize =
-                                parseYAMLIntValue<cxuint>(ptr, end, lineNo);
+                                parseYAMLIntValue<cxuint>(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_CODEPROPS_KERNARG_SEGMENT_ALIGN:
                     kernel.kernargSegmentAlign =
-                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_CODEPROPS_KERNARG_SEGMENT_SIZE:
                     kernel.kernargSegmentSize =
-                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_CODEPROPS_MAX_FLAT_WORK_GROUP_SIZE:
                     kernel.maxFlatWorkGroupSize =
-                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_CODEPROPS_NUM_SGPRS:
-                    kernel.sgprsNum = parseYAMLIntValue<cxuint>(ptr, end, lineNo);
+                    kernel.sgprsNum = parseYAMLIntValue<cxuint>(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_CODEPROPS_NUM_SPILLED_SGPRS:
-                    kernel.spilledSgprs = parseYAMLIntValue<cxuint>(ptr, end, lineNo);
+                    kernel.spilledSgprs =
+                            parseYAMLIntValue<cxuint>(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_CODEPROPS_NUM_SPILLED_VGPRS:
-                    kernel.spilledVgprs = parseYAMLIntValue<cxuint>(ptr, end, lineNo);
+                    kernel.spilledVgprs =
+                            parseYAMLIntValue<cxuint>(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_CODEPROPS_NUM_VGPRS:
-                    kernel.vgprsNum = parseYAMLIntValue<cxuint>(ptr, end, lineNo);
+                    kernel.vgprsNum = parseYAMLIntValue<cxuint>(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_CODEPROPS_PRIVATE_SEGMENT_FIXED_SIZE:
                     kernel.privateSegmentFixedSize =
-                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_CODEPROPS_WAVEFRONT_SIZE:
-                    kernel.wavefrontSize = parseYAMLIntValue<cxuint>(ptr, end, lineNo);
+                    kernel.wavefrontSize =
+                            parseYAMLIntValue<cxuint>(ptr, end, lineNo, true);
                     break;
                 default:
+                    skipYAMLValue(ptr, end, lineNo, level);
                     break;
             }
         }
@@ -855,7 +989,7 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 throw ParseException(lineNo, "No '-' before argument object");
             ptr++;
             const char* afterMinus = ptr;
-            skipSpacesToEnd(ptr, end);
+            skipSpacesToLineEnd(ptr, end);
             levels[++curLevel] = level + 1 + ptr-afterMinus;
             level = levels[curLevel];
             inKernelArg = true;
@@ -876,7 +1010,7 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 case ROCMMT_ARGS_ACTUALACCQUAL:
                 {
                     const std::string acc = trimStrSpaces(parseYAMLStringValue(
-                                    ptr, end, lineNo, level));
+                                    ptr, end, lineNo, level, true));
                     size_t accIndex = 0;
                     for (; accIndex < 6; accIndex++)
                         if (::strcmp(rocmAccessQualifierTbl[accIndex], acc.c_str())==0)
@@ -892,7 +1026,7 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 case ROCMMT_ARGS_ADDRSPACEQUAL:
                 {
                     const std::string aspace = trimStrSpaces(parseYAMLStringValue(
-                                    ptr, end, lineNo, level));
+                                    ptr, end, lineNo, level, true));
                     size_t aspaceIndex = 0;
                     for (; aspaceIndex < 6; aspaceIndex++)
                         if (::strcmp(rocmAddrSpaceTypesTbl[aspaceIndex],
@@ -904,36 +1038,38 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                     break;
                 }
                 case ROCMMT_ARGS_ALIGN:
-                    kernelArg.align = parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                    kernelArg.align = parseYAMLIntValue<uint64_t>(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_ARGS_ISCONST:
-                    kernelArg.isConst = parseYAMLBoolValue(ptr, end, lineNo);
+                    kernelArg.isConst = parseYAMLBoolValue(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_ARGS_ISPIPE:
-                    kernelArg.isPipe = parseYAMLBoolValue(ptr, end, lineNo);
+                    kernelArg.isPipe = parseYAMLBoolValue(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_ARGS_ISRESTRICT:
-                    kernelArg.isRestrict = parseYAMLBoolValue(ptr, end, lineNo);
+                    kernelArg.isRestrict = parseYAMLBoolValue(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_ARGS_ISVOLATILE:
-                    kernelArg.isVolatile = parseYAMLBoolValue(ptr, end, lineNo);
+                    kernelArg.isVolatile = parseYAMLBoolValue(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_ARGS_NAME:
-                    kernelArg.name = parseYAMLStringValue(ptr, end, lineNo, level);
+                    kernelArg.name = parseYAMLStringValue(ptr, end, lineNo, level, true);
                     break;
                 case ROCMMT_ARGS_POINTEE_ALIGN:
-                    kernelArg.pointeeAlign = parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                    kernelArg.pointeeAlign =
+                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo, true);
                     break;
                 case ROCMMT_ARGS_SIZE:
                     kernelArg.size = parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
                     break;
                 case ROCMMT_ARGS_TYPENAME:
-                    kernelArg.typeName = parseYAMLStringValue(ptr, end, lineNo, level);
+                    kernelArg.typeName =
+                                parseYAMLStringValue(ptr, end, lineNo, level, true);
                     break;
                 case ROCMMT_ARGS_VALUEKIND:
                 {
                     const std::string vkind = trimStrSpaces(parseYAMLStringValue(
-                                ptr, end, lineNo, level));
+                                ptr, end, lineNo, level, true));
                     const size_t vkindIndex = binaryMapFind(rocmValueKindNames,
                             rocmValueKindNames + rocmValueKindNamesNum, vkind.c_str(),
                             CStringLess()) - rocmValueKindNames;
@@ -946,7 +1082,7 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 case ROCMMT_ARGS_VALUETYPE:
                 {
                     const std::string vtype = trimStrSpaces(parseYAMLStringValue(
-                                    ptr, end, lineNo, level));
+                                    ptr, end, lineNo, level, true));
                     const size_t vtypeIndex = binaryMapFind(rocmValueTypeNames,
                             rocmValueTypeNames + rocmValueTypeNamesNum, vtype.c_str(),
                             CStringLess()) - rocmValueTypeNames;
@@ -957,6 +1093,7 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                     break;
                 }
                 default:
+                    skipYAMLValue(ptr, end, lineNo, level);
                     break;
             }
         }

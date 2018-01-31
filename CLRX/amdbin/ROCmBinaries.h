@@ -44,7 +44,8 @@ namespace CLRX
 
 enum : Flags {
     ROCMBIN_CREATE_REGIONMAP = 0x10,    ///< create region map
-    ROCMBIN_CREATE_KERNELINFOMAP = 0x20,    ///< create kernel metadata info map
+    ROCMBIN_CREATE_METADATAINFO = 0x20,     ///< create metadata info object
+    ROCMBIN_CREATE_KERNELINFOMAP = 0x40,    ///< create kernel metadata info map
     ROCMBIN_CREATE_ALL = ELF_CREATE_ALL | 0xfff0 ///< all ROCm binaries flags
 };
 
