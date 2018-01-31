@@ -105,7 +105,8 @@ enum class ROCmValueType : cxbyte
 /// ROCm argument address space
 enum class ROCmAddressSpace : cxbyte
 {
-    PRIVATE = 0,
+    NONE = 0,
+    PRIVATE,
     GLOBAL,
     CONSTANT,
     LOCAL,

@@ -1063,7 +1063,7 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                             break;
                     if (aspaceIndex == 6)
                         throw ParseException(lineNo, "Wrong address space");
-                    kernelArg.addressSpace = ROCmAddressSpace(aspaceIndex);
+                    kernelArg.addressSpace = ROCmAddressSpace(aspaceIndex+1);
                     break;
                 }
                 case ROCMMT_ARGS_ALIGN:
