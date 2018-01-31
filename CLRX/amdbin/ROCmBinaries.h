@@ -115,10 +115,10 @@ enum class ROCmAddressSpace : cxbyte
 /// ROCm access qualifier
 enum class ROCmAccessQual: cxbyte
 {
-    READ_ONLY = 0,
+    DEFAULT = 0,
+    READ_ONLY,
     WRITE_ONLY,
     READ_WRITE,
-    DEFAULT
 };
 
 /// ROCm kernel argument
@@ -133,7 +133,7 @@ struct ROCmKernelArgInfo
     ROCmValueType valueType;    ///< value type
     ROCmAddressSpace addressSpace;  ///< pointer address space
     ROCmAccessQual accessQual;      ///< access qualifier (for images and values)
-    ROCmAccessQual actualAccessQual;    ///< access qualifier to resource data
+    ROCmAccessQual actualAccessQual;    ///< actual access qualifier
     bool isConst;       ///< is constant
     bool isRestrict;    ///< is restrict
     bool isVolatile;    ///< is volatile
@@ -160,9 +160,11 @@ struct ROCmKernelMetadata
     cxuint sgprsNum;        ///< number of SGPRs
     cxuint vgprsNum;        ///< number of VGPRs
     uint64_t maxFlatWorkGroupSize;
-    uint64_t fixedWorkGroupSize[3];
+    cxuint fixedWorkGroupSize[3];
     cxuint spilledSgprs;    ///< number of spilled SGPRs
     cxuint spilledVgprs;    ///< number of spilled VGPRs
+    
+    ROCmKernelMetadata();
 };
 
 /// ROCm printf call info
@@ -179,6 +181,8 @@ struct ROCmMetadata
     cxuint version[2];  ///< version
     std::vector<ROCmPrintfInfo> printfInfos;  ///< printf calls infos
     std::vector<ROCmKernelMetadata> kernels;  ///< kernel metadatas
+    
+    ROCmMetadata();
 };
 
 /// ROCm main binary for GPU for 64-bit mode

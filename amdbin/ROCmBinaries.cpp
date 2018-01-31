@@ -39,6 +39,25 @@ using namespace CLRX;
  * ROCm metadata YAML parser
  */
 
+ROCmKernelMetadata::ROCmKernelMetadata() :
+    langVersion{ BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+    reqdWorkGroupSize{ BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+    workGroupSizeHint{ BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+    kernargSegmentSize(BINGEN64_NOTSUPPLIED),
+    groupSegmentFixedSize(BINGEN64_NOTSUPPLIED),
+    privateSegmentFixedSize(BINGEN64_NOTSUPPLIED),
+    kernargSegmentAlign(BINGEN64_NOTSUPPLIED),
+    wavefrontSize(BINGEN_NOTSUPPLIED),
+    sgprsNum(BINGEN_NOTSUPPLIED), vgprsNum(BINGEN_NOTSUPPLIED),
+    maxFlatWorkGroupSize(BINGEN64_NOTSUPPLIED),
+    fixedWorkGroupSize{ BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+    spilledSgprs(BINGEN_NOTSUPPLIED),
+    spilledVgprs(BINGEN_NOTSUPPLIED)
+{ }
+
+ROCmMetadata::ROCmMetadata() : version{ 0, 0 }
+{ }
+
 // return trailing spaces
 static size_t skipSpacesAndComments(const char*& ptr, const char* end, size_t& lineNo)
 {
@@ -573,7 +592,7 @@ static const char* rocmAddrSpaceTypesTbl[] =
 { "Private", "Global", "Constant", "Local", "Generic", "Region" };
 
 static const char* rocmAccessQualifierTbl[] =
-{ "ReadOnly", "WriteOnly", "ReadWrite", "Default" };
+{ "Default", "ReadOnly", "WriteOnly", "ReadWrite" };
 
 void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 ROCmMetadata& metadataInfo)
@@ -690,7 +709,7 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
             level = levels[curLevel];
             inKernel = true;
             
-            kernels.push_back(ROCmKernelMetadata{});
+            kernels.push_back(ROCmKernelMetadata());
         }
         
         if (curLevel==2 && inKernel)
@@ -711,6 +730,14 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
                     canToNextLevel = true;
                     break;
                 case ROCMMT_KERNEL_CODEPROPS:
+                    kernel.kernargSegmentSize = BINGEN64_DEFAULT;
+                    kernel.groupSegmentFixedSize = BINGEN64_DEFAULT;
+                    kernel.privateSegmentFixedSize = BINGEN64_DEFAULT;
+                    kernel.kernargSegmentAlign = BINGEN64_DEFAULT;
+                    kernel.wavefrontSize = BINGEN_DEFAULT;
+                    kernel.sgprsNum = BINGEN_DEFAULT;
+                    kernel.vgprsNum = BINGEN_DEFAULT;
+                    kernel.maxFlatWorkGroupSize = BINGEN64_DEFAULT;
                     inKernelCodeProps = true;
                     canToNextLevel = true;
                     break;
@@ -777,13 +804,13 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
             {
                 case ROCMMT_CODEPROPS_FIXED_WORK_GROUP_SIZE:
                 {
-                    YAMLIntArrayConsumer<uint64_t> consumer(3, kernel.fixedWorkGroupSize);
+                    YAMLIntArrayConsumer<cxuint> consumer(3, kernel.fixedWorkGroupSize);
                     parseYAMLValArray(ptr, end, lineNo, level, &consumer);
                     break;
                 }
                 case ROCMMT_CODEPROPS_GROUP_SEGMENT_FIXED_SIZE:
                     kernel.groupSegmentFixedSize =
-                                parseYAMLIntValue<uint64_t>(ptr, end, lineNo);
+                                parseYAMLIntValue<cxuint>(ptr, end, lineNo);
                     break;
                 case ROCMMT_CODEPROPS_KERNARG_SEGMENT_ALIGN:
                     kernel.kernargSegmentAlign =
