@@ -78,9 +78,12 @@ static size_t skipSpacesAndComments(const char*& ptr, const char* end, size_t& l
         else if (*ptr!='\n')
             break; // no comment and no end of line
         else
+        {
+            ptr++;
             lineNo++; // next line
+        }
     }
-    return lineStart - ptr;
+    return ptr - lineStart;
 }
 
 static inline void skipSpacesToLineEnd(const char*& ptr, const char* end)
@@ -112,7 +115,7 @@ static size_t parseYAMLKey(const char*& ptr, const char* end, size_t lineNo,
         throw ParseException(lineNo, "Expected key name");
     const char* keyEnd = ptr;
     while (ptr != end && *ptr!='\n' && isSpace(*ptr)) ptr++;
-    if (ptr == end || *ptr==':')
+    if (ptr == end || *ptr!=':')
         throw ParseException(lineNo, "Expected colon");
     ptr++;
     const char* afterColon = ptr;
@@ -151,7 +154,7 @@ static bool parseYAMLBoolValue(const char*& ptr, const char* end, size_t& lineNo
         throw ParseException(lineNo, "Expected boolean value");
     
     const char* wordPtr = ptr;
-    while(ptr == end && isAlnum(*ptr)) ptr++;
+    while(ptr != end && isAlnum(*ptr)) ptr++;
     CString word(wordPtr, ptr);
     
     bool value = false;
@@ -163,13 +166,14 @@ static bool parseYAMLBoolValue(const char*& ptr, const char* end, size_t& lineNo
             value = true;
             break;
         }
-    for (const char* v: { "0", "false", "f", "off", "no", "n"})
-        if (::strcasecmp(word.c_str(), v) == 0)
-        {
-            isSet = true;
-            value = false;
-            break;
-        }
+    if (!isSet)
+        for (const char* v: { "0", "false", "f", "off", "no", "n"})
+            if (::strcasecmp(word.c_str(), v) == 0)
+            {
+                isSet = true;
+                value = false;
+                break;
+            }
     if (!isSet)
         throw ParseException(lineNo, "Is not boolean value");
     
@@ -311,8 +315,9 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
     skipSpacesToLineEnd(ptr, end);
     if (ptr == end)
         return "";
+    std::string buf;
     if (*ptr=='"' || *ptr== '\'')
-        std::string buf = parseYAMLString(ptr, end, lineNo);
+        buf = parseYAMLString(ptr, end, lineNo);
     // otherwise parse stream
     else if (*ptr == '|' || *ptr == '>')
     {
@@ -357,10 +362,13 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
         }
         return buf;
     }
-    // single line string (unquoted)
-    const char* strStart = ptr;
-    while (ptr != end && *ptr!='\n' && *ptr!='#') ptr++;
-    std::string buf(strStart, ptr);
+    else
+    {
+        // single line string (unquoted)
+        const char* strStart = ptr;
+        while (ptr != end && *ptr!='\n' && *ptr!='#') ptr++;
+        buf.assign(strStart, ptr);
+    }
     
     if (singleValue)
         skipSpacesToNextLine(ptr, end, lineNo);
@@ -389,11 +397,12 @@ static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
         {
             // parse in line
             elemConsumer->consume(ptr, end, lineNo, 0, false);
-            if (ptr!=end && *ptr==',')
-                throw ParseException(lineNo, "Expected ','");
-            else if (ptr!=end && *ptr==']')
+            skipSpacesAndComments(ptr, end, lineNo);
+            if (ptr!=end && *ptr==']')
                 // just end
                 break;
+            else if (ptr==end || *ptr!=',')
+                throw ParseException(lineNo, "Expected ','");
             ptr++;
             skipSpacesAndComments(ptr, end, lineNo);
         }
@@ -423,7 +432,7 @@ static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
         skipSpacesToLineEnd(ptr, end);
         if (afterMinus == ptr)
             throw ParseException(lineNo, "No spaces after '-'");
-        elemConsumer->consume(ptr, end, lineNo, indent0+1 + afterMinus-ptr, true);
+        elemConsumer->consume(ptr, end, lineNo, indent0+1 + ptr-afterMinus, true);
         
         size_t indent = skipSpacesAndComments(ptr, end, lineNo);
         if (indent < indent0)
@@ -479,6 +488,7 @@ public:
     virtual void consume(const char*& ptr, const char* end, size_t& lineNo,
                 cxuint prevIndent, bool singleValue)
     {
+        const size_t oldLineNo = lineNo;
         std::string str = parseYAMLStringValue(ptr, end, lineNo, prevIndent, singleValue);
         // parse printf string
         ROCmPrintfInfo printfInfo{};
@@ -486,16 +496,19 @@ public:
         const char* ptr2 = str.c_str();
         const char* end2 = str.c_str() + str.size();
         skipSpacesToLineEnd(ptr2, end2);
-        printfInfo.id = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
+        try
+        { printfInfo.id = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2); }
+        catch(const ParseException& ex)
+        { throw ParseException(oldLineNo, ex.what()); }
         skipSpacesToLineEnd(ptr2, end2);
         if (ptr2==end || *ptr2!=':')
-            throw ParseException(lineNo, "No colon after printf callId");
+            throw ParseException(oldLineNo, "No colon after printf callId");
         ptr2++;
         skipSpacesToLineEnd(ptr2, end2);
         uint32_t argsNum = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
         skipSpacesToLineEnd(ptr2, end2);
         if (ptr2==end || *ptr2!=':')
-            throw ParseException(lineNo, "No colon after printf argsNum");
+            throw ParseException(oldLineNo, "No colon after printf argsNum");
         ptr2++;
         
         printfInfo.argSizes.resize(argsNum);
@@ -512,6 +525,8 @@ public:
         }
         // format
         printfInfo.format.assign(ptr2, end2);
+        
+        printfInfos.push_back(printfInfo);
     }
 };
 
@@ -682,7 +697,7 @@ static const std::pair<const char*, ROCmValueKind> rocmValueKindNames[] =
     { "HiddenDefaultQueue", ROCmValueKind::HIDDEN_DEFAULT_QUEUE },
     { "HiddenGlobalOffsetX", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X },
     { "HiddenGlobalOffsetY", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y },
-    { "HiddenglobalOffsetZ", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z },
+    { "HiddenGlobalOffsetZ", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z },
     { "HiddenNone", ROCmValueKind::HIDDEN_NONE },
     { "HiddenPrintfBuffer", ROCmValueKind::HIDDEN_PRINTF_BUFFER },
     { "Image", ROCmValueKind::IMAGE },
@@ -700,13 +715,13 @@ static const std::pair<const char*, ROCmValueType> rocmValueTypeNames[] =
     { "F32", ROCmValueType::FLOAT32 },
     { "F64", ROCmValueType::FLOAT64 },
     { "I16", ROCmValueType::INT16 },
-    { "I8", ROCmValueType::INT8 },
     { "I32", ROCmValueType::INT32 },
     { "I64", ROCmValueType::INT64 },
-    { "U8", ROCmValueType::UINT8 },
+    { "I8", ROCmValueType::INT8 },
     { "U16", ROCmValueType::UINT16 },
     { "U32", ROCmValueType::UINT32 },
     { "U64", ROCmValueType::UINT64 },
+    { "U8", ROCmValueType::UINT8 },
     { "Struct", ROCmValueType::STRUCTURE }
 };
 
@@ -783,8 +798,6 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
             if (curLevel < 1 && inKernels)
             {
                 // leave from kernels
-                metadataInfo.kernels.assign(kernels.begin(), kernels.end());
-                kernels.clear();
                 inKernels = false;
                 inKernel = false;
             }
@@ -801,7 +814,10 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
             {
                 ptr += 3;
                 if (ptr!=end)
+                {
+                    lineNo++;
                     ptr++; // to newline
+                }
                 continue; // skip document start
             }
             
@@ -1102,7 +1118,7 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                     // if unknown type
                     if (vtypeIndex == rocmValueTypeNamesNum)
                         throw ParseException(lineNo, "Wrong argument value type");
-                    kernelArg.valueKind = rocmValueKindNames[vtypeIndex].second;
+                    kernelArg.valueType = rocmValueTypeNames[vtypeIndex].second;
                     break;
                 }
                 default:
@@ -1267,7 +1283,8 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         mapSort(regionsMap.begin(), regionsMap.end());
     }
     
-    if (hasMetadataInfo() && metadata != nullptr && metadataSize != 0)
+    if ((creationFlags & ROCMBIN_CREATE_METADATAINFO) != 0 &&
+        metadata != nullptr && metadataSize != 0)
     {
         metadataInfo.reset(new ROCmMetadata());
         parseROCmMetadata(metadataSize, metadata, *metadataInfo);

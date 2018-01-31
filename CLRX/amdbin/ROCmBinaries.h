@@ -262,7 +262,7 @@ public:
     char* getMetadata()
     { return metadata; }
     
-    /// get metadata info
+    /// has metadata info
     bool hasMetadataInfo() const
     { return metadataInfo!=nullptr; }
     
