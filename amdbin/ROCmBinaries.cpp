@@ -936,10 +936,19 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 case ROCMMT_KERNEL_ARGS:
                     inKernelArgs = true;
                     canToNextLevel = true;
+                    kernel.argInfos.clear();
                     break;
                 case ROCMMT_KERNEL_ATTRS:
                     inKernelAttrs = true;
                     canToNextLevel = true;
+                    kernel.reqdWorkGroupSize[0] = BINGEN_NOTSUPPLIED;
+                    kernel.reqdWorkGroupSize[1] = BINGEN_NOTSUPPLIED;
+                    kernel.reqdWorkGroupSize[2] = BINGEN_NOTSUPPLIED;
+                    kernel.workGroupSizeHint[0] = BINGEN_NOTSUPPLIED;
+                    kernel.workGroupSizeHint[1] = BINGEN_NOTSUPPLIED;
+                    kernel.workGroupSizeHint[2] = BINGEN_NOTSUPPLIED;
+                    kernel.runtimeHandle.clear();
+                    kernel.vecTypeHint.clear();
                     break;
                 case ROCMMT_KERNEL_CODEPROPS:
                     kernel.kernargSegmentSize = BINGEN64_DEFAULT;
@@ -949,7 +958,12 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                     kernel.wavefrontSize = BINGEN_DEFAULT;
                     kernel.sgprsNum = BINGEN_DEFAULT;
                     kernel.vgprsNum = BINGEN_DEFAULT;
+                    kernel.spilledSgprs = BINGEN_NOTSUPPLIED;
+                    kernel.spilledVgprs = BINGEN_NOTSUPPLIED;
                     kernel.maxFlatWorkGroupSize = BINGEN64_DEFAULT;
+                    kernel.fixedWorkGroupSize[0] = BINGEN_NOTSUPPLIED;
+                    kernel.fixedWorkGroupSize[1] = BINGEN_NOTSUPPLIED;
+                    kernel.fixedWorkGroupSize[2] = BINGEN_NOTSUPPLIED;
                     inKernelCodeProps = true;
                     canToNextLevel = true;
                     break;
