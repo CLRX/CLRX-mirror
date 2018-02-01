@@ -106,6 +106,7 @@ static void skipSpacesToNextLine(const char*& ptr, const char* end, size_t& line
     }
 }
 
+// parse YAML key (keywords - recognized keys)
 static size_t parseYAMLKey(const char*& ptr, const char* end, size_t lineNo,
             size_t keywordsNum, const char** keywords)
 {
@@ -114,7 +115,7 @@ static size_t parseYAMLKey(const char*& ptr, const char* end, size_t lineNo,
     if (keyPtr == end)
         throw ParseException(lineNo, "Expected key name");
     const char* keyEnd = ptr;
-    while (ptr != end && *ptr!='\n' && isSpace(*ptr)) ptr++;
+    skipSpacesToLineEnd(ptr, end);
     if (ptr == end || *ptr!=':')
         throw ParseException(lineNo, "Expected colon");
     ptr++;
@@ -129,6 +130,7 @@ static size_t parseYAMLKey(const char*& ptr, const char* end, size_t lineNo,
     return index;
 }
 
+// parse YAML integer value
 template<typename T>
 static T parseYAMLIntValue(const char*& ptr, const char* end, size_t& lineNo,
                 bool singleValue = false)
@@ -147,6 +149,7 @@ static T parseYAMLIntValue(const char*& ptr, const char* end, size_t& lineNo,
     return value;
 }
 
+// parse YAML boolean value
 static bool parseYAMLBoolValue(const char*& ptr, const char* end, size_t& lineNo,
         bool singleValue = false)
 {
@@ -183,6 +186,7 @@ static bool parseYAMLBoolValue(const char*& ptr, const char* end, size_t& lineNo
     return value;
 }
 
+// trim spaces (remove spaces from start and end)
 static std::string trimStrSpaces(const std::string& str)
 {
     size_t i = 0;
@@ -415,6 +419,7 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
     return buf;
 }
 
+/// element consumer class
 class CLRX_INTERNAL YAMLElemConsumer
 {
 public:
@@ -431,6 +436,7 @@ static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
     
     if (*ptr == '[')
     {
+        // parse array []
         ptr++;
         skipSpacesAndComments(ptr, end, lineNo);
         while (ptr != end)
@@ -454,7 +460,7 @@ static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
             skipSpacesToNextLine(ptr, end, lineNo);
         return;
     }
-    // sequence
+    // parse sequence
     size_t oldLineNo = lineNo;
     size_t indent0 = skipSpacesAndComments(ptr, end, lineNo);
     if (ptr == end || lineNo == oldLineNo)
@@ -463,6 +469,7 @@ static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
     if (indent0 < prevIndent)
         throw ParseException(lineNo, "Unindented sequence of objects");
     
+    // main loop to parse sequence
     while (ptr != end)
     {
         if (*ptr != '-')
@@ -486,6 +493,7 @@ static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
     }
 }
 
+// integer element consumer
 template<typename T>
 class CLRX_INTERNAL YAMLIntArrayConsumer: public YAMLElemConsumer
 {
@@ -515,7 +523,6 @@ public:
 };
 
 // printf info string consumer
-
 class CLRX_INTERNAL YAMLPrintfVectorConsumer: public YAMLElemConsumer
 {
 public:
@@ -571,6 +578,7 @@ public:
     }
 };
 
+// skip YAML value after key
 static void skipYAMLValue(const char*& ptr, const char* end, size_t& lineNo,
                 cxuint prevIndent, bool singleValue = true)
 {
@@ -610,6 +618,7 @@ static void skipYAMLValue(const char*& ptr, const char* end, size_t& lineNo,
         {
             // parse in line
             if (ptr!=end && (*ptr=='\'' || *ptr=='"'))
+                // skip YAML string
                 skipYAMLValue(ptr, end, lineNo, 0, false);
             else
                 while (ptr!=end && *ptr!='\n' &&
@@ -941,6 +950,7 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 case ROCMMT_KERNEL_ATTRS:
                     inKernelAttrs = true;
                     canToNextLevel = true;
+                    // initialize kernel attributes values
                     kernel.reqdWorkGroupSize[0] = BINGEN_NOTSUPPLIED;
                     kernel.reqdWorkGroupSize[1] = BINGEN_NOTSUPPLIED;
                     kernel.reqdWorkGroupSize[2] = BINGEN_NOTSUPPLIED;
@@ -951,6 +961,7 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                     kernel.vecTypeHint.clear();
                     break;
                 case ROCMMT_KERNEL_CODEPROPS:
+                    // initialize CodeProps values
                     kernel.kernargSegmentSize = BINGEN64_DEFAULT;
                     kernel.groupSegmentFixedSize = BINGEN64_DEFAULT;
                     kernel.privateSegmentFixedSize = BINGEN64_DEFAULT;
