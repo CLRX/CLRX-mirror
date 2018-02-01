@@ -348,8 +348,7 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
             {
                 if (ptr == end || *ptr=='\n')
                 {
-                    if (!newLineFold)
-                        buf.append("\n");
+                    buf.append(newLineFold ? " " : "\n");
                     continue;
                 }
                 // if smaller indent
@@ -357,8 +356,7 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
                 return buf;
             }
             ptr = lineStart + indent;
-            if (!newLineFold)
-                buf.append("\n");
+            buf.append(newLineFold ? " " : "\n");
         }
         return buf;
     }
