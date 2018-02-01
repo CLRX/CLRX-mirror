@@ -326,7 +326,10 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
             throw ParseException(lineNo, "Illegal block string start");
         // multiline
         bool newLineFold = *ptr=='>';
-        while (ptr != end && *ptr!='\n') ptr++;
+        ptr++;
+        skipSpacesToLineEnd(ptr, end);
+        if (ptr!=end && *ptr!='\n')
+            throw ParseException(lineNo, "Garbages at string block");
         if (ptr == end)
             return ""; // end
         lineNo++;
@@ -568,16 +571,15 @@ public:
     }
 };
 
-static void skipYAMLValue(const char* ptr, const char* end, size_t& lineNo,
-                cxuint prevIndent)
+static void skipYAMLValue(const char*& ptr, const char* end, size_t& lineNo,
+                cxuint prevIndent, bool singleValue = true)
 {
     skipSpacesToLineEnd(ptr, end);
-    if (ptr == end || *ptr=='\n')
-        return;
-    if (ptr==end || (*ptr!='\'' && *ptr!='"' && *ptr!='|' && *ptr!='>' && *ptr !='['))
+    if (ptr==end || (*ptr!='\'' && *ptr!='"' && *ptr!='|' && *ptr!='>' && *ptr !='[' &&
+                *ptr!='#' && *ptr!='\n'))
     {
-        skipSpacesToLineEnd(ptr, end);
-        if (ptr!=end) ptr++;
+        while (ptr!=end && *ptr!='\n') ptr++;
+        skipSpacesToNextLine(ptr, end, lineNo);
         return;
     }
     // string
@@ -597,7 +599,8 @@ static void skipYAMLValue(const char* ptr, const char* end, size_t& lineNo,
         if (ptr==end)
             throw ParseException(lineNo, "Unterminated string");
         ptr++;
-        skipSpacesToNextLine(ptr, end, lineNo);
+        if (singleValue)
+            skipSpacesToNextLine(ptr, end, lineNo);
     }
     else if (*ptr=='[')
     {   // otherwise [array]
@@ -606,12 +609,18 @@ static void skipYAMLValue(const char* ptr, const char* end, size_t& lineNo,
         while (ptr != end)
         {
             // parse in line
-            skipYAMLValue(ptr, end, lineNo, 0);
-            if (ptr!=end && *ptr==',')
-                throw ParseException(lineNo, "Expected ','");
-            else if (ptr!=end && *ptr==']')
+            if (ptr!=end && (*ptr=='\'' || *ptr=='"'))
+                skipYAMLValue(ptr, end, lineNo, 0, false);
+            else
+                while (ptr!=end && *ptr!='\n' &&
+                            *ptr!='#' && *ptr!=',' && *ptr!=']') ptr++;
+            skipSpacesAndComments(ptr, end, lineNo);
+            
+            if (ptr!=end && *ptr==']')
                 // just end
                 break;
+            else if (ptr!=end && *ptr!=',')
+                throw ParseException(lineNo, "Expected ','");
             ptr++;
             skipSpacesAndComments(ptr, end, lineNo);
         }
@@ -624,7 +633,10 @@ static void skipYAMLValue(const char* ptr, const char* end, size_t& lineNo,
     {   // block value
         if (ptr!=end && (*ptr=='|' || *ptr=='>'))
             ptr++; // skip '|' or '>'
-        skipSpacesToLineEnd(ptr, end);
+        if (ptr!=end && *ptr=='#')
+            while (ptr!=end && *ptr!='\n') ptr++;
+        else
+            skipSpacesToLineEnd(ptr, end);
         if (ptr!=end && *ptr!='\n')
             throw ParseException(lineNo, "Garbages before block or children");
         ptr++;
@@ -640,10 +652,17 @@ static void skipYAMLValue(const char* ptr, const char* end, size_t& lineNo,
                 lineNo++;
                 continue;
             }
-            if (ptr-lineStart < prevIndent)
+            if (ptr-lineStart <= prevIndent)
             {
                 ptr = lineStart;
                 break;
+            }
+            
+            while (ptr!=end && *ptr!='\n') ptr++;
+            if (ptr!=end)
+            {
+                lineNo++;
+                ptr++;
             }
         }
     }
