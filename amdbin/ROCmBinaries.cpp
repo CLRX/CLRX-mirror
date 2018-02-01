@@ -369,7 +369,8 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
                 if (size_t(ptr - lineStart) < indent)
                 {
                     buf.append("\n"); // always add newline at last line
-                    ptr = lineStart;
+                    if (ptr != end)
+                        ptr = lineStart;
                     return buf;
                 }
                 else // if this same and not end of line
