@@ -311,7 +311,7 @@ static std::string parseYAMLString(const char*& linePtr, const char* end,
 }
 
 static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_t& lineNo,
-                    cxuint prevIndent, bool singleValue = false)
+                    cxuint prevIndent, bool singleValue = false, bool blockAccept = true)
 {
     skipSpacesToLineEnd(ptr, end);
     if (ptr == end)
@@ -322,6 +322,8 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
     // otherwise parse stream
     else if (*ptr == '|' || *ptr == '>')
     {
+        if (!blockAccept)
+            throw ParseException(lineNo, "Illegal block string start");
         // multiline
         bool newLineFold = *ptr=='>';
         while (ptr != end && *ptr!='\n') ptr++;
@@ -414,7 +416,7 @@ class CLRX_INTERNAL YAMLElemConsumer
 {
 public:
     virtual void consume(const char*& ptr, const char* end, size_t& lineNo,
-                cxuint prevIndent, bool singleValue) = 0;
+                cxuint prevIndent, bool singleValue, bool blockAccept) = 0;
 };
 
 static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
@@ -431,7 +433,7 @@ static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
         while (ptr != end)
         {
             // parse in line
-            elemConsumer->consume(ptr, end, lineNo, 0, false);
+            elemConsumer->consume(ptr, end, lineNo, 0, false, false);
             skipSpacesAndComments(ptr, end, lineNo);
             if (ptr!=end && *ptr==']')
                 // just end
@@ -467,7 +469,7 @@ static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
         skipSpacesToLineEnd(ptr, end);
         if (afterMinus == ptr)
             throw ParseException(lineNo, "No spaces after '-'");
-        elemConsumer->consume(ptr, end, lineNo, indent0+1 + ptr-afterMinus, true);
+        elemConsumer->consume(ptr, end, lineNo, indent0, true, true);
         
         size_t indent = skipSpacesAndComments(ptr, end, lineNo);
         if (indent < indent0)
@@ -495,7 +497,7 @@ public:
     { }
     
     virtual void consume(const char*& ptr, const char* end, size_t& lineNo,
-                cxuint prevIndent, bool singleValue)
+                cxuint prevIndent, bool singleValue, bool blockAccept)
     {
         if (elemsNum == requiredElemsNum)
             throw ParseException(lineNo, "Too many elements");
@@ -521,10 +523,11 @@ public:
     { }
     
     virtual void consume(const char*& ptr, const char* end, size_t& lineNo,
-                cxuint prevIndent, bool singleValue)
+                cxuint prevIndent, bool singleValue, bool blockAccept)
     {
         const size_t oldLineNo = lineNo;
-        std::string str = parseYAMLStringValue(ptr, end, lineNo, prevIndent, singleValue);
+        std::string str = parseYAMLStringValue(ptr, end, lineNo, prevIndent,
+                                singleValue, blockAccept);
         // parse printf string
         ROCmPrintfInfo printfInfo{};
         
