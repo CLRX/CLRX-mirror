@@ -1068,6 +1068,8 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                         kernelArgInfosKeywordsNum, kernelArgInfosKeywords);
             
             ROCmKernelArgInfo& kernelArg = kernels.back().argInfos.back();
+            
+            size_t valLineNo = lineNo;
             switch(keyIndex)
             {
                 case ROCMMT_ARGS_ACCQUAL:
@@ -1097,7 +1099,7 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                                     aspace.c_str())==0)
                             break;
                     if (aspaceIndex == 6)
-                        throw ParseException(lineNo, "Wrong address space");
+                        throw ParseException(valLineNo, "Wrong address space");
                     kernelArg.addressSpace = ROCmAddressSpace(aspaceIndex+1);
                     break;
                 }
@@ -1139,7 +1141,7 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                             CStringLess()) - rocmValueKindNames;
                     // if unknown kind
                     if (vkindIndex == rocmValueKindNamesNum)
-                        throw ParseException(lineNo, "Wrong argument value kind");
+                        throw ParseException(valLineNo, "Wrong argument value kind");
                     kernelArg.valueKind = rocmValueKindNames[vkindIndex].second;
                     break;
                 }
@@ -1152,7 +1154,7 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                             CStringLess()) - rocmValueTypeNames;
                     // if unknown type
                     if (vtypeIndex == rocmValueTypeNamesNum)
-                        throw ParseException(lineNo, "Wrong argument value type");
+                        throw ParseException(valLineNo, "Wrong argument value type");
                     kernelArg.valueType = rocmValueTypeNames[vtypeIndex].second;
                     break;
                 }
