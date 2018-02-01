@@ -339,24 +339,49 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
         {
             const char* strStart = ptr;
             while (ptr != end && *ptr!='\n') ptr++;
-            buf.append(strStart, end);
+            buf.append(strStart, ptr);
             
-            lineNo++;
+            if (ptr != end) // if new line
+            {
+                lineNo++;
+                ptr++;
+            }
+            else // end of stream
+                break;
+            
             const char* lineStart = ptr;
             skipSpacesToLineEnd(ptr, end);
-            if (size_t(ptr - lineStart) < indent)
+            bool emptyLines = false;
+            while (size_t(ptr - lineStart) <= indent)
             {
-                if (ptr == end || *ptr=='\n')
+                if (ptr != end && *ptr=='\n')
                 {
-                    buf.append(newLineFold ? " " : "\n");
+                    // empty line
+                    buf.append("\n");
+                    ptr++;
+                    lineNo++;
+                    lineStart = ptr;
+                    skipSpacesToLineEnd(ptr, end);
+                    emptyLines = true;
                     continue;
                 }
                 // if smaller indent
-                ptr = lineStart;
-                return buf;
+                if (size_t(ptr - lineStart) < indent)
+                {
+                    buf.append("\n"); // always add newline at last line
+                    ptr = lineStart;
+                    return buf;
+                }
+                else // if this same and not end of line
+                    break;
             }
+            
+            if (!emptyLines || !newLineFold)
+                // add missing newline after line with text
+                // only if no emptyLines or no newLineFold
+                buf.append(newLineFold ? " " : "\n");
+            // to indent
             ptr = lineStart + indent;
-            buf.append(newLineFold ? " " : "\n");
         }
         return buf;
     }
@@ -364,8 +389,18 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
     {
         // single line string (unquoted)
         const char* strStart = ptr;
-        while (ptr != end && *ptr!='\n' && *ptr!='#') ptr++;
-        buf.assign(strStart, ptr);
+        // automatically trim spaces at ends
+        const char* strEnd = ptr;
+        while (ptr != end && *ptr!='\n' && *ptr!='#')
+        {
+            if (!isSpace(*ptr))
+                strEnd = ptr; // to trim at end
+            ptr++;
+        }
+        if (strEnd != end && !isSpace(*strEnd))
+            strEnd++;
+        
+        buf.assign(strStart, strEnd);
     }
     
     if (singleValue)
