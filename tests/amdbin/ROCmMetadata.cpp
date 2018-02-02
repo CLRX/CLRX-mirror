@@ -1077,6 +1077,102 @@ Kernels:         # kernels
             }
         },
         true, ""
+    },
+    {   // test 7 - error
+        R"ffDXD(---
+Version:         [ 1, 0 ]
+Printf:          
+  - '1:1:4:index\72%d\n'
+  - '2:4:4:4:4:4:i=%d,a=%f,b=%f,c=%f\n'
+ - '3:1:2:index\72%d\n'
+Kernels:         
+  - Name:            vectorAdd
+)ffDXD",
+        { },
+        false, "6: Unexpected nesting level"
+    },
+    {   // test 8 - error
+        R"ffDXD(---
+Version:[ 1, 0 ]
+Printf:          
+  - '1:1:4:index\72%d\n'
+  - '2:4:4:4:4:4:i=%d,a=%f,b=%f,c=%f\n'
+  - '3:1:2:index\72%d\n'
+Kernels:         
+  - Name:            vectorAdd
+)ffDXD",
+        { },
+        false, "2: After key and colon must be space"
+    },
+    {   // test 9 - error
+        R"ffDXD(---
+Version:   [ 111xx, 0 ]
+Printf:          
+  - '1:1:4:index\72%d\n'
+  - '2:4:4:4:4:4:i=%d,a=%f,b=%f,c=%f\n'
+  - '3:1:2:index\72%d\n'
+Kernels:         
+  - Name:            vectorAdd
+)ffDXD",
+        { },
+        false, "2: Expected ','"
+    },
+    { // test 10
+        R"ffDXD(---
+Version:         [ 1, 0 ]
+Printf:          
+  - '1:1:4:index\72%d\n'
+  - '2:4:4:4:4:4:i=%d,a=%f,b=%f,c=%f\n'
+Kernels:         
+  - Name:            vectorAdd
+    SymbolName:      'vectorAdd@kd'
+    Language:        OpenCL C
+    LanguageVersion: [ 1, 2 ]
+    Attrs:
+      ReqdWorkGroupSize:
+        - 7
+        - 9
+        - 11
+      WorkGroupSizeHint:
+        - 112
+        - 33
+        - 66
+      VecTypeHint: uint8
+      RuntimeHandle:  kernelRT
+    Args:            
+      - Name:            n
+        TypeName:        uint
+        Size:            4
+        Align:           4
+        ValueKind:       ByValue
+        ValueType:       U32
+        AccQual:         Default
+        ActualAccQual:   Default
+      - Name:            a
+        TypeName:        'float*'
+        Size:            8
+        Align:           16
+        PointeeAlign:    32
+        ValueKind:       GlxobalBuffer
+        ValueType:       F32
+        AddrSpaceQual:   Global
+        AccQual:         ReadOnly
+        ActualAccQual:   ReadWrite
+        IsConst:         true
+      - Name:            b
+        TypeName:        'float*'
+        Size:            8
+        Align:           16
+        PointeeAlign:    32
+        ValueKind:       GlobalBuffer
+        ValueType:       F32
+        AddrSpaceQual:   Global
+        AccQual:         WriteOnly
+        ActualAccQual:   WriteOnly
+        IsConst:         true
+)ffDXD",
+        { },
+        false, "36: Wrong argument value kind"
     }
 };
 
@@ -1116,6 +1212,9 @@ static void testROCmMetadataCase(cxuint testId, const ROCmMetadataTestCase& test
     snprintf(testName, 30, "Test #%u", testId);
     assertValue(testName, "good", testCase.good, good);
     assertString(testName, "error", testCase.error, error.c_str());
+    if (!good)
+        // do not check if test failed
+        return;
     
     assertValue(testName, "version[0]", expected.version[0], result.version[0]);
     assertValue(testName, "version[1]", expected.version[1], result.version[1]);

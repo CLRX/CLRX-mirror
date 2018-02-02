@@ -186,7 +186,7 @@ static bool parseYAMLBoolValue(const char*& ptr, const char* end, size_t& lineNo
                 break;
             }
     if (!isSet)
-        throw ParseException(lineNo, "Is not boolean value");
+        throw ParseException(lineNo, "This is not boolean value");
     
     if (singleValue)
         skipSpacesToNextLine(ptr, end, lineNo);
