@@ -124,35 +124,35 @@ Kernels:
                         { "n", "uint", 4, 4, 0, ROCmValueKind::BY_VALUE,
                           ROCmValueType::UINT32, ROCmAddressSpace::NONE,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          false, false, false },
+                          false, false, false, false },
                         { "a", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
                           ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          true, false, false },
+                          true, false, false, false },
                         { "b", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
                           ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          true, false, false },
+                          true, false, false, false },
                         { "c", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
                           ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          false, false, false },
+                          false, false, false, false },
                         { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X,
                           ROCmValueType::INT64, ROCmAddressSpace::NONE,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          false, false, false },
+                          false, false, false, false },
                         { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y,
                           ROCmValueType::INT64, ROCmAddressSpace::NONE,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          false, false, false },
+                          false, false, false, false },
                         { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z,
                           ROCmValueType::INT64, ROCmAddressSpace::NONE,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          false, false, false },
+                          false, false, false, false },
                         { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_PRINTF_BUFFER,
                           ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          false, false, false }
+                          false, false, false, false }
                     },
                      "OpenCL C", { 1, 2 },
                      { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
@@ -200,7 +200,8 @@ Kernels:
       - Name:            a
         TypeName:        'float*'
         Size:            8
-        Align:           8
+        Align:           16
+        PointeeAlign:    32
         ValueKind:       GlobalBuffer
         ValueType:       F32
         AddrSpaceQual:   Global
@@ -210,7 +211,8 @@ Kernels:
       - Name:            b
         TypeName:        'float*'
         Size:            8
-        Align:           8
+        Align:           16
+        PointeeAlign:    32
         ValueKind:       GlobalBuffer
         ValueType:       F32
         AddrSpaceQual:   Global
@@ -248,6 +250,16 @@ Kernels:
         ValueKind:       HiddenCompletionAction
         ValueType:       I8
         AddrSpaceQual:   Global
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenNone
+        ValueType:       I8
+        AddrSpaceQual:   Global
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenDefaultQueue
+        ValueType:       I8
+        AddrSpaceQual:   Global
     CodeProps:       
       KernargSegmentSize: 64
       GroupSegmentFixedSize: 120
@@ -275,39 +287,47 @@ Kernels:
                         { "n", "uint", 4, 4, 0, ROCmValueKind::BY_VALUE,
                           ROCmValueType::UINT32, ROCmAddressSpace::NONE,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          false, false, false },
-                        { "a", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          false, false, false, false },
+                        { "a", "float*", 8, 16, 32, ROCmValueKind::GLOBAL_BUFFER,
                           ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
                           ROCmAccessQual::READ_ONLY, ROCmAccessQual::READ_WRITE,
-                          true, false, false },
-                        { "b", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          true, false, false, false },
+                        { "b", "float*", 8, 16, 32, ROCmValueKind::GLOBAL_BUFFER,
                           ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
                           ROCmAccessQual::WRITE_ONLY, ROCmAccessQual::WRITE_ONLY,
-                          true, false, false },
+                          true, false, false, false },
                         { "c", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
                           ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
                           ROCmAccessQual::READ_WRITE, ROCmAccessQual::READ_ONLY,
-                          false, false, false },
+                          false, false, false, false },
                         { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X,
                           ROCmValueType::INT64, ROCmAddressSpace::NONE,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          false, false, false },
+                          false, false, false, false },
                         { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y,
                           ROCmValueType::INT64, ROCmAddressSpace::NONE,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          false, false, false },
+                          false, false, false, false },
                         { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z,
                           ROCmValueType::INT64, ROCmAddressSpace::NONE,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          false, false, false },
+                          false, false, false, false },
                         { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_PRINTF_BUFFER,
                           ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          false, false, false },
+                          false, false, false, false },
                         { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_COMPLETION_ACTION,
                           ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
-                          false, false, false }
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_NONE,
+                          ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_DEFAULT_QUEUE,
+                          ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false }
                     },
                      "OpenCL C", { 1, 2 },
                      { 7, 9, 11 },
