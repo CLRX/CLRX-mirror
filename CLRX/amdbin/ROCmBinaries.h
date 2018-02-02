@@ -166,7 +166,7 @@ struct ROCmKernelMetadata
     cxuint spilledSgprs;    ///< number of spilled SGPRs
     cxuint spilledVgprs;    ///< number of spilled VGPRs
     
-    ROCmKernelMetadata();
+    void initialize();
 };
 
 /// ROCm printf call info
@@ -184,7 +184,7 @@ struct ROCmMetadata
     std::vector<ROCmPrintfInfo> printfInfos;  ///< printf calls infos
     std::vector<ROCmKernelMetadata> kernels;  ///< kernel metadatas
     
-    ROCmMetadata();
+    void initialize();
 };
 
 /// ROCm main binary for GPU for 64-bit mode

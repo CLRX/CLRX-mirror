@@ -39,24 +39,31 @@ using namespace CLRX;
  * ROCm metadata YAML parser
  */
 
-ROCmKernelMetadata::ROCmKernelMetadata() :
-    langVersion{ BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-    reqdWorkGroupSize{ BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-    workGroupSizeHint{ BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-    kernargSegmentSize(BINGEN64_NOTSUPPLIED),
-    groupSegmentFixedSize(BINGEN64_NOTSUPPLIED),
-    privateSegmentFixedSize(BINGEN64_NOTSUPPLIED),
-    kernargSegmentAlign(BINGEN64_NOTSUPPLIED),
-    wavefrontSize(BINGEN_NOTSUPPLIED),
-    sgprsNum(BINGEN_NOTSUPPLIED), vgprsNum(BINGEN_NOTSUPPLIED),
-    maxFlatWorkGroupSize(BINGEN64_NOTSUPPLIED),
-    fixedWorkGroupSize{ BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-    spilledSgprs(BINGEN_NOTSUPPLIED),
-    spilledVgprs(BINGEN_NOTSUPPLIED)
-{ }
+void ROCmKernelMetadata::initialize()
+{
+    langVersion[0] = langVersion[1] = BINGEN_NOTSUPPLIED;
+    reqdWorkGroupSize[0] = reqdWorkGroupSize[1] =
+            reqdWorkGroupSize[2] = BINGEN_NOTSUPPLIED;
+    workGroupSizeHint[0] = workGroupSizeHint[1] =
+            workGroupSizeHint[2] = BINGEN_NOTSUPPLIED;
+    kernargSegmentSize = BINGEN64_NOTSUPPLIED;
+    groupSegmentFixedSize = BINGEN64_NOTSUPPLIED;
+    privateSegmentFixedSize = BINGEN64_NOTSUPPLIED;
+    kernargSegmentAlign = BINGEN64_NOTSUPPLIED;
+    wavefrontSize = BINGEN_NOTSUPPLIED;
+    sgprsNum = BINGEN_NOTSUPPLIED;
+    vgprsNum = BINGEN_NOTSUPPLIED;
+    maxFlatWorkGroupSize = BINGEN64_NOTSUPPLIED;
+    fixedWorkGroupSize[0] = fixedWorkGroupSize[1] =
+            fixedWorkGroupSize[2] = BINGEN_NOTSUPPLIED;
+    spilledSgprs = BINGEN_NOTSUPPLIED;
+    spilledVgprs = BINGEN_NOTSUPPLIED;
+}
 
-ROCmMetadata::ROCmMetadata() : version{ 0, 0 }
-{ }
+void ROCmMetadata::initialize ()
+{
+    version[0] = version[1] = 0;
+}
 
 // return trailing spaces
 static size_t skipSpacesAndComments(const char*& ptr, const char* end, size_t& lineNo)
@@ -931,6 +938,7 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
             inKernel = true;
             
             kernels.push_back(ROCmKernelMetadata());
+            kernels.back().initialize();
         }
         
         if (curLevel==2 && inKernel)
