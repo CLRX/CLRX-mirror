@@ -32,6 +32,8 @@ struct ROCmMetadataTestCase
 {
     const char* input;      // input metadata string
     ROCmMetadata expected;
+    bool good;
+    const char* error;
 };
 
 static const ROCmMetadataTestCase rocmMetadataTestCases[] =
@@ -161,7 +163,163 @@ Kernels:
                      BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
                 }
             }
-        }
+        },
+        true, ""
+    },
+    {   // test 1
+        R"ffDXD(---
+Version:         [ 1, 0 ]
+Printf:          
+  - '1:1:4:index\72%d\n'
+  - '2:4:4:4:4:4:i=%d,a=%f,b=%f,c=%f\n'
+Kernels:         
+  - Name:            vectorAdd
+    SymbolName:      'vectorAdd@kd'
+    Language:        OpenCL C
+    LanguageVersion: [ 1, 2 ]
+    Attrs:
+      ReqdWorkGroupSize:
+        - 7
+        - 9
+        - 11
+      WorkGroupSizeHint:
+        - 112
+        - 33
+        - 66
+      VecTypeHint: uint8
+      RuntimeHandle:  kernelRT
+    Args:            
+      - Name:            n
+        TypeName:        uint
+        Size:            4
+        Align:           4
+        ValueKind:       ByValue
+        ValueType:       U32
+        AccQual:         Default
+        ActualAccQual:   Default
+      - Name:            a
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       F32
+        AddrSpaceQual:   Global
+        AccQual:         ReadOnly
+        ActualAccQual:   ReadWrite
+        IsConst:         true
+      - Name:            b
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       F32
+        AddrSpaceQual:   Global
+        AccQual:         WriteOnly
+        ActualAccQual:   WriteOnly
+        IsConst:         true
+      - Name:            c
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       F32
+        AddrSpaceQual:   Global
+        AccQual:         ReadWrite
+        ActualAccQual:   ReadOnly
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenGlobalOffsetX
+        ValueType:       I64
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenGlobalOffsetY
+        ValueType:       I64
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenGlobalOffsetZ
+        ValueType:       I64
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenPrintfBuffer
+        ValueType:       I8
+        AddrSpaceQual:   Global
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenCompletionAction
+        ValueType:       I8
+        AddrSpaceQual:   Global
+    CodeProps:       
+      KernargSegmentSize: 64
+      GroupSegmentFixedSize: 120
+      PrivateSegmentFixedSize: 408
+      KernargSegmentAlign: 8
+      WavefrontSize:   64
+      NumSGPRs:        14
+      NumVGPRs:        11
+      MaxFlatWorkGroupSize: 256
+      FixedWorkGroupSize: [ 11, 91, 96 ]
+      NumSpilledSGPRs: 12
+      NumSpilledVGPRs: 37
+...
+)ffDXD",
+        {
+            { 1, 0 }, // version
+            {    // printfInfos
+                { 1, { 4 }, "index:%d\n" },
+                { 2, { 4, 4, 4, 4 }, "i=%d,a=%f,b=%f,c=%f\n" }
+            },
+            {
+                {   // kernel 0
+                    "vectorAdd", "vectorAdd@kd",
+                    {   // arguments
+                        { "n", "uint", 4, 4, 0, ROCmValueKind::BY_VALUE,
+                          ROCmValueType::UINT32, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false },
+                        { "a", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::READ_ONLY, ROCmAccessQual::READ_WRITE,
+                          true, false, false },
+                        { "b", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::WRITE_ONLY, ROCmAccessQual::WRITE_ONLY,
+                          true, false, false },
+                        { "c", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::READ_WRITE, ROCmAccessQual::READ_ONLY,
+                          false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X,
+                          ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y,
+                          ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z,
+                          ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_PRINTF_BUFFER,
+                          ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_COMPLETION_ACTION,
+                          ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false }
+                    },
+                     "OpenCL C", { 1, 2 },
+                     { 7, 9, 11 },
+                     { 112, 33, 66 },
+                     "uint8", "kernelRT", 64, 120, 408, 8, 64,
+                     14, 11, 256,
+                     { 11, 91, 96 },
+                     12, 37
+                }
+            }
+        },
+        true, ""
     }
 };
 
@@ -182,12 +340,26 @@ static void testROCmMetadataCase(cxuint testId, const ROCmMetadataTestCase& test
         binGen.generate(output);
     }
     // now we load binary
-    ROCmBinary binary(output.size(), output.data(), ROCMBIN_CREATE_METADATAINFO);
     const ROCmMetadata& expected = testCase.expected;
-    const ROCmMetadata& result = binary.getMetadataInfo();
+    ROCmMetadata result;
+    bool good = true;
+    CString error;
+    try
+    {
+        ROCmBinary binary(output.size(), output.data(), ROCMBIN_CREATE_METADATAINFO);
+        result = binary.getMetadataInfo();
+    }
+    catch(const ParseException& ex)
+    {
+        good = false;
+        error = ex.what();
+    }
     
     char testName[30];
     snprintf(testName, 30, "Test #%u", testId);
+    assertValue(testName, "good", testCase.good, good);
+    assertString(testName, "error", testCase.error, error.c_str());
+    
     assertValue(testName, "version[0]", expected.version[0], result.version[0]);
     assertValue(testName, "version[1]", expected.version[1], result.version[1]);
     assertValue(testName, "printfInfosNum", expected.printfInfos.size(),
