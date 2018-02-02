@@ -20,6 +20,7 @@
 #include <CLRX/Config.h>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <cstring>
 #include <memory>
 #include <CLRX/utils/Containers.h>
@@ -154,13 +155,13 @@ Kernels:
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
                           false, false, false, false }
                     },
-                     "OpenCL C", { 1, 2 },
-                     { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-                     { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-                     "", "", 64, 0, 0, 8, 64,
-                     14, 11, 256,
-                     { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-                     BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
+                    "OpenCL C", { 1, 2 },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    "", "", 64, 0, 0, 8, 64,
+                    14, 11, 256,
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
                 }
             }
         },
@@ -329,13 +330,581 @@ Kernels:
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
                           false, false, false, false }
                     },
-                     "OpenCL C", { 1, 2 },
-                     { 7, 9, 11 },
-                     { 112, 33, 66 },
-                     "uint8", "kernelRT", 64, 120, 408, 8, 64,
-                     14, 11, 256,
-                     { 11, 91, 96 },
-                     12, 37
+                    "OpenCL C", { 1, 2 },
+                    { 7, 9, 11 },
+                    { 112, 33, 66 },
+                    "uint8", "kernelRT", 64, 120, 408, 8, 64,
+                    14, 11, 256,
+                    { 11, 91, 96 },
+                    12, 37
+                }
+            }
+        },
+        true, ""
+    },
+    {   // test 2 - printf
+        R"ffDXD(---
+Version:         [ 1, 0 ]
+Printf:          
+  - '1:1:4:index\72%d\n'
+  - '  2  :  4  :8  : 12  :  4 :  120 :i=%d,a=%f,b=%f,c=%f\n'
+  - '3:0:index\72%d\t\v\f\a\n'
+...
+)ffDXD",
+        {
+            { 1, 0 }, // version
+            { // printfInfos
+                { 1, { 4 }, "index:%d\n" },
+                { 2, {  8, 12, 4, 120 }, "i=%d,a=%f,b=%f,c=%f\n" },
+                { 3, { }, "index:%d\t\v\f\a\n" },
+            },
+            { }
+        },
+        true, ""
+    },
+    {   // test 3 - printf (in array)
+        R"ffDXD(---
+Version:         [ 1, 0 ]
+Printf: [
+  "1:1:4:index\72%d\n",
+  '  2  :  4  :8  : 12  :  4 :  120 :i=%d,a=%f,b=%f,c=%f\n',
+  '3:0:index\72%d\t\v\f\a\n' ]
+...
+)ffDXD",
+        {
+            { 1, 0 }, // version
+            { // printfInfos
+                { 1, { 4 }, "index:%d\n" },
+                { 2, {  8, 12, 4, 120 }, "i=%d,a=%f,b=%f,c=%f\n" },
+                { 3, { }, "index:%d\t\v\f\a\n" },
+            },
+            { }
+        },
+        true, ""
+    },
+    {   // test 4 - argument types
+        R"ffDXD(---
+Version:         [ 1, 0 ]
+Printf:          
+  - '1:1:4:index\72%d\n'
+  - '2:4:4:4:4:4:i=%d,a=%f,b=%f,c=%f\n'
+Kernels:         
+  - Name:            vectorAdd
+    SymbolName:      'vectorAdd@kd'
+    Language:        OpenCL C
+    LanguageVersion: [ 1, 2 ]
+    Args:            
+      - Name:            n
+        TypeName:        uint
+        Size:            4
+        Align:           4
+        ValueKind:       ByValue
+        ValueType:       U32
+        AccQual:         Default
+      - Name:            a
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       I8
+        AddrSpaceQual:   Global
+        AccQual:         Default
+        IsConst:         true
+      - Name:            b
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       U8
+        AddrSpaceQual:   Global
+        AccQual:         Default
+        IsConst:         true
+      - Name:            c
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       I16
+        AddrSpaceQual:   Global
+        AccQual:         Default
+      - Name:            d
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       U16
+        AddrSpaceQual:   Global
+        AccQual:         Default
+      - Name:            e
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       F16
+        AddrSpaceQual:   Global
+        AccQual:         Default
+      - Name:            f
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       I32
+        AddrSpaceQual:   Global
+        AccQual:         Default
+      - Name:            g
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       U32
+        AddrSpaceQual:   Global
+        AccQual:         Default
+      - Name:            h
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       F32
+        AddrSpaceQual:   Global
+        AccQual:         Default
+      - Name:            i
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       I64
+        AddrSpaceQual:   Global
+        AccQual:         Default
+      - Name:            j
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       U64
+        AddrSpaceQual:   Global
+        AccQual:         Default
+      - Name:            k
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       F64
+        AddrSpaceQual:   Global
+        AccQual:         Default
+      - Name:            l
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       Struct
+        AddrSpaceQual:   Global
+        AccQual:         Default
+      - Name:            aa
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       I8
+        AddrSpaceQual:   Region
+        AccQual:         Default
+        IsConst:         1
+        IsPipe:          0
+      - Name:            ab
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       I8
+        AddrSpaceQual:   Constant
+        AccQual:         Default
+        IsConst:         on
+        IsPipe:          off
+      - Name:            ac
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       I8
+        AddrSpaceQual:   Private
+        AccQual:         Default
+        IsConst:         true
+        IsPipe:          no
+      - Name:            ad
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       I8
+        AddrSpaceQual:   Local
+        AccQual:         Default
+        IsConst:         true
+        IsVolatile:      true
+        IsRestrict:      false
+      - Name:            ae
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       I8
+        AddrSpaceQual:   Generic
+        AccQual:         Default
+        IsConst:         true
+        IsRestrict:      true
+        IsPipe:          false
+      - Name:            pip
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       Pipe
+        ValueType:       I8
+        AddrSpaceQual:   Global
+        AccQual:         Default
+        IsPipe:          true
+      - Name:            dp
+        TypeName:        'void*'
+        Size:            4
+        Align:           4
+        ValueKind:       DynamicSharedPointer
+        ValueType:       I8
+        PointeeAlign:    1
+        AddrSpaceQual:   Local
+        AccQual:         Default
+        IsConst:         true
+      - Name:            img
+        TypeName:        image2d_t
+        Size:            8
+        Align:           8
+        ValueKind:       Image
+        ValueType:       Struct
+        AddrSpaceQual:   Constant
+        AccQual:         WriteOnly
+      - Name:            samp
+        TypeName:        sampler_t
+        Size:            8
+        Align:           8
+        ValueKind:       Sampler
+        ValueType:       Struct
+        AddrSpaceQual:   Constant
+        AccQual:         Default
+      - Name:            queue
+        TypeName:        queue_t
+        Size:            8
+        Align:           8
+        ValueKind:       Queue
+        ValueType:       Struct
+        AddrSpaceQual:   Constant
+        AccQual:         Default
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenGlobalOffsetX
+        ValueType:       I64
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenGlobalOffsetY
+        ValueType:       I64
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenGlobalOffsetZ
+        ValueType:       I64
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenPrintfBuffer
+        ValueType:       I8
+        AddrSpaceQual:   Global
+    CodeProps:       
+      KernargSegmentSize: 64
+      GroupSegmentFixedSize: 0
+      PrivateSegmentFixedSize: 0
+      KernargSegmentAlign: 8
+      WavefrontSize:   64
+      NumSGPRs:        14
+      NumVGPRs:        11
+      MaxFlatWorkGroupSize: 256
+...
+)ffDXD",
+        {
+            { 1, 0 }, // version
+            {    // printfInfos
+                { 1, { 4 }, "index:%d\n" },
+                { 2, { 4, 4, 4, 4 }, "i=%d,a=%f,b=%f,c=%f\n" }
+            },
+            {
+                {   // kernel 0
+                    "vectorAdd", "vectorAdd@kd",
+                    {   // arguments
+                        { "n", "uint", 4, 4, 0, ROCmValueKind::BY_VALUE,
+                          ROCmValueType::UINT32, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "a", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          true, false, false, false },
+                        { "b", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::UINT8, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          true, false, false, false },
+                        { "c", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::INT16, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "d", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::UINT16, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "e", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::FLOAT16, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "f", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::INT32, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "g", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::UINT32, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "h", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "i", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::INT64, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "j", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::UINT64, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "k", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::FLOAT64, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "l", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::STRUCTURE, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "aa", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::INT8, ROCmAddressSpace::REGION,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          true, false, false, false },
+                        { "ab", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::INT8, ROCmAddressSpace::CONSTANT,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          true, false, false, false },
+                        { "ac", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::INT8, ROCmAddressSpace::PRIVATE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          true, false, false, false },
+                        { "ad", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::INT8, ROCmAddressSpace::LOCAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          true, false, true, false },
+                        { "ae", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::INT8, ROCmAddressSpace::GENERIC,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          true, true, false, false },
+                        { "pip", "float*", 8, 8, 0, ROCmValueKind::PIPE,
+                          ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, true },
+                        { "dp", "void*", 4, 4, 1, ROCmValueKind::DYN_SHARED_PTR,
+                          ROCmValueType::INT8, ROCmAddressSpace::LOCAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          true, false, false, false },
+                        { "img", "image2d_t", 8, 8, 0, ROCmValueKind::IMAGE,
+                          ROCmValueType::STRUCTURE, ROCmAddressSpace::CONSTANT,
+                          ROCmAccessQual::WRITE_ONLY, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "samp", "sampler_t", 8, 8, 0, ROCmValueKind::SAMPLER,
+                          ROCmValueType::STRUCTURE, ROCmAddressSpace::CONSTANT,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "queue", "queue_t", 8, 8, 0, ROCmValueKind::QUEUE,
+                          ROCmValueType::STRUCTURE, ROCmAddressSpace::CONSTANT,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X,
+                          ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y,
+                          ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z,
+                          ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_PRINTF_BUFFER,
+                          ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false }
+                    },
+                    "OpenCL C", { 1, 2 },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    "", "", 64, 0, 0, 8, 64,
+                    14, 11, 256,
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
+                }
+            }
+        },
+        true, ""
+    },
+    {   // test 5 - block strings
+        R"ffDXD(---
+Version:         [ 1, 0 ]
+Printf:          
+  - '1:1:4:index\72%d\n'
+  - '2:4:4:4:4:4:i=%d,a=%f,b=%f,c=%f\n'
+Kernels:         
+  - Name:            vectorAdd
+    SymbolName:    aaa bbb xxxxx   
+    Language:        OpenCL C
+    LanguageVersion: [ 1, 2 ]
+    CodeProps:       
+      KernargSegmentSize: 64
+      GroupSegmentFixedSize: 0
+      PrivateSegmentFixedSize: 0
+      KernargSegmentAlign: 8
+      WavefrontSize:   64
+      NumSGPRs:        14
+      NumVGPRs:        11
+      MaxFlatWorkGroupSize: 256
+  - Name:            vectorAdd1
+    SymbolName:    "ala ma kota\n\t\a"
+    Language:        OpenCL C
+    LanguageVersion: [ 1, 2 ]
+    CodeProps:       
+      KernargSegmentSize: 64
+      GroupSegmentFixedSize: 0
+      PrivateSegmentFixedSize: 0
+      KernargSegmentAlign: 8
+      WavefrontSize:   64
+      NumSGPRs:        14
+      NumVGPRs:        11
+      MaxFlatWorkGroupSize: 256
+  - Name:            vectorAdd2
+    SymbolName: |
+      somebody
+      in the
+      
+  
+      place
+    Language:        OpenCL C
+    LanguageVersion: [ 1, 2 ]
+    CodeProps:       
+      KernargSegmentSize: 64
+      GroupSegmentFixedSize: 0
+      PrivateSegmentFixedSize: 0
+      KernargSegmentAlign: 8
+      WavefrontSize:   64
+      NumSGPRs:        14
+      NumVGPRs:        11
+      MaxFlatWorkGroupSize: 256
+  - Name:            vectorAdd3
+    SymbolName: >
+      somebody
+      in the
+      
+  
+      place
+    Language:        OpenCL C
+    LanguageVersion: [ 1, 2 ]
+    CodeProps:       
+      KernargSegmentSize: 64
+      GroupSegmentFixedSize: 0
+      PrivateSegmentFixedSize: 0
+      KernargSegmentAlign: 8
+      WavefrontSize:   64
+      NumSGPRs:        14
+      NumVGPRs:        11
+      MaxFlatWorkGroupSize: 256
+  - Name:            vectorAdd4
+    SymbolName: |
+      somebody
+      in the
+        #ala
+      #ma kota
+      
+  
+      place
+    Language:        OpenCL C
+    LanguageVersion: [ 1, 2 ]
+    CodeProps:       
+      KernargSegmentSize: 64
+      GroupSegmentFixedSize: 0
+      PrivateSegmentFixedSize: 0
+      KernargSegmentAlign: 8
+      WavefrontSize:   64
+      NumSGPRs:        14
+      NumVGPRs:        11
+      MaxFlatWorkGroupSize: 256
+...
+)ffDXD",
+        {
+            { 1, 0 }, // version
+            {    // printfInfos
+                { 1, { 4 }, "index:%d\n" },
+                { 2, { 4, 4, 4, 4 }, "i=%d,a=%f,b=%f,c=%f\n" }
+            },
+            {
+                {   // kernel 0
+                    "vectorAdd", "aaa bbb xxxxx",
+                    { },
+                    "OpenCL C", { 1, 2 },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    "", "", 64, 0, 0, 8, 64,
+                    14, 11, 256,
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
+                },
+                {   // kernel 1
+                    "vectorAdd1", "ala ma kota\n\t\a",
+                    { },
+                    "OpenCL C", { 1, 2 },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    "", "", 64, 0, 0, 8, 64,
+                    14, 11, 256,
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
+                },
+                {   // kernel 2
+                    "vectorAdd2", "somebody\nin the\n\n\nplace\n",
+                    { },
+                    "OpenCL C", { 1, 2 },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    "", "", 64, 0, 0, 8, 64,
+                    14, 11, 256,
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
+                },
+                {   // kernel 3
+                    "vectorAdd3", "somebody in the\n\nplace\n",
+                    { },
+                    "OpenCL C", { 1, 2 },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    "", "", 64, 0, 0, 8, 64,
+                    14, 11, 256,
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
+                },
+                {   // kernel 4
+                    "vectorAdd4", "somebody\nin the\n  #ala\n#ma kota\n\n\nplace\n",
+                    { },
+                    "OpenCL C", { 1, 2 },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    "", "", 64, 0, 0, 8, 64,
+                    14, 11, 256,
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
                 }
             }
         },
