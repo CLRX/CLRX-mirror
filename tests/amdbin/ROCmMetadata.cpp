@@ -944,6 +944,11 @@ Kernels:         # kernels
       shorter empty line
     
       xxxxxx
+    YXaya:
+      aaaa
+      bbbb
+  # some comment
+      xxxxxx
     LanguageVersion: [ 1
   # ...............
     ,
