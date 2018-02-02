@@ -94,13 +94,13 @@ cmake .. -G "Visual Studio XXXXXX [arch]" [cmake configuration options]
 ```
 
 where XXXX - version of Visual Studio (7, 14 2015, ...).
-arch - architecture (Win64, Win32, ARM)  (optional).
+arch - architecture (Win64, ARM)  (optional).
 
 After creating Makefiles scripts you can compile project:
 
 `make` or `make -jX` - where X is number of processors.
 
-or
+or (for NMake)
 
 `nmake`
 
