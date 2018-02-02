@@ -50,6 +50,11 @@ s_mov_b32       s14, (gdata+160)&0xffffffff
 The CLRX assembler allow to use one of two ways to configure kernel setup:
 for human (`.config`) and for quick recompilation (kernel setup, stub, metadata content).
 
+## Register usage setup
+
+The CLRX assembler automatically sets number of used VGPRs and number of used SGPRs.
+This setup can be replaced by pseudo-ops '.sgprsnum' and '.vgprsnum'.
+
 ## Scalar register allocation
 
 Depend on configuration options, an assembler add VCC and FLAT_SCRATCH

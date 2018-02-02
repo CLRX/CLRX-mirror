@@ -23,6 +23,11 @@ A `.data` section inside kernel is usable section and holds same zeroes.
 The CLRX assembler allow to use one of two ways to configure kernel setup:
 for human (`.config`) and for quick recompilation (ATI CALNotes and the metadata string).
 
+## Register usage setup
+
+The CLRX assembler automatically sets number of used VGPRs and number of used SGPRs.
+This setup can be replaced by pseudo-ops '.sgprsnum' and '.vgprsnum'.
+
 ## Scalar register allocation
 
 To used scalar registers, assembler add 2 additional registers for handling VCC.

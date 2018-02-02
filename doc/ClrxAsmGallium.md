@@ -24,6 +24,11 @@ Order of these parts doesn't matter.
 
 Kernel function should to be aligned to 256 byte boundary.
 
+## Register usage setup
+
+The CLRX assembler automatically sets number of used VGPRs and number of used SGPRs.
+This setup can be replaced by pseudo-ops '.sgprsnum' and '.vgprsnum'.
+
 ## Scalar register allocation
 
 Assembler for GalliumCompute format counts all SGPR registers and add extra registers
