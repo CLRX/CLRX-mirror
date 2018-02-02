@@ -909,6 +909,147 @@ Kernels:
             }
         },
         true, ""
+    },
+    {   // test 6 - comments and spaces
+        R"ffDXD(---
+Version:         [ 1, 0 ]#xxxxxxxx
+# list of printfs
+Printf:          
+  - '1:1:4:index\72%d\n'
+  - '2:4:4:4:4:4:i=%d,a=%f,b=%f,c=%f\n'
+# kernels
+Kernels:         # kernels
+  - Name:            vectorAdd
+    SymbolName:      'vectorAdd@kd'
+    Language:        OpenCL C#aaaaaaaa
+    LanguageVersion: [ 1
+  # ...............
+    ,
+    # zzzz
+    2 ] ##aaaa
+    Args: 
+      - Name:            n
+        TypeName:        uint
+        Size:            4
+        Align:           4
+        ValueKind:       ByValue
+        ValueType:       U32
+        AccQual:         Default
+      - Name:            a
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer      
+        ValueType:       F32
+        AddrSpaceQual:   Global
+        AccQual:         Default
+        IsConst:         true
+      - Name:            b
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer       
+        ValueType:       F32
+        AddrSpaceQual:   Global
+        AccQual:         Default
+        IsConst:         true
+      - Name:            c
+        TypeName:        'float*'
+        Size:            8
+        # some comment
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       F32
+        AddrSpaceQual:   Global
+        AccQual:         Default
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenGlobalOffsetX
+        ValueType:       I64
+#aaaaaaaaaa
+      - Size:            8
+      ## aaaa
+        Align:           8 # aaaaa
+        ValueKind:       HiddenGlobalOffsetY
+        ValueType:       I64
+      - Size:            8
+        Align:           8#aaaaaaaaaaa
+        ValueKind:       HiddenGlobalOffsetZ
+        ValueType:       I64
+      # end of arguments
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenPrintfBuffer
+        ValueType:       I8
+        AddrSpaceQual:   Global
+    CodeProps:#aaaaaa xxx
+      KernargSegmentSize: 64
+      GroupSegmentFixedSize: 0
+      PrivateSegmentFixedSize: 0
+      KernargSegmentAlign: 8
+      WavefrontSize:   64
+      NumSGPRs:        14
+      NumVGPRs:        11
+      MaxFlatWorkGroupSize: 256
+      #
+      #
+      #  
+...
+)ffDXD",
+        {
+            { 1, 0 }, // version
+            {    // printfInfos
+                { 1, { 4 }, "index:%d\n" },
+                { 2, { 4, 4, 4, 4 }, "i=%d,a=%f,b=%f,c=%f\n" }
+            },
+            {
+                {   // kernel 0
+                    "vectorAdd", "vectorAdd@kd",
+                    {   // arguments
+                        { "n", "uint", 4, 4, 0, ROCmValueKind::BY_VALUE,
+                          ROCmValueType::UINT32, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "a", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          true, false, false, false },
+                        { "b", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          true, false, false, false },
+                        { "c", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X,
+                          ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y,
+                          ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z,
+                          ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_PRINTF_BUFFER,
+                          ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false }
+                    },
+                    "OpenCL C", { 1, 2 },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    "", "", 64, 0, 0, 8, 64,
+                    14, 11, 256,
+                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
+                }
+            }
+        },
+        true, ""
     }
 };
 
