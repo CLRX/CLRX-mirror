@@ -523,6 +523,15 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(rocmInput->deviceType);
     const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
     
+    {
+        // print AMD architecture version
+        char buf[40];
+        size_t size = snprintf(buf, 40, ".arch_minor %u\n", rocmInput->archMinor);
+        output.write(buf, size);
+        size = snprintf(buf, 40, ".arch_stepping %u\n", rocmInput->archStepping);
+        output.write(buf, size);
+    }
+    
     if (rocmInput->eflags != 0)
     {
         // print eflags if not zero
@@ -555,15 +564,6 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     {
         output.write(".metadata\n", 10);
         printDisasmLongString(rocmInput->metadataSize, rocmInput->metadata, output);
-    }
-    
-    {
-        // print AMD architecture version
-        char buf[40];
-        size_t size = snprintf(buf, 40, ".arch_minor %u\n", rocmInput->archMinor);
-        output.write(buf, size);
-        size = snprintf(buf, 40, ".arch_stepping %u\n", rocmInput->archStepping);
-        output.write(buf, size);
     }
     
     // dump kernel config
