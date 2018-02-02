@@ -81,9 +81,30 @@ You can just add one or many of these options to cmake command:
 cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
 ```
 
+or for Microsoft Visual C++ (for NMake):
+
+```
+cmake .. -G "NMake Makefiles" [cmake configuration options]
+```
+
+or for Microsoft Visual C++ (for same Visual Studio)
+
+```
+cmake .. -G "Visual Studio XXXXXX [arch]" [cmake configuration options]
+```
+
+where XXXX - version of Visual Studio (7, 14 2015, ...).
+arch - architecture (Win64, Win32, ARM)  (optional).
+
 After creating Makefiles scripts you can compile project:
 
 `make` or `make -jX` - where X is number of processors.
+
+or
+
+`nmake`
+
+or just execute build option in Visual Studio.
 
 After building you can check whether project is working (if you will build tests):
 
@@ -98,12 +119,25 @@ Creating documentation will be done by this command
 make Docs
 ```
 
+or (for NMake)
+
+```
+nmake Docs
+```
+
+
 ### Installation
 
 Installation is easy. Just run command:
 
 ```
 make install
+```
+
+or (for NMake):
+
+```
+nmake install
 ```
 
 ### Usage of libraries in binaries
