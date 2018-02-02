@@ -128,8 +128,8 @@ static size_t parseYAMLKey(const char*& ptr, const char* end, size_t lineNo,
     ptr++;
     const char* afterColon = ptr;
     skipSpacesToLineEnd(ptr, end);
-    if (afterColon == ptr && ptr != end && *ptr!='\n' && *ptr!='#')
-        // only if not immediate newline or comment
+    if (afterColon == ptr && ptr != end && *ptr!='\n')
+        // only if not immediate newline
         throw ParseException(lineNo, "After key and colon must be space");
     CString keyword(keyPtr, keyEnd);
     const size_t index = binaryFind(keywords, keywords+keywordsNum,
@@ -668,7 +668,7 @@ static void skipYAMLValue(const char*& ptr, const char* end, size_t& lineNo,
                 lineNo++;
                 continue;
             }
-            if (ptr-lineStart <= prevIndent)
+            if (ptr-lineStart <= prevIndent && *ptr!='\n')
             {
                 ptr = lineStart;
                 break;

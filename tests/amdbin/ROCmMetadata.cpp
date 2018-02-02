@@ -922,6 +922,28 @@ Kernels:         # kernels
   - Name:            vectorAdd
     SymbolName:      'vectorAdd@kd'
     Language:        OpenCL C#aaaaaaaa
+    XExex: aaaaaa 111
+    XExex: [ 1,
+    4,
+    5 ] # aaaa
+    XExey: |
+      aaaa
+      -----
+      
+      xxxxxx
+    XExey: >
+      aaaa
+      -----
+        
+      
+      xxxxxx
+    XExey: >
+      aaaa
+      -----
+        
+      shorter empty line
+    
+      xxxxxx
     LanguageVersion: [ 1
   # ...............
     ,
@@ -982,7 +1004,7 @@ Kernels:         # kernels
         ValueKind:       HiddenPrintfBuffer
         ValueType:       I8
         AddrSpaceQual:   Global
-    CodeProps:#aaaaaa xxx
+    CodeProps: #aaaaaa xxx
       KernargSegmentSize: 64
       GroupSegmentFixedSize: 0
       PrivateSegmentFixedSize: 0
