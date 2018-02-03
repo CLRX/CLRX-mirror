@@ -63,7 +63,8 @@ static const char* origBinaryFiles[] =
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/scratch-15_7.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/scratch.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/test2-15_7.clo",
-    CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/test2.clo"
+    CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/test2.clo",
+    CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/simplecopy-kattrs-248203.clo"
 };
 
 struct IntAmdCL2SetupData
