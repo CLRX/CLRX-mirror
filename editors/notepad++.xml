@@ -1681,6 +1681,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .usereg
 .usesetup
 .using
+.vectypehint
 .version
 .vgprsnum
 .warning
@@ -1689,6 +1690,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .weak
 .while
 .word
+.work_group_size_hint
 .workgroup_fbarrier_count
 .workgroup_group_segment_size
 .workitem_private_segment_size

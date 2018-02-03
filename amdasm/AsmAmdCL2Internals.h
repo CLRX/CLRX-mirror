@@ -173,8 +173,14 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
     // .use_grid_work_group_count
     static void setUseGridWorkGroupCount(AsmAmdCL2Handler& handler,
                       const char* pseudoOpPlace, const char* linePtr);
-    // .cws (set reqd_work_group_size)
+    // .cws (set reqd_work_group_size or workgroupsizehint)
     static void setCWS(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    // .cws (set reqd_work_group_size or workgroupsizehint)
+    static void setWorkGroupSizeHint(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    // .vectypehint
+    static void setVecTypeHint(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     // .arg (kernel argument)
     static void doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,

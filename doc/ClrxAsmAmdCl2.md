@@ -590,6 +590,13 @@ Syntax: .userdatanum NUMBER
 This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set number of
 registers for USERDATA.
 
+### .vectypehint
+
+Syntax: .vectypehint OPENCLTYPE
+
+This pseudo-operation must be inside any kernel configuration.
+Set vectypehint for kernel. The argument is OpenCL type.
+
 ### .vgprsnum
 
 Syntax: .vgprsnum REGNUM
@@ -610,6 +617,13 @@ Syntax: .wavefront_size POWEROFTWO
 
 This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`).
 Set `wavefront_size` field in kernel configuration. Value must be a power of two.
+
+### .work_group_size_hint
+
+Syntax: .work_group_size_hint SIZEHINT[, SIZEHINT[, SIZEHINT]]
+
+This pseudo-operation must be inside any kernel configuration.
+Set work_group_size_hint for this kernel.
 
 ### .workgroup_fbarrier_count
 

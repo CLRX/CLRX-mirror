@@ -2061,6 +2061,7 @@
             <item>.usereg</item>
             <item>.usesetup</item>
             <item>.using</item>
+            <item>.vectypehint</item>
             <item>.version</item>
             <item>.vgprsnum</item>
             <item>.warning</item>
@@ -2069,6 +2070,7 @@
             <item>.weak</item>
             <item>.while</item>
             <item>.word</item>
+            <item>.work_group_size_hint</item>
             <item>.workgroup_fbarrier_count</item>
             <item>.workgroup_group_segment_size</item>
             <item>.workitem_private_segment_size</item>

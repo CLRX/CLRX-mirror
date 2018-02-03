@@ -41,6 +41,11 @@ void AmdCL2Input::addEmptyKernel(const char* kernelName)
     AmdCL2KernelInput kernel{};
     kernel.kernelName = kernelName;
     
+    for (size_t i = 0; i < 3; i++)
+    {
+        kernel.config.workGroupSizeHint[i] = 0;
+        kernel.config.reqdWorkGroupSize[i] = 0;
+    }
     kernel.config.usedSGPRsNum = kernel.config.usedVGPRsNum = BINGEN_DEFAULT;
     kernel.config.floatMode = 0xc0;
     kernel.config.dimMask = BINGEN_DEFAULT;
@@ -601,6 +606,8 @@ static void prepareKernelTempData(const AmdCL2Input* input,
             // fix for new word (GFX?)
             if (input->driverVersion >= 223600U)
                 out += ::strlen(amdcl2GPUArchNameWordTable[cxuint(arch)]) - 7;
+            if (is16_3Ver && !kernel.config.vecTypeHint.empty())
+                out += kernel.config.vecTypeHint.size();
             
             /// if kernels uses locals
             tempData.pipesUsed = 0;
@@ -986,6 +993,7 @@ static const uint32_t ptrSpacesTable[4] = { 0, 3, 5, 4 };
 struct CLRX_INTERNAL AmdCL2Types32
 {
     typedef AmdCL2GPUMetadataHeader32 MetadataHeader;
+    typedef AmdCL2GPUMetadataHeaderEnd32 MetadataHeaderEnd;
     typedef AmdCL2GPUKernelArgEntry32 KernelArgEntry;
     static const size_t headerSize16_3Ver = 0xa4;
     static const size_t headerSizeNewBinaries = 0x90;
@@ -999,6 +1007,7 @@ struct CLRX_INTERNAL AmdCL2Types32
 struct CLRX_INTERNAL AmdCL2Types64
 {
     typedef AmdCL2GPUMetadataHeader64 MetadataHeader;
+    typedef AmdCL2GPUMetadataHeaderEnd64 MetadataHeaderEnd;
     typedef AmdCL2GPUKernelArgEntry64 KernelArgEntry;
     static const size_t headerSize16_3Ver = 0x110;
     static const size_t headerSizeNewBinaries = 0xe0;
@@ -1094,7 +1103,15 @@ public:
                         tempData.pipesUsed==0 && !config.useEnqueue ? 0xffffffffU : 0)));
         }
         if (is16_3Ver)
-            fob.fill(Types::headerEndSize, 0);
+        {
+            fob.fill(Types::headerEndSize - sizeof(typename Types::MetadataHeaderEnd), 0);
+            typename Types::MetadataHeaderEnd mthdrEnd;
+            mthdrEnd.vecTypeHintLength = config.vecTypeHint.size();
+            for (size_t i = 0; i < 3; i++)
+                SLEV(mthdrEnd.workGroupSizeHint[i], config.workGroupSizeHint[i]);
+            mthdrEnd.unused = 0;
+            fob.writeObject(mthdrEnd);
+        }
         // two null terminated strings
         fob.writeArray(22, "__OpenCL_dummy_kernel");
         if (input->driverVersion < 223600U)
@@ -1103,7 +1120,7 @@ public:
             fob.writeArray(::strlen(amdcl2GPUArchNameWordTable[cxuint(arch)])+1,
                            amdcl2GPUArchNameWordTable[cxuint(arch)]);
         if (is16_3Ver)
-            fob.writeObject<cxbyte>(0);
+            fob.writeArray(config.vecTypeHint.size()+1, config.vecTypeHint.c_str());
         
         // put argument entries
         cxuint argOffset = 0;

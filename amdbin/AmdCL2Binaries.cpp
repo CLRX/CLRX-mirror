@@ -350,6 +350,15 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
         throw BinException("Metadata header is too short");
     kernelHeader.data = metadata;
     const uint32_t argsNum = ULEV(hdrStruc->argsNum);
+    size_t vecTypeHintLength = 0;
+    if (kernelHeader.size >= Types::newMetadataHeaderSize)
+    {
+        const typename Types::MetadataHeaderEnd* hdrEnd =
+            reinterpret_cast<const typename Types::MetadataHeaderEnd*>(
+                metadata +  Types::newMetadataHeaderSize -
+                        sizeof(typename Types::MetadataHeaderEnd));
+        vecTypeHintLength = ULEV(hdrEnd->vecTypeHintLength);
+    }
     
     if (usumGt(ULEV(hdrStruc->firstNameLength), ULEV(hdrStruc->secondNameLength),
                 metadataSize-kernelHeader.size-2))
@@ -358,11 +367,11 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     size_t argOffset = kernelHeader.size +
             ULEV(hdrStruc->firstNameLength)+ULEV(hdrStruc->secondNameLength)+2;
     // fix for latest Crimson drivers
-    if (ULEV(*(const uint32_t*)(metadata+argOffset)) ==
+    if (vecTypeHintLength!=0 || ULEV(*(const uint32_t*)(metadata+argOffset)) ==
                 (sizeof(typename Types::KernelArgEntry)<<8))
     {
         crimson16 = true;
-        argOffset++;
+        argOffset += vecTypeHintLength + 1;
     }
     const typename Types::KernelArgEntry* argPtr = reinterpret_cast<
             const typename Types::KernelArgEntry*>(metadata + argOffset);
@@ -508,14 +517,18 @@ struct CLRX_INTERNAL AmdCL2Types32 : Elf32Types
 {
     typedef ElfBinary32 ElfBinary;
     typedef AmdCL2GPUMetadataHeader32 MetadataHeader;
+    typedef AmdCL2GPUMetadataHeaderEnd32 MetadataHeaderEnd;
     typedef AmdCL2GPUKernelArgEntry32 KernelArgEntry;
+    static const size_t newMetadataHeaderSize = 0xa4;
 };
 
 struct CLRX_INTERNAL AmdCL2Types64 : Elf64Types
 {
     typedef ElfBinary64 ElfBinary;
     typedef AmdCL2GPUMetadataHeader64 MetadataHeader;
+    typedef AmdCL2GPUMetadataHeaderEnd64 MetadataHeaderEnd;
     typedef AmdCL2GPUKernelArgEntry64 KernelArgEntry;
+    static const size_t newMetadataHeaderSize = 0x110;
 };
 
 /* AMD CL2 GPU Binary base class */

@@ -220,16 +220,20 @@ struct CLRX_INTERNAL AmdCL2Types32 : Elf32Types
 {
     typedef AmdCL2MainGPUBinary32 MainBinary;
     typedef AmdCL2GPUMetadataHeader32 MetadataHeader;
+    typedef AmdCL2GPUMetadataHeaderEnd32 MetadataHeaderEnd;
     typedef AmdCL2GPUKernelArgEntry32 KernelArgEntry;
     static const KernelArgType wordType = KernelArgType::INT;
+    static const size_t newMetadataHeaderSize = 0xa4;
 };
 
 struct CLRX_INTERNAL AmdCL2Types64 : Elf64Types
 {
     typedef AmdCL2MainGPUBinary64 MainBinary;
     typedef AmdCL2GPUMetadataHeader64 MetadataHeader;
+    typedef AmdCL2GPUMetadataHeaderEnd64 MetadataHeaderEnd;
     typedef AmdCL2GPUKernelArgEntry64 KernelArgEntry;
     static const KernelArgType wordType = KernelArgType::LONG;
+    static const size_t newMetadataHeaderSize = 0x110;
 };
 
 // generate kernel config
@@ -244,6 +248,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     size_t headerSize = ULEV(mdHdr->size);
     for (size_t i = 0; i < 3; i++)
         config.reqdWorkGroupSize[i] = ULEV(mdHdr->reqdWorkGroupSize[i]);
+    for (size_t i = 0; i < 3; i++)
+        config.workGroupSizeHint[i] = 0;
     const IntAmdCL2SetupData* setupData =
             reinterpret_cast<const IntAmdCL2SetupData*>(setup + 48);
     uint32_t pgmRSRC1 = ULEV(setupData->pgmRSRC1);
@@ -285,12 +291,27 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     std::sort(config.samplers.begin(), config.samplers.end());
     config.samplers.resize(std::unique(config.samplers.begin(), config.samplers.end()) -
                 config.samplers.begin());
+    
+    size_t vecTypeHintLength = 0;
+    if (headerSize >= Types::newMetadataHeaderSize)
+    {
+        const typename Types::MetadataHeaderEnd* hdrEnd =
+            reinterpret_cast<const typename Types::MetadataHeaderEnd*>(
+                metadata +  Types::newMetadataHeaderSize -
+                        sizeof(typename Types::MetadataHeaderEnd));
+        for (cxuint k = 0; k < 3; k++)
+            config.workGroupSizeHint[k] = ULEV(hdrEnd->workGroupSizeHint[k]);
+        vecTypeHintLength = ULEV(hdrEnd->vecTypeHintLength);
+    }
     // get kernel args
     size_t argOffset = headerSize + ULEV(mdHdr->firstNameLength) + 
             ULEV(mdHdr->secondNameLength)+2;
-    if (ULEV(*((const uint32_t*)(metadata+argOffset))) ==
+    if (vecTypeHintLength!=0 || ULEV(*((const uint32_t*)(metadata+argOffset))) ==
             (sizeof(typename Types::KernelArgEntry)<<8))
-        argOffset++;
+    {
+        config.vecTypeHint.assign((const char*)metadata + argOffset, vecTypeHintLength);
+        argOffset += vecTypeHintLength+1;
+    }
     const typename Types::KernelArgEntry* argPtr = reinterpret_cast<
             const typename Types::KernelArgEntry*>(metadata + argOffset);
     const uint32_t argsNum = ULEV(mdHdr->argsNum);

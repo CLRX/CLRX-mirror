@@ -64,8 +64,9 @@ static const char* amdCL2PseudoOpNamesTbl[] =
     "use_private_segment_buffer", "use_private_segment_size",
     "use_ptr64", "use_queue_ptr", "use_xnack_enabled",
     "useargs", "useenqueue", "usegeneric",
-    "userdatanum", "usesetup", "vgprsnum",
-    "wavefront_sgpr_count", "wavefront_size",  "workgroup_fbarrier_count",
+    "userdatanum", "usesetup", "vectypehint", "vgprsnum",
+    "wavefront_sgpr_count", "wavefront_size",
+    "work_group_size_hint", "workgroup_fbarrier_count",
     "workgroup_group_segment_size", "workitem_private_segment_size",
     "workitem_vgpr_count"
 };
@@ -104,8 +105,9 @@ enum
     AMDCL2OP_USE_PRIVATE_SEGMENT_BUFFER, AMDCL2OP_USE_PRIVATE_SEGMENT_SIZE,
     AMDCL2OP_USE_PTR64, AMDCL2OP_USE_QUEUE_PTR, AMDCL2OP_USE_XNACK_ENABLED,
     AMDCL2OP_USEARGS, AMDCL2OP_USEENQUEUE, AMDCL2OP_USEGENERIC,
-    AMDCL2OP_USERDATANUM, AMDCL2OP_USESETUP, AMDCL2OP_VGPRSNUM,
+    AMDCL2OP_USERDATANUM, AMDCL2OP_USESETUP, AMDCL2OP_VECTYPEHINT, AMDCL2OP_VGPRSNUM,
     AMDCL2OP_WAVEFRONT_SGPR_COUNT, AMDCL2OP_WAVEFRONT_SIZE,
+    AMDCL2OP_WORK_GROUP_SIZE_HINT,
     AMDCL2OP_WORKGROUP_FBARRIER_COUNT, AMDCL2OP_WORKGROUP_GROUP_SEGMENT_SIZE,
     AMDCL2OP_WORKITEM_PRIVATE_SEGMENT_SIZE, AMDCL2OP_WORKITEM_VGPR_COUNT
 };
@@ -1148,9 +1150,50 @@ void AsmAmdCL2PseudoOps::setCWS(AsmAmdCL2Handler& handler, const char* pseudoOpP
     if (!AsmAmdPseudoOps::parseCWS(asmr, pseudoOpPlace, linePtr, out))
         return;
     AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    // reqd_work_group_size
     config.reqdWorkGroupSize[0] = out[0];
     config.reqdWorkGroupSize[1] = out[1];
     config.reqdWorkGroupSize[2] = out[2];
+}
+
+void AsmAmdCL2PseudoOps::setWorkGroupSizeHint(AsmAmdCL2Handler& handler,
+                    const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
+    
+    skipSpacesToEnd(linePtr, end);
+    uint64_t out[3] = { 0, 0, 0 };
+    // parse CWS (1-3 values)
+    if (!AsmAmdPseudoOps::parseCWS(asmr, pseudoOpPlace, linePtr, out))
+        return;
+    AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    // work group size hint
+    config.workGroupSizeHint[0] = out[0];
+    config.workGroupSizeHint[1] = out[1];
+    config.workGroupSizeHint[2] = out[2];
+}
+
+void AsmAmdCL2PseudoOps::setVecTypeHint(AsmAmdCL2Handler& handler,
+                    const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
+    
+    CString vecTypeHint;
+    skipSpacesToEnd(linePtr, end);
+    bool good = getNameArg(asmr, vecTypeHint, linePtr, "vectypehint", true);
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    config.vecTypeHint = vecTypeHint;
 }
 
 void AsmAmdCL2PseudoOps::doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
@@ -1669,6 +1712,9 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_USERDATANUM);
             break;
+        case AMDCL2OP_VECTYPEHINT:
+            AsmAmdCL2PseudoOps::setVecTypeHint(*this, stmtPlace, linePtr);
+            break;
         case AMDCL2OP_VGPRSNUM:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_VGPRSNUM);
@@ -1680,6 +1726,9 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
         case AMDCL2OP_WAVEFRONT_SIZE:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              AMDCL2CVAL_WAVEFRONT_SIZE);
+            break;
+        case AMDCL2OP_WORK_GROUP_SIZE_HINT:
+            AsmAmdCL2PseudoOps::setWorkGroupSizeHint(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_WORKITEM_VGPR_COUNT:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,

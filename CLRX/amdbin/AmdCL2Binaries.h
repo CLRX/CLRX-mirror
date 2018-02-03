@@ -281,6 +281,13 @@ struct AmdCL2GPUMetadataHeader32
     uint64_t argsNum;       ///< number of arguments
 };
 
+struct AmdCL2GPUMetadataHeaderEnd32
+{
+    uint32_t workGroupSizeHint[3];
+    uint32_t vecTypeHintLength;
+    uint32_t unused;
+};
+
 /// header for metadata
 struct AmdCL2GPUMetadataHeader64
 {
@@ -300,6 +307,13 @@ struct AmdCL2GPUMetadataHeader64
     uint64_t pipesUsage;
     uint64_t unknown5[2];
     uint64_t argsNum;       ///< number of arguments
+};
+
+struct AmdCL2GPUMetadataHeaderEnd64
+{
+    uint64_t workGroupSizeHint[3];
+    uint64_t vecTypeHintLength;
+    uint64_t unused;
 };
 
 /// GPU kernel argument entry

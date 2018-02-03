@@ -353,6 +353,7 @@
             <keyword>usereg</keyword>
             <keyword>usesetup</keyword>
             <keyword>using</keyword>
+            <keyword>vectypehint</keyword>
             <keyword>version</keyword>
             <keyword>vgprsnum</keyword>
             <keyword>warning</keyword>
@@ -361,6 +362,7 @@
             <keyword>weak</keyword>
             <keyword>while</keyword>
             <keyword>word</keyword>
+            <keyword>work_group_size_hint</keyword>
             <keyword>workgroup_fbarrier_count</keyword>
             <keyword>workgroup_group_segment_size</keyword>
             <keyword>workitem_private_segment_size</keyword>
