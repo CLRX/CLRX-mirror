@@ -184,7 +184,10 @@ struct ROCmMetadata
     std::vector<ROCmPrintfInfo> printfInfos;  ///< printf calls infos
     std::vector<ROCmKernelMetadata> kernels;  ///< kernel metadatas
     
+    /// initialize metadata info
     void initialize();
+    /// parse metadata info from metadata string
+    void parse(size_t metadataSize, const char* metadata);
 };
 
 /// ROCm main binary for GPU for 64-bit mode

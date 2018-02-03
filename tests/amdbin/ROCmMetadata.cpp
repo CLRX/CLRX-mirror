@@ -156,11 +156,11 @@ Kernels:
                           false, false, false, false }
                     },
                     "OpenCL C", { 1, 2 },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
+                    { 0, 0, 0 },
                     "", "", 64, 0, 0, 8, 64,
                     14, 11, 256,
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
                     BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
                 }
             }
@@ -742,11 +742,11 @@ Kernels:
                           false, false, false, false }
                     },
                     "OpenCL C", { 1, 2 },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
+                    { 0, 0, 0 },
                     "", "", 64, 0, 0, 8, 64,
                     14, 11, 256,
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
                     BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
                 }
             }
@@ -855,55 +855,55 @@ Kernels:
                     "vectorAdd", "aaa bbb xxxxx",
                     { },
                     "OpenCL C", { 1, 2 },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
+                    { 0, 0, 0 },
                     "", "", 64, 0, 0, 8, 64,
                     14, 11, 256,
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
                     BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
                 },
                 {   // kernel 1
                     "vectorAdd1", "ala ma kota\n\t\a",
                     { },
                     "OpenCL C", { 1, 2 },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
+                    { 0, 0, 0 },
                     "", "", 64, 0, 0, 8, 64,
                     14, 11, 256,
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
                     BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
                 },
                 {   // kernel 2
                     "vectorAdd2", "somebody\nin the\n\n\nplace\n",
                     { },
                     "OpenCL C", { 1, 2 },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
+                    { 0, 0, 0 },
                     "", "", 64, 0, 0, 8, 64,
                     14, 11, 256,
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
                     BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
                 },
                 {   // kernel 3
                     "vectorAdd3", "somebody in the\n\nplace\n",
                     { },
                     "OpenCL C", { 1, 2 },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
+                    { 0, 0, 0 },
                     "", "", 64, 0, 0, 8, 64,
                     14, 11, 256,
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
                     BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
                 },
                 {   // kernel 4
                     "vectorAdd4", "somebody\nin the\n  #ala\n#ma kota\n\n\nplace\n",
                     { },
                     "OpenCL C", { 1, 2 },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
+                    { 0, 0, 0 },
                     "", "", 64, 0, 0, 8, 64,
                     14, 11, 256,
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
                     BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
                 }
             }
@@ -1067,11 +1067,11 @@ Kernels:         # kernels
                           false, false, false, false }
                     },
                     "OpenCL C", { 1, 2 },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
+                    { 0, 0, 0 },
                     "", "", 64, 0, 0, 8, 64,
                     14, 11, 256,
-                    { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED },
+                    { 0, 0, 0 },
                     BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
                 }
             }

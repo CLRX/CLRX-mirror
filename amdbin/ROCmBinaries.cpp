@@ -42,10 +42,8 @@ using namespace CLRX;
 void ROCmKernelMetadata::initialize()
 {
     langVersion[0] = langVersion[1] = BINGEN_NOTSUPPLIED;
-    reqdWorkGroupSize[0] = reqdWorkGroupSize[1] =
-            reqdWorkGroupSize[2] = BINGEN_NOTSUPPLIED;
-    workGroupSizeHint[0] = workGroupSizeHint[1] =
-            workGroupSizeHint[2] = BINGEN_NOTSUPPLIED;
+    reqdWorkGroupSize[0] = reqdWorkGroupSize[1] = reqdWorkGroupSize[2] = 0;
+    workGroupSizeHint[0] = workGroupSizeHint[1] = workGroupSizeHint[2] = 0;
     kernargSegmentSize = BINGEN64_NOTSUPPLIED;
     groupSegmentFixedSize = BINGEN64_NOTSUPPLIED;
     privateSegmentFixedSize = BINGEN64_NOTSUPPLIED;
@@ -54,8 +52,7 @@ void ROCmKernelMetadata::initialize()
     sgprsNum = BINGEN_NOTSUPPLIED;
     vgprsNum = BINGEN_NOTSUPPLIED;
     maxFlatWorkGroupSize = BINGEN64_NOTSUPPLIED;
-    fixedWorkGroupSize[0] = fixedWorkGroupSize[1] =
-            fixedWorkGroupSize[2] = BINGEN_NOTSUPPLIED;
+    fixedWorkGroupSize[0] = fixedWorkGroupSize[1] = fixedWorkGroupSize[2] = 0;
     spilledSgprs = BINGEN_NOTSUPPLIED;
     spilledVgprs = BINGEN_NOTSUPPLIED;
 }
@@ -966,12 +963,12 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                     inKernelAttrs = true;
                     canToNextLevel = true;
                     // initialize kernel attributes values
-                    kernel.reqdWorkGroupSize[0] = BINGEN_NOTSUPPLIED;
-                    kernel.reqdWorkGroupSize[1] = BINGEN_NOTSUPPLIED;
-                    kernel.reqdWorkGroupSize[2] = BINGEN_NOTSUPPLIED;
-                    kernel.workGroupSizeHint[0] = BINGEN_NOTSUPPLIED;
-                    kernel.workGroupSizeHint[1] = BINGEN_NOTSUPPLIED;
-                    kernel.workGroupSizeHint[2] = BINGEN_NOTSUPPLIED;
+                    kernel.reqdWorkGroupSize[0] = 0;
+                    kernel.reqdWorkGroupSize[1] = 0;
+                    kernel.reqdWorkGroupSize[2] = 0;
+                    kernel.workGroupSizeHint[0] = 0;
+                    kernel.workGroupSizeHint[1] = 0;
+                    kernel.workGroupSizeHint[2] = 0;
                     kernel.runtimeHandle.clear();
                     kernel.vecTypeHint.clear();
                     break;
@@ -987,9 +984,9 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                     kernel.spilledSgprs = BINGEN_NOTSUPPLIED;
                     kernel.spilledVgprs = BINGEN_NOTSUPPLIED;
                     kernel.maxFlatWorkGroupSize = BINGEN64_DEFAULT;
-                    kernel.fixedWorkGroupSize[0] = BINGEN_NOTSUPPLIED;
-                    kernel.fixedWorkGroupSize[1] = BINGEN_NOTSUPPLIED;
-                    kernel.fixedWorkGroupSize[2] = BINGEN_NOTSUPPLIED;
+                    kernel.fixedWorkGroupSize[0] = 0;
+                    kernel.fixedWorkGroupSize[1] = 0;
+                    kernel.fixedWorkGroupSize[2] = 0;
                     inKernelCodeProps = true;
                     canToNextLevel = true;
                     break;
@@ -1226,6 +1223,11 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
             }
         }
     }
+}
+
+void ROCmMetadata::parse(size_t metadataSize, const char* metadata)
+{
+    parseROCmMetadata(metadataSize, metadata, *this);
 }
 
 /*

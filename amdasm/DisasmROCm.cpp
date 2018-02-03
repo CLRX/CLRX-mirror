@@ -513,6 +513,36 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
     }
 }
 
+static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadata& kernel)
+{
+    output.write("        .md_symname ", 20);
+    output.write(kernel.symbolName.c_str(), kernel.symbolName.size());
+    output.write("\n", 1);
+    output.write("        .md_language \"", 22);
+    {
+        std::string langName = escapeStringCStyle(kernel.language);
+        output.write(langName.c_str(), langName.size());
+    }
+    size_t bufSize = 0;
+    char buf[100];
+    if (kernel.langVersion[0] != BINGEN_NOTSUPPLIED)
+    {
+        output.write("\", ", 3);
+        bufSize = snprintf(buf, 100, "%u, %u\n",
+                           kernel.langVersion[0], kernel.langVersion[1]);
+        output.write(buf, bufSize);
+    }
+    else // version not supplied
+        output.write("\"\n", 2);
+    
+    if (!kernel.vecTypeHint.empty())
+    {
+        output.write("        .vectypehint ", 21);
+        output.write(kernel.vecTypeHint.c_str(), kernel.vecTypeHint.size());
+        output.write("\n", 1);
+    }
+}
+
 void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInput,
            ISADisassembler* isaDisassembler, Flags flags)
 {
@@ -522,6 +552,14 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(rocmInput->deviceType);
     const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    
+    ROCmMetadata metadataInfo;
+    bool haveMetadataInfo = false;
+    if (doDumpConfig && rocmInput->metadata!=nullptr)
+    {
+        metadataInfo.parse(rocmInput->metadataSize, rocmInput->metadata);
+        haveMetadataInfo = true;
+    }
     
     {
         // print AMD architecture version
@@ -566,6 +604,40 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
         printDisasmLongString(rocmInput->metadataSize, rocmInput->metadata, output);
     }
     
+    Array<std::pair<CString, size_t> > sortedMdKernelIndices;
+    
+    if (doDumpConfig && haveMetadataInfo)
+    {
+        // main metadata info dump
+        char buf[100];
+        size_t bufSize;
+        if (metadataInfo.version[0] != BINGEN_NOTSUPPLIED)
+        {
+            bufSize = snprintf(buf, 100, ".md_version %u, %u\n", metadataInfo.version[0],
+                    metadataInfo.version[1]);
+            output.write(buf, bufSize);
+        }
+        for (const ROCmPrintfInfo& printfInfo: metadataInfo.printfInfos)
+        {
+            bufSize = snprintf(buf, 100, ".printf %u", printfInfo.id);
+            output.write(buf, bufSize);
+            for (uint32_t argSize: printfInfo.argSizes)
+            {
+                bufSize = snprintf(buf, 100, ", %u", argSize);
+                output.write(buf, bufSize);
+            }
+            output.write(", \"", 3);
+            std::string format = escapeStringCStyle(printfInfo.format);
+            output.write(format.c_str(), format.size());
+            output.write("\"\n", 2);
+        }
+        // prepare order of rocm metadata kernels
+        sortedMdKernelIndices.resize(metadataInfo.kernels.size());
+        for (size_t i = 0; i < sortedMdKernelIndices.size(); i++)
+            sortedMdKernelIndices[i] = std::make_pair(metadataInfo.kernels[i].name, i);
+        mapSort(sortedMdKernelIndices.begin(), sortedMdKernelIndices.end());
+    }
+    
     // dump kernel config
     for (const ROCmDisasmRegionInput& rinput: rocmInput->regions)
         if (rinput.type != ROCmRegionType::DATA)
@@ -575,10 +647,21 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
             output.put('\n');
             if (rinput.type == ROCmRegionType::FKERNEL)
                 output.write("    .fkernel\n", 13);
-            if (doMetadata && doDumpConfig)
+            if (doDumpConfig)
+            {
                 dumpKernelConfig(output, maxSgprsNum, arch,
                      *reinterpret_cast<const ROCmKernelConfig*>(
                              rocmInput->code + rinput.offset));
+                
+                if (!haveMetadataInfo)
+                    continue; // no metatadata info
+                auto it = binaryMapFind(sortedMdKernelIndices.begin(),
+                        sortedMdKernelIndices.end(), rinput.regionName);
+                if (it == sortedMdKernelIndices.end())
+                    continue; // not found
+                // dump kernel metadata config
+                dumpKernelMetadataInfo(output, metadataInfo.kernels[it->second]);
+            }
         }
     
     // disassembly code in HSA form
