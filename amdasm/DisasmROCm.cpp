@@ -680,7 +680,7 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
         
         if (argInfo.valueKind == ROCmValueKind::DYN_SHARED_PTR)
         {
-            bufSize = snprintf(buf, 100, "%" PRIu64 ",", argInfo.pointeeAlign);
+            bufSize = snprintf(buf, 100, ", %" PRIu64, argInfo.pointeeAlign);
             output.write(buf, bufSize);
         }
         
