@@ -513,6 +513,27 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
     }
 }
 
+static inline bool hasValue(cxuint value)
+{ return value!=BINGEN_NOTSUPPLIED && value!=BINGEN_DEFAULT; }
+
+static inline bool hasValue(uint64_t value)
+{ return value!=BINGEN64_NOTSUPPLIED && value!=BINGEN64_DEFAULT; }
+
+static const char* disasmROCmValueKindNames[] =
+{
+    "value", "globalbuf", "dynshptr", "sampler", "image", "pipe", "queue",
+    "gox", "goy", "goz", "none", "printfbuf", "defqueue", "complact"
+};
+
+static const char* disasmROCmValueTypeNames[] =
+{ "struct", "i8", "u8", "i16", "u16", "f16", "i32", "u32", "f32", "i64", "u64", "f64" };
+
+static const char* disasmROCmAddressSpaces[] =
+{ "none", "private", "global", "constant", "local", "generic", "region" };
+
+static const char* disasmROCmAccessQuals[] =
+{ "default", "read_only", "write_only", "read_write" };
+
 static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadata& kernel)
 {
     output.write("        .md_symname ", 20);
@@ -535,10 +556,167 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
     else // version not supplied
         output.write("\"\n", 2);
     
+    // print reqd_work_group_size: .cws XSIZE[,YSIZE[,ZSIZE]]
+    if (kernel.reqdWorkGroupSize[0] != 0 || kernel.reqdWorkGroupSize[1] != 0 ||
+        kernel.reqdWorkGroupSize[2] != 0)
+    {
+        bufSize = snprintf(buf, 100, "        .cws %u, %u, %u\n",
+               kernel.reqdWorkGroupSize[0], kernel.reqdWorkGroupSize[1],
+               kernel.reqdWorkGroupSize[2]);
+        output.write(buf, bufSize);
+    }
+    
+    // work group size hint
+    if (kernel.workGroupSizeHint[0] != 0 || kernel.workGroupSizeHint[1] != 0 ||
+        kernel.workGroupSizeHint[2] != 0)
+    {
+        bufSize = snprintf(buf, 100, "        .work_group_size_hint %u, %u, %u\n",
+               kernel.workGroupSizeHint[0], kernel.workGroupSizeHint[1],
+               kernel.workGroupSizeHint[2]);
+        output.write(buf, bufSize);
+    }
     if (!kernel.vecTypeHint.empty())
     {
         output.write("        .vectypehint ", 21);
         output.write(kernel.vecTypeHint.c_str(), kernel.vecTypeHint.size());
+        output.write("\n", 1);
+    }
+    if (!kernel.runtimeHandle.empty())
+    {
+        output.write("        .runtime_handle ", 24);
+        output.write(kernel.runtimeHandle.c_str(), kernel.runtimeHandle.size());
+        output.write("\n", 1);
+    }
+    if (hasValue(kernel.kernargSegmentSize))
+    {
+        bufSize = snprintf(buf, 100, "        .md_kernarg_segment_size %" PRIu64 "\n",
+                    kernel.kernargSegmentSize);
+        output.write(buf, bufSize);
+    }
+    if (hasValue(kernel.kernargSegmentAlign))
+    {
+        bufSize = snprintf(buf, 100, "        .md_kernarg_segment_align %" PRIu64 "\n",
+                    kernel.kernargSegmentAlign);
+        output.write(buf, bufSize);
+    }
+    if (hasValue(kernel.groupSegmentFixedSize))
+    {
+        bufSize = snprintf(buf, 100, "        .md_group_segment_fixed_size %" PRIu64 "\n",
+                    kernel.groupSegmentFixedSize);
+        output.write(buf, bufSize);
+    }
+    if (hasValue(kernel.privateSegmentFixedSize))
+    {
+        bufSize = snprintf(buf, 100, "        .md_private_segment_fixed_size %" PRIu64 "\n",
+                    kernel.privateSegmentFixedSize);
+        output.write(buf, bufSize);
+    }
+    if (hasValue(kernel.wavefrontSize))
+    {
+        bufSize = snprintf(buf, 100, "        .md_wavefront_size %u\n",
+                    kernel.wavefrontSize);
+        output.write(buf, bufSize);
+    }
+    if (hasValue(kernel.sgprsNum))
+    {
+        bufSize = snprintf(buf, 100, "        .md_sgprsnum %u\n", kernel.sgprsNum);
+        output.write(buf, bufSize);
+    }
+    if (hasValue(kernel.vgprsNum))
+    {
+        bufSize = snprintf(buf, 100, "        .md_vgprsnum %u\n", kernel.vgprsNum);
+        output.write(buf, bufSize);
+    }
+    if (hasValue(kernel.spilledSgprs))
+    {
+        bufSize = snprintf(buf, 100, "        .md_spilledsgprsnum %u\n",
+                           kernel.spilledSgprs);
+        output.write(buf, bufSize);
+    }
+    if (hasValue(kernel.spilledVgprs))
+    {
+        bufSize = snprintf(buf, 100, "        .md_spilledvgprsnum %u\n",
+                           kernel.spilledVgprs);
+        output.write(buf, bufSize);
+    }
+    if (hasValue(kernel.maxFlatWorkGroupSize))
+    {
+        bufSize = snprintf(buf, 100, "        .max_flat_work_group_size %" PRIu64 "\n",
+                    kernel.maxFlatWorkGroupSize);
+        output.write(buf, bufSize);
+    }
+    // fixed work group size
+    if (kernel.fixedWorkGroupSize[0] != 0 || kernel.fixedWorkGroupSize[1] != 0 ||
+        kernel.fixedWorkGroupSize[2] != 0)
+    {
+        bufSize = snprintf(buf, 100, "        .fixed_work_group_size %u, %u, %u\n",
+               kernel.fixedWorkGroupSize[0], kernel.fixedWorkGroupSize[1],
+               kernel.fixedWorkGroupSize[2]);
+        output.write(buf, bufSize);
+    }
+    
+    // dump kernel arguments
+    for (const ROCmKernelArgInfo& argInfo: kernel.argInfos)
+    {
+        output.write("        .arg ", 13);
+        if (!argInfo.name.empty())
+        {
+            output.write(argInfo.name.c_str(), argInfo.name.size());
+            output.write(", ", 2);
+        }
+        output.write("\"", 1);
+        std::string typeName = escapeStringCStyle(argInfo.typeName);
+        output.write(typeName.c_str(), typeName.size());
+        output.write("\", ", 3);
+        size_t bufSize = 0;
+        char buf[100];
+        bufSize = snprintf(buf, 100, "%" PRIu64 ", %" PRIu64,
+                           argInfo.size, argInfo.align);
+        output.write(buf, bufSize);
+        bufSize = snprintf(buf, 100, ", %s, %s", 
+                    disasmROCmValueKindNames[cxuint(argInfo.valueKind)],
+                    disasmROCmValueTypeNames[cxuint(argInfo.valueType)]);
+        output.write(buf, bufSize);
+        
+        if (argInfo.valueKind == ROCmValueKind::DYN_SHARED_PTR)
+        {
+            bufSize = snprintf(buf, 100, "%" PRIu64 ",", argInfo.pointeeAlign);
+            output.write(buf, bufSize);
+        }
+        
+        if (argInfo.valueKind == ROCmValueKind::DYN_SHARED_PTR ||
+            argInfo.valueKind == ROCmValueKind::GLOBAL_BUFFER)
+        {
+            bufSize = snprintf(buf, 100, ", %s",
+                    disasmROCmAddressSpaces[cxuint(argInfo.addressSpace)]);
+            output.write(buf, bufSize);
+        }
+        
+        if (argInfo.valueKind == ROCmValueKind::IMAGE ||
+            argInfo.valueKind == ROCmValueKind::PIPE)
+        {
+            bufSize = snprintf(buf, 100, ", %s",
+                    disasmROCmAccessQuals[cxuint(argInfo.accessQual)]);
+            output.write(buf, bufSize);
+        }
+        if (argInfo.valueKind == ROCmValueKind::GLOBAL_BUFFER ||
+            argInfo.valueKind == ROCmValueKind::IMAGE ||
+            argInfo.valueKind == ROCmValueKind::PIPE)
+        {
+            bufSize = snprintf(buf, 100, ", %s",
+                    disasmROCmAccessQuals[cxuint(argInfo.actualAccessQual)]);
+            output.write(buf, bufSize);
+        }
+        
+        if (argInfo.isConst)
+            output.write(" const", 6);
+        if (argInfo.isRestrict)
+            output.write(" restrict", 9);
+        if (argInfo.isVolatile)
+            output.write(" volatile", 9);
+        if (argInfo.isPipe)
+            output.write(" pipe", 5);
+        
         output.write("\n", 1);
     }
 }

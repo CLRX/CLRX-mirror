@@ -669,7 +669,7 @@ static void skipYAMLValue(const char*& ptr, const char* end, size_t& lineNo,
                 lineNo++;
                 continue;
             }
-            if (ptr-lineStart <= prevIndent && *ptr!='\n' &&
+            if (size_t(ptr-lineStart) <= prevIndent && *ptr!='\n' &&
                 (blockValue || *ptr!='#'))
                 // if indent is short and not empty line (same spaces) or
                 // or with only comment and not blockValue

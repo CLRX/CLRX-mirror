@@ -1393,19 +1393,15 @@ static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& con
         buf[bufSize++] = '\n';
         output.write(buf, bufSize);
     }
-    bufSize = 0;
     // print reqd_work_group_size: .cws XSIZE[,YSIZE[,ZSIZE]]
-    if (config.reqdWorkGroupSize[2] != 0)
+    if (config.reqdWorkGroupSize[0] != 0 || config.reqdWorkGroupSize[1] != 0 ||
+        config.reqdWorkGroupSize[2] != 0)
+    {
         bufSize = snprintf(buf, 100, "        .cws %u, %u, %u\n",
                config.reqdWorkGroupSize[0], config.reqdWorkGroupSize[1],
                config.reqdWorkGroupSize[2]);
-    else if (config.reqdWorkGroupSize[1] != 0)
-        bufSize = snprintf(buf, 100, "        .cws %u, %u\n", config.reqdWorkGroupSize[0],
-                   config.reqdWorkGroupSize[1]);
-    else if (config.reqdWorkGroupSize[0] != 0)
-        bufSize = snprintf(buf, 100, "        .cws %u\n", config.reqdWorkGroupSize[0]);
-    if (bufSize != 0) // if we have cws
         output.write(buf, bufSize);
+    }
     
     bufSize = snprintf(buf, 100, "        .sgprsnum %u\n", config.usedSGPRsNum);
     output.write(buf, bufSize);
