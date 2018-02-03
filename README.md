@@ -29,7 +29,7 @@ with specified option `-xasm`. Refer to README and INSTALL to learn about CLRXWr
 CLRadeonExtender requires:
 
 * C++11 compliant compiler (Clang++ or GCC 4.7 or later, MSVC 2015 or later)
-* GNU make tool or nmake or any build system supported by CMake
+* any build system supported by CMake (GNU make, NMake, Visual Studio, ...)
 * CMake system (2.8 or later)
 * Threads support (for Linux, recommended NPTL)
 * Unix-like (Linux or BSD) system or Windows system

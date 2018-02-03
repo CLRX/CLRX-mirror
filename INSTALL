@@ -13,7 +13,7 @@ stage).
 This package provides source code and requires:
 
 * C++11 compliant compiler (Clang++ or GCC 4.7 or later, MSVC 2015 or later)
-* GNU make tool or nmake or any build system supported by CMake
+* any build system supported by CMake (GNU make, NMake, Visual Studio, ...)
 * CMake system (2.8 or later)
 * Threads support (for Linux, recommended NPTL)
 * Unix-like (Linux or BSD) system or Windows system
@@ -23,7 +23,7 @@ behaviour) requires:
 
 * libOpenCL.so or OpenCL.dll
 * OpenCL ICD (for example from AMD Catalyst driver)
-* AMD Catalyst driver.
+* AMD Catalyst driver or AMDGPU-PRO driver.
 
 These utilities is working with the OpenCL kernel binaries compiled for the
 Radeon GPU's based on GCN 1.0/1.1/1.2 architecture. Any binaries compiled
