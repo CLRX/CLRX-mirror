@@ -24,6 +24,26 @@ Order of these parts doesn't matter.
 
 Kernel function should to be aligned to 256 byte boundary.
 
+## Relocations
+
+A CLRX assembler handles relocations to scratch symbol (`.scratchsym` pseudo-op).
+These relocations can be applied to places that accepts
+32-bit literal immediates. Only two types of relocations is allowed:
+
+* `place`, `place&0xffffffff`, `place%0x10000000`, `place%%0x10000000` -
+low 32 bits of value
+* `place>>32`, `place/0x100000000`, `place//0x100000000` - high 32 bits of value
+
+The `place` indicates an expression with scratch symbol. Additional offsets
+are not accepted (only same scratch symbol).
+
+Examples:
+
+```
+s_mov_b32       s13, scratchsym>>32
+s_mov_b32       s12, scratchsym&0xffffffff
+```
+
 ## Register usage setup
 
 The CLRX assembler automatically sets number of used VGPRs and number of used SGPRs.

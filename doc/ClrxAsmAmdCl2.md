@@ -25,7 +25,7 @@ Special section to define global data for all kernels:
 
 ## Relocations
 
-An CLRX assembler handles relocations to symbol at global data, global rwdata and
+A CLRX assembler handles relocations to symbol at global data, global rwdata and
 global bss data in kernel code. These relocations can be applied to places that accepts
 32-bit literal immediates. Only two types of relocations is allowed:
 
