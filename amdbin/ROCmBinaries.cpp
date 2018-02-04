@@ -1688,41 +1688,39 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig& kc
         {
             output += "    CodeProps:       \n";
             output += "      KernargSegmentSize: ";
-            itocstrCStyle(kernel.kernargSegmentSize != BINGEN64_DEFAULT ?
+            itocstrCStyle(hasValue(kernel.kernargSegmentSize) ?
                     kernel.kernargSegmentSize : ULEV(kconfig.kernargSegmentSize),
                     numBuf, 24);
             output += numBuf;
             output += "\n      GroupSegmentFixedSize: ";
-            itocstrCStyle(kernel.groupSegmentFixedSize  != BINGEN64_DEFAULT ?
+            itocstrCStyle(hasValue(kernel.groupSegmentFixedSize) ?
                     kernel.groupSegmentFixedSize :
                     uint64_t(ULEV(kconfig.workgroupGroupSegmentSize)),
                     numBuf, 24);
             output += numBuf;
             output += "\n      PrivateSegmentFixedSize: ";
-            itocstrCStyle(kernel.privateSegmentFixedSize  != BINGEN64_DEFAULT ?
+            itocstrCStyle(hasValue(kernel.privateSegmentFixedSize) ?
                     kernel.privateSegmentFixedSize :
                     uint64_t(ULEV(kconfig.workitemPrivateSegmentSize)),
                     numBuf, 24);
             output += numBuf;
             output += "\n      KernargSegmentAlign: ";
-            itocstrCStyle(kernel.kernargSegmentAlign != BINGEN64_DEFAULT ?
+            itocstrCStyle(hasValue(kernel.kernargSegmentAlign) ?
                     kernel.kernargSegmentAlign :
                     uint64_t(1ULL<<kconfig.kernargSegmentAlignment),
                     numBuf, 24);
             output += numBuf;
             output += "\n      WavefrontSize:   ";
-            itocstrCStyle(kernel.wavefrontSize != BINGEN_DEFAULT ?
-                    kernel.wavefrontSize : cxuint(1U<<kconfig.wavefrontSize), numBuf, 24);
+            itocstrCStyle(hasValue(kernel.wavefrontSize) ? kernel.wavefrontSize :
+                    cxuint(1U<<kconfig.wavefrontSize), numBuf, 24);
             output += numBuf;
             output += "\n      NumSGPRs:        ";
-            itocstrCStyle(kernel.sgprsNum != BINGEN_DEFAULT ?
-                    kernel.sgprsNum : cxuint(ULEV(kconfig.wavefrontSgprCount)),
-                    numBuf, 24);
+            itocstrCStyle(hasValue(kernel.sgprsNum) ? kernel.sgprsNum :
+                    cxuint(ULEV(kconfig.wavefrontSgprCount)), numBuf, 24);
             output += numBuf;
             output += "\n      NumVGPRs:        ";
-            itocstrCStyle(kernel.vgprsNum != BINGEN_DEFAULT ?
-                    kernel.vgprsNum : cxuint(ULEV(kconfig.workitemVgprCount)),
-                    numBuf, 24);
+            itocstrCStyle(hasValue(kernel.vgprsNum) ? kernel.vgprsNum :
+                    cxuint(ULEV(kconfig.workitemVgprCount)), numBuf, 24);
             output += numBuf;
             if (hasValue(kernel.spilledSgprs))
             {
@@ -1737,7 +1735,7 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig& kc
                 output += numBuf;
             }
             output += "\n      MaxFlatWorkGroupSize: ";
-            itocstrCStyle(kernel.maxFlatWorkGroupSize != BINGEN_DEFAULT ?
+            itocstrCStyle(hasValue(kernel.maxFlatWorkGroupSize) ?
                         kernel.maxFlatWorkGroupSize : uint64_t(256), numBuf, 24);
             output += numBuf;
             output += "\n";
