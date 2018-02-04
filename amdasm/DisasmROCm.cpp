@@ -20,6 +20,7 @@
 #include <CLRX/Config.h>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <inttypes.h>
 #include <string>
 #include <ostream>
@@ -688,24 +689,30 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
         if (argInfo.valueKind == ROCmValueKind::DYN_SHARED_PTR ||
             argInfo.valueKind == ROCmValueKind::GLOBAL_BUFFER)
         {
-            bufSize = snprintf(buf, 100, ", %s",
-                    disasmROCmAddressSpaces[cxuint(argInfo.addressSpace)]);
+            buf[0] = ','; buf[1] = ' ';
+            const char* name = disasmROCmAddressSpaces[cxuint(argInfo.addressSpace)];
+            bufSize = strlen(name) + 2;
+            ::memcpy(buf+2, name, bufSize-2);
             output.write(buf, bufSize);
         }
         
         if (argInfo.valueKind == ROCmValueKind::IMAGE ||
             argInfo.valueKind == ROCmValueKind::PIPE)
         {
-            bufSize = snprintf(buf, 100, ", %s",
-                    disasmROCmAccessQuals[cxuint(argInfo.accessQual)]);
+            buf[0] = ','; buf[1] = ' ';
+            const char* name = disasmROCmAccessQuals[cxuint(argInfo.accessQual)];
+            bufSize = strlen(name) + 2;
+            ::memcpy(buf+2, name, bufSize-2);
             output.write(buf, bufSize);
         }
         if (argInfo.valueKind == ROCmValueKind::GLOBAL_BUFFER ||
             argInfo.valueKind == ROCmValueKind::IMAGE ||
             argInfo.valueKind == ROCmValueKind::PIPE)
         {
-            bufSize = snprintf(buf, 100, ", %s",
-                    disasmROCmAccessQuals[cxuint(argInfo.actualAccessQual)]);
+            buf[0] = ','; buf[1] = ' ';
+            const char* name = disasmROCmAccessQuals[cxuint(argInfo.actualAccessQual)];
+            bufSize = strlen(name) + 2;
+            ::memcpy(buf+2, name, bufSize-2);
             output.write(buf, bufSize);
         }
         
