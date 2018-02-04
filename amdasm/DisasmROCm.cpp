@@ -514,6 +514,7 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
     }
 }
 
+// helper for checking wether value is supplied
 static inline bool hasValue(cxuint value)
 { return value!=BINGEN_NOTSUPPLIED && value!=BINGEN_DEFAULT; }
 
@@ -619,6 +620,7 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
                     kernel.wavefrontSize);
         output.write(buf, bufSize);
     }
+    // SGPRs and VGPRs
     if (hasValue(kernel.sgprsNum))
     {
         bufSize = snprintf(buf, 100, "        .md_sgprsnum %u\n", kernel.sgprsNum);
@@ -629,6 +631,7 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
         bufSize = snprintf(buf, 100, "        .md_vgprsnum %u\n", kernel.vgprsNum);
         output.write(buf, bufSize);
     }
+    // spilled SGPRs and VGPRs
     if (hasValue(kernel.spilledSgprs))
     {
         bufSize = snprintf(buf, 100, "        .md_spilledsgprs %u\n",

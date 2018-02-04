@@ -765,7 +765,7 @@ static const char* kernelArgInfosKeywords[] =
 static const size_t kernelArgInfosKeywordsNum =
         sizeof(kernelArgInfosKeywords) / sizeof(const char*);
 
-static const std::pair<const char*, ROCmValueKind> rocmValueKindNames[] =
+static const std::pair<const char*, ROCmValueKind> rocmValueKindNamesMap[] =
 {
     { "ByValue", ROCmValueKind::BY_VALUE },
     { "DynamicSharedPointer", ROCmValueKind::DYN_SHARED_PTR },
@@ -784,9 +784,9 @@ static const std::pair<const char*, ROCmValueKind> rocmValueKindNames[] =
 };
 
 static const size_t rocmValueKindNamesNum =
-        sizeof(rocmValueKindNames) / sizeof(std::pair<const char*, ROCmValueKind>);
+        sizeof(rocmValueKindNamesMap) / sizeof(std::pair<const char*, ROCmValueKind>);
 
-static const std::pair<const char*, ROCmValueType> rocmValueTypeNames[] =
+static const std::pair<const char*, ROCmValueType> rocmValueTypeNamesMap[] =
 {
     { "F16", ROCmValueType::FLOAT16 },
     { "F32", ROCmValueType::FLOAT32 },
@@ -803,7 +803,7 @@ static const std::pair<const char*, ROCmValueType> rocmValueTypeNames[] =
 };
 
 static const size_t rocmValueTypeNamesNum =
-        sizeof(rocmValueTypeNames) / sizeof(std::pair<const char*, ROCmValueType>);
+        sizeof(rocmValueTypeNamesMap) / sizeof(std::pair<const char*, ROCmValueType>);
 
 static const char* rocmAddrSpaceTypesTbl[] =
 { "Private", "Global", "Constant", "Local", "Generic", "Region" };
@@ -1195,26 +1195,26 @@ static void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 {
                     const std::string vkind = trimStrSpaces(parseYAMLStringValue(
                                 ptr, end, lineNo, level, true));
-                    const size_t vkindIndex = binaryMapFind(rocmValueKindNames,
-                            rocmValueKindNames + rocmValueKindNamesNum, vkind.c_str(),
-                            CStringLess()) - rocmValueKindNames;
+                    const size_t vkindIndex = binaryMapFind(rocmValueKindNamesMap,
+                            rocmValueKindNamesMap + rocmValueKindNamesNum, vkind.c_str(),
+                            CStringLess()) - rocmValueKindNamesMap;
                     // if unknown kind
                     if (vkindIndex == rocmValueKindNamesNum)
                         throw ParseException(valLineNo, "Wrong argument value kind");
-                    kernelArg.valueKind = rocmValueKindNames[vkindIndex].second;
+                    kernelArg.valueKind = rocmValueKindNamesMap[vkindIndex].second;
                     break;
                 }
                 case ROCMMT_ARGS_VALUETYPE:
                 {
                     const std::string vtype = trimStrSpaces(parseYAMLStringValue(
                                     ptr, end, lineNo, level, true));
-                    const size_t vtypeIndex = binaryMapFind(rocmValueTypeNames,
-                            rocmValueTypeNames + rocmValueTypeNamesNum, vtype.c_str(),
-                            CStringLess()) - rocmValueTypeNames;
+                    const size_t vtypeIndex = binaryMapFind(rocmValueTypeNamesMap,
+                            rocmValueTypeNamesMap + rocmValueTypeNamesNum, vtype.c_str(),
+                            CStringLess()) - rocmValueTypeNamesMap;
                     // if unknown type
                     if (vtypeIndex == rocmValueTypeNamesNum)
                         throw ParseException(valLineNo, "Wrong argument value type");
-                    kernelArg.valueType = rocmValueTypeNames[vtypeIndex].second;
+                    kernelArg.valueType = rocmValueTypeNamesMap[vtypeIndex].second;
                     break;
                 }
                 default:
@@ -1481,6 +1481,275 @@ bool CLRX::isROCmBinary(size_t binarySize, const cxbyte* binary)
 void ROCmInput::addEmptyKernel(const char* kernelName)
 {
     symbols.push_back({ kernelName, 0, 0, ROCmRegionType::KERNEL });
+}
+
+/*
+ * ROCm YAML metadata generator
+ */
+
+static const char* rocmValueKindNames[] =
+{
+    "ByValue", "GlobalBuffer", "DynamicSharedPointer", "Sampler", "Image", "Pipe", "Queue",
+    "HiddenGlobalOffsetX", "HiddenGlobalOffsetY", "HiddenGlobalOffsetZ", "HiddenNone",
+    "HiddenPrintfBuffer", "HiddenDefaultQueue", "HiddenCompletionAction"
+};
+
+static const char* rocmValueTypeNames[] =
+{
+    "Struct", "I8", "U8", "I16", "U16", "F16", "I32", "U32", "F32", "I64", "U64", "F64"
+};
+
+static void genArrayValue(cxuint n, const cxuint* values, std::string& output)
+{
+    char numBuf[24];
+    output += "[ ";
+    for (cxuint i = 0; i < n; i++)
+    {
+        itocstrCStyle(values[i], numBuf, 24);
+        output += numBuf;
+        output += (i+1<n) ? ", " : "]\n";
+    }
+}
+
+// helper for checking wether value is supplied
+static inline bool hasValue(cxuint value)
+{ return value!=BINGEN_NOTSUPPLIED && value!=BINGEN_DEFAULT; }
+
+static inline bool hasValue(uint64_t value)
+{ return value!=BINGEN64_NOTSUPPLIED && value!=BINGEN64_DEFAULT; }
+
+void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig& kconfig,
+                    std::string& output)
+{
+    output.clear();
+    char numBuf[24];
+    output += "---\n";
+    // version
+    output += "Version:         ";
+    genArrayValue(2, mdInfo.version, output);
+    if (!mdInfo.printfInfos.empty())
+        output += "Printf:          \n";
+    // printfs
+    for (const ROCmPrintfInfo& printfInfo: mdInfo.printfInfos)
+    {
+        output += "  - '";
+        itocstrCStyle(printfInfo.id, numBuf, 24);
+        output += numBuf;
+        output += ':';
+        itocstrCStyle(printfInfo.argSizes.size(), numBuf, 24);
+        output += numBuf;
+        output += ':';
+        for (size_t argSize: printfInfo.argSizes)
+        {
+            itocstrCStyle(argSize, numBuf, 24);
+            output += numBuf;
+            output += ':';
+        }
+        // printf format
+        output += escapeStringCStyle(printfInfo.format);
+        output += "'\n";
+    }
+    
+    if (!mdInfo.printfInfos.empty())
+        output += "Kernels:         \n";
+    // kernels
+    for (const ROCmKernelMetadata& kernel: mdInfo.kernels)
+    {
+        output += "  - Name:            ";
+        output.append(kernel.name.c_str(), kernel.name.size());
+        output += "\n    SymbolName:      '";
+        output += escapeStringCStyle(kernel.symbolName);
+        output += "'\n";
+        if (!kernel.language.empty())
+        {
+            output += "    Language:        ";
+            output.append(kernel.language.c_str(), kernel.language.size());
+            output += "\n";
+        }
+        if (kernel.langVersion[0] != BINGEN_NOTSUPPLIED)
+        {
+            output += "    LanguageVersion: ";
+            genArrayValue(2, kernel.langVersion, output);
+        }
+        // kernel attributes
+        if (kernel.reqdWorkGroupSize[0] != 0 || kernel.reqdWorkGroupSize[1] != 0 ||
+            kernel.reqdWorkGroupSize[2] != 0 ||
+            kernel.workGroupSizeHint[0] != 0 || kernel.workGroupSizeHint[1] != 0 ||
+            kernel.workGroupSizeHint[2] != 0 ||
+            !kernel.vecTypeHint.empty() || !kernel.runtimeHandle.empty())
+        {
+            output += "    Attrs:           \n";
+            if (kernel.workGroupSizeHint[0] != 0 || kernel.workGroupSizeHint[1] != 0 ||
+                kernel.workGroupSizeHint[2] != 0)
+            {
+                output += "      WorkGroupSizeHint: ";
+                genArrayValue(3, kernel.workGroupSizeHint, output);
+            }
+            if (kernel.reqdWorkGroupSize[0] != 0 || kernel.reqdWorkGroupSize[1] != 0 ||
+                kernel.reqdWorkGroupSize[2] != 0)
+            {
+                output += "      ReqdWorkGroupSize: ";
+                genArrayValue(3, kernel.reqdWorkGroupSize, output);
+            }
+            if (!kernel.vecTypeHint.empty())
+            {
+                output += "      VecTypeHint:     ";
+                output.append(kernel.vecTypeHint.c_str(), kernel.vecTypeHint.size());
+                output += "\n";
+            }
+            if (!kernel.runtimeHandle.empty())
+            {
+                output += "      RuntimeHandle:   ";
+                output.append(kernel.runtimeHandle.c_str(), kernel.runtimeHandle.size());
+                output += "\n";
+            }
+        }
+        // kernel arguments
+        if (!kernel.argInfos.empty())
+            output += "    Args:            \n";
+        for (const ROCmKernelArgInfo& argInfo: kernel.argInfos)
+        {
+            output += "      - ";
+            if (!argInfo.name.empty())
+            {
+                output += "Name:            ";
+                output.append(argInfo.name.c_str(), argInfo.name.size());
+                output += "\n        ";
+            }
+            if (!argInfo.typeName.empty())
+            {
+                output += "TypeName:        ";
+                output.append(argInfo.typeName.c_str(), argInfo.typeName.size());
+                output += "\n        ";
+            }
+            output += "Size:            ";
+            itocstrCStyle(argInfo.size, numBuf, 24);
+            output += numBuf;
+            output += "\n        Align:           ";
+            itocstrCStyle(argInfo.align, numBuf, 24);
+            output += numBuf;
+            output += "\n        ValueKind:       ";
+            output += rocmValueKindNames[cxuint(argInfo.valueKind)];
+            output += "\n        ValueType:       ";
+            output += rocmValueTypeNames[cxuint(argInfo.valueType)];
+            output += "\n";
+            
+            if (argInfo.valueKind == ROCmValueKind::DYN_SHARED_PTR)
+            {
+                output += "        PointeeAlign:    ";
+                itocstrCStyle(argInfo.pointeeAlign, numBuf, 24);
+                output += numBuf;
+                output += "\n";
+            }
+            if (argInfo.valueKind == ROCmValueKind::DYN_SHARED_PTR ||
+                argInfo.valueKind == ROCmValueKind::GLOBAL_BUFFER)
+            {
+                output += "        AddrSpaceQual:   ";
+                output += rocmAddrSpaceTypesTbl[cxuint(argInfo.addressSpace)];
+                output += "\n";
+            }
+            if (argInfo.valueKind == ROCmValueKind::IMAGE ||
+                argInfo.valueKind == ROCmValueKind::PIPE)
+            {
+                output += "        AccQual:         ";
+                output += rocmAccessQualifierTbl[cxuint(argInfo.accessQual)];
+                output += "\n";
+            }
+            if (argInfo.valueKind == ROCmValueKind::GLOBAL_BUFFER ||
+                argInfo.valueKind == ROCmValueKind::IMAGE ||
+                argInfo.valueKind == ROCmValueKind::PIPE)
+            {
+                output += "        ActualAccQual:   ";
+                output += rocmAccessQualifierTbl[cxuint(argInfo.actualAccessQual)];
+                output += "\n";
+            }
+            if (argInfo.isConst)
+                output += "        IsConst:         true\n";
+            if (argInfo.isRestrict)
+                output += "        IsRestrict:      true\n";
+            if (argInfo.isVolatile)
+                output += "        IsVolatile:      true\n";
+            if (argInfo.isPipe)
+                output += "        IsPipe:          true\n";
+        }
+        
+        // kernel code properties
+        if (kernel.kernargSegmentSize != BINGEN64_NOTSUPPLIED ||
+            kernel.kernargSegmentAlign != BINGEN64_NOTSUPPLIED ||
+            kernel.privateSegmentFixedSize != BINGEN64_NOTSUPPLIED ||
+            kernel.groupSegmentFixedSize != BINGEN64_NOTSUPPLIED ||
+            kernel.wavefrontSize != BINGEN_NOTSUPPLIED ||
+            kernel.sgprsNum != BINGEN_NOTSUPPLIED ||
+            kernel.vgprsNum != BINGEN_NOTSUPPLIED ||
+            kernel.maxFlatWorkGroupSize != BINGEN64_NOTSUPPLIED ||
+            hasValue(kernel.spilledSgprs) || hasValue(kernel.spilledVgprs) ||
+            kernel.fixedWorkGroupSize[0] != 0 || kernel.fixedWorkGroupSize[1] != 0 ||
+            kernel.fixedWorkGroupSize[2] != 0)
+        {
+            output += "    CodeProps:       \n";
+            output += "      KernargSegmentSize: ";
+            itocstrCStyle(kernel.kernargSegmentSize != BINGEN64_DEFAULT ?
+                    kernel.kernargSegmentSize : ULEV(kconfig.kernargSegmentSize),
+                    numBuf, 24);
+            output += numBuf;
+            output += "\n      GroupSegmentFixedSize: ";
+            itocstrCStyle(kernel.groupSegmentFixedSize  != BINGEN64_DEFAULT ?
+                    kernel.groupSegmentFixedSize :
+                    uint64_t(ULEV(kconfig.workgroupGroupSegmentSize)),
+                    numBuf, 24);
+            output += numBuf;
+            output += "\n      PrivateSegmentFixedSize: ";
+            itocstrCStyle(kernel.privateSegmentFixedSize  != BINGEN64_DEFAULT ?
+                    kernel.privateSegmentFixedSize :
+                    uint64_t(ULEV(kconfig.workitemPrivateSegmentSize)),
+                    numBuf, 24);
+            output += numBuf;
+            output += "\n      KernargSegmentAlign: ";
+            itocstrCStyle(kernel.kernargSegmentAlign != BINGEN64_DEFAULT ?
+                    kernel.kernargSegmentAlign :
+                    uint64_t(1ULL<<kconfig.kernargSegmentAlignment),
+                    numBuf, 24);
+            output += numBuf;
+            output += "\n      WavefrontSize:   ";
+            itocstrCStyle(kernel.wavefrontSize != BINGEN_DEFAULT ?
+                    kernel.wavefrontSize : cxuint(1U<<kconfig.wavefrontSize), numBuf, 24);
+            output += numBuf;
+            output += "\n      NumSGPRs:        ";
+            itocstrCStyle(kernel.sgprsNum != BINGEN_DEFAULT ?
+                    kernel.sgprsNum : cxuint(ULEV(kconfig.wavefrontSgprCount)),
+                    numBuf, 24);
+            output += numBuf;
+            output += "\n      NumVGPRs:        ";
+            itocstrCStyle(kernel.vgprsNum != BINGEN_DEFAULT ?
+                    kernel.vgprsNum : cxuint(ULEV(kconfig.workitemVgprCount)),
+                    numBuf, 24);
+            output += numBuf;
+            if (hasValue(kernel.spilledSgprs))
+            {
+                output += "\n      NumSpilledSGPRs: ";
+                itocstrCStyle(kernel.spilledSgprs, numBuf, 24);
+                output += numBuf;
+            }
+            if (hasValue(kernel.spilledVgprs))
+            {
+                output += "\n      NumSpilledVGPRs: ";
+                itocstrCStyle(kernel.spilledVgprs, numBuf, 24);
+                output += numBuf;
+            }
+            output += "\n      MaxFlatWorkGroupSize: ";
+            itocstrCStyle(kernel.maxFlatWorkGroupSize != BINGEN_DEFAULT ?
+                        kernel.maxFlatWorkGroupSize : uint64_t(256), numBuf, 24);
+            output += numBuf;
+            output += "\n";
+            if (kernel.fixedWorkGroupSize[0] != 0 || kernel.fixedWorkGroupSize[1] != 0 ||
+                kernel.fixedWorkGroupSize[2] != 0)
+            {
+                output += "      FixedWorkGroupSize:   ";
+                genArrayValue(3, kernel.fixedWorkGroupSize, output);
+            }
+        }
+    }
+    output += "...\n";
 }
 
 /*

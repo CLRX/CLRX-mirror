@@ -40,7 +40,7 @@ enum
 };
 
 enum {
-    AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER = 1,  ///< use privae segment buffer
+    AMDHSAFLAG_USE_PRIVATE_SEGMENT_BUFFER = 1,  ///< use private segment buffer
     AMDHSAFLAG_USE_DISPATCH_PTR = 2,
     AMDHSAFLAG_USE_QUEUE_PTR = 4,       ///< use queue pointer
     AMDHSAFLAG_USE_KERNARG_SEGMENT_PTR = 8, ///< use kernel argument segment pointer
