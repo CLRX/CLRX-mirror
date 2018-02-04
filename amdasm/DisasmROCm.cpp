@@ -630,13 +630,13 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
     }
     if (hasValue(kernel.spilledSgprs))
     {
-        bufSize = snprintf(buf, 100, "        .md_spilledsgprsnum %u\n",
+        bufSize = snprintf(buf, 100, "        .md_spilledsgprs %u\n",
                            kernel.spilledSgprs);
         output.write(buf, bufSize);
     }
     if (hasValue(kernel.spilledVgprs))
     {
-        bufSize = snprintf(buf, 100, "        .md_spilledvgprsnum %u\n",
+        bufSize = snprintf(buf, 100, "        .md_spilledvgprs %u\n",
                            kernel.spilledVgprs);
         output.write(buf, bufSize);
     }
