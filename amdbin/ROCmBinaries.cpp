@@ -1511,14 +1511,43 @@ static void genArrayValue(cxuint n, const cxuint* values, std::string& output)
     }
 }
 
-// helper for checking wether value is supplied
+// helper for checking whether value is supplied
 static inline bool hasValue(cxuint value)
 { return value!=BINGEN_NOTSUPPLIED && value!=BINGEN_DEFAULT; }
 
 static inline bool hasValue(uint64_t value)
 { return value!=BINGEN64_NOTSUPPLIED && value!=BINGEN64_DEFAULT; }
 
-void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig& kconfig,
+// get escaped YAML string if needed, otherwise get this same string
+static std::string escapeYAMLString(const CString& input)
+{
+    bool toEscape = false;
+    const char* s;
+    for (s = input.c_str(); *s!=0; s++)
+    {
+        cxbyte c = *s;
+        if (c < 0x20 || c >= 0x80 || c=='*' || c=='&' || c=='!' || c=='@' ||
+            c=='\'' || c=='\"')
+        {
+            toEscape = true;
+            break;
+        }
+    }
+    // if spaces in begin and end
+    if (isSpace(input[0]) || (!input.empty() && isSpace(s[-1])))
+        toEscape = true;
+    
+    if (toEscape)
+    {
+        std::string out = "'";
+        out += escapeStringCStyle(s-input.c_str(), input.c_str());
+        out += "'";
+        return out;
+    }
+    return input.c_str();
+}
+
+void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig** kconfigs,
                     std::string& output)
 {
     output.clear();
@@ -1553,17 +1582,18 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig& kc
     if (!mdInfo.printfInfos.empty())
         output += "Kernels:         \n";
     // kernels
-    for (const ROCmKernelMetadata& kernel: mdInfo.kernels)
+    for (size_t i = 0; i < mdInfo.kernels.size(); i++)
     {
+        const ROCmKernelMetadata& kernel = mdInfo.kernels[i];
         output += "  - Name:            ";
         output.append(kernel.name.c_str(), kernel.name.size());
         output += "\n    SymbolName:      '";
-        output += escapeStringCStyle(kernel.symbolName);
+        output += escapeYAMLString(kernel.symbolName);
         output += "'\n";
         if (!kernel.language.empty())
         {
             output += "    Language:        ";
-            output.append(kernel.language.c_str(), kernel.language.size());
+            output += escapeYAMLString(kernel.language);
             output += "\n";
         }
         if (kernel.langVersion[0] != BINGEN_NOTSUPPLIED)
@@ -1594,13 +1624,13 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig& kc
             if (!kernel.vecTypeHint.empty())
             {
                 output += "      VecTypeHint:     ";
-                output.append(kernel.vecTypeHint.c_str(), kernel.vecTypeHint.size());
+                output += escapeYAMLString(kernel.vecTypeHint);
                 output += "\n";
             }
             if (!kernel.runtimeHandle.empty())
             {
                 output += "      RuntimeHandle:   ";
-                output.append(kernel.runtimeHandle.c_str(), kernel.runtimeHandle.size());
+                output += escapeYAMLString(kernel.runtimeHandle);
                 output += "\n";
             }
         }
@@ -1613,13 +1643,13 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig& kc
             if (!argInfo.name.empty())
             {
                 output += "Name:            ";
-                output.append(argInfo.name.c_str(), argInfo.name.size());
+                output += escapeYAMLString(argInfo.name);
                 output += "\n        ";
             }
             if (!argInfo.typeName.empty())
             {
                 output += "TypeName:        ";
-                output.append(argInfo.typeName.c_str(), argInfo.typeName.size());
+                output += escapeYAMLString(argInfo.typeName);
                 output += "\n        ";
             }
             output += "Size:            ";
@@ -1686,6 +1716,8 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig& kc
             kernel.fixedWorkGroupSize[0] != 0 || kernel.fixedWorkGroupSize[1] != 0 ||
             kernel.fixedWorkGroupSize[2] != 0)
         {
+            const ROCmKernelConfig& kconfig = *kconfigs[i];
+            
             output += "    CodeProps:       \n";
             output += "      KernargSegmentSize: ";
             itocstrCStyle(hasValue(kernel.kernargSegmentSize) ?
@@ -1722,6 +1754,7 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig& kc
             itocstrCStyle(hasValue(kernel.vgprsNum) ? kernel.vgprsNum :
                     cxuint(ULEV(kconfig.workitemVgprCount)), numBuf, 24);
             output += numBuf;
+            // spilled registers
             if (hasValue(kernel.spilledSgprs))
             {
                 output += "\n      NumSpilledSGPRs: ";

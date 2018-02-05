@@ -514,7 +514,7 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
     }
 }
 
-// helper for checking wether value is supplied
+// helper for checking whether value is supplied
 static inline bool hasValue(cxuint value)
 { return value!=BINGEN_NOTSUPPLIED && value!=BINGEN_DEFAULT; }
 
