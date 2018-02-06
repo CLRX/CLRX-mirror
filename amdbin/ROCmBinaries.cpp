@@ -1972,9 +1972,9 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     if (!target.empty())
         elfBinGen64.addNote({"AMD", target.size(), (const cxbyte*)target.c_str(), 0xbU});
     
+    std::string metadataStr;
     size_t metadataSize = input->metadataSize;
     const char* metadata = input->metadata;
-    std::string metadataStr;
     if (input->useMetadataInfo)
     {
         // generate ROCm metadata
@@ -1997,7 +1997,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
                         input->code + input->symbols[it->second].offset);
         }
         
-        //generateROCmMetadata(input->metadataInfo, metadataStr);
+        generateROCmMetadata(input->metadataInfo, kernelConfigPtrs.get(), metadataStr);
         metadataSize = metadataStr.size();
         metadata = metadataStr.c_str();
     }
