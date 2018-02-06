@@ -798,8 +798,8 @@ void AsmROCmPseudoOps::addPrintf(AsmROCmHandler& handler, const char* pseudoOpPl
 static const std::pair<const char*, cxuint> rocmValueKindNamesTbl[] =
 {
     { "complact", cxuint(ROCmValueKind::HIDDEN_COMPLETION_ACTION) },
-    { "dynshptr", cxuint(ROCmValueKind::DYN_SHARED_PTR) },
     { "defqueue", cxuint(ROCmValueKind::HIDDEN_DEFAULT_QUEUE) },
+    { "dynshptr", cxuint(ROCmValueKind::DYN_SHARED_PTR) },
     { "globalbuf", cxuint(ROCmValueKind::GLOBAL_BUFFER) },
     { "globaloffsetx", cxuint(ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X) },
     { "globaloffsety", cxuint(ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X) },
@@ -864,7 +864,7 @@ static const std::pair<const char*, cxuint> rocmAccessQualNamesTbl[] =
     { "default", cxuint(ROCmAccessQual::DEFAULT) },
     { "read_only", cxuint(ROCmAccessQual::READ_ONLY) },
     { "read_write", cxuint(ROCmAccessQual::READ_WRITE) },
-    { "write_inly", cxuint(ROCmAccessQual::WRITE_ONLY) }
+    { "write_only", cxuint(ROCmAccessQual::WRITE_ONLY) }
 };
 
 // add kernel argument (to metadata)
@@ -1010,7 +1010,11 @@ void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoO
     {
         char name[20];
         const char* fieldPlace = linePtr;
-        good &= getNameArg(asmr, 20, name, linePtr, "argument flag", true);
+        if (!getNameArg(asmr, 20, name, linePtr, "argument flag", true))
+        {
+            good = false;
+            break;
+        }
         
         if (::strcmp(name, "const")==0)
             argIsConst = true;
@@ -1021,7 +1025,10 @@ void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoO
         else if (::strcmp(name, "pip")==0)
             argIsPipe = true;
         else
+        {
             ASM_NOTGOOD_BY_ERROR(fieldPlace, "Unknown argument flag")
+            break;
+        }
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -1991,7 +1998,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             break;
         case ROCMOP_MD_KERNARG_SEGMENT_SIZE:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
-                            ROCMCVAL_MD_KERNARG_SEGMENT_ALIGN);
+                            ROCMCVAL_MD_KERNARG_SEGMENT_SIZE);
             break;
         case ROCMOP_MD_LANGUAGE:
             AsmROCmPseudoOps::setKernelLanguage(*this, stmtPlace, linePtr);

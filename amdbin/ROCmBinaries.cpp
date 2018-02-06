@@ -1610,7 +1610,7 @@ static void generateROCmMetadata(const ROCmMetadata& mdInfo,
         output += "'\n";
     }
     
-    if (!mdInfo.printfInfos.empty())
+    if (!mdInfo.kernels.empty())
         output += "Kernels:         \n";
     // kernels
     for (size_t i = 0; i < mdInfo.kernels.size(); i++)
