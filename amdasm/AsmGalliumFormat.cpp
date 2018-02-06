@@ -587,34 +587,6 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 }
                 break;
             }
-            case GALLIUMCVAL_SPILLEDSGPRS:
-            {
-                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
-                            asmr.deviceType);
-                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
-                if (value > maxSGPRsNum)
-                {
-                    char buf[64];
-                    snprintf(buf, 64, "Spilled SGPRs number out of range (0-%u)",
-                             maxSGPRsNum);
-                    ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
-                }
-                break;
-            }
-            case GALLIUMCVAL_SPILLEDVGPRS:
-            {
-                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
-                            asmr.deviceType);
-                cxuint maxVGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
-                if (value > maxVGPRsNum)
-                {
-                    char buf[64];
-                    snprintf(buf, 64, "Spilled VGPRs number out of range (0-%u)",
-                             maxVGPRsNum);
-                    ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
-                }
-                break;
-            }
             case GALLIUMCVAL_EXCEPTIONS:
                 asmr.printWarningForRange(7, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);

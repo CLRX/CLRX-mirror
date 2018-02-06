@@ -26,6 +26,7 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#include <unordered_set>
 #include <CLRX/amdbin/ElfBinaries.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
@@ -529,6 +530,8 @@ public:
 // printf info string consumer
 class CLRX_INTERNAL YAMLPrintfVectorConsumer: public YAMLElemConsumer
 {
+private:
+    std::unordered_set<cxuint> printfIds;
 public:
     std::vector<ROCmPrintfInfo>& printfInfos;
     
@@ -552,6 +555,11 @@ public:
         { printfInfo.id = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2); }
         catch(const ParseException& ex)
         { throw ParseException(oldLineNo, ex.what()); }
+        
+        // check printf id uniqueness
+        if (!printfIds.insert(printfInfo.id).second)
+            throw ParseException(oldLineNo, "Duplicate of printf id");
+        
         skipSpacesToLineEnd(ptr2, end2);
         if (ptr2==end || *ptr2!=':')
             throw ParseException(oldLineNo, "No colon after printf callId");
@@ -1561,6 +1569,13 @@ static void generateROCmMetadata(const ROCmMetadata& mdInfo,
     genArrayValue(2, mdInfo.version, output);
     if (!mdInfo.printfInfos.empty())
         output += "Printf:          \n";
+    // check print ids uniquness
+    {
+        std::unordered_set<cxuint> printfIds;
+        for (const ROCmPrintfInfo& printfInfo: mdInfo.printfInfos)
+            if (!printfIds.insert(printfInfo.id).second)
+                throw BinGenException("Duplicate of printf id");
+    }
     // printfs
     for (const ROCmPrintfInfo& printfInfo: mdInfo.printfInfos)
     {

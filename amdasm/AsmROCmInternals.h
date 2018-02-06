@@ -83,7 +83,8 @@ enum ROCmConfigValueTarget
     ROCMCVAL_RUNTIME_LOADER_KERNEL_SYMBOL,
     
     // metadata info
-    ROCMCVAL_MD_WAVEFRONT_SIZE,
+    ROCMCVAL_METADATA_START,
+    ROCMCVAL_MD_WAVEFRONT_SIZE = ROCMCVAL_METADATA_START,
     ROCMCVAL_MD_KERNARG_SEGMENT_ALIGN,
     ROCMCVAL_MD_KERNARG_SEGMENT_SIZE,
     ROCMCVAL_MD_GROUP_SEGMENT_FIXED_SIZE,
@@ -157,10 +158,15 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
                     ROCmConfigValueTarget target, uint64_t value);
     static void setConfigValueMain(AsmAmdHsaKernelConfig& config,
                         ROCmConfigValueTarget target, uint64_t value);
+    // checkConfigMdValue
+    static bool checkMDConfigValue(Assembler& asmr, const char* valuePlace,
+                    ROCmConfigValueTarget target, uint64_t value);
+    // setConfigMdValue
+    static void setMDConfigValue(ROCmKernelMetadata& metadata,
+                ROCmConfigValueTarget target, uint64_t value);
     // set config value
     static void setConfigValue(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, ROCmConfigValueTarget target);
-    
     // setConfigBoolValueMain routines used by other handlers to set AMD HSA config values
     static void setConfigBoolValueMain(AsmAmdHsaKernelConfig& config,
                         ROCmConfigValueTarget target);

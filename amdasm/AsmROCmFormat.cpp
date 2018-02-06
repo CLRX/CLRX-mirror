@@ -28,6 +28,7 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/amdasm/AsmFormats.h>
+#include "AsmAmdInternals.h"
 #include "AsmROCmInternals.h"
 
 using namespace CLRX;
@@ -87,7 +88,8 @@ enum
     ROCMOP_LOCALSIZE, ROCMOP_MACHINE,
     ROCMOP_MAX_FLAT_WORK_GROUP_SIZE, ROCMOP_MAX_SCRATCH_BACKING_MEMORY,
     ROCMOP_MD_GROUP_SEGMENT_FIXED_SIZE, ROCMOP_MD_KERNARG_SEGMENT_ALIGN,
-    ROCMOP_MD_KERNARG_SEGMENT_SIZE, ROCMOP_MD_LANGUAGE, ROCMOP_MD_PRIVATE_SEGMENT_FIXED_SIZE,
+    ROCMOP_MD_KERNARG_SEGMENT_SIZE, ROCMOP_MD_LANGUAGE,
+    ROCMOP_MD_PRIVATE_SEGMENT_FIXED_SIZE,
     ROCMOP_MD_SPILLEDSGPRS, ROCMOP_MD_SPILLEDVGPRS, ROCMOP_MD_SGPRSNUM,
     ROCMOP_MD_SYMNAME, ROCMOP_MD_VERSION, ROCMOP_MD_VGPRSNUM, ROCMOP_MD_WAVEFRONT_SIZE,
     ROCMOP_METADATA, ROCMOP_NEWBINFMT, ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PRINTF,
@@ -143,6 +145,8 @@ cxuint AsmROCmHandler::addKernel(const char* kernelName)
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
     kernelStates.push_back(
         new Kernel{ thisSection, nullptr, false, ASMSECT_NONE, thisSection });
+    output.metadataInfo.kernels.push_back(ROCmKernelMetadata());
+    output.metadataInfo.kernels.back().initialize();
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
@@ -473,6 +477,10 @@ void AsmROCmPseudoOps::addMetadata(AsmROCmHandler& handler, const char* pseudoOp
 {
     Assembler& asmr = handler.assembler;
     
+    if (handler.output.useMetadataInfo)
+        PSEUDOOP_RETURN_BY_ERROR("Metadata can't be defined if metadata config "
+                    "is already defined")
+    
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -498,6 +506,278 @@ void AsmROCmPseudoOps::doFKernel(AsmROCmHandler& handler, const char* pseudoOpPl
         return;
     // set fkernel flag for kernel
     handler.kernelStates[asmr.currentKernel]->isFKernel = true;
+}
+
+void AsmROCmPseudoOps::setMetadataVersion(AsmROCmHandler& handler,
+                const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel!=ASMKERN_GLOBAL)
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of md_version pseudo-op")
+    
+    if (handler.metadataSection != ASMSECT_NONE)
+        PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
+                    "metadata section exists")
+    
+    uint64_t mdVerMajor = 0, mdVerMinor = 0;
+    skipSpacesToEnd(linePtr, end);
+    // parse metadata major version
+    const char* valuePlace = linePtr;
+    bool good = getAbsoluteValueArg(asmr, mdVerMajor, linePtr, true);
+    asmr.printWarningForRange(sizeof(cxuint)<<3, mdVerMajor,
+                asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    // parse metadata minor version
+    skipSpacesToEnd(linePtr, end);
+    valuePlace = linePtr;
+    good &= getAbsoluteValueArg(asmr, mdVerMinor, linePtr, true);
+    asmr.printWarningForRange(sizeof(cxuint)<<3, mdVerMinor,
+                asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    handler.output.useMetadataInfo = true;
+    handler.output.metadataInfo.version[0] = mdVerMajor;
+    handler.output.metadataInfo.version[1] = mdVerMinor;
+}
+
+void AsmROCmPseudoOps::setCWS(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
+    
+    if (handler.metadataSection != ASMSECT_NONE)
+        PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
+                    "metadata section exists")
+    
+    skipSpacesToEnd(linePtr, end);
+    uint64_t out[3] = { 0, 0, 0 };
+    // parse CWS (1-3 values)
+    if (!AsmAmdPseudoOps::parseCWS(asmr, pseudoOpPlace, linePtr, out))
+        return;
+    handler.output.useMetadataInfo = true;
+    ROCmKernelMetadata& metadata = handler.output.metadataInfo.kernels[asmr.currentKernel];
+    // reqd_work_group_size
+    metadata.reqdWorkGroupSize[0] = out[0];
+    metadata.reqdWorkGroupSize[1] = out[1];
+    metadata.reqdWorkGroupSize[2] = out[2];
+}
+
+void AsmROCmPseudoOps::setWorkGroupSizeHint(AsmROCmHandler& handler,
+                    const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
+    
+    if (handler.metadataSection != ASMSECT_NONE)
+        PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
+                    "metadata section exists")
+    
+    skipSpacesToEnd(linePtr, end);
+    uint64_t out[3] = { 0, 0, 0 };
+    // parse CWS (1-3 values)
+    if (!AsmAmdPseudoOps::parseCWS(asmr, pseudoOpPlace, linePtr, out))
+        return;
+    handler.output.useMetadataInfo = true;
+    ROCmKernelMetadata& metadata = handler.output.metadataInfo.kernels[asmr.currentKernel];
+    // work group size hint
+    metadata.workGroupSizeHint[0] = out[0];
+    metadata.workGroupSizeHint[1] = out[1];
+    metadata.workGroupSizeHint[2] = out[2];
+}
+
+void AsmROCmPseudoOps::setFixedWorkGroupSize(AsmROCmHandler& handler,
+                    const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
+    
+    if (handler.metadataSection != ASMSECT_NONE)
+        PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
+                    "metadata section exists")
+    
+    skipSpacesToEnd(linePtr, end);
+    uint64_t out[3] = { 0, 0, 0 };
+    // parse CWS (1-3 values)
+    if (!AsmAmdPseudoOps::parseCWS(asmr, pseudoOpPlace, linePtr, out))
+        return;
+    handler.output.useMetadataInfo = true;
+    ROCmKernelMetadata& metadata = handler.output.metadataInfo.kernels[asmr.currentKernel];
+    // fixed work group size
+    metadata.fixedWorkGroupSize[0] = out[0];
+    metadata.fixedWorkGroupSize[1] = out[1];
+    metadata.fixedWorkGroupSize[2] = out[2];
+}
+
+void AsmROCmPseudoOps::setVecTypeHint(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
+    
+    if (handler.metadataSection != ASMSECT_NONE)
+        PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
+                    "metadata section exists")
+    
+    CString vecTypeHint;
+    skipSpacesToEnd(linePtr, end);
+    bool good = getNameArg(asmr, vecTypeHint, linePtr, "vectypehint", true);
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    ROCmKernelMetadata& metadata = handler.output.metadataInfo.kernels[asmr.currentKernel];
+    handler.output.useMetadataInfo = true;
+    metadata.vecTypeHint = vecTypeHint;
+}
+
+void AsmROCmPseudoOps::setKernelSymName(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
+    
+    if (handler.metadataSection != ASMSECT_NONE)
+        PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
+                    "metadata section exists")
+    
+    CString symName;
+    skipSpacesToEnd(linePtr, end);
+    bool good = getNameArg(asmr, symName, linePtr, "symbol name", true);
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    ROCmKernelMetadata& metadata = handler.output.metadataInfo.kernels[asmr.currentKernel];
+    handler.output.useMetadataInfo = true;
+    metadata.symbolName = symName;
+}
+
+void AsmROCmPseudoOps::setKernelLanguage(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
+    
+    if (handler.metadataSection != ASMSECT_NONE)
+        PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
+                    "metadata section exists")
+    
+    std::string langName;
+    skipSpacesToEnd(linePtr, end);
+    bool good = asmr.parseString(langName, linePtr);
+    
+    uint64_t langVerMajor = 0, langVerMinor = 0;
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr != end)
+    {
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        
+        skipSpacesToEnd(linePtr, end);
+        // parse language major version
+        const char* valuePlace = linePtr;
+        good &= getAbsoluteValueArg(asmr, langVerMajor, linePtr, true);
+        asmr.printWarningForRange(sizeof(cxuint)<<3, langVerMajor,
+                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        
+        // parse language major version
+        skipSpacesToEnd(linePtr, end);
+        valuePlace = linePtr;
+        good &= getAbsoluteValueArg(asmr, langVerMinor, linePtr, true);
+        asmr.printWarningForRange(sizeof(cxuint)<<3, langVerMinor,
+                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    // just set language
+    handler.output.useMetadataInfo = true;
+    ROCmKernelMetadata& metadata = handler.output.metadataInfo.kernels[asmr.currentKernel];
+    metadata.language = langName;
+    metadata.langVersion[0] = langVerMajor;
+    metadata.langVersion[1] = langVerMinor;
+}
+
+void AsmROCmPseudoOps::addPrintf(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel!=ASMKERN_GLOBAL)
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of printf pseudo-op")
+    
+    if (handler.metadataSection != ASMSECT_NONE)
+        PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
+                    "metadata section exists")
+    
+    ROCmPrintfInfo printfInfo{};
+    uint64_t printfId = 0;
+    skipSpacesToEnd(linePtr, end);
+    // parse printf id
+    const char* valuePlace = linePtr;
+    bool good = getAbsoluteValueArg(asmr, printfId, linePtr);
+    asmr.printWarningForRange(sizeof(cxuint)<<3, printfId,
+                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    printfInfo.id = printfId;
+    
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    std::vector<uint32_t> argSizes;
+    skipSpacesToEnd(linePtr, end);
+    // parse argument sizes
+    while (linePtr != end && *linePtr!='\"')
+    {
+        uint64_t argSize = 0;
+        good &= getAbsoluteValueArg(asmr, argSize, linePtr);
+        valuePlace = linePtr;
+        // warning
+        asmr.printWarningForRange(sizeof(cxuint)<<3, argSize,
+                        asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+        argSizes.push_back(uint32_t(argSize));
+        
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        skipSpacesToEnd(linePtr, end);
+    }
+    printfInfo.argSizes.assign(argSizes.begin(), argSizes.end());
+    
+    if (linePtr == end)
+        PSEUDOOP_RETURN_BY_ERROR("Missing format string")
+    // parse format
+    std::string formatStr;
+    good &= asmr.parseString(formatStr, linePtr);
+    printfInfo.format = formatStr;
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.useMetadataInfo = true;
+    // just add new printf
+    handler.output.metadataInfo.printfInfos.push_back(printfInfo);
 }
 
 bool AsmROCmPseudoOps::checkConfigValue(Assembler& asmr, const char* valuePlace,
@@ -614,6 +894,56 @@ bool AsmROCmPseudoOps::checkConfigValue(Assembler& asmr, const char* valuePlace,
     return good;
 }
 
+// check metadata config values
+bool AsmROCmPseudoOps::checkMDConfigValue(Assembler& asmr, const char* valuePlace,
+                ROCmConfigValueTarget target, uint64_t value)
+{
+    bool good = true;
+    switch(target)
+    {
+        case ROCMCVAL_MD_WAVEFRONT_SIZE:
+            if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
+                ASM_NOTGOOD_BY_ERROR(valuePlace, "Wavefront size must be power of two")
+            else if (value > 256)
+                ASM_NOTGOOD_BY_ERROR(valuePlace,
+                            "Wavefront size must be not greater than 256")
+            break;
+        case ROCMCVAL_MD_KERNARG_SEGMENT_ALIGN:
+            if (value==0 || 1ULL<<(63-CLZ64(value)) != value)
+                ASM_NOTGOOD_BY_ERROR(valuePlace, "Alignment size must be power of two")
+            break;
+        case ROCMCVAL_MD_SGPRSNUM:
+        {
+            const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                        asmr.deviceType);
+            cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+            if (value > maxSGPRsNum)
+            {
+                char buf[64];
+                snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
+                ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
+            }
+            break;
+        }
+        case ROCMCVAL_MD_VGPRSNUM:
+        {
+            const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                        asmr.deviceType);
+            cxuint maxVGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
+            if (value > maxVGPRsNum)
+            {
+                char buf[64];
+                snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
+                ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
+            }
+            break;
+        }
+        default:
+            break;
+    }
+    return good;
+}
+
 void AsmROCmPseudoOps::setConfigValueMain(AsmAmdHsaKernelConfig& config,
                 ROCmConfigValueTarget target, uint64_t value)
 {
@@ -709,6 +1039,47 @@ void AsmROCmPseudoOps::setConfigValueMain(AsmAmdHsaKernelConfig& config,
     }
 }
 
+/// set metadata config values
+void AsmROCmPseudoOps::setMDConfigValue(ROCmKernelMetadata& metadata,
+                        ROCmConfigValueTarget target, uint64_t value)
+{
+    switch(target)
+    {
+        case ROCMCVAL_MD_WAVEFRONT_SIZE:
+            metadata.wavefrontSize = value;
+            break;
+        case ROCMCVAL_MD_KERNARG_SEGMENT_ALIGN:
+            metadata.kernargSegmentAlign = value;
+            break;
+        case ROCMCVAL_MD_KERNARG_SEGMENT_SIZE:
+            metadata.kernargSegmentSize = value;
+            break;
+        case ROCMCVAL_MD_GROUP_SEGMENT_FIXED_SIZE:
+            metadata.groupSegmentFixedSize = value;
+            break;
+        case ROCMCVAL_MD_PRIVATE_SEGMENT_FIXED_SIZE:
+            metadata.privateSegmentFixedSize = value;
+            break;
+        case ROCMCVAL_MD_SGPRSNUM:
+            metadata.sgprsNum = value;
+            break;
+        case ROCMCVAL_MD_VGPRSNUM:
+            metadata.vgprsNum = value;
+            break;
+        case ROCMCVAL_MD_SPILLEDSGPRS:
+            metadata.spilledSgprs = value;
+            break;
+        case ROCMCVAL_MD_SPILLEDVGPRS:
+            metadata.spilledVgprs = value;
+            break;
+        case ROCMCVAL_MAX_FLAT_WORK_GROUP_SIZE:
+            metadata.maxFlatWorkGroupSize = value;
+            break;
+        default:
+            break;
+    }
+}
+
 void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseudoOpPlace,
                   const char* linePtr, ROCmConfigValueTarget target)
 {
@@ -725,13 +1096,29 @@ void AsmROCmPseudoOps::setConfigValue(AsmROCmHandler& handler, const char* pseud
     bool good = getAbsoluteValueArg(asmr, value, linePtr, true);
     /* ranges checking */
     if (good)
-        good = checkConfigValue(asmr, valuePlace, target, value);
+    {
+        if (target < ROCMCVAL_METADATA_START)
+            good = checkConfigValue(asmr, valuePlace, target, value);
+        else // metadata values
+            good = checkMDConfigValue(asmr, valuePlace, target, value);
+    }
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
     // set value
-    setConfigValueMain(config, target, value);
+    if (target < ROCMCVAL_METADATA_START)
+    {
+        AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
+        setConfigValueMain(config, target, value);
+    }
+    else
+    {
+        // set metadata value
+        handler.output.useMetadataInfo = true;
+        ROCmKernelMetadata& metadata = 
+                    handler.output.metadataInfo.kernels[asmr.currentKernel];
+        setMDConfigValue(metadata, target, value);
+    }
 }
 
 void AsmROCmPseudoOps::setConfigBoolValueMain(AsmAmdHsaKernelConfig& config,
@@ -1223,6 +1610,8 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::doControlDirective(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_CWS:
+        case ROCMOP_REQD_WORK_GROUP_SIZE:
+            AsmROCmPseudoOps::setCWS(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_DEBUG_PRIVATE_SEGMENT_BUFFER_SGPR:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
@@ -1251,6 +1640,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
                              ROCMCVAL_EXCEPTIONS);
             break;
         case ROCMOP_FIXED_WORK_GROUP_SIZE:
+            AsmROCmPseudoOps::setFixedWorkGroupSize(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_FKERNEL:
             AsmROCmPseudoOps::doFKernel(*this, stmtPlace, linePtr);
@@ -1326,6 +1716,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
         case ROCMOP_MD_KERNARG_SEGMENT_SIZE:
             break;
         case ROCMOP_MD_LANGUAGE:
+            AsmROCmPseudoOps::setKernelLanguage(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_MD_PRIVATE_SEGMENT_FIXED_SIZE:
             break;
@@ -1336,8 +1727,10 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
         case ROCMOP_MD_SGPRSNUM:
             break;
         case ROCMOP_MD_SYMNAME:
+            AsmROCmPseudoOps::setKernelSymName(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_MD_VERSION:
+            AsmROCmPseudoOps::setMetadataVersion(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_MD_VGPRSNUM:
             break;
@@ -1353,6 +1746,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_PGMRSRC2);
             break;
         case ROCMOP_PRINTF:
+            AsmROCmPseudoOps::addPrintf(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_PRIORITY:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_PRIORITY);
@@ -1368,8 +1762,6 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
         case ROCMOP_PRIVMODE:
             AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_PRIVMODE);
-            break;
-        case ROCMOP_REQD_WORK_GROUP_SIZE:
             break;
         case ROCMOP_RESERVED_SGPRS:
             AsmROCmPseudoOps::setReservedXgprs(*this, stmtPlace, linePtr, false);
@@ -1456,6 +1848,9 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_USERDATANUM);
             break;
+        case ROCMOP_VECTYPEHINT:
+            AsmROCmPseudoOps::setVecTypeHint(*this, stmtPlace, linePtr);
+            break;
         case ROCMOP_VGPRSNUM:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_VGPRSNUM);
             break;
@@ -1472,6 +1867,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
                              ROCMCVAL_WORKITEM_VGPR_COUNT);
             break;
         case ROCM_WORK_GROUP_SIZE_HINT:
+            AsmROCmPseudoOps::setWorkGroupSizeHint(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_WORKGROUP_FBARRIER_COUNT:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
