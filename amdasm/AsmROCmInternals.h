@@ -143,6 +143,9 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     // .printf (add printf)
     static void addPrintf(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .arg (add kernel argument to metadata)
+    static void addKernelArg(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                    const char* linePtr);
     // .fkernel (define kernel as function kernel)
     static void doFKernel(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);

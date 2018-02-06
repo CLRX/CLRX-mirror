@@ -51,7 +51,7 @@ static const char* rocmPseudoOpNamesTbl[] =
     "max_flat_work_group_size", "max_scratch_backing_memory",
     "md_group_segment_fixed_size", "md_kernarg_segment_align",
     "md_kernarg_segment_size", "md_language","md_private_segment_fixed_size",
-    "md_spilledsgprs", "md_spilledvgprs", "md_sgprsnum",
+    "md_sgprsnum", "md_spilledsgprs", "md_spilledvgprs",
     "md_symname", "md_version", "md_vgprsnum", "md_wavefront_size",
     "metadata", "newbinfmt", "pgmrsrc1", "pgmrsrc2", "printf", "priority",
     "private_elem_size", "private_segment_align",
@@ -90,7 +90,7 @@ enum
     ROCMOP_MD_GROUP_SEGMENT_FIXED_SIZE, ROCMOP_MD_KERNARG_SEGMENT_ALIGN,
     ROCMOP_MD_KERNARG_SEGMENT_SIZE, ROCMOP_MD_LANGUAGE,
     ROCMOP_MD_PRIVATE_SEGMENT_FIXED_SIZE,
-    ROCMOP_MD_SPILLEDSGPRS, ROCMOP_MD_SPILLEDVGPRS, ROCMOP_MD_SGPRSNUM,
+    ROCMOP_MD_SGPRSNUM, ROCMOP_MD_SPILLEDSGPRS, ROCMOP_MD_SPILLEDVGPRS,
     ROCMOP_MD_SYMNAME, ROCMOP_MD_VERSION, ROCMOP_MD_VGPRSNUM, ROCMOP_MD_WAVEFRONT_SIZE,
     ROCMOP_METADATA, ROCMOP_NEWBINFMT, ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PRINTF,
     ROCMOP_PRIORITY, ROCMOP_PRIVATE_ELEM_SIZE, ROCMOP_PRIVATE_SEGMENT_ALIGN,
@@ -524,18 +524,23 @@ void AsmROCmPseudoOps::setMetadataVersion(AsmROCmHandler& handler,
     skipSpacesToEnd(linePtr, end);
     // parse metadata major version
     const char* valuePlace = linePtr;
-    bool good = getAbsoluteValueArg(asmr, mdVerMajor, linePtr, true);
-    asmr.printWarningForRange(sizeof(cxuint)<<3, mdVerMajor,
-                asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    bool good = true;
+    if (getAbsoluteValueArg(asmr, mdVerMajor, linePtr, true))
+        asmr.printWarningForRange(sizeof(cxuint)<<3, mdVerMajor,
+                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    else
+        good = false;
     if (!skipRequiredComma(asmr, linePtr))
         return;
     
     // parse metadata minor version
     skipSpacesToEnd(linePtr, end);
     valuePlace = linePtr;
-    good &= getAbsoluteValueArg(asmr, mdVerMinor, linePtr, true);
-    asmr.printWarningForRange(sizeof(cxuint)<<3, mdVerMinor,
-                asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    if (getAbsoluteValueArg(asmr, mdVerMinor, linePtr, true))
+        asmr.printWarningForRange(sizeof(cxuint)<<3, mdVerMinor,
+                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    else
+        good = false;
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -697,18 +702,22 @@ void AsmROCmPseudoOps::setKernelLanguage(AsmROCmHandler& handler, const char* ps
         skipSpacesToEnd(linePtr, end);
         // parse language major version
         const char* valuePlace = linePtr;
-        good &= getAbsoluteValueArg(asmr, langVerMajor, linePtr, true);
-        asmr.printWarningForRange(sizeof(cxuint)<<3, langVerMajor,
-                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+        if (getAbsoluteValueArg(asmr, langVerMajor, linePtr, true))
+            asmr.printWarningForRange(sizeof(cxuint)<<3, langVerMajor,
+                        asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+        else
+            good = false;
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
         // parse language major version
         skipSpacesToEnd(linePtr, end);
         valuePlace = linePtr;
-        good &= getAbsoluteValueArg(asmr, langVerMinor, linePtr, true);
-        asmr.printWarningForRange(sizeof(cxuint)<<3, langVerMinor,
-                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+        if (getAbsoluteValueArg(asmr, langVerMinor, linePtr, true))
+            asmr.printWarningForRange(sizeof(cxuint)<<3, langVerMinor,
+                        asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+        else
+            good = false;
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -739,9 +748,12 @@ void AsmROCmPseudoOps::addPrintf(AsmROCmHandler& handler, const char* pseudoOpPl
     skipSpacesToEnd(linePtr, end);
     // parse printf id
     const char* valuePlace = linePtr;
-    bool good = getAbsoluteValueArg(asmr, printfId, linePtr);
-    asmr.printWarningForRange(sizeof(cxuint)<<3, printfId,
-                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    bool good = true;
+    if (getAbsoluteValueArg(asmr, printfId, linePtr))
+        asmr.printWarningForRange(sizeof(cxuint)<<3, printfId,
+                            asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    else
+        good = false;
     printfInfo.id = printfId;
     
     if (!skipRequiredComma(asmr, linePtr))
@@ -753,11 +765,12 @@ void AsmROCmPseudoOps::addPrintf(AsmROCmHandler& handler, const char* pseudoOpPl
     while (linePtr != end && *linePtr!='\"')
     {
         uint64_t argSize = 0;
-        good &= getAbsoluteValueArg(asmr, argSize, linePtr);
         valuePlace = linePtr;
-        // warning
-        asmr.printWarningForRange(sizeof(cxuint)<<3, argSize,
-                        asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+        if (getAbsoluteValueArg(asmr, argSize, linePtr))
+            asmr.printWarningForRange(sizeof(cxuint)<<3, argSize,
+                            asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+        else
+            good = false;
         argSizes.push_back(uint32_t(argSize));
         
         if (!skipRequiredComma(asmr, linePtr))
@@ -778,6 +791,259 @@ void AsmROCmPseudoOps::addPrintf(AsmROCmHandler& handler, const char* pseudoOpPl
     handler.output.useMetadataInfo = true;
     // just add new printf
     handler.output.metadataInfo.printfInfos.push_back(printfInfo);
+}
+
+static const std::pair<const char*, cxuint> rocmValueKindNamesTbl[] =
+{
+    { "complact", cxuint(ROCmValueKind::HIDDEN_COMPLETION_ACTION) },
+    { "dynshptr", cxuint(ROCmValueKind::DYN_SHARED_PTR) },
+    { "defqueue", cxuint(ROCmValueKind::HIDDEN_DEFAULT_QUEUE) },
+    { "globalbuf", cxuint(ROCmValueKind::GLOBAL_BUFFER) },
+    { "globaloffsetx", cxuint(ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X) },
+    { "globaloffsety", cxuint(ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X) },
+    { "globaloffsetz", cxuint(ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X) },
+    { "gox", cxuint(ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X) },
+    { "goy", cxuint(ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y) },
+    { "goz", cxuint(ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z) },
+    { "image", cxuint(ROCmValueKind::IMAGE) },
+    { "none", cxuint(ROCmValueKind::HIDDEN_NONE) },
+    { "printfbuf", cxuint(ROCmValueKind::HIDDEN_PRINTF_BUFFER) },
+    { "pipe", cxuint(ROCmValueKind::PIPE) },
+    { "queue", cxuint(ROCmValueKind::QUEUE) },
+    { "sampler", cxuint(ROCmValueKind::SAMPLER) },
+    { "value", cxuint(ROCmValueKind::BY_VALUE) }
+};
+
+static const size_t rocmValueKindNamesTblSize =
+        sizeof(rocmValueKindNamesTbl) / sizeof(std::pair<const char*, cxuint>);
+
+static const std::pair<const char*, cxuint> rocmValueTypeNamesTbl[] =
+{
+    { "char", cxuint(ROCmValueType::INT8) },
+    { "double", cxuint(ROCmValueType::FLOAT64) },
+    { "f16", cxuint(ROCmValueType::FLOAT16) },
+    { "f32", cxuint(ROCmValueType::FLOAT32) },
+    { "f64", cxuint(ROCmValueType::FLOAT64) },
+    { "float", cxuint(ROCmValueType::FLOAT32) },
+    { "half", cxuint(ROCmValueType::FLOAT16) },
+    { "i16", cxuint(ROCmValueType::INT16) },
+    { "i32", cxuint(ROCmValueType::INT32) },
+    { "i64", cxuint(ROCmValueType::INT64) },
+    { "i8", cxuint(ROCmValueType::INT8) },
+    { "int", cxuint(ROCmValueType::INT32) },
+    { "long", cxuint(ROCmValueType::INT64) },
+    { "short", cxuint(ROCmValueType::INT16) },
+    { "struct", cxuint(ROCmValueType::STRUCTURE) },
+    { "u16", cxuint(ROCmValueType::UINT16) },
+    { "u32", cxuint(ROCmValueType::UINT32) },
+    { "u64", cxuint(ROCmValueType::UINT64) },
+    { "u8", cxuint(ROCmValueType::UINT8) },
+    { "uchar", cxuint(ROCmValueType::UINT8) },
+    { "uint", cxuint(ROCmValueType::UINT32) },
+    { "ulong", cxuint(ROCmValueType::UINT64) },
+    { "ushort", cxuint(ROCmValueType::INT16) }
+};
+
+static const size_t rocmValueTypeNamesTblSize =
+        sizeof(rocmValueTypeNamesTbl) / sizeof(std::pair<const char*, cxuint>);
+
+static const std::pair<const char*, cxuint> rocmAddressSpaceNamesTbl[] =
+{
+    { "constant", cxuint(ROCmAddressSpace::CONSTANT) },
+    { "generic", cxuint(ROCmAddressSpace::GENERIC) },
+    { "global", cxuint(ROCmAddressSpace::GLOBAL) },
+    { "local", cxuint(ROCmAddressSpace::LOCAL) },
+    { "private", cxuint(ROCmAddressSpace::PRIVATE) },
+    { "region", cxuint(ROCmAddressSpace::REGION) }
+};
+
+static const std::pair<const char*, cxuint> rocmAccessQualNamesTbl[] =
+{
+    { "default", cxuint(ROCmAccessQual::DEFAULT) },
+    { "read_only", cxuint(ROCmAccessQual::READ_ONLY) },
+    { "read_write", cxuint(ROCmAccessQual::READ_WRITE) },
+    { "write_inly", cxuint(ROCmAccessQual::WRITE_ONLY) }
+};
+
+// add kernel argument (to metadata)
+void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                    const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
+    
+    if (handler.metadataSection != ASMSECT_NONE)
+        PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
+                    "metadata section exists")
+    
+    bool good = true;
+    skipSpacesToEnd(linePtr, end);
+    CString argName;
+    if (linePtr!=end && *linePtr!=',')
+    {
+        // parse name
+        good &= getNameArg(asmr, argName, linePtr, "argument name", true);
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+    }
+    std::string typeName;
+    if (linePtr!=end && *linePtr=='"')
+    {
+        // parse arg type
+        good &= asmr.parseString(typeName, linePtr);
+        
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+    }
+    // parse argument size
+    uint64_t argSize = 0;
+    const char* sizePlace = linePtr;
+    if (getAbsoluteValueArg(asmr, argSize, linePtr, true))
+    {
+        if (argSize == 0)
+            ASM_NOTGOOD_BY_ERROR(sizePlace, "Argument size is zero")
+    }
+    else
+        good = false;
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    skipSpacesToEnd(linePtr, end);
+    // parse argument alignment
+    uint64_t argAlign = 0;
+    if (linePtr!=end && *linePtr!=',')
+    {
+        const char* valuePlace = linePtr;
+        if (getAbsoluteValueArg(asmr, argAlign, linePtr, true))
+        {
+            if (argAlign==0 || argAlign != (1ULL<<(63-CLZ64(argAlign))))
+                ASM_NOTGOOD_BY_ERROR(valuePlace, "Argument alignment is not power of 2")
+        }
+        else
+            good = false;
+    }
+    if (argAlign == 0)
+    {
+        argAlign = (argSize!=0) ? 1ULL<<(63-CLZ64(argSize)) : 1;
+        if (argSize > argAlign)
+            argAlign <<= 1;
+    }
+    
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    // get value kind
+    cxuint valueKindVal = 0;
+    good &= getEnumeration(asmr, linePtr, "value kind", rocmValueKindNamesTblSize,
+                rocmValueKindNamesTbl, valueKindVal, nullptr);
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    // get value type
+    cxuint valueTypeVal = 0;
+    good &= getEnumeration(asmr, linePtr, "value type", rocmValueTypeNamesTblSize,
+                rocmValueTypeNamesTbl, valueTypeVal, nullptr);
+    
+    uint64_t pointeeAlign = 0;
+    if (valueKindVal == cxuint(ROCmValueKind::DYN_SHARED_PTR))
+    {
+        // parse pointeeAlign
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        const char* valuePlace = linePtr;
+        if (getAbsoluteValueArg(asmr, pointeeAlign, linePtr, true))
+        {
+            if (pointeeAlign==0 || pointeeAlign != (1ULL<<(63-CLZ64(pointeeAlign))))
+                ASM_NOTGOOD_BY_ERROR(valuePlace, "Argument pointee alignment "
+                            "is not power of 2")
+        }
+        else
+            good = false;
+    }
+    
+    cxuint addressSpaceVal = 0;
+    if (valueKindVal == cxuint(ROCmValueKind::DYN_SHARED_PTR) ||
+        valueKindVal == cxuint(ROCmValueKind::GLOBAL_BUFFER))
+    {
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        // parse address space
+        good &= getEnumeration(asmr, linePtr, "address space",
+                    6, rocmAddressSpaceNamesTbl, addressSpaceVal, nullptr);
+    }
+    
+    cxuint accessQualVal = 0;
+    if (valueKindVal == cxuint(ROCmValueKind::IMAGE) ||
+        valueKindVal == cxuint(ROCmValueKind::PIPE))
+    {
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        // parse address space
+        good &= getEnumeration(asmr, linePtr, "access qualifier",
+                    4, rocmAccessQualNamesTbl, accessQualVal, nullptr);
+    }
+    cxuint actualAccessQualVal = 0;
+    if (valueKindVal == cxuint(ROCmValueKind::GLOBAL_BUFFER) ||
+        valueKindVal == cxuint(ROCmValueKind::IMAGE) ||
+        valueKindVal == cxuint(ROCmValueKind::PIPE))
+    {
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        // parse address space
+        good &= getEnumeration(asmr, linePtr, "access qualifier",
+                    4, rocmAccessQualNamesTbl, actualAccessQualVal, nullptr);
+    }
+    
+    bool argIsConst = false;
+    bool argIsRestrict = false;
+    bool argIsVolatile = false;
+    bool argIsPipe = false;
+    // parse list of flags
+    skipSpacesToEnd(linePtr, end);
+    while (linePtr != end)
+    {
+        char name[20];
+        const char* fieldPlace = linePtr;
+        good &= getNameArg(asmr, 20, name, linePtr, "argument flag", true);
+        
+        if (::strcmp(name, "const")==0)
+            argIsConst = true;
+        else if (::strcmp(name, "restrict")==0)
+            argIsRestrict= true;
+        else if (::strcmp(name, "volatile")==0)
+            argIsVolatile = true;
+        else if (::strcmp(name, "pip")==0)
+            argIsPipe = true;
+        else
+            ASM_NOTGOOD_BY_ERROR(fieldPlace, "Unknown argument flag")
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    handler.output.useMetadataInfo = true;
+    ROCmKernelMetadata& metadata = handler.output.metadataInfo.kernels[asmr.currentKernel];
+    // setup kernel arg info
+    ROCmKernelArgInfo argInfo{};
+    argInfo.name = argName;
+    argInfo.typeName = typeName;
+    argInfo.size = argSize;
+    argInfo.align = argAlign;
+    argInfo.pointeeAlign = pointeeAlign;
+    argInfo.valueKind = ROCmValueKind(valueKindVal);
+    argInfo.valueType = ROCmValueType(valueTypeVal);
+    argInfo.addressSpace = ROCmAddressSpace(addressSpaceVal);
+    argInfo.accessQual = ROCmAccessQual(accessQualVal);
+    argInfo.actualAccessQual = ROCmAccessQual(actualAccessQualVal);
+    argInfo.isConst = argIsConst;
+    argInfo.isRestrict = argIsRestrict;
+    argInfo.isVolatile = argIsVolatile;
+    argInfo.isPipe = argIsPipe;
+    // just add to kernel arguments
+    metadata.argInfos.push_back(argInfo);
 }
 
 bool AsmROCmPseudoOps::checkConfigValue(Assembler& asmr, const char* valuePlace,
@@ -1595,6 +1861,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setArchStepping(*this, linePtr);
             break;
         case ROCMOP_ARG:
+            AsmROCmPseudoOps::addKernelArg(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_CALL_CONVENTION:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
@@ -1701,6 +1968,8 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setMachine(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_MAX_FLAT_WORK_GROUP_SIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                            ROCMCVAL_MAX_FLAT_WORK_GROUP_SIZE);
             break;
         case ROCMOP_MAX_SCRATCH_BACKING_MEMORY:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
@@ -1710,21 +1979,35 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::addMetadata(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_MD_GROUP_SEGMENT_FIXED_SIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                            ROCMCVAL_MD_GROUP_SEGMENT_FIXED_SIZE);
             break;
         case ROCMOP_MD_KERNARG_SEGMENT_ALIGN:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                            ROCMCVAL_MD_KERNARG_SEGMENT_ALIGN);
             break;
         case ROCMOP_MD_KERNARG_SEGMENT_SIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                            ROCMCVAL_MD_KERNARG_SEGMENT_ALIGN);
             break;
         case ROCMOP_MD_LANGUAGE:
             AsmROCmPseudoOps::setKernelLanguage(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_MD_PRIVATE_SEGMENT_FIXED_SIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                            ROCMCVAL_MD_PRIVATE_SEGMENT_FIXED_SIZE);
             break;
         case ROCMOP_MD_SPILLEDSGPRS:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                            ROCMCVAL_MD_SPILLEDSGPRS);
             break;
         case ROCMOP_MD_SPILLEDVGPRS:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                            ROCMCVAL_MD_SPILLEDVGPRS);
             break;
         case ROCMOP_MD_SGPRSNUM:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                            ROCMCVAL_MD_SGPRSNUM);
             break;
         case ROCMOP_MD_SYMNAME:
             AsmROCmPseudoOps::setKernelSymName(*this, stmtPlace, linePtr);
@@ -1733,8 +2016,12 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setMetadataVersion(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_MD_VGPRSNUM:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                            ROCMCVAL_MD_VGPRSNUM);
             break;
         case ROCMOP_MD_WAVEFRONT_SIZE:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                            ROCMCVAL_MD_WAVEFRONT_SIZE);
             break;
         case ROCMOP_NEWBINFMT:
             AsmROCmPseudoOps::setNewBinFormat(*this, linePtr);

@@ -664,11 +664,8 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
     for (const ROCmKernelArgInfo& argInfo: kernel.argInfos)
     {
         output.write("        .arg ", 13);
-        if (!argInfo.name.empty())
-        {
-            output.write(argInfo.name.c_str(), argInfo.name.size());
-            output.write(", ", 2);
-        }
+        output.write(argInfo.name.c_str(), argInfo.name.size());
+        output.write(", ", 2);
         output.write("\"", 1);
         std::string typeName = escapeStringCStyle(argInfo.typeName);
         output.write(typeName.c_str(), typeName.size());
