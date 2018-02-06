@@ -58,6 +58,7 @@ static ROCmInput genROCmInput(const ROCmBinary& binary)
     rocmInput.newBinFormat = binary.isNewBinaryFormat();
     rocmInput.globalDataSize = binary.getGlobalDataSize();
     rocmInput.globalData = binary.getGlobalData();
+    rocmInput.useMetadataInfo = false;
     
     {
         // load .note to determine architecture (major, minor and stepping)

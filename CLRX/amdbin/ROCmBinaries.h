@@ -368,6 +368,8 @@ struct ROCmInput
     CString targetTripple; ///< same LLVM target tripple
     size_t metadataSize;    ///< metadata size
     const char* metadata;   ///< metadata
+    bool useMetadataInfo;   ///< use metadatainfo instead same metadata
+    ROCmMetadata metadataInfo; ///< metadata info
     std::vector<BinSection> extraSections;  ///< extra sections
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
     

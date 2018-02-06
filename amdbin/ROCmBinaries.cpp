@@ -1971,9 +1971,39 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     elfBinGen64.addNote({"AMD", 0x1b, noteBuf.get(), 3U});
     if (!target.empty())
         elfBinGen64.addNote({"AMD", target.size(), (const cxbyte*)target.c_str(), 0xbU});
-    if (input->metadataSize != 0)
-        elfBinGen64.addNote({"AMD", input->metadataSize,
-                (const cxbyte*)input->metadata, 0xaU});
+    
+    size_t metadataSize = input->metadataSize;
+    const char* metadata = input->metadata;
+    std::string metadataStr;
+    if (input->useMetadataInfo)
+    {
+        // generate ROCm metadata
+        std::vector<std::pair<CString, size_t> > symbolIndices(input->symbols.size());
+        // create sorted indices of symbols by its name
+        for (size_t k = 0; k < input->symbols.size(); k++)
+            symbolIndices[k] = std::make_pair(input->symbols[k].symbolName, k);
+        mapSort(symbolIndices.begin(), symbolIndices.end());
+        
+        const size_t mdKernelsNum = input->metadataInfo.kernels.size();
+        std::unique_ptr<const ROCmKernelConfig*[]> kernelConfigPtrs(
+                new const ROCmKernelConfig*[mdKernelsNum]);
+        for (size_t k = 0; k < mdKernelsNum; k++)
+        {
+            auto it = binaryMapFind(symbolIndices.begin(), symbolIndices.end(), 
+                        input->metadataInfo.kernels[k].name);
+            if (it == symbolIndices.end())
+                throw BinGenException("Kernel in metadata doesn't exists in code");
+            kernelConfigPtrs[k] = reinterpret_cast<const ROCmKernelConfig*>(
+                        input->code + input->symbols[it->second].offset);
+        }
+        
+        //generateROCmMetadata(input->metadataInfo, metadataStr);
+        metadataSize = metadataStr.size();
+        metadata = metadataStr.c_str();
+    }
+    
+    if (metadataSize != 0)
+        elfBinGen64.addNote({"AMD", metadataSize, (const cxbyte*)metadata, 0xaU});
     
     /// region and sections
     elfBinGen64.addRegion(ElfRegion64::programHeaderTable());
