@@ -58,9 +58,10 @@ void ROCmKernelMetadata::initialize()
     spilledVgprs = BINGEN_NOTSUPPLIED;
 }
 
-void ROCmMetadata::initialize ()
+void ROCmMetadata::initialize()
 {
-    version[0] = version[1] = 0;
+    version[0] = 1;
+    version[1] = 0;
 }
 
 // return trailing spaces
@@ -1515,7 +1516,7 @@ static void genArrayValue(cxuint n, const cxuint* values, std::string& output)
     {
         itocstrCStyle(values[i], numBuf, 24);
         output += numBuf;
-        output += (i+1<n) ? ", " : "]\n";
+        output += (i+1<n) ? ", " : " ]\n";
     }
 }
 
@@ -1531,20 +1532,15 @@ static std::string escapeYAMLString(const CString& input)
 {
     bool toEscape = false;
     const char* s;
-    bool nonDigit = false;
     for (s = input.c_str(); *s!=0; s++)
     {
         cxbyte c = *s;
         if (c < 0x20 || c >= 0x80 || c=='*' || c=='&' || c=='!' || c=='@' ||
             c=='\'' || c=='\"')
-        {
             toEscape = true;
-            break;
-        }
-        nonDigit |= isDigit(c);
     }
     // if spaces in begin and end
-    if (!nonDigit || isSpace(input[0]) || isDigit(input[0]) ||
+    if (isSpace(input[0]) || isDigit(input[0]) ||
         (!input.empty() && isSpace(s[-1])))
         toEscape = true;
     
@@ -1556,6 +1552,18 @@ static std::string escapeYAMLString(const CString& input)
         return out;
     }
     return input.c_str();
+}
+
+static std::string escapePrintfFormat(const std::string& fmt)
+{
+    std::string out;
+    out.reserve(fmt.size());
+    for (char c: fmt)
+        if (c!=':')
+            out.push_back(c);
+        else
+            out += "\\72";
+    return out;
 }
 
 static void generateROCmMetadata(const ROCmMetadata& mdInfo,
@@ -1596,7 +1604,9 @@ static void generateROCmMetadata(const ROCmMetadata& mdInfo,
             output += ':';
         }
         // printf format
-        output += escapeStringCStyle(printfInfo.format);
+        std::string escapedFmt = escapeStringCStyle(printfInfo.format);
+        escapedFmt = escapePrintfFormat(escapedFmt);
+        output += escapedFmt;
         output += "'\n";
     }
     
@@ -1608,9 +1618,17 @@ static void generateROCmMetadata(const ROCmMetadata& mdInfo,
         const ROCmKernelMetadata& kernel = mdInfo.kernels[i];
         output += "  - Name:            ";
         output.append(kernel.name.c_str(), kernel.name.size());
-        output += "\n    SymbolName:      '";
-        output += escapeYAMLString(kernel.symbolName);
-        output += "'\n";
+        output += "\n    SymbolName:      ";
+        if (!kernel.symbolName.empty())
+            output += escapeYAMLString(kernel.symbolName);
+        else
+        {
+            // default is kernel name + '@kd'
+            std::string symName = kernel.name.c_str();
+            symName += "@kd";
+            output += escapeYAMLString(symName);
+        }
+        output += "\n";
         if (!kernel.language.empty())
         {
             output += "    Language:        ";

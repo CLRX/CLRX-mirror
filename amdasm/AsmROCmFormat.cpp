@@ -119,6 +119,7 @@ AsmROCmHandler::AsmROCmHandler(Assembler& assembler): AsmFormatHandler(assembler
              output{}, codeSection(0), commentSection(ASMSECT_NONE),
              metadataSection(ASMSECT_NONE), dataSection(ASMSECT_NONE), extraSectionCount(0)
 {
+    output.metadataInfo.initialize();
     output.archMinor = output.archStepping = UINT32_MAX;
     output.eflags = BINGEN_DEFAULT;
     assembler.currentKernel = ASMKERN_GLOBAL;
@@ -147,6 +148,7 @@ cxuint AsmROCmHandler::addKernel(const char* kernelName)
         new Kernel{ thisSection, nullptr, false, ASMSECT_NONE, thisSection });
     output.metadataInfo.kernels.push_back(ROCmKernelMetadata());
     output.metadataInfo.kernels.back().initialize();
+    output.metadataInfo.kernels.back().name = kernelName;
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
@@ -664,9 +666,9 @@ void AsmROCmPseudoOps::setKernelSymName(AsmROCmHandler& handler, const char* pse
         PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
                     "metadata section exists")
     
-    CString symName;
+    std::string symName;
     skipSpacesToEnd(linePtr, end);
-    bool good = getNameArg(asmr, symName, linePtr, "symbol name", true);
+    bool good = asmr.parseString(symName, linePtr);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -807,8 +809,8 @@ static const std::pair<const char*, cxuint> rocmValueKindNamesTbl[] =
     { "goz", cxuint(ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z) },
     { "image", cxuint(ROCmValueKind::IMAGE) },
     { "none", cxuint(ROCmValueKind::HIDDEN_NONE) },
-    { "printfbuf", cxuint(ROCmValueKind::HIDDEN_PRINTF_BUFFER) },
     { "pipe", cxuint(ROCmValueKind::PIPE) },
+    { "printfbuf", cxuint(ROCmValueKind::HIDDEN_PRINTF_BUFFER) },
     { "queue", cxuint(ROCmValueKind::QUEUE) },
     { "sampler", cxuint(ROCmValueKind::SAMPLER) },
     { "value", cxuint(ROCmValueKind::BY_VALUE) }
@@ -883,12 +885,13 @@ void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoO
     skipSpacesToEnd(linePtr, end);
     CString argName;
     if (linePtr!=end && *linePtr!=',')
-    {
         // parse name
         good &= getNameArg(asmr, argName, linePtr, "argument name", true);
-        if (!skipRequiredComma(asmr, linePtr))
-            return;
-    }
+    
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    skipSpacesToEnd(linePtr, end);
+    
     std::string typeName;
     if (linePtr!=end && *linePtr=='"')
     {

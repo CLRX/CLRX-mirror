@@ -539,9 +539,13 @@ static const char* disasmROCmAccessQuals[] =
 static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadata& kernel)
 {
     output.write("    .config\n", 12);
-    output.write("        .md_symname ", 20);
-    output.write(kernel.symbolName.c_str(), kernel.symbolName.size());
-    output.write("\n", 1);
+    output.write("        .md_symname \"", 21);
+    //output.write(kernel.symbolName.c_str(), kernel.symbolName.size());
+    {
+        std::string symName = escapeStringCStyle(kernel.symbolName);
+        output.write(symName.c_str(), symName.size());
+    }
+    output.write("\"\n", 2);
     output.write("        .md_language \"", 22);
     {
         std::string langName = escapeStringCStyle(kernel.language);
