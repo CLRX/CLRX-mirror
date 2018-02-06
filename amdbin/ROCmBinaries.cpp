@@ -1719,10 +1719,11 @@ static void generateROCmMetadata(const ROCmMetadata& mdInfo,
             if (argInfo.valueKind == ROCmValueKind::DYN_SHARED_PTR ||
                 argInfo.valueKind == ROCmValueKind::GLOBAL_BUFFER)
             {
-                if (argInfo.addressSpace > ROCmAddressSpace::MAX_VALUE)
+                if (argInfo.addressSpace > ROCmAddressSpace::MAX_VALUE ||
+                    argInfo.addressSpace == ROCmAddressSpace::NONE)
                     throw BinGenException("Unknown AddressSpace");
                 output += "        AddrSpaceQual:   ";
-                output += rocmAddrSpaceTypesTbl[cxuint(argInfo.addressSpace)];
+                output += rocmAddrSpaceTypesTbl[cxuint(argInfo.addressSpace)-1];
                 output += "\n";
             }
             if (argInfo.valueKind == ROCmValueKind::IMAGE ||
