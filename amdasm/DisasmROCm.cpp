@@ -678,6 +678,12 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
         bufSize = snprintf(buf, 100, "%" PRIu64 ", %" PRIu64,
                            argInfo.size, argInfo.align);
         output.write(buf, bufSize);
+        
+        if (argInfo.valueKind > ROCmValueKind::MAX_VALUE)
+            throw DisasmException("Unknown argument value kind");
+        if (argInfo.valueType > ROCmValueType::MAX_VALUE)
+            throw DisasmException("Unknown argument value type");
+        
         bufSize = snprintf(buf, 100, ", %s, %s", 
                     disasmROCmValueKindNames[cxuint(argInfo.valueKind)],
                     disasmROCmValueTypeNames[cxuint(argInfo.valueType)]);
@@ -692,6 +698,8 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
         if (argInfo.valueKind == ROCmValueKind::DYN_SHARED_PTR ||
             argInfo.valueKind == ROCmValueKind::GLOBAL_BUFFER)
         {
+            if (argInfo.addressSpace > ROCmAddressSpace::MAX_VALUE)
+                throw DisasmException("Unknown address space");
             buf[0] = ','; buf[1] = ' ';
             const char* name = disasmROCmAddressSpaces[cxuint(argInfo.addressSpace)];
             bufSize = strlen(name) + 2;
@@ -702,6 +710,8 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
         if (argInfo.valueKind == ROCmValueKind::IMAGE ||
             argInfo.valueKind == ROCmValueKind::PIPE)
         {
+            if (argInfo.accessQual > ROCmAccessQual::MAX_VALUE)
+                throw DisasmException("Unknown access qualifier");
             buf[0] = ','; buf[1] = ' ';
             const char* name = disasmROCmAccessQuals[cxuint(argInfo.accessQual)];
             bufSize = strlen(name) + 2;
@@ -712,6 +722,8 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
             argInfo.valueKind == ROCmValueKind::IMAGE ||
             argInfo.valueKind == ROCmValueKind::PIPE)
         {
+            if (argInfo.actualAccessQual > ROCmAccessQual::MAX_VALUE)
+                throw DisasmException("Unknown actual access qualifier");
             buf[0] = ','; buf[1] = ' ';
             const char* name = disasmROCmAccessQuals[cxuint(argInfo.actualAccessQual)];
             bufSize = strlen(name) + 2;

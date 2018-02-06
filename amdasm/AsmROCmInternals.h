@@ -80,7 +80,19 @@ enum ROCmConfigValueTarget
     ROCMCVAL_PRIVATE_SEGMENT_ALIGN,
     ROCMCVAL_WAVEFRONT_SIZE,
     ROCMCVAL_CALL_CONVENTION,
-    ROCMCVAL_RUNTIME_LOADER_KERNEL_SYMBOL
+    ROCMCVAL_RUNTIME_LOADER_KERNEL_SYMBOL,
+    
+    // metadata info
+    ROCMCVAL_MD_WAVEFRONT_SIZE,
+    ROCMCVAL_MD_KERNARG_SEGMENT_ALIGN,
+    ROCMCVAL_MD_KERNARG_SEGMENT_SIZE,
+    ROCMCVAL_MD_GROUP_SEGMENT_FIXED_SIZE,
+    ROCMCVAL_MD_PRIVATE_SEGMENT_FIXED_SIZE,
+    ROCMCVAL_MD_SGPRSNUM,
+    ROCMCVAL_MD_VGPRSNUM,
+    ROCMCVAL_MD_SPILLEDSGPRS,
+    ROCMCVAL_MD_SPILLEDVGPRS,
+    ROCMCVAL_MAX_FLAT_WORK_GROUP_SIZE
 };
 
 struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
@@ -106,7 +118,30 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     // .metadata
     static void addMetadata(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    
+    // .md_version
+    static void setMetadataVersion(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    // .cws (set reqd_work_group_size or workgroupsizehint)
+    static void setCWS(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    // .work_group_size_hint
+    static void setWorkGroupSizeHint(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    // .fixed_work_group_size
+    static void setFixedWorkGroupSize(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    // .vectypehint
+    static void setVecTypeHint(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    // .md_symname
+    static void setKernelSymName(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    // .md_language
+    static void setKernelLanguage(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    // .printf (add printf)
+    static void addPrintf(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
     // .fkernel (define kernel as function kernel)
     static void doFKernel(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);

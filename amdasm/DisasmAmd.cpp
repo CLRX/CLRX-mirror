@@ -1286,6 +1286,8 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
     output.write(arg.typeName.c_str(), arg.typeName.size());
     if (arg.argType != KernelArgType::POINTER)
     {
+        if (arg.argType > KernelArgType::MAX_VALUE_CL2)
+            throw DisasmException("Unknown argument type");
         bufSize = snprintf(buf, 100, "\", %s",
                    kernelArgTypeNamesTbl[cxuint(arg.argType)]);
         output.write(buf, bufSize);
@@ -1321,6 +1323,8 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
     }
     else
     {
+        if (arg.pointerType > KernelArgType::MAX_VALUE_CL2)
+            throw DisasmException("Unknown argument pointer type");
         // pointer
         bufSize = snprintf(buf, 100, "\", %s*",
                    kernelArgTypeNamesTbl[cxuint(arg.pointerType)]);

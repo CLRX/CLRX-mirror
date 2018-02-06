@@ -82,7 +82,8 @@ enum class ROCmValueKind : cxbyte
     HIDDEN_NONE,            ///< none (not used)
     HIDDEN_PRINTF_BUFFER,   ///< buffer for printf calls
     HIDDEN_DEFAULT_QUEUE,   ///< OpenCL default queue
-    HIDDEN_COMPLETION_ACTION    ///< ???
+    HIDDEN_COMPLETION_ACTION,    ///< ???
+    MAX_VALUE = HIDDEN_COMPLETION_ACTION
 };
 
 /// ROCm argument's value type
@@ -99,7 +100,8 @@ enum class ROCmValueType : cxbyte
     FLOAT32,    ///< single floating point
     INT64,      ///< 64-bit signed integer
     UINT64,     ///< 64-bit unsigned integer
-    FLOAT64     ///< double floating point
+    FLOAT64,     ///< double floating point
+    MAX_VALUE = FLOAT64
 };
 
 /// ROCm argument address space
@@ -111,7 +113,8 @@ enum class ROCmAddressSpace : cxbyte
     CONSTANT,
     LOCAL,
     GENERIC,
-    REGION
+    REGION,
+    MAX_VALUE = REGION
 };
 
 /// ROCm access qualifier
@@ -121,6 +124,7 @@ enum class ROCmAccessQual: cxbyte
     READ_ONLY,
     WRITE_ONLY,
     READ_WRITE,
+    MAX_VALUE = READ_WRITE
 };
 
 /// ROCm kernel argument

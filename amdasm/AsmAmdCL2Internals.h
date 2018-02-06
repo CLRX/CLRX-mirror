@@ -176,7 +176,7 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
     // .cws (set reqd_work_group_size or workgroupsizehint)
     static void setCWS(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    // .cws (set reqd_work_group_size or workgroupsizehint)
+    // .work_group_size_hint
     static void setWorkGroupSizeHint(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     // .vectypehint

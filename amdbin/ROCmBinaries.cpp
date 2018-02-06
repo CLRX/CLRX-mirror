@@ -1523,6 +1523,7 @@ static std::string escapeYAMLString(const CString& input)
 {
     bool toEscape = false;
     const char* s;
+    bool nonDigit = false;
     for (s = input.c_str(); *s!=0; s++)
     {
         cxbyte c = *s;
@@ -1532,9 +1533,11 @@ static std::string escapeYAMLString(const CString& input)
             toEscape = true;
             break;
         }
+        nonDigit |= isDigit(c);
     }
     // if spaces in begin and end
-    if (isSpace(input[0]) || (!input.empty() && isSpace(s[-1])))
+    if (!nonDigit || isSpace(input[0]) || isDigit(input[0]) ||
+        (!input.empty() && isSpace(s[-1])))
         toEscape = true;
     
     if (toEscape)
@@ -1547,8 +1550,8 @@ static std::string escapeYAMLString(const CString& input)
     return input.c_str();
 }
 
-void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig** kconfigs,
-                    std::string& output)
+static void generateROCmMetadata(const ROCmMetadata& mdInfo,
+                    const ROCmKernelConfig** kconfigs, std::string& output)
 {
     output.clear();
     char numBuf[24];
@@ -1659,7 +1662,13 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig** k
             itocstrCStyle(argInfo.align, numBuf, 24);
             output += numBuf;
             output += "\n        ValueKind:       ";
+            
+            if (argInfo.valueKind > ROCmValueKind::MAX_VALUE)
+                throw BinGenException("Unknown ValueKind");
             output += rocmValueKindNames[cxuint(argInfo.valueKind)];
+            
+            if (argInfo.valueType > ROCmValueType::MAX_VALUE)
+                throw BinGenException("Unknown ValueType");
             output += "\n        ValueType:       ";
             output += rocmValueTypeNames[cxuint(argInfo.valueType)];
             output += "\n";
@@ -1674,6 +1683,8 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig** k
             if (argInfo.valueKind == ROCmValueKind::DYN_SHARED_PTR ||
                 argInfo.valueKind == ROCmValueKind::GLOBAL_BUFFER)
             {
+                if (argInfo.addressSpace > ROCmAddressSpace::MAX_VALUE)
+                    throw BinGenException("Unknown AddressSpace");
                 output += "        AddrSpaceQual:   ";
                 output += rocmAddrSpaceTypesTbl[cxuint(argInfo.addressSpace)];
                 output += "\n";
@@ -1681,6 +1692,8 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig** k
             if (argInfo.valueKind == ROCmValueKind::IMAGE ||
                 argInfo.valueKind == ROCmValueKind::PIPE)
             {
+                if (argInfo.accessQual> ROCmAccessQual::MAX_VALUE)
+                    throw BinGenException("Unknown AccessQualifier");
                 output += "        AccQual:         ";
                 output += rocmAccessQualifierTbl[cxuint(argInfo.accessQual)];
                 output += "\n";
@@ -1689,6 +1702,8 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo, const ROCmKernelConfig** k
                 argInfo.valueKind == ROCmValueKind::IMAGE ||
                 argInfo.valueKind == ROCmValueKind::PIPE)
             {
+                if (argInfo.actualAccessQual> ROCmAccessQual::MAX_VALUE)
+                    throw BinGenException("Unknown ActualAccessQualifier");
                 output += "        ActualAccQual:   ";
                 output += rocmAccessQualifierTbl[cxuint(argInfo.actualAccessQual)];
                 output += "\n";
@@ -1987,16 +2002,19 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
         const size_t mdKernelsNum = input->metadataInfo.kernels.size();
         std::unique_ptr<const ROCmKernelConfig*[]> kernelConfigPtrs(
                 new const ROCmKernelConfig*[mdKernelsNum]);
+        // generate ROCm kernel config pointers
         for (size_t k = 0; k < mdKernelsNum; k++)
         {
             auto it = binaryMapFind(symbolIndices.begin(), symbolIndices.end(), 
                         input->metadataInfo.kernels[k].name);
-            if (it == symbolIndices.end())
+            if (it == symbolIndices.end() ||
+                (input->symbols[it->second].type != ROCmRegionType::FKERNEL &&
+                 input->symbols[it->second].type != ROCmRegionType::KERNEL))
                 throw BinGenException("Kernel in metadata doesn't exists in code");
             kernelConfigPtrs[k] = reinterpret_cast<const ROCmKernelConfig*>(
                         input->code + input->symbols[it->second].offset);
         }
-        
+        // just generate ROCm metadata from info
         generateROCmMetadata(input->metadataInfo, kernelConfigPtrs.get(), metadataStr);
         metadataSize = metadataStr.size();
         metadata = metadataStr.c_str();
