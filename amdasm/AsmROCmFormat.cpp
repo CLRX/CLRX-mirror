@@ -2253,6 +2253,10 @@ bool AsmROCmHandler::prepareBinary()
         }
     }
     
+    // enable metadata config for new binary format by default (if no metadata section)
+    if (output.newBinFormat && output.metadata==nullptr)
+        output.useMetadataInfo = true;
+    
     GPUArchitecture arch = getGPUArchitectureFromDeviceType(assembler.deviceType);
     // set up number of the allocated SGPRs and VGPRs for kernel
     cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);

@@ -1566,7 +1566,10 @@ static void generateROCmMetadata(const ROCmMetadata& mdInfo,
     output += "---\n";
     // version
     output += "Version:         ";
-    genArrayValue(2, mdInfo.version, output);
+    if (hasValue(mdInfo.version[0]))
+        genArrayValue(2, mdInfo.version, output);
+    else // default
+        output += "[ 1, 0 ]\n";
     if (!mdInfo.printfInfos.empty())
         output += "Printf:          \n";
     // check print ids uniquness
