@@ -869,7 +869,11 @@ bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
     const char* valuePlace = linePtr;
     bool good = getAbsoluteValueArg(asmr, out[0], linePtr, true);
     if (good)
+    {
         asmr.printWarningForRange(32, out[0], asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+        if (out[0] == 0)
+            ASM_NOTGOOD_BY_ERROR(valuePlace, "Group size comment must be not zero");
+    }
     bool haveComma;
     if (!skipComma(asmr, haveComma, linePtr))
         return false;
@@ -879,8 +883,12 @@ bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
         skipSpacesToEnd(linePtr, end);
         valuePlace = linePtr;
         if (getAbsoluteValueArg(asmr, out[1], linePtr, false))
+        {
             asmr.printWarningForRange(32, out[1], asmr.getSourcePos(valuePlace),
                               WS_UNSIGNED);
+            if (out[1] == 0)
+                ASM_NOTGOOD_BY_ERROR(valuePlace, "Group size comment must be not zero");
+        }
         else
             good = false;
         
@@ -890,11 +898,15 @@ bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
         {
             valuePlace = linePtr;
             if (getAbsoluteValueArg(asmr, out[2], linePtr, false))
+            {
                 asmr.printWarningForRange(32, out[2], asmr.getSourcePos(valuePlace),
                             WS_UNSIGNED);
+                if (out[2] == 0)
+                    ASM_NOTGOOD_BY_ERROR(valuePlace, "Group size comment must be not zero");
+            }
             else
                 good = false;
-        }   
+        }
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -910,7 +922,7 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
         PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     
-    uint64_t out[3] = { 0, 0, 0 };
+    uint64_t out[3] = { 1, 1, 1 };
     if (!parseCWS(asmr, pseudoOpPlace, linePtr, out))
         return;
     AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
