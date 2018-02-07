@@ -748,6 +748,56 @@ test.s:107:22: Error: Illegal pointer type
 test.s:108:35: Error: Unknown access qualifier
 test.s:110:13: Error: Illegal place of configuration pseudo-op
 )ffDXD", false
+    },
+    {   // cws default
+        R"ffDXD(            .amd
+    .kernel configKernel
+        .config
+            .uavid 11
+            .arg x  ,  float  
+            .arg xff ,  "SP" ,  float  
+            .cws 41,6
+        .text
+            s_endpgm
+    .kernel configKernel2
+        .config
+            .uavid 13
+            .arg x  ,  float  
+            .arg xff ,  "SP" ,  float  
+            .cws 42
+        .text
+            s_endpgm
+)ffDXD",
+        R"ffDXD(AmdBinDump:
+  Bitness=32-bit, devType=CapeVerde, drvVersion=0, drvInfo="", compileOptions=""
+  Kernel: configKernel
+    Data:
+    nullptr
+    Code:
+    000081bf
+    Config:
+      Arg: "x", "float", float, void, none, 0, 0, 0, default, true
+      Arg: "xff", "SP", float, void, none, 0, 0, 0, default, true
+      dims=default, cws=41 6 1, SGPRS=0, VGPRS=0, pgmRSRC2=0x0, ieeeMode=0x0
+      floatMode=0xc0, hwLocalSize=0, hwRegion=default, scratchBuffer=0
+      uavPrivate=default, uavId=11, constBufferId=default, printfId=default
+      privateId=default, earlyExit=0,condOut=0, 
+  Kernel: configKernel2
+    Data:
+    nullptr
+    Code:
+    000081bf
+    Config:
+      Arg: "x", "float", float, void, none, 0, 0, 0, default, true
+      Arg: "xff", "SP", float, void, none, 0, 0, 0, default, true
+      dims=default, cws=42 1 1, SGPRS=0, VGPRS=0, pgmRSRC2=0x0, ieeeMode=0x0
+      floatMode=0xc0, hwLocalSize=0, hwRegion=default, scratchBuffer=0
+      uavPrivate=default, uavId=13, constBufferId=default, printfId=default
+      privateId=default, earlyExit=0,condOut=0, 
+  GlobalData:
+  nullptr
+)ffDXD",
+        "", true
     }
 };
 

@@ -1044,6 +1044,58 @@ test.s:45:5: Error: Config can't be defined if metadata,header,setup,stub sectio
   SamplerInit:
   nullptr
 )ffDXD", "", true
+    },
+    {   // with vectypehint and work_group_size_hint
+        // cws and work_group_size_hint defaults
+        R"ffDXD(.amdcl2
+.64bit
+.gpu Bonaire
+.driver_version 191205
+.kernel aaa1
+    .config
+        .dims x
+        .setupargs
+        .vectypehint float8
+        .cws 144,11
+        .work_group_size_hint 44
+        .arg n,uint
+        .arg in,uint*,global,const
+        .arg out,uint*,global
+        .ieeemode
+        .floatmode 0xda
+        .localsize 1000
+        .useargs
+    .text
+        s_and_b32 s9,s5,44
+        s_and_b32 s10,s5,5
+)ffDXD",
+        R"ffDXD(AmdCL2BinDump:
+  devType=Bonaire, aclVersion=, drvVersion=191205, compileOptions=""
+  Kernel: aaa1
+    Code:
+    05ac098705850a87
+    Config:
+      Arg: "_.global_offset_0", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_1", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_2", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 3, 0, 0, 0
+      Arg: "_.vqueue_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.aqlwrap_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "n", "uint", uint, void, none, 0, 0, 0, default, 3
+      Arg: "in", "uint*", pointer, uint, global, 4, 0, 0, default, 3
+      Arg: "out", "uint*", pointer, uint, global, 0, 0, 0, default, 3
+      dims=1, cws=144 11 1, SGPRS=11, VGPRS=1
+      pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x1, floatMode=0xda
+      priority=0, exceptions=0, localSize=1000, scratchBuffer=0
+      useArgs 
+      vectypehint=float8, workGroupSizeHint=44 1 1
+  GlobalData:
+  RwData:
+  nullptr
+  Bss size: 0, bssAlign: 0
+  SamplerInit:
+  nullptr
+)ffDXD", "", true
     }
 };
 
