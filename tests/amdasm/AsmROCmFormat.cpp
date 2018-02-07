@@ -1088,7 +1088,7 @@ kxx1:   .skip 256
 )ffDXD",
         "", true
     },
-    {
+    {   // next metadata info example
         R"ffDXD(.rocm
         .gpu Fiji
         .eflags 3
@@ -1255,7 +1255,88 @@ kxx1:   .skip 256
   NewBinFormat
 )ffDXD",
         "", true
-    }
+    },
+    {   // next metadata info (errors)
+        R"ffDXD(.rocm
+        .gpu Fiji
+        .eflags 3
+        .newbinfmt
+        .md_version 3 , 5
+.kernel kxx1
+    .config
+        .dims x
+        .codeversion 1,0
+        .call_convention 0x34dac
+        .debug_private_segment_buffer_sgpr 98
+        .debug_wavefront_private_segment_offset_sgpr 96
+        .gds_segment_size 100
+        .kernarg_segment_align 32
+    # metadata
+    .text
+        .md_language "jezorx"
+        .reqd_work_group_size 6,
+        .work_group_size_hint 5,7
+        .fixed_work_group_size 3,,71
+        .md_kernarg_segment_size 64
+        .md_kernarg_segment_align 32
+        .md_group_segment_fixed_size 1121
+        .md_private_segment_fixed_size 6632
+        .md_wavefront_size 64
+        .md_sgprsnum 14
+        .md_vgprsnum 11
+        .spilledsgprs 34
+        .spilledvgprs 42
+        .runtime_handle "SomeCodeToExec"
+        # arg infos
+        .arg , "", 8, 8, none, i64
+        .arg , "", 8, 8, complact, i64
+.kernel kxx1
+        .arg , "", 8, 8, printfbuxf, i64
+        .arg vx1, "void*", 8, 8, globalbuf, xi8, global, default volatile
+        .arg vx1, "void*", 8, 8, globalbuf, xi8, global, default volxx
+        .arg vx1, "void*", 8, 8, globalbuf, i8, global, volatile
+        .arg vx1, "void*", 8, 8, globalbuf, i8, global :: xx
+        .md_language "jezorx", ,
+        .md_vgprsnum  
+        .runtime_handle 144
+.main
+        .printf 22,,,"aa"
+.text
+kxx1:   .skip 256
+        s_mov_b32 s7, 0
+        s_endpgm
+)ffDXD",
+        "",
+        R"ffDXD(test.s:17:9: Error: Illegal place of configuration pseudo-op
+test.s:18:9: Error: Illegal place of configuration pseudo-op
+test.s:19:9: Error: Illegal place of configuration pseudo-op
+test.s:20:9: Error: Illegal place of configuration pseudo-op
+test.s:21:9: Error: Illegal place of configuration pseudo-op
+test.s:22:9: Error: Illegal place of configuration pseudo-op
+test.s:23:9: Error: Illegal place of configuration pseudo-op
+test.s:24:9: Error: Illegal place of configuration pseudo-op
+test.s:25:9: Error: Illegal place of configuration pseudo-op
+test.s:26:9: Error: Illegal place of configuration pseudo-op
+test.s:27:9: Error: Illegal place of configuration pseudo-op
+test.s:28:9: Error: Illegal place of configuration pseudo-op
+test.s:29:9: Error: Illegal place of configuration pseudo-op
+test.s:30:9: Error: Illegal place of configuration pseudo-op
+test.s:32:9: Error: Illegal place of configuration pseudo-op
+test.s:33:9: Error: Illegal place of configuration pseudo-op
+test.s:35:26: Error: Unknown value kind
+test.s:36:45: Error: Unknown value type
+test.s:37:45: Error: Unknown value type
+test.s:37:66: Error: Unknown argument flag
+test.s:38:57: Error: Unknown access qualifier
+test.s:39:56: Error: Some garbages at argument flag place
+test.s:40:32: Error: Expected expression
+test.s:40:33: Error: Expected expression
+test.s:41:23: Error: Expected expression
+test.s:42:25: Error: Expected string
+test.s:44:20: Error: Expected expression
+test.s:44:21: Error: Expected expression
+)ffDXD", false
+    },
 };
 
 static void testAssembler(cxuint testId, const AsmTestCase& testCase)
