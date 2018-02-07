@@ -54,6 +54,21 @@ static void printHexData(std::ostream& os, cxuint indentLevel, size_t size,
 static const char* rocmRegionTypeNames[3] =
 { "data", "fkernel", "kernel" };
 
+static const char* rocmValueKindNames[] =
+{
+    "value", "globalbuf", "dynshptr", "sampler", "image", "pipe", "queue",
+    "gox", "goy", "goz", "none", "printfbuf", "defqueue", "complact"
+};
+
+static const char* rocmValueTypeNames[] =
+{ "struct", "i8", "u8", "i16", "u16", "f16", "i32", "u32", "f32", "i64", "u64", "f64" };
+
+static const char* rocmAddressSpaces[] =
+{ "none", "private", "global", "constant", "local", "generic", "region" };
+
+static const char* rocmAccessQuals[] =
+{ "default", "read_only", "write_only", "read_write" };
+
 // print dump of ROCm output to stream for comparing with testcase
 static void printROCmOutput(std::ostream& os, const ROCmInput* output)
 {
@@ -134,6 +149,70 @@ static void printROCmOutput(std::ostream& os, const ROCmInput* output)
     if (output->metadata != nullptr)
         os << "  Metadata:\n" << std::string(output->metadata,
                             output->metadataSize) << "\n";
+    
+    // dump ROCm metadata
+    if (output->useMetadataInfo)
+    {
+        const ROCmMetadata& metadata = output->metadataInfo;
+        os << "  MetadataInfo:\n"
+            "    Version: " << metadata.version[0] << "." << metadata.version[1] << "\n";
+        // dump printf info
+        for (const ROCmPrintfInfo& printfInfo: metadata.printfInfos)
+        {
+            os << "    Printf: " << printfInfo.id;
+            for (size_t argSize: printfInfo.argSizes)
+                os << ", " << argSize;
+            os << "; \"" << printfInfo.format << "\"\n";
+        }
+        // dump kernel metadata
+        for (const ROCmKernelMetadata& kernel: metadata.kernels)
+        {
+            os << "    Kernel: " << kernel.name << "\n"
+                "      SymName=" << kernel.symbolName << "\n"
+                "      Language=" << kernel.language << " " <<
+                        kernel.langVersion[0] << "." << kernel.langVersion[1] << "\n"
+                "      ReqdWorkGroupSize=" << kernel.reqdWorkGroupSize[0] << " " <<
+                        kernel.reqdWorkGroupSize[1] << " " <<
+                        kernel.reqdWorkGroupSize[2] << "\n"
+                "      WorkGroupSizeHint=" << kernel.workGroupSizeHint[0] << " " <<
+                        kernel.workGroupSizeHint[1] << " " <<
+                        kernel.workGroupSizeHint[2] << "\n"
+                "      VecTypeHint=" << kernel.vecTypeHint << "\n"
+                "      RuntimeHandle=" << kernel.runtimeHandle << "\n"
+                "      KernargSegmentSize=" << kernel.kernargSegmentSize << "\n"
+                "      KernargSegmentAlign=" << kernel.kernargSegmentAlign << "\n"
+                "      GroupSegmentFixedSize=" << kernel.groupSegmentFixedSize<< "\n"
+                "      PrivateSegmentFixedSize=" << kernel.privateSegmentFixedSize<< "\n"
+                "      WaveFrontSize=" << kernel.wavefrontSize << "\n"
+                "      SgprsNum=" << kernel.sgprsNum << "\n"
+                "      VgprsNum=" << kernel.vgprsNum << "\n"
+                "      SpilledSgprs=" << kernel.spilledSgprs << "\n"
+                "      SpilledVgprs=" << kernel.spilledVgprs << "\n"
+                "      MaxFlatWorkGroupSize=" << kernel.maxFlatWorkGroupSize << "\n"
+                "      FixedWorkGroupSize=" << kernel.fixedWorkGroupSize[0] << " " <<
+                        kernel.fixedWorkGroupSize[1] << " " <<
+                        kernel.fixedWorkGroupSize[2] << "\n";
+            
+            // dump kernel arguments
+            for (const ROCmKernelArgInfo& argInfo: kernel.argInfos)
+                os << "      Arg name=" << argInfo.name << ", type=" << argInfo.typeName <<
+                    ", size=" << argInfo.size << ", align=" << argInfo.align << "\n"
+                    "        valuekind=" <<
+                            rocmValueKindNames[cxuint(argInfo.valueKind)] <<
+                    ", valuetype=" << rocmValueTypeNames[cxuint(argInfo.valueType)] <<
+                    ", pointeeAlign=" << argInfo.pointeeAlign << "\n"
+                    "        addrSpace=" <<
+                            rocmAddressSpaces[cxuint(argInfo.addressSpace)] <<
+                    ", accQual=" << rocmAccessQuals[cxuint(argInfo.accessQual)] <<
+                    ", actAccQual=" <<
+                            rocmAccessQuals[cxuint(argInfo.actualAccessQual)] << "\n"
+                    "        Flags=" <<
+                    (argInfo.isConst ? " const" : "") <<
+                    (argInfo.isRestrict ? " restrict" : "") <<
+                    (argInfo.isVolatile ? " volatile" : "") <<
+                    (argInfo.isPipe ? " pipe" : "") << "\n";
+        }
+    }
     
     if (!output->target.empty())
         os << "  Target=" << output->target << "\n";
@@ -679,6 +758,332 @@ maybe not unrecognizable by parser but it is understandable by human
   EFlags=3
   NewBinFormat
 )ffDXD", "", true
+    },
+    {   // metadata info
+        R"ffDXD(.rocm
+        .gpu Fiji
+        .eflags 3
+        .newbinfmt
+        .md_version 3 , 5
+        .printf 1 ,5 ,7 , 2,  11, "sometext %d %e %f"
+        .printf 2 ,"sometext"
+        .printf  , 16 ,8 , 2,  4, "sometext %d %e %f"
+.kernel kxx1
+    .config
+        .dims x
+        .codeversion 1,0
+        .call_convention 0x34dac
+        .debug_private_segment_buffer_sgpr 98
+        .debug_wavefront_private_segment_offset_sgpr 96
+        .gds_segment_size 100
+        .kernarg_segment_align 32
+    # metadata
+        .md_symname "kxx1@kd"
+        .md_language "Poliglot", 3, 1
+        .reqd_work_group_size 6,2,4
+        .work_group_size_hint 5,7,2
+        .vectypehint float16
+        .spilledsgprs 11
+        .spilledvgprs 52
+        .md_kernarg_segment_size 64
+        .md_kernarg_segment_align 8
+        .md_group_segment_fixed_size 0
+        .md_private_segment_fixed_size 0
+        .md_wavefront_size 64
+        .md_sgprsnum 14
+        .md_vgprsnum 11
+        .max_flat_work_group_size 256
+        .arg n, "uint", 4, , value, u32
+        .arg n2, "uint", 12, , value, u32
+        .arg x0, "char", 1, 16, value, char
+        .arg x1, "int8", 1, 16, value, i8
+        .arg x2, "short", 2, 16, value, short
+        .arg x3, "int16", 2, 16, value, i16
+        .arg x4, "int", 4, 16, value, int
+        .arg x5, "int32", 4, 16, value, i32
+        .arg x6, "long", 8, 16, value, long
+        .arg x7, "int64", 8, 16, value, i64
+        .arg x8, "uchar", 1, 16, value, uchar
+        .arg x9, "uint8", 1, 16, value, u8
+        .arg x10, "ushort", 2, 16, value, ushort
+        .arg x11, "uint16", 2, 16, value, u16
+        .arg x12, "uint", 4, 16, value, uint
+        .arg x13, "uint32", 4, 16, value, u32
+        .arg x14, "ulong", 8, 16, value, ulong
+        .arg x15, "uint64", 8, 16, value, u64
+        .arg x16, "half", 2, 16, value, half
+        .arg x17, "fp16", 2, 16, value, f16
+        .arg x18, "float", 4, 16, value, float
+        .arg x19, "fp32", 4, 16, value, f32
+        .arg x20, "double", 8, 16, value, double
+        .arg x21, "fp64", 8, 16, value, f64
+        .arg a, "float*", 8, 8, globalbuf, f32, global, default const volatile
+        .arg abuf, "float*", 8, 8, globalbuf, f32, constant, default
+        .arg abuf2, "float*", 8, 8, dynshptr, f32, 1, local
+        .arg abuf3, "float*", 8, 8, globalbuf, f32, generic, default
+        .arg abuf4, "float*", 8, 8, globalbuf, f32, region, default
+        .arg abuf5, "float*", 8, 8, dynshptr, f32, 1, private
+        .arg bbuf, "float*", 8, 8, globalbuf, f32, global, read_only
+        .arg bbuf2, "float*", 8, 8, globalbuf, f32, global, write_only
+        .arg bbuf3, "float*", 8, 8, globalbuf, f32, global, read_write
+        .arg img1, "image1d_t", 8, 8, image, struct, read_only, default
+        .arg img2, "image1d_t", 8, 8, image, struct, write_only, default
+        .arg img3, "image1d_t", 8, 8, image, struct, read_write, default
+        .arg , "", 8, 8, gox, i64
+        .arg , "", 8, 8, goy, i64
+        .arg , "", 8, 8, goz, i64
+        .arg , "", 8, 8, globaloffsetx, i64
+        .arg , "", 8, 8, globaloffsety, i64
+        .arg , "", 8, 8, globaloffsetz, i64
+.text
+kxx1:   .skip 256
+        s_mov_b32 s7, 0
+        s_endpgm
+)ffDXD",
+        R"ffDXD(ROCmBinDump:
+  ROCmSymbol: name=kxx1, offset=0, size=0, type=kernel
+    Config:
+      amdCodeVersion=1.1
+      amdMachine=1:8:0:3
+      kernelCodeEntryOffset=256
+      kernelCodePrefetchOffset=0
+      kernelCodePrefetchSize=0
+      maxScrachBackingMemorySize=0
+      computePgmRsrc1=0xc0040
+      computePgmRsrc2=0x80
+      enableSgprRegisterFlags=0x0
+      enableFeatureFlags=0x0
+      workitemPrivateSegmentSize=0
+      workgroupGroupSegmentSize=0
+      gdsSegmentSize=100
+      kernargSegmentSize=0
+      workgroupFbarrierCount=0
+      wavefrontSgprCount=10
+      workitemVgprCount=1
+      reservedVgprFirst=0
+      reservedVgprCount=0
+      reservedSgprFirst=0
+      reservedSgprCount=0
+      debugWavefrontPrivateSegmentOffsetSgpr=96
+      debugPrivateSegmentBufferSgpr=98
+      kernargSegmentAlignment=5
+      groupSegmentAlignment=4
+      privateSegmentAlignment=4
+      wavefrontSize=6
+      callConvention=0x34dac
+      runtimeLoaderKernelSymbol=0x0
+      ControlDirective:
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+  Comment:
+  nullptr
+  Code:
+  0100000000000000010008000000030000010000000000000000000000000000
+  0000000000000000000000000000000040000c00800000000000000000000000
+  00000000640000000000000000000000000000000a0001000000000000000000
+  6000620005040406ac4d03000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  800087be000081bf
+  MetadataInfo:
+    Version: 3.5
+    Printf: 1, 5, 7, 2, 11; "sometext %d %e %f"
+    Printf: 2; "sometext"
+    Printf: 4294967295, 16, 8, 2, 4; "sometext %d %e %f"
+    Kernel: kxx1
+      SymName=kxx1@kd
+      Language=Poliglot 3.1
+      ReqdWorkGroupSize=6 2 4
+      WorkGroupSizeHint=5 7 2
+      VecTypeHint=float16
+      RuntimeHandle=
+      KernargSegmentSize=64
+      KernargSegmentAlign=8
+      GroupSegmentFixedSize=0
+      PrivateSegmentFixedSize=0
+      WaveFrontSize=64
+      SgprsNum=14
+      VgprsNum=11
+      SpilledSgprs=11
+      SpilledVgprs=52
+      MaxFlatWorkGroupSize=256
+      FixedWorkGroupSize=0 0 0
+      Arg name=n, type=uint, size=4, align=4
+        valuekind=value, valuetype=u32, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=n2, type=uint, size=12, align=16
+        valuekind=value, valuetype=u32, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x0, type=char, size=1, align=16
+        valuekind=value, valuetype=i8, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x1, type=int8, size=1, align=16
+        valuekind=value, valuetype=i8, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x2, type=short, size=2, align=16
+        valuekind=value, valuetype=i16, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x3, type=int16, size=2, align=16
+        valuekind=value, valuetype=i16, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x4, type=int, size=4, align=16
+        valuekind=value, valuetype=i32, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x5, type=int32, size=4, align=16
+        valuekind=value, valuetype=i32, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x6, type=long, size=8, align=16
+        valuekind=value, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x7, type=int64, size=8, align=16
+        valuekind=value, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x8, type=uchar, size=1, align=16
+        valuekind=value, valuetype=u8, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x9, type=uint8, size=1, align=16
+        valuekind=value, valuetype=u8, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x10, type=ushort, size=2, align=16
+        valuekind=value, valuetype=i16, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x11, type=uint16, size=2, align=16
+        valuekind=value, valuetype=u16, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x12, type=uint, size=4, align=16
+        valuekind=value, valuetype=u32, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x13, type=uint32, size=4, align=16
+        valuekind=value, valuetype=u32, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x14, type=ulong, size=8, align=16
+        valuekind=value, valuetype=u64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x15, type=uint64, size=8, align=16
+        valuekind=value, valuetype=u64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x16, type=half, size=2, align=16
+        valuekind=value, valuetype=f16, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x17, type=fp16, size=2, align=16
+        valuekind=value, valuetype=f16, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x18, type=float, size=4, align=16
+        valuekind=value, valuetype=f32, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x19, type=fp32, size=4, align=16
+        valuekind=value, valuetype=f32, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x20, type=double, size=8, align=16
+        valuekind=value, valuetype=f64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=x21, type=fp64, size=8, align=16
+        valuekind=value, valuetype=f64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=a, type=float*, size=8, align=8
+        valuekind=globalbuf, valuetype=f32, pointeeAlign=0
+        addrSpace=global, accQual=default, actAccQual=default
+        Flags= const volatile
+      Arg name=abuf, type=float*, size=8, align=8
+        valuekind=globalbuf, valuetype=f32, pointeeAlign=0
+        addrSpace=constant, accQual=default, actAccQual=default
+        Flags=
+      Arg name=abuf2, type=float*, size=8, align=8
+        valuekind=dynshptr, valuetype=f32, pointeeAlign=1
+        addrSpace=local, accQual=default, actAccQual=default
+        Flags=
+      Arg name=abuf3, type=float*, size=8, align=8
+        valuekind=globalbuf, valuetype=f32, pointeeAlign=0
+        addrSpace=generic, accQual=default, actAccQual=default
+        Flags=
+      Arg name=abuf4, type=float*, size=8, align=8
+        valuekind=globalbuf, valuetype=f32, pointeeAlign=0
+        addrSpace=region, accQual=default, actAccQual=default
+        Flags=
+      Arg name=abuf5, type=float*, size=8, align=8
+        valuekind=dynshptr, valuetype=f32, pointeeAlign=1
+        addrSpace=private, accQual=default, actAccQual=default
+        Flags=
+      Arg name=bbuf, type=float*, size=8, align=8
+        valuekind=globalbuf, valuetype=f32, pointeeAlign=0
+        addrSpace=global, accQual=default, actAccQual=read_only
+        Flags=
+      Arg name=bbuf2, type=float*, size=8, align=8
+        valuekind=globalbuf, valuetype=f32, pointeeAlign=0
+        addrSpace=global, accQual=default, actAccQual=write_only
+        Flags=
+      Arg name=bbuf3, type=float*, size=8, align=8
+        valuekind=globalbuf, valuetype=f32, pointeeAlign=0
+        addrSpace=global, accQual=default, actAccQual=read_write
+        Flags=
+      Arg name=img1, type=image1d_t, size=8, align=8
+        valuekind=image, valuetype=struct, pointeeAlign=0
+        addrSpace=none, accQual=read_only, actAccQual=default
+        Flags=
+      Arg name=img2, type=image1d_t, size=8, align=8
+        valuekind=image, valuetype=struct, pointeeAlign=0
+        addrSpace=none, accQual=write_only, actAccQual=default
+        Flags=
+      Arg name=img3, type=image1d_t, size=8, align=8
+        valuekind=image, valuetype=struct, pointeeAlign=0
+        addrSpace=none, accQual=read_write, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=gox, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=goy, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=goz, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=gox, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=gox, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=gox, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+  EFlags=3
+  NewBinFormat
+)ffDXD",
+        "", true
     }
 };
 
