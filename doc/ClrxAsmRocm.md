@@ -52,6 +52,74 @@ Syntax: .arch_minor ARCH_STEPPING
 
 Set architecture stepping number.
 
+### .arg
+
+Syntax arg: .arg [NAME]\[, "TYPENAME"], SIZE, [ALIGN], VALUEKIND, VALUETYPE[,POINTEEALIGN]\[, ADDRSPACE]\[,ACCQUAL]\[,ACTACCQUAL] \[FLAG1\] \[FLAG2\]...
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Define kernel argument in metadata info. The argument name, type name, alignment are
+optional. The ADDRSPACE is address space and it present only if value kind is
+`globalbuf` or `dynshptr`. The POINTEEALIGN is pointee alignment in bytes and it present
+only if value kind is `dynshptr`. The ACCQUAL defines access qualifier and it present
+only if value kind is `image` or `pipe`. The ACTACCQUAL defines actual access qualifier
+and it present only if value kind is `image`, `pipe` or `globalbuf`.
+The FLAGS is list of flags delimited by spaces.
+
+The list of value kinds:
+
+* complact - hidden competion action
+* defqueue -hidden default command queue
+* dynshptr - dynamic shared pointer (local, private)
+* globalbuf - global buffer
+* gox, globaloffsetx - hidden global offset x
+* goy, globaloffsety - hidden global offset y
+* goz, globaloffsetz - hidden global offset z
+* image - image object
+* none - hidden none to make space between arguments
+* pipe - OpenCL 2.0 pipe object
+* printfbuf - hidden printf buffer
+* queue - command queue
+* sampler - image sampler
+* value - ByValue - argument holds value (integer, floats)
+
+The list of value types:
+
+* i8, char - signed 8-bit integer
+* i16, short - signed 16-bit integer
+* i32, int - signed 32-bit integer
+* i64, long - signed 64-bit integer
+* u8, uchar - unsigned 8-bit integer
+* u16, ushort - unsigned 16-bit integer
+* u32, uint - unsigned 32-bit integer
+* u64, ulong - unsigned 64-bit integer
+* f16, half - 16-bit half floating point
+* f32, float - 32-bit single floating point
+* f64, double - 64-bit double floating point
+* struct - structure
+
+The list of address spaces:
+
+* constant - constant space (???)
+* generic - generic (global or scratch or local)
+* global - global memory
+* local - local memory
+* private - private memory
+* region - ???
+
+This list of access qualifiers:
+
+* default - default access qualifier
+* read_only - read only
+* read_write - read and write
+* write_only - write only
+
+This list of flags:
+
+* const - constant value (only for global buffer)
+* restrict - restrict value (only for global buffer)
+* volatile - volatile (only for global buffer)
+* pipe - only for pipe value kind
+
 ### .call_convention
 
 Syntax: .call_convention CALL_CONV
