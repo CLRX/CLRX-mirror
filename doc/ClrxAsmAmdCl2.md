@@ -209,6 +209,8 @@ Syntax: .reqd_work_group_size SIZEHINT[, SIZEHINT[, SIZEHINT]]
 
 This pseudo-operation must be inside any kernel configuration.
 Set reqd_work_group_size hint for this kernel.
+In versions earlier than 0.1.7 this pseudo-op has been broken and this pseudo-op
+set zeroes in two last component instead ones. We recomment to fill all components.
 
 ### .debug_private_segment_buffer_sgpr
 
