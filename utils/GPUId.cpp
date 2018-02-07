@@ -417,7 +417,8 @@ static const AMDGPUArchVersion amdCL2GpuArchVersionTbl[] =
     { 9, 0, 5 }  // GPUDeviceType::GFX905
 };
 
-AMDGPUArchVersion CLRX::getGPUArchVersion(GPUDeviceType deviceType, GPUArchVersionTable table)
+AMDGPUArchVersion CLRX::getGPUArchVersion(GPUDeviceType deviceType,
+                            GPUArchVersionTable table)
 {
     if (deviceType > GPUDeviceType::GPUDEVICE_MAX)
         throw GPUIdException("Unknown GPU device type");

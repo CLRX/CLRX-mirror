@@ -567,7 +567,7 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
     if (kernel.reqdWorkGroupSize[0] != 0 || kernel.reqdWorkGroupSize[1] != 0 ||
         kernel.reqdWorkGroupSize[2] != 0)
     {
-        bufSize = snprintf(buf, 100, "        .cws %u, %u, %u\n",
+        bufSize = snprintf(buf, 100, "        .reqd_work_group_size %u, %u, %u\n",
                kernel.reqdWorkGroupSize[0], kernel.reqdWorkGroupSize[1],
                kernel.reqdWorkGroupSize[2]);
         output.write(buf, bufSize);
