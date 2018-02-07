@@ -565,7 +565,7 @@ void AsmROCmPseudoOps::setCWS(AsmROCmHandler& handler, const char* pseudoOpPlace
                     "metadata section exists")
     
     skipSpacesToEnd(linePtr, end);
-    uint64_t out[3] = { 0, 0, 0 };
+    uint64_t out[3] = { 1, 1, 1 };
     // parse CWS (1-3 values)
     if (!AsmAmdPseudoOps::parseCWS(asmr, pseudoOpPlace, linePtr, out))
         return;
@@ -591,7 +591,7 @@ void AsmROCmPseudoOps::setWorkGroupSizeHint(AsmROCmHandler& handler,
                     "metadata section exists")
     
     skipSpacesToEnd(linePtr, end);
-    uint64_t out[3] = { 0, 0, 0 };
+    uint64_t out[3] = { 1, 1, 1 };
     // parse CWS (1-3 values)
     if (!AsmAmdPseudoOps::parseCWS(asmr, pseudoOpPlace, linePtr, out))
         return;
@@ -617,7 +617,7 @@ void AsmROCmPseudoOps::setFixedWorkGroupSize(AsmROCmHandler& handler,
                     "metadata section exists")
     
     skipSpacesToEnd(linePtr, end);
-    uint64_t out[3] = { 0, 0, 0 };
+    uint64_t out[3] = { 1, 1, 1 };
     // parse CWS (1-3 values)
     if (!AsmAmdPseudoOps::parseCWS(asmr, pseudoOpPlace, linePtr, out))
         return;

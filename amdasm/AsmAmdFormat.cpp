@@ -862,10 +862,10 @@ bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    // default value is (1,0,0)
+    // default value is (1,1,1)
     out[0] = 1;
-    out[1] = 0;
-    out[2] = 0;
+    out[1] = 1;
+    out[2] = 1;
     const char* valuePlace = linePtr;
     bool good = getAbsoluteValueArg(asmr, out[0], linePtr, true);
     if (good)
