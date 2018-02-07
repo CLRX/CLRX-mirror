@@ -51,14 +51,15 @@ static const char* rocmPseudoOpNamesTbl[] =
     "max_flat_work_group_size", "max_scratch_backing_memory",
     "md_group_segment_fixed_size", "md_kernarg_segment_align",
     "md_kernarg_segment_size", "md_language","md_private_segment_fixed_size",
-    "md_sgprsnum", "md_spilledsgprs", "md_spilledvgprs",
-    "md_symname", "md_version", "md_vgprsnum", "md_wavefront_size",
+    "md_sgprsnum", "md_symname", "md_version",
+    "md_vgprsnum", "md_wavefront_size",
     "metadata", "newbinfmt", "pgmrsrc1", "pgmrsrc2", "printf", "priority",
     "private_elem_size", "private_segment_align",
     "privmode", "reqd_work_group_size",
     "reserved_sgprs", "reserved_vgprs",
     "runtime_handle", "runtime_loader_kernel_symbol",
-    "scratchbuffer", "sgprsnum", "target", "tgsize", "tripple",
+    "scratchbuffer", "sgprsnum",
+    "spilledsgprs", "spilledvgprs", "target", "tgsize", "tripple",
     "use_debug_enabled", "use_dispatch_id",
     "use_dispatch_ptr", "use_dynamic_call_stack",
     "use_flat_scratch_init", "use_grid_workgroup_count",
@@ -89,15 +90,14 @@ enum
     ROCMOP_MAX_FLAT_WORK_GROUP_SIZE, ROCMOP_MAX_SCRATCH_BACKING_MEMORY,
     ROCMOP_MD_GROUP_SEGMENT_FIXED_SIZE, ROCMOP_MD_KERNARG_SEGMENT_ALIGN,
     ROCMOP_MD_KERNARG_SEGMENT_SIZE, ROCMOP_MD_LANGUAGE,
-    ROCMOP_MD_PRIVATE_SEGMENT_FIXED_SIZE,
-    ROCMOP_MD_SGPRSNUM, ROCMOP_MD_SPILLEDSGPRS, ROCMOP_MD_SPILLEDVGPRS,
+    ROCMOP_MD_PRIVATE_SEGMENT_FIXED_SIZE, ROCMOP_MD_SGPRSNUM,
     ROCMOP_MD_SYMNAME, ROCMOP_MD_VERSION, ROCMOP_MD_VGPRSNUM, ROCMOP_MD_WAVEFRONT_SIZE,
     ROCMOP_METADATA, ROCMOP_NEWBINFMT, ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PRINTF,
     ROCMOP_PRIORITY, ROCMOP_PRIVATE_ELEM_SIZE, ROCMOP_PRIVATE_SEGMENT_ALIGN,
     ROCMOP_PRIVMODE, ROCMOP_REQD_WORK_GROUP_SIZE,
     ROCMOP_RESERVED_SGPRS, ROCMOP_RESERVED_VGPRS,
     ROCMOP_RUNTIME_HANDLE, ROCMOP_RUNTIME_LOADER_KERNEL_SYMBOL,
-    ROCMOP_SCRATCHBUFFER, ROCMOP_SGPRSNUM,
+    ROCMOP_SCRATCHBUFFER, ROCMOP_SGPRSNUM, ROCMOP_SPILLEDSGPRS, ROCMOP_SPILLEDVGPRS,
     ROCMOP_TARGET, ROCMOP_TGSIZE, ROCMOP_TRIPPLE,
     ROCMOP_USE_DEBUG_ENABLED, ROCMOP_USE_DISPATCH_ID,
     ROCMOP_USE_DISPATCH_PTR, ROCMOP_USE_DYNAMIC_CALL_STACK,
@@ -2004,11 +2004,11 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                             ROCMCVAL_MD_PRIVATE_SEGMENT_FIXED_SIZE);
             break;
-        case ROCMOP_MD_SPILLEDSGPRS:
+        case ROCMOP_SPILLEDSGPRS:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                             ROCMCVAL_MD_SPILLEDSGPRS);
             break;
-        case ROCMOP_MD_SPILLEDVGPRS:
+        case ROCMOP_SPILLEDVGPRS:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                             ROCMCVAL_MD_SPILLEDVGPRS);
             break;
