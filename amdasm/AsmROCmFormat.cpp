@@ -730,6 +730,31 @@ void AsmROCmPseudoOps::setKernelLanguage(AsmROCmHandler& handler, const char* ps
     metadata.langVersion[1] = langVerMinor;
 }
 
+void AsmROCmPseudoOps::setRuntimeHandle(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+        PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
+    
+    if (handler.metadataSection != ASMSECT_NONE)
+        PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
+                    "metadata section exists")
+    
+    std::string runtimeHandle;
+    skipSpacesToEnd(linePtr, end);
+    bool good = asmr.parseString(runtimeHandle, linePtr);
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    ROCmKernelMetadata& metadata = handler.output.metadataInfo.kernels[asmr.currentKernel];
+    handler.output.useMetadataInfo = true;
+    metadata.runtimeHandle = runtimeHandle;
+
+}
+
 void AsmROCmPseudoOps::addPrintf(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {
@@ -1019,7 +1044,7 @@ void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoO
             argIsRestrict= true;
         else if (::strcmp(name, "volatile")==0)
             argIsVolatile = true;
-        else if (::strcmp(name, "pip")==0)
+        else if (::strcmp(name, "pipe")==0)
             argIsPipe = true;
         else
         {
@@ -2064,6 +2089,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setReservedXgprs(*this, stmtPlace, linePtr, true);
             break;
         case ROCMOP_RUNTIME_HANDLE:
+            AsmROCmPseudoOps::setRuntimeHandle(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_RUNTIME_LOADER_KERNEL_SYMBOL:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,

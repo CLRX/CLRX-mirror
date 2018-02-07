@@ -140,6 +140,9 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     // .md_language
     static void setKernelLanguage(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    // .runtime_handle
+    static void setRuntimeHandle(AsmROCmHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
     // .printf (add printf)
     static void addPrintf(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);

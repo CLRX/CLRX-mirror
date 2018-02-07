@@ -1084,6 +1084,174 @@ kxx1:   .skip 256
   NewBinFormat
 )ffDXD",
         "", true
+    },
+    {
+        R"ffDXD(.rocm
+        .gpu Fiji
+        .eflags 3
+        .newbinfmt
+        .md_version 3 , 5
+.kernel kxx1
+    .config
+        .dims x
+        .codeversion 1,0
+        .call_convention 0x34dac
+        .debug_private_segment_buffer_sgpr 98
+        .debug_wavefront_private_segment_offset_sgpr 96
+        .gds_segment_size 100
+        .kernarg_segment_align 32
+    # metadata
+        .md_language "jezorx"
+        .reqd_work_group_size 6,
+        .work_group_size_hint 5,7
+        .fixed_work_group_size 3,,71
+        .md_kernarg_segment_size 64
+        .md_kernarg_segment_align 32
+        .md_group_segment_fixed_size 1121
+        .md_private_segment_fixed_size 6632
+        .md_wavefront_size 64
+        .md_sgprsnum 14
+        .md_vgprsnum 11
+        .runtime_handle "SomeCodeToExec"
+        # arg infos
+        .arg , "", 8, 8, none, i64
+        .arg , "", 8, 8, complact, i64
+        .arg , "", 8, 8, printfbuf, i64
+        .arg , "", 8, 8, defqueue, i64
+        .arg pipe0, "pipe_t", 8, 8, pipe, struct, read_write, default pipe
+        .arg qx01, "queue_t", 8, 8, queue, struct
+        .arg masksamp, "sampler_t", 8, 8, sampler, struct
+        .arg vxx1, "void*", 8, 8, globalbuf, i8, global, default const
+        .arg vx1, "void*", 8, 8, globalbuf, i8, global, default volatile
+        .arg dx3, "void*", 8, 8, globalbuf, i8, global, default restrict
+        .arg ex6, "void*", 8, 8, globalbuf, i8, global, default pipe
+        .arg fx9, "void*", 8, 8, globalbuf, i8, global, default volatile const restrict
+.text
+kxx1:   .skip 256
+        s_mov_b32 s7, 0
+        s_endpgm
+)ffDXD",
+        R"ffDXD(ROCmBinDump:
+  ROCmSymbol: name=kxx1, offset=0, size=0, type=kernel
+    Config:
+      amdCodeVersion=1.1
+      amdMachine=1:8:0:3
+      kernelCodeEntryOffset=256
+      kernelCodePrefetchOffset=0
+      kernelCodePrefetchSize=0
+      maxScrachBackingMemorySize=0
+      computePgmRsrc1=0xc0040
+      computePgmRsrc2=0x80
+      enableSgprRegisterFlags=0x0
+      enableFeatureFlags=0x0
+      workitemPrivateSegmentSize=0
+      workgroupGroupSegmentSize=0
+      gdsSegmentSize=100
+      kernargSegmentSize=0
+      workgroupFbarrierCount=0
+      wavefrontSgprCount=10
+      workitemVgprCount=1
+      reservedVgprFirst=0
+      reservedVgprCount=0
+      reservedSgprFirst=0
+      reservedSgprCount=0
+      debugWavefrontPrivateSegmentOffsetSgpr=96
+      debugPrivateSegmentBufferSgpr=98
+      kernargSegmentAlignment=5
+      groupSegmentAlignment=4
+      privateSegmentAlignment=4
+      wavefrontSize=6
+      callConvention=0x34dac
+      runtimeLoaderKernelSymbol=0x0
+      ControlDirective:
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+  Comment:
+  nullptr
+  Code:
+  0100000000000000010008000000030000010000000000000000000000000000
+  0000000000000000000000000000000040000c00800000000000000000000000
+  00000000640000000000000000000000000000000a0001000000000000000000
+  6000620005040406ac4d03000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  800087be000081bf
+  MetadataInfo:
+    Version: 3.5
+    Kernel: kxx1
+      SymName=
+      Language=jezorx 0.0
+      ReqdWorkGroupSize=6 1 1
+      WorkGroupSizeHint=5 7 1
+      VecTypeHint=
+      RuntimeHandle=SomeCodeToExec
+      KernargSegmentSize=64
+      KernargSegmentAlign=32
+      GroupSegmentFixedSize=1121
+      PrivateSegmentFixedSize=6632
+      WaveFrontSize=64
+      SgprsNum=14
+      VgprsNum=11
+      SpilledSgprs=4294967294
+      SpilledVgprs=4294967294
+      MaxFlatWorkGroupSize=18446744073709551614
+      FixedWorkGroupSize=3 1 71
+      Arg name=, type=, size=8, align=8
+        valuekind=none, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=complact, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=printfbuf, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=defqueue, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=pipe0, type=pipe_t, size=8, align=8
+        valuekind=pipe, valuetype=struct, pointeeAlign=0
+        addrSpace=none, accQual=read_write, actAccQual=default
+        Flags= pipe
+      Arg name=qx01, type=queue_t, size=8, align=8
+        valuekind=queue, valuetype=struct, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=masksamp, type=sampler_t, size=8, align=8
+        valuekind=sampler, valuetype=struct, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=vxx1, type=void*, size=8, align=8
+        valuekind=globalbuf, valuetype=i8, pointeeAlign=0
+        addrSpace=global, accQual=default, actAccQual=default
+        Flags= const
+      Arg name=vx1, type=void*, size=8, align=8
+        valuekind=globalbuf, valuetype=i8, pointeeAlign=0
+        addrSpace=global, accQual=default, actAccQual=default
+        Flags= volatile
+      Arg name=dx3, type=void*, size=8, align=8
+        valuekind=globalbuf, valuetype=i8, pointeeAlign=0
+        addrSpace=global, accQual=default, actAccQual=default
+        Flags= restrict
+      Arg name=ex6, type=void*, size=8, align=8
+        valuekind=globalbuf, valuetype=i8, pointeeAlign=0
+        addrSpace=global, accQual=default, actAccQual=default
+        Flags= pipe
+      Arg name=fx9, type=void*, size=8, align=8
+        valuekind=globalbuf, valuetype=i8, pointeeAlign=0
+        addrSpace=global, accQual=default, actAccQual=default
+        Flags= const restrict volatile
+  EFlags=3
+  NewBinFormat
+)ffDXD",
+        "", true
     }
 };
 
