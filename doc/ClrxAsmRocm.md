@@ -24,6 +24,9 @@ Order of these parts doesn't matter.
 
 Kernel function should to be aligned to 256 byte boundary.
 
+Additional kernel informations and binary informations are in metadata ELF note.
+It holds informations about `printf` calls, kernel configuration and its arguments.
+
 ## Register usage setup
 
 The CLRX assembler automatically sets number of used VGPRs and number of used SGPRs.
@@ -66,11 +69,40 @@ This pseudo-op must be inside kernel configuration (`.config`). Set AMD code ver
 
 Open kernel configuration. Must be inside kernel.
 
+The kernel metadata info config pseudo-ops:
+
+* .arg - add kernel argument
+* .md_language - kernel language
+* .cws, .reqd_work_group_size - reqd_work_group_size
+* .work_group_size_hint - work_group_size_hint
+* .fixed_work_group_size - fixed work group size
+* .max_flat_work_group_size - max flat work group size
+* .vectypehint - vector type hint
+* .runtime_handle - runtime handle symbol name
+* .md_kernarg_segment_align - kernel argument segment alignment
+* .md_kernarg_segment_size - kernel argument segment size
+* .md_group_segment_fixed_size - group segment fixed size
+* .md_private_segment_fixed_size - private segment fixed size
+* .md_symname - kernel symbol name
+* .md_sgprsnum - number of SGPRs
+* .md_vgprsnum - number of VGPRs
+* .spilledsgprs - number of spilled SGPRs
+* .spilledvgprs - number of spilled VGPRs
+* .md_wavefront_size - wavefront size
+
 ### .control_directive
 
 Open control directive section. This section must be 128 bytes. The content of this
 section will be stored in control_directive field in kernel configuration.
 Must be defined inside kernel.
+
+### .cws, .reqd_work_group_size
+
+Syntax: .cws SIZEHINT[, SIZEHINT[, SIZEHINT]]
+Syntax: .reqd_work_group_size SIZEHINT[, SIZEHINT[, SIZEHINT]]
+
+This pseudo-operation must be inside any kernel configuration.
+Set reqd_work_group_size hint for this kernel in metadata info.
 
 ### .debug_private_segment_buffer_sgpr
 
@@ -115,6 +147,13 @@ Syntax: .exceptions EXCPMASK
 
 This pseudo-op must be inside kernel configuration (`.config`).
 Set exception mask in PGMRSRC2 register value. Value should be 7-bit.
+
+### .fixed_work_group_size
+
+Syntax: .fixed_work_group_size SIZEHINT[, SIZEHINT[, SIZEHINT]]
+
+This pseudo-operation must be inside any kernel configuration.
+Set fixed_work_group_size for this kernel in metadata info.
 
 ### .fkernel
 
@@ -235,12 +274,88 @@ Syntax: .machine KIND, MAJOR, MINOR, STEPPING
 This pseudo-op must be inside kernel configuration (`.config`). Set
 machine version fields in kernel configuration.
 
+### .max_flat_work_group_size
+
+Syntax: .max_flat_work_group_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Set max flat work group size in metadata info.
+
 ### .max_scratch_backing_memory
 
 Syntax: .max_scratch_backing_memory SIZE
 
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `max_scratch_backing_memory_byte_size` field in kernel configuration.
+
+### .md_group_segment_fixed_size
+
+Syntax: .md_group_segment_fixed_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Set group segment fixed size in metadata info.
+
+### .md_kernarg_segment_align
+
+Syntax: .md_kernarg_segment_align ALIGNMENT
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Set kernel argument segment alignment in metadata info.
+
+### .md_kernarg_segment_size
+
+Syntax: .md_kernarg_segment_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Set kernel argument segment size in metadata info.
+
+### .md_private_segment_fixed_size
+
+Syntax: .md_private_segment_fixed_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Set private segment fixed size in metadata info.
+
+### .md_symname
+
+Syntax: .md_symname "SYMBOLNAME"
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Set kernel symbol name in metadata info. It should be in format "NAME@kd".
+
+### .md_language
+
+Syntax .md_language "LANGUAGE"[, MAJOR, MINOR]
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Set kernel language and its version in metadata info. The language name is as string.
+
+### .md_sgprsnum
+
+Syntax: .md_sgprsnum REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Defines number of scalar registers for kernel in metadata info.
+
+### .md_version
+
+Syntax: .md_version MAJOR, MINOR
+
+This pseudo-ops defines metadata format version.
+
+### .md_wavefront_size
+
+Syntax: .md_wavefront_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Defines wavefront size in metadata info. If not specified then value get from HSA config.
+
+### .md_vgprsnum
+
+Syntax: .md_vgprsnum REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Defines number of vector registers for kernel in metadata info.
 
 ### .newbinfmt
 
@@ -260,6 +375,15 @@ Syntax: .pgmrsrc2 VALUE
 This pseudo-op must be inside kernel configuration (`.config`).
 Defines value of the PGMRSRC2. If dimensions is set then bits that controls dimension setup
 will be ignored. SCRATCH_EN bit will be ignored.
+
+### .printf
+
+Syntax: .printf [ID]\[,ARGSIZE,....],"FORMAT"
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Adds new printf info entry to metadata info. The first argument is ID (must be unique)
+and is optional. Next arguments are argument size for printf call. The last argument
+is format string.
 
 ### .priority
 
@@ -302,6 +426,13 @@ This pseudo-op must be inside kernel configuration (`.config`). Set
 `reserved_vgpr_first` and `reserved_vgpr_count` fields in kernel configuration.
 `reserved_vgpr_count` filled by number of registers (LASTREG-FIRSTREG+1).
 
+### .runtime_handle
+
+Syntax: .runtime_handle "SYMBOLNAME"
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Set runtime handle in metadata info
+
 ### .runtime_loader_kernel_symbol
 
 Syntax: .runtime_loader_kernel_symbol ADDRESS
@@ -322,6 +453,20 @@ Syntax: .sgprsnum REGNUM
 This pseudo-op must be inside kernel configuration (`.config`). Set number of scalar
 registers which can be used during kernel execution.
 It counts SGPR registers including VCC, FLAT_SCRATCH and XNACK_MASK.
+
+### .spilledsgprs
+
+Syntax: .spilledsgprs REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`). Set number of scalar
+registers to spill in scratch buffer (in metadata info).
+
+### .spilledvgprs
+
+Syntax: .spilledvgprs REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`). Set number of vector
+registers to spill in scratch buffer (in metadata info).
 
 ### .target
 
@@ -417,6 +562,13 @@ Syntax: .userdatanum NUMBER
 This pseudo-op must be inside kernel configuration (`.config`). Set number of
 registers for USERDATA.
 
+### .vectypehint
+
+Syntax: .vectypehint "OPENCLTYPE"
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Set vectypehint for kernel in metadata info. The argument is OpenCL type.
+
 ### .vgprsnum
 
 Syntax: .vgprsnum REGNUM
@@ -465,6 +617,13 @@ Syntax: .workitem_vgpr_count REGNUM
 
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `workitem_vgpr_count` field in kernel configuration.
+
+### .work_group_size_hint
+
+Syntax: .work_group_size_hint SIZEHINT[, SIZEHINT[, SIZEHINT]]
+
+This pseudo-operation must be inside any kernel configuration.
+Set work_group_size_hint for this kernel in metadata info.
 
 ## Sample code
 

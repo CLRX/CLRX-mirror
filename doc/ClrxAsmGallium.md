@@ -595,14 +595,14 @@ It counts SGPR registers including VCC, FLAT_SCRATCH and XNACK_MASK.
 
 ### .spilledsgprs
 
-Syntax: .sgpilledsgprs REGNUM
+Syntax: .spilledsgprs REGNUM
 
 This pseudo-op must be inside kernel configuration (`.config`). Set number of scalar
 registers to spill in scratch buffer. It have meaning for LLVM 3.9 or later.
 
 ### .spilledvgprs
 
-Syntax: .sgpilledvgprs REGNUM
+Syntax: .spilledvgprs REGNUM
 
 This pseudo-op must be inside kernel configuration (`.config`). Set number of vector
 registers to spill in scratch buffer. It have meaning for LLVM 3.9 or later. 
