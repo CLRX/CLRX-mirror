@@ -709,3 +709,44 @@ test1:
 /*32060200         */ v_add_u32       v3, vcc, s0, v1
 ...
 ```
+
+The sample with metadata info:
+
+```
+.rocm
+.gpu Fiji
+.arch_minor 0
+.arch_stepping 4
+.eflags 2
+.newbinfmt
+.tripple "amdgcn-amd-amdhsa-amdgizcl"
+.md_version 1, 0
+.kernel vectorAdd
+    .config
+        .dims x
+        .codeversion 1, 1
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+    .control_directive
+        .fill 128, 1, 0x00
+    .config
+        .md_language "OpenCL", 1, 2
+        .arg n, "uint", 4, , value, u32
+        .arg a, "float*", 8, , globalbuf, f32, global, default const volatile
+        .arg b, "float*", 8, , globalbuf, f32, global, default const
+        .arg c, "float*", 8, , globalbuf, f32, global, default
+        .arg , "", 8, , gox, i64
+        .arg , "", 8, , goy, i64
+        .arg , "", 8, , goz, i64
+        .arg , "", 8, , printfbuf, i8
+.text
+vectorAdd:
+.skip 256           # skip ROCm kernel configuration (required)
+...
+```

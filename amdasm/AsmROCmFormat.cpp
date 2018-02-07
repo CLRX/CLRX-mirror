@@ -2207,6 +2207,18 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
     return true;
 }
 
+static uint64_t calculateKernelArgSize(const std::vector<ROCmKernelArgInfo>& argInfos)
+{
+    uint64_t size = 0;
+    for (const ROCmKernelArgInfo& argInfo: argInfos)
+    {
+        // alignment
+        size = (size + argInfo.align-1) & ~(argInfo.align-1);
+        size += argInfo.size;
+    }
+    return size;
+}
+
 bool AsmROCmHandler::prepareBinary()
 {
     bool good = true;
@@ -2340,7 +2352,14 @@ bool AsmROCmHandler::prepareBinary()
         if (config.gdsSegmentSize == BINGEN_DEFAULT)
             config.gdsSegmentSize = 0;
         if (config.kernargSegmentSize == BINGEN64_DEFAULT)
-            config.kernargSegmentSize = 0;
+        {
+            if (output.useMetadataInfo)
+                // calculate kernel arg size
+                config.kernargSegmentSize = calculateKernelArgSize(
+                        output.metadataInfo.kernels[i].argInfos);
+            else
+                config.kernargSegmentSize = 0;
+        }
         if (config.workgroupFbarrierCount == BINGEN_DEFAULT)
             config.workgroupFbarrierCount = 0;
         if (config.reservedVgprFirst == BINGEN16_DEFAULT)
