@@ -357,6 +357,10 @@ Syntax: .md_vgprsnum REGNUM
 This pseudo-op must be inside kernel configuration (`.config`).
 Defines number of vector registers for kernel in metadata info.
 
+### .metadata
+
+Go to metadata (metadata ELF note) section.
+
 ### .newbinfmt
 
 This pseudo-ops set new binary format.
