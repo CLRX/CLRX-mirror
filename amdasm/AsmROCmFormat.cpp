@@ -2455,7 +2455,8 @@ bool AsmROCmHandler::prepareBinary()
                 calculatePgmRSrc2(arch, (config.workitemPrivateSegmentSize != 0),
                             userSGPRsNum, false, config.dimMask,
                             (config.computePgmRsrc2 & 0x1b80U), config.tgSize,
-                            config.workgroupGroupSegmentSize, config.exceptions);
+                            (output.newBinFormat ? 0 : config.workgroupGroupSegmentSize),
+                            config.exceptions);
         
         if (config.wavefrontSgprCount == BINGEN16_DEFAULT)
             config.wavefrontSgprCount = sgprsNum;
