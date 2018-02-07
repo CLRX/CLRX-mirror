@@ -2081,7 +2081,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
                 ".rodata", SHT_PROGBITS, SHF_ALLOC, 0, 0, Elf64Types::nobase));
     
     elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
-                ".dynsym", SHT_DYNSYM, SHF_ALLOC, 0, 1, Elf64Types::nobase));
+                ".dynsym", SHT_DYNSYM, SHF_ALLOC, 0, BINGEN_DEFAULT, Elf64Types::nobase));
     elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 4,
                 ".hash", SHT_HASH, SHF_ALLOC,
                 mainBuiltinSectTable[ELFSECTID_DYNSYM-ELFSECTID_START], 0,
@@ -2105,7 +2105,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     elfBinGen64.addRegion(ElfRegion64(commentSize, (const cxbyte*)comment, 1, ".comment",
               SHT_PROGBITS, SHF_MERGE|SHF_STRINGS, 0, 0, 0, 1));
     elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
-                ".symtab", SHT_SYMTAB, 0, 0, 2));
+                ".symtab", SHT_SYMTAB, 0, 0, BINGEN_DEFAULT));
     elfBinGen64.addRegion(ElfRegion64::shstrtabSection());
     elfBinGen64.addRegion(ElfRegion64::strtabSection());
     elfBinGen64.addRegion(ElfRegion64::sectionHeaderTable());

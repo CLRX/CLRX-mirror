@@ -715,7 +715,7 @@ static void putSectionsAndSymbols(ElfBinaryGenTemplate<Types>& elfBinGen,
             SHT_PROGBITS, 0));
     elfBinGen.addRegion(ElfRegion::shstrtabSection());
     elfBinGen.addRegion(ElfRegion::sectionHeaderTable());
-    elfBinGen.addRegion(ElfRegion::symtabSection());
+    elfBinGen.addRegion(ElfRegion::symtabSection(false));
     elfBinGen.addRegion(ElfRegion::strtabSection());
     /* symbols */
     /// EndOfTextLabel - ?? always is at end of symbol table

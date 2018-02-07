@@ -2453,7 +2453,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         if (is16_3Ver)
         {
             /* new driver version */
-            innerBinGen->addRegion(ElfRegion64::symtabSection());
+            innerBinGen->addRegion(ElfRegion64::symtabSection(false));
             innerBinSectionTable[ELFSECTID_SYMTAB-ELFSECTID_START] = extraSectionIndex++;
         }
         
@@ -2519,7 +2519,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".strtab",
                                   SHT_STRTAB, SHF_STRINGS, 0, 0));
             innerBinSectionTable[ELFSECTID_STRTAB-ELFSECTID_START] = extraSectionIndex++;
-            innerBinGen->addRegion(ElfRegion64::symtabSection());
+            innerBinGen->addRegion(ElfRegion64::symtabSection(false));
             innerBinSectionTable[ELFSECTID_SYMTAB-ELFSECTID_START] = extraSectionIndex++;
             innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
                                   SHT_STRTAB, SHF_STRINGS, 0, 0));

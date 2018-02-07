@@ -704,14 +704,14 @@ struct ElfRegionTemplate
     { return ElfRegionTemplate(0, (const cxbyte*)nullptr, 1, ".shstrtab", SHT_STRTAB, 0); }
     
     /// get symtab section
-    static ElfRegionTemplate symtabSection()
+    static ElfRegionTemplate symtabSection(bool defInfo = true)
     { return ElfRegionTemplate(0, (const cxbyte*)nullptr, sizeof(typename Types::Word),
-                ".symtab", SHT_SYMTAB, 0); }
+                ".symtab", SHT_SYMTAB, 0, 0, defInfo ? BINGEN_DEFAULT : 0); }
     
     /// get dynsym section
-    static ElfRegionTemplate dynsymSection()
+    static ElfRegionTemplate dynsymSection(bool defInfo = true)
     { return ElfRegionTemplate(0, (const cxbyte*)nullptr, sizeof(typename Types::Word),
-                ".dynsym", SHT_DYNSYM, SHF_ALLOC); }
+                ".dynsym", SHT_DYNSYM, SHF_ALLOC, 0, defInfo ? BINGEN_DEFAULT : 0); }
     
     /// get hash section
     static ElfRegionTemplate hashSection(uint16_t link)

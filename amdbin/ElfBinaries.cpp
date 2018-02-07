@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <cstdint>
@@ -1017,7 +1018,27 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         SLEV(shdr.sh_size, region2.size);
                     else // otherwise if not match this size
                         SLEV(shdr.sh_size, regionOffsets[j+1]-regionOffsets[j]);
-                    SLEV(shdr.sh_info, region2.section.info);
+                    
+                    if ((region2.section.type!=SHT_SYMTAB &&
+                         region2.section.type!=SHT_DYNSYM) ||
+                            region2.section.info != BINGEN_DEFAULT)
+                        // put set info
+                        SLEV(shdr.sh_info, region2.section.info);
+                    else // if symbtabs
+                    {
+                        // otherwise if default for symtabs, put count of last local
+                        const auto& symbolsList = (region2.section.type == SHT_SYMTAB) ?
+                            symbols : dynSymbols;
+                        cxuint lastLocal = 0;
+                        for (size_t l = 0; l < symbolsList.size(); l++)
+                            if (ELF32_ST_BIND(symbolsList[l].info)==STB_LOCAL)
+                                lastLocal = l+1;
+                        if ((region2.section.type==SHT_SYMTAB && addNullSym) ||
+                            (region2.section.type==SHT_DYNSYM && addNullDynSym))
+                            lastLocal++;
+                        SLEV(shdr.sh_info, lastLocal);
+                    }
+                    
                     SLEV(shdr.sh_addralign, (region2.section.align==0) ?
                             region2.align : region2.section.align);
                     if (region2.section.link == 0)
