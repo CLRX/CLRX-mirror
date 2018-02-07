@@ -426,7 +426,8 @@ bool AsmParseUtils::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outS
 }
 
 // skip comma (can be not present), return true in haveComma if ',' encountered
-bool AsmParseUtils::skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr)
+bool AsmParseUtils::skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr,
+                        bool errorWhenNoEnd)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -436,7 +437,15 @@ bool AsmParseUtils::skipComma(Assembler& asmr, bool& haveComma, const char*& lin
         return true;
     }
     if (*linePtr != ',')
-        ASM_FAIL_BY_ERROR(linePtr, "Expected ',' before argument")
+    {
+        if (errorWhenNoEnd)
+            ASM_FAIL_BY_ERROR(linePtr, "Expected ',' before argument")
+        else
+        {
+            haveComma = false;
+            return true;
+        }
+    }
     linePtr++;
     haveComma = true;
     return true;

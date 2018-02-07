@@ -120,7 +120,9 @@ struct CLRX_INTERNAL AsmParseUtils
           const char* prefix = nullptr);
     
     // skip comma
-    static bool skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr);
+    // errorWhenNoEnd - print error if not end and not comma
+    static bool skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr,
+                    bool errorWhenNoEnd = true);
     // skip required comma, (returns false if not found comma)
     static bool skipRequiredComma(Assembler& asmr, const char*& linePtr);
     
