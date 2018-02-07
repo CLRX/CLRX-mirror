@@ -21,9 +21,12 @@
 #include <iostream>
 #include <cstdio>
 #include <sstream>
+#include <string>
 #include <algorithm>
 #include <memory>
+#include <CLRX/amdbin/AmdBinGen.h>
 #include <CLRX/amdasm/Assembler.h>
+#include <CLRX/amdasm/AsmFormats.h>
 #include "../TestUtils.h"
 
 using namespace CLRX;
