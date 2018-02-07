@@ -127,7 +127,7 @@ Enable usage of the DEBUG_MODE.
 
 Syntax: .dims DIMENSIONS
 
-This pseudo-op must be inside kernel configuration (`.config`). Defines what dimensions
+This pseudo-op must be inside kernel configuration (`.config`). Define what dimensions
 (from list: x, y, z) will be used to determine space of the kernel execution.
 
 ### .dx10clamp
@@ -163,7 +163,7 @@ Mark given kernel as function in ROCm. Must be inside kernel.
 
 Syntax: .floatmode BYTE-VALUE
 
-This pseudo-op must be inside kernel configuration (`.config`). Defines float-mode.
+This pseudo-op must be inside kernel configuration (`.config`). Define float-mode.
 Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register). Default value is 0xc0.
 
 ### .gds_segment_size
@@ -264,7 +264,7 @@ This pseudo-op must be inside kernel configuration (`.config`). Set
 
 Syntax: .localsize SIZE
 
-This pseudo-op must be inside kernel configuration (`.config`). Defines initial
+This pseudo-op must be inside kernel configuration (`.config`). Define initial
 local memory size used by kernel.
 
 ### .machine
@@ -335,7 +335,7 @@ Set kernel language and its version in metadata info. The language name is as st
 Syntax: .md_sgprsnum REGNUM
 
 This pseudo-op must be inside kernel configuration (`.config`).
-Defines number of scalar registers for kernel in metadata info.
+Define number of scalar registers for kernel in metadata info.
 
 ### .md_version
 
@@ -348,14 +348,14 @@ This pseudo-ops defines metadata format version.
 Syntax: .md_wavefront_size SIZE
 
 This pseudo-op must be inside kernel configuration (`.config`).
-Defines wavefront size in metadata info. If not specified then value get from HSA config.
+Define wavefront size in metadata info. If not specified then value get from HSA config.
 
 ### .md_vgprsnum
 
 Syntax: .md_vgprsnum REGNUM
 
 This pseudo-op must be inside kernel configuration (`.config`).
-Defines number of vector registers for kernel in metadata info.
+Define number of vector registers for kernel in metadata info.
 
 ### .metadata
 
@@ -370,14 +370,14 @@ This pseudo-ops set new binary format.
 Syntax: .pgmrsrc1 VALUE
 
 This pseudo-op must be inside kernel configuration (`.config`).
-Defines value of the PGMRSRC1.
+Define value of the PGMRSRC1.
 
 ### .pgmrsrc2
 
 Syntax: .pgmrsrc2 VALUE
 
 This pseudo-op must be inside kernel configuration (`.config`).
-Defines value of the PGMRSRC2. If dimensions is set then bits that controls dimension setup
+Define value of the PGMRSRC2. If dimensions is set then bits that controls dimension setup
 will be ignored. SCRATCH_EN bit will be ignored.
 
 ### .printf
@@ -393,7 +393,7 @@ is format string.
 
 Syntax: .priority PRIORITY
 
-This pseudo-op must be inside kernel configuration (`.config`). Defines priority (0-3).
+This pseudo-op must be inside kernel configuration (`.config`). Define priority (0-3).
 
 ### .private_elem_size
 
@@ -448,7 +448,7 @@ This pseudo-op must be inside kernel configuration (`.config`). Set
 
 Syntax: .scratchbuffer SIZE
 
-This pseudo-op must be inside kernel configuration (`.config`). Defines scratchbuffer size.
+This pseudo-op must be inside kernel configuration (`.config`). Define scratchbuffer size.
 
 ### .sgprsnum
 

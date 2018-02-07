@@ -209,7 +209,7 @@ private_elem_size to 4 bytes.
 
 Syntax: .dims DIMENSIONS
 
-This pseudo-op must be inside kernel configuration (`.config`). Defines what dimensions
+This pseudo-op must be inside kernel configuration (`.config`). Define what dimensions
 (from list: x, y, z) will be used to determine space of the kernel execution.
 
 ### .driver_version
@@ -247,7 +247,7 @@ Set exception mask in PGMRSRC2 register value. Value should be 7-bit.
 
 Syntax: .floatmode BYTE-VALUE
 
-This pseudo-op must be inside kernel configuration (`.config`). Defines float-mode.
+This pseudo-op must be inside kernel configuration (`.config`). Define float-mode.
 Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register). Default value is 0xc0.
 
 ### .gds_segment_size
@@ -292,7 +292,7 @@ LLVM version is 4.0.0 or later. Enable usage of the DEBUG_MODE in kernel HSA con
 Syntax: .hsa_dims DIMENSIONS
 
 This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
-LLVM version is 4.0.0 or later. Defines what dimensions (from list: x, y, z) will be used
+LLVM version is 4.0.0 or later. Define what dimensions (from list: x, y, z) will be used
 to determine space of the kernel execution in kernel HSA configuration.
 
 ### .hsa_dx10clamp
@@ -313,7 +313,7 @@ kernel HSA configuration. Value should be 7-bit.
 Syntax: .hsa_floatmode BYTE-VALUE
 
 This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
-LLVM version is 4.0.0 or later. Defines float-mode in kernel HSA configuration.
+LLVM version is 4.0.0 or later. Define float-mode in kernel HSA configuration.
 Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register). Default value is 0xc0.
 
 ### .hsa_ieeemode
@@ -328,7 +328,7 @@ LLVM version is 4.0.0 or later. Set ieee-mode in kernel HSA configuration.
 Syntax: .hsa_localsize SIZE
 
 This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
-LLVM version is 4.0.0 or later. Defines initial local memory size used by kernel in
+LLVM version is 4.0.0 or later. Define initial local memory size used by kernel in
 kernel HSA configuration.
 
 ### .hsa_pgmrsrc1
@@ -336,14 +336,14 @@ kernel HSA configuration.
 Syntax: .hsa_pgmrsrc1 VALUE
 
 This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
-LLVM version is 4.0.0 or later. Defines value of the PGMRSRC1 in kernel HSA configuration.
+LLVM version is 4.0.0 or later. Define value of the PGMRSRC1 in kernel HSA configuration.
 
 ### .hsa_pgmrsrc2
 
 Syntax: .hsa_pgmrsrc2 VALUE
 
 This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
-LLVM version is 4.0.0 or later. Defines value of the PGMRSRC2 in kernel HSA configration.
+LLVM version is 4.0.0 or later. Define value of the PGMRSRC2 in kernel HSA configration.
 If dimensions is set then bits that controls dimension setup will be ignored.
 SCRATCH_EN bit will be ignored.
 
@@ -352,7 +352,7 @@ SCRATCH_EN bit will be ignored.
 Syntax: .hsa_priority PRIORITY
 
 This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
-LLVM version is 4.0.0 or later. Defines priority (0-3) in kernel HSA configuration.
+LLVM version is 4.0.0 or later. Define priority (0-3) in kernel HSA configuration.
 
 ### .hsa_privmode
 
@@ -365,7 +365,7 @@ kernel HSA configuration.
 Syntax: .hsa_scratchbuffer SIZE
 
 This pseudo-op must be inside kernel configuration (`.config`) and can ben used only if
-LLVM version is 4.0.0 or later. Defines scratchbuffer size in kernel HSA configuration.
+LLVM version is 4.0.0 or later. Define scratchbuffer size in kernel HSA configuration.
 
 ### .hsa_sgprsnum
 
@@ -480,7 +480,7 @@ This pseudo-op replaces driver info.
 
 Syntax: .localsize SIZE
 
-This pseudo-op must be inside kernel configuration (`.config`). Defines initial
+This pseudo-op must be inside kernel configuration (`.config`). Define initial
 local memory size used by kernel.
 
 ### .machine
@@ -503,21 +503,21 @@ in kernel configuration.
 Syntax: .pgmrsrc1 VALUE
 
 This pseudo-op must be inside kernel configuration (`.config`).
-Defines value of the PGMRSRC1.
+Define value of the PGMRSRC1.
 
 ### .pgmrsrc2
 
 Syntax: .pgmrsrc2 VALUE
 
 This pseudo-op must be inside kernel configuration (`.config`).
-Defines value of the PGMRSRC2. If dimensions is set then bits that controls dimension setup
+Define value of the PGMRSRC2. If dimensions is set then bits that controls dimension setup
 will be ignored. SCRATCH_EN bit will be ignored.
 
 ### .priority
 
 Syntax: .priority PRIORITY
 
-This pseudo-op must be inside kernel configuration (`.config`). Defines priority (0-3).
+This pseudo-op must be inside kernel configuration (`.config`). Define priority (0-3).
 
 ### .private_elem_size
 
@@ -576,7 +576,7 @@ configuration.
 
 Syntax: .scratchbuffer SIZE
 
-This pseudo-op must be inside kernel configuration (`.config`). Defines scratchbuffer size.
+This pseudo-op must be inside kernel configuration (`.config`). Define scratchbuffer size.
 
 ### .scratchsym
 

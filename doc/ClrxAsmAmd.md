@@ -183,7 +183,7 @@ set zeroes in two last component instead ones. We recomment to fill all componen
 
 Syntax: .dims DIMENSIONS
 
-This pseudo-operation must be inside kernel configuration. Defines what dimensions
+This pseudo-operation must be inside kernel configuration. Define what dimensions
 (from list: x, y, z) will be used to determine space of the kernel execution.
 
 ### .driver_info

@@ -242,7 +242,7 @@ These default features are `.use_private_segment_buffer`, `.use_kernarg_segment_
 
 Syntax: .dims DIMENSIONS
 
-This pseudo-operation must be inside any kernel configuration. Defines what dimensions
+This pseudo-operation must be inside any kernel configuration. Define what dimensions
 (from list: x, y, z) will be used to determine space of the kernel execution.
 
 ### .driver_version
@@ -379,7 +379,7 @@ This pseudo-operation must be inside kernel. Go to metadata content.
 Syntax: .pgmrsrc1 VALUE
 
 This pseudo-operation must be inside kernel.
-Defines value of the PGMRSRC1.
+Define value of the PGMRSRC1.
 
 
 ### .pgmrsrc2
@@ -394,7 +394,7 @@ SCRATCH_EN bit will be ignored.
 
 Syntax: .priority PRIORITY
 
-This pseudo-operation must be inside kernel. Defines priority (0-3).
+This pseudo-operation must be inside kernel. Define priority (0-3).
 
 ### .private_elem_size
 
