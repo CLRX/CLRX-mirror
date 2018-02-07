@@ -1584,30 +1584,42 @@ static void generateROCmMetadata(const ROCmMetadata& mdInfo,
     {
         std::unordered_set<cxuint> printfIds;
         for (const ROCmPrintfInfo& printfInfo: mdInfo.printfInfos)
-            if (!printfIds.insert(printfInfo.id).second)
-                throw BinGenException("Duplicate of printf id");
-    }
-    // printfs
-    for (const ROCmPrintfInfo& printfInfo: mdInfo.printfInfos)
-    {
-        output += "  - '";
-        itocstrCStyle(printfInfo.id, numBuf, 24);
-        output += numBuf;
-        output += ':';
-        itocstrCStyle(printfInfo.argSizes.size(), numBuf, 24);
-        output += numBuf;
-        output += ':';
-        for (size_t argSize: printfInfo.argSizes)
+            if (printfInfo.id!=BINGEN_DEFAULT)
+                if (!printfIds.insert(printfInfo.id).second)
+                    throw BinGenException("Duplicate of printf id");
+        // printfs
+        uint32_t freePrintfId = 1;
+        for (const ROCmPrintfInfo& printfInfo: mdInfo.printfInfos)
         {
-            itocstrCStyle(argSize, numBuf, 24);
+            // skip used printfids;
+            uint32_t printfId = printfInfo.id;
+            if (printfId == BINGEN_DEFAULT)
+            {
+                // skip used printfids
+                for (; printfIds.find(freePrintfId) != printfIds.end(); ++freePrintfId);
+                // just use this free printfid
+                printfId = freePrintfId++;
+            }
+            
+            output += "  - '";
+            itocstrCStyle(printfId, numBuf, 24);
             output += numBuf;
             output += ':';
+            itocstrCStyle(printfInfo.argSizes.size(), numBuf, 24);
+            output += numBuf;
+            output += ':';
+            for (size_t argSize: printfInfo.argSizes)
+            {
+                itocstrCStyle(argSize, numBuf, 24);
+                output += numBuf;
+                output += ':';
+            }
+            // printf format
+            std::string escapedFmt = escapeStringCStyle(printfInfo.format);
+            escapedFmt = escapePrintfFormat(escapedFmt);
+            output += escapedFmt;
+            output += "'\n";
         }
-        // printf format
-        std::string escapedFmt = escapeStringCStyle(printfInfo.format);
-        escapedFmt = escapePrintfFormat(escapedFmt);
-        output += escapedFmt;
-        output += "'\n";
     }
     
     if (!mdInfo.kernels.empty())

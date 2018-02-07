@@ -746,7 +746,7 @@ void AsmROCmPseudoOps::addPrintf(AsmROCmHandler& handler, const char* pseudoOpPl
                     "metadata section exists")
     
     ROCmPrintfInfo printfInfo{};
-    uint64_t printfId = 0;
+    uint64_t printfId = BINGEN_DEFAULT;
     skipSpacesToEnd(linePtr, end);
     // parse printf id
     const char* valuePlace = linePtr;
@@ -768,7 +768,7 @@ void AsmROCmPseudoOps::addPrintf(AsmROCmHandler& handler, const char* pseudoOpPl
     {
         uint64_t argSize = 0;
         valuePlace = linePtr;
-        if (getAbsoluteValueArg(asmr, argSize, linePtr))
+        if (getAbsoluteValueArg(asmr, argSize, linePtr, true))
             asmr.printWarningForRange(sizeof(cxuint)<<3, argSize,
                             asmr.getSourcePos(valuePlace), WS_UNSIGNED);
         else
