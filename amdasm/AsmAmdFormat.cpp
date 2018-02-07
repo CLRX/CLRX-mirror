@@ -866,13 +866,13 @@ bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
     out[0] = 1;
     out[1] = 1;
     out[2] = 1;
-    const char* valuePlace = linePtr;
+    const char* valuePlace1 = linePtr;
+    const char* valuePlace2 = nullptr;
+    const char* valuePlace3 = nullptr;
     bool good = getAbsoluteValueArg(asmr, out[0], linePtr, true);
     if (good)
     {
-        asmr.printWarningForRange(32, out[0], asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-        if (out[0] == 0)
-            ASM_NOTGOOD_BY_ERROR(valuePlace, "Group size comment must be not zero");
+        asmr.printWarningForRange(32, out[0], asmr.getSourcePos(valuePlace1), WS_UNSIGNED);
     }
     bool haveComma;
     if (!skipComma(asmr, haveComma, linePtr))
@@ -881,13 +881,11 @@ bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
     {
         // second and third argument is optional
         skipSpacesToEnd(linePtr, end);
-        valuePlace = linePtr;
+        valuePlace2 = linePtr;
         if (getAbsoluteValueArg(asmr, out[1], linePtr, false))
         {
-            asmr.printWarningForRange(32, out[1], asmr.getSourcePos(valuePlace),
+            asmr.printWarningForRange(32, out[1], asmr.getSourcePos(valuePlace2),
                               WS_UNSIGNED);
-            if (out[1] == 0)
-                ASM_NOTGOOD_BY_ERROR(valuePlace, "Group size comment must be not zero");
         }
         else
             good = false;
@@ -896,17 +894,24 @@ bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
             return false;
         if (haveComma)
         {
-            valuePlace = linePtr;
+            valuePlace3 = linePtr;
             if (getAbsoluteValueArg(asmr, out[2], linePtr, false))
             {
-                asmr.printWarningForRange(32, out[2], asmr.getSourcePos(valuePlace),
+                asmr.printWarningForRange(32, out[2], asmr.getSourcePos(valuePlace3),
                             WS_UNSIGNED);
-                if (out[2] == 0)
-                    ASM_NOTGOOD_BY_ERROR(valuePlace, "Group size comment must be not zero");
             }
             else
                 good = false;
         }
+    }
+    if (out[0] != 0 || out[1]!=0 || out[2]!=0)
+    {
+        if (out[0] == 0)
+            ASM_NOTGOOD_BY_ERROR(valuePlace1, "Group size comment must be not zero");
+        if (out[1] == 0)
+            ASM_NOTGOOD_BY_ERROR(valuePlace2, "Group size comment must be not zero");
+        if (out[2] == 0)
+            ASM_NOTGOOD_BY_ERROR(valuePlace3, "Group size comment must be not zero");
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
