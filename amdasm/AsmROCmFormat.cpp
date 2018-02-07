@@ -515,9 +515,6 @@ void AsmROCmPseudoOps::setMetadataVersion(AsmROCmHandler& handler,
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    if (asmr.currentKernel!=ASMKERN_GLOBAL)
-        PSEUDOOP_RETURN_BY_ERROR("Illegal place of md_version pseudo-op")
-    
     if (handler.metadataSection != ASMSECT_NONE)
         PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
                     "metadata section exists")
@@ -738,9 +735,6 @@ void AsmROCmPseudoOps::addPrintf(AsmROCmHandler& handler, const char* pseudoOpPl
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    if (asmr.currentKernel!=ASMKERN_GLOBAL)
-        PSEUDOOP_RETURN_BY_ERROR("Illegal place of printf pseudo-op")
-    
     if (handler.metadataSection != ASMSECT_NONE)
         PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
                     "metadata section exists")
@@ -967,36 +961,40 @@ void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoO
             good = false;
     }
     
+    bool haveComma = false;
     cxuint addressSpaceVal = 0;
     if (valueKindVal == cxuint(ROCmValueKind::DYN_SHARED_PTR) ||
         valueKindVal == cxuint(ROCmValueKind::GLOBAL_BUFFER))
     {
-        if (!skipRequiredComma(asmr, linePtr))
+        if (!skipComma(asmr, haveComma, linePtr))
             return;
         // parse address space
-        good &= getEnumeration(asmr, linePtr, "address space",
-                    6, rocmAddressSpaceNamesTbl, addressSpaceVal, nullptr);
+        if (haveComma)
+            good &= getEnumeration(asmr, linePtr, "address space",
+                        6, rocmAddressSpaceNamesTbl, addressSpaceVal, nullptr);
     }
     
     cxuint accessQualVal = 0;
     if (valueKindVal == cxuint(ROCmValueKind::IMAGE) ||
         valueKindVal == cxuint(ROCmValueKind::PIPE))
     {
-        if (!skipRequiredComma(asmr, linePtr))
+        if (!skipComma(asmr, haveComma, linePtr))
             return;
-        // parse address space
-        good &= getEnumeration(asmr, linePtr, "access qualifier",
-                    4, rocmAccessQualNamesTbl, accessQualVal, nullptr);
+        // parse access qualifier
+        if (haveComma)
+            good &= getEnumeration(asmr, linePtr, "access qualifier",
+                        4, rocmAccessQualNamesTbl, accessQualVal, nullptr);
     }
     cxuint actualAccessQualVal = 0;
     if (valueKindVal == cxuint(ROCmValueKind::GLOBAL_BUFFER) ||
         valueKindVal == cxuint(ROCmValueKind::IMAGE) ||
         valueKindVal == cxuint(ROCmValueKind::PIPE))
     {
-        if (!skipRequiredComma(asmr, linePtr))
+        if (!skipComma(asmr, haveComma, linePtr))
             return;
-        // parse address space
-        good &= getEnumeration(asmr, linePtr, "access qualifier",
+        // parse actual access qualifier
+        if (haveComma)
+            good &= getEnumeration(asmr, linePtr, "access qualifier",
                     4, rocmAccessQualNamesTbl, actualAccessQualVal, nullptr);
     }
     
