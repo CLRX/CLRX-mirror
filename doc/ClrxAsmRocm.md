@@ -18,7 +18,7 @@ data's points where is kernel code.
 The assembler source code divided to three parts:
 
 * kernel configuration
-* kernel code and data (in `.text` section`)
+* kernel code and data (in `.text` section)
 
 Order of these parts doesn't matter.
 
