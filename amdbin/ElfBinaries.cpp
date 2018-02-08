@@ -654,6 +654,18 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                         dynValTable[DT_HASH] = resolveSectionAddress(header, region,
                                  regionAddresses[i]);
                         break;
+                    case SHT_RELA:
+                        dynValTable[DT_RELA] = resolveSectionAddress(header, region,
+                                 regionAddresses[i]);
+                        dynValTable[DT_RELASZ] = region.size;
+                        dynValTable[DT_RELAENT] = sizeof(typename Types::Rela);
+                        break;
+                    case SHT_REL:
+                        dynValTable[DT_REL] = resolveSectionAddress(header, region,
+                                 regionAddresses[i]);
+                        dynValTable[DT_RELSZ] = region.size;
+                        dynValTable[DT_RELENT] = sizeof(typename Types::Rel);
+                        break;
                 }
             }
             
@@ -734,6 +746,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             
             if (haveDynamic)
             {
+                // set dynamics
                 if (region.section.type == SHT_STRTAB &&
                     ::strcmp(region.section.name, ".dynstr") == 0)
                     dynValTable[DT_STRSZ] = region.size;
