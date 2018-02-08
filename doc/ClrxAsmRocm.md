@@ -427,7 +427,7 @@ Define number of vector registers for kernel in metadata info.
 
 ### .metadata
 
-Go to metadata (metadata ELF note) section.
+This pseudo-operation must be inside kernel. Go to metadata (metadata ELF note) section.
 
 ### .newbinfmt
 
