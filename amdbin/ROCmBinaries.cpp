@@ -112,6 +112,54 @@ static void skipSpacesToNextLine(const char*& ptr, const char* end, size_t& line
     }
 }
 
+enum class YAMLValType
+{
+    NONE,
+    NIL,
+    BOOL,
+    INT,
+    FLOAT,
+    STRING,
+    SEQ
+};
+
+static YAMLValType parseYAMLType(const char*& ptr, const char* end, size_t lineNo)
+{
+    if (ptr+2>end || *ptr!='!' || ptr[1]!='!')
+        return YAMLValType::NONE; // no type
+    if (ptr+7 && ::strncmp(ptr+2, "null", 4)==0 && isSpace(ptr[6]) && ptr[6]!='\n')
+    {
+        ptr += 6;
+        return YAMLValType::NIL;
+    }
+    else if (ptr+7 && ::strncmp(ptr+2, "bool", 4)==0 && isSpace(ptr[6]) && ptr[6]!='\n')
+    {
+        ptr += 6;
+        return YAMLValType::BOOL;
+    }
+    else if (ptr+6 && ::strncmp(ptr+2, "int", 3)==0 && isSpace(ptr[5]) && ptr[5]!='\n')
+    {
+        ptr += 5;
+        return YAMLValType::INT;
+    }
+    else if (ptr+8 && ::strncmp(ptr+2, "float", 5)==0 && isSpace(ptr[7]) && ptr[7]!='\n')
+    {
+        ptr += 7;
+        return YAMLValType::FLOAT;
+    }
+    else if (ptr+6 && ::strncmp(ptr+2, "str", 3)==0 && isSpace(ptr[5]) && ptr[5]!='\n')
+    {
+        ptr += 5;
+        return YAMLValType::STRING;
+    }
+    else if (ptr+6 && ::strncmp(ptr+2, "seq", 3)==0 && isSpace(ptr[5]) && ptr[5]!='\n')
+    {
+        ptr += 5;
+        return YAMLValType::SEQ;
+    }
+    throw ParseException(lineNo, "Unknown YAML value type");
+}
+
 // parse YAML key (keywords - recognized keys)
 static size_t parseYAMLKey(const char*& ptr, const char* end, size_t lineNo,
             size_t keywordsNum, const char** keywords)
@@ -144,6 +192,18 @@ static T parseYAMLIntValue(const char*& ptr, const char* end, size_t& lineNo,
     skipSpacesToLineEnd(ptr, end);
     if (ptr == end || *ptr=='\n')
         throw ParseException(lineNo, "Expected integer value");
+    
+    // skip !!int
+    YAMLValType valType = parseYAMLType(ptr, end, lineNo);
+    if (valType == YAMLValType::INT)
+    {   // if 
+        skipSpacesToLineEnd(ptr, end);
+        if (ptr == end || *ptr=='\n')
+            throw ParseException(lineNo, "Expected integer value");
+    }
+    else if (valType != YAMLValType::NONE)
+        throw ParseException(lineNo, "Expected value of integer type");
+    
     T value = 0;
     try
     { value = cstrtovCStyle<T>(ptr, end, ptr); }
@@ -162,6 +222,17 @@ static bool parseYAMLBoolValue(const char*& ptr, const char* end, size_t& lineNo
     skipSpacesToLineEnd(ptr, end);
     if (ptr == end || *ptr=='\n')
         throw ParseException(lineNo, "Expected boolean value");
+    
+    // skip !!bool
+    YAMLValType valType = parseYAMLType(ptr, end, lineNo);
+    if (valType == YAMLValType::BOOL)
+    {   // if 
+        skipSpacesToLineEnd(ptr, end);
+        if (ptr == end || *ptr=='\n')
+            throw ParseException(lineNo, "Expected boolean value");
+    }
+    else if (valType != YAMLValType::NONE)
+        throw ParseException(lineNo, "Expected value of boolean type");
     
     const char* wordPtr = ptr;
     while(ptr != end && isAlnum(*ptr)) ptr++;
@@ -326,6 +397,18 @@ static std::string parseYAMLStringValue(const char*& ptr, const char* end, size_
     skipSpacesToLineEnd(ptr, end);
     if (ptr == end)
         return "";
+    
+    // skip !!str
+    YAMLValType valType = parseYAMLType(ptr, end, lineNo);
+    if (valType == YAMLValType::STRING)
+    {   // if 
+        skipSpacesToLineEnd(ptr, end);
+        if (ptr == end)
+            return "";
+    }
+    else if (valType != YAMLValType::NONE)
+        throw ParseException(lineNo, "Expected value of string type");
+    
     std::string buf;
     if (*ptr=='"' || *ptr== '\'')
         buf = parseYAMLString(ptr, end, lineNo);
@@ -439,6 +522,17 @@ static void parseYAMLValArray(const char*& ptr, const char* end, size_t& lineNo,
     skipSpacesToLineEnd(ptr, end);
     if (ptr == end)
         return;
+    
+    // skip !!int
+    YAMLValType valType = parseYAMLType(ptr, end, lineNo);
+    if (valType == YAMLValType::SEQ)
+    {   // if 
+        skipSpacesToLineEnd(ptr, end);
+        if (ptr == end)
+            return;
+    }
+    else if (valType != YAMLValType::NONE)
+        throw ParseException(lineNo, "Expected value of sequence type");
     
     if (*ptr == '[')
     {
@@ -596,6 +690,13 @@ static void skipYAMLValue(const char*& ptr, const char* end, size_t& lineNo,
                 cxuint prevIndent, bool singleValue = true)
 {
     skipSpacesToLineEnd(ptr, end);
+    if (ptr+2 >= end && ptr[0]=='!' && ptr[1]=='!')
+    {   // skip !!xxxxx
+        ptr+=2;
+        while (ptr!=end && isAlpha(*ptr)) ptr++;
+        skipSpacesToLineEnd(ptr, end);
+    }
+    
     if (ptr==end || (*ptr!='\'' && *ptr!='"' && *ptr!='|' && *ptr!='>' && *ptr !='[' &&
                 *ptr!='#' && *ptr!='\n'))
     {

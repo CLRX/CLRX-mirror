@@ -1173,6 +1173,164 @@ Kernels:
 )ffDXD",
         { },
         false, "36: Wrong argument value kind"
+    },
+    {   // test 11 - with type specifier
+        R"ffDXD(---
+Version:   !!seq      [ 1, 0 ]
+Printf:          
+  - '1:1:4:index\72%d\n'
+  - '2:4:4:4:4:4:i=%d,a=%f,b=%f,c=%f\n'
+Kernels:         
+  - Name:            vectorAdd
+    SymbolName: !!str     'vectorAdd@kd'
+    Language:        OpenCL C
+    LanguageVersion: [ 1, 2 ]
+    Args:            
+      - Name:            n
+        TypeName:        uint
+        Size:       !!int     4
+        Align:           4
+        ValueKind:       ByValue
+        ValueType:       U32
+        AccQual:         Default
+      - Name:            a
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:  !!str     GlobalBuffer
+        ValueType:       F32
+        AddrSpaceQual:   Global
+        AccQual:         Default
+        IsConst:    !!bool     true
+      - Name:            b
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       F32
+        AddrSpaceQual:   Global
+        AccQual:         Default
+        IsConst:         true
+      - Name:            c
+        TypeName:        'float*'
+        Size:            8
+        Align:           8
+        ValueKind:       GlobalBuffer
+        ValueType:       F32
+        AddrSpaceQual:   Global
+        AccQual:         Default
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenGlobalOffsetX
+        ValueType:       I64
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenGlobalOffsetY
+        ValueType:       I64
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenGlobalOffsetZ
+        ValueType:       I64
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenPrintfBuffer
+        ValueType:       I8
+        AddrSpaceQual:   Global
+    CodeProps:       
+      KernargSegmentSize: 64
+      GroupSegmentFixedSize: 0
+      PrivateSegmentFixedSize: 0
+      KernargSegmentAlign: 8
+      WavefrontSize:   64
+      NumSGPRs:        14
+      NumVGPRs:        11
+      MaxFlatWorkGroupSize: 256
+...
+)ffDXD",
+        {
+            { 1, 0 }, // version
+            {    // printfInfos
+                { 1, { 4 }, "index:%d\n" },
+                { 2, { 4, 4, 4, 4 }, "i=%d,a=%f,b=%f,c=%f\n" }
+            },
+            {
+                {   // kernel 0
+                    "vectorAdd", "vectorAdd@kd",
+                    {   // arguments
+                        { "n", "uint", 4, 4, 0, ROCmValueKind::BY_VALUE,
+                          ROCmValueType::UINT32, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "a", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          true, false, false, false },
+                        { "b", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          true, false, false, false },
+                        { "c", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                          ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X,
+                          ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y,
+                          ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z,
+                          ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_PRINTF_BUFFER,
+                          ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false }
+                    },
+                    "OpenCL C", { 1, 2 },
+                    { 0, 0, 0 },
+                    { 0, 0, 0 },
+                    "", "", 64, 0, 0, 8, 64,
+                    14, 11, 256,
+                    { 0, 0, 0 },
+                    BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED
+                }
+            }
+        },
+        true, ""
+    },
+    {   // test 11 - with type specifier (error)
+        R"ffDXD(---
+Version:   !!float      [ 1, 0 ]
+Printf:          
+  - '1:1:4:index\72%d\n'
+  - '2:4:4:4:4:4:i=%d,a=%f,b=%f,c=%f\n'
+Kernels:         
+  - Name:            vectorAdd
+    SymbolName: !!int     'vectorAdd@kd'
+    Language:        OpenCL C
+    LanguageVersion: [ 1, 2 ]
+)ffDXD",
+        { },
+        false, "2: Expected value of sequence type"
+    },
+    {   // test 12 - with type specifier (error)
+        R"ffDXD(---
+Version:         [ 1, 0 ]
+Printf:          
+  - '1:1:4:index\72%d\n'
+  - '2:4:4:4:4:4:i=%d,a=%f,b=%f,c=%f\n'
+Kernels:         
+  - Name:            vectorAdd
+    SymbolName: !!int     'vectorAdd@kd'
+    Language:        OpenCL C
+    LanguageVersion: [ 1, 2 ]
+)ffDXD",
+        { },
+        false, "8: Expected value of string type"
     }
 };
 
