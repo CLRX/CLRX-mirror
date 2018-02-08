@@ -171,8 +171,8 @@ add new CAL note.
 
 ### .cws, .reqd_work_group_size
 
-Syntax: .cws SIZEHINT[, SIZEHINT[, SIZEHINT]]
-Syntax: .reqd_work_group_size SIZEHINT[, SIZEHINT[, SIZEHINT]]
+Syntax: .cws [SIZEHINT][, [SIZEHINT][, [SIZEHINT]]]  
+Syntax: .reqd_work_group_size [SIZEHINT][, [SIZEHINT][, [SIZEHINT]]]
 
 This pseudo-operation must be inside kernel configuration.
 Set reqd_work_group_size hint for this kernel.

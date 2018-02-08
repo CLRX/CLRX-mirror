@@ -869,11 +869,9 @@ bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
     const char* valuePlace1 = linePtr;
     const char* valuePlace2 = nullptr;
     const char* valuePlace3 = nullptr;
-    bool good = getAbsoluteValueArg(asmr, out[0], linePtr, true);
+    bool good = getAbsoluteValueArg(asmr, out[0], linePtr, false);
     if (good)
-    {
         asmr.printWarningForRange(32, out[0], asmr.getSourcePos(valuePlace1), WS_UNSIGNED);
-    }
     bool haveComma;
     if (!skipComma(asmr, haveComma, linePtr))
         return false;
@@ -883,10 +881,8 @@ bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
         skipSpacesToEnd(linePtr, end);
         valuePlace2 = linePtr;
         if (getAbsoluteValueArg(asmr, out[1], linePtr, false))
-        {
             asmr.printWarningForRange(32, out[1], asmr.getSourcePos(valuePlace2),
                               WS_UNSIGNED);
-        }
         else
             good = false;
         
@@ -896,10 +892,8 @@ bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
         {
             valuePlace3 = linePtr;
             if (getAbsoluteValueArg(asmr, out[2], linePtr, false))
-            {
                 asmr.printWarningForRange(32, out[2], asmr.getSourcePos(valuePlace3),
                             WS_UNSIGNED);
-            }
             else
                 good = false;
         }

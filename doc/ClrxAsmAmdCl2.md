@@ -204,8 +204,8 @@ Must be defined inside kernel.
 
 ### .cws, .reqd_work_group_size
 
-Syntax: .cws SIZEHINT[, SIZEHINT[, SIZEHINT]]
-Syntax: .reqd_work_group_size SIZEHINT[, SIZEHINT[, SIZEHINT]]
+Syntax: .cws [SIZEHINT][, [SIZEHINT][, [SIZEHINT]]]  
+Syntax: .reqd_work_group_size [SIZEHINT][, [SIZEHINT][, [SIZEHINT]]]
 
 This pseudo-operation must be inside any kernel configuration.
 Set reqd_work_group_size hint for this kernel.
@@ -622,7 +622,7 @@ Set `wavefront_size` field in kernel configuration. Value must be a power of two
 
 ### .work_group_size_hint
 
-Syntax: .work_group_size_hint SIZEHINT[, SIZEHINT[, SIZEHINT]]
+Syntax: .work_group_size_hint [SIZEHINT][, [SIZEHINT][, [SIZEHINT]]]
 
 This pseudo-operation must be inside any kernel configuration.
 Set work_group_size_hint for this kernel.

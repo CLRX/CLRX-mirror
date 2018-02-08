@@ -166,8 +166,8 @@ Must be defined inside kernel.
 
 ### .cws, .reqd_work_group_size
 
-Syntax: .cws SIZEHINT[, SIZEHINT[, SIZEHINT]]
-Syntax: .reqd_work_group_size SIZEHINT[, SIZEHINT[, SIZEHINT]]
+Syntax: .cws [SIZEHINT][, [SIZEHINT][, [SIZEHINT]]]  
+Syntax: .reqd_work_group_size [SIZEHINT][, [SIZEHINT][, [SIZEHINT]]]
 
 This pseudo-operation must be inside any kernel configuration.
 Set reqd_work_group_size hint for this kernel in metadata info.
@@ -218,7 +218,7 @@ Set exception mask in PGMRSRC2 register value. Value should be 7-bit.
 
 ### .fixed_work_group_size
 
-Syntax: .fixed_work_group_size SIZEHINT[, SIZEHINT[, SIZEHINT]]
+Syntax: .fixed_work_group_size [SIZEHINT][, [SIZEHINT][, [SIZEHINT]]]
 
 This pseudo-operation must be inside any kernel configuration.
 Set fixed_work_group_size for this kernel in metadata info.
@@ -662,6 +662,13 @@ Syntax: .wavefront_size POWEROFTWO
 This pseudo-op must be inside kernel configuration (`.config`). Set `wavefront_size`
 field in kernel configuration. Value must be a power of two.
 
+### .work_group_size_hint
+
+Syntax: .work_group_size_hint [SIZEHINT][, [SIZEHINT][, [SIZEHINT]]]
+
+This pseudo-operation must be inside any kernel configuration.
+Set work_group_size_hint for this kernel in metadata info.
+
 ### .workgroup_fbarrier_count
 
 Syntax: .workgroup_fbarrier_count COUNT
@@ -689,13 +696,6 @@ Syntax: .workitem_vgpr_count REGNUM
 
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `workitem_vgpr_count` field in kernel configuration.
-
-### .work_group_size_hint
-
-Syntax: .work_group_size_hint SIZEHINT[, SIZEHINT[, SIZEHINT]]
-
-This pseudo-operation must be inside any kernel configuration.
-Set work_group_size_hint for this kernel in metadata info.
 
 ## Sample code
 

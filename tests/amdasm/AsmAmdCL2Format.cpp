@@ -741,7 +741,6 @@ x=3*6)ffDXD",
     .config)ffDXD",
         "",
         R"ffDXD(test.s:6:15: Error: Unknown dimension type
-test.s:8:15: Error: Expected expression
 test.s:13:20: Warning: Value 0x111da truncated to 0xda
 test.s:14:20: Error: LocalSize out of range (0-32768)
 test.s:15:19: Warning: Value 0x6 truncated to 0x2
