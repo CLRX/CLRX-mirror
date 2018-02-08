@@ -2495,6 +2495,10 @@ bool AsmROCmHandler::prepareBinary()
                     size_t(symEntry.second.size), ROCmRegionType::DATA});
                 continue;
             }
+            cxbyte info = symEntry.second.info;
+            // object type for global symbol referring to global data
+            if (symEntry.second.sectionId==dataSection)
+                info = ELF32_ST_INFO(ELF32_ST_BIND(symEntry.second.info), STT_OBJECT);
             
             cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
@@ -2502,8 +2506,8 @@ bool AsmROCmHandler::prepareBinary()
                 continue; // no section
             
             output.extraSymbols.push_back({ symEntry.first, symEntry.second.value,
-                    symEntry.second.size, binSectId, false, symEntry.second.info,
-                    symEntry.second.other });
+                    symEntry.second.size, binSectId, false,
+                    info, symEntry.second.other });
         }
     
     AsmSection& asmCSection = assembler.sections[codeSection];

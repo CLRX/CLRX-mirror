@@ -2217,8 +2217,12 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
                          ROCMSECTID_MAX, mainSectionsNum));
     /* extra symbols */
     for (const BinSymbol& symbol: input->extraSymbols)
-        elfBinGen64.addSymbol(ElfSymbol64(symbol, mainBuiltinSectTable,
-                         ROCMSECTID_MAX, mainSectionsNum));
+    {
+        ElfSymbol64 sym(symbol, mainBuiltinSectTable,
+                         ROCMSECTID_MAX, mainSectionsNum);
+        elfBinGen64.addSymbol(sym);
+        elfBinGen64.addDynSymbol(sym);
+    }
     
     size_t binarySize = elfBinGen64.countSize();
     /****
