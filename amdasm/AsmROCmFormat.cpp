@@ -2216,7 +2216,7 @@ static uint64_t calculateKernelArgSize(const std::vector<ROCmKernelArgInfo>& arg
         size = (size + argInfo.align-1) & ~(argInfo.align-1);
         size += argInfo.size;
     }
-    return size;
+    return (size + 15) & ~uint64_t(15);
 }
 
 bool AsmROCmHandler::prepareBinary()
