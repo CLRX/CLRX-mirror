@@ -2005,8 +2005,7 @@ static inline void addMainSectionToTable(cxuint& sectionsNum, uint16_t* builtinT
 
 // TODO: add GLOBAL OFFSET TABLE dynamic and (static?) relocations
 
-void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
-             Array<cxbyte>* aPtr) const
+void ROCmBinGenerator::prepareBinaryGen()
 {
     AMDGPUArchVersion amdGpuArchValues = getGPUArchVersion(input->deviceType,
                 GPUArchVersionTable::ROCM);
@@ -2015,8 +2014,8 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     if (input->archStepping!=UINT32_MAX)
         amdGpuArchValues.stepping = input->archStepping;
     
-    const char* comment = "CLRX ROCmBinGenerator " CLRX_VERSION;
-    uint32_t commentSize = ::strlen(comment);
+    comment = "CLRX ROCmBinGenerator " CLRX_VERSION;
+    commentSize = ::strlen(comment);
     if (input->comment!=nullptr)
     {
         // if comment, store comment section
@@ -2030,11 +2029,10 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     if (input->eflags != BINGEN_DEFAULT)
         eflags = input->eflags;
     
-    ElfBinaryGen64 elfBinGen64({ 0U, 0U, 0x40, 0, ET_DYN,
+    elfBinGen64.reset(new ElfBinaryGen64({ 0U, 0U, 0x40, 0, ET_DYN,
             0xe0, EV_CURRENT, UINT_MAX, 0, eflags },
-            true, true, true, PHREGION_FILESTART);
+            true, true, true, PHREGION_FILESTART));
     
-    uint16_t mainBuiltinSectTable[ROCMSECTID_MAX-ELFSECTID_START+1];
     std::fill(mainBuiltinSectTable,
               mainBuiltinSectTable + ROCMSECTID_MAX-ELFSECTID_START+1, SHN_UNDEF);
     cxuint mainSectionsNum = 1;
@@ -2061,7 +2059,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_STRTAB);
     
     // add symbols (kernels, function kernels and data symbols)
-    elfBinGen64.addSymbol(ElfSymbol64("_DYNAMIC",
+    elfBinGen64->addSymbol(ElfSymbol64("_DYNAMIC",
                   mainBuiltinSectTable[ROCMSECTID_DYNAMIC-ELFSECTID_START],
                   ELF64_ST_INFO(STB_LOCAL, STT_NOTYPE), STV_HIDDEN, true, 0, 0));
     const uint16_t textSectIndex = mainBuiltinSectTable[ELFSECTID_TEXT-ELFSECTID_START];
@@ -2089,37 +2087,37 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
                 break;
         }
         // add to symbols and dynamic symbols table
-        elfBinGen64.addSymbol(elfsym);
-        elfBinGen64.addDynSymbol(elfsym);
+        elfBinGen64->addSymbol(elfsym);
+        elfBinGen64->addDynSymbol(elfsym);
     }
     
     static const int32_t dynTags[] = {
         DT_SYMTAB, DT_SYMENT, DT_STRTAB, DT_STRSZ, DT_HASH };
-    elfBinGen64.addDynamics(sizeof(dynTags)/sizeof(int32_t), dynTags);
+    elfBinGen64->addDynamics(sizeof(dynTags)/sizeof(int32_t), dynTags);
     
     // elf program headers
-    elfBinGen64.addProgramHeader({ PT_PHDR, PF_R, 0, 1,
+    elfBinGen64->addProgramHeader({ PT_PHDR, PF_R, 0, 1,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0 });
-    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R, PHREGION_FILESTART,
+    elfBinGen64->addProgramHeader({ PT_LOAD, PF_R, PHREGION_FILESTART,
                     execProgHeaderRegionIndex,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0, 0x1000 });
-    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_X, execProgHeaderRegionIndex, 1,
+    elfBinGen64->addProgramHeader({ PT_LOAD, PF_R|PF_X, execProgHeaderRegionIndex, 1,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0 });
-    elfBinGen64.addProgramHeader({ PT_LOAD, PF_R|PF_W, execProgHeaderRegionIndex+1, 1,
+    elfBinGen64->addProgramHeader({ PT_LOAD, PF_R|PF_W, execProgHeaderRegionIndex+1, 1,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0 });
-    elfBinGen64.addProgramHeader({ PT_DYNAMIC, PF_R|PF_W, execProgHeaderRegionIndex+1, 1,
+    elfBinGen64->addProgramHeader({ PT_DYNAMIC, PF_R|PF_W, execProgHeaderRegionIndex+1, 1,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0, 8 });
-    elfBinGen64.addProgramHeader({ PT_GNU_RELRO, PF_R, execProgHeaderRegionIndex+1, 1,
+    elfBinGen64->addProgramHeader({ PT_GNU_RELRO, PF_R, execProgHeaderRegionIndex+1, 1,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0, 1 });
-    elfBinGen64.addProgramHeader({ PT_GNU_STACK, PF_R|PF_W, PHREGION_FILESTART, 0,
+    elfBinGen64->addProgramHeader({ PT_GNU_STACK, PF_R|PF_W, PHREGION_FILESTART, 0,
                     true, 0, 0, 0 });
     
     if (input->newBinFormat)
         // program header for note (new binary format)
-        elfBinGen64.addProgramHeader({ PT_NOTE, PF_R, 1, 1, true,
+        elfBinGen64->addProgramHeader({ PT_NOTE, PF_R, 1, 1, true,
                     Elf64Types::nobase, Elf64Types::nobase, 0, 4 });
     
-    std::string target = input->target.c_str();
+    target = input->target.c_str();
     if (target.empty() && !input->targetTripple.empty())
     {
         target = input->targetTripple.c_str();
@@ -2129,19 +2127,18 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
         target += dbuf;
     }
     // elf notes
-    elfBinGen64.addNote({"AMD", sizeof noteDescType1, noteDescType1, 1U});
-    std::unique_ptr<cxbyte[]> noteBuf(new cxbyte[0x1b]);
+    elfBinGen64->addNote({"AMD", sizeof noteDescType1, noteDescType1, 1U});
+    noteBuf.reset(new cxbyte[0x1b]);
     ::memcpy(noteBuf.get(), noteDescType3, 0x1b);
     SULEV(*(uint32_t*)(noteBuf.get()+4), amdGpuArchValues.major);
     SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
     SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);
-    elfBinGen64.addNote({"AMD", 0x1b, noteBuf.get(), 3U});
+    elfBinGen64->addNote({"AMD", 0x1b, noteBuf.get(), 3U});
     if (!target.empty())
-        elfBinGen64.addNote({"AMD", target.size(), (const cxbyte*)target.c_str(), 0xbU});
+        elfBinGen64->addNote({"AMD", target.size(), (const cxbyte*)target.c_str(), 0xbU});
     
-    std::string metadataStr;
-    size_t metadataSize = input->metadataSize;
-    const char* metadata = input->metadata;
+    metadataSize = input->metadataSize;
+    metadata = input->metadata;
     if (input->useMetadataInfo)
     {
         // generate ROCm metadata
@@ -2173,60 +2170,65 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     }
     
     if (metadataSize != 0)
-        elfBinGen64.addNote({"AMD", metadataSize, (const cxbyte*)metadata, 0xaU});
+        elfBinGen64->addNote({"AMD", metadataSize, (const cxbyte*)metadata, 0xaU});
     
     /// region and sections
-    elfBinGen64.addRegion(ElfRegion64::programHeaderTable());
+    elfBinGen64->addRegion(ElfRegion64::programHeaderTable());
     if (input->newBinFormat)
-        elfBinGen64.addRegion(ElfRegion64::noteSection());
+        elfBinGen64->addRegion(ElfRegion64::noteSection());
     if (input->globalData != nullptr)
-        elfBinGen64.addRegion(ElfRegion64(input->globalDataSize, input->globalData, 4,
+        elfBinGen64->addRegion(ElfRegion64(input->globalDataSize, input->globalData, 4,
                 ".rodata", SHT_PROGBITS, SHF_ALLOC, 0, 0, Elf64Types::nobase));
     
-    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
+    elfBinGen64->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
                 ".dynsym", SHT_DYNSYM, SHF_ALLOC, 0, BINGEN_DEFAULT, Elf64Types::nobase));
-    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 4,
+    elfBinGen64->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 4,
                 ".hash", SHT_HASH, SHF_ALLOC,
                 mainBuiltinSectTable[ELFSECTID_DYNSYM-ELFSECTID_START], 0,
                 Elf64Types::nobase));
-    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".dynstr", SHT_STRTAB,
+    elfBinGen64->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".dynstr", SHT_STRTAB,
                 SHF_ALLOC, 0, 0, Elf64Types::nobase));
     // '.text' with alignment=4096
-    elfBinGen64.addRegion(ElfRegion64(input->codeSize, (const cxbyte*)input->code, 
+    elfBinGen64->addRegion(ElfRegion64(input->codeSize, (const cxbyte*)input->code, 
               0x1000, ".text", SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR, 0, 0,
               Elf64Types::nobase, 0, false, 256));
-    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 0x1000,
+    elfBinGen64->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 0x1000,
                 ".dynamic", SHT_DYNAMIC, SHF_ALLOC|SHF_WRITE,
                 mainBuiltinSectTable[ELFSECTID_DYNSTR-ELFSECTID_START], 0,
                 Elf64Types::nobase, 0, false, 8));
     if (!input->newBinFormat)
     {
-        elfBinGen64.addRegion(ElfRegion64::noteSection());
-        elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1,
+        elfBinGen64->addRegion(ElfRegion64::noteSection());
+        elfBinGen64->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1,
                     ".AMDGPU.config", SHT_PROGBITS, 0));
     }
-    elfBinGen64.addRegion(ElfRegion64(commentSize, (const cxbyte*)comment, 1, ".comment",
+    elfBinGen64->addRegion(ElfRegion64(commentSize, (const cxbyte*)comment, 1, ".comment",
               SHT_PROGBITS, SHF_MERGE|SHF_STRINGS, 0, 0, 0, 1));
-    elfBinGen64.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
+    elfBinGen64->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
                 ".symtab", SHT_SYMTAB, 0, 0, BINGEN_DEFAULT));
-    elfBinGen64.addRegion(ElfRegion64::shstrtabSection());
-    elfBinGen64.addRegion(ElfRegion64::strtabSection());
-    elfBinGen64.addRegion(ElfRegion64::sectionHeaderTable());
+    elfBinGen64->addRegion(ElfRegion64::shstrtabSection());
+    elfBinGen64->addRegion(ElfRegion64::strtabSection());
+    elfBinGen64->addRegion(ElfRegion64::sectionHeaderTable());
     
     /* extra sections */
     for (const BinSection& section: input->extraSections)
-        elfBinGen64.addRegion(ElfRegion64(section, mainBuiltinSectTable,
+        elfBinGen64->addRegion(ElfRegion64(section, mainBuiltinSectTable,
                          ROCMSECTID_MAX, mainSectionsNum));
     /* extra symbols */
     for (const BinSymbol& symbol: input->extraSymbols)
     {
         ElfSymbol64 sym(symbol, mainBuiltinSectTable,
                          ROCMSECTID_MAX, mainSectionsNum);
-        elfBinGen64.addSymbol(sym);
-        elfBinGen64.addDynSymbol(sym);
+        elfBinGen64->addSymbol(sym);
+        elfBinGen64->addDynSymbol(sym);
     }
-    
-    size_t binarySize = elfBinGen64.countSize();
+    binarySize = elfBinGen64->countSize();
+}
+
+void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
+             Array<cxbyte>* aPtr)
+{
+    prepareBinaryGen();
     /****
      * prepare for write binary to output
      ****/
@@ -2256,7 +2258,7 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
      * write binary to output
      ****/
     FastOutputBuffer bos(256, *os);
-    elfBinGen64.generate(bos);
+    elfBinGen64->generate(bos);
     assert(bos.getWritten() == binarySize);
     }
     catch(...)
@@ -2267,17 +2269,17 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     os->exceptions(oldExceptions);
 }
 
-void ROCmBinGenerator::generate(Array<cxbyte>& array) const
+void ROCmBinGenerator::generate(Array<cxbyte>& array)
 {
     generateInternal(nullptr, nullptr, &array);
 }
 
-void ROCmBinGenerator::generate(std::ostream& os) const
+void ROCmBinGenerator::generate(std::ostream& os)
 {
     generateInternal(&os, nullptr, nullptr);
 }
 
-void ROCmBinGenerator::generate(std::vector<char>& v) const
+void ROCmBinGenerator::generate(std::vector<char>& v)
 {
     generateInternal(nullptr, &v, nullptr);
 }

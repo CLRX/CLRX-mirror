@@ -388,9 +388,19 @@ private:
     private:
     bool manageable;
     const ROCmInput* input;
+    std::unique_ptr<ElfBinaryGen64> elfBinGen64;
+    size_t binarySize;
+    size_t commentSize;
+    const char* comment;
+    std::string target;
+    std::unique_ptr<cxbyte[]> noteBuf;
+    std::string metadataStr;
+    size_t metadataSize;
+    const char* metadata;
+    uint16_t mainBuiltinSectTable[ROCMSECTID_MAX-ELFSECTID_START+1];
     
     void generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
-             Array<cxbyte>* aPtr) const;
+             Array<cxbyte>* aPtr);
 public:
     /// constructor
     ROCmBinGenerator();
@@ -424,17 +434,23 @@ public:
     const ROCmInput* getInput() const
     { return input; }
     
+    // prepare binary generator (for section diffs)
+    void prepareBinaryGen();
+    
+    size_t getSectionOffset(cxuint sectionId) const
+    { return elfBinGen64->getRegionOffset(mainBuiltinSectTable[sectionId]); }
+    
     /// set input
     void setInput(const ROCmInput* input);
     
     /// generates binary to array of bytes
-    void generate(Array<cxbyte>& array) const;
+    void generate(Array<cxbyte>& array);
     
     /// generates binary to output stream
-    void generate(std::ostream& os) const;
+    void generate(std::ostream& os);
     
     /// generates binary to vector of char
-    void generate(std::vector<char>& vector) const;
+    void generate(std::vector<char>& vector);
 };
 
 };
