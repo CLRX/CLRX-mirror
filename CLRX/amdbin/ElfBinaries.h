@@ -885,6 +885,10 @@ public:
     /// count size of binary
     uint64_t countSize();
     
+    // return offset for specified region
+    typename Types::Word getRegionOffset(cxuint i) const
+    { return regionOffsets[i]; }
+    
     /// generate binary
     void generate(FastOutputBuffer& fob);
     

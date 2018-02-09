@@ -2003,6 +2003,8 @@ static inline void addMainSectionToTable(cxuint& sectionsNum, uint16_t* builtinT
                 cxuint elfSectId)
 { builtinTable[elfSectId - ELFSECTID_START] = sectionsNum++; }
 
+// TODO: add GLOBAL OFFSET TABLE dynamic and (static?) relocations
+
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
 {

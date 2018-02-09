@@ -666,6 +666,8 @@ struct AsmSection
     Flags flags;   ///< section flags
     uint64_t alignment; ///< section alignment
     uint64_t size;  ///< section size
+    cxuint relSpace;    ///< relative space where is section
+    uint64_t relAddress; ///< relative address
     std::vector<cxbyte> content;    ///< content of section
     
     std::unique_ptr<ISAUsageHandler> usageHandler;  ///< usage handler
@@ -674,10 +676,12 @@ struct AsmSection
     /// constructor
     AsmSection();
     /// constructor
-    AsmSection(const char* _name, cxuint _kernelId, AsmSectionType _type,
-            Flags _flags, uint64_t _alignment, uint64_t _size = 0)
+    AsmSection(const char* _name, cxuint _kernelId, AsmSectionType _type, Flags _flags,
+               uint64_t _alignment, uint64_t _size = 0, cxuint _relSpace = UINT_MAX,
+               uint64_t _relAddress = UINT64_MAX)
             : name(_name), kernelId(_kernelId), type(_type), flags(_flags),
-              alignment(_alignment), size(_size)
+              alignment(_alignment), size(_size), relSpace(_relSpace),
+              relAddress(_relAddress)
     { }
     
     /// copy constructor

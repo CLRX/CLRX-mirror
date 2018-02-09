@@ -128,6 +128,7 @@ public:
     };
 protected:
     Assembler& assembler;   ///< assembler reference
+    bool sectionDiffsResolvable;
     
     /// constructor
     explicit AsmFormatHandler(Assembler& assembler);
@@ -137,6 +138,10 @@ protected:
                     cxuint& relSectionId, uint64_t& relValue);
 public:
     virtual ~AsmFormatHandler();
+    
+    /// return true if format handler can resolve differences between sections
+    bool isSectionDiffsResolvable() const
+    { return sectionDiffsResolvable; }
     
     /// add/set kernel
     /** adds new kernel. throw AsmFormatException when addition failed.
@@ -183,6 +188,9 @@ public:
     virtual void writeBinary(std::ostream& os) const = 0;
     /// write binary to array
     virtual void writeBinary(Array<cxbyte>& array) const = 0;
+    
+    /// prepare before section diference resolving
+    virtual void prepareSectionDiffsResolving();
 };
 
 /// handles raw code format

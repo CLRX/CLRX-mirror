@@ -56,7 +56,8 @@ void AsmAmdHsaKernelConfig::initialize()
     dx10Clamp = false;
 }
 
-AsmFormatHandler::AsmFormatHandler(Assembler& _assembler) : assembler(_assembler)
+AsmFormatHandler::AsmFormatHandler(Assembler& _assembler) : assembler(_assembler),
+        sectionDiffsResolvable(false)
 { }
 
 AsmFormatHandler::~AsmFormatHandler()
@@ -164,6 +165,9 @@ bool AsmFormatHandler::resolveLoHiRelocExpression(const AsmExpression* expr,
     // 
     return expr->evaluate(assembler, relOpStart, relOpEnd, relValue, relSectionId);
 }
+
+void AsmFormatHandler::prepareSectionDiffsResolving()
+{ }
 
 /* raw code handler */
 
