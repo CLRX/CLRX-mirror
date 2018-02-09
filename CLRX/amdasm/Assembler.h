@@ -442,6 +442,7 @@ private:
     std::vector<DefSym> defSyms;
     std::vector<CString> includeDirs;
     std::vector<AsmSection> sections;
+    std::vector<Array<cxuint> > relSpacesSections;
     std::unordered_set<AsmSymbolEntry*> symbolSnapshots;
     std::vector<AsmRelocation> relocations;
     AsmScope globalScope;
@@ -468,6 +469,7 @@ private:
     size_t lineSize;
     const char* line;
     bool endOfAssembly;
+    bool sectionDiffsPrepared;
     
     cxuint filenameIndex;
     std::stack<AsmInputFilter*> asmInputFilters;
@@ -752,6 +754,9 @@ public:
     /// get sections
     const std::vector<AsmSection>& getSections() const
     { return sections; }
+    // get first sections for rel spaces
+    const std::vector<Array<cxuint> >& getRelSpacesSections() const
+    { return relSpacesSections; }
     /// get kernel map
     const KernelMap& getKernelMap() const
     { return kernelMap; }

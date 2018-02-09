@@ -2633,6 +2633,7 @@ void Assembler::printUnresolvedSymbols(AsmScope* thisScope)
 bool Assembler::assemble()
 {
     resolvingRelocs = false;
+    sectionDiffsPrepared = false;
     
     for (const DefSym& defSym: defSyms)
         if (defSym.first!=".")

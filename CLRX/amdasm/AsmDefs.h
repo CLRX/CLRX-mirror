@@ -284,6 +284,14 @@ struct AsmRelocation
     uint64_t addend;    ///< addend
 };
 
+/// class of return value for a trying routines
+enum class AsmTryStatus
+{
+    FAILED = 0, ///< if failed now, no later trial
+    TRY_LATER,  ///< try later (after some)
+    SUCCESS     ///< succeed, no trial needed
+};
+
 /// assembler expression class
 class AsmExpression: public NonCopyableAndNonMovable
 {
@@ -338,6 +346,17 @@ public:
     void setTarget(AsmExprTarget _target)
     { target = _target; }
     
+    /// try to evaluate expression with/without section differences
+    /** 
+     * \param assembler assembler instace
+     * \param value output value
+     * \param sectionId output section id
+     * \param withSectionDiffs evaluate including precalculated section differences
+     * \return operation status
+     */
+    AsmTryStatus tryEvaluate(Assembler& assembler, size_t opStart, size_t opEnd,
+                  uint64_t& value, cxuint& sectionId, bool withSectionDiffs = false) const;
+    
     /// try to evaluate expression
     /**
      * \param assembler assembler instace
@@ -346,7 +365,8 @@ public:
      * \return true if evaluated
      */
     bool evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const
-    { return evaluate(assembler, 0, ops.size(), value, sectionId); }
+    { return tryEvaluate(assembler, 0, ops.size(), value, sectionId) !=
+                    AsmTryStatus::FAILED; }
     
     /// try to evaluate expression
     /**
@@ -358,7 +378,9 @@ public:
      * \return true if evaluated
      */
     bool evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
-                  uint64_t& value, cxuint& sectionId) const;
+                  uint64_t& value, cxuint& sectionId) const
+    { return tryEvaluate(assembler, opStart, opEnd, value, sectionId) !=
+                    AsmTryStatus::FAILED; }
     
     /// parse expression. By default, also gets values of symbol or  creates them
     /** parse expresion from assembler's line string. Accepts empty expression.
