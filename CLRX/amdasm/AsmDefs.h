@@ -349,6 +349,8 @@ public:
     /// try to evaluate expression with/without section differences
     /** 
      * \param assembler assembler instace
+     * \param opStart start operand
+     * \param opEnd end operand
      * \param value output value
      * \param sectionId output section id
      * \param withSectionDiffs evaluate including precalculated section differences
@@ -356,6 +358,18 @@ public:
      */
     AsmTryStatus tryEvaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                   uint64_t& value, cxuint& sectionId, bool withSectionDiffs = false) const;
+    
+    /// try to evaluate expression with/without section differences
+    /** 
+     * \param assembler assembler instace
+     * \param value output value
+     * \param sectionId output section id
+     * \param withSectionDiffs evaluate including precalculated section differences
+     * \return operation status
+     */
+    AsmTryStatus tryEvaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId,
+                    bool withSectionDiffs = false) const
+    { return tryEvaluate(assembler, 0, ops.size(), value, sectionId, withSectionDiffs); }
     
     /// try to evaluate expression
     /**

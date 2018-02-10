@@ -700,7 +700,9 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
             {
                 // put directly to section
                 cxuint sectionId;
-                if (expr->evaluate(asmr, value, sectionId))
+                AsmTryStatus  evalStatus = expr->tryEvaluate(asmr, value, sectionId,
+                                        asmr.withSectionDiffs());
+                if (evalStatus == AsmTryStatus::SUCCESS)
                 {
                     if (sectionId == ASMSECT_ABS)
                     {
@@ -713,6 +715,14 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
                     }
                     else
                         asmr.printError(exprPlace, "Expression must be absolute!");
+                }
+                else if (evalStatus == AsmTryStatus::TRY_LATER)
+                {
+                    // if section diffs to resolve later
+                    expr->setTarget(AsmExprTarget::dataTarget<T>(
+                                    asmr.currentSection, asmr.currentOutPos));
+                    asmr.unevalExpressions.push_back(expr.release());
+                    asmr.reserveData(sizeof(T));
                 }
             }
             else // expression, we set target of expression (just data)

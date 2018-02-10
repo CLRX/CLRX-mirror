@@ -1454,17 +1454,31 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 return false;
             if (expr->isEmpty())
                 ASM_FAIL_BY_ERROR(exprPlace, "Expected expression")
+            
+            bool tryLater = false;
             if (expr->getSymOccursNum()==0)
             {
                 // resolved now
                 cxuint sectionId; // for getting
-                if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
+                AsmTryStatus evalStatus = expr->tryEvaluate(asmr, value, sectionId,
+                                        asmr.withSectionDiffs());
+                
+                if (evalStatus == AsmTryStatus::FAILED) // failed evaluation!
                     return false;
+                else if (evalStatus == AsmTryStatus::TRY_LATER)
+                {
+                    if (outTargetExpr!=nullptr)
+                        asmr.unevalExpressions.push_back(expr.get());
+                    tryLater = true;
+                }
                 else if (sectionId != ASMSECT_ABS)
                     // if not absolute value
                     ASM_FAIL_BY_ERROR(exprPlace, "Expression must be absolute!")
             }
             else
+                tryLater = true;
+            
+            if (tryLater)
             {
                 // return output expression with symbols to resolve
                 if ((instrOpMask & INSTROP_ONLYINLINECONSTS)!=0)

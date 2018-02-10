@@ -316,8 +316,17 @@ bool AsmParseUtils::getJumpValueArg(Assembler& asmr, uint64_t& value,
     if (expr->getSymOccursNum()==0)
     {
         cxuint sectionId;
-        if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
+        AsmTryStatus evalStatus = expr->tryEvaluate(asmr, value, sectionId,
+                            asmr.withSectionDiffs());
+        if (evalStatus == AsmTryStatus::FAILED) // failed evaluation!
             return false;
+        else if (evalStatus == AsmTryStatus::TRY_LATER)
+        {
+            // store out target expression (some symbols is not resolved)
+            asmr.unevalExpressions.push_back(expr.get());
+            outTargetExpr = std::move(expr);
+            return true;
+        }
         if (sectionId != asmr.currentSection)
             // if jump outside current section (.text)
             ASM_FAIL_BY_ERROR(exprPlace, "Jump over current section!")
@@ -763,6 +772,9 @@ Assembler::~Assembler()
     
     for (auto& entry: symbolSnapshots)
         delete entry;
+    
+    for (auto& expr: unevalExpressions)
+        delete expr;
 }
 
 // routine to parse string in assembly syntax
@@ -1307,6 +1319,74 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
     return true;
 }
 
+bool Assembler::resolveExprTarget(const AsmExpression* expr,
+                        uint64_t value, cxuint sectionId)
+{
+    const AsmExprTarget& target = expr->getTarget();
+    switch(target.type)
+    {
+        case ASMXTGT_SYMBOL:
+            // resolve symbol
+            setSymbol(*target.symbol, value, sectionId);
+            break;
+        case ASMXTGT_DATA8:
+            if (sectionId != ASMSECT_ABS)
+                THIS_FAIL_BY_ERROR(expr->getSourcePos(),
+                        "Relative value is illegal in data expressions")
+            else
+            {
+                printWarningForRange(8, value, expr->getSourcePos());
+                sections[target.sectionId].content[target.offset] = cxbyte(value);
+            }
+            break;
+        case ASMXTGT_DATA16:
+            if (sectionId != ASMSECT_ABS)
+                THIS_FAIL_BY_ERROR(expr->getSourcePos(),
+                        "Relative value is illegal in data expressions")
+            else
+            {
+                printWarningForRange(16, value, expr->getSourcePos());
+                SULEV(*reinterpret_cast<uint16_t*>(sections[target.sectionId]
+                        .content.data() + target.offset), uint16_t(value));
+            }
+            break;
+        case ASMXTGT_DATA32:
+            if (sectionId != ASMSECT_ABS)
+                THIS_FAIL_BY_ERROR(expr->getSourcePos(),
+                        "Relative value is illegal in data expressions")
+            else
+            {
+                printWarningForRange(32, value, expr->getSourcePos());
+                SULEV(*reinterpret_cast<uint32_t*>(sections[target.sectionId]
+                        .content.data() + target.offset), uint32_t(value));
+            }
+            break;
+        case ASMXTGT_DATA64:
+            if (sectionId != ASMSECT_ABS)
+                THIS_FAIL_BY_ERROR(expr->getSourcePos(),
+                        "Relative value is illegal in data expressions")
+            else
+                SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
+                        .content.data() + target.offset), uint64_t(value));
+            break;
+        // special case for Code flow
+        case ASMXTGT_CODEFLOW:
+            if (target.sectionId != sectionId)
+                THIS_FAIL_BY_ERROR(expr->getSourcePos(), "Jump over current section!")
+            else
+                sections[target.sectionId].codeFlow[target.cflowId].target = value;
+            break;
+        default:
+            // ISA assembler resolves this dependency
+            if (!isaAssembler->resolveCode(expr->getSourcePos(),
+                    target.sectionId, sections[target.sectionId].content.data(),
+                    target.offset, target.type, sectionId, value))
+                return false;
+            break;
+    }
+    return true;
+}
+
 bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId)
 {
     symEntry.second.value = value;
@@ -1366,85 +1446,26 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                 }
                 
                 // resolving
-                switch(target.type)
-                {
-                    case ASMXTGT_SYMBOL:
-                    {    // resolve symbol
-                        AsmSymbolEntry& curSymEntry = *target.symbol;
-                        if (!curSymEntry.second.resolving &&
-                            (!curSymEntry.second.regRange &&
-                             curSymEntry.second.expression==expr))
-                        {
-                            curSymEntry.second.value = value;
-                            curSymEntry.second.sectionId = sectionId;
-                            curSymEntry.second.hasValue =
-                                isResolvableSection(sectionId) || resolvingRelocs;
-                            symbolStack.push(std::make_pair(&curSymEntry, 0));
-                            if (!curSymEntry.second.hasValue)
-                                continue;
-                            curSymEntry.second.resolving = true;
-                        }
-                        // otherwise we ignore circular dependencies
-                        break;
+                if (target.type == ASMXTGT_SYMBOL)
+                {    // resolve symbol
+                    AsmSymbolEntry& curSymEntry = *target.symbol;
+                    if (!curSymEntry.second.resolving &&
+                        (!curSymEntry.second.regRange &&
+                            curSymEntry.second.expression==expr))
+                    {
+                        curSymEntry.second.value = value;
+                        curSymEntry.second.sectionId = sectionId;
+                        curSymEntry.second.hasValue =
+                            isResolvableSection(sectionId) || resolvingRelocs;
+                        symbolStack.push(std::make_pair(&curSymEntry, 0));
+                        if (!curSymEntry.second.hasValue)
+                            continue;
+                        curSymEntry.second.resolving = true;
                     }
-                    case ASMXTGT_DATA8:
-                        if (sectionId != ASMSECT_ABS)
-                            THIS_NOTGOOD_BY_ERROR(expr->getSourcePos(),
-                                   "Relative value is illegal in data expressions")
-                        else
-                        {
-                            printWarningForRange(8, value, expr->getSourcePos());
-                            sections[target.sectionId].content[target.offset] =
-                                    cxbyte(value);
-                        }
-                        break;
-                    case ASMXTGT_DATA16:
-                        if (sectionId != ASMSECT_ABS)
-                            THIS_NOTGOOD_BY_ERROR(expr->getSourcePos(),
-                                   "Relative value is illegal in data expressions")
-                        else
-                        {
-                            printWarningForRange(16, value, expr->getSourcePos());
-                            SULEV(*reinterpret_cast<uint16_t*>(sections[target.sectionId]
-                                    .content.data() + target.offset), uint16_t(value));
-                        }
-                        break;
-                    case ASMXTGT_DATA32:
-                        if (sectionId != ASMSECT_ABS)
-                            THIS_NOTGOOD_BY_ERROR(expr->getSourcePos(),
-                                   "Relative value is illegal in data expressions")
-                        else
-                        {
-                            printWarningForRange(32, value, expr->getSourcePos());
-                            SULEV(*reinterpret_cast<uint32_t*>(sections[target.sectionId]
-                                    .content.data() + target.offset), uint32_t(value));
-                        }
-                        break;
-                    case ASMXTGT_DATA64:
-                        if (sectionId != ASMSECT_ABS)
-                            THIS_NOTGOOD_BY_ERROR(expr->getSourcePos(),
-                                   "Relative value is illegal in data expressions")
-                        else
-                            SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
-                                    .content.data() + target.offset), uint64_t(value));
-                        break;
-                    // special case for Code flow
-                    case ASMXTGT_CODEFLOW:
-                        if (target.sectionId != sectionId)
-                            THIS_NOTGOOD_BY_ERROR(expr->getSourcePos(),
-                                            "Jump over current section!")
-                        else
-                            sections[target.sectionId].
-                                    codeFlow[target.cflowId].target = value;
-                        break;
-                    default:
-                        // ISA assembler resolves this dependency
-                        if (!isaAssembler->resolveCode(expr->getSourcePos(),
-                                target.sectionId, sections[target.sectionId].content.data(),
-                                target.offset, target.type, sectionId, value))
-                            good = false;
-                        break;
+                    // otherwise we ignore circular dependencies
                 }
+                else
+                    good &= resolveExprTarget(expr, value, sectionId);
                 delete occurrence.expression; // delete expression
             }
             else // otherwise we only clear occurrence expression
@@ -1587,6 +1608,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     }
     AsmSymbolEntry& symEntry = *res.first;
     
+    bool tryLater = false;
     if (!expr)
     {
         setSymbol(symEntry, value, sectionId);
@@ -1597,13 +1619,23 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         // can evalute, assign now
         uint64_t value;
         cxuint sectionId;
-        if (!expr->evaluate(*this, value, sectionId))
-            return false;
         
-        setSymbol(symEntry, value, sectionId);
-        symEntry.second.onceDefined = !reassign;
+        AsmTryStatus evalStatus = expr->tryEvaluate(*this, value, sectionId,
+                                    withSectionDiffs());
+        if (evalStatus == AsmTryStatus::FAILED)
+            return false;
+        else if (evalStatus == AsmTryStatus::TRY_LATER)
+            tryLater = true;
+        else
+        {   // success
+            setSymbol(symEntry, value, sectionId);
+            symEntry.second.onceDefined = !reassign;
+        }
     }
-    else // set expression
+    else
+        tryLater = true;
+    
+    if (tryLater) // set expression
     {
         expr->setTarget(AsmExprTarget::symbolTarget(&symEntry));
         symEntry.second.expression = expr.release();
@@ -2850,8 +2882,23 @@ bool Assembler::assemble()
         clauses.pop();
     }
     
+    if (withSectionDiffs())
+        formatHandler->prepareSectionDiffsResolving();
+    
     resolvingRelocs = true;
     tryToResolveSymbols(&globalScope);
+    
+    if (withSectionDiffs())
+        for (AsmExpression* expr: unevalExpressions)
+        {
+            // try to resolve unevaluated expressions
+            uint64_t value;
+            cxuint sectionId;
+            if (expr->evaluate(*this, value, sectionId))
+                resolveExprTarget(expr, value, sectionId);
+            delete expr;
+        }
+    
     printUnresolvedSymbols(&globalScope);
     
     if (good && formatHandler!=nullptr)

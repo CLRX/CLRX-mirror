@@ -444,6 +444,7 @@ private:
     std::vector<AsmSection> sections;
     std::vector<Array<cxuint> > relSpacesSections;
     std::unordered_set<AsmSymbolEntry*> symbolSnapshots;
+    std::vector<AsmExpression*> unevalExpressions;
     std::vector<AsmRelocation> relocations;
     AsmScope globalScope;
     AsmMacroMap macroMap;
@@ -485,6 +486,9 @@ private:
     cxuint currentKernel;
     cxuint& currentSection;
     uint64_t& currentOutPos;
+    
+    bool withSectionDiffs() const
+    { return formatHandler!=nullptr && formatHandler->isSectionDiffsResolvable(); }
     
     AsmSourcePos getSourcePos(LineCol lineCol) const
     {
@@ -647,6 +651,8 @@ private:
     
     void tryToResolveSymbols(AsmScope* scope);
     void printUnresolvedSymbols(AsmScope* scope);
+    
+    bool resolveExprTarget(const AsmExpression* expr, uint64_t value, cxuint sectionId);
     
 protected:
     /// helper for testing
