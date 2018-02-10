@@ -278,6 +278,9 @@ AsmFormatHandler::SectionInfo AsmROCmHandler::getSectionInfo(cxuint sectionId) c
     else if (info.type != AsmSectionType::CONFIG)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     
+    if (info.type == AsmSectionType::CODE || info.type == AsmSectionType::DATA)
+        info.relSpace = 0;  // first rel space
+    
     info.name = sections[sectionId].name;
     return info;
 }

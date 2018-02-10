@@ -2410,7 +2410,8 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
             return;
         }
         auto info = formatHandler->getSectionInfo(sectionId);
-        sections.push_back({ info.name, currentKernel, info.type, info.flags, align });
+        sections.push_back({ info.name, currentKernel, info.type, info.flags, align,
+                    0, info.relSpace });
         currentOutPos = 0;
     }
     else // if section exists

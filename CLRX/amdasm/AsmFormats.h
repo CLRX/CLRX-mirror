@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <memory>
 #include <unordered_set>
 #include <unordered_map>
 #include <CLRX/amdbin/AmdBinaries.h>
@@ -125,6 +126,15 @@ public:
         const char* name;   ///< section name
         AsmSectionType type;    ///< section type
         Flags flags;        ///< section flags
+        cxuint relSpace;    ///< relative space
+        
+        SectionInfo() : name(nullptr), type(AsmSectionType::DATA), flags(0),
+                    relSpace(UINT_MAX)
+        { }
+        SectionInfo(const char* _name, AsmSectionType _type, Flags _flags = 0,
+                cxuint _relSpace = UINT_MAX) : name(_name), type(_type), flags(_flags),
+                    relSpace(_relSpace)
+        { }
     };
 protected:
     Assembler& assembler;   ///< assembler reference
@@ -489,6 +499,7 @@ private:
     typedef std::unordered_map<CString, cxuint> SectionMap;
     friend struct AsmROCmPseudoOps;
     ROCmInput output;
+    std::unique_ptr<ROCmBinGenerator> binGen;
     struct Section
     {
         cxuint kernelId;
