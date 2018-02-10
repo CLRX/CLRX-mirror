@@ -121,6 +121,108 @@ struct RelMultiply
     cxuint sectionId;
 };
 
+static inline bool compareRelMSectionLess(const RelMultiply& r1, const RelMultiply& r2)
+{ return r1.sectionId < r2.sectionId; }
+
+static void reduceRelMultiplies(std::vector<RelMultiply>& relmuls)
+{
+    size_t i = 0, j = 0;
+    uint64_t multiply = 0;
+    cxuint prevSect = ASMSECT_ABS;
+    for (i = 0; i < relmuls.size(); i++)
+    {
+        if (relmuls[i].sectionId != prevSect)
+        {
+            if (i != 0)
+                relmuls[j++] = { multiply, prevSect };
+            multiply = relmuls[i].multiply;
+            prevSect = relmuls[i].sectionId;
+        }
+        else
+            multiply += relmuls[i].multiply;
+    }
+    if (i != 0)
+        relmuls[j++] = { multiply, prevSect };
+    relmuls.resize(j);
+}
+
+static bool checkRelativesEquality(Assembler& assembler,
+            std::vector<RelMultiply>& relatives,
+            const Array<RelMultiply>& relatives2, bool checkRelSpaces)
+{
+    std::vector<RelMultiply> relSpaces1(relatives.size());
+    std::vector<RelMultiply> relSpaces2(relatives2.size());
+    const std::vector<AsmSection>& sections = assembler.getSections();
+    
+    bool haveRealRelSpaces = false;
+    if (checkRelSpaces)
+    {
+        // convert sections to relspaces
+        for (size_t i = 0; i < relSpaces1.size(); i++)
+            if (sections[relatives[i].sectionId].relSpace != UINT_MAX)
+            {
+                relSpaces1[i] = { relatives[i].multiply, 
+                        sections[relatives[i].sectionId].relSpace };
+                haveRealRelSpaces = true;
+            }
+            else // treat as separate relSpace
+                relSpaces1[i] = { relatives[i].multiply,
+                        0x80000000 | relatives[i].sectionId };
+        
+        for (size_t i = 0; i < relSpaces2.size(); i++)
+            if (sections[relatives2[i].sectionId].relSpace != UINT_MAX)
+            {
+                relSpaces2[i] = { relatives2[i].multiply, 
+                        sections[relatives2[i].sectionId].relSpace };
+                haveRealRelSpaces = true;
+            }
+            else // treat as separate relSpace
+                relSpaces2[i] = { relatives2[i].multiply,
+                        0x80000000 | relatives2[i].sectionId };
+    }
+    
+    if (!checkRelSpaces || !haveRealRelSpaces)
+    {
+        // if no check relspaces or if no real rel spaces in relatives
+        size_t requals = 0;
+        if (relatives2.size() != relatives.size())
+            return false;
+        else
+        {
+            // check whether relatives as same in two operands
+            for (const RelMultiply& r: relatives2)
+                for (RelMultiply& r2: relatives)
+                    if (r.multiply == r2.multiply &&
+                            r.sectionId == r2.sectionId)
+                    {
+                        r2.sectionId = ASMSECT_ABS; // ignore in next iter
+                        requals++;
+                        break;
+                    }
+            if (requals != relatives.size())
+                return false;
+        }
+    }
+    else
+    {
+        // sort
+        std::sort(relSpaces1.begin(), relSpaces1.end(), compareRelMSectionLess);
+        std::sort(relSpaces2.begin(), relSpaces2.end(), compareRelMSectionLess);
+        // reduce relspaces by sum multiplies
+        reduceRelMultiplies(relSpaces1);
+        reduceRelMultiplies(relSpaces2);
+        
+        /// compare relspaces
+        if (relSpaces1.size() != relSpaces2.size())
+            return false;
+        for (size_t i = 0; i < relSpaces1.size(); i++)
+            if (relSpaces1[i].multiply != relSpaces2[i].multiply ||
+                relSpaces1[i].sectionId != relSpaces2[i].sectionId)
+                return false;
+    }
+    return true;
+}
+
 AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                  uint64_t& outValue, cxuint& outSectionId, bool withSectionDiffs) const
 {
@@ -644,27 +746,13 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                     case AsmExprOp::ABOVE:
                     case AsmExprOp::ABOVE_EQ:
                     {
-                        // TODO: include relspace before section diffs resolving
-                        size_t requals = 0;
-                        if (relatives2.size() != relatives.size())
+                        if (!checkRelativesEquality(assembler, relatives, relatives2,
+                                    withSectionDiffs && !sectDiffsPrepared))
                             ASMX_FAILED_BY_ERROR(sourcePos, "For comparisons "
                                         "two values must have this same relatives!")
-                        else
-                        {
-                            // check whether relatives as same in two operands
-                            for (const RelMultiply& r: relatives2)
-                                for (RelMultiply& r2: relatives)
-                                    if (r.multiply == r2.multiply &&
-                                            r.sectionId == r2.sectionId)
-                                    {
-                                        r2.sectionId = ASMSECT_ABS; // ignore in next iter
-                                        requals++;
-                                        break;
-                                    }
-                            if (requals != relatives.size())
-                                ASMX_FAILED_BY_ERROR(sourcePos, "For comparisons "
-                                        "two values must have this same relatives!")
-                        }
+                        
+                        if (withSectionDiffs && !sectDiffsPrepared)
+                            tryLater = true; // must be evaluated later
                         relatives.clear();
                         switch(op)
                         {
