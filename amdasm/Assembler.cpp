@@ -1327,8 +1327,7 @@ bool Assembler::resolveExprTarget(const AsmExpression* expr,
     {
         case ASMXTGT_SYMBOL:
             // resolve symbol
-            setSymbol(*target.symbol, value, sectionId);
-            break;
+            return setSymbol(*target.symbol, value, sectionId);
         case ASMXTGT_DATA8:
             if (sectionId != ASMSECT_ABS)
                 THIS_FAIL_BY_ERROR(expr->getSourcePos(),
