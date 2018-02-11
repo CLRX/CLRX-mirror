@@ -150,76 +150,68 @@ static bool checkRelativesEquality(Assembler& assembler,
             std::vector<RelMultiply>& relatives,
             const Array<RelMultiply>& relatives2, bool checkRelSpaces)
 {
+    // if no check relspaces or if no real rel spaces in relatives
+    bool equal = true;
+    size_t requals = 0;
+    if (relatives2.size() != relatives.size())
+        equal = false;
+    else
+    {
+        // check whether relatives as same in two operands
+        for (const RelMultiply& r: relatives2)
+            for (RelMultiply& r2: relatives)
+                if (r.multiply == r2.multiply &&
+                        r.sectionId == r2.sectionId)
+                {
+                    r2.sectionId = ASMSECT_ABS; // ignore in next iter
+                    requals++;
+                    break;
+                }
+        if (requals != relatives.size())
+            equal = false;
+    }
+    
+    if (equal) // if equal in previous method
+        return true;
+    
+    if (!checkRelSpaces) // otherwise is not equal
+        return false;
+    
     std::vector<RelMultiply> relSpaces1(relatives.size());
     std::vector<RelMultiply> relSpaces2(relatives2.size());
     const std::vector<AsmSection>& sections = assembler.getSections();
     
-    bool haveRealRelSpaces = false;
-    if (checkRelSpaces)
-    {
-        // convert sections to relspaces
-        for (size_t i = 0; i < relSpaces1.size(); i++)
-            if (sections[relatives[i].sectionId].relSpace != UINT_MAX)
-            {
-                relSpaces1[i] = { relatives[i].multiply, 
-                        sections[relatives[i].sectionId].relSpace };
-                haveRealRelSpaces = true;
-            }
-            else // treat as separate relSpace
-                relSpaces1[i] = { relatives[i].multiply,
-                        0x80000000 | relatives[i].sectionId };
-        
-        for (size_t i = 0; i < relSpaces2.size(); i++)
-            if (sections[relatives2[i].sectionId].relSpace != UINT_MAX)
-            {
-                relSpaces2[i] = { relatives2[i].multiply, 
-                        sections[relatives2[i].sectionId].relSpace };
-                haveRealRelSpaces = true;
-            }
-            else // treat as separate relSpace
-                relSpaces2[i] = { relatives2[i].multiply,
-                        0x80000000 | relatives2[i].sectionId };
-    }
+    // convert sections to relspaces
+    for (size_t i = 0; i < relSpaces1.size(); i++)
+        if (sections[relatives[i].sectionId].relSpace != UINT_MAX)
+            relSpaces1[i] = { relatives[i].multiply, 
+                    sections[relatives[i].sectionId].relSpace };
+        else // treat as separate relSpace
+            relSpaces1[i] = { relatives[i].multiply,
+                    0x80000000 | relatives[i].sectionId };
     
-    if (!checkRelSpaces || !haveRealRelSpaces)
-    {
-        // if no check relspaces or if no real rel spaces in relatives
-        size_t requals = 0;
-        if (relatives2.size() != relatives.size())
+    for (size_t i = 0; i < relSpaces2.size(); i++)
+        if (sections[relatives2[i].sectionId].relSpace != UINT_MAX)
+            relSpaces2[i] = { relatives2[i].multiply, 
+                    sections[relatives2[i].sectionId].relSpace };
+        else // treat as separate relSpace
+            relSpaces2[i] = { relatives2[i].multiply,
+                    0x80000000 | relatives2[i].sectionId };
+    
+    // sort
+    std::sort(relSpaces1.begin(), relSpaces1.end(), compareRelMSectionLess);
+    std::sort(relSpaces2.begin(), relSpaces2.end(), compareRelMSectionLess);
+    // reduce relspaces by sum multiplies
+    reduceRelMultiplies(relSpaces1);
+    reduceRelMultiplies(relSpaces2);
+    
+    /// compare relspaces
+    if (relSpaces1.size() != relSpaces2.size())
+        return false;
+    for (size_t i = 0; i < relSpaces1.size(); i++)
+        if (relSpaces1[i].multiply != relSpaces2[i].multiply ||
+            relSpaces1[i].sectionId != relSpaces2[i].sectionId)
             return false;
-        else
-        {
-            // check whether relatives as same in two operands
-            for (const RelMultiply& r: relatives2)
-                for (RelMultiply& r2: relatives)
-                    if (r.multiply == r2.multiply &&
-                            r.sectionId == r2.sectionId)
-                    {
-                        r2.sectionId = ASMSECT_ABS; // ignore in next iter
-                        requals++;
-                        break;
-                    }
-            if (requals != relatives.size())
-                return false;
-        }
-    }
-    else
-    {
-        // sort
-        std::sort(relSpaces1.begin(), relSpaces1.end(), compareRelMSectionLess);
-        std::sort(relSpaces2.begin(), relSpaces2.end(), compareRelMSectionLess);
-        // reduce relspaces by sum multiplies
-        reduceRelMultiplies(relSpaces1);
-        reduceRelMultiplies(relSpaces2);
-        
-        /// compare relspaces
-        if (relSpaces1.size() != relSpaces2.size())
-            return false;
-        for (size_t i = 0; i < relSpaces1.size(); i++)
-            if (relSpaces1[i].multiply != relSpaces2[i].multiply ||
-                relSpaces1[i].sectionId != relSpaces2[i].sectionId)
-                return false;
-    }
     return true;
 }
 
