@@ -146,6 +146,25 @@ static void reduceRelMultiplies(std::vector<RelMultiply>& relmuls)
     relmuls.resize(j);
 }
 
+static void convertRelSpaces(const RelMultiply& relative,
+        RelMultiply& relSpace, const std::vector<AsmSection>& sections,
+        const std::vector<Array<cxuint> >& relSpacesSects, uint64_t fixAddr1)
+{
+    if (sections[relative.sectionId].relSpace != UINT_MAX)
+    {
+        cxuint osectId = relative.sectionId;
+        relSpace = { relative.multiply, sections[osectId].relSpace };
+        if (!relSpacesSects.empty())
+        {
+            cxuint rsectId = relSpacesSects[sections[osectId].relSpace][0];
+            fixAddr1 += relative.multiply*(sections[osectId].relAddress -
+                    sections[rsectId].relAddress);
+        }
+    }
+    else // treat as separate relSpace
+        relSpace = { relative.multiply, 0x80000000U | relative.sectionId };
+}
+
 static bool checkRelativesEquality(Assembler& assembler,
             std::vector<RelMultiply>& relatives,
             const Array<RelMultiply>& relatives2, bool checkRelSpaces,
@@ -187,32 +206,10 @@ static bool checkRelativesEquality(Assembler& assembler,
     
     // convert sections to relspaces
     for (size_t i = 0; i < relSpaces1.size(); i++)
-        if (sections[relatives[i].sectionId].relSpace != UINT_MAX)
-        {
-            cxuint osectId = relatives[i].sectionId;
-            relSpaces1[i] = { relatives[i].multiply, 
-                    sections[osectId].relSpace };
-            cxuint rsectId = relSpacesSects[sections[osectId].relSpace][0];
-            fixAddr1 = relatives[i].multiply*(sections[osectId].relAddress -
-                    sections[rsectId].relAddress);
-        }
-        else // treat as separate relSpace
-            relSpaces1[i] = { relatives[i].multiply,
-                    0x80000000 | relatives[i].sectionId };
+        convertRelSpaces(relatives[i], relSpaces1[i], sections, relSpacesSects, fixAddr1);
     
     for (size_t i = 0; i < relSpaces2.size(); i++)
-        if (sections[relatives2[i].sectionId].relSpace != UINT_MAX)
-        {
-            cxuint osectId = relatives2[i].sectionId;
-            relSpaces1[i] = { relatives2[i].multiply,
-                    sections[osectId].relSpace };
-            cxuint rsectId = relSpacesSects[sections[osectId].relSpace][0];
-            fixAddr1 = relatives2[i].multiply*(sections[osectId].relAddress -
-                    sections[rsectId].relAddress);
-        }
-        else // treat as separate relSpace
-            relSpaces2[i] = { relatives2[i].multiply,
-                    0x80000000 | relatives2[i].sectionId };
+        convertRelSpaces(relatives2[i], relSpaces2[i], sections, relSpacesSects, fixAddr2);
     
     // sort
     std::sort(relSpaces1.begin(), relSpaces1.end(), compareRelMSectionLess);
