@@ -1430,11 +1430,19 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                 if (!resolvingRelocs || target.type==ASMXTGT_SYMBOL)
                 {
                     // standard mode
-                    if (!expr->evaluate(*this, value, sectionId))
+                    AsmTryStatus evalStatus = expr->tryEvaluate(*this, value, sectionId,
+                                        withSectionDiffs());
+                    if (evalStatus == AsmTryStatus::FAILED)
                     {
                         // if failed
                         delete occurrence.expression; // delete expression
                         good = false;
+                        continue;
+                    }
+                    else if (evalStatus == AsmTryStatus::TRY_LATER)
+                    {   // try later if can not be evaluated
+                        unevalExpressions.push_back(occurrence.expression);
+                        // but still good
                         continue;
                     }
                 }
