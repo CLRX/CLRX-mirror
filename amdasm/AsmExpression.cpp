@@ -148,8 +148,11 @@ static void reduceRelMultiplies(std::vector<RelMultiply>& relmuls)
 
 static bool checkRelativesEquality(Assembler& assembler,
             std::vector<RelMultiply>& relatives,
-            const Array<RelMultiply>& relatives2, bool checkRelSpaces)
+            const Array<RelMultiply>& relatives2, bool checkRelSpaces,
+            uint64_t& fixAddr1, uint64_t& fixAddr2)
 {
+    fixAddr1 = 0;
+    fixAddr2 = 0;
     // if no check relspaces or if no real rel spaces in relatives
     bool equal = true;
     size_t requals = 0;
@@ -180,20 +183,33 @@ static bool checkRelativesEquality(Assembler& assembler,
     std::vector<RelMultiply> relSpaces1(relatives.size());
     std::vector<RelMultiply> relSpaces2(relatives2.size());
     const std::vector<AsmSection>& sections = assembler.getSections();
+    const std::vector<Array<cxuint> >& relSpacesSects = assembler.getRelSpacesSections();
     
     // convert sections to relspaces
     for (size_t i = 0; i < relSpaces1.size(); i++)
         if (sections[relatives[i].sectionId].relSpace != UINT_MAX)
+        {
+            cxuint osectId = relatives[i].sectionId;
             relSpaces1[i] = { relatives[i].multiply, 
-                    sections[relatives[i].sectionId].relSpace };
+                    sections[osectId].relSpace };
+            cxuint rsectId = relSpacesSects[sections[osectId].relSpace][0];
+            fixAddr1 = relatives[i].multiply*(sections[osectId].relAddress -
+                    sections[rsectId].relAddress);
+        }
         else // treat as separate relSpace
             relSpaces1[i] = { relatives[i].multiply,
                     0x80000000 | relatives[i].sectionId };
     
     for (size_t i = 0; i < relSpaces2.size(); i++)
         if (sections[relatives2[i].sectionId].relSpace != UINT_MAX)
-            relSpaces2[i] = { relatives2[i].multiply, 
-                    sections[relatives2[i].sectionId].relSpace };
+        {
+            cxuint osectId = relatives2[i].sectionId;
+            relSpaces1[i] = { relatives2[i].multiply,
+                    sections[osectId].relSpace };
+            cxuint rsectId = relSpacesSects[sections[osectId].relSpace][0];
+            fixAddr1 = relatives2[i].multiply*(sections[osectId].relAddress -
+                    sections[rsectId].relAddress);
+        }
         else // treat as separate relSpace
             relSpaces2[i] = { relatives2[i].multiply,
                     0x80000000 | relatives2[i].sectionId };
@@ -738,14 +754,18 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                     case AsmExprOp::ABOVE:
                     case AsmExprOp::ABOVE_EQ:
                     {
+                        uint64_t fixAddr1 = 0, fixAddr2 = 0;
                         if (!checkRelativesEquality(assembler, relatives, relatives2,
-                                    withSectionDiffs && !sectDiffsPrepared))
+                                    withSectionDiffs && !sectDiffsPrepared,
+                                    fixAddr1, fixAddr2))
                             ASMX_FAILED_BY_ERROR(sourcePos, "For comparisons "
                                         "two values must have this same relatives!")
                         
                         if (withSectionDiffs && !sectDiffsPrepared)
                             tryLater = true; // must be evaluated later
                         relatives.clear();
+                        value += fixAddr1;
+                        value2 += fixAddr2;
                         switch(op)
                         {
                             case AsmExprOp::EQUAL:
