@@ -452,8 +452,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
     }
     else
     {
-        const bool sectDiffsPrepared = (assembler.formatHandler != nullptr &&
-             assembler.formatHandler->isSectionDiffsResolvable());
+        const bool sectDiffsPrepared = assembler.sectionDiffsPrepared;
         
         // structure that contains relatives info: offset value and mult. of sections
         struct ValueAndMultiplies
@@ -879,11 +878,22 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
         {   // find proper section
             const Array<cxuint>& rlSections  = relSpacesSects[
                                 sections[sectionId].relSpace];
-            auto it = std::lower_bound(rlSections.begin(), rlSections.end(), sectionId,
-                [&sections](cxuint a, cxuint b)
-                { return sections[a].relAddress < sections[b].relAddress; });
-            cxuint newSectionId =  (it != rlSections.end()) ? *it : rlSections.front();
+            uint64_t valAddr = sections[sectionId].relAddress + value;
+            auto it = std::lower_bound(rlSections.begin(), rlSections.end(), ASMSECT_ABS,
+                [&sections,valAddr](cxuint a, cxuint b)
+                {
+                    uint64_t relAddr1 = a!=ASMSECT_ABS ? sections[a].relAddress : valAddr;
+                    uint64_t relAddr2 = b!=ASMSECT_ABS ? sections[b].relAddress : valAddr;
+                    return relAddr1 < relAddr2;
+                });
+            // if section address higher than current address
+            if ((it == rlSections.end() || sections[*it].relAddress != valAddr) &&
+                    it != rlSections.begin())
+                --it;
+            
+            cxuint newSectionId = (it != rlSections.end()) ? *it : rlSections.back();
             value += sections[sectionId].relAddress - sections[newSectionId].relAddress;
+            sectionId = newSectionId;
         }
     }
     if (tryLater)

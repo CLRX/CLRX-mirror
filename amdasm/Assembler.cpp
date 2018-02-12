@@ -60,6 +60,8 @@ AsmSection::AsmSection(const AsmSection& section)
     alignment = section.alignment;
     size = section.size;
     content = section.content;
+    relSpace = section.relSpace;
+    relAddress = section.relAddress;
     
     if (section.usageHandler!=nullptr)
         usageHandler.reset(section.usageHandler->copy());
@@ -76,6 +78,8 @@ AsmSection& AsmSection::operator=(const AsmSection& section)
     alignment = section.alignment;
     size = section.size;
     content = section.content;
+    relSpace = section.relSpace;
+    relAddress = section.relAddress;
     
     if (section.usageHandler!=nullptr)
         usageHandler.reset(section.usageHandler->copy());
@@ -1637,6 +1641,8 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     if (tryLater) // set expression
     {
         expr->setTarget(AsmExprTarget::symbolTarget(&symEntry));
+        if (expr->getSymOccursNum() == 0)
+            unevalExpressions.push_back(expr.get());
         symEntry.second.expression = expr.release();
         symEntry.second.regRange = symEntry.second.hasValue = false;
         symEntry.second.onceDefined = !reassign;
@@ -2375,7 +2381,8 @@ void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
         auto it = kernelMap.insert(std::make_pair(kernelName, kernelId)).first;
         kernels.push_back({ it->first.c_str(),  getSourcePos(pseudoOpPlace) });
         auto info = formatHandler->getSectionInfo(currentSection);
-        sections.push_back({ info.name, currentKernel, info.type, info.flags, 0 });
+        sections.push_back({ info.name, currentKernel, info.type, info.flags, 0,
+                    0, info.relSpace });
         currentOutPos = 0;
     }
     else
@@ -2457,7 +2464,8 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
         else
             printWarning(pseudoOpPlace,
                      "Section type and flags was ignored for builtin section");
-        sections.push_back({ info.name, currentKernel, info.type, info.flags, align });
+        sections.push_back({ info.name, currentKernel, info.type, info.flags, align,
+                    0, info.relSpace });
         currentOutPos = 0;
     }
     else // if section exists
@@ -2520,7 +2528,8 @@ void Assembler::initializeOutputFormat()
     isaAssembler = new GCNAssembler(*this);
     // add first section
     auto info = formatHandler->getSectionInfo(currentSection);
-    sections.push_back({ info.name, currentKernel, info.type, info.flags, 0 });
+    sections.push_back({ info.name, currentKernel, info.type, info.flags, 0,
+                0, info.relSpace });
     currentOutPos = 0;
 }
 
@@ -2883,13 +2892,18 @@ bool Assembler::assemble()
     }
     
     if (withSectionDiffs())
+    {
         formatHandler->prepareSectionDiffsResolving();
+        sectionDiffsPrepared = true;
+    }
     
     resolvingRelocs = true;
     tryToResolveSymbols(&globalScope);
     
     if (withSectionDiffs())
-        for (AsmExpression* expr: unevalExpressions)
+    {
+        resolvingRelocs = false;
+        for (AsmExpression*& expr: unevalExpressions)
         {
             // try to resolve unevaluated expressions
             uint64_t value;
@@ -2897,7 +2911,10 @@ bool Assembler::assemble()
             if (expr->evaluate(*this, value, sectionId))
                 resolveExprTarget(expr, value, sectionId);
             delete expr;
+            expr = nullptr;
         }
+        resolvingRelocs = true;
+    }
     
     printUnresolvedSymbols(&globalScope);
     

@@ -2228,7 +2228,8 @@ void ROCmBinGenerator::prepareBinaryGen()
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr)
 {
-    prepareBinaryGen();
+    if (elfBinGen64 == nullptr)
+        prepareBinaryGen();
     /****
      * prepare for write binary to output
      ****/

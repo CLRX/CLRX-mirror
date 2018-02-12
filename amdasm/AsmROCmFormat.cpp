@@ -117,8 +117,10 @@ enum
 
 AsmROCmHandler::AsmROCmHandler(Assembler& assembler): AsmFormatHandler(assembler),
              output{}, codeSection(0), commentSection(ASMSECT_NONE),
-             metadataSection(ASMSECT_NONE), dataSection(ASMSECT_NONE), extraSectionCount(0)
+             metadataSection(ASMSECT_NONE), dataSection(ASMSECT_NONE), extraSectionCount(0),
+             good(true)
 {
+    sectionDiffsResolvable = true;
     output.metadataInfo.initialize();
     output.archMinor = output.archStepping = UINT32_MAX;
     output.eflags = BINGEN_DEFAULT;
@@ -272,7 +274,7 @@ AsmFormatHandler::SectionInfo AsmROCmHandler::getSectionInfo(cxuint sectionId) c
     info.type = sections[sectionId].type;
     info.flags = 0;
     // code is addressable and writeable
-    if (info.type == AsmSectionType::CODE)
+    if (info.type == AsmSectionType::CODE || info.type == AsmSectionType::DATA)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
     // any other section (except config) are absolute addressable and writeable
     else if (info.type != AsmSectionType::CONFIG)
@@ -2224,12 +2226,7 @@ static uint64_t calculateKernelArgSize(const std::vector<ROCmKernelArgInfo>& arg
 
 bool AsmROCmHandler::prepareSectionDiffsResolving()
 {
-    return false;
-}
-
-bool AsmROCmHandler::prepareBinary()
-{
-    bool good = true;
+    good = true;
     size_t sectionsNum = sections.size();
     output.deviceType = assembler.getDeviceType();
     
@@ -2576,7 +2573,30 @@ bool AsmROCmHandler::prepareBinary()
     dataSymbols.insert(dataSymbols.end(), output.symbols.begin(), output.symbols.end());
     output.symbols = std::move(dataSymbols);
     if (good)
+    {
         binGen.reset(new ROCmBinGenerator(&output));
+        binGen->prepareBinaryGen();
+        
+        // add relSpacesSections
+        assembler.sections[codeSection].relAddress =
+                    binGen->getSectionOffset(ELFSECTID_TEXT);
+        
+        Array<cxuint> relSections(1 + (dataSection != ASMSECT_ABS));
+        cxuint relSectionId = 0;
+        if (dataSection != ASMSECT_ABS)
+        {
+            assembler.sections[dataSection].relAddress =
+                    binGen->getSectionOffset(ELFSECTID_RODATA);
+            relSections[relSectionId++] = dataSection;
+        }
+        relSections[relSectionId++] = codeSection;
+        assembler.relSpacesSections.push_back(std::move(relSections));
+    }
+    return good;
+}
+
+bool AsmROCmHandler::prepareBinary()
+{
     return good;
 }
 

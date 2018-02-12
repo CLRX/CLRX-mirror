@@ -438,7 +438,8 @@ public:
     void prepareBinaryGen();
     
     size_t getSectionOffset(cxuint sectionId) const
-    { return elfBinGen64->getRegionOffset(mainBuiltinSectTable[sectionId]); }
+    { return elfBinGen64->getRegionOffset(
+                    mainBuiltinSectTable[sectionId - ELFSECTID_START]); }
     
     /// set input
     void setInput(const ROCmInput* input);

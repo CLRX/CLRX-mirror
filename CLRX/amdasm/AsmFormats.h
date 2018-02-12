@@ -532,6 +532,8 @@ private:
     cxuint savedSection;
     cxuint extraSectionCount;
     
+    bool good;
+    
     void restoreKcodeCurrentAllocRegs();
     void saveKcodeCurrentAllocRegs();
     
