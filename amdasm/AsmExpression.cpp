@@ -756,8 +756,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                                     fixAddr1, fixAddr2))
                             ASMX_FAILED_BY_ERROR(sourcePos, "For comparisons "
                                         "two values must have this same relatives!")
-                        
-                        if (withSectionDiffs && !sectDiffsPrepared)
+                        else if (withSectionDiffs && !sectDiffsPrepared)
                             tryLater = true; // must be evaluated later
                         relatives.clear();
                         value += fixAddr1;
