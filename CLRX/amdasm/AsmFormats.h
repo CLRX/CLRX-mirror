@@ -200,7 +200,7 @@ public:
     virtual void writeBinary(Array<cxbyte>& array) const = 0;
     
     /// prepare before section diference resolving
-    virtual void prepareSectionDiffsResolving();
+    virtual bool prepareSectionDiffsResolving();
 };
 
 /// handles raw code format
@@ -559,6 +559,8 @@ public:
     /// get output object (input for bingenerator)
     const ROCmInput* getOutput() const
     { return &output; }
+    
+    bool prepareSectionDiffsResolving();
 };
 
 };

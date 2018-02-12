@@ -2222,6 +2222,11 @@ static uint64_t calculateKernelArgSize(const std::vector<ROCmKernelArgInfo>& arg
     return (size + 15) & ~uint64_t(15);
 }
 
+bool AsmROCmHandler::prepareSectionDiffsResolving()
+{
+    return false;
+}
+
 bool AsmROCmHandler::prepareBinary()
 {
     bool good = true;
@@ -2570,17 +2575,17 @@ bool AsmROCmHandler::prepareBinary()
     // put data objects
     dataSymbols.insert(dataSymbols.end(), output.symbols.begin(), output.symbols.end());
     output.symbols = std::move(dataSymbols);
+    if (good)
+        binGen.reset(new ROCmBinGenerator(&output));
     return good;
 }
 
 void AsmROCmHandler::writeBinary(std::ostream& os) const
 {
-    ROCmBinGenerator binGenerator(&output);
-    binGenerator.generate(os);
+    binGen->generate(os);
 }
 
 void AsmROCmHandler::writeBinary(Array<cxbyte>& array) const
 {
-    ROCmBinGenerator binGenerator(&output);
-    binGenerator.generate(array);
+    binGen->generate(array);
 }

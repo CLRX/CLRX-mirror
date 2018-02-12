@@ -166,8 +166,10 @@ bool AsmFormatHandler::resolveLoHiRelocExpression(const AsmExpression* expr,
     return expr->evaluate(assembler, relOpStart, relOpEnd, relValue, relSectionId);
 }
 
-void AsmFormatHandler::prepareSectionDiffsResolving()
-{ }
+bool AsmFormatHandler::prepareSectionDiffsResolving()
+{
+    return false;
+}
 
 /* raw code handler */
 
