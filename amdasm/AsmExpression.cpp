@@ -186,7 +186,7 @@ static bool checkSectionDiffs(size_t n, const RelMultiply* relMultiplies,
     for (size_t i = 0; i < n; i++)
         if (sections[relMultiplies[i].sectionId].relSpace == UINT_MAX)
             return false; // if found section not in anything relocation space
-    //tryLater = true;
+    tryLater = true;
     return true;
 }
 
