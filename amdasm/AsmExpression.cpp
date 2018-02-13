@@ -151,7 +151,7 @@ static bool checkRelativesEqualityInt(T1& relatives, const T2& relatives2)
 static bool checkRelativesEquality(Assembler& assembler,
             std::vector<RelMultiply>& relatives,
             const Array<RelMultiply>& relatives2, bool withSectionDiffs,
-            bool sectDiffsPrepared)
+            bool sectDiffsPrepared, bool& tryLater)
 {
     if (!withSectionDiffs || sectDiffsPrepared) // otherwise is not equal
         return checkRelativesEqualityInt(relatives, relatives2);
@@ -168,7 +168,10 @@ static bool checkRelativesEquality(Assembler& assembler,
                      [&sections](const RelMultiply& r)
                      { return sections[r.sectionId].relSpace == UINT_MAX; });
         // now compare
-        return checkRelativesEqualityInt(orels1, orels2);
+        bool equal = checkRelativesEqualityInt(orels1, orels2);
+        if (equal && (orels1.size()!=relatives.size() || orels2.size()!=relatives2.size()))
+            tryLater = true;
+        return equal;
     }
 }
 
@@ -716,11 +719,9 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                     case AsmExprOp::ABOVE_EQ:
                     {
                         if (!checkRelativesEquality(assembler, relatives, relatives2,
-                                    withSectionDiffs, sectDiffsPrepared))
+                                    withSectionDiffs, sectDiffsPrepared, tryLater))
                             ASMX_FAILED_BY_ERROR(sourcePos, "For comparisons "
                                         "two values must have this same relatives!")
-                        else if (withSectionDiffs && !sectDiffsPrepared)
-                            tryLater = true; // must be evaluated later
                         relatives.clear();
                         switch(op)
                         {
