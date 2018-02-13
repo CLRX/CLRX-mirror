@@ -1390,8 +1390,29 @@ bool Assembler::resolveExprTarget(const AsmExpression* expr,
     return true;
 }
 
+void Assembler::createTempSymEntryIfNeeded(AsmSymbolEntry& symEntry)
+{
+    if (symEntry.second.expression != nullptr &&
+                symEntry.second.expression->getSymOccursNum()!=0)
+    {   // create new symbol with this expression
+        std::unique_ptr<AsmSymbolEntry> newSymEntry(new AsmSymbolEntry(symEntry.first,
+                AsmSymbol(symEntry.second.expression, symEntry.second.onceDefined,
+                          symEntry.second.base)));
+        symEntry.second.expression->setTarget(
+                    AsmExprTarget::symbolTarget(newSymEntry.get()));
+        // replace in expression occurrences
+        for (const AsmExprSymbolOccurrence& occur: symEntry.second.occurrencesInExprs)
+            occur.expression->replaceOccurrenceSymbol(occur, newSymEntry.get());
+        newSymEntry->second.occurrencesInExprs = symEntry.second.occurrencesInExprs;
+        symEntry.second.occurrencesInExprs.clear();
+        newSymEntry->second.detached = true;
+        symbolSnapshots.insert(newSymEntry.release());
+    }
+}
+
 bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId)
 {
+    createTempSymEntryIfNeeded(symEntry);
     symEntry.second.value = value;
     symEntry.second.expression = nullptr;
     symEntry.second.sectionId = sectionId;
@@ -1472,6 +1493,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         if (!curSymEntry.second.hasValue)
                             continue;
                         curSymEntry.second.resolving = true;
+                        curSymEntry.second.expression = nullptr;
                     }
                     // otherwise we ignore circular dependencies
                 }
@@ -1487,6 +1509,12 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
             entry.first->second.resolving = false;
             entry.first->second.occurrencesInExprs.clear();
             if (entry.first->second.snapshot && --(entry.first->second.refCount) == 0)
+            {
+                symbolSnapshots.erase(entry.first);
+                delete entry.first; // delete this symbol snapshot
+                entry.first = nullptr;
+            }
+            if (entry.first!=nullptr && entry.first->second.detached)
             {
                 symbolSnapshots.erase(entry.first);
                 delete entry.first; // delete this symbol snapshot
@@ -1648,6 +1676,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     
     if (tryLater) // set expression
     {
+        createTempSymEntryIfNeeded(symEntry);
         expr->setTarget(AsmExprTarget::symbolTarget(&symEntry));
         if (expr->getSymOccursNum() == 0)
             unevalExpressions.push_back(expr.get());

@@ -167,6 +167,7 @@ struct AsmSymbol
     cxuint base:1;              ///< with base expression
     cxuint snapshot:1;          ///< if symbol is snapshot
     cxuint regRange:1;          ///< if symbol is register range
+    cxuint detached:1;
     uint64_t value;         ///< value of symbol
     uint64_t size;          ///< size of symbol
     union {
@@ -181,19 +182,20 @@ struct AsmSymbol
     explicit AsmSymbol(bool _onceDefined = false) :
             refCount(1), sectionId(ASMSECT_ABS), info(0), other(0), hasValue(false),
             onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
-            regRange(false), value(0), size(0), expression(nullptr)
+            regRange(false), detached(false), value(0), size(0), expression(nullptr)
     { }
     /// constructor with expression
     explicit AsmSymbol(AsmExpression* expr, bool _onceDefined = false, bool _base = false) :
             refCount(1), sectionId(ASMSECT_ABS), info(0), other(0), hasValue(false),
             onceDefined(_onceDefined), resolving(false), base(_base),
-            snapshot(false), regRange(false), value(0), size(0), expression(expr)
+            snapshot(false), regRange(false), detached(false),
+            value(0), size(0), expression(expr)
     { }
     /// constructor with value and section id
     explicit AsmSymbol(cxuint _sectionId, uint64_t _value, bool _onceDefined = false) :
             refCount(1), sectionId(_sectionId), info(0), other(0), hasValue(true),
             onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
-            regRange(false), value(_value), size(0), expression(nullptr)
+            regRange(false), detached(false), value(_value), size(0), expression(nullptr)
     { }
     /// destructor
     ~AsmSymbol();
@@ -443,6 +445,9 @@ public:
     /// substitute occurrence in expression by value
     void substituteOccurrence(AsmExprSymbolOccurrence occurrence, uint64_t value,
                   cxuint sectionId = ASMSECT_ABS);
+    /// replace symbol in expression
+    void replaceOccurrenceSymbol(AsmExprSymbolOccurrence occurrence,
+                    AsmSymbolEntry* newSymEntry);
     /// get operators list
     const Array<AsmExprOp>& getOps() const
     { return ops; }
@@ -495,6 +500,12 @@ inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurren
     args[occurrence.argIndex].relValue.sectionId = sectionId;
     if (sectionId != ASMSECT_ABS)
         relativeSymOccurs = true;
+}
+
+inline void AsmExpression::replaceOccurrenceSymbol(AsmExprSymbolOccurrence occurrence,
+                    AsmSymbolEntry* newSymEntry)
+{
+    args[occurrence.argIndex].symbol = newSymEntry;
 }
 
 /// type of register field

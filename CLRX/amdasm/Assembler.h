@@ -654,6 +654,8 @@ private:
     
     bool resolveExprTarget(const AsmExpression* expr, uint64_t value, cxuint sectionId);
     
+    void createTempSymEntryIfNeeded(AsmSymbolEntry& symEntry);
+    
 protected:
     /// helper for testing
     bool readLine();

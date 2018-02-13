@@ -2432,5 +2432,28 @@ In macro content:
         "test.s:5:44: Error: Expected macro argument name\n"
         "test.s:6:13: Error: Unknown instruction\n", ""
     },
+    /* 66 - evaluate old expressions of symbols */
+    {
+        R"ffDXD(.int aa0
+aa1=aa2
+aa0=aa1
+aa1=bb2
+bb0=aa1
+aa1=3
+aa2=6
+bb2=11)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            { 0x06, 0x00, 0x00, 0x00 } } },
+        {
+            { ".", 4U, 0, 0U, true, false, false, 0, 0 },
+            { "aa0", 6U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "aa1", 3U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "aa2", 6U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "bb0", 11U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "bb2", 11U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        },
+        true, "", ""
+    },
     { nullptr }
 };
