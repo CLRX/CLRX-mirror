@@ -19,6 +19,7 @@
 
 #include <CLRX/Config.h>
 #include <string>
+#include <iterator>
 #include <vector>
 #include <stack>
 #include <algorithm>
@@ -121,62 +122,12 @@ struct RelMultiply
     cxuint sectionId;
 };
 
-static inline bool compareRelMSectionLess(const RelMultiply& r1, const RelMultiply& r2)
-{ return r1.sectionId < r2.sectionId; }
-
-static void reduceRelMultiplies(std::vector<RelMultiply>& relmuls)
+template<typename T1, typename T2>
+static bool checkRelativesEqualityInt(T1& relatives, const T2& relatives2)
 {
-    size_t i = 0, j = 0;
-    uint64_t multiply = 0;
-    cxuint prevSect = ASMSECT_ABS;
-    for (i = 0; i < relmuls.size(); i++)
-    {
-        if (relmuls[i].sectionId != prevSect)
-        {
-            if (i != 0)
-                relmuls[j++] = { multiply, prevSect };
-            multiply = relmuls[i].multiply;
-            prevSect = relmuls[i].sectionId;
-        }
-        else
-            multiply += relmuls[i].multiply;
-    }
-    if (i != 0)
-        relmuls[j++] = { multiply, prevSect };
-    relmuls.resize(j);
-}
-
-static void convertRelSpaces(const RelMultiply& relative,
-        RelMultiply& relSpace, const std::vector<AsmSection>& sections,
-        const std::vector<Array<cxuint> >& relSpacesSects, uint64_t fixAddr1)
-{
-    if (sections[relative.sectionId].relSpace != UINT_MAX)
-    {
-        cxuint osectId = relative.sectionId;
-        relSpace = { relative.multiply, sections[osectId].relSpace };
-        if (!relSpacesSects.empty())
-        {
-            cxuint rsectId = relSpacesSects[sections[osectId].relSpace][0];
-            fixAddr1 += relative.multiply*(sections[osectId].relAddress -
-                    sections[rsectId].relAddress);
-        }
-    }
-    else // treat as separate relSpace
-        relSpace = { relative.multiply, 0x80000000U | relative.sectionId };
-}
-
-static bool checkRelativesEquality(Assembler& assembler,
-            std::vector<RelMultiply>& relatives,
-            const Array<RelMultiply>& relatives2, bool checkRelSpaces,
-            uint64_t& fixAddr1, uint64_t& fixAddr2)
-{
-    fixAddr1 = 0;
-    fixAddr2 = 0;
-    // if no check relspaces or if no real rel spaces in relatives
-    bool equal = true;
     size_t requals = 0;
     if (relatives2.size() != relatives.size())
-        equal = false;
+        return false;
     else
     {
         // check whether relatives as same in two operands
@@ -190,43 +141,57 @@ static bool checkRelativesEquality(Assembler& assembler,
                     break;
                 }
         if (requals != relatives.size())
-            equal = false;
-    }
-    
-    if (equal) // if equal in previous method
-        return true;
-    
-    if (!checkRelSpaces) // otherwise is not equal
-        return false;
-    
-    std::vector<RelMultiply> relSpaces1(relatives.size());
-    std::vector<RelMultiply> relSpaces2(relatives2.size());
-    const std::vector<AsmSection>& sections = assembler.getSections();
-    const std::vector<Array<cxuint> >& relSpacesSects = assembler.getRelSpacesSections();
-    
-    // convert sections to relspaces
-    for (size_t i = 0; i < relSpaces1.size(); i++)
-        convertRelSpaces(relatives[i], relSpaces1[i], sections, relSpacesSects, fixAddr1);
-    
-    for (size_t i = 0; i < relSpaces2.size(); i++)
-        convertRelSpaces(relatives2[i], relSpaces2[i], sections, relSpacesSects, fixAddr2);
-    
-    // sort
-    std::sort(relSpaces1.begin(), relSpaces1.end(), compareRelMSectionLess);
-    std::sort(relSpaces2.begin(), relSpaces2.end(), compareRelMSectionLess);
-    // reduce relspaces by sum multiplies
-    reduceRelMultiplies(relSpaces1);
-    reduceRelMultiplies(relSpaces2);
-    
-    /// compare relspaces
-    if (relSpaces1.size() != relSpaces2.size())
-        return false;
-    for (size_t i = 0; i < relSpaces1.size(); i++)
-        if (relSpaces1[i].multiply != relSpaces2[i].multiply ||
-            relSpaces1[i].sectionId != relSpaces2[i].sectionId)
             return false;
+    }
     return true;
 }
+
+// check relatives equality
+// if check relSpaces then check relSpaces from relatives and check their equality
+static bool checkRelativesEquality(Assembler& assembler,
+            std::vector<RelMultiply>& relatives,
+            const Array<RelMultiply>& relatives2, bool withSectionDiffs,
+            bool sectDiffsPrepared)
+{
+    if (!withSectionDiffs || sectDiffsPrepared) // otherwise is not equal
+        return checkRelativesEqualityInt(relatives, relatives2);
+    else
+    {
+        const std::vector<AsmSection>& sections = assembler.getSections();
+        // compare with ignoring sections with relspaces
+        std::vector<RelMultiply> orels1;
+        std::vector<RelMultiply> orels2;
+        std::copy_if(relatives.begin(), relatives.end(), std::back_inserter(orels1),
+                     [&sections](const RelMultiply& r)
+                     { return sections[r.sectionId].relSpace == UINT_MAX; });
+        std::copy_if(relatives2.begin(), relatives2.end(), std::back_inserter(orels2),
+                     [&sections](const RelMultiply& r)
+                     { return sections[r.sectionId].relSpace == UINT_MAX; });
+        // now compare
+        return checkRelativesEqualityInt(orels1, orels2);
+    }
+}
+
+// check whether sections is in resolvable section diffs
+static bool checkSectionDiffs(size_t n, const RelMultiply* relMultiplies,
+                    const std::vector<AsmSection>& sections, bool withSectionDiffs,
+                    bool sectDiffsPreppared, bool& tryLater)
+{
+    if (n == 0)
+        return true;
+    
+    if (!withSectionDiffs || sectDiffsPreppared)
+        return false;
+    
+    for (size_t i = 0; i < n; i++)
+        if (sections[relMultiplies[i].sectionId].relSpace == UINT_MAX)
+            return false; // if found section not in anything relocation space
+    //tryLater = true;
+    return true;
+}
+
+#define CHKSREL(rel) checkSectionDiffs(rel.size(), rel.data(), sections, \
+                withSectionDiffs, sectDiffsPrepared, tryLater)
 
 AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, size_t opEnd,
                  uint64_t& outValue, cxuint& outSectionId, bool withSectionDiffs) const
@@ -572,7 +537,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                     }
                     case AsmExprOp::MULTIPLY:
                         // we do not multiply with relatives in two operands
-                        if (!relatives.empty() && !relatives2.empty())
+                        if (!CHKSREL(relatives) && !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Multiplication is not allowed for two relative values")
                         if (relatives2.empty())
@@ -597,7 +562,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         value = value2 * value;
                         break;
                     case AsmExprOp::DIVISION:
-                        if (!relatives.empty() || !relatives2.empty())
+                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Division is not allowed for any relative value")
                         if (value != 0)
@@ -612,7 +577,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         messagePosIndex++;
                         break;
                     case AsmExprOp::SIGNED_DIVISION:
-                        if (!relatives.empty()|| !relatives2.empty())
+                        if (!CHKSREL(relatives)|| !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Signed division is not allowed for any relative value")
                         if (value != 0)
@@ -627,7 +592,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         messagePosIndex++;
                         break;
                     case AsmExprOp::MODULO:
-                        if (!relatives.empty() || !relatives2.empty())
+                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Modulo is not allowed for any relative value")
                         if (value != 0)
@@ -642,7 +607,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         messagePosIndex++;
                         break;
                     case AsmExprOp::SIGNED_MODULO:
-                        if (!relatives.empty() || !relatives2.empty())
+                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Signed Modulo is not allowed for any relative value")
                         if (value != 0)
@@ -657,31 +622,31 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         messagePosIndex++;
                         break;
                     case AsmExprOp::BIT_AND:
-                        if (!relatives.empty() || !relatives2.empty())
+                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Binary AND is not allowed for any relative value")
                         value = value2 & value;
                         break;
                     case AsmExprOp::BIT_OR:
-                        if (!relatives.empty() || !relatives2.empty())
+                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Binary OR is not allowed for any relative value")
                         value = value2 | value;
                         break;
                     case AsmExprOp::BIT_XOR:
-                        if (!relatives.empty() || !relatives2.empty())
+                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Binary XOR is not allowed for any relative value")
                         value = value2 ^ value;
                         break;
                     case AsmExprOp::BIT_ORNOT:
-                        if (!relatives.empty() || !relatives2.empty())
+                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Binary ORNOT is not allowed for any relative value")
                         value = value2 | ~value;
                         break;
                     case AsmExprOp::SHIFT_LEFT:
-                        if (!relatives.empty())
+                        if (!CHKSREL(relatives))
                             ASMX_FAILED_BY_ERROR(sourcePos, "Shift left is not allowed "
                                     "for any for relative second value")
                         else if (value < 64)
@@ -700,7 +665,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         messagePosIndex++;
                         break;
                     case AsmExprOp::SHIFT_RIGHT:
-                        if (!relatives.empty() || !relatives2.empty())
+                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Shift right is not allowed for any relative value")
                         if (value < 64)
@@ -714,7 +679,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         messagePosIndex++;
                         break;
                     case AsmExprOp::SIGNED_SHIFT_RIGHT:
-                        if (!relatives.empty() || !relatives2.empty())
+                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos, "Signed shift right is not "
                                     "allowed for any relative value")
                         if (value < 64)
@@ -728,13 +693,13 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         messagePosIndex++;
                         break;
                     case AsmExprOp::LOGICAL_AND:
-                        if (!relatives.empty() || !relatives2.empty())
+                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Logical AND is not allowed for any relative value")
                         value = value2 && value;
                         break;
                     case AsmExprOp::LOGICAL_OR:
-                        if (!relatives.empty() || !relatives2.empty())
+                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Logical OR is not allowed for any relative value")
                         value = value2 || value;
@@ -750,17 +715,13 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                     case AsmExprOp::ABOVE:
                     case AsmExprOp::ABOVE_EQ:
                     {
-                        uint64_t fixAddr1 = 0, fixAddr2 = 0;
                         if (!checkRelativesEquality(assembler, relatives, relatives2,
-                                    withSectionDiffs && !sectDiffsPrepared,
-                                    fixAddr1, fixAddr2))
+                                    withSectionDiffs, sectDiffsPrepared))
                             ASMX_FAILED_BY_ERROR(sourcePos, "For comparisons "
                                         "two values must have this same relatives!")
                         else if (withSectionDiffs && !sectDiffsPrepared)
                             tryLater = true; // must be evaluated later
                         relatives.clear();
-                        value += fixAddr1;
-                        value2 += fixAddr2;
                         switch(op)
                         {
                             case AsmExprOp::EQUAL:
@@ -812,7 +773,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                 const uint64_t value3 = stack.top().value;
                 const Array<RelMultiply> relatives3 = stack.top().relatives;
                 stack.pop();
-                if (!relatives3.empty())
+                if (!CHKSREL(relatives3))
                     ASMX_FAILED_BY_ERROR(sourcePos,
                          "Choice is not allowed for first relative value")
                 if (value3)
