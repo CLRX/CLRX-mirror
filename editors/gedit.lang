@@ -160,6 +160,7 @@
             <keyword>file</keyword>
             <keyword>fill</keyword>
             <keyword>fillq</keyword>
+            <keyword>fixed_work_group_size</keyword>
             <keyword>fkernel</keyword>
             <keyword>float</keyword>
             <keyword>floatconsts</keyword>
@@ -256,8 +257,19 @@
             <keyword>macro</keyword>
             <keyword>macrocase</keyword>
             <keyword>main</keyword>
+            <keyword>max_flat_work_group_size</keyword>
             <keyword>max_scratch_backing_memory</keyword>
             <keyword>newbinfmt</keyword>
+            <keyword>md_group_segment_fixed_size</keyword>
+            <keyword>md_kernarg_segment_align</keyword>
+            <keyword>md_kernarg_segment_size</keyword>
+            <keyword>md_language</keyword>
+            <keyword>md_private_segment_fixed_size</keyword>
+            <keyword>md_sgprsnum</keyword>
+            <keyword>md_symname</keyword>
+            <keyword>md_version</keyword>
+            <keyword>md_vgprsnum</keyword>
+            <keyword>md_wavefront_size</keyword>
             <keyword>metadata</keyword>
             <keyword>noaltmacro</keyword>
             <keyword>nobuggyfplit</keyword>
@@ -288,6 +300,7 @@
             <keyword>reserved_vgprs</keyword>
             <keyword>rocm</keyword>
             <keyword>rodata</keyword>
+            <keyword>runtime_handle</keyword>
             <keyword>runtime_loader_kernel_symbol</keyword>
             <keyword>rwdata</keyword>
             <keyword>sampler</keyword>

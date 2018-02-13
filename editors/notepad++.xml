@@ -1488,6 +1488,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .file
 .fill
 .fillq
+.fixed_work_group_size
 .fkernel
 .float
 .floatconsts
@@ -1584,7 +1585,18 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .macro
 .macrocase
 .main
+.max_flat_work_group_size
 .max_scratch_backing_memory
+.md_group_segment_fixed_size
+.md_kernarg_segment_align
+.md_kernarg_segment_size
+.md_language
+.md_private_segment_fixed_size
+.md_sgprsnum
+.md_symname
+.md_version
+.md_vgprsnum
+.md_wavefront_size
 .metadata
 .newbinfmt
 .noaltmacro
@@ -1616,6 +1628,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .reserved_vgprs
 .rocm
 .rodata
+.runtime_handle
 .runtime_loader_kernel_symbol
 .rwdata
 .sampler

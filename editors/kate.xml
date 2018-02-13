@@ -1868,6 +1868,7 @@
             <item>.file</item>
             <item>.fill</item>
             <item>.fillq</item>
+            <item>.fixed_work_group_size</item>
             <item>.fkernel</item>
             <item>.float</item>
             <item>.floatconsts</item>
@@ -1964,7 +1965,18 @@
             <item>.macro</item>
             <item>.macrocase</item>
             <item>.main</item>
+            <item>.max_flat_work_group_size</item>
             <item>.max_scratch_backing_memory</item>
+            <item>.md_group_segment_fixed_size</item>
+            <item>.md_kernarg_segment_align</item>
+            <item>.md_kernarg_segment_size</item>
+            <item>.md_language</item>
+            <item>.md_private_segment_fixed_size</item>
+            <item>.md_sgprsnum</item>
+            <item>.md_symname</item>
+            <item>.md_version</item>
+            <item>.md_vgprsnum</item>
+            <item>.md_wavefront_size</item>
             <item>.metadata</item>
             <item>.newbinfmt</item>
             <item>.noaltmacro</item>
@@ -1996,6 +2008,7 @@
             <item>.reserved_vgprs</item>
             <item>.rocm</item>
             <item>.rodata</item>
+            <item>.runtime_handle</item>
             <item>.runtime_loader_kernel_symbol</item>
             <item>.rwdata</item>
             <item>.sampler</item>
