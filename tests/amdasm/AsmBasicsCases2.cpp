@@ -2171,6 +2171,9 @@ gdata1:
 gdata2:
 .int somesym
 .int vectorAdd-gdata2+2
+.byte (vectorAdd+0x100)*4==gdata2+gdata2+gdata2+(0x650+0x100)*4+gdata2
+someval1=somesym+10000
+someval2=someval1*2
 .kernel vectorAdd
     .config
         .dims x
@@ -2193,6 +2196,7 @@ vectorAdd:
         s_mov_b32   s1, .-gdata2
 somesym=vectorAdd-gdata1
         s_branch vectorAdd + (vectorAdd-gdata2)
+        s_branch vectorAdd + ((vectorAdd-gdata2)&0xffffe0)
         .int (vectorAdd+0x100)*4==gdata2+gdata2+gdata2+(0x650+0x100)*4+gdata2
         s_endpgm
 )ffDXD",
@@ -2234,23 +2238,25 @@ somesym=vectorAdd-gdata1
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0xff, 0x00, 0x81, 0xbe, 0x50, 0x07, 0x00, 0x00,
-                    0x51, 0x01, 0x82, 0xbf, 0xff, 0xff, 0xff, 0xff,
-                    0x00, 0x00, 0x81, 0xbf
+                    0x51, 0x01, 0x82, 0xbf, 0x4c, 0x01, 0x82, 0xbf,
+                    0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x81, 0xbf
                 } },
             { ".rodata", ASMKERN_GLOBAL, AsmSectionType::DATA,
                 {
                     0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
                     0x03, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00,
                     0x06, 0x00, 0x00, 0x00, 0x64, 0x06, 0x00, 0x00,
-                    0x52, 0x06, 0x00, 0x00
+                    0x52, 0x06, 0x00, 0x00, 0xff
                 } },
             { nullptr, 0, AsmSectionType::CONFIG, { } },
         },
         {
-            { ".", 276U, 0, 0U, true, false, false, 0, 0 },
+            { ".", 280U, 0, 0U, true, false, false, 0, 0 },
             { "gdata1", 0U, 1, 0U, true, true, false, 16, 0 },
             { "gdata2", 20U, 1, 0U, true, true, false, 0, 0 },
             { "somesym", 1636U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "someval1", 11636U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "someval2", 23272U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "vectorAdd", 0U, 0, 0U, true, true, false, 0, 0 }
         }, true, "", ""
     },
