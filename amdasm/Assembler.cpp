@@ -1392,8 +1392,9 @@ bool Assembler::resolveExprTarget(const AsmExpression* expr,
 
 void Assembler::createTempSymEntryIfNeeded(AsmSymbolEntry& symEntry)
 {
-    if (symEntry.second.expression != nullptr &&
-                symEntry.second.expression->getSymOccursNum()!=0)
+    if (symEntry.second.expression != nullptr && (
+        (symEntry.second.withUnevalExpr && !sectionDiffsPrepared) ||
+                symEntry.second.expression->getSymOccursNum()!=0))
     {   // create new symbol with this expression
         std::unique_ptr<AsmSymbolEntry> newSymEntry(new AsmSymbolEntry(symEntry.first,
                 AsmSymbol(symEntry.second.expression, symEntry.second.onceDefined,
@@ -1419,6 +1420,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
     symEntry.second.hasValue = isResolvableSection(sectionId) || resolvingRelocs;
     symEntry.second.regRange = false;
     symEntry.second.base = false;
+    symEntry.second.withUnevalExpr = false;
     if (!symEntry.second.hasValue) // if not resolved we just return
         return true; // no error
     bool good = true;
@@ -1463,6 +1465,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     else if (evalStatus == AsmTryStatus::TRY_LATER)
                     {   // try later if can not be evaluated
                         unevalExpressions.push_back(occurrence.expression);
+                        if (target.type==ASMXTGT_SYMBOL)
+                            target.symbol->second.withUnevalExpr = true;
                         // but still good
                         continue;
                     }
@@ -1487,6 +1491,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     {
                         curSymEntry.second.value = value;
                         curSymEntry.second.sectionId = sectionId;
+                        curSymEntry.second.withUnevalExpr = false;
                         curSymEntry.second.hasValue =
                             isResolvableSection(sectionId) || resolvingRelocs;
                         symbolStack.push(std::make_pair(&curSymEntry, 0));
@@ -1679,7 +1684,12 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         createTempSymEntryIfNeeded(symEntry);
         expr->setTarget(AsmExprTarget::symbolTarget(&symEntry));
         if (expr->getSymOccursNum() == 0)
+        {
             unevalExpressions.push_back(expr.get());
+            symEntry.second.withUnevalExpr = true;
+        }
+        else
+            symEntry.second.withUnevalExpr = false;
         symEntry.second.expression = expr.release();
         symEntry.second.regRange = symEntry.second.hasValue = false;
         symEntry.second.onceDefined = !reassign;
