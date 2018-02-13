@@ -1869,80 +1869,67 @@ static void generateROCmMetadata(const ROCmMetadata& mdInfo,
         }
         
         // kernel code properties
-        if (kernel.kernargSegmentSize != BINGEN64_NOTSUPPLIED ||
-            kernel.kernargSegmentAlign != BINGEN64_NOTSUPPLIED ||
-            kernel.privateSegmentFixedSize != BINGEN64_NOTSUPPLIED ||
-            kernel.groupSegmentFixedSize != BINGEN64_NOTSUPPLIED ||
-            kernel.wavefrontSize != BINGEN_NOTSUPPLIED ||
-            kernel.sgprsNum != BINGEN_NOTSUPPLIED ||
-            kernel.vgprsNum != BINGEN_NOTSUPPLIED ||
-            kernel.maxFlatWorkGroupSize != BINGEN64_NOTSUPPLIED ||
-            hasValue(kernel.spilledSgprs) || hasValue(kernel.spilledVgprs) ||
-            kernel.fixedWorkGroupSize[0] != 0 || kernel.fixedWorkGroupSize[1] != 0 ||
+        const ROCmKernelConfig& kconfig = *kconfigs[i];
+        
+        output += "    CodeProps:       \n";
+        output += "      KernargSegmentSize: ";
+        itocstrCStyle(hasValue(kernel.kernargSegmentSize) ?
+                kernel.kernargSegmentSize : ULEV(kconfig.kernargSegmentSize),
+                numBuf, 24);
+        output += numBuf;
+        output += "\n      GroupSegmentFixedSize: ";
+        itocstrCStyle(hasValue(kernel.groupSegmentFixedSize) ?
+                kernel.groupSegmentFixedSize :
+                uint64_t(ULEV(kconfig.workgroupGroupSegmentSize)),
+                numBuf, 24);
+        output += numBuf;
+        output += "\n      PrivateSegmentFixedSize: ";
+        itocstrCStyle(hasValue(kernel.privateSegmentFixedSize) ?
+                kernel.privateSegmentFixedSize :
+                uint64_t(ULEV(kconfig.workitemPrivateSegmentSize)),
+                numBuf, 24);
+        output += numBuf;
+        output += "\n      KernargSegmentAlign: ";
+        itocstrCStyle(hasValue(kernel.kernargSegmentAlign) ?
+                kernel.kernargSegmentAlign :
+                uint64_t(1ULL<<kconfig.kernargSegmentAlignment),
+                numBuf, 24);
+        output += numBuf;
+        output += "\n      WavefrontSize:   ";
+        itocstrCStyle(hasValue(kernel.wavefrontSize) ? kernel.wavefrontSize :
+                cxuint(1U<<kconfig.wavefrontSize), numBuf, 24);
+        output += numBuf;
+        output += "\n      NumSGPRs:        ";
+        itocstrCStyle(hasValue(kernel.sgprsNum) ? kernel.sgprsNum :
+                cxuint(ULEV(kconfig.wavefrontSgprCount)), numBuf, 24);
+        output += numBuf;
+        output += "\n      NumVGPRs:        ";
+        itocstrCStyle(hasValue(kernel.vgprsNum) ? kernel.vgprsNum :
+                cxuint(ULEV(kconfig.workitemVgprCount)), numBuf, 24);
+        output += numBuf;
+        // spilled registers
+        if (hasValue(kernel.spilledSgprs))
+        {
+            output += "\n      NumSpilledSGPRs: ";
+            itocstrCStyle(kernel.spilledSgprs, numBuf, 24);
+            output += numBuf;
+        }
+        if (hasValue(kernel.spilledVgprs))
+        {
+            output += "\n      NumSpilledVGPRs: ";
+            itocstrCStyle(kernel.spilledVgprs, numBuf, 24);
+            output += numBuf;
+        }
+        output += "\n      MaxFlatWorkGroupSize: ";
+        itocstrCStyle(hasValue(kernel.maxFlatWorkGroupSize) ?
+                    kernel.maxFlatWorkGroupSize : uint64_t(256), numBuf, 24);
+        output += numBuf;
+        output += "\n";
+        if (kernel.fixedWorkGroupSize[0] != 0 || kernel.fixedWorkGroupSize[1] != 0 ||
             kernel.fixedWorkGroupSize[2] != 0)
         {
-            const ROCmKernelConfig& kconfig = *kconfigs[i];
-            
-            output += "    CodeProps:       \n";
-            output += "      KernargSegmentSize: ";
-            itocstrCStyle(hasValue(kernel.kernargSegmentSize) ?
-                    kernel.kernargSegmentSize : ULEV(kconfig.kernargSegmentSize),
-                    numBuf, 24);
-            output += numBuf;
-            output += "\n      GroupSegmentFixedSize: ";
-            itocstrCStyle(hasValue(kernel.groupSegmentFixedSize) ?
-                    kernel.groupSegmentFixedSize :
-                    uint64_t(ULEV(kconfig.workgroupGroupSegmentSize)),
-                    numBuf, 24);
-            output += numBuf;
-            output += "\n      PrivateSegmentFixedSize: ";
-            itocstrCStyle(hasValue(kernel.privateSegmentFixedSize) ?
-                    kernel.privateSegmentFixedSize :
-                    uint64_t(ULEV(kconfig.workitemPrivateSegmentSize)),
-                    numBuf, 24);
-            output += numBuf;
-            output += "\n      KernargSegmentAlign: ";
-            itocstrCStyle(hasValue(kernel.kernargSegmentAlign) ?
-                    kernel.kernargSegmentAlign :
-                    uint64_t(1ULL<<kconfig.kernargSegmentAlignment),
-                    numBuf, 24);
-            output += numBuf;
-            output += "\n      WavefrontSize:   ";
-            itocstrCStyle(hasValue(kernel.wavefrontSize) ? kernel.wavefrontSize :
-                    cxuint(1U<<kconfig.wavefrontSize), numBuf, 24);
-            output += numBuf;
-            output += "\n      NumSGPRs:        ";
-            itocstrCStyle(hasValue(kernel.sgprsNum) ? kernel.sgprsNum :
-                    cxuint(ULEV(kconfig.wavefrontSgprCount)), numBuf, 24);
-            output += numBuf;
-            output += "\n      NumVGPRs:        ";
-            itocstrCStyle(hasValue(kernel.vgprsNum) ? kernel.vgprsNum :
-                    cxuint(ULEV(kconfig.workitemVgprCount)), numBuf, 24);
-            output += numBuf;
-            // spilled registers
-            if (hasValue(kernel.spilledSgprs))
-            {
-                output += "\n      NumSpilledSGPRs: ";
-                itocstrCStyle(kernel.spilledSgprs, numBuf, 24);
-                output += numBuf;
-            }
-            if (hasValue(kernel.spilledVgprs))
-            {
-                output += "\n      NumSpilledVGPRs: ";
-                itocstrCStyle(kernel.spilledVgprs, numBuf, 24);
-                output += numBuf;
-            }
-            output += "\n      MaxFlatWorkGroupSize: ";
-            itocstrCStyle(hasValue(kernel.maxFlatWorkGroupSize) ?
-                        kernel.maxFlatWorkGroupSize : uint64_t(256), numBuf, 24);
-            output += numBuf;
-            output += "\n";
-            if (kernel.fixedWorkGroupSize[0] != 0 || kernel.fixedWorkGroupSize[1] != 0 ||
-                kernel.fixedWorkGroupSize[2] != 0)
-            {
-                output += "      FixedWorkGroupSize:   ";
-                genArrayValue(3, kernel.fixedWorkGroupSize, output);
-            }
+            output += "      FixedWorkGroupSize:   ";
+            genArrayValue(3, kernel.fixedWorkGroupSize, output);
         }
     }
     output += "...\n";
