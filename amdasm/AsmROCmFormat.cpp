@@ -2481,40 +2481,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
                  assembler.sections[kernel.ctrlDirSection].content.data(), 128);
     }
     
-    // if set adds symbols to binary
-    std::vector<ROCmSymbolInput> dataSymbols;
-    if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
-        for (const AsmSymbolEntry& symEntry: assembler.globalScope.symbolMap)
-        {
-            if (!symEntry.second.hasValue)
-                continue; // unresolved
-            if (ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
-                continue; // local
-            if (assembler.kernelMap.find(symEntry.first.c_str())!=assembler.kernelMap.end())
-                continue; // if kernel name
-            
-            if (symEntry.second.sectionId==codeSection)
-            {
-                // put data objects
-                dataSymbols.push_back({symEntry.first, size_t(symEntry.second.value),
-                    size_t(symEntry.second.size), ROCmRegionType::DATA});
-                continue;
-            }
-            cxbyte info = symEntry.second.info;
-            // object type for global symbol referring to global data
-            if (symEntry.second.sectionId==dataSection)
-                info = ELF32_ST_INFO(ELF32_ST_BIND(symEntry.second.info), STT_OBJECT);
-            
-            cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
-                    sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
-            if (binSectId==ELFSECTID_UNDEF)
-                continue; // no section
-            
-            output.extraSymbols.push_back({ symEntry.first, symEntry.second.value,
-                    symEntry.second.size, binSectId, false,
-                    info, symEntry.second.other });
-        }
-    
+    // check kernel symbols and setup kernel configs
     AsmSection& asmCSection = assembler.sections[codeSection];
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
     for (size_t ki = 0; ki < output.symbols.size(); ki++)
@@ -2569,9 +2536,9 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         kinput.type = kernel.isFKernel ? ROCmRegionType::FKERNEL : ROCmRegionType::KERNEL;
     }
     
-    // put data objects
-    dataSymbols.insert(dataSymbols.end(), output.symbols.begin(), output.symbols.end());
-    output.symbols = std::move(dataSymbols);
+    // add symbols before section diffs prepping
+    addSymbols(false);
+    
     if (good)
     {
         binGen.reset(new ROCmBinGenerator(&output));
@@ -2595,8 +2562,60 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
     return good;
 }
 
+void AsmROCmHandler::addSymbols(bool sectionDiffsPrepared)
+{
+    output.extraSymbols.clear();
+    // if set adds symbols to binary
+    std::vector<ROCmSymbolInput> dataSymbols;
+    if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
+        for (const AsmSymbolEntry& symEntry: assembler.globalScope.symbolMap)
+        {
+            //if (!symEntry.second.hasValue)
+              //  continue; // unresolved
+            if (ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
+                continue; // local
+            if (assembler.kernelMap.find(symEntry.first.c_str())!=assembler.kernelMap.end())
+                continue; // if kernel name
+            
+            if (symEntry.second.sectionId==codeSection)
+            {
+                // put data objects
+                dataSymbols.push_back({symEntry.first, size_t(symEntry.second.value),
+                    size_t(symEntry.second.size), ROCmRegionType::DATA});
+                continue;
+            }
+            cxbyte info = symEntry.second.info;
+            // object type for global symbol referring to global data
+            if (symEntry.second.sectionId==dataSection)
+                info = ELF32_ST_INFO(ELF32_ST_BIND(symEntry.second.info), STT_OBJECT);
+            
+            cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
+                    sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
+            if (binSectId==ELFSECTID_UNDEF)
+                continue; // no section
+            
+            output.extraSymbols.push_back({ symEntry.first, symEntry.second.value,
+                    symEntry.second.size, binSectId, false,
+                    info, symEntry.second.other });
+        }
+    
+    // put data objects
+    if (sectionDiffsPrepared)
+    {
+        // move kernels to start
+        for (size_t i = 0; i < kernelStates.size(); i++)
+            output.symbols[i] = output.symbols[output.symbols.size()-kernelStates.size()+i];
+        output.symbols.resize(kernelStates.size());
+    }
+    dataSymbols.insert(dataSymbols.end(), output.symbols.begin(), output.symbols.end());
+    output.symbols = std::move(dataSymbols);
+}
+
 bool AsmROCmHandler::prepareBinary()
 {
+    // add symbols after section diffs prepping
+    addSymbols(true);
+    binGen->updateSymbols();
     return good;
 }
 

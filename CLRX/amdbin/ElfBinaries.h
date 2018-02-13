@@ -866,6 +866,12 @@ public:
     /// add new program header
     void addProgramHeader(const ElfProgramHeaderTemplate<Types>& progHeader);
     
+    /// clear symbols
+    void clearSymbols()
+    { symbols.clear(); }
+    /// clear dynamic symbols
+    void clearDynSymbols()
+    { dynSymbols.clear(); }
     /// add symbol
     void addSymbol(const ElfSymbolTemplate<Types>& symbol)
     { symbols.push_back(symbol); }

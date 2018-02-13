@@ -537,6 +537,7 @@ private:
     void restoreKcodeCurrentAllocRegs();
     void saveKcodeCurrentAllocRegs();
     
+    void addSymbols(bool sectionDiffsPrepared);
 public:
     /// construcror
     explicit AsmROCmHandler(Assembler& assembler);

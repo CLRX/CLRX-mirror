@@ -397,6 +397,7 @@ private:
     std::string metadataStr;
     size_t metadataSize;
     const char* metadata;
+    cxuint mainSectionsNum;
     uint16_t mainBuiltinSectTable[ROCMSECTID_MAX-ELFSECTID_START+1];
     
     void generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
@@ -433,16 +434,17 @@ public:
     /// get input
     const ROCmInput* getInput() const
     { return input; }
+    /// set input
+    void setInput(const ROCmInput* input);
     
-    // prepare binary generator (for section diffs)
+    /// prepare binary generator (for section diffs)
     void prepareBinaryGen();
-    
+    /// get section offset (from main section)
     size_t getSectionOffset(cxuint sectionId) const
     { return elfBinGen64->getRegionOffset(
                     mainBuiltinSectTable[sectionId - ELFSECTID_START]); }
-    
-    /// set input
-    void setInput(const ROCmInput* input);
+    /// update symbols
+    void updateSymbols();
     
     /// generates binary to array of bytes
     void generate(Array<cxbyte>& array);

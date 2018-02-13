@@ -2022,7 +2022,7 @@ void ROCmBinGenerator::prepareBinaryGen()
     
     std::fill(mainBuiltinSectTable,
               mainBuiltinSectTable + ROCMSECTID_MAX-ELFSECTID_START+1, SHN_UNDEF);
-    cxuint mainSectionsNum = 1;
+    mainSectionsNum = 1;
     
     // generate main builtin section table (for section id translation)
     if (input->newBinFormat)
@@ -2044,39 +2044,6 @@ void ROCmBinGenerator::prepareBinaryGen()
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_SYMTAB);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_SHSTRTAB);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_STRTAB);
-    
-    // add symbols (kernels, function kernels and data symbols)
-    elfBinGen64->addSymbol(ElfSymbol64("_DYNAMIC",
-                  mainBuiltinSectTable[ROCMSECTID_DYNAMIC-ELFSECTID_START],
-                  ELF64_ST_INFO(STB_LOCAL, STT_NOTYPE), STV_HIDDEN, true, 0, 0));
-    const uint16_t textSectIndex = mainBuiltinSectTable[ELFSECTID_TEXT-ELFSECTID_START];
-    for (const ROCmSymbolInput& symbol: input->symbols)
-    {
-        ElfSymbol64 elfsym;
-        switch (symbol.type)
-        {
-            case ROCmRegionType::KERNEL:
-                elfsym = ElfSymbol64(symbol.symbolName.c_str(), textSectIndex,
-                      ELF64_ST_INFO(STB_GLOBAL, STT_GNU_IFUNC), 0, true,
-                      symbol.offset, symbol.size);
-                break;
-            case ROCmRegionType::FKERNEL:
-                elfsym = ElfSymbol64(symbol.symbolName.c_str(), textSectIndex,
-                      ELF64_ST_INFO(STB_GLOBAL, STT_FUNC), 0, true,
-                      symbol.offset, symbol.size);
-                break;
-            case ROCmRegionType::DATA:
-                elfsym = ElfSymbol64(symbol.symbolName.c_str(), textSectIndex,
-                      ELF64_ST_INFO(STB_GLOBAL, STT_OBJECT), 0, true,
-                      symbol.offset, symbol.size);
-                break;
-            default:
-                break;
-        }
-        // add to symbols and dynamic symbols table
-        elfBinGen64->addSymbol(elfsym);
-        elfBinGen64->addDynSymbol(elfsym);
-    }
     
     static const int32_t dynTags[] = {
         DT_SYMTAB, DT_SYMENT, DT_STRTAB, DT_STRSZ, DT_HASH };
@@ -2201,6 +2168,46 @@ void ROCmBinGenerator::prepareBinaryGen()
     for (const BinSection& section: input->extraSections)
         elfBinGen64->addRegion(ElfRegion64(section, mainBuiltinSectTable,
                          ROCMSECTID_MAX, mainSectionsNum));
+    updateSymbols();
+    binarySize = elfBinGen64->countSize();
+}
+
+void ROCmBinGenerator::updateSymbols()
+{
+    elfBinGen64->clearSymbols();
+    elfBinGen64->clearDynSymbols();
+    // add symbols (kernels, function kernels and data symbols)
+    elfBinGen64->addSymbol(ElfSymbol64("_DYNAMIC",
+                  mainBuiltinSectTable[ROCMSECTID_DYNAMIC-ELFSECTID_START],
+                  ELF64_ST_INFO(STB_LOCAL, STT_NOTYPE), STV_HIDDEN, true, 0, 0));
+    const uint16_t textSectIndex = mainBuiltinSectTable[ELFSECTID_TEXT-ELFSECTID_START];
+    for (const ROCmSymbolInput& symbol: input->symbols)
+    {
+        ElfSymbol64 elfsym;
+        switch (symbol.type)
+        {
+            case ROCmRegionType::KERNEL:
+                elfsym = ElfSymbol64(symbol.symbolName.c_str(), textSectIndex,
+                      ELF64_ST_INFO(STB_GLOBAL, STT_GNU_IFUNC), 0, true,
+                      symbol.offset, symbol.size);
+                break;
+            case ROCmRegionType::FKERNEL:
+                elfsym = ElfSymbol64(symbol.symbolName.c_str(), textSectIndex,
+                      ELF64_ST_INFO(STB_GLOBAL, STT_FUNC), 0, true,
+                      symbol.offset, symbol.size);
+                break;
+            case ROCmRegionType::DATA:
+                elfsym = ElfSymbol64(symbol.symbolName.c_str(), textSectIndex,
+                      ELF64_ST_INFO(STB_GLOBAL, STT_OBJECT), 0, true,
+                      symbol.offset, symbol.size);
+                break;
+            default:
+                break;
+        }
+        // add to symbols and dynamic symbols table
+        elfBinGen64->addSymbol(elfsym);
+        elfBinGen64->addDynSymbol(elfsym);
+    }
     /* extra symbols */
     for (const BinSymbol& symbol: input->extraSymbols)
     {
@@ -2209,7 +2216,6 @@ void ROCmBinGenerator::prepareBinaryGen()
         elfBinGen64->addSymbol(sym);
         elfBinGen64->addDynSymbol(sym);
     }
-    binarySize = elfBinGen64->countSize();
 }
 
 void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
