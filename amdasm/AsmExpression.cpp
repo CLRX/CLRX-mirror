@@ -147,13 +147,13 @@ static bool checkRelativesEqualityInt(T1& relatives, const T2& relatives2)
 }
 
 // check relatives equality
-// if check relSpaces then check relSpaces from relatives and check their equality
 static bool checkRelativesEquality(Assembler& assembler,
             std::vector<RelMultiply>& relatives,
             const Array<RelMultiply>& relatives2, bool withSectionDiffs,
             bool sectDiffsPrepared, bool& tryLater)
 {
-    if (!withSectionDiffs || sectDiffsPrepared) // otherwise is not equal
+    if (!withSectionDiffs || sectDiffsPrepared)
+        // standard mode
         return checkRelativesEqualityInt(relatives, relatives2);
     else
     {
@@ -170,6 +170,8 @@ static bool checkRelativesEquality(Assembler& assembler,
         // now compare
         bool equal = checkRelativesEqualityInt(orels1, orels2);
         if (equal && (orels1.size()!=relatives.size() || orels2.size()!=relatives2.size()))
+            // try later, if relatives has section with relspaces
+            // and if other relatives are equal
             tryLater = true;
         return equal;
     }
