@@ -593,6 +593,7 @@ R"ffDXD(            .amdcl2
 gstart:
         .int 1,2,3,4,5,6
 gstart2:
+gstartx = .   # replaced later after reloc
 .rwdata
         .int 4,5
 rwdat1:
@@ -634,10 +635,12 @@ cc=gstart+10+x
         s_mov_b32 s1, bsslabel+33
         .byte 12
         .int (gstart+22)>>32
+        .int (gstartx+22)>>32
         s_endpgm
 aa = gstart2 + 100
 bb = aa + 3
-x=3*6)ffDXD",
+x=3*6
+gstartx = 11)ffDXD",
         R"ffDXD(AmdCL2BinDump:
   devType=Bonaire, aclVersion=, drvVersion=191205, compileOptions=""
   Kernel: aaa1
@@ -647,7 +650,7 @@ x=3*6)ffDXD",
     ff0381be55555555ff0381be55555555ff0381be55555555ff0381be55555555
     ff0381be55555555ff0381be55555555ff0381be55555555ff0381be55555555
     ff0381be55555555ff0381be55555555ff0381be55555555ff0381be55555555
-    ff0381be555555550c55555555000081bf
+    ff0381be555555550c5555555555555555000081bf
     Config:
       Arg: "_.global_offset_0", "size_t", long, void, none, 0, 0, 0, 0, 0
       Arg: "_.global_offset_1", "size_t", long, void, none, 0, 0, 0, 0, 0
@@ -683,6 +686,7 @@ x=3*6)ffDXD",
     Rel: offset=156, type=1, symbol=1, addend=41
     Rel: offset=164, type=1, symbol=2, addend=43
     Rel: offset=169, type=2, symbol=0, addend=22
+    Rel: offset=173, type=2, symbol=0, addend=46
   GlobalData:
   010000000200000003000000040000000500000006000000
   RwData:

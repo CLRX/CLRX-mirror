@@ -785,6 +785,13 @@ Assembler::~Assembler()
     for (auto& entry: symbolSnapshots)
         delete entry;
     
+    /// remove expressions before symbol clones
+    for (auto& entry: symbolClones)
+        entry->second.clearOccurrencesInExpr();
+    
+    for (auto& entry: symbolClones)
+        delete entry;
+    
     for (auto& expr: unevalExpressions)
         delete expr;
 }
@@ -1401,26 +1408,43 @@ bool Assembler::resolveExprTarget(const AsmExpression* expr,
 void Assembler::cloneSymEntryIfNeeded(AsmSymbolEntry& symEntry)
 {
     if (!symEntry.second.base && !symEntry.second.regRange &&
-        symEntry.second.expression != nullptr && (
-        // if symbol have unevaluated expression but we clone symbol only if
-        // before section diffs preparation
-        (symEntry.second.withUnevalExpr && !sectionDiffsPrepared) ||
-        // or expression have unresolved symbols
-                symEntry.second.expression->getSymOccursNum()!=0) &&
+        ((symEntry.second.expression != nullptr && (
+          // if symbol have unevaluated expression but we clone symbol only if
+          // before section diffs preparation
+          (symEntry.second.withUnevalExpr && !sectionDiffsPrepared) ||
+          // or expression have unresolved symbols
+                  symEntry.second.expression->getSymOccursNum()!=0)) ||
+          // to resolve relocations (no expression but no have hasValue
+         (!resolvingRelocs &&
+             symEntry.second.expression == nullptr && !symEntry.second.hasValue &&
+             !isResolvableSection(symEntry.second.sectionId))) &&
         !symEntry.second.occurrencesInExprs.empty())
     {   // create new symbol with this expression
-        std::unique_ptr<AsmSymbolEntry> newSymEntry(new AsmSymbolEntry(symEntry.first,
-                AsmSymbol(symEntry.second.expression, symEntry.second.onceDefined,
-                          symEntry.second.base)));
-        symEntry.second.expression->setTarget(
-                    AsmExprTarget::symbolTarget(newSymEntry.get()));
+        std::unique_ptr<AsmSymbolEntry> newSymEntry;
+        if (symEntry.second.expression!=nullptr)
+        {
+            newSymEntry.reset(new AsmSymbolEntry(symEntry.first,
+                    AsmSymbol(symEntry.second.expression, symEntry.second.onceDefined,
+                            symEntry.second.base)));
+            symEntry.second.expression->setTarget(
+                        AsmExprTarget::symbolTarget(newSymEntry.get()));
+        }
+        else
+        {
+            // if have unresolvable section
+            newSymEntry.reset(new AsmSymbolEntry(symEntry.first,
+                    AsmSymbol(symEntry.second.sectionId, symEntry.second.value,
+                              symEntry.second.onceDefined)));
+            newSymEntry->second.resolving = symEntry.second.resolving;
+            newSymEntry->second.hasValue = symEntry.second.hasValue;
+        }
         // replace in expression occurrences
         for (const AsmExprSymbolOccurrence& occur: symEntry.second.occurrencesInExprs)
             occur.expression->replaceOccurrenceSymbol(occur, newSymEntry.get());
         newSymEntry->second.occurrencesInExprs = symEntry.second.occurrencesInExprs;
         symEntry.second.occurrencesInExprs.clear();
         newSymEntry->second.detached = true;
-        symbolSnapshots.insert(newSymEntry.release());
+        symbolClones.insert(newSymEntry.release());
         
         symEntry.second.expression = nullptr;
         symEntry.second.hasValue = false;
@@ -1539,9 +1563,10 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                 entry.first = nullptr;
             }
             // if detached (cloned symbol) while replacing value by unevaluated expression
-            if (entry.first!=nullptr && entry.first->second.detached)
+            if (!doNotRemoveFromSymbolClones &&
+                entry.first!=nullptr && entry.first->second.detached)
             {
-                symbolSnapshots.erase(entry.first);
+                symbolClones.erase(entry.first);
                 delete entry.first; // delete this symbol snapshot
             }
             symbolStack.pop();
@@ -2658,6 +2683,21 @@ struct ScopeStackElem
     AsmScopeMap::iterator childIt;
 };
 
+void Assembler::tryToResolveSymbol(AsmSymbolEntry& symEntry)
+{
+    if (!symEntry.second.occurrencesInExprs.empty() ||
+        (symEntry.first!="." &&
+                !isResolvableSection(symEntry.second.sectionId)))
+    {
+        // try to resolve symbols
+        uint64_t value;
+        cxuint sectionId;
+        if (formatHandler!=nullptr &&
+            formatHandler->resolveSymbol(symEntry.second, value, sectionId))
+            setSymbol(symEntry, value, sectionId);
+    }
+}
+
 // try to resolve symbols in scope (after closing temporary scope or
 // ending assembly for global scope)
 void Assembler::tryToResolveSymbols(AsmScope* thisScope)
@@ -2674,17 +2714,7 @@ void Assembler::tryToResolveSymbols(AsmScope* thisScope)
             // first we check symbol of current scope
             AsmScope* curScope = elem.scope.second;
             for (AsmSymbolEntry& symEntry: curScope->symbolMap)
-                if (!symEntry.second.occurrencesInExprs.empty() ||
-                    (symEntry.first!="." &&
-                            !isResolvableSection(symEntry.second.sectionId)))
-                {
-                    // try to resolve symbols
-                    uint64_t value;
-                    cxuint sectionId;
-                    if (formatHandler!=nullptr &&
-                        formatHandler->resolveSymbol(symEntry.second, value, sectionId))
-                        setSymbol(symEntry, value, sectionId);
-                }
+                tryToResolveSymbol(symEntry);
         }
         // next, we travere on children
         if (elem.childIt != elem.scope.second->scopeMap.end())
@@ -2750,6 +2780,7 @@ void Assembler::printUnresolvedSymbols(AsmScope* thisScope)
 bool Assembler::assemble()
 {
     resolvingRelocs = false;
+    doNotRemoveFromSymbolClones = false;
     sectionDiffsPrepared = false;
     
     for (const DefSym& defSym: defSyms)
@@ -2975,6 +3006,10 @@ bool Assembler::assemble()
     
     resolvingRelocs = true;
     tryToResolveSymbols(&globalScope);
+    doNotRemoveFromSymbolClones = true;
+    for (AsmSymbolEntry* symEntry: symbolClones)
+        tryToResolveSymbol(*symEntry);
+    doNotRemoveFromSymbolClones = false;
     
     if (withSectionDiffs())
     {

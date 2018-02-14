@@ -438,12 +438,14 @@ private:
     bool _64bit;    ///
     bool good;
     bool resolvingRelocs;
+    bool doNotRemoveFromSymbolClones;
     ISAAssembler* isaAssembler;
     std::vector<DefSym> defSyms;
     std::vector<CString> includeDirs;
     std::vector<AsmSection> sections;
     std::vector<Array<cxuint> > relSpacesSections;
     std::unordered_set<AsmSymbolEntry*> symbolSnapshots;
+    std::unordered_set<AsmSymbolEntry*> symbolClones;
     std::vector<AsmExpression*> unevalExpressions;
     std::vector<AsmRelocation> relocations;
     AsmScope globalScope;
@@ -649,6 +651,7 @@ private:
     void handleRegionsOnKernels(const std::vector<cxuint>& newKernels,
                 const std::vector<cxuint>& oldKernels, cxuint codeSection);
     
+    void tryToResolveSymbol(AsmSymbolEntry& symEntry);
     void tryToResolveSymbols(AsmScope* scope);
     void printUnresolvedSymbols(AsmScope* scope);
     
