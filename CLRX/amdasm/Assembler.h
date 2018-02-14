@@ -656,6 +656,8 @@ private:
     
     void createTempSymEntryIfNeeded(AsmSymbolEntry& symEntry);
     
+    void undefineSymbol(AsmSymbolEntry& symEntry);
+    
 protected:
     /// helper for testing
     bool readLine();

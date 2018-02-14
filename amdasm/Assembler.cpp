@@ -632,6 +632,14 @@ void AsmSymbol::undefine()
     }
     value = 0;
     onceDefined = false;
+    detached = false;
+    withUnevalExpr = false;
+}
+
+void Assembler::undefineSymbol(AsmSymbolEntry& symEntry)
+{
+    createTempSymEntryIfNeeded(symEntry);
+    symEntry.second.undefine();
 }
 
 AsmScope::~AsmScope()
@@ -1392,7 +1400,8 @@ bool Assembler::resolveExprTarget(const AsmExpression* expr,
 
 void Assembler::createTempSymEntryIfNeeded(AsmSymbolEntry& symEntry)
 {
-    if (symEntry.second.expression != nullptr && (
+    if (!symEntry.second.base && !symEntry.second.regRange &&
+        symEntry.second.expression != nullptr && (
         (symEntry.second.withUnevalExpr && !sectionDiffsPrepared) ||
                 symEntry.second.expression->getSymOccursNum()!=0))
     {   // create new symbol with this expression
@@ -1408,6 +1417,9 @@ void Assembler::createTempSymEntryIfNeeded(AsmSymbolEntry& symEntry)
         symEntry.second.occurrencesInExprs.clear();
         newSymEntry->second.detached = true;
         symbolSnapshots.insert(newSymEntry.release());
+        
+        symEntry.second.expression = nullptr;
+        symEntry.second.hasValue = false;
     }
 }
 

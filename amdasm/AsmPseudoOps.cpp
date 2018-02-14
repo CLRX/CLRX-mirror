@@ -2159,7 +2159,7 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
         asmr.printWarning(symNamePlace, (std::string("Symbol '") + symName.c_str() +
                 "' already doesn't exist").c_str());
     else // always undefine (do not remove, due to .eqv evaluation)
-        it->second.undefine();
+        asmr.undefineSymbol(*it);
 }
 
 void AsmPseudoOps::setAbsoluteOffset(Assembler& asmr, const char* linePtr)
