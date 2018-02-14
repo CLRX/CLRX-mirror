@@ -2174,6 +2174,9 @@ gdata2:
 .byte (vectorAdd+0x100)*4==gdata2+gdata2+gdata2+(0x650+0x100)*4+gdata2
 someval1=somesym+10000
 someval2=someval1*2
+.eqv someval3, somesym1*4+c
+c=1
+someval4=someval3+1000000
 .kernel vectorAdd
     .config
         .dims x
@@ -2195,10 +2198,22 @@ vectorAdd:
 .skip 256
         s_mov_b32   s1, .-gdata2
 somesym=vectorAdd-gdata1
+somesym1=vectorAdd-gdata1
         s_branch vectorAdd + (vectorAdd-gdata2)
         s_branch vectorAdd + ((vectorAdd-gdata2)&0xffffe0)
         .int (vectorAdd+0x100)*4==gdata2+gdata2+gdata2+(0x650+0x100)*4+gdata2
         s_endpgm
+c=somesym1
+someval5=someval3+3000000
+c=2
+someval6=someval3+2000000
+
+somesym1=1
+aa1=aa2
+aa0=aa1
+aa1=3
+
+aa2=6
 )ffDXD",
         BinaryFormat::ROCM, GPUDeviceType::ICELAND, false,
         { "vectorAdd" },
@@ -2252,11 +2267,20 @@ somesym=vectorAdd-gdata1
         },
         {
             { ".", 280U, 0, 0U, true, false, false, 0, 0 },
+            { "aa0", 6U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "aa1", 3U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "aa2", 6U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "c", 2U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "gdata1", 0U, 1, 0U, true, true, false, 16, 0 },
             { "gdata2", 20U, 1, 0U, true, true, false, 0, 0 },
             { "somesym", 1636U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "somesym1", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "someval1", 11636U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "someval2", 23272U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "someval3", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "someval4", 1006545U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "someval5", 3008180U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "someval6", 2006546U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "vectorAdd", 0U, 0, 0U, true, true, false, 0, 0 }
         }, true, "", ""
     },

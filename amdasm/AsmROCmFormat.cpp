@@ -118,7 +118,7 @@ enum
 AsmROCmHandler::AsmROCmHandler(Assembler& assembler): AsmFormatHandler(assembler),
              output{}, codeSection(0), commentSection(ASMSECT_NONE),
              metadataSection(ASMSECT_NONE), dataSection(ASMSECT_NONE), extraSectionCount(0),
-             good(true)
+             unresolvedGlobals(false), good(true)
 {
     sectionDiffsResolvable = true;
     output.metadataInfo.initialize();
@@ -2227,6 +2227,7 @@ static uint64_t calculateKernelArgSize(const std::vector<ROCmKernelArgInfo>& arg
 bool AsmROCmHandler::prepareSectionDiffsResolving()
 {
     good = true;
+    unresolvedGlobals = false;
     size_t sectionsNum = sections.size();
     output.deviceType = assembler.getDeviceType();
     
@@ -2570,8 +2571,6 @@ void AsmROCmHandler::addSymbols(bool sectionDiffsPrepared)
     if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
         for (const AsmSymbolEntry& symEntry: assembler.globalScope.symbolMap)
         {
-            //if (!symEntry.second.hasValue)
-              //  continue; // unresolved
             if (ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
                 continue; // local
             if (assembler.kernelMap.find(symEntry.first.c_str())!=assembler.kernelMap.end())
@@ -2579,6 +2578,9 @@ void AsmROCmHandler::addSymbols(bool sectionDiffsPrepared)
             
             if (symEntry.second.sectionId==codeSection)
             {
+                if (!symEntry.second.hasValue && !sectionDiffsPrepared)
+                    // mark that we have some unresolved globals
+                    unresolvedGlobals = true;
                 // put data objects
                 dataSymbols.push_back({symEntry.first, size_t(symEntry.second.value),
                     size_t(symEntry.second.size), ROCmRegionType::DATA});
@@ -2593,6 +2595,10 @@ void AsmROCmHandler::addSymbols(bool sectionDiffsPrepared)
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
             if (binSectId==ELFSECTID_UNDEF)
                 continue; // no section
+            
+            if (!symEntry.second.hasValue && !sectionDiffsPrepared)
+                // mark that we have some unresolved globals
+                unresolvedGlobals = true;
             
             output.extraSymbols.push_back({ symEntry.first, symEntry.second.value,
                     symEntry.second.size, binSectId, false,
@@ -2613,9 +2619,13 @@ void AsmROCmHandler::addSymbols(bool sectionDiffsPrepared)
 
 bool AsmROCmHandler::prepareBinary()
 {
-    // add symbols after section diffs prepping
-    addSymbols(true);
-    binGen->updateSymbols();
+    if (unresolvedGlobals)
+    {
+        // add and update symbols after section diffs prepping only
+        // if we have unresolved globals
+        addSymbols(true);
+        binGen->updateSymbols();
+    }
     return good;
 }
 

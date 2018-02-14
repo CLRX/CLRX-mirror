@@ -532,6 +532,7 @@ private:
     cxuint savedSection;
     cxuint extraSectionCount;
     
+    bool unresolvedGlobals;
     bool good;
     
     void restoreKcodeCurrentAllocRegs();
