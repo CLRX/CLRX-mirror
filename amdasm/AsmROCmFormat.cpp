@@ -43,7 +43,7 @@ static const char* rocmPseudoOpNamesTbl[] =
     "debugmode", "default_hsa_features", "dims", "dx10clamp",
     "eflags", "exceptions", "fixed_work_group_size",
     "fkernel", "floatmode", "gds_segment_size",
-    "globaldata", "group_segment_align", "ieeemode", "kcode",
+    "globaldata", "gotsym", "group_segment_align", "ieeemode", "kcode",
     "kcodeend", "kernarg_segment_align",
     "kernarg_segment_size", "kernel_code_entry_offset",
     "kernel_code_prefetch_offset", "kernel_code_prefetch_size",
@@ -81,7 +81,7 @@ enum
     ROCMOP_DEBUG_WAVEFRONT_PRIVATE_SEGMENT_OFFSET_SGPR,
     ROCMOP_DEBUGMODE, ROCMOP_DEFAULT_HSA_FEATURES, ROCMOP_DIMS, ROCMOP_DX10CLAMP,
     ROCMOP_EFLAGS, ROCMOP_EXCEPTIONS, ROCMOP_FIXED_WORK_GROUP_SIZE, ROCMOP_FKERNEL,
-    ROCMOP_FLOATMODE, ROCMOP_GDS_SEGMENT_SIZE, ROCMOP_GLOBALDATA,
+    ROCMOP_FLOATMODE, ROCMOP_GDS_SEGMENT_SIZE, ROCMOP_GLOBALDATA, ROCMOP_GOTSYM,
     ROCMOP_GROUP_SEGMENT_ALIGN, ROCMOP_IEEEMODE, ROCMOP_KCODE,
     ROCMOP_KCODEEND, ROCMOP_KERNARG_SEGMENT_ALIGN,
     ROCMOP_KERNARG_SEGMENT_SIZE, ROCMOP_KERNEL_CODE_ENTRY_OFFSET,
@@ -117,7 +117,8 @@ enum
 
 AsmROCmHandler::AsmROCmHandler(Assembler& assembler): AsmFormatHandler(assembler),
              output{}, codeSection(0), commentSection(ASMSECT_NONE),
-             metadataSection(ASMSECT_NONE), dataSection(ASMSECT_NONE), extraSectionCount(0),
+             metadataSection(ASMSECT_NONE), dataSection(ASMSECT_NONE),
+             gotSection(ASMSECT_NONE), extraSectionCount(0),
              unresolvedGlobals(false), good(true)
 {
     sectionDiffsResolvable = true;
@@ -276,11 +277,14 @@ AsmFormatHandler::SectionInfo AsmROCmHandler::getSectionInfo(cxuint sectionId) c
     // code is addressable and writeable
     if (info.type == AsmSectionType::CODE || info.type == AsmSectionType::DATA)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
+    else if (info.type == AsmSectionType::ROCM_GOT)
+        info.flags = ASMSECT_ADDRESSABLE;
     // any other section (except config) are absolute addressable and writeable
     else if (info.type != AsmSectionType::CONFIG)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     
-    if (info.type == AsmSectionType::CODE || info.type == AsmSectionType::DATA)
+    if (info.type == AsmSectionType::CODE || info.type == AsmSectionType::DATA ||
+        info.type == AsmSectionType::ROCM_GOT)
         info.relSpace = 0;  // first rel space
     
     info.name = sections[sectionId].name;
@@ -1751,6 +1755,102 @@ void AsmROCmPseudoOps::setUseGridWorkGroupCount(AsmROCmHandler& handler,
             (dimMask<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT);
 }
 
+void AsmROCmPseudoOps::addGotSymbol(AsmROCmHandler& handler,
+                    const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    // parse symbol
+    skipSpacesToEnd(linePtr, end);
+    const char* symNamePlace = linePtr;
+    AsmSymbolEntry* entry;
+    bool good = true;
+    const CString symName = extractScopedSymName(linePtr, end, false);
+    if (symName.empty())
+        // this is not symbol or a missing symbol
+        ASM_NOTGOOD_BY_ERROR(symNamePlace, "Expected symbol")
+    else if (symName==".")
+        ASM_NOTGOOD_BY_ERROR(symNamePlace, "Illegal symbol '.'")
+    
+    AsmScope* outScope;
+    CString sameSymName;
+    if (good)
+    {
+        entry = asmr.findSymbolInScope(symName, outScope, sameSymName);
+        if (outScope != &asmr.globalScope)
+            ASM_NOTGOOD_BY_ERROR(symNamePlace, "Symbol must be in global scope")
+    }
+    
+    bool haveComma = false;
+    if (skipComma(asmr, haveComma, linePtr))
+        return;
+    
+    CString targetSymName;
+    if (haveComma)
+    {
+        skipSpacesToEnd(linePtr, end);
+        symNamePlace = linePtr;
+        // parse target symbol (that refer to GOT section
+        targetSymName = extractScopedSymName(linePtr, end, false);
+        if (targetSymName.empty())
+            ASM_RETURN_BY_ERROR(symNamePlace, "Illegal symbol name")
+        size_t symNameLength = targetSymName.size();
+        // special case for '.' symbol (check whether is in global scope)
+        if (symNameLength >= 3 && targetSymName.compare(symNameLength-3, 3, "::.")==0)
+            ASM_RETURN_BY_ERROR(symNamePlace, "Symbol '.' can be only in global scope")
+        if (!checkGarbagesAtEnd(asmr, linePtr))
+            return;
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (entry==nullptr)
+    {
+        // create unresolved symbol if not found
+        std::pair<AsmSymbolMap::iterator, bool> res = outScope->symbolMap.insert(
+                        std::make_pair(sameSymName, AsmSymbol()));
+        entry = &*res.first;
+    }
+    // add GOT symbol
+    size_t gotSymbolIndex = handler.gotSymbols.size();
+    handler.gotSymbols.push_back(sameSymName);
+    
+    if (handler.gotSection == ASMSECT_NONE)
+    {
+        // create GOT section
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ ASMKERN_GLOBAL,
+            AsmSectionType::ROCM_GOT, ROCMSECTID_GOT, nullptr });
+        handler.gotSection = thisSection;
+        AsmFormatHandler::SectionInfo info = handler.getSectionInfo(thisSection);
+        // add to assembler
+        asmr.sections.push_back({ info.name, ASMKERN_GLOBAL, info.type, info.flags, 0,
+                    0, info.relSpace });
+    }
+    
+    // set up value of GOT symbol
+    if (!targetSymName.empty())
+    {
+        std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
+                    AsmSymbol(handler.gotSection, gotSymbolIndex*8));
+        if (!res.second)
+        {
+            // if symbol found
+            if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
+                asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
+                            "' is already defined").c_str());
+            else // set value of symbol
+                asmr.setSymbol(*res.first, gotSymbolIndex*8, handler.gotSection);
+        }
+        else // set hasValue (by isResolvableSection
+            res.first->second.hasValue = true;
+    }
+    // set GOT section size
+    asmr.sections[handler.gotSection].size = handler.gotSymbols.size()*8;
+}
+
+
 void AsmROCmPseudoOps::updateKCodeSel(AsmROCmHandler& handler,
                   const std::vector<cxuint>& oldset)
 {
@@ -1959,6 +2059,9 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
         case ROCMOP_GDS_SEGMENT_SIZE:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_GDS_SEGMENT_SIZE);
+            break;
+        case ROCMOP_GOTSYM:
+            AsmROCmPseudoOps::addGotSymbol(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_GROUP_SEGMENT_ALIGN:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
@@ -2566,11 +2669,24 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
 void AsmROCmHandler::addSymbols(bool sectionDiffsPrepared)
 {
     output.extraSymbols.clear();
+    
+    // prepate got symbols set
+    Array<CString> gotSymSet(gotSymbols.begin(), gotSymbols.end());
+    std::sort(gotSymSet.begin(), gotSymSet.end());
+    
     // if set adds symbols to binary
     std::vector<ROCmSymbolInput> dataSymbols;
-    if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
+    
+    const bool forceAddSymbols = (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS) != 0;
+    
+    if (forceAddSymbols || !gotSymbols.empty())
         for (const AsmSymbolEntry& symEntry: assembler.globalScope.symbolMap)
         {
+            if (!forceAddSymbols &&
+                !std::binary_search(gotSymSet.begin(), gotSymSet.end(), symEntry.first))
+                // if not forceAddSymbols and if not in got symbols
+                continue;
+                
             if (ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
                 continue; // local
             if (assembler.kernelMap.find(symEntry.first.c_str())!=assembler.kernelMap.end())
@@ -2625,6 +2741,60 @@ bool AsmROCmHandler::prepareBinary()
         // if we have unresolved globals
         addSymbols(true);
         binGen->updateSymbols();
+    }
+    
+    if (gotSymbols.empty())
+        return good;
+    
+    // create map to speedup finding symbol indices
+    size_t outputSymsNum = output.symbols.size();
+    Array<std::pair<CString, size_t> > outputSymMap(outputSymsNum);
+    for (size_t i = 0; i < outputSymsNum; i++)
+        outputSymMap[i] = std::make_pair(output.symbols[i].symbolName, i);
+    mapSort(outputSymMap.begin(), outputSymMap.end());
+    
+    size_t extraSymsNum = output.extraSymbols.size();
+    Array<std::pair<CString, size_t> > extraSymMap(extraSymsNum);
+    for (size_t i = 0; i < extraSymsNum; i++)
+        extraSymMap[i] = std::make_pair(output.extraSymbols[i].name, i);
+    mapSort(extraSymMap.begin(), extraSymMap.end());
+    
+    // prepare GOT symbols
+    const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
+    for (const CString& symName: gotSymbols)
+    {
+        const AsmSymbolEntry& symEntry = *symbolMap.find(symName);
+        if (!symEntry.second.hasValue)
+        {
+            good = false;
+            assembler.printError(nullptr, (std::string(
+                    "GOT symbol '")+symName.c_str()+"' is unresolved").c_str());
+            continue;
+        }
+        if (ELF32_ST_BIND(symEntry.second.info) != STB_GLOBAL)
+        {
+            good = false;
+            assembler.printError(nullptr, (std::string(
+                    "GOT symbol '")+symName.c_str()+"' is not global symbol").c_str());
+            continue;
+        }
+        
+        // put to output got symbols table
+        auto it = binaryMapFind(outputSymMap.begin(), outputSymMap.end(), symName);
+        if (it != outputSymMap.end())
+            output.gotSymbols.push_back(it->second);
+        else
+        {   // find in extra symbols
+            it = binaryMapFind(extraSymMap.begin(), extraSymMap.end(), symName);
+            if (it != extraSymMap.end())
+                output.gotSymbols.push_back(outputSymsNum + it->second);
+            else
+            {
+                good = false;
+                assembler.printError(nullptr, (std::string(
+                        "GOT symbol '")+symName.c_str()+"' not found!").c_str());
+            }
+        }
     }
     return good;
 }

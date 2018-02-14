@@ -71,6 +71,7 @@ enum class AsmSectionType: cxbyte
     ROCM_COMMENT = LAST_COMMON+1,        ///< ROCm comment section
     ROCM_CONFIG_CTRL_DIRECTIVE,
     ROCM_METADATA,
+    ROCM_GOT,
     
     EXTRA_FIRST = 0xfc,
     EXTRA_PROGBITS = 0xfc,
@@ -523,12 +524,14 @@ private:
     std::vector<Section> sections;
     std::vector<cxuint> kcodeSelection; // kcode
     std::stack<std::vector<cxuint> > kcodeSelStack;
+    std::vector<CString> gotSymbols;
     cxuint currentKcodeKernel;
     SectionMap extraSectionMap;
     cxuint codeSection;
     cxuint commentSection;
     cxuint metadataSection;
     cxuint dataSection;
+    cxuint gotSection;
     cxuint savedSection;
     cxuint extraSectionCount;
     

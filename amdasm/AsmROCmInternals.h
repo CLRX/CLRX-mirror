@@ -208,6 +208,10 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     static void setUseGridWorkGroupCount(AsmROCmHandler& handler,
                       const char* pseudoOpPlace, const char* linePtr);
     
+    // .gotsym
+    static void addGotSymbol(AsmROCmHandler& handler,
+                    const char* pseudoOpPlace, const char* linePtr);
+    
     // .kcode (open kernel code)
     static void doKCode(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
