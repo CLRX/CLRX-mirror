@@ -1935,6 +1935,48 @@ static void generateROCmMetadata(const ROCmMetadata& mdInfo,
     output += "...\n";
 }
 
+/* ROCm section generators */
+
+class CLRX_INTERNAL ROCmGotGen: public ElfRegionContent
+{
+private:
+    const ROCmInput* input;
+public:
+    explicit ROCmGotGen(const ROCmInput* _input) : input(_input)
+    { }
+    
+    void operator()(FastOutputBuffer& fob) const
+    {
+        fob.fill(input->gotSymbols.size()*8, 0);
+    }
+};
+
+class CLRX_INTERNAL ROCmRelaDynGen: public ElfRegionContent
+{
+private:
+    size_t gotOffset;
+    const ROCmInput* input;
+public:
+    explicit ROCmRelaDynGen(const ROCmInput* _input) : gotOffset(0), input(_input)
+    { }
+    
+    void setGotOffset(size_t _gotOffset)
+    { gotOffset = _gotOffset; }
+    
+    void operator()(FastOutputBuffer& fob) const
+    {
+        for (size_t i = 0; i < input->gotSymbols.size(); i++)
+        {
+            size_t symIndex = input->gotSymbols[i];
+            Elf64_Rela rela{};
+            SLEV(rela.r_offset, gotOffset + 8*i);
+            SLEV(rela.r_info, ELF64_R_INFO(input->symbols.size() + symIndex + 1, 3));
+            rela.r_addend = 0;
+            fob.writeObject(rela);
+        }
+    }
+};
+
 /*
  * ROCm Binary Generator
  */
@@ -1943,13 +1985,14 @@ ROCmBinGenerator::ROCmBinGenerator() : manageable(false), input(nullptr)
 { }
 
 ROCmBinGenerator::ROCmBinGenerator(const ROCmInput* rocmInput)
-        : manageable(false), input(rocmInput)
+        : manageable(false), input(rocmInput), rocmGotGen(nullptr), rocmRelaDynGen(nullptr)
 { }
 
 ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
         uint32_t archMinor, uint32_t archStepping, size_t codeSize, const cxbyte* code,
         size_t globalDataSize, const cxbyte* globalData,
-        const std::vector<ROCmSymbolInput>& symbols)
+        const std::vector<ROCmSymbolInput>& symbols) :
+        rocmGotGen(nullptr), rocmRelaDynGen(nullptr)
 {
     input = new ROCmInput{ deviceType, archMinor, archStepping, 0, false,
             globalDataSize, globalData, symbols, codeSize, code };
@@ -1958,7 +2001,8 @@ ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
 ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
         uint32_t archMinor, uint32_t archStepping, size_t codeSize, const cxbyte* code,
         size_t globalDataSize, const cxbyte* globalData,
-        std::vector<ROCmSymbolInput>&& symbols)
+        std::vector<ROCmSymbolInput>&& symbols) :
+        rocmGotGen(nullptr), rocmRelaDynGen(nullptr)
 {
     input = new ROCmInput{ deviceType, archMinor, archStepping, 0, false,
             globalDataSize, globalData, std::move(symbols), codeSize, code };
@@ -1968,6 +2012,10 @@ ROCmBinGenerator::~ROCmBinGenerator()
 {
     if (manageable)
         delete input;
+    if (rocmGotGen!=nullptr)
+        delete (ROCmGotGen*)rocmGotGen;
+    if (rocmRelaDynGen!=nullptr)
+        delete (ROCmRelaDynGen*)rocmRelaDynGen;
 }
 
 void ROCmBinGenerator::setInput(const ROCmInput* input)
@@ -1989,8 +2037,6 @@ static const cxbyte noteDescType3[27] =
 static inline void addMainSectionToTable(cxuint& sectionsNum, uint16_t* builtinTable,
                 cxuint elfSectId)
 { builtinTable[elfSectId - ELFSECTID_START] = sectionsNum++; }
-
-// TODO: add GLOBAL OFFSET TABLE dynamic and (static?) relocations
 
 void ROCmBinGenerator::prepareBinaryGen()
 {
@@ -2032,9 +2078,13 @@ void ROCmBinGenerator::prepareBinaryGen()
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_DYNSYM);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ROCMSECTID_HASH);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_DYNSTR);
+    if (!input->gotSymbols.empty())
+        addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ROCMSECTID_RELADYN);
     const cxuint execProgHeaderRegionIndex = mainSectionsNum;
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_TEXT);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ROCMSECTID_DYNAMIC);
+    if (!input->gotSymbols.empty())
+        addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ROCMSECTID_GOT);
     if (!input->newBinFormat)
     {
         addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ROCMSECTID_NOTE);
@@ -2057,11 +2107,13 @@ void ROCmBinGenerator::prepareBinaryGen()
                     true, Elf64Types::nobase, Elf64Types::nobase, 0, 0x1000 });
     elfBinGen64->addProgramHeader({ PT_LOAD, PF_R|PF_X, execProgHeaderRegionIndex, 1,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0 });
-    elfBinGen64->addProgramHeader({ PT_LOAD, PF_R|PF_W, execProgHeaderRegionIndex+1, 1,
+    elfBinGen64->addProgramHeader({ PT_LOAD, PF_R|PF_W, execProgHeaderRegionIndex+1,
+                    cxuint(1 + (!input->gotSymbols.empty())),
                     true, Elf64Types::nobase, Elf64Types::nobase, 0 });
     elfBinGen64->addProgramHeader({ PT_DYNAMIC, PF_R|PF_W, execProgHeaderRegionIndex+1, 1,
                     true, Elf64Types::nobase, Elf64Types::nobase, 0, 8 });
-    elfBinGen64->addProgramHeader({ PT_GNU_RELRO, PF_R, execProgHeaderRegionIndex+1, 1,
+    elfBinGen64->addProgramHeader({ PT_GNU_RELRO, PF_R, execProgHeaderRegionIndex+1,
+                    cxuint(1 + (!input->gotSymbols.empty())),
                     true, Elf64Types::nobase, Elf64Types::nobase, 0, 1 });
     elfBinGen64->addProgramHeader({ PT_GNU_STACK, PF_R|PF_W, PHREGION_FILESTART, 0,
                     true, 0, 0, 0 });
@@ -2142,6 +2194,15 @@ void ROCmBinGenerator::prepareBinaryGen()
                 Elf64Types::nobase));
     elfBinGen64->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".dynstr", SHT_STRTAB,
                 SHF_ALLOC, 0, 0, Elf64Types::nobase));
+    if (!input->gotSymbols.empty())
+    {
+        rocmRelaDynGen = new ROCmRelaDynGen(input);
+        elfBinGen64->addRegion(ElfRegion64(input->gotSymbols.size()*sizeof(Elf64_Rela),
+                (ElfRegionContent*)rocmRelaDynGen, 8, "rela.dyn",
+                SHT_RELA, SHF_ALLOC, 0, 0,
+                mainBuiltinSectTable[ELFSECTID_DYNSYM-ELFSECTID_START], 0,
+                Elf64Types::nobase, sizeof(Elf64_Rela)));
+    }
     // '.text' with alignment=4096
     elfBinGen64->addRegion(ElfRegion64(input->codeSize, (const cxbyte*)input->code, 
               0x1000, ".text", SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR, 0, 0,
@@ -2150,6 +2211,13 @@ void ROCmBinGenerator::prepareBinaryGen()
                 ".dynamic", SHT_DYNAMIC, SHF_ALLOC|SHF_WRITE,
                 mainBuiltinSectTable[ELFSECTID_DYNSTR-ELFSECTID_START], 0,
                 Elf64Types::nobase, 0, false, 8));
+    if (!input->gotSymbols.empty())
+    {
+        rocmGotGen = new ROCmGotGen(input);
+        elfBinGen64->addRegion(ElfRegion64(input->gotSymbols.size()*8,
+                (ElfRegionContent*)rocmGotGen, 8, ".got", SHT_PROGBITS,
+                SHF_ALLOC|SHF_WRITE, 0, 0, Elf64Types::nobase));
+    }
     if (!input->newBinFormat)
     {
         elfBinGen64->addRegion(ElfRegion64::noteSection());
@@ -2170,6 +2238,11 @@ void ROCmBinGenerator::prepareBinaryGen()
                          ROCMSECTID_MAX, mainSectionsNum));
     updateSymbols();
     binarySize = elfBinGen64->countSize();
+    
+    if (rocmRelaDynGen != nullptr)
+        ((ROCmRelaDynGen*)rocmRelaDynGen)->setGotOffset(
+                elfBinGen64->getRegionOffset(
+                        mainBuiltinSectTable[ROCMSECTID_GOT - ELFSECTID_START]));
 }
 
 void ROCmBinGenerator::updateSymbols()
@@ -2254,6 +2327,17 @@ void ROCmBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* 
     FastOutputBuffer bos(256, *os);
     elfBinGen64->generate(bos);
     assert(bos.getWritten() == binarySize);
+    
+    if (rocmGotGen != nullptr)
+    {
+        delete (ROCmGotGen*)rocmGotGen;
+        rocmGotGen = nullptr;
+    }
+    if (rocmRelaDynGen != nullptr)
+    {
+        delete (ROCmGotGen*)rocmRelaDynGen;
+        rocmRelaDynGen = nullptr;
+    }
     }
     catch(...)
     {

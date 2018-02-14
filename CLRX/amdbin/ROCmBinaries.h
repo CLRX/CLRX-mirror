@@ -341,7 +341,9 @@ enum: cxuint {
     ROCMSECTID_DYNAMIC,
     ROCMSECTID_NOTE,
     ROCMSECTID_GPUCONFIG,
-    ROCMSECTID_MAX = ROCMSECTID_GPUCONFIG
+    ROCMSECTID_RELADYN,
+    ROCMSECTID_GOT,
+    ROCMSECTID_MAX = ROCMSECTID_GOT
 };
 
 /// ROCm binary symbol input
@@ -374,6 +376,7 @@ struct ROCmInput
     const char* metadata;   ///< metadata
     bool useMetadataInfo;   ///< use metadatainfo instead same metadata
     ROCmMetadata metadataInfo; ///< metadata info
+    std::vector<size_t> gotSymbols; ///< list of indices of symbols to GOT section
     std::vector<BinSection> extraSections;  ///< extra sections
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
     
@@ -399,6 +402,8 @@ private:
     const char* metadata;
     cxuint mainSectionsNum;
     uint16_t mainBuiltinSectTable[ROCMSECTID_MAX-ELFSECTID_START+1];
+    void* rocmGotGen;
+    void* rocmRelaDynGen;
     
     void generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr);
