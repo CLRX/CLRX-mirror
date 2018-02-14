@@ -1424,6 +1424,7 @@ void Assembler::cloneSymEntryIfNeeded(AsmSymbolEntry& symEntry)
         
         symEntry.second.expression = nullptr;
         symEntry.second.hasValue = false;
+        symEntry.second.withUnevalExpr = false;
     }
 }
 
@@ -1630,6 +1631,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         symEntry.second.sectionId = ASMSECT_ABS;
         symEntry.second.regRange = symEntry.second.hasValue = true;
         symEntry.second.value = (regStart | (uint64_t(regEnd)<<32));
+        symEntry.second.withUnevalExpr = false;
         return true;
     }
     
