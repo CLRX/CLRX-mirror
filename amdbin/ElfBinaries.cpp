@@ -584,13 +584,16 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     for (size_t i = 0; i < regions.size(); i++)
     {
         ElfRegionTemplate<Types>& region = regions[i];
-        if (region.align > 1)
+        typename Types::Word ralign = (region.type==ElfRegionType::SECTION) ?
+                        region.section.align : 0;
+        ralign = std::max(region.align, ralign);
+        if (ralign > 1)
         {
             // fix alignment
-            if ((size&(region.align-1))!=0)
-                size += region.align - (size&(region.align-1));
-            if ((address&(region.align-1))!=0)
-                address += region.align - (address&(region.align-1));
+            if ((size&(ralign-1))!=0)
+                size += ralign - (size&(ralign-1));
+            if ((address&(ralign-1))!=0)
+                address += ralign - (address&(ralign-1));
         }
         
         regionOffsets[i] = size;
@@ -839,7 +842,10 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
             typename Types::Word entry = regionOffsets[header.entryRegion] + header.entry;
             if (regions[header.entryRegion].type == ElfRegionType::SECTION &&
                 regions[header.entryRegion].section.addrBase != 0)
-                entry += regions[header.entryRegion].section.addrBase;
+            {
+                auto addrBase = regions[header.entryRegion].section.addrBase;
+                entry += addrBase != Types::nobase ? addrBase : 0;
+            }
             else
                 entry += header.vaddrBase;
             

@@ -2109,10 +2109,6 @@ void ROCmBinGenerator::prepareBinaryGen()
     if (input->eflags != BINGEN_DEFAULT)
         eflags = input->eflags;
     
-    elfBinGen64.reset(new ElfBinaryGen64({ 0U, 0U, 0x40, 0, ET_DYN,
-            0xe0, EV_CURRENT, UINT_MAX, 0, eflags },
-            true, true, true, PHREGION_FILESTART));
-    
     std::fill(mainBuiltinSectTable,
               mainBuiltinSectTable + ROCMSECTID_MAX-ELFSECTID_START+1, SHN_UNDEF);
     mainSectionsNum = 1;
@@ -2141,6 +2137,10 @@ void ROCmBinGenerator::prepareBinaryGen()
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_SYMTAB);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_SHSTRTAB);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_STRTAB);
+    
+    elfBinGen64.reset(new ElfBinaryGen64({ 0U, 0U, 0x40, 0, ET_DYN, 0xe0, EV_CURRENT,
+            cxuint(input->newBinFormat ? execProgHeaderRegionIndex : UINT_MAX), 0, eflags },
+            true, true, true, PHREGION_FILESTART));
     
     static const int32_t dynTags[] = {
         DT_SYMTAB, DT_SYMENT, DT_STRTAB, DT_STRSZ, DT_HASH };
@@ -2243,10 +2243,10 @@ void ROCmBinGenerator::prepareBinaryGen()
                 SHF_ALLOC, 0, 0, Elf64Types::nobase));
     if (!input->gotSymbols.empty())
     {
-        rocmRelaDynGen = new ROCmRelaDynGen(input);
+        ROCmRelaDynGen* sgen = new ROCmRelaDynGen(input);
+        rocmRelaDynGen = (void*)sgen;
         elfBinGen64->addRegion(ElfRegion64(input->gotSymbols.size()*sizeof(Elf64_Rela),
-                (ElfRegionContent*)rocmRelaDynGen, 8, "rela.dyn",
-                SHT_RELA, SHF_ALLOC, 0, 0,
+                sgen, 8, ".rela.dyn", SHT_RELA, SHF_ALLOC,
                 mainBuiltinSectTable[ELFSECTID_DYNSYM-ELFSECTID_START], 0,
                 Elf64Types::nobase, sizeof(Elf64_Rela)));
     }
@@ -2260,9 +2260,10 @@ void ROCmBinGenerator::prepareBinaryGen()
                 Elf64Types::nobase, 0, false, 8));
     if (!input->gotSymbols.empty())
     {
-        rocmGotGen = new ROCmGotGen(input);
-        elfBinGen64->addRegion(ElfRegion64(input->gotSymbols.size()*8,
-                (ElfRegionContent*)rocmGotGen, 8, ".got", SHT_PROGBITS,
+        ROCmGotGen* sgen = new ROCmGotGen(input);
+        rocmGotGen = (void*)sgen;
+        elfBinGen64->addRegion(ElfRegion64(input->gotSymbols.size()*8, sgen,
+                8, ".got", SHT_PROGBITS,
                 SHF_ALLOC|SHF_WRITE, 0, 0, Elf64Types::nobase));
     }
     if (!input->newBinFormat)

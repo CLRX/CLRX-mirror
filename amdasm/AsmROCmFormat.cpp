@@ -1782,7 +1782,7 @@ void AsmROCmPseudoOps::addGotSymbol(AsmROCmHandler& handler,
     }
     
     bool haveComma = false;
-    if (skipComma(asmr, haveComma, linePtr))
+    if (!skipComma(asmr, haveComma, linePtr))
         return;
     
     CString targetSymName;
@@ -2731,20 +2731,9 @@ void AsmROCmHandler::addSymbols(bool sectionDiffsPrepared)
     }
     dataSymbols.insert(dataSymbols.end(), output.symbols.begin(), output.symbols.end());
     output.symbols = std::move(dataSymbols);
-}
-
-bool AsmROCmHandler::prepareBinary()
-{
-    if (unresolvedGlobals)
-    {
-        // add and update symbols after section diffs prepping only
-        // if we have unresolved globals
-        addSymbols(true);
-        binGen->updateSymbols();
-    }
     
     if (gotSymbols.empty())
-        return good;
+        return;
     
     // create map to speedup finding symbol indices
     size_t outputSymsNum = output.symbols.size();
@@ -2759,6 +2748,7 @@ bool AsmROCmHandler::prepareBinary()
         extraSymMap[i] = std::make_pair(output.extraSymbols[i].name, i);
     mapSort(extraSymMap.begin(), extraSymMap.end());
     
+    output.gotSymbols.clear();
     // prepare GOT symbols
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
     for (const CString& symName: gotSymbols)
@@ -2795,6 +2785,17 @@ bool AsmROCmHandler::prepareBinary()
                         "GOT symbol '")+symName.c_str()+"' not found!").c_str());
             }
         }
+    }
+}
+
+bool AsmROCmHandler::prepareBinary()
+{
+    if (unresolvedGlobals)
+    {
+        // add and update symbols after section diffs prepping only
+        // if we have unresolved globals
+        addSymbols(true);
+        binGen->updateSymbols();
     }
     return good;
 }
