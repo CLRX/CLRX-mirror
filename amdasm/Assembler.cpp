@@ -1407,7 +1407,8 @@ bool Assembler::resolveExprTarget(const AsmExpression* expr,
 
 void Assembler::cloneSymEntryIfNeeded(AsmSymbolEntry& symEntry)
 {
-    if (!symEntry.second.base && !symEntry.second.regRange &&
+    if (!symEntry.second.occurrencesInExprs.empty() &&
+        !symEntry.second.base && !symEntry.second.regRange &&
         ((symEntry.second.expression != nullptr && (
           // if symbol have unevaluated expression but we clone symbol only if
           // before section diffs preparation
@@ -1415,10 +1416,8 @@ void Assembler::cloneSymEntryIfNeeded(AsmSymbolEntry& symEntry)
           // or expression have unresolved symbols
                   symEntry.second.expression->getSymOccursNum()!=0)) ||
           // to resolve relocations (no expression but no have hasValue
-         (!resolvingRelocs &&
-             symEntry.second.expression == nullptr && !symEntry.second.hasValue &&
-             !isResolvableSection(symEntry.second.sectionId))) &&
-        !symEntry.second.occurrencesInExprs.empty())
+         (!resolvingRelocs && symEntry.second.expression == nullptr &&
+          !symEntry.second.hasValue && !isResolvableSection(symEntry.second.sectionId))))
     {   // create new symbol with this expression
         std::unique_ptr<AsmSymbolEntry> newSymEntry;
         if (symEntry.second.expression!=nullptr)
