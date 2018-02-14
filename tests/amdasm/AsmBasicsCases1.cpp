@@ -2455,7 +2455,7 @@ bb2=11)ffDXD",
         },
         true, "", ""
     },
-    /* 66 - evaluate old expressions of symbols (after undef symbol) */
+    /* 67 - evaluate old expressions of symbols (after undef symbol) */
     {
         R"ffDXD(.int aa0
 aa1=aa2
@@ -2472,6 +2472,29 @@ bb2=11)ffDXD",
             { ".", 4U, 0, 0U, true, false, false, 0, 0 },
             { "aa0", 6U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "aa1", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "aa2", 6U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "bb0", 11U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "bb2", 11U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        },
+        true, "", ""
+    },
+    /* 68 - evaluate old expressions of symbols (replaced by regrange) */
+    {
+        R"ffDXD(.int aa0
+aa1=aa2
+aa0=aa1
+aa1=bb2
+bb0=aa1
+aa1=%v[1:2]
+aa2=6
+bb2=11)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            { 0x06, 0x00, 0x00, 0x00 } } },
+        {
+            { ".", 4U, 0, 0U, true, false, false, 0, 0 },
+            { "aa0", 6U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "aa1", 1112396529921U, ASMSECT_ABS, 0U, true, false, false, 0, 0, true },
             { "aa2", 6U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "bb0", 11U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "bb2", 11U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }

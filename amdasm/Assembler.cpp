@@ -638,7 +638,7 @@ void AsmSymbol::undefine()
 
 void Assembler::undefineSymbol(AsmSymbolEntry& symEntry)
 {
-    createTempSymEntryIfNeeded(symEntry);
+    cloneSymEntryIfNeeded(symEntry);
     symEntry.second.undefine();
 }
 
@@ -1398,12 +1398,16 @@ bool Assembler::resolveExprTarget(const AsmExpression* expr,
     return true;
 }
 
-void Assembler::createTempSymEntryIfNeeded(AsmSymbolEntry& symEntry)
+void Assembler::cloneSymEntryIfNeeded(AsmSymbolEntry& symEntry)
 {
     if (!symEntry.second.base && !symEntry.second.regRange &&
         symEntry.second.expression != nullptr && (
+        // if symbol have unevaluated expression but we clone symbol only if
+        // before section diffs preparation
         (symEntry.second.withUnevalExpr && !sectionDiffsPrepared) ||
-                symEntry.second.expression->getSymOccursNum()!=0))
+        // or expression have unresolved symbols
+                symEntry.second.expression->getSymOccursNum()!=0) &&
+        !symEntry.second.occurrencesInExprs.empty())
     {   // create new symbol with this expression
         std::unique_ptr<AsmSymbolEntry> newSymEntry(new AsmSymbolEntry(symEntry.first,
                 AsmSymbol(symEntry.second.expression, symEntry.second.onceDefined,
@@ -1425,7 +1429,7 @@ void Assembler::createTempSymEntryIfNeeded(AsmSymbolEntry& symEntry)
 
 bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId)
 {
-    createTempSymEntryIfNeeded(symEntry);
+    cloneSymEntryIfNeeded(symEntry);
     symEntry.second.value = value;
     symEntry.second.expression = nullptr;
     symEntry.second.sectionId = sectionId;
@@ -1477,6 +1481,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     else if (evalStatus == AsmTryStatus::TRY_LATER)
                     {   // try later if can not be evaluated
                         unevalExpressions.push_back(occurrence.expression);
+                        // mark that symbol with this expression have unevaluated
+                        // expression and it can be cloned while replacing value
                         if (target.type==ASMXTGT_SYMBOL)
                             target.symbol->second.withUnevalExpr = true;
                         // but still good
@@ -1531,6 +1537,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                 delete entry.first; // delete this symbol snapshot
                 entry.first = nullptr;
             }
+            // if detached (cloned symbol) while replacing value by unevaluated expression
             if (entry.first!=nullptr && entry.first->second.detached)
             {
                 symbolSnapshots.erase(entry.first);
@@ -1574,6 +1581,10 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
                         "' is already defined").c_str());
             return false;
         }
+        
+        // create symbol clone before setting value
+            cloneSymEntryIfNeeded(*res.first);
+        
         if (!res.first->second.occurrencesInExprs.empty())
         {
             // regrange found in expressions (error)
@@ -1609,6 +1620,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
                             symbolName.c_str() + "' was used in some expressions").c_str());
             return false;
         }
+        
         // setup symbol entry (required)
         AsmSymbolEntry& symEntry = *res.first;
         symEntry.second.expression = nullptr;
@@ -1693,14 +1705,17 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     
     if (tryLater) // set expression
     {
-        createTempSymEntryIfNeeded(symEntry);
+        cloneSymEntryIfNeeded(symEntry);
         expr->setTarget(AsmExprTarget::symbolTarget(&symEntry));
         if (expr->getSymOccursNum() == 0)
         {
             unevalExpressions.push_back(expr.get());
+            // mark that symbol with this expression have unevaluated
+            // expression and it can be cloned while replacing value
+            // we set it after cloning previous symbol state
             symEntry.second.withUnevalExpr = true;
         }
-        else
+        else // standard behaviour
             symEntry.second.withUnevalExpr = false;
         symEntry.second.expression = expr.release();
         symEntry.second.regRange = symEntry.second.hasValue = false;

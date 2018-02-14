@@ -654,7 +654,7 @@ private:
     
     bool resolveExprTarget(const AsmExpression* expr, uint64_t value, cxuint sectionId);
     
-    void createTempSymEntryIfNeeded(AsmSymbolEntry& symEntry);
+    void cloneSymEntryIfNeeded(AsmSymbolEntry& symEntry);
     
     void undefineSymbol(AsmSymbolEntry& symEntry);
     
