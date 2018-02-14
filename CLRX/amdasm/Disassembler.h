@@ -325,6 +325,7 @@ struct ROCmDisasmInput
     CString target;     ///< LLVM target triple
     size_t metadataSize;    ///< metadata size
     const char* metadata;   ///< metadata
+    Array<std::pair<CString, size_t> > gotSymbols; ///< GOT symbols names
 };
 
 /// disasm kernel info structure (Gallium binaries)

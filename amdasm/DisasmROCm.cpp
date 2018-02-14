@@ -52,6 +52,33 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
         input->regions[i] = { region.regionName, size_t(region.size),
             size_t(region.offset - codeOffset), region.type };
     }
+    
+    const size_t gotSymbolsNum = binary.getGotSymbolsNum();
+    input->gotSymbols.resize(gotSymbolsNum);
+    
+    // get rodata index and offset
+    cxuint rodataIndex = SHN_UNDEF;
+    size_t rodataOffset = 0;
+    try
+    {
+        rodataIndex = binary.getSectionIndex(".rodata");
+        rodataOffset = ULEV(binary.getSectionHeader(rodataIndex).sh_offset);
+    }
+    catch(Exception& ex)
+    { }
+    
+    // setup got symbols
+    for (size_t i = 0; i < gotSymbolsNum; i++)
+    {
+        const size_t gotSymIndex = binary.getGotSymbol(i);
+        const Elf64_Sym& sym = binary.getDynSymbol(gotSymIndex);
+        size_t offset = SIZE_MAX;
+        // set offset if symbol refer to some place in globaldata (rodata)
+        if (rodataIndex != SHN_UNDEF && ULEV(sym.st_shndx) == rodataIndex)
+            offset = ULEV(sym.st_value) - rodataOffset;
+        input->gotSymbols[i] = { binary.getDynSymbolName(gotSymIndex), offset };
+    }
+    
     // setup code
     input->eflags = ULEV(binary.getHeader().e_flags);
     input->code = binary.getCode();
@@ -789,6 +816,27 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
         const std::string escapedTarget = escapeStringCStyle(rocmInput->target);
         output.write(escapedTarget.c_str(), escapedTarget.size());
         output.write("\"\n", 2);
+    }
+    
+    // print got symbols
+    for (const auto& gotSymbol: rocmInput->gotSymbols)
+    {
+        char buf[24];
+        if (gotSymbol.second != SIZE_MAX)
+        {
+            // print got symbol definition
+            output.write(".global ", 8);
+            output.write(gotSymbol.first.c_str(), gotSymbol.first.size());
+            output.write("\n", 1);
+            output.write(gotSymbol.first.c_str(), gotSymbol.first.size());
+            output.write(" = .gdata + ", 12);
+            size_t numSize = itocstrCStyle(gotSymbol.second, buf, 24);
+            output.write(buf, numSize);
+            output.write("\n", 1);
+        }
+        output.write(".gotsym ", 8);
+        output.write(gotSymbol.first.c_str(), gotSymbol.first.size());
+        output.write("\n", 1);
     }
     
     if (doDumpData && rocmInput->globalData != nullptr &&

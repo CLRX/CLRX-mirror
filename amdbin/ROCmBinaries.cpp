@@ -1387,6 +1387,18 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     { } // ignore failed
     newBinFormat = (gpuConfigIndex == SHN_UNDEF);
     
+    cxuint relaDynIndex = SHN_UNDEF;
+    try
+    { relaDynIndex = getSectionIndex(".rela.dyn"); }
+    catch(const Exception& ex)
+    { } // ignore failed
+    
+    cxuint gotIndex = SHN_UNDEF;
+    try
+    { gotIndex = getSectionIndex(".got"); }
+    catch(const Exception& ex)
+    { } // ignore failed
+    
     // counts regions (symbol or kernel)
     regionsNum = 0;
     const size_t symbolsNum = getSymbolsNum();
@@ -1454,6 +1466,41 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             region.size = regSize;
         else
             region.size = std::min(regSize, region.size);
+    }
+    
+    // load got symbols
+    if (relaDynIndex != SHN_UNDEF && gotIndex != SHN_UNDEF)
+    {
+        const Elf64_Shdr& relaShdr = getSectionHeader(relaDynIndex);
+        const Elf64_Shdr& gotShdr = getSectionHeader(gotIndex);
+        
+        size_t relaEntrySize = ULEV(relaShdr.sh_entsize);
+        if (relaEntrySize==0)
+            relaEntrySize = sizeof(Elf64_Rela);
+        const size_t relaEntriesNum = ULEV(relaShdr.sh_size)/relaEntrySize;
+        const size_t gotEntriesNum = ULEV(gotShdr.sh_size) >> 3;
+        if (gotEntriesNum != relaEntriesNum)
+            throw BinException("RelaDyn entries number and GOT entries "
+                        "number doesn't match!");
+        
+        // initialize GOT symbols table
+        gotSymbols.resize(gotEntriesNum);
+        const cxbyte* relaDyn = getSectionContent(relaDynIndex);
+        for (size_t i = 0; i < relaEntriesNum; i++)
+        {
+            const Elf64_Rela& rela = *reinterpret_cast<const Elf64_Rela*>(
+                            relaDyn + relaEntrySize*i);
+            // check rela entry fields
+            if (ULEV(rela.r_offset) != ULEV(gotShdr.sh_offset) + i*8)
+                throw BinException("Wrong dyn relocation offset");
+            if (ULEV(rela.r_addend) != 0ULL)
+                throw BinException("Wrong dyn relocation addend");
+            size_t symIndex = ELF64_R_SYM(ULEV(rela.r_info));
+            if (symIndex >= getDynSymbolsNum())
+                throw BinException("Dyn relocation symbol index out of range");
+            // just set in gotSymbols
+            gotSymbols[i] = symIndex;
+        }
     }
     
     // get metadata
@@ -1970,7 +2017,7 @@ public:
             size_t symIndex = input->gotSymbols[i];
             Elf64_Rela rela{};
             SLEV(rela.r_offset, gotOffset + 8*i);
-            SLEV(rela.r_info, ELF64_R_INFO(input->symbols.size() + symIndex + 1, 3));
+            SLEV(rela.r_info, ELF64_R_INFO(symIndex + 1, 3));
             rela.r_addend = 0;
             fob.writeObject(rela);
         }

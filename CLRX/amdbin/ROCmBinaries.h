@@ -216,6 +216,7 @@ private:
     char* metadata;
     std::unique_ptr<ROCmMetadata> metadataInfo;
     RegionMap kernelInfosMap;
+    Array<size_t> gotSymbols;
     bool newBinFormat;
 public:
     /// constructor
@@ -297,6 +298,18 @@ public:
     bool isNewBinaryFormat() const
     { return newBinFormat; }
     
+    /// get GOT symbol index (from elfbin dynsymbols)
+    size_t getGotSymbolsNum() const
+    { return gotSymbols.size(); }
+    
+    /// get GOT symbols (indices) (from elfbin dynsymbols)
+    const Array<size_t> getGotSymbols() const
+    { return gotSymbols; }
+    
+    /// get GOT symbol index (from elfbin dynsymbols)
+    size_t getGotSymbol(size_t index) const
+    { return gotSymbols[index]; }
+    
     /// returns true if kernel map exists
     bool hasRegionMap() const
     { return (creationFlags & ROCMBIN_CREATE_REGIONMAP) != 0; }
@@ -376,7 +389,13 @@ struct ROCmInput
     const char* metadata;   ///< metadata
     bool useMetadataInfo;   ///< use metadatainfo instead same metadata
     ROCmMetadata metadataInfo; ///< metadata info
-    std::vector<size_t> gotSymbols; ///< list of indices of symbols to GOT section
+    
+    /// list of indices of symbols to GOT section
+    /**  list of indices of symbols to GOT section.
+     * If symbol index is lower than symbols.size(), then it refer to symbols
+     * otherwise it refer to extraSymbols (index - symbols.size())
+     */
+    std::vector<size_t> gotSymbols;
     std::vector<BinSection> extraSections;  ///< extra sections
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
     
