@@ -34,9 +34,18 @@ This setup can be replaced by pseudo-ops '.sgprsnum' and '.vgprsnum'.
 
 ## Scalar register allocation
 
-Assembler for ROCm format counts all SGPR registers and add extra registers
+An assembler for ROCm format counts all SGPR registers and add extra registers
 (FLAT_SCRATCH, XNACK_MASK). Special fields determines
 what extra SGPR extra has been added. The VCC register is included by default.
+
+## Expression with sections
+
+An assembler can calculate difference between symbols which present in one of three sections:
+globaldata (rodata) section, code section and GOT (Global Offset Table) section.
+For example, an expression `.-globaldata1` (if globaldata is defined in global data section)
+calculates distance between current position and `globaldata1` place.
+An assembler automcatically found section where symbol points to between code,
+globaldata and GOT.
 
 ## List of the specific pseudo-operations
 
@@ -191,6 +200,13 @@ This pseudo-op must be inside kernel configuration (`.config`). Set
 This pseudo-op must be inside kernel configuration (`.config`).
 Enable usage of the DEBUG_MODE.
 
+### .default_hsa_features
+
+This pseudo-op must be inside kernel configuration (`.config`).
+It sets default HSA kernel features and register features (extra SGPR registers usage).
+These default features are `.use_private_segment_buffer`, `.use_dispatch_ptr`,
+`.use_kernarg_segment_ptr`, `.use_ptr64` and private_elem_size to 4 bytes.
+
 ### .dims
 
 Syntax: .dims DIMENSIONS
@@ -245,19 +261,19 @@ This pseudo-op must be inside kernel configuration (`.config`). Set
 
 Go to constant global data section (`.rodata`).
 
+### .gotsym
+
+Syntax: .gotsym SYMBOL[, OUTSYMBOL]
+
+Add GOT entry for SYMBOL. A SYMBOL must be defined in global scope. Optionally, pseudo-op
+set position of the GOT entry to OUTSYMBOL if symbol was given.
+
 ### .group_segment_align
 
 Syntax: .group_segment_align ALIGN
 
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `group_segment_align` field in kernel configuration.
-
-### .default_hsa_features
-
-This pseudo-op must be inside kernel configuration (`.config`).
-It sets default HSA kernel features and register features (extra SGPR registers usage).
-These default features are `.use_private_segment_buffer`, `.use_dispatch_ptr`,
-`.use_kernarg_segment_ptr`, `.use_ptr64` and private_elem_size to 4 bytes.
 
 ### .ieeemode
 
