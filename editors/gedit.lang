@@ -180,6 +180,7 @@
             <keyword>globalbuffers</keyword>
             <keyword>globaldata</keyword>
             <keyword>globl</keyword>
+            <keyword>gotsym</keyword>
             <keyword>gpu</keyword>
             <keyword>group_segment_align</keyword>
             <keyword>half</keyword>

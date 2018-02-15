@@ -1888,6 +1888,7 @@
             <item>.globalbuffers</item>
             <item>.globaldata</item>
             <item>.globl</item>
+            <item>.gotsym</item>
             <item>.gpu</item>
             <item>.group_segment_align</item>
             <item>.half</item>
