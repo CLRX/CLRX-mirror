@@ -2725,7 +2725,7 @@ void AsmROCmHandler::addSymbols(bool sectionDiffsPrepared)
                 unresolvedGlobals = true;
             
             output.extraSymbols.push_back({ symEntry.first, symEntry.second.value,
-                    symEntry.second.size, binSectId, true,
+                    symEntry.second.size, binSectId, binSectId != ELFSECTID_ABS,
                     info, symEntry.second.other });
         }
     
