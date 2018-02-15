@@ -45,7 +45,10 @@ globaldata (rodata) section, code section and GOT (Global Offset Table) section.
 For example, an expression `.-globaldata1` (if globaldata is defined in global data section)
 calculates distance between current position and `globaldata1` place.
 An assembler automcatically found section where symbol points to between code,
-globaldata and GOT.
+globaldata and GOT. Because, layout of the sections is not known while assemblying,
+section differences are possible in places where expression can be evaluated later:
+in `.int` or similar pseudo-ops, in the literal values in instructions,
+in the symbol assignments, etc.
 
 ## List of the specific pseudo-operations
 
@@ -266,7 +269,7 @@ Go to constant global data section (`.rodata`).
 Syntax: .gotsym SYMBOL[, OUTSYMBOL]
 
 Add GOT entry for SYMBOL. A SYMBOL must be defined in global scope. Optionally, pseudo-op
-set position of the GOT entry to OUTSYMBOL if symbol was given.
+set position of the GOT entry to OUTSYMBOL if symbol was given. A GOT entry take 8 bytes.
 
 ### .group_segment_align
 
