@@ -2642,6 +2642,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
     
     // add symbols before section diffs prepping
     addSymbols(false);
+    output.gotSymbols.resize(gotSymbols.size());
     
     if (good)
     {
@@ -2738,9 +2739,20 @@ void AsmROCmHandler::addSymbols(bool sectionDiffsPrepared)
     }
     dataSymbols.insert(dataSymbols.end(), output.symbols.begin(), output.symbols.end());
     output.symbols = std::move(dataSymbols);
+}
+
+bool AsmROCmHandler::prepareBinary()
+{
+    if (unresolvedGlobals)
+    {
+        // add and update symbols after section diffs prepping only
+        // if we have unresolved globals
+        addSymbols(true);
+        binGen->updateSymbols();
+    }
     
     if (gotSymbols.empty())
-        return;
+        return good;
     
     // create map to speedup finding symbol indices
     size_t outputSymsNum = output.symbols.size();
@@ -2792,17 +2804,6 @@ void AsmROCmHandler::addSymbols(bool sectionDiffsPrepared)
                         "GOT symbol '")+symName.c_str()+"' not found!").c_str());
             }
         }
-    }
-}
-
-bool AsmROCmHandler::prepareBinary()
-{
-    if (unresolvedGlobals)
-    {
-        // add and update symbols after section diffs prepping only
-        // if we have unresolved globals
-        addSymbols(true);
-        binGen->updateSymbols();
     }
     return good;
 }
