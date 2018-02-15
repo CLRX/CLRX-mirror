@@ -1832,14 +1832,14 @@ void AsmROCmPseudoOps::addGotSymbol(AsmROCmHandler& handler,
     // set up value of GOT symbol
     if (!targetSymName.empty())
     {
-        std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(symName,
+        std::pair<AsmSymbolEntry*, bool> res = asmr.insertSymbolInScope(targetSymName,
                     AsmSymbol(handler.gotSection, gotSymbolIndex*8));
         if (!res.second)
         {
             // if symbol found
             if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
-                asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
-                            "' is already defined").c_str());
+                asmr.printError(symNamePlace, (std::string("Symbol '")+
+                            targetSymName.c_str()+ "' is already defined").c_str());
             else // set value of symbol
                 asmr.setSymbol(*res.first, gotSymbolIndex*8, handler.gotSection);
         }
@@ -2652,15 +2652,22 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         assembler.sections[codeSection].relAddress =
                     binGen->getSectionOffset(ELFSECTID_TEXT);
         
-        Array<cxuint> relSections(1 + (dataSection != ASMSECT_ABS));
+        Array<cxuint> relSections(1 + (dataSection != ASMSECT_NONE) +
+                    (gotSection != ASMSECT_NONE));
         cxuint relSectionId = 0;
-        if (dataSection != ASMSECT_ABS)
+        if (dataSection != ASMSECT_NONE)
         {
             assembler.sections[dataSection].relAddress =
                     binGen->getSectionOffset(ELFSECTID_RODATA);
             relSections[relSectionId++] = dataSection;
         }
         relSections[relSectionId++] = codeSection;
+        if (gotSection != ASMSECT_NONE)
+        {
+            assembler.sections[gotSection].relAddress =
+                    binGen->getSectionOffset(ROCMSECTID_GOT);
+            relSections[relSectionId++] = gotSection;
+        }
         assembler.relSpacesSections.push_back(std::move(relSections));
     }
     return good;
