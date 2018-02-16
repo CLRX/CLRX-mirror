@@ -177,7 +177,7 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags,
                 // parse AMDAPP version
                 try
                 {
-                    const char* majorVerPart = amdappPart+9;
+                    const char* majorVerPart = amdappPart+2;
                     const char* minorVerPart;
                     const char* end;
                     cxuint majorVersion = cstrtoui(majorVerPart, nullptr,
@@ -404,7 +404,7 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags,
         asmSetup.llvmVersion = llvmVersion;
     if (binaryFormat == BinaryFormat::GALLIUM && mesaVersion != 0)
         asmSetup.driverVersion = mesaVersion;
-    else if ((binaryFormat == BinaryFormat::AMD ||
+    else if ((binaryFormat == BinaryFormat::AMD || binaryFormat == BinaryFormat::ROCM ||
             binaryFormat == BinaryFormat::AMDCL2) && amdappVersion != 0)
         asmSetup.driverVersion = amdappVersion;
     // base OpenCL options for program
