@@ -122,6 +122,7 @@ AsmROCmHandler::AsmROCmHandler(Assembler& assembler): AsmFormatHandler(assembler
              unresolvedGlobals(false), good(true)
 {
     sectionDiffsResolvable = true;
+    output.newBinFormat = assembler.isNewROCmBinFormat();
     output.metadataInfo.initialize();
     output.archMinor = output.archStepping = UINT32_MAX;
     output.eflags = BINGEN_DEFAULT;

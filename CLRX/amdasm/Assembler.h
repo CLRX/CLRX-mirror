@@ -436,6 +436,7 @@ private:
     uint32_t driverVersion;
     uint32_t llvmVersion; // GalliumCompute
     bool _64bit;    ///
+    bool newROCmBinFormat;
     bool good;
     bool resolvingRelocs;
     bool doNotRemoveFromSymbolClones;
@@ -738,6 +739,12 @@ public:
     /// set bitness (true if 64-bit)
     void set64Bit(bool this64Bit)
     {  _64bit = this64Bit; }
+    /// is new ROCm binary format
+    bool isNewROCmBinFormat() const
+    { return newROCmBinFormat; }
+    /// set new ROCm binary format
+    void setNewROCmBinFormat(bool newFmt)
+    { newROCmBinFormat = newFmt; }
     /// get flags
     Flags getFlags() const
     { return flags; }

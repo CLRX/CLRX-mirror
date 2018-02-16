@@ -13,8 +13,8 @@ The `clrxasm` can be invoked in following way:
 clrxasm [-6Swam?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
 [-g GPUDEVICE] [-A ARCH] [-t VERSION] [--defsym=SYM[=VALUE]] [--includePath=PATH]
 [--output OUTFILE] [--binaryFormat=BINFORMAT] [--64bit] [--gpuType=GPUDEVICE]
-[--arch=ARCH] [--driverVersion=VERSION] [--llvmVersion=VERSION] [--forceAddSymbols]
-[--noWarnings] [--alternate] [--buggyFPLit] [--oldModParam]
+[--arch=ARCH] [--driverVersion=VERSION] [--llvmVersion=VERSION] [--newROCmBinFormat]
+[--forceAddSymbols] [--noWarnings] [--alternate] [--buggyFPLit] [--oldModParam]
 [--noMacroCase] [--help] [--usage] [--version] [file...]
 
 ### Input
@@ -74,6 +74,10 @@ MajorVersion*100 + MinorVersion.
 
     Choose LLVM compiler version. Version can be retrieved from clinfo program that display
 field Version. Version is number in that form: MajorVersion*100 + MinorVersion.
+
+* **--newROCmBinFormat**
+
+    Enable new ROCm binary format.
 
 * **-S**, **--forceAddSymbols**
 

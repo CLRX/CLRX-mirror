@@ -49,6 +49,8 @@ static const CLIOption programOptions[] =
         "set driver version (for Amd/GalliumCompute)", "VERSION" },
     { "llvmVersion", 0, CLIArgType::UINT, false, false,
         "set LLVM version (for GalliumCompute)", "VERSION" },
+    { "newROCmBinFormat", 0, CLIArgType::NONE, false, false,
+        "enable new ROCm binary format", nullptr },
     { "forceAddSymbols", 'S', CLIArgType::NONE, false, false,
         "force add symbols to binaries", nullptr },
     { "alternate", 'a', CLIArgType::NONE, false, false,
@@ -90,6 +92,7 @@ try
     uint32_t driverVersion = 0;
     uint32_t llvmVersion = 0;
     Flags flags = 0;
+    bool newROCmBinFormat = false;
     if (cli.hasShortOption('b'))
     {
         const char* binFmtName = cli.getShortOptArg<const char*>('b');
@@ -130,6 +133,8 @@ try
         flags |= ASM_MACRONOCASE;
     if (cli.hasLongOption("oldModParam"))
         flags |= ASM_OLDMODPARAM;
+    if (cli.hasLongOption("newROCmBinFormat"))
+        newROCmBinFormat = true;
     
     cxuint argsNum = cli.getArgsNum();
     Array<CString> filenames(argsNum);
@@ -144,6 +149,7 @@ try
     assembler->set64Bit(is64Bit);
     assembler->setDriverVersion(driverVersion);
     assembler->setLLVMVersion(llvmVersion);
+    assembler->setNewROCmBinFormat(newROCmBinFormat);
     
     size_t defSymsNum = 0;
     const char* const* defSyms = nullptr;
