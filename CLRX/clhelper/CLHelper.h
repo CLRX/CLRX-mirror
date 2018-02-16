@@ -82,6 +82,7 @@ struct CLAsmSetup
     bool is64Bit;        ///< if binary is 64-bit
     CString options; ///< OpenCL base options
     Flags asmFlags;     ///< assembler flags
+    bool newROCmBinFormat; ///< new ROCm binary format
 };
 
 /// get assembler setup(compile assembler code) binary for OpenCL device

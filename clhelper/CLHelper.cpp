@@ -411,6 +411,8 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags,
     asmSetup.options = (binaryFormat==BinaryFormat::AMDCL2) ? "-cl-std=CL2.0" :
                (useLegacy ? "-legacy" : "");
     asmSetup.asmFlags = asmFlags;
+    if (binaryFormat == BinaryFormat::ROCM)
+        asmSetup.newROCmBinFormat = true;
     return asmSetup;
 }
 
@@ -437,6 +439,7 @@ Array<cxbyte> CLRX::createBinaryForOpenCL(const CLAsmSetup& asmSetup,
         assembler.setLLVMVersion(asmSetup.llvmVersion);
     if (asmSetup.driverVersion != 0)
         assembler.setDriverVersion(asmSetup.driverVersion);
+    assembler.setNewROCmBinFormat(asmSetup.newROCmBinFormat);
     // initial def symbols
     for (const auto& symbol: defSymbols)
         assembler.addInitialDefSym(symbol.first, symbol.second);
