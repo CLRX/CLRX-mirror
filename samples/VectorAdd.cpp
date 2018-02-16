@@ -430,7 +430,7 @@ end:
         .codeversion 1, 1
         .default_hsa_features
         .call_convention 0xffffffff
-        .pgmrsrc2 0xd0      # trap present
+        .pgmrsrc2 0x40      # trap present
         # ROCm metadata
         .md_language "OpenCL C", 1, 2
         .md_kernarg_segment_align 8
