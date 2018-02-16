@@ -418,6 +418,72 @@ vectorAdd:
 .endif
 end:
         s_endpgm
+
+.elseiffmt rocm   # ROCm code
+.newbinfmt
+.tripple "amdgcn-amd-amdhsa-amdgizcl"
+.kernel vectorAdd
+    .config
+        .dims x
+        .dx10clamp
+        .ieeemode
+        .codeversion 1, 1
+        .default_hsa_features
+        .call_convention 0xffffffff
+        .pgmrsrc2 0xd0      # trap present
+        # ROCm metadata
+        .md_language "OpenCL C", 1, 2
+        .md_kernarg_segment_align 8
+        .arg n, "uint", 4, 4, value, u32
+        .arg a, "float*", 8, 8, globalbuf, f32, global, default const
+        .arg b, "float*", 8, 8, globalbuf, f32, global, default const
+        .arg c, "float*", 8, 8, globalbuf, f32, global, default
+        .arg , "", 8, 8, gox, i64
+        .arg , "", 8, 8, goy, i64
+        .arg , "", 8, 8, goz, i64
+.text
+vectorAdd:
+.skip 256
+# code from CLANG OpenCL compiler
+        s_load_dword    s2, s[4:5], 0x1*SMUL
+        s_load_dword    s3, s[6:7], 0x0
+        s_load_dwordx2  s[0:1], s[6:7], 0x8*SMUL
+        s_waitcnt       lgkmcnt(0)
+        s_and_b32       s2, s2, 0xffff
+        s_mul_i32       s8, s8, s2
+        VADD_U32        v0, vcc, s8, v0
+        v_mov_b32       v1, s1
+        VADD_u32        v0, vcc, s0, v0
+        VADDC_U32       v1, vcc, 0, v1, vcc
+        v_cmp_gt_u32    vcc, s3, v0
+        s_and_saveexec_b64 s[0:1], vcc
+        s_cbranch_execz end
+        s_load_dwordx2  s[0:1], s[6:7], 0x2*SMUL
+        s_load_dwordx2  s[2:3], s[6:7], 0x4*SMUL
+.if GCN1_2_4
+        v_lshlrev_b64   v[0:1], 2, v[0:1]
+.else
+        v_lshl_b64      v[0:1], v[0:1], 2
+.endif
+        s_load_dwordx2  s[4:5], s[6:7], 0x6*SMUL
+        v_and_b32       v5, 3, v1
+        s_waitcnt       lgkmcnt(0)
+        v_mov_b32       v2, s1
+        VADD_U32        v1, vcc, s0, v0
+        VADDC_U32       v2, vcc, v2, v5, vcc
+        v_mov_b32       v4, s3
+        VADD_U32        v3, vcc, s2, v0
+        VADDC_U32       v4, vcc, v4, v5, vcc
+        flat_load_dword v3, v[3:4]
+        flat_load_dword v2, v[1:2]
+        v_mov_b32       v1, s5
+        VADD_U32        v0, vcc, s4, v0
+        VADDC_U32       v1, vcc, v1, v5, vcc
+        s_waitcnt       vmcnt(0) & lgkmcnt(0)
+        v_add_f32       v2, v2, v3
+        flat_store_dword v[0:1], v2
+end:
+        s_endpgm
 .else
         .error "Unsupported binary format"
 .endif
