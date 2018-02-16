@@ -103,7 +103,7 @@ bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
 
 static const char* binaryFormatNamesTbl[] =
 {
-    "AMD OpenCL 1.2", "GalliumCompute", "Raw code", "AMD OpenCL 2.0"
+    "AMD OpenCL 1.2", "GalliumCompute", "Raw code", "AMD OpenCL 2.0", "ROCm"
 };
 
 CLFacade::CLFacade(cl_uint deviceIndex, const char* sourceCode, const char* kernelNames,
