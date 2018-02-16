@@ -2016,8 +2016,6 @@ bool AsmGalliumHandler::prepareBinary()
                 outConfig.privateSegmentAlignment = 4;
             if (outConfig.wavefrontSize == BINGEN8_DEFAULT)
                 outConfig.wavefrontSize = 6;
-            if (outConfig.callConvention == BINGEN_DEFAULT)
-                outConfig.callConvention = 0;
             outConfig.reserved1[0] = 0;
             outConfig.reserved1[1] = 0;
             outConfig.reserved1[2] = 0;

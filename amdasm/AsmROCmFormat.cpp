@@ -2573,8 +2573,6 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         if (config.workitemVgprCount == BINGEN16_DEFAULT)
             config.workitemVgprCount = vgprsNum;
         
-        if (config.callConvention == BINGEN_DEFAULT)
-            config.callConvention = 0;
         if (config.runtimeLoaderKernelSymbol == BINGEN64_DEFAULT)
             config.runtimeLoaderKernelSymbol = 0;
         

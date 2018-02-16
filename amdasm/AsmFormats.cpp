@@ -46,6 +46,7 @@ void AsmAmdHsaKernelConfig::initialize()
     usedVGPRsNum = BINGEN_DEFAULT;
     usedSGPRsNum = BINGEN_DEFAULT;
     userDataNum = BINGEN8_DEFAULT;
+    callConvention = 0;
     ieeeMode = false;
     floatMode = 0xc0;
     priority = 0;
