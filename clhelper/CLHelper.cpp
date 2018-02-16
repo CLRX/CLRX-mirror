@@ -171,7 +171,7 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags,
             if (error != CL_SUCCESS)
                 throw CLError(error, "clGetPlatformInfoVersion");
             
-            const char* amdappPart = strstr(platformVersion.get(), "AMD-APP (");
+            const char* amdappPart = strstr(platformVersion.get(), " (");
             if (amdappPart!=nullptr)
             {
                 // parse AMDAPP version
@@ -233,18 +233,6 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags,
     if (error != CL_SUCCESS)
         throw CLError(error, "clGetDeviceInfoName");
     
-    // get device version - used for getting Mesa3D version and LLVM version
-    size_t deviceVersionSize;
-    std::unique_ptr<char[]> deviceVersion;
-    error = clGetDeviceInfo(clDevice, CL_DEVICE_VERSION, 0, nullptr, &deviceVersionSize);
-    if (error != CL_SUCCESS)
-        throw CLError(error, "clGetDeviceInfoVersion");
-    deviceVersion.reset(new char[deviceVersionSize]);
-    error = clGetDeviceInfo(clDevice, CL_DEVICE_VERSION, deviceVersionSize,
-                            deviceVersion.get(), nullptr);
-    if (error != CL_SUCCESS)
-        throw CLError(error, "clGetDeviceInfoVersion");
-    
     // get bits from device name (LLVM version)
     cxuint llvmVersion = 0;
     cxuint mesaVersion = 0;
@@ -276,6 +264,19 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags,
             { } // ignore error
         }
         
+        // get device version - used for getting Mesa3D version and LLVM version
+        size_t deviceVersionSize;
+        std::unique_ptr<char[]> deviceVersion;
+        error = clGetDeviceInfo(clDevice, CL_DEVICE_VERSION, 0, nullptr,
+                                &deviceVersionSize);
+        if (error != CL_SUCCESS)
+            throw CLError(error, "clGetDeviceInfoVersion");
+        deviceVersion.reset(new char[deviceVersionSize]);
+        error = clGetDeviceInfo(clDevice, CL_DEVICE_VERSION, deviceVersionSize,
+                                deviceVersion.get(), nullptr);
+        if (error != CL_SUCCESS)
+            throw CLError(error, "clGetDeviceInfoVersion");
+        
         const char* mesaPart = strstr(deviceVersion.get(), "Mesa ");
         if (mesaPart==nullptr)
             mesaPart = strstr(deviceVersion.get(), "MESA ");
@@ -297,6 +298,33 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags,
             }
             catch(const ParseException& ex)
             { } // ignore error
+        }
+    }
+    else
+    {
+        // check whether is ROCm-OpenCL
+        // get driver version - used for getting ROCm-OpenCL info
+        size_t driverVersionSize;
+        std::unique_ptr<char[]> driverVersion;
+        error = clGetDeviceInfo(clDevice, CL_DRIVER_VERSION, 0, nullptr,
+                        &driverVersionSize);
+        if (error != CL_SUCCESS)
+            throw CLError(error, "clGetDriverInfoVersion");
+        driverVersion.reset(new char[driverVersionSize]);
+        error = clGetDeviceInfo(clDevice, CL_DRIVER_VERSION, driverVersionSize,
+                                driverVersion.get(), nullptr);
+        if (error != CL_SUCCESS)
+            throw CLError(error, "clGetDriverInfoVersion");
+        
+        // parse ROCm-OpenCL (HSAXXX,LC)
+        const char* hsaStr = strstr(driverVersion.get(), "(HSA");
+        if (hsaStr != nullptr)
+        {
+            // now we check LC
+            const char* lcStr = strstr(hsaStr+4, ",LC)");
+            if (lcStr != nullptr)
+                // we have ROCm binary format
+                binaryFormat = BinaryFormat::ROCM;
         }
     }
     
