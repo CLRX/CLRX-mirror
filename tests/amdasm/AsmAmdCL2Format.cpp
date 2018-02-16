@@ -285,7 +285,11 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
         printHexData(os, 1, section.size, section.data);
     }
     // print extra symbols from main binary if supplied
-    for (BinSymbol symbol: output->extraSymbols)
+    Array<BinSymbol> extraSymbols(output->extraSymbols.begin(), output->extraSymbols.end());
+    std::sort(extraSymbols.begin(), extraSymbols.end(),
+              [](const BinSymbol& s1, const BinSymbol& s2)
+              { return s1.name < s2.name; });
+    for (BinSymbol symbol: extraSymbols)
         os << "  Symbol: name=" << symbol.name << ", value=" << symbol.value <<
                 ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
     os.flush();

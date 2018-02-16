@@ -194,7 +194,12 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
             printHexData(os, 2, section.size, section.data);
         }
         // print extra symbols in inner binaries
-        for (BinSymbol symbol: kernel.extraSymbols)
+        Array<BinSymbol> extraSymbols(kernel.extraSymbols.begin(),
+                                      kernel.extraSymbols.end());
+        std::sort(extraSymbols.begin(), extraSymbols.end(),
+                [](const BinSymbol& s1, const BinSymbol& s2)
+                { return s1.name < s2.name; });
+        for (BinSymbol symbol: extraSymbols)
                 os << "    Symbol: name=" << symbol.name << ", value=" << symbol.value <<
                 ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
         os.flush();
@@ -209,7 +214,12 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
         printHexData(os, 1, section.size, section.data);
     }
     // print extra symbols in main binaries
-    for (BinSymbol symbol: output->extraSymbols)
+    Array<BinSymbol> extraSymbols(output->extraSymbols.begin(), output->extraSymbols.end());
+    std::sort(extraSymbols.begin(), extraSymbols.end(),
+              [](const BinSymbol& s1, const BinSymbol& s2)
+              { return s1.name < s2.name; });
+    
+    for (BinSymbol symbol: extraSymbols)
         os << "  Symbol: name=" << symbol.name << ", value=" << symbol.value <<
                 ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
     os.flush();
