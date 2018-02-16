@@ -2437,7 +2437,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         if (config.amdCodeVersionMajor == BINGEN_DEFAULT)
             config.amdCodeVersionMajor = 1;
         if (config.amdCodeVersionMinor == BINGEN_DEFAULT)
-            config.amdCodeVersionMinor = 0;
+            config.amdCodeVersionMinor = (output.newBinFormat) ? 1 : 0;
         if (config.amdMachineKind == BINGEN16_DEFAULT)
             config.amdMachineKind = 1;
         if (config.amdMachineMajor == BINGEN16_DEFAULT)

@@ -91,7 +91,7 @@ static void printROCmOutput(std::ostream& os, const ROCmInput* output)
         // print kernel configuration
         os << "    Config:\n"
             "      amdCodeVersion=" << ULEV(config.amdCodeVersionMajor) << "." <<
-                ULEV(config.amdCodeVersionMajor) << "\n"
+                ULEV(config.amdCodeVersionMinor) << "\n"
             "      amdMachine=" << ULEV(config.amdMachineKind) << ":" <<
                 ULEV(config.amdMachineMajor) << ":" <<
                 ULEV(config.amdMachineMinor) << ":" <<
@@ -263,7 +263,7 @@ struct AsmTestCase
 
 static const AsmTestCase asmTestCases1Tbl[] =
 {
-    {
+    {   // 0
         R"ffDXD(        .rocm
         .gpu Fiji
 .kernel kxx1
@@ -328,7 +328,7 @@ kxx2:
         R"ffDXD(ROCmBinDump:
   ROCmSymbol: name=kxx1, offset=0, size=0, type=fkernel
     Config:
-      amdCodeVersion=1.1
+      amdCodeVersion=1.0
       amdMachine=1:8:0:3
       kernelCodeEntryOffset=256
       kernelCodePrefetchOffset=0
@@ -364,7 +364,7 @@ kxx2:
       0000000000000000000000000000000000000000000000000000000000000000
   ROCmSymbol: name=kxx2, offset=512, size=0, type=kernel
     Config:
-      amdCodeVersion=1.1
+      amdCodeVersion=1.0
       amdMachine=1:8:0:3
       kernelCodeEntryOffset=256
       kernelCodePrefetchOffset=0
@@ -431,7 +431,7 @@ kxx2:
         "",
         true
     },
-    {
+    {   // 1
         R"ffDXD(        .rocm
         .gpu Fiji
 .kernel someKernelX
@@ -480,7 +480,7 @@ someKernelX:
         R"ffDXD(ROCmBinDump:
   ROCmSymbol: name=someKernelX, offset=0, size=0, type=kernel
     Config:
-      amdCodeVersion=1.1
+      amdCodeVersion=1.0
       amdMachine=8:0:1:2
       kernelCodeEntryOffset=256
       kernelCodePrefetchOffset=1002
@@ -531,7 +531,7 @@ someKernelX:
         "",
         true
     },
-    {
+    {   // 2
         R"ffDXD(        .rocm
         .gpu Fiji
 .kernel someKernelX
@@ -544,7 +544,7 @@ someKernelX:
         "", "test.s:3:1: Error: "
         "Code for kernel 'someKernelX' is too small for configuration\n", false
     },
-    {
+    {   // 3
         R"ffDXD(        .rocm
         .gpu Fiji
 .kernel someKernelX
@@ -590,7 +590,7 @@ test.s:20:25: Error: Wavefront size must be not greater than 256
 test.s:21:19: Warning: Value 0xaa1fd3da2313 truncated to 0xd3da2313
 )ffDXD", false
     },
-    {   // different eflags
+    {   // 4 - different eflags
         R"ffDXD(.rocm
         .gpu Fiji
         .eflags 3
@@ -627,7 +627,7 @@ kxx1:
         R"ffDXD(ROCmBinDump:
   ROCmSymbol: name=kxx1, offset=0, size=0, type=kernel
     Config:
-      amdCodeVersion=1.1
+      amdCodeVersion=1.0
       amdMachine=1:8:0:3
       kernelCodeEntryOffset=256
       kernelCodePrefetchOffset=0
@@ -676,7 +676,7 @@ kxx1:
   EFlags=3
 )ffDXD", "", true
     },
-    {   // metadata and others
+    {   // 5 - metadata and others
         R"ffDXD(.rocm
         .gpu Fiji
         .eflags 3
@@ -719,7 +719,7 @@ kxx1:
         R"ffDXD(ROCmBinDump:
   ROCmSymbol: name=kxx1, offset=0, size=0, type=kernel
     Config:
-      amdCodeVersion=1.1
+      amdCodeVersion=1.0
       amdMachine=1:8:0:3
       kernelCodeEntryOffset=256
       kernelCodePrefetchOffset=0
@@ -775,7 +775,7 @@ maybe not unrecognizable by parser but it is understandable by human
   NewBinFormat
 )ffDXD", "", true
     },
-    {   // metadata info
+    {   // 6 - metadata info
         R"ffDXD(.rocm
         .gpu Fiji
         .eflags 3
@@ -859,7 +859,7 @@ kxx1:   .skip 256
         R"ffDXD(ROCmBinDump:
   ROCmSymbol: name=kxx1, offset=0, size=0, type=kernel
     Config:
-      amdCodeVersion=1.1
+      amdCodeVersion=1.0
       amdMachine=1:8:0:3
       kernelCodeEntryOffset=256
       kernelCodePrefetchOffset=0
@@ -1101,7 +1101,7 @@ kxx1:   .skip 256
 )ffDXD",
         "", true
     },
-    {   // next metadata info example
+    {   //  6 - next metadata info example
         R"ffDXD(.rocm
         .gpu Fiji
         .eflags 3
@@ -1150,7 +1150,7 @@ kxx1:   .skip 256
         R"ffDXD(ROCmBinDump:
   ROCmSymbol: name=kxx1, offset=0, size=0, type=kernel
     Config:
-      amdCodeVersion=1.1
+      amdCodeVersion=1.0
       amdMachine=1:8:0:3
       kernelCodeEntryOffset=256
       kernelCodePrefetchOffset=0
@@ -1438,7 +1438,7 @@ globalValX = 334
   Comment:
   nullptr
   Code:
-  0100000000000000010008000000000000010000000000000000000000000000
+  0100000001000000010008000000000000010000000000000000000000000000
   0000000000000000000000000000000040000c00900000000b000a0000000000
   00000000000000004000000000000000000000000b0001000000000000000000
   0000000004040406000000000000000000000000000000000000000000000000
