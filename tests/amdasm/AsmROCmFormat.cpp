@@ -246,7 +246,12 @@ static void printROCmOutput(std::ostream& os, const ROCmInput* output)
         printHexData(os, 1, section.size, section.data);
     }
     // print extra symbols if supplied
-    for (BinSymbol symbol: output->extraSymbols)
+    Array<BinSymbol> extraSymbols(output->extraSymbols.begin(), output->extraSymbols.end());
+    std::sort(extraSymbols.begin(), extraSymbols.end(),
+              [](const BinSymbol& s1, const BinSymbol& s2)
+              { return s1.name < s2.name; });
+    
+    for (BinSymbol symbol: extraSymbols)
         os << "  Symbol: name=" << symbol.name << ", value=" << symbol.value <<
                 ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
     os.flush();
@@ -1506,11 +1511,11 @@ globalValX = 334
     Sym: gdata1
     Sym: datav
     Sym: globalValX
+  Symbol: name=datav.GOT, value=16, size=0, section=4294967055
+  Symbol: name=gdata1, value=0, size=0, section=4294967046
+  Symbol: name=gdata2, value=20, size=0, section=4294967046
   Symbol: name=globalValX, value=334, size=0, section=4294967294
   Symbol: name=globalValX.GOT, value=24, size=0, section=4294967055
-  Symbol: name=datav.GOT, value=16, size=0, section=4294967055
-  Symbol: name=gdata2, value=20, size=0, section=4294967046
-  Symbol: name=gdata1, value=0, size=0, section=4294967046
 )ffDXD",
         "", true
     }
