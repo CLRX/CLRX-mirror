@@ -225,6 +225,19 @@ static void printROCmOutput(std::ostream& os, const ROCmInput* output)
     if (output->newBinFormat)
         os << "  NewBinFormat\n";
     
+    if (!output->gotSymbols.empty())
+    {
+        // print got symbol indices with symbol names
+        os << "  GotSymbols:\n";
+        for (size_t index: output->gotSymbols)
+        {
+            const CString name = (index < output->symbols.size()) ?
+                    output->symbols[index].symbolName :
+                    output->extraSymbols[index-output->symbols.size()].name;
+            os << "    Sym: " << index << ": " << name << "\n";
+        }
+    }
+    
     // print extra sections if supplied
     for (BinSection section: output->extraSections)
     {
@@ -1337,6 +1350,170 @@ test.s:44:20: Error: Expected expression
 test.s:44:21: Error: Expected expression
 )ffDXD", false
     },
+    {   // with got symbols
+        R"ffDXD(.rocm
+.gpu Iceland
+.arch_minor 0
+.arch_stepping 0
+.eflags 2
+.newbinfmt
+.target "amdgcn-amd-amdhsa-amdgizcl-gfx800"
+.md_version 1, 0
+.globaldata
+.gotsym gdata2
+gdata1:
+.global gdata1
+.int 1,2,3,4,6
+gdata2:
+.global gdata2
+.int 11,21,13,14,61
+.gotsym gdata1
+.gotsym datav, datav.GOT
+.gotsym globalValX, globalValX.GOT
+.global datav.GOT
+.global globalValX.GOT
+.kernel vectorAdd
+    .config
+        .dims x
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .md_language "OpenCL", 1, 2
+        .arg n, "uint", 4, 4, value, u32
+        .arg a, "float*", 8, 8, globalbuf, f32, global, default const
+        .arg b, "float*", 8, 8, globalbuf, f32, global, default const
+        .arg c, "float*", 8, 8, globalbuf, f32, global, default
+        .arg , "", 8, 8, gox, i64
+        .arg , "", 8, 8, goy, i64
+        .arg , "", 8, 8, goz, i64
+.text
+vectorAdd:
+.skip 256
+        s_mov_b32   s1, .-gdata2
+.global datav
+datav:
+.global globalValX
+globalValX = 334
+)ffDXD",
+        R"ffDXD(ROCmBinDump:
+  ROCmSymbol: name=datav, offset=264, size=0, type=data
+  ROCmSymbol: name=vectorAdd, offset=0, size=0, type=kernel
+    Config:
+      amdCodeVersion=1.1
+      amdMachine=1:8:0:0
+      kernelCodeEntryOffset=256
+      kernelCodePrefetchOffset=0
+      kernelCodePrefetchSize=0
+      maxScrachBackingMemorySize=0
+      computePgmRsrc1=0xc0040
+      computePgmRsrc2=0x90
+      enableSgprRegisterFlags=0xb
+      enableFeatureFlags=0xa
+      workitemPrivateSegmentSize=0
+      workgroupGroupSegmentSize=0
+      gdsSegmentSize=0
+      kernargSegmentSize=64
+      workgroupFbarrierCount=0
+      wavefrontSgprCount=11
+      workitemVgprCount=1
+      reservedVgprFirst=0
+      reservedVgprCount=0
+      reservedSgprFirst=0
+      reservedSgprCount=0
+      debugWavefrontPrivateSegmentOffsetSgpr=0
+      debugPrivateSegmentBufferSgpr=0
+      kernargSegmentAlignment=4
+      groupSegmentAlignment=4
+      privateSegmentAlignment=4
+      wavefrontSize=6
+      callConvention=0x0
+      runtimeLoaderKernelSymbol=0x0
+      ControlDirective:
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+  Comment:
+  nullptr
+  Code:
+  0100000000000000010008000000000000010000000000000000000000000000
+  0000000000000000000000000000000040000c00900000000b000a0000000000
+  00000000000000004000000000000000000000000b0001000000000000000000
+  0000000004040406000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  ff0081be50070000
+  GlobalData:
+  01000000020000000300000004000000060000000b000000150000000d000000
+  0e0000003d000000
+  MetadataInfo:
+    Version: 1.0
+    Kernel: vectorAdd
+      SymName=
+      Language=OpenCL 1.2
+      ReqdWorkGroupSize=0 0 0
+      WorkGroupSizeHint=0 0 0
+      VecTypeHint=
+      RuntimeHandle=
+      KernargSegmentSize=18446744073709551614
+      KernargSegmentAlign=18446744073709551614
+      GroupSegmentFixedSize=18446744073709551614
+      PrivateSegmentFixedSize=18446744073709551614
+      WaveFrontSize=4294967294
+      SgprsNum=4294967294
+      VgprsNum=4294967294
+      SpilledSgprs=4294967294
+      SpilledVgprs=4294967294
+      MaxFlatWorkGroupSize=18446744073709551614
+      FixedWorkGroupSize=0 0 0
+      Arg name=n, type=uint, size=4, align=4
+        valuekind=value, valuetype=u32, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=a, type=float*, size=8, align=8
+        valuekind=globalbuf, valuetype=f32, pointeeAlign=0
+        addrSpace=global, accQual=default, actAccQual=default
+        Flags= const
+      Arg name=b, type=float*, size=8, align=8
+        valuekind=globalbuf, valuetype=f32, pointeeAlign=0
+        addrSpace=global, accQual=default, actAccQual=default
+        Flags= const
+      Arg name=c, type=float*, size=8, align=8
+        valuekind=globalbuf, valuetype=f32, pointeeAlign=0
+        addrSpace=global, accQual=default, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=gox, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=goy, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=goz, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+  Target=amdgcn-amd-amdhsa-amdgizcl-gfx800
+  EFlags=2
+  NewBinFormat
+  GotSymbols:
+    Sym: 5: gdata2
+    Sym: 6: gdata1
+    Sym: 0: datav
+    Sym: 2: globalValX
+  Symbol: name=globalValX, value=334, size=0, section=4294967294
+  Symbol: name=globalValX.GOT, value=24, size=0, section=4294967055
+  Symbol: name=datav.GOT, value=16, size=0, section=4294967055
+  Symbol: name=gdata2, value=20, size=0, section=4294967046
+  Symbol: name=gdata1, value=0, size=0, section=4294967046
+)ffDXD",
+        "", true
+    }
 };
 
 static void testAssembler(cxuint testId, const AsmTestCase& testCase)
