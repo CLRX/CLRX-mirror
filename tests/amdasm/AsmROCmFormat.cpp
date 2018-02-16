@@ -234,7 +234,7 @@ static void printROCmOutput(std::ostream& os, const ROCmInput* output)
             const CString name = (index < output->symbols.size()) ?
                     output->symbols[index].symbolName :
                     output->extraSymbols[index-output->symbols.size()].name;
-            os << "    Sym: " << index << ": " << name << "\n";
+            os << "    Sym: " << name << "\n";
         }
     }
     
@@ -1502,10 +1502,10 @@ globalValX = 334
   EFlags=2
   NewBinFormat
   GotSymbols:
-    Sym: 5: gdata2
-    Sym: 6: gdata1
-    Sym: 0: datav
-    Sym: 2: globalValX
+    Sym: gdata2
+    Sym: gdata1
+    Sym: datav
+    Sym: globalValX
   Symbol: name=globalValX, value=334, size=0, section=4294967294
   Symbol: name=globalValX.GOT, value=24, size=0, section=4294967055
   Symbol: name=datav.GOT, value=16, size=0, section=4294967055
