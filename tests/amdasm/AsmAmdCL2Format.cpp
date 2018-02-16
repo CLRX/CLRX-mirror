@@ -190,7 +190,7 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
                         *reinterpret_cast<const AmdHsaKernelConfig*>(kernel.setup);
                 os <<
                     "      amdCodeVersion=" << ULEV(config.amdCodeVersionMajor) << "." <<
-                        ULEV(config.amdCodeVersionMajor) << "\n"
+                        ULEV(config.amdCodeVersionMinor) << "\n"
                     "      amdMachine=" << ULEV(config.amdMachineKind) << ":" <<
                         ULEV(config.amdMachineMajor) << ":" <<
                         ULEV(config.amdMachineMinor) << ":" <<

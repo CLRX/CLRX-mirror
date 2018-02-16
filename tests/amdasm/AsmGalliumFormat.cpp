@@ -115,7 +115,7 @@ static void printGalliumOutput(std::ostream& os, const GalliumInput* output, boo
                                 output->code + kernel.offset);
                 os << "    AMD HSA Config:\n"
                     "      amdCodeVersion=" << ULEV(config.amdCodeVersionMajor) << "." <<
-                        ULEV(config.amdCodeVersionMajor) << "\n"
+                        ULEV(config.amdCodeVersionMinor) << "\n"
                     "      amdMachine=" << ULEV(config.amdMachineKind) << ":" <<
                         ULEV(config.amdMachineMajor) << ":" <<
                         ULEV(config.amdMachineMinor) << ":" <<
@@ -514,7 +514,7 @@ aa23:
       dims=default, SGPRS=36, VGPRS=139, pgmRSRC2=0x7fbeb, ieeeMode=0x1
       floatMode=0x2b, priority=1, localSize=0, scratchBuffer=230
     AMD HSA Config:
-      amdCodeVersion=1.1
+      amdCodeVersion=1.0
       amdMachine=1:0:0:0
       kernelCodeEntryOffset=256
       kernelCodePrefetchOffset=0
@@ -556,7 +556,7 @@ aa23:
       dims=6, SGPRS=12, VGPRS=3, pgmRSRC2=0x0, ieeeMode=0x1
       floatMode=0xc0, priority=3, localSize=0, scratchBuffer=0
     AMD HSA Config:
-      amdCodeVersion=1.1
+      amdCodeVersion=1.0
       amdMachine=1:0:0:0
       kernelCodeEntryOffset=256
       kernelCodePrefetchOffset=1002
@@ -651,7 +651,7 @@ aa22:
       dims=default, SGPRS=61, VGPRS=139, pgmRSRC2=0x7fbeb, ieeeMode=0x1
       floatMode=0x2b, priority=1, localSize=0, scratchBuffer=230
     AMD HSA Config:
-      amdCodeVersion=1.1
+      amdCodeVersion=1.0
       amdMachine=1:8:0:3
       kernelCodeEntryOffset=256
       kernelCodePrefetchOffset=0
@@ -749,7 +749,7 @@ aa22:
       dims=1, SGPRS=36, VGPRS=139, pgmRSRC2=0x7fbeb, ieeeMode=0x1
       floatMode=0x12, priority=1, localSize=23, scratchBuffer=230
     AMD HSA Config:
-      amdCodeVersion=1.1
+      amdCodeVersion=1.0
       amdMachine=1:0:0:0
       kernelCodeEntryOffset=256
       kernelCodePrefetchOffset=0
