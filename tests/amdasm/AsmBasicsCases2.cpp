@@ -416,6 +416,25 @@ ce:
             y27 = al+cl+bl>@cl+al+bl-99
             y28 = al+cl+bl<=@cl+al+bl-99
             y29 = al+cl+bl>=@cl+al+bl-99
+            
+            y30 = al&0
+            y31 = al&-1
+            y32 = 0&al
+            y33 = -1&al
+            y34 = al|0
+            y35 = al|-1
+            y36 = 0|al
+            y37 = -1|al
+            y38 = al^0
+            y39 = 0^al
+            y40 = al!0
+            y41 = al!-1
+            y42 = al&&0
+            y43 = 0&&al
+            y44 = al||1
+            y45 = 2||al
+            y46 = 0!-al
+            y47 = -1!al
             z0 = al-ae ? bl : ce)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { "a", "b", "c" },
         {
@@ -469,6 +488,24 @@ ce:
             { "y27", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "y28", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "y29", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y30", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y31", 3U, 1, 0U, true, false, false, 0, 0 },
+            { "y32", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y33", 3U, 1, 0U, true, false, false, 0, 0 },
+            { "y34", 3U, 1, 0U, true, false, false, 0, 0 },
+            { "y35", 0xffffffffffffffffULL, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y36", 3U, 1, 0U, true, false, false, 0, 0 },
+            { "y37", 0xffffffffffffffffULL, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y38", 3U, 1, 0U, true, false, false, 0, 0 },
+            { "y39", 3U, 1, 0U, true, false, false, 0, 0 },
+            { "y40", 0xffffffffffffffffULL, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y41", 3U, 1, 0U, true, false, false, 0, 0 },
+            { "y42", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y43", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y44", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y45", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y46", 2U, 1, 0U, true, false, false, 0, 0 },
+            { "y47", 0xffffffffffffffffULL, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "z0", 5U, 2, 0U, true, false, false, 0, 0 }
         }, true, "", ""
     },
@@ -500,7 +537,7 @@ ce:
             e0 = al&6
             e0 = al^6
             e0 = al&&6
-            e0 = al||6
+            e0 = al||0
             e0 = al!6
             e0 = al==7
             e0 = al!=7
@@ -512,6 +549,12 @@ ce:
             e0 = al>@7
             e0 = al<=@7
             e0 = al>=@7
+            e0 = 2!al
+            e0 = 6|al
+            e0 = 6&al
+            e0 = 6^al
+            e0 = 6&&al
+            e0 = 0||al
             z0 = al-bl ? bl : ce)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { "a", "b", "c" },
         {
@@ -562,7 +605,13 @@ test.s:36:18: Error: For comparisons two values must have this same relatives!
 test.s:37:18: Error: For comparisons two values must have this same relatives!
 test.s:38:18: Error: For comparisons two values must have this same relatives!
 test.s:39:18: Error: For comparisons two values must have this same relatives!
-test.s:40:18: Error: Choice is not allowed for first relative value
+test.s:40:18: Error: Binary ORNOT is not allowed for any relative value
+test.s:41:18: Error: Binary OR is not allowed for any relative value
+test.s:42:18: Error: Binary AND is not allowed for any relative value
+test.s:43:18: Error: Binary XOR is not allowed for any relative value
+test.s:44:18: Error: Logical AND is not allowed for any relative value
+test.s:45:18: Error: Logical OR is not allowed for any relative value
+test.s:46:18: Error: Choice is not allowed for first relative value
 )ffDXD", ""
     },
     /* 14 - relatives inside '.eqv' expressions */
