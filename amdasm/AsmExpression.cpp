@@ -627,29 +627,97 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         messagePosIndex++;
                         break;
                     case AsmExprOp::BIT_AND:
-                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
+                    {
+                        bool norel1 = CHKSREL(relatives);
+                        bool norel2 = CHKSREL(relatives2);
+                        if ((norel1 && value==0) || (norel2 && value2==0))
+                        {
+                            relatives.clear();
+                            value = 0;
+                        }
+                        else if (norel1 && value==UINT64_MAX)
+                        {
+                            relatives.assign(relatives2.begin(), relatives2.end());
+                            value = value2;
+                        }
+                        else if (norel2 && value2==UINT64_MAX)
+                        { } // keep old value
+                        else if (!norel1 || !norel2)
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Binary AND is not allowed for any relative value")
-                        value = value2 & value;
+                        else
+                            value = value2 & value;
                         break;
+                    }
                     case AsmExprOp::BIT_OR:
-                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
+                    {
+                        bool norel1 = CHKSREL(relatives);
+                        bool norel2 = CHKSREL(relatives2);
+                        if ((norel1 && value==UINT64_MAX) || (norel2 && value2==UINT64_MAX))
+                        {
+                            relatives.clear();
+                            value = UINT64_MAX;
+                        }
+                        else if (norel1 && value==0)
+                        {
+                            relatives.assign(relatives2.begin(), relatives2.end());
+                            value = value2;
+                        }
+                        else if (norel2 && value2==0)
+                        { } // keep old value
+                        else if (!norel1 || !norel2)
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Binary OR is not allowed for any relative value")
-                        value = value2 | value;
+                        else
+                            value = value2 | value;
                         break;
+                    }
                     case AsmExprOp::BIT_XOR:
-                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
+                    {
+                        bool norel1 = CHKSREL(relatives);
+                        bool norel2 = CHKSREL(relatives2);
+                        if (norel1 && value==0)
+                        {
+                            relatives.assign(relatives2.begin(), relatives2.end());
+                            value = value2;
+                        }
+                        else if (norel2 && value2==0)
+                        { } // keep old value
+                        else if (!norel1 || !norel2)
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Binary XOR is not allowed for any relative value")
-                        value = value2 ^ value;
+                        else
+                            value = value2 ^ value;
                         break;
+                    }
                     case AsmExprOp::BIT_ORNOT:
-                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
+                    {
+                        bool norel1 = CHKSREL(relatives);
+                        bool norel2 = CHKSREL(relatives2);
+                        if ((norel1 && value==0) || (norel2 && value2==UINT64_MAX))
+                        {
+                            relatives.clear();
+                            value = UINT64_MAX;
+                        }
+                        else if (norel1 && value==UINT64_MAX)
+                        {
+                            relatives.assign(relatives2.begin(), relatives2.end());
+                            value = value2;
+                        }
+                        else if (norel2 && value2 == 0)
+                        {
+                            // 0 | ~v
+                            for (RelMultiply& r: relatives)
+                                r.multiply = -r.multiply;
+                            value = ~value;
+                        }
+                        else if (!norel1 || !norel2)
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Binary ORNOT is not allowed for any relative value")
-                        value = value2 | ~value;
+                        else
+                            value = value2 | ~value;
                         break;
+                    }
                     case AsmExprOp::SHIFT_LEFT:
                         if (!CHKSREL(relatives))
                             ASMX_FAILED_BY_ERROR(sourcePos, "Shift left is not allowed "
@@ -698,17 +766,37 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         messagePosIndex++;
                         break;
                     case AsmExprOp::LOGICAL_AND:
-                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
+                    {
+                        bool norel1 = CHKSREL(relatives);
+                        bool norel2 = CHKSREL(relatives2);
+                        if ((norel1 && value==0) || (norel2 && value2==0))
+                        {
+                            relatives.clear();
+                            value = 0;
+                        }
+                        else if (!norel1 || !norel2)
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Logical AND is not allowed for any relative value")
-                        value = value2 && value;
+                        else
+                            value = value2 && value;
                         break;
+                    }
                     case AsmExprOp::LOGICAL_OR:
-                        if (!CHKSREL(relatives) || !CHKSREL(relatives2))
+                    {
+                        bool norel1 = CHKSREL(relatives);
+                        bool norel2 = CHKSREL(relatives2);
+                        if ((norel1 && value!=0) || (norel2 && value2!=0))
+                        {
+                            relatives.clear();
+                            value = 1;
+                        }
+                        else if (!CHKSREL(relatives) || !CHKSREL(relatives2))
                             ASMX_FAILED_BY_ERROR(sourcePos,
                                  "Logical OR is not allowed for any relative value")
-                        value = value2 || value;
+                        else
+                            value = value2 || value;
                         break;
+                    }
                     case AsmExprOp::EQUAL:
                     case AsmExprOp::NOT_EQUAL:
                     case AsmExprOp::LESS:
