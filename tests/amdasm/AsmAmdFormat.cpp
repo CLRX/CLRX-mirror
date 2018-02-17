@@ -150,7 +150,8 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
                         argTypeNameTbl[cxuint(arg.pointerType)] << ", " <<
                         ptrSpaceNameTbl[cxuint(arg.ptrSpace)] << ", " <<
                         cxuint(arg.ptrAccess) << ", " << arg.structSize << ", " <<
-                        arg.constSpaceSize << ", " << confValueToString(arg.resId) << ", " <<
+                        arg.constSpaceSize << ", " <<
+                                confValueToString(arg.resId) << ", " <<
                         (arg.used ? "true":"false")<< "\n";
             
             if (!config.samplers.empty())
@@ -162,7 +163,8 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
             }
             os << "      dims=" << confValueToString(config.dimMask) << ", "
                     "cws=" << config.reqdWorkGroupSize[0] << " " <<
-                    config.reqdWorkGroupSize[1] << " " << config.reqdWorkGroupSize[2] << ", "
+                            config.reqdWorkGroupSize[1] << " " <<
+                            config.reqdWorkGroupSize[2] << ", "
                     "SGPRS=" << confValueToString(config.usedSGPRsNum) << ", "
                     "VGPRS=" << confValueToString(config.usedVGPRsNum) << ", "
                     "pgmRSRC2=" << std::hex << "0x" << config.pgmRSRC2 << ", "
