@@ -24,6 +24,7 @@
 #define __CLRX_CLHELPER_H__
 
 #include <CLRX/Config.h>
+#include <exception>
 #include <vector>
 #include <utility>
 #include <CL/cl.h>
@@ -65,6 +66,9 @@ public:
     
 /// choose suitable OpenCL platform for CLRX assembler programs
 extern cl_platform_id chooseCLPlatformForCLRX();
+
+/// choose suitable OpenCL many platforms for CLRX assembler programs
+extern std::vector<cl_platform_id> chooseCLPlatformsForCLRX();
 
 enum : Flags
 {

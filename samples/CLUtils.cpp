@@ -51,39 +51,60 @@ bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
     }
     
     cl_int error = CL_SUCCESS;
-    cl_platform_id choosenPlatform = chooseCLPlatformForCLRX();
+    const std::vector<cl_platform_id> choosenPlatforms = chooseCLPlatformsForCLRX();
     
     if (argc >= 2 && ::strcmp(argv[1], "-L")==0)
     {
-        // list devices, before it get GPU devices
-        cl_uint devicesNum;
-        std::unique_ptr<cl_device_id[]> devices;
-        error = clGetDeviceIDs(choosenPlatform, CL_DEVICE_TYPE_GPU, 0,
-                               nullptr, &devicesNum);
-        if (error != CL_SUCCESS)
-            throw CLError(error, "clGetDeviceIDs");
-        
-        devices.reset(new cl_device_id[devicesNum]);
-        error = clGetDeviceIDs(choosenPlatform, CL_DEVICE_TYPE_GPU,
-                        devicesNum, devices.get(), nullptr);
-        if (error != CL_SUCCESS)
-            throw CLError(error, "clGetDeviceIDs");
-        
-        for (cl_uint i = 0; i < devicesNum; i++)
+        cxuint devPlatformStart = 0;
+        for (cl_platform_id choosenPlatform: choosenPlatforms)
         {
-            cl_device_id device = devices[i];
-            // get device and print that
-            size_t deviceNameSize;
-            std::unique_ptr<char[]> deviceName;
-            error = clGetDeviceInfo(device, CL_DEVICE_NAME, 0, nullptr, &deviceNameSize);
+            size_t platformNameSize;
+            std::unique_ptr<char[]> platformName;
+            error = clGetPlatformInfo(choosenPlatform, CL_PLATFORM_NAME, 0, nullptr,
+                            &platformNameSize);
             if (error != CL_SUCCESS)
-                throw CLError(error, "clGetDeviceInfoName");
-            deviceName.reset(new char[deviceNameSize]);
-            error = clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize,
-                                     deviceName.get(), nullptr);
+                throw CLError(error, "clGetPlatformInfoName");
+            platformName.reset(new char[platformNameSize]);
+            error = clGetPlatformInfo(choosenPlatform, CL_PLATFORM_NAME, platformNameSize,
+                                    platformName.get(), nullptr);
             if (error != CL_SUCCESS)
-                throw CLError(error, "clGetDeviceInfoName");
-            std::cout << "Device: " << i << " - " << deviceName.get() << "\n";
+                throw CLError(error, "clGetPlatformInfoName");
+            
+            std::cout << "Platform: " << platformName.get() << "\n";
+            
+            // list devices, before it get GPU devices
+            cl_uint devicesNum;
+            std::unique_ptr<cl_device_id[]> devices;
+            error = clGetDeviceIDs(choosenPlatform, CL_DEVICE_TYPE_GPU, 0,
+                                nullptr, &devicesNum);
+            if (error != CL_SUCCESS)
+                throw CLError(error, "clGetDeviceIDs");
+            
+            devices.reset(new cl_device_id[devicesNum]);
+            error = clGetDeviceIDs(choosenPlatform, CL_DEVICE_TYPE_GPU,
+                            devicesNum, devices.get(), nullptr);
+            if (error != CL_SUCCESS)
+                throw CLError(error, "clGetDeviceIDs");
+            
+            for (cl_uint i = 0; i < devicesNum; i++)
+            {
+                cl_device_id device = devices[i];
+                // get device and print that
+                size_t deviceNameSize;
+                std::unique_ptr<char[]> deviceName;
+                error = clGetDeviceInfo(device, CL_DEVICE_NAME, 0, nullptr,
+                                &deviceNameSize);
+                if (error != CL_SUCCESS)
+                    throw CLError(error, "clGetDeviceInfoName");
+                deviceName.reset(new char[deviceNameSize]);
+                error = clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize,
+                                        deviceName.get(), nullptr);
+                if (error != CL_SUCCESS)
+                    throw CLError(error, "clGetDeviceInfoName");
+                std::cout << "  Device: " << (i+devPlatformStart) << " - " <<
+                            deviceName.get() << "\n";
+            }
+            devPlatformStart += devicesNum;
         }
         std::cout.flush();
         return true;
@@ -117,16 +138,28 @@ try
     program = nullptr;
     
     cl_int error = CL_SUCCESS;
-    const cl_platform_id choosenPlatform = chooseCLPlatformForCLRX();
+    const std::vector<cl_platform_id> choosenPlatforms = chooseCLPlatformsForCLRX();
     
     // find device
+    cxuint devPlatformStart = 0;
     cl_uint devicesNum;
+    cl_platform_id choosenPlatform = nullptr;
     std::unique_ptr<cl_device_id[]> devices;
-    error = clGetDeviceIDs(choosenPlatform, CL_DEVICE_TYPE_GPU, 0, nullptr, &devicesNum);
-    if (error != CL_SUCCESS)
-        throw CLError(error, "clGetDeviceIDs");
-    
-    if (deviceIndex >= devicesNum)
+    for (cl_platform_id platform: choosenPlatforms)
+    {
+        error = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU,
+                            0, nullptr, &devicesNum);
+        if (error != CL_SUCCESS)
+            throw CLError(error, "clGetDeviceIDs");
+        
+        if (deviceIndex - devPlatformStart < devicesNum)
+        {
+            choosenPlatform = platform;
+            break;
+        }
+        devPlatformStart += devicesNum;
+    }
+    if (choosenPlatform == nullptr)
         throw CLError(0, "DeviceIndexOutOfRange");
         
     devices.reset(new cl_device_id[devicesNum]);
@@ -135,7 +168,7 @@ try
     if (error != CL_SUCCESS)
         throw CLError(error, "clGetDeviceIDs");
     
-    device = devices[deviceIndex];
+    device = devices[deviceIndex-devPlatformStart];
     
     const CLAsmSetup asmSetup = assemblerSetupForCLDevice(device, useCL==1 ?
             CLHELPER_USEAMDLEGACY : useCL==2 ? CLHELPER_USEAMDCL2 : 0);

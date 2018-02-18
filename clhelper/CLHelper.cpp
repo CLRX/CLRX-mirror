@@ -73,7 +73,7 @@ static char* stripCString(char* str)
 
 /* main routines */
 
-cl_platform_id CLRX::chooseCLPlatformForCLRX()
+static std::vector<cl_platform_id> chooseCLPlatformsForCLRXInt(bool single = true)
 {
     cl_int error = CL_SUCCESS;
     cl_uint platformsNum;
@@ -86,7 +86,7 @@ cl_platform_id CLRX::chooseCLPlatformForCLRX()
     if (error != CL_SUCCESS)
         throw CLError(error, "clGetPlatformIDs");
     
-    cl_platform_id choosenPlatform = nullptr;
+    std::vector<cl_platform_id> choosenPlatforms;
     /// find platform with AMD or GalliumCompute devices
     for (cl_uint i = 0; i < platformsNum; i++)
     {
@@ -107,15 +107,26 @@ cl_platform_id CLRX::chooseCLPlatformForCLRX()
         if (::strcmp(splatformName, "AMD Accelerated Parallel Processing")==0 ||
             ::strcmp(splatformName, "Clover")==0)
         {
-            choosenPlatform = platforms[i];
-            break;
+            choosenPlatforms.push_back(platforms[i]);
+            if (single)
+                break;
         }
     }
     
-    if (choosenPlatform==nullptr)
+    if (choosenPlatforms.empty())
         throw Exception("PlatformNotFound");
     
-    return choosenPlatform;
+    return choosenPlatforms;
+}
+
+cl_platform_id CLRX::chooseCLPlatformForCLRX()
+{
+    return chooseCLPlatformsForCLRXInt()[0];
+}
+
+std::vector<cl_platform_id> CLRX::chooseCLPlatformsForCLRX()
+{
+    return chooseCLPlatformsForCLRXInt(false);
 }
 
 CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags,
