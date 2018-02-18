@@ -643,8 +643,8 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         else if (norel2 && value2==UINT64_MAX)
                         { } // keep old value
                         else if (!norel1 || !norel2)
-                            ASMX_FAILED_BY_ERROR(sourcePos,
-                                 "Binary AND is not allowed for any relative value")
+                            ASMX_FAILED_BY_ERROR(sourcePos, "Binary AND is not allowed "
+                                    "for any relative value except special cases")
                         else
                             value = value2 & value;
                         break;
@@ -666,8 +666,8 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         else if (norel2 && value2==0)
                         { } // keep old value
                         else if (!norel1 || !norel2)
-                            ASMX_FAILED_BY_ERROR(sourcePos,
-                                 "Binary OR is not allowed for any relative value")
+                            ASMX_FAILED_BY_ERROR(sourcePos, "Binary OR is not allowed "
+                                    "for any relative value except special cases")
                         else
                             value = value2 | value;
                         break;
@@ -684,8 +684,8 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                         else if (norel2 && value2==0)
                         { } // keep old value
                         else if (!norel1 || !norel2)
-                            ASMX_FAILED_BY_ERROR(sourcePos,
-                                 "Binary XOR is not allowed for any relative value")
+                            ASMX_FAILED_BY_ERROR(sourcePos, "Binary XOR is not allowed "
+                                    "for any relative value except special cases")
                         else
                             value = value2 ^ value;
                         break;
@@ -712,8 +712,8 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                             value = ~value;
                         }
                         else if (!norel1 || !norel2)
-                            ASMX_FAILED_BY_ERROR(sourcePos,
-                                 "Binary ORNOT is not allowed for any relative value")
+                            ASMX_FAILED_BY_ERROR(sourcePos, "Binary ORNOT is not allowed "
+                                    "for any relative value except special cases")
                         else
                             value = value2 | ~value;
                         break;
@@ -775,8 +775,8 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                             value = 0;
                         }
                         else if (!norel1 || !norel2)
-                            ASMX_FAILED_BY_ERROR(sourcePos,
-                                 "Logical AND is not allowed for any relative value")
+                            ASMX_FAILED_BY_ERROR(sourcePos, "Logical AND is not allowed "
+                                    "for any relative value except special cases")
                         else
                             value = value2 && value;
                         break;
@@ -791,8 +791,8 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                             value = 1;
                         }
                         else if (!CHKSREL(relatives) || !CHKSREL(relatives2))
-                            ASMX_FAILED_BY_ERROR(sourcePos,
-                                 "Logical OR is not allowed for any relative value")
+                            ASMX_FAILED_BY_ERROR(sourcePos, "Logical OR is not allowed "
+                                    "for any relative value except special cases")
                         else
                             value = value2 || value;
                         break;

@@ -589,12 +589,12 @@ test.s:20:18: Error: Signed Modulo is not allowed for any relative value
 test.s:21:18: Error: Signed shift right is not allowed for any relative value
 test.s:22:18: Error: Division is not allowed for any relative value
 test.s:23:18: Error: Modulo is not allowed for any relative value
-test.s:24:18: Error: Binary OR is not allowed for any relative value
-test.s:25:18: Error: Binary AND is not allowed for any relative value
-test.s:26:18: Error: Binary XOR is not allowed for any relative value
-test.s:27:18: Error: Logical AND is not allowed for any relative value
-test.s:28:18: Error: Logical OR is not allowed for any relative value
-test.s:29:18: Error: Binary ORNOT is not allowed for any relative value
+test.s:24:18: Error: Binary OR is not allowed for any relative value except special cases
+test.s:25:18: Error: Binary AND is not allowed for any relative value except special cases
+test.s:26:18: Error: Binary XOR is not allowed for any relative value except special cases
+test.s:27:18: Error: Logical AND is not allowed for any relative value except special cases
+test.s:28:18: Error: Logical OR is not allowed for any relative value except special cases
+test.s:29:18: Error: Binary ORNOT is not allowed for any relative value except special cases
 test.s:30:18: Error: For comparisons two values must have this same relatives!
 test.s:31:18: Error: For comparisons two values must have this same relatives!
 test.s:32:18: Error: For comparisons two values must have this same relatives!
@@ -605,12 +605,12 @@ test.s:36:18: Error: For comparisons two values must have this same relatives!
 test.s:37:18: Error: For comparisons two values must have this same relatives!
 test.s:38:18: Error: For comparisons two values must have this same relatives!
 test.s:39:18: Error: For comparisons two values must have this same relatives!
-test.s:40:18: Error: Binary ORNOT is not allowed for any relative value
-test.s:41:18: Error: Binary OR is not allowed for any relative value
-test.s:42:18: Error: Binary AND is not allowed for any relative value
-test.s:43:18: Error: Binary XOR is not allowed for any relative value
-test.s:44:18: Error: Logical AND is not allowed for any relative value
-test.s:45:18: Error: Logical OR is not allowed for any relative value
+test.s:40:18: Error: Binary ORNOT is not allowed for any relative value except special cases
+test.s:41:18: Error: Binary OR is not allowed for any relative value except special cases
+test.s:42:18: Error: Binary AND is not allowed for any relative value except special cases
+test.s:43:18: Error: Binary XOR is not allowed for any relative value except special cases
+test.s:44:18: Error: Logical AND is not allowed for any relative value except special cases
+test.s:45:18: Error: Logical OR is not allowed for any relative value except special cases
 test.s:46:18: Error: Choice is not allowed for first relative value
 )ffDXD", ""
     },
