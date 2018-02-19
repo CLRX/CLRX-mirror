@@ -1106,7 +1106,7 @@ public:
         {
             fob.fill(Types::headerEndSize - sizeof(typename Types::MetadataHeaderEnd), 0);
             typename Types::MetadataHeaderEnd mthdrEnd;
-            mthdrEnd.vecTypeHintLength = config.vecTypeHint.size();
+            SLEV(mthdrEnd.vecTypeHintLength, config.vecTypeHint.size());
             for (size_t i = 0; i < 3; i++)
                 SLEV(mthdrEnd.workGroupSizeHint[i], config.workGroupSizeHint[i]);
             mthdrEnd.unused = 0;
