@@ -119,7 +119,7 @@ AsmROCmHandler::AsmROCmHandler(Assembler& assembler): AsmFormatHandler(assembler
              output{}, codeSection(0), commentSection(ASMSECT_NONE),
              metadataSection(ASMSECT_NONE), dataSection(ASMSECT_NONE),
              gotSection(ASMSECT_NONE), extraSectionCount(0),
-             unresolvedGlobals(false), good(true)
+             prevSymbolsCount(0), unresolvedGlobals(false), good(true)
 {
     sectionDiffsResolvable = true;
     output.newBinFormat = assembler.isNewROCmBinFormat();
@@ -2642,6 +2642,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
     // add symbols before section diffs prepping
     addSymbols(false);
     output.gotSymbols.resize(gotSymbols.size());
+    prevSymbolsCount = output.symbols.size() + output.extraSymbols.size();
     
     if (good)
     {
@@ -2747,6 +2748,13 @@ bool AsmROCmHandler::prepareBinary()
         // add and update symbols after section diffs prepping only
         // if we have unresolved globals
         addSymbols(true);
+        if (prevSymbolsCount != output.symbols.size() + output.extraSymbols.size())
+        {
+            assembler.printError(nullptr, "Symbols count before section differences"
+                " resolving doesn't match with current symbols count!");
+            good = false;
+            return false;
+        }
         binGen->updateSymbols();
     }
     

@@ -535,6 +535,8 @@ private:
     cxuint savedSection;
     cxuint extraSectionCount;
     
+    size_t prevSymbolsCount;
+    
     bool unresolvedGlobals;
     bool good;
     
