@@ -1,6 +1,43 @@
 
 Change Log
 
+CLRadeonExtender 0.1.7:
+
+* update AmdCL2ABI chapter
+* fixed kernel arguments sizes in GalliumCompute binary format
+* add new GPU devices gfx902-gfx905
+* update device tables for Amd Crimson drivers
+* small fixes in DynLibrary interface
+* add relocations to GalliumCompute binary format (for scratch buffer symbols)
+* make getXXXDisasmInputFromBinaryXX as public interface
+* speeding up evaluation of simple expressions without symbols
+* add '.for' and '.while' pseudo-ops ('for' and 'while' loops)
+* fixed some grammar/typos in CLRX documentation
+* add GPU device names from ROCm-OpenCL
+* handle new ROCm binary format with YAML metadatas (assembler and disassembler)
+* add few pseudo-ops to ROCm handling
+* add new pseudo-ops to set parameters in ROCm YAML metadata
+* fixes in GalliumCompute binary generator (for conformant with standards)
+* add '.reqd_work_group_size' pseudo-op (equivalent of '.cws')
+* add support for work_group_size_hint and vec_type hint in Amd OpenCL 2.0 binary format
+* some small bug fixes in ROCm disassembler
+* updates in README.md and INSTALL files
+* small sanitizations in DisasmAmd, DisasmAmdCL2 (argument type checking)
+* change behaviour of '.cws' (.reqd_work_group_size) while setting default values
+* add calculation of section differences in an expressions (for ROCm handling)
+* fixed invalid reads (potential segfault) after undefining symbol
+* fixed old stupid bug: resolve symbol value by using new value (or just if undefined then
+  do not resolve symbol) instead old unresolved symbol value later when expression
+  has been evaluated
+* Add GOT table handling in ROCm binary format
+* add new option '--newROCmBinFormat'
+* add untested support for ROCm in CLHelper and VectorAdd sample
+* add support for multiple OpenCL platforms in CLHelper and samples
+* allow te call_convetion to 0xffffffff in AMDHSA config
+* handle special cases with relatives while evaluating binary/logical operators
+* small fixes in CLRX documentation and Unix manuals
+* developing unfinished AsmRegAlloc
+
 CLRadeonExtender 0.1.6:
 
 * add support for Mesa3D 17.3.0 (GPU detection)
