@@ -53,7 +53,7 @@ Assembler accepts following formats: 'amd', 'amdcl2', 'gallium', 'rocm', 'rawcod
 * **-g GPUDEVICE**, **--gpuType=GPUDEVICE**
 
     Choose device type. Device type name is case-insensitive.
-Currently is supported: 
+List of supported GPUs: 
 CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
 Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose, Horse, Stoney,
 Ellesmere, Baffin, GFX804, GFX900, GFX901, GFX902, GFX903, GFX904 and GFX905.
