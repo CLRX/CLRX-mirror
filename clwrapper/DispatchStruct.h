@@ -43,13 +43,24 @@
 #include <windows.h>
 #undef NOMINMAX
 #endif
-#include <CL/cl.h>
-#ifdef HAVE_OPENGL
-#  include <GL/gl.h>
-#  include <CL/cl_gl.h>
-#  include <CL/cl_gl_ext.h>
+
+#ifdef __APPLE__
+#  include <OpenCL/cl.h>
+#  ifdef HAVE_OPENGL
+#    include <OpenGL/gl.h>
+#    include <OpenCL/cl_gl.h>
+#    include <OpenCL/cl_gl_ext.h>
+#  endif
+#  include <OpenCL/cl_ext.h>
+#else
+#  include <CL/cl.h>
+#  ifdef HAVE_OPENGL
+#    include <GL/gl.h>
+#    include <CL/cl_gl.h>
+#    include <CL/cl_gl_ext.h>
+#  endif
+#  include <CL/cl_ext.h>
 #endif
-#include <CL/cl_ext.h>
 
 #ifndef CL_VERSION_1_2
 #define CL_EXT_PREFIX__VERSION_1_1_DEPRECATED

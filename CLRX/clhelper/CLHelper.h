@@ -27,7 +27,11 @@
 #include <exception>
 #include <vector>
 #include <utility>
-#include <CL/cl.h>
+#ifdef __APPLE__
+#  include <OpenCL/cl.h>
+#else
+#  include <CL/cl.h>
+#endif
 #include <CLRX/amdasm/Commons.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/CString.h>

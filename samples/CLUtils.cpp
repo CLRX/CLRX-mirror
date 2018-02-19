@@ -26,7 +26,11 @@
 #include <vector>
 #include <cstring>
 #include <memory>
-#include <CL/cl.h>
+#ifdef __APPLE__
+#  include <OpenCL/cl.h>
+#else
+#  include <CL/cl.h>
+#endif
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/clhelper/CLHelper.h>
 #include "CLUtils.h"

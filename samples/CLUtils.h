@@ -25,7 +25,11 @@
 #include <vector>
 #include <exception>
 #include <CLRX/clhelper/CLHelper.h>
-#include <CL/cl.h>
+#ifdef __APPLE__
+#  include <OpenCL/cl.h>
+#else
+#  include <CL/cl.h>
+#endif
 
 class CLFacade
 {
