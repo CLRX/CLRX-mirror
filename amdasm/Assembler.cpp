@@ -622,18 +622,13 @@ void AsmSymbol::clearOccurrencesInExpr()
 
 void AsmSymbol::undefine()
 {
-    hasValue = false;
-    base = false;
     if (!regRange)
     {
         // delete expresion if symbol is not regrange
         delete expression;
         expression = nullptr;
     }
-    value = 0;
-    onceDefined = false;
-    detached = false;
-    withUnevalExpr = false;
+    *this = AsmSymbol();
 }
 
 void Assembler::undefineSymbol(AsmSymbolEntry& symEntry)
