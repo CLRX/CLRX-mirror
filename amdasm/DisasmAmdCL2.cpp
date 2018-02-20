@@ -501,7 +501,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                 case 1:  // read_only image
                 case 2:  // write_only image
                 case 3:  // read_write image
-                    if (kindOfType==2) // not image
+                    if (kindOfType==2) // image
                     {
                         arg.argType = KernelArgType::IMAGE;
                         arg.ptrAccess = (argType==1) ? KARG_PTR_READ_ONLY : (argType==2) ?
