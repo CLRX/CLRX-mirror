@@ -111,8 +111,8 @@ image types
 * type* - pointer to data
 
 Rest of the argument depends on type of the kernel argument. STRUCTSIZE determines size of
-structure. ACCESS for image determines can be one of the: `read_only`, `rdonly` or
-`write_only`, `wronly`.
+structure. ACCESS for image determines can be one of the: `read_only`, `rdonly`,
+`write_only`, `wronly` or 'read_write', 'rdwr'.
 PTRSPACE determines space where pointer points to.
 It can be one of: `local`, `constant` or `global`.
 ACCESS for pointers can be: `const`, `restrict` and `volatile`.
