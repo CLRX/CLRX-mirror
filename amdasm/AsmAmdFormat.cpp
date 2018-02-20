@@ -1373,6 +1373,10 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
                     ptrAccess = KARG_PTR_READ_ONLY;
                 else if (::strcmp(name, "write_only")==0 || ::strcmp(name, "wronly")==0)
                     ptrAccess = KARG_PTR_WRITE_ONLY;
+                // OpenCL 2.0 allow read-write access for image
+                else if (cl20 && (::strcmp(name, "read_write")==0 ||
+                            ::strcmp(name, "rdwr")==0))
+                    ptrAccess = KARG_PTR_READ_WRITE;
                 else if (*name!=0) // unknown
                     ASM_NOTGOOD_BY_ERROR(ptrAccessPlace, "Unknown access qualifier")
             }
