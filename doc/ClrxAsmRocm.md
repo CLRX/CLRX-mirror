@@ -121,9 +121,9 @@ The list of address spaces:
 This list of access qualifiers:
 
 * default - default access qualifier
-* read_only - read only
-* read_write - read and write
-* write_only - write only
+* read_only, rdonly - read only
+* read_write, rdwr - read and write
+* write_only, wronly - write only
 
 This list of flags:
 

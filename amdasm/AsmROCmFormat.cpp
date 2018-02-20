@@ -891,10 +891,16 @@ static const std::pair<const char*, cxuint> rocmAddressSpaceNamesTbl[] =
 static const std::pair<const char*, cxuint> rocmAccessQualNamesTbl[] =
 {
     { "default", cxuint(ROCmAccessQual::DEFAULT) },
+    { "rdonly", cxuint(ROCmAccessQual::READ_ONLY) },
+    { "rdwr", cxuint(ROCmAccessQual::READ_WRITE) },
     { "read_only", cxuint(ROCmAccessQual::READ_ONLY) },
     { "read_write", cxuint(ROCmAccessQual::READ_WRITE) },
-    { "write_only", cxuint(ROCmAccessQual::WRITE_ONLY) }
+    { "write_only", cxuint(ROCmAccessQual::WRITE_ONLY) },
+    { "wronly", cxuint(ROCmAccessQual::WRITE_ONLY) }
 };
+
+static const size_t rocmAccessQualNamesTblSize =
+        sizeof(rocmAccessQualNamesTbl) / sizeof(std::pair<const char*, cxuint>);
 
 // add kernel argument (to metadata)
 void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoOpPlace,
@@ -1017,7 +1023,8 @@ void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoO
         // parse access qualifier
         if (haveComma)
             good &= getEnumeration(asmr, linePtr, "access qualifier",
-                        4, rocmAccessQualNamesTbl, accessQualVal, nullptr);
+                    rocmAccessQualNamesTblSize, rocmAccessQualNamesTbl,
+                    accessQualVal, nullptr);
     }
     cxuint actualAccessQualVal = 0;
     if (valueKindVal == cxuint(ROCmValueKind::GLOBAL_BUFFER) ||
@@ -1029,7 +1036,8 @@ void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoO
         // parse actual access qualifier
         if (haveComma)
             good &= getEnumeration(asmr, linePtr, "access qualifier",
-                    4, rocmAccessQualNamesTbl, actualAccessQualVal, nullptr);
+                    rocmAccessQualNamesTblSize, rocmAccessQualNamesTbl,
+                    actualAccessQualVal, nullptr);
     }
     
     bool argIsConst = false;

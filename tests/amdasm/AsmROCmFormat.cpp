@@ -847,9 +847,9 @@ maybe not unrecognizable by parser but it is understandable by human
         .arg bbuf, "float*", 8, 8, globalbuf, f32, global, read_only
         .arg bbuf2, "float*", 8, 8, globalbuf, f32, global, write_only
         .arg bbuf3, "float*", 8, 8, globalbuf, f32, global, read_write
-        .arg img1, "image1d_t", 8, 8, image, struct, read_only, default
-        .arg img2, "image1d_t", 8, 8, image, struct, write_only, default
-        .arg img3, "image1d_t", 8, 8, image, struct, read_write, default
+        .arg img1, "image1d_t", 8, 8, image, struct, rdonly, default
+        .arg img2, "image1d_t", 8, 8, image, struct, wronly, default
+        .arg img3, "image1d_t", 8, 8, image, struct, rdwr, default
         .arg , "", 8, 8, gox, i64
         .arg , "", 8, 8, goy, i64
         .arg , "", 8, 8, goz, i64
