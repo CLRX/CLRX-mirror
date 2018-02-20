@@ -37,6 +37,7 @@ CLRadeonExtender 0.1.7:
 * handle special cases with relatives while evaluating binary/logical operators
 * small fixes in CLRX documentation and Unix manuals
 * developing unfinished AsmRegAlloc
+* add a missing access qualifier to images 'read_write' for AMD OpenCL 2.0
 
 CLRadeonExtender 0.1.6:
 
