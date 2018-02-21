@@ -23,7 +23,13 @@ behaviour) requires:
 
 * libOpenCL.so or OpenCL.dll
 * OpenCL ICD (for example from AMD Catalyst driver)
-* AMD Catalyst driver or AMDGPU-PRO driver.
+* AMD Catalyst driver or AMDGPU-PRO driver
+
+and documentation requires:
+
+* pod2man utility for Unix manuals
+* markdown_py utility for CLRX Documentation
+* Doxygen for CLRX API Documentation
 
 These utilities is working with the OpenCL kernel binaries compiled for the
 Radeon GPU's based on GCN 1.0/1.1/1.2 architecture. Any binaries compiled

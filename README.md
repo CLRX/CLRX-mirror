@@ -42,6 +42,12 @@ Optionally, CLRXWrapper requires:
 * OpenCL ICD (for example from AMD Catalyst driver)
 * AMD Catalyst driver or AMDGPU-PRO driver.
 
+and documentation requires:
+
+* pod2man utility for Unix manuals
+* markdown_py utility for CLRX Documentation
+* Doxygen for CLRX API Documentation
+
 ### Compilation
 
 To build system you should create a build directory in source code package:
