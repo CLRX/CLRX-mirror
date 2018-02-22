@@ -32,6 +32,7 @@ Copyright (c)  2015-2018  Mateusz Szpakowski.
     * [ROCm handling](ClrxAsmRocm)
 * [CLRX libraries](ClrxLibraries)
 * [CLRXWrapper](ClrxWrapper)
+* [Binary formats](BinaryFormats)
 * [GalliumCompute ABI](GalliumAbi)
 * [AMD Catalyst ABI](AmdAbi)
 * [AMD Catalyst OpenCL 2.0 ABI](AmdCl2Abi)
