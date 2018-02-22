@@ -492,6 +492,51 @@ static inline void insertReplace(SSAReplacesMap& rmap, const AsmSingleVReg& vreg
     res.first->second.push_back({ origId, destId });
 }
 
+static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
+            const LastSSAIdMap& stackVarMap,
+            std::unordered_map<AsmSingleVReg, size_t>& toResolveMap,
+            FlowStackEntry2& entry,
+            const std::pair<const AsmSingleVReg, AsmRegAllocator::SSAInfo>& sentry)
+{
+    const SSAInfo& sinfo = sentry.second;
+    auto res = toResolveMap.insert({ sentry.first, entry.blockIndex });
+    
+    if (res.second && sinfo.readBeforeWrite)
+    {
+        // resolve conflict for this variable ssaId>.
+        // only if in previous block previous SSAID is
+        // read before all writes
+        auto it = stackVarMap.find(sentry.first);
+        
+        if (it != stackVarMap.end())
+        {
+            // found, resolve by set ssaIdLast
+            for (size_t ssaId: it->second)
+            {
+                if (ssaId > sinfo.ssaIdBefore)
+                {
+                    std::cout << "  insertreplace: " << sentry.first.regVar << ":" <<
+                        sentry.first.index  << ": " <<
+                        ssaId << ", " << sinfo.ssaIdBefore << std::endl;
+                    insertReplace(replacesMap, sentry.first, ssaId,
+                                sinfo.ssaIdBefore);
+                }
+                else if (ssaId < sinfo.ssaIdBefore)
+                {
+                    std::cout << "  insertreplace2: " << sentry.first.regVar << ":" <<
+                        sentry.first.index  << ": " <<
+                        ssaId << ", " << sinfo.ssaIdBefore << std::endl;
+                    insertReplace(replacesMap, sentry.first,
+                                    sinfo.ssaIdBefore, ssaId);
+                }
+                /*else
+                    std::cout << "  noinsertreplace: " <<
+                        ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
+            }
+        }
+    }
+}
+
 static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
         const std::unordered_map<size_t, RoutineData>& routineMap,
         const std::vector<CodeBlock>& codeBlocks,
@@ -549,47 +594,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                 std::cout << "  resolv: " << entry.blockIndex << std::endl;
                 
                 for (auto& sentry: cblock.ssaInfoMap)
-                {
-                    const SSAInfo& sinfo = sentry.second;
-                    auto res = toResolveMap.insert({ sentry.first, entry.blockIndex });
-                    
-                    if (res.second && sinfo.readBeforeWrite)
-                    {
-                        // resolve conflict for this variable ssaId>.
-                        // only if in previous block previous SSAID is
-                        // read before all writes
-                        auto it = stackVarMap.find(sentry.first);
-                        
-                        if (it != stackVarMap.end())
-                        {
-                            // found, resolve by set ssaIdLast
-                            for (size_t ssaId: it->second)
-                            {
-                                if (ssaId > sinfo.ssaIdBefore)
-                                {
-                                    std::cout << "  insertreplace: " <<
-                                        sentry.first.regVar << ":" <<
-                                        sentry.first.index  << ": " <<
-                                        ssaId << ", " << sinfo.ssaIdBefore << std::endl;
-                                    insertReplace(replacesMap, sentry.first, ssaId,
-                                                sinfo.ssaIdBefore);
-                                }
-                                else if (ssaId < sinfo.ssaIdBefore)
-                                {
-                                    std::cout << "  insertreplace2: " <<
-                                        sentry.first.regVar << ":" <<
-                                        sentry.first.index  << ": " <<
-                                        ssaId << ", " << sinfo.ssaIdBefore << std::endl;
-                                    insertReplace(replacesMap, sentry.first,
-                                                  sinfo.ssaIdBefore, ssaId);
-                                }
-                                /*else
-                                    std::cout << "  noinsertreplace: " <<
-                                        ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
-                            }
-                        }
-                    }
-                }
+                    handleSSAEntryWhileResolving(replacesMap, stackVarMap, toResolveMap,
+                                    entry, sentry);
             }
             else
             {
