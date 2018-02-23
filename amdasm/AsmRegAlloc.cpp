@@ -464,7 +464,18 @@ private:
     
     void updateInSortedEntries(EntryMapIt it)
     {
-        // update after increasing usage, just swap entries if needed
+        const size_t curPos = it->second.sortedPos;
+        if (curPos == 0)
+            return; // first position
+        if (sortedEntries[curPos-1]->second.usage < it->second.usage &&
+            (curPos==1 || sortedEntries[curPos-2]->second.usage >= it->second.usage))
+        {
+            //std::cout << "fast path" << std::endl;
+            std::swap(sortedEntries[curPos-1]->second.sortedPos, it->second.sortedPos);
+            std::swap(sortedEntries[curPos-1], sortedEntries[curPos]);
+            return;
+        }
+        //std::cout << "slow path" << std::endl;
         auto fit = std::upper_bound(sortedEntries.begin(),
             sortedEntries.begin()+it->second.sortedPos, it,
             [](EntryMapIt it1, EntryMapIt it2)
@@ -521,6 +532,9 @@ public:
         }
         const size_t elemWeight = value.weight();
         
+        // correct max weight if element have greater weight
+        maxWeight = std::max(elemWeight, maxWeight);
+        
         while (totalWeight+elemWeight > maxWeight)
         {
             // remove min usage element
@@ -533,8 +547,6 @@ public:
         insertToSortedEntries(res.first); // new entry in sorted entries
         
         totalWeight += elemWeight;
-        // correct max weight if element have greater weight
-        maxWeight = std::max(elemWeight, maxWeight);
     }
 };
 
