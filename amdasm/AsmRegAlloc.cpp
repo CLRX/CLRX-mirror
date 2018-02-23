@@ -458,31 +458,29 @@ private:
     size_t maxWeight;
     
     typedef typename std::unordered_map<K, Entry>::iterator EntryMapIt;
-    // sorted entries - sorted by weight
+    // sorted entries - sorted by usage
     std::vector<EntryMapIt> sortedEntries;
     std::unordered_map<K, Entry> entryMap;
     
     void updateInSortedEntries(EntryMapIt it)
     {
-        size_t i;
-        for (i = it->second.sortedPos; i > 0 &&
-             // sort by usage or if equal by weight in reverse order
-             (sortedEntries[i-1]->second.usage < it->second.usage ||
-              (sortedEntries[i-1]->second.usage == it->second.usage &&
-               sortedEntries[i-1]->second.value.weight() < it->second.value.weight()));
-              i--)
+        // update after increasing usage, just swap entries if needed
+        auto fit = std::upper_bound(sortedEntries.begin(),
+            sortedEntries.begin()+it->second.sortedPos, it,
+            [](EntryMapIt it1, EntryMapIt it2)
+            { return it1->second.usage > it2->second.usage; });
+        if (fit != sortedEntries.begin()+it->second.sortedPos)
         {
-            sortedEntries[i-1]->second.sortedPos++;
-            std::swap(sortedEntries[i-1], sortedEntries[i]);
+            const size_t curPos = it->second.sortedPos;
+            std::swap((*fit)->second.sortedPos, it->second.sortedPos);
+            std::swap(*fit, sortedEntries[curPos]);
         }
-        it->second.sortedPos = i;
     }
     
     void insertToSortedEntries(EntryMapIt it)
     {
         it->second.sortedPos = sortedEntries.size();
         sortedEntries.push_back(it);
-        updateInSortedEntries(it);
     }
     
     void removeFromSortedEntries(size_t pos)
