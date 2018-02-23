@@ -20,7 +20,7 @@ for md in "$1"/*.md; do
     <title>CLRadeonExtender Manual - ${TITLE}</title>
     <link rel="stylesheet" type="text/css" href="styles.css"/>
 </head>
-<body>
+<body style="background: white;">
 FFXX
     cat "$1/${md}" | python "${TOOLDIR}"/PrepareOffline.py | \
     markdown_py -x tables >> "${OUTHTML}"
