@@ -553,9 +553,29 @@ public:
 /** Simple cache **/
 
 // map of last SSAId for routine, key - varid, value - last SSA ids
-typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > LastSSAIdMap;
+class CLRX_INTERNAL LastSSAIdMap: public
+            std::unordered_map<AsmSingleVReg, std::vector<size_t> >
+{
+public:
+    LastSSAIdMap()
+    { }
+    
+    size_t weight() const
+    { return size(); }
+};
 
-struct RetSSAEntry
+class CLRX_INTERNAL RBWSSAIdMap: public std::unordered_map<AsmSingleVReg, size_t>
+{
+public:
+    RBWSSAIdMap()
+    { }
+    
+    size_t weight() const
+    { return size(); }
+};
+
+
+struct CLRX_INTERNAL RetSSAEntry
 {
     std::vector<size_t> routines;
     std::vector<size_t> ssaIds;
@@ -563,7 +583,7 @@ struct RetSSAEntry
 
 typedef std::unordered_map<AsmSingleVReg, RetSSAEntry> RetSSAIdMap;
 
-struct RoutineData
+struct CLRX_INTERNAL RoutineData
 {
     // rbwSSAIdMap - read before write SSAId's map
     std::unordered_map<AsmSingleVReg, size_t> rbwSSAIdMap;
@@ -571,7 +591,7 @@ struct RoutineData
     LastSSAIdMap lastSSAIdMap;
 };
 
-struct FlowStackEntry
+struct CLRX_INTERNAL FlowStackEntry
 {
     size_t blockIndex;
     size_t nextIndex;
@@ -579,7 +599,7 @@ struct FlowStackEntry
     RetSSAIdMap prevRetSSAIdSets;
 };
 
-struct FlowStackEntry2
+struct CLRX_INTERNAL FlowStackEntry2
 {
     size_t blockIndex;
     size_t nextIndex;
@@ -1594,7 +1614,7 @@ static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
 
 typedef std::deque<FlowStackEntry>::const_iterator FlowStackCIter;
 
-struct VRegLastPos
+struct CLRX_INTERNAL VRegLastPos
 {
     size_t ssaId; // last SSA id
     std::vector<FlowStackCIter> blockChain; // subsequent blocks that changes SSAId
