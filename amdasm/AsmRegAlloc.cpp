@@ -441,6 +441,107 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
     }
 }
 
+/** Simple cache **/
+
+template<typename K, typename V>
+class CLRX_INTERNAL SimpleCache
+{
+private:
+    struct Entry
+    {
+        size_t sortedPos;
+        size_t usage;
+        V value;
+    };
+    
+    size_t totalWeight;
+    size_t maxWeight;
+    
+    typedef typename std::unordered_map<K, Entry>::iterator EntryMapIt;
+    // sorted entries - sorted by weight
+    std::vector<EntryMapIt> sortedEntries;
+    std::unordered_map<K, Entry> entryMap;
+    
+    void updateInSortedEntries(EntryMapIt it)
+    {
+        size_t i;
+        for (i = it->second.sortedPos; i > 0 &&
+             // sort by usage or if equal by weight in reverse order
+             (sortedEntries[i-1]->second.usage < it->second.usage ||
+              (sortedEntries[i-1]->second.usage == it->second.usage &&
+               sortedEntries[i-1]->second.value.weight() < it->second.value.weight()));
+              i--)
+        {
+            sortedEntries[i-1]->second.sortedPos++;
+            std::swap(sortedEntries[i-1], sortedEntries[i]);
+        }
+        it->second.sortedPos = i;
+    }
+    
+    void insertToSortedEntries(EntryMapIt it)
+    {
+        it->second.sortedPos = sortedEntries.size();
+        sortedEntries.push_back(it);
+        updateInSortedEntries(it);
+    }
+    
+    void removeFromSortedEntries(size_t pos)
+    {
+        // update later element positioning
+        for (size_t i = pos+1; i < sortedEntries.size(); i++)
+            (sortedEntries[i]->second.sortedPos)--;
+        sortedEntries.erase(sortedEntries.begin() + pos);
+    }
+    
+public:
+    explicit SimpleCache(size_t _maxWeight) : totalWeight(0), maxWeight(_maxWeight)
+    { }
+    
+    // use key - get value
+    V* use(const K& key)
+    {
+        auto it = entryMap.find(key);
+        if (it != entryMap.end())
+        {
+            it->second.usage++;
+            updateInSortedEntries(it);
+            return &(it->second.value);
+        }
+        return nullptr;
+    }
+    
+    // put value
+    void put(const K& key, const V& value)
+    {
+        auto res = entryMap.insert({ key, Entry{ 0, 0, value } });
+        if (!res.second)
+        {
+            removeFromSortedEntries(res.first->second.sortedPos); // remove old value
+            // update value
+            totalWeight -= res.first->second.value.weight();
+            res.first->second = Entry{ 0, 0, value };
+        }
+        const size_t elemWeight = value.weight();
+        
+        while (totalWeight+elemWeight > maxWeight)
+        {
+            // remove min usage element
+            auto minUsageIt = sortedEntries.back();
+            sortedEntries.pop_back();
+            totalWeight -= minUsageIt->second.value.weight();
+            entryMap.erase(minUsageIt);
+        }
+        
+        insertToSortedEntries(res.first); // new entry in sorted entries
+        
+        totalWeight += elemWeight;
+        // correct max weight if element have greater weight
+        maxWeight = std::max(elemWeight, maxWeight);
+    }
+};
+
+/** Simple cache **/
+
 // map of last SSAId for routine, key - varid, value - last SSA ids
 typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > LastSSAIdMap;
 
@@ -496,7 +597,7 @@ static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
             const LastSSAIdMap& stackVarMap,
             std::unordered_map<AsmSingleVReg, size_t>& toResolveMap,
             FlowStackEntry2& entry,
-            const std::pair<const AsmSingleVReg, AsmRegAllocator::SSAInfo>& sentry)
+            const std::pair<const AsmSingleVReg, SSAInfo>& sentry)
 {
     const SSAInfo& sinfo = sentry.second;
     auto res = toResolveMap.insert({ sentry.first, entry.blockIndex });
@@ -898,7 +999,7 @@ static void collectSSAIdsForCall(const std::deque<FlowStackEntry>& prevFlowStack
 static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
             RetSSAIdMap& retSSAIdMap, std::unordered_map<size_t, RoutineData>& routineMap,
             SSAReplacesMap& ssaReplacesMap,
-            std::pair<const AsmSingleVReg, AsmRegAllocator::SSAInfo>& ssaEntry)
+            std::pair<const AsmSingleVReg, SSAInfo>& ssaEntry)
 {
     SSAInfo& sinfo = ssaEntry.second;
     size_t& ssaId = curSSAIdMap[ssaEntry.first];
@@ -934,7 +1035,7 @@ static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
 }
 
 static void updateRoutineData(RoutineData& rdata,
-        std::pair<const AsmSingleVReg, AsmRegAllocator::SSAInfo>& ssaEntry)
+        std::pair<const AsmSingleVReg, SSAInfo>& ssaEntry)
 {
     const SSAInfo& sinfo = ssaEntry.second;
     // put first SSAId before write
@@ -948,8 +1049,7 @@ static void updateRoutineData(RoutineData& rdata,
     {
         // put last SSAId
         //std::cout << "PutC: " << sinfo.ssaIdLast << std::endl;
-        auto res = rdata.curSSAIdMap.insert({ ssaEntry.first,
-                { sinfo.ssaIdLast } });
+        auto res = rdata.curSSAIdMap.insert({ ssaEntry.first, { sinfo.ssaIdLast } });
         if (!res.second)
         {
             // if not inserted
@@ -1025,7 +1125,7 @@ static void revertRetSSAIdMap(std::unordered_map<AsmSingleVReg, size_t>& curSSAI
 }
 
 static void updateRoutineCurSSAIdMap(RoutineData* rdata,
-            const std::pair<const AsmSingleVReg, AsmRegAllocator::SSAInfo>& ssaEntry,
+            const std::pair<const AsmSingleVReg, SSAInfo>& ssaEntry,
             const FlowStackEntry& entry, size_t curSSAId, size_t nextSSAId)
 {
     std::vector<size_t>& ssaIds = rdata->curSSAIdMap[ssaEntry.first];
@@ -1135,6 +1235,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     // routine map - routine datas map, value - last SSA ids map
     std::unordered_map<size_t, RoutineData> routineMap;
     
+    std::vector<bool> cblocksToCache(codeBlocks.size(), false);
     std::vector<bool> visited(codeBlocks.size(), false);
     flowStack.push_back({ 0, 0 });
     
@@ -1194,6 +1295,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             else
             {
+                cblocksToCache[entry.blockIndex] = true;
                 // back, already visited
                 flowStack.pop_back();
                 continue;
