@@ -694,19 +694,21 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
     LastSSAIdMap stackVarMap;
     
     size_t pfStartIndex = 0;
-    /*{
-        auto pfPrev = --pfEnd;
+    {
+        auto pfPrev = pfEnd;
+        --pfPrev;
         auto it = prevWaysIndexMap.find(pfPrev->blockIndex);
         if (it != prevWaysIndexMap.end())
         {
             const LastSSAIdMap* cached = resFirstPointsCache.use(pfPrev->blockIndex);
             if (cached!=nullptr)
             {
+                std::cout << "pfcached: " << pfPrev->blockIndex << std::endl;
                 stackVarMap = *cached;
                 pfStartIndex = it->second.second+1;
             }
         }
-    }*/
+    }
     
     for (auto pfit = prevFlowStack.begin()+pfStartIndex; pfit != pfEnd; ++pfit)
     {
