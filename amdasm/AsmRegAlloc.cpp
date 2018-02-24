@@ -38,6 +38,7 @@ using namespace CLRX;
 typedef AsmRegAllocator::CodeBlock CodeBlock;
 typedef AsmRegAllocator::NextBlock NextBlock;
 typedef AsmRegAllocator::SSAInfo SSAInfo;
+typedef std::pair<const AsmSingleVReg, SSAInfo> SSAEntry;
 
 ISAUsageHandler::ISAUsageHandler(const std::vector<cxbyte>& _content) :
             content(_content), lastOffset(0), readOffset(0), instrStructPos(0),
@@ -533,7 +534,8 @@ public:
         const size_t elemWeight = value.weight();
         
         // correct max weight if element have greater weight
-        maxWeight = std::max(elemWeight, maxWeight);
+        if (elemWeight > maxWeight)
+            maxWeight = elemWeight<<1;
         
         while (totalWeight+elemWeight > maxWeight)
         {
@@ -626,8 +628,7 @@ static inline void insertReplace(SSAReplacesMap& rmap, const AsmSingleVReg& vreg
 static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
             const LastSSAIdMap& stackVarMap,
             std::unordered_map<AsmSingleVReg, size_t>& toResolveMap,
-            FlowStackEntry2& entry,
-            const std::pair<const AsmSingleVReg, SSAInfo>& sentry)
+            FlowStackEntry2& entry, const SSAEntry& sentry)
 {
     const SSAInfo& sinfo = sentry.second;
     auto res = toResolveMap.insert({ sentry.first, entry.blockIndex });
@@ -905,8 +906,7 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src)
 
 static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
             RetSSAIdMap& retSSAIdMap, std::unordered_map<size_t, RoutineData>& routineMap,
-            SSAReplacesMap& ssaReplacesMap,
-            std::pair<const AsmSingleVReg, SSAInfo>& ssaEntry)
+            SSAReplacesMap& ssaReplacesMap, SSAEntry& ssaEntry)
 {
     SSAInfo& sinfo = ssaEntry.second;
     size_t& ssaId = curSSAIdMap[ssaEntry.first];
@@ -941,8 +941,7 @@ static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
     }
 }
 
-static void updateRoutineData(RoutineData& rdata,
-        std::pair<const AsmSingleVReg, SSAInfo>& ssaEntry)
+static void updateRoutineData(RoutineData& rdata, SSAEntry& ssaEntry)
 {
     const SSAInfo& sinfo = ssaEntry.second;
     // put first SSAId before write
@@ -1031,8 +1030,7 @@ static void revertRetSSAIdMap(std::unordered_map<AsmSingleVReg, size_t>& curSSAI
     }
 }
 
-static void updateRoutineCurSSAIdMap(RoutineData* rdata,
-            const std::pair<const AsmSingleVReg, SSAInfo>& ssaEntry,
+static void updateRoutineCurSSAIdMap(RoutineData* rdata, const SSAEntry& ssaEntry,
             const FlowStackEntry& entry, size_t curSSAId, size_t nextSSAId)
 {
     std::vector<size_t>& ssaIds = rdata->curSSAIdMap[ssaEntry.first];
@@ -1083,6 +1081,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     size_t regTypesNum;
     assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
     
+    size_t rbwCount = 0;
+    
     while (true)
     {
         while (cbit != codeBlocks.end() && cbit->end <= rvu.offset)
@@ -1122,6 +1122,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 if (rvu.regVar==nullptr)
                     sinfo.ssaIdBefore = sinfo.ssaIdFirst =
                             sinfo.ssaId = sinfo.ssaIdLast = 0;
+                // count read before writes (for cache weight)
+                if (rvu.regVar!=nullptr && sinfo.readBeforeWrite)
+                    rbwCount++;
             }
             // get next rvusage
             if (!usageHandler.hasNext())
@@ -1307,6 +1310,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     flowStack.clear();
     std::fill(visited.begin(), visited.end(), false);
     flowStack.push_back({ 0, 0 });
+    
+    SimpleCache<size_t, RBWSSAIdMap> toReplaceCache(rbwCount<<1);
     
     while (!flowStack.empty())
     {
