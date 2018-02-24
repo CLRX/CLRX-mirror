@@ -566,16 +566,7 @@ public:
     { return size(); }
 };
 
-class CLRX_INTERNAL RBWSSAIdMap: public std::unordered_map<AsmSingleVReg, size_t>
-{
-public:
-    RBWSSAIdMap()
-    { }
-    
-    size_t weight() const
-    { return size(); }
-};
-
+typedef LastSSAIdMap RBWSSAIdMap;
 
 struct CLRX_INTERNAL RetSSAEntry
 {
@@ -637,7 +628,16 @@ static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
     if (res.second && sinfo.readBeforeWrite)
     {
         if (cacheSecPoints != nullptr)
-            cacheSecPoints->insert({ sentry.first, sinfo.ssaIdBefore });
+        {
+            auto res = cacheSecPoints->insert({ sentry.first, { sinfo.ssaIdBefore } });
+            if (!res.second)
+            {
+                auto sit = std::find(res.first->second.begin(), res.first->second.end(),
+                        sinfo.ssaIdBefore);
+                if (sit == res.first->second.end())
+                    res.first->second.push_back(sinfo.ssaIdBefore);
+            }
+        }
         
         // resolve conflict for this variable ssaId>.
         // only if in previous block previous SSAID is
@@ -722,25 +722,30 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                 // found, resolve by set ssaIdLast
                 for (size_t ssaId: it->second)
                 {
-                    if (ssaId > sentry.second)
+                    for (size_t secSSAId: sentry.second)
                     {
-                        std::cout << "  insertreplace: " << sentry.first.regVar << ":" <<
-                            sentry.first.index  << ": " <<
-                            ssaId << ", " << sentry.second << std::endl;
-                        insertReplace(replacesMap, sentry.first, ssaId,
-                                    sentry.second);
+                        if (ssaId > secSSAId)
+                        {
+                            std::cout << "  insertreplace: " <<
+                                sentry.first.regVar << ":" <<
+                                sentry.first.index  << ": " <<
+                                ssaId << ", " << secSSAId << std::endl;
+                            insertReplace(replacesMap, sentry.first, ssaId,
+                                        secSSAId);
+                        }
+                        else if (ssaId < secSSAId)
+                        {
+                            std::cout << "  insertreplace2: " <<
+                                sentry.first.regVar << ":" <<
+                                sentry.first.index  << ": " <<
+                                ssaId << ", " << secSSAId << std::endl;
+                            insertReplace(replacesMap, sentry.first,
+                                            secSSAId, ssaId);
+                        }
+                        /*else
+                            std::cout << "  noinsertreplace: " <<
+                                ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
                     }
-                    else if (ssaId < sentry.second)
-                    {
-                        std::cout << "  insertreplace2: " << sentry.first.regVar << ":" <<
-                            sentry.first.index  << ": " <<
-                            ssaId << ", " << sentry.second << std::endl;
-                        insertReplace(replacesMap, sentry.first,
-                                        sentry.second, ssaId);
-                    }
-                    /*else
-                        std::cout << "  noinsertreplace: " <<
-                            ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
                 }
             }
         }
@@ -854,8 +859,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
         }
     }
     
-    /*if (toCache)
-        resSecondPointsCache.put(nextBlock, cacheSecPoints);*/
+    if (toCache)
+        resSecondPointsCache.put(nextBlock, cacheSecPoints);
 }
 
 static void joinRetSSAIdMap(RetSSAIdMap& dest, const LastSSAIdMap& src,
