@@ -520,6 +520,9 @@ public:
         return nullptr;
     }
     
+    bool hasKey(const K& key)
+    { return entryMap.find(key) != entryMap.end(); }
+    
     // put value
     void put(const K& key, const V& value)
     {
@@ -673,10 +676,14 @@ static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
     }
 }
 
-static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
+typedef std::unordered_map<size_t, std::pair<size_t, size_t> > PrevWaysIndexMap;
+
+static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack,
         const std::unordered_map<size_t, RoutineData>& routineMap,
         const std::vector<CodeBlock>& codeBlocks,
-        std::vector<bool>& cblocksToCache,
+        const PrevWaysIndexMap& prevWaysIndexMap,
+        const std::vector<bool>& waysToCache, std::vector<bool>& cblocksToCache,
+        SimpleCache<size_t, LastSSAIdMap>& resFirstPointsCache,
         SimpleCache<size_t, RBWSSAIdMap>& resSecondPointsCache,
         SSAReplacesMap& replacesMap)
 {
@@ -685,9 +692,25 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
     --pfEnd;
     std::cout << "startResolv: " << (pfEnd-1)->blockIndex << "," << nextBlock << std::endl;
     LastSSAIdMap stackVarMap;
-    for (auto pfit = prevFlowStack.begin(); pfit != pfEnd; ++pfit)
+    
+    size_t pfStartIndex = 0;
+    /*{
+        auto pfPrev = --pfEnd;
+        auto it = prevWaysIndexMap.find(pfPrev->blockIndex);
+        if (it != prevWaysIndexMap.end())
+        {
+            const LastSSAIdMap* cached = resFirstPointsCache.use(pfPrev->blockIndex);
+            if (cached!=nullptr)
+            {
+                stackVarMap = *cached;
+                pfStartIndex = it->second.second+1;
+            }
+        }
+    }*/
+    
+    for (auto pfit = prevFlowStack.begin()+pfStartIndex; pfit != pfEnd; ++pfit)
     {
-        const FlowStackEntry& entry = *pfit;
+        const FlowStackEntry2& entry = *pfit;
         std::cout << "  apply: " << entry.blockIndex << std::endl;
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
         for (const auto& sentry: cblock.ssaInfoMap)
@@ -707,6 +730,10 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                     for (const auto& sentry: regVarMap)
                         stackVarMap[sentry.first] = sentry.second;
                 }
+        
+        // put to first point cache
+        if (waysToCache[pfit->blockIndex] && !resFirstPointsCache.hasKey(pfit->blockIndex))
+            resFirstPointsCache.put(pfit->blockIndex, stackVarMap);
     }
     
     RBWSSAIdMap* resSecondPoints = resSecondPointsCache.use(nextBlock);
@@ -1137,8 +1164,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     size_t regTypesNum;
     assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
     
-    size_t rbwCount = 0;
-    
     while (true)
     {
         while (cbit != codeBlocks.end() && cbit->end <= rvu.offset)
@@ -1178,9 +1203,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 if (rvu.regVar==nullptr)
                     sinfo.ssaIdBefore = sinfo.ssaIdFirst =
                             sinfo.ssaId = sinfo.ssaIdLast = 0;
-                // count read before writes (for cache weight)
-                if (rvu.regVar!=nullptr && sinfo.readBeforeWrite)
-                    rbwCount++;
             }
             // get next rvusage
             if (!usageHandler.hasNext())
@@ -1189,6 +1211,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         }
         ++cbit;
     }
+    
+    size_t rbwCount = 0;
+    size_t wrCount = 0;
     
     std::deque<CallStackEntry> callStack;
     std::deque<FlowStackEntry> flowStack;
@@ -1200,7 +1225,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::unordered_map<AsmSingleVReg, size_t> curSSAIdMap;
     // routine map - routine datas map, value - last SSA ids map
     std::unordered_map<size_t, RoutineData> routineMap;
+    // key - current res first key, value - previous first key and its flowStack pos
+    PrevWaysIndexMap prevWaysIndexMap;
+    // to track ways last block indices pair: block index, flowStackPos)
+    std::stack<std::pair<size_t, size_t> > cacheWaysStack;
     
+    std::vector<bool> waysToCache(codeBlocks.size(), false);
     std::vector<bool> cblocksToCache(codeBlocks.size(), false);
     std::vector<bool> visited(codeBlocks.size(), false);
     flowStack.push_back({ 0, 0 });
@@ -1257,6 +1287,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         // put data to routine data
                         updateRoutineData(routineMap.find(
                             callStack.back().routineBlock)->second, ssaEntry);
+                        
+                    // count read before writes (for cache weight)
+                    if (sinfo.readBeforeWrite)
+                        rbwCount++;
+                    if (sinfo.ssaIdChange!=0)
+                        wrCount++;
                 }
             }
             else
@@ -1264,6 +1300,20 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 cblocksToCache[entry.blockIndex] = true;
                 // back, already visited
                 flowStack.pop_back();
+                
+                // track cache points in way (res first points)
+                size_t curWayBIndex = flowStack.back().blockIndex;
+                waysToCache[curWayBIndex] = true;
+                size_t prevWayBIndex = SIZE_MAX;
+                if (!cacheWaysStack.empty())
+                {
+                    std::pair<size_t, size_t> prevWayEntry = cacheWaysStack.top();
+                    prevWayBIndex = prevWayEntry.first;
+                    if (prevWayBIndex != curWayBIndex)
+                        prevWaysIndexMap[curWayBIndex] = prevWayEntry;
+                }
+                if (prevWayBIndex != curWayBIndex)
+                    cacheWaysStack.push(std::make_pair(curWayBIndex, flowStack.size()-1));
                 continue;
             }
         }
@@ -1350,12 +1400,11 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 
                 if (rdata!=nullptr)
                     updateRoutineCurSSAIdMap(rdata, ssaEntry, entry, curSSAId, nextSSAId);
-                {
-                    
-                }
             }
             
             std::cout << "pop: " << entry.blockIndex << std::endl;
+            if (!cacheWaysStack.empty() && cacheWaysStack.top().first == entry.blockIndex)
+                cacheWaysStack.pop();
             flowStack.pop_back();
         }
     }
@@ -1364,14 +1413,17 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
      * after that, we find points to resolve conflicts
      **********/
     flowStack.clear();
-    std::fill(visited.begin(), visited.end(), false);
-    flowStack.push_back({ 0, 0 });
+    std::deque<FlowStackEntry2> flowStack2;
     
+    std::fill(visited.begin(), visited.end(), false);
+    flowStack2.push_back({ 0, 0 });
+    
+    SimpleCache<size_t, LastSSAIdMap> resFirstPointsCache(wrCount<<1);
     SimpleCache<size_t, RBWSSAIdMap> resSecondPointsCache(rbwCount<<1);
     
-    while (!flowStack.empty())
+    while (!flowStack2.empty())
     {
-        FlowStackEntry& entry = flowStack.back();
+        FlowStackEntry2& entry = flowStack2.back();
         CodeBlock& cblock = codeBlocks[entry.blockIndex];
         
         if (entry.nextIndex == 0)
@@ -1381,8 +1433,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 visited[entry.blockIndex] = true;
             else
             {
-                resolveSSAConflicts(flowStack, routineMap, codeBlocks, cblocksToCache,
-                            resSecondPointsCache, ssaReplacesMap);
+                resolveSSAConflicts(flowStack2, routineMap, codeBlocks,
+                            prevWaysIndexMap, waysToCache, cblocksToCache,
+                            resFirstPointsCache, resSecondPointsCache, ssaReplacesMap);
                 
                 // join routine data
                 /*auto rit = routineMap.find(entry.blockIndex);
@@ -1391,17 +1444,17 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     joinRoutineData(routineMap.find(
                             callStack.back().routineBlock)->second, rit->second);*/
                 /*if (!callStack.empty())
-                    collectSSAIdsForCall(flowStack, callStack, visited,
+                    collectSSAIdsForCall(flowStack2, callStack, visited,
                             routineMap, codeBlocks);*/
                 // back, already visited
-                flowStack.pop_back();
+                flowStack2.pop_back();
                 continue;
             }
         }
         
         if (entry.nextIndex < cblock.nexts.size())
         {
-            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            flowStack2.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
             entry.nextIndex++;
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
@@ -1409,11 +1462,11 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
                  !cblock.haveReturn && !cblock.haveEnd)
         {
-            flowStack.push_back({ entry.blockIndex+1, 0 });
+            flowStack2.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
         }
         else // back
-            flowStack.pop_back();
+            flowStack2.pop_back();
     }
 }
 
