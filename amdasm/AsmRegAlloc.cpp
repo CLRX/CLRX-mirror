@@ -628,13 +628,17 @@ static inline void insertReplace(SSAReplacesMap& rmap, const AsmSingleVReg& vreg
 static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
             const LastSSAIdMap& stackVarMap,
             std::unordered_map<AsmSingleVReg, size_t>& toResolveMap,
-            FlowStackEntry2& entry, const SSAEntry& sentry)
+            FlowStackEntry2& entry, const SSAEntry& sentry,
+            RBWSSAIdMap* cacheSecPoints)
 {
     const SSAInfo& sinfo = sentry.second;
     auto res = toResolveMap.insert({ sentry.first, entry.blockIndex });
     
     if (res.second && sinfo.readBeforeWrite)
     {
+        if (cacheSecPoints != nullptr)
+            cacheSecPoints->insert({ sentry.first, sinfo.ssaIdBefore });
+        
         // resolve conflict for this variable ssaId>.
         // only if in previous block previous SSAID is
         // read before all writes
@@ -672,6 +676,8 @@ static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
 static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
         const std::unordered_map<size_t, RoutineData>& routineMap,
         const std::vector<CodeBlock>& codeBlocks,
+        std::vector<bool>& cblocksToCache,
+        SimpleCache<size_t, RBWSSAIdMap>& resSecondPointsCache,
         SSAReplacesMap& replacesMap)
 {
     size_t nextBlock = prevFlowStack.back().blockIndex;
@@ -703,6 +709,47 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                 }
     }
     
+    RBWSSAIdMap* resSecondPoints = resSecondPointsCache.use(nextBlock);
+    if (resSecondPoints != nullptr)
+    {
+        std::cout << "use resSecPointCache for " << nextBlock << std::endl;
+        for (const auto& sentry: *resSecondPoints)
+        {
+            auto it = stackVarMap.find(sentry.first);
+        
+            if (it != stackVarMap.end())
+            {
+                // found, resolve by set ssaIdLast
+                for (size_t ssaId: it->second)
+                {
+                    if (ssaId > sentry.second)
+                    {
+                        std::cout << "  insertreplace: " << sentry.first.regVar << ":" <<
+                            sentry.first.index  << ": " <<
+                            ssaId << ", " << sentry.second << std::endl;
+                        insertReplace(replacesMap, sentry.first, ssaId,
+                                    sentry.second);
+                    }
+                    else if (ssaId < sentry.second)
+                    {
+                        std::cout << "  insertreplace2: " << sentry.first.regVar << ":" <<
+                            sentry.first.index  << ": " <<
+                            ssaId << ", " << sentry.second << std::endl;
+                        insertReplace(replacesMap, sentry.first,
+                                        sentry.second, ssaId);
+                    }
+                    /*else
+                        std::cout << "  noinsertreplace: " <<
+                            ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
+                }
+            }
+        }
+    }
+    
+    
+    RBWSSAIdMap cacheSecPoints;
+    const bool toCache = (resSecondPoints == nullptr) && cblocksToCache[nextBlock];
+    
     //std::stack<CallStackEntry> callStack = prevCallStack;
     // traverse by graph from next block
     std::deque<FlowStackEntry2> flowStack;
@@ -727,10 +774,11 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
                 
                 for (auto& sentry: cblock.ssaInfoMap)
                     handleSSAEntryWhileResolving(replacesMap, stackVarMap, toResolveMap,
-                                    entry, sentry);
+                                    entry, sentry, toCache ? &cacheSecPoints : nullptr);
             }
             else
             {
+                cblocksToCache[entry.blockIndex] = true;
                 // back, already visited
                 std::cout << "resolv already: " << entry.blockIndex << std::endl;
                 flowStack.pop_back();
@@ -805,6 +853,9 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry>& prevFlowStack,
             flowStack.pop_back();
         }
     }
+    
+    /*if (toCache)
+        resSecondPointsCache.put(nextBlock, cacheSecPoints);*/
 }
 
 static void joinRetSSAIdMap(RetSSAIdMap& dest, const LastSSAIdMap& src,
@@ -1311,7 +1362,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::fill(visited.begin(), visited.end(), false);
     flowStack.push_back({ 0, 0 });
     
-    SimpleCache<size_t, RBWSSAIdMap> toReplaceCache(rbwCount<<1);
+    SimpleCache<size_t, RBWSSAIdMap> resSecondPointsCache(rbwCount<<1);
     
     while (!flowStack.empty())
     {
@@ -1325,7 +1376,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 visited[entry.blockIndex] = true;
             else
             {
-                resolveSSAConflicts(flowStack, routineMap, codeBlocks, ssaReplacesMap);
+                resolveSSAConflicts(flowStack, routineMap, codeBlocks, cblocksToCache,
+                            resSecondPointsCache, ssaReplacesMap);
                 
                 // join routine data
                 /*auto rit = routineMap.find(entry.blockIndex);
