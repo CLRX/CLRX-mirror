@@ -700,10 +700,11 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
         auto it = prevWaysIndexMap.find(pfPrev->blockIndex);
         if (it != prevWaysIndexMap.end())
         {
-            const LastSSAIdMap* cached = resFirstPointsCache.use(pfPrev->blockIndex);
+            const LastSSAIdMap* cached = resFirstPointsCache.use(it->second.first);
             if (cached!=nullptr)
             {
-                std::cout << "pfcached: " << pfPrev->blockIndex << std::endl;
+                std::cout << "use pfcached: " << it->second.first << ", " <<
+                        it->second.second << std::endl;
                 stackVarMap = *cached;
                 pfStartIndex = it->second.second+1;
             }
@@ -735,7 +736,10 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
         
         // put to first point cache
         if (waysToCache[pfit->blockIndex] && !resFirstPointsCache.hasKey(pfit->blockIndex))
+        {
+            std::cout << "put pfcache " << pfit->blockIndex << std::endl;
             resFirstPointsCache.put(pfit->blockIndex, stackVarMap);
+        }
     }
     
     RBWSSAIdMap* resSecondPoints = resSecondPointsCache.use(nextBlock);
@@ -1230,7 +1234,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     // key - current res first key, value - previous first key and its flowStack pos
     PrevWaysIndexMap prevWaysIndexMap;
     // to track ways last block indices pair: block index, flowStackPos)
-    std::stack<std::pair<size_t, size_t> > cacheWaysStack;
+    std::pair<size_t, size_t> lastCommonCacheWayPoint{ SIZE_MAX, SIZE_MAX };
     
     std::vector<bool> waysToCache(codeBlocks.size(), false);
     std::vector<bool> cblocksToCache(codeBlocks.size(), false);
@@ -1303,19 +1307,18 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 // back, already visited
                 flowStack.pop_back();
                 
-                // track cache points in way (res first points)
                 size_t curWayBIndex = flowStack.back().blockIndex;
-                waysToCache[curWayBIndex] = true;
-                size_t prevWayBIndex = SIZE_MAX;
-                if (!cacheWaysStack.empty())
+                if (lastCommonCacheWayPoint.first != SIZE_MAX)
                 {
-                    std::pair<size_t, size_t> prevWayEntry = cacheWaysStack.top();
-                    prevWayBIndex = prevWayEntry.first;
-                    if (prevWayBIndex != curWayBIndex)
-                        prevWaysIndexMap[curWayBIndex] = prevWayEntry;
+                    // mark point of way to cache (res first point)
+                    waysToCache[lastCommonCacheWayPoint.first] = true;
+                    std::cout << "mark to pfcache " <<
+                            lastCommonCacheWayPoint.first << ", " <<
+                            curWayBIndex << std::endl;
+                    prevWaysIndexMap[curWayBIndex] = lastCommonCacheWayPoint;
                 }
-                if (prevWayBIndex != curWayBIndex)
-                    cacheWaysStack.push(std::make_pair(curWayBIndex, flowStack.size()-1));
+                lastCommonCacheWayPoint = { curWayBIndex, flowStack.size()-1 };
+                std::cout << "lastCcwP: " << curWayBIndex << std::endl;
                 continue;
             }
         }
@@ -1405,9 +1408,14 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             
             std::cout << "pop: " << entry.blockIndex << std::endl;
-            if (!cacheWaysStack.empty() && cacheWaysStack.top().first == entry.blockIndex)
-                cacheWaysStack.pop();
             flowStack.pop_back();
+            if (!flowStack.empty() && lastCommonCacheWayPoint.first != SIZE_MAX &&
+                    lastCommonCacheWayPoint.second >= flowStack.size())
+            {
+                lastCommonCacheWayPoint =
+                        { flowStack.back().blockIndex, flowStack.size()-1 };
+                std::cout << "POPlastCcwP: " << lastCommonCacheWayPoint.first << std::endl;
+            }
         }
     }
     
