@@ -1042,15 +1042,10 @@ static void updateRoutineData(RoutineData& rdata, SSAEntry& ssaEntry)
         if (!res.second)
         {
             // if not inserted
-            std::vector<size_t>& ssaIds = res.first->second;
-            auto ssaIdIt = ssaIds.end();
+            VectorSet<size_t>& ssaIds = res.first->second;
             if (sinfo.readBeforeWrite)
-                ssaIdIt = std::find(ssaIds.begin(), ssaIds.end(),
-                        sinfo.ssaIdBefore);
-            if (ssaIdIt == ssaIds.end())
-                ssaIds.push_back(sinfo.ssaIdLast);
-            else
-                *ssaIdIt = sinfo.ssaIdLast;
+                ssaIds.eraseValue(sinfo.ssaIdBefore);
+            ssaIds.insertValue(sinfo.ssaIdLast);
         }
     }
 }
@@ -1115,16 +1110,10 @@ static void updateRoutineCurSSAIdMap(RoutineData* rdata, const SSAEntry& ssaEntr
         std::cout << " " << v;
     std::cout << std::endl;
     
-    {   // if cblock with some children
-        auto nit = std::find(ssaIds.begin(), ssaIds.end(), nextSSAId-1);
-        if (nit != ssaIds.end() && nextSSAId != curSSAId)
-        {
-            std::cout << "erase in blk2: " << ssaEntry.first.regVar <<
-                    ":" << ssaEntry.first.index << ": " <<
-                    entry.blockIndex << " ssaId=" << *nit << std::endl;
-            ssaIds.erase(nit);  // just remove
-        }
-    }
+    // if cblock with some children
+    if (nextSSAId != curSSAId)
+        ssaIds.eraseValue(nextSSAId-1);
+    
     // push previous SSAId to lastSSAIdMap (later will be replaced)
     /*std::cout << "call back: " << nextSSAId << "," <<
             (curSSAId) << std::endl;*/
