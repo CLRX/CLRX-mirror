@@ -24,6 +24,7 @@
 #include <vector>
 #include <utility>
 #include <unordered_set>
+#include <initializer_list>
 #include <map>
 #include <set>
 #include <unordered_map>
@@ -559,11 +560,26 @@ public:
 
 // map of last SSAId for routine, key - varid, value - last SSA ids
 class CLRX_INTERNAL LastSSAIdMap: public
-            std::unordered_map<AsmSingleVReg, std::vector<size_t> >
+            std::unordered_map<AsmSingleVReg, VectorSet<size_t> >
 {
 public:
     LastSSAIdMap()
     { }
+    
+    iterator insertSSAId(const AsmSingleVReg& vreg, size_t ssaId)
+    {
+        auto res = insert({ vreg, { ssaId } });
+        if (!res.second)
+            res.first->second.insertValue(ssaId);
+        return res.first;
+    }
+    
+    void eraseSSAId(const AsmSingleVReg& vreg, size_t ssaId)
+    {
+        auto it = find(vreg);
+        if (it != end())
+             it->second.eraseValue(ssaId);
+    }
     
     size_t weight() const
     { return size(); }
@@ -574,7 +590,7 @@ typedef LastSSAIdMap RBWSSAIdMap;
 struct CLRX_INTERNAL RetSSAEntry
 {
     std::vector<size_t> routines;
-    std::vector<size_t> ssaIds;
+    VectorSet<size_t> ssaIds;
 };
 
 typedef std::unordered_map<AsmSingleVReg, RetSSAEntry> RetSSAIdMap;
@@ -634,12 +650,7 @@ static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
         {
             auto res = cacheSecPoints->insert({ sentry.first, { sinfo.ssaIdBefore } });
             if (!res.second)
-            {
-                auto sit = std::find(res.first->second.begin(), res.first->second.end(),
-                        sinfo.ssaIdBefore);
-                if (sit == res.first->second.end())
-                    res.first->second.push_back(sinfo.ssaIdBefore);
-            }
+                res.first->second.insertValue(sinfo.ssaIdBefore);
         }
         
         // resolve conflict for this variable ssaId>.
@@ -858,7 +869,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
         }
         else // back
         {
-            // mark resolved variables as not handled for further processing
+            // remove old to resolve in leaved way to allow collecting next ssaId
+            // before write (can be different due to earlier visit)
             for (const auto& next: cblock.nexts)
                 if (next.isCall)
                 {
@@ -867,24 +879,22 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                     {
                         auto it = toResolveMap.find(v.first);
                         if (it != toResolveMap.end() && it->second == entry.blockIndex)
-                            // remove if not handled yet
                             toResolveMap.erase(it);
                     }
                     for (const auto& v: rdata.lastSSAIdMap)
                     {
                         auto it = toResolveMap.find(v.first);
                         if (it != toResolveMap.end() && it->second == entry.blockIndex)
-                            // remove if not handled yet
                             toResolveMap.erase(it);
                     }
                 }
             
             for (const auto& sentry: cblock.ssaInfoMap)
             {
-                // mark resolved variables as not handled for further processing
                 auto it = toResolveMap.find(sentry.first);
                 if (it != toResolveMap.end() && it->second == entry.blockIndex)
-                    // remove if not handled yet
+                    // remove old to resolve in leaved way to allow collecting next ssaId
+                    // before write (can be different due to earlier visit)
                     toResolveMap.erase(it);
             }
             std::cout << "  popresolv" << std::endl;
@@ -910,15 +920,11 @@ static void joinRetSSAIdMap(RetSSAIdMap& dest, const LastSSAIdMap& src,
         auto res = dest.insert({entry.first, { { routineBlock }, entry.second } });
         if (res.second)
             continue; // added new
-        std::vector<size_t>& destEntry = res.first->second.ssaIds;
+        VectorSet<size_t>& destEntry = res.first->second.ssaIds;
         res.first->second.routines.push_back(routineBlock);
         // add new ways
         for (size_t ssaId: entry.second)
-        {
-            auto it = std::find(destEntry.begin(), destEntry.end(), ssaId);
-            if (it == destEntry.end())
-                destEntry.push_back(ssaId);
-        }
+            destEntry.insertValue(ssaId);
         std::cout << "    :";
         for (size_t v: destEntry)
             std::cout << " " << v;
@@ -938,14 +944,10 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src)
         auto res = dest.insert(entry); // find
         if (res.second)
             continue; // added new
-        std::vector<size_t>& destEntry = res.first->second;
+        VectorSet<size_t>& destEntry = res.first->second;
         // add new ways
         for (size_t ssaId: entry.second)
-        {
-            auto it = std::find(destEntry.begin(), destEntry.end(), ssaId);
-            if (it == destEntry.end())
-                destEntry.push_back(ssaId);
-        }
+            destEntry.insertValue(ssaId);
         std::cout << "    :";
         for (size_t v: destEntry)
             std::cout << " " << v;
@@ -968,24 +970,16 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src)
             std::cout << " " << v;
         std::cout << std::endl;
         auto res = dest.curSSAIdMap.insert(entry); // find
-        std::vector<size_t>& destEntry = res.first->second;
+        VectorSet<size_t>& destEntry = res.first->second;
         if (!res.second)
         {
             // add new ways
             for (size_t ssaId: entry.second)
-            {
-                auto it = std::find(destEntry.begin(), destEntry.end(), ssaId);
-                if (it == destEntry.end())
-                    destEntry.push_back(ssaId);
-            }
+                destEntry.insertValue(ssaId);
         }
         auto rbwit = src.rbwSSAIdMap.find(entry.first);
         if (rbwit != src.rbwSSAIdMap.end())
-        {
-            auto deit = std::find(destEntry.begin(), destEntry.end(), rbwit->second);
-            if (deit != destEntry.end())
-                destEntry.erase(deit);
-        }
+            destEntry.eraseValue(rbwit->second);
         std::cout << "    :";
         for (size_t v: destEntry)
             std::cout << " " << v;
@@ -1024,7 +1018,7 @@ static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         // reduce SSAIds replaces
         for (size_t rblock: ssaIdsIt->second.routines)
             routineMap.find(rblock)->second.lastSSAIdMap[ssaEntry.first] =
-                    std::vector<size_t>({ ssaId-1 });
+                            VectorSet<size_t>({ ssaId-1 });
         // finally remove from container (because obsolete)
         retSSAIdMap.erase(ssaIdsIt);
     }
@@ -1084,13 +1078,9 @@ static void revertRetSSAIdMap(std::unordered_map<AsmSingleVReg, size_t>& curSSAI
         auto rfit = retSSAIdMap.find(v.first);
         if (rdata!=nullptr)
         {
-            std::vector<size_t>& ssaIds = rdata->curSSAIdMap[v.first];
+            VectorSet<size_t>& ssaIds = rdata->curSSAIdMap[v.first];
             for (size_t ssaId: rfit->second.ssaIds)
-            {
-                auto ssaIdsIt = std::find(ssaIds.begin(), ssaIds.end(), ssaId);
-                if (ssaIdsIt != ssaIds.end())
-                    ssaIds.erase(ssaIdsIt);
-            }
+                ssaIds.eraseValue(ssaId);
         }
         
         if (!v.second.ssaIds.empty())
@@ -1100,13 +1090,9 @@ static void revertRetSSAIdMap(std::unordered_map<AsmSingleVReg, size_t>& curSSAI
         
         if (rdata!=nullptr)
         {
-            std::vector<size_t>& ssaIds = rdata->curSSAIdMap[v.first];
+            VectorSet<size_t>& ssaIds = rdata->curSSAIdMap[v.first];
             for (size_t ssaId: v.second.ssaIds)
-            {
-                auto ssaIdsIt = std::find(ssaIds.begin(), ssaIds.end(), ssaId);
-                if (ssaIdsIt == ssaIds.end())
-                    ssaIds.push_back(ssaId);
-            }
+                ssaIds.insertValue(ssaId);
             if (v.second.ssaIds.empty())
                 ssaIds.push_back(curSSAIdMap[v.first]-1);
             
@@ -1122,7 +1108,7 @@ static void revertRetSSAIdMap(std::unordered_map<AsmSingleVReg, size_t>& curSSAI
 static void updateRoutineCurSSAIdMap(RoutineData* rdata, const SSAEntry& ssaEntry,
             const FlowStackEntry& entry, size_t curSSAId, size_t nextSSAId)
 {
-    std::vector<size_t>& ssaIds = rdata->curSSAIdMap[ssaEntry.first];
+    VectorSet<size_t>& ssaIds = rdata->curSSAIdMap[ssaEntry.first];
     std::cout << " pushentry " << entry.blockIndex << ": " <<
                 ssaEntry.first.regVar << ":" << ssaEntry.first.index << ":";
     for (size_t v: ssaIds)
@@ -1142,9 +1128,7 @@ static void updateRoutineCurSSAIdMap(RoutineData* rdata, const SSAEntry& ssaEntr
     // push previous SSAId to lastSSAIdMap (later will be replaced)
     /*std::cout << "call back: " << nextSSAId << "," <<
             (curSSAId) << std::endl;*/
-    auto fit = std::find(ssaIds.begin(), ssaIds.end(), curSSAId-1);
-    if (fit == ssaIds.end())
-        ssaIds.push_back(curSSAId-1);
+    ssaIds.insertValue(curSSAId-1);
     
     std::cout << " popentry " << entry.blockIndex << ": " <<
                 ssaEntry.first.regVar << ":" << ssaEntry.first.index << ":";

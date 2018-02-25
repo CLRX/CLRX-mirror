@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <iterator>
 #include <algorithm>
+#include <vector>
 #include <initializer_list>
 
 /// main namespace
@@ -280,6 +281,45 @@ public:
         std::swap(ptrEnd, array.ptrEnd);
     }
 };
+
+/// VectorSet
+template<typename T>
+class VectorSet: public std::vector<T>
+{
+public:
+    /// constructor
+    VectorSet()
+    { }
+    
+    /// constructor
+    VectorSet(size_t n) : std::vector<T>(n)
+    { }
+    
+    /// constructor
+    VectorSet(size_t n, const T& v) : std::vector<T>(n, v)
+    { }
+    
+    /// constructor
+    VectorSet(std::initializer_list<T> l): std::vector<T>(l)
+    { }
+    
+    /// insert new value if doesn't exists
+    void insertValue(const T& v)
+    {
+        auto fit = std::find(std::vector<T>::begin(), std::vector<T>::end(), v);
+        if (fit == std::vector<T>::end())
+            std::vector<T>::push_back(v);
+    }
+    
+    /// erase value if exists
+    void eraseValue(const T& v)
+    {
+        auto fit = std::find(std::vector<T>::begin(), std::vector<T>::end(), v);
+        if (fit != std::vector<T>::end())
+            std::vector<T>::erase(fit);
+    }
+};
+
 
 /// binary find helper
 /**

@@ -3535,6 +3535,9 @@ static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
 
 static void testCreateSSAData(cxuint i, const AsmSSADataCase& testCase)
 {
+    std::cout << "-----------------------------------------------\n"
+    "           Test " << i << "\n"
+                "------------------------------------------------\n";
     std::istringstream input(testCase.input);
     std::ostringstream errorStream;
     
