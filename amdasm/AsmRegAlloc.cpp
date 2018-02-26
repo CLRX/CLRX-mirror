@@ -808,6 +808,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                 }
             }
         }
+        return;
     }
     
     
