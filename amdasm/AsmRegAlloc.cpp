@@ -618,11 +618,26 @@ struct CLRX_INTERNAL FlowStackEntry2
 };
 
 
-struct CallStackEntry
+struct CLRX_INTERNAL CallStackEntry
 {
     size_t callBlock; // index
     size_t callNextIndex; // index of call next
     size_t routineBlock;    // routine block
+};
+
+struct CLRX_INTERNAL ResSecCacheConNode
+{
+    size_t next; // block index
+    // already read in path to next Cache construction node
+    std::vector<AsmSingleVReg> alreadyRead;
+};
+
+// hold all readBeforeWrite SSAIds for whole subtree for cache block point
+// does not hold readBeforeWrite SSAIds for next subtrees
+struct CLRX_INTERNAL ResSecCacheConEntry
+{
+    LastSSAIdMap rbwSSAIdMap;
+    std::vector<ResSecCacheConNode> nodes;
 };
 
 typedef AsmRegAllocator::SSAReplace SSAReplace; // first - orig ssaid, second - dest ssaid
@@ -637,12 +652,12 @@ static inline void insertReplace(SSAReplacesMap& rmap, const AsmSingleVReg& vreg
 
 static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
             const LastSSAIdMap& stackVarMap,
-            std::unordered_map<AsmSingleVReg, size_t>& toResolveMap,
+            std::unordered_map<AsmSingleVReg, size_t>& alreadyReadMap,
             FlowStackEntry2& entry, const SSAEntry& sentry,
             RBWSSAIdMap* cacheSecPoints)
 {
     const SSAInfo& sinfo = sentry.second;
-    auto res = toResolveMap.insert({ sentry.first, entry.blockIndex });
+    auto res = alreadyReadMap.insert({ sentry.first, entry.blockIndex });
     
     if (res.second && sinfo.readBeforeWrite)
     {
@@ -805,8 +820,12 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
     flowStack.push_back({ nextBlock, 0 });
     std::vector<bool> visited(codeBlocks.size(), false);
     
+    // holds second point in resolving construction entries
+    // key - first block index, value - cache con entry
+    std::unordered_map<size_t, ResSecCacheConEntry> resSecCacheConstrBlocks;
+    // already read in current path
     // key - vreg, value - source block where vreg of conflict found
-    std::unordered_map<AsmSingleVReg, size_t> toResolveMap;
+    std::unordered_map<AsmSingleVReg, size_t> alreadyReadMap;
     
     while (!flowStack.empty())
     {
@@ -822,7 +841,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                 std::cout << "  resolv: " << entry.blockIndex << std::endl;
                 
                 for (auto& sentry: cblock.ssaInfoMap)
-                    handleSSAEntryWhileResolving(replacesMap, stackVarMap, toResolveMap,
+                    handleSSAEntryWhileResolving(replacesMap, stackVarMap, alreadyReadMap,
                                     entry, sentry, toCache ? &cacheSecPoints : nullptr);
             }
             else
@@ -859,9 +878,9 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                 {
                     const RoutineData& rdata = routineMap.find(next.block)->second;
                     for (const auto& v: rdata.rbwSSAIdMap)
-                        toResolveMap.insert({v.first, entry.blockIndex });
+                        alreadyReadMap.insert({v.first, entry.blockIndex });
                     for (const auto& v: rdata.lastSSAIdMap)
-                        toResolveMap.insert({v.first, entry.blockIndex });
+                        alreadyReadMap.insert({v.first, entry.blockIndex });
                 }
             
             flowStack.push_back({ entry.blockIndex+1, 0 });
@@ -877,25 +896,25 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                     const RoutineData& rdata = routineMap.find(next.block)->second;
                     for (const auto& v: rdata.rbwSSAIdMap)
                     {
-                        auto it = toResolveMap.find(v.first);
-                        if (it != toResolveMap.end() && it->second == entry.blockIndex)
-                            toResolveMap.erase(it);
+                        auto it = alreadyReadMap.find(v.first);
+                        if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
+                            alreadyReadMap.erase(it);
                     }
                     for (const auto& v: rdata.lastSSAIdMap)
                     {
-                        auto it = toResolveMap.find(v.first);
-                        if (it != toResolveMap.end() && it->second == entry.blockIndex)
-                            toResolveMap.erase(it);
+                        auto it = alreadyReadMap.find(v.first);
+                        if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
+                            alreadyReadMap.erase(it);
                     }
                 }
             
             for (const auto& sentry: cblock.ssaInfoMap)
             {
-                auto it = toResolveMap.find(sentry.first);
-                if (it != toResolveMap.end() && it->second == entry.blockIndex)
+                auto it = alreadyReadMap.find(sentry.first);
+                if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
                     // remove old to resolve in leaved way to allow collecting next ssaId
                     // before write (can be different due to earlier visit)
-                    toResolveMap.erase(it);
+                    alreadyReadMap.erase(it);
             }
             std::cout << "  popresolv" << std::endl;
             flowStack.pop_back();
