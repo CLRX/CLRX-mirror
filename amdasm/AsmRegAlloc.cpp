@@ -640,6 +640,24 @@ struct CLRX_INTERNAL ResSecCacheConEntry
     std::vector<ResSecCacheConNode> nodes;
 };
 
+class ResSecondPointsToCache: public std::vector<bool>
+{
+public:
+    explicit ResSecondPointsToCache(size_t n) : std::vector<bool>(n<<1, false)
+    { }
+    
+    void increase(size_t i)
+    {
+        if ((*this)[i<<1])
+            (*this)[(i<<1)+1] = true;
+        else
+            (*this)[i<<1] = true;
+    }
+    
+    cxuint count(size_t i) const
+    { return cxuint((*this)[i<<1]) + (*this)[(i<<1)+1]; }
+};
+
 typedef AsmRegAllocator::SSAReplace SSAReplace; // first - orig ssaid, second - dest ssaid
 typedef AsmRegAllocator::SSAReplacesMap SSAReplacesMap;
 
@@ -708,7 +726,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
         const std::unordered_map<size_t, RoutineData>& routineMap,
         const std::vector<CodeBlock>& codeBlocks,
         const PrevWaysIndexMap& prevWaysIndexMap,
-        const std::vector<bool>& waysToCache, std::vector<bool>& cblocksToCache,
+        const std::vector<bool>& waysToCache, ResSecondPointsToCache& cblocksToCache,
         SimpleCache<size_t, LastSSAIdMap>& resFirstPointsCache,
         SimpleCache<size_t, RBWSSAIdMap>& resSecondPointsCache,
         SSAReplacesMap& replacesMap)
@@ -813,7 +831,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
     
     
     RBWSSAIdMap cacheSecPoints;
-    const bool toCache = (resSecondPoints == nullptr) && cblocksToCache[nextBlock];
+    const bool toCache = (resSecondPoints == nullptr) &&
+                cblocksToCache.count(nextBlock)>=2;
     
     //std::stack<CallStackEntry> callStack = prevCallStack;
     // traverse by graph from next block
@@ -847,7 +866,9 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
             }
             else
             {
-                cblocksToCache[entry.blockIndex] = true;
+                cblocksToCache.increase(entry.blockIndex);
+                std::cout << "cblockToCache: " << entry.blockIndex << "=" <<
+                            cblocksToCache.count(entry.blockIndex) << std::endl;
                 // back, already visited
                 std::cout << "resolv already: " << entry.blockIndex << std::endl;
                 flowStack.pop_back();
@@ -1230,7 +1251,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::pair<size_t, size_t> lastCommonCacheWayPoint{ SIZE_MAX, SIZE_MAX };
     
     std::vector<bool> waysToCache(codeBlocks.size(), false);
-    std::vector<bool> cblocksToCache(codeBlocks.size(), false);
+    ResSecondPointsToCache cblocksToCache(codeBlocks.size());
     std::vector<bool> visited(codeBlocks.size(), false);
     flowStack.push_back({ 0, 0 });
     
@@ -1296,7 +1317,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             else
             {
-                cblocksToCache[entry.blockIndex] = true;
+                cblocksToCache.increase(entry.blockIndex);
+                std::cout << "cblockToCache: " << entry.blockIndex << "=" <<
+                            cblocksToCache.count(entry.blockIndex) << std::endl;
                 // back, already visited
                 flowStack.pop_back();
                 
