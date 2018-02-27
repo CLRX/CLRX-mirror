@@ -3577,6 +3577,9 @@ mainz:
         s_sub_u32 xa[4], xa[4], xa[7]
         s_add_u32 xa[5], xa[5], xa[7]
         s_add_u32 sa[6], sa[6], sa[7]
+        s_add_u32 sa[3], sa[3], sa[7]
+        s_sub_u32 sa[4], sa[4], sa[7]
+        s_add_u32 sa[5], sa[5], sa[7]
         s_endpgm
 )ffDXD",
         {
@@ -3614,7 +3617,7 @@ mainz:
                 { { 8, false } },
                 {
                     { { "", 5 }, SSAInfo(0, 0, 0, 0, 0, true) },
-                    { { "sa", 4 }, SSAInfo(1, 3, 3, 3, 1, false) }
+                    { { "sa", 4 }, SSAInfo(1, 4, 4, 4, 1, false) }
                 }, false, false, true },
             {   // block 4 - bb0
                 48, 60,
@@ -3672,9 +3675,12 @@ mainz:
                     { { "va", 4 }, SSAInfo(0, 1, 1, 1, 1, true) }
                 }, false, false, true },
             {   // block 10 - mainz
-                144, 168,
+                144, 180,
                 { },
                 {
+                    { { "sa", 3 }, SSAInfo(3, 4, 4, 4, 1, true) },
+                    { { "sa", 4 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "sa", 5 }, SSAInfo(1, 2, 2, 2, 1, true) },
                     { { "sa", 6 }, SSAInfo(1, 2, 2, 2, 1, true) },
                     { { "sa", 7 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
                     { { "xa", 0 }, SSAInfo(1, 2, 2, 2, 1, true) },
@@ -3686,8 +3692,8 @@ mainz:
         },
         {
             { { "sa", 2 }, { { 3, 1 }, { 3, 1 } } },
-            { { "sa", 3 }, { { 2, 1 }, { 2, 1 } } },
-            { { "sa", 4 }, { { 3, 1 } } },
+            { { "sa", 3 }, { { 2, 1 }, { 2, 1 }, { 3, 1 }, { 3, 1 } } },
+            { { "sa", 4 }, { { 4, 1 }, { 2, 1 }, { 2, 1 } } },
             { { "sa", 6 }, { { 3, 1 }, { 3, 1 } } },
             { { "va", 0 }, { { 2, 0 } } },
             { { "va", 2 }, { { 3, 1 }, { 3, 1 } } },
@@ -3698,7 +3704,7 @@ mainz:
             { { "xa", 4 }, { { 2, 0 }, { 2, 0 } } }
         },
         true, ""
-    },
+    }
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
