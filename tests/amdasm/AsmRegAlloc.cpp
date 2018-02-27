@@ -3518,7 +3518,187 @@ bb2:    s_and_b32 sa[3], sa[3], sa[6]
             { { "sa", 4 }, { { 3, 2 }, { 2, 1 } } }
         },
         true, ""
-    }
+    },
+    {  // 28 - res second point cache test 1
+        R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
+        s_mov_b32 sa[2], s4
+        s_mov_b32 sa[3], s5
+        s_mov_b32 sa[4], s6
+        .cf_cjump aa0, bb0, cc0
+        s_setpc_b64 s[0:1]
+        
+        s_mov_b32 sa[3], s3
+        s_mov_b32 sa[6], s3
+        s_branch mainx
+        
+aa0:    s_mov_b32 sa[2], s2
+        s_mov_b32 sa[6], s2
+        s_cbranch_scc0 mainx
+        
+        s_mov_b32 sa[4], s5
+        s_branch mainx
+
+bb0:    v_mov_b32 va[3], 4
+        v_mov_b32 va[2], v6
+        s_cbranch_scc0 mainy
+        
+        v_mov_b32 va[0], v6
+        v_mov_b32 va[4], v6
+        s_branch mainy
+        
+cc0:    s_mov_b32 xa[3], 4
+        s_mov_b32 xa[4], 4
+        s_cbranch_scc0 mainz
+        
+        s_mov_b32 xa[0], s6
+        s_mov_b32 xa[3], s6
+        s_branch mainz
+        
+mainx:
+        s_add_u32 sa[2], sa[2], sa[7]
+        s_add_u32 sa[3], sa[3], sa[7]
+        s_sub_u32 sa[4], sa[4], sa[7]
+        s_add_u32 sa[5], sa[5], sa[7]
+        
+        v_xor_b32 va[2], va[2], va[1]
+        s_add_u32 xa[0], xa[0], xa[7]
+        s_cbranch_scc0 mainz
+        
+mainy:
+        v_xor_b32 va[0], va[0], va[1]
+        v_xor_b32 va[2], va[2], va[1]
+        v_xor_b32 va[3], va[3], va[1]
+        v_xor_b32 va[4], va[4], va[1]
+        s_endpgm
+        
+mainz:
+        s_add_u32 xa[0], xa[0], xa[7]
+        s_add_u32 xa[3], xa[3], xa[7]
+        s_sub_u32 xa[4], xa[4], xa[7]
+        s_add_u32 xa[5], xa[5], xa[7]
+        s_add_u32 sa[6], sa[6], sa[7]
+        s_endpgm
+)ffDXD",
+        {
+            {   // block 0 - start
+                0, 16,
+                { { 1, false }, { 2, false }, { 4, false }, { 6, false } },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 5 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 6 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 3 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 4 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, false, false, false },
+            {   // block 1 - before aa0
+                16, 28,
+                { { 8, false } },
+                {
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 3 }, SSAInfo(1, 2, 2, 2, 1, false) },
+                    { { "sa", 6 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, false, false, true },
+            {   // block 2 - aa0
+                28, 40,
+                { { 3, false }, { 8, false } },
+                {
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(1, 3, 3, 3, 1, false) },
+                    { { "sa", 6 }, SSAInfo(0, 3, 3, 3, 1, false) }
+                }, false, false, false },
+            {   // block 3 - after aa0
+                40, 48,
+                { { 8, false } },
+                {
+                    { { "", 5 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 4 }, SSAInfo(1, 3, 3, 3, 1, false) }
+                }, false, false, true },
+            {   // block 4 - bb0
+                48, 60,
+                { { 5, false }, { 9, false } },
+                {
+                    { { "", 256+6 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "va", 2 }, SSAInfo(0, 3, 3, 3, 1, false) },
+                    { { "va", 3 }, SSAInfo(0, 2, 2, 2, 1, false) }
+                }, false, false, false },
+            {   // block 5 - after bb0
+                60, 72,
+                { { 9, false } },
+                {
+                    { { "", 256+6 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "va", 0 }, SSAInfo(0, 2, 2, 2, 1, false) },
+                    { { "va", 4 }, SSAInfo(0, 2, 2, 2, 1, false) }
+                }, false, false, true },
+            {   // block 6 - cc0
+                72, 84,
+                { { 7, false }, { 10, false } },
+                {
+                    { { "xa", 3 }, SSAInfo(0, 2, 2, 2, 1, false) },
+                    { { "xa", 4 }, SSAInfo(0, 2, 2, 2, 1, false) }
+                }, false, false, false },
+            {   // block 7 - after cc0
+                84, 96,
+                { { 10, false } },
+                {
+                    { { "", 6 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "xa", 0 }, SSAInfo(0, 3, 3, 3, 1, false) },
+                    { { "xa", 3 }, SSAInfo(2, 3, 3, 3, 1, false) }
+                }, false, false, true },
+            {   // block 8 - mainx
+                96, 124,
+                { { 9, false }, { 10, false } },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 3 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "sa", 4 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 5 }, SSAInfo(0, 1, 1, 1, 1, true) },
+                    { { "sa", 7 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 2 }, SSAInfo(0, 1, 1, 1, 1, true) },
+                    { { "xa", 0 }, SSAInfo(0, 1, 1, 1, 1, true) },
+                    { { "xa", 7 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, false },
+            {   // block 9 - mainy
+                124, 144,
+                { },
+                {
+                    { { "va", 0 }, SSAInfo(0, 1, 1, 1, 1, true) },
+                    { { "va", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "va", 3 }, SSAInfo(0, 1, 1, 1, 1, true) },
+                    { { "va", 4 }, SSAInfo(0, 1, 1, 1, 1, true) }
+                }, false, false, true },
+            {   // block 10 - mainz
+                144, 168,
+                { },
+                {
+                    { { "sa", 6 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 7 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "xa", 0 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "xa", 3 }, SSAInfo(0, 1, 1, 1, 1, true) },
+                    { { "xa", 4 }, SSAInfo(0, 1, 1, 1, 1, true) },
+                    { { "xa", 5 }, SSAInfo(0, 1, 1, 1, 1, true) },
+                    { { "xa", 7 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                }, false, false, true },
+        },
+        {
+            { { "sa", 2 }, { { 3, 1 }, { 3, 1 } } },
+            { { "sa", 3 }, { { 2, 1 }, { 2, 1 } } },
+            { { "sa", 4 }, { { 3, 1 } } },
+            { { "sa", 6 }, { { 3, 1 }, { 3, 1 } } },
+            { { "va", 0 }, { { 2, 0 } } },
+            { { "va", 2 }, { { 3, 1 }, { 3, 1 } } },
+            { { "va", 3 }, { { 2, 0 }, { 2, 0 } } },
+            { { "va", 4 }, { { 2, 0 } } },
+            { { "xa", 0 }, { { 3, 1 } } },
+            { { "xa", 3 }, { { 3, 0 }, { 2, 0 } } },
+            { { "xa", 4 }, { { 2, 0 }, { 2, 0 } } }
+        },
+        true, ""
+    },
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
