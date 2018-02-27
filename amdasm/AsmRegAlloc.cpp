@@ -625,21 +625,6 @@ struct CLRX_INTERNAL CallStackEntry
     size_t routineBlock;    // routine block
 };
 
-struct CLRX_INTERNAL ResSecCacheConNode
-{
-    size_t next; // block index
-    // already read in path to next Cache construction node
-    std::vector<AsmSingleVReg> alreadyRead;
-};
-
-// hold all readBeforeWrite SSAIds for whole subtree for cache block point
-// does not hold readBeforeWrite SSAIds for next subtrees
-struct CLRX_INTERNAL ResSecCacheConEntry
-{
-    LastSSAIdMap rbwSSAIdMap;
-    std::vector<ResSecCacheConNode> nodes;
-};
-
 class ResSecondPointsToCache: public std::vector<bool>
 {
 public:
@@ -668,8 +653,8 @@ static inline void insertReplace(SSAReplacesMap& rmap, const AsmSingleVReg& vreg
     res.first->second.push_back({ origId, destId });
 }
 
-static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
-            const LastSSAIdMap& stackVarMap,
+static void handleSSAEntryWhileResolving(SSAReplacesMap* replacesMap,
+            const LastSSAIdMap* stackVarMap,
             std::unordered_map<AsmSingleVReg, size_t>& alreadyReadMap,
             FlowStackEntry2& entry, const SSAEntry& sentry,
             RBWSSAIdMap* cacheSecPoints)
@@ -686,35 +671,39 @@ static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
                 res.first->second.insertValue(sinfo.ssaIdBefore);
         }
         
-        // resolve conflict for this variable ssaId>.
-        // only if in previous block previous SSAID is
-        // read before all writes
-        auto it = stackVarMap.find(sentry.first);
-        
-        if (it != stackVarMap.end())
+        if (stackVarMap != nullptr)
         {
-            // found, resolve by set ssaIdLast
-            for (size_t ssaId: it->second)
+            
+            // resolve conflict for this variable ssaId>.
+            // only if in previous block previous SSAID is
+            // read before all writes
+            auto it = stackVarMap->find(sentry.first);
+            
+            if (it != stackVarMap->end())
             {
-                if (ssaId > sinfo.ssaIdBefore)
+                // found, resolve by set ssaIdLast
+                for (size_t ssaId: it->second)
                 {
-                    std::cout << "  insertreplace: " << sentry.first.regVar << ":" <<
-                        sentry.first.index  << ": " <<
-                        ssaId << ", " << sinfo.ssaIdBefore << std::endl;
-                    insertReplace(replacesMap, sentry.first, ssaId,
-                                sinfo.ssaIdBefore);
+                    if (ssaId > sinfo.ssaIdBefore)
+                    {
+                        std::cout << "  insertreplace: " << sentry.first.regVar << ":" <<
+                            sentry.first.index  << ": " <<
+                            ssaId << ", " << sinfo.ssaIdBefore << std::endl;
+                        insertReplace(*replacesMap, sentry.first, ssaId,
+                                    sinfo.ssaIdBefore);
+                    }
+                    else if (ssaId < sinfo.ssaIdBefore)
+                    {
+                        std::cout << "  insertreplace2: " << sentry.first.regVar << ":" <<
+                            sentry.first.index  << ": " <<
+                            ssaId << ", " << sinfo.ssaIdBefore << std::endl;
+                        insertReplace(*replacesMap, sentry.first,
+                                        sinfo.ssaIdBefore, ssaId);
+                    }
+                    /*else
+                        std::cout << "  noinsertreplace: " <<
+                            ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
                 }
-                else if (ssaId < sinfo.ssaIdBefore)
-                {
-                    std::cout << "  insertreplace2: " << sentry.first.regVar << ":" <<
-                        sentry.first.index  << ": " <<
-                        ssaId << ", " << sinfo.ssaIdBefore << std::endl;
-                    insertReplace(replacesMap, sentry.first,
-                                    sinfo.ssaIdBefore, ssaId);
-                }
-                /*else
-                    std::cout << "  noinsertreplace: " <<
-                        ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
             }
         }
     }
@@ -722,8 +711,8 @@ static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
 
 typedef std::unordered_map<size_t, std::pair<size_t, size_t> > PrevWaysIndexMap;
 
-static void useResSecPointCache(SSAReplacesMap& replacesMap,
-        const LastSSAIdMap& stackVarMap,
+static void useResSecPointCache(SSAReplacesMap* replacesMap,
+        const LastSSAIdMap* stackVarMap,
         const std::unordered_map<AsmSingleVReg, size_t>& alreadyReadMap,
         const RBWSSAIdMap* resSecondPoints, size_t nextBlock,
         RBWSSAIdMap* destCacheSecPoints)
@@ -739,41 +728,168 @@ static void useResSecPointCache(SSAReplacesMap& replacesMap,
                 for (size_t srcSSAId: sentry.second)
                     res.first->second.insertValue(srcSSAId);
         }
-        auto it = stackVarMap.find(sentry.first);
         
-        if (it != stackVarMap.end() && !alreadyRead)
+        if (stackVarMap != nullptr)
         {
-            // found, resolve by set ssaIdLast
-            for (size_t ssaId: it->second)
+            auto it = stackVarMap->find(sentry.first);
+            
+            if (it != stackVarMap->end() && !alreadyRead)
             {
-                for (size_t secSSAId: sentry.second)
+                // found, resolve by set ssaIdLast
+                for (size_t ssaId: it->second)
                 {
-                    if (ssaId > secSSAId)
+                    for (size_t secSSAId: sentry.second)
                     {
-                        std::cout << "  insertreplace: " <<
-                            sentry.first.regVar << ":" <<
-                            sentry.first.index  << ": " <<
-                            ssaId << ", " << secSSAId << std::endl;
-                        insertReplace(replacesMap, sentry.first, ssaId,
-                                    secSSAId);
+                        if (ssaId > secSSAId)
+                        {
+                            std::cout << "  insertreplace: " <<
+                                sentry.first.regVar << ":" <<
+                                sentry.first.index  << ": " <<
+                                ssaId << ", " << secSSAId << std::endl;
+                            insertReplace(*replacesMap, sentry.first, ssaId,
+                                        secSSAId);
+                        }
+                        else if (ssaId < secSSAId)
+                        {
+                            std::cout << "  insertreplace2: " <<
+                                sentry.first.regVar << ":" <<
+                                sentry.first.index  << ": " <<
+                                ssaId << ", " << secSSAId << std::endl;
+                            insertReplace(*replacesMap, sentry.first,
+                                            secSSAId, ssaId);
+                        }
+                        /*else
+                            std::cout << "  noinsertreplace: " <<
+                                ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
                     }
-                    else if (ssaId < secSSAId)
-                    {
-                        std::cout << "  insertreplace2: " <<
-                            sentry.first.regVar << ":" <<
-                            sentry.first.index  << ": " <<
-                            ssaId << ", " << secSSAId << std::endl;
-                        insertReplace(replacesMap, sentry.first,
-                                        secSSAId, ssaId);
-                    }
-                    /*else
-                        std::cout << "  noinsertreplace: " <<
-                            ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
                 }
             }
         }
     }
 }
+
+static void addResSecCacheEntry(const std::unordered_map<size_t, RoutineData>& routineMap,
+                const std::vector<CodeBlock>& codeBlocks,
+                SimpleCache<size_t, RBWSSAIdMap>& resSecondPointsCache,
+                size_t nextBlock)
+{
+    std::cout << "addResSecCacheEntry: " << nextBlock << std::endl;
+    //std::stack<CallStackEntry> callStack = prevCallStack;
+    // traverse by graph from next block
+    std::deque<FlowStackEntry2> flowStack;
+    flowStack.push_back({ nextBlock, 0 });
+    std::vector<bool> visited(codeBlocks.size(), false);
+    
+    std::unordered_map<AsmSingleVReg, size_t> alreadyReadMap;
+    
+    RBWSSAIdMap cacheSecPoints;
+    
+    while (!flowStack.empty())
+    {
+        FlowStackEntry2& entry = flowStack.back();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        {
+            // process current block
+            if (!visited[entry.blockIndex])
+            {
+                visited[entry.blockIndex] = true;
+                std::cout << "  resolv: " << entry.blockIndex << std::endl;
+                
+                const RBWSSAIdMap* resSecondPoints = resSecondPointsCache.use(nextBlock);
+                if (resSecondPoints == nullptr)
+                    for (auto& sentry: cblock.ssaInfoMap)
+                        handleSSAEntryWhileResolving(nullptr, nullptr,
+                                alreadyReadMap, entry, sentry,
+                                &cacheSecPoints);
+                else // to use cache
+                {
+                    useResSecPointCache(nullptr, nullptr, alreadyReadMap,
+                            resSecondPoints, entry.blockIndex, &cacheSecPoints);
+                    flowStack.pop_back();
+                    continue;
+                }
+            }
+            else
+            {
+                // back, already visited
+                std::cout << "resolv already: " << entry.blockIndex << std::endl;
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        
+        /*if (!callStack.empty() &&
+            entry.blockIndex == callStack.top().callBlock &&
+            entry.nextIndex-1 == callStack.top().callNextIndex)
+            callStack.pop(); // just return from call
+        */
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            /*if (cblock.nexts[entry.nextIndex].isCall)
+                callStack.push({ entry.blockIndex, entry.nextIndex,
+                            cblock.nexts[entry.nextIndex].block });*/
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            // add toResolveMap ssaIds inside called routines
+            for (const auto& next: cblock.nexts)
+                if (next.isCall)
+                {
+                    const RoutineData& rdata = routineMap.find(next.block)->second;
+                    for (const auto& v: rdata.rbwSSAIdMap)
+                        alreadyReadMap.insert({v.first, entry.blockIndex });
+                    for (const auto& v: rdata.lastSSAIdMap)
+                        alreadyReadMap.insert({v.first, entry.blockIndex });
+                }
+            
+            flowStack.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else // back
+        {
+            // remove old to resolve in leaved way to allow collecting next ssaId
+            // before write (can be different due to earlier visit)
+            for (const auto& next: cblock.nexts)
+                if (next.isCall)
+                {
+                    const RoutineData& rdata = routineMap.find(next.block)->second;
+                    for (const auto& v: rdata.rbwSSAIdMap)
+                    {
+                        auto it = alreadyReadMap.find(v.first);
+                        if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
+                            alreadyReadMap.erase(it);
+                    }
+                    for (const auto& v: rdata.lastSSAIdMap)
+                    {
+                        auto it = alreadyReadMap.find(v.first);
+                        if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
+                            alreadyReadMap.erase(it);
+                    }
+                }
+            
+            for (const auto& sentry: cblock.ssaInfoMap)
+            {
+                auto it = alreadyReadMap.find(sentry.first);
+                if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
+                    // remove old to resolve in leaved way to allow collecting next ssaId
+                    // before write (can be different due to earlier visit)
+                    alreadyReadMap.erase(it);
+            }
+            std::cout << "  popresolv" << std::endl;
+            flowStack.pop_back();
+        }
+    }
+    
+    resSecondPointsCache.put(nextBlock, cacheSecPoints);
+}
+
 
 static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack,
         const std::unordered_map<size_t, RoutineData>& routineMap,
@@ -839,10 +955,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
         }
     }
     
-    RBWSSAIdMap* resSecondPoints = resSecondPointsCache.use(nextBlock);
-    
     RBWSSAIdMap cacheSecPoints;
-    const bool toCache = (resSecondPoints == nullptr) &&
+    const bool toCache = (!resSecondPointsCache.hasKey(nextBlock)) &&
                 cblocksToCache.count(nextBlock)>=2;
     
     //std::stack<CallStackEntry> callStack = prevCallStack;
@@ -851,9 +965,6 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
     flowStack.push_back({ nextBlock, 0 });
     std::vector<bool> visited(codeBlocks.size(), false);
     
-    // holds second point in resolving construction entries
-    // key - first block index, value - cache con entry
-    std::unordered_map<size_t, ResSecCacheConEntry> resSecCacheConstrBlocks;
     // already read in current path
     // key - vreg, value - source block where vreg of conflict found
     std::unordered_map<AsmSingleVReg, size_t> alreadyReadMap;
@@ -874,12 +985,12 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                 const RBWSSAIdMap* resSecondPoints = resSecondPointsCache.use(nextBlock);
                 if (resSecondPoints == nullptr)
                     for (auto& sentry: cblock.ssaInfoMap)
-                        handleSSAEntryWhileResolving(replacesMap, stackVarMap,
+                        handleSSAEntryWhileResolving(&replacesMap, &stackVarMap,
                                 alreadyReadMap, entry, sentry,
                                 toCache ? &cacheSecPoints : nullptr);
                 else // to use cache
                 {
-                    useResSecPointCache(replacesMap, stackVarMap, alreadyReadMap,
+                    useResSecPointCache(&replacesMap, &stackVarMap, alreadyReadMap,
                             resSecondPoints, entry.blockIndex,
                             toCache ? &cacheSecPoints : nullptr);
                     flowStack.pop_back();
@@ -961,6 +1072,13 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                     alreadyReadMap.erase(it);
             }
             std::cout << "  popresolv" << std::endl;
+            
+            if (cblocksToCache.count(entry.blockIndex)==2 &&
+                !resSecondPointsCache.hasKey(entry.blockIndex))
+                // add to cache
+                addResSecCacheEntry(routineMap, codeBlocks, resSecondPointsCache,
+                            entry.blockIndex);
+            
             flowStack.pop_back();
         }
     }
@@ -1514,7 +1632,14 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             entry.nextIndex++;
         }
         else // back
+        {
+            if (cblocksToCache.count(entry.blockIndex)==2 &&
+                !resSecondPointsCache.hasKey(entry.blockIndex))
+                // add to cache
+                addResSecCacheEntry(routineMap, codeBlocks, resSecondPointsCache,
+                            entry.blockIndex);
             flowStack2.pop_back();
+        }
     }
 }
 
