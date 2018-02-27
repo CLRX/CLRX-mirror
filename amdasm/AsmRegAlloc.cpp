@@ -722,6 +722,59 @@ static void handleSSAEntryWhileResolving(SSAReplacesMap& replacesMap,
 
 typedef std::unordered_map<size_t, std::pair<size_t, size_t> > PrevWaysIndexMap;
 
+static void useResSecPointCache(SSAReplacesMap& replacesMap,
+        const LastSSAIdMap& stackVarMap,
+        const std::unordered_map<AsmSingleVReg, size_t>& alreadyReadMap,
+        const RBWSSAIdMap* resSecondPoints, size_t nextBlock,
+        RBWSSAIdMap* destCacheSecPoints)
+{
+    std::cout << "use resSecPointCache for " << nextBlock << std::endl;
+    for (const auto& sentry: *resSecondPoints)
+    {
+        const bool alreadyRead = alreadyReadMap.find(sentry.first) != alreadyReadMap.end();
+        if (destCacheSecPoints != nullptr && !alreadyRead)
+        {
+            auto res = destCacheSecPoints->insert(sentry);
+            if (!res.second)
+                for (size_t srcSSAId: sentry.second)
+                    res.first->second.insertValue(srcSSAId);
+        }
+        auto it = stackVarMap.find(sentry.first);
+        
+        if (it != stackVarMap.end() && !alreadyRead)
+        {
+            // found, resolve by set ssaIdLast
+            for (size_t ssaId: it->second)
+            {
+                for (size_t secSSAId: sentry.second)
+                {
+                    if (ssaId > secSSAId)
+                    {
+                        std::cout << "  insertreplace: " <<
+                            sentry.first.regVar << ":" <<
+                            sentry.first.index  << ": " <<
+                            ssaId << ", " << secSSAId << std::endl;
+                        insertReplace(replacesMap, sentry.first, ssaId,
+                                    secSSAId);
+                    }
+                    else if (ssaId < secSSAId)
+                    {
+                        std::cout << "  insertreplace2: " <<
+                            sentry.first.regVar << ":" <<
+                            sentry.first.index  << ": " <<
+                            ssaId << ", " << secSSAId << std::endl;
+                        insertReplace(replacesMap, sentry.first,
+                                        secSSAId, ssaId);
+                    }
+                    /*else
+                        std::cout << "  noinsertreplace: " <<
+                            ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
+                }
+            }
+        }
+    }
+}
+
 static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack,
         const std::unordered_map<size_t, RoutineData>& routineMap,
         const std::vector<CodeBlock>& codeBlocks,
@@ -787,48 +840,6 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
     }
     
     RBWSSAIdMap* resSecondPoints = resSecondPointsCache.use(nextBlock);
-    if (resSecondPoints != nullptr)
-    {
-        std::cout << "use resSecPointCache for " << nextBlock << std::endl;
-        for (const auto& sentry: *resSecondPoints)
-        {
-            auto it = stackVarMap.find(sentry.first);
-        
-            if (it != stackVarMap.end())
-            {
-                // found, resolve by set ssaIdLast
-                for (size_t ssaId: it->second)
-                {
-                    for (size_t secSSAId: sentry.second)
-                    {
-                        if (ssaId > secSSAId)
-                        {
-                            std::cout << "  insertreplace: " <<
-                                sentry.first.regVar << ":" <<
-                                sentry.first.index  << ": " <<
-                                ssaId << ", " << secSSAId << std::endl;
-                            insertReplace(replacesMap, sentry.first, ssaId,
-                                        secSSAId);
-                        }
-                        else if (ssaId < secSSAId)
-                        {
-                            std::cout << "  insertreplace2: " <<
-                                sentry.first.regVar << ":" <<
-                                sentry.first.index  << ": " <<
-                                ssaId << ", " << secSSAId << std::endl;
-                            insertReplace(replacesMap, sentry.first,
-                                            secSSAId, ssaId);
-                        }
-                        /*else
-                            std::cout << "  noinsertreplace: " <<
-                                ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
-                    }
-                }
-            }
-        }
-        return;
-    }
-    
     
     RBWSSAIdMap cacheSecPoints;
     const bool toCache = (resSecondPoints == nullptr) &&
@@ -860,9 +871,20 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                 visited[entry.blockIndex] = true;
                 std::cout << "  resolv: " << entry.blockIndex << std::endl;
                 
-                for (auto& sentry: cblock.ssaInfoMap)
-                    handleSSAEntryWhileResolving(replacesMap, stackVarMap, alreadyReadMap,
-                                    entry, sentry, toCache ? &cacheSecPoints : nullptr);
+                const RBWSSAIdMap* resSecondPoints = resSecondPointsCache.use(nextBlock);
+                if (resSecondPoints == nullptr)
+                    for (auto& sentry: cblock.ssaInfoMap)
+                        handleSSAEntryWhileResolving(replacesMap, stackVarMap,
+                                alreadyReadMap, entry, sentry,
+                                toCache ? &cacheSecPoints : nullptr);
+                else // to use cache
+                {
+                    useResSecPointCache(replacesMap, stackVarMap, alreadyReadMap,
+                            resSecondPoints, entry.blockIndex,
+                            toCache ? &cacheSecPoints : nullptr);
+                    flowStack.pop_back();
+                    continue;
+                }
             }
             else
             {
