@@ -3552,7 +3552,9 @@ cc0:    s_mov_b32 xa[3], 4
         
         s_mov_b32 xa[0], s6
         s_mov_b32 xa[3], s6
-        s_branch mainz
+        s_cbranch_scc0 mainz
+        
+        s_mov_b32 xa[0], s6
         
 mainx:
         s_add_u32 sa[2], sa[2], sa[7]
@@ -3598,7 +3600,7 @@ mainz:
                 }, false, false, false },
             {   // block 1 - before aa0
                 16, 28,
-                { { 8, false } },
+                { { 9, false } },
                 {
                     { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, true) },
                     { { "sa", 3 }, SSAInfo(1, 2, 2, 2, 1, false) },
@@ -3606,7 +3608,7 @@ mainz:
                 }, false, false, true },
             {   // block 2 - aa0
                 28, 40,
-                { { 3, false }, { 8, false } },
+                { { 3, false }, { 9, false } },
                 {
                     { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
                     { { "sa", 2 }, SSAInfo(1, 3, 3, 3, 1, false) },
@@ -3614,14 +3616,14 @@ mainz:
                 }, false, false, false },
             {   // block 3 - after aa0
                 40, 48,
-                { { 8, false } },
+                { { 9, false } },
                 {
                     { { "", 5 }, SSAInfo(0, 0, 0, 0, 0, true) },
                     { { "sa", 4 }, SSAInfo(1, 4, 4, 4, 1, false) }
                 }, false, false, true },
             {   // block 4 - bb0
                 48, 60,
-                { { 5, false }, { 9, false } },
+                { { 5, false }, { 10, false } },
                 {
                     { { "", 256+6 }, SSAInfo(0, 0, 0, 0, 0, true) },
                     { { "va", 2 }, SSAInfo(0, 3, 3, 3, 1, false) },
@@ -3629,7 +3631,7 @@ mainz:
                 }, false, false, false },
             {   // block 5 - after bb0
                 60, 72,
-                { { 9, false } },
+                { { 10, false } },
                 {
                     { { "", 256+6 }, SSAInfo(0, 0, 0, 0, 0, true) },
                     { { "va", 0 }, SSAInfo(0, 2, 2, 2, 1, false) },
@@ -3637,22 +3639,29 @@ mainz:
                 }, false, false, true },
             {   // block 6 - cc0
                 72, 84,
-                { { 7, false }, { 10, false } },
+                { { 7, false }, { 11, false } },
                 {
                     { { "xa", 3 }, SSAInfo(0, 2, 2, 2, 1, false) },
                     { { "xa", 4 }, SSAInfo(0, 2, 2, 2, 1, false) }
                 }, false, false, false },
             {   // block 7 - after cc0
                 84, 96,
-                { { 10, false } },
+                { { 8, false }, { 11, false } },
                 {
                     { { "", 6 }, SSAInfo(0, 0, 0, 0, 0, true) },
                     { { "xa", 0 }, SSAInfo(0, 3, 3, 3, 1, false) },
                     { { "xa", 3 }, SSAInfo(2, 3, 3, 3, 1, false) }
-                }, false, false, true },
-            {   // block 8 - mainx
-                96, 124,
-                { { 9, false }, { 10, false } },
+                }, false, false, false },
+            {   // block 8 - before mainx
+                96, 100,
+                { },
+                {
+                    { { "", 6 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "xa", 0 }, SSAInfo(3, 4, 4, 4, 1, false) }
+                }, false, false, false },
+            {   // block 9 - mainx
+                100, 128,
+                { { 10, false }, { 11, false } },
                 {
                     { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
                     { { "sa", 3 }, SSAInfo(2, 3, 3, 3, 1, true) },
@@ -3664,8 +3673,8 @@ mainz:
                     { { "xa", 0 }, SSAInfo(0, 1, 1, 1, 1, true) },
                     { { "xa", 7 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
                 }, false, false, false },
-            {   // block 9 - mainy
-                124, 144,
+            {   // block 10 - mainy
+                128, 148,
                 { },
                 {
                     { { "va", 0 }, SSAInfo(0, 1, 1, 1, 1, true) },
@@ -3674,8 +3683,8 @@ mainz:
                     { { "va", 3 }, SSAInfo(0, 1, 1, 1, 1, true) },
                     { { "va", 4 }, SSAInfo(0, 1, 1, 1, 1, true) }
                 }, false, false, true },
-            {   // block 10 - mainz
-                144, 180,
+            {   // block 11 - mainz
+                148, 184,
                 { },
                 {
                     { { "sa", 3 }, SSAInfo(3, 4, 4, 4, 1, true) },
@@ -3692,16 +3701,16 @@ mainz:
         },
         {
             { { "sa", 2 }, { { 3, 1 }, { 3, 1 } } },
-            { { "sa", 3 }, { { 2, 1 }, { 2, 1 }, { 3, 1 }, { 3, 1 } } },
+            { { "sa", 3 }, { { 2, 1 }, { 2, 1 }, { 2, 1 }, { 3, 1 }, { 3, 1 } } },
             { { "sa", 4 }, { { 4, 1 }, { 2, 1 }, { 2, 1 } } },
             { { "sa", 6 }, { { 3, 1 }, { 3, 1 } } },
             { { "va", 0 }, { { 2, 0 } } },
             { { "va", 2 }, { { 3, 1 }, { 3, 1 } } },
             { { "va", 3 }, { { 2, 0 }, { 2, 0 } } },
             { { "va", 4 }, { { 2, 0 } } },
-            { { "xa", 0 }, { { 3, 1 } } },
-            { { "xa", 3 }, { { 3, 0 }, { 2, 0 } } },
-            { { "xa", 4 }, { { 2, 0 }, { 2, 0 } } }
+            { { "xa", 0 }, { { 4, 0 }, { 3, 1 } } },
+            { { "xa", 3 }, { { 3, 0 }, { 3, 0 }, { 2, 0 } } },
+            { { "xa", 4 }, { { 2, 0 }, { 2, 0 }, { 2, 0 } } }
         },
         true, ""
     }

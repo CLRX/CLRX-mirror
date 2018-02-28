@@ -716,7 +716,8 @@ static void useResSecPointCache(SSAReplacesMap* replacesMap,
         const RBWSSAIdMap* resSecondPoints, size_t nextBlock,
         RBWSSAIdMap* destCacheSecPoints)
 {
-    std::cout << "use resSecPointCache for " << nextBlock << std::endl;
+    std::cout << "use resSecPointCache for " << nextBlock <<
+            ", alreadyRMapSize: " << alreadyReadMap.size() << std::endl;
     for (const auto& sentry: *resSecondPoints)
     {
         const bool alreadyRead = alreadyReadMap.find(sentry.first) != alreadyReadMap.end();
