@@ -797,7 +797,8 @@ static void addResSecCacheEntry(const std::unordered_map<size_t, RoutineData>& r
                 visited[entry.blockIndex] = true;
                 std::cout << "  resolv: " << entry.blockIndex << std::endl;
                 
-                const RBWSSAIdMap* resSecondPoints = resSecondPointsCache.use(nextBlock);
+                const RBWSSAIdMap* resSecondPoints =
+                            resSecondPointsCache.use(entry.blockIndex);
                 if (resSecondPoints == nullptr)
                     for (auto& sentry: cblock.ssaInfoMap)
                         handleSSAEntryWhileResolving(nullptr, nullptr,
@@ -982,7 +983,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                 visited[entry.blockIndex] = true;
                 std::cout << "  resolv: " << entry.blockIndex << std::endl;
                 
-                const RBWSSAIdMap* resSecondPoints = resSecondPointsCache.use(nextBlock);
+                const RBWSSAIdMap* resSecondPoints =
+                        resSecondPointsCache.use(entry.blockIndex);
                 if (resSecondPoints == nullptr)
                     for (auto& sentry: cblock.ssaInfoMap)
                         handleSSAEntryWhileResolving(&replacesMap, &stackVarMap,
