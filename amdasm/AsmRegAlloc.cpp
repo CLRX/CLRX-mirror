@@ -747,8 +747,7 @@ static void useResSecPointCache(SSAReplacesMap* replacesMap,
                                 sentry.first.regVar << ":" <<
                                 sentry.first.index  << ": " <<
                                 ssaId << ", " << secSSAId << std::endl;
-                            insertReplace(*replacesMap, sentry.first, ssaId,
-                                        secSSAId);
+                            insertReplace(*replacesMap, sentry.first, ssaId, secSSAId);
                         }
                         else if (ssaId < secSSAId)
                         {
@@ -756,8 +755,7 @@ static void useResSecPointCache(SSAReplacesMap* replacesMap,
                                 sentry.first.regVar << ":" <<
                                 sentry.first.index  << ": " <<
                                 ssaId << ", " << secSSAId << std::endl;
-                            insertReplace(*replacesMap, sentry.first,
-                                            secSSAId, ssaId);
+                            insertReplace(*replacesMap, sentry.first, secSSAId, ssaId);
                         }
                         /*else
                             std::cout << "  noinsertreplace: " <<
@@ -1460,6 +1458,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             else
             {
+                // TODO: correctly join this path with routine data
+                // currently does not include further substitutions in visited path
                 RoutineData* rdata = nullptr;
                 if (!callStack.empty())
                     rdata = &(routineMap.find(callStack.back().routineBlock)->second);
