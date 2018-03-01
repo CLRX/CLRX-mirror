@@ -606,6 +606,7 @@ struct CLRX_INTERNAL FlowStackEntry
 {
     size_t blockIndex;
     size_t nextIndex;
+    bool isCall;
     std::unordered_map<AsmSingleVReg, size_t> prevSSAIds;
     RetSSAIdMap prevRetSSAIdSets;
 };
@@ -1459,6 +1460,18 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             else
             {
+                RoutineData* rdata = nullptr;
+                if (!callStack.empty())
+                    rdata = &(routineMap.find(callStack.back().routineBlock)->second);
+                
+                if (!entry.isCall && rdata != nullptr)
+                {
+                    std::cout << "procret2: " << entry.blockIndex << std::endl;
+                    joinLastSSAIdMap(rdata->lastSSAIdMap, rdata->curSSAIdMap);
+                    std::cout << "procretend2" << std::endl;
+                }
+                
+                // handle caching for res second point
                 cblocksToCache.increase(entry.blockIndex);
                 std::cout << "cblockToCache: " << entry.blockIndex << "=" <<
                             cblocksToCache.count(entry.blockIndex) << std::endl;
@@ -1497,15 +1510,17 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         
         if (entry.nextIndex < cblock.nexts.size())
         {
+            bool isCall = false;
             if (cblock.nexts[entry.nextIndex].isCall)
             {
                 std::cout << " call: " << entry.blockIndex << std::endl;
                 callStack.push_back({ entry.blockIndex, entry.nextIndex,
                             cblock.nexts[entry.nextIndex].block });
                 routineMap.insert({ cblock.nexts[entry.nextIndex].block, { } });
+                isCall = true;
             }
             
-            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0, isCall });
             entry.nextIndex++;
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
@@ -1524,7 +1539,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, next.block);
                     }
             }
-            flowStack.push_back({ entry.blockIndex+1, 0 });
+            flowStack.push_back({ entry.blockIndex+1, 0, false });
             entry.nextIndex++;
         }
         else // back
