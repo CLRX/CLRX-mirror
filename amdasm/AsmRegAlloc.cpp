@@ -600,6 +600,9 @@ struct CLRX_INTERNAL RoutineData
     std::unordered_map<AsmSingleVReg, size_t> rbwSSAIdMap;
     LastSSAIdMap curSSAIdMap;
     LastSSAIdMap lastSSAIdMap;
+    
+    size_t weight() const
+    { return rbwSSAIdMap.size() + lastSSAIdMap.weight(); }
 };
 
 struct CLRX_INTERNAL FlowStackEntry
@@ -1206,7 +1209,7 @@ static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
     }
 }
 
-static void updateRoutineData(RoutineData& rdata, SSAEntry& ssaEntry)
+static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry)
 {
     const SSAInfo& sinfo = ssaEntry.second;
     // put first SSAId before write
@@ -1308,6 +1311,102 @@ static void updateRoutineCurSSAIdMap(RoutineData* rdata, const SSAEntry& ssaEntr
     std::cout << std::endl;
 }
 
+static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
+        const ResSecondPointsToCache& subroutToCache,
+        SimpleCache<size_t, RoutineData>& subroutinesCache,
+        const std::unordered_map<size_t, RoutineData>& routineMap, RoutineData& rdata,
+        size_t routineBlock)
+{
+    std::cout << "--------- createRoutineData ----------------\n";
+    std::vector<bool> visited(codeBlocks.size(), false);
+    std::deque<FlowStackEntry> flowStack;
+    flowStack.push_back({ routineBlock, 0 });
+    
+    while (!flowStack.empty())
+    {
+        FlowStackEntry& entry = flowStack.back();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        {
+            // process current block
+            RoutineData* cachedRdata = subroutinesCache.use(entry.blockIndex);
+            if (cachedRdata != nullptr && flowStack.size() > 1)
+            {
+                // TODO: correctly join this path with routine data
+                // currently does not include further substitutions in visited path
+                std::cout << "procret2: " << entry.blockIndex << std::endl;
+                joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap);
+                std::cout << "procretend2" << std::endl;
+                flowStack.pop_back();
+                continue;
+            }
+            else if (!visited[entry.blockIndex])
+            {
+                std::cout << "proc: " << entry.blockIndex << std::endl;
+                visited[entry.blockIndex] = true;
+                
+                for (const auto& ssaEntry: cblock.ssaInfoMap)
+                    // put data to routine data
+                    updateRoutineData(rdata, ssaEntry);
+            }
+            else if (subroutToCache.count(entry.blockIndex)!=0)
+            {   // begin caching
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        
+        // join and skip calls
+        for (; entry.nextIndex < cblock.nexts.size() &&
+                    cblock.nexts[entry.nextIndex].isCall; entry.nextIndex++)
+            joinRoutineData(rdata, routineMap.find(
+                            cblock.nexts[entry.nextIndex].block)->second);
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            flowStack.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else
+        {
+            if (cblock.haveReturn)
+            {
+                std::cout << "procret: " << entry.blockIndex << std::endl;
+                joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap);
+                std::cout << "procretend" << std::endl;
+            }
+            
+            for (const auto& ssaEntry: cblock.ssaInfoMap)
+            {
+                if (ssaEntry.first.regVar == nullptr)
+                    continue;
+                size_t curSSAId = ssaEntry.second.ssaIdBefore+1;
+                size_t nextSSAId = (ssaEntry.second.ssaIdLast != SIZE_MAX) ?
+                    ssaEntry.second.ssaIdLast+1 : curSSAId;
+                
+                std::cout << "popcurnext: " << ssaEntry.first.regVar <<
+                            ":" << ssaEntry.first.index << ": " <<
+                            nextSSAId << ", " << curSSAId << std::endl;
+                
+                updateRoutineCurSSAIdMap(&rdata, ssaEntry, entry, curSSAId, nextSSAId);
+            }
+            
+            flowStack.pop_back();
+        }
+    }
+    std::cout << "--------- createRoutineData end ------------\n";
+}
+
+
 void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
 {
     if (codeBlocks.empty())
@@ -1376,6 +1475,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     size_t rbwCount = 0;
     size_t wrCount = 0;
     
+    SimpleCache<size_t, RoutineData> subroutinesCache(codeBlocks.size()<<3);
+    
     std::deque<CallStackEntry> callStack;
     std::deque<FlowStackEntry> flowStack;
     // total SSA count
@@ -1392,6 +1493,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::pair<size_t, size_t> lastCommonCacheWayPoint{ SIZE_MAX, SIZE_MAX };
     
     std::vector<bool> waysToCache(codeBlocks.size(), false);
+    // subroutToCache - true if given block begin subroutine to cache
     ResSecondPointsToCache cblocksToCache(codeBlocks.size());
     std::vector<bool> visited(codeBlocks.size(), false);
     flowStack.push_back({ 0, 0 });
@@ -1501,6 +1603,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             std::cout << " ret: " << entry.blockIndex << std::endl;
             const RoutineData& prevRdata =
                     routineMap.find(callStack.back().routineBlock)->second;
+            RoutineData myRoutineData;
+            createRoutineData(codeBlocks, cblocksToCache, subroutinesCache,
+                        routineMap, myRoutineData, callStack.back().routineBlock);
             callStack.pop_back(); // just return from call
             if (!callStack.empty())
                 // put to parent routine
