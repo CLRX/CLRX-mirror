@@ -603,6 +603,93 @@ struct CLRX_INTERNAL RoutineData
     
     size_t weight() const
     { return rbwSSAIdMap.size() + lastSSAIdMap.weight(); }
+    
+    void compare(const RoutineData& rdata) const
+    {
+        std::cout << "-- Comparing routine data" << std::endl;
+        if (rbwSSAIdMap != rdata.rbwSSAIdMap)
+        {
+            std::cout << "RBWSSAIdMap doesn't match" << std::endl;
+            for (const auto& rbwe: rbwSSAIdMap)
+            {
+                auto it2 = rdata.rbwSSAIdMap.find(rbwe.first);
+                if (it2 != rdata.rbwSSAIdMap.end() && rbwe.second != it2->second)
+                    std::cout << "  Key: " << rbwe.first.regVar << ":" <<
+                            rbwe.first.index << ", " <<
+                            rbwe.second << " != " << it2->second << std::endl;
+                else if (it2 == rdata.rbwSSAIdMap.end())
+                    std::cout << "  Key: " << rbwe.first.regVar << ":" <<
+                            rbwe.first.index << " not found" << std::endl;
+            }
+            for (const auto& rbwe: rdata.rbwSSAIdMap)
+            {
+                auto it2 = rbwSSAIdMap.find(rbwe.first);
+                if (it2 == rbwSSAIdMap.end())
+                    std::cout << "  Key2: " << rbwe.first.regVar << ":" <<
+                            rbwe.first.index << " not found" << std::endl;
+            }
+        }
+        if (curSSAIdMap != rdata.curSSAIdMap)
+        {
+            std::cout << "CurSSAIdMap doesn't match" << std::endl;
+            for (const auto& le: curSSAIdMap)
+            {
+                auto it2 = rdata.curSSAIdMap.find(le.first);
+                if (it2 != rdata.curSSAIdMap.end() && le.second != it2->second)
+                {
+                    std::cout << "  Key: " << le.first.regVar << ":" <<
+                            le.first.index << ", ";
+                    for (size_t k = 0; k < le.second.size(); k++)
+                        std::cout << (k!=0?",":"[") << le.second[k];
+                    std::cout << "]!=";
+                    for (size_t k = 0; k < it2->second.size(); k++)
+                        std::cout << (k!=0?",":"[") << it2->second[k];
+                    std::cout << "]" << std::endl;
+                }
+                else if (it2 == rdata.curSSAIdMap.end())
+                    std::cout << "  Key: " << le.first.regVar << ":" <<
+                            le.first.index << " not found" << std::endl;
+            }
+            for (const auto& le: rdata.curSSAIdMap)
+            {
+                auto it2 = curSSAIdMap.find(le.first);
+                if (it2 == curSSAIdMap.end())
+                    std::cout << "  Key2: " << le.first.regVar << ":" <<
+                            le.first.index << " not found" << std::endl;
+            }
+        }
+        if (lastSSAIdMap != rdata.lastSSAIdMap)
+        {
+            std::cout << "LastSSAIdMap doesn't match" << std::endl;
+            for (const auto& le: lastSSAIdMap)
+            {
+                auto it2 = rdata.lastSSAIdMap.find(le.first);
+                if (it2 != rdata.lastSSAIdMap.end() && le.second != it2->second)
+                {
+                    std::cout << "  Key: " << le.first.regVar << ":" <<
+                            le.first.index << ", ";
+                    for (size_t k = 0; k < le.second.size(); k++)
+                        std::cout << (k!=0?",":"[") << le.second[k];
+                    std::cout << "]!=";
+                    for (size_t k = 0; k < it2->second.size(); k++)
+                        std::cout << (k!=0?",":"[") << it2->second[k];
+                    std::cout << "]" << std::endl;
+                }
+                else if (it2 == rdata.lastSSAIdMap.end())
+                    std::cout << "  Key: " << le.first.regVar << ":" <<
+                            le.first.index << " not found" << std::endl;
+            }
+            for (const auto& le: rdata.lastSSAIdMap)
+            {
+                auto it2 = lastSSAIdMap.find(le.first);
+                if (it2 == lastSSAIdMap.end())
+                    std::cout << "  Key2: " << le.first.regVar << ":" <<
+                            le.first.index << " not found" << std::endl;
+            }
+        }
+        
+        std::cout << "-- Comparing routine data end" << std::endl;
+    }
 };
 
 struct CLRX_INTERNAL FlowStackEntry
@@ -1346,8 +1433,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 visited[entry.blockIndex] = true;
                 
                 for (const auto& ssaEntry: cblock.ssaInfoMap)
-                    // put data to routine data
-                    updateRoutineData(rdata, ssaEntry);
+                    if (ssaEntry.first.regVar != nullptr)
+                        // put data to routine data
+                        updateRoutineData(rdata, ssaEntry);
             }
             else if (subroutToCache.count(entry.blockIndex)!=0)
             {   // begin caching
@@ -1490,6 +1578,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     PrevWaysIndexMap prevWaysIndexMap;
     // to track ways last block indices pair: block index, flowStackPos)
     std::pair<size_t, size_t> lastCommonCacheWayPoint{ SIZE_MAX, SIZE_MAX };
+    std::vector<bool> isRoutineGen(codeBlocks.size(), false);
     
     std::vector<bool> waysToCache(codeBlocks.size(), false);
     // subroutToCache - true if given block begin subroutine to cache
@@ -1599,9 +1688,14 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             std::cout << " ret: " << entry.blockIndex << std::endl;
             const RoutineData& prevRdata =
                     routineMap.find(callStack.back().routineBlock)->second;
-            RoutineData myRoutineData;
-            createRoutineData(codeBlocks, cblocksToCache, subroutinesCache,
-                        routineMap, myRoutineData, callStack.back().routineBlock);
+            if (!isRoutineGen[callStack.back().routineBlock])
+            {
+                RoutineData myRoutineData;
+                createRoutineData(codeBlocks, cblocksToCache, subroutinesCache,
+                            routineMap, myRoutineData, callStack.back().routineBlock);
+                prevRdata.compare(myRoutineData);
+                isRoutineGen[callStack.back().routineBlock] = true;
+            }
             callStack.pop_back(); // just return from call
             if (!callStack.empty())
                 // put to parent routine
