@@ -1249,7 +1249,9 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src)
                 destEntry.insertValue(ssaId);
         }
         auto rbwit = src.rbwSSAIdMap.find(entry.first);
-        if (rbwit != src.rbwSSAIdMap.end())
+        if (rbwit != src.rbwSSAIdMap.end() &&
+            // remove only if not in src lastSSAIdMap
+            std::find(entry.second.begin(), entry.second.end(), rbwit->second) == entry.second.end())
             destEntry.eraseValue(rbwit->second);
         std::cout << "    :";
         for (size_t v: destEntry)
