@@ -610,7 +610,6 @@ struct CLRX_INTERNAL FlowStackEntry
     size_t blockIndex;
     size_t nextIndex;
     bool isCall;
-    std::unordered_map<AsmSingleVReg, size_t> prevSSAIds;
     RetSSAIdMap prevRetSSAIdSets;
 };
 
@@ -1532,10 +1531,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         // first read before write at all, need change totalcount, ssaId
                         ssaId++;
                         totalSSACount++;
-                        entry.prevSSAIds.insert({ ssaEntry.first, ssaId });
                     }
-                    else if (ssaId != totalSSACount) // save old ssaId
-                        entry.prevSSAIds.insert({ ssaEntry.first, ssaId });
                     
                     sinfo.ssaId = totalSSACount;
                     sinfo.ssaIdFirst = sinfo.ssaIdChange!=0 ? totalSSACount : SIZE_MAX;
@@ -1669,13 +1665,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 if (ssaEntry.first.regVar == nullptr)
                     continue;
                 
-                auto it = entry.prevSSAIds.find(ssaEntry.first);
                 size_t& curSSAId = curSSAIdMap[ssaEntry.first];
                 const size_t nextSSAId = curSSAId;
-                if (it == entry.prevSSAIds.end())
-                    curSSAId -= ssaEntry.second.ssaIdChange;
-                else // if found
-                    curSSAId = it->second;
+                curSSAId = ssaEntry.second.ssaIdBefore+1;
                 
                 std::cout << "popcurnext: " << ssaEntry.first.regVar <<
                             ":" << ssaEntry.first.index << ": " <<
