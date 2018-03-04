@@ -1425,8 +1425,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         if (entry.nextIndex == 0)
         {
             // process current block
-            RoutineData* cachedRdata = subroutinesCache.use(entry.blockIndex);
-            if (cachedRdata != nullptr && flowStack.size() > 1)
+            //RoutineData* cachedRdata = subroutinesCache.use(entry.blockIndex);
+            if (/*cachedRdata != nullptr &&*/
+                visited[entry.blockIndex] && flowStack.size() > 1)
             {
                 // TODO: correctly join this path with routine data
                 // currently does not include further substitutions in visited path
@@ -1661,10 +1662,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     //totalSSACount = std::max(totalSSACount, ssaId);
                     ssaId = totalSSACount;
                     
-                    if (!callStack.empty())
+                    /*if (!callStack.empty())
                         // put data to routine data
                         updateRoutineData(routineMap.find(
-                            callStack.back().routineBlock)->second, ssaEntry);
+                            callStack.back().routineBlock)->second, ssaEntry);*/
                         
                     // count read before writes (for cache weight)
                     if (sinfo.readBeforeWrite)
@@ -1677,7 +1678,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             {
                 // TODO: correctly join this path with routine data
                 // currently does not include further substitutions in visited path
-                RoutineData* rdata = nullptr;
+                /*RoutineData* rdata = nullptr;
                 if (!callStack.empty())
                     rdata = &(routineMap.find(callStack.back().routineBlock)->second);
                 
@@ -1686,7 +1687,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     std::cout << "procret2: " << entry.blockIndex << std::endl;
                     joinLastSSAIdMap(rdata->lastSSAIdMap, rdata->curSSAIdMap);
                     std::cout << "procretend2" << std::endl;
-                }
+                }*/
                 
                 // handle caching for res second point
                 cblocksToCache.increase(entry.blockIndex);
@@ -1716,14 +1717,14 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             entry.nextIndex-1 == callStack.back().callNextIndex)
         {
             std::cout << " ret: " << entry.blockIndex << std::endl;
-            const RoutineData& prevRdata =
+            RoutineData& prevRdata =
                     routineMap.find(callStack.back().routineBlock)->second;
             if (!isRoutineGen[callStack.back().routineBlock])
             {
-                RoutineData myRoutineData;
+                //RoutineData myRoutineData;
                 createRoutineData(codeBlocks, curSSAIdMap, cblocksToCache, subroutinesCache,
-                            routineMap, myRoutineData, callStack.back().routineBlock);
-                prevRdata.compare(myRoutineData);
+                            routineMap, prevRdata, callStack.back().routineBlock);
+                //prevRdata.compare(myRoutineData);
                 isRoutineGen[callStack.back().routineBlock] = true;
             }
             callStack.pop_back(); // just return from call
@@ -1773,12 +1774,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             if (!callStack.empty())
                 rdata = &(routineMap.find(callStack.back().routineBlock)->second);
             
-            if (cblock.haveReturn && rdata != nullptr)
+            /*if (cblock.haveReturn && rdata != nullptr)
             {
                 std::cout << "procret: " << entry.blockIndex << std::endl;
                 joinLastSSAIdMap(rdata->lastSSAIdMap, rdata->curSSAIdMap);
                 std::cout << "procretend" << std::endl;
-            }
+            }*/
             
             // revert retSSAIdMap
             revertRetSSAIdMap(curSSAIdMap, retSSAIdMap, entry, rdata);
@@ -1797,8 +1798,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                             ":" << ssaEntry.first.index << ": " <<
                             nextSSAId << ", " << curSSAId << std::endl;
                 
-                if (rdata!=nullptr)
+                /*if (rdata!=nullptr)
                     updateRoutineCurSSAIdMap(rdata, ssaEntry, entry, curSSAId, nextSSAId);
+                */
             }
             
             std::cout << "pop: " << entry.blockIndex << std::endl;
