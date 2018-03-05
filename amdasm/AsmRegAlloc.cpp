@@ -1140,11 +1140,12 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src)
 }
 
 static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src,
-                    const LastSSAIdMap& laterSSAIds)
+                    const RoutineData& laterRdata)
 {
     for (const auto& entry: src)
     {
-        if (laterSSAIds.find(entry.first) != laterSSAIds.end())
+        if (laterRdata.lastSSAIdMap.find(entry.first) != laterRdata.lastSSAIdMap.end() ||
+            laterRdata.rbwSSAIdMap.find(entry.first) != laterRdata.rbwSSAIdMap.end())
             continue;
         std::cout << "  entry: " << entry.first.regVar << ":" <<
                 cxuint(entry.first.index) << ":";
@@ -1163,7 +1164,7 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src,
             std::cout << " " << v;
         std::cout << std::endl;
     }
-    joinLastSSAIdMap(dest, laterSSAIds);
+    joinLastSSAIdMap(dest, laterRdata.lastSSAIdMap);
 }
 
 
@@ -1239,7 +1240,8 @@ static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
     }
 }
 
-static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry)
+static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
+                size_t prevSSAId)
 {
     const SSAInfo& sinfo = ssaEntry.second;
     // put first SSAId before write
@@ -1259,7 +1261,7 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry)
             // if not inserted
             VectorSet<size_t>& ssaIds = res.first->second;
             if (sinfo.readBeforeWrite)
-                ssaIds.eraseValue(sinfo.ssaIdBefore);
+                ssaIds.eraseValue(prevSSAId);
             ssaIds.insertValue(sinfo.ssaIdLast);
         }
     }
@@ -1369,7 +1371,13 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             if (/*cachedRdata != nullptr &&*/
                 visited[entry.blockIndex] && flowStack.size() > 1)
             {
-                RoutineData* cachedRdata = subroutinesCache.use(entry.blockIndex);
+                const RoutineData* cachedRdata = subroutinesCache.use(entry.blockIndex);
+                if (cachedRdata == nullptr)
+                {
+                    // try in routine map
+                    auto rit = routineMap.find(entry.blockIndex);
+                    cachedRdata = &rit->second;
+                }
                 if (cachedRdata == nullptr)
                 {
                     RoutineData subrData;
@@ -1383,12 +1391,10 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 else
                     std::cout << "use cached subr " << entry.blockIndex << std::endl;
                 
-                
                 // TODO: correctly join this path with routine data
                 // currently does not include further substitutions in visited path
                 std::cout << "procret2: " << entry.blockIndex << std::endl;
-                joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap,
-                            cachedRdata->lastSSAIdMap);
+                joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap, *cachedRdata);
                 std::cout << "procretend2" << std::endl;
                 flowStack.pop_back();
                 continue;
@@ -1402,7 +1408,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     if (ssaEntry.first.regVar != nullptr)
                     {
                         // put data to routine data
-                        updateRoutineData(rdata, ssaEntry);
+                        updateRoutineData(rdata, ssaEntry, curSSAIdMap[ssaEntry.first]-1);
                         
                         if (ssaEntry.second.ssaIdChange!=0)
                             curSSAIdMap[ssaEntry.first] = ssaEntry.second.ssaIdLast+1;
