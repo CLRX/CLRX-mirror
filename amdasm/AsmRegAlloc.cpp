@@ -1139,6 +1139,34 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src)
     }
 }
 
+static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src,
+                    const LastSSAIdMap& laterSSAIds)
+{
+    for (const auto& entry: src)
+    {
+        if (laterSSAIds.find(entry.first) != laterSSAIds.end())
+            continue;
+        std::cout << "  entry: " << entry.first.regVar << ":" <<
+                cxuint(entry.first.index) << ":";
+        for (size_t v: entry.second)
+            std::cout << " " << v;
+        std::cout << std::endl;
+        auto res = dest.insert(entry); // find
+        if (res.second)
+            continue; // added new
+        VectorSet<size_t>& destEntry = res.first->second;
+        // add new ways
+        for (size_t ssaId: entry.second)
+            destEntry.insertValue(ssaId);
+        std::cout << "    :";
+        for (size_t v: destEntry)
+            std::cout << " " << v;
+        std::cout << std::endl;
+    }
+    joinLastSSAIdMap(dest, laterSSAIds);
+}
+
+
 static void joinRoutineData(RoutineData& dest, const RoutineData& src)
 {
     // insert readBeforeWrite only if doesnt exists in destination
@@ -1338,14 +1366,29 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         if (entry.nextIndex == 0)
         {
             // process current block
-            //RoutineData* cachedRdata = subroutinesCache.use(entry.blockIndex);
             if (/*cachedRdata != nullptr &&*/
                 visited[entry.blockIndex] && flowStack.size() > 1)
             {
+                RoutineData* cachedRdata = subroutinesCache.use(entry.blockIndex);
+                if (cachedRdata == nullptr)
+                {
+                    RoutineData subrData;
+                    std::cout << "-- subrcache2 for " << entry.blockIndex << std::endl;
+                    createRoutineData(codeBlocks, curSSAIdMap, subroutToCache,
+                            subroutinesCache, routineMap, subrData, entry.blockIndex);
+                    subroutinesCache.put(entry.blockIndex, subrData);
+                    
+                    cachedRdata = subroutinesCache.use(entry.blockIndex);
+                }
+                else
+                    std::cout << "use cached subr " << entry.blockIndex << std::endl;
+                
+                
                 // TODO: correctly join this path with routine data
                 // currently does not include further substitutions in visited path
                 std::cout << "procret2: " << entry.blockIndex << std::endl;
-                joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap);
+                joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap,
+                            cachedRdata->lastSSAIdMap);
                 std::cout << "procretend2" << std::endl;
                 flowStack.pop_back();
                 continue;
@@ -1365,7 +1408,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                             curSSAIdMap[ssaEntry.first] = ssaEntry.second.ssaIdLast+1;
                     }
             }
-            else if (subroutToCache.count(entry.blockIndex)!=0)
+            else
             {   // begin caching
                 flowStack.pop_back();
                 continue;
@@ -1429,6 +1472,15 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                             nextSSAId << ", " << curSSAId << std::endl;
                 
                 updateRoutineCurSSAIdMap(&rdata, ssaEntry, entry, curSSAId, nextSSAId);
+            }
+            
+            if (flowStack.size() > 1 && subroutToCache.count(entry.blockIndex)!=0)
+            { //put to cache
+                RoutineData subrData;
+                std::cout << "-- subrcache for " << entry.blockIndex << std::endl;
+                createRoutineData(codeBlocks, curSSAIdMap, subroutToCache,
+                        subroutinesCache, routineMap, subrData, entry.blockIndex);
+                subroutinesCache.put(entry.blockIndex, subrData);
             }
             
             flowStack.pop_back();
