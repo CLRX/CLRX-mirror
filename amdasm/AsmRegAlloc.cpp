@@ -1144,8 +1144,7 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src,
 {
     for (const auto& entry: src)
     {
-        if (laterRdata.lastSSAIdMap.find(entry.first) != laterRdata.lastSSAIdMap.end() ||
-            laterRdata.rbwSSAIdMap.find(entry.first) != laterRdata.rbwSSAIdMap.end())
+        if (laterRdata.lastSSAIdMap.find(entry.first) != laterRdata.lastSSAIdMap.end())
             continue;
         std::cout << "  entry: " << entry.first.regVar << ":" <<
                 cxuint(entry.first.index) << ":";
