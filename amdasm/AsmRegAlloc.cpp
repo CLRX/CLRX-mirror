@@ -600,6 +600,10 @@ struct CLRX_INTERNAL RoutineData
     std::unordered_map<AsmSingleVReg, size_t> rbwSSAIdMap;
     LastSSAIdMap curSSAIdMap;
     LastSSAIdMap lastSSAIdMap;
+    int notFirstReturn;
+    
+    RoutineData() : notFirstReturn(0)
+    { }
     
     size_t weight() const
     { return rbwSSAIdMap.size() + lastSSAIdMap.weight(); }
@@ -1257,26 +1261,33 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
                 size_t prevSSAId)
 {
     const SSAInfo& sinfo = ssaEntry.second;
+    bool beforeFirstAccess = true;
     // put first SSAId before write
     if (sinfo.readBeforeWrite)
     {
         //std::cout << "PutCRBW: " << sinfo.ssaIdBefore << std::endl;
-        rdata.rbwSSAIdMap.insert({ ssaEntry.first, prevSSAId });
+        if (!rdata.rbwSSAIdMap.insert({ ssaEntry.first, prevSSAId }).second)
+            // if already added
+            beforeFirstAccess = false;
     }
     
     if (sinfo.ssaIdChange != 0)
     {
-        // put last SSAId
         //std::cout << "PutC: " << sinfo.ssaIdLast << std::endl;
         auto res = rdata.curSSAIdMap.insert({ ssaEntry.first, { sinfo.ssaIdLast } });
+        // put last SSAId
         if (!res.second)
         {
+            beforeFirstAccess = false;
             // if not inserted
             VectorSet<size_t>& ssaIds = res.first->second;
             if (sinfo.readBeforeWrite)
                 ssaIds.eraseValue(prevSSAId);
             ssaIds.insertValue(sinfo.ssaIdLast);
         }
+        // add readbefore if in previous returns if not added yet
+        if (rdata.notFirstReturn==2 && beforeFirstAccess)
+            rdata.lastSSAIdMap.insert({ ssaEntry.first, { prevSSAId } });
     }
     else
     {
@@ -1492,6 +1503,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         if (entry.nextIndex < cblock.nexts.size())
         {
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            if (rdata.notFirstReturn!=0)
+                rdata.notFirstReturn = 2;
             entry.nextIndex++;
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
@@ -1512,6 +1525,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             }
             flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
+            if (rdata.notFirstReturn!=0)
+                rdata.notFirstReturn = 2;
         }
         else
         {
@@ -1520,6 +1535,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 std::cout << "procret: " << entry.blockIndex << std::endl;
                 joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap);
                 std::cout << "procretend" << std::endl;
+                rdata.notFirstReturn = 1;
             }
             
             // revert retSSAIdMap
