@@ -1381,7 +1381,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         const ResSecondPointsToCache& subroutToCache,
         SimpleCache<size_t, RoutineData>& subroutinesCache,
         const std::unordered_map<size_t, RoutineData>& routineMap, RoutineData& rdata,
-        size_t routineBlock)
+        size_t routineBlock, bool noMainLoop = false)
 {
     std::cout << "--------- createRoutineData ----------------\n";
     std::vector<bool> visited(codeBlocks.size(), false);
@@ -1421,7 +1421,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     RoutineData subrData;
                     std::cout << "-- subrcache2 for " << entry.blockIndex << std::endl;
                     createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, subroutToCache,
-                            subroutinesCache, routineMap, subrData, entry.blockIndex);
+                        subroutinesCache, routineMap, subrData, entry.blockIndex, true);
                     if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
                     {   // leave from loop point
                         auto loopsit = loopSSAIdMap.find(entry.blockIndex);
@@ -1459,7 +1459,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                             curSSAIdMap[ssaEntry.first] = ssaEntry.second.ssaIdLast+1;
                     }
             }
-            else if (isLoop && routineBlock != entry.blockIndex)
+            else if (isLoop && (!noMainLoop || routineBlock != entry.blockIndex))
             {
                 // handle loops
                 std::cout << "  join loop ssaids: " << entry.blockIndex << std::endl;
@@ -1548,7 +1548,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 RoutineData subrData;
                 std::cout << "-- subrcache for " << entry.blockIndex << std::endl;
                 createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, subroutToCache,
-                        subroutinesCache, routineMap, subrData, entry.blockIndex);
+                        subroutinesCache, routineMap, subrData, entry.blockIndex, true);
                 if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
                 {   // leave from loop point
                     if (loopsit != loopSSAIdMap.end())
