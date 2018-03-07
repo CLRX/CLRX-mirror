@@ -1140,7 +1140,7 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src)
 }
 
 static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src,
-                    const RoutineData& laterRdata)
+                    const RoutineData& laterRdata, bool loop = false)
 {
     for (const auto& entry: src)
     {
@@ -1176,7 +1176,8 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src,
             std::cout << " " << v;
         std::cout << std::endl;
     }
-    joinLastSSAIdMap(dest, laterRdata.lastSSAIdMap);
+    if (!loop) // do not if loop
+        joinLastSSAIdMap(dest, laterRdata.lastSSAIdMap);
 }
 
 
@@ -1260,7 +1261,7 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
     if (sinfo.readBeforeWrite)
     {
         //std::cout << "PutCRBW: " << sinfo.ssaIdBefore << std::endl;
-        rdata.rbwSSAIdMap.insert({ ssaEntry.first, sinfo.ssaIdBefore });
+        rdata.rbwSSAIdMap.insert({ ssaEntry.first, prevSSAId });
     }
     
     if (sinfo.ssaIdChange != 0)
@@ -1275,6 +1276,16 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
             if (sinfo.readBeforeWrite)
                 ssaIds.eraseValue(prevSSAId);
             ssaIds.insertValue(sinfo.ssaIdLast);
+        }
+    }
+    else
+    {
+        // insert read ssaid if no change
+        auto res = rdata.curSSAIdMap.insert({ ssaEntry.first, { prevSSAId } });
+        if (!res.second)
+        {
+            VectorSet<size_t>& ssaIds = res.first->second;
+            ssaIds.insertValue(prevSSAId);
         }
     }
 }
@@ -1358,8 +1369,15 @@ static void updateRoutineCurSSAIdMap(RoutineData* rdata, const SSAEntry& ssaEntr
     std::cout << std::endl;
 }
 
+struct CLRX_INTERNAL LoopSSAIdMap
+{
+    LastSSAIdMap ssaIdMap;
+    bool passed;
+};
+
 static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
+        const std::unordered_set<size_t>& loopBlocks,
         const ResSecondPointsToCache& subroutToCache,
         SimpleCache<size_t, RoutineData>& subroutinesCache,
         const std::unordered_map<size_t, RoutineData>& routineMap, RoutineData& rdata,
@@ -1372,6 +1390,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     RetSSAIdMap retSSAIdMap;
     flowStack.push_back({ routineBlock, 0 });
     
+    std::unordered_map<size_t, LoopSSAIdMap> loopSSAIdMap;
+    
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.back();
@@ -1383,6 +1403,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             //if (/*cachedRdata != nullptr &&*/
                 //visited[entry.blockIndex] && flowStack.size() > 1)
             const RoutineData* cachedRdata = nullptr;
+            
+            bool isLoop = loopBlocks.find(entry.blockIndex) != loopBlocks.end();
             if (routineBlock != entry.blockIndex)
             {
                 cachedRdata = subroutinesCache.use(entry.blockIndex);
@@ -1393,12 +1415,20 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     if (rit != routineMap.end())
                         cachedRdata = &rit->second;
                 }
-                if (cachedRdata == nullptr && subroutToCache.count(entry.blockIndex)!=0)
+                if (!isLoop && cachedRdata == nullptr &&
+                    subroutToCache.count(entry.blockIndex)!=0)
                 {
                     RoutineData subrData;
                     std::cout << "-- subrcache2 for " << entry.blockIndex << std::endl;
-                    createRoutineData(codeBlocks, curSSAIdMap, subroutToCache,
+                    createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, subroutToCache,
                             subroutinesCache, routineMap, subrData, entry.blockIndex);
+                    if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
+                    {   // leave from loop point
+                        auto loopsit = loopSSAIdMap.find(entry.blockIndex);
+                        if (loopsit != loopSSAIdMap.end())
+                            joinLastSSAIdMap(subrData.lastSSAIdMap,
+                                    loopsit->second.ssaIdMap, subrData, true);
+                    }
                     subroutinesCache.put(entry.blockIndex, subrData);
                     
                     cachedRdata = subroutinesCache.use(entry.blockIndex);
@@ -1429,8 +1459,25 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                             curSSAIdMap[ssaEntry.first] = ssaEntry.second.ssaIdLast+1;
                     }
             }
+            else if (isLoop && routineBlock != entry.blockIndex)
+            {
+                // handle loops
+                std::cout << "  join loop ssaids: " << entry.blockIndex << std::endl;
+                auto loopsit = loopSSAIdMap.find(entry.blockIndex);
+                if (loopsit != loopSSAIdMap.end())
+                {
+                    if (!loopsit->second.passed)
+                        // still in loop join ssaid map
+                        joinLastSSAIdMap(loopsit->second.ssaIdMap, rdata.curSSAIdMap);
+                }
+                else // insert new
+                    loopSSAIdMap.insert({ entry.blockIndex,
+                                { rdata.curSSAIdMap, false } });
+                flowStack.pop_back();
+                continue;
+            }
             else
-            {   // begin caching
+            {
                 flowStack.pop_back();
                 continue;
             }
@@ -1495,14 +1542,24 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 updateRoutineCurSSAIdMap(&rdata, ssaEntry, entry, curSSAId, nextSSAId);
             }
             
+            auto loopsit = loopSSAIdMap.find(entry.blockIndex);
             if (flowStack.size() > 1 && subroutToCache.count(entry.blockIndex)!=0)
             { //put to cache
                 RoutineData subrData;
                 std::cout << "-- subrcache for " << entry.blockIndex << std::endl;
-                createRoutineData(codeBlocks, curSSAIdMap, subroutToCache,
+                createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, subroutToCache,
                         subroutinesCache, routineMap, subrData, entry.blockIndex);
+                if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
+                {   // leave from loop point
+                    if (loopsit != loopSSAIdMap.end())
+                        joinLastSSAIdMap(subrData.lastSSAIdMap, loopsit->second.ssaIdMap,
+                                         subrData, true);
+                }
                 subroutinesCache.put(entry.blockIndex, subrData);
             }
+            if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
+                // mark that loop has passed fully
+                loopsit->second.passed = true;
             
             flowStack.pop_back();
         }
@@ -1598,10 +1655,13 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::vector<bool> isRoutineGen(codeBlocks.size(), false);
     
     std::vector<bool> waysToCache(codeBlocks.size(), false);
+    std::vector<bool> flowStackBlocks(codeBlocks.size(), false);
     // subroutToCache - true if given block begin subroutine to cache
     ResSecondPointsToCache cblocksToCache(codeBlocks.size());
     std::vector<bool> visited(codeBlocks.size(), false);
     flowStack.push_back({ 0, 0 });
+    flowStackBlocks[0] = true;
+    std::unordered_set<size_t> loopBlocks;
     
     while (!flowStack.empty())
     {
@@ -1680,6 +1740,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 std::cout << "cblockToCache: " << entry.blockIndex << "=" <<
                             cblocksToCache.count(entry.blockIndex) << std::endl;
                 // back, already visited
+                flowStackBlocks[entry.blockIndex] = false;
                 flowStack.pop_back();
                 
                 size_t curWayBIndex = flowStack.back().blockIndex;
@@ -1708,8 +1769,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             if (!isRoutineGen[callStack.back().routineBlock])
             {
                 //RoutineData myRoutineData;
-                createRoutineData(codeBlocks, curSSAIdMap, cblocksToCache, subroutinesCache,
-                            routineMap, prevRdata, callStack.back().routineBlock);
+                createRoutineData(codeBlocks, curSSAIdMap, loopBlocks,
+                            cblocksToCache, subroutinesCache, routineMap, prevRdata,
+                            callStack.back().routineBlock);
                 //prevRdata.compare(myRoutineData);
                 isRoutineGen[callStack.back().routineBlock] = true;
             }
@@ -1723,16 +1785,19 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         if (entry.nextIndex < cblock.nexts.size())
         {
             bool isCall = false;
+            const size_t nextBlock = cblock.nexts[entry.nextIndex].block;
             if (cblock.nexts[entry.nextIndex].isCall)
             {
                 std::cout << " call: " << entry.blockIndex << std::endl;
-                callStack.push_back({ entry.blockIndex, entry.nextIndex,
-                            cblock.nexts[entry.nextIndex].block });
-                routineMap.insert({ cblock.nexts[entry.nextIndex].block, { } });
+                callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
+                routineMap.insert({ nextBlock, { } });
                 isCall = true;
             }
             
-            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0, isCall });
+            flowStack.push_back({ nextBlock, 0, isCall });
+            if (flowStackBlocks[nextBlock])
+                loopBlocks.insert(nextBlock);
+            flowStackBlocks[nextBlock] = true;
             entry.nextIndex++;
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
@@ -1752,6 +1817,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     }
             }
             flowStack.push_back({ entry.blockIndex+1, 0, false });
+            if (flowStackBlocks[entry.blockIndex+1])
+                loopBlocks.insert(entry.blockIndex+1);
+            flowStackBlocks[entry.blockIndex+1] = true;
             entry.nextIndex++;
         }
         else // back
@@ -1790,6 +1858,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             
             std::cout << "pop: " << entry.blockIndex << std::endl;
+            flowStackBlocks[entry.blockIndex] = false;
             flowStack.pop_back();
             if (!flowStack.empty() && lastCommonCacheWayPoint.first != SIZE_MAX &&
                     lastCommonCacheWayPoint.second >= flowStack.size())
@@ -1798,6 +1867,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         { flowStack.back().blockIndex, flowStack.size()-1 };
                 std::cout << "POPlastCcwP: " << lastCommonCacheWayPoint.first << std::endl;
             }
+            
         }
     }
     
