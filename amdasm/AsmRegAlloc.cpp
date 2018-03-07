@@ -1144,8 +1144,21 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src,
 {
     for (const auto& entry: src)
     {
-        if (laterRdata.lastSSAIdMap.find(entry.first) != laterRdata.lastSSAIdMap.end())
-            continue;
+        auto lsit = laterRdata.lastSSAIdMap.find(entry.first);
+        if (lsit != laterRdata.lastSSAIdMap.end())
+        {
+            auto csit = laterRdata.curSSAIdMap.find(entry.first);
+            if (csit != laterRdata.curSSAIdMap.end() && !csit->second.empty())
+            {
+                // if found in last ssa ID map,
+                // but has first value (some way do not change SSAId)
+                // then pass to add new ssaIds before this point
+                if (!lsit->second.hasValue(csit->second[0]))
+                    continue; // otherwise, skip
+            }
+            else
+                continue;
+        }
         std::cout << "  entry: " << entry.first.regVar << ":" <<
                 cxuint(entry.first.index) << ":";
         for (size_t v: entry.second)
@@ -1367,17 +1380,20 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         if (entry.nextIndex == 0)
         {
             // process current block
-            if (/*cachedRdata != nullptr &&*/
-                visited[entry.blockIndex] && flowStack.size() > 1)
+            //if (/*cachedRdata != nullptr &&*/
+                //visited[entry.blockIndex] && flowStack.size() > 1)
+            const RoutineData* cachedRdata = nullptr;
+            if (routineBlock != entry.blockIndex)
             {
-                const RoutineData* cachedRdata = subroutinesCache.use(entry.blockIndex);
+                cachedRdata = subroutinesCache.use(entry.blockIndex);
                 if (cachedRdata == nullptr)
                 {
                     // try in routine map
                     auto rit = routineMap.find(entry.blockIndex);
-                    cachedRdata = &rit->second;
+                    if (rit != routineMap.end())
+                        cachedRdata = &rit->second;
                 }
-                if (cachedRdata == nullptr)
+                if (cachedRdata == nullptr && subroutToCache.count(entry.blockIndex)!=0)
                 {
                     RoutineData subrData;
                     std::cout << "-- subrcache2 for " << entry.blockIndex << std::endl;
@@ -1387,11 +1403,11 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     
                     cachedRdata = subroutinesCache.use(entry.blockIndex);
                 }
-                else
-                    std::cout << "use cached subr " << entry.blockIndex << std::endl;
-                
-                // TODO: correctly join this path with routine data
-                // currently does not include further substitutions in visited path
+            }
+            
+            if (cachedRdata != nullptr)
+            {
+                std::cout << "use cached subr " << entry.blockIndex << std::endl;
                 std::cout << "procret2: " << entry.blockIndex << std::endl;
                 joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap, *cachedRdata);
                 std::cout << "procretend2" << std::endl;

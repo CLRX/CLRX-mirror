@@ -318,6 +318,12 @@ public:
         if (fit != std::vector<T>::end())
             std::vector<T>::erase(fit);
     }
+    
+    bool hasValue(const T& v) const
+    {
+        return std::find(std::vector<T>::begin(), std::vector<T>::end(), v) !=
+                std::vector<T>::end();
+    }
 };
 
 
