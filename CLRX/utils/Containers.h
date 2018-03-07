@@ -319,6 +319,7 @@ public:
             std::vector<T>::erase(fit);
     }
     
+    /// return true if value present in vector set
     bool hasValue(const T& v) const
     {
         return std::find(std::vector<T>::begin(), std::vector<T>::end(), v) !=
