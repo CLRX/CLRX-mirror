@@ -1255,6 +1255,9 @@ static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         // finally remove from container (because obsolete)
         retSSAIdMap.erase(ssaIdsIt);
     }
+    else if (ssaIdsIt != retSSAIdMap.end() && sinfo.ssaIdChange!=0)
+        // just remove, if some change without read before
+        retSSAIdMap.erase(ssaIdsIt);
 }
 
 static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
