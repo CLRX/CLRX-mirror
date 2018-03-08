@@ -1222,7 +1222,7 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src)
 
 static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
             RetSSAIdMap& retSSAIdMap, std::unordered_map<size_t, RoutineData>& routineMap,
-            SSAReplacesMap& ssaReplacesMap, SSAEntry& ssaEntry)
+            SSAReplacesMap& ssaReplacesMap, FlowStackEntry& entry, SSAEntry& ssaEntry)
 {
     SSAInfo& sinfo = ssaEntry.second;
     size_t& ssaId = curSSAIdMap[ssaEntry.first];
@@ -1256,8 +1256,14 @@ static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         retSSAIdMap.erase(ssaIdsIt);
     }
     else if (ssaIdsIt != retSSAIdMap.end() && sinfo.ssaIdChange!=0)
+    {
+        // put before removing to revert for other ways after calls
+        auto res = entry.prevRetSSAIdSets.insert(*ssaIdsIt);
+        if (res.second)
+            res.first->second = ssaIdsIt->second;
         // just remove, if some change without read before
         retSSAIdMap.erase(ssaIdsIt);
+    }
 }
 
 static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
@@ -1327,13 +1333,23 @@ static void revertRetSSAIdMap(const std::unordered_map<AsmSingleVReg, size_t>& c
         auto rfit = retSSAIdMap.find(v.first);
         if (rdata!=nullptr)
         {
-            VectorSet<size_t>& ssaIds = rdata->curSSAIdMap[v.first];
-            for (size_t ssaId: rfit->second.ssaIds)
-                ssaIds.eraseValue(ssaId);
+            auto csit = rdata->curSSAIdMap.find(v.first);
+            if (csit != rdata->curSSAIdMap.end())
+            {
+                VectorSet<size_t>& ssaIds = csit->second;
+                for (size_t ssaId: rfit->second.ssaIds)
+                    ssaIds.eraseValue(ssaId);
+            }
         }
         
         if (!v.second.ssaIds.empty())
-            rfit->second = v.second;
+        {
+            // just add if previously present
+            if (rfit != retSSAIdMap.end())
+                rfit->second = v.second;
+            else
+                retSSAIdMap.insert(v);
+        }
         else // erase if empty
             retSSAIdMap.erase(v.first);
         
@@ -1702,7 +1718,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     }
                     
                     reduceSSAIds(curSSAIdMap, retSSAIdMap, routineMap, ssaReplacesMap,
-                                 ssaEntry);
+                                 entry, ssaEntry);
                     
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
                     
