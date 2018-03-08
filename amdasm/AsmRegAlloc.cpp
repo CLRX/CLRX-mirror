@@ -1331,15 +1331,11 @@ static void revertRetSSAIdMap(const std::unordered_map<AsmSingleVReg, size_t>& c
     for (auto v: entry.prevRetSSAIdSets)
     {
         auto rfit = retSSAIdMap.find(v.first);
-        if (rdata!=nullptr)
+        if (rdata!=nullptr && rfit != retSSAIdMap.end())
         {
-            auto csit = rdata->curSSAIdMap.find(v.first);
-            if (csit != rdata->curSSAIdMap.end())
-            {
-                VectorSet<size_t>& ssaIds = csit->second;
-                for (size_t ssaId: rfit->second.ssaIds)
-                    ssaIds.eraseValue(ssaId);
-            }
+            VectorSet<size_t>& ssaIds = rdata->curSSAIdMap[v.first];
+            for (size_t ssaId: rfit->second.ssaIds)
+                ssaIds.eraseValue(ssaId);
         }
         
         if (!v.second.ssaIds.empty())
