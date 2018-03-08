@@ -590,6 +590,7 @@ struct CLRX_INTERNAL RetSSAEntry
 {
     std::vector<size_t> routines;
     VectorSet<size_t> ssaIds;
+    size_t prevSSAId; // for curSSAId
 };
 
 typedef std::unordered_map<AsmSingleVReg, RetSSAEntry> RetSSAIdMap;
@@ -1310,8 +1311,10 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
     }
 }
 
-static void initializePrevRetSSAIds(const RetSSAIdMap& retSSAIdMap,
-            const RoutineData& rdata, FlowStackEntry& entry)
+static void initializePrevRetSSAIds(const CodeBlock& cblock,
+            const std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
+            const RetSSAIdMap& retSSAIdMap, const RoutineData& rdata,
+            FlowStackEntry& entry)
 {
     for (const auto& v: rdata.lastSSAIdMap)
     {
@@ -1321,10 +1324,15 @@ static void initializePrevRetSSAIds(const RetSSAIdMap& retSSAIdMap,
         auto rfit = retSSAIdMap.find(v.first);
         if (rfit != retSSAIdMap.end())
             res.first->second = rfit->second;
+        
+        auto cbsit = cblock.ssaInfoMap.find(v.first);
+        auto csit = curSSAIdMap.find(v.first);
+        res.first->second.prevSSAId = cbsit!=cblock.ssaInfoMap.end() ?
+                cbsit->second.ssaIdBefore : (csit!=curSSAIdMap.end() ? csit->second : 0);
     }
 }
 
-static void revertRetSSAIdMap(const std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
+static void revertRetSSAIdMap(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
             RetSSAIdMap& retSSAIdMap, FlowStackEntry& entry, RoutineData* rdata)
 {
     // revert retSSAIdMap
@@ -1366,6 +1374,7 @@ static void revertRetSSAIdMap(const std::unordered_map<AsmSingleVReg, size_t>& c
                 std::cout << " " << v;
             std::cout << std::endl;
         }
+        curSSAIdMap[v.first] = v.second.prevSSAId;
     }
 }
 
@@ -1532,7 +1541,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     {
                         //std::cout << "joincall:"<< next.block << std::endl;
                         auto it = routineMap.find(next.block); // must find
-                        initializePrevRetSSAIds(retSSAIdMap, it->second, entry);
+                        initializePrevRetSSAIds(cblock, curSSAIdMap, retSSAIdMap,
+                                    it->second, entry);
                         joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, next.block);
                     }
             }
@@ -1839,7 +1849,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     {
                         //std::cout << "joincall:"<< next.block << std::endl;
                         auto it = routineMap.find(next.block); // must find
-                        initializePrevRetSSAIds(retSSAIdMap, it->second, entry);
+                        initializePrevRetSSAIds(cblock, curSSAIdMap, retSSAIdMap,
+                                    it->second, entry);
                         joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, next.block);
                     }
             }
