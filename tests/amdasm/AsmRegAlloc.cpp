@@ -4738,6 +4738,273 @@ bb2:    s_and_b32 sa[2], sa[2], sa[0]
             { { "sa", 6 }, { { 3, 2 }, { 4, 2 } } }
         },
         true, ""
+    },
+    {   // 35 - retssa tests
+        R"ffDXD(.regvar sa:s:10, va:v:8
+        s_mov_b32 sa[2], s4
+        s_mov_b32 sa[3], s5
+        s_mov_b32 sa[4], s6
+        s_mov_b32 sa[5], s5
+        v_mov_b32 va[1], v0
+        v_mov_b32 va[2], v1
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]
+        s_cbranch_vccnz aa1
+aa0:    s_xor_b32 sa[2], sa[1], sa[0]
+        s_xor_b32 sa[3], sa[3], sa[0]
+        
+        .cf_call routine2
+        s_swappc_b64 s[0:1], s[2:3]
+        
+        s_cbranch_vccnz aa3
+aa2:    s_xor_b32 sa[6], sa[1], sa[0]
+        s_xor_b32 sa[7], sa[7], sa[0]
+        v_xor_b32 va[1], va[0], va[0]
+        v_xor_b32 va[2], va[0], va[0]
+        s_endpgm
+        
+aa3:    s_xor_b32 sa[6], sa[6], sa[0]
+        s_xor_b32 sa[7], sa[7], sa[0]
+        s_xor_b32 sa[8], sa[8], sa[0]
+        s_xor_b32 sa[5], sa[5], sa[0]
+        v_xor_b32 va[1], va[1], va[0]
+        v_xor_b32 va[0], va[2], va[0]
+        s_endpgm
+        
+aa1:    s_xor_b32 sa[2], sa[2], sa[0]
+        s_xor_b32 sa[3], sa[3], sa[0]
+        s_xor_b32 sa[2], sa[4], sa[0]
+        s_xor_b32 sa[5], sa[5], sa[0]
+        s_cbranch_execz aa5
+        
+aa4:    s_xor_b32 sa[4], sa[4], sa[0]
+        v_xor_b32 va[1], va[1], va[0]
+        s_endpgm
+        
+aa5:    s_xor_b32 sa[4], sa[4], sa[0]
+        s_endpgm
+        
+routine:
+        s_xor_b32 sa[2], sa[2], sa[0]
+        s_xor_b32 sa[3], sa[3], sa[0]
+        s_cbranch_vccz bb1
+        
+bb0:    s_min_u32 sa[2], sa[2], sa[0]
+        s_min_u32 sa[3], sa[3], sa[0]
+        s_max_u32 sa[4], sa[4], sa[0]
+        s_xor_b32 sa[5], sa[5], sa[0]
+        v_xor_b32 va[1], va[1], va[0]
+        v_xor_b32 va[2], va[2], va[0]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+        
+bb1:    s_and_b32 sa[2], sa[2], sa[0]
+        s_and_b32 sa[3], sa[3], sa[0]
+        s_max_u32 sa[4], sa[4], sa[0]
+        s_xor_b32 sa[5], sa[5], sa[0]
+        v_xor_b32 va[1], va[1], va[0]
+        v_xor_b32 va[2], va[2], va[0]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+
+routine2:
+        s_xor_b32 sa[6], sa[6], sa[1]
+        s_xor_b32 sa[7], sa[7], sa[1]
+        s_cbranch_vccz bb3
+        
+bb2:    s_min_u32 sa[6], sa[6], sa[1]
+        s_min_u32 sa[7], sa[7], sa[1]
+        s_max_u32 sa[8], sa[8], sa[1]
+        s_xor_b32 sa[5], sa[5], sa[1]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+        
+bb3:    s_and_b32 sa[6], sa[6], sa[1]
+        s_and_b32 sa[7], sa[7], sa[1]
+        s_max_u32 sa[8], sa[8], sa[1]
+        s_xor_b32 sa[5], sa[5], sa[1]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+)ffDXD",
+        {
+            {   // block 0 - start
+                0, 28,
+                { { 9, true } },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 5 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 6 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 256 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 256+1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 3 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 4 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 5 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "va", 1 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "va", 2 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, true, false, false },
+            {   // block 1 - branch aa0-aa1
+                28, 32,
+                { { 2, false }, { 6, false } },
+                {
+                }, false, false, false },
+            {   // block 2 - aa0
+                32, 44,
+                { { 12, true } },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 2 }, SSAInfo(1, 5, 5, 5, 1, false) },
+                    { { "sa", 3 }, SSAInfo(3, 5, 5, 5, 1, true) }
+                }, true, false, false },
+            {   // block 3 - branch aa2-aa3
+                44, 48,
+                { { 4, false }, { 5, false } },
+                {
+                }, false, false, false },
+            {   // block 4 - aa2
+                48, 68,
+                { },
+                {
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 6 }, SSAInfo(0, 4, 4, 4, 1, false) },
+                    { { "sa", 7 }, SSAInfo(2, 4, 4, 4, 1, true) },
+                    { { "va", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 1 }, SSAInfo(1, 4, 4, 4, 1, false) },
+                    { { "va", 2 }, SSAInfo(1, 4, 4, 4, 1, false) }
+                }, false, false, true },
+            {   // block 5 - aa3
+                68, 96,
+                { },
+                {
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 5 }, SSAInfo(4, 6, 6, 6, 1, true) },
+                    { { "sa", 6 }, SSAInfo(2, 5, 5, 5, 1, true) },
+                    { { "sa", 7 }, SSAInfo(2, 5, 5, 5, 1, true) },
+                    { { "sa", 8 }, SSAInfo(1, 3, 3, 3, 1, true) },
+                    { { "va", 0 }, SSAInfo(0, 1, 1, 1, 1, true) },
+                    { { "va", 1 }, SSAInfo(2, 5, 5, 5, 1, true) },
+                    { { "va", 2 }, SSAInfo(2, SIZE_MAX, 5, SIZE_MAX, 0, true) }
+                }, false, false, true },
+            {   // block 6 - aa1
+                96, 116,
+                { { 7, false }, { 8, false } },
+                {
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 2 }, SSAInfo(3, 6, 6, 7, 2, true) },
+                    { { "sa", 3 }, SSAInfo(3, 6, 6, 6, 1, true) },
+                    { { "sa", 4 }, SSAInfo(2, SIZE_MAX, 4, SIZE_MAX, 0, true) },
+                    { { "sa", 5 }, SSAInfo(2, 7, 7, 7, 1, true) }
+                }, false, false, false },
+            {   // block 7 - aa4
+                116, 128,
+                { },
+                {
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 4 }, SSAInfo(2, 4, 4, 4, 1, true) },
+                    { { "va", 0 }, SSAInfo(0, SIZE_MAX, 2, SIZE_MAX, 0, true) },
+                    { { "va", 1 }, SSAInfo(2, 6, 6, 6, 1, true) }
+                }, false, false, true },
+            {   // block 8 - aa5
+                128, 136,
+                { },
+                {
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 4 }, SSAInfo(2, 5, 5, 5, 1, true) }
+                }, false, false, true },
+            {   // block 9 - routine
+                136, 148,
+                { { 10, false }, { 11, false } },
+                {
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 2, 2, 2, 1, true) }
+                }, false, false, false },
+            {   // block 10 - bb0
+                148, 176,
+                { },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 2 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "sa", 3 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "sa", 4 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 5 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "va", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 1 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "va", 2 }, SSAInfo(1, 2, 2, 2, 1, true) }
+                }, false, true, true },
+            {   // block 11 - bb1
+                176, 204,
+                { },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 2 }, SSAInfo(2, 4, 4, 4, 1, true) },
+                    { { "sa", 3 }, SSAInfo(2, 4, 4, 4, 1, true) },
+                    { { "sa", 4 }, SSAInfo(1, 3, 3, 3, 1, true) },
+                    { { "sa", 5 }, SSAInfo(1, 3, 3, 3, 1, true) },
+                    { { "va", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "va", 1 }, SSAInfo(1, 3, 3, 3, 1, true) },
+                    { { "va", 2 }, SSAInfo(1, 3, 3, 3, 1, true) }
+                }, false, true, true },
+            {   // block 12 - routine2
+                204, 216,
+                { { 13, false }, { 14, false } },
+                {
+                    { { "sa", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 6 }, SSAInfo(0, 1, 1, 1, 1, true) },
+                    { { "sa", 7 }, SSAInfo(0, 1, 1, 1, 1, true) }
+                }, false, false, false },
+            {   // block 13 - bb2
+                216, 236,
+                { },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 5 }, SSAInfo(2, 4, 4, 4, 1, true) },
+                    { { "sa", 6 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 7 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 8 }, SSAInfo(0, 1, 1, 1, 1, true) }
+                }, false, true, true },
+            {   // block 14 - bb3
+                236, 256,
+                { },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 5 }, SSAInfo(2, 5, 5, 5, 1, true) },
+                    { { "sa", 6 }, SSAInfo(1, 3, 3, 3, 1, true) },
+                    { { "sa", 7 }, SSAInfo(1, 3, 3, 3, 1, true) },
+                    { { "sa", 8 }, SSAInfo(0, 2, 2, 2, 1, true) }
+                }, false, true, true }
+        },
+        {   // SSA replaces
+            { { "sa", 2 }, { { 4, 3 } } },
+            { { "sa", 3 }, { { 4, 3 } } },
+            { { "sa", 4 }, { { 3, 2 } } },
+            { { "sa", 5 }, { { 3, 2 }, { 5, 4 } } },
+            { { "sa", 6 }, { { 3, 2 } } },
+            { { "sa", 7 }, { { 3, 2 } } },
+            { { "sa", 8 }, { { 2, 1 } } },
+            { { "va", 1 }, { { 3, 2 } } },
+            { { "va", 2 }, { { 3, 2 } } }
+        },
+        true, ""
     }
 };
 

@@ -1221,7 +1221,7 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src)
     }
 }
 
-static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
+static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
             RetSSAIdMap& retSSAIdMap, std::unordered_map<size_t, RoutineData>& routineMap,
             SSAReplacesMap& ssaReplacesMap, FlowStackEntry& entry, SSAEntry& ssaEntry)
 {
@@ -1255,6 +1255,7 @@ static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
                             VectorSet<size_t>({ ssaId-1 });
         // finally remove from container (because obsolete)
         retSSAIdMap.erase(ssaIdsIt);
+        return true;
     }
     else if (ssaIdsIt != retSSAIdMap.end() && sinfo.ssaIdChange!=0)
     {
@@ -1265,6 +1266,7 @@ static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         // just remove, if some change without read before
         retSSAIdMap.erase(ssaIdsIt);
     }
+    return false;
 }
 
 static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
@@ -1723,8 +1725,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         continue; // no change for registers
                     }
                     
-                    reduceSSAIds(curSSAIdMap, retSSAIdMap, routineMap, ssaReplacesMap,
-                                 entry, ssaEntry);
+                    bool reducedSSAId = reduceSSAIds(curSSAIdMap, retSSAIdMap,
+                                routineMap, ssaReplacesMap, entry, ssaEntry);
                     
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
                     
@@ -1743,7 +1745,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     totalSSACount += sinfo.ssaIdChange;
                     sinfo.ssaIdLast = sinfo.ssaIdChange!=0 ? totalSSACount-1 : SIZE_MAX;
                     //totalSSACount = std::max(totalSSACount, ssaId);
-                    ssaId = totalSSACount;
+                    if (!reducedSSAId || sinfo.ssaIdChange!=0)
+                        ssaId = totalSSACount;
                     
                     /*if (!callStack.empty())
                         // put data to routine data
