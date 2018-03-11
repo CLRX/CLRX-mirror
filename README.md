@@ -131,6 +131,12 @@ or (for NMake)
 nmake Docs
 ```
 
+#### FreeBSD
+
+Due to unknown reasons, the compilation under clang++ will be failed. We recommend to use
+gcc compiler to build the CLRadeonExtender. You should prepend cmake command by `CXX=g++`:
+`CXX=g++ cmake .. ....`.
+
 
 ### Installation
 

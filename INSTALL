@@ -92,11 +92,17 @@ or just execute build option in Visual Studio.
 After building you can check whether project is working (if you will build tests):
 
   ctest
-  
+
 2.1. Windows and MSVC
 
 CLRadeonExtender has been compiled under Windows 8.1 and Microsoft Visual Studio 2015
 Community version.
+
+2.2. FreeBSD
+
+Due to unknown reasons, the compilation under clang++ will be failed. We recommend to use
+gcc compiler to build the CLRadeonExtender. You should prepend cmake command by `CXX=g++`:
+`CXX=g++ cmake .. ....`.
 
 3. Installation
 
