@@ -25,7 +25,7 @@
 #include "AsmRegAlloc.h"
 
 const AsmSSADataCase ssaDataTestCases2Tbl[] =
-{    
+{
     {   // 27 - conflicts inside routines
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
@@ -1677,4 +1677,3 @@ bb3:    s_and_b32 sa[6], sa[6], sa[1]
     },
     { nullptr }
 };
-
