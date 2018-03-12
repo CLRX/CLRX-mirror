@@ -1461,10 +1461,15 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                         subroutinesCache, routineMap, subrData, entry.blockIndex, true);
                     if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
                     {   // leave from loop point
+                        std::cout << "   loopfound " << entry.blockIndex << std::endl;
                         auto loopsit = loopSSAIdMap.find(entry.blockIndex);
                         if (loopsit != loopSSAIdMap.end())
+                        {
+                            std::cout << "   loopssaIdMap: " <<
+                                    entry.blockIndex << std::endl;
                             joinLastSSAIdMap(subrData.lastSSAIdMap,
                                     loopsit->second.ssaIdMap, subrData, true);
+                        }
                     }
                     subroutinesCache.put(entry.blockIndex, subrData);
                     
@@ -1590,13 +1595,18 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                         subroutinesCache, routineMap, subrData, entry.blockIndex, true);
                 if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
                 {   // leave from loop point
+                    std::cout << "   loopfound: " << entry.blockIndex << std::endl;
                     if (loopsit != loopSSAIdMap.end())
+                    {
+                        std::cout << "   loopssaIdMap: " << entry.blockIndex << std::endl;
                         joinLastSSAIdMap(subrData.lastSSAIdMap, loopsit->second.ssaIdMap,
                                          subrData, true);
+                    }
                 }
                 subroutinesCache.put(entry.blockIndex, subrData);
             }
-            if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
+            if (loopBlocks.find(entry.blockIndex) != loopBlocks.end() &&
+                    loopsit != loopSSAIdMap.end())
                 // mark that loop has passed fully
                 loopsit->second.passed = true;
             
