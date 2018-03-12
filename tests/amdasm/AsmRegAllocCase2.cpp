@@ -26,7 +26,7 @@
 
 const AsmSSADataCase ssaDataTestCases2Tbl[] =
 {
-    {   // 27 - conflicts inside routines
+    {   // 0 - conflicts inside routines
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -188,7 +188,7 @@ bb2:    s_and_b32 sa[3], sa[3], sa[6]
         },
         true, ""
     },
-    {  // 28 - res second point cache test 1
+    {  // 1 - res second point cache test 1
         R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -383,7 +383,7 @@ mainz:
         },
         true, ""
     },
-    {   // 29 - cache test 2: loop
+    {   // 2 - cache test 2: loop
         R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -528,7 +528,7 @@ aa3:    s_xor_b32 sa[4], sa[4], sa[7]
         true, ""
     },
 #if 0
-    {   // 30 - routine with loop
+    {   // 3 - routine with loop
         R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -664,7 +664,7 @@ loopend:
         true, ""
     }
 #endif
-    {   // 31 - routine with condition
+    {   // 4 - routine with condition
         R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -788,7 +788,7 @@ rend:
         },
         true, ""
     },
-    {   // 32 - two routines with common code
+    {   // 5 - two routines with common code
         R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -935,7 +935,7 @@ routine2:
         },
         true, ""
     },
-    {   // 33 - simple call, more complex routine (reduce with reads)
+    {   // 6 - simple call, more complex routine (reduce with reads)
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -1036,7 +1036,7 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
         },
         true, ""
     },
-    {   // 34 - retssa tests
+    {   // 7 - retssa tests
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -1248,7 +1248,7 @@ bb2:    s_and_b32 sa[2], sa[2], sa[0]
         },
         true, ""
     },
-    {   // 35 - retssa tests
+    {   // 8 - retssa tests
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
@@ -1408,7 +1408,7 @@ bb2:    s_and_b32 sa[2], sa[2], sa[0]
         },
         true, ""
     },
-    {   // 35 - retssa tests
+    {   // 9 - retssa tests
         R"ffDXD(.regvar sa:s:10, va:v:8
         s_mov_b32 sa[2], s4
         s_mov_b32 sa[3], s5
