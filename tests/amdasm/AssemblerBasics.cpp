@@ -49,7 +49,7 @@ static void pushSymbolsFromScopes(const AsmScope& scope,
     }
 }
 
-static void testAssembler(cxuint testId, const AsmTestCase& testCase)
+static void testAssembler(cxuint testSuiteId, cxuint testId, const AsmTestCase& testCase)
 {
     std::istringstream input(testCase.input);
     std::ostringstream errorStream;
@@ -66,7 +66,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     bool good = assembler.assemble();
     /* compare results */
     char testName[30];
-    snprintf(testName, 30, "Test #%u", testId);
+    snprintf(testName, 30, "Test%u #%u", testSuiteId, testId);
     
     // check whether good, format, device, bitness is match
     assertValue(testName, "good", int(testCase.good), int(good));
@@ -159,7 +159,7 @@ int main(int argc, const char** argv)
     int retVal = 0;
     for (size_t i = 0; asmTestCases1Tbl[i].input != nullptr; i++)
         try
-        { testAssembler(i, asmTestCases1Tbl[i]); }
+        { testAssembler(0, i, asmTestCases1Tbl[i]); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;
@@ -167,7 +167,7 @@ int main(int argc, const char** argv)
         }
     for (size_t i = 0; asmTestCases2Tbl[i].input != nullptr; i++)
         try
-        { testAssembler(i, asmTestCases2Tbl[i]); }
+        { testAssembler(1, i, asmTestCases2Tbl[i]); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;

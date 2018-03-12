@@ -123,7 +123,7 @@ static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
     return { it->second, vr.index };
 }
 
-static void testCreateSSAData(cxuint i, const AsmSSADataCase& testCase)
+static void testCreateSSAData(cxuint testSuiteId, cxuint i, const AsmSSADataCase& testCase)
 {
     std::cout << "-----------------------------------------------\n"
     "           Test " << i << "\n"
@@ -150,7 +150,7 @@ static void testCreateSSAData(cxuint i, const AsmSSADataCase& testCase)
     regAlloc.createSSAData(*section.usageHandler);
     const std::vector<CodeBlock>& resCodeBlocks = regAlloc.getCodeBlocks();
     std::ostringstream oss;
-    oss << " testAsmSSADataCase#" << i;
+    oss << " testAsmSSAData" << testSuiteId << " case#" << i;
     const std::string testCaseName = oss.str();
     assertValue<bool>("testAsmSSAData", testCaseName+".good",
                       testCase.good, good);
@@ -298,7 +298,7 @@ int main(int argc, const char** argv)
         }
     for (size_t i = 0; ssaDataTestCases1Tbl[i].input!=nullptr; i++)
         try
-        { testCreateSSAData(i, ssaDataTestCases1Tbl[i]); }
+        { testCreateSSAData(0, i, ssaDataTestCases1Tbl[i]); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;
@@ -306,7 +306,7 @@ int main(int argc, const char** argv)
         }
     for (size_t i = 0; ssaDataTestCases2Tbl[i].input!=nullptr; i++)
         try
-        { testCreateSSAData(i, ssaDataTestCases2Tbl[i]); }
+        { testCreateSSAData(1, i, ssaDataTestCases2Tbl[i]); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;
