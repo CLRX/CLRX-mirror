@@ -36,6 +36,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/Containers.h>
 #include <CLRX/amdasm/Commons.h>
 #include <CLRX/amdasm/AsmSource.h>
 #include <CLRX/amdasm/AsmFormats.h>
@@ -335,7 +336,7 @@ public:
     
      // first - orig ssaid, second - dest ssaid
     typedef std::pair<size_t, size_t> SSAReplace;
-    typedef std::unordered_map<AsmSingleVReg, std::vector<SSAReplace> > SSAReplacesMap;
+    typedef std::unordered_map<AsmSingleVReg, VectorSet<SSAReplace> > SSAReplacesMap;
     // interference graph type
     typedef Array<std::unordered_set<size_t> > InterGraph;
     typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > VarIndexMap;

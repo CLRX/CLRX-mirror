@@ -657,7 +657,7 @@ static inline void insertReplace(SSAReplacesMap& rmap, const AsmSingleVReg& vreg
               size_t origId, size_t destId)
 {
     auto res = rmap.insert({ vreg, {} });
-    res.first->second.push_back({ origId, destId });
+    res.first->second.insertValue({ origId, destId });
 }
 
 static void handleSSAEntryWhileResolving(SSAReplacesMap* replacesMap,
@@ -1605,10 +1605,19 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 }
                 subroutinesCache.put(entry.blockIndex, subrData);
             }
-            if (loopBlocks.find(entry.blockIndex) != loopBlocks.end() &&
-                    loopsit != loopSSAIdMap.end())
-                // mark that loop has passed fully
-                loopsit->second.passed = true;
+            if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
+            {
+                if (loopsit != loopSSAIdMap.end())
+                {
+                    std::cout << "   mark loopblocks passed: " <<
+                                entry.blockIndex << std::endl;
+                    // mark that loop has passed fully
+                    loopsit->second.passed = true;
+                }
+                else
+                    std::cout << "   loopblocks nopassed: " <<
+                                entry.blockIndex << std::endl;
+            }
             
             flowStack.pop_back();
         }
@@ -2009,10 +2018,10 @@ void AsmRegAllocator::applySSAReplaces()
     
     for (auto& entry: ssaReplacesMap)
     {
-        std::vector<SSAReplace>& replaces = entry.second;
+        VectorSet<SSAReplace>& replaces = entry.second;
         std::sort(replaces.begin(), replaces.end());
         replaces.resize(std::unique(replaces.begin(), replaces.end()) - replaces.begin());
-        std::vector<SSAReplace> newReplaces;
+        VectorSet<SSAReplace> newReplaces;
         
         std::unordered_map<size_t, MinSSAGraphNode> ssaGraphNodes;
         
@@ -2090,7 +2099,7 @@ void AsmRegAllocator::applySSAReplaces()
             if (it == ssaReplacesMap.end())
                 continue;
             SSAInfo& sinfo = ssaEntry.second;
-            std::vector<SSAReplace>& replaces = it->second;
+            VectorSet<SSAReplace>& replaces = it->second;
             if (sinfo.readBeforeWrite)
             {
                 auto rit = binaryMapFind(replaces.begin(), replaces.end(),
