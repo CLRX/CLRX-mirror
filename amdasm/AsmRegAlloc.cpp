@@ -1418,14 +1418,17 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         const ResSecondPointsToCache& subroutToCache,
         SimpleCache<size_t, RoutineData>& subroutinesCache,
         const std::unordered_map<size_t, RoutineData>& routineMap, RoutineData& rdata,
-        size_t routineBlock, bool noMainLoop = false)
+        size_t routineBlock, bool noMainLoop = false,
+        const std::vector<bool>& prevFlowStackBlocks = {})
 {
     std::cout << "--------- createRoutineData ----------------\n";
     std::vector<bool> visited(codeBlocks.size(), false);
     std::deque<FlowStackEntry> flowStack;
+    std::vector<bool> flowStackBlocks(codeBlocks.size(), false);
     // last SSA ids map from returns
     RetSSAIdMap retSSAIdMap;
     flowStack.push_back({ routineBlock, 0 });
+    flowStackBlocks[routineBlock] = true;
     
     std::unordered_map<size_t, LoopSSAIdMap> loopSSAIdMap;
     
@@ -1436,6 +1439,13 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         
         if (entry.nextIndex == 0)
         {
+            if (!prevFlowStackBlocks.empty() && prevFlowStackBlocks[entry.blockIndex])
+            {
+                flowStackBlocks[entry.blockIndex] = false;
+                flowStack.pop_back();
+                continue;
+            }
+            
             // process current block
             //if (/*cachedRdata != nullptr &&*/
                 //visited[entry.blockIndex] && flowStack.size() > 1)
@@ -1457,8 +1467,11 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 {
                     RoutineData subrData;
                     std::cout << "-- subrcache2 for " << entry.blockIndex << std::endl;
+                    flowStackBlocks[entry.blockIndex] = false;
                     createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, subroutToCache,
-                        subroutinesCache, routineMap, subrData, entry.blockIndex, true);
+                        subroutinesCache, routineMap, subrData, entry.blockIndex, true,
+                        flowStackBlocks);
+                    flowStackBlocks[entry.blockIndex] = true;
                     if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
                     {   // leave from loop point
                         std::cout << "   loopfound " << entry.blockIndex << std::endl;
@@ -1483,6 +1496,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 std::cout << "procret2: " << entry.blockIndex << std::endl;
                 joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap, *cachedRdata);
                 std::cout << "procretend2" << std::endl;
+                flowStackBlocks[entry.blockIndex] = false;
                 flowStack.pop_back();
                 continue;
             }
@@ -1515,11 +1529,14 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 else // insert new
                     loopSSAIdMap.insert({ entry.blockIndex,
                                 { rdata.curSSAIdMap, false } });
+                
+                flowStackBlocks[entry.blockIndex] = false;
                 flowStack.pop_back();
                 continue;
             }
             else
             {
+                flowStackBlocks[entry.blockIndex] = false;
                 flowStack.pop_back();
                 continue;
             }
@@ -1534,6 +1551,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         if (entry.nextIndex < cblock.nexts.size())
         {
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            flowStackBlocks[cblock.nexts[entry.nextIndex].block] = true;
             entry.nextIndex++;
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
@@ -1554,6 +1572,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     }
             }
             flowStack.push_back({ entry.blockIndex+1, 0 });
+            flowStackBlocks[entry.blockIndex+1] = true;
             entry.nextIndex++;
         }
         else
@@ -1591,8 +1610,11 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             { //put to cache
                 RoutineData subrData;
                 std::cout << "-- subrcache for " << entry.blockIndex << std::endl;
+                flowStackBlocks[entry.blockIndex] = false;
                 createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, subroutToCache,
-                        subroutinesCache, routineMap, subrData, entry.blockIndex, true);
+                        subroutinesCache, routineMap, subrData, entry.blockIndex, true,
+                        flowStackBlocks);
+                flowStackBlocks[entry.blockIndex] = true;
                 if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
                 {   // leave from loop point
                     std::cout << "   loopfound: " << entry.blockIndex << std::endl;
@@ -1619,6 +1641,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                                 entry.blockIndex << std::endl;
             }
             
+            flowStackBlocks[entry.blockIndex] = false;
             flowStack.pop_back();
         }
     }

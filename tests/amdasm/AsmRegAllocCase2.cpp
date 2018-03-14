@@ -527,7 +527,6 @@ aa3:    s_xor_b32 sa[4], sa[4], sa[7]
         },
         true, ""
     },
-#if 0
     {   // 3 - routine with loop
         R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
         s_mov_b32 sa[2], s4
@@ -597,7 +596,7 @@ loopend:
                     { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, true) },
                     { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
                     { { "sa", 2 }, SSAInfo(2, 4, 4, 4, 1, true) },
-                    { { "sa", 5 }, SSAInfo(2, 6, 6, 6, 1, true) }
+                    { { "sa", 5 }, SSAInfo(4, 6, 6, 6, 1, true) }
                 }, true, false, false },
             {   // block 2 - end
                 32, 36,
@@ -658,12 +657,11 @@ loopend:
                 }, false, true, true }
         },
         {   // SSA replaces
-            { { "sa", 2 }, { { 3, 2 }, { 3, 2 }, { 4, 1 } } },
-            { { "sa", 5 }, { { 3, 2 }, { 4, 2 }, { 5, 2 }, { 3, 1 }, { 5, 2 }, { 6, 1 } } }
+            { { "sa", 2 }, { { 3, 2 }, { 4, 1 } } },
+            { { "sa", 5 }, { { 3, 1 }, { 5, 2 }, { 6, 1 } } }
         },
         true, ""
-    }
-#endif
+    },
     {   // 4 - routine with condition
         R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
         s_mov_b32 sa[2], s4
