@@ -450,7 +450,13 @@ This pseudo-operation must be inside kernel. Go to metadata (metadata ELF note) 
 
 ### .newbinfmt
 
-This pseudo-ops set new binary format.
+This pseudo-op set new binary format.
+
+### .nosectdiffs
+
+This pseudo-op disable section difference resolving. After disabling it, the global data
+and GOT sections are absolute addressable. This is old ROCm mode for compatibility with
+older an assembler's versions.
 
 ### .pgmrsrc1
 

@@ -1983,6 +1983,7 @@
             <item>.noaltmacro</item>
             <item>.nobuggyfplit</item>
             <item>.nomacrocase</item>
+            <item>.nosectdiffs</item>
             <item>.octa</item>
             <item>.offset</item>
             <item>.org</item>

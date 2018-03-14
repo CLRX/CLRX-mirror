@@ -275,6 +275,7 @@
             <keyword>noaltmacro</keyword>
             <keyword>nobuggyfplit</keyword>
             <keyword>nomacrocase</keyword>
+            <keyword>nosectdiffs</keyword>
             <keyword>octa</keyword>
             <keyword>offset</keyword>
             <keyword>org</keyword>

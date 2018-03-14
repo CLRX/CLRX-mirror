@@ -53,7 +53,8 @@ static const char* rocmPseudoOpNamesTbl[] =
     "md_kernarg_segment_size", "md_language","md_private_segment_fixed_size",
     "md_sgprsnum", "md_symname", "md_version",
     "md_vgprsnum", "md_wavefront_size",
-    "metadata", "newbinfmt", "pgmrsrc1", "pgmrsrc2", "printf", "priority",
+    "metadata", "newbinfmt", "nosectdiffs",
+    "pgmrsrc1", "pgmrsrc2", "printf", "priority",
     "private_elem_size", "private_segment_align",
     "privmode", "reqd_work_group_size",
     "reserved_sgprs", "reserved_vgprs",
@@ -92,7 +93,8 @@ enum
     ROCMOP_MD_KERNARG_SEGMENT_SIZE, ROCMOP_MD_LANGUAGE,
     ROCMOP_MD_PRIVATE_SEGMENT_FIXED_SIZE, ROCMOP_MD_SGPRSNUM,
     ROCMOP_MD_SYMNAME, ROCMOP_MD_VERSION, ROCMOP_MD_VGPRSNUM, ROCMOP_MD_WAVEFRONT_SIZE,
-    ROCMOP_METADATA, ROCMOP_NEWBINFMT, ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PRINTF,
+    ROCMOP_METADATA, ROCMOP_NEWBINFMT, ROCMOP_NOSECTDIFFS,
+    ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PRINTF,
     ROCMOP_PRIORITY, ROCMOP_PRIVATE_ELEM_SIZE, ROCMOP_PRIVATE_SEGMENT_ALIGN,
     ROCMOP_PRIVMODE, ROCMOP_REQD_WORK_GROUP_SIZE,
     ROCMOP_RESERVED_SGPRS, ROCMOP_RESERVED_VGPRS,
@@ -277,16 +279,25 @@ AsmFormatHandler::SectionInfo AsmROCmHandler::getSectionInfo(cxuint sectionId) c
     info.flags = 0;
     // code is addressable and writeable
     if (info.type == AsmSectionType::CODE || info.type == AsmSectionType::DATA)
+    {
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
+        if (info.type == AsmSectionType::DATA && !sectionDiffsResolvable)
+            info.flags |= ASMSECT_ABS_ADDRESSABLE;
+    }
     else if (info.type == AsmSectionType::ROCM_GOT)
+    {
         info.flags = ASMSECT_ADDRESSABLE;
+        if (!sectionDiffsResolvable)
+            info.flags |= ASMSECT_ABS_ADDRESSABLE;
+    }
     // any other section (except config) are absolute addressable and writeable
     else if (info.type != AsmSectionType::CONFIG)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     
-    if (info.type == AsmSectionType::CODE || info.type == AsmSectionType::DATA ||
-        info.type == AsmSectionType::ROCM_GOT)
-        info.relSpace = 0;  // first rel space
+    if (sectionDiffsResolvable)
+        if (info.type == AsmSectionType::CODE || info.type == AsmSectionType::DATA ||
+            info.type == AsmSectionType::ROCM_GOT)
+            info.relSpace = 0;  // first rel space
     
     info.name = sections[sectionId].name;
     return info;
@@ -1764,6 +1775,15 @@ void AsmROCmPseudoOps::setUseGridWorkGroupCount(AsmROCmHandler& handler,
             (dimMask<<ROCMFLAG_USE_GRID_WORKGROUP_COUNT_BIT);
 }
 
+void AsmROCmPseudoOps::noSectionDiffs(AsmROCmHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    handler.sectionDiffsResolvable = false;
+}
+
 void AsmROCmPseudoOps::addGotSymbol(AsmROCmHandler& handler,
                     const char* pseudoOpPlace, const char* linePtr)
 {
@@ -2141,6 +2161,9 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             break;
         case ROCMOP_MD_LANGUAGE:
             AsmROCmPseudoOps::setKernelLanguage(*this, stmtPlace, linePtr);
+            break;
+        case ROCMOP_NOSECTDIFFS:
+            AsmROCmPseudoOps::noSectionDiffs(*this, linePtr);
             break;
         case ROCMOP_MD_PRIVATE_SEGMENT_FIXED_SIZE:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
@@ -2751,6 +2774,10 @@ void AsmROCmHandler::addSymbols(bool sectionDiffsPrepared)
 
 bool AsmROCmHandler::prepareBinary()
 {
+    if (!sectionDiffsResolvable)
+        // if no section resolvable
+        prepareSectionDiffsResolving();
+    
     if (unresolvedGlobals)
     {
         // add and update symbols after section diffs prepping only

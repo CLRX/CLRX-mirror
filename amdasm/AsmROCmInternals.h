@@ -212,6 +212,9 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     static void addGotSymbol(AsmROCmHandler& handler,
                     const char* pseudoOpPlace, const char* linePtr);
     
+    // .nosectdiffs
+    static void noSectionDiffs(AsmROCmHandler& handler, const char* linePtr);
+    
     // .kcode (open kernel code)
     static void doKCode(AsmROCmHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
