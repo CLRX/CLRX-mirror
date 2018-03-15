@@ -1478,10 +1478,11 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                         auto loopsit = loopSSAIdMap.find(entry.blockIndex);
                         if (loopsit != loopSSAIdMap.end())
                         {
-                            std::cout << "   loopssaIdMap: " <<
+                            std::cout << "   loopssaId2Map: " <<
                                     entry.blockIndex << std::endl;
                             joinLastSSAIdMap(subrData.lastSSAIdMap,
                                     loopsit->second.ssaIdMap, subrData, true);
+                            std::cout << "   loopssaIdMap2End: " << std::endl;
                         }
                     }
                     subroutinesCache.put(entry.blockIndex, subrData);
@@ -1623,6 +1624,10 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                         std::cout << "   loopssaIdMap: " << entry.blockIndex << std::endl;
                         joinLastSSAIdMap(subrData.lastSSAIdMap, loopsit->second.ssaIdMap,
                                          subrData, true);
+                        std::cout << "   loopssaIdMapEnd: " << std::endl;
+                        // for main routine now
+                        joinLastSSAIdMap(rdata.lastSSAIdMap, loopsit->second.ssaIdMap,
+                                        subrData, true);
                     }
                 }
                 subroutinesCache.put(entry.blockIndex, subrData);
