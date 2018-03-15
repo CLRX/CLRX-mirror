@@ -1425,6 +1425,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     std::vector<bool> visited(codeBlocks.size(), false);
     std::deque<FlowStackEntry> flowStack;
     std::vector<bool> flowStackBlocks(codeBlocks.size(), false);
+    if (!prevFlowStackBlocks.empty())
+        flowStackBlocks = prevFlowStackBlocks;
     // last SSA ids map from returns
     RetSSAIdMap retSSAIdMap;
     flowStack.push_back({ routineBlock, 0 });
@@ -1441,7 +1443,6 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         {
             if (!prevFlowStackBlocks.empty() && prevFlowStackBlocks[entry.blockIndex])
             {
-                flowStackBlocks[entry.blockIndex] = false;
                 flowStack.pop_back();
                 continue;
             }
@@ -1467,11 +1468,12 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 {
                     RoutineData subrData;
                     std::cout << "-- subrcache2 for " << entry.blockIndex << std::endl;
-                    flowStackBlocks[entry.blockIndex] = false;
+                    const bool oldFB = flowStackBlocks[entry.blockIndex];
+                    flowStackBlocks[entry.blockIndex] = !oldFB;
                     createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, subroutToCache,
                         subroutinesCache, routineMap, subrData, entry.blockIndex, true,
                         flowStackBlocks);
-                    flowStackBlocks[entry.blockIndex] = true;
+                    flowStackBlocks[entry.blockIndex] = oldFB;
                     if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
                     {   // leave from loop point
                         std::cout << "   loopfound " << entry.blockIndex << std::endl;
@@ -1497,7 +1499,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 std::cout << "procret2: " << entry.blockIndex << std::endl;
                 joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap, *cachedRdata);
                 std::cout << "procretend2" << std::endl;
-                flowStackBlocks[entry.blockIndex] = false;
+                flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                 flowStack.pop_back();
                 continue;
             }
@@ -1531,13 +1533,13 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     loopSSAIdMap.insert({ entry.blockIndex,
                                 { rdata.curSSAIdMap, false } });
                 
-                flowStackBlocks[entry.blockIndex] = false;
+                flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                 flowStack.pop_back();
                 continue;
             }
             else
             {
-                flowStackBlocks[entry.blockIndex] = false;
+                flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                 flowStack.pop_back();
                 continue;
             }
@@ -1551,8 +1553,10 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         
         if (entry.nextIndex < cblock.nexts.size())
         {
-            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
-            flowStackBlocks[cblock.nexts[entry.nextIndex].block] = true;
+            const size_t nextBlock = cblock.nexts[entry.nextIndex].block;
+            flowStack.push_back({ nextBlock, 0 });
+            // negate - if true (already in flowstack, then popping keep this state)
+            flowStackBlocks[nextBlock] = !flowStackBlocks[nextBlock];
             entry.nextIndex++;
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
@@ -1572,12 +1576,15 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                         joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, next.block);
                     }
             }
-            flowStack.push_back({ entry.blockIndex+1, 0 });
-            flowStackBlocks[entry.blockIndex+1] = true;
+            const size_t nextBlock = entry.blockIndex+1;
+            flowStack.push_back({ nextBlock, 0 });
+            // negate - if true (already in flowstack, then popping keep this state)
+            flowStackBlocks[nextBlock] = !flowStackBlocks[nextBlock];
             entry.nextIndex++;
         }
         else
         {
+            std::cout << "popstart: " << entry.blockIndex << std::endl;
             if (cblock.haveReturn)
             {
                 std::cout << "procret: " << entry.blockIndex << std::endl;
@@ -1647,6 +1654,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             }
             
             flowStackBlocks[entry.blockIndex] = false;
+            std::cout << "pop: " << entry.blockIndex << std::endl;
             flowStack.pop_back();
         }
     }
@@ -1827,7 +1835,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 std::cout << "cblockToCache: " << entry.blockIndex << "=" <<
                             cblocksToCache.count(entry.blockIndex) << std::endl;
                 // back, already visited
-                flowStackBlocks[entry.blockIndex] = false;
+                flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                 flowStack.pop_back();
                 
                 size_t curWayBIndex = flowStack.back().blockIndex;
@@ -1883,8 +1891,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             
             flowStack.push_back({ nextBlock, 0, isCall });
             if (flowStackBlocks[nextBlock])
+            {
                 loopBlocks.insert(nextBlock);
-            flowStackBlocks[nextBlock] = true;
+                flowStackBlocks[nextBlock] = false; // keep to inserted in popping
+            }
+            else
+                flowStackBlocks[nextBlock] = true;
             entry.nextIndex++;
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
@@ -1906,8 +1918,13 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             flowStack.push_back({ entry.blockIndex+1, 0, false });
             if (flowStackBlocks[entry.blockIndex+1])
+            {
                 loopBlocks.insert(entry.blockIndex+1);
-            flowStackBlocks[entry.blockIndex+1] = true;
+                 // keep to inserted in popping
+                flowStackBlocks[entry.blockIndex+1] = false;
+            }
+            else
+                flowStackBlocks[entry.blockIndex+1] = true;
             entry.nextIndex++;
         }
         else // back
