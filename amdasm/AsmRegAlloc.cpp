@@ -1443,6 +1443,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         {
             if (!prevFlowStackBlocks.empty() && prevFlowStackBlocks[entry.blockIndex])
             {
+                flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                 flowStack.pop_back();
                 continue;
             }
