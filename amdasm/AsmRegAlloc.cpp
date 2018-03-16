@@ -1464,7 +1464,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     if (rit != routineMap.end())
                         cachedRdata = &rit->second;
                 }
-                if (!isLoop && cachedRdata == nullptr &&
+                if (!isLoop && visited[entry.blockIndex] && cachedRdata == nullptr &&
                     subroutToCache.count(entry.blockIndex)!=0)
                 {
                     RoutineData subrData;
