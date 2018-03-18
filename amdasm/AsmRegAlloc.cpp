@@ -1462,8 +1462,37 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         
         if (entry.nextIndex == 0)
         {
+            bool isLoop = loopBlocks.find(entry.blockIndex) != loopBlocks.end();
+            
             if (!prevFlowStackBlocks.empty() && prevFlowStackBlocks[entry.blockIndex])
             {
+                if (isLoop && (!noMainLoop || routineBlock != entry.blockIndex))
+                {
+                    // handle loops
+                    std::cout << "  join loop ssaids: " << entry.blockIndex << std::endl;
+                    auto loopsit = loopSSAIdMap.find(entry.blockIndex);
+                    if (loopsit != loopSSAIdMap.end())
+                    {
+                        if (!loopsit->second.passed)
+                            // still in loop join ssaid map
+                            joinLastSSAIdMap(loopsit->second.ssaIdMap, rdata.curSSAIdMap);
+                    }
+                    else // insert new
+                        loopsit = loopSSAIdMap.insert({ entry.blockIndex,
+                                    { rdata.curSSAIdMap, false } }).first;
+                    
+                    // add to routine data loopEnds
+                    auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
+                    if (loopsit2 != rdata.loopEnds.end())
+                    {
+                        if (!loopsit->second.passed)
+                            // still in loop join ssaid map
+                            joinLastSSAIdMap(loopsit2->second, rdata.curSSAIdMap);
+                    }
+                    else
+                        rdata.loopEnds.insert({ entry.blockIndex, rdata.curSSAIdMap });
+                }
+                
                 flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                 flowStack.pop_back();
                 continue;
@@ -1474,7 +1503,6 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 //visited[entry.blockIndex] && flowStack.size() > 1)
             const RoutineData* cachedRdata = nullptr;
             
-            bool isLoop = loopBlocks.find(entry.blockIndex) != loopBlocks.end();
             if (routineBlock != entry.blockIndex)
             {
                 cachedRdata = subroutinesCache.use(entry.blockIndex);
