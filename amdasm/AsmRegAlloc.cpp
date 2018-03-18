@@ -601,13 +601,23 @@ struct CLRX_INTERNAL RoutineData
     std::unordered_map<AsmSingleVReg, size_t> rbwSSAIdMap;
     LastSSAIdMap curSSAIdMap;
     LastSSAIdMap lastSSAIdMap;
+    // key - loop block, value - last ssaId map for loop end
+    std::unordered_map<size_t, LastSSAIdMap> loopEnds;
     bool notFirstReturn;
+    size_t weight_;
     
-    RoutineData() : notFirstReturn(false)
+    RoutineData() : notFirstReturn(false), weight_(0)
     { }
     
+    void calculateWeight()
+    {
+        weight_ = rbwSSAIdMap.size() + lastSSAIdMap.weight();
+        for (const auto& entry: loopEnds)
+            weight_ += entry.second.weight();
+    }
+    
     size_t weight() const
-    { return rbwSSAIdMap.size() + lastSSAIdMap.weight(); }
+    { return weight_; }
 };
 
 struct CLRX_INTERNAL FlowStackEntry
@@ -1144,16 +1154,17 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src)
     }
 }
 
-static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src,
-                    const RoutineData& laterRdata, bool loop = false)
+static void joinLastSSAIdMapInt(LastSSAIdMap& dest, const LastSSAIdMap& src,
+                    const LastSSAIdMap& laterRdataCurSSAIdMap,
+                    const LastSSAIdMap& laterRdataLastSSAIdMap, bool loop)
 {
     for (const auto& entry: src)
     {
-        auto lsit = laterRdata.lastSSAIdMap.find(entry.first);
-        if (lsit != laterRdata.lastSSAIdMap.end())
+        auto lsit = laterRdataLastSSAIdMap.find(entry.first);
+        if (lsit != laterRdataLastSSAIdMap.end())
         {
-            auto csit = laterRdata.curSSAIdMap.find(entry.first);
-            if (csit != laterRdata.curSSAIdMap.end() && !csit->second.empty())
+            auto csit = laterRdataCurSSAIdMap.find(entry.first);
+            if (csit != laterRdataCurSSAIdMap.end() && !csit->second.empty())
             {
                 // if found in last ssa ID map,
                 // but has first value (some way do not change SSAId)
@@ -1182,7 +1193,13 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src,
         std::cout << std::endl;
     }
     if (!loop) // do not if loop
-        joinLastSSAIdMap(dest, laterRdata.lastSSAIdMap);
+        joinLastSSAIdMap(dest, laterRdataLastSSAIdMap);
+}
+
+static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src,
+                    const RoutineData& laterRdata, bool loop = false)
+{
+    joinLastSSAIdMapInt(dest, src, laterRdata.curSSAIdMap, laterRdata.lastSSAIdMap, loop);
 }
 
 
@@ -1299,7 +1316,11 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
         }
         // add readbefore if in previous returns if not added yet
         if (rdata.notFirstReturn && beforeFirstAccess)
+        {
             rdata.lastSSAIdMap.insert({ ssaEntry.first, { prevSSAId } });
+            for (auto& loopEnd: rdata.loopEnds)
+                loopEnd.second.insert({ ssaEntry.first, { prevSSAId } });
+        }
     }
     else
     {
@@ -1488,6 +1509,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                             std::cout << "   loopssaIdMap2End: " << std::endl;
                         }
                     }
+                    subrData.calculateWeight();
                     subroutinesCache.put(entry.blockIndex, subrData);
                     
                     cachedRdata = subroutinesCache.use(entry.blockIndex);
@@ -1499,6 +1521,14 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 std::cout << "use cached subr " << entry.blockIndex << std::endl;
                 std::cout << "procret2: " << entry.blockIndex << std::endl;
                 joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap, *cachedRdata);
+                
+                // join loopEnds
+                for (const auto& loopEnd: cachedRdata->loopEnds)
+                {
+                    auto res = rdata.loopEnds.insert({ loopEnd.first, { } });
+                    joinLastSSAIdMapInt(res.first->second, rdata.curSSAIdMap,
+                                cachedRdata->curSSAIdMap, loopEnd.second, false);
+                }
                 std::cout << "procretend2" << std::endl;
                 flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                 flowStack.pop_back();
@@ -1531,8 +1561,19 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                         joinLastSSAIdMap(loopsit->second.ssaIdMap, rdata.curSSAIdMap);
                 }
                 else // insert new
-                    loopSSAIdMap.insert({ entry.blockIndex,
-                                { rdata.curSSAIdMap, false } });
+                    loopsit = loopSSAIdMap.insert({ entry.blockIndex,
+                                { rdata.curSSAIdMap, false } }).first;
+                
+                // add to routine data loopEnds
+                auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
+                if (loopsit2 != rdata.loopEnds.end())
+                {
+                    if (!loopsit->second.passed)
+                        // still in loop join ssaid map
+                        joinLastSSAIdMap(loopsit2->second, rdata.curSSAIdMap);
+                }
+                else
+                    rdata.loopEnds.insert({ entry.blockIndex, rdata.curSSAIdMap });
                 
                 flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                 flowStack.pop_back();
@@ -1638,6 +1679,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                                         subrData, true);
                     }
                 }
+                subrData.calculateWeight();
                 subroutinesCache.put(entry.blockIndex, subrData);
             }
             if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
@@ -2005,15 +2047,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                             prevWaysIndexMap, waysToCache, cblocksToCache,
                             resFirstPointsCache, resSecondPointsCache, ssaReplacesMap);
                 
-                // join routine data
-                /*auto rit = routineMap.find(entry.blockIndex);
-                if (rit != routineMap.end())
-                    // just join with current routine data
-                    joinRoutineData(routineMap.find(
-                            callStack.back().routineBlock)->second, rit->second);*/
-                /*if (!callStack.empty())
-                    collectSSAIdsForCall(flowStack2, callStack, visited,
-                            routineMap, codeBlocks);*/
                 // back, already visited
                 flowStack2.pop_back();
                 continue;
