@@ -1310,8 +1310,7 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
             beforeFirstAccess = false;
             // if not inserted
             VectorSet<size_t>& ssaIds = res.first->second;
-            if (sinfo.readBeforeWrite)
-                ssaIds.eraseValue(prevSSAId);
+            ssaIds.eraseValue(prevSSAId);
             ssaIds.insertValue(sinfo.ssaIdLast);
         }
         // add readbefore if in previous returns if not added yet
