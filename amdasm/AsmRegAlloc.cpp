@@ -1526,13 +1526,13 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
                     {   // leave from loop point
                         std::cout << "   loopfound " << entry.blockIndex << std::endl;
-                        auto loopsit = loopSSAIdMap.find(entry.blockIndex);
-                        if (loopsit != loopSSAIdMap.end())
+                        auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
+                        if (loopsit2 != rdata.loopEnds.end())
                         {
                             std::cout << "   loopssaId2Map: " <<
                                     entry.blockIndex << std::endl;
                             joinLastSSAIdMap(subrData.lastSSAIdMap,
-                                    loopsit->second.ssaIdMap, subrData, true);
+                                    loopsit2->second, subrData, true);
                             std::cout << "   loopssaIdMap2End: " << std::endl;
                         }
                     }
@@ -1683,6 +1683,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             }
             
             auto loopsit = loopSSAIdMap.find(entry.blockIndex);
+            auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
             if (flowStack.size() > 1 && subroutToCache.count(entry.blockIndex)!=0)
             { //put to cache
                 RoutineData subrData;
@@ -1695,14 +1696,14 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
                 {   // leave from loop point
                     std::cout << "   loopfound: " << entry.blockIndex << std::endl;
-                    if (loopsit != loopSSAIdMap.end())
+                    if (loopsit2 != rdata.loopEnds.end())
                     {
                         std::cout << "   loopssaIdMap: " << entry.blockIndex << std::endl;
-                        joinLastSSAIdMap(subrData.lastSSAIdMap, loopsit->second.ssaIdMap,
+                        joinLastSSAIdMap(subrData.lastSSAIdMap, loopsit2->second,
                                          subrData, true);
                         std::cout << "   loopssaIdMapEnd: " << std::endl;
                         // for main routine now
-                        joinLastSSAIdMap(rdata.lastSSAIdMap, loopsit->second.ssaIdMap,
+                        joinLastSSAIdMap(rdata.lastSSAIdMap, loopsit2->second,
                                         subrData, true);
                     }
                 }
