@@ -595,6 +595,12 @@ struct CLRX_INTERNAL RetSSAEntry
 
 typedef std::unordered_map<AsmSingleVReg, RetSSAEntry> RetSSAIdMap;
 
+struct CLRX_INTERNAL LoopSSAIdMap
+{
+    LastSSAIdMap ssaIdMap;
+    bool passed;
+};
+
 struct CLRX_INTERNAL RoutineData
 {
     // rbwSSAIdMap - read before write SSAId's map
@@ -602,7 +608,7 @@ struct CLRX_INTERNAL RoutineData
     LastSSAIdMap curSSAIdMap;
     LastSSAIdMap lastSSAIdMap;
     // key - loop block, value - last ssaId map for loop end
-    std::unordered_map<size_t, LastSSAIdMap> loopEnds;
+    std::unordered_map<size_t, LoopSSAIdMap> loopEnds;
     bool notFirstReturn;
     size_t weight_;
     
@@ -613,7 +619,7 @@ struct CLRX_INTERNAL RoutineData
     {
         weight_ = rbwSSAIdMap.size() + lastSSAIdMap.weight();
         for (const auto& entry: loopEnds)
-            weight_ += entry.second.weight();
+            weight_ += entry.second.ssaIdMap.weight();
     }
     
     size_t weight() const
@@ -1318,7 +1324,7 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
         {
             rdata.lastSSAIdMap.insert({ ssaEntry.first, { prevSSAId } });
             for (auto& loopEnd: rdata.loopEnds)
-                loopEnd.second.insert({ ssaEntry.first, { prevSSAId } });
+                loopEnd.second.ssaIdMap.insert({ ssaEntry.first, { prevSSAId } });
         }
     }
     else
@@ -1426,12 +1432,6 @@ static void updateRoutineCurSSAIdMap(RoutineData* rdata, const SSAEntry& ssaEntr
     std::cout << std::endl;
 }
 
-struct CLRX_INTERNAL LoopSSAIdMap
-{
-    LastSSAIdMap ssaIdMap;
-    bool passed;
-};
-
 static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         const std::unordered_set<size_t>& loopBlocks,
@@ -1452,8 +1452,6 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     flowStack.push_back({ routineBlock, 0 });
     flowStackBlocks[routineBlock] = true;
     
-    std::unordered_map<size_t, LoopSSAIdMap> loopSSAIdMap;
-    
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.back();
@@ -1469,27 +1467,17 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 {
                     // handle loops
                     std::cout << "  join loop ssaids: " << entry.blockIndex << std::endl;
-                    auto loopsit = loopSSAIdMap.find(entry.blockIndex);
-                    if (loopsit != loopSSAIdMap.end())
-                    {
-                        if (!loopsit->second.passed)
-                            // still in loop join ssaid map
-                            joinLastSSAIdMap(loopsit->second.ssaIdMap, rdata.curSSAIdMap);
-                    }
-                    else // insert new
-                        loopsit = loopSSAIdMap.insert({ entry.blockIndex,
-                                    { rdata.curSSAIdMap, false } }).first;
-                    
                     // add to routine data loopEnds
                     auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
                     if (loopsit2 != rdata.loopEnds.end())
                     {
-                        if (!loopsit->second.passed)
+                        if (!loopsit2->second.passed)
                             // still in loop join ssaid map
-                            joinLastSSAIdMap(loopsit2->second, rdata.curSSAIdMap);
+                            joinLastSSAIdMap(loopsit2->second.ssaIdMap, rdata.curSSAIdMap);
                     }
                     else
-                        rdata.loopEnds.insert({ entry.blockIndex, rdata.curSSAIdMap });
+                        rdata.loopEnds.insert({ entry.blockIndex,
+                                    { rdata.curSSAIdMap, false } });
                 }
                 
                 flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
@@ -1532,7 +1520,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                             std::cout << "   loopssaId2Map: " <<
                                     entry.blockIndex << std::endl;
                             joinLastSSAIdMap(subrData.lastSSAIdMap,
-                                    loopsit2->second, subrData, true);
+                                    loopsit2->second.ssaIdMap, subrData, true);
                             std::cout << "   loopssaIdMap2End: " << std::endl;
                         }
                     }
@@ -1552,9 +1540,10 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 // join loopEnds
                 for (const auto& loopEnd: cachedRdata->loopEnds)
                 {
-                    auto res = rdata.loopEnds.insert({ loopEnd.first, { } });
-                    joinLastSSAIdMapInt(res.first->second, rdata.curSSAIdMap,
-                                cachedRdata->curSSAIdMap, loopEnd.second, false);
+                    auto res = rdata.loopEnds.insert({ loopEnd.first, LoopSSAIdMap() });
+                    // true - do not add cached rdata loopend, because it was added
+                    joinLastSSAIdMapInt(res.first->second.ssaIdMap, rdata.curSSAIdMap,
+                                cachedRdata->curSSAIdMap, loopEnd.second.ssaIdMap, true);
                 }
                 std::cout << "procretend2" << std::endl;
                 flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
@@ -1580,27 +1569,17 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             {
                 // handle loops
                 std::cout << "  join loop ssaids: " << entry.blockIndex << std::endl;
-                auto loopsit = loopSSAIdMap.find(entry.blockIndex);
-                if (loopsit != loopSSAIdMap.end())
-                {
-                    if (!loopsit->second.passed)
-                        // still in loop join ssaid map
-                        joinLastSSAIdMap(loopsit->second.ssaIdMap, rdata.curSSAIdMap);
-                }
-                else // insert new
-                    loopsit = loopSSAIdMap.insert({ entry.blockIndex,
-                                { rdata.curSSAIdMap, false } }).first;
-                
                 // add to routine data loopEnds
                 auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
                 if (loopsit2 != rdata.loopEnds.end())
                 {
-                    if (!loopsit->second.passed)
+                    if (!loopsit2->second.passed)
                         // still in loop join ssaid map
-                        joinLastSSAIdMap(loopsit2->second, rdata.curSSAIdMap);
+                        joinLastSSAIdMap(loopsit2->second.ssaIdMap, rdata.curSSAIdMap);
                 }
                 else
-                    rdata.loopEnds.insert({ entry.blockIndex, rdata.curSSAIdMap });
+                    rdata.loopEnds.insert({ entry.blockIndex,
+                                { rdata.curSSAIdMap, false } });
                 
                 flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                 flowStack.pop_back();
@@ -1682,7 +1661,6 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 updateRoutineCurSSAIdMap(&rdata, ssaEntry, entry, curSSAId, nextSSAId);
             }
             
-            auto loopsit = loopSSAIdMap.find(entry.blockIndex);
             auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
             if (flowStack.size() > 1 && subroutToCache.count(entry.blockIndex)!=0)
             { //put to cache
@@ -1699,11 +1677,11 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     if (loopsit2 != rdata.loopEnds.end())
                     {
                         std::cout << "   loopssaIdMap: " << entry.blockIndex << std::endl;
-                        joinLastSSAIdMap(subrData.lastSSAIdMap, loopsit2->second,
+                        joinLastSSAIdMap(subrData.lastSSAIdMap, loopsit2->second.ssaIdMap,
                                          subrData, true);
                         std::cout << "   loopssaIdMapEnd: " << std::endl;
                         // for main routine now
-                        joinLastSSAIdMap(rdata.lastSSAIdMap, loopsit2->second,
+                        joinLastSSAIdMap(rdata.lastSSAIdMap, loopsit2->second.ssaIdMap,
                                         subrData, true);
                     }
                 }
@@ -1712,12 +1690,12 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             }
             if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
             {
-                if (loopsit != loopSSAIdMap.end())
+                if (loopsit2 != rdata.loopEnds.end())
                 {
                     std::cout << "   mark loopblocks passed: " <<
                                 entry.blockIndex << std::endl;
                     // mark that loop has passed fully
-                    loopsit->second.passed = true;
+                    loopsit2->second.passed = true;
                 }
                 else
                     std::cout << "   loopblocks nopassed: " <<
