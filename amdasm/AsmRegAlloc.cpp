@@ -1454,6 +1454,7 @@ static bool tryAddLoopEnd(const FlowStackEntry& entry, size_t routineBlock,
     return false;
 }
 
+
 static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         const std::unordered_set<size_t>& loopBlocks,
@@ -1478,6 +1479,35 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     {
         FlowStackEntry& entry = flowStack.back();
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        auto addSubroutine = [&](bool applyToMainRoutine)
+        {
+            RoutineData subrData;
+            const bool oldFB = flowStackBlocks[entry.blockIndex];
+            flowStackBlocks[entry.blockIndex] = !oldFB;
+            createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, subroutToCache,
+                subroutinesCache, routineMap, subrData, entry.blockIndex, true,
+                flowStackBlocks);
+            flowStackBlocks[entry.blockIndex] = oldFB;
+            if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
+            {   // leave from loop point
+                std::cout << "   loopfound " << entry.blockIndex << std::endl;
+                auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
+                if (loopsit2 != rdata.loopEnds.end())
+                {
+                    std::cout << "   loopssaId2Map: " <<
+                            entry.blockIndex << std::endl;
+                    joinLastSSAIdMap(subrData.lastSSAIdMap,
+                            loopsit2->second.ssaIdMap, subrData, true);
+                    std::cout << "   loopssaIdMap2End: " << std::endl;
+                    if (applyToMainRoutine)
+                        joinLastSSAIdMap(rdata.lastSSAIdMap, loopsit2->second.ssaIdMap,
+                                        subrData, true);
+                }
+            }
+            subrData.calculateWeight();
+            subroutinesCache.put(entry.blockIndex, subrData);
+        };
         
         if (entry.nextIndex == 0)
         {
@@ -1510,30 +1540,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 if (!isLoop && visited[entry.blockIndex] && cachedRdata == nullptr &&
                     subroutToCache.count(entry.blockIndex)!=0)
                 {
-                    RoutineData subrData;
                     std::cout << "-- subrcache2 for " << entry.blockIndex << std::endl;
-                    const bool oldFB = flowStackBlocks[entry.blockIndex];
-                    flowStackBlocks[entry.blockIndex] = !oldFB;
-                    createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, subroutToCache,
-                        subroutinesCache, routineMap, subrData, entry.blockIndex, true,
-                        flowStackBlocks);
-                    flowStackBlocks[entry.blockIndex] = oldFB;
-                    if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
-                    {   // leave from loop point
-                        std::cout << "   loopfound " << entry.blockIndex << std::endl;
-                        auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
-                        if (loopsit2 != rdata.loopEnds.end())
-                        {
-                            std::cout << "   loopssaId2Map: " <<
-                                    entry.blockIndex << std::endl;
-                            joinLastSSAIdMap(subrData.lastSSAIdMap,
-                                    loopsit2->second.ssaIdMap, subrData, true);
-                            std::cout << "   loopssaIdMap2End: " << std::endl;
-                        }
-                    }
-                    subrData.calculateWeight();
-                    subroutinesCache.put(entry.blockIndex, subrData);
-                    
+                    addSubroutine(false);
                     cachedRdata = subroutinesCache.use(entry.blockIndex);
                 }
             }
@@ -1652,29 +1660,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
             if (flowStack.size() > 1 && subroutToCache.count(entry.blockIndex)!=0)
             { //put to cache
-                RoutineData subrData;
                 std::cout << "-- subrcache for " << entry.blockIndex << std::endl;
-                flowStackBlocks[entry.blockIndex] = false;
-                createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, subroutToCache,
-                        subroutinesCache, routineMap, subrData, entry.blockIndex, true,
-                        flowStackBlocks);
-                flowStackBlocks[entry.blockIndex] = true;
-                if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
-                {   // leave from loop point
-                    std::cout << "   loopfound: " << entry.blockIndex << std::endl;
-                    if (loopsit2 != rdata.loopEnds.end())
-                    {
-                        std::cout << "   loopssaIdMap: " << entry.blockIndex << std::endl;
-                        joinLastSSAIdMap(subrData.lastSSAIdMap, loopsit2->second.ssaIdMap,
-                                         subrData, true);
-                        std::cout << "   loopssaIdMapEnd: " << std::endl;
-                        // for main routine now
-                        joinLastSSAIdMap(rdata.lastSSAIdMap, loopsit2->second.ssaIdMap,
-                                        subrData, true);
-                    }
-                }
-                subrData.calculateWeight();
-                subroutinesCache.put(entry.blockIndex, subrData);
+                addSubroutine(true);
             }
             if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
             {
