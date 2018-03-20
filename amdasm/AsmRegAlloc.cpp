@@ -1480,7 +1480,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         FlowStackEntry& entry = flowStack.back();
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
         
-        auto addSubroutine = [&](bool applyToMainRoutine)
+        auto addSubroutine = [&](
+            std::unordered_map<size_t, LoopSSAIdMap>::const_iterator loopsit2,
+            bool applyToMainRoutine)
         {
             RoutineData subrData;
             const bool oldFB = flowStackBlocks[entry.blockIndex];
@@ -1492,7 +1494,6 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
             {   // leave from loop point
                 std::cout << "   loopfound " << entry.blockIndex << std::endl;
-                auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
                 if (loopsit2 != rdata.loopEnds.end())
                 {
                     std::cout << "   loopssaId2Map: " <<
@@ -1540,8 +1541,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 if (!isLoop && visited[entry.blockIndex] && cachedRdata == nullptr &&
                     subroutToCache.count(entry.blockIndex)!=0)
                 {
+                    auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
                     std::cout << "-- subrcache2 for " << entry.blockIndex << std::endl;
-                    addSubroutine(false);
+                    addSubroutine(loopsit2, false);
                     cachedRdata = subroutinesCache.use(entry.blockIndex);
                 }
             }
@@ -1658,10 +1660,11 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             }
             
             auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
-            if (flowStack.size() > 1 && subroutToCache.count(entry.blockIndex)!=0)
+            if ((!noMainLoop || flowStack.size() > 1) &&
+                subroutToCache.count(entry.blockIndex)!=0)
             { //put to cache
                 std::cout << "-- subrcache for " << entry.blockIndex << std::endl;
-                addSubroutine(true);
+                addSubroutine(loopsit2, true);
             }
             if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
             {
