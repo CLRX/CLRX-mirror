@@ -527,8 +527,6 @@ aa3:    s_xor_b32 sa[4], sa[4], sa[7]
         },
         true, ""
     },
-    // TODO: incorrect passing: wrong behaviour:
-    // no loop marking and generating inside routine
     {   // 3 - routine with loop
         R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
         s_mov_b32 sa[2], s4
