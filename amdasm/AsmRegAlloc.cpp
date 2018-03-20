@@ -1178,8 +1178,6 @@ static void joinLastSSAIdMapInt(LastSSAIdMap& dest, const LastSSAIdMap& src,
                 if (!lsit->second.hasValue(csit->second[0]))
                     continue; // otherwise, skip
             }
-            else
-                continue;
         }
         std::cout << "  entry: " << entry.first.regVar << ":" <<
                 cxuint(entry.first.index) << ":";
