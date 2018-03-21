@@ -97,5 +97,6 @@ struct AsmSSADataCase
 extern const AsmCodeStructCase codeStructTestCases1Tbl[];
 extern const AsmSSADataCase ssaDataTestCases1Tbl[];
 extern const AsmSSADataCase ssaDataTestCases2Tbl[];
+extern const AsmSSADataCase ssaDataTestCases3Tbl[];
 
 #endif

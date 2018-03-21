@@ -170,6 +170,7 @@ tests/amdasm/AsmRegAlloc.cpp -text
 tests/amdasm/AsmRegAlloc.h -text
 tests/amdasm/AsmRegAllocCase1.cpp -text
 tests/amdasm/AsmRegAllocCase2.cpp -text
+tests/amdasm/AsmRegAllocCase3.cpp -text
 tests/amdasm/AsmRegPool.cpp -text
 tests/amdasm/AssemblerBasics.cpp -text
 tests/amdasm/CMakeLists.txt -text svneol=unset#text/plain

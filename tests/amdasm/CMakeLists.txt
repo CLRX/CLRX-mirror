@@ -84,6 +84,7 @@ ADD_TEST(AsmCodeFlow AsmCodeFlow)
 ADD_EXECUTABLE(AsmRegAlloc
         AsmRegAlloc.cpp
         AsmRegAllocCase1.cpp
-        AsmRegAllocCase2.cpp)
+        AsmRegAllocCase2.cpp
+        AsmRegAllocCase3.cpp)
 TEST_LINK_LIBRARIES(AsmRegAlloc CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AsmRegAlloc AsmRegAlloc)

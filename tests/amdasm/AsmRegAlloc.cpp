@@ -312,5 +312,13 @@ int main(int argc, const char** argv)
             std::cerr << ex.what() << std::endl;
             retVal = 1;
         }
+    for (size_t i = 0; ssaDataTestCases3Tbl[i].input!=nullptr; i++)
+        try
+        { testCreateSSAData(2, i, ssaDataTestCases3Tbl[i]); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
     return retVal;
 }

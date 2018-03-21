@@ -1482,6 +1482,20 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             std::unordered_map<size_t, LoopSSAIdMap>::const_iterator loopsit2,
             bool applyToMainRoutine)
         {
+            if (subroutinesCache.hasKey(entry.blockIndex))
+            {
+                // if already put, just applyToMainRoutine if needed
+                if (applyToMainRoutine &&
+                    loopBlocks.find(entry.blockIndex) != loopBlocks.end() &&
+                    loopsit2 != rdata.loopEnds.end())
+                {
+                    RoutineData* subRdata = subroutinesCache.use(entry.blockIndex);
+                    joinLastSSAIdMap(rdata.lastSSAIdMap, loopsit2->second.ssaIdMap,
+                                        *subRdata, true);
+                }
+                return;
+            }
+            
             RoutineData subrData;
             const bool oldFB = flowStackBlocks[entry.blockIndex];
             flowStackBlocks[entry.blockIndex] = !oldFB;
@@ -1895,6 +1909,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 //prevRdata.compare(myRoutineData);
                 isRoutineGen[callStack.back().routineBlock] = true;
             }
+            
+            
+            
             callStack.pop_back(); // just return from call
             if (!callStack.empty())
                 // put to parent routine
@@ -1931,6 +1948,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         {
             if (entry.nextIndex!=0) // if back from calls (just return from calls)
             {
+                //
                 for (const NextBlock& next: cblock.nexts)
                     if (next.isCall)
                     {
