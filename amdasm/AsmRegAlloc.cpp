@@ -943,6 +943,19 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                         it->second.second << std::endl;
                 stackVarMap = *cached;
                 pfStartIndex = it->second.second+1;
+                
+                // apply missing calls at end of the cached
+                const CodeBlock& cblock = codeBlocks[it->second.first];
+                for (const NextBlock& next: cblock.nexts)
+                    if (next.isCall)
+                    {
+                        std::cout << "  applycall (cache): " << it->second.first << ": " <<
+                                next.block << std::endl;
+                        const LastSSAIdMap& regVarMap =
+                                routineMap.find(next.block)->second.lastSSAIdMap;
+                        for (const auto& sentry: regVarMap)
+                            stackVarMap[sentry.first] = sentry.second;
+                    }
             }
         }
     }
@@ -1239,6 +1252,87 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src)
         for (size_t v: destEntry)
             std::cout << " " << v;
         std::cout << std::endl;
+    }
+}
+
+static void reduceSSAIdsForCalls(FlowStackEntry& entry,
+            const std::vector<CodeBlock>& codeBlocks,
+            RetSSAIdMap& retSSAIdMap, std::unordered_map<size_t, RoutineData>& routineMap,
+            SSAReplacesMap& ssaReplacesMap)
+{
+    if (retSSAIdMap.empty())
+        return;
+    LastSSAIdMap rbwSSAIdMap;
+    std::unordered_set<AsmSingleVReg> reduced;
+    std::unordered_set<AsmSingleVReg> changed;
+    const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+    // collect rbw SSAIds
+    for (const NextBlock next: cblock.nexts)
+        if (next.isCall)
+        {
+            auto it = routineMap.find(next.block); // must find
+            for (const auto& rentry: it->second.rbwSSAIdMap)
+                rbwSSAIdMap.insertSSAId(rentry.first,rentry.second);
+            
+        }
+    for (const NextBlock next: cblock.nexts)
+        if (next.isCall)
+        {
+            auto it = routineMap.find(next.block); // must find
+            // add changed
+            for (const auto& lentry: it->second.lastSSAIdMap)
+                if (rbwSSAIdMap.find(lentry.first) == rbwSSAIdMap.end())
+                    changed.insert(lentry.first);
+        }
+    
+    // reduce SSAIds
+    for (const auto& rentry: retSSAIdMap)
+    {
+        auto ssaIdsIt = rbwSSAIdMap.find(rentry.first);
+        if (ssaIdsIt != rbwSSAIdMap.end())
+        {
+            const VectorSet<size_t>& ssaIds = ssaIdsIt->second;
+            const VectorSet<size_t>& rssaIds = rentry.second.ssaIds;
+            Array<size_t> outSSAIds(ssaIds.size() + rssaIds.size());
+            std::copy(rssaIds.begin(), rssaIds.end(), outSSAIds.begin());
+            std::copy(ssaIds.begin(), ssaIds.end(), outSSAIds.begin()+rssaIds.size());
+            
+            std::sort(outSSAIds.begin(), outSSAIds.end());
+            outSSAIds.resize(std::unique(outSSAIds.begin(), outSSAIds.end()) -
+                        outSSAIds.begin());
+            size_t minSSAId = outSSAIds.front();
+            if (outSSAIds.size() >= 2)
+            {
+                for (auto sit = outSSAIds.begin()+1; sit != outSSAIds.end(); ++sit)
+                    insertReplace(ssaReplacesMap, rentry.first, *sit, minSSAId);
+                
+                std::cout << "calls retssa ssaid: " << rentry.first.regVar << ":" <<
+                        rentry.first.index << std::endl;
+            }
+            
+            for (size_t rblock: rentry.second.routines)
+                routineMap.find(rblock)->second.lastSSAIdMap[rentry.first] =
+                            VectorSet<size_t>({ minSSAId });
+            reduced.insert(rentry.first);
+        }
+    }
+    for (const AsmSingleVReg& vreg: reduced)
+        retSSAIdMap.erase(vreg);
+    reduced.clear();
+        
+    for (const AsmSingleVReg& vreg: changed)
+    {
+        auto rit = retSSAIdMap.find(vreg);
+        if (rit != retSSAIdMap.end())
+        {
+            // if modified
+            // put before removing to revert for other ways after calls
+            auto res = entry.prevRetSSAIdSets.insert(*rit);
+            if (res.second)
+                res.first->second = rit->second;
+            // just remove, if some change without read before
+            retSSAIdMap.erase(rit);
+        }
     }
 }
 
@@ -1948,6 +2042,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         {
             if (entry.nextIndex!=0) // if back from calls (just return from calls)
             {
+                reduceSSAIdsForCalls(entry, codeBlocks, retSSAIdMap, routineMap,
+                                     ssaReplacesMap);
                 //
                 for (const NextBlock& next: cblock.nexts)
                     if (next.isCall)
