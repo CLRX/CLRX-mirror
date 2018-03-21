@@ -913,6 +913,32 @@ static void addResSecCacheEntry(const std::unordered_map<size_t, RoutineData>& r
     resSecondPointsCache.put(nextBlock, cacheSecPoints);
 }
 
+static void applyCallToStackVarMap(const CodeBlock& cblock,
+        const std::unordered_map<size_t, RoutineData>& routineMap,
+        LastSSAIdMap& stackVarMap, size_t blockIndex, size_t nextIndex)
+{
+    for (const NextBlock& next: cblock.nexts)
+        if (next.isCall)
+        {
+            const LastSSAIdMap& regVarMap =
+                    routineMap.find(next.block)->second.lastSSAIdMap;
+            for (const auto& sentry: regVarMap)
+                stackVarMap[sentry.first] = {}; // clearing
+        }
+    
+    for (const NextBlock& next: cblock.nexts)
+        if (next.isCall)
+        {
+            std::cout << "  applycall: " << blockIndex << ": " <<
+                    nextIndex << ": " << next.block << std::endl;
+            const LastSSAIdMap& regVarMap =
+                    routineMap.find(next.block)->second.lastSSAIdMap;
+            for (const auto& sentry: regVarMap)
+                for (size_t s: sentry.second)
+                    stackVarMap.insertSSAId(sentry.first, s);
+        }
+}
+
 
 static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack,
         const std::unordered_map<size_t, RoutineData>& routineMap,
@@ -946,16 +972,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                 
                 // apply missing calls at end of the cached
                 const CodeBlock& cblock = codeBlocks[it->second.first];
-                for (const NextBlock& next: cblock.nexts)
-                    if (next.isCall)
-                    {
-                        std::cout << "  applycall (cache): " << it->second.first << ": " <<
-                                next.block << std::endl;
-                        const LastSSAIdMap& regVarMap =
-                                routineMap.find(next.block)->second.lastSSAIdMap;
-                        for (const auto& sentry: regVarMap)
-                            stackVarMap[sentry.first] = sentry.second;
-                    }
+                
+                applyCallToStackVarMap(cblock, routineMap, stackVarMap, -1, -1);
             }
         }
     }
@@ -972,16 +990,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                 stackVarMap[sentry.first] = { sinfo.ssaId + sinfo.ssaIdChange - 1 };
         }
         if (entry.nextIndex > cblock.nexts.size())
-            for (const NextBlock& next: cblock.nexts)
-                if (next.isCall)
-                {
-                    std::cout << "  applycall: " << entry.blockIndex << ": " <<
-                            entry.nextIndex << ": " << next.block << std::endl;
-                    const LastSSAIdMap& regVarMap =
-                            routineMap.find(next.block)->second.lastSSAIdMap;
-                    for (const auto& sentry: regVarMap)
-                        stackVarMap[sentry.first] = sentry.second;
-                }
+            applyCallToStackVarMap(cblock, routineMap, stackVarMap,
+                        entry.blockIndex, entry.nextIndex);
         
         // put to first point cache
         if (waysToCache[pfit->blockIndex] && !resFirstPointsCache.hasKey(pfit->blockIndex))
