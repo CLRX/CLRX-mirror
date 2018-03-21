@@ -973,7 +973,9 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                 // apply missing calls at end of the cached
                 const CodeBlock& cblock = codeBlocks[it->second.first];
                 
-                applyCallToStackVarMap(cblock, routineMap, stackVarMap, -1, -1);
+                const FlowStackEntry2& entry = *(prevFlowStack.begin()+pfStartIndex-1);
+                if (entry.nextIndex > cblock.nexts.size())
+                    applyCallToStackVarMap(cblock, routineMap, stackVarMap, -1, -1);
             }
         }
     }
