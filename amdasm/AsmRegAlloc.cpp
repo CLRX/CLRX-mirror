@@ -1657,8 +1657,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             if (it2 != subrLoopsMap.end())
             {
                 std::cout << "    found subrloopsmap: " << entry.blockIndex << ":";
-                for (size_t loop: it2->second)
+                for (auto lit2 = it2->second.rbegin(); lit2 != it2->second.rend(); ++lit2)
                 {
+                    size_t loop = *lit2;
                     auto loopsit3 = rdata.loopEnds.find(loop);
                     if (loopsit3 == rdata.loopEnds.end() ||
                         activeLoops.hasValue(loop))
