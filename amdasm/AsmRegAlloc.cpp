@@ -585,6 +585,7 @@ public:
 };
 
 typedef LastSSAIdMap RBWSSAIdMap;
+typedef std::unordered_map<size_t, VectorSet<size_t> > SubrLoopsMap;
 
 struct CLRX_INTERNAL RetSSAEntry
 {
@@ -1189,6 +1190,8 @@ static void joinLastSSAIdMapInt(LastSSAIdMap& dest, const LastSSAIdMap& src,
                     const LastSSAIdMap& laterRdataCurSSAIdMap,
                     const LastSSAIdMap& laterRdataLastSSAIdMap, bool loop)
 {
+    //bool haveReturns = !dest.empty();
+    bool haveReturns = true;
     for (const auto& entry: src)
     {
         auto lsit = laterRdataLastSSAIdMap.find(entry.first);
@@ -1221,6 +1224,26 @@ static void joinLastSSAIdMapInt(LastSSAIdMap& dest, const LastSSAIdMap& src,
             std::cout << " " << v;
         std::cout << std::endl;
     }
+    if (haveReturns)
+        // add not in src but in laterRdataCurSSAIdMap
+        for (const auto& entry: laterRdataCurSSAIdMap)
+        {
+            if (src.find(entry.first) != src.end())
+                continue; // if processed from src
+            
+            auto res = dest.insert(entry); // find
+            if (res.second)
+                continue; // added new
+            VectorSet<size_t>& destEntry = res.first->second;
+            // add new ways
+            for (size_t ssaId: entry.second)
+                destEntry.insertValue(ssaId);
+            std::cout << "  entry (lrc): " << entry.first.regVar << ":" <<
+                    cxuint(entry.first.index) << ":";
+            for (size_t v: destEntry)
+                std::cout << " " << v;
+            std::cout << std::endl;
+        }
     if (!loop) // do not if loop
         joinLastSSAIdMap(dest, laterRdataLastSSAIdMap);
 }
@@ -1570,6 +1593,10 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
 {
     std::cout << "--------- createRoutineData ----------------\n";
     std::vector<bool> visited(codeBlocks.size(), false);
+    
+    VectorSet<size_t> activeLoops;
+    SubrLoopsMap subrLoopsMap;
+    SubrLoopsMap loopSubrsMap;
     std::deque<FlowStackEntry> flowStack;
     std::vector<bool> flowStackBlocks(codeBlocks.size(), false);
     if (!prevFlowStackBlocks.empty())
@@ -1609,6 +1636,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 subroutinesCache, routineMap, subrData, entry.blockIndex, true,
                 flowStackBlocks);
             flowStackBlocks[entry.blockIndex] = oldFB;
+            
             if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
             {   // leave from loop point
                 std::cout << "   loopfound " << entry.blockIndex << std::endl;
@@ -1624,6 +1652,25 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                                         subrData, true);
                 }
             }
+            
+            // apply loops for subroutine
+            auto it = loopSubrsMap.find(entry.blockIndex);
+            if (it != loopSubrsMap.end())
+            {
+                std::cout << "    found loopsubrsmap: " << entry.blockIndex << ":";
+                for (size_t subr: it->second)
+                {
+                    std::cout << " " << subr;
+                    RoutineData* subrData2 = subroutinesCache.use(subr);
+                    if (subrData2 == nullptr)
+                        continue;
+                    std::cout << "*";
+                    joinLastSSAIdMap(subrData2->lastSSAIdMap,
+                            loopsit2->second.ssaIdMap, subrData, false);
+                }
+                std::cout << "\n";
+            }
+            
             subrData.calculateWeight();
             subroutinesCache.put(entry.blockIndex, subrData);
         };
@@ -1687,6 +1734,20 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             }
             else if (!visited[entry.blockIndex])
             {
+                // set up loops for which subroutine is present
+                if (subroutToCache.count(entry.blockIndex)!=0 && !activeLoops.empty())
+                {
+                    subrLoopsMap.insert({ entry.blockIndex, activeLoops });
+                    for (size_t loop: activeLoops)
+                    {
+                        auto res = loopSubrsMap.insert({ loop, { entry.blockIndex} });
+                        if (!res.second)
+                            res.first->second.insertValue(entry.blockIndex);
+                    }
+                }
+                
+                if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
+                    activeLoops.insertValue(entry.blockIndex);
                 std::cout << "proc: " << entry.blockIndex << std::endl;
                 visited[entry.blockIndex] = true;
                 
@@ -1777,13 +1838,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 updateRoutineCurSSAIdMap(&rdata, ssaEntry, entry, curSSAId, nextSSAId);
             }
             
+            activeLoops.eraseValue(entry.blockIndex);
+            
             auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
-            if ((!noMainLoop || flowStack.size() > 1) &&
-                subroutToCache.count(entry.blockIndex)!=0)
-            { //put to cache
-                std::cout << "-- subrcache for " << entry.blockIndex << std::endl;
-                addSubroutine(loopsit2, true);
-            }
             if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
             {
                 if (loopsit2 != rdata.loopEnds.end())
@@ -1796,6 +1853,13 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 else
                     std::cout << "   loopblocks nopassed: " <<
                                 entry.blockIndex << std::endl;
+            }
+            
+            if ((!noMainLoop || flowStack.size() > 1) &&
+                subroutToCache.count(entry.blockIndex)!=0)
+            { //put to cache
+                std::cout << "-- subrcache for " << entry.blockIndex << std::endl;
+                addSubroutine(loopsit2, true);
             }
             
             flowStackBlocks[entry.blockIndex] = false;

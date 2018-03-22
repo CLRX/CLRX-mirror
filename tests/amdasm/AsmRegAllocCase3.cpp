@@ -698,7 +698,7 @@ end1:   s_xor_b32 sa[5], sa[5], sa[1]
         .cf_ret
         s_setpc_b64 s[0:1]
         
-end2:   s_xor_b32 sa[6], sa[6], sa[1]
+end2:   s_xor_b32 sa[6], sa[0], sa[1]
         .cf_ret
         s_setpc_b64 s[0:1]
 
@@ -787,8 +787,9 @@ b0:     s_xor_b32 sa[5], sa[5], sa[0]
                 {
                     { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
                     { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
                     { { "sa", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
-                    { { "sa", 6 }, SSAInfo(1, 2, 2, 2, 1, true) }
+                    { { "sa", 6 }, SSAInfo(1, 2, 2, 2, 1, false) }
                 }, false, true, true },
             {   // block 9 - b0
                 100, 108,
