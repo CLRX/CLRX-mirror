@@ -592,7 +592,7 @@ b0:     s_xor_b32 sa[5], sa[5], sa[0]
                 { },
                 {
                     { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
-                    { { "sa", 2 }, SSAInfo(2, 4, 4, 4, 1, true) },
+                    { { "sa", 2 }, SSAInfo(3, 4, 4, 4, 1, true) },
                     { { "sa", 3 }, SSAInfo(2, 4, 4, 4, 1, true) },
                     { { "sa", 4 }, SSAInfo(1, 3, 3, 3, 1, true) },
                     { { "sa", 5 }, SSAInfo(1, 3, 3, 3, 1, true) },

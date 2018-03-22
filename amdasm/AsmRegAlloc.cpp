@@ -1190,8 +1190,6 @@ static void joinLastSSAIdMapInt(LastSSAIdMap& dest, const LastSSAIdMap& src,
                     const LastSSAIdMap& laterRdataCurSSAIdMap,
                     const LastSSAIdMap& laterRdataLastSSAIdMap, bool loop)
 {
-    //bool haveReturns = !dest.empty();
-    bool haveReturns = true;
     for (const auto& entry: src)
     {
         auto lsit = laterRdataLastSSAIdMap.find(entry.first);
@@ -1224,26 +1222,6 @@ static void joinLastSSAIdMapInt(LastSSAIdMap& dest, const LastSSAIdMap& src,
             std::cout << " " << v;
         std::cout << std::endl;
     }
-    if (haveReturns)
-        // add not in src but in laterRdataCurSSAIdMap
-        for (const auto& entry: laterRdataCurSSAIdMap)
-        {
-            if (src.find(entry.first) != src.end())
-                continue; // if processed from src
-            
-            auto res = dest.insert(entry); // find
-            if (res.second)
-                continue; // added new
-            VectorSet<size_t>& destEntry = res.first->second;
-            // add new ways
-            for (size_t ssaId: entry.second)
-                destEntry.insertValue(ssaId);
-            std::cout << "  entry (lrc): " << entry.first.regVar << ":" <<
-                    cxuint(entry.first.index) << ":";
-            for (size_t v: destEntry)
-                std::cout << " " << v;
-            std::cout << std::endl;
-        }
     if (!loop) // do not if loop
         joinLastSSAIdMap(dest, laterRdataLastSSAIdMap);
 }
@@ -1718,6 +1696,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 std::cout << "use cached subr " << entry.blockIndex << std::endl;
                 std::cout << "procret2: " << entry.blockIndex << std::endl;
                 joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap, *cachedRdata);
+                // join to curSSAIdMap to rdata curSSAIdMap
+                rdata.curSSAIdMap.insert(cachedRdata->curSSAIdMap.begin(),
+                            cachedRdata->curSSAIdMap.end());
                 
                 // join loopEnds
                 for (const auto& loopEnd: cachedRdata->loopEnds)
