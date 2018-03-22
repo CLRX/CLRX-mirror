@@ -1575,6 +1575,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     VectorSet<size_t> activeLoops;
     SubrLoopsMap subrLoopsMap;
     SubrLoopsMap loopSubrsMap;
+    std::unordered_map<size_t, RoutineData> subrDataForLoopMap;
     std::deque<FlowStackEntry> flowStack;
     std::vector<bool> flowStackBlocks(codeBlocks.size(), false);
     if (!prevFlowStackBlocks.empty())
@@ -1613,6 +1614,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, subroutToCache,
                 subroutinesCache, routineMap, subrData, entry.blockIndex, true,
                 flowStackBlocks);
+            RoutineData subrDataCopy;
             flowStackBlocks[entry.blockIndex] = oldFB;
             
             if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
@@ -1620,6 +1622,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 std::cout << "   loopfound " << entry.blockIndex << std::endl;
                 if (loopsit2 != rdata.loopEnds.end())
                 {
+                    subrDataCopy = subrData;
+                    subrDataForLoopMap.insert({ entry.blockIndex, subrDataCopy });
                     std::cout << "   loopssaId2Map: " <<
                             entry.blockIndex << std::endl;
                     joinLastSSAIdMap(subrData.lastSSAIdMap,
@@ -1627,11 +1631,11 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     std::cout << "   loopssaIdMap2End: " << std::endl;
                     if (applyToMainRoutine)
                         joinLastSSAIdMap(rdata.lastSSAIdMap, loopsit2->second.ssaIdMap,
-                                        subrData, true);
+                                        subrDataCopy, true);
                 }
             }
             
-            // apply loops for subroutine
+            // apply loop to subroutines
             auto it = loopSubrsMap.find(entry.blockIndex);
             if (it != loopSubrsMap.end())
             {
@@ -1644,7 +1648,26 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                         continue;
                     std::cout << "*";
                     joinLastSSAIdMap(subrData2->lastSSAIdMap,
-                            loopsit2->second.ssaIdMap, subrData, false);
+                            loopsit2->second.ssaIdMap, subrDataCopy, false);
+                }
+                std::cout << "\n";
+            }
+            // apply loops to this subroutine
+            auto it2 = subrLoopsMap.find(entry.blockIndex);
+            if (it2 != subrLoopsMap.end())
+            {
+                std::cout << "    found subrloopsmap: " << entry.blockIndex << ":";
+                for (size_t loop: it2->second)
+                {
+                    auto loopsit3 = rdata.loopEnds.find(loop);
+                    if (loopsit3 == rdata.loopEnds.end() ||
+                        activeLoops.hasValue(loop))
+                        continue;
+                    std::cout << " " << loop;
+                    auto  itx = subrDataForLoopMap.find(loop);
+                    if (itx != subrDataForLoopMap.end())
+                        joinLastSSAIdMap(subrData.lastSSAIdMap,
+                                loopsit3->second.ssaIdMap, itx->second, false);
                 }
                 std::cout << "\n";
             }
