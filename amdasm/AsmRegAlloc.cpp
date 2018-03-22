@@ -1498,7 +1498,7 @@ static void revertRetSSAIdMap(std::unordered_map<AsmSingleVReg, size_t>& curSSAI
             if (v.second.ssaIds.empty())
             {
                 auto cit = curSSAIdMap.find(v.first);
-                ssaIds.push_back((cit!=curSSAIdMap.end() ? cit->second : 0)-1);
+                ssaIds.push_back((cit!=curSSAIdMap.end() ? cit->second : 1)-1);
             }
             
             std::cout << " popentry2 " << entry.blockIndex << ": " <<
@@ -1696,9 +1696,15 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 std::cout << "use cached subr " << entry.blockIndex << std::endl;
                 std::cout << "procret2: " << entry.blockIndex << std::endl;
                 joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap, *cachedRdata);
-                // join to curSSAIdMap to rdata curSSAIdMap
-                rdata.curSSAIdMap.insert(cachedRdata->curSSAIdMap.begin(),
-                            cachedRdata->curSSAIdMap.end());
+                // get not given rdata curSSAIdMap ssaIds but present in cachedRdata
+                // curSSAIdMap
+                for (const auto& entry: cachedRdata->curSSAIdMap)
+                    if (rdata.curSSAIdMap.find(entry.first) == rdata.curSSAIdMap.end())
+                    {
+                        auto cit = curSSAIdMap.find(entry.first);
+                        rdata.curSSAIdMap.insert({ entry.first,
+                            { (cit!=curSSAIdMap.end() ? cit->second : 1)-1 } });
+                    }
                 
                 // join loopEnds
                 for (const auto& loopEnd: cachedRdata->loopEnds)
