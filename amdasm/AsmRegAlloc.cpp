@@ -924,7 +924,7 @@ static void applyCallToStackVarMap(const CodeBlock& cblock,
             const LastSSAIdMap& regVarMap =
                     routineMap.find(next.block)->second.lastSSAIdMap;
             for (const auto& sentry: regVarMap)
-                stackVarMap[sentry.first] = {}; // clearing
+                stackVarMap[sentry.first].clear(); // clearing
         }
     
     for (const NextBlock& next: cblock.nexts)
