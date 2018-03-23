@@ -1726,8 +1726,16 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     if (rdata.curSSAIdMap.find(entry.first) == rdata.curSSAIdMap.end())
                     {
                         auto cit = curSSAIdMap.find(entry.first);
-                        rdata.curSSAIdMap.insert({ entry.first,
-                            { (cit!=curSSAIdMap.end() ? cit->second : 1)-1 } });
+                        size_t prevSSAId = (cit!=curSSAIdMap.end() ? cit->second : 1)-1;
+                        rdata.curSSAIdMap.insert({ entry.first, { prevSSAId } });
+                        
+                        if (rdata.notFirstReturn)
+                        {
+                            rdata.lastSSAIdMap.insertSSAId(entry.first, prevSSAId);
+                            for (auto& loopEnd: rdata.loopEnds)
+                                loopEnd.second.ssaIdMap.
+                                        insertSSAId(entry.first, prevSSAId);
+                        }
                     }
                 
                 // join loopEnds
