@@ -660,7 +660,6 @@ b0:     s_xor_b32 sa[5], sa[5], sa[0]
         },
         true, ""
     },
-    // TODO: incorrect retSSA ids for sa[6]
     {   // 3 - routine with loop and jumps to mid in loop
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
