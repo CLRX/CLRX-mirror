@@ -1644,9 +1644,13 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     RoutineData* subrData2 = subroutinesCache.use(subr);
                     if (subrData2 == nullptr)
                         continue;
+                    RoutineData subrData2Copy = *subrData2;
                     std::cout << "*";
-                    joinLastSSAIdMap(subrData2->lastSSAIdMap,
+                    joinLastSSAIdMap(subrData2Copy.lastSSAIdMap,
                             loopsit2->second.ssaIdMap, subrDataCopy, false);
+                    // reinsert subroutine into subroutine cache
+                    subrData2Copy.calculateWeight();
+                    subroutinesCache.put(subr, subrData2Copy);
                 }
                 std::cout << "\n";
             }
