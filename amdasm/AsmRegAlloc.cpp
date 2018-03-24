@@ -2070,10 +2070,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             
             callStack.pop_back(); // just return from call
             callBlocks.erase(routineBlock);
-            if (!callStack.empty())
-                // put to parent routine
-                joinRoutineData(routineMap.find(callStack.back().routineBlock)->second,
-                                    prevRdata);
         }
         
         if (entry.nextIndex < cblock.nexts.size())
