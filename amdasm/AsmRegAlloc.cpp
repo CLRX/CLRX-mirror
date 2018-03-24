@@ -844,16 +844,8 @@ static void addResSecCacheEntry(const std::unordered_map<size_t, RoutineData>& r
             }
         }
         
-        /*if (!callStack.empty() &&
-            entry.blockIndex == callStack.top().callBlock &&
-            entry.nextIndex-1 == callStack.top().callNextIndex)
-            callStack.pop(); // just return from call
-        */
         if (entry.nextIndex < cblock.nexts.size())
         {
-            /*if (cblock.nexts[entry.nextIndex].isCall)
-                callStack.push({ entry.blockIndex, entry.nextIndex,
-                            cblock.nexts[entry.nextIndex].block });*/
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
             entry.nextIndex++;
         }
@@ -1059,16 +1051,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
             }
         }
         
-        /*if (!callStack.empty() &&
-            entry.blockIndex == callStack.top().callBlock &&
-            entry.nextIndex-1 == callStack.top().callNextIndex)
-            callStack.pop(); // just return from call
-        */
         if (entry.nextIndex < cblock.nexts.size())
         {
-            /*if (cblock.nexts[entry.nextIndex].isCall)
-                callStack.push({ entry.blockIndex, entry.nextIndex,
-                            cblock.nexts[entry.nextIndex].block });*/
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
             entry.nextIndex++;
         }
@@ -1985,7 +1969,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::vector<bool> visited(codeBlocks.size(), false);
     flowStack.push_back({ 0, 0 });
     flowStackBlocks[0] = true;
+    std::unordered_set<size_t> callBlocks;
     std::unordered_set<size_t> loopBlocks;
+    std::unordered_set<size_t> recurseBlocks;
     
     while (!flowStack.empty())
     {
@@ -2071,21 +2057,19 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             entry.nextIndex-1 == callStack.back().callNextIndex)
         {
             std::cout << " ret: " << entry.blockIndex << std::endl;
-            RoutineData& prevRdata =
-                    routineMap.find(callStack.back().routineBlock)->second;
-            if (!isRoutineGen[callStack.back().routineBlock])
+            const size_t routineBlock = callStack.back().routineBlock;
+            RoutineData& prevRdata = routineMap.find(routineBlock)->second;
+            if (!isRoutineGen[routineBlock])
             {
-                //RoutineData myRoutineData;
                 createRoutineData(codeBlocks, curSSAIdMap, loopBlocks,
                             cblocksToCache, subroutinesCache, routineMap, prevRdata,
-                            callStack.back().routineBlock);
+                            routineBlock);
                 //prevRdata.compare(myRoutineData);
-                isRoutineGen[callStack.back().routineBlock] = true;
+                isRoutineGen[routineBlock] = true;
             }
             
-            
-            
             callStack.pop_back(); // just return from call
+            callBlocks.erase(routineBlock);
             if (!callStack.empty())
                 // put to parent routine
                 joinRoutineData(routineMap.find(callStack.back().routineBlock)->second,
@@ -2099,6 +2083,13 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             if (cblock.nexts[entry.nextIndex].isCall)
             {
                 std::cout << " call: " << entry.blockIndex << std::endl;
+                if (!callBlocks.insert(nextBlock).second)
+                {
+                    // if already called (then it is recursion)
+                    recurseBlocks.insert(nextBlock);
+                    std::cout << "   -- recursion: " << nextBlock << std::endl;
+                }
+                
                 callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
                 routineMap.insert({ nextBlock, { } });
                 isCall = true;
