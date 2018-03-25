@@ -1925,6 +1925,164 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
 }
 
 
+static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
+            const ResSecondPointsToCache& cblocksToCache,
+            const std::unordered_set<size_t>& loopBlocks,
+            const std::unordered_map<size_t, RoutineData>& routineMap,
+            RetSSAIdMap& retSSAIdMap, SSAReplacesMap& ssaReplacesMap,
+            size_t recurBlock)
+{
+    std::unordered_map<AsmSingleVReg, size_t> curSSAIdMap;
+    SimpleCache<size_t, RoutineData> subroutinesCache(codeBlocks.size()<<3);
+    
+    // routineMapSP - routine Map for second of the recursion
+    std::unordered_map<size_t, RoutineData> routineMapSP;
+    std::vector<bool> isRoutineGen(codeBlocks.size(), false);
+    std::deque<CallStackEntry> callStack;
+    std::deque<FlowStackEntry> flowStack;
+    std::vector<bool> visited(codeBlocks.size(), false);
+    flowStack.push_back({ recurBlock, 0 });
+    
+    while (!flowStack.empty())
+    {
+        FlowStackEntry& entry = flowStack.back();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        {
+            // process current block
+            if (!visited[entry.blockIndex])
+            {
+                std::cout << "proc: " << entry.blockIndex << std::endl;
+                visited[entry.blockIndex] = true;
+                
+                for (const auto& ssaEntry: cblock.ssaInfoMap)
+                    if (ssaEntry.first.regVar != nullptr)
+                    {
+                        // put data to routine data
+                        //updateRoutineData(rdata, ssaEntry, curSSAIdMap[ssaEntry.first]-1);
+                        
+                        if (ssaEntry.second.ssaIdChange!=0)
+                            curSSAIdMap[ssaEntry.first] = ssaEntry.second.ssaIdLast+1;
+                    }
+            }
+            else
+            {
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        
+        if (!callStack.empty() &&
+            entry.blockIndex == callStack.back().callBlock &&
+            entry.nextIndex-1 == callStack.back().callNextIndex)
+        {
+            std::cout << " ret: " << entry.blockIndex << std::endl;
+            const size_t routineBlock = callStack.back().routineBlock;
+            RoutineData& prevRdata = routineMapSP.find(routineBlock)->second;
+            if (!isRoutineGen[routineBlock])
+            {
+                createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, cblocksToCache,
+                        subroutinesCache, routineMap, &routineMapSP, prevRdata,
+                        routineBlock);
+                //prevRdata.compare(myRoutineData);
+                isRoutineGen[routineBlock] = true;
+            }
+            
+            callStack.pop_back(); // just return from call
+            //callBlocks.erase(routineBlock);
+        }
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            bool isCall = false;
+            const size_t nextBlock = cblock.nexts[entry.nextIndex].block;
+            if (cblock.nexts[entry.nextIndex].isCall)
+            {
+                std::cout << " call: " << entry.blockIndex << std::endl;
+                /*if (!callBlocks.insert(nextBlock).second)
+                {
+                    // if already called (then it is recursion)
+                    recurseBlocks.insert(nextBlock);
+                    std::cout << "   -- recursion: " << nextBlock << std::endl;
+                }*/
+                
+                callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
+                routineMapSP.insert({ nextBlock, { } });
+                isCall = true;
+            }
+            entry.nextIndex++;
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            if (entry.nextIndex!=0) // if back from calls (just return from calls)
+            {
+                reduceSSAIdsForCalls(entry, codeBlocks, retSSAIdMap, routineMapSP,
+                                     ssaReplacesMap);
+                //
+                for (const NextBlock& next: cblock.nexts)
+                    if (next.isCall)
+                    {
+                        //std::cout << "joincall:"<< next.block << std::endl;
+                        auto it = routineMap.find(next.block); // must find
+                        initializePrevRetSSAIds(cblock, curSSAIdMap, retSSAIdMap,
+                                    it->second, entry);
+                        joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, next.block);
+                    }
+            }
+            /*flowStack.push_back({ entry.blockIndex+1, 0, false });
+            if (flowStackBlocks[entry.blockIndex+1])
+            {
+                loopBlocks.insert(entry.blockIndex+1);
+                 // keep to inserted in popping
+                flowStackBlocks[entry.blockIndex+1] = false;
+            }
+            else
+                flowStackBlocks[entry.blockIndex+1] = true;*/
+            entry.nextIndex++;
+        }
+        else
+        {
+            RoutineData* rdata = nullptr;
+            if (!callStack.empty())
+                rdata = &(routineMapSP.find(callStack.back().routineBlock)->second);
+            
+            // revert retSSAIdMap
+            revertRetSSAIdMap(curSSAIdMap, retSSAIdMap, entry, rdata);
+            //
+            
+            for (const auto& ssaEntry: cblock.ssaInfoMap)
+            {
+                if (ssaEntry.first.regVar == nullptr)
+                    continue;
+                
+                size_t& curSSAId = curSSAIdMap[ssaEntry.first];
+                const size_t nextSSAId = curSSAId;
+                curSSAId = ssaEntry.second.ssaIdBefore+1;
+                
+                std::cout << "popcurnext: " << ssaEntry.first.regVar <<
+                            ":" << ssaEntry.first.index << ": " <<
+                            nextSSAId << ", " << curSSAId << std::endl;
+            }
+            
+            std::cout << "pop: " << entry.blockIndex << std::endl;
+            //flowStackBlocks[entry.blockIndex] = false;
+            flowStack.pop_back();
+            /*if (!flowStack.empty() && lastCommonCacheWayPoint.first != SIZE_MAX &&
+                    lastCommonCacheWayPoint.second >= flowStack.size())
+            {
+                lastCommonCacheWayPoint =
+                        { flowStack.back().blockIndex, flowStack.size()-1 };
+                std::cout << "POPlastCcwP: " << lastCommonCacheWayPoint.first << std::endl;
+            }*/
+        }
+    }
+}
+
+
 void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
 {
     if (codeBlocks.empty())
@@ -2214,7 +2372,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         { flowStack.back().blockIndex, flowStack.size()-1 };
                 std::cout << "POPlastCcwP: " << lastCommonCacheWayPoint.first << std::endl;
             }
-            
         }
     }
     
