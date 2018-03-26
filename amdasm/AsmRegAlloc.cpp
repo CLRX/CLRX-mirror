@@ -1928,6 +1928,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
 static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
             const ResSecondPointsToCache& cblocksToCache,
             const std::unordered_set<size_t>& loopBlocks,
+            const std::unordered_set<size_t>& recurseBlocks,
             const std::unordered_map<size_t, RoutineData>& routineMap,
             RetSSAIdMap& retSSAIdMap, SSAReplacesMap& ssaReplacesMap,
             size_t recurBlock)
@@ -1957,14 +1958,8 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
                 visited[entry.blockIndex] = true;
                 
                 for (const auto& ssaEntry: cblock.ssaInfoMap)
-                    if (ssaEntry.first.regVar != nullptr)
-                    {
-                        // put data to routine data
-                        //updateRoutineData(rdata, ssaEntry, curSSAIdMap[ssaEntry.first]-1);
-                        
-                        if (ssaEntry.second.ssaIdChange!=0)
-                            curSSAIdMap[ssaEntry.first] = ssaEntry.second.ssaIdLast+1;
-                    }
+                    if (ssaEntry.first.regVar != nullptr && ssaEntry.second.ssaIdChange!=0)
+                        curSSAIdMap[ssaEntry.first] = ssaEntry.second.ssaIdLast+1;
             }
             else
             {
@@ -2000,15 +1995,14 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
             if (cblock.nexts[entry.nextIndex].isCall)
             {
                 std::cout << " call: " << entry.blockIndex << std::endl;
-                /*if (!callBlocks.insert(nextBlock).second)
+                if (recurseBlocks.find(nextBlock) == recurseBlocks.end())
                 {
-                    // if already called (then it is recursion)
-                    recurseBlocks.insert(nextBlock);
+                    // no recursion - normal call
+                    callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
+                    routineMapSP.insert({ nextBlock, { } });
+                }
+                else
                     std::cout << "   -- recursion: " << nextBlock << std::endl;
-                }*/
-                
-                callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
-                routineMapSP.insert({ nextBlock, { } });
                 isCall = true;
             }
             entry.nextIndex++;
@@ -2033,15 +2027,6 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
                         joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, next.block);
                     }
             }
-            /*flowStack.push_back({ entry.blockIndex+1, 0, false });
-            if (flowStackBlocks[entry.blockIndex+1])
-            {
-                loopBlocks.insert(entry.blockIndex+1);
-                 // keep to inserted in popping
-                flowStackBlocks[entry.blockIndex+1] = false;
-            }
-            else
-                flowStackBlocks[entry.blockIndex+1] = true;*/
             entry.nextIndex++;
         }
         else
@@ -2071,13 +2056,6 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
             std::cout << "pop: " << entry.blockIndex << std::endl;
             //flowStackBlocks[entry.blockIndex] = false;
             flowStack.pop_back();
-            /*if (!flowStack.empty() && lastCommonCacheWayPoint.first != SIZE_MAX &&
-                    lastCommonCacheWayPoint.second >= flowStack.size())
-            {
-                lastCommonCacheWayPoint =
-                        { flowStack.back().blockIndex, flowStack.size()-1 };
-                std::cout << "POPlastCcwP: " << lastCommonCacheWayPoint.first << std::endl;
-            }*/
         }
     }
 }
