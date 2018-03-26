@@ -2060,6 +2060,11 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
         }
     }
     
+    RoutineData& prevRdata = routineMapSP.find(recurBlock)->second;
+    createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, cblocksToCache,
+                        subroutinesCache, routineMap, &routineMapSP, prevRdata,
+                        recurBlock);
+    
     // replace routineMap entries by routineMapSP entries
     for (const auto& entry: routineMapSP)
         routineMap[entry.first] = entry.second;
@@ -2256,6 +2261,14 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 //prevRdata.compare(myRoutineData);
                 isRoutineGen[routineBlock] = true;
             }
+            else if (recurseBlocks.find(routineBlock) != recurseBlocks.end())
+            {
+                // second pass through recursion
+                passSecondRecurPass(codeBlocks, curSSAIdMap, cblocksToCache,
+                            loopBlocks, recurseBlocks, routineMap, retSSAIdMap,
+                            ssaReplacesMap, routineBlock);
+                recurseBlocks.erase(routineBlock);
+            }
             
             callStack.pop_back(); // just return from call
             callBlocks.erase(routineBlock);
@@ -2270,12 +2283,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 std::cout << " call: " << entry.blockIndex << std::endl;
                 if (!callBlocks.insert(nextBlock).second)
                 {
+                    std::cout << "   -- recursion: " << nextBlock << std::endl;
                     // if already called (then it is recursion)
                     recurseBlocks.insert(nextBlock);
-                    std::cout << "   -- recursion: " << nextBlock << std::endl;
-                    passSecondRecurPass(codeBlocks, curSSAIdMap, cblocksToCache,
-                            loopBlocks, recurseBlocks, routineMap, retSSAIdMap,
-                            ssaReplacesMap, nextBlock);
                 }
                 
                 callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
