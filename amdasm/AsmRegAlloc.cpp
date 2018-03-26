@@ -1926,14 +1926,14 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
 
 
 static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
+            std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
             const ResSecondPointsToCache& cblocksToCache,
             const std::unordered_set<size_t>& loopBlocks,
             const std::unordered_set<size_t>& recurseBlocks,
-            const std::unordered_map<size_t, RoutineData>& routineMap,
+            std::unordered_map<size_t, RoutineData>& routineMap,
             RetSSAIdMap& retSSAIdMap, SSAReplacesMap& ssaReplacesMap,
             size_t recurBlock)
 {
-    std::unordered_map<AsmSingleVReg, size_t> curSSAIdMap;
     SimpleCache<size_t, RoutineData> subroutinesCache(codeBlocks.size()<<3);
     
     // routineMapSP - routine Map for second of the recursion
@@ -1943,6 +1943,9 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
     std::deque<FlowStackEntry> flowStack;
     std::vector<bool> visited(codeBlocks.size(), false);
     flowStack.push_back({ recurBlock, 0 });
+    
+    callStack.push_back({ SIZE_MAX, 0, recurBlock });
+    routineMapSP.insert({ recurBlock, { } });
     
     while (!flowStack.empty())
     {
@@ -1990,7 +1993,6 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
         
         if (entry.nextIndex < cblock.nexts.size())
         {
-            bool isCall = false;
             const size_t nextBlock = cblock.nexts[entry.nextIndex].block;
             if (cblock.nexts[entry.nextIndex].isCall)
             {
@@ -2003,7 +2005,6 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
                 }
                 else
                     std::cout << "   -- recursion: " << nextBlock << std::endl;
-                isCall = true;
             }
             entry.nextIndex++;
         }
@@ -2058,6 +2059,10 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
             flowStack.pop_back();
         }
     }
+    
+    // replace routineMap entries by routineMapSP entries
+    for (const auto& entry: routineMapSP)
+        routineMap[entry.first] = entry.second;
 }
 
 
@@ -2268,6 +2273,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     // if already called (then it is recursion)
                     recurseBlocks.insert(nextBlock);
                     std::cout << "   -- recursion: " << nextBlock << std::endl;
+                    passSecondRecurPass(codeBlocks, curSSAIdMap, cblocksToCache,
+                            loopBlocks, recurseBlocks, routineMap, retSSAIdMap,
+                            ssaReplacesMap, nextBlock);
                 }
                 
                 callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
