@@ -1934,6 +1934,7 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
             RetSSAIdMap& retSSAIdMap, SSAReplacesMap& ssaReplacesMap,
             size_t recurBlock)
 {
+    std::cout << "----- passSecondRecurPass: " << recurBlock << std::endl;
     SimpleCache<size_t, RoutineData> subroutinesCache(codeBlocks.size()<<3);
     
     // routineMapSP - routine Map for second of the recursion
@@ -2059,6 +2060,7 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
             flowStack.pop_back();
         }
     }
+    std::cout << "----- passSecondRecurPass end: " << recurBlock << std::endl;
     
     RoutineData& prevRdata = routineMapSP.find(recurBlock)->second;
     createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, cblocksToCache,
@@ -2068,8 +2070,15 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
     // replace routineMap entries by routineMapSP entries
     for (const auto& entry: routineMapSP)
         routineMap[entry.first] = entry.second;
+    std::cout << "----- passSecondRecurPass after: " << recurBlock << std::endl;
 }
 
+
+struct CLRX_INTERNAL RecurStateEntry
+{
+    std::unordered_map<AsmSingleVReg, size_t> curSSAIdMap;
+    RetSSAIdMap retSSAIdMap;
+};
 
 void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
 {
@@ -2164,6 +2173,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::vector<bool> visited(codeBlocks.size(), false);
     flowStack.push_back({ 0, 0 });
     flowStackBlocks[0] = true;
+    
+    std::unordered_map<size_t, RecurStateEntry> recurStateMap;
     std::unordered_set<size_t> callBlocks;
     std::unordered_set<size_t> loopBlocks;
     std::unordered_set<size_t> recurseBlocks;
@@ -2254,20 +2265,21 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             std::cout << " ret: " << entry.blockIndex << std::endl;
             const size_t routineBlock = callStack.back().routineBlock;
             RoutineData& prevRdata = routineMap.find(routineBlock)->second;
-            if (!isRoutineGen[routineBlock])
+            if (recurseBlocks.find(routineBlock) != recurseBlocks.end())
+            {
+                std::cout << "store recuState: " << routineBlock << std::endl;
+                /*passSecondRecurPass(codeBlocks, curSSAIdMap, cblocksToCache,
+                            loopBlocks, recurseBlocks, routineMap, retSSAIdMap,
+                            ssaReplacesMap, routineBlock);*/
+                recurStateMap.insert({ routineBlock, { curSSAIdMap, retSSAIdMap } });
+                recurseBlocks.erase(routineBlock);
+            }
+            else if (!isRoutineGen[routineBlock])
             {
                 createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, cblocksToCache,
                         subroutinesCache, routineMap, nullptr, prevRdata, routineBlock);
                 //prevRdata.compare(myRoutineData);
                 isRoutineGen[routineBlock] = true;
-            }
-            else if (recurseBlocks.find(routineBlock) != recurseBlocks.end())
-            {
-                // second pass through recursion
-                passSecondRecurPass(codeBlocks, curSSAIdMap, cblocksToCache,
-                            loopBlocks, recurseBlocks, routineMap, retSSAIdMap,
-                            ssaReplacesMap, routineBlock);
-                recurseBlocks.erase(routineBlock);
             }
             
             callStack.pop_back(); // just return from call
@@ -2296,7 +2308,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             flowStack.push_back({ nextBlock, 0, isCall });
             if (flowStackBlocks[nextBlock])
             {
-                loopBlocks.insert(nextBlock);
+                if (!cblock.nexts[entry.nextIndex].isCall)
+                    loopBlocks.insert(nextBlock);
                 flowStackBlocks[nextBlock] = false; // keep to inserted in popping
             }
             else
@@ -2336,6 +2349,15 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         }
         else // back
         {
+            {
+                auto rsit = recurStateMap.find(entry.blockIndex);
+                if (rsit != recurStateMap.end())
+                    // second pass through recursion
+                    passSecondRecurPass(codeBlocks, rsit->second.curSSAIdMap,
+                            cblocksToCache, loopBlocks, recurseBlocks, routineMap,
+                            rsit->second.retSSAIdMap, ssaReplacesMap, entry.blockIndex);
+            }
+            
             RoutineData* rdata = nullptr;
             if (!callStack.empty())
                 rdata = &(routineMap.find(callStack.back().routineBlock)->second);

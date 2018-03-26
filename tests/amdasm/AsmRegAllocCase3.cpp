@@ -1186,5 +1186,45 @@ routine2:
         },
         true, ""
     },
+#if 0
+    {   // 7 - first recursion testcase
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4
+        s_mov_b32 sa[3], s4
+        s_mov_b32 sa[6], s7
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]
+        
+        s_add_u32 sa[2], sa[2], sa[0]
+        s_add_u32 sa[3], sa[3], sa[0]
+        s_add_u32 sa[6], sa[6], sa[0]
+        s_endpgm
+        
+routine:
+        s_xor_b32 sa[2], sa[2], sa[0]
+        s_xor_b32 sa[3], sa[3], sa[1]
+        s_cbranch_vccnz b0
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]
+        
+        s_xor_b32 sa[3], sa[3], sa[1]
+        s_xor_b32 sa[6], sa[6], sa[1]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+        
+b0:     s_xor_b32 sa[3], sa[3], sa[0]
+        s_xor_b32 sa[2], sa[2], sa[0]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+)ffDXD",
+        {
+        },
+        {
+        },
+        true, ""
+    },
+#endif
     { nullptr }
 };
