@@ -655,9 +655,7 @@ AsmScope::~AsmScope()
         if (entry.it != entry.scope->scopeMap.end())
         {
             // next nested level
-            if (entry.it->second != nullptr)
-                scopeStack.push({ entry.it->second, entry.it->second->scopeMap.begin() });
-            entry.it->second = nullptr;
+            scopeStack.push({ entry.it->second, entry.it->second->scopeMap.begin() });
             ++entry.it;
         }
         else
