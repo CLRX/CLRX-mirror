@@ -637,21 +637,65 @@ void Assembler::undefineSymbol(AsmSymbolEntry& symEntry)
     symEntry.second.undefine();
 }
 
+struct CLRX_INTERNAL ScopeStackElem0
+{
+    AsmScope* scope;
+    AsmScopeMap::iterator it;
+};
+
+
 AsmScope::~AsmScope()
 {
-    for (const auto& entry: scopeMap)
-        delete entry.second;
-    /// remove expressions before symbol map deletion
-    for (auto& entry: symbolMap)
-        entry.second.clearOccurrencesInExpr();
+    std::stack<ScopeStackElem0> scopeStack;
+    scopeStack.push({ this, this->scopeMap.begin() });
+    
+    while (!scopeStack.empty())
+    {
+        ScopeStackElem0& entry = scopeStack.top();
+        if (entry.it != entry.scope->scopeMap.end())
+        {
+            // next nested level
+            if (entry.it->second != nullptr)
+                scopeStack.push({ entry.it->second, entry.it->second->scopeMap.begin() });
+            entry.it->second = nullptr;
+            ++entry.it;
+        }
+        else
+        {
+            entry.scope->scopeMap.clear();
+            /// remove expressions before symbol map deletion
+            for (auto& symEntry: entry.scope->symbolMap)
+                symEntry.second.clearOccurrencesInExpr();
+            entry.scope->symbolMap.clear();
+            if (scopeStack.size() > 1)
+                delete entry.scope;
+            scopeStack.pop();
+        }
+    }
 }
 
 // simple way to delete symbols recursively from scope
 void AsmScope::deleteSymbolsRecursively()
 {
-    symbolMap.clear();
-    for (auto& entry: scopeMap)
-        entry.second->deleteSymbolsRecursively();
+    std::stack<ScopeStackElem0> scopeStack;
+    scopeStack.push({ this, this->scopeMap.begin() });
+    
+    while (!scopeStack.empty())
+    {
+        ScopeStackElem0& entry = scopeStack.top();
+        if (entry.it == entry.scope->scopeMap.begin())
+            // first touch - clear symbol map
+            entry.scope->symbolMap.clear();
+        
+        if (entry.it != entry.scope->scopeMap.end())
+        {
+            // next nested level
+            scopeStack.push({ entry.it->second, entry.it->second->scopeMap.begin() });
+            ++entry.it;
+        }
+        else
+            scopeStack.pop();
+    }
 }
 
 void AsmScope::startUsingScope(AsmScope* scope)
