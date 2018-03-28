@@ -2314,12 +2314,28 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                             ssaReplacesMap, routineBlock);*/
                 recurStateMap.insert({ routineBlock, { curSSAIdMap, retSSAIdMap } });
             }
-            else if (!isRoutineGen[routineBlock])
+            
+            if (!isRoutineGen[routineBlock] && !flowStackBlocks[routineBlock])
             {
                 createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, recurseBlocks,
                         cblocksToCache, subroutinesCache, routineMap, nullptr,
                         retRecurStateMapMap, prevRdata, routineBlock);
                 //prevRdata.compare(myRoutineData);
+                
+                auto rsit = recurStateMap.find(routineBlock);
+                if (rsit != recurStateMap.end())
+                {
+                    // second pass through recursion
+                    passSecondRecurPass(codeBlocks, rsit->second.curSSAIdMap,
+                            cblocksToCache, loopBlocks, recurseBlocks, routineMap,
+                            rsit->second.retSSAIdMap, ssaReplacesMap,
+                            retRecurStateMapMap, routineBlock);
+                    recurseBlocks.erase(routineBlock);
+                    // join retRecurStates
+                    for (const auto& entry: retRecurStateMapMap[routineBlock])
+                        std::cout << "join retrecState: " << entry.first << std::endl;
+                }
+                
                 isRoutineGen[routineBlock] = true;
             }
             
@@ -2390,22 +2406,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         }
         else // back
         {
-            {
-                auto rsit = recurStateMap.find(entry.blockIndex);
-                if (rsit != recurStateMap.end())
-                {
-                    // second pass through recursion
-                    passSecondRecurPass(codeBlocks, rsit->second.curSSAIdMap,
-                            cblocksToCache, loopBlocks, recurseBlocks, routineMap,
-                            rsit->second.retSSAIdMap, ssaReplacesMap,
-                            retRecurStateMapMap, entry.blockIndex);
-                    recurseBlocks.erase(entry.blockIndex);
-                    // join retRecurStates
-                    for (const auto& entry: retRecurStateMapMap[entry.blockIndex])
-                        std::cout << "join retrecState: " << entry.first << std::endl;
-                }
-            }
-            
             RoutineData* rdata = nullptr;
             if (!callStack.empty())
                 rdata = &(routineMap.find(callStack.back().routineBlock)->second);
