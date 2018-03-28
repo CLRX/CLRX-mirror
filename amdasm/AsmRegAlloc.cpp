@@ -604,8 +604,6 @@ struct CLRX_INTERNAL LoopSSAIdMap
 
 struct CLRX_INTERNAL RoutineData
 {
-    // TODO: check whether rbwSSAIdMap should be updated after retSSAId reduction
-    // beyond first read of the regvars inside routine
     // rbwSSAIdMap - read before write SSAId's map
     std::unordered_map<AsmSingleVReg, size_t> rbwSSAIdMap;
     LastSSAIdMap curSSAIdMap;
