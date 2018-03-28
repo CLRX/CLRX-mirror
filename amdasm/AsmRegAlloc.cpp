@@ -1971,7 +1971,7 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
             std::unordered_map<size_t, RoutineData>& routineMap,
             RetSSAIdMap& retSSAIdMap, SSAReplacesMap& ssaReplacesMap,
             RetRecurStateMapMap& retRecurStateMapMap,
-            size_t recurBlock)
+            size_t recurBlock, RoutineData& rdataSP)
 {
     std::cout << "----- passSecondRecurPass: " << recurBlock << std::endl;
     SimpleCache<size_t, RoutineData> subroutinesCache(codeBlocks.size()<<3);
@@ -2102,14 +2102,15 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
     }
     std::cout << "----- passSecondRecurPass end: " << recurBlock << std::endl;
     
-    RoutineData& prevRdata = routineMapSP.find(recurBlock)->second;
+    rdataSP = routineMapSP.find(recurBlock)->second;
     createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, recurseBlocks, cblocksToCache,
                 subroutinesCache, routineMap, &routineMapSP,
-                retRecurStateMapMap, prevRdata, recurBlock);
+                retRecurStateMapMap, rdataSP, recurBlock);
     
     // replace routineMap entries by routineMapSP entries
     for (const auto& entry: routineMapSP)
-        routineMap[entry.first] = entry.second;
+        if (entry.first != recurBlock)
+            routineMap[entry.first] = entry.second;
     std::cout << "----- passSecondRecurPass after: " << recurBlock << std::endl;
 }
 
@@ -2309,9 +2310,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             if (recurseBlocks.find(routineBlock) != recurseBlocks.end())
             {
                 std::cout << "store recuState: " << routineBlock << std::endl;
-                /*passSecondRecurPass(codeBlocks, curSSAIdMap, cblocksToCache,
-                            loopBlocks, recurseBlocks, routineMap, retSSAIdMap,
-                            ssaReplacesMap, routineBlock);*/
                 recurStateMap.insert({ routineBlock, { curSSAIdMap, retSSAIdMap } });
             }
             
@@ -2326,10 +2324,11 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 if (rsit != recurStateMap.end())
                 {
                     // second pass through recursion
+                    RoutineData rdataSP;
                     passSecondRecurPass(codeBlocks, rsit->second.curSSAIdMap,
                             cblocksToCache, loopBlocks, recurseBlocks, routineMap,
                             rsit->second.retSSAIdMap, ssaReplacesMap,
-                            retRecurStateMapMap, routineBlock);
+                            retRecurStateMapMap, routineBlock, rdataSP);
                     recurseBlocks.erase(routineBlock);
                     // join retRecurStates
                     for (const auto& entry: retRecurStateMapMap[routineBlock])
