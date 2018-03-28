@@ -1609,7 +1609,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         RetRecurStateMapMap& retRecurStateMapMap,
         RoutineData& rdata, size_t routineBlock, bool noMainLoop = false,
         const std::vector<bool>& prevFlowStackBlocks = {},
-        const std::deque<CallStackEntry>& callStack = {})
+        const std::deque<CallStackEntry>& callStack = {},
+        RetRecurState* retRecurState = nullptr)
 {
     std::cout << "--------- createRoutineData ----------------\n";
     std::vector<bool> visited(codeBlocks.size(), false);
@@ -1626,6 +1627,14 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     RetSSAIdMap retSSAIdMap;
     flowStack.push_back({ routineBlock, 0 });
     flowStackBlocks[routineBlock] = true;
+    
+    if (retRecurState != nullptr)
+    {
+        std::cout << " -- -- get retrecurstate" << std::endl;
+        retSSAIdMap = retRecurState->retSSAIdMap;
+        flowStack = retRecurState->flowStack;
+        flowStackBlocks = retRecurState->flowStackBlocks;
+    }
     
     while (!flowStack.empty())
     {
@@ -1882,13 +1891,15 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                         if (recurBlocks.find(next.block) == recurBlocks.end())
                             joinRetSSAIdMap(retSSAIdMap, callRdata->lastSSAIdMap,
                                             next.block);
-                        else
+                        else if (routineMapRecur != nullptr)
                         {   // put retRecurState
                             std::cout << "-- store retrecurstate: " <<
                                     next.block << ": " << entry.blockIndex << std::endl;
+                            std::deque<FlowStackEntry> newFlowStack;
+                            newFlowStack.push_back({entry.blockIndex, 0});
                             retRecurStateMapMap[next.block].insert({ entry.blockIndex, {
                                     curSSAIdMap, retSSAIdMap,
-                                    flowStack, flowStackBlocks, callStack } });
+                                    newFlowStack, flowStackBlocks, callStack } });
                         }
                     }
             }
@@ -1948,7 +1959,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             
             if ((!noMainLoop || flowStack.size() > 1) &&
                 subroutToCache.count(entry.blockIndex)!=0 &&
-                recurBlocks.find(entry.blockIndex) == recurBlocks.end())
+                recurBlocks.find(entry.blockIndex) == recurBlocks.end() &&
+                retRecurState == nullptr)
             {   //put to cache
                 std::cout << "-- subrcache for " << entry.blockIndex << std::endl;
                 addSubroutine(loopsit2, true);
@@ -2331,8 +2343,16 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                             retRecurStateMapMap, routineBlock, rdataSP);
                     recurseBlocks.erase(routineBlock);
                     // join retRecurStates
-                    for (const auto& entry: retRecurStateMapMap[routineBlock])
+                    for (auto& entry: retRecurStateMapMap[routineBlock])
+                    {
                         std::cout << "join retrecState: " << entry.first << std::endl;
+                        createRoutineData(codeBlocks, entry.second.curSSAIdMap,
+                                loopBlocks, recurseBlocks, cblocksToCache,
+                                subroutinesCache, routineMap, nullptr,
+                                retRecurStateMapMap, rdataSP, routineBlock, false, {},
+                                callStack, &entry.second);
+                        joinRoutineData(prevRdata, rdataSP);
+                    }
                 }
                 
                 isRoutineGen[routineBlock] = true;
