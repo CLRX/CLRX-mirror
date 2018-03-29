@@ -1186,7 +1186,6 @@ routine2:
         },
         true, ""
     },
-#if 0
     {   // 7 - first recursion testcase
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4
@@ -1216,15 +1215,80 @@ routine:
         
 b0:     s_xor_b32 sa[3], sa[3], sa[0]
         s_xor_b32 sa[2], sa[2], sa[0]
+        s_xor_b32 sa[6], sa[6], sa[0]
         .cf_ret
         s_setpc_b64 s[0:1]
 )ffDXD",
         {
+            {   // block 0 - start
+                0, 16,
+                { { 2, true } },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 7 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 3 }, SSAInfo(0, 1, 1, 1, 1, false) },
+                    { { "sa", 6 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, true, false, false },
+            {   // block 1 - end
+                16, 32,
+                { },
+                {
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 2 }, SSAInfo(2, 4, 4, 4, 1, true) },
+                    { { "sa", 3 }, SSAInfo(3, 5, 5, 5, 1, true) },
+                    { { "sa", 6 }, SSAInfo(2, 4, 4, 4, 1, true) }
+                }, false, false, true },
+            {   // block 2 - routine
+                32, 44,
+                { { 3, false }, { 5, false } },
+                {
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 2, 2, 2, 1, true) }
+                }, false, false, false },
+            {   // block 3 - recur call
+                44, 48,
+                { { 2, true } },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, true) }
+                }, true, false, false },
+            {   // block 4 - routine end
+                48, 60,
+                { },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 3 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "sa", 6 }, SSAInfo(1, 2, 2, 2, 1, true) }
+                }, false, true, true },
+            {   // block 5 - routine end 2
+                60, 76,
+                { },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 2 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "sa", 3 }, SSAInfo(2, 4, 4, 4, 1, true) },
+                    { { "sa", 6 }, SSAInfo(1, 3, 3, 3, 1, true) }
+                }, false, true, true }
         },
-        {
+        {   // SSA replaces
+            { { "sa", 2 }, { { 3, 2 }, { 2, 1 } } },
+            { { "sa", 3 }, { { 3, 2 }, { 4, 3 }, { 2, 1 } } },
+            { { "sa", 6 }, { { 2, 1 }, { 3, 2 } } }
         },
         true, ""
     },
-#endif
     { nullptr }
 };

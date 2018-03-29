@@ -830,7 +830,7 @@ static void addResSecCacheEntry(const std::unordered_map<size_t, RoutineData>& r
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
-                std::cout << "  resolv: " << entry.blockIndex << std::endl;
+                std::cout << "  resolv (cache): " << entry.blockIndex << std::endl;
                 
                 const RBWSSAIdMap* resSecondPoints =
                             resSecondPointsCache.use(entry.blockIndex);
@@ -850,7 +850,7 @@ static void addResSecCacheEntry(const std::unordered_map<size_t, RoutineData>& r
             else
             {
                 // back, already visited
-                std::cout << "resolv already: " << entry.blockIndex << std::endl;
+                std::cout << "resolv already (cache): " << entry.blockIndex << std::endl;
                 flowStack.pop_back();
                 continue;
             }
@@ -910,7 +910,7 @@ static void addResSecCacheEntry(const std::unordered_map<size_t, RoutineData>& r
                     // before write (can be different due to earlier visit)
                     alreadyReadMap.erase(it);
             }
-            std::cout << "  popresolv" << std::endl;
+            std::cout << "  popresolv (cache)" << std::endl;
             flowStack.pop_back();
         }
     }
@@ -1599,6 +1599,7 @@ typedef std::unordered_map<size_t, std::unordered_map<size_t, RetRecurState> >
             RetRecurStateMapMap;
 
 static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
+        SSAReplacesMap& ssaReplacesMap,
         std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         const std::unordered_set<size_t>& loopBlocks,
         const std::unordered_set<size_t>& recurBlocks,
@@ -1623,11 +1624,15 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     std::vector<bool> flowStackBlocks(codeBlocks.size(), false);
     if (!prevFlowStackBlocks.empty())
         flowStackBlocks = prevFlowStackBlocks;
+    
+    // SSAId for join recursion returns
+    RoutineData retRecurRdata;
     // last SSA ids map from returns
     RetSSAIdMap retSSAIdMap;
     flowStack.push_back({ routineBlock, 0 });
     flowStackBlocks[routineBlock] = true;
     
+    bool returnFromRecur = (retRecurState != nullptr);
     if (retRecurState != nullptr)
     {
         std::cout << " -- -- get retrecurstate" << std::endl;
@@ -1653,6 +1658,10 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     loopsit2 != rdata.loopEnds.end())
                 {
                     RoutineData* subRdata = subroutinesCache.use(entry.blockIndex);
+                    if (returnFromRecur)
+                        joinLastSSAIdMap(retRecurRdata.lastSSAIdMap,
+                                    loopsit2->second.ssaIdMap, *subRdata, true);
+                    
                     joinLastSSAIdMap(rdata.lastSSAIdMap, loopsit2->second.ssaIdMap,
                                         *subRdata, true);
                 }
@@ -1662,9 +1671,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             RoutineData subrData;
             const bool oldFB = flowStackBlocks[entry.blockIndex];
             flowStackBlocks[entry.blockIndex] = !oldFB;
-            createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, recurBlocks,
-                    subroutToCache, subroutinesCache, routineMap, routineMapRecur,
-                    retRecurStateMapMap, subrData, entry.blockIndex,
+            createRoutineData(codeBlocks, ssaReplacesMap, curSSAIdMap, loopBlocks,
+                    recurBlocks, subroutToCache, subroutinesCache, routineMap,
+                    routineMapRecur, retRecurStateMapMap, subrData, entry.blockIndex,
                     true, flowStackBlocks);
             RoutineData subrDataCopy;
             flowStackBlocks[entry.blockIndex] = oldFB;
@@ -1682,8 +1691,13 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                             loopsit2->second.ssaIdMap, subrData, true);
                     std::cout << "   loopssaIdMap2End: " << std::endl;
                     if (applyToMainRoutine)
+                    {
+                        if (returnFromRecur)
+                            joinLastSSAIdMap(retRecurRdata.lastSSAIdMap,
+                                    loopsit2->second.ssaIdMap, subrDataCopy, true);
                         joinLastSSAIdMap(rdata.lastSSAIdMap, loopsit2->second.ssaIdMap,
                                         subrDataCopy, true);
+                    }
                 }
             }
             
@@ -1777,14 +1791,20 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             {
                 std::cout << "use cached subr " << entry.blockIndex << std::endl;
                 std::cout << "procret2: " << entry.blockIndex << std::endl;
+                if (returnFromRecur)
+                    joinLastSSAIdMap(retRecurRdata.lastSSAIdMap,
+                            retRecurRdata.curSSAIdMap, *cachedRdata);
+                
                 joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap, *cachedRdata);
                 // get not given rdata curSSAIdMap ssaIds but present in cachedRdata
                 // curSSAIdMap
                 for (const auto& entry: cachedRdata->curSSAIdMap)
+                {
                     if (rdata.curSSAIdMap.find(entry.first) == rdata.curSSAIdMap.end())
                     {
                         auto cit = curSSAIdMap.find(entry.first);
                         size_t prevSSAId = (cit!=curSSAIdMap.end() ? cit->second : 1)-1;
+                        
                         rdata.curSSAIdMap.insert({ entry.first, { prevSSAId } });
                         
                         if (rdata.notFirstReturn)
@@ -1795,6 +1815,17 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                                         insertSSAId(entry.first, prevSSAId);
                         }
                     }
+                    if (returnFromRecur && retRecurRdata.curSSAIdMap.find(entry.first) ==
+                                retRecurRdata.curSSAIdMap.end())
+                    {
+                        auto cit = curSSAIdMap.find(entry.first);
+                        size_t prevSSAId = (cit!=curSSAIdMap.end() ? cit->second : 1)-1;
+                        
+                        retRecurRdata.curSSAIdMap.insert(
+                                    { entry.first, { prevSSAId } });
+                        retRecurRdata.lastSSAIdMap.insertSSAId(entry.first, prevSSAId);
+                    }
+                }
                 
                 // join loopEnds
                 for (const auto& loopEnd: cachedRdata->loopEnds)
@@ -1817,7 +1848,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     subrLoopsMap.insert({ entry.blockIndex, activeLoops });
                     for (size_t loop: activeLoops)
                     {
-                        auto res = loopSubrsMap.insert({ loop, { entry.blockIndex} });
+                        auto res = loopSubrsMap.insert({ loop, { entry.blockIndex } });
                         if (!res.second)
                             res.first->second.insertValue(entry.blockIndex);
                     }
@@ -1831,6 +1862,10 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 for (const auto& ssaEntry: cblock.ssaInfoMap)
                     if (ssaEntry.first.regVar != nullptr)
                     {
+                        if (returnFromRecur)
+                            updateRoutineData(retRecurRdata, ssaEntry,
+                                        curSSAIdMap[ssaEntry.first]-1);
+                        
                         // put data to routine data
                         updateRoutineData(rdata, ssaEntry, curSSAIdMap[ssaEntry.first]-1);
                         
@@ -1861,6 +1896,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             
             //joinRoutineData(rdata, routineMap.find(
             //                cblock.nexts[entry.nextIndex].block)->second);
+            if (returnFromRecur && recurBlocks.find(nextRBlock) == recurBlocks.end())
+                joinRoutineData(retRecurRdata, *findRoutine(routineMap,
+                                routineMapRecur, nextRBlock));
             joinRoutineData(rdata, *findRoutine(routineMap, routineMapRecur, nextRBlock));
         }
         
@@ -1915,12 +1953,19 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             if (cblock.haveReturn)
             {
                 std::cout << "procret: " << entry.blockIndex << std::endl;
+                if (returnFromRecur)
+                    joinLastSSAIdMap(retRecurRdata.lastSSAIdMap, retRecurRdata.curSSAIdMap);
                 joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap);
                 std::cout << "procretend" << std::endl;
                 rdata.notFirstReturn = true;
+                if (returnFromRecur)
+                    retRecurRdata.notFirstReturn = true;
             }
             
             // revert retSSAIdMap
+            if (returnFromRecur)
+                revertRetSSAIdMap(curSSAIdMap, retSSAIdMap, entry, &retRecurRdata);
+            
             revertRetSSAIdMap(curSSAIdMap, retSSAIdMap, entry, &rdata);
             //
             
@@ -1937,6 +1982,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                             ":" << ssaEntry.first.index << ": " <<
                             nextSSAId << ", " << curSSAId << std::endl;
                 
+                if (returnFromRecur)
+                    updateRoutineCurSSAIdMap(&retRecurRdata, ssaEntry, entry,
+                                    curSSAId, nextSSAId);
                 updateRoutineCurSSAIdMap(&rdata, ssaEntry, entry, curSSAId, nextSSAId);
             }
             
@@ -1969,6 +2017,22 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             flowStackBlocks[entry.blockIndex] = false;
             std::cout << "pop: " << entry.blockIndex << std::endl;
             flowStack.pop_back();
+        }
+    }
+    
+    if (returnFromRecur)
+    {
+        for (const auto& entry: retRecurRdata.rbwSSAIdMap)
+        {
+            auto lit = retRecurRdata.lastSSAIdMap.find(entry.first);
+            if (lit != retRecurRdata.lastSSAIdMap.end())
+                for (size_t ssaId: lit->second)
+                {
+                    if (entry.second < ssaId)
+                        insertReplace(ssaReplacesMap, entry.first, ssaId, entry.second);
+                    else if (entry.second > ssaId)
+                        insertReplace(ssaReplacesMap, entry.first, entry.second, ssaId);
+                }
         }
     }
     std::cout << "--------- createRoutineData end ------------\n";
@@ -2032,7 +2096,8 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
             RoutineData& prevRdata = routineMapSP.find(routineBlock)->second;
             if (!isRoutineGen[routineBlock])
             {
-                createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, recurseBlocks,
+                createRoutineData(codeBlocks, ssaReplacesMap, curSSAIdMap,
+                        loopBlocks, recurseBlocks,
                         cblocksToCache, subroutinesCache, routineMap, &routineMapSP,
                         retRecurStateMapMap, prevRdata, routineBlock,
                         false, {}, callStack);
@@ -2115,9 +2180,9 @@ static void passSecondRecurPass(const std::vector<CodeBlock>& codeBlocks,
     std::cout << "----- passSecondRecurPass end: " << recurBlock << std::endl;
     
     rdataSP = routineMapSP.find(recurBlock)->second;
-    createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, recurseBlocks, cblocksToCache,
-                subroutinesCache, routineMap, &routineMapSP,
-                retRecurStateMapMap, rdataSP, recurBlock);
+    createRoutineData(codeBlocks, ssaReplacesMap, curSSAIdMap, loopBlocks,
+                recurseBlocks, cblocksToCache, subroutinesCache, routineMap,
+                &routineMapSP, retRecurStateMapMap, rdataSP, recurBlock);
     
     // replace routineMap entries by routineMapSP entries
     for (const auto& entry: routineMapSP)
@@ -2327,9 +2392,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             
             if (!isRoutineGen[routineBlock] && !flowStackBlocks[routineBlock])
             {
-                createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, recurseBlocks,
-                        cblocksToCache, subroutinesCache, routineMap, nullptr,
-                        retRecurStateMapMap, prevRdata, routineBlock);
+                createRoutineData(codeBlocks, ssaReplacesMap, curSSAIdMap,
+                        loopBlocks, recurseBlocks, cblocksToCache, subroutinesCache,
+                        routineMap, nullptr, retRecurStateMapMap, prevRdata, routineBlock);
                 //prevRdata.compare(myRoutineData);
                 
                 auto rsit = recurStateMap.find(routineBlock);
@@ -2341,18 +2406,19 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                             cblocksToCache, loopBlocks, recurseBlocks, routineMap,
                             rsit->second.retSSAIdMap, ssaReplacesMap,
                             retRecurStateMapMap, routineBlock, rdataSP);
-                    recurseBlocks.erase(routineBlock);
                     // join retRecurStates
                     for (auto& entry: retRecurStateMapMap[routineBlock])
                     {
                         std::cout << "join retrecState: " << entry.first << std::endl;
-                        createRoutineData(codeBlocks, entry.second.curSSAIdMap,
+                        createRoutineData(codeBlocks, ssaReplacesMap, 
+                                entry.second.curSSAIdMap,
                                 loopBlocks, recurseBlocks, cblocksToCache,
                                 subroutinesCache, routineMap, nullptr,
                                 retRecurStateMapMap, rdataSP, routineBlock, false, {},
                                 callStack, &entry.second);
                         joinRoutineData(prevRdata, rdataSP);
                     }
+                    recurseBlocks.erase(routineBlock);
                 }
                 
                 isRoutineGen[routineBlock] = true;
