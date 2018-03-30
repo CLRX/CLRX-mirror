@@ -1896,10 +1896,14 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             
             //joinRoutineData(rdata, routineMap.find(
             //                cblock.nexts[entry.nextIndex].block)->second);
-            if (returnFromRecur && recurBlocks.find(nextRBlock) == recurBlocks.end())
-                joinRoutineData(retRecurRdata, *findRoutine(routineMap,
-                                routineMapRecur, nextRBlock));
-            joinRoutineData(rdata, *findRoutine(routineMap, routineMapRecur, nextRBlock));
+            if (recurBlocks.find(nextRBlock) == recurBlocks.end())
+            {
+                if (returnFromRecur)
+                    joinRoutineData(retRecurRdata, *findRoutine(routineMap,
+                                    routineMapRecur, nextRBlock));
+                joinRoutineData(rdata,
+                        *findRoutine(routineMap, routineMapRecur, nextRBlock));
+            }
         }
         
         if (entry.nextIndex < cblock.nexts.size())
