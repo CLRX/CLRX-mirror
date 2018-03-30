@@ -1290,5 +1290,89 @@ b0:     s_xor_b32 sa[3], sa[3], sa[0]
         },
         true, ""
     },
+#if 0
+    {   // 8 - first recursion testcase
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4
+        s_mov_b32 sa[3], s4
+        s_mov_b32 sa[4], s5
+        s_mov_b32 sa[5], s6
+        s_mov_b32 sa[6], s7
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]
+        
+        s_add_u32 sa[2], sa[2], sa[0]
+        s_add_u32 sa[3], sa[3], sa[0]
+        s_add_u32 sa[6], sa[6], sa[0]
+        s_endpgm
+        
+routine:
+        s_xor_b32 sa[2], sa[2], sa[0]
+        s_xor_b32 sa[3], sa[3], sa[1]
+        s_cbranch_vccnz b0
+        
+        .cf_call routine2
+        s_swappc_b64 s[0:1], s[2:3]
+        
+        s_xor_b32 sa[3], sa[3], sa[1]
+        s_xor_b32 sa[6], sa[6], sa[1]
+        s_xor_b32 sa[5], sa[5], sa[0]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+        
+b0:     s_xor_b32 sa[3], sa[3], sa[0]
+        s_xor_b32 sa[2], sa[2], sa[0]
+        s_xor_b32 sa[6], sa[6], sa[0]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+        
+routine2:
+        s_xor_b32 sa[2], sa[2], sa[0]
+        s_xor_b32 sa[3], sa[3], sa[1]
+        s_cbranch_vccnz b1
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]
+        
+        s_xor_b32 sa[3], sa[3], sa[1]
+        s_xor_b32 sa[6], sa[6], sa[1]
+        s_xor_b32 sa[4], sa[4], sa[0]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+        
+b1:     s_xor_b32 sa[3], sa[3], sa[0]
+        s_xor_b32 sa[2], sa[2], sa[0]
+        s_xor_b32 sa[6], sa[6], sa[0]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+)ffDXD",
+        {
+            {   // block 0 - start
+            },
+            {   // block 1 - end
+            },
+            {   // block 2 - routine
+            },
+            {   // block 3 - call routine2
+            },
+            {   // block 4 - routine end
+            },
+            {   // block 5 - routine end2
+            },
+            {   // block 6 - routine2
+            },
+            {   // block 7 - call routine
+            },
+            {   // block 8 - routine2 end
+            },
+            {   // block 9 - routine2 end2
+            }
+        },
+        {   // SSA replaces
+        },
+        true, ""
+    },
+#endif
     { nullptr }
 };
