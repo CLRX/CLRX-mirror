@@ -933,7 +933,8 @@ static void addResSecCacheEntry(const RoutineMap& routineMap,
         
         if (entry.nextIndex < cblock.nexts.size())
         {
-            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            flowStack.push_back({ { cblock.nexts[entry.nextIndex].block,
+                    entry.blockIndex.pass }, 0 });
             entry.nextIndex++;
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
@@ -1142,7 +1143,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
         
         if (entry.nextIndex < cblock.nexts.size())
         {
-            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            flowStack.push_back({ { cblock.nexts[entry.nextIndex].block,
+                        entry.blockIndex.pass }, 0 });
             entry.nextIndex++;
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
@@ -1430,6 +1432,7 @@ static void reduceSSAIdsForCalls(FlowStackEntry& entry,
     }
 }
 
+// TODO: correct reduction for recursion support
 // reduce retSSAIds (last SSAIds for regvar) while passing by code block
 // and emits SSA replaces for these ssaids
 static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
@@ -1886,7 +1889,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         
         if (entry.nextIndex < cblock.nexts.size())
         {
-            const BlockIndex nextBlock = cblock.nexts[entry.nextIndex].block;
+            const BlockIndex nextBlock = { cblock.nexts[entry.nextIndex].block,
+                        entry.blockIndex.pass };
             flowStack.push_back({ nextBlock, 0 });
             // negate - if true (already in flowstack, then popping keep this state)
             flowStackBlocks[nextBlock] = !flowStackBlocks[nextBlock];
@@ -2091,6 +2095,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 
                 for (auto& ssaEntry: cblock.ssaInfoMap)
                 {
+                    // TODO: correct pass by second pass in recursion
                     SSAInfo& sinfo = ssaEntry.second;
                     if (ssaEntry.first.regVar==nullptr)
                     {
@@ -2178,16 +2183,35 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         if (entry.nextIndex < cblock.nexts.size())
         {
             bool isCall = false;
-            const size_t nextBlock = cblock.nexts[entry.nextIndex].block;
+            BlockIndex nextBlock = cblock.nexts[entry.nextIndex].block;
+            nextBlock.pass = entry.blockIndex.pass;
             if (cblock.nexts[entry.nextIndex].isCall)
             {
-                std::cout << " call: " << entry.blockIndex << std::endl;
+                bool nextRecursion = false;
                 if (!callBlocks.insert(nextBlock).second)
                 {
                     // if already called (then it is recursion)
-                    recurseBlocks.insert(nextBlock);
-                    std::cout << "   -- recursion: " << nextBlock << std::endl;
+                    nextRecursion = recurseBlocks.insert(nextBlock.index).second;
+                    if (nextRecursion)
+                    {
+                        std::cout << "   -- recursion: " << nextBlock << std::endl;
+                        nextBlock.pass = 1;
+                    }
+                    else
+                    {
+                        entry.nextIndex++;
+                        std::cout << " NO call (rec): " << entry.blockIndex << std::endl;
+                        continue;
+                    }
                 }
+                else if (entry.blockIndex.pass==1 &&
+                    recurseBlocks.find(nextBlock.index) != recurseBlocks.end())
+                {
+                    entry.nextIndex++;
+                    std::cout << " NO call (rec)2: " << entry.blockIndex << std::endl;
+                    continue;
+                }
+                std::cout << " call: " << entry.blockIndex << std::endl;
                 
                 callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
                 routineMap.insert({ nextBlock, { } });
@@ -2310,7 +2334,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         
         if (entry.nextIndex < cblock.nexts.size())
         {
-            flowStack2.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            flowStack2.push_back({
+                { cblock.nexts[entry.nextIndex].block, entry.blockIndex.pass }, 0 });
             entry.nextIndex++;
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
