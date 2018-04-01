@@ -1449,7 +1449,7 @@ static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         if (sinfo.ssaId != SIZE_MAX)
         {
             std::vector<size_t> outSSAIds = ssaIds;
-            outSSAIds.push_back(sinfo.ssaIdBefore); // ???
+            outSSAIds.push_back(ssaId-1); // ???
             // already set
             if (outSSAIds.size() >= 1)
             {
@@ -1458,9 +1458,12 @@ static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
                 outSSAIds.resize(std::unique(outSSAIds.begin(), outSSAIds.end()) -
                             outSSAIds.begin());
                 // insert SSA replaces
-                size_t minSSAId = outSSAIds.front();
-                for (auto sit = outSSAIds.begin()+1; sit != outSSAIds.end(); ++sit)
-                    insertReplace(ssaReplacesMap, ssaEntry.first, *sit, minSSAId);
+                if (outSSAIds.size() >= 2)
+                {
+                    size_t minSSAId = outSSAIds.front();
+                    for (auto sit = outSSAIds.begin()+1; sit != outSSAIds.end(); ++sit)
+                        insertReplace(ssaReplacesMap, ssaEntry.first, *sit, minSSAId);
+                }
             }
         }
         else if (ssaIds.size() >= 2)
@@ -2211,6 +2214,14 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                             routineBlock);
                 //prevRdata.compare(myRoutineData);
                 isRoutineGen[routineBlock] = true;
+                
+                auto csimsmit = curSSAIdMapStateMap.find(routineBlock.index);
+                if (csimsmit != curSSAIdMapStateMap.end() && entry.blockIndex.pass==0)
+                {
+                    std::cout << " get curSSAIdMap from back recur 2" << std::endl;
+                    curSSAIdMap = csimsmit->second;
+                    curSSAIdMapStateMap.erase(csimsmit);
+                }
             }
             
             callStack.pop_back(); // just return from call
