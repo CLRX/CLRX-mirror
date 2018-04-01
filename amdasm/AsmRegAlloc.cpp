@@ -1446,7 +1446,24 @@ static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
     {
         auto& ssaIds = ssaIdsIt->second.ssaIds;
         
-        if (ssaIds.size() >= 2)
+        if (sinfo.ssaId != SIZE_MAX)
+        {
+            std::vector<size_t> outSSAIds = ssaIds;
+            outSSAIds.push_back(sinfo.ssaIdBefore); // ???
+            // already set
+            if (outSSAIds.size() >= 1)
+            {
+                // reduce to minimal ssaId from all calls
+                std::sort(outSSAIds.begin(), outSSAIds.end());
+                outSSAIds.resize(std::unique(outSSAIds.begin(), outSSAIds.end()) -
+                            outSSAIds.begin());
+                // insert SSA replaces
+                size_t minSSAId = outSSAIds.front();
+                for (auto sit = outSSAIds.begin()+1; sit != outSSAIds.end(); ++sit)
+                    insertReplace(ssaReplacesMap, ssaEntry.first, *sit, minSSAId);
+            }
+        }
+        else if (ssaIds.size() >= 2)
         {
             // reduce to minimal ssaId from all calls
             std::sort(ssaIds.begin(), ssaIds.end());
@@ -1648,6 +1665,7 @@ static bool tryAddLoopEnd(const FlowStackEntry& entry, BlockIndex routineBlock,
 }
 
 
+// TODO: fix curSSAIdMap between recursive call returns
 static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         const std::unordered_set<BlockIndex>& loopBlocks,
@@ -2080,6 +2098,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::unordered_set<BlockIndex> loopBlocks;
     std::unordered_set<size_t> recurseBlocks;
     
+    std::unordered_map<size_t, std::unordered_map<AsmSingleVReg, size_t> >
+            curSSAIdMapStateMap;
+    
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.back();
@@ -2102,6 +2123,22 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         // TODO - pass registers through SSA marking and resolving
                         sinfo.ssaIdChange = 0; // zeroing SSA changes
                         continue; // no change for registers
+                    }
+                    
+                    if (sinfo.ssaId != SIZE_MAX)
+                    {
+                        // already initialized
+                        reduceSSAIds(curSSAIdMap, retSSAIdMap,
+                                routineMap, ssaReplacesMap, entry, ssaEntry);
+                        if (sinfo.ssaIdChange!=0)
+                            curSSAIdMap[ssaEntry.first] = sinfo.ssaIdLast+1;
+                        
+                        // count read before writes (for cache weight)
+                        if (sinfo.readBeforeWrite)
+                            rbwCount++;
+                        if (sinfo.ssaIdChange!=0)
+                            wrCount++;
+                        continue;
                     }
                     
                     bool reducedSSAId = reduceSSAIds(curSSAIdMap, retSSAIdMap,
@@ -2196,6 +2233,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     {
                         std::cout << "   -- recursion: " << nextBlock << std::endl;
                         nextBlock.pass = 1;
+                        
+                        curSSAIdMapStateMap.insert({ nextBlock.index,  curSSAIdMap });
                     }
                     else
                     {
@@ -2212,7 +2251,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     continue;
                 }
                 std::cout << " call: " << entry.blockIndex << std::endl;
-                
+                                
                 callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
                 routineMap.insert({ nextBlock, { } });
                 isCall = true;
@@ -2243,7 +2282,15 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     if (next.isCall)
                     {
                         //std::cout << "joincall:"<< next.block << std::endl;
-                        auto it = routineMap.find(next.block); // must find
+                        size_t pass = 0;
+                        if (callBlocks.find(next.block) != callBlocks.end())
+                        {
+                            std::cout << " is secpass: " << entry.blockIndex << " : " <<
+                                    next.block << std::endl;
+                            pass = 1; // it ways second pass
+                        }
+                        
+                        auto it = routineMap.find({ next.block, pass }); // must find
                         initializePrevRetSSAIds(cblock, curSSAIdMap, retSSAIdMap,
                                     it->second, entry);
                         joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, next.block);
@@ -2286,7 +2333,18 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             
             std::cout << "pop: " << entry.blockIndex << std::endl;
             flowStackBlocks[entry.blockIndex] = false;
+            
+            if (!flowStack.empty() && flowStack.back().isCall)
+            {
+                auto csimsmit = curSSAIdMapStateMap.find(entry.blockIndex.index);
+                if (csimsmit != curSSAIdMapStateMap.end())
+                {
+                    std::cout << " get curSSAIdMap from back recur" << std::endl;
+                    curSSAIdMap = csimsmit->second;
+                }
+            }
             flowStack.pop_back();
+            
             if (!flowStack.empty() && lastCommonCacheWayPoint.first != SIZE_MAX &&
                     lastCommonCacheWayPoint.second >= flowStack.size())
             {
@@ -2294,7 +2352,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         { flowStack.back().blockIndex, flowStack.size()-1 };
                 std::cout << "POPlastCcwP: " << lastCommonCacheWayPoint.first << std::endl;
             }
-            
         }
     }
     
