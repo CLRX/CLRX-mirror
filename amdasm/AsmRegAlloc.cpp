@@ -1214,7 +1214,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
 
 // join ret SSAId Map - src - last SSAIdMap from called routine
 static void joinRetSSAIdMap(RetSSAIdMap& dest, const LastSSAIdMap& src,
-                size_t routineBlock)
+                BlockIndex routineBlock)
 {
     for (const auto& entry: src)
     {
@@ -1672,6 +1672,7 @@ static bool tryAddLoopEnd(const FlowStackEntry& entry, BlockIndex routineBlock,
 static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         const std::unordered_set<BlockIndex>& loopBlocks,
+        const std::unordered_set<BlockIndex>& callBlocks,
         const ResSecondPointsToCache& subroutToCache,
         SimpleCache<BlockIndex, RoutineData>& subroutinesCache,
         const RoutineMap& routineMap, RoutineData& rdata,
@@ -1720,9 +1721,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             RoutineData subrData;
             const bool oldFB = flowStackBlocks[entry.blockIndex];
             flowStackBlocks[entry.blockIndex] = !oldFB;
-            createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, subroutToCache,
-                subroutinesCache, routineMap, subrData, entry.blockIndex, true,
-                flowStackBlocks);
+            createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, callBlocks,
+                    subroutToCache, subroutinesCache, routineMap, subrData,
+                    entry.blockIndex, true, flowStackBlocks);
             RoutineData subrDataCopy;
             flowStackBlocks[entry.blockIndex] = oldFB;
             
@@ -1905,8 +1906,13 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         // join and skip calls
         for (; entry.nextIndex < cblock.nexts.size() &&
                     cblock.nexts[entry.nextIndex].isCall; entry.nextIndex++)
-            joinRoutineData(rdata, routineMap.find(
-                            cblock.nexts[entry.nextIndex].block)->second);
+        {
+            BlockIndex rblock = cblock.nexts[entry.nextIndex].block;
+            if (callBlocks.find(rblock) != callBlocks.end())
+                rblock.pass = 1;
+            if (rblock != routineBlock)
+                joinRoutineData(rdata, routineMap.find(rblock)->second);
+        }
         
         if (entry.nextIndex < cblock.nexts.size())
         {
@@ -1931,7 +1937,11 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                         auto it = routineMap.find(next.block); // must find
                         initializePrevRetSSAIds(cblock, curSSAIdMap, retSSAIdMap,
                                     it->second, entry);
-                        joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, next.block);
+                        BlockIndex rblock(next.block, entry.blockIndex.pass);
+                        if (callBlocks.find(next.block) != callBlocks.end())
+                            rblock.pass = 1;
+                        
+                        joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, rblock);
                     }
             }
             const BlockIndex nextBlock = entry.blockIndex+1;
@@ -2209,7 +2219,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             RoutineData& prevRdata = routineMap.find(routineBlock)->second;
             if (!isRoutineGen[routineBlock])
             {
-                createRoutineData(codeBlocks, curSSAIdMap, loopBlocks,
+                createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, callBlocks,
                             cblocksToCache, subroutinesCache, routineMap, prevRdata,
                             routineBlock);
                 //prevRdata.compare(myRoutineData);
@@ -2304,7 +2314,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         auto it = routineMap.find({ next.block, pass }); // must find
                         initializePrevRetSSAIds(cblock, curSSAIdMap, retSSAIdMap,
                                     it->second, entry);
-                        joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, next.block);
+                        
+                        BlockIndex rblock(next.block, entry.blockIndex.pass);
+                        if (callBlocks.find(next.block) != callBlocks.end())
+                            rblock.pass = 1;
+                        
+                        joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, rblock);
                     }
             }
             flowStack.push_back({ entry.blockIndex+1, 0, false });
