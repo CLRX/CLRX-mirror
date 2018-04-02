@@ -1432,7 +1432,29 @@ static void reduceSSAIdsForCalls(FlowStackEntry& entry,
     }
 }
 
-// TODO: correct reduction for recursion support
+static void reduceSSAIds2(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
+            RetSSAIdMap& retSSAIdMap, FlowStackEntry& entry, const SSAEntry& ssaEntry)
+{
+    const SSAInfo& sinfo = ssaEntry.second;
+    size_t& ssaId = curSSAIdMap[ssaEntry.first];
+    auto ssaIdsIt = retSSAIdMap.find(ssaEntry.first);
+    if (ssaIdsIt != retSSAIdMap.end() && sinfo.readBeforeWrite)
+    {
+        auto& ssaIds = ssaIdsIt->second.ssaIds;
+        ssaId = ssaIds.front()+1; // plus one
+        retSSAIdMap.erase(ssaIdsIt);
+    }
+    else if (ssaIdsIt != retSSAIdMap.end() && sinfo.ssaIdChange!=0)
+    {
+        // put before removing to revert for other ways after calls
+        auto res = entry.prevRetSSAIdSets.insert(*ssaIdsIt);
+        if (res.second)
+            res.first->second = ssaIdsIt->second;
+        // just remove, if some change without read before
+        retSSAIdMap.erase(ssaIdsIt);
+    }
+}
+
 // reduce retSSAIds (last SSAIds for regvar) while passing by code block
 // and emits SSA replaces for these ssaids
 static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
@@ -1448,8 +1470,8 @@ static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         
         if (sinfo.ssaId != SIZE_MAX)
         {
-            std::vector<size_t> outSSAIds = ssaIds;
-            outSSAIds.push_back(ssaId-1); // ???
+            VectorSet<size_t> outSSAIds = ssaIds;
+            outSSAIds.insertValue(ssaId-1); // ???
             // already set
             if (outSSAIds.size() >= 1)
             {
@@ -1607,7 +1629,7 @@ static void revertRetSSAIdMap(std::unordered_map<AsmSingleVReg, size_t>& curSSAI
             if (v.second.ssaIds.empty())
             {
                 auto cit = curSSAIdMap.find(v.first);
-                ssaIds.push_back((cit!=curSSAIdMap.end() ? cit->second : 1)-1);
+                ssaIds.insertValue((cit!=curSSAIdMap.end() ? cit->second : 1)-1);
             }
             
             std::cout << " popentry2 " << entry.blockIndex << ": " <<
@@ -1887,6 +1909,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 for (const auto& ssaEntry: cblock.ssaInfoMap)
                     if (ssaEntry.first.regVar != nullptr)
                     {
+                        reduceSSAIds2(curSSAIdMap, retSSAIdMap, entry, ssaEntry);
                         // put data to routine data
                         updateRoutineData(rdata, ssaEntry, curSSAIdMap[ssaEntry.first]-1);
                         
@@ -1934,12 +1957,12 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     if (next.isCall)
                     {
                         //std::cout << "joincall:"<< next.block << std::endl;
-                        auto it = routineMap.find(next.block); // must find
-                        initializePrevRetSSAIds(cblock, curSSAIdMap, retSSAIdMap,
-                                    it->second, entry);
                         BlockIndex rblock(next.block, entry.blockIndex.pass);
                         if (callBlocks.find(next.block) != callBlocks.end())
                             rblock.pass = 1;
+                        auto it = routineMap.find(rblock); // must find
+                        initializePrevRetSSAIds(cblock, curSSAIdMap, retSSAIdMap,
+                                    it->second, entry);
                         
                         joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, rblock);
                     }
