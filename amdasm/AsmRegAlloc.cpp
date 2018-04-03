@@ -1574,7 +1574,7 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
     }
 }
 
-static void initializePrevRetSSAIds(const CodeBlock& cblock,
+static void initializePrevRetSSAIds(
             const std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
             const RetSSAIdMap& retSSAIdMap, const RoutineData& rdata,
             FlowStackEntry& entry)
@@ -1588,10 +1588,8 @@ static void initializePrevRetSSAIds(const CodeBlock& cblock,
         if (rfit != retSSAIdMap.end())
             res.first->second = rfit->second;
         
-        auto cbsit = cblock.ssaInfoMap.find(v.first);
         auto csit = curSSAIdMap.find(v.first);
-        res.first->second.prevSSAId = cbsit!=cblock.ssaInfoMap.end() ?
-                cbsit->second.ssaIdBefore : (csit!=curSSAIdMap.end() ? csit->second : 0);
+        res.first->second.prevSSAId = (csit!=curSSAIdMap.end() ? csit->second : 1);
     }
 }
 
@@ -1961,7 +1959,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                         if (callBlocks.find(next.block) != callBlocks.end())
                             rblock.pass = 1;
                         auto it = routineMap.find(rblock); // must find
-                        initializePrevRetSSAIds(cblock, curSSAIdMap, retSSAIdMap,
+                        initializePrevRetSSAIds(curSSAIdMap, retSSAIdMap,
                                     it->second, entry);
                         
                         joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, rblock);
@@ -2335,7 +2333,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         }
                         
                         auto it = routineMap.find({ next.block, pass }); // must find
-                        initializePrevRetSSAIds(cblock, curSSAIdMap, retSSAIdMap,
+                        initializePrevRetSSAIds(curSSAIdMap, retSSAIdMap,
                                     it->second, entry);
                         
                         BlockIndex rblock(next.block, entry.blockIndex.pass);
