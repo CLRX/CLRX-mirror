@@ -1315,7 +1315,9 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src,
 
 // join routine data from child call with data from parent routine
 // (just join child call from parent)
-static void joinRoutineData(RoutineData& dest, const RoutineData& src)
+static void joinRoutineData(RoutineData& dest, const RoutineData& src,
+            const std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
+            bool notFirstReturn)
 {
     // insert readBeforeWrite only if doesnt exists in destination
     dest.rbwSSAIdMap.insert(src.rbwSSAIdMap.begin(), src.rbwSSAIdMap.end());
@@ -1336,6 +1338,13 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src)
             // add new ways
             for (size_t ssaId: entry.second)
                 destEntry.insertValue(ssaId);
+        }
+        else if (notFirstReturn)
+        {
+            auto csit = curSSAIdMap.find(entry.first);
+            // insert to lastSSAIdMap if no ssaIds for regvar in lastSSAIdMap
+            dest.lastSSAIdMap.insert({ entry.first,
+                        { (csit!=curSSAIdMap.end() ? csit->second : 1)-1 } });
         }
         auto rbwit = src.rbwSSAIdMap.find(entry.first);
         if (rbwit != src.rbwSSAIdMap.end() &&
@@ -1932,7 +1941,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             if (callBlocks.find(rblock) != callBlocks.end())
                 rblock.pass = 1;
             if (rblock != routineBlock)
-                joinRoutineData(rdata, routineMap.find(rblock)->second);
+                joinRoutineData(rdata, routineMap.find(rblock)->second,
+                            curSSAIdMap, rdata.notFirstReturn);
         }
         
         if (entry.nextIndex < cblock.nexts.size())
@@ -2356,12 +2366,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         }
         else // back
         {
-            RoutineData* rdata = nullptr;
-            if (!callStack.empty())
-                rdata = &(routineMap.find(callStack.back().routineBlock)->second);
-            
             // revert retSSAIdMap
-            revertRetSSAIdMap(curSSAIdMap, retSSAIdMap, entry, rdata);
+            revertRetSSAIdMap(curSSAIdMap, retSSAIdMap, entry, nullptr);
             //
             
             for (const auto& ssaEntry: cblock.ssaInfoMap)
