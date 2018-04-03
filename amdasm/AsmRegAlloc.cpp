@@ -1628,9 +1628,12 @@ static void revertRetSSAIdMap(std::unordered_map<AsmSingleVReg, size_t>& curSSAI
         else // erase if empty
             retSSAIdMap.erase(v.first);
         
+        size_t oldSSAId = curSSAIdMap[v.first]-1;
+        curSSAIdMap[v.first] = v.second.prevSSAId;
         if (rdata!=nullptr)
         {
             VectorSet<size_t>& ssaIds = rdata->curSSAIdMap[v.first];
+            ssaIds.eraseValue(oldSSAId); // ??? need extra constraints
             for (size_t ssaId: v.second.ssaIds)
                 ssaIds.insertValue(ssaId);
             if (v.second.ssaIds.empty())
@@ -1645,7 +1648,6 @@ static void revertRetSSAIdMap(std::unordered_map<AsmSingleVReg, size_t>& curSSAI
                 std::cout << " " << v;
             std::cout << std::endl;
         }
-        curSSAIdMap[v.first] = v.second.prevSSAId;
     }
 }
 
