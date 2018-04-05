@@ -1333,6 +1333,7 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src,
         std::cout << std::endl;
         auto res = dest.curSSAIdMap.insert(entry); // find
         VectorSet<size_t>& destEntry = res.first->second;
+        
         if (!res.second)
         {
             // add new ways
@@ -1346,12 +1347,7 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src,
             dest.lastSSAIdMap.insert({ entry.first,
                         { (csit!=curSSAIdMap.end() ? csit->second : 1)-1 } });
         }
-        auto rbwit = src.rbwSSAIdMap.find(entry.first);
-        if (rbwit != src.rbwSSAIdMap.end() &&
-            // remove only if not in src lastSSAIdMap
-            std::find(entry.second.begin(), entry.second.end(),
-                      rbwit->second) == entry.second.end())
-            destEntry.eraseValue(rbwit->second);
+        
         std::cout << "    :";
         for (size_t v: destEntry)
             std::cout << " " << v;
@@ -1936,15 +1932,50 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         }
         
         // join and skip calls
-        for (; entry.nextIndex < cblock.nexts.size() &&
-                    cblock.nexts[entry.nextIndex].isCall; entry.nextIndex++)
         {
-            BlockIndex rblock = cblock.nexts[entry.nextIndex].block;
-            if (callBlocks.find(rblock) != callBlocks.end())
-                rblock.pass = 1;
-            if (rblock != routineBlock)
+            std::vector<BlockIndex> calledRoutines;
+            for (; entry.nextIndex < cblock.nexts.size() &&
+                        cblock.nexts[entry.nextIndex].isCall; entry.nextIndex++)
+            {
+                BlockIndex rblock = cblock.nexts[entry.nextIndex].block;
+                if (callBlocks.find(rblock) != callBlocks.end())
+                    rblock.pass = 1;
+                if (rblock != routineBlock)
+                    calledRoutines.push_back(rblock);
+            }
+            
+            if (!calledRoutines.empty())
+            {
+                // toNotClear - regvar to no keep (because is used in called routines)
+                std::unordered_set<AsmSingleVReg> toNotClear;
+                // if regvar any called routine (used)
+                std::unordered_set<AsmSingleVReg> allInCalls;
+                for (BlockIndex rblock: calledRoutines)
+                {
+                    const RoutineData& srcRdata = routineMap.find(rblock)->second;
+                    for (const auto& rbw: srcRdata.rbwSSAIdMap)
+                    {
+                        allInCalls.insert(rbw.first);
+                        auto lsit = srcRdata.lastSSAIdMap.find(rbw.first);
+                        if (lsit != srcRdata.lastSSAIdMap.end() &&
+                             lsit->second.hasValue(rbw.second))
+                            // if returned not modified, then do not clear this regvar
+                            toNotClear.insert(rbw.first);
+                    }
+                    for (const auto& rbw: srcRdata.lastSSAIdMap)
+                        allInCalls.insert(rbw.first);
+                }
+                for (auto& entry: rdata.curSSAIdMap)
+                    // if any called routine and if to clear
+                    if (allInCalls.find(entry.first) != allInCalls.end() &&
+                        toNotClear.find(entry.first) == toNotClear.end())
+                        // not found
+                        entry.second.clear();
+            }
+            
+            for (BlockIndex rblock: calledRoutines)
                 joinRoutineData(rdata, routineMap.find(rblock)->second,
-                            curSSAIdMap, rdata.notFirstReturn);
+                                curSSAIdMap, rdata.notFirstReturn);
         }
         
         if (entry.nextIndex < cblock.nexts.size())
