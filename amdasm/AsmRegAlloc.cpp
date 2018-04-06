@@ -1512,8 +1512,21 @@ static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         // replace smallest ssaId in routineMap lastSSAId entry
         // reduce SSAIds replaces
         for (BlockIndex rblock: ssaIdsIt->second.routines)
-            routineMap.find(rblock)->second.lastSSAIdMap[ssaEntry.first] =
-                            VectorSet<size_t>({ ssaId-1 });
+        {
+            RoutineData& rdata = routineMap.find(rblock)->second;
+            size_t rbwRetSSAId = SIZE_MAX;
+            auto rbwIt = rdata.rbwSSAIdMap.find(ssaEntry.first);
+            auto rlsit = rdata.lastSSAIdMap.find(ssaEntry.first);
+            if (rbwIt != rdata.rbwSSAIdMap.end() && rlsit->second.hasValue(rbwIt->second))
+                rbwRetSSAId = rbwIt->second;
+            rlsit->second = VectorSet<size_t>({ ssaId-1 });
+            if (rbwRetSSAId != SIZE_MAX)
+            {
+                std::cout << "  keep retSSAId rbw: " << rbwRetSSAId << std::endl;
+                // add retSSAId without changes (in way without regvar changes)
+                rlsit->second.insertValue(rbwRetSSAId);
+            }
+        }
         // finally remove from container (because obsolete)
         retSSAIdMap.erase(ssaIdsIt);
         return true;
@@ -1726,6 +1739,15 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     {
         FlowStackEntry& entry = flowStack.back();
         const CodeBlock& cblock = codeBlocks[entry.blockIndex.index];
+        
+        std::cout << ":: rdata.curSSAIdMap #" << entry.blockIndex << "\n";
+        for (const auto& v: rdata.curSSAIdMap)
+        {
+            std::cout << "  :: " << v.first.regVar << ":" << v.first.index << ":";
+            for (size_t ssaId: v.second)
+                std::cout << " " << ssaId;
+            std::cout << "\n";
+        }
         
         auto addSubroutine = [&](
             std::unordered_map<BlockIndex, LoopSSAIdMap>::const_iterator loopsit2,
