@@ -667,6 +667,7 @@ struct CLRX_INTERNAL RoutineData
 {
     // rbwSSAIdMap - read before write SSAId's map
     std::unordered_map<AsmSingleVReg, size_t> rbwSSAIdMap;
+    std::unordered_map<AsmSingleVReg, size_t> origRbwSSAIdMap;
     LastSSAIdMap curSSAIdMap;
     LastSSAIdMap lastSSAIdMap;
     // key - loop block, value - last ssaId map for loop end
@@ -1321,6 +1322,7 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src,
 {
     // insert readBeforeWrite only if doesnt exists in destination
     dest.rbwSSAIdMap.insert(src.rbwSSAIdMap.begin(), src.rbwSSAIdMap.end());
+    dest.origRbwSSAIdMap.insert(src.origRbwSSAIdMap.begin(), src.origRbwSSAIdMap.end());
     
     //joinLastSSAIdMap(dest.curSSAIdMap, src.lastSSAIdMap);
     
@@ -1557,6 +1559,9 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
         if (!rdata.rbwSSAIdMap.insert({ ssaEntry.first, prevSSAId }).second)
             // if already added
             beforeFirstAccess = false;
+            
+        rdata.origRbwSSAIdMap.insert({ ssaEntry.first,
+                        ssaEntry.second.ssaIdBefore }).second;
     }
     
     if (sinfo.ssaIdChange != 0)
@@ -1975,7 +1980,15 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 for (BlockIndex rblock: calledRoutines)
                 {
                     const RoutineData& srcRdata = routineMap.find(rblock)->second;
-                    for (const auto& rbw: srcRdata.rbwSSAIdMap)
+                    // for next recursion pass call - choose origRvwSSAIdMap
+                    // otherwise - standard rbwSsaIdMap
+                    const std::unordered_map<AsmSingleVReg, size_t>& srcRbwSSAIdMap =
+                        (entry.blockIndex.pass == 0 && rblock.pass!=0) ?
+                        srcRdata.origRbwSSAIdMap : srcRdata.rbwSSAIdMap;
+                    if (entry.blockIndex.pass == 0 && rblock.pass!=0)
+                        std::cout << "choose origRbwSSAIdMap: " << rblock << std::endl;
+                        
+                    for (const auto& rbw: srcRbwSSAIdMap)
                     {
                         allInCalls.insert(rbw.first);
                         auto lsit = srcRdata.lastSSAIdMap.find(rbw.first);
