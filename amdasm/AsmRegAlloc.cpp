@@ -1993,11 +1993,11 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                         toNotClear.find(entry.first) == toNotClear.end())
                         // not found
                         entry.second.clear();
-            }
             
-            for (BlockIndex rblock: calledRoutines)
-                joinRoutineData(rdata, routineMap.find(rblock)->second,
-                                curSSAIdMap, rdata.notFirstReturn);
+                for (BlockIndex rblock: calledRoutines)
+                    joinRoutineData(rdata, routineMap.find(rblock)->second,
+                                    curSSAIdMap, rdata.notFirstReturn);
+            }
         }
         
         if (entry.nextIndex < cblock.nexts.size())
