@@ -1559,7 +1559,7 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
         if (!rdata.rbwSSAIdMap.insert({ ssaEntry.first, prevSSAId }).second)
             // if already added
             beforeFirstAccess = false;
-            
+        
         rdata.origRbwSSAIdMap.insert({ ssaEntry.first,
                         ssaEntry.second.ssaIdBefore }).second;
     }
@@ -1859,8 +1859,6 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             }
             
             // process current block
-            //if (/*cachedRdata != nullptr &&*/
-                //visited[entry.blockIndex] && flowStack.size() > 1)
             const RoutineData* cachedRdata = nullptr;
             
             if (routineBlock != entry.blockIndex)
@@ -2285,6 +2283,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             else
             {
+                // TODO: subroutToCache do not cache calls
                 // handle caching for res second point
                 cblocksToCache.increase(entry.blockIndex);
                 std::cout << "cblockToCache: " << entry.blockIndex << "=" <<
@@ -2356,7 +2355,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         
                         curSSAIdMapStateMap.insert({ nextBlock.index,  curSSAIdMap });
                     }
-                    else
+                    else if (entry.blockIndex.pass==1)
                     {
                         entry.nextIndex++;
                         std::cout << " NO call (rec): " << entry.blockIndex << std::endl;

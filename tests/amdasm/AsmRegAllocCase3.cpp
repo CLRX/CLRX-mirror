@@ -1537,7 +1537,7 @@ b0:     s_xor_b32 sa[3], sa[3], sa[0]
                 { },
                 {
                     { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
-                    { { "sa", 2 }, SSAInfo(3, 5, 5, 5, 1, true) },
+                    { { "sa", 2 }, SSAInfo(1, 5, 5, 5, 1, true) },
                     { { "sa", 3 }, SSAInfo(2, 5, 5, 5, 1, true) },
                     { { "sa", 6 }, SSAInfo(1, 4, 4, 4, 1, true) }
                 }, false, false, true },
@@ -1593,7 +1593,7 @@ b0:     s_xor_b32 sa[3], sa[3], sa[0]
                 }, false, true, true }
         },
         {   // SSA replaces (good ???)
-            { { "sa", 2 }, { { 3, 2 }, { 4, 2 }, { 4, 3 }, { 2, 1 }, { 3, 1 } } },
+            { { "sa", 2 }, { { 3, 2 }, { 4, 2 }, { 3, 1 }, { 4, 1 }, { 2, 1 } } },
             { { "sa", 3 }, { { 3, 2 }, { 4, 2 }, { 2, 1 }, { 3, 1 } } },
             { { "sa", 6 }, { { 2, 1 }, { 3, 1 } } }
         },
