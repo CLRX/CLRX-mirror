@@ -1713,7 +1713,6 @@ static bool tryAddLoopEnd(const FlowStackEntry& entry, BlockIndex routineBlock,
 }
 
 
-// TODO: fix curSSAIdMap between recursive call returns
 static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         const std::unordered_set<BlockIndex>& loopBlocks,
@@ -2226,7 +2225,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 
                 for (auto& ssaEntry: cblock.ssaInfoMap)
                 {
-                    // TODO: correct pass by second pass in recursion
                     SSAInfo& sinfo = ssaEntry.second;
                     if (ssaEntry.first.regVar==nullptr)
                     {
@@ -2283,8 +2281,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             }
             else
             {
-                // TODO: subroutToCache do not cache calls
-                // handle caching for res second point
                 cblocksToCache.increase(entry.blockIndex);
                 std::cout << "cblockToCache: " << entry.blockIndex << "=" <<
                             cblocksToCache.count(entry.blockIndex) << std::endl;
