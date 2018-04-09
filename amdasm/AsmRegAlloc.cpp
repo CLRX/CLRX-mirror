@@ -694,6 +694,7 @@ struct CLRX_INTERNAL FlowStackEntry
     BlockIndex blockIndex;
     size_t nextIndex;
     bool isCall;
+    bool haveReturn;
     RetSSAIdMap prevRetSSAIdSets;
 };
 
@@ -1725,6 +1726,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
 {
     std::cout << "--------- createRoutineData ----------------\n";
     CBlockBitPool visited(codeBlocks.size(), false);
+    CBlockBitPool haveReturnBlocks(codeBlocks.size(), false);
     
     VectorSet<BlockIndex> activeLoops;
     SubrLoopsMap subrLoopsMap;
@@ -1738,6 +1740,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     RetSSAIdMap retSSAIdMap;
     flowStack.push_back({ routineBlock, 0 });
     flowStackBlocks[routineBlock] = true;
+    
     
     while (!flowStack.empty())
     {
@@ -1884,6 +1887,14 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             {
                 std::cout << "use cached subr " << entry.blockIndex << std::endl;
                 std::cout << "procret2: " << entry.blockIndex << std::endl;
+                if (visited[entry.blockIndex] && !haveReturnBlocks[entry.blockIndex])
+                {
+                    // no joining. no returns
+                    std::cout << "procretend2" << std::endl;
+                    flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
+                    flowStack.pop_back();
+                    continue;
+                }
                 joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap, *cachedRdata);
                 // get not given rdata curSSAIdMap ssaIds but present in cachedRdata
                 // curSSAIdMap
@@ -2055,7 +2066,11 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap);
                 std::cout << "procretend" << std::endl;
                 rdata.notFirstReturn = true;
+                entry.haveReturn = true;
+                haveReturnBlocks[entry.blockIndex] = true;
             }
+            
+            const bool prevHaveReturn = entry.haveReturn;
             
             // revert retSSAIdMap
             revertRetSSAIdMap(curSSAIdMap, retSSAIdMap, entry, &rdata);
@@ -2103,7 +2118,15 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             
             flowStackBlocks[entry.blockIndex] = false;
             std::cout << "pop: " << entry.blockIndex << std::endl;
+            
             flowStack.pop_back();
+            // set up haveReturn
+            if (!flowStack.empty())
+            {
+                flowStack.back().haveReturn |= prevHaveReturn;
+                haveReturnBlocks[flowStack.back().blockIndex] =
+                        flowStack.back().haveReturn;
+            }
         }
     }
     std::cout << "--------- createRoutineData end ------------\n";
@@ -2207,9 +2230,86 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::unordered_set<BlockIndex> loopBlocks;
     std::unordered_set<size_t> recurseBlocks;
     
+    /*
+     * find recursions
+     */
+    while (!flowStack.empty())
+    {
+        FlowStackEntry& entry = flowStack.back();
+        CodeBlock& cblock = codeBlocks[entry.blockIndex.index];
+        
+        if (entry.nextIndex == 0)
+        {
+            // process current block
+            if (!visited[entry.blockIndex])
+            {
+                visited[entry.blockIndex] = true;
+            }
+            else
+            {
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        
+        if (!callStack.empty() &&
+            entry.blockIndex == callStack.back().callBlock &&
+            entry.nextIndex-1 == callStack.back().callNextIndex)
+        {
+            const BlockIndex routineBlock = callStack.back().routineBlock;
+            callStack.pop_back(); // just return from call
+            callBlocks.erase(routineBlock);
+            std::cout << "finding recur: ret: " << routineBlock << std::endl;
+        }
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            bool isCall = false;
+            BlockIndex nextBlock = cblock.nexts[entry.nextIndex].block;
+            
+            if (cblock.nexts[entry.nextIndex].isCall)
+            {
+                if (!callBlocks.insert(nextBlock).second)
+                {
+                    // if already called (then it is recursion)
+                    std::cout << "finding recursions: " << nextBlock << std::endl;
+                    recurseBlocks.insert(nextBlock.index).second;
+                    entry.nextIndex++;
+                    continue;
+                }
+                callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
+                std::cout << "finding recur: call: " << nextBlock << std::endl;
+                isCall = true;
+            }
+            
+            flowStack.push_back({ nextBlock, 0, isCall });
+            entry.nextIndex++;
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            flowStack.push_back({ entry.blockIndex+1, 0, false });
+            entry.nextIndex++;
+        }
+        else // back
+            flowStack.pop_back();
+    }
+    
+    recurseBlocks.clear();
+    callStack.clear();
+    callBlocks.clear();
+    flowStack.clear();
+    flowStack.push_back({ 0, 0 });
+    std::fill(visited.begin(), visited.end(), false);
+    
     std::unordered_map<size_t, std::unordered_map<AsmSingleVReg, size_t> >
             curSSAIdMapStateMap;
     
+    /*
+     * main loop to fill up ssaInfos
+     */
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.back();
