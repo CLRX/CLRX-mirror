@@ -695,6 +695,7 @@ struct CLRX_INTERNAL FlowStackEntry
     size_t nextIndex;
     bool isCall;
     bool haveReturn;
+    std::vector<size_t> recurChangedVarBlocks;
     RetSSAIdMap prevRetSSAIdSets;
 };
 
@@ -2431,8 +2432,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 {
                     entry.haveReturn = true;
                     haveReturnBlocks[entry.blockIndex] = true;
-                    prevChangedVars = entry.changedVars;
                 }
+                prevChangedVars = entry.changedVars;
                 const bool curHaveReturn = entry.haveReturn;
                 std::cout << "   collect regvars: " << entry.blockIndex << ": " <<
                         int(curHaveReturn) << std::endl;
@@ -2651,7 +2652,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 }
                 
                 if (!nextRecursion)
+                {
+                    entry.recurChangedVarBlocks.push_back(nextBlock.index);
                     continue;
+                }
                 
                 std::cout << " call: " << entry.blockIndex << std::endl;
                                 
@@ -2704,6 +2708,25 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         joinRetSSAIdMap(retSSAIdMap, it->second.lastSSAIdMap, rblock);
                     }
             }
+            
+            if (!entry.recurChangedVarBlocks.empty())
+            {
+                // apply to all changed regvars in curSSAIdMap
+                std::cout << "apply recurChangedVarBlocks in " <<
+                            entry.blockIndex << std::endl;
+                std::unordered_set<AsmSingleVReg> changedRegVars;
+                for (size_t chrblk: entry.recurChangedVarBlocks)
+                {
+                    auto chrbit = recurChangedVarMap.find(chrblk);
+                    if (chrbit != recurChangedVarMap.end())
+                        changedRegVars.insert(chrbit->second.begin(),
+                                    chrbit->second.end());
+                }
+                
+                /*for (const AsmSingleVReg& chvreg: changedRegVars)
+                    curSSAIdMap[chvreg] += 1;*/
+            }
+            
             flowStack.push_back({ entry.blockIndex+1, 0, false });
             if (flowStackBlocks[entry.blockIndex+1])
             {
