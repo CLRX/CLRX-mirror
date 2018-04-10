@@ -2083,7 +2083,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 haveReturnBlocks[entry.blockIndex] = true;
             }
             
-            const bool prevHaveReturn = entry.haveReturn;
+            const bool curHaveReturn = entry.haveReturn;
             
             // revert retSSAIdMap
             revertRetSSAIdMap(curSSAIdMap, retSSAIdMap, entry, &rdata);
@@ -2136,7 +2136,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             // set up haveReturn
             if (!flowStack.empty())
             {
-                flowStack.back().haveReturn |= prevHaveReturn;
+                flowStack.back().haveReturn |= curHaveReturn;
                 haveReturnBlocks[flowStack.back().blockIndex] =
                         flowStack.back().haveReturn;
             }
@@ -2293,10 +2293,13 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 {
                     // if already called (then it is recursion)
                     std::cout << "finding recursions: " << nextBlock << std::endl;
+                    // uncomment after tests
                     recurChangedVarMap.insert({ nextBlock.index, { } });
                     entry.nextIndex++;
                     continue;
                 }
+                // comment after tests
+                //recurChangedVarMap.insert({ nextBlock.index, { } });
                 callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
                 std::cout << "finding recur: call: " << nextBlock << std::endl;
                 isCall = true;
@@ -2320,9 +2323,15 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     // collecting changed regvars
     for (auto& changedRegVars: recurChangedVarMap)
     {
+        std::cout << " -- ChangedVars for " << changedRegVars.first << std::endl;
         std::fill(visited.begin(), visited.end(), false);
+        std::fill(flowStackBlocks.begin(), flowStackBlocks.end(), false);
         flowStack.clear();
         flowStack.push_back({ changedRegVars.first, 0 });
+        flowStackBlocks[changedRegVars.first] = true;
+        loopBlocks.clear();
+        
+        std::unordered_map<BlockIndex, std::unordered_set<AsmSingleVReg> > chLoopEnds;
         
         while (!flowStack.empty())
         {
@@ -2339,15 +2348,40 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         if (ssaEntry.second.ssaIdChange!=0)
                             entry.changedVars.insert(ssaEntry.first);
                 }
+                else if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
+                {
+                    std::cout << "   collect regvars: add loop end: " <<
+                            entry.blockIndex << std::endl;
+                    // add loop end
+                    std::unordered_set<AsmSingleVReg>& chloopEnd =
+                            chLoopEnds[entry.blockIndex];
+                    size_t i;
+                    for (i = flowStack.size()-1; i > 0 && !flowStack[i-1].haveReturn; ++i)
+                    {
+                        const FlowStackEntry4& entryx = flowStack[i-1];
+                        chloopEnd.insert(entryx.changedVars.begin(),
+                                entryx.changedVars.end());
+                        if (entryx.blockIndex == entry.blockIndex)
+                            // if loop block
+                            break;
+                    }
+                    
+                    flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
+                    flowStack.pop_back();
+                    continue;
+                }
                 else
                 {
-                    // TODO: fix handling loops (fix haveReturn leaks)
                     const bool prevHaveReturn = haveReturnBlocks[entry.blockIndex];
+                    const bool isCall = entry.isCall;
+                    flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                     flowStack.pop_back();
                     // set up haveReturn
                     FlowStackEntry4& prevEntry = flowStack.back();
-                    const bool haveReturn = (prevEntry.haveReturn |= prevHaveReturn);
-                    haveReturnBlocks[prevEntry.blockIndex] = haveReturn;
+                    if (!isCall)
+                        // propagate haveReturn only for jumps (no for calls)
+                        prevEntry.haveReturn |= prevHaveReturn;
+                    haveReturnBlocks[prevEntry.blockIndex] = prevEntry.haveReturn;
                     continue;
                 }
             }
@@ -2357,6 +2391,18 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 bool isCall = false;
                 BlockIndex nextBlock = cblock.nexts[entry.nextIndex].block;
                 flowStack.push_back({ nextBlock, 0, isCall });
+                if (flowStackBlocks[nextBlock])
+                {
+                    if (!cblock.nexts[entry.nextIndex].isCall)
+                    {
+                        std::cout << "   collect regvars: " << entry.blockIndex <<
+                            ": loop detected 2" << std::endl;
+                        loopBlocks.insert(nextBlock);
+                    }
+                    flowStackBlocks[nextBlock] = false; // keep to inserted in popping
+                }
+                else
+                    flowStackBlocks[nextBlock] = true;
                 entry.nextIndex++;
             }
             else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
@@ -2365,45 +2411,80 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     !cblock.haveReturn && !cblock.haveEnd)
             {
                 flowStack.push_back({ entry.blockIndex+1, 0, false });
+                if (flowStackBlocks[entry.blockIndex+1])
+                {
+                    std::cout << "   collect regvars: " << entry.blockIndex <<
+                            ": loop detected" << std::endl;
+                    loopBlocks.insert(entry.blockIndex+1);
+                    // keep to inserted in popping
+                    flowStackBlocks[entry.blockIndex+1] = false;
+                }
+                else
+                    flowStackBlocks[entry.blockIndex+1] = true;
                 entry.nextIndex++;
             }
             else // back
             {
                 std::unordered_set<AsmSingleVReg> prevChangedVars;
+                const bool isCall = entry.isCall;
                 if (cblock.haveReturn)
                 {
                     entry.haveReturn = true;
                     haveReturnBlocks[entry.blockIndex] = true;
                     prevChangedVars = entry.changedVars;
                 }
-                const bool prevHaveReturn = entry.haveReturn;
-                std::cout << "collect regvars: " << entry.blockIndex << ": " <<
-                        int(prevHaveReturn) << std::endl;
+                const bool curHaveReturn = entry.haveReturn;
+                std::cout << "   collect regvars: " << entry.blockIndex << ": " <<
+                        int(curHaveReturn) << std::endl;
+                
+                if (loopBlocks.find(entry.blockIndex) != loopBlocks.end() &&
+                    curHaveReturn)
+                {
+                    auto it = chLoopEnds.find(entry.blockIndex);
+                    if (it != chLoopEnds.end())
+                    {
+                        std::cout << "   collect regvars: add loop ends: " <<
+                                entry.blockIndex << std::endl;
+                        // add loop ends returns
+                        prevChangedVars.insert(it->second.begin(), it->second.end());
+                        chLoopEnds.erase(it); // delete it
+                    }
+                    loopBlocks.erase(entry.blockIndex);
+                }
                 
                 flowStack.pop_back();
+                flowStackBlocks[entry.blockIndex] = false;
+                
                 // set up haveReturn
                 if (!flowStack.empty())
                 {
                     FlowStackEntry4& prevEntry = flowStack.back();
-                    const bool haveReturn = (prevEntry.haveReturn |= prevHaveReturn);
-                    haveReturnBlocks[prevEntry.blockIndex] = haveReturn;
-                    if (prevHaveReturn)
+                    if (!isCall)
+                        // propagate haveReturn only for jumps (no for calls)
+                        // because, call do not add returns
+                        prevEntry.haveReturn |= curHaveReturn;
+                    haveReturnBlocks[prevEntry.blockIndex] = prevEntry.haveReturn;
+                    if (curHaveReturn)
                         prevEntry.changedVars.insert(prevChangedVars.begin(),
                                     prevChangedVars.end());
                 }
-                else if (prevHaveReturn)
+                else if (curHaveReturn)
                     // put to changed reg vars
                     changedRegVars.second.insert(
                             prevChangedVars.begin(), prevChangedVars.end());
             }
         }
+        std::cout << " -- ChangedVars end for " << changedRegVars.first << std::endl;
     }
     }
     
+    loopBlocks.clear();
+    std::fill(flowStackBlocks.begin(), flowStackBlocks.end(), false);
     callStack.clear();
     callBlocks.clear();
     flowStack.clear();
     flowStack.push_back({ 0, 0 });
+    flowStackBlocks[0] = true;
     std::fill(visited.begin(), visited.end(), false);
     
     std::unordered_map<size_t, std::unordered_map<AsmSingleVReg, size_t> >
