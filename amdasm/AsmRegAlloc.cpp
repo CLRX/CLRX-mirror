@@ -715,7 +715,7 @@ struct CLRX_INTERNAL FlowStackEntry3
 // for recursion finding collecting regvars changed in recursions
 struct CLRX_INTERNAL FlowStackEntry4
 {
-    BlockIndex blockIndex;
+    size_t blockIndex;
     size_t nextIndex;
     bool isCall;
     bool haveReturn;
@@ -2145,7 +2145,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     std::cout << "--------- createRoutineData end ------------\n";
 }
 
-typedef std::unordered_map<BlockIndex, std::unordered_set<AsmSingleVReg> >
+typedef std::unordered_map<size_t, std::unordered_set<AsmSingleVReg> >
                 RecurChangedVarMap;
 
 
@@ -2258,7 +2258,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     while (!flowStack.empty())
     {
         FlowStackEntry4& entry = flowStack.back();
-        CodeBlock& cblock = codeBlocks[entry.blockIndex.index];
+        CodeBlock& cblock = codeBlocks[entry.blockIndex];
         
         if (entry.nextIndex == 0)
         {
@@ -2273,7 +2273,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         }
         
         if (!callStack.empty() &&
-            entry.blockIndex == callStack.back().callBlock &&
+            entry.blockIndex == callStack.back().callBlock.index &&
             entry.nextIndex-1 == callStack.back().callNextIndex)
         {
             const BlockIndex routineBlock = callStack.back().routineBlock;
@@ -2285,7 +2285,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         if (entry.nextIndex < cblock.nexts.size())
         {
             bool isCall = false;
-            BlockIndex nextBlock = cblock.nexts[entry.nextIndex].block;
+            size_t nextBlock = cblock.nexts[entry.nextIndex].block;
             
             if (cblock.nexts[entry.nextIndex].isCall)
             {
@@ -2294,12 +2294,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     // if already called (then it is recursion)
                     std::cout << "finding recursions: " << nextBlock << std::endl;
                     // uncomment after tests
-                    recurChangedVarMap.insert({ nextBlock.index, { } });
+                    recurChangedVarMap.insert({ nextBlock, { } });
                     entry.nextIndex++;
                     continue;
                 }
                 // comment after tests
-                //recurChangedVarMap.insert({ nextBlock.index, { } });
+                //recurChangedVarMap.insert({ nextBlock, { } });
                 callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
                 std::cout << "finding recur: call: " << nextBlock << std::endl;
                 isCall = true;
@@ -2331,12 +2331,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         flowStackBlocks[changedRegVars.first] = true;
         loopBlocks.clear();
         
-        std::unordered_map<BlockIndex, std::unordered_set<AsmSingleVReg> > chLoopEnds;
+        std::unordered_map<size_t, std::unordered_set<AsmSingleVReg> > chLoopEnds;
         
         while (!flowStack.empty())
         {
             FlowStackEntry4& entry = flowStack.back();
-            CodeBlock& cblock = codeBlocks[entry.blockIndex.index];
+            CodeBlock& cblock = codeBlocks[entry.blockIndex];
             
             if (entry.nextIndex == 0)
             {
@@ -2389,7 +2389,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             if (entry.nextIndex < cblock.nexts.size())
             {
                 bool isCall = false;
-                BlockIndex nextBlock = cblock.nexts[entry.nextIndex].block;
+                size_t nextBlock = cblock.nexts[entry.nextIndex].block;
                 flowStack.push_back({ nextBlock, 0, isCall });
                 if (flowStackBlocks[nextBlock])
                 {
@@ -2622,12 +2622,11 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             nextBlock.pass = entry.blockIndex.pass;
             if (cblock.nexts[entry.nextIndex].isCall)
             {
-                bool nextRecursion = false;
+                bool nextRecursion = true;
                 if (!callBlocks.insert(nextBlock).second)
                 {
                     // if already called (then it is recursion)
-                    nextRecursion = recurseBlocks.insert(nextBlock.index).second;
-                    if (nextRecursion)
+                    if (recurseBlocks.insert(nextBlock.index).second)
                     {
                         std::cout << "   -- recursion: " << nextBlock << std::endl;
                         nextBlock.pass = 1;
@@ -2636,18 +2635,24 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     }
                     else if (entry.blockIndex.pass==1)
                     {
+                        nextRecursion = false;
                         entry.nextIndex++;
                         std::cout << " NO call (rec): " << entry.blockIndex << std::endl;
-                        continue;
+                        //continue;
                     }
                 }
                 else if (entry.blockIndex.pass==1 &&
                     recurseBlocks.find(nextBlock.index) != recurseBlocks.end())
                 {
+                    nextRecursion = false;
                     entry.nextIndex++;
                     std::cout << " NO call (rec)2: " << entry.blockIndex << std::endl;
-                    continue;
+                    //continue;
                 }
+                
+                if (!nextRecursion)
+                    continue;
+                
                 std::cout << " call: " << entry.blockIndex << std::endl;
                                 
                 callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
