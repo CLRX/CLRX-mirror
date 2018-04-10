@@ -1900,7 +1900,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 if (visited[entry.blockIndex] && !haveReturnBlocks[entry.blockIndex])
                 {
                     // no joining. no returns
-                    std::cout << "procretend2" << std::endl;
+                    std::cout << "procretend2 nojoin" << std::endl;
                     flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                     flowStack.pop_back();
                     continue;
@@ -1935,6 +1935,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 std::cout << "procretend2" << std::endl;
                 flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                 flowStack.pop_back();
+                // propagate haveReturn to previous block
+                flowStack.back().haveReturn = true;
+                haveReturnBlocks[flowStack.back().blockIndex] = true;
                 continue;
             }
             else if (!visited[entry.blockIndex])
@@ -2338,7 +2341,13 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 }
                 else
                 {
+                    // TODO: fix handling loops (fix haveReturn leaks)
+                    const bool prevHaveReturn = haveReturnBlocks[entry.blockIndex];
                     flowStack.pop_back();
+                    // set up haveReturn
+                    FlowStackEntry4& prevEntry = flowStack.back();
+                    const bool haveReturn = (prevEntry.haveReturn |= prevHaveReturn);
+                    haveReturnBlocks[prevEntry.blockIndex] = haveReturn;
                     continue;
                 }
             }
@@ -2376,12 +2385,9 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     FlowStackEntry4& prevEntry = flowStack.back();
                     const bool haveReturn = (prevEntry.haveReturn |= prevHaveReturn);
                     haveReturnBlocks[prevEntry.blockIndex] = haveReturn;
-                    if (haveReturn)
+                    if (prevHaveReturn)
                         prevEntry.changedVars.insert(prevChangedVars.begin(),
                                     prevChangedVars.end());
-                    else
-                        // if no return in preb block
-                        prevEntry.changedVars.clear();
                 }
                 else if (prevHaveReturn)
                     // put to changed reg vars
