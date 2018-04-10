@@ -2377,6 +2377,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     prevChangedVars = entry.changedVars;
                 }
                 const bool prevHaveReturn = entry.haveReturn;
+                std::cout << "collect regvars: " << entry.blockIndex << ": " <<
+                        int(prevHaveReturn) << std::endl;
                 
                 flowStack.pop_back();
                 // set up haveReturn
