@@ -1757,14 +1757,14 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         FlowStackEntry& entry = flowStack.back();
         const CodeBlock& cblock = codeBlocks[entry.blockIndex.index];
         
-        std::cout << ":: rdata.curSSAIdMap #" << entry.blockIndex << "\n";
+        /*std::cout << ":: rdata.curSSAIdMap #" << entry.blockIndex << "\n";
         for (const auto& v: rdata.curSSAIdMap)
         {
             std::cout << "  :: " << v.first.regVar << ":" << v.first.index << ":";
             for (size_t ssaId: v.second)
                 std::cout << " " << ssaId;
             std::cout << "\n";
-        }
+        }*/
         
         auto addSubroutine = [&](
             std::unordered_map<BlockIndex, LoopSSAIdMap>::const_iterator loopsit2,
@@ -2248,6 +2248,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     {
     CBlockBitPool haveReturnBlocks(codeBlocks.size(), false);
     std::deque<FlowStackEntry4> flowStack;
+    flowStack.push_back({ 0, 0 });
     /*
      * find recursions
      */
