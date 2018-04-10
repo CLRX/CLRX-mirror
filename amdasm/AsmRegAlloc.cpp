@@ -2723,8 +2723,11 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                                     chrbit->second.end());
                 }
                 
-                /*for (const AsmSingleVReg& chvreg: changedRegVars)
-                    curSSAIdMap[chvreg] += 1;*/
+                for (const AsmSingleVReg& chvreg: changedRegVars)
+                {
+                    curSSAIdMap[chvreg] += 1;
+                    totalSSACountMap[chvreg] += 1;
+                }
             }
             
             flowStack.push_back({ entry.blockIndex+1, 0, false });
@@ -2740,6 +2743,24 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
         }
         else // back
         {
+            if (!entry.recurChangedVarBlocks.empty())
+            {
+                // apply to all changed regvars in curSSAIdMap
+                std::cout << "revert recurChangedVarBlocks in " <<
+                            entry.blockIndex << std::endl;
+                std::unordered_set<AsmSingleVReg> changedRegVars;
+                for (size_t chrblk: entry.recurChangedVarBlocks)
+                {
+                    auto chrbit = recurChangedVarMap.find(chrblk);
+                    if (chrbit != recurChangedVarMap.end())
+                        changedRegVars.insert(chrbit->second.begin(),
+                                    chrbit->second.end());
+                }
+                
+                for (const AsmSingleVReg& chvreg: changedRegVars)
+                    curSSAIdMap[chvreg] -= 1;
+            }
+            
             // revert retSSAIdMap
             revertRetSSAIdMap(curSSAIdMap, retSSAIdMap, entry, nullptr);
             //
@@ -2770,6 +2791,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     curSSAIdMap = csimsmit->second;
                 }
             }
+            
             flowStack.pop_back();
             
             if (!flowStack.empty() && lastCommonCacheWayPoint.first != SIZE_MAX &&
