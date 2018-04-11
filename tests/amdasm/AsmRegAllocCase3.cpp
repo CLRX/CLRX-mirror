@@ -2455,7 +2455,6 @@ r2b0:
                     { { "sa", 4 }, SSAInfo(2, 3, 3, 3, 1, true) }
                 }, false, true, true }
         },
-            // TODO: add reducing SSAIds while loop connection
         {   // SSA replaces
             { { "sa", 2 }, { { 6, 3 }, { 8, 3 }, { 5, 2 }, { 4, 2 }, { 7, 2 } } },
             { { "sa", 3 }, { { 3, 2 }, { 4, 2 }, { 5, 2 }, { 6, 2 },
@@ -2466,7 +2465,7 @@ r2b0:
         },
         true, ""
     },
-    {   // 16 - routine with loop with call to other routine
+    {   // 17 - routine with loop with call to other routine
         R"ffDXD(.regvar sa:s:10, va:v:8
         s_mov_b32 sa[2], s4
         s_cbranch_scc1 a1
