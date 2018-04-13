@@ -36,6 +36,7 @@
 
 using namespace CLRX;
 
+#if ASMREGALLOC_DEBUGDUMP
 std::ostream& operator<<(std::ostream& os, const CLRX::BlockIndex& v)
 {
     if (v.pass==0)
@@ -43,6 +44,7 @@ std::ostream& operator<<(std::ostream& os, const CLRX::BlockIndex& v)
     else
         return os << v.index << "#" << v.pass;
 }
+#endif
 
 ISAUsageHandler::ISAUsageHandler(const std::vector<cxbyte>& _content) :
             content(_content), lastOffset(0), readOffset(0), instrStructPos(0),

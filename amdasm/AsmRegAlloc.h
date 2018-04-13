@@ -66,7 +66,9 @@ struct CLRX_INTERNAL BlockIndex
 
 };
 
+#if ASMREGALLOC_DEBUGDUMP
 extern CLRX_INTERNAL std::ostream& operator<<(std::ostream& os, const CLRX::BlockIndex& v);
+#endif
 
 namespace std
 {
