@@ -21,6 +21,7 @@
 #define __CLRX_ASMREGALLOC_H__
 
 #include <CLRX/Config.h>
+#include <iostream>
 #include <vector>
 #include <utility>
 #include <unordered_set>
@@ -32,6 +33,8 @@
 #include "AsmInternals.h"
 
 using namespace CLRX;
+
+#define ASMREGALLOC_DEBUGDUMP 0
 
 namespace CLRX
 {
@@ -205,6 +208,19 @@ struct CLRX_INTERNAL CallStackEntry
 };
 
 typedef std::unordered_map<BlockIndex, RoutineData> RoutineMap;
+
+#if ASMREGALLOC_DEBUGDUMP
+#define ARDOut std::cout
+#else
+struct NoOutput
+{
+    template<typename T>
+    NoOutput& operator<<(const T& v)
+    { return *this; }
+};
+
+#define ARDOut NoOutput()
+#endif
 
 };
 

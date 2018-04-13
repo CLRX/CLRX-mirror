@@ -65,6 +65,8 @@ typedef AsmRegAllocator::SSAReplacesMap SSAReplacesMap;
 static inline void insertReplace(SSAReplacesMap& rmap, const AsmSingleVReg& vreg,
               size_t origId, size_t destId)
 {
+    ARDOut << "  insertreplace: " << vreg.regVar << ":" << vreg.index  << ": " <<
+                origId << ", " << destId << "\n";
     auto res = rmap.insert({ vreg, {} });
     res.first->second.insertValue({ origId, destId });
 }
@@ -109,24 +111,11 @@ static void handleSSAEntryWhileResolving(SSAReplacesMap* replacesMap,
                 for (size_t ssaId: it->second)
                 {
                     if (ssaId > sinfo.ssaIdBefore)
-                    {
-                        std::cout << "  insertreplace: " << sentry.first.regVar << ":" <<
-                            sentry.first.index  << ": " <<
-                            ssaId << ", " << sinfo.ssaIdBefore << std::endl;
                         insertReplace(*replacesMap, sentry.first, ssaId,
                                     sinfo.ssaIdBefore);
-                    }
                     else if (ssaId < sinfo.ssaIdBefore)
-                    {
-                        std::cout << "  insertreplace2: " << sentry.first.regVar << ":" <<
-                            sentry.first.index  << ": " <<
-                            ssaId << ", " << sinfo.ssaIdBefore << std::endl;
                         insertReplace(*replacesMap, sentry.first,
                                         sinfo.ssaIdBefore, ssaId);
-                    }
-                    /*else
-                        std::cout << "  noinsertreplace: " <<
-                            ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
                 }
             }
         }
@@ -143,8 +132,8 @@ static void useResSecPointCache(SSAReplacesMap* replacesMap,
         const RBWSSAIdMap* resSecondPoints, BlockIndex nextBlock,
         RBWSSAIdMap* destCacheSecPoints)
 {
-    std::cout << "use resSecPointCache for " << nextBlock <<
-            ", alreadyRMapSize: " << alreadyReadMap.size() << std::endl;
+    ARDOut << "use resSecPointCache for " << nextBlock <<
+            ", alreadyRMapSize: " << alreadyReadMap.size() << "\n";
     for (const auto& sentry: *resSecondPoints)
     {
         const bool alreadyRead = alreadyReadMap.find(sentry.first) != alreadyReadMap.end();
@@ -168,24 +157,9 @@ static void useResSecPointCache(SSAReplacesMap* replacesMap,
                     for (size_t secSSAId: sentry.second)
                     {
                         if (ssaId > secSSAId)
-                        {
-                            std::cout << "  insertreplace: " <<
-                                sentry.first.regVar << ":" <<
-                                sentry.first.index  << ": " <<
-                                ssaId << ", " << secSSAId << std::endl;
                             insertReplace(*replacesMap, sentry.first, ssaId, secSSAId);
-                        }
                         else if (ssaId < secSSAId)
-                        {
-                            std::cout << "  insertreplace2: " <<
-                                sentry.first.regVar << ":" <<
-                                sentry.first.index  << ": " <<
-                                ssaId << ", " << secSSAId << std::endl;
                             insertReplace(*replacesMap, sentry.first, secSSAId, ssaId);
-                        }
-                        /*else
-                            std::cout << "  noinsertreplace: " <<
-                                ssaId << "," << sinfo.ssaIdBefore << std::endl;*/
                     }
                 }
             }
@@ -199,7 +173,7 @@ static void addResSecCacheEntry(const RoutineMap& routineMap,
                 SimpleCache<BlockIndex, RBWSSAIdMap>& resSecondPointsCache,
                 BlockIndex nextBlock)
 {
-    std::cout << "addResSecCacheEntry: " << nextBlock << std::endl;
+    ARDOut << "addResSecCacheEntry: " << nextBlock << "\n";
     //std::stack<CallStackEntry> callStack = prevCallStack;
     // traverse by graph from next block
     std::deque<FlowStackEntry2> flowStack;
@@ -221,7 +195,7 @@ static void addResSecCacheEntry(const RoutineMap& routineMap,
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
-                std::cout << "  resolv (cache): " << entry.blockIndex << std::endl;
+                ARDOut << "  resolv (cache): " << entry.blockIndex << "\n";
                 
                 const RBWSSAIdMap* resSecondPoints =
                             resSecondPointsCache.use(entry.blockIndex);
@@ -241,7 +215,7 @@ static void addResSecCacheEntry(const RoutineMap& routineMap,
             else
             {
                 // back, already visited
-                std::cout << "resolv already (cache): " << entry.blockIndex << std::endl;
+                ARDOut << "resolv already (cache): " << entry.blockIndex << "\n";
                 flowStack.pop_back();
                 continue;
             }
@@ -302,7 +276,7 @@ static void addResSecCacheEntry(const RoutineMap& routineMap,
                     // before write (can be different due to earlier visit)
                     alreadyReadMap.erase(it);
             }
-            std::cout << "  popresolv (cache)" << std::endl;
+            ARDOut << "  popresolv (cache)\n";
             flowStack.pop_back();
         }
     }
@@ -326,8 +300,8 @@ static void applyCallToStackVarMap(const CodeBlock& cblock, const RoutineMap& ro
     for (const NextBlock& next: cblock.nexts)
         if (next.isCall)
         {
-            std::cout << "  applycall: " << blockIndex << ": " <<
-                    nextIndex << ": " << next.block << std::endl;
+            ARDOut << "  applycall: " << blockIndex << ": " <<
+                    nextIndex << ": " << next.block << "\n";
             const LastSSAIdMap& regVarMap =
                     routineMap.find(next.block)->second.lastSSAIdMap;
             for (const auto& sentry: regVarMap)
@@ -350,7 +324,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
     BlockIndex nextBlock = prevFlowStack.back().blockIndex;
     auto pfEnd = prevFlowStack.end();
     --pfEnd;
-    std::cout << "startResolv: " << (pfEnd-1)->blockIndex << "," << nextBlock << std::endl;
+    ARDOut << "startResolv: " << (pfEnd-1)->blockIndex << "," << nextBlock << "\n";
     LastSSAIdMap stackVarMap;
     
     size_t pfStartIndex = 0;
@@ -363,8 +337,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
             const LastSSAIdMap* cached = resFirstPointsCache.use(it->second.first);
             if (cached!=nullptr)
             {
-                std::cout << "use pfcached: " << it->second.first << ", " <<
-                        it->second.second << std::endl;
+                ARDOut << "use pfcached: " << it->second.first << ", " <<
+                        it->second.second << "\n";
                 stackVarMap = *cached;
                 pfStartIndex = it->second.second+1;
                 
@@ -381,7 +355,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
     for (auto pfit = prevFlowStack.begin()+pfStartIndex; pfit != pfEnd; ++pfit)
     {
         const FlowStackEntry2& entry = *pfit;
-        std::cout << "  apply: " << entry.blockIndex << std::endl;
+        ARDOut << "  apply: " << entry.blockIndex << "\n";
         const CodeBlock& cblock = codeBlocks[entry.blockIndex.index];
         for (const auto& sentry: cblock.ssaInfoMap)
         {
@@ -397,7 +371,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
         if (waysToCache[pfit->blockIndex] &&
             !resFirstPointsCache.hasKey(pfit->blockIndex))
         {
-            std::cout << "put pfcache " << pfit->blockIndex << std::endl;
+            ARDOut << "put pfcache " << pfit->blockIndex << "\n";
             resFirstPointsCache.put(pfit->blockIndex, stackVarMap);
         }
     }
@@ -427,7 +401,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
-                std::cout << "  resolv: " << entry.blockIndex << std::endl;
+                ARDOut << "  resolv: " << entry.blockIndex << "\n";
                 
                 const RBWSSAIdMap* resSecondPoints =
                         resSecondPointsCache.use(entry.blockIndex);
@@ -448,10 +422,10 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
             else
             {
                 cblocksToCache.increase(entry.blockIndex);
-                std::cout << "cblockToCache: " << entry.blockIndex << "=" <<
-                            cblocksToCache.count(entry.blockIndex) << std::endl;
+                ARDOut << "cblockToCache: " << entry.blockIndex << "=" <<
+                            cblocksToCache.count(entry.blockIndex) << "\n";
                 // back, already visited
-                std::cout << "resolv already: " << entry.blockIndex << std::endl;
+                ARDOut << "resolv already: " << entry.blockIndex << "\n";
                 flowStack.pop_back();
                 continue;
             }
@@ -512,7 +486,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                     // before write (can be different due to earlier visit)
                     alreadyReadMap.erase(it);
             }
-            std::cout << "  popresolv" << std::endl;
+            ARDOut << "  popresolv\n";
             
             if (cblocksToCache.count(entry.blockIndex)==2 &&
                 !resSecondPointsCache.hasKey(entry.blockIndex))
@@ -534,11 +508,11 @@ static void joinRetSSAIdMap(RetSSAIdMap& dest, const LastSSAIdMap& src,
 {
     for (const auto& entry: src)
     {
-        std::cout << "  entry2: " << entry.first.regVar << ":" <<
+        ARDOut << "  joinRetSSAIdMap: " << entry.first.regVar << ":" <<
                 cxuint(entry.first.index) << ":";
         for (size_t v: entry.second)
-            std::cout << " " << v;
-        std::cout << std::endl;
+            ARDOut << " " << v;
+        ARDOut << "\n";
         // insert if not inserted
         auto res = dest.insert({entry.first, { { routineBlock }, entry.second } });
         if (res.second)
@@ -548,10 +522,10 @@ static void joinRetSSAIdMap(RetSSAIdMap& dest, const LastSSAIdMap& src,
         // add new ways
         for (size_t ssaId: entry.second)
             destEntry.insertValue(ssaId);
-        std::cout << "    :";
+        ARDOut << "    :";
         for (size_t v: destEntry)
-            std::cout << " " << v;
-        std::cout << std::endl;
+            ARDOut << " " << v;
+        ARDOut << "\n";
     }
 }
 
@@ -560,11 +534,11 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src)
 {
     for (const auto& entry: src)
     {
-        std::cout << "  entry: " << entry.first.regVar << ":" <<
+        ARDOut << "  joinLastSSAIdMap: " << entry.first.regVar << ":" <<
                 cxuint(entry.first.index) << ":";
         for (size_t v: entry.second)
-            std::cout << " " << v;
-        std::cout << std::endl;
+            ARDOut << " " << v;
+        ARDOut << "\n";
         auto res = dest.insert(entry); // find
         if (res.second)
             continue; // added new
@@ -572,10 +546,10 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src)
         // add new ways
         for (size_t ssaId: entry.second)
             destEntry.insertValue(ssaId);
-        std::cout << "    :";
+        ARDOut << "    :";
         for (size_t v: destEntry)
-            std::cout << " " << v;
-        std::cout << std::endl;
+            ARDOut << " " << v;
+        ARDOut << "\n";
     }
 }
 
@@ -601,11 +575,11 @@ static void joinLastSSAIdMapInt(LastSSAIdMap& dest, const LastSSAIdMap& src,
                     continue; // otherwise, skip
             }
         }
-        std::cout << "  entry: " << entry.first.regVar << ":" <<
+        ARDOut << "  joinLastSSAIdMapInt: " << entry.first.regVar << ":" <<
                 cxuint(entry.first.index) << ":";
         for (size_t v: entry.second)
-            std::cout << " " << v;
-        std::cout << std::endl;
+            ARDOut << " " << v;
+        ARDOut << "\n";
         auto res = dest.insert(entry); // find
         if (res.second)
             continue; // added new
@@ -613,10 +587,10 @@ static void joinLastSSAIdMapInt(LastSSAIdMap& dest, const LastSSAIdMap& src,
         // add new ways
         for (size_t ssaId: entry.second)
             destEntry.insertValue(ssaId);
-        std::cout << "    :";
+        ARDOut << "    :";
         for (size_t v: destEntry)
-            std::cout << " " << v;
-        std::cout << std::endl;
+            ARDOut << " " << v;
+        ARDOut << "\n";
     }
     if (!loop) // do not if loop
         joinLastSSAIdMap(dest, laterRdataLastSSAIdMap);
@@ -643,11 +617,11 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src,
     
     for (const auto& entry: src.lastSSAIdMap)
     {
-        std::cout << "  entry3: " << entry.first.regVar << ":" <<
+        ARDOut << "  joinRoutineData: " << entry.first.regVar << ":" <<
                 cxuint(entry.first.index) << ":";
         for (size_t v: entry.second)
-            std::cout << " " << v;
-        std::cout << std::endl;
+            ARDOut << " " << v;
+        ARDOut << "\n";
         auto res = dest.curSSAIdMap.insert(entry); // find
         VectorSet<size_t>& destEntry = res.first->second;
         
@@ -665,10 +639,10 @@ static void joinRoutineData(RoutineData& dest, const RoutineData& src,
                         { (csit!=curSSAIdMap.end() ? csit->second : 1)-1 } });
         }
         
-        std::cout << "    :";
+        ARDOut << "    :";
         for (size_t v: destEntry)
-            std::cout << " " << v;
-        std::cout << std::endl;
+            ARDOut << " " << v;
+        ARDOut << "\n";
     }
 }
 
@@ -724,8 +698,8 @@ static void reduceSSAIdsForCalls(FlowStackEntry& entry,
                 for (auto sit = outSSAIds.begin()+1; sit != outSSAIds.end(); ++sit)
                     insertReplace(ssaReplacesMap, rentry.first, *sit, minSSAId);
                 
-                std::cout << "calls retssa ssaid: " << rentry.first.regVar << ":" <<
-                        rentry.first.index << std::endl;
+                ARDOut << "calls retssa ssaid: " << rentry.first.regVar << ":" <<
+                        rentry.first.index << "\n";
             }
             
             for (BlockIndex rblock: rentry.second.routines)
@@ -824,8 +798,8 @@ static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         else if (ssaIds.size() == 1)
             ssaId = ssaIds.front()+1; // plus one
         
-        std::cout << "retssa ssaid: " << ssaEntry.first.regVar << ":" <<
-                ssaEntry.first.index << ": " << ssaId << std::endl;
+        ARDOut << "retssa ssaid: " << ssaEntry.first.regVar << ":" <<
+                ssaEntry.first.index << ": " << ssaId << "\n";
         // replace smallest ssaId in routineMap lastSSAId entry
         // reduce SSAIds replaces
         for (BlockIndex rblock: ssaIdsIt->second.routines)
@@ -839,7 +813,7 @@ static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
             rlsit->second = VectorSet<size_t>({ ssaId-1 });
             if (rbwRetSSAId != SIZE_MAX)
             {
-                std::cout << "  keep retSSAId rbw: " << rbwRetSSAId << std::endl;
+                ARDOut << "  keep retSSAId rbw: " << rbwRetSSAId << "\n";
                 // add retSSAId without changes (in way without regvar changes)
                 rlsit->second.insertValue(rbwRetSSAId);
             }
@@ -870,7 +844,7 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
     // put first SSAId before write
     if (sinfo.readBeforeWrite)
     {
-        //std::cout << "PutCRBW: " << sinfo.ssaIdBefore << std::endl;
+        //ARDOut << "PutCRBW: " << sinfo.ssaIdBefore << "\n";
         if (!rdata.rbwSSAIdMap.insert({ ssaEntry.first, prevSSAId }).second)
             // if already added
             beforeFirstAccess = false;
@@ -881,7 +855,7 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
     
     if (sinfo.ssaIdChange != 0)
     {
-        //std::cout << "PutC: " << sinfo.ssaIdLast << std::endl;
+        //ARDOut << "PutC: " << sinfo.ssaIdLast << "\n";
         auto res = rdata.curSSAIdMap.insert({ ssaEntry.first, { sinfo.ssaIdLast } });
         // put last SSAId
         if (!res.second)
@@ -971,11 +945,11 @@ static void revertRetSSAIdMap(std::unordered_map<AsmSingleVReg, size_t>& curSSAI
                 ssaIds.insertValue((cit!=curSSAIdMap.end() ? cit->second : 1)-1);
             }
             
-            std::cout << " popentry2 " << entry.blockIndex << ": " <<
+            ARDOut << " revertSSAIdPopEntry" << entry.blockIndex << ": " <<
                     v.first.regVar << ":" << v.first.index << ":";
             for (size_t v: ssaIds)
-                std::cout << " " << v;
-            std::cout << std::endl;
+                ARDOut << " " << v;
+            ARDOut << "\n";
         }
     }
 }
@@ -985,11 +959,11 @@ static void updateRoutineCurSSAIdMap(RoutineData* rdata, const SSAEntry& ssaEntr
             const FlowStackEntry& entry, size_t curSSAId, size_t nextSSAId)
 {
     VectorSet<size_t>& ssaIds = rdata->curSSAIdMap[ssaEntry.first];
-    std::cout << " pushentry " << entry.blockIndex << ": " <<
+    ARDOut << " updateRoutineCurSSAIdMap " << entry.blockIndex << ": " <<
                 ssaEntry.first.regVar << ":" << ssaEntry.first.index << ":";
     for (size_t v: ssaIds)
-        std::cout << " " << v;
-    std::cout << std::endl;
+        ARDOut << " " << v;
+    ARDOut << "\n";
     
     // if cblock with some children
     if (nextSSAId != curSSAId)
@@ -998,11 +972,11 @@ static void updateRoutineCurSSAIdMap(RoutineData* rdata, const SSAEntry& ssaEntr
     // push previous SSAId to lastSSAIdMap (later will be replaced)
     ssaIds.insertValue(curSSAId-1);
     
-    std::cout << " popentry " << entry.blockIndex << ": " <<
+    ARDOut << " updateRoutineCurSSAIdMap after " << entry.blockIndex << ": " <<
                 ssaEntry.first.regVar << ":" << ssaEntry.first.index << ":";
     for (size_t v: ssaIds)
-        std::cout << " " << v;
-    std::cout << std::endl;
+        ARDOut << " " << v;
+    ARDOut << "\n";
 }
 
 static bool tryAddLoopEnd(const FlowStackEntry& entry, BlockIndex routineBlock,
@@ -1011,7 +985,7 @@ static bool tryAddLoopEnd(const FlowStackEntry& entry, BlockIndex routineBlock,
     if (isLoop && (!noMainLoop || routineBlock != entry.blockIndex))
     {
         // handle loops
-        std::cout << "  join loop ssaids: " << entry.blockIndex << std::endl;
+        ARDOut << "  join loop ssaids: " << entry.blockIndex << "\n";
         // add to routine data loopEnds
         auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
         if (loopsit2 != rdata.loopEnds.end())
@@ -1038,7 +1012,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         BlockIndex routineBlock, bool noMainLoop = false,
         const CBlockBitPool& prevFlowStackBlocks = {})
 {
-    std::cout << "--------- createRoutineData ----------------\n";
+    ARDOut << "--------- createRoutineData ----------------\n";
     CBlockBitPool visited(codeBlocks.size(), false);
     CBlockBitPool haveReturnBlocks(codeBlocks.size(), false);
     
@@ -1090,16 +1064,16 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             
             if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
             {   // leave from loop point
-                std::cout << "   loopfound " << entry.blockIndex << std::endl;
+                ARDOut << "   loopfound " << entry.blockIndex << "\n";
                 if (loopsit2 != rdata.loopEnds.end())
                 {
                     subrDataCopy = subrData;
                     subrDataForLoopMap.insert({ entry.blockIndex, subrDataCopy });
-                    std::cout << "   loopssaId2Map: " <<
-                            entry.blockIndex << std::endl;
+                    ARDOut << "   loopssaId2Map: " <<
+                            entry.blockIndex << "\n";
                     joinLastSSAIdMap(subrData.lastSSAIdMap,
                             loopsit2->second.ssaIdMap, subrData, true);
-                    std::cout << "   loopssaIdMap2End: " << std::endl;
+                    ARDOut << "   loopssaIdMap2End: \n";
                     if (applyToMainRoutine)
                         joinLastSSAIdMap(rdata.lastSSAIdMap, loopsit2->second.ssaIdMap,
                                         subrDataCopy, true);
@@ -1110,28 +1084,28 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             auto it = loopSubrsMap.find(entry.blockIndex);
             if (it != loopSubrsMap.end())
             {
-                std::cout << "    found loopsubrsmap: " << entry.blockIndex << ":";
+                ARDOut << "    found loopsubrsmap: " << entry.blockIndex << ":";
                 for (BlockIndex subr: it->second)
                 {
-                    std::cout << " " << subr;
+                    ARDOut << " " << subr;
                     RoutineData* subrData2 = subroutinesCache.use(subr);
                     if (subrData2 == nullptr)
                         continue;
                     RoutineData subrData2Copy = *subrData2;
-                    std::cout << "*";
+                    ARDOut << "*";
                     joinLastSSAIdMap(subrData2Copy.lastSSAIdMap,
                             loopsit2->second.ssaIdMap, subrDataCopy, false);
                     // reinsert subroutine into subroutine cache
                     subrData2Copy.calculateWeight();
                     subroutinesCache.put(subr, subrData2Copy);
                 }
-                std::cout << "\n";
+                ARDOut << "\n";
             }
             // apply loops to this subroutine
             auto it2 = subrLoopsMap.find(entry.blockIndex);
             if (it2 != subrLoopsMap.end())
             {
-                std::cout << "    found subrloopsmap: " << entry.blockIndex << ":";
+                ARDOut << "    found subrloopsmap: " << entry.blockIndex << ":";
                 for (auto lit2 = it2->second.rbegin(); lit2 != it2->second.rend(); ++lit2)
                 {
                     BlockIndex loop = *lit2;
@@ -1139,13 +1113,13 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     if (loopsit3 == rdata.loopEnds.end() ||
                         activeLoops.hasValue(loop))
                         continue;
-                    std::cout << " " << loop;
+                    ARDOut << " " << loop;
                     auto  itx = subrDataForLoopMap.find(loop);
                     if (itx != subrDataForLoopMap.end())
                         joinLastSSAIdMap(subrData.lastSSAIdMap,
                                 loopsit3->second.ssaIdMap, itx->second, false);
                 }
-                std::cout << "\n";
+                ARDOut << "\n";
             }
             
             subrData.calculateWeight();
@@ -1182,7 +1156,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     subroutToCache.count(entry.blockIndex)!=0)
                 {
                     auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
-                    std::cout << "-- subrcache2 for " << entry.blockIndex << std::endl;
+                    ARDOut << "-- subrcache2 for " << entry.blockIndex << "\n";
                     addSubroutine(loopsit2, false);
                     cachedRdata = subroutinesCache.use(entry.blockIndex);
                 }
@@ -1190,12 +1164,12 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             
             if (cachedRdata != nullptr)
             {
-                std::cout << "use cached subr " << entry.blockIndex << std::endl;
-                std::cout << "procret2: " << entry.blockIndex << std::endl;
+                ARDOut << "use cached subr " << entry.blockIndex << "\n";
+                ARDOut << "procret2: " << entry.blockIndex << "\n";
                 if (visited[entry.blockIndex] && !haveReturnBlocks[entry.blockIndex])
                 {
                     // no joining. no returns
-                    std::cout << "procretend2 nojoin" << std::endl;
+                    ARDOut << "procretend2 nojoin\n";
                     flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                     flowStack.pop_back();
                     continue;
@@ -1227,7 +1201,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     joinLastSSAIdMapInt(res.first->second.ssaIdMap, rdata.curSSAIdMap,
                                 cachedRdata->curSSAIdMap, loopEnd.second.ssaIdMap, true);
                 }
-                std::cout << "procretend2" << std::endl;
+                ARDOut << "procretend2\n";
                 flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                 flowStack.pop_back();
                 // propagate haveReturn to previous block
@@ -1251,7 +1225,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 
                 if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
                     activeLoops.insertValue(entry.blockIndex);
-                std::cout << "proc: " << entry.blockIndex << std::endl;
+                ARDOut << "proc: " << entry.blockIndex << "\n";
                 visited[entry.blockIndex] = true;
                 
                 for (const auto& ssaEntry: cblock.ssaInfoMap)
@@ -1302,7 +1276,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                         (entry.blockIndex.pass == 0 && rblock.pass!=0) ?
                         srcRdata.origRbwSSAIdMap : srcRdata.rbwSSAIdMap;
                     if (entry.blockIndex.pass == 0 && rblock.pass!=0)
-                        std::cout << "choose origRbwSSAIdMap: " << rblock << std::endl;
+                        ARDOut << "choose origRbwSSAIdMap: " << rblock << "\n";
                         
                     for (const auto& rbw: srcRbwSSAIdMap)
                     {
@@ -1348,7 +1322,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 for (const NextBlock& next: cblock.nexts)
                     if (next.isCall)
                     {
-                        //std::cout << "joincall:"<< next.block << std::endl;
+                        //ARDOut << "joincall:"<< next.block << "\n";
                         BlockIndex rblock(next.block, entry.blockIndex.pass);
                         if (callBlocks.find(next.block) != callBlocks.end())
                             rblock.pass = 1;
@@ -1367,12 +1341,12 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         }
         else
         {
-            std::cout << "popstart: " << entry.blockIndex << std::endl;
+            ARDOut << "popstart: " << entry.blockIndex << "\n";
             if (cblock.haveReturn)
             {
-                std::cout << "procret: " << entry.blockIndex << std::endl;
+                ARDOut << "procret: " << entry.blockIndex << "\n";
                 joinLastSSAIdMap(rdata.lastSSAIdMap, rdata.curSSAIdMap);
-                std::cout << "procretend" << std::endl;
+                ARDOut << "procretend\n";
                 rdata.notFirstReturn = true;
                 entry.haveReturn = true;
                 haveReturnBlocks[entry.blockIndex] = true;
@@ -1393,9 +1367,9 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     ssaEntry.second.ssaIdLast+1 : curSSAId;
                 curSSAIdMap[ssaEntry.first] = curSSAId;
                 
-                std::cout << "popcurnext: " << ssaEntry.first.regVar <<
+                ARDOut << "popcurnext: " << ssaEntry.first.regVar <<
                             ":" << ssaEntry.first.index << ": " <<
-                            nextSSAId << ", " << curSSAId << std::endl;
+                            nextSSAId << ", " << curSSAId << "\n";
                 
                 updateRoutineCurSSAIdMap(&rdata, ssaEntry, entry, curSSAId, nextSSAId);
             }
@@ -1407,25 +1381,25 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             {
                 if (loopsit2 != rdata.loopEnds.end())
                 {
-                    std::cout << "   mark loopblocks passed: " <<
-                                entry.blockIndex << std::endl;
+                    ARDOut << "   mark loopblocks passed: " <<
+                                entry.blockIndex << "\n";
                     // mark that loop has passed fully
                     loopsit2->second.passed = true;
                 }
                 else
-                    std::cout << "   loopblocks nopassed: " <<
-                                entry.blockIndex << std::endl;
+                    ARDOut << "   loopblocks nopassed: " <<
+                                entry.blockIndex << "\n";
             }
             
             if ((!noMainLoop || flowStack.size() > 1) &&
                 subroutToCache.count(entry.blockIndex)!=0)
             { //put to cache
-                std::cout << "-- subrcache for " << entry.blockIndex << std::endl;
+                ARDOut << "-- subrcache for " << entry.blockIndex << "\n";
                 addSubroutine(loopsit2, true);
             }
             
             flowStackBlocks[entry.blockIndex] = false;
-            std::cout << "pop: " << entry.blockIndex << std::endl;
+            ARDOut << "pop: " << entry.blockIndex << "\n";
             
             flowStack.pop_back();
             // set up haveReturn
@@ -1437,7 +1411,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             }
         }
     }
-    std::cout << "--------- createRoutineData end ------------\n";
+    ARDOut << "--------- createRoutineData end ------------\n";
 }
 
 void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
@@ -1556,7 +1530,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             // process current block
             if (!visited[entry.blockIndex])
             {
-                std::cout << "proc: " << entry.blockIndex << std::endl;
+                ARDOut << "proc: " << entry.blockIndex << "\n";
                 visited[entry.blockIndex] = true;
                 
                 for (auto& ssaEntry: cblock.ssaInfoMap)
@@ -1618,8 +1592,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             else
             {
                 cblocksToCache.increase(entry.blockIndex);
-                std::cout << "cblockToCache: " << entry.blockIndex << "=" <<
-                            cblocksToCache.count(entry.blockIndex) << std::endl;
+                ARDOut << "cblockToCache: " << entry.blockIndex << "=" <<
+                            cblocksToCache.count(entry.blockIndex) << "\n";
                 // back, already visited
                 flowStackBlocks[entry.blockIndex] = !flowStackBlocks[entry.blockIndex];
                 flowStack.pop_back();
@@ -1629,13 +1603,13 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 {
                     // mark point of way to cache (res first point)
                     waysToCache[lastCommonCacheWayPoint.first] = true;
-                    std::cout << "mark to pfcache " <<
+                    ARDOut << "mark to pfcache " <<
                             lastCommonCacheWayPoint.first << ", " <<
-                            curWayBIndex << std::endl;
+                            curWayBIndex << "\n";
                     prevWaysIndexMap[curWayBIndex] = lastCommonCacheWayPoint;
                 }
                 lastCommonCacheWayPoint = { curWayBIndex, flowStack.size()-1 };
-                std::cout << "lastCcwP: " << curWayBIndex << std::endl;
+                ARDOut << "lastCcwP: " << curWayBIndex << "\n";
                 continue;
             }
         }
@@ -1644,7 +1618,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             entry.blockIndex == callStack.back().callBlock &&
             entry.nextIndex-1 == callStack.back().callNextIndex)
         {
-            std::cout << " ret: " << entry.blockIndex << std::endl;
+            ARDOut << " ret: " << entry.blockIndex << "\n";
             const BlockIndex routineBlock = callStack.back().routineBlock;
             RoutineData& prevRdata = routineMap.find(routineBlock)->second;
             if (!isRoutineGen[routineBlock])
@@ -1658,7 +1632,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 auto csimsmit = curSSAIdMapStateMap.find(routineBlock.index);
                 if (csimsmit != curSSAIdMapStateMap.end() && entry.blockIndex.pass==0)
                 {
-                    std::cout << " get curSSAIdMap from back recur 2" << std::endl;
+                    ARDOut << " get curSSAIdMap from back recur 2\n";
                     curSSAIdMap = csimsmit->second;
                     curSSAIdMapStateMap.erase(csimsmit);
                 }
@@ -1680,7 +1654,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     // if already called (then it is recursion)
                     if (recurseBlocks.insert(nextBlock.index).second)
                     {
-                        std::cout << "   -- recursion: " << nextBlock << std::endl;
+                        ARDOut << "   -- recursion: " << nextBlock << "\n";
                         nextBlock.pass = 1;
                         
                         curSSAIdMapStateMap.insert({ nextBlock.index,  curSSAIdMap });
@@ -1688,7 +1662,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     else if (entry.blockIndex.pass==1)
                     {
                         entry.nextIndex++;
-                        std::cout << " NO call (rec): " << entry.blockIndex << std::endl;
+                        ARDOut << " NO call (rec): " << entry.blockIndex << "\n";
                         continue;
                     }
                 }
@@ -1696,11 +1670,11 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     recurseBlocks.find(nextBlock.index) != recurseBlocks.end())
                 {
                     entry.nextIndex++;
-                    std::cout << " NO call (rec)2: " << entry.blockIndex << std::endl;
+                    ARDOut << " NO call (rec)2: " << entry.blockIndex << "\n";
                     continue;
                 }
                 
-                std::cout << " call: " << entry.blockIndex << std::endl;
+                ARDOut << " call: " << entry.blockIndex << "\n";
                 
                 callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
                 routineMap.insert({ nextBlock, { } });
@@ -1731,12 +1705,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 for (const NextBlock& next: cblock.nexts)
                     if (next.isCall)
                     {
-                        //std::cout << "joincall:"<< next.block << std::endl;
+                        //ARDOut << "joincall:"<< next.block << "\n";
                         size_t pass = 0;
                         if (callBlocks.find(next.block) != callBlocks.end())
                         {
-                            std::cout << " is secpass: " << entry.blockIndex << " : " <<
-                                    next.block << std::endl;
+                            ARDOut << " is secpass: " << entry.blockIndex << " : " <<
+                                    next.block << "\n";
                             pass = 1; // it ways second pass
                         }
                         
@@ -1778,12 +1752,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 const size_t nextSSAId = curSSAId;
                 curSSAId = ssaEntry.second.ssaIdBefore+1;
                 
-                std::cout << "popcurnext: " << ssaEntry.first.regVar <<
+                ARDOut << "popcurnext: " << ssaEntry.first.regVar <<
                             ":" << ssaEntry.first.index << ": " <<
-                            nextSSAId << ", " << curSSAId << std::endl;
+                            nextSSAId << ", " << curSSAId << "\n";
             }
             
-            std::cout << "pop: " << entry.blockIndex << std::endl;
+            ARDOut << "pop: " << entry.blockIndex << "\n";
             flowStackBlocks[entry.blockIndex] = false;
             
             if (!flowStack.empty() && flowStack.back().isCall)
@@ -1791,7 +1765,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 auto csimsmit = curSSAIdMapStateMap.find(entry.blockIndex.index);
                 if (csimsmit != curSSAIdMapStateMap.end())
                 {
-                    std::cout << " get curSSAIdMap from back recur" << std::endl;
+                    ARDOut << " get curSSAIdMap from back recur\n";
                     curSSAIdMap = csimsmit->second;
                 }
             }
@@ -1803,7 +1777,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             {
                 lastCommonCacheWayPoint =
                         { flowStack.back().blockIndex, flowStack.size()-1 };
-                std::cout << "POPlastCcwP: " << lastCommonCacheWayPoint.first << std::endl;
+                ARDOut << "POPlastCcwP: " << lastCommonCacheWayPoint.first << "\n";
             }
         }
     }
