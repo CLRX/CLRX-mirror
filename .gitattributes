@@ -51,6 +51,8 @@ amdasm/AsmPseudoOps.cpp -text
 amdasm/AsmROCmFormat.cpp -text
 amdasm/AsmROCmInternals.h -text
 amdasm/AsmRegAlloc.cpp -text
+amdasm/AsmRegAlloc.h -text
+amdasm/AsmRegAllocSSAData.cpp -text
 amdasm/AsmSource.cpp -text
 amdasm/Assembler.cpp -text
 amdasm/CMakeLists.txt -text svneol=unset#text/plain

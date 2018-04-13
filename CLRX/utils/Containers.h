@@ -28,6 +28,8 @@
 #include <iterator>
 #include <algorithm>
 #include <vector>
+#include <utility>
+#include <unordered_map>
 #include <initializer_list>
 
 /// main namespace
@@ -498,5 +500,121 @@ void swap(CLRX::Array<T>& a1, CLRX::Array<T>& a2)
 { a1.swap(a2); }
 
 }
+
+/** Simple cache **/
+
+/// Simple cache for object. object class should have a weight method
+template<typename K, typename V>
+class CLRX_INTERNAL SimpleCache
+{
+private:
+    struct Entry
+    {
+        size_t sortedPos;
+        size_t usage;
+        V value;
+    };
+    
+    size_t totalWeight;
+    size_t maxWeight;
+    
+    typedef typename std::unordered_map<K, Entry>::iterator EntryMapIt;
+    // sorted entries - sorted by usage
+    std::vector<EntryMapIt> sortedEntries;
+    std::unordered_map<K, Entry> entryMap;
+    
+    void updateInSortedEntries(EntryMapIt it)
+    {
+        const size_t curPos = it->second.sortedPos;
+        if (curPos == 0)
+            return; // first position
+        if (sortedEntries[curPos-1]->second.usage < it->second.usage &&
+            (curPos==1 || sortedEntries[curPos-2]->second.usage >= it->second.usage))
+        {
+            //std::cout << "fast path" << std::endl;
+            std::swap(sortedEntries[curPos-1]->second.sortedPos, it->second.sortedPos);
+            std::swap(sortedEntries[curPos-1], sortedEntries[curPos]);
+            return;
+        }
+        //std::cout << "slow path" << std::endl;
+        auto fit = std::upper_bound(sortedEntries.begin(),
+            sortedEntries.begin()+it->second.sortedPos, it,
+            [](EntryMapIt it1, EntryMapIt it2)
+            { return it1->second.usage > it2->second.usage; });
+        if (fit != sortedEntries.begin()+it->second.sortedPos)
+        {
+            const size_t curPos = it->second.sortedPos;
+            std::swap((*fit)->second.sortedPos, it->second.sortedPos);
+            std::swap(*fit, sortedEntries[curPos]);
+        }
+    }
+    
+    void insertToSortedEntries(EntryMapIt it)
+    {
+        it->second.sortedPos = sortedEntries.size();
+        sortedEntries.push_back(it);
+    }
+    
+    void removeFromSortedEntries(size_t pos)
+    {
+        // update later element positioning
+        for (size_t i = pos+1; i < sortedEntries.size(); i++)
+            (sortedEntries[i]->second.sortedPos)--;
+        sortedEntries.erase(sortedEntries.begin() + pos);
+    }
+    
+public:
+    /// constructor
+    explicit SimpleCache(size_t _maxWeight) : totalWeight(0), maxWeight(_maxWeight)
+    { }
+    
+    /// use key - get value
+    V* use(const K& key)
+    {
+        auto it = entryMap.find(key);
+        if (it != entryMap.end())
+        {
+            it->second.usage++;
+            updateInSortedEntries(it);
+            return &(it->second.value);
+        }
+        return nullptr;
+    }
+    
+    /// return true if key exists
+    bool hasKey(const K& key)
+    { return entryMap.find(key) != entryMap.end(); }
+    
+    /// put value
+    void put(const K& key, const V& value)
+    {
+        auto res = entryMap.insert({ key, Entry{ 0, 0, value } });
+        if (!res.second)
+        {
+            removeFromSortedEntries(res.first->second.sortedPos); // remove old value
+            // update value
+            totalWeight -= res.first->second.value.weight();
+            res.first->second = Entry{ 0, 0, value };
+        }
+        const size_t elemWeight = value.weight();
+        
+        // correct max weight if element have greater weight
+        if (elemWeight > maxWeight)
+            maxWeight = elemWeight<<1;
+        
+        while (totalWeight+elemWeight > maxWeight)
+        {
+            // remove min usage element
+            auto minUsageIt = sortedEntries.back();
+            sortedEntries.pop_back();
+            totalWeight -= minUsageIt->second.value.weight();
+            entryMap.erase(minUsageIt);
+        }
+        
+        insertToSortedEntries(res.first); // new entry in sorted entries
+        
+        totalWeight += elemWeight;
+    }
+};
 
 #endif

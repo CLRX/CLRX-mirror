@@ -28,6 +28,7 @@ SET(LIBAMDASMSRC
         AsmPseudoOps.cpp
         AsmROCmFormat.cpp
         AsmRegAlloc.cpp
+        AsmRegAllocSSAData.cpp
         AsmSource.cpp
         Assembler.cpp
         Disassembler.cpp
