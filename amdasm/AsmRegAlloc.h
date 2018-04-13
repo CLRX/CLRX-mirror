@@ -189,7 +189,7 @@ struct CLRX_INTERNAL FlowStackEntry
 
 struct CLRX_INTERNAL FlowStackEntry2
 {
-    BlockIndex blockIndex;
+    size_t blockIndex;
     size_t nextIndex;
 };
 
@@ -210,6 +210,33 @@ struct CLRX_INTERNAL CallStackEntry
 };
 
 typedef std::unordered_map<BlockIndex, RoutineData> RoutineMap;
+
+typedef std::unordered_map<size_t, std::pair<size_t, size_t> > PrevWaysIndexMap;
+
+class CLRX_INTERNAL ResSecondPointsToCache: public CBlockBitPool
+{
+public:
+    explicit ResSecondPointsToCache(size_t n) : CBlockBitPool(n<<1, false)
+    { }
+    
+    void increase(BlockIndex ip)
+    {
+        const size_t i = ip.index + (ip.pass ? (size()>>2) : 0);
+        if ((*this)[i<<1])
+            (*this)[(i<<1)+1] = true;
+        else
+            (*this)[i<<1] = true;
+    }
+    
+    cxuint count(BlockIndex ip) const
+    {
+        const size_t i = ip.index + (ip.pass ? (size()>>2) : 0);
+        return cxuint((*this)[i<<1]) + (*this)[(i<<1)+1];
+    }
+};
+
+typedef AsmRegAllocator::SSAReplace SSAReplace; // first - orig ssaid, second - dest ssaid
+typedef AsmRegAllocator::SSAReplacesMap SSAReplacesMap;
 
 #if ASMREGALLOC_DEBUGDUMP
 #define ARDOut std::cout
