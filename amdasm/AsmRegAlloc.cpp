@@ -461,9 +461,12 @@ void AsmRegAllocator::applySSAReplaces()
     {
         size_t minSSAId;
         bool visited;
-        bool visited2;
+        size_t parentsNum;
+        size_t parentsCount;
         std::unordered_set<size_t> nexts;
-        MinSSAGraphNode() : minSSAId(SIZE_MAX), visited(false), visited2(false) { }
+        MinSSAGraphNode() : minSSAId(SIZE_MAX), visited(false),
+            parentsNum(0), parentsCount(0)
+        { }
     };
     
     typedef std::map<size_t, MinSSAGraphNode, std::greater<size_t> > SSAGraphNodesMap;
@@ -515,6 +518,8 @@ void AsmRegAllocator::applySSAReplaces()
                             v.second.minSSAId << std::endl;*/
         // propagate min value
         std::stack<MinSSAGraphStackEntry> minSSAStack;
+        
+        // initialize parentsNumber
         for (auto ssaGraphNodeIt = ssaGraphNodes.begin();
                  ssaGraphNodeIt!=ssaGraphNodes.end(); )
         {
@@ -528,12 +533,52 @@ void AsmRegAllocator::applySSAReplaces()
                 bool toPop = false;
                 if (entry.nextIt == node.nexts.begin())
                 {
+                    node.parentsNum++;
                     if (!node.visited)
                         node.visited = true;
                     else
                         toPop = true;
                 }
                 if (!toPop && entry.nextIt != node.nexts.end())
+                {
+                    auto nodeIt = ssaGraphNodes.find(*entry.nextIt);
+                    if (nodeIt != ssaGraphNodes.end())
+                        minSSAStack.push({ nodeIt, nodeIt->second.nexts.begin(),
+                                    size_t(0) });
+                    ++entry.nextIt;
+                }
+                else
+                    minSSAStack.pop();
+            }
+            
+            // skip visited nodes
+            for(; ssaGraphNodeIt != ssaGraphNodes.end(); ++ssaGraphNodeIt)
+                if (!ssaGraphNodeIt->second.visited)
+                    break;
+        }
+        
+        for (auto& entry: ssaGraphNodes)
+            entry.second.visited = false;
+        
+        for (auto ssaGraphNodeIt = ssaGraphNodes.begin();
+                 ssaGraphNodeIt!=ssaGraphNodes.end(); )
+        {
+            ARDOut << "  Start in " << ssaGraphNodeIt->first << "." << "\n";
+            minSSAStack.push({ ssaGraphNodeIt, ssaGraphNodeIt->second.nexts.begin() });
+            // traverse with minimalize SSA id
+            while (!minSSAStack.empty())
+            {
+                MinSSAGraphStackEntry& entry = minSSAStack.top();
+                MinSSAGraphNode& node = entry.nodeIt->second;
+                if (entry.nextIt == node.nexts.begin())
+                {
+                    node.visited = true;
+                    node.parentsCount++;
+                }
+                
+                // try to children only all parents are visited and if parent has children
+                if (node.parentsCount == node.parentsNum &&
+                    entry.nextIt != node.nexts.end())
                 {
                     auto nodeIt = ssaGraphNodes.find(*entry.nextIt);
                     if (nodeIt != ssaGraphNodes.end())
@@ -567,6 +612,13 @@ void AsmRegAllocator::applySSAReplaces()
                     break;
         }
         
+        // reset visited and parentsCount
+        for (auto& entry: ssaGraphNodes)
+        {
+            entry.second.visited = false;
+            entry.second.parentsCount = 0;
+        }
+        
         for (auto ssaGraphNodeIt = ssaGraphNodes.begin();
                  ssaGraphNodeIt!=ssaGraphNodes.end(); )
         {
@@ -578,8 +630,14 @@ void AsmRegAllocator::applySSAReplaces()
                 MinSSAGraphStackEntry& entry = minSSAStack.top();
                 MinSSAGraphNode& node = entry.nodeIt->second;
                 if (entry.nextIt == node.nexts.begin())
-                    node.visited2 = true;
-                if (entry.nextIt != node.nexts.end())
+                {
+                    node.visited = true;
+                    node.parentsCount++;
+                }
+                
+                // try to children only all parents are visited and if parent has children
+                if (node.parentsCount == node.parentsNum &&
+                    entry.nextIt != node.nexts.end())
                 {
                     auto nodeIt = ssaGraphNodes.find(*entry.nextIt);
                     if (nodeIt != ssaGraphNodes.end())
@@ -611,7 +669,7 @@ void AsmRegAllocator::applySSAReplaces()
             
             // skip visited nodes
             for(; ssaGraphNodeIt != ssaGraphNodes.end(); ++ssaGraphNodeIt)
-                if (!ssaGraphNodeIt->second.visited2)
+                if (!ssaGraphNodeIt->second.visited)
                     break;
         }
         
