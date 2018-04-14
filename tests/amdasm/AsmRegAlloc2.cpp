@@ -249,6 +249,175 @@ static const AsmApplySSAReplacesCase ssaApplyReplacesCasesTbl[] =
                     { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
                 }, false, false, true }
         }
+    },
+    {   // 2 - more complex dependencies
+        {
+            { 0, 4,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, true) },
+                    { { "sa", 3 }, SSAInfo(0, 1, 1, 1, 1, true) }
+                }, false, false, false },
+            { 4, 8,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 2, 2, 2, 1, true) }
+                }, false, false, false },
+            { 8, 12,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(2, 3, 3, 3, 1, true) },
+                    { { "sa", 3 }, SSAInfo(2, 3, 3, 3, 1, true) }
+                }, false, false, false },
+            { 12, 16,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(3, 4, 4, 4, 1, true) },
+                    { { "sa", 3 }, SSAInfo(3, 4, 4, 4, 1, true) }
+                }, false, false, false },
+            { 16, 20,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(4, 5, 5, 5, 1, true) },
+                    { { "sa", 3 }, SSAInfo(4, 5, 5, 5, 1, true) }
+                }, false, false, false },
+            { 20, 24,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(5, 6, 6, 6, 1, true) },
+                    { { "sa", 3 }, SSAInfo(5, 6, 6, 6, 1, true) }
+                }, false, false, false },
+            { 24, 28,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(6, 7, 7, 7, 1, true) },
+                    { { "sa", 3 }, SSAInfo(6, 7, 7, 7, 1, true) }
+                }, false, false, false },
+            { 28, 32,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(7, 8, 8, 8, 1, true) },
+                    { { "sa", 3 }, SSAInfo(7, 8, 8, 8, 1, true) }
+                }, false, false, false },
+            { 32, 36,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(8, 9, 9, 9, 1, true) },
+                    { { "sa", 3 }, SSAInfo(8, 9, 9, 9, 1, true) }
+                }, false, false, false },
+            { 36, 40,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(9, 10, 10, 10, 1, true) },
+                    { { "sa", 3 }, SSAInfo(9, 10, 10, 10, 1, true) }
+                }, false, false, false },
+            { 40, 44,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(10, 11, 11, 11, 1, true) },
+                    { { "sa", 3 }, SSAInfo(10, 11, 11, 11, 1, true) }
+                }, false, false, false },
+            { 44, 48,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(11, 12, 12, 12, 1, true) },
+                    { { "sa", 3 }, SSAInfo(11, 12, 12, 12, 1, true) }
+                }, false, false, false },
+            { 48, 52,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(12, 13, 13, 13, 1, true) },
+                    { { "sa", 3 }, SSAInfo(12, 13, 13, 13, 1, true) }
+                }, false, false, false }
+        },
+        {   // SSA replaces
+            { { "sa", 2 }, { { 4, 1 }, { 4, 3 }, { 3, 2 }, { 7, 5 }, { 7, 6 },
+                        { 11, 7 }, { 12, 7 } } },
+            { { "sa", 3 }, { { 3, 2 }, { 5, 3 }, { 5, 4 }, { 4, 1 },
+                        { 13, 4 }, { 12, 5 }, { 10, 2 } } }
+        },
+        // expected blocks
+        {
+            { 0, 4,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, true) },
+                    { { "sa", 3 }, SSAInfo(0, 1, 1, 1, 1, true) }
+                }, false, false, false },
+            { 4, 8,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 1, 2, 1, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 1, 2, 1, 1, true) }
+                }, false, false, false },
+            { 8, 12,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 1, 3, 1, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 1, 3, 1, 1, true) }
+                }, false, false, false },
+            { 12, 16,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 1, 4, 1, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 1, 4, 1, 1, true) }
+                }, false, false, false },
+            { 16, 20,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 5, 5, 5, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 1, 5, 1, 1, true) }
+                }, false, false, false },
+            { 20, 24,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(5, 5, 6, 5, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 6, 6, 6, 1, true) }
+                }, false, false, false },
+            { 24, 28,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(5, 5, 7, 5, 1, true) },
+                    { { "sa", 3 }, SSAInfo(6, 7, 7, 7, 1, true) }
+                }, false, false, false },
+            { 28, 32,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(5, 8, 8, 8, 1, true) },
+                    { { "sa", 3 }, SSAInfo(7, 8, 8, 8, 1, true) }
+                }, false, false, false },
+            { 32, 36,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(8, 9, 9, 9, 1, true) },
+                    { { "sa", 3 }, SSAInfo(8, 9, 9, 9, 1, true) }
+                }, false, false, false },
+            { 36, 40,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(9, 10, 10, 10, 1, true) },
+                    { { "sa", 3 }, SSAInfo(9, 1, 10, 1, 1, true) }
+                }, false, false, false },
+            { 40, 44,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(10, 5, 11, 5, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 11, 11, 11, 1, true) }
+                }, false, false, false },
+            { 44, 48,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(5, 5, 12, 5, 1, true) },
+                    { { "sa", 3 }, SSAInfo(11, 1, 12, 1, 1, true) }
+                }, false, false, false },
+            { 48, 52,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(5, 13, 13, 13, 1, true) },
+                    { { "sa", 3 }, SSAInfo(1, 1, 13, 1, 1, true) }
+                }, false, false, false }
+        }
     }
 };
 

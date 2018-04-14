@@ -461,17 +461,21 @@ void AsmRegAllocator::applySSAReplaces()
     {
         size_t minSSAId;
         bool visited;
+        bool visited2;
         std::unordered_set<size_t> nexts;
-        MinSSAGraphNode() : minSSAId(SIZE_MAX), visited(false) { }
+        MinSSAGraphNode() : minSSAId(SIZE_MAX), visited(false), visited2(false) { }
     };
+    
+    typedef std::map<size_t, MinSSAGraphNode, std::greater<size_t> > SSAGraphNodesMap;
+    
     struct MinSSAGraphStackEntry
     {
-        std::unordered_map<size_t, MinSSAGraphNode>::iterator nodeIt;
+        SSAGraphNodesMap::iterator nodeIt;
         std::unordered_set<size_t>::const_iterator nextIt;
         size_t minSSAId;
         
         MinSSAGraphStackEntry(
-                std::unordered_map<size_t, MinSSAGraphNode>::iterator _nodeIt,
+                SSAGraphNodesMap::iterator _nodeIt,
                 std::unordered_set<size_t>::const_iterator _nextIt,
                 size_t _minSSAId = SIZE_MAX)
                 : nodeIt(_nodeIt), nextIt(_nextIt), minSSAId(_minSSAId)
@@ -480,31 +484,41 @@ void AsmRegAllocator::applySSAReplaces()
     
     for (auto& entry: ssaReplacesMap)
     {
+        ARDOut << "SSAReplace: " << entry.first.regVar << "." << entry.first.index << "\n";
         VectorSet<SSAReplace>& replaces = entry.second;
-        std::sort(replaces.begin(), replaces.end());
+        std::sort(replaces.begin(), replaces.end(), std::greater<SSAReplace>());
         replaces.resize(std::unique(replaces.begin(), replaces.end()) - replaces.begin());
         VectorSet<SSAReplace> newReplaces;
         
-        std::unordered_map<size_t, MinSSAGraphNode> ssaGraphNodes;
+        SSAGraphNodesMap ssaGraphNodes;
         
         auto it = replaces.begin();
         while (it != replaces.end())
         {
             auto itEnd = std::upper_bound(it, replaces.end(),
-                            std::make_pair(it->first, size_t(SIZE_MAX)));
+                    std::make_pair(it->first, size_t(0)), std::greater<SSAReplace>());
             {
+                auto itLast = itEnd;
+                --itLast;
                 MinSSAGraphNode& node = ssaGraphNodes[it->first];
-                node.minSSAId = std::min(node.minSSAId, it->second);
+                node.minSSAId = std::min(node.minSSAId, itLast->second);
                 for (auto it2 = it; it2 != itEnd; ++it2)
-                    node.nexts.insert(it->second);
+                {
+                    node.nexts.insert(it2->second);
+                    ssaGraphNodes.insert({ it2->second, MinSSAGraphNode() });
+                }
             }
             it = itEnd;
         }
+        /*for (const auto& v: ssaGraphNodes)
+            ARDOut << "  SSANode: " << v.first << ":" << &v.second << " minSSAID: " <<
+                            v.second.minSSAId << std::endl;*/
         // propagate min value
         std::stack<MinSSAGraphStackEntry> minSSAStack;
         for (auto ssaGraphNodeIt = ssaGraphNodes.begin();
                  ssaGraphNodeIt!=ssaGraphNodes.end(); )
         {
+            ARDOut << "  Start in " << ssaGraphNodeIt->first << "." << "\n";
             minSSAStack.push({ ssaGraphNodeIt, ssaGraphNodeIt->second.nexts.begin() });
             // traverse with minimalize SSA id
             while (!minSSAStack.empty())
@@ -524,14 +538,20 @@ void AsmRegAllocator::applySSAReplaces()
                     auto nodeIt = ssaGraphNodes.find(*entry.nextIt);
                     if (nodeIt != ssaGraphNodes.end())
                     {
+                        ARDOut << "  Node: " << &node << " minSSAId: " <<
+                                node.minSSAId << " to " <<
+                                nodeIt->first << ": " << &(nodeIt->second) <<
+                                " minSSAId: " << nodeIt->second.minSSAId << "\n";
                         minSSAStack.push({ nodeIt, nodeIt->second.nexts.begin(),
-                                nodeIt->second.minSSAId });
+                                std::min(nodeIt->second.minSSAId, node.minSSAId) });
                     }
                     ++entry.nextIt;
                 }
                 else
                 {
                     node.minSSAId = std::min(node.minSSAId, entry.minSSAId);
+                    ARDOut << "    Node: " << &node << " minSSAId: " <<
+                                node.minSSAId << "\n";
                     minSSAStack.pop();
                     if (!minSSAStack.empty())
                     {
@@ -540,9 +560,54 @@ void AsmRegAllocator::applySSAReplaces()
                     }
                 }
             }
+            
             // skip visited nodes
             for(; ssaGraphNodeIt != ssaGraphNodes.end(); ++ssaGraphNodeIt)
                 if (!ssaGraphNodeIt->second.visited)
+                    break;
+        }
+        
+        for (auto ssaGraphNodeIt = ssaGraphNodes.begin();
+                 ssaGraphNodeIt!=ssaGraphNodes.end(); )
+        {
+            // fill up rest of tree
+            ARDOut << "  Start2 in " << ssaGraphNodeIt->first << "." << "\n";
+            minSSAStack.push({ ssaGraphNodeIt, ssaGraphNodeIt->second.nexts.begin() });
+            while (!minSSAStack.empty())
+            {
+                MinSSAGraphStackEntry& entry = minSSAStack.top();
+                MinSSAGraphNode& node = entry.nodeIt->second;
+                bool toPop = false;
+                if (entry.nextIt == node.nexts.begin())
+                {
+                    if (!node.visited2)
+                        node.visited2 = true;
+                    else
+                        toPop = true;
+                }
+                if (!toPop && entry.nextIt != node.nexts.end())
+                {
+                    auto nodeIt = ssaGraphNodes.find(*entry.nextIt);
+                    if (nodeIt != ssaGraphNodes.end())
+                    {
+                        ARDOut << "  Node2: " << &node << " minSSAId: " <<
+                                node.minSSAId << " to " <<
+                                nodeIt->first << ": " << &(nodeIt->second) <<
+                                " minSSAId: " << nodeIt->second.minSSAId << "\n";
+                        node.minSSAId = nodeIt->second.minSSAId =
+                                std::min(nodeIt->second.minSSAId, node.minSSAId);
+                        minSSAStack.push({ nodeIt, nodeIt->second.nexts.begin(),
+                                 nodeIt->second.minSSAId });
+                    }
+                    ++entry.nextIt;
+                }
+                else
+                    minSSAStack.pop();
+            }
+            
+            // skip visited nodes
+            for(; ssaGraphNodeIt != ssaGraphNodes.end(); ++ssaGraphNodeIt)
+                if (!ssaGraphNodeIt->second.visited2)
                     break;
         }
         
