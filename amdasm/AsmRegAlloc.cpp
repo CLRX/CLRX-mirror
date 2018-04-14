@@ -594,7 +594,7 @@ void AsmRegAllocator::applySSAReplaces()
                                 node.minSSAId << " to " <<
                                 nodeIt->first << ": " << &(nodeIt->second) <<
                                 " minSSAId: " << nodeIt->second.minSSAId << "\n";
-                        node.minSSAId = nodeIt->second.minSSAId =
+                        nodeIt->second.minSSAId =
                                 std::min(nodeIt->second.minSSAId, node.minSSAId);
                         minSSAStack.push({ nodeIt, nodeIt->second.nexts.begin(),
                                  nodeIt->second.minSSAId });
@@ -602,7 +602,17 @@ void AsmRegAllocator::applySSAReplaces()
                     ++entry.nextIt;
                 }
                 else
+                {
+                    node.minSSAId = std::min(node.minSSAId, entry.minSSAId);
+                    ARDOut << "    Node2: " << &node << " minSSAId: " <<
+                                node.minSSAId << "\n";
                     minSSAStack.pop();
+                    if (!minSSAStack.empty())
+                    {
+                        MinSSAGraphStackEntry& pentry = minSSAStack.top();
+                        pentry.minSSAId = std::min(pentry.minSSAId, node.minSSAId);
+                    }
+                }
             }
             
             // skip visited nodes
