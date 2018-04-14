@@ -55,7 +55,9 @@ Assembler for GalliumCompute format counts all SGPR registers and add extra regi
 (VCC, FLAT_SCRATCH, XNACK_MASK) if any used to register pool.
  The VCC register is included by default.
 In AMDHSA configuration (LLVM >= 4.0.0) then special fields determines
-what extra SGPR extra has been added.
+what extra SGPR registers (FLAT_SCRATCH, VCC and XNACK_MASK) has been added.
+
+The `.sgprsnum` set number of all SGPRs including VCC, FLAT_SCRATCH and XNACK_MASK.
 
 ## List of the specific pseudo-operations
 

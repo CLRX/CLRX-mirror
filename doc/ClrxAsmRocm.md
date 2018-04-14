@@ -36,7 +36,10 @@ This setup can be replaced by pseudo-ops '.sgprsnum' and '.vgprsnum'.
 
 An assembler for ROCm format counts all SGPR registers and add extra registers
 (FLAT_SCRATCH, XNACK_MASK). Special fields determines
-what extra SGPR extra has been added. The VCC register is included by default.
+what extra SGPR registers (FLAT_SCRATCH, VCC and XNACK_MASK) has been added.
+The VCC register is included by default.
+
+The `.sgprsnum` set number of all SGPRs including VCC, FLAT_SCRATCH and XNACK_MASK.
 
 ## Expression with sections
 

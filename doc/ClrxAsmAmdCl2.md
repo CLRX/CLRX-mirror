@@ -57,10 +57,15 @@ This setup can be replaced by pseudo-ops '.sgprsnum' and '.vgprsnum'.
 
 ## Scalar register allocation
 
-Depend on configuration options, an assembler add VCC and FLAT_SCRATCH
+Depend on configuration options, an assembler add VCC, FLAT_SCRATCH and XNACK_MASK
 (if `.useenqueue` or `.usegeneric` enabled).
 In HSA configuration mode, a special fields determines
-what extra SGPR extra has been added.
+what extra SGPR registers (FLAT_SCRATCH, VCC and XNACK_MASK) has been added.
+
+While using HSA kernel configuration (`.hsaconfig`) the `.sgprsnum` set number of all SGPRs
+including VCC, FLAT_SCRATCH and XNACK_MASK.
+While using kernel configuration (`.config`) the `.sgprsnum` set number of all SGPRs
+except VCC and FLAT_SCRATCH and XNACK_MASK (rule from AMD binary format support).
 
 ## List of the specific pseudo-operations
 
