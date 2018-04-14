@@ -577,15 +577,9 @@ void AsmRegAllocator::applySSAReplaces()
             {
                 MinSSAGraphStackEntry& entry = minSSAStack.top();
                 MinSSAGraphNode& node = entry.nodeIt->second;
-                bool toPop = false;
                 if (entry.nextIt == node.nexts.begin())
-                {
-                    if (!node.visited2)
-                        node.visited2 = true;
-                    else
-                        toPop = true;
-                }
-                if (!toPop && entry.nextIt != node.nexts.end())
+                    node.visited2 = true;
+                if (entry.nextIt != node.nexts.end())
                 {
                     auto nodeIt = ssaGraphNodes.find(*entry.nextIt);
                     if (nodeIt != ssaGraphNodes.end())
