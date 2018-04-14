@@ -364,8 +364,12 @@ private:
     std::unordered_map<size_t, EqualToDep> equalToDepMaps[MAX_REGTYPES_NUM];
     std::unordered_map<size_t, size_t> equalSetMaps[MAX_REGTYPES_NUM];
     std::vector<std::vector<size_t> > equalSetLists[MAX_REGTYPES_NUM];
+    
 public:
     AsmRegAllocator(Assembler& assembler);
+    // constructor for testing
+    AsmRegAllocator(Assembler& assembler, const std::vector<CodeBlock>& codeBlocks,
+                const SSAReplacesMap& ssaReplacesMap);
     
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);

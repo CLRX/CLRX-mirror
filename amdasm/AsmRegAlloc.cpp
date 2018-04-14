@@ -260,6 +260,11 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
 AsmRegAllocator::AsmRegAllocator(Assembler& _assembler) : assembler(_assembler)
 { }
 
+AsmRegAllocator::AsmRegAllocator(Assembler& _assembler,
+        const std::vector<CodeBlock>& _codeBlocks, const SSAReplacesMap& _ssaReplacesMap)
+        : assembler(_assembler), codeBlocks(_codeBlocks), ssaReplacesMap(_ssaReplacesMap)
+{ }
+
 static inline bool codeBlockStartLess(const AsmRegAllocator::CodeBlock& c1,
                   const AsmRegAllocator::CodeBlock& c2)
 { return c1.start < c2.start; }
@@ -464,6 +469,13 @@ void AsmRegAllocator::applySSAReplaces()
         std::unordered_map<size_t, MinSSAGraphNode>::iterator nodeIt;
         std::unordered_set<size_t>::const_iterator nextIt;
         size_t minSSAId;
+        
+        MinSSAGraphStackEntry(
+                std::unordered_map<size_t, MinSSAGraphNode>::iterator _nodeIt,
+                std::unordered_set<size_t>::const_iterator _nextIt,
+                size_t _minSSAId = SIZE_MAX)
+                : nodeIt(_nodeIt), nextIt(_nextIt), minSSAId(_minSSAId)
+        { }
     };
     
     for (auto& entry: ssaReplacesMap)
@@ -529,7 +541,7 @@ void AsmRegAllocator::applySSAReplaces()
                 }
             }
             // skip visited nodes
-            while (ssaGraphNodeIt != ssaGraphNodes.end())
+            for(; ssaGraphNodeIt != ssaGraphNodes.end(); ++ssaGraphNodeIt)
                 if (!ssaGraphNodeIt->second.visited)
                     break;
         }

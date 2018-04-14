@@ -302,6 +302,11 @@ public:
     { }
     
     /// constructor
+    template<typename It>
+    VectorSet(It first, It last) : std::vector<T>(first, last)
+    { }
+    
+    /// constructor
     VectorSet(std::initializer_list<T> l): std::vector<T>(l)
     { }
     
