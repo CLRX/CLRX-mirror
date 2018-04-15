@@ -566,6 +566,8 @@ void AsmRegAllocator::applySSAReplaces()
         for (auto& entry: ssaGraphNodes)
             entry.second.visited = false;
         
+        std::vector<MinSSAGraphNode*> toClear; // nodes to clear
+        
         for (auto ssaGraphNodeIt = ssaGraphNodes.begin();
                  ssaGraphNodeIt!=ssaGraphNodes.end(); )
         {
@@ -580,6 +582,9 @@ void AsmRegAllocator::applySSAReplaces()
                 if (entry.nextIt == node.nexts.begin())
                 {
                     toPop = node.visited;
+                    if (!node.visited)
+                        // this flag visited for this node will be clear after this pass
+                        toClear.push_back(&node);
                     node.visited = true;
                 }
                 
@@ -619,8 +624,9 @@ void AsmRegAllocator::applySSAReplaces()
                 if (!ssaGraphNodeIt->second.visited)
                     break;
             // zeroing visited
-            for (auto& entry: ssaGraphNodes)
-                entry.second.visited = false;
+            for (MinSSAGraphNode* node: toClear)
+                node->visited = false;
+            toClear.clear();
         }
         
         // final fill up
@@ -638,6 +644,9 @@ void AsmRegAllocator::applySSAReplaces()
                 if (entry.nextIt == node.nexts.begin())
                 {
                     toPop = node.visited;
+                    if (!node.visited)
+                        // this flag visited for this node will be clear after this pass
+                        toClear.push_back(&node);
                     node.visited = true;
                 }
                 
@@ -680,8 +689,9 @@ void AsmRegAllocator::applySSAReplaces()
                     break;
             
             // zeroing visited
-            for (auto& entry: ssaGraphNodes)
-                entry.second.visited = false;
+            for (MinSSAGraphNode* node: toClear)
+                node->visited = false;
+            toClear.clear();
         }
         
         for (const auto& entry: ssaGraphNodes)
