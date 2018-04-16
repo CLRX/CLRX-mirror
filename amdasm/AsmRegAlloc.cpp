@@ -793,38 +793,6 @@ struct Liveness
             --it;
         return it->first<=t && t<it->second;
     }
-    
-    bool common(const Liveness& b) const
-    {
-        auto i = l.begin();
-        auto j = b.l.begin();
-        for (; i != l.end() && j != b.l.end();)
-        {
-            if (i->first==i->second)
-            {
-                ++i;
-                continue;
-            }
-            if (j->first==j->second)
-            {
-                ++j;
-                continue;
-            }
-            if (i->first<j->first)
-            {
-                if (i->second > j->first)
-                    return true; // common place
-                ++i;
-            }
-            else
-            {
-                if (i->first < j->second)
-                    return true; // common place
-                ++j;
-            }
-        }
-        return false;
-    }
 };
 
 typedef AsmRegAllocator::VarIndexMap VarIndexMap;
