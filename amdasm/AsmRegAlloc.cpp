@@ -743,46 +743,51 @@ struct Liveness
     void clear()
     { l.clear(); }
     
-    void expand(size_t k)
+    void join(std::map<size_t, size_t>::iterator it)
     {
-        if (l.empty())
-            l.insert(std::make_pair(k, k+1));
-        else
+        if (it != l.begin())
         {
-            auto it = l.end();
-            --it;
-            it->second = k+1;
+            auto prevIt = it;
+            --prevIt;
+            if (prevIt->second >= it->first)
+            {
+                // join with previous region
+                prevIt->second = it->second;
+                l.erase(it);
+                it = prevIt;
+            }
         }
-    }
-    void newRegion(size_t k)
-    {
-        if (l.empty())
-            l.insert(std::make_pair(k, k));
-        else
+        if (it != l.end())
         {
-            auto it = l.end();
-            --it;
-            if (it->first != k && it->second != k)
-                l.insert(std::make_pair(k, k));
+            auto nextIt = it;
+            ++nextIt;
+            if (nextIt->first <= it->second)
+            {
+                // join with next region
+                it->second = nextIt->second;
+                l.erase(nextIt);
+            }
         }
     }
     
-    void insert(size_t k, size_t k2)
+    void expand(size_t k)
     {
-        auto it1 = l.lower_bound(k);
-        if (it1!=l.begin() && (it1==l.end() || it1->first>k))
-            --it1;
-        if (it1->second < k)
-            ++it1;
-        auto it2 = l.lower_bound(k2);
-        if (it1!=it2)
+        std::map<size_t, size_t>::iterator it;
+        if (l.empty())
+            it = l.insert(std::make_pair(k, k+1)).first;
+        else
         {
-            k = std::min(k, it1->first);
-            k2 = std::max(k2, (--it2)->second);
-            l.erase(it1, it2);
+            it = l.end();
+            --it;
+            it->second = k+1;
         }
-        l.insert(std::make_pair(k, k2));
+        join(it);
     }
+    void newRegion(size_t k)
+    { join(l.insert(std::make_pair(k, k)).first); }
+    
+    void insert(size_t k, size_t k2)
+    { join(l.insert(std::make_pair(k, k2)).first); }
     
     bool contain(size_t t) const
     {
