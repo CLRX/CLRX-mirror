@@ -878,7 +878,7 @@ typedef std::unordered_map<size_t, EqualToDep> EqualToDepMap;
 static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNum,
             const AsmRegVarUsage* rvus, LinearDepMap* ldepsOut,
             EqualToDepMap* edepsOut, const VarIndexMap* vregIndexMaps,
-            std::unordered_map<AsmSingleVReg, size_t> ssaIdIdxMap,
+            const std::unordered_map<AsmSingleVReg, size_t>& ssaIdIdxMap,
             size_t regTypesNum, const cxuint* regRanges)
 {
     // add linear deps
@@ -1009,15 +1009,20 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
                 ssaIdIndices.resize(ssaIdCount, SIZE_MAX);
             
             if (sinfo.readBeforeWrite)
-                ssaIdIndices[sinfo.ssaIdBefore] = graphVregsCount++;
+            {
+                if (ssaIdIndices[sinfo.ssaIdBefore] == SIZE_MAX)
+                    ssaIdIndices[sinfo.ssaIdBefore] = graphVregsCount++;
+            }
             if (sinfo.ssaIdChange!=0)
             {
                 // fill up ssaIdIndices (with graph Ids)
-                ssaIdIndices[sinfo.ssaIdFirst] = graphVregsCount++;
+                if (ssaIdIndices[sinfo.ssaIdFirst] == SIZE_MAX)
+                    ssaIdIndices[sinfo.ssaIdFirst] = graphVregsCount++;
                 for (size_t ssaId = sinfo.ssaId+1;
                         ssaId < sinfo.ssaId+sinfo.ssaIdChange-1; ssaId++)
                     ssaIdIndices[ssaId] = graphVregsCount++;
-                ssaIdIndices[sinfo.ssaIdLast] = graphVregsCount++;
+                if (ssaIdIndices[sinfo.ssaIdLast] == SIZE_MAX)
+                    ssaIdIndices[sinfo.ssaIdLast] = graphVregsCount++;
             }
         }
     
