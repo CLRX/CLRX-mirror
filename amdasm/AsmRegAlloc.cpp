@@ -757,10 +757,11 @@ struct Liveness
                 it = prevIt;
             }
         }
-        if (it != l.end())
+        
+        auto nextIt = it;
+        ++nextIt;
+        if (nextIt != l.end())
         {
-            auto nextIt = it;
-            ++nextIt;
             if (nextIt->first <= it->second)
             {
                 // join with next region
@@ -778,8 +779,12 @@ struct Liveness
         else // do nothing
             return;
         if (it->first <= k && it->second > k)
+        {
             // we need expand previous region to this
+            if (it==l.begin())
+                return;
             --it;
+        }
         it->second = k+1;
         join(it);
     }
