@@ -599,8 +599,10 @@ void AsmRegAllocator::applySSAReplaces()
                                 node.minSSAId << " to " <<
                                 nodeIt->first << ":" << &(nodeIt->second) <<
                                 " minSSAId: " << nodeIt->second.minSSAId << "\n";
+                        nodeIt->second.minSSAId =
+                                std::min(nodeIt->second.minSSAId, node.minSSAId);
                         minSSAStack.push({ nodeIt, nodeIt->second.nexts.begin(),
-                                std::min(nodeIt->second.minSSAId, node.minSSAId) });
+                                nodeIt->second.minSSAId });
                     }
                     ++entry.nextIt;
                 }
@@ -619,78 +621,18 @@ void AsmRegAllocator::applySSAReplaces()
                 }
             }
             
+            const size_t minSSAId = ssaGraphNodeIt->second.minSSAId;
+            
             // skip visited nodes
             for(; ssaGraphNodeIt != ssaGraphNodes.end(); ++ssaGraphNodeIt)
                 if (!ssaGraphNodeIt->second.visited)
                     break;
             // zeroing visited
             for (MinSSAGraphNode* node: toClear)
-                node->visited = false;
-            toClear.clear();
-        }
-        
-        // final fill up
-        for (auto ssaGraphNodeIt = ssaGraphNodes.begin();
-                 ssaGraphNodeIt!=ssaGraphNodes.end(); )
-        {
-            // fill up rest of tree
-            ARDOut << "  Start2 in " << ssaGraphNodeIt->first << "." << "\n";
-            minSSAStack.push({ ssaGraphNodeIt, ssaGraphNodeIt->second.nexts.begin() });
-            while (!minSSAStack.empty())
             {
-                MinSSAGraphStackEntry& entry = minSSAStack.top();
-                MinSSAGraphNode& node = entry.nodeIt->second;
-                bool toPop = false;
-                if (entry.nextIt == node.nexts.begin())
-                {
-                    toPop = node.visited;
-                    if (!node.visited)
-                        // this flag visited for this node will be clear after this pass
-                        toClear.push_back(&node);
-                    node.visited = true;
-                }
-                
-                // try to children only all parents are visited and if parent has children
-                if (!toPop && entry.nextIt != node.nexts.end())
-                {
-                    auto nodeIt = ssaGraphNodes.find(*entry.nextIt);
-                    if (nodeIt != ssaGraphNodes.end())
-                    {
-                        ARDOut << "  Node2: " <<
-                                entry.nodeIt->first << ":" << &node << " minSSAId: " <<
-                                node.minSSAId << " to " <<
-                                nodeIt->first << ":" << &(nodeIt->second) <<
-                                " minSSAId: " << nodeIt->second.minSSAId << "\n";
-                        nodeIt->second.minSSAId =
-                                std::min(nodeIt->second.minSSAId, node.minSSAId);
-                        minSSAStack.push({ nodeIt, nodeIt->second.nexts.begin(),
-                                 nodeIt->second.minSSAId });
-                    }
-                    ++entry.nextIt;
-                }
-                else
-                {
-                    node.minSSAId = std::min(node.minSSAId, entry.minSSAId);
-                    ARDOut << "    Node2: " <<
-                                entry.nodeIt->first << ":" << &node << " minSSAId: " <<
-                                node.minSSAId << "\n";
-                    minSSAStack.pop();
-                    if (!minSSAStack.empty())
-                    {
-                        MinSSAGraphStackEntry& pentry = minSSAStack.top();
-                        pentry.minSSAId = std::min(pentry.minSSAId, node.minSSAId);
-                    }
-                }
-            }
-            
-            // skip visited nodes
-            for(; ssaGraphNodeIt != ssaGraphNodes.end(); ++ssaGraphNodeIt)
-                if (!ssaGraphNodeIt->second.visited)
-                    break;
-            
-            // zeroing visited
-            for (MinSSAGraphNode* node: toClear)
+                node->minSSAId = minSSAId; // fill up by minSSAId
                 node->visited = false;
+            }
             toClear.clear();
         }
         
