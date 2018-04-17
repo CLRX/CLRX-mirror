@@ -713,20 +713,10 @@ static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
     return livenesses[regType][ssaIdIndices[ssaId]];
 }
 
-typedef std::deque<FlowStackEntry3>::const_iterator FlowStackCIter;
-
-struct CLRX_INTERNAL VRegLastPos
-{
-    size_t ssaId; // last SSA id
-    std::vector<FlowStackCIter> blockChain; // subsequent blocks that changes SSAId
-};
-
 /* TODO: add handling calls
  * handle many start points in this code (for example many kernel's in same code)
  * replace sets by vector, and sort and remove same values on demand
  */
-
-typedef std::unordered_map<AsmSingleVReg, VRegLastPos> LastVRegMap;
 
 static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack,
         const std::vector<CodeBlock>& codeBlocks,
@@ -856,25 +846,6 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry3>& flowStack,
     }
 }
 
-struct LiveBlock
-{
-    size_t start;
-    size_t end;
-    size_t vidx;
-    
-    bool operator==(const LiveBlock& b) const
-    { return start==b.start && end==b.end && vidx==b.vidx; }
-    
-    bool operator<(const LiveBlock& b) const
-    { return start<b.start || (start==b.start &&
-            (end<b.end || (end==b.end && vidx<b.vidx))); }
-};
-
-typedef AsmRegAllocator::LinearDep LinearDep;
-typedef AsmRegAllocator::EqualToDep EqualToDep;
-typedef std::unordered_map<size_t, LinearDep> LinearDepMap;
-typedef std::unordered_map<size_t, EqualToDep> EqualToDepMap;
-
 static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNum,
             const AsmRegVarUsage* rvus, LinearDepMap* ldepsOut,
             EqualToDepMap* edepsOut, const VarIndexMap* vregIndexMaps,
@@ -971,14 +942,6 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
         }
     }
 }
-
-typedef std::unordered_map<size_t, EqualToDep>::const_iterator EqualToDepMapCIter;
-
-struct EqualStackEntry
-{
-    EqualToDepMapCIter etoDepIt;
-    size_t nextIdx; // over nextVidxes size, then prevVidxes[nextIdx-nextVidxes.size()]
-};
 
 void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
 {
@@ -1335,25 +1298,6 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
         }
     }
 }
-
-typedef AsmRegAllocator::InterGraph InterGraph;
-
-struct CLRX_INTERNAL SDOLDOCompare
-{
-    const InterGraph& interGraph;
-    const Array<size_t>& sdoCounts;
-    
-    SDOLDOCompare(const InterGraph& _interGraph, const Array<size_t>&_sdoCounts)
-        : interGraph(_interGraph), sdoCounts(_sdoCounts)
-    { }
-    
-    bool operator()(size_t a, size_t b) const
-    {
-        if (sdoCounts[a] > sdoCounts[b])
-            return true;
-        return interGraph[a].size() > interGraph[b].size();
-    }
-};
 
 /* algorithm to allocate regranges:
  * from smallest regranges to greatest regranges:

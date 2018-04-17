@@ -325,6 +325,62 @@ struct Liveness
 
 typedef AsmRegAllocator::VarIndexMap VarIndexMap;
 
+typedef std::deque<FlowStackEntry3>::const_iterator FlowStackCIter;
+
+struct CLRX_INTERNAL VRegLastPos
+{
+    size_t ssaId; // last SSA id
+    std::vector<FlowStackCIter> blockChain; // subsequent blocks that changes SSAId
+};
+
+typedef std::unordered_map<AsmSingleVReg, VRegLastPos> LastVRegMap;
+
+struct CLRX_INTERNAL LiveBlock
+{
+    size_t start;
+    size_t end;
+    size_t vidx;
+    
+    bool operator==(const LiveBlock& b) const
+    { return start==b.start && end==b.end && vidx==b.vidx; }
+    
+    bool operator<(const LiveBlock& b) const
+    { return start<b.start || (start==b.start &&
+            (end<b.end || (end==b.end && vidx<b.vidx))); }
+};
+
+typedef AsmRegAllocator::LinearDep LinearDep;
+typedef AsmRegAllocator::EqualToDep EqualToDep;
+typedef std::unordered_map<size_t, LinearDep> LinearDepMap;
+typedef std::unordered_map<size_t, EqualToDep> EqualToDepMap;
+
+typedef std::unordered_map<size_t, EqualToDep>::const_iterator EqualToDepMapCIter;
+
+struct CLRX_INTERNAL EqualStackEntry
+{
+    EqualToDepMapCIter etoDepIt;
+    size_t nextIdx; // over nextVidxes size, then prevVidxes[nextIdx-nextVidxes.size()]
+};
+
+typedef AsmRegAllocator::InterGraph InterGraph;
+
+struct CLRX_INTERNAL SDOLDOCompare
+{
+    const InterGraph& interGraph;
+    const Array<size_t>& sdoCounts;
+    
+    SDOLDOCompare(const InterGraph& _interGraph, const Array<size_t>&_sdoCounts)
+        : interGraph(_interGraph), sdoCounts(_sdoCounts)
+    { }
+    
+    bool operator()(size_t a, size_t b) const
+    {
+        if (sdoCounts[a] > sdoCounts[b])
+            return true;
+        return interGraph[a].size() > interGraph[b].size();
+    }
+};
+
 };
 
 #endif
