@@ -772,15 +772,15 @@ struct Liveness
     
     void expand(size_t k)
     {
-        std::map<size_t, size_t>::iterator it;
-        if (l.empty())
-            it = l.insert(std::make_pair(k, k+1)).first;
-        else
-        {
-            it = l.end();
+        auto it = l.lower_bound(k);
+        if (it != l.begin())
             --it;
-            it->second = k+1;
-        }
+        else // do nothing
+            return;
+        if (it->first <= k && it->second > k)
+            // we need expand previous region to this
+            --it;
+        it->second = k+1;
         join(it);
     }
     void newRegion(size_t k)
