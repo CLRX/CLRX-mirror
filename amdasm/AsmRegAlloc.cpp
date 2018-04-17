@@ -1003,6 +1003,7 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
             if (sinfo.ssaIdChange!=0)
             {
                 ssaIdCount = std::max(ssaIdCount, sinfo.ssaIdLast+1);
+                ssaIdCount = std::max(ssaIdCount, sinfo.ssaId+sinfo.ssaIdChange-1);
                 ssaIdCount = std::max(ssaIdCount, sinfo.ssaIdFirst+1);
             }
             if (ssaIdIndices.size() < ssaIdCount)

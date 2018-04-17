@@ -997,7 +997,6 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     flowStack.push_back({ routineBlock, 0 });
     flowStackBlocks[routineBlock] = true;
     
-    
     while (!flowStack.empty())
     {
         FlowStackEntry& entry = flowStack.back();
@@ -1597,7 +1596,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, callBlocks,
                             cblocksToCache, subroutinesCache, routineMap, prevRdata,
                             routineBlock);
-                //prevRdata.compare(myRoutineData);
                 isRoutineGen[routineBlock] = true;
                 
                 auto csimsmit = curSSAIdMapStateMap.find(routineBlock.index);
