@@ -334,6 +334,8 @@ public:
         ISAUsageHandler::ReadPos usagePos;
     };
     
+    typedef Array<std::pair<size_t, size_t> > OutLiveness;
+    
      // first - orig ssaid, second - dest ssaid
     typedef std::pair<size_t, size_t> SSAReplace;
     typedef std::unordered_map<AsmSingleVReg, VectorSet<SSAReplace> > SSAReplacesMap;
@@ -357,6 +359,8 @@ private:
     SSAReplacesMap ssaReplacesMap;
     size_t regTypesNum;
     
+    Array<OutLiveness> outLivenesses[MAX_REGTYPES_NUM];
+    size_t graphVregsCounts[MAX_REGTYPES_NUM];
     VarIndexMap vregIndexMaps[MAX_REGTYPES_NUM]; // indices to igraph for 2 reg types
     InterGraph interGraphs[MAX_REGTYPES_NUM]; // for 2 register 
     Array<cxuint> graphColorMaps[MAX_REGTYPES_NUM];
@@ -375,7 +379,8 @@ public:
              size_t codeSize, const cxbyte* code);
     void createSSAData(ISAUsageHandler& usageHandler);
     void applySSAReplaces();
-    void createInterferenceGraph(ISAUsageHandler& usageHandler);
+    void createLivenesses(ISAUsageHandler& usageHandler);
+    void createInterferenceGraph();
     void colorInterferenceGraph();
     
     void allocateRegisters(cxuint sectionId);
@@ -384,6 +389,8 @@ public:
     { return codeBlocks; }
     const SSAReplacesMap& getSSAReplacesMap() const
     { return ssaReplacesMap; }
+    const Array<OutLiveness>* getOutLivenesses() const
+    { return outLivenesses; }
 };
 
 /// type of clause

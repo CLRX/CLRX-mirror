@@ -943,10 +943,9 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
     }
 }
 
-void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
+void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
 {
     // construct var index maps
-    size_t graphVregsCounts[MAX_REGTYPES_NUM];
     std::fill(graphVregsCounts, graphVregsCounts+regTypesNum, 0);
     cxuint regRanges[MAX_REGTYPES_NUM*2];
     size_t regTypesNum;
@@ -1170,16 +1169,35 @@ void AsmRegAllocator::createInterferenceGraph(ISAUsageHandler& usageHandler)
         }
     }
     
+    // move livenesses to AsmRegAllocator outLivenesses
+    for (size_t regType = 0; regType < regTypesNum; regType++)
+    {
+        std::vector<Liveness>& livenesses2 = livenesses[regType];
+        Array<OutLiveness>& outLivenesses2 = outLivenesses[regType];
+        outLivenesses2.resize(livenesses2.size());
+        for (size_t li = 0; li < livenesses2.size(); li++)
+        {
+            outLivenesses2[li].resize(livenesses2[li].l.size());
+            std::copy(livenesses2[li].l.begin(), livenesses2[li].l.end(),
+                      outLivenesses2[li].begin());
+            livenesses2[li].clear();
+        }
+        livenesses2.clear();
+    }
+}
+
+void AsmRegAllocator::createInterferenceGraph()
+{
     /// construct liveBlockMaps
     std::set<LiveBlock> liveBlockMaps[MAX_REGTYPES_NUM];
     for (size_t regType = 0; regType < regTypesNum; regType++)
     {
         std::set<LiveBlock>& liveBlockMap = liveBlockMaps[regType];
-        std::vector<Liveness>& liveness = livenesses[regType];
+        Array<OutLiveness>& liveness = outLivenesses[regType];
         for (size_t li = 0; li < liveness.size(); li++)
         {
-            Liveness& lv = liveness[li];
-            for (const std::pair<size_t, size_t>& blk: lv.l)
+            OutLiveness& lv = liveness[li];
+            for (const std::pair<size_t, size_t>& blk: lv)
                 if (blk.first != blk.second)
                     liveBlockMap.insert({ blk.first, blk.second, li });
             lv.clear();
@@ -1437,6 +1455,7 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
     createCodeStructure(section.codeFlow, section.content.size(), section.content.data());
     createSSAData(*section.usageHandler);
     applySSAReplaces();
-    createInterferenceGraph(*section.usageHandler);
+    createLivenesses(*section.usageHandler);
+    createInterferenceGraph();
     colorInterferenceGraph();
 }
