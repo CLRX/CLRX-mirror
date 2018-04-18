@@ -396,6 +396,9 @@ public:
     { return linearDepMaps; }
     const std::unordered_map<size_t, EqualToDep>* getEqualToDepMaps() const
     { return equalToDepMaps; }
+    
+    const VarIndexMap* getVregIndexMaps() const
+    { return vregIndexMaps; }
 };
 
 /// type of clause

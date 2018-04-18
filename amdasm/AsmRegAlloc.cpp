@@ -917,7 +917,7 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
                 ldepsOut[regType][vidxes[j]].prevVidxes.push_back(vidxes[j-1]);
             }
         }
-        
+    
     /* equalTo dependencies */
     count = edeps[0];
     pos = 1;
@@ -952,8 +952,8 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
 void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
 {
     // construct var index maps
-    std::fill(graphVregsCounts, graphVregsCounts+regTypesNum, 0);
     cxuint regRanges[MAX_REGTYPES_NUM*2];
+    std::fill(graphVregsCounts, graphVregsCounts+MAX_REGTYPES_NUM, size_t(0));
     size_t regTypesNum;
     assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
     
@@ -1444,6 +1444,7 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
     codeBlocks.clear();
     for (size_t i = 0; i < MAX_REGTYPES_NUM; i++)
     {
+        graphVregsCounts[i] = 0;
         vregIndexMaps[i].clear();
         interGraphs[i].clear();
         linearDepMaps[i].clear();

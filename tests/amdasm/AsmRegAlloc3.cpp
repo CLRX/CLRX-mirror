@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -34,6 +35,7 @@ using namespace CLRX;
 typedef AsmRegAllocator::OutLiveness OutLiveness;
 typedef AsmRegAllocator::LinearDep LinearDep;
 typedef AsmRegAllocator::EqualToDep EqualToDep;
+typedef AsmRegAllocator::VarIndexMap VarIndexMap;
 
 struct LinearDep2
 {
@@ -56,6 +58,50 @@ struct AsmLivenessesCase
     bool good;
     const char* errorMessages;
 };
+
+static const AsmLivenessesCase createLivenessesCasesTbl[] =
+{
+#if 0
+    {   // 0 - simple case
+        R"ffDXD(.regvar sa:s:8, va:v:10
+        s_mov_b32 sa[4], sa[2]  # 0
+        s_add_u32 sa[4], sa[4], s3
+        v_xor_b32 va[4], va[2], v3
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { },
+                { },
+                { },
+                { }
+            },
+            {   // for VGPRs
+                { },
+                { },
+                { }
+            },
+            { },
+            { }
+        },
+        {   // linearDepMaps
+        },
+        {   // equalToDepMaps
+        }, true, ""
+    }
+#endif
+};
+
+static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
+        const std::unordered_map<const AsmRegVar*, CString>& rvMap)
+{
+    if (vr.regVar == nullptr)
+        return { "", vr.index };
+    
+    auto it = rvMap.find(vr.regVar);
+    if (it == rvMap.end())
+        throw Exception("getTestSingleVReg: RegVar not found!!");
+    return { it->second, vr.index };
+}
 
 static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase)
 {
@@ -91,11 +137,43 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
     assertString("testAsmLivenesses", testCaseName+".errorMessages",
               testCase.errorMessages, errorStream.str());
     
+    std::unordered_map<const AsmRegVar*, CString> regVarNamesMap;
+    for (const auto& rvEntry: assembler.getRegVarMap())
+        regVarNamesMap.insert(std::make_pair(&rvEntry.second, rvEntry.first));
+    
+    // generate livenesses indices conversion table
+    const VarIndexMap* vregIndexMaps = regAlloc.getVregIndexMaps();
+    
+    std::vector<size_t> lvIndexCvtTables[MAX_REGTYPES_NUM];
+    for (size_t r = 0; r < MAX_REGTYPES_NUM; r++)
+    {
+        const VarIndexMap& vregIndexMap = vregIndexMaps[r];
+        Array<std::pair<TestSingleVReg, const std::vector<size_t>*> > outVregIdxMap(
+                    vregIndexMap.size());
+        
+        size_t i = 0;
+        for (const auto& entry: vregIndexMap)
+        {
+            TestSingleVReg vreg = getTestSingleVReg(entry.first, regVarNamesMap);
+            outVregIdxMap[i++] = std::make_pair(vreg, &entry.second);
+        }
+        mapSort(outVregIdxMap.begin(), outVregIdxMap.end());
+        
+        std::vector<size_t>& lvIndexCvtTable = lvIndexCvtTables[r];
+        // generate livenessCvt table
+        for (const auto& entry: outVregIdxMap)
+        {
+            for (size_t v: *entry.second)
+                if (v != SIZE_MAX)
+                    lvIndexCvtTable.push_back(v);
+        }
+    }
+    
     const Array<OutLiveness>* resLivenesses = regAlloc.getOutLivenesses();
     for (size_t r = 0; r < MAX_REGTYPES_NUM; r++)
     {
         std::ostringstream rOss;
-        rOss << "live.regtype#" << r << ".";
+        rOss << "live.regtype#" << r;
         rOss.flush();
         std::string rtname(rOss.str());
         
@@ -109,7 +187,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             lOss.flush();
             std::string lvname(rtname + lOss.str());
             const OutLiveness& expLv = testCase.livenesses[r][li];
-            const OutLiveness& resLv = resLivenesses[r][li];
+            const OutLiveness& resLv = resLivenesses[r][lvIndexCvtTables[r][li]];
             
             // checking liveness
             assertValue("testAsmLivenesses", testCaseName + lvname + ".size",
@@ -133,7 +211,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
     for (size_t r = 0; r < MAX_REGTYPES_NUM; r++)
     {
         std::ostringstream rOss;
-        rOss << "lndep.regtype#" << r << ".";
+        rOss << "lndep.regtype#" << r;
         rOss.flush();
         std::string rtname(rOss.str());
         
@@ -159,10 +237,22 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             
             assertValue("testAsmLivenesses", testCaseName + ldname + ".align",
                         cxuint(expLinearDep.align), cxuint(resLinearDep.align));
+            
+            Array<size_t> expPrevVidxes(expLinearDep.prevVidxes.size());
+            // convert to res ssaIdIndices
+            for (size_t k = 0; k < expLinearDep.prevVidxes.size(); k++)
+                expPrevVidxes[k] = lvIndexCvtTables[r][expLinearDep.prevVidxes[k]];
+            
             assertArray("testAsmLivenesses", testCaseName + ldname + ".prevVidxes",
-                        expLinearDep.prevVidxes, resLinearDep.prevVidxes);
+                        expPrevVidxes, resLinearDep.prevVidxes);
+            
+            Array<size_t> expNextVidxes(expLinearDep.nextVidxes.size());
+            // convert to res ssaIdIndices
+            for (size_t k = 0; k < expLinearDep.nextVidxes.size(); k++)
+                expNextVidxes[k] = lvIndexCvtTables[r][expLinearDep.nextVidxes[k]];
+            
             assertArray("testAsmLivenesses", testCaseName + ldname + ".nextVidxes",
-                        expLinearDep.nextVidxes, resLinearDep.nextVidxes);
+                        expNextVidxes, resLinearDep.nextVidxes);
         }
     }
     
@@ -171,7 +261,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
     for (size_t r = 0; r < MAX_REGTYPES_NUM; r++)
     {
         std::ostringstream rOss;
-        rOss << "eqtodep.regtype#" << r << ".";
+        rOss << "eqtodep.regtype#" << r;
         rOss.flush();
         std::string rtname(rOss.str());
         
@@ -195,10 +285,21 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             const EqualToDep2& expEqualToDep = expEqualToDepEntry.second;
             const EqualToDep& resEqualToDep = reit->second;
             
+            Array<size_t> expPrevVidxes(expEqualToDep.prevVidxes.size());
+            // convert to res ssaIdIndices
+            for (size_t k = 0; k < expEqualToDep.prevVidxes.size(); k++)
+                expPrevVidxes[k] = lvIndexCvtTables[r][expEqualToDep.prevVidxes[k]];
+            
             assertArray("testAsmLivenesses", testCaseName + ldname + ".prevVidxes",
-                        expEqualToDep.prevVidxes, resEqualToDep.prevVidxes);
+                        expPrevVidxes, resEqualToDep.prevVidxes);
+            
+            Array<size_t> expNextVidxes(expEqualToDep.nextVidxes.size());
+            // convert to res ssaIdIndices
+            for (size_t k = 0; k < expEqualToDep.nextVidxes.size(); k++)
+                expNextVidxes[k] = lvIndexCvtTables[r][expEqualToDep.nextVidxes[k]];
+            
             assertArray("testAsmLivenesses", testCaseName + ldname + ".nextVidxes",
-                        expEqualToDep.nextVidxes, resEqualToDep.nextVidxes);
+                        expNextVidxes, resEqualToDep.nextVidxes);
         }
     }
 }
@@ -206,5 +307,13 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
 int main(int argc, const char** argv)
 {
     int retVal = 0;
+    for (size_t i = 0; i < sizeof(createLivenessesCasesTbl)/sizeof(AsmLivenessesCase); i++)
+        try
+        { testCreateLivenessesCase(i, createLivenessesCasesTbl[i]); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
     return retVal;
 }
