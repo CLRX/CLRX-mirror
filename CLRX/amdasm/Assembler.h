@@ -76,6 +76,7 @@ public:
         size_t regVarUsagesPos;    ///< position in regVarUsage
         uint16_t pushedArgs;    ///< pushed argds number
         bool useRegMode;        ///< true if in usereg mode
+        bool isNext;            ///< isNext
     };
 protected:
     std::vector<cxbyte> instrStruct;    ///< structure of register usage
@@ -124,7 +125,7 @@ public:
     ReadPos getReadPos() const
     {
         return { readOffset, instrStructPos, regUsagesPos, regUsages2Pos,
-            regVarUsagesPos, pushedArgs, useRegMode };
+            regVarUsagesPos, pushedArgs, useRegMode, isNext };
     }
     /// set reading position
     void setReadPos(const ReadPos rpos)
@@ -136,6 +137,7 @@ public:
         regVarUsagesPos = rpos.regVarUsagesPos;
         pushedArgs = rpos.pushedArgs;
         useRegMode = rpos.useRegMode;
+        isNext = rpos.isNext;
     }
     
     /// push regvar or register from usereg pseudo-op

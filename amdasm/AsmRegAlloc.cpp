@@ -1010,6 +1010,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
         livenesses[i].resize(graphVregsCounts[i]);
     
     size_t curLiveTime = 0;
+    flowStack.push_back({ 0, 0 });
     
     while (!flowStack.empty())
     {

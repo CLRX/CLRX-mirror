@@ -315,6 +315,7 @@ void GCNUsageHandler::getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage*
                 cxbyte* linearDeps, cxbyte* equalToDeps) const
 {
     cxuint count = 0;
+    equalToDeps[0] = 0;
     if (rvus[0].regField>=GCNFIELD_VOP_SRC0 && rvus[0].regField<=GCNFIELD_VOP3_SDST1)
     {
         // if VOPx instructions, equalTo deps for rule (only one SGPR in source)
