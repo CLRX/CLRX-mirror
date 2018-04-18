@@ -148,10 +148,12 @@ static void testCreateSSAData(cxuint testSuiteId, cxuint i, const AsmSSADataCase
     regAlloc.createCodeStructure(section.codeFlow, section.getSize(),
                             section.content.data());
     regAlloc.createSSAData(*section.usageHandler);
+    
     const std::vector<CodeBlock>& resCodeBlocks = regAlloc.getCodeBlocks();
     std::ostringstream oss;
     oss << " testAsmSSAData" << testSuiteId << " case#" << i;
     const std::string testCaseName = oss.str();
+    
     assertValue<bool>("testAsmSSAData", testCaseName+".good",
                       testCase.good, good);
     assertString("testAsmSSAData", testCaseName+".errorMessages",

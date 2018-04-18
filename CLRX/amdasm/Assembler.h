@@ -391,6 +391,11 @@ public:
     { return ssaReplacesMap; }
     const Array<OutLiveness>* getOutLivenesses() const
     { return outLivenesses; }
+    
+    const std::unordered_map<size_t, LinearDep>* getLinearDepMaps() const
+    { return linearDepMaps; }
+    const std::unordered_map<size_t, EqualToDep>* getEqualToDepMaps() const
+    { return equalToDepMaps; }
 };
 
 /// type of clause

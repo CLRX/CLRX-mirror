@@ -33,11 +33,27 @@
 using namespace CLRX;
 
 typedef AsmRegAllocator::OutLiveness OutLiveness;
+typedef AsmRegAllocator::LinearDep LinearDep;
+typedef AsmRegAllocator::EqualToDep EqualToDep;
+
+struct LinearDep2
+{
+    cxbyte align;
+    Array<size_t> prevVidxes;
+    Array<size_t> nextVidxes;
+};
+struct EqualToDep2
+{
+    Array<size_t> prevVidxes;
+    Array<size_t> nextVidxes;
+};
 
 struct AsmLivenessesCase
 {
     const char* input;
     Array<OutLiveness> livenesses[MAX_REGTYPES_NUM];
+    Array<std::pair<size_t, LinearDep2> > linearDepMaps[MAX_REGTYPES_NUM];
+    Array<std::pair<size_t, EqualToDep2> > equalToDepMaps[MAX_REGTYPES_NUM];
     bool good;
     const char* errorMessages;
 };
@@ -64,6 +80,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
     regAlloc.createCodeStructure(section.codeFlow, section.getSize(),
                             section.content.data());
     regAlloc.createSSAData(*section.usageHandler);
+    regAlloc.applySSAReplaces();
     regAlloc.createLivenesses(*section.usageHandler);
     
     std::ostringstream oss;
@@ -79,7 +96,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
     for (size_t r = 0; r < MAX_REGTYPES_NUM; r++)
     {
         std::ostringstream rOss;
-        rOss << ".regtype#" << r << ".";
+        rOss << "live.regtype#" << r << ".";
         rOss.flush();
         std::string rtname(rOss.str());
         
@@ -89,12 +106,13 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
         for (size_t li = 0; li < resLivenesses[r].size(); li++)
         {
             std::ostringstream lOss;
-            rOss << ".liveness#" << li << ".";
+            lOss << ".liveness#" << li << ".";
             lOss.flush();
             std::string lvname(rtname + lOss.str());
             const OutLiveness& expLv = testCase.livenesses[r][li];
             const OutLiveness& resLv = resLivenesses[r][li];
             
+            // checking liveness
             assertValue("testAsmLivenesses", testCaseName + lvname + ".size",
                     expLv.size(), resLv.size());
             for (size_t k = 0; k < resLv.size(); k++)
@@ -108,6 +126,80 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
                 assertValue("testAsmLivenesses", testCaseName + regname + ".second",
                     expLv[k].second, resLv[k].second);
             }
+        }
+    }
+    
+    const std::unordered_map<size_t, LinearDep>* resLinearDepMaps =
+                regAlloc.getLinearDepMaps();
+    for (size_t r = 0; r < MAX_REGTYPES_NUM; r++)
+    {
+        std::ostringstream rOss;
+        rOss << "lndep.regtype#" << r << ".";
+        rOss.flush();
+        std::string rtname(rOss.str());
+        
+        assertValue("testAsmLivenesses", testCaseName + rtname + ".size",
+                    testCase.linearDepMaps[r].size(), resLinearDepMaps[r].size());
+        
+        for (size_t di = 0; di < testCase.linearDepMaps[r].size(); di++)
+        {
+            std::ostringstream lOss;
+            lOss << ".lndep#" << di << ".";
+            lOss.flush();
+            std::string ldname(rtname + lOss.str());
+            const auto& expLinearDepEntry = testCase.linearDepMaps[r][di];
+            auto rlit = resLinearDepMaps[r].find(expLinearDepEntry.first);
+            
+            std::ostringstream vOss;
+            vOss << expLinearDepEntry.first;
+            vOss.flush();
+            assertTrue("testAsmLivenesses", testCaseName + ldname + ".key=" + vOss.str(),
+                        rlit != resLinearDepMaps[r].end());
+            const LinearDep2& expLinearDep = expLinearDepEntry.second;
+            const LinearDep& resLinearDep = rlit->second;
+            
+            assertValue("testAsmLivenesses", testCaseName + ldname + ".align",
+                        cxuint(expLinearDep.align), cxuint(resLinearDep.align));
+            assertArray("testAsmLivenesses", testCaseName + ldname + ".prevVidxes",
+                        expLinearDep.prevVidxes, resLinearDep.prevVidxes);
+            assertArray("testAsmLivenesses", testCaseName + ldname + ".nextVidxes",
+                        expLinearDep.nextVidxes, resLinearDep.nextVidxes);
+        }
+    }
+    
+    const std::unordered_map<size_t, EqualToDep>* resEqualToDepMaps =
+                regAlloc.getEqualToDepMaps();
+    for (size_t r = 0; r < MAX_REGTYPES_NUM; r++)
+    {
+        std::ostringstream rOss;
+        rOss << "eqtodep.regtype#" << r << ".";
+        rOss.flush();
+        std::string rtname(rOss.str());
+        
+        assertValue("testAsmLivenesses", testCaseName + rtname + ".size",
+                    testCase.equalToDepMaps[r].size(), resEqualToDepMaps[r].size());
+        
+        for (size_t di = 0; di < testCase.equalToDepMaps[r].size(); di++)
+        {
+            std::ostringstream lOss;
+            lOss << ".eqtodep#" << di << ".";
+            lOss.flush();
+            std::string ldname(rtname + lOss.str());
+            const auto& expEqualToDepEntry = testCase.equalToDepMaps[r][di];
+            auto reit = resEqualToDepMaps[r].find(expEqualToDepEntry.first);
+            
+            std::ostringstream vOss;
+            vOss << expEqualToDepEntry.first;
+            vOss.flush();
+            assertTrue("testAsmLivenesses", testCaseName + ldname + ".key=" + vOss.str(),
+                        reit != resEqualToDepMaps[r].end());
+            const EqualToDep2& expEqualToDep = expEqualToDepEntry.second;
+            const EqualToDep& resEqualToDep = reit->second;
+            
+            assertArray("testAsmLivenesses", testCaseName + ldname + ".prevVidxes",
+                        expEqualToDep.prevVidxes, resEqualToDep.prevVidxes);
+            assertArray("testAsmLivenesses", testCaseName + ldname + ".nextVidxes",
+                        expEqualToDep.nextVidxes, resEqualToDep.nextVidxes);
         }
     }
 }
