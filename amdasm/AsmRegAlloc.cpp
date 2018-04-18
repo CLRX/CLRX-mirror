@@ -456,6 +456,9 @@ void AsmRegAllocator::createCodeStructure(const std::vector<AsmCodeFlowEntry>& c
 
 void AsmRegAllocator::applySSAReplaces()
 {
+    if (ssaReplacesMap.empty())
+        return; // do nothing
+    
     /* prepare SSA id replaces */
     struct MinSSAGraphNode
     {
@@ -674,6 +677,9 @@ void AsmRegAllocator::applySSAReplaces()
                     sinfo.ssaIdLast = rit->second; // replace
             }
         }
+    
+    // clear ssa replaces
+    ssaReplacesMap.clear();
 }
 
 static cxuint getRegType(size_t regTypesNum, const cxuint* regRanges,

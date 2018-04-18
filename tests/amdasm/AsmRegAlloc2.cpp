@@ -821,7 +821,24 @@ static const AsmApplySSAReplacesCase ssaApplyReplacesCasesTbl[] =
                     { { "sa", 2 }, SSAInfo(18, 1, 19, 1, 1, true) }
                 }, false, false, false }
         }
-    }
+    },
+    {   // 5 - empty
+        {
+            { 0, 4,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, true) }
+                }, false, false, false }
+        },
+        { }, // empty SSA replaces
+        {
+            { 0, 4,
+                { },
+                {
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, true) }
+                }, false, false, false }
+        }
+    }   
 };
 
 std::ostream& operator<<(std::ostream& os, const TestSingleVReg& vreg)
