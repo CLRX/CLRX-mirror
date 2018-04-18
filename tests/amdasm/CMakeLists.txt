@@ -92,3 +92,8 @@ ADD_TEST(AsmRegAlloc AsmRegAlloc)
 ADD_EXECUTABLE(AsmRegAlloc2 AsmRegAlloc2.cpp)
 TEST_LINK_LIBRARIES(AsmRegAlloc2 CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AsmRegAlloc2 AsmRegAlloc2)
+
+ADD_EXECUTABLE(AsmRegAlloc3 AsmRegAlloc3.cpp)
+TEST_LINK_LIBRARIES(AsmRegAlloc3 CLRXAmdAsm CLRXAmdBin CLRXUtils)
+ADD_TEST(AsmRegAlloc3 AsmRegAlloc3)
+
