@@ -138,7 +138,7 @@ static void testCreateSSAData(cxuint testSuiteId, cxuint i, const AsmSSADataCase
     if (assembler.getSections().size()<1)
     {
         std::ostringstream oss;
-        oss << "FAILED for " << " testAsmCodeStructCase#" << i;
+        oss << "FAILED for " << " testAsmCodeSSAData#" << i;
         throw Exception(oss.str());
     }
     const AsmSection& section = assembler.getSections()[0];
