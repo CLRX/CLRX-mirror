@@ -183,7 +183,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
         for (size_t li = 0; li < resLivenesses[r].size(); li++)
         {
             std::ostringstream lOss;
-            lOss << ".liveness#" << li << ".";
+            lOss << ".liveness#" << li;
             lOss.flush();
             std::string lvname(rtname + lOss.str());
             const OutLiveness& expLv = testCase.livenesses[r][li];
@@ -195,7 +195,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             for (size_t k = 0; k < resLv.size(); k++)
             {
                 std::ostringstream regOss;
-                regOss << ".reg#" << k << ".";
+                regOss << ".reg#" << k;
                 regOss.flush();
                 std::string regname(lvname + regOss.str());
                 assertValue("testAsmLivenesses", testCaseName + regname + ".first",
@@ -221,7 +221,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
         for (size_t di = 0; di < testCase.linearDepMaps[r].size(); di++)
         {
             std::ostringstream lOss;
-            lOss << ".lndep#" << di << ".";
+            lOss << ".lndep#" << di;
             lOss.flush();
             std::string ldname(rtname + lOss.str());
             const auto& expLinearDepEntry = testCase.linearDepMaps[r][di];
@@ -271,7 +271,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
         for (size_t di = 0; di < testCase.equalToDepMaps[r].size(); di++)
         {
             std::ostringstream lOss;
-            lOss << ".eqtodep#" << di << ".";
+            lOss << ".eqtodep#" << di;
             lOss.flush();
             std::string ldname(rtname + lOss.str());
             const auto& expEqualToDepEntry = testCase.equalToDepMaps[r][di];

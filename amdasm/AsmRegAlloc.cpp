@@ -716,6 +716,9 @@ static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
     const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
     const std::vector<size_t>& ssaIdIndices =
                 vregIndexMap.find(svreg)->second;
+    ARDOut << "lvn[" << regType << "][" << ssaIdIndices[ssaId] << "]. ssaIdIdx: " <<
+            ssaIdIdx << ". ssaId: " << ssaId << ". svreg: " << svreg.regVar << ":" <<
+            svreg.index << "\n";
     return livenesses[regType][ssaIdIndices[ssaId]];
 }
 
@@ -1069,19 +1072,23 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 {
                     AsmRegVarUsage rvu = { 0U, nullptr, 0U, 0U };
                     size_t liveTimeNext = curBlockLiveEnd;
+                    bool hasNext = false;
                     if (usageHandler.hasNext())
                     {
+                        hasNext = true;
                         rvu = usageHandler.nextUsage();
-                        if (rvu.offset >= cblock.end)
-                            break;
-                        if (!rvu.useRegMode)
-                            instrRVUs[instrRVUsCount++] = rvu;
-                        liveTimeNext = std::min(rvu.offset, cblock.end) -
-                                cblock.start + curLiveTime;
+                        if (rvu.offset < cblock.end)
+                        {
+                            if (!rvu.useRegMode)
+                                instrRVUs[instrRVUsCount++] = rvu;
+                            liveTimeNext = std::min(rvu.offset, cblock.end) -
+                                    cblock.start + curLiveTime;
+                        }
                     }
                     size_t liveTime = oldOffset - cblock.start + curLiveTime;
-                    if (!usageHandler.hasNext() || rvu.offset >= oldOffset)
+                    if (!hasNext || rvu.offset > oldOffset)
                     {
+                        ARDOut << "apply to liveness. offset: " << oldOffset << "\n";
                         // apply to liveness
                         for (AsmSingleVReg svreg: readSVRegs)
                         {
@@ -1116,8 +1123,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                         
                         readSVRegs.clear();
                         writtenSVRegs.clear();
-                        if (!usageHandler.hasNext())
-                            break; // end
+                        if (!hasNext)
+                            break;
                         oldOffset = rvu.offset;
                         instrRVUsCount = 0;
                     }
@@ -1128,7 +1135,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                     {
                         // per register/singlvreg
                         AsmSingleVReg svreg{ rvu.regVar, rindex };
-                        if (rvu.rwFlags == ASMRVU_WRITE && rvu.regField == ASMFIELD_NONE)
+                        if (rvu.rwFlags == ASMRVU_WRITE && rvu.regField!=ASMFIELD_NONE)
                             writtenSVRegs.push_back(svreg);
                         else // read or treat as reading // expand previous region
                             readSVRegs.push_back(svreg);

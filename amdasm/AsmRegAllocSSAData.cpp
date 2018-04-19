@@ -1411,6 +1411,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     AsmRegVarUsage rvu;
     if (!usageHandler.hasNext())
         return; // do nothing if no regusages
+    ISAUsageHandler::ReadPos oldReadPos = usageHandler.getReadPos();
     rvu = usageHandler.nextUsage();
     
     cxuint regRanges[MAX_REGTYPES_NUM*2];
@@ -1423,18 +1424,21 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     {
         while (cbit != codeBlocks.end() && cbit->end <= rvu.offset)
         {
-            cbit->usagePos = usageHandler.getReadPos();
+            cbit->usagePos = oldReadPos;
             ++cbit;
         }
         if (cbit == codeBlocks.end())
             break;
         // skip rvu's before codeblock
         while (rvu.offset < cbit->start && usageHandler.hasNext())
+        {
+            oldReadPos = usageHandler.getReadPos();
             rvu = usageHandler.nextUsage();
+        }
         if (rvu.offset < cbit->start)
             break;
         
-        cbit->usagePos = usageHandler.getReadPos();
+        cbit->usagePos = oldReadPos;
         while (rvu.offset < cbit->end)
         {
             // process rvu
@@ -1462,6 +1466,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             // get next rvusage
             if (!usageHandler.hasNext())
                 break;
+            oldReadPos = usageHandler.getReadPos();
             rvu = usageHandler.nextUsage();
         }
         ++cbit;

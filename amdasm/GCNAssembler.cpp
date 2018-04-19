@@ -329,7 +329,7 @@ void GCNUsageHandler::getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage*
             {
                 // if SGPR
                 if ((rvus[i].regVar==nullptr && rvus[i].rstart<108) ||
-                     rvus[i].regVar->type == REGTYPE_SGPR)
+                     (rvus[i].regVar!=nullptr && rvus[i].regVar->type == REGTYPE_SGPR))
                     equalToDeps[2 + count++] = i;
             }
         }
