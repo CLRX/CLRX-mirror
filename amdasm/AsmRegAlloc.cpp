@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+#include <assert.h>
 #include <iostream>
 #include <stack>
 #include <deque>
@@ -902,10 +903,12 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
             const AsmRegVarUsage& rvu = rvus[i];
             std::vector<size_t> vidxes;
             cxuint regType = UINT_MAX;
+            cxbyte align = rvus[ldeps[pos]].align;
             for (uint16_t k = rvu.rstart; k < rvu.rend; k++)
             {
                 AsmSingleVReg svreg = {rvu.regVar, k};
                 auto sit = ssaIdIdxMap.find(svreg);
+                assert(sit != ssaIdIdxMap.end());
                 if (regType==UINT_MAX)
                     regType = getRegType(regTypesNum, regRanges, svreg);
                 const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
@@ -914,6 +917,7 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
                 // push variable index
                 vidxes.push_back(ssaIdIndices[sit->second]);
             }
+            ldepsOut[regType][vidxes[0]].align = align;
             for (size_t j = 1; j < vidxes.size(); j++)
             {
                 ldepsOut[regType][vidxes[j-1]].nextVidxes.push_back(vidxes[j]);
@@ -1079,8 +1083,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                     {
                         hasNext = true;
                         rvu = usageHandler.nextUsage();
-                        if (rvu.offset < cblock.end && !rvu.useRegMode)
-                            instrRVUs[instrRVUsCount++] = rvu;
                     }
                     size_t liveTime = oldOffset - cblock.start + curLiveTime;
                     if (!hasNext || rvu.offset > oldOffset)
@@ -1132,6 +1134,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                         oldOffset = rvu.offset;
                         instrRVUsCount = 0;
                     }
+                    if (hasNext && rvu.offset < cblock.end && !rvu.useRegMode)
+                        instrRVUs[instrRVUsCount++] = rvu;
                     if (rvu.offset >= cblock.end)
                         break;
                     

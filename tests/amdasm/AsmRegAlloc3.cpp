@@ -111,7 +111,60 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
         { },  // linearDepMaps
         { },  // equalToDepMaps
         true, ""
-    }
+    },
+    {   // 2 - simple case (linear dep)
+        R"ffDXD(.regvar sa:s:8, va:v:10
+        s_mov_b64 sa[4:5], sa[2:3]  # 0
+        s_and_b64 sa[4:5], sa[4:5], s[4:5]
+        v_add_f64 va[4:5], va[2:3], v[3:4]
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 0, 5 } }, // S4
+                { { 0, 5 } }, // S5
+                { { 0, 0 } }, // sa[2]'0
+                { { 0, 0 } }, // sa[3]'0
+                { { 4, 5 } }, // sa[4]'0
+                { { 8, 9 } }, // sa[4]'1
+                { { 4, 5 } }, // sa[5]'0
+                { { 8, 9 } }  // sa[4]'1
+            },
+            {   // for VGPRs
+                { { 0, 9 } }, // V3
+                { { 0, 9 } }, // V4
+                { { 0, 9 } }, // va[2]'0
+                { { 0, 9 } }, // va[3]'0
+                { }, // va[4]'0 : out of range code block
+                { }  // va[5]'0 : out of range code block
+            },
+            { },
+            { }
+        },
+        {   // linearDepMaps
+            {   // for SGPRs
+                { 0, { 2, { }, { 1 } } },  // S4
+                { 1, { 0, { 0 }, { } } },  // S5
+                { 2, { 2, { }, { 3 } } },  // sa[2]'0
+                { 3, { 0, { 2 }, { } } },  // sa[3]'0
+                { 4, { 2, { }, { 6 } } },  // sa[4]'0
+                { 5, { 2, { }, { 7, 7 } } },  // sa[4]'1
+                { 6, { 0, { 4 }, { } } },  // sa[5]'0
+                { 7, { 0, { 5, 5 }, { } } }   // sa[5]'1
+            },
+            {   // for VGPRs
+                { 0, { 1, { }, { 1 } } },  // V3
+                { 1, { 0, { 0 }, { } } },  // V4
+                { 2, { 1, { }, { 3 } } },  // va[2]'0
+                { 3, { 0, { 2 }, { } } },  // va[3]'0
+                { 4, { 1, { }, { 5 } } },  // va[4]'0
+                { 5, { 0, { 4 }, { } } },  // va[5]'0
+            },
+            { },
+            { }
+        },
+        { },  // equalToDepMaps
+        true, ""
+    },
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
@@ -249,7 +302,8 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             lOss.flush();
             std::string ldname(rtname + lOss.str());
             const auto& expLinearDepEntry = testCase.linearDepMaps[r][di];
-            auto rlit = resLinearDepMaps[r].find(expLinearDepEntry.first);
+            auto rlit = resLinearDepMaps[r].find(
+                            lvIndexCvtTables[r][expLinearDepEntry.first]);
             
             std::ostringstream vOss;
             vOss << expLinearDepEntry.first;
@@ -299,7 +353,8 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             lOss.flush();
             std::string ldname(rtname + lOss.str());
             const auto& expEqualToDepEntry = testCase.equalToDepMaps[r][di];
-            auto reit = resEqualToDepMaps[r].find(expEqualToDepEntry.first);
+            auto reit = resEqualToDepMaps[r].find(
+                            lvIndexCvtTables[r][expEqualToDepEntry.first]);
             
             std::ostringstream vOss;
             vOss << expEqualToDepEntry.first;
