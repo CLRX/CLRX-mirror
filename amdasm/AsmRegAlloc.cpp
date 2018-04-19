@@ -952,8 +952,10 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
     }
 }
 
-void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
+void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
+            size_t codeSize, const cxbyte* code)
 {
+    ISAAssembler* isaAsm = assembler.isaAssembler;
     // construct var index maps
     cxuint regRanges[MAX_REGTYPES_NUM*2];
     std::fill(graphVregsCounts, graphVregsCounts+MAX_REGTYPES_NUM, size_t(0));
@@ -1071,23 +1073,23 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 while (true)
                 {
                     AsmRegVarUsage rvu = { 0U, nullptr, 0U, 0U };
-                    size_t liveTimeNext = curBlockLiveEnd;
+                    size_t liveTimeNext = SIZE_MAX;
                     bool hasNext = false;
                     if (usageHandler.hasNext())
                     {
                         hasNext = true;
                         rvu = usageHandler.nextUsage();
-                        if (rvu.offset < cblock.end)
-                        {
-                            if (!rvu.useRegMode)
-                                instrRVUs[instrRVUsCount++] = rvu;
-                            liveTimeNext = std::min(rvu.offset, cblock.end) -
-                                    cblock.start + curLiveTime;
-                        }
+                        if (rvu.offset < cblock.end && !rvu.useRegMode)
+                            instrRVUs[instrRVUsCount++] = rvu;
                     }
                     size_t liveTime = oldOffset - cblock.start + curLiveTime;
                     if (!hasNext || rvu.offset > oldOffset)
                     {
+                        if (!writtenSVRegs.empty())
+                            // calculate livetime for next instruction
+                            liveTimeNext = liveTime + isaAsm->getInstructionSize(
+                                    codeSize - oldOffset, code + oldOffset);
+                        
                         ARDOut << "apply to liveness. offset: " << oldOffset << "\n";
                         // apply to liveness
                         for (AsmSingleVReg svreg: readSVRegs)
@@ -1472,7 +1474,7 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
     createCodeStructure(section.codeFlow, section.content.size(), section.content.data());
     createSSAData(*section.usageHandler);
     applySSAReplaces();
-    createLivenesses(*section.usageHandler);
+    createLivenesses(*section.usageHandler, section.content.size(), section.content.data());
     createInterferenceGraph();
     colorInterferenceGraph();
 }

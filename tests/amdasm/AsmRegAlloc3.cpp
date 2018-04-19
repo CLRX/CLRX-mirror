@@ -82,10 +82,35 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             { },
             { }
         },
-        {   // linearDepMaps
+        { },  // linearDepMaps
+        { },  // equalToDepMaps
+        true, ""
+    },
+    {   // 1 - simple case 2
+        R"ffDXD(.regvar sa:s:8, va:v:10
+        s_mov_b32 sa[4], sa[2]  # 0
+        s_add_u32 sa[4], sa[4], s3
+        v_xor_b32 va[4], va[2], v3
+        s_endpgm
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 0, 5 } }, // S3
+                { { 0, 0 } }, // sa[2]'0
+                { { 4, 5 } }, // sa[4]'0
+                { { 8, 9 } }  // sa[4]'1
+            },
+            {   // for VGPRs
+                { { 0, 9 } }, // V3
+                { { 0, 9 } }, // va[2]'0
+                { { 12, 13 } } // va[4]'0 : out of range code block
+            },
+            { },
+            { }
         },
-        {   // equalToDepMaps
-        }, true, ""
+        { },  // linearDepMaps
+        { },  // equalToDepMaps
+        true, ""
     }
 };
 
@@ -124,7 +149,8 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
                             section.content.data());
     regAlloc.createSSAData(*section.usageHandler);
     regAlloc.applySSAReplaces();
-    regAlloc.createLivenesses(*section.usageHandler);
+    regAlloc.createLivenesses(*section.usageHandler, section.getSize(),
+                            section.content.data());
     
     std::ostringstream oss;
     oss << " testAsmLivenesses case#" << i;
