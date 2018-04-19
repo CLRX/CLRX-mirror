@@ -1092,11 +1092,13 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                         // apply to liveness
                         for (AsmSingleVReg svreg: readSVRegs)
                         {
-                            Liveness& lv = getLiveness(svreg, ssaIdIdxMap[svreg],
+                            auto svrres = ssaIdIdxMap.insert({ svreg, 0 });
+                            Liveness& lv = getLiveness(svreg, svrres.first->second,
                                     cblock.ssaInfoMap.find(svreg)->second,
                                     livenesses, vregIndexMaps, regTypesNum, regRanges);
-                            if (!lv.l.empty() && (--lv.l.end())->first < curLiveTime)
-                                lv.newRegion(curLiveTime); // begin region from this block
+                            if (svrres.second)
+                                // begin region from this block
+                                lv.newRegion(curLiveTime);
                             lv.expand(liveTime);
                         }
                         for (AsmSingleVReg svreg: writtenSVRegs)
@@ -1108,7 +1110,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                                     livenesses, vregIndexMaps, regTypesNum, regRanges);
                             if (liveTimeNext != curBlockLiveEnd)
                                 // because live after this instr
-                                lv.newRegion(liveTimeNext);
+                                lv.insert(liveTimeNext, liveTimeNext+1);
                             sinfo.lastPos = liveTimeNext - curLiveTime + cblock.start;
                         }
                         // get linear deps and equal to

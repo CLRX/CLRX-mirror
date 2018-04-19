@@ -61,7 +61,6 @@ struct AsmLivenessesCase
 
 static const AsmLivenessesCase createLivenessesCasesTbl[] =
 {
-#if 0
     {   // 0 - simple case
         R"ffDXD(.regvar sa:s:8, va:v:10
         s_mov_b32 sa[4], sa[2]  # 0
@@ -70,15 +69,15 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
 )ffDXD",
         {   // livenesses
             {   // for SGPRs
-                { },
-                { },
-                { },
-                { }
+                { { 0, 5 } }, // S3
+                { { 0, 0 } }, // sa[2]'0
+                { { 4, 5 } }, // sa[4]'0
+                { { 8, 9 } }  // sa[4]'1
             },
             {   // for VGPRs
-                { },
-                { },
-                { }
+                { { 0, 9 } }, // V3
+                { { 0, 9 } }, // va[2]'0
+                { } // va[4]'0 : out of range code block
             },
             { },
             { }
@@ -88,7 +87,6 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
         {   // equalToDepMaps
         }, true, ""
     }
-#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,

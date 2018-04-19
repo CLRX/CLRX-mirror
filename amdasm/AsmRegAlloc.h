@@ -270,7 +270,7 @@ struct Liveness
             if (prevIt->second >= it->first)
             {
                 // join with previous region
-                prevIt->second = it->second;
+                prevIt->second = std::max(it->second, prevIt->second);
                 l.erase(it);
                 it = prevIt;
             }
@@ -283,7 +283,7 @@ struct Liveness
             if (nextIt->first <= it->second)
             {
                 // join with next region
-                it->second = nextIt->second;
+                it->second = std::max(it->second, nextIt->second);
                 l.erase(nextIt);
             }
         }
