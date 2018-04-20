@@ -1001,6 +1001,16 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                 continue;
             }
             
+            if (flowStack.size() > 1)
+            {
+                auto fcit = flowStack.end();
+                --fcit;
+                --fcit; // previous entry
+                // add liveregion into liveness after previous block
+                for(Liveness* lv: fcit->lastInstrWrites)
+                    lv->insert(curLiveTime, curLiveTime+1);
+            }
+            
             putCrossBlockLivenesses(flowStack, codeBlocks,
                     lastVRegMap, livenesses, vregIndexMaps, regTypesNum, regRanges);
             
@@ -1077,6 +1087,9 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                             if (liveTimeNext != curBlockLiveEnd)
                                 // because live after this instr
                                 lv.insert(liveTimeNext, liveTimeNext+1);
+                            else
+                                entry.lastInstrWrites.push_back(&lv);
+                                
                             sinfo.lastPos = liveTimeNext;
                         }
                         // get linear deps and equal to
@@ -1130,6 +1143,11 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
         }
         else // back
         {
+            if (cblock.nexts.empty() && cblock.haveEnd)
+                // add special liveregion for end for last writes
+                for(Liveness* lv: entry.lastInstrWrites)
+                    lv->insert(SIZE_MAX-1, SIZE_MAX);
+            
             // revert lastSSAIdMap
             blockInWay.erase(entry.blockIndex);
             flowStack.pop_back();

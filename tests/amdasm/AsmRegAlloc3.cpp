@@ -70,7 +70,7 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             {   // for VGPRs
                 { { 0, 9 } }, // V3
                 { { 0, 9 } }, // va[2]'0
-                { } // va[4]'0 : out of range code block
+                { { SIZE_MAX-1, SIZE_MAX } } // va[4]'0 : out of range code block
             },
             { },
             { }
@@ -130,10 +130,10 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             {   // for VGPRs
                 { { 0, 9 } }, // V3
                 { { 0, 9 } }, // V4
-                { }, // rbx4[1]'0
-                { }, // rbx4[2]'0
-                { }, // rbx4[3]'0
-                { }, // rbx4[4]'0
+                { { SIZE_MAX-1, SIZE_MAX } }, // rbx4[1]'0
+                { { SIZE_MAX-1, SIZE_MAX } }, // rbx4[2]'0
+                { { SIZE_MAX-1, SIZE_MAX } }, // rbx4[3]'0
+                { { SIZE_MAX-1, SIZE_MAX } }, // rbx4[4]'0
                 { { 0, 17 } }, // rbx4[5]'0: tfe - read before write
                 { { 0, 9 } }, // va[2]'0
                 { { 0, 9 } }, // va[3]'0
