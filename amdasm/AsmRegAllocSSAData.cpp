@@ -817,8 +817,7 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
             // if already added
             beforeFirstAccess = false;
         
-        rdata.origRbwSSAIdMap.insert({ ssaEntry.first,
-                        ssaEntry.second.ssaIdBefore }).second;
+        rdata.origRbwSSAIdMap.insert({ ssaEntry.first, ssaEntry.second.ssaIdBefore });
     }
     
     if (sinfo.ssaIdChange != 0)
