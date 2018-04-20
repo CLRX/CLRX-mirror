@@ -729,8 +729,7 @@ static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
  */
 
 static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack,
-        const std::vector<CodeBlock>& codeBlocks,
-        const Array<size_t>& codeBlockLiveTimes, const LastVRegMap& lastVRegMap,
+        const std::vector<CodeBlock>& codeBlocks, const LastVRegMap& lastVRegMap,
         std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps,
         size_t regTypesNum, const cxuint* regRanges)
 {
@@ -753,13 +752,11 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
             --flitEnd; // before last element
             // insert live time to last seen position
             const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
-            size_t toLiveCvt = codeBlockLiveTimes[flit->blockIndex] - lastBlk.start;
-            lv.insert(lastBlk.ssaInfoMap.find(entry.first)->second.lastPos + toLiveCvt,
-                    toLiveCvt + lastBlk.end);
+            lv.insert(lastBlk.ssaInfoMap.find(entry.first)->second.lastPos, lastBlk.end);
             for (++flit; flit != flitEnd; ++flit)
             {
                 const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-                size_t blockLiveTime = codeBlockLiveTimes[flit->blockIndex];
+                size_t blockLiveTime = cblock.start;
                 lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
             }
         }
@@ -767,7 +764,6 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
 
 static void putCrossBlockForLoop(const std::deque<FlowStackEntry3>& flowStack,
         const std::vector<CodeBlock>& codeBlocks,
-        const Array<size_t>& codeBlockLiveTimes,
         std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps,
         size_t regTypesNum, const cxuint* regRanges)
 {
@@ -820,7 +816,7 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry3>& flowStack,
                 for (auto flit2 = flitStart; flit != flitEnd; ++flit)
                 {
                     const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
-                    size_t blockLiveTime = codeBlockLiveTimes[flit2->blockIndex];
+                    size_t blockLiveTime = cblock.start;
                     lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
                 }
                 continue;
@@ -830,26 +826,23 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry3>& flowStack,
             for (auto flit2 = flitStart; flowPos2 < flowPos; ++flit2, flowPos++)
             {
                 const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
-                size_t blockLiveTime = codeBlockLiveTimes[flit2->blockIndex];
+                size_t blockLiveTime = cblock.start;
                 lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
             }
             // insert liveness for last block in loop of last SSAId (prev round)
             auto flit2 = flitStart + flowPos;
             const CodeBlock& firstBlk = codeBlocks[flit2->blockIndex];
-            size_t toLiveCvt = codeBlockLiveTimes[flit2->blockIndex] - firstBlk.start;
-            lv.insert(codeBlockLiveTimes[flit2->blockIndex],
-                    firstBlk.ssaInfoMap.find(entry.first)->second.firstPos + toLiveCvt);
+            lv.insert(firstBlk.start,
+                    firstBlk.ssaInfoMap.find(entry.first)->second.firstPos);
             // insert liveness for first block in loop of last SSAId
             flit2 = flitStart + (varMapIt->second.second+1);
             const CodeBlock& lastBlk = codeBlocks[flit2->blockIndex];
-            toLiveCvt = codeBlockLiveTimes[flit2->blockIndex] - lastBlk.start;
-            lv.insert(lastBlk.ssaInfoMap.find(entry.first)->second.lastPos + toLiveCvt,
-                    toLiveCvt + lastBlk.end);
+            lv.insert(lastBlk.ssaInfoMap.find(entry.first)->second.lastPos, lastBlk.end);
             // fill up loop end
             for (++flit2; flit2 != flitEnd; ++flit2)
             {
                 const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
-                size_t blockLiveTime = codeBlockLiveTimes[flit2->blockIndex];
+                size_t blockLiveTime = cblock.start;
                 lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
             }
         }
@@ -980,7 +973,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
     // hold last vreg ssaId and position
     LastVRegMap lastVRegMap;
     // hold start live time position for every code block
-    Array<size_t> codeBlockLiveTimes(codeBlocks.size());
     std::unordered_set<size_t> blockInWay;
     
     std::vector<Liveness> livenesses[MAX_REGTYPES_NUM];
@@ -998,18 +990,18 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
         
         if (entry.nextIndex == 0)
         {
+            curLiveTime = cblock.start;
             // process current block
             if (!blockInWay.insert(entry.blockIndex).second)
             {
                 // if loop
-                putCrossBlockForLoop(flowStack, codeBlocks, codeBlockLiveTimes, 
+                putCrossBlockForLoop(flowStack, codeBlocks,
                         livenesses, vregIndexMaps, regTypesNum, regRanges);
                 flowStack.pop_back();
                 continue;
             }
             
-            codeBlockLiveTimes[entry.blockIndex] = curLiveTime;
-            putCrossBlockLivenesses(flowStack, codeBlocks, codeBlockLiveTimes, 
+            putCrossBlockLivenesses(flowStack, codeBlocks,
                     lastVRegMap, livenesses, vregIndexMaps, regTypesNum, regRanges);
             
             for (const auto& sentry: cblock.ssaInfoMap)
@@ -1030,7 +1022,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                 }
             }
             
-            size_t curBlockLiveEnd = cblock.end - cblock.start + curLiveTime;
+            size_t curBlockLiveEnd = cblock.end;
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
@@ -1054,7 +1046,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                         hasNext = true;
                         rvu = usageHandler.nextUsage();
                     }
-                    size_t liveTime = oldOffset - cblock.start + curLiveTime;
+                    size_t liveTime = oldOffset;
                     if (!hasNext || rvu.offset > oldOffset)
                     {
                         if (!writtenSVRegs.empty())
@@ -1085,7 +1077,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                             if (liveTimeNext != curBlockLiveEnd)
                                 // because live after this instr
                                 lv.insert(liveTimeNext, liveTimeNext+1);
-                            sinfo.lastPos = liveTimeNext - curLiveTime + cblock.start;
+                            sinfo.lastPos = liveTimeNext;
                         }
                         // get linear deps and equal to
                         cxbyte lDeps[16];
