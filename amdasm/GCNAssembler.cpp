@@ -1615,19 +1615,10 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (src1Op.range.isSGPR() && !regRangeCanEqual(src0Op.range, src1Op.range))
         sgprsReaded++;
     if (haveSrcCC)
-    {
         // check for third operand (SSRC)
-        bool equalS0SCC = regRangeCanEqual(src0Op.range, srcCCReg);
-        bool equalS1SCC = regRangeCanEqual(src1Op.range, srcCCReg);
-        if((!equalS0SCC && !equalS1SCC) ||
-            (!srcCCReg.isRegVar() &&
-             ((!equalS0SCC && equalS1SCC && src1Op.range.isRegVar()) ||
-              (equalS0SCC && !equalS1SCC && src0Op.range.isRegVar()))) ||
-            (srcCCReg.isRegVar() &&
-                 ((!equalS0SCC && equalS1SCC && !src1Op.range.isRegVar()) ||
-                 (equalS0SCC && !equalS1SCC && !src0Op.range.isRegVar()))))
+        if (!regRangeCanEqual(src0Op.range, srcCCReg) &&
+            !regRangeCanEqual(src1Op.range, srcCCReg))
             sgprsReaded++;
-    }
     
     if (sgprsReaded >= 2)
         /* include VCCs (???) */
@@ -2418,28 +2409,9 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         //if (src2Op && src2Op.range.start<108 &&
         if (src2Op && src2Op.range.isSGPR())
         {
-            if (src0Op.range.isSGPR())
-            {
-                if (src1Op.range.isSGPR())
-                {   // SRC0 - SGPR, SRC1 - SGPR, SRC2 - SGPR
-                    if (!regRangeCanEqual(src0Op.range, src2Op.range) &&
-                        !regRangeCanEqual(src1Op.range, src2Op.range))
-                        numSgprToRead++;
-                }
-                // SRC0 - SGPR, SRC1 - VGPR, SRC2 - SGPR
-                else if (!regRangeCanEqual(src0Op.range, src2Op.range))
-                    numSgprToRead++;
-            }
-            else
-            {
-                if (src1Op.range.isSGPR())
-                {    // SRC0 - VGPR, SRC1 - SGPR, SRC2 - SGPR
-                    if (!regRangeCanEqual(src1Op.range, src2Op.range))
-                        numSgprToRead++;
-                }
-                else // SRC0 - VGPR, SRC1 - VGPR, SRC2 - SGPR
-                    numSgprToRead++;
-            }
+            if (!regRangeCanEqual(src0Op.range, src2Op.range) &&
+                !regRangeCanEqual(src1Op.range, src2Op.range))
+                numSgprToRead++;
         }
         
         if (numSgprToRead>=2)
