@@ -309,33 +309,11 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
 }
 
 /// get usage dependencies
-/* linearDeps - lists of linked register fields (linked fields)
- * equalToDeps - lists of register fields should be equal */
+/* linearDeps - lists of linked register fields (linked fields) */
 void GCNUsageHandler::getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
-                cxbyte* linearDeps, cxbyte* equalToDeps) const
+                cxbyte* linearDeps) const
 {
     cxuint count = 0;
-    equalToDeps[0] = 0;
-    if (rvus[0].regField>=GCNFIELD_VOP_SRC0 && rvus[0].regField<=GCNFIELD_VOP3_SDST1)
-    {
-        // if VOPx instructions, equalTo deps for rule (only one SGPR in source)
-        for (cxuint i = 0; i < rvusNum; i++)
-        {
-            const AsmRegField rf = rvus[i].regField;
-            if (rf == GCNFIELD_VOP_SRC0 || rf == GCNFIELD_VOP_VSRC1 ||
-                rf == GCNFIELD_VOP_SSRC1 || rf == GCNFIELD_VOP3_SRC0 ||
-                rf == GCNFIELD_VOP3_SRC1 || rf == GCNFIELD_VOP3_SRC2 ||
-                rf == GCNFIELD_VOP3_SSRC || rf == GCNFIELD_DPPSDWA_SRC0)
-            {
-                // if SGPR
-                if ((rvus[i].regVar==nullptr && rvus[i].rstart<108) ||
-                     (rvus[i].regVar!=nullptr && rvus[i].regVar->type == REGTYPE_SGPR))
-                    equalToDeps[2 + count++] = i;
-            }
-        }
-        equalToDeps[1] = (count >= 2) ? count : 0;
-        equalToDeps[0] = (equalToDeps[1] != 0);
-    }
     // linear dependencies (join fields)
     count = 0;
     for (cxuint i = 0; i < rvusNum; i++)
@@ -396,8 +374,6 @@ static void tryPromoteConstImmToLiteral(GCNOperand& src0Op, uint16_t arch)
 // check whether reg range can be equal (regvar and registers)
 static inline bool regRangeCanEqual(const RegRange& r1, const RegRange& r2)
 {
-    if (r1.isRegVar() != r2.isRegVar() && r1.isSGPR()==r2.isSGPR())
-        return true; // can be equal: regvar -> reg
     return r1.regVar==r2.regVar && r1.start==r2.start;
 }
 

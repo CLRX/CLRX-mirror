@@ -350,17 +350,7 @@ struct CLRX_INTERNAL LiveBlock
 };
 
 typedef AsmRegAllocator::LinearDep LinearDep;
-typedef AsmRegAllocator::EqualToDep EqualToDep;
 typedef std::unordered_map<size_t, LinearDep> LinearDepMap;
-typedef std::unordered_map<size_t, EqualToDep> EqualToDepMap;
-
-typedef std::unordered_map<size_t, EqualToDep>::const_iterator EqualToDepMapCIter;
-
-struct CLRX_INTERNAL EqualStackEntry
-{
-    EqualToDepMapCIter etoDepIt;
-    size_t nextIdx; // over nextVidxes size, then prevVidxes[nextIdx-nextVidxes.size()]
-};
 
 typedef AsmRegAllocator::InterGraph InterGraph;
 

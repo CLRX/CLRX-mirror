@@ -151,7 +151,7 @@ public:
                     cxbyte rwFlags) const = 0;
     /// get usage dependencies around single instruction
     virtual void getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
-                    cxbyte* linearDeps, cxbyte* equalToDeps) const = 0;
+                    cxbyte* linearDeps) const = 0;
 };
 
 /// GCN (register and regvar) Usage handler
@@ -171,7 +171,7 @@ public:
     cxbyte getRwFlags(AsmRegField regFied, uint16_t rstart, uint16_t rend) const;
     std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField, cxbyte rwFlags) const;
     void getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
-                    cxbyte* linearDeps, cxbyte* equalToDeps) const;
+                    cxbyte* linearDeps) const;
 };
 
 /// ISA assembler class
@@ -350,11 +350,6 @@ public:
         std::vector<size_t> prevVidxes;
         std::vector<size_t> nextVidxes;
     };
-    struct EqualToDep
-    {
-        std::vector<size_t> prevVidxes;
-        std::vector<size_t> nextVidxes;
-    };
 private:
     Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
@@ -367,9 +362,6 @@ private:
     InterGraph interGraphs[MAX_REGTYPES_NUM]; // for 2 register 
     Array<cxuint> graphColorMaps[MAX_REGTYPES_NUM];
     std::unordered_map<size_t, LinearDep> linearDepMaps[MAX_REGTYPES_NUM];
-    std::unordered_map<size_t, EqualToDep> equalToDepMaps[MAX_REGTYPES_NUM];
-    std::unordered_map<size_t, size_t> equalSetMaps[MAX_REGTYPES_NUM];
-    std::vector<std::vector<size_t> > equalSetLists[MAX_REGTYPES_NUM];
     
 public:
     AsmRegAllocator(Assembler& assembler);
@@ -397,8 +389,6 @@ public:
     
     const std::unordered_map<size_t, LinearDep>* getLinearDepMaps() const
     { return linearDepMaps; }
-    const std::unordered_map<size_t, EqualToDep>* getEqualToDepMaps() const
-    { return equalToDepMaps; }
     
     const VarIndexMap* getVregIndexMaps() const
     { return vregIndexMaps; }

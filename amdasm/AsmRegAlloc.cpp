@@ -856,9 +856,9 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry3>& flowStack,
     }
 }
 
-static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNum,
+static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
             const AsmRegVarUsage* rvus, LinearDepMap* ldepsOut,
-            EqualToDepMap* edepsOut, const VarIndexMap* vregIndexMaps,
+            const VarIndexMap* vregIndexMaps,
             const std::unordered_map<AsmSingleVReg, size_t>& ssaIdIdxMap,
             size_t regTypesNum, const cxuint* regRanges)
 {
@@ -924,36 +924,6 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
                 ldepsOut[regType][vidxes[j]].prevVidxes.push_back(vidxes[j-1]);
             }
         }
-    
-    /* equalTo dependencies */
-    count = edeps[0];
-    pos = 1;
-    for (cxuint i = 0; i < count; i++)
-    {
-        cxuint ccount = edeps[pos++];
-        std::vector<size_t> vidxes;
-        cxuint regType = UINT_MAX;
-        for (cxuint j = 0; j < ccount; j++)
-        {
-            const AsmRegVarUsage& rvu = rvus[edeps[pos++]];
-            // only one register should be set for equalTo depencencies
-            // other registers in range will be resolved by linear dependencies
-            AsmSingleVReg svreg = {rvu.regVar, rvu.rstart};
-            auto sit = ssaIdIdxMap.find(svreg);
-            if (regType==UINT_MAX)
-                regType = getRegType(regTypesNum, regRanges, svreg);
-            const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-            const std::vector<size_t>& ssaIdIndices =
-                        vregIndexMap.find(svreg)->second;
-            // push variable index
-            vidxes.push_back(ssaIdIndices[sit->second]);
-        }
-        for (size_t j = 1; j < vidxes.size(); j++)
-        {
-            edepsOut[regType][vidxes[j-1]].nextVidxes.push_back(vidxes[j]);
-            edepsOut[regType][vidxes[j]].prevVidxes.push_back(vidxes[j-1]);
-        }
-    }
 }
 
 void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
@@ -1119,12 +1089,10 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                         }
                         // get linear deps and equal to
                         cxbyte lDeps[16];
-                        cxbyte eDeps[16];
-                        usageHandler.getUsageDependencies(instrRVUsCount, instrRVUs,
-                                        lDeps, eDeps);
+                        usageHandler.getUsageDependencies(instrRVUsCount, instrRVUs, lDeps);
                         
-                        addUsageDeps(lDeps, eDeps, instrRVUsCount, instrRVUs,
-                                linearDepMaps, equalToDepMaps, vregIndexMaps, ssaIdIdxMap,
+                        addUsageDeps(lDeps, instrRVUsCount, instrRVUs,
+                                linearDepMaps, vregIndexMaps, ssaIdIdxMap,
                                 regTypesNum, regRanges);
                         
                         readSVRegs.clear();
@@ -1264,79 +1232,6 @@ void AsmRegAllocator::createInterferenceGraph()
             rangeStart = std::max(rangeStart, lit->start);
         }
     }
-    
-    /*
-     * resolve equalSets
-     */
-    for (cxuint regType = 0; regType < regTypesNum; regType++)
-    {
-        InterGraph& interGraph = interGraphs[regType];
-        const size_t nodesNum = interGraph.size();
-        const std::unordered_map<size_t, EqualToDep>& etoDepMap = equalToDepMaps[regType];
-        std::vector<bool> visited(nodesNum, false);
-        std::vector<std::vector<size_t> >& equalSetList = equalSetLists[regType];
-        
-        for (size_t v = 0; v < nodesNum;)
-        {
-            auto it = etoDepMap.find(v);
-            if (it == etoDepMap.end())
-            {
-                // is not regvar in equalTo dependencies
-                v++;
-                continue;
-            }
-            
-            std::stack<EqualStackEntry> etoStack;
-            etoStack.push(EqualStackEntry{ it, 0 });
-            
-            std::unordered_map<size_t, size_t>& equalSetMap =  equalSetMaps[regType];
-            const size_t equalSetIndex = equalSetList.size();
-            equalSetList.push_back(std::vector<size_t>());
-            std::vector<size_t>& equalSet = equalSetList.back();
-            
-            // traverse by this
-            while (!etoStack.empty())
-            {
-                EqualStackEntry& entry = etoStack.top();
-                size_t vidx = entry.etoDepIt->first; // node index, vreg index
-                const EqualToDep& eToDep = entry.etoDepIt->second;
-                if (entry.nextIdx == 0)
-                {
-                    if (!visited[vidx])
-                    {
-                        // push to this equalSet
-                        equalSetMap.insert({ vidx, equalSetIndex });
-                        equalSet.push_back(vidx);
-                    }
-                    else
-                    {
-                        // already visited
-                        etoStack.pop();
-                        continue;
-                    }
-                }
-                
-                if (entry.nextIdx < eToDep.nextVidxes.size())
-                {
-                    auto nextIt = etoDepMap.find(eToDep.nextVidxes[entry.nextIdx]);
-                    etoStack.push(EqualStackEntry{ nextIt, 0 });
-                    entry.nextIdx++;
-                }
-                else if (entry.nextIdx < eToDep.nextVidxes.size()+eToDep.prevVidxes.size())
-                {
-                    auto nextIt = etoDepMap.find(eToDep.prevVidxes[
-                                entry.nextIdx - eToDep.nextVidxes.size()]);
-                    etoStack.push(EqualStackEntry{ nextIt, 0 });
-                    entry.nextIdx++;
-                }
-                else
-                    etoStack.pop();
-            }
-            
-            // to first already added node (var)
-            while (v < nodesNum && !visited[v]) v++;
-        }
-    }
 }
 
 /* algorithm to allocate regranges:
@@ -1359,8 +1254,6 @@ void AsmRegAllocator::colorInterferenceGraph()
         InterGraph& interGraph = interGraphs[regType];
         const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
         Array<cxuint>& gcMap = graphColorMaps[regType];
-        const std::vector<std::vector<size_t> >& equalSetList = equalSetLists[regType];
-        const std::unordered_map<size_t, size_t>& equalSetMap =  equalSetMaps[regType];
         
         const size_t nodesNum = interGraph.size();
         gcMap.resize(nodesNum);
@@ -1385,12 +1278,6 @@ void AsmRegAllocator::colorInterferenceGraph()
             if (gcMap[node] != UINT_MAX)
                 continue; // already colored
             size_t color = 0;
-            std::vector<size_t> equalNodes;
-            equalNodes.push_back(node); // only one node, if equalSet not found
-            auto equalSetMapIt = equalSetMap.find(node);
-            if (equalSetMapIt != equalSetMap.end())
-                // found, get equal set from equalSetList
-                equalNodes = equalSetList[equalSetMapIt->second];
             
             for (color = 0; color <= colorsNum; color++)
             {
@@ -1412,44 +1299,38 @@ void AsmRegAllocator::colorInterferenceGraph()
                 colorsNum++;
             }
             
-            for (size_t nextNode: equalNodes)
-                gcMap[nextNode] = color;
+            gcMap[node] = color;
             // update SDO for node
             bool colorExists = false;
-            for (size_t node: equalNodes)
+            for (size_t nb: interGraph[node])
+                if (gcMap[nb] == color)
+                {
+                    colorExists = true;
+                    break;
+                }
+            if (!colorExists)
+                sdoCounts[node]++;
+            // update SDO for neighbors
+            for (size_t nb: interGraph[node])
             {
-                for (size_t nb: interGraph[node])
-                    if (gcMap[nb] == color)
+                colorExists = false;
+                for (size_t nb2: interGraph[nb])
+                    if (gcMap[nb2] == color)
                     {
                         colorExists = true;
                         break;
                     }
                 if (!colorExists)
-                    sdoCounts[node]++;
-            }
-            // update SDO for neighbors
-            for (size_t node: equalNodes)
-                for (size_t nb: interGraph[node])
                 {
-                    colorExists = false;
-                    for (size_t nb2: interGraph[nb])
-                        if (gcMap[nb2] == color)
-                        {
-                            colorExists = true;
-                            break;
-                        }
-                    if (!colorExists)
-                    {
-                        if (gcMap[nb] == UINT_MAX)
-                            nodeSet.erase(nb);  // before update we erase from nodeSet
-                        sdoCounts[nb]++;
-                        if (gcMap[nb] == UINT_MAX)
-                            nodeSet.insert(nb); // after update, insert again
-                    }
+                    if (gcMap[nb] == UINT_MAX)
+                        nodeSet.erase(nb);  // before update we erase from nodeSet
+                    sdoCounts[nb]++;
+                    if (gcMap[nb] == UINT_MAX)
+                        nodeSet.insert(nb); // after update, insert again
                 }
+            }
             
-            for (size_t nextNode: equalNodes)
-                gcMap[nextNode] = color;
+            gcMap[node] = color;
         }
     }
 }
@@ -1464,10 +1345,7 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
         vregIndexMaps[i].clear();
         interGraphs[i].clear();
         linearDepMaps[i].clear();
-        equalToDepMaps[i].clear();
         graphColorMaps[i].clear();
-        equalSetMaps[i].clear();
-        equalSetLists[i].clear();
     }
     ssaReplacesMap.clear();
     cxuint maxRegs[MAX_REGTYPES_NUM];

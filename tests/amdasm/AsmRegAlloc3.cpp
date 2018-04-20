@@ -34,17 +34,11 @@ using namespace CLRX;
 
 typedef AsmRegAllocator::OutLiveness OutLiveness;
 typedef AsmRegAllocator::LinearDep LinearDep;
-typedef AsmRegAllocator::EqualToDep EqualToDep;
 typedef AsmRegAllocator::VarIndexMap VarIndexMap;
 
 struct LinearDep2
 {
     cxbyte align;
-    Array<size_t> prevVidxes;
-    Array<size_t> nextVidxes;
-};
-struct EqualToDep2
-{
     Array<size_t> prevVidxes;
     Array<size_t> nextVidxes;
 };
@@ -54,7 +48,6 @@ struct AsmLivenessesCase
     const char* input;
     Array<OutLiveness> livenesses[MAX_REGTYPES_NUM];
     Array<std::pair<size_t, LinearDep2> > linearDepMaps[MAX_REGTYPES_NUM];
-    Array<std::pair<size_t, EqualToDep2> > equalToDepMaps[MAX_REGTYPES_NUM];
     bool good;
     const char* errorMessages;
 };
@@ -83,7 +76,6 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             { }
         },
         { },  // linearDepMaps
-        { },  // equalToDepMaps
         true, ""
     },
     {   // 1 - simple case 2
@@ -109,23 +101,20 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             { }
         },
         { },  // linearDepMaps
-        { },  // equalToDepMaps
         true, ""
     },
     {   // 2 - simple case (linear dep)
-        R"ffDXD(.regvar sa:s:10, va:v:10
+        R"ffDXD(.regvar sa:s:8, va:v:10
         .regvar sbuf:s:4, rbx4:v:6
         s_mov_b64 sa[4:5], sa[2:3]  # 0
         s_and_b64 sa[4:5], sa[4:5], s[4:5]
         v_add_f64 va[4:5], va[2:3], v[3:4]
         buffer_load_dwordx4 rbx4[1:5], va[6], sbuf[0:3], sa[7] idxen offset:603 tfe
-        v_mad_f32 va[7], sa[8], va[8], s10
 )ffDXD",
         {   // livenesses
             {   // for SGPRs
                 { { 0, 5 } }, // S4
                 { { 0, 5 } }, // S5
-                { { 0, 25 } }, // S10
                 { { 0, 0 } }, // sa[2]'0
                 { { 0, 0 } }, // sa[3]'0
                 { { 4, 5 } }, // sa[4]'0
@@ -133,27 +122,24 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
                 { { 4, 5 } }, // sa[5]'0
                 { { 8, 9 } }, // sa[5]'1
                 { { 0, 17 } }, // sa[7]'0
-                { { 0, 25 } }, // sa[8]'0
                 { { 0, 17 } }, // sbuf[0]'0
                 { { 0, 17 } }, // sbuf[1]'0
                 { { 0, 17 } }, // sbuf[2]'0
-                { { 0, 17 } }  // sbuf[3]'0
+                { { 0, 17 } }, // sbuf[3]'0
             },
             {   // for VGPRs
                 { { 0, 9 } }, // V3
                 { { 0, 9 } }, // V4
-                { { 24, 25 } }, // rbx4[1]'0
-                { { 24, 25 } }, // rbx4[2]'0
-                { { 24, 25 } }, // rbx4[3]'0
-                { { 24, 25 } }, // rbx4[4]'0
+                { }, // rbx4[1]'0
+                { }, // rbx4[2]'0
+                { }, // rbx4[3]'0
+                { }, // rbx4[4]'0
                 { { 0, 17 } }, // rbx4[5]'0: tfe - read before write
                 { { 0, 9 } }, // va[2]'0
                 { { 0, 9 } }, // va[3]'0
                 { { 16, 17 } }, // va[4]'0 : out of range code block
                 { { 16, 17 } }, // va[5]'0 : out of range code block
-                { { 0, 17 } }, // va[6]'0
-                { }, // va[7]'0
-                { { 0, 25 } }  // va[8]'0
+                { { 0, 17 } } // va[6]'0
             },
             { },
             { }
@@ -162,16 +148,16 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             {   // for SGPRs
                 { 0, { 0, { }, { 1 } } },  // S4
                 { 1, { 0, { 0 }, { } } },  // S5
-                { 3, { 2, { }, { 4 } } },  // sa[2]'0
-                { 4, { 0, { 3 }, { } } },  // sa[3]'0
-                { 5, { 2, { }, { 7 } } },  // sa[4]'0
-                { 6, { 2, { }, { 8, 8 } } },  // sa[4]'1
-                { 7, { 0, { 5 }, { } } },  // sa[5]'0
-                { 8, { 0, { 6, 6 }, { } } },   // sa[5]'1
-                { 11, { 4, { }, { 12 } } }, // sbuf[0]'0
-                { 12, { 0, { 11 }, { 13 } } }, // sbuf[1]'0
-                { 13, { 0, { 12 }, { 14 } } }, // sbuf[2]'0
-                { 14, { 0, { 13 }, { } } }  // sbuf[3]'0
+                { 2, { 2, { }, { 3 } } },  // sa[2]'0
+                { 3, { 0, { 2 }, { } } },  // sa[3]'0
+                { 4, { 2, { }, { 6 } } },  // sa[4]'0
+                { 5, { 2, { }, { 7, 7 } } },  // sa[4]'1
+                { 6, { 0, { 4 }, { } } },  // sa[5]'0
+                { 7, { 0, { 5, 5 }, { } } },   // sa[5]'1
+                { 9, { 4, { }, { 10 } } }, // sbuf[0]'0
+                { 10, { 0, { 9 }, { 11 } } }, // sbuf[1]'0
+                { 11, { 0, { 10 }, { 12 } } }, // sbuf[2]'0
+                { 12, { 0, { 11 }, { } } }  // sbuf[3]'0
             },
             {   // for VGPRs
                 { 0, { 0, { }, { 1 } } },  // V3
@@ -186,15 +172,6 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
                 { 9, { 1, { }, { 10 } } },  // va[4]'0
                 { 10, { 0, { 9 }, { } } }  // va[5]'0
             },
-            { },
-            { }
-        },
-        {   // equalToDepMaps
-            {   // for SGPRs
-                { 2, { { 10 }, { } } },  // S10
-                { 10, { { }, { 2 } } }   // sa[8]'0
-            },
-            { },
             { },
             { }
         },
@@ -372,54 +349,6 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             
             assertArray("testAsmLivenesses", testCaseName + ldname + ".nextVidxes",
                         expLinearDep.nextVidxes, resNextVidxes);
-        }
-    }
-    
-    const std::unordered_map<size_t, EqualToDep>* resEqualToDepMaps =
-                regAlloc.getEqualToDepMaps();
-    for (size_t r = 0; r < MAX_REGTYPES_NUM; r++)
-    {
-        std::ostringstream rOss;
-        rOss << "eqtodep.regtype#" << r;
-        rOss.flush();
-        std::string rtname(rOss.str());
-        
-        assertValue("testAsmLivenesses", testCaseName + rtname + ".size",
-                    testCase.equalToDepMaps[r].size(), resEqualToDepMaps[r].size());
-        
-        for (size_t di = 0; di < testCase.equalToDepMaps[r].size(); di++)
-        {
-            std::ostringstream lOss;
-            lOss << ".eqtodep#" << di;
-            lOss.flush();
-            std::string ldname(rtname + lOss.str());
-            const auto& expEqualToDepEntry = testCase.equalToDepMaps[r][di];
-            auto reit = resEqualToDepMaps[r].find(
-                            lvIndexCvtTables[r][expEqualToDepEntry.first]);
-            
-            std::ostringstream vOss;
-            vOss << expEqualToDepEntry.first;
-            vOss.flush();
-            assertTrue("testAsmLivenesses", testCaseName + ldname + ".key=" + vOss.str(),
-                        reit != resEqualToDepMaps[r].end());
-            const EqualToDep2& expEqualToDep = expEqualToDepEntry.second;
-            const EqualToDep& resEqualToDep = reit->second;
-            
-            Array<size_t> resPrevVidxes(resEqualToDep.prevVidxes.size());
-            // convert to res ssaIdIndices
-            for (size_t k = 0; k < resEqualToDep.prevVidxes.size(); k++)
-                resPrevVidxes[k] = revLvIndexCvtTables[r][resEqualToDep.prevVidxes[k]];
-            
-            assertArray("testAsmLivenesses", testCaseName + ldname + ".prevVidxes",
-                        expEqualToDep.prevVidxes, resPrevVidxes);
-            
-            Array<size_t> resNextVidxes(resEqualToDep.nextVidxes.size());
-            // convert to res ssaIdIndices
-            for (size_t k = 0; k < resEqualToDep.nextVidxes.size(); k++)
-                resNextVidxes[k] = revLvIndexCvtTables[r][resEqualToDep.nextVidxes[k]];
-            
-            assertArray("testAsmLivenesses", testCaseName + ldname + ".nextVidxes",
-                        expEqualToDep.nextVidxes, resNextVidxes);
         }
     }
 }
