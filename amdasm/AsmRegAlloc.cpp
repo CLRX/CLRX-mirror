@@ -903,7 +903,7 @@ static void addUsageDeps(const cxbyte* ldeps, const cxbyte* edeps, cxuint rvusNu
             const AsmRegVarUsage& rvu = rvus[i];
             std::vector<size_t> vidxes;
             cxuint regType = UINT_MAX;
-            cxbyte align = rvus[ldeps[pos]].align;
+            cxbyte align = rvus[i].align;
             for (uint16_t k = rvu.rstart; k < rvu.rend; k++)
             {
                 AsmSingleVReg svreg = {rvu.regVar, k};

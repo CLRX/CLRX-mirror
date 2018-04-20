@@ -114,9 +114,11 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
     },
     {   // 2 - simple case (linear dep)
         R"ffDXD(.regvar sa:s:8, va:v:10
+        .regvar sbuf:s:4, rbx4:v:6
         s_mov_b64 sa[4:5], sa[2:3]  # 0
         s_and_b64 sa[4:5], sa[4:5], s[4:5]
         v_add_f64 va[4:5], va[2:3], v[3:4]
+        buffer_load_dwordx4 rbx4[1:5], va[6], sbuf[0:3], sa[7] idxen offset:603 tfe
 )ffDXD",
         {   // livenesses
             {   // for SGPRs
@@ -127,44 +129,64 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
                 { { 4, 5 } }, // sa[4]'0
                 { { 8, 9 } }, // sa[4]'1
                 { { 4, 5 } }, // sa[5]'0
-                { { 8, 9 } }  // sa[4]'1
+                { { 8, 9 } }, // sa[5]'1
+                { { 0, 17 } }, // sa[7]'0
+                { { 0, 17 } }, // sbuf[0]'0
+                { { 0, 17 } }, // sbuf[1]'0
+                { { 0, 17 } }, // sbuf[2]'0
+                { { 0, 17 } }, // sbuf[3]'0
             },
             {   // for VGPRs
                 { { 0, 9 } }, // V3
                 { { 0, 9 } }, // V4
+                { }, // rbx4[1]'0
+                { }, // rbx4[2]'0
+                { }, // rbx4[3]'0
+                { }, // rbx4[4]'0
+                { { 0, 17 } }, // rbx4[5]'0: tfe - read before write
                 { { 0, 9 } }, // va[2]'0
                 { { 0, 9 } }, // va[3]'0
-                { }, // va[4]'0 : out of range code block
-                { }  // va[5]'0 : out of range code block
+                { { 16, 17 } }, // va[4]'0 : out of range code block
+                { { 16, 17 } }, // va[5]'0 : out of range code block
+                { { 0, 17 } } // va[6]'0
             },
             { },
             { }
         },
         {   // linearDepMaps
             {   // for SGPRs
-                { 0, { 2, { }, { 1 } } },  // S4
+                { 0, { 0, { }, { 1 } } },  // S4
                 { 1, { 0, { 0 }, { } } },  // S5
                 { 2, { 2, { }, { 3 } } },  // sa[2]'0
                 { 3, { 0, { 2 }, { } } },  // sa[3]'0
                 { 4, { 2, { }, { 6 } } },  // sa[4]'0
                 { 5, { 2, { }, { 7, 7 } } },  // sa[4]'1
                 { 6, { 0, { 4 }, { } } },  // sa[5]'0
-                { 7, { 0, { 5, 5 }, { } } }   // sa[5]'1
+                { 7, { 0, { 5, 5 }, { } } },   // sa[5]'1
+                { 9, { 4, { }, { 10 } } }, // sbuf[0]'0
+                { 10, { 0, { 9 }, { 11 } } }, // sbuf[1]'0
+                { 11, { 0, { 10 }, { 12 } } }, // sbuf[2]'0
+                { 12, { 0, { 11 }, { } } }  // sbuf[3]'0
             },
             {   // for VGPRs
-                { 0, { 1, { }, { 1 } } },  // V3
+                { 0, { 0, { }, { 1 } } },  // V3
                 { 1, { 0, { 0 }, { } } },  // V4
-                { 2, { 1, { }, { 3 } } },  // va[2]'0
-                { 3, { 0, { 2 }, { } } },  // va[3]'0
-                { 4, { 1, { }, { 5 } } },  // va[4]'0
-                { 5, { 0, { 4 }, { } } },  // va[5]'0
+                { 2, { 1, { }, { 3 } } }, // rbx4[1]'0
+                { 3, { 0, { 2 }, { 4 } } }, // rbx4[2]'0
+                { 4, { 0, { 3 }, { 5 } } }, // rbx4[3]'0
+                { 5, { 0, { 4 }, { 6 } } }, // rbx4[4]'0
+                { 6, { 0, { 5 }, { } } }, // rbx4[5]'0
+                { 7, { 1, { }, { 8 } } },  // va[2]'0
+                { 8, { 0, { 7 }, { } } },  // va[3]'0
+                { 9, { 1, { }, { 10 } } },  // va[4]'0
+                { 10, { 0, { 9 }, { } } }  // va[5]'0
             },
             { },
             { }
         },
         { },  // equalToDepMaps
         true, ""
-    },
+    }
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
