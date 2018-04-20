@@ -222,28 +222,34 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
     const VarIndexMap* vregIndexMaps = regAlloc.getVregIndexMaps();
     
     std::vector<size_t> lvIndexCvtTables[MAX_REGTYPES_NUM];
+    std::vector<size_t> revLvIndexCvtTables[MAX_REGTYPES_NUM];
     for (size_t r = 0; r < MAX_REGTYPES_NUM; r++)
     {
         const VarIndexMap& vregIndexMap = vregIndexMaps[r];
         Array<std::pair<TestSingleVReg, const std::vector<size_t>*> > outVregIdxMap(
                     vregIndexMap.size());
         
-        size_t i = 0;
+        size_t j = 0;
         for (const auto& entry: vregIndexMap)
         {
             TestSingleVReg vreg = getTestSingleVReg(entry.first, regVarNamesMap);
-            outVregIdxMap[i++] = std::make_pair(vreg, &entry.second);
+            outVregIdxMap[j++] = std::make_pair(vreg, &entry.second);
         }
         mapSort(outVregIdxMap.begin(), outVregIdxMap.end());
         
         std::vector<size_t>& lvIndexCvtTable = lvIndexCvtTables[r];
+        std::vector<size_t>& revLvIndexCvtTable = revLvIndexCvtTables[r];
         // generate livenessCvt table
         for (const auto& entry: outVregIdxMap)
-        {
             for (size_t v: *entry.second)
                 if (v != SIZE_MAX)
+                {
+                    size_t j = lvIndexCvtTable.size();
                     lvIndexCvtTable.push_back(v);
-        }
+                    if (v+1 > revLvIndexCvtTable.size())
+                        revLvIndexCvtTable.resize(v+1);
+                    revLvIndexCvtTable[v] = j;
+                }
     }
     
     const Array<OutLiveness>* resLivenesses = regAlloc.getOutLivenesses();
@@ -316,21 +322,21 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             assertValue("testAsmLivenesses", testCaseName + ldname + ".align",
                         cxuint(expLinearDep.align), cxuint(resLinearDep.align));
             
-            Array<size_t> expPrevVidxes(expLinearDep.prevVidxes.size());
+            Array<size_t> resPrevVidxes(resLinearDep.prevVidxes.size());
             // convert to res ssaIdIndices
-            for (size_t k = 0; k < expLinearDep.prevVidxes.size(); k++)
-                expPrevVidxes[k] = lvIndexCvtTables[r][expLinearDep.prevVidxes[k]];
+            for (size_t k = 0; k < resLinearDep.prevVidxes.size(); k++)
+                resPrevVidxes[k] = revLvIndexCvtTables[r][resLinearDep.prevVidxes[k]];
             
             assertArray("testAsmLivenesses", testCaseName + ldname + ".prevVidxes",
-                        expPrevVidxes, resLinearDep.prevVidxes);
+                        expLinearDep.prevVidxes, resPrevVidxes);
             
-            Array<size_t> expNextVidxes(expLinearDep.nextVidxes.size());
+            Array<size_t> resNextVidxes(resLinearDep.nextVidxes.size());
             // convert to res ssaIdIndices
-            for (size_t k = 0; k < expLinearDep.nextVidxes.size(); k++)
-                expNextVidxes[k] = lvIndexCvtTables[r][expLinearDep.nextVidxes[k]];
+            for (size_t k = 0; k < resLinearDep.nextVidxes.size(); k++)
+                resNextVidxes[k] = revLvIndexCvtTables[r][resLinearDep.nextVidxes[k]];
             
             assertArray("testAsmLivenesses", testCaseName + ldname + ".nextVidxes",
-                        expNextVidxes, resLinearDep.nextVidxes);
+                        expLinearDep.nextVidxes, resNextVidxes);
         }
     }
     
@@ -364,21 +370,21 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             const EqualToDep2& expEqualToDep = expEqualToDepEntry.second;
             const EqualToDep& resEqualToDep = reit->second;
             
-            Array<size_t> expPrevVidxes(expEqualToDep.prevVidxes.size());
+            Array<size_t> resPrevVidxes(resEqualToDep.prevVidxes.size());
             // convert to res ssaIdIndices
-            for (size_t k = 0; k < expEqualToDep.prevVidxes.size(); k++)
-                expPrevVidxes[k] = lvIndexCvtTables[r][expEqualToDep.prevVidxes[k]];
+            for (size_t k = 0; k < resEqualToDep.prevVidxes.size(); k++)
+                resPrevVidxes[k] = revLvIndexCvtTables[r][resEqualToDep.prevVidxes[k]];
             
             assertArray("testAsmLivenesses", testCaseName + ldname + ".prevVidxes",
-                        expPrevVidxes, resEqualToDep.prevVidxes);
+                        expEqualToDep.prevVidxes, resPrevVidxes);
             
-            Array<size_t> expNextVidxes(expEqualToDep.nextVidxes.size());
+            Array<size_t> resNextVidxes(resEqualToDep.nextVidxes.size());
             // convert to res ssaIdIndices
-            for (size_t k = 0; k < expEqualToDep.nextVidxes.size(); k++)
-                expNextVidxes[k] = lvIndexCvtTables[r][expEqualToDep.nextVidxes[k]];
+            for (size_t k = 0; k < resEqualToDep.nextVidxes.size(); k++)
+                resNextVidxes[k] = revLvIndexCvtTables[r][resEqualToDep.nextVidxes[k]];
             
             assertArray("testAsmLivenesses", testCaseName + ldname + ".nextVidxes",
-                        expNextVidxes, resEqualToDep.nextVidxes);
+                        expEqualToDep.nextVidxes, resNextVidxes);
         }
     }
 }
