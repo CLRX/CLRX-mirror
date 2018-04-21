@@ -194,6 +194,13 @@ struct CLRX_INTERNAL FlowStackEntry2
     size_t nextIndex;
 };
 
+struct CLRX_INTERNAL FlowStackEntry3
+{
+    size_t blockIndex;
+    size_t nextIndex;
+    bool isCall;
+};
+
 struct CLRX_INTERNAL CallStackEntry
 {
     BlockIndex callBlock; // index
@@ -285,7 +292,7 @@ struct Liveness
         auto it = l.lower_bound(k);
         if (it != l.begin())
             --it;
-        else // do nothing
+        else if (it->first > k) // do nothing
             return;
         if (it->first <= k && it->second > k)
         {
@@ -312,14 +319,6 @@ struct Liveness
             --it;
         return it->first<=t && t<it->second;
     }
-};
-
-struct CLRX_INTERNAL FlowStackEntry3
-{
-    size_t blockIndex;
-    size_t nextIndex;
-    bool isCall;
-    std::vector<Liveness*> lastInstrWrites;
 };
 
 typedef AsmRegAllocator::VarIndexMap VarIndexMap;

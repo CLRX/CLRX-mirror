@@ -63,14 +63,14 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
         {   // livenesses
             {   // for SGPRs
                 { { 0, 5 } }, // S3
-                { { 0, 0 } }, // sa[2]'0
-                { { 4, 5 } }, // sa[4]'0
-                { { 8, 9 } }  // sa[4]'1
+                { { 0, 1 } }, // sa[2]'0
+                { { 1, 5 } }, // sa[4]'0
+                { { 5, 6 } }  // sa[4]'1
             },
             {   // for VGPRs
                 { { 0, 9 } }, // V3
                 { { 0, 9 } }, // va[2]'0
-                { { SIZE_MAX-1, SIZE_MAX } } // va[4]'0 : out of range code block
+                { { 9, 10 } } // va[4]'0 : out of range code block
             },
             { },
             { }
@@ -88,14 +88,14 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
         {   // livenesses
             {   // for SGPRs
                 { { 0, 5 } }, // S3
-                { { 0, 0 } }, // sa[2]'0
-                { { 4, 5 } }, // sa[4]'0
-                { { 8, 9 } }  // sa[4]'1
+                { { 0, 1 } }, // sa[2]'0
+                { { 1, 5 } }, // sa[4]'0
+                { { 5, 6 } }  // sa[4]'1
             },
             {   // for VGPRs
                 { { 0, 9 } }, // V3
                 { { 0, 9 } }, // va[2]'0
-                { { 12, 13 } } // va[4]'0 : out of range code block
+                { { 9, 10 } } // va[4]'0 : out of range code block
             },
             { },
             { }
@@ -115,12 +115,12 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             {   // for SGPRs
                 { { 0, 5 } }, // S4
                 { { 0, 5 } }, // S5
-                { { 0, 0 } }, // sa[2]'0
-                { { 0, 0 } }, // sa[3]'0
-                { { 4, 5 } }, // sa[4]'0
-                { { 8, 9 } }, // sa[4]'1
-                { { 4, 5 } }, // sa[5]'0
-                { { 8, 9 } }, // sa[5]'1
+                { { 0, 1 } }, // sa[2]'0
+                { { 0, 1 } }, // sa[3]'0
+                { { 1, 5 } }, // sa[4]'0
+                { { 5, 6 } }, // sa[4]'1
+                { { 1, 5 } }, // sa[5]'0
+                { { 5, 6 } }, // sa[5]'1
                 { { 0, 17 } }, // sa[7]'0
                 { { 0, 17 } }, // sbuf[0]'0
                 { { 0, 17 } }, // sbuf[1]'0
@@ -130,15 +130,15 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             {   // for VGPRs
                 { { 0, 9 } }, // V3
                 { { 0, 9 } }, // V4
-                { { SIZE_MAX-1, SIZE_MAX } }, // rbx4[1]'0
-                { { SIZE_MAX-1, SIZE_MAX } }, // rbx4[2]'0
-                { { SIZE_MAX-1, SIZE_MAX } }, // rbx4[3]'0
-                { { SIZE_MAX-1, SIZE_MAX } }, // rbx4[4]'0
+                { { 17, 18 } }, // rbx4[1]'0
+                { { 17, 18 } }, // rbx4[2]'0
+                { { 17, 18 } }, // rbx4[3]'0
+                { { 17, 18 } }, // rbx4[4]'0
                 { { 0, 17 } }, // rbx4[5]'0: tfe - read before write
                 { { 0, 9 } }, // va[2]'0
                 { { 0, 9 } }, // va[3]'0
-                { { 16, 17 } }, // va[4]'0 : out of range code block
-                { { 16, 17 } }, // va[5]'0 : out of range code block
+                { { 9, 10 } }, // va[4]'0 : out of range code block
+                { { 9, 10 } }, // va[5]'0 : out of range code block
                 { { 0, 17 } } // va[6]'0
             },
             { },
@@ -195,25 +195,24 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
                 { { 0, 5 } }, // 0: S3
                 { { 0, 37 } }, // 1: sa[2]'0
                 { { 0, 37 } }, // 2: sa[3]'0
-                { { 4, 5 } }, // 3: sa[4]'0
-                { { 8, 29 } }, // 4: sa[4]'1
-                { { 40, 41 } }  // 5: sa[7]'0
+                { { 1, 5 } }, // 3: sa[4]'0
+                { { 5, 29 } }, // 4: sa[4]'1
+                { { 37, 38 } }  // 5: sa[7]'0
             },
             {   // for VGPRs
                 { { 0, 41 } }, // 0: v0
                 { { 0, 9 } }, // 1: v3
                 { { 0, 9 } }, // 2: va[2]'0
-                { { 20, 41 } }, // 3: va[3]'0
-                { { 12, 29 } }, // 4: va[4]'0
-                { { 32, 33 } }, // 5: va[5]'0
-                { { 28, 33 } }, // 6: va[6]'0
+                { { 13, 41 } }, // 3: va[3]'0
+                { { 9, 29 } }, // 4: va[4]'0
+                { { 29, 30 } }, // 5: va[5]'0
+                { { 21, 33 } }, // 6: va[6]'0
                 { { 0, 41 } }  // 7: va[7]'0
             },
             { },
             { }
         },
-        {
-        },
+        { }, // linearDepMaps
         true, ""
     }
 };
@@ -253,8 +252,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
                             section.content.data());
     regAlloc.createSSAData(*section.usageHandler);
     regAlloc.applySSAReplaces();
-    regAlloc.createLivenesses(*section.usageHandler, section.getSize(),
-                            section.content.data());
+    regAlloc.createLivenesses(*section.usageHandler);
     
     std::ostringstream oss;
     oss << " testAsmLivenesses case#" << i;

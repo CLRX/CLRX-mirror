@@ -373,8 +373,7 @@ public:
              size_t codeSize, const cxbyte* code);
     void createSSAData(ISAUsageHandler& usageHandler);
     void applySSAReplaces();
-    void createLivenesses(ISAUsageHandler& usageHandler,
-            size_t codeSize, const cxbyte* code);
+    void createLivenesses(ISAUsageHandler& usageHandler);
     void createInterferenceGraph();
     void colorInterferenceGraph();
     

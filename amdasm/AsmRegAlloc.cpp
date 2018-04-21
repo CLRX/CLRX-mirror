@@ -919,10 +919,8 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
         }
 }
 
-void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
-            size_t codeSize, const cxbyte* code)
+void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
 {
-    ISAAssembler* isaAsm = assembler.isaAssembler;
     // construct var index maps
     cxuint regRanges[MAX_REGTYPES_NUM*2];
     std::fill(graphVregsCounts, graphVregsCounts+MAX_REGTYPES_NUM, size_t(0));
@@ -1001,16 +999,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                 continue;
             }
             
-            if (flowStack.size() > 1)
-            {
-                auto fcit = flowStack.end();
-                --fcit;
-                --fcit; // previous entry
-                // add liveregion into liveness after previous block
-                for(Liveness* lv: fcit->lastInstrWrites)
-                    lv->insert(curLiveTime, curLiveTime+1);
-            }
-            
             putCrossBlockLivenesses(flowStack, codeBlocks,
                     lastVRegMap, livenesses, vregIndexMaps, regTypesNum, regRanges);
             
@@ -1032,7 +1020,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                 }
             }
             
-            size_t curBlockLiveEnd = cblock.end;
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
@@ -1049,7 +1036,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                 while (true)
                 {
                     AsmRegVarUsage rvu = { 0U, nullptr, 0U, 0U };
-                    size_t liveTimeNext = SIZE_MAX;
                     bool hasNext = false;
                     if (usageHandler.hasNext())
                     {
@@ -1059,11 +1045,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                     size_t liveTime = oldOffset;
                     if (!hasNext || rvu.offset > oldOffset)
                     {
-                        if (!writtenSVRegs.empty())
-                            // calculate livetime for next instruction
-                            liveTimeNext = liveTime + isaAsm->getInstructionSize(
-                                    codeSize - oldOffset, code + oldOffset);
-                        
                         ARDOut << "apply to liveness. offset: " << oldOffset << "\n";
                         // apply to liveness
                         for (AsmSingleVReg svreg: readSVRegs)
@@ -1084,13 +1065,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                             SSAInfo& sinfo = cblock.ssaInfoMap.find(svreg)->second;
                             Liveness& lv = getLiveness(svreg, ssaIdIdx, sinfo,
                                     livenesses, vregIndexMaps, regTypesNum, regRanges);
-                            if (liveTimeNext != curBlockLiveEnd)
-                                // because live after this instr
-                                lv.insert(liveTimeNext, liveTimeNext+1);
-                            else
-                                entry.lastInstrWrites.push_back(&lv);
-                                
-                            sinfo.lastPos = liveTimeNext;
+                            lv.insert(liveTime+1, liveTime+2);
                         }
                         // get linear deps and equal to
                         cxbyte lDeps[16];
@@ -1143,11 +1118,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
         }
         else // back
         {
-            if (cblock.nexts.empty() && cblock.haveEnd)
-                // add special liveregion for end for last writes
-                for(Liveness* lv: entry.lastInstrWrites)
-                    lv->insert(SIZE_MAX-1, SIZE_MAX);
-            
             // revert lastSSAIdMap
             blockInWay.erase(entry.blockIndex);
             flowStack.pop_back();
@@ -1366,7 +1336,7 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
     createCodeStructure(section.codeFlow, section.content.size(), section.content.data());
     createSSAData(*section.usageHandler);
     applySSAReplaces();
-    createLivenesses(*section.usageHandler, section.content.size(), section.content.data());
+    createLivenesses(*section.usageHandler);
     createInterferenceGraph();
     colorInterferenceGraph();
 }
