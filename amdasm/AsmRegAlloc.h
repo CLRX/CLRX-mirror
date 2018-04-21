@@ -289,10 +289,10 @@ struct Liveness
     
     void expand(size_t k)
     {
-        auto it = l.lower_bound(k);
+        auto it = l.upper_bound(k);
         if (it != l.begin())
             --it;
-        else if (it->first > k) // do nothing
+        else // do nothing
             return;
         if (it->first <= k && it->second > k)
         {
