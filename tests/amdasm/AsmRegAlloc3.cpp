@@ -54,6 +54,7 @@ struct AsmLivenessesCase
 
 static const AsmLivenessesCase createLivenessesCasesTbl[] =
 {
+#if 0
     {   // 0 - simple case
         R"ffDXD(.regvar sa:s:8, va:v:10
         s_mov_b32 sa[4], sa[2]  # 0
@@ -176,6 +177,46 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             { }
         },
         true, ""
+    },
+#endif
+    {   // 3 - next simple case
+        R"ffDXD(.regvar sa:s:8, va:v:10
+        s_mov_b32 sa[4], sa[2]  # 0
+        s_add_u32 sa[4], sa[4], s3
+        v_xor_b32 va[4], va[2], v3
+        v_mov_b32 va[3], 1.45s
+        v_mov_b32 va[6], -7.45s
+        v_lshlrev_b32 va[5], sa[4], va[4]
+        v_mac_f32 va[3], va[6], v0
+        s_mul_i32 sa[7], sa[2], sa[3]
+        v_mac_f32 va[3], va[7], v0
+        s_endpgm
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 0, 5 } }, // 0: S3
+                { { 0, 37 } }, // 1: sa[2]'0
+                { { 0, 37 } }, // 2: sa[3]'0
+                { { 4, 5 } }, // 3: sa[4]'0
+                { { 8, 29 } }, // 4: sa[4]'1
+                { { 40, 41 } }  // 5: sa[7]'0
+            },
+            {   // for VGPRs
+                { { 0, 41 } }, // 0: v0
+                { { 0, 9 } }, // 1: v3
+                { { 0, 9 } }, // 2: va[2]'0
+                { { 20, 41 } }, // 3: va[3]'0
+                { { 12, 29 } }, // 4: va[4]'0
+                { { 32, 33 } }, // 5: va[5]'0
+                { { 28, 33 } }, // 6: va[6]'0
+                { { 0, 41 } }  // 7: va[7]'0
+            },
+            { },
+            { }
+        },
+        {
+        },
+        true, ""
     }
 };
 
@@ -256,6 +297,8 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             for (size_t v: *entry.second)
                 if (v != SIZE_MAX)
                 {
+                    /*std::cout << "lvidx: " << v << ": " << entry.first.name << ":" <<
+                            entry.first.index << std::endl;*/
                     size_t j = lvIndexCvtTable.size();
                     lvIndexCvtTable.push_back(v);
                     if (v+1 > revLvIndexCvtTable.size())
