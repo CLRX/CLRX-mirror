@@ -715,8 +715,7 @@ static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
     
     cxuint regType = getRegType(regTypesNum, regRanges, svreg); // regtype
     const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-    const std::vector<size_t>& ssaIdIndices =
-                vregIndexMap.find(svreg)->second;
+    const std::vector<size_t>& ssaIdIndices = vregIndexMap.find(svreg)->second;
     ARDOut << "lvn[" << regType << "][" << ssaIdIndices[ssaId] << "]. ssaIdIdx: " <<
             ssaIdIdx << ". ssaId: " << ssaId << ". svreg: " << svreg.regVar << ":" <<
             svreg.index << "\n";
@@ -944,6 +943,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 ssaIdCount = std::max(ssaIdCount, sinfo.ssaId+sinfo.ssaIdChange-1);
                 ssaIdCount = std::max(ssaIdCount, sinfo.ssaIdFirst+1);
             }
+            if (entry.first.regVar==nullptr)
+                ssaIdCount = 1;
             if (ssaIdIndices.size() < ssaIdCount)
                 ssaIdIndices.resize(ssaIdCount, SIZE_MAX);
             
@@ -963,6 +964,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 if (ssaIdIndices[sinfo.ssaIdLast] == SIZE_MAX)
                     ssaIdIndices[sinfo.ssaIdLast] = graphVregsCount++;
             }
+            if (entry.first.regVar==nullptr && ssaIdIndices[0] == SIZE_MAX)
+                ssaIdIndices[0] = graphVregsCount++;
         }
     
     // construct vreg liveness

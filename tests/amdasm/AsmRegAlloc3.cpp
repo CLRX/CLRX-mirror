@@ -54,6 +54,7 @@ struct AsmLivenessesCase
 
 static const AsmLivenessesCase createLivenessesCasesTbl[] =
 {
+#if 0
     {   // 0 - simple case
         R"ffDXD(.regvar sa:s:8, va:v:10
         s_mov_b32 sa[4], sa[2]  # 0
@@ -208,6 +209,56 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
                 { { 29, 30 } }, // 5: va[5]'0
                 { { 21, 33 } }, // 6: va[6]'0
                 { { 0, 41 } }  // 7: va[7]'0
+            },
+            { },
+            { }
+        },
+        { }, // linearDepMaps
+        true, ""
+    },
+#endif
+    {   // 4 - next test case
+        R"ffDXD(.regvar sa:s:8, va:v:10
+        s_mov_b32 sa[4], sa[2]  # 0
+        s_add_u32 sa[4], sa[4], s3  # 4
+        
+        v_xor_b32 v4, va[2], v3         # 8
+        v_xor_b32 va[5], v4, va[5]      # 12
+        
+        s_sub_u32 sa[4], sa[4], sa[3]   # 16
+        
+        v_xor_b32 v4, va[5], v3         # 20
+        v_xor_b32 va[6], v4, va[6]      # 24
+        
+        s_mul_i32 sa[4], sa[4], sa[1]   # 28
+        s_mul_i32 sa[4], sa[4], sa[0]   # 32
+        
+        v_xor_b32 v4, va[6], v3         # 36
+        v_xor_b32 va[7], v4, va[7]      # 40
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 0, 5 } },   // 0: S3
+                { { 0, 33 } },  // 1: sa[0]'0
+                { { 0, 29 } },  // 2: sa[1]'0
+                { { 0, 1 } },   // 3: sa[2]'0
+                { { 0, 17 } },  // 4: sa[3]'0
+                { { 1, 5 } },   // 5: sa[4]'0
+                { { 5, 17 } },  // 6: sa[4]'1
+                { { 17, 29 } }, // 7: sa[4]'2
+                { { 29, 33 } }, // 8: sa[4]'3
+                { { 33, 34 } }  // 9: sa[4]'4
+            },
+            {   // for VGPRs
+                { { 0, 37 } },   // 0: v3
+                { { 9, 13 }, { 21, 25 }, { 37, 41 } }, // 1: v4
+                { { 0, 9 } },    // 2: va[2]'0
+                { { 0, 13 } },   // 3: va[5]'0
+                { { 13, 21 } },  // 4: va[5]'1
+                { { 0, 25 } },   // 5: va[6]'0
+                { { 25, 37 } },  // 6: va[6]'1
+                { { 0, 41 } },   // 7: va[7]'0
+                { { 41, 42 } }   // 8: va[7]'1
             },
             { },
             { }
