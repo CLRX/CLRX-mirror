@@ -54,7 +54,6 @@ struct AsmLivenessesCase
 
 static const AsmLivenessesCase createLivenessesCasesTbl[] =
 {
-#if 0
     {   // 0 - simple case
         R"ffDXD(.regvar sa:s:8, va:v:10
         s_mov_b32 sa[4], sa[2]  # 0
@@ -178,7 +177,6 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
         },
         true, ""
     },
-#endif
     {   // 3 - next simple case
         R"ffDXD(.regvar sa:s:8, va:v:10
         s_mov_b32 sa[4], sa[2]  # 0
