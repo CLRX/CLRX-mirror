@@ -294,14 +294,8 @@ struct Liveness
             --it;
         else // do nothing
             return;
-        if (it->first <= k && it->second > k)
-        {
-            // we need expand previous region to this
-            if (it==l.begin())
-                return;
-            --it;
-        }
-        it->second = k+1;
+        // try expand, lower new bound, then use older
+        it->second = std::max(it->second, k+1);
         join(it);
     }
     void newRegion(size_t k)
