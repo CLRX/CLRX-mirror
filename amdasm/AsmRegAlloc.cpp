@@ -732,6 +732,7 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
         std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps,
         size_t regTypesNum, const cxuint* regRanges)
 {
+    ARDOut << "putCrossBlockLv block: " << flowStack.back().blockIndex << "\n";
     const CodeBlock& cblock = codeBlocks[flowStack.back().blockIndex];
     for (const auto& entry: cblock.ssaInfoMap)
         if (entry.second.readBeforeWrite)
@@ -741,7 +742,7 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
             if (lvrit == lastVRegMap.end())
                 continue; // not found
             const VRegLastPos& lastPos = lvrit->second;
-            FlowStackCIter flit = lastPos.blockChain.back();
+            FlowStackCIter flit = flowStack.begin() + lastPos.blockChain.back();
             cxuint regType = getRegType(regTypesNum, regRanges, entry.first);
             const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
             const std::vector<size_t>& ssaIdIndices =
@@ -749,8 +750,12 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
             Liveness& lv = livenesses[regType][ssaIdIndices[entry.second.ssaIdBefore]];
             FlowStackCIter flitEnd = flowStack.end();
             --flitEnd; // before last element
+            
+            ARDOut << "  putCross for " << entry.first.regVar << ":" <<
+                    entry.first.index << ": " << lastPos.blockChain.back() << "\n";
             // insert live time to last seen position
             const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
+            
             lv.insert(lastBlk.ssaInfoMap.find(entry.first)->second.lastPos, lastBlk.end);
             for (++flit; flit != flitEnd; ++flit)
             {
@@ -1002,29 +1007,28 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 continue;
             }
             
-            putCrossBlockLivenesses(flowStack, codeBlocks,
-                    lastVRegMap, livenesses, vregIndexMaps, regTypesNum, regRanges);
-            
-            for (const auto& sentry: cblock.ssaInfoMap)
-            {
-                const SSAInfo& sinfo = sentry.second;
-                // update
-                size_t lastSSAId =  (sinfo.ssaIdChange != 0) ? sinfo.ssaIdLast :
-                        (sinfo.readBeforeWrite) ? sinfo.ssaIdBefore : 0;
-                FlowStackCIter flit = flowStack.end();
-                --flit; // to last position
-                auto res = lastVRegMap.insert({ sentry.first, 
-                            { lastSSAId, { flit } } });
-                if (!res.second) // if not first seen, just update
-                {
-                    // update last
-                    res.first->second.ssaId = lastSSAId;
-                    res.first->second.blockChain.push_back(flit);
-                }
-            }
-            
             if (!visited[entry.blockIndex])
             {
+                putCrossBlockLivenesses(flowStack, codeBlocks,
+                        lastVRegMap, livenesses, vregIndexMaps, regTypesNum, regRanges);
+                // update last vreg position
+                for (const auto& sentry: cblock.ssaInfoMap)
+                {
+                    const SSAInfo& sinfo = sentry.second;
+                    // update
+                    size_t lastSSAId =  (sinfo.ssaIdChange != 0) ? sinfo.ssaIdLast :
+                            (sinfo.readBeforeWrite) ? sinfo.ssaIdBefore : 0;
+                    auto res = lastVRegMap.insert({ sentry.first,
+                                { lastSSAId, { flowStack.size()-1 } } });
+                    if (!res.second) // if not first seen, just update
+                    {
+                        // update last
+                        res.first->second.ssaId = lastSSAId;
+                        res.first->second.blockChain.push_back(flowStack.size()-1);
+                    }
+                }
+                
+                // main routine to handle ssaInfos
                 visited[entry.blockIndex] = true;
                 std::unordered_map<AsmSingleVReg, size_t> ssaIdIdxMap;
                 AsmRegVarUsage instrRVUs[8];

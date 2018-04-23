@@ -1450,6 +1450,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                 SSAInfo& sinfo = res.first->second;
                 if (res.second)
                     sinfo.firstPos = rvu.offset;
+                sinfo.lastPos = rvu.offset;
+                
                 if ((rvu.rwFlags & ASMRVU_READ) != 0 && (sinfo.ssaIdChange == 0 ||
                     // if first write RVU instead read RVU
                     (sinfo.ssaIdChange == 1 && sinfo.firstPos==rvu.offset)))
