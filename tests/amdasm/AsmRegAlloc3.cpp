@@ -263,9 +263,7 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
         },
         { }, // linearDepMaps
         true, ""
-    }
-#if 0
-    ,
+    },
     {   // 5 - blocks
         R"ffDXD(.regvar sa:s:8, va:v:10
         s_mov_b32 sa[4], sa[2]          # 0
@@ -283,21 +281,46 @@ a1:     v_add_f32 va[2], sa[5], va[0]   # 32
         s_endpgm                        # 40
         
 a2:     s_cselect_b32 sa[2], sa[4], sa[3]   # 44
-        #v_cndmask_b32 va[3], va[0], va[1], vcc     # 48
+        v_cndmask_b32 va[3], va[0], va[1], vcc     # 48
         s_endpgm                        # 52
 )ffDXD",
         {   // livenesses
             {   // for SGPRs
+                { { 0, 17 } }, // 0: S0
+                { { 0, 17 } }, // 1: S1
+                { { 0, 21 } }, // 2: S3
+                { { 0, 26 } }, // 3: S4
+                { { 0, 25 } }, // 4: sa[2]'0
+                { { 45, 46 } }, // 5: sa[2]'1
+                { { 0, 20 }, { 44, 45 } }, // 6: sa[3]'0
+                { { 21, 22 } }, // 7: sa[3]'1
+                { { 1, 5 } }, // 8: sa[4]'0
+                { { 5, 20 }, { 44, 45 } }, // 9: sa[4]'1
+                { { 0, 20 }, { 32, 33 } }  // 10: sa[5]
             },
             {   // for VGPRs
+                { { 0, 20 }, { 32, 37 } }, // 0: V0
+                { { 9, 20 }, { 32, 33 }, { 44, 49 } }, // 1: va[0]'0
+                { { 0, 20 }, { 44, 49 } }, // 2: va[1]'0
+                { { 0, 9 } }, // 3: va[2]'0
+                { { 33, 37 } }, // 4: va[2]'1
+                { { 37, 38 } }, // 5: va[3]'0
+                { { 49, 50 } }  // 6: va[3]'1
             },
             { },
             { }
         },
-        { }, // linearDepMaps
+        {   // linearDepMaps
+            {   // for SGPRs
+                { 0, { 0, { }, { 1 } } },
+                { 1, { 0, { 0 }, { } } }
+            },
+            { },
+            { },
+            { }
+        },
         true, ""
     }
-#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,

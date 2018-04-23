@@ -739,10 +739,10 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
         {
             // find last 
             auto lvrit = lastVRegMap.find(entry.first);
-            if (lvrit == lastVRegMap.end())
-                continue; // not found
-            const VRegLastPos& lastPos = lvrit->second;
-            FlowStackCIter flit = flowStack.begin() + lastPos.blockChain.back();
+            FlowStackCIter flit = flowStack.begin();
+            if (lvrit != lastVRegMap.end())
+                flit += lvrit->second.blockChain.back();
+            
             cxuint regType = getRegType(regTypesNum, regRanges, entry.first);
             const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
             const std::vector<size_t>& ssaIdIndices =
@@ -752,12 +752,22 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
             --flitEnd; // before last element
             
             ARDOut << "  putCross for " << entry.first.regVar << ":" <<
-                    entry.first.index << ": " << lastPos.blockChain.back() << "\n";
+                    entry.first.index << "\n";
             // insert live time to last seen position
             const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
             
-            lv.insert(lastBlk.ssaInfoMap.find(entry.first)->second.lastPos, lastBlk.end);
-            for (++flit; flit != flitEnd; ++flit)
+            auto sinfoIt = lastBlk.ssaInfoMap.find(entry.first);
+            size_t lastPos = lastBlk.start;
+            if (sinfoIt != lastBlk.ssaInfoMap.end())
+            {
+                // if begin at some point at last block
+                lastPos = sinfoIt->second.lastPos;
+                lv.insert(lastPos + (!sinfoIt->second.readBeforeWrite),
+                          lastBlk.end);
+                ++flit; // skip last block in stack
+            }
+            
+            for (; flit != flitEnd; ++flit)
             {
                 const CodeBlock& cblock = codeBlocks[flit->blockIndex];
                 size_t blockLiveTime = cblock.start;
@@ -1009,8 +1019,9 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             
             if (!visited[entry.blockIndex])
             {
-                putCrossBlockLivenesses(flowStack, codeBlocks,
-                        lastVRegMap, livenesses, vregIndexMaps, regTypesNum, regRanges);
+                if (flowStack.size() > 1)
+                    putCrossBlockLivenesses(flowStack, codeBlocks, lastVRegMap,
+                            livenesses, vregIndexMaps, regTypesNum, regRanges);
                 // update last vreg position
                 for (const auto& sentry: cblock.ssaInfoMap)
                 {

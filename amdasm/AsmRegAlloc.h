@@ -302,7 +302,12 @@ struct Liveness
     { join(l.insert(std::make_pair(k, k)).first); }
     
     void insert(size_t k, size_t k2)
-    { join(l.insert(std::make_pair(k, k2)).first); }
+    {
+        auto res = l.insert(std::make_pair(k, k2));
+        if (!res.second)
+            res.first->second = k2;
+        join(res.first);
+    }
     
     bool contain(size_t t) const
     {
