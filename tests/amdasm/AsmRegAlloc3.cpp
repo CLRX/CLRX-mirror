@@ -264,6 +264,40 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
         { }, // linearDepMaps
         true, ""
     }
+#if 0
+    ,
+    {   // 5 - blocks
+        R"ffDXD(.regvar sa:s:8, va:v:10
+        s_mov_b32 sa[4], sa[2]             # 0
+        s_add_u32 sa[4], sa[4], s3         # 4
+        v_mad_f32 va[0], va[1], va[2], v0  # 8
+        .cf_jump a0,a1,a2
+        s_setpc_b64 s[0:1]                 # 16
+        
+a0:     s_mul_i32 sa[3], sa[4], s3
+        s_xor_b32 s4, sa[2], s4
+        s_endpgm
+        
+a1:     v_add_f32 va[2], sa[5], va[0]
+        v_mul_f32 va[3], va[2], v0
+        s_endpgm
+        
+a2:     s_cselect_b32 sa[2], sa[4], sa[3]
+        #v_cndmask_b32 va[3], va[0], va[1], vcc
+        s_endpgm
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+            },
+            {   // for VGPRs
+            },
+            { },
+            { }
+        },
+        { }, // linearDepMaps
+        true, ""
+    }
+#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
