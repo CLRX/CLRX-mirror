@@ -721,7 +721,7 @@ static void reduceSSAIds2(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap
 
 // reduce retSSAIds (last SSAIds for regvar) while passing by code block
 // and emits SSA replaces for these ssaids
-static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
+static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
             RetSSAIdMap& retSSAIdMap, RoutineMap& routineMap,
             SSAReplacesMap& ssaReplacesMap, FlowStackEntry& entry, SSAEntry& ssaEntry)
 {
@@ -788,7 +788,6 @@ static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
         }
         // finally remove from container (because obsolete)
         retSSAIdMap.erase(ssaIdsIt);
-        return true;
     }
     else if (ssaIdsIt != retSSAIdMap.end() && sinfo.ssaIdChange!=0)
     {
@@ -798,10 +797,7 @@ static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
             res.first->second = ssaIdsIt->second;
         // just remove, if some change without read before
         retSSAIdMap.erase(ssaIdsIt);
-        return false;
     }
-    // no reduced, but no reduction for this var
-    return (ssaIdsIt == retSSAIdMap.end());
 }
 
 // update single current SSAId for routine and optionally lastSSAIdMap if returns
@@ -1558,8 +1554,8 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                         continue;
                     }
                     
-                    bool reducedSSAId = reduceSSAIds(curSSAIdMap, retSSAIdMap,
-                                routineMap, ssaReplacesMap, entry, ssaEntry);
+                    reduceSSAIds(curSSAIdMap, retSSAIdMap, routineMap, ssaReplacesMap,
+                                 entry, ssaEntry);
                     
                     size_t& ssaId = curSSAIdMap[ssaEntry.first];
                     
@@ -1578,7 +1574,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
                     totalSSACount += sinfo.ssaIdChange;
                     sinfo.ssaIdLast = sinfo.ssaIdChange!=0 ? totalSSACount-1 : SIZE_MAX;
                     //totalSSACount = std::max(totalSSACount, ssaId);
-                    if (!reducedSSAId || sinfo.ssaIdChange!=0)
+                    if (sinfo.ssaIdChange!=0)
                         ssaId = totalSSACount;
                     
                     // count read before writes (for cache weight)
