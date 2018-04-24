@@ -324,13 +324,8 @@ typedef AsmRegAllocator::VarIndexMap VarIndexMap;
 
 typedef std::deque<FlowStackEntry3>::const_iterator FlowStackCIter;
 
-struct CLRX_INTERNAL VRegLastPos
-{
-    size_t ssaId; // last SSA id
-    std::vector<size_t> blockChain; // subsequent blocks that changes SSAId
-};
-
-typedef std::unordered_map<AsmSingleVReg, VRegLastPos> LastVRegMap;
+// key - singlevreg, value - code block chain
+typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > LastVRegMap;
 
 struct CLRX_INTERNAL LiveBlock
 {

@@ -741,7 +741,7 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
             auto lvrit = lastVRegMap.find(entry.first);
             FlowStackCIter flit = flowStack.begin();
             if (lvrit != lastVRegMap.end())
-                flit += lvrit->second.blockChain.back();
+                flit += lvrit->second.back();
             
             cxuint regType = getRegType(regTypesNum, regRanges, entry.first);
             const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
@@ -770,8 +770,7 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
             for (; flit != flitEnd; ++flit)
             {
                 const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-                size_t blockLiveTime = cblock.start;
-                lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
+                lv.insert(cblock.start, cblock.end);
             }
         }
 }
@@ -830,8 +829,7 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry3>& flowStack,
                 for (auto flit2 = flitStart; flit != flitEnd; ++flit)
                 {
                     const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
-                    size_t blockLiveTime = cblock.start;
-                    lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
+                    lv.insert(cblock.start, cblock.end);
                 }
                 continue;
             }
@@ -840,8 +838,7 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry3>& flowStack,
             for (auto flit2 = flitStart; flowPos2 < flowPos; ++flit2, flowPos++)
             {
                 const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
-                size_t blockLiveTime = cblock.start;
-                lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
+                lv.insert(cblock.start, cblock.end);
             }
             // insert liveness for last block in loop of last SSAId (prev round)
             auto flit2 = flitStart + flowPos;
@@ -856,8 +853,7 @@ static void putCrossBlockForLoop(const std::deque<FlowStackEntry3>& flowStack,
             for (++flit2; flit2 != flitEnd; ++flit2)
             {
                 const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
-                size_t blockLiveTime = cblock.start;
-                lv.insert(blockLiveTime, cblock.end-cblock.start + blockLiveTime);
+                lv.insert(cblock.start, cblock.end);
             }
         }
     }
@@ -1025,18 +1021,12 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 // update last vreg position
                 for (const auto& sentry: cblock.ssaInfoMap)
                 {
-                    const SSAInfo& sinfo = sentry.second;
                     // update
-                    size_t lastSSAId =  (sinfo.ssaIdChange != 0) ? sinfo.ssaIdLast :
-                            (sinfo.readBeforeWrite) ? sinfo.ssaIdBefore : 0;
                     auto res = lastVRegMap.insert({ sentry.first,
-                                { lastSSAId, { flowStack.size()-1 } } });
+                                { flowStack.size()-1 } });
                     if (!res.second) // if not first seen, just update
-                    {
                         // update last
-                        res.first->second.ssaId = lastSSAId;
-                        res.first->second.blockChain.push_back(flowStack.size()-1);
-                    }
+                        res.first->second.push_back(flowStack.size()-1);
                 }
                 
                 // main routine to handle ssaInfos
@@ -1146,10 +1136,9 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                     auto lvrit = lastVRegMap.find(sentry.first);
                     if (lvrit != lastVRegMap.end())
                     {
-                        VRegLastPos& lastPos = lvrit->second;
-                        lastPos.ssaId = sentry.second.ssaIdBefore;
-                        lastPos.blockChain.pop_back();
-                        if (lastPos.blockChain.empty()) // just remove from lastVRegs
+                        std::vector<size_t>& lastPos = lvrit->second;
+                        lastPos.pop_back();
+                        if (lastPos.empty()) // just remove from lastVRegs
                             lastVRegMap.erase(lvrit);
                     }
                 }
