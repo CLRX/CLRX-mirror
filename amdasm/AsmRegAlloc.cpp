@@ -762,7 +762,7 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
             {
                 // if begin at some point at last block
                 lastPos = sinfoIt->second.lastPos;
-                lv.insert(lastPos + (!sinfoIt->second.readBeforeWrite),
+                lv.insert(lastPos + (sinfoIt->second.ssaIdChange!=0),
                           lastBlk.end);
                 ++flit; // skip last block in stack
             }

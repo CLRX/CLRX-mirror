@@ -305,7 +305,7 @@ struct Liveness
     {
         auto res = l.insert(std::make_pair(k, k2));
         if (!res.second)
-            res.first->second = k2;
+            res.first->second = std::max(res.first->second, k2);
         join(res.first);
     }
     

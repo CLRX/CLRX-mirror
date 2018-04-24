@@ -798,8 +798,10 @@ static bool reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
             res.first->second = ssaIdsIt->second;
         // just remove, if some change without read before
         retSSAIdMap.erase(ssaIdsIt);
+        return false;
     }
-    return false;
+    // no reduced, but no reduction for this var
+    return (ssaIdsIt == retSSAIdMap.end());
 }
 
 // update single current SSAId for routine and optionally lastSSAIdMap if returns
