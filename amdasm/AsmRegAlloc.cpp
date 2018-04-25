@@ -954,11 +954,15 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 ssaIdCount = std::max(ssaIdCount, sinfo.ssaId+sinfo.ssaIdChange-1);
                 ssaIdCount = std::max(ssaIdCount, sinfo.ssaIdFirst+1);
             }
+            // if not readBeforeWrite and neither ssaIdChanges but it is write to
+            // normal register
             if (entry.first.regVar==nullptr)
                 ssaIdCount = 1;
+            
             if (ssaIdIndices.size() < ssaIdCount)
                 ssaIdIndices.resize(ssaIdCount, SIZE_MAX);
             
+            // set liveness index to ssaIdIndices
             if (sinfo.readBeforeWrite)
             {
                 if (ssaIdIndices[sinfo.ssaIdBefore] == SIZE_MAX)
@@ -975,6 +979,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 if (ssaIdIndices[sinfo.ssaIdLast] == SIZE_MAX)
                     ssaIdIndices[sinfo.ssaIdLast] = graphVregsCount++;
             }
+            // if not readBeforeWrite and neither ssaIdChanges but it is write to
+            // normal register
             if (entry.first.regVar==nullptr && ssaIdIndices[0] == SIZE_MAX)
                 ssaIdIndices[0] = graphVregsCount++;
         }
@@ -1133,7 +1139,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             blockInWay.erase(entry.blockIndex);
             flowStack.pop_back();
             if (!flowStack.empty())
-            {
                 for (const auto& sentry: cblock.ssaInfoMap)
                 {
                     auto lvrit = lastVRegMap.find(sentry.first);
@@ -1145,7 +1150,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                             lastVRegMap.erase(lvrit);
                     }
                 }
-            }
         }
     }
     
