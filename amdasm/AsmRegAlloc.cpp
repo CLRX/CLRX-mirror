@@ -1045,13 +1045,13 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 {
                     AsmRegVarUsage rvu = { 0U, nullptr, 0U, 0U };
                     bool hasNext = false;
-                    if (usageHandler.hasNext())
+                    if (usageHandler.hasNext() && oldOffset < cblock.end)
                     {
                         hasNext = true;
                         rvu = usageHandler.nextUsage();
                     }
-                    size_t liveTime = oldOffset;
-                    if (!hasNext || rvu.offset > oldOffset)
+                    const size_t liveTime = oldOffset;
+                    if ((!hasNext || rvu.offset > oldOffset) && oldOffset < cblock.end)
                     {
                         ARDOut << "apply to liveness. offset: " << oldOffset << "\n";
                         // apply to liveness
@@ -1073,6 +1073,10 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                             SSAInfo& sinfo = cblock.ssaInfoMap.find(svreg)->second;
                             Liveness& lv = getLiveness(svreg, ssaIdIdx, sinfo,
                                     livenesses, vregIndexMaps, regTypesNum, regRanges);
+                            // works only with ISA where smallest instruction have 2 bytes!
+                            // after previous read, but not after instruction.
+                            // if var is not used anywhere then this liveness region
+                            // blocks assignment for other vars
                             lv.insert(liveTime+1, liveTime+2);
                         }
                         // get linear deps and equal to
@@ -1090,9 +1094,9 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                         oldOffset = rvu.offset;
                         instrRVUsCount = 0;
                     }
-                    if (hasNext && rvu.offset < cblock.end && !rvu.useRegMode)
+                    if (hasNext && oldOffset < cblock.end && !rvu.useRegMode)
                         instrRVUs[instrRVUsCount++] = rvu;
-                    if (rvu.offset >= cblock.end)
+                    if (oldOffset >= cblock.end)
                         break;
                     
                     for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
@@ -1105,7 +1109,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                             readSVRegs.push_back(svreg);
                     }
                 }
-                curLiveTime += cblock.end-cblock.start;
             }
             else
             {
