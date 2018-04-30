@@ -3123,5 +3123,69 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]
         },
         true, ""
     },
+    {   // 21 - simple join from 3 ways
+        R"ffDXD(.regvar sa:s:12, va:v:8
+        s_mov_b32 sa[2], s2
+        .cf_jump a1,a2,a3
+        s_setpc_b64 s[0:1]
+        
+a1:     s_add_u32 sa[2], sa[2], sa[3]
+        s_add_u32 sa[2], sa[2], sa[3]
+        s_branch end
+a2:     s_add_u32 sa[2], sa[2], sa[4]
+        s_add_u32 sa[2], sa[2], sa[4]
+        s_branch end
+a3:     s_add_u32 sa[2], sa[2], sa[5]
+        s_add_u32 sa[2], sa[2], sa[5]
+        s_branch end
+
+end:    s_xor_b32 sa[2], sa[2], s3
+        s_endpgm
+)ffDXD",
+        {
+            {   // block 0 - start
+                0, 8,
+                { { 1, false }, { 2, false }, { 3, false } },
+                {
+                    { { "", 0 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 1 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, false, false, true },
+            {   // block 1 - a1
+                8, 20,
+                { { 4, false } },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 2, 2, 3, 2, true) },
+                    { { "sa", 3 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, true },
+            {   // block 2 - a2
+                20, 32,
+                { { 4, false } },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 5, 5, 6, 2, true) },
+                    { { "sa", 4 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, true },
+            {   // block 3 - a3
+                32, 44,
+                { { 4, false } },
+                {
+                    { { "sa", 2 }, SSAInfo(1, 7, 7, 8, 2, true) },
+                    { { "sa", 5 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) }
+                }, false, false, true
+            },
+            {   // block 4 - end
+                44, 52,
+                { },
+                {
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(3, 4, 4, 4, 1, true) }
+                }, false, false, true }
+        },
+        {   // SSA replaces
+            { { "sa", 2 }, { { 6, 3 }, { 8, 3 } } }
+        },
+        true, ""
+    },
     { nullptr }
 };

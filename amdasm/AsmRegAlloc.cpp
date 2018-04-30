@@ -727,6 +727,7 @@ static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
  * replace sets by vector, and sort and remove same values on demand
  */
 
+/* join livenesses between consecutive code blocks */
 static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack,
         const std::vector<CodeBlock>& codeBlocks, const LastVRegMap& lastVRegMap,
         std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps,
@@ -775,86 +776,169 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
         }
 }
 
-static void putCrossBlockForLoop(const std::deque<FlowStackEntry3>& flowStack,
-        const std::vector<CodeBlock>& codeBlocks,
-        std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps,
-        size_t regTypesNum, const cxuint* regRanges)
+static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStack,
+        const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
+        std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
 {
-    auto flitStart = flowStack.end();
-    --flitStart;
-    size_t curBlock = flitStart->blockIndex;
-    // find step in way
-    while (flitStart->blockIndex != curBlock) --flitStart;
-    auto flitEnd = flowStack.end();
-    --flitEnd;
-    std::unordered_map<AsmSingleVReg, std::pair<size_t, size_t> > varMap;
+    size_t nextBlock = prevFlowStack.back().blockIndex;
+    auto pfEnd = prevFlowStack.end();
+    --pfEnd;
+    ARDOut << "startJoinLv: " << (pfEnd-1)->blockIndex << "," << nextBlock << "\n";
+    // key - varreg, value - last position in previous flowStack
+    std::unordered_map<AsmSingleVReg, size_t> stackVarMap;
     
-    // collect var to check
-    size_t flowPos = 0;
-    for (auto flit = flitStart; flit != flitEnd; ++flit, flowPos++)
+    for (auto pfit = prevFlowStack.begin(); pfit != pfEnd; ++pfit)
     {
-        const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-        for (const auto& entry: cblock.ssaInfoMap)
-        {
-            const SSAInfo& sinfo = entry.second;
-            size_t lastSSAId = (sinfo.ssaIdChange != 0) ? sinfo.ssaIdLast :
-                    (sinfo.readBeforeWrite) ? sinfo.ssaIdBefore : 0;
-            varMap[entry.first] = { lastSSAId, flowPos };
-        }
+        const FlowStackEntry3& entry = *pfit;
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        for (const auto& sentry: cblock.ssaInfoMap)
+            stackVarMap[sentry.first] = pfit - prevFlowStack.begin();
     }
-    // find connections
-    flowPos = 0;
-    for (auto flit = flitStart; flit != flitEnd; ++flit, flowPos++)
+    
+    // traverse by graph from next block
+    std::deque<FlowStackEntry3> flowStack;
+    flowStack.push_back({ nextBlock, 0 });
+    std::vector<bool> visited(codeBlocks.size(), false);
+    
+    // already read in current path
+    // key - vreg, value - source block where vreg of conflict found
+    std::unordered_map<AsmSingleVReg, size_t> alreadyReadMap;
+    
+    while (!flowStack.empty())
     {
-        const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-        for (const auto& entry: cblock.ssaInfoMap)
+        FlowStackEntry3& entry = flowStack.back();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
         {
-            const SSAInfo& sinfo = entry.second;
-            auto varMapIt = varMap.find(entry.first);
-            if (!sinfo.readBeforeWrite || varMapIt == varMap.end() ||
-                flowPos > varMapIt->second.second ||
-                sinfo.ssaIdBefore != varMapIt->second.first)
-                continue;
-            // just connect
-            
-            cxuint regType = getRegType(regTypesNum, regRanges, entry.first);
-            const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-            const std::vector<size_t>& ssaIdIndices =
-                        vregIndexMap.find(entry.first)->second;
-            Liveness& lv = livenesses[regType][ssaIdIndices[entry.second.ssaIdBefore]];
-            
-            if (flowPos == varMapIt->second.second)
+            // process current block
+            //if (!visited[entry.blockIndex])
             {
-                // fill whole loop
-                for (auto flit2 = flitStart; flit != flitEnd; ++flit)
+                //visited[entry.blockIndex] = true;
+                ARDOut << "  lvjoin: " << entry.blockIndex << "\n";
+                for (const auto& sentry: cblock.ssaInfoMap)
                 {
-                    const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
-                    lv.insert(cblock.start, cblock.end);
+                    const SSAInfo& sinfo = sentry.second;
+                    auto res = alreadyReadMap.insert({ sentry.first, entry.blockIndex });
+                    
+                    if (res.second && sinfo.readBeforeWrite)
+                    {
+                        // join liveness for this variable ssaId>.
+                        // only if in previous block previous SSAID is
+                        // read before all writes
+                        auto it = stackVarMap.find(sentry.first);
+                        
+                        const size_t pfStart = (it != stackVarMap.end() ? it->second : 0);
+                        //if (it == stackVarMap.end())
+                            //continue;
+                        // fill up previous part
+                        Liveness& lv = getLiveness(sentry.first, 0, sinfo,
+                                livenesses, vregIndexMaps, regTypesNum, regRanges);
+                        auto flit = prevFlowStack.begin() + pfStart;
+                        {
+                            // fill up liveness for first code block
+                            const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+                            auto ssaInfoIt = cblock.ssaInfoMap.find(sentry.first);
+                            size_t prevLastPos = (ssaInfoIt != cblock.ssaInfoMap.end()) ?
+                                    ssaInfoIt->second.lastPos+1 : cblock.start;
+                                cblock.ssaInfoMap.find(sentry.first)->second;
+                            lv.insert(prevLastPos, cblock.end);
+                        }
+                        
+                        for (++flit; flit != pfEnd; ++flit)
+                        {
+                            const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+                            lv.insert(cblock.start, cblock.end);
+                        }
+                        
+                        // fill up next part
+                        auto newFlitEnd = flowStack.end();
+                        --newFlitEnd; // end at previous this code block
+                        for (flit = flowStack.begin(); flit != newFlitEnd; ++flit)
+                        {
+                            const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+                            lv.insert(cblock.start, cblock.end);
+                        }
+                        // fill up new last code block
+                        {
+                            const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+                            const SSAInfo& nextSInfo =
+                                cblock.ssaInfoMap.find(sentry.first)->second;
+                            lv.insert(cblock.start, nextSInfo.firstPos);
+                        }
+                    }
                 }
+            }
+            /*else
+            {
+                flowStack.pop_back();
                 continue;
-            }
+            }*/
+        }
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            // add toResolveMap ssaIds inside called routines
+            /*for (const auto& next: cblock.nexts)
+                if (next.isCall)
+                {
+                    const RoutineData& rdata = routineMap.find(next.block)->second;
+                    for (const auto& v: rdata.rbwSSAIdMap)
+                        alreadyReadMap.insert({v.first, entry.blockIndex });
+                    for (const auto& v: rdata.lastSSAIdMap)
+                        alreadyReadMap.insert({v.first, entry.blockIndex });
+                }*/
             
-            size_t flowPos2 = 0;
-            for (auto flit2 = flitStart; flowPos2 < flowPos; ++flit2, flowPos++)
+            flowStack.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else // back
+        {
+            // remove old to resolve in leaved way to allow collecting next ssaId
+            // before write (can be different due to earlier visit)
+            /*for (const auto& next: cblock.nexts)
+                if (next.isCall)
+                {
+                    const RoutineData& rdata = routineMap.find(next.block)->second;
+                    for (const auto& v: rdata.rbwSSAIdMap)
+                    {
+                        auto it = alreadyReadMap.find(v.first);
+                        if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
+                            alreadyReadMap.erase(it);
+                    }
+                    for (const auto& v: rdata.lastSSAIdMap)
+                    {
+                        auto it = alreadyReadMap.find(v.first);
+                        if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
+                            alreadyReadMap.erase(it);
+                    }
+                }*/
+            
+            for (const auto& sentry: cblock.ssaInfoMap)
             {
-                const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
-                lv.insert(cblock.start, cblock.end);
+                auto it = alreadyReadMap.find(sentry.first);
+                if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
+                    // remove old to resolve in leaved way to allow collecting next ssaId
+                    // before write (can be different due to earlier visit)
+                    alreadyReadMap.erase(it);
             }
-            // insert liveness for last block in loop of last SSAId (prev round)
-            auto flit2 = flitStart + flowPos;
-            const CodeBlock& firstBlk = codeBlocks[flit2->blockIndex];
-            lv.insert(firstBlk.start,
-                    firstBlk.ssaInfoMap.find(entry.first)->second.firstPos);
-            // insert liveness for first block in loop of last SSAId
-            flit2 = flitStart + (varMapIt->second.second+1);
-            const CodeBlock& lastBlk = codeBlocks[flit2->blockIndex];
-            lv.insert(lastBlk.ssaInfoMap.find(entry.first)->second.lastPos, lastBlk.end);
-            // fill up loop end
-            for (++flit2; flit2 != flitEnd; ++flit2)
-            {
-                const CodeBlock& cblock = codeBlocks[flit2->blockIndex];
-                lv.insert(cblock.start, cblock.end);
-            }
+            ARDOut << "  popjoin\n";
+            
+            /*if (cblocksToCache.count(entry.blockIndex)==2 &&
+                !resSecondPointsCache.hasKey(entry.blockIndex))
+                // add to cache
+                addResSecCacheEntry(routineMap, codeBlocks, resSecondPointsCache,
+                            entry.blockIndex);*/
+            
+            flowStack.pop_back();
         }
     }
 }
@@ -1013,8 +1097,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             if (!blockInWay.insert(entry.blockIndex).second)
             {
                 // if loop
-                putCrossBlockForLoop(flowStack, codeBlocks,
-                        livenesses, vregIndexMaps, regTypesNum, regRanges);
+                /*putCrossBlockForLoop(flowStack, codeBlocks,
+                        livenesses, vregIndexMaps, regTypesNum, regRanges);*/
                 flowStack.pop_back();
                 continue;
             }
@@ -1151,6 +1235,49 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                     }
                 }
         }
+    }
+    
+    // after, that resolve joins (join with already visited code)
+    flowStack.clear();
+    std::fill(visited.begin(), visited.end(), false);
+    
+    flowStack.push_back({ 0, 0 });
+    
+    while (!flowStack.empty())
+    {
+        FlowStackEntry3& entry = flowStack.back();
+        CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        {
+            // process current block
+            if (!visited[entry.blockIndex])
+                visited[entry.blockIndex] = true;
+            else
+            {
+                joinRegVarLivenesses(flowStack, codeBlocks, vregIndexMaps,
+                            livenesses, regTypesNum, regRanges);
+                // back, already visited
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            flowStack.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else // back
+            flowStack.pop_back();
     }
     
     // move livenesses to AsmRegAllocator outLivenesses
