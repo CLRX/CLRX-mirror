@@ -1085,6 +1085,16 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
     // hold start live time position for every code block
     std::unordered_set<size_t> blockInWay;
     
+    // key - current res first key, value - previous first key and its flowStack pos
+    PrevWaysIndexMap prevWaysIndexMap;
+    // to track ways last block indices pair: block index, flowStackPos)
+    std::pair<size_t, size_t> lastCommonCacheWayPoint{ SIZE_MAX, SIZE_MAX };
+    std::vector<bool> waysToCache(codeBlocks.size(), false);
+    ResSecondPointsToCache cblocksToCache(codeBlocks.size());
+    
+    size_t rbwCount = 0;
+    size_t wrCount = 0;
+    
     std::vector<Liveness> livenesses[MAX_REGTYPES_NUM];
     
     for (size_t i = 0; i < regTypesNum; i++)
@@ -1125,6 +1135,12 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                     if (!res.second) // if not first seen, just update
                         // update last
                         res.first->second.push_back(flowStack.size()-1);
+                    
+                    // count read before writes (for cache weight)
+                    if (sentry.second.readBeforeWrite)
+                        rbwCount++;
+                    if (sentry.second.ssaIdChange!=0)
+                        wrCount++;
                 }
                 
                 // main routine to handle ssaInfos
@@ -1210,8 +1226,25 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             }
             else
             {
+                cblocksToCache.increase(entry.blockIndex);
+                ARDOut << "cblockToCache: " << entry.blockIndex << "=" <<
+                            cblocksToCache.count(entry.blockIndex) << "\n";
+                
                 // back, already visited
                 flowStack.pop_back();
+                
+                size_t curWayBIndex = flowStack.back().blockIndex;
+                if (lastCommonCacheWayPoint.first != SIZE_MAX)
+                {
+                    // mark point of way to cache (res first point)
+                    waysToCache[lastCommonCacheWayPoint.first] = true;
+                    ARDOut << "mark to pfcache " <<
+                            lastCommonCacheWayPoint.first << ", " <<
+                            curWayBIndex << "\n";
+                    prevWaysIndexMap[curWayBIndex] = lastCommonCacheWayPoint;
+                }
+                lastCommonCacheWayPoint = { curWayBIndex, flowStack.size()-1 };
+                ARDOut << "lastCcwP: " << curWayBIndex << "\n";
                 continue;
             }
         }
@@ -1242,10 +1275,22 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                             lastVRegMap.erase(lvrit);
                     }
                 }
+            
+            
+            if (!flowStack.empty() && lastCommonCacheWayPoint.first != SIZE_MAX &&
+                    lastCommonCacheWayPoint.second >= flowStack.size())
+            {
+                lastCommonCacheWayPoint =
+                        { flowStack.back().blockIndex, flowStack.size()-1 };
+                ARDOut << "POPlastCcwP: " << lastCommonCacheWayPoint.first << "\n";
+            }
         }
     }
     
     // after, that resolve joins (join with already visited code)
+    SimpleCache<size_t, SVRegMap> resFirstPointsCache(wrCount<<1);
+    SimpleCache<size_t, SVRegMap> resSecondPointsCache(rbwCount<<1);
+    
     flowStack.clear();
     std::fill(visited.begin(), visited.end(), false);
     
@@ -1285,7 +1330,14 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             entry.nextIndex++;
         }
         else // back
+        {
+            /*if (cblocksToCache.count(entry.blockIndex)==2 &&
+                !resSecondPointsCache.hasKey(entry.blockIndex))
+                // add to cache
+                addResSecCacheEntry(routineMap, codeBlocks, resSecondPointsCache,
+                            entry.blockIndex);*/
             flowStack.pop_back();
+        }
     }
     
     // move livenesses to AsmRegAllocator outLivenesses

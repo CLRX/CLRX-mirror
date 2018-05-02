@@ -135,6 +135,8 @@ public:
     { return size(); }
 };
 
+typedef std::unordered_map<AsmSingleVReg, BlockIndex> SVRegBlockMap;
+typedef std::unordered_map<AsmSingleVReg, size_t> SVRegMap;
 typedef LastSSAIdMap RBWSSAIdMap;
 typedef std::unordered_map<BlockIndex, VectorSet<BlockIndex> > SubrLoopsMap;
 

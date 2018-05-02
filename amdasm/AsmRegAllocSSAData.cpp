@@ -53,8 +53,7 @@ static inline void insertReplace(SSAReplacesMap& rmap, const AsmSingleVReg& vreg
  */
 
 static void handleSSAEntryWhileResolving(SSAReplacesMap* replacesMap,
-            const LastSSAIdMap* stackVarMap,
-            std::unordered_map<AsmSingleVReg, BlockIndex>& alreadyReadMap,
+            const LastSSAIdMap* stackVarMap, SVRegBlockMap& alreadyReadMap,
             FlowStackEntry2& entry, const SSAEntry& sentry,
             RBWSSAIdMap* cacheSecPoints)
 {
@@ -97,8 +96,7 @@ static void handleSSAEntryWhileResolving(SSAReplacesMap* replacesMap,
 // use res second point cache entry to resolve conflict with SSAIds.
 // it emits SSA replaces from these conflicts
 static void useResSecPointCache(SSAReplacesMap* replacesMap,
-        const LastSSAIdMap* stackVarMap,
-        const std::unordered_map<AsmSingleVReg, BlockIndex>& alreadyReadMap,
+        const LastSSAIdMap* stackVarMap, const SVRegBlockMap& alreadyReadMap,
         const RBWSSAIdMap* resSecondPoints, BlockIndex nextBlock,
         RBWSSAIdMap* destCacheSecPoints)
 {
@@ -150,7 +148,7 @@ static void addResSecCacheEntry(const RoutineMap& routineMap,
     flowStack.push_back({ nextBlock, 0 });
     CBlockBitPool visited(codeBlocks.size(), false);
     
-    std::unordered_map<AsmSingleVReg, BlockIndex> alreadyReadMap;
+    SVRegBlockMap alreadyReadMap;
     
     RBWSSAIdMap cacheSecPoints;
     
@@ -357,7 +355,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
     
     // already read in current path
     // key - vreg, value - source block where vreg of conflict found
-    std::unordered_map<AsmSingleVReg, BlockIndex> alreadyReadMap;
+    SVRegBlockMap alreadyReadMap;
     
     while (!flowStack.empty())
     {
@@ -574,8 +572,7 @@ static void joinLastSSAIdMap(LastSSAIdMap& dest, const LastSSAIdMap& src,
 // join routine data from child call with data from parent routine
 // (just join child call from parent)
 static void joinRoutineData(RoutineData& dest, const RoutineData& src,
-            const std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
-            bool notFirstReturn)
+            const SVRegMap& curSSAIdMap, bool notFirstReturn)
 {
     // insert readBeforeWrite only if doesnt exists in destination
     dest.rbwSSAIdMap.insert(src.rbwSSAIdMap.begin(), src.rbwSSAIdMap.end());
@@ -696,8 +693,8 @@ static void reduceSSAIdsForCalls(FlowStackEntry& entry,
     }
 }
 
-static void reduceSSAIds2(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
-            RetSSAIdMap& retSSAIdMap, FlowStackEntry& entry, const SSAEntry& ssaEntry)
+static void reduceSSAIds2(SVRegMap& curSSAIdMap, RetSSAIdMap& retSSAIdMap,
+                FlowStackEntry& entry, const SSAEntry& ssaEntry)
 {
     const SSAInfo& sinfo = ssaEntry.second;
     size_t& ssaId = curSSAIdMap[ssaEntry.first];
@@ -721,9 +718,9 @@ static void reduceSSAIds2(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap
 
 // reduce retSSAIds (last SSAIds for regvar) while passing by code block
 // and emits SSA replaces for these ssaids
-static void reduceSSAIds(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
-            RetSSAIdMap& retSSAIdMap, RoutineMap& routineMap,
-            SSAReplacesMap& ssaReplacesMap, FlowStackEntry& entry, SSAEntry& ssaEntry)
+static void reduceSSAIds(SVRegMap& curSSAIdMap, RetSSAIdMap& retSSAIdMap,
+            RoutineMap& routineMap, SSAReplacesMap& ssaReplacesMap, FlowStackEntry& entry,
+            SSAEntry& ssaEntry)
 {
     SSAInfo& sinfo = ssaEntry.second;
     size_t& ssaId = curSSAIdMap[ssaEntry.first];
@@ -851,8 +848,7 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
     }
 }
 
-static void initializePrevRetSSAIds(
-            const std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
+static void initializePrevRetSSAIds(const SVRegMap& curSSAIdMap,
             const RetSSAIdMap& retSSAIdMap, const RoutineData& rdata,
             FlowStackEntry& entry)
 {
@@ -871,8 +867,8 @@ static void initializePrevRetSSAIds(
 }
 
 // revert retSSAIdMap while leaving from code block
-static void revertRetSSAIdMap(std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
-            RetSSAIdMap& retSSAIdMap, FlowStackEntry& entry, RoutineData* rdata)
+static void revertRetSSAIdMap(SVRegMap& curSSAIdMap, RetSSAIdMap& retSSAIdMap,
+            FlowStackEntry& entry, RoutineData* rdata)
 {
     // revert retSSAIdMap
     for (auto v: entry.prevRetSSAIdSets)
@@ -968,8 +964,7 @@ static bool tryAddLoopEnd(const FlowStackEntry& entry, BlockIndex routineBlock,
 
 
 static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
-        std::unordered_map<AsmSingleVReg, size_t>& curSSAIdMap,
-        const std::unordered_set<BlockIndex>& loopBlocks,
+        SVRegMap& curSSAIdMap, const std::unordered_set<BlockIndex>& loopBlocks,
         const std::unordered_set<BlockIndex>& callBlocks,
         const ResSecondPointsToCache& subroutToCache,
         SimpleCache<BlockIndex, RoutineData>& subroutinesCache,
@@ -1248,7 +1243,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     const RoutineData& srcRdata = routineMap.find(rblock)->second;
                     // for next recursion pass call - choose origRvwSSAIdMap
                     // otherwise - standard rbwSsaIdMap
-                    const std::unordered_map<AsmSingleVReg, size_t>& srcRbwSSAIdMap =
+                    const SVRegMap& srcRbwSSAIdMap =
                         (entry.blockIndex.pass == 0 && rblock.pass!=0) ?
                         srcRdata.origRbwSSAIdMap : srcRdata.rbwSSAIdMap;
                     if (entry.blockIndex.pass == 0 && rblock.pass!=0)
@@ -1479,11 +1474,11 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::deque<CallStackEntry> callStack;
     std::deque<FlowStackEntry> flowStack;
     // total SSA count
-    std::unordered_map<AsmSingleVReg, size_t> totalSSACountMap;
+    SVRegMap totalSSACountMap;
     // last SSA ids map from returns
     RetSSAIdMap retSSAIdMap;
     // last SSA ids in current way in code flow
-    std::unordered_map<AsmSingleVReg, size_t> curSSAIdMap;
+    SVRegMap curSSAIdMap;
     // routine map - routine datas map, value - last SSA ids map
     RoutineMap routineMap;
     // key - current res first key, value - previous first key and its flowStack pos
@@ -1509,8 +1504,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     /** INFO if you want to get code changedRegVars between recursions you get 3984
      * this stuff has been deleted */
     
-    std::unordered_map<size_t, std::unordered_map<AsmSingleVReg, size_t> >
-            curSSAIdMapStateMap;
+    std::unordered_map<size_t, SVRegMap > curSSAIdMapStateMap;
     
     /*
      * main loop to fill up ssaInfos
