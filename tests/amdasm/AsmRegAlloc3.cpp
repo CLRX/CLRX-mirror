@@ -54,6 +54,7 @@ struct AsmLivenessesCase
 
 static const AsmLivenessesCase createLivenessesCasesTbl[] =
 {
+#if 0
     {   // 0 - simple case
         R"ffDXD(.regvar sa:s:8, va:v:10
         s_mov_b32 sa[4], sa[2]  # 0
@@ -641,6 +642,71 @@ end:    s_xor_b32 sa[2], sa[2], s3      # 44
             { // for SGPRs
                 { 0, { 0, { }, { 1 } } },
                 { 1, { 0, { 0 }, { } } }
+            },
+            { },
+            { },
+            { }
+        },
+        true, ""
+    },
+#endif
+    {   // 10 - more complex join
+        R"ffDXD(.regvar sa:s:12, va:v:8
+        s_mov_b32 sa[2], s2             # 0
+        s_xor_b32 sa[6], sa[2], s3      # 4
+        .cf_jump a1,a2,a3
+        s_setpc_b64 s[0:1]              # 8
+        
+a1:     s_add_u32 sa[2], sa[2], sa[3]   # 12
+        s_add_u32 sa[2], sa[2], sa[3]   # 16
+        .cf_jump b1,b2
+        s_setpc_b64 s[0:1]              # 20
+a2:     s_add_u32 sa[2], sa[2], sa[4]   # 24
+        s_add_u32 sa[2], sa[2], sa[4]   # 28
+        .cf_jump b1,b2
+        s_setpc_b64 s[0:1]              # 32
+a3:     s_add_u32 sa[2], sa[2], sa[5]   # 36
+        s_add_u32 sa[2], sa[2], sa[5]   # 40
+        .cf_jump b1,b2
+        s_setpc_b64 s[0:1]              # 44
+        
+b1:     s_add_u32 sa[5], sa[6], sa[4]   # 48
+        s_branch end                    # 52
+b2:     s_add_u32 sa[6], sa[5], sa[4]   # 56
+        s_branch end                    # 60
+        
+end:    s_xor_b32 sa[2], sa[2], s3      # 64
+        s_xor_b32 sa[3], sa[6], s4      # 68
+        s_endpgm                        # 72
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 0, 21 }, { 24, 33 }, { 36, 45 } }, // 0: S0
+                { { 0, 21 }, { 24, 33 }, { 36, 45 } }, // 1: S1
+                { { 0, 1 } }, // 2: S2
+                { { 0, 65 } }, // 3: S3
+                { { 0, 69 } }, // 4: S4
+                { { 1, 13 }, { 24, 25 }, { 36, 37 } }, // 5: sa[2]'0
+                { { 13, 17 } }, // 6: sa[2]'1
+                { { 17, 24 }, { 29, 36 }, { 41, 65 } }, // 7: sa[2]'2
+                { { 65, 66 } }, // 8: sa[2]'3
+                { { 25, 29 } }, // 9: sa[2]'4
+                { { 37, 41 } }, // 10: sa[2]'5
+                { { 0, 17 } }, // 11: sa[3]'0
+                { { 69, 70 } }, // 12: sa[3]'1
+                { { 0, 49 }, { 56, 57 } }, // 13: sa[4]'0
+                { { 0, 48 }, { 56, 57 } }, // 14: sa[5]'0
+                { { 49, 50 } }, // 15: sa[5]'0
+                { { 5, 56 }, { 57, 69 } }  // 16: sa[6]'0
+            },
+            { },
+            { },
+            { }
+        },
+        {   // linearDepMaps
+            { // for SGPRs
+                { 0, { 0, { }, { 1, 1, 1, 1 } } },
+                { 1, { 0, { 0, 0, 0, 0 }, { } } }
             },
             { },
             { },
