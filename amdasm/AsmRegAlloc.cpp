@@ -841,7 +841,6 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                             auto ssaInfoIt = cblock.ssaInfoMap.find(sentry.first);
                             size_t prevLastPos = (ssaInfoIt != cblock.ssaInfoMap.end()) ?
                                     ssaInfoIt->second.lastPos+1 : cblock.start;
-                                cblock.ssaInfoMap.find(sentry.first)->second;
                             lv.insert(prevLastPos, cblock.end);
                         }
                         
@@ -849,22 +848,6 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                         {
                             const CodeBlock& cblock = codeBlocks[flit->blockIndex];
                             lv.insert(cblock.start, cblock.end);
-                        }
-                        
-                        // fill up next part
-                        auto newFlitEnd = flowStack.end();
-                        --newFlitEnd; // end at previous this code block
-                        for (flit = flowStack.begin(); flit != newFlitEnd; ++flit)
-                        {
-                            const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-                            lv.insert(cblock.start, cblock.end);
-                        }
-                        // fill up new last code block
-                        {
-                            const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-                            const SSAInfo& nextSInfo =
-                                cblock.ssaInfoMap.find(sentry.first)->second;
-                            lv.insert(cblock.start, nextSInfo.firstPos);
                         }
                     }
                 }
