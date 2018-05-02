@@ -351,8 +351,8 @@ public:
     struct LinearDep
     {
         cxbyte align;
-        std::vector<size_t> prevVidxes;
-        std::vector<size_t> nextVidxes;
+        VectorSet<size_t> prevVidxes;
+        VectorSet<size_t> nextVidxes;
     };
 private:
     Assembler& assembler;

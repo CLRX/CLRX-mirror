@@ -962,8 +962,8 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
         ldepsOut[regType][vidxes[0]].align = align;
         for (size_t k = 1; k < vidxes.size(); k++)
         {
-            ldepsOut[regType][vidxes[k-1]].nextVidxes.push_back(vidxes[k]);
-            ldepsOut[regType][vidxes[k]].prevVidxes.push_back(vidxes[k-1]);
+            ldepsOut[regType][vidxes[k-1]].nextVidxes.insertValue(vidxes[k]);
+            ldepsOut[regType][vidxes[k]].prevVidxes.insertValue(vidxes[k-1]);
         }
     }
     // add single arg linear dependencies
@@ -990,8 +990,8 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
             ldepsOut[regType][vidxes[0]].align = align;
             for (size_t j = 1; j < vidxes.size(); j++)
             {
-                ldepsOut[regType][vidxes[j-1]].nextVidxes.push_back(vidxes[j]);
-                ldepsOut[regType][vidxes[j]].prevVidxes.push_back(vidxes[j-1]);
+                ldepsOut[regType][vidxes[j-1]].nextVidxes.insertValue(vidxes[j]);
+                ldepsOut[regType][vidxes[j]].prevVidxes.insertValue(vidxes[j-1]);
             }
         }
 }
