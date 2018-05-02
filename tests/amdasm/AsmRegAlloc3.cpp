@@ -54,7 +54,6 @@ struct AsmLivenessesCase
 
 static const AsmLivenessesCase createLivenessesCasesTbl[] =
 {
-#if 0
     {   // 0 - simple case
         R"ffDXD(.regvar sa:s:8, va:v:10
         s_mov_b32 sa[4], sa[2]  # 0
@@ -649,7 +648,6 @@ end:    s_xor_b32 sa[2], sa[2], s3      # 44
         },
         true, ""
     },
-#endif
     {   // 10 - more complex join
         R"ffDXD(.regvar sa:s:12, va:v:8
         s_mov_b32 sa[2], s2             # 0
