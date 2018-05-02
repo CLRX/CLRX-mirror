@@ -776,10 +776,45 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
         }
 }
 
-static void handleSSAEntryWhileJoining(
-            const std::unordered_map<AsmSingleVReg, size_t>* stackVarMap,
-            std::unordered_map<AsmSingleVReg, size_t>& alreadyReadMap,
-            FlowStackEntry3& entry, const SSAEntry& sentry,
+static void joinSVregWithVisited(const SVRegMap* stackVarMap, const SSAEntry& sentry,
+            const std::deque<FlowStackEntry3>& prevFlowStack,
+            const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
+            std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
+{
+    auto pfEnd = prevFlowStack.end();
+    --pfEnd;
+    const SSAInfo& sinfo = sentry.second;
+    
+    // join liveness for this variable ssaId>.
+    // only if in previous block previous SSAID is
+    // read before all writes
+    auto it = stackVarMap->find(sentry.first);
+    
+    const size_t pfStart = (it != stackVarMap->end() ? it->second : 0);
+    //if (it == stackVarMap.end())
+        //continue;
+    // fill up previous part
+    Liveness& lv = getLiveness(sentry.first, 0, sinfo,
+            livenesses, vregIndexMaps, regTypesNum, regRanges);
+    auto flit = prevFlowStack.begin() + pfStart;
+    {
+        // fill up liveness for first code block
+        const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+        auto ssaInfoIt = cblock.ssaInfoMap.find(sentry.first);
+        size_t prevLastPos = (ssaInfoIt != cblock.ssaInfoMap.end()) ?
+                ssaInfoIt->second.lastPos+1 : cblock.start;
+        lv.insert(prevLastPos, cblock.end);
+    }
+    
+    for (++flit; flit != pfEnd; ++flit)
+    {
+        const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+        lv.insert(cblock.start, cblock.end);
+    }
+}
+
+static void handleSSAEntryWhileJoining(const SVRegMap* stackVarMap,
+            SVRegMap& alreadyReadMap, FlowStackEntry3& entry, const SSAEntry& sentry,
             const std::deque<FlowStackEntry3>& prevFlowStack,
             const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
             std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
@@ -800,33 +835,36 @@ static void handleSSAEntryWhileJoining(
         }*/
         
         if (stackVarMap != nullptr)
+            joinSVregWithVisited(stackVarMap, sentry, prevFlowStack,
+                    codeBlocks, vregIndexMaps, livenesses, regTypesNum, regRanges);
+    }
+}
+
+static void useJoinSecPointCache(const SVRegMap* stackVarMap,
+        const SVRegBlockMap& alreadyReadMap,
+        const SVRegMap* resSecondPoints, size_t nextBlock,
+        SVRegMap* destCacheSecPoints,
+        const std::deque<FlowStackEntry3>& prevFlowStack,
+        const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
+        std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
+{
+    ARDOut << "use joinSecPointCache for " << nextBlock <<
+            ", alreadyRMapSize: " << alreadyReadMap.size() << "\n";
+    for (const auto& sentry: *resSecondPoints)
+    {
+        const bool alreadyRead = alreadyReadMap.find(sentry.first) != alreadyReadMap.end();
+        if (destCacheSecPoints != nullptr && !alreadyRead)
         {
-            // join liveness for this variable ssaId>.
-            // only if in previous block previous SSAID is
-            // read before all writes
-            auto it = stackVarMap->find(sentry.first);
-            
-            const size_t pfStart = (it != stackVarMap->end() ? it->second : 0);
-            //if (it == stackVarMap.end())
-                //continue;
-            // fill up previous part
-            Liveness& lv = getLiveness(sentry.first, 0, sinfo,
-                    livenesses, vregIndexMaps, regTypesNum, regRanges);
-            auto flit = prevFlowStack.begin() + pfStart;
-            {
-                // fill up liveness for first code block
-                const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-                auto ssaInfoIt = cblock.ssaInfoMap.find(sentry.first);
-                size_t prevLastPos = (ssaInfoIt != cblock.ssaInfoMap.end()) ?
-                        ssaInfoIt->second.lastPos+1 : cblock.start;
-                lv.insert(prevLastPos, cblock.end);
-            }
-            
-            for (++flit; flit != pfEnd; ++flit)
-            {
-                const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-                lv.insert(cblock.start, cblock.end);
-            }
+            auto res = destCacheSecPoints->insert(sentry);
+            if (!res.second)
+                res.first->second = sentry.second;
+        }
+        
+        if (stackVarMap != nullptr)
+        {
+            if (!alreadyRead)
+                joinSVregWithVisited(stackVarMap, sentry, prevFlowStack,
+                    codeBlocks, vregIndexMaps, livenesses, regTypesNum, regRanges);
         }
     }
 }
@@ -840,7 +878,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
     --pfEnd;
     ARDOut << "startJoinLv: " << (pfEnd-1)->blockIndex << "," << nextBlock << "\n";
     // key - varreg, value - last position in previous flowStack
-    std::unordered_map<AsmSingleVReg, size_t> stackVarMap;
+    SVRegMap stackVarMap;
     
     for (auto pfit = prevFlowStack.begin(); pfit != pfEnd; ++pfit)
     {
@@ -857,7 +895,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
     
     // already read in current path
     // key - vreg, value - source block where vreg of conflict found
-    std::unordered_map<AsmSingleVReg, size_t> alreadyReadMap;
+    SVRegMap alreadyReadMap;
     
     while (!flowStack.empty())
     {
@@ -953,8 +991,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
 
 static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
             const AsmRegVarUsage* rvus, LinearDepMap* ldepsOut,
-            const VarIndexMap* vregIndexMaps,
-            const std::unordered_map<AsmSingleVReg, size_t>& ssaIdIdxMap,
+            const VarIndexMap* vregIndexMaps, const SVRegMap& ssaIdIdxMap,
             size_t regTypesNum, const cxuint* regRanges)
 {
     // add linear deps
@@ -1145,7 +1182,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 
                 // main routine to handle ssaInfos
                 visited[entry.blockIndex] = true;
-                std::unordered_map<AsmSingleVReg, size_t> ssaIdIdxMap;
+                SVRegMap ssaIdIdxMap;
                 AsmRegVarUsage instrRVUs[8];
                 cxuint instrRVUsCount = 0;
                 
