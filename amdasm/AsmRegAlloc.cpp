@@ -776,6 +776,61 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
         }
 }
 
+static void handleSSAEntryWhileJoining(
+            const std::unordered_map<AsmSingleVReg, size_t>* stackVarMap,
+            std::unordered_map<AsmSingleVReg, size_t>& alreadyReadMap,
+            FlowStackEntry3& entry, const SSAEntry& sentry,
+            const std::deque<FlowStackEntry3>& prevFlowStack,
+            const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
+            std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
+{
+    auto pfEnd = prevFlowStack.end();
+    --pfEnd;
+    
+    const SSAInfo& sinfo = sentry.second;
+    auto res = alreadyReadMap.insert({ sentry.first, entry.blockIndex });
+    
+    if (res.second && sinfo.readBeforeWrite)
+    {
+        /*if (cacheSecPoints != nullptr)
+        {
+            auto res = cacheSecPoints->insert({ sentry.first, { sinfo.ssaIdBefore } });
+            if (!res.second)
+                res.first->second.insertValue(sinfo.ssaIdBefore);
+        }*/
+        
+        if (stackVarMap != nullptr)
+        {
+            // join liveness for this variable ssaId>.
+            // only if in previous block previous SSAID is
+            // read before all writes
+            auto it = stackVarMap->find(sentry.first);
+            
+            const size_t pfStart = (it != stackVarMap->end() ? it->second : 0);
+            //if (it == stackVarMap.end())
+                //continue;
+            // fill up previous part
+            Liveness& lv = getLiveness(sentry.first, 0, sinfo,
+                    livenesses, vregIndexMaps, regTypesNum, regRanges);
+            auto flit = prevFlowStack.begin() + pfStart;
+            {
+                // fill up liveness for first code block
+                const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+                auto ssaInfoIt = cblock.ssaInfoMap.find(sentry.first);
+                size_t prevLastPos = (ssaInfoIt != cblock.ssaInfoMap.end()) ?
+                        ssaInfoIt->second.lastPos+1 : cblock.start;
+                lv.insert(prevLastPos, cblock.end);
+            }
+            
+            for (++flit; flit != pfEnd; ++flit)
+            {
+                const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+                lv.insert(cblock.start, cblock.end);
+            }
+        }
+    }
+}
+
 static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStack,
         const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
         std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
@@ -817,40 +872,10 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                 //visited[entry.blockIndex] = true;
                 ARDOut << "  lvjoin: " << entry.blockIndex << "\n";
                 for (const auto& sentry: cblock.ssaInfoMap)
-                {
-                    const SSAInfo& sinfo = sentry.second;
-                    auto res = alreadyReadMap.insert({ sentry.first, entry.blockIndex });
-                    
-                    if (res.second && sinfo.readBeforeWrite)
-                    {
-                        // join liveness for this variable ssaId>.
-                        // only if in previous block previous SSAID is
-                        // read before all writes
-                        auto it = stackVarMap.find(sentry.first);
-                        
-                        const size_t pfStart = (it != stackVarMap.end() ? it->second : 0);
-                        //if (it == stackVarMap.end())
-                            //continue;
-                        // fill up previous part
-                        Liveness& lv = getLiveness(sentry.first, 0, sinfo,
-                                livenesses, vregIndexMaps, regTypesNum, regRanges);
-                        auto flit = prevFlowStack.begin() + pfStart;
-                        {
-                            // fill up liveness for first code block
-                            const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-                            auto ssaInfoIt = cblock.ssaInfoMap.find(sentry.first);
-                            size_t prevLastPos = (ssaInfoIt != cblock.ssaInfoMap.end()) ?
-                                    ssaInfoIt->second.lastPos+1 : cblock.start;
-                            lv.insert(prevLastPos, cblock.end);
-                        }
-                        
-                        for (++flit; flit != pfEnd; ++flit)
-                        {
-                            const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-                            lv.insert(cblock.start, cblock.end);
-                        }
-                    }
-                }
+                    handleSSAEntryWhileJoining(&stackVarMap, alreadyReadMap, entry, sentry,
+                                //toCache ? &cacheSecPoints : nullptr)
+                                prevFlowStack, codeBlocks, vregIndexMaps, livenesses,
+                                regTypesNum, regRanges);
             }
             /*else
             {
