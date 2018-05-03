@@ -1070,6 +1070,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                     }
                 else
                 {
+                    ARDOut << "use join secPointCache: " << entry.blockIndex << "\n";
                     // add to current cache sec points
                     for (const auto& rsentry: *joinSecondPoints)
                     {
