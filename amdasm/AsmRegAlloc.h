@@ -35,7 +35,7 @@
 
 using namespace CLRX;
 
-#define ASMREGALLOC_DEBUGDUMP 0
+#define ASMREGALLOC_DEBUGDUMP 1
 
 namespace CLRX
 {

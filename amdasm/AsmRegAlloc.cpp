@@ -1023,7 +1023,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
         }
     }
     
-    for (auto pfit = prevFlowStack.begin(); pfit != pfEnd; ++pfit)
+    for (auto pfit = prevFlowStack.begin()+pfStartIndex; pfit != pfEnd; ++pfit)
     {
         const FlowStackEntry3& entry = *pfit;
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
@@ -1038,6 +1038,10 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
             joinFirstPointsCache.put(pfit->blockIndex, stackVarMap);
         }
     }
+    
+    SVRegMap cacheSecPoints;
+    const bool toCache = (!joinSecondPointsCache.hasKey(nextBlock)) &&
+                cblocksToCache.count(nextBlock)>=2;
     
     // traverse by graph from next block
     std::deque<FlowStackEntry3> flowStack;
@@ -1056,26 +1060,67 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
         if (entry.nextIndex == 0)
         {
             // process current block
-            //if (!visited[entry.blockIndex])
+            if (!visited[entry.blockIndex])
             {
-                //visited[entry.blockIndex] = true;
+                visited[entry.blockIndex] = true;
                 ARDOut << "  lvjoin: " << entry.blockIndex << "\n";
-                for (const auto& sentry: cblock.ssaInfoMap)
+                
+                const SVRegMap* joinSecondPoints =
+                        joinSecondPointsCache.use(entry.blockIndex);
+                
+                if (joinSecondPoints == nullptr)
+                    for (const auto& sentry: cblock.ssaInfoMap)
+                    {
+                        const SSAInfo& sinfo = sentry.second;
+                        auto res = alreadyReadMap.insert({ sentry.first, entry.blockIndex });
+                        
+                        if (toCache)
+                        {
+                            auto res = cacheSecPoints.insert({ sentry.first,
+                                        sinfo.ssaIdBefore });
+                            if (!res.second)
+                                res.first->second = sinfo.ssaIdBefore;
+                        }
+                        
+                        if (res.second && sinfo.readBeforeWrite)
+                            joinSVregWithVisited(&stackVarMap, sentry.first,
+                                sentry.second.ssaIdBefore, prevFlowStack, codeBlocks,
+                                vregIndexMaps, livenesses, regTypesNum, regRanges);
+                    }
+                else
                 {
-                    const SSAInfo& sinfo = sentry.second;
-                    auto res = alreadyReadMap.insert({ sentry.first, entry.blockIndex });
-                    
-                    if (res.second && sinfo.readBeforeWrite)
-                        joinSVregWithVisited(&stackVarMap, sentry.first,
-                            sentry.second.ssaIdBefore, prevFlowStack, codeBlocks,
-                            vregIndexMaps, livenesses, regTypesNum, regRanges);
+                    // add to current cache sec points
+                    for (const auto& rsentry: *joinSecondPoints)
+                    {
+                        const bool alreadyRead =
+                            alreadyReadMap.find(rsentry.first) != alreadyReadMap.end();
+                        
+                        if (!alreadyRead)
+                            joinSVregWithVisited(&stackVarMap, rsentry.first,
+                                    rsentry.second, prevFlowStack, codeBlocks,
+                                    vregIndexMaps, livenesses, regTypesNum, regRanges);
+                        
+                        if (!alreadyRead)
+                        {
+                            auto res = cacheSecPoints.insert(rsentry);
+                            if (!res.second)
+                                res.first->second = rsentry.second;
+                        }
+                    }
+                    flowStack.pop_back();
+                    continue;
                 }
             }
-            /*else
+            else
             {
+                cblocksToCache.increase(entry.blockIndex);
+                ARDOut << "jcblockToCache: " << entry.blockIndex << "=" <<
+                            cblocksToCache.count(entry.blockIndex) << "\n";
+                // back, already visited
+                ARDOut << "join already: " << entry.blockIndex << "\n";
                 flowStack.pop_back();
                 continue;
-            }*/
+            }
         }
         
         if (entry.nextIndex < cblock.nexts.size())
@@ -1305,17 +1350,10 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
         {
             curLiveTime = cblock.start;
             // process current block
-            if (!blockInWay.insert(entry.blockIndex).second)
-            {
-                // if loop
-                /*putCrossBlockForLoop(flowStack, codeBlocks,
-                        livenesses, vregIndexMaps, regTypesNum, regRanges);*/
-                flowStack.pop_back();
-                continue;
-            }
-            
             if (!visited[entry.blockIndex])
             {
+                visited[entry.blockIndex] = true;
+                ARDOut << "joinpush: " << entry.blockIndex << "\n";
                 if (flowStack.size() > 1)
                     putCrossBlockLivenesses(flowStack, codeBlocks, lastVRegMap,
                             livenesses, vregIndexMaps, regTypesNum, regRanges);
@@ -1337,7 +1375,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 }
                 
                 // main routine to handle ssaInfos
-                visited[entry.blockIndex] = true;
                 SVRegMap ssaIdIdxMap;
                 AsmRegVarUsage instrRVUs[8];
                 cxuint instrRVUsCount = 0;
@@ -1420,7 +1457,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             else
             {
                 cblocksToCache.increase(entry.blockIndex);
-                ARDOut << "cblockToCache: " << entry.blockIndex << "=" <<
+                ARDOut << "jcblockToCache: " << entry.blockIndex << "=" <<
                             cblocksToCache.count(entry.blockIndex) << "\n";
                 
                 // back, already visited
