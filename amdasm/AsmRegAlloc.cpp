@@ -824,38 +824,9 @@ static void joinSVregWithVisited(const SVRegMap* stackVarMap, const AsmSingleVRe
     }
 }
 
-static void handleSSAEntryWhileJoining(const SVRegMap* stackVarMap,
-            SVRegMap& alreadyReadMap, FlowStackEntry3& entry, const SSAEntry& sentry,
-            SVRegMap* cacheSecPoints, const std::deque<FlowStackEntry3>& prevFlowStack,
-            const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
-            std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
-{
-    auto pfEnd = prevFlowStack.end();
-    --pfEnd;
-    
-    const SSAInfo& sinfo = sentry.second;
-    auto res = alreadyReadMap.insert({ sentry.first, entry.blockIndex });
-    
-    if (res.second && sinfo.readBeforeWrite)
-    {
-        if (cacheSecPoints != nullptr)
-        {
-            auto res = cacheSecPoints->insert({ sentry.first, sinfo.ssaIdBefore });
-            if (!res.second)
-                res.first->second = sinfo.ssaIdBefore;
-        }
-        
-        if (stackVarMap != nullptr)
-            joinSVregWithVisited(stackVarMap, sentry.first,
-                    sentry.second.ssaIdBefore, prevFlowStack,
-                    codeBlocks, vregIndexMaps, livenesses, regTypesNum, regRanges);
-    }
-}
-
 static void useJoinSecPointCache(const SVRegMap* stackVarMap,
         const SVRegBlockMap& alreadyReadMap,
         const SVRegMap* resSecondPoints, size_t nextBlock,
-        SVRegMap* destCacheSecPoints,
         const std::deque<FlowStackEntry3>& prevFlowStack,
         const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
         std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
@@ -865,20 +836,10 @@ static void useJoinSecPointCache(const SVRegMap* stackVarMap,
     for (const auto& rsentry: *resSecondPoints)
     {
         const bool alreadyRead = alreadyReadMap.find(rsentry.first) != alreadyReadMap.end();
-        if (destCacheSecPoints != nullptr && !alreadyRead)
-        {
-            auto res = destCacheSecPoints->insert(rsentry);
-            if (!res.second)
-                res.first->second = rsentry.second;
-        }
-        
-        if (stackVarMap != nullptr)
-        {
-            if (!alreadyRead)
-                joinSVregWithVisited(stackVarMap, rsentry.first, rsentry.second,
-                    prevFlowStack, codeBlocks, vregIndexMaps, livenesses, regTypesNum,
-                    regRanges);
-        }
+        if (stackVarMap != nullptr && !alreadyRead)
+            joinSVregWithVisited(stackVarMap, rsentry.first, rsentry.second,
+                prevFlowStack, codeBlocks, vregIndexMaps, livenesses, regTypesNum,
+                regRanges);
     }
 }
 
@@ -915,15 +876,37 @@ static void addJoinSecCacheEntry(const RoutineMap& routineMap,
                             resSecondPointsCache.use(entry.blockIndex);
                 if (resSecondPoints == nullptr)
                 {
+                    // if joinSecondPointCache not found
                     for (auto& sentry: cblock.ssaInfoMap)
-                        /*handleSSAEntryWhileResolving(nullptr, nullptr,
-                                alreadyReadMap, entry, sentry,
-                                &cacheSecPoints)*/;
+                    {
+                        const SSAInfo& sinfo = sentry.second;
+                        auto res = alreadyReadMap.insert(
+                                    { sentry.first, entry.blockIndex });
+                        
+                        if (res.second && sinfo.readBeforeWrite)
+                        {
+                            auto res = cacheSecPoints.insert(
+                                        { sentry.first, sinfo.ssaIdBefore });
+                            
+                            if (!res.second)
+                                res.first->second = sinfo.ssaIdBefore;
+                        }
+                    }
                 }
                 else // to use cache
                 {
-                    /*useResSecPointCache(nullptr, nullptr, alreadyReadMap,
-                            resSecondPoints, entry.blockIndex, &cacheSecPoints);*/
+                    // add to current cache sec points
+                    for (const auto& rsentry: *resSecondPoints)
+                    {
+                        const bool alreadyRead =
+                            alreadyReadMap.find(rsentry.first) != alreadyReadMap.end();
+                        if (!alreadyRead)
+                        {
+                            auto res = cacheSecPoints.insert(rsentry);
+                            if (!res.second)
+                                res.first->second = rsentry.second;
+                        }
+                    }
                     flowStack.pop_back();
                     continue;
                 }
@@ -996,7 +979,7 @@ static void addJoinSecCacheEntry(const RoutineMap& routineMap,
         }
     }
     
-    //resSecondPointsCache.put(nextBlock, cacheSecPoints);
+    resSecondPointsCache.put(nextBlock, cacheSecPoints);
 }
 
 static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStack,
@@ -1040,10 +1023,15 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                 //visited[entry.blockIndex] = true;
                 ARDOut << "  lvjoin: " << entry.blockIndex << "\n";
                 for (const auto& sentry: cblock.ssaInfoMap)
-                    handleSSAEntryWhileJoining(&stackVarMap, alreadyReadMap, entry, sentry,
-                                nullptr,
-                                prevFlowStack, codeBlocks, vregIndexMaps, livenesses,
-                                regTypesNum, regRanges);
+                {
+                    const SSAInfo& sinfo = sentry.second;
+                    auto res = alreadyReadMap.insert({ sentry.first, entry.blockIndex });
+                    
+                    if (res.second && sinfo.readBeforeWrite)
+                        joinSVregWithVisited(&stackVarMap, sentry.first,
+                            sentry.second.ssaIdBefore, prevFlowStack, codeBlocks,
+                            vregIndexMaps, livenesses, regTypesNum, regRanges);
+                }
             }
             /*else
             {

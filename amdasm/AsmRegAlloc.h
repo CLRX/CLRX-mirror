@@ -136,7 +136,17 @@ public:
 };
 
 typedef std::unordered_map<AsmSingleVReg, BlockIndex> SVRegBlockMap;
-typedef std::unordered_map<AsmSingleVReg, size_t> SVRegMap;
+
+class CLRX_INTERNAL SVRegMap: public std::unordered_map<AsmSingleVReg, size_t>
+{
+public:
+    SVRegMap()
+    { }
+    
+    size_t weight() const
+    { return size(); }
+};
+
 typedef LastSSAIdMap RBWSSAIdMap;
 typedef std::unordered_map<BlockIndex, VectorSet<BlockIndex> > SubrLoopsMap;
 
@@ -158,8 +168,8 @@ struct CLRX_INTERNAL LoopSSAIdMap
 struct CLRX_INTERNAL RoutineData
 {
     // rbwSSAIdMap - read before write SSAId's map
-    std::unordered_map<AsmSingleVReg, size_t> rbwSSAIdMap;
-    std::unordered_map<AsmSingleVReg, size_t> origRbwSSAIdMap;
+    SVRegMap rbwSSAIdMap;
+    SVRegMap origRbwSSAIdMap;
     LastSSAIdMap curSSAIdMap;
     LastSSAIdMap lastSSAIdMap;
     // key - loop block, value - last ssaId map for loop end
