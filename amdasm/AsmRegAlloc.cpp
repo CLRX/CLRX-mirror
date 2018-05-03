@@ -1053,7 +1053,8 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                     for (const auto& sentry: cblock.ssaInfoMap)
                     {
                         const SSAInfo& sinfo = sentry.second;
-                        auto res = alreadyReadMap.insert({ sentry.first, entry.blockIndex });
+                        auto res = alreadyReadMap.insert(
+                                    { sentry.first, entry.blockIndex });
                         
                         if (toCache)
                         {
@@ -1243,6 +1244,7 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
 
 void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
 {
+    ARDOut << "----- createLivenesses ------\n";
     // construct var index maps
     cxuint regRanges[MAX_REGTYPES_NUM*2];
     std::fill(graphVregsCounts, graphVregsCounts+MAX_REGTYPES_NUM, size_t(0));

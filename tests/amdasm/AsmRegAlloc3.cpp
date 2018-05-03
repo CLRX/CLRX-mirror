@@ -770,6 +770,69 @@ loop:
             { }
         },
         true, ""
+    },
+    {   // 12 - simple loop with fork (regvar used only in these forks)
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4             # 0
+loop:   s_cbranch_scc1 b1               # 4
+        
+b0:     s_add_u32 sa[2], sa[2], sa[0]   # 8
+        s_branch loopend                # 12
+b1:     s_add_u32 sa[2], sa[2], sa[1]   # 16
+loopend:
+        s_cbranch_scc0 loop             # 20
+        s_endpgm                        # 24
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 0, 1 } }, // 0: S4
+                { { 0, 24 } }, // 1: sa[0]'0
+                { { 0, 24 } }, // 2: sa[1]'0
+                { { 1, 24 } }  // 3: sa[2]'0
+            },
+            { },
+            { },
+            { }
+        },
+        {   // linearDepMaps
+            { },
+            { },
+            { },
+            { }
+        },
+        true, ""
+    },
+    {   // 13 - simple with forks - holes in loop (second case)
+        R"ffDXD(.regvar sa:s:8, va:v:8
+loop:   s_cbranch_scc1 b1               # 0
+        
+b0:     s_add_u32 sa[2], sa[2], sa[0]   # 4
+        s_add_u32 sa[3], sa[0], sa[1]   # 8
+        s_branch loopend                # 12
+b1:     s_add_u32 sa[2], sa[0], sa[1]   # 16
+        s_add_u32 sa[3], sa[3], sa[1]   # 20
+loopend:
+        s_cbranch_scc0 loop             # 24
+        s_endpgm                        # 28
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 0, 28 } }, // 0: sa[0]'0
+                { { 0, 28 } }, // 1: sa[1]'0
+                { { 0, 16 }, { 17, 28 } }, // 2: sa[2]'0
+                { { 0, 4 }, { 9, 28 } }  // 3: sa[3]'0
+            },
+            { },
+            { },
+            { }
+        },
+        {   // linearDepMaps
+            { },
+            { },
+            { },
+            { }
+        },
+        true, ""
     }
 };
 
