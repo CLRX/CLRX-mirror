@@ -722,6 +722,18 @@ static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
     return livenesses[regType][ssaIdIndices[ssaId]];
 }
 
+static Liveness& getLiveness2(const AsmSingleVReg& svreg,
+        size_t ssaId, std::vector<Liveness>* livenesses,
+        const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges)
+{
+    cxuint regType = getRegType(regTypesNum, regRanges, svreg); // regtype
+    const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+    const std::vector<size_t>& ssaIdIndices = vregIndexMap.find(svreg)->second;
+    ARDOut << "lvn[" << regType << "][" << ssaIdIndices[ssaId] << "]. ssaId: " <<
+            ssaId << ". svreg: " << svreg.regVar << ":" << svreg.index << "\n";
+    return livenesses[regType][ssaIdIndices[ssaId]];
+}
+
 /* TODO: add handling calls
  * handle many start points in this code (for example many kernel's in same code)
  * replace sets by vector, and sort and remove same values on demand
@@ -776,31 +788,30 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
         }
 }
 
-static void joinSVregWithVisited(const SVRegMap* stackVarMap, const SSAEntry& sentry,
-            const std::deque<FlowStackEntry3>& prevFlowStack,
+static void joinSVregWithVisited(const SVRegMap* stackVarMap, const AsmSingleVReg& vreg,
+            size_t ssaIdNextBefore, const std::deque<FlowStackEntry3>& prevFlowStack,
             const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
             std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
 {
     auto pfEnd = prevFlowStack.end();
     --pfEnd;
-    const SSAInfo& sinfo = sentry.second;
     
     // join liveness for this variable ssaId>.
     // only if in previous block previous SSAID is
     // read before all writes
-    auto it = stackVarMap->find(sentry.first);
+    auto it = stackVarMap->find(vreg);
     
     const size_t pfStart = (it != stackVarMap->end() ? it->second : 0);
     //if (it == stackVarMap.end())
         //continue;
     // fill up previous part
-    Liveness& lv = getLiveness(sentry.first, 0, sinfo,
+    Liveness& lv = getLiveness2(vreg, ssaIdNextBefore,
             livenesses, vregIndexMaps, regTypesNum, regRanges);
     auto flit = prevFlowStack.begin() + pfStart;
     {
         // fill up liveness for first code block
         const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-        auto ssaInfoIt = cblock.ssaInfoMap.find(sentry.first);
+        auto ssaInfoIt = cblock.ssaInfoMap.find(vreg);
         size_t prevLastPos = (ssaInfoIt != cblock.ssaInfoMap.end()) ?
                 ssaInfoIt->second.lastPos+1 : cblock.start;
         lv.insert(prevLastPos, cblock.end);
@@ -815,7 +826,7 @@ static void joinSVregWithVisited(const SVRegMap* stackVarMap, const SSAEntry& se
 
 static void handleSSAEntryWhileJoining(const SVRegMap* stackVarMap,
             SVRegMap& alreadyReadMap, FlowStackEntry3& entry, const SSAEntry& sentry,
-            const std::deque<FlowStackEntry3>& prevFlowStack,
+            SVRegMap* cacheSecPoints, const std::deque<FlowStackEntry3>& prevFlowStack,
             const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
             std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
 {
@@ -827,15 +838,16 @@ static void handleSSAEntryWhileJoining(const SVRegMap* stackVarMap,
     
     if (res.second && sinfo.readBeforeWrite)
     {
-        /*if (cacheSecPoints != nullptr)
+        if (cacheSecPoints != nullptr)
         {
-            auto res = cacheSecPoints->insert({ sentry.first, { sinfo.ssaIdBefore } });
+            auto res = cacheSecPoints->insert({ sentry.first, sinfo.ssaIdBefore });
             if (!res.second)
-                res.first->second.insertValue(sinfo.ssaIdBefore);
-        }*/
+                res.first->second = sinfo.ssaIdBefore;
+        }
         
         if (stackVarMap != nullptr)
-            joinSVregWithVisited(stackVarMap, sentry, prevFlowStack,
+            joinSVregWithVisited(stackVarMap, sentry.first,
+                    sentry.second.ssaIdBefore, prevFlowStack,
                     codeBlocks, vregIndexMaps, livenesses, regTypesNum, regRanges);
     }
 }
@@ -850,23 +862,141 @@ static void useJoinSecPointCache(const SVRegMap* stackVarMap,
 {
     ARDOut << "use joinSecPointCache for " << nextBlock <<
             ", alreadyRMapSize: " << alreadyReadMap.size() << "\n";
-    for (const auto& sentry: *resSecondPoints)
+    for (const auto& rsentry: *resSecondPoints)
     {
-        const bool alreadyRead = alreadyReadMap.find(sentry.first) != alreadyReadMap.end();
+        const bool alreadyRead = alreadyReadMap.find(rsentry.first) != alreadyReadMap.end();
         if (destCacheSecPoints != nullptr && !alreadyRead)
         {
-            auto res = destCacheSecPoints->insert(sentry);
+            auto res = destCacheSecPoints->insert(rsentry);
             if (!res.second)
-                res.first->second = sentry.second;
+                res.first->second = rsentry.second;
         }
         
         if (stackVarMap != nullptr)
         {
             if (!alreadyRead)
-                joinSVregWithVisited(stackVarMap, sentry, prevFlowStack,
-                    codeBlocks, vregIndexMaps, livenesses, regTypesNum, regRanges);
+                joinSVregWithVisited(stackVarMap, rsentry.first, rsentry.second,
+                    prevFlowStack, codeBlocks, vregIndexMaps, livenesses, regTypesNum,
+                    regRanges);
         }
     }
+}
+
+// add new join second cache entry with readBeforeWrite for all encountered regvars
+static void addJoinSecCacheEntry(const RoutineMap& routineMap,
+                const std::vector<CodeBlock>& codeBlocks,
+                SimpleCache<size_t, SVRegMap>& resSecondPointsCache,
+                size_t nextBlock)
+{
+    ARDOut << "addJoinSecCacheEntry: " << nextBlock << "\n";
+    //std::stack<CallStackEntry> callStack = prevCallStack;
+    // traverse by graph from next block
+    std::deque<FlowStackEntry3> flowStack;
+    flowStack.push_back({ nextBlock, 0 });
+    CBlockBitPool visited(codeBlocks.size(), false);
+    
+    SVRegBlockMap alreadyReadMap;
+    SVRegMap cacheSecPoints;
+    
+    while (!flowStack.empty())
+    {
+        FlowStackEntry3& entry = flowStack.back();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        {
+            // process current block
+            if (!visited[entry.blockIndex])
+            {
+                visited[entry.blockIndex] = true;
+                ARDOut << "  resolv (cache): " << entry.blockIndex << "\n";
+                
+                const SVRegMap* resSecondPoints =
+                            resSecondPointsCache.use(entry.blockIndex);
+                if (resSecondPoints == nullptr)
+                {
+                    for (auto& sentry: cblock.ssaInfoMap)
+                        /*handleSSAEntryWhileResolving(nullptr, nullptr,
+                                alreadyReadMap, entry, sentry,
+                                &cacheSecPoints)*/;
+                }
+                else // to use cache
+                {
+                    /*useResSecPointCache(nullptr, nullptr, alreadyReadMap,
+                            resSecondPoints, entry.blockIndex, &cacheSecPoints);*/
+                    flowStack.pop_back();
+                    continue;
+                }
+            }
+            else
+            {
+                // back, already visited
+                ARDOut << "join already (cache): " << entry.blockIndex << "\n";
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            // add toResolveMap ssaIds inside called routines
+            for (const auto& next: cblock.nexts)
+                if (next.isCall)
+                {
+                    const RoutineData& rdata = routineMap.find(next.block)->second;
+                    for (const auto& v: rdata.rbwSSAIdMap)
+                        alreadyReadMap.insert({v.first, entry.blockIndex });
+                    for (const auto& v: rdata.lastSSAIdMap)
+                        alreadyReadMap.insert({v.first, entry.blockIndex });
+                }
+            
+            flowStack.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else // back
+        {
+            // remove old to resolve in leaved way to allow collecting next ssaId
+            // before write (can be different due to earlier visit)
+            for (const auto& next: cblock.nexts)
+                if (next.isCall)
+                {
+                    const RoutineData& rdata = routineMap.find(next.block)->second;
+                    for (const auto& v: rdata.rbwSSAIdMap)
+                    {
+                        auto it = alreadyReadMap.find(v.first);
+                        if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
+                            alreadyReadMap.erase(it);
+                    }
+                    for (const auto& v: rdata.lastSSAIdMap)
+                    {
+                        auto it = alreadyReadMap.find(v.first);
+                        if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
+                            alreadyReadMap.erase(it);
+                    }
+                }
+            
+            for (const auto& sentry: cblock.ssaInfoMap)
+            {
+                auto it = alreadyReadMap.find(sentry.first);
+                if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
+                    // remove old to resolve in leaved way to allow collecting next ssaId
+                    // before write (can be different due to earlier visit)
+                    alreadyReadMap.erase(it);
+            }
+            ARDOut << "  popjoin (cache)\n";
+            flowStack.pop_back();
+        }
+    }
+    
+    //resSecondPointsCache.put(nextBlock, cacheSecPoints);
 }
 
 static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStack,
@@ -911,7 +1041,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                 ARDOut << "  lvjoin: " << entry.blockIndex << "\n";
                 for (const auto& sentry: cblock.ssaInfoMap)
                     handleSSAEntryWhileJoining(&stackVarMap, alreadyReadMap, entry, sentry,
-                                //toCache ? &cacheSecPoints : nullptr)
+                                nullptr,
                                 prevFlowStack, codeBlocks, vregIndexMaps, livenesses,
                                 regTypesNum, regRanges);
             }
@@ -1325,7 +1455,9 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
     }
     
     // after, that resolve joins (join with already visited code)
+    // SVRegMap in this cache: key - vreg, value - last flowStack entry position
     SimpleCache<size_t, SVRegMap> resFirstPointsCache(wrCount<<1);
+    // SVRegMap in this cache: key - vreg, value - first readBefore in second part
     SimpleCache<size_t, SVRegMap> resSecondPointsCache(rbwCount<<1);
     
     flowStack.clear();
