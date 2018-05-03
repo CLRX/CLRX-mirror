@@ -824,25 +824,6 @@ static void joinSVregWithVisited(const SVRegMap* stackVarMap, const AsmSingleVRe
     }
 }
 
-static void useJoinSecPointCache(const SVRegMap* stackVarMap,
-        const SVRegBlockMap& alreadyReadMap,
-        const SVRegMap* resSecondPoints, size_t nextBlock,
-        const std::deque<FlowStackEntry3>& prevFlowStack,
-        const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
-        std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
-{
-    ARDOut << "use joinSecPointCache for " << nextBlock <<
-            ", alreadyRMapSize: " << alreadyReadMap.size() << "\n";
-    for (const auto& rsentry: *resSecondPoints)
-    {
-        const bool alreadyRead = alreadyReadMap.find(rsentry.first) != alreadyReadMap.end();
-        if (stackVarMap != nullptr && !alreadyRead)
-            joinSVregWithVisited(stackVarMap, rsentry.first, rsentry.second,
-                prevFlowStack, codeBlocks, vregIndexMaps, livenesses, regTypesNum,
-                regRanges);
-    }
-}
-
 // add new join second cache entry with readBeforeWrite for all encountered regvars
 static void addJoinSecCacheEntry(//const RoutineMap& routineMap,
                 const std::vector<CodeBlock>& codeBlocks,
