@@ -1320,8 +1320,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
     std::vector<bool> visited(codeBlocks.size(), false);
     // hold last vreg ssaId and position
     LastVRegMap lastVRegMap;
-    // hold start live time position for every code block
-    std::unordered_set<size_t> blockInWay;
     
     // key - current res first key, value - previous first key and its flowStack pos
     PrevWaysIndexMap prevWaysIndexMap;
@@ -1491,7 +1489,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
         else // back
         {
             // revert lastSSAIdMap
-            blockInWay.erase(entry.blockIndex);
             flowStack.pop_back();
             if (!flowStack.empty())
                 for (const auto& sentry: cblock.ssaInfoMap)
