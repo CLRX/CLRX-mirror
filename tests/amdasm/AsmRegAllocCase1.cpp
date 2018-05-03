@@ -3211,5 +3211,59 @@ bb3:    s_and_b32 sa[5], sa[5], sa[6]
         },
         true, ""
     },
+    {   // 27 - simple loop with fork (regvar used only in these forks)
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4
+loop:   s_cbranch_scc1 b1
+        
+b0:     s_add_u32 sa[2], sa[2], sa[0]
+        s_branch loopend
+b1:     s_add_u32 sa[2], sa[2], sa[1]
+loopend:
+        s_cbranch_scc0 loop
+        s_endpgm
+)ffDXD",
+        {
+            {   // block 0 - start
+                0, 4,
+                { },
+                {
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, false) }
+                }, false, false, false },
+            {   // block 1 - loop
+                4, 8,
+                { { 2, false }, { 3, false } },
+                {
+                }, false, false, false },
+            {   // block 2 - b0
+                8, 16,
+                { { 4, false } },
+                {
+                    { { "sa", 0 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 2 }, SSAInfo(1, 2, 2, 2, 1, true) }
+                }, false, false, true },
+            {   // block 3 - b1
+                16, 20,
+                { },
+                {
+                    { { "sa", 1 }, SSAInfo(0, SIZE_MAX, 1, SIZE_MAX, 0, true) },
+                    { { "sa", 2 }, SSAInfo(1, 3, 3, 3, 1, true) }
+                }, false, false, false },
+            {   // block 4 - loopend
+                20, 24,
+                { { 1, false }, { 5, false } },
+                {
+                }, false, false, false },
+            {   // block 5 - en
+                24, 28,
+                { },
+                { }, false, false, true }
+        },
+        {   // SSA replaces
+            { { "sa", 2 }, { { 2, 1 }, { 3, 1 } } }
+        },
+        true, ""
+    },
     { nullptr }
 };

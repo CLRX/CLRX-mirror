@@ -711,6 +711,65 @@ end:    s_xor_b32 sa[2], sa[2], s3      # 64
             { }
         },
         true, ""
+    },
+    {   // 11 - simple loop
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[0], 0              # 0
+        s_mov_b32 sa[1], s10            # 4
+        v_mov_b32 va[0], v0             # 8
+        v_mov_b32 va[1], v1             # 12
+        v_mov_b32 va[3], 0              # 16
+        v_mov_b32 va[4], 11             # 20
+loop:
+        ds_read_b32 va[2], va[3]        # 24
+        v_xor_b32 va[0], va[1], va[2]   # 32
+        v_not_b32 va[0], va[0]          # 36
+        v_xor_b32 va[0], 0xfff, va[0]   # 40
+        v_xor_b32 va[4], va[4], va[2]   # 48
+        v_not_b32 va[4], va[0]          # 52
+        v_xor_b32 va[4], 0xfff, va[0]   # 56
+        v_add_u32 va[1], vcc, 1001, va[1]   # 64
+        
+        s_add_u32 sa[0], sa[0], 1       # 72
+        s_cmp_lt_u32 sa[0], sa[1]       # 76
+        s_cbranch_scc1 loop             # 80
+        
+        v_xor_b32 va[0], 33, va[0]      # 84
+        s_add_u32 sa[0], 14, sa[0]      # 88
+        s_endpgm                        # 92
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 0, 5 } }, // 0: S10
+                { { 1, 89 } }, // 1: sa[0]'0
+                { { 89, 90 } }, // 2: sa[0]'1
+                { { 5, 84 } }  // 3: sa[1]'0
+            },
+            {   // for VGPRs
+                { { 0, 9 } }, // 0: V0
+                { { 0, 13 } }, // 1: V1
+                { { 9, 10 } }, // va[0]'0
+                { { 33, 37 } }, // va[0]'1
+                { { 37, 41 } }, // va[0]'2
+                { { 41, 85 } }, // va[0]'3
+                { { 85, 86 } }, // va[0]'4
+                { { 13, 84 } }, // va[1]'0
+                { { 25, 49 } }, // va[2]'0
+                { { 17, 84 } }, // va[3]'0
+                { { 21, 49 }, { 57, 84 } }, // va[4]'0
+                { { 49, 50 } }, // va[4]'1
+                { { 53, 54 } }  // va[4]'2
+            },
+            { },
+            { }
+        },
+        {   // linearDepMaps
+            { },
+            { },
+            { },
+            { }
+        },
+        true, ""
     }
 };
 
