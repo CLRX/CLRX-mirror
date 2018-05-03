@@ -844,9 +844,9 @@ static void useJoinSecPointCache(const SVRegMap* stackVarMap,
 }
 
 // add new join second cache entry with readBeforeWrite for all encountered regvars
-static void addJoinSecCacheEntry(const RoutineMap& routineMap,
+static void addJoinSecCacheEntry(//const RoutineMap& routineMap,
                 const std::vector<CodeBlock>& codeBlocks,
-                SimpleCache<size_t, SVRegMap>& resSecondPointsCache,
+                SimpleCache<size_t, SVRegMap>& joinSecondPointsCache,
                 size_t nextBlock)
 {
     ARDOut << "addJoinSecCacheEntry: " << nextBlock << "\n";
@@ -873,7 +873,7 @@ static void addJoinSecCacheEntry(const RoutineMap& routineMap,
                 ARDOut << "  resolv (cache): " << entry.blockIndex << "\n";
                 
                 const SVRegMap* resSecondPoints =
-                            resSecondPointsCache.use(entry.blockIndex);
+                            joinSecondPointsCache.use(entry.blockIndex);
                 if (resSecondPoints == nullptr)
                 {
                     // if joinSecondPointCache not found
@@ -931,7 +931,7 @@ static void addJoinSecCacheEntry(const RoutineMap& routineMap,
                  !cblock.haveReturn && !cblock.haveEnd)
         {
             // add toResolveMap ssaIds inside called routines
-            for (const auto& next: cblock.nexts)
+            /*for (const auto& next: cblock.nexts)
                 if (next.isCall)
                 {
                     const RoutineData& rdata = routineMap.find(next.block)->second;
@@ -939,7 +939,7 @@ static void addJoinSecCacheEntry(const RoutineMap& routineMap,
                         alreadyReadMap.insert({v.first, entry.blockIndex });
                     for (const auto& v: rdata.lastSSAIdMap)
                         alreadyReadMap.insert({v.first, entry.blockIndex });
-                }
+                }*/
             
             flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
@@ -948,7 +948,7 @@ static void addJoinSecCacheEntry(const RoutineMap& routineMap,
         {
             // remove old to resolve in leaved way to allow collecting next ssaId
             // before write (can be different due to earlier visit)
-            for (const auto& next: cblock.nexts)
+            /*for (const auto& next: cblock.nexts)
                 if (next.isCall)
                 {
                     const RoutineData& rdata = routineMap.find(next.block)->second;
@@ -964,7 +964,7 @@ static void addJoinSecCacheEntry(const RoutineMap& routineMap,
                         if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
                             alreadyReadMap.erase(it);
                     }
-                }
+                }*/
             
             for (const auto& sentry: cblock.ssaInfoMap)
             {
@@ -979,11 +979,16 @@ static void addJoinSecCacheEntry(const RoutineMap& routineMap,
         }
     }
     
-    resSecondPointsCache.put(nextBlock, cacheSecPoints);
+    joinSecondPointsCache.put(nextBlock, cacheSecPoints);
 }
 
 static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStack,
-        const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
+        const std::vector<CodeBlock>& codeBlocks,
+        const PrevWaysIndexMap& prevWaysIndexMap,
+        const std::vector<bool>& waysToCache, ResSecondPointsToCache& cblocksToCache,
+        SimpleCache<size_t, SVRegMap>& joinFirstPointsCache,
+        SimpleCache<size_t, SVRegMap>& joinSecondPointsCache,
+        const VarIndexMap* vregIndexMaps,
         std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
 {
     size_t nextBlock = prevFlowStack.back().blockIndex;
@@ -993,12 +998,45 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
     // key - varreg, value - last position in previous flowStack
     SVRegMap stackVarMap;
     
+    size_t pfStartIndex = 0;
+    {
+        auto pfPrev = pfEnd;
+        --pfPrev;
+        auto it = prevWaysIndexMap.find(pfPrev->blockIndex);
+        if (it != prevWaysIndexMap.end())
+        {
+            const SVRegMap* cached = joinFirstPointsCache.use(it->second.first);
+            if (cached!=nullptr)
+            {
+                ARDOut << "use pfcached: " << it->second.first << ", " <<
+                        it->second.second << "\n";
+                stackVarMap = *cached;
+                pfStartIndex = it->second.second+1;
+                
+                // apply missing calls at end of the cached
+                //const CodeBlock& cblock = codeBlocks[it->second.first];
+                
+                //const FlowStackEntry3& entry = *(prevFlowStack.begin()+pfStartIndex-1);
+                //if (entry.nextIndex > cblock.nexts.size())
+                   // applyCallToStackVarMap(cblock, routineMap, stackVarMap, -1, -1);
+            }
+        }
+    }
+    
     for (auto pfit = prevFlowStack.begin(); pfit != pfEnd; ++pfit)
     {
         const FlowStackEntry3& entry = *pfit;
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
         for (const auto& sentry: cblock.ssaInfoMap)
             stackVarMap[sentry.first] = pfit - prevFlowStack.begin();
+        
+        // put to first point cache
+        if (waysToCache[pfit->blockIndex] &&
+            !joinFirstPointsCache.hasKey(pfit->blockIndex))
+        {
+            ARDOut << "put pfcache " << pfit->blockIndex << "\n";
+            joinFirstPointsCache.put(pfit->blockIndex, stackVarMap);
+        }
     }
     
     // traverse by graph from next block
@@ -1097,9 +1135,9 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
             ARDOut << "  popjoin\n";
             
             /*if (cblocksToCache.count(entry.blockIndex)==2 &&
-                !resSecondPointsCache.hasKey(entry.blockIndex))
+                !joinSecondPointsCache.hasKey(entry.blockIndex))
                 // add to cache
-                addResSecCacheEntry(routineMap, codeBlocks, resSecondPointsCache,
+                addResSecCacheEntry(routineMap, codeBlocks, joinSecondPointsCache,
                             entry.blockIndex);*/
             
             flowStack.pop_back();
@@ -1444,9 +1482,9 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
     
     // after, that resolve joins (join with already visited code)
     // SVRegMap in this cache: key - vreg, value - last flowStack entry position
-    SimpleCache<size_t, SVRegMap> resFirstPointsCache(wrCount<<1);
+    SimpleCache<size_t, SVRegMap> joinFirstPointsCache(wrCount<<1);
     // SVRegMap in this cache: key - vreg, value - first readBefore in second part
-    SimpleCache<size_t, SVRegMap> resSecondPointsCache(rbwCount<<1);
+    SimpleCache<size_t, SVRegMap> joinSecondPointsCache(rbwCount<<1);
     
     flowStack.clear();
     std::fill(visited.begin(), visited.end(), false);
@@ -1465,8 +1503,10 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 visited[entry.blockIndex] = true;
             else
             {
-                joinRegVarLivenesses(flowStack, codeBlocks, vregIndexMaps,
-                            livenesses, regTypesNum, regRanges);
+                joinRegVarLivenesses(flowStack, codeBlocks,
+                        prevWaysIndexMap, waysToCache, cblocksToCache,
+                        joinFirstPointsCache, joinSecondPointsCache,
+                        vregIndexMaps, livenesses, regTypesNum, regRanges);
                 // back, already visited
                 flowStack.pop_back();
                 continue;
@@ -1488,11 +1528,11 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
         }
         else // back
         {
-            /*if (cblocksToCache.count(entry.blockIndex)==2 &&
-                !resSecondPointsCache.hasKey(entry.blockIndex))
+            if (cblocksToCache.count(entry.blockIndex)==2 &&
+                !joinSecondPointsCache.hasKey(entry.blockIndex))
                 // add to cache
-                addResSecCacheEntry(routineMap, codeBlocks, resSecondPointsCache,
-                            entry.blockIndex);*/
+                addJoinSecCacheEntry(codeBlocks, joinSecondPointsCache,
+                            entry.blockIndex);
             flowStack.pop_back();
         }
     }
