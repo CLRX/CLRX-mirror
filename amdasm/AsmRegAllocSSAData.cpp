@@ -57,6 +57,9 @@ static void handleSSAEntryWhileResolving(SSAReplacesMap* replacesMap,
             FlowStackEntry2& entry, const SSAEntry& sentry,
             RBWSSAIdMap* cacheSecPoints)
 {
+    if (sentry.first.regVar==nullptr)
+        return; // ignore registers (only regvars)
+    
     const SSAInfo& sinfo = sentry.second;
     auto res = alreadyReadMap.insert({ sentry.first, entry.blockIndex });
     
@@ -326,6 +329,9 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
         for (const auto& sentry: cblock.ssaInfoMap)
         {
+            if (sentry.first.regVar==nullptr)
+                // ignore regular registers (only regvars)
+                continue;
             const SSAInfo& sinfo = sentry.second;
             if (sinfo.ssaIdChange != 0)
                 stackVarMap[sentry.first] = { sinfo.ssaId + sinfo.ssaIdChange - 1 };
