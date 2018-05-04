@@ -3187,5 +3187,55 @@ end:    s_xor_b32 sa[2], sa[2], s3
         },
         true, ""
     },
+    {   // 22 - same registers, no regvars
+        R"ffDXD(
+        s_mov_b32 s2, s10
+        s_mov_b32 s3, s11
+        
+loop:   s_xor_b32 s2, s2, s4
+        s_cbranch_scc0 end
+        
+        s_xor_b32 s3, s2, s4
+        s_cbranch_scc0 loop
+        
+end:    s_xor_b32 s3, s3, s4
+        s_endpgm
+)ffDXD",
+        {
+            // block 0 - start
+            { 0, 8,
+                { },
+                {
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 10 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 11 }, SSAInfo(0, 0, 0, 0, 0, true) }
+                }, false, false, false },
+            // block 1 - loop
+            { 8, 16,
+                { { 2, false }, { 3, false } },
+                {
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) }
+                }, false, false, false },
+            // block 2 - loop part 2
+            { 16, 24,
+                { { 1, false }, { 3, false } },
+                {
+                    { { "", 2 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) }
+                }, false, false, false },
+            // block 3 - end
+            { 24, 32,
+                { },
+                {
+                    { { "", 3 }, SSAInfo(0, 0, 0, 0, 0, true) },
+                    { { "", 4 }, SSAInfo(0, 0, 0, 0, 0, true) }
+                }, false, false, true }
+        },
+        { },
+        true, ""
+    },
     { nullptr }
 };
