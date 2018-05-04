@@ -864,13 +864,7 @@ static void addJoinSecCacheEntry(//const RoutineMap& routineMap,
                                     { sentry.first, entry.blockIndex });
                         
                         if (res.second && sinfo.readBeforeWrite)
-                        {
-                            auto res = cacheSecPoints.insert(
-                                        { sentry.first, sinfo.ssaIdBefore });
-                            
-                            if (!res.second)
-                                res.first->second = sinfo.ssaIdBefore;
-                        }
+                            cacheSecPoints[sentry.first] = sinfo.ssaIdBefore;
                     }
                 }
                 else // to use cache
@@ -881,11 +875,7 @@ static void addJoinSecCacheEntry(//const RoutineMap& routineMap,
                         const bool alreadyRead =
                             alreadyReadMap.find(rsentry.first) != alreadyReadMap.end();
                         if (!alreadyRead)
-                        {
-                            auto res = cacheSecPoints.insert(rsentry);
-                            if (!res.second)
-                                res.first->second = rsentry.second;
-                        }
+                            cacheSecPoints[rsentry.first] = rsentry.second;
                     }
                     flowStack.pop_back();
                     continue;
@@ -1056,12 +1046,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                                     { sentry.first, entry.blockIndex });
                         
                         if (toCache)
-                        {
-                            auto res = cacheSecPoints.insert({ sentry.first,
-                                        sinfo.ssaIdBefore });
-                            if (!res.second)
-                                res.first->second = sinfo.ssaIdBefore;
-                        }
+                            cacheSecPoints[sentry.first] = sinfo.ssaIdBefore;
                         
                         if (res.second && sinfo.readBeforeWrite)
                             joinSVregWithVisited(&stackVarMap, sentry.first,
@@ -1080,11 +1065,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                         if (!alreadyRead)
                         {
                             if (toCache)
-                            {
-                                auto res = cacheSecPoints.insert(rsentry);
-                                if (!res.second)
-                                    res.first->second = rsentry.second;
-                            }
+                                cacheSecPoints[rsentry.first] = rsentry.second;
                             
                             joinSVregWithVisited(&stackVarMap, rsentry.first,
                                     rsentry.second, prevFlowStack, codeBlocks,
