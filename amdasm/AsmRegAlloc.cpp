@@ -1169,6 +1169,9 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
             flowStack.pop_back();
         }
     }
+    
+    if (toCache)
+        joinSecondPointsCache.put(nextBlock, cacheSecPoints);
 }
 
 static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
