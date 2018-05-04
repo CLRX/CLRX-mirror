@@ -833,6 +833,97 @@ loopend:
             { }
         },
         true, ""
+    },
+    {   // 14 - two loops, one nested
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b64 sa[0:1], 0            # 0
+        v_mov_b32 va[0], v1             # 4
+        v_mov_b32 va[1], v2             # 8
+        v_mov_b32 va[2], v3             # 12
+        
+loop0:  v_lshrrev_b32 va[0], va[2], va[0]   # 16
+        v_xor_b32 va[0], va[1], va[0]       # 20
+        
+        s_xor_b32 sa[3], sa[0], 0x5     # 24
+        s_cmp_eq_u32 sa[3], 9           # 28
+        s_cbranch_scc1 bb0              # 32
+        
+        v_and_b32 va[0], -15, va[0]         # 36
+        v_sub_u32 va[0], vcc, -13, va[0]    # 40
+        s_branch loop1start                 # 44
+        
+bb0:    v_xor_b32 va[0], 15, va[0]          # 48
+        v_add_u32 va[0], vcc, 17, va[0]     # 52
+loop1start:
+        s_mov_b32 sa[1], sa[0]              # 56
+        
+loop1:  v_add_u32 va[2], vcc, va[2], va[1]  # 60
+        v_xor_b32 va[2], 0xffaaaa, va[0]    # 64
+        
+        s_xor_b32 sa[2], sa[1], 0x5     # 72
+        s_cmp_eq_u32 sa[2], 7           # 76
+        s_cbranch_scc1 bb1              # 80
+        
+        v_sub_u32 va[1], vcc, 5, va[1]      # 84
+        v_sub_u32 va[2], vcc, 7, va[2]      # 88
+        s_branch loop1end                   # 92
+        
+bb1:    v_xor_b32 va[1], 15, va[1]          # 96
+        v_xor_b32 va[2], 17, va[2]          # 100
+loop1end:
+        
+        s_add_u32 sa[1], sa[1], 1       # 104
+        s_cmp_lt_u32 sa[1], 52          # 108
+        s_cbranch_scc1 loop1            # 112
+        
+        v_xor_b32 va[0], va[1], va[0]   # 116
+        v_xor_b32 va[0], va[2], va[0]   # 120
+        v_xor_b32 va[0], sa[0], va[0]   # 124
+        
+        s_add_u32 sa[0], sa[0], 1       # 128
+        s_cmp_lt_u32 sa[0], 33          # 132
+        s_cbranch_scc1 loop0            # 136
+        
+        s_endpgm                        # 140
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 1, 140 } }, // 0: sa[0]'0
+                { { 1, 2 } }, // 1: sa[1]'0
+                { { 57, 116 } }, // 2: sa[1]'1
+                { { 73, 77 } }, // 3: sa[2]'0
+                { { 25, 29 } }  // 4: sa[3]'0
+            },
+            {   // for VGPRs
+                { { 0, 5 } }, // 0: V1
+                { { 0, 9 } }, // 1: V2
+                { { 0, 13 } }, // 2: V3
+                { { 5, 17 }, { 125, 140 } }, // 3: va[0]'0
+                { { 17, 21 } }, // 4: va[0]'1
+                { { 21, 37 }, { 48, 49 } }, // 5: va[0]'2
+                { { 37, 41 } }, // 6: va[0]'3
+                { { 41, 48 }, { 53, 117 } }, // 7: va[0]'4
+                { { 117, 121 } }, // 8: va[0]'5
+                { { 121, 125 } }, // 9: va[0]'6
+                { { 49, 53 } }, // 10: va[0]'7
+                { { 9, 140 } }, // 11: va[1]'0
+                { { 13, 61 }, { 89, 96 }, { 101, 140 } }, // 12: va[2]'0
+                { { 61, 62 } }, // 13: va[2]'1
+                { { 65, 89 }, { 96, 101 } }  // 14: va[2]'2
+            },
+            { },
+            { }
+        },
+        {   // linearDepMaps
+            { // for SGPRs
+                { 0, { 2, { }, { 1 } } },
+                { 1, { 0, { 0 }, { } } }
+            },
+            { },
+            { },
+            { }
+        },
+        true, ""
     }
 };
 
