@@ -684,9 +684,7 @@ static void reduceSSAIdsForCalls(FlowStackEntry& entry,
         {
             // if modified
             // put before removing to revert for other ways after calls
-            auto res = entry.prevRetSSAIdSets.insert(*rit);
-            if (res.second)
-                res.first->second = rit->second;
+            entry.prevRetSSAIdSets.insert(*rit);
             // just remove, if some change without read before
             retSSAIdMap.erase(rit);
         }
@@ -708,9 +706,7 @@ static void reduceSSAIds2(SVRegMap& curSSAIdMap, RetSSAIdMap& retSSAIdMap,
     else if (ssaIdsIt != retSSAIdMap.end() && sinfo.ssaIdChange!=0)
     {
         // put before removing to revert for other ways after calls
-        auto res = entry.prevRetSSAIdSets.insert(*ssaIdsIt);
-        if (res.second)
-            res.first->second = ssaIdsIt->second;
+        entry.prevRetSSAIdSets.insert(*ssaIdsIt);
         // just remove, if some change without read before
         retSSAIdMap.erase(ssaIdsIt);
     }
@@ -789,9 +785,7 @@ static void reduceSSAIds(SVRegMap& curSSAIdMap, RetSSAIdMap& retSSAIdMap,
     else if (ssaIdsIt != retSSAIdMap.end() && sinfo.ssaIdChange!=0)
     {
         // put before removing to revert for other ways after calls
-        auto res = entry.prevRetSSAIdSets.insert(*ssaIdsIt);
-        if (res.second)
-            res.first->second = ssaIdsIt->second;
+        entry.prevRetSSAIdSets.insert(*ssaIdsIt);
         // just remove, if some change without read before
         retSSAIdMap.erase(ssaIdsIt);
     }
