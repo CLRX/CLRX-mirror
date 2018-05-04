@@ -835,10 +835,7 @@ static void updateRoutineData(RoutineData& rdata, const SSAEntry& ssaEntry,
         // insert read ssaid if no change
         auto res = rdata.curSSAIdMap.insert({ ssaEntry.first, { prevSSAId } });
         if (!res.second)
-        {
-            VectorSet<size_t>& ssaIds = res.first->second;
-            ssaIds.insertValue(prevSSAId);
-        }
+            res.first->second.insertValue(prevSSAId);
     }
 }
 
