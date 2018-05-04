@@ -924,6 +924,78 @@ loop1end:
             { }
         },
         true, ""
+    },
+    {   // 15 - trick - SSA replaces beyond visited point
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4             # 0
+        s_mov_b32 sa[3], s5             # 4
+        
+loop:   s_xor_b32 sa[2], sa[2], sa[4]   # 8
+        s_cbranch_scc0 end              # 12
+        
+        s_xor_b32 sa[3], sa[2], sa[4]   # 16
+        s_cbranch_scc0 loop             # 20
+        
+        s_endpgm                        # 24
+        
+end:    s_xor_b32 sa[3], sa[3], sa[4]   # 28
+        s_endpgm                        # 32
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 0, 1 } }, // 0: S4
+                { { 0, 5 } }, // 1: S5
+                { { 1, 24 } }, // 2: sa[2]'0
+                { { 5, 16 }, { 17, 24 }, { 28, 29 } }, // 3: sa[3]'0
+                { { 29, 30 } }, // 4: sa[3]'1
+                { { 0, 24 }, { 28, 29 } }  // 5: sa[4]'0
+            },
+            { },
+            { },
+            { }
+        },
+        {   // linearDepMaps
+            { },
+            { },
+            { },
+            { }
+        },
+        true, ""
+    },
+    {   // 16 - trick - SSA replaces beyond visited point
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4             # 0
+        s_mov_b32 sa[3], s5             # 4
+        
+loop:   s_xor_b32 sa[2], sa[2], sa[4]   # 8
+        s_cbranch_scc0 end              # 12
+        
+        s_xor_b32 sa[3], sa[2], sa[4]   # 16
+        s_cbranch_scc0 loop             # 20
+        
+end:    s_xor_b32 sa[3], sa[3], sa[4]   # 24
+        s_endpgm                        # 28
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 0, 1 } }, // 0: S4
+                { { 0, 5 } }, // 1: S5
+                { { 1, 24 } }, // 2: sa[2]'0
+                { { 5, 16 }, { 17, 25 } }, // 3: sa[3]'0
+                { { 25, 26 } }, // 4: sa[3]'1
+                { { 0, 25 } }  // 5: sa[4]'0
+            },
+            { },
+            { },
+            { }
+        },
+        {   // linearDepMaps
+            { },
+            { },
+            { },
+            { }
+        },
+        true, ""
     }
 };
 
