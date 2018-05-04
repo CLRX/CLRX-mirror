@@ -1078,15 +1078,14 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                             alreadyReadMap.find(rsentry.first) != alreadyReadMap.end();
                         
                         if (!alreadyRead)
-                            joinSVregWithVisited(&stackVarMap, rsentry.first,
-                                    rsentry.second, prevFlowStack, codeBlocks,
-                                    vregIndexMaps, livenesses, regTypesNum, regRanges);
-                        
-                        if (!alreadyRead)
                         {
                             auto res = cacheSecPoints.insert(rsentry);
                             if (!res.second)
                                 res.first->second = rsentry.second;
+                            
+                            joinSVregWithVisited(&stackVarMap, rsentry.first,
+                                    rsentry.second, prevFlowStack, codeBlocks,
+                                    vregIndexMaps, livenesses, regTypesNum, regRanges);
                         }
                     }
                     flowStack.pop_back();
@@ -1161,11 +1160,11 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
             }
             ARDOut << "  popjoin\n";
             
-            /*if (cblocksToCache.count(entry.blockIndex)==2 &&
+            if (cblocksToCache.count(entry.blockIndex)==2 &&
                 !joinSecondPointsCache.hasKey(entry.blockIndex))
                 // add to cache
-                addResSecCacheEntry(routineMap, codeBlocks, joinSecondPointsCache,
-                            entry.blockIndex);*/
+                addJoinSecCacheEntry(codeBlocks, joinSecondPointsCache,
+                            entry.blockIndex);
             
             flowStack.pop_back();
         }
