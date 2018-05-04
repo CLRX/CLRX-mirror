@@ -1079,9 +1079,12 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                         
                         if (!alreadyRead)
                         {
-                            auto res = cacheSecPoints.insert(rsentry);
-                            if (!res.second)
-                                res.first->second = rsentry.second;
+                            if (toCache)
+                            {
+                                auto res = cacheSecPoints.insert(rsentry);
+                                if (!res.second)
+                                    res.first->second = rsentry.second;
+                            }
                             
                             joinSVregWithVisited(&stackVarMap, rsentry.first,
                                     rsentry.second, prevFlowStack, codeBlocks,
