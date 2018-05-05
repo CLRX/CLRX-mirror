@@ -191,6 +191,23 @@ struct CLRX_INTERNAL RoutineData
     { return weight_; }
 };
 
+struct CLRX_INTERNAL LastAccessBlockPos
+{
+    size_t blockIndex;
+    bool inSubroutines; // true if last access in some called subroutine
+};
+
+typedef std::unordered_map<AsmSingleVReg, LastAccessBlockPos> LastAccessMap;
+
+// Routine data for createLivenesses - holds svreg read before writes and
+// last access of the svregs
+class CLRX_INTERNAL RoutineDataLv
+{
+    std::unordered_set<AsmSingleVReg> readBeforeWrites;
+    // key - svreg, value - list of the last codeblocks where is svreg
+    LastAccessMap lastAccessMap;
+};
+
 struct CLRX_INTERNAL FlowStackEntry
 {
     BlockIndex blockIndex;
