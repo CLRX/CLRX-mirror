@@ -795,6 +795,14 @@ static void joinSVregWithVisited(const SVRegMap* stackVarMap, const AsmSingleVRe
     auto pfEnd = prevFlowStack.end();
     --pfEnd;
     
+    Liveness& lv = getLiveness2(vreg, ssaIdNextBefore,
+            livenesses, vregIndexMaps, regTypesNum, regRanges);
+    
+    const CodeBlock& cbLast = codeBlocks[(pfEnd-1)->blockIndex];
+    if (lv.contain(cbLast.end-1))
+        // if already filled up
+        return;
+    
     // join liveness for this variable ssaId>.
     // only if in previous block previous SSAID is
     // read before all writes
@@ -804,8 +812,6 @@ static void joinSVregWithVisited(const SVRegMap* stackVarMap, const AsmSingleVRe
     //if (it == stackVarMap.end())
         //continue;
     // fill up previous part
-    Liveness& lv = getLiveness2(vreg, ssaIdNextBefore,
-            livenesses, vregIndexMaps, regTypesNum, regRanges);
     auto flit = prevFlowStack.begin() + pfStart;
     {
         // fill up liveness for first code block
