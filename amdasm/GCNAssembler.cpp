@@ -1504,6 +1504,32 @@ static void encodeVOPWords(uint32_t vop0Word, cxbyte modifiers,
         SLEV(words[wordsNum++], immValue);
 }
 
+static void encodeVOP3Words(bool isGCN12, const GCNAsmInstruction& gcnInsn,
+        cxbyte modifiers, VOPOpModifiers opMods, bool haveDstCC,
+        const RegRange& dstReg, const RegRange& dstCCReg, const RegRange& srcCCReg,
+        const GCNOperand& src0Op, const GCNOperand& src1Op,
+        cxuint& wordsNum, uint32_t* words)
+{
+    // VOP3 encoding
+    uint32_t code = (isGCN12) ?
+            (uint32_t(gcnInsn.code2)<<16) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) :
+            (uint32_t(gcnInsn.code2)<<17) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0);
+    if (haveDstCC) // if VOP3B
+        SLEV(words[0], 0xd0000000U | code |
+            (dstReg.bstart()&0xff) | (uint32_t(dstCCReg.bstart())<<8));
+    else // if VOP3A
+        SLEV(words[0], 0xd0000000U | code | (dstReg.bstart()&0xff) |
+            ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
+            ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0) |
+            ((opMods.opselMod&15) << 11));
+    // second dword
+    SLEV(words[1], src0Op.range.bstart() | (uint32_t(src1Op.range.bstart())<<9) |
+        (uint32_t(srcCCReg.bstart())<<18) | (uint32_t(modifiers & 3) << 27) |
+        ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
+        ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0));
+    wordsNum++;
+}
+
 bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
@@ -1734,26 +1760,10 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 modifiers, extraMods, src0Op, src1Op, immValue, mode1,
                 0, wordsNum, words);
     else
-    {
         // VOP3 encoding
-        uint32_t code = (isGCN12) ?
-                (uint32_t(gcnInsn.code2)<<16) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) :
-                (uint32_t(gcnInsn.code2)<<17) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0);
-        if (haveDstCC) // if VOP3B
-            SLEV(words[0], 0xd0000000U | code |
-                (dstReg.bstart()&0xff) | (uint32_t(dstCCReg.bstart())<<8));
-        else // if VOP3A
-            SLEV(words[0], 0xd0000000U | code | (dstReg.bstart()&0xff) |
-                ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
-                ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0) |
-                ((opMods.opselMod&15) << 11));
-        // second dword
-        SLEV(words[1], src0Op.range.bstart() | (uint32_t(src1Op.range.bstart())<<9) |
-            (uint32_t(srcCCReg.bstart())<<18) | (uint32_t(modifiers & 3) << 27) |
-            ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
-            ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0));
-        wordsNum++;
-    }
+        encodeVOP3Words(isGCN12, gcnInsn, modifiers, opMods, haveDstCC,
+                dstReg, dstCCReg, srcCCReg, src0Op, src1Op, wordsNum, words);
+    
     if (!checkGCNEncodingSize(asmr, instrPlace, gcnEncSize, wordsNum))
         return false;
     
@@ -1906,18 +1916,10 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 modifiers, extraMods, src0Op, GCNOperand{ { 256, 257 } }, 0, mode1,
                 0, wordsNum, words);
     else
-    {
         // VOP3 encoding
-        uint32_t code = (isGCN12) ?
-                (uint32_t(gcnInsn.code2)<<16) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) :
-                (uint32_t(gcnInsn.code2)<<17) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0);
-        SLEV(words[0], 0xd0000000U | code | (dstReg.bstart()&0xff) |
-            ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
-            ((opMods.opselMod&15) << 11));
-        SLEV(words[1], src0Op.range.bstart() | (uint32_t(modifiers & 3) << 27) |
-            ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0));
-        wordsNum++;
-    }
+        encodeVOP3Words(isGCN12, gcnInsn, modifiers, opMods, false,
+                dstReg, RegRange{}, RegRange{}, src0Op, GCNOperand{}, wordsNum, words);
+    
     if (!checkGCNEncodingSize(asmr, instrPlace, gcnEncSize, wordsNum))
         return false;
     
@@ -2095,21 +2097,10 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 dstMods, wordsNum, words);
     }
     else
-    {
         // VOP3 encoding
-        uint32_t code = (isGCN12) ?
-                (uint32_t(gcnInsn.code2)<<16) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) :
-                (uint32_t(gcnInsn.code2)<<17) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0);
-        SLEV(words[0], 0xd0000000U | code | (dstReg.bstart()&0xff) |
-                ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
-                ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0) |
-                ((opMods.opselMod&15) << 11));
-        SLEV(words[1], src0Op.range.bstart() | (uint32_t(src1Op.range.bstart())<<9) |
-            (uint32_t(modifiers & 3) << 27) |
-            ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
-            ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0));
-        wordsNum++;
-    }
+        encodeVOP3Words(isGCN12, gcnInsn, modifiers, opMods, false,
+                dstReg, RegRange{}, RegRange{}, src0Op, src1Op, wordsNum, words);
+    
     if (!checkGCNEncodingSize(asmr, instrPlace, gcnEncSize, wordsNum))
         return false;
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
