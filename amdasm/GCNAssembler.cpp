@@ -1452,6 +1452,58 @@ static Flags correctOpType(uint32_t regsNum, Flags typeMask)
         INSTROP_V64BIT : typeMask;
 }
 
+static void encodeVOPWords(uint32_t vop0Word, cxbyte modifiers,
+        const VOPExtraModifiers& extraMods, const GCNOperand& src0Op,
+        const GCNOperand& src1Op, uint32_t immValue, uint16_t mode1,
+        // dstMod - (16bits lower value, 16bit - use dstMod instead std encoding
+        uint32_t inDstMod, cxuint& wordsNum, uint32_t* words)
+{
+    // VOP2 encoding
+    cxuint src0out = src0Op.range.bstart();
+    if (extraMods.needSDWA)
+        src0out = 0xf9;
+    else if (extraMods.needDPP)
+        src0out = 0xfa;
+    SLEV(words[0], vop0Word | uint32_t(src0out));
+    if (extraMods.needSDWA)
+    {
+        const uint32_t dstMod = (inDstMod & 0x10000) ? (inDstMod&0xff00) :
+                    ((uint32_t(extraMods.dstSel)<<8) |
+                    (uint32_t(extraMods.dstUnused)<<11) |
+                    ((modifiers & VOP3_CLAMP) ? 0x2000 : 0) |
+                    (uint32_t(modifiers & 3) << 14));
+        // if SDWA encoding
+        SLEV(words[wordsNum++], dstMod | (src0Op.range.bstart()&0xff) |
+                (uint32_t(extraMods.src0Sel)<<16) |
+                ((src0Op.vopMods&VOPOP_SEXT) ? (1U<<19) : 0) |
+                ((src0Op.vopMods&VOPOP_NEG) ? (1U<<20) : 0) |
+                ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0) |
+                (uint32_t(extraMods.src1Sel)<<24) |
+                ((src1Op.vopMods&VOPOP_SEXT) ? (1U<<27) : 0) |
+                ((src1Op.vopMods&VOPOP_NEG) ? (1U<<28) : 0) |
+                ((src1Op.vopMods&VOPOP_ABS) ? (1U<<29) : 0) |
+                (src0Op.range.isNonVGPR() ? (1U<<23) : 0) |
+                (src1Op.range.isNonVGPR() ? (1U<<31) : 0));
+    }
+    else if (extraMods.needDPP)
+        // DPP encoding
+        SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) | (extraMods.dppCtrl<<8) |
+                ((modifiers&VOP3_BOUNDCTRL) ? (1U<<19) : 0) |
+                ((src0Op.vopMods&VOPOP_NEG) ? (1U<<20) : 0) |
+                ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0) |
+                ((src1Op.vopMods&VOPOP_NEG) ? (1U<<22) : 0) |
+                ((src1Op.vopMods&VOPOP_ABS) ? (1U<<23) : 0) |
+                (uint32_t(extraMods.bankMask)<<24) |
+                (uint32_t(extraMods.rowMask)<<28));
+    else if (src0Op.range.isVal(255)) // otherwise we check for immediate/literal value
+        SLEV(words[wordsNum++], src0Op.value);
+    else if (src1Op.range.isVal(255))
+        // literal from SRC1
+        SLEV(words[wordsNum++], src1Op.value);
+    else if (mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM)
+        SLEV(words[wordsNum++], immValue);
+}
+
 bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
@@ -1675,51 +1727,12 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     cxuint wordsNum = 1;
     uint32_t words[2];
     if (!vop3)
-    {
         // VOP2 encoding
-        cxuint src0out = src0Op.range.bstart();
-        if (extraMods.needSDWA)
-            src0out = 0xf9;
-        else if (extraMods.needDPP)
-            src0out = 0xfa;
-        SLEV(words[0], (uint32_t(gcnInsn.code1)<<25) | src0out |
+        encodeVOPWords((uint32_t(gcnInsn.code1)<<25) |
                 (uint32_t(src1Op.range.bstart()&0xff)<<9) |
-                (uint32_t(dstReg.bstart()&0xff)<<17));
-        if (extraMods.needSDWA)
-            // if SDWA encoding
-            SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) |
-                    (uint32_t(extraMods.dstSel)<<8) |
-                    (uint32_t(extraMods.dstUnused)<<11) |
-                    ((modifiers & VOP3_CLAMP) ? 0x2000 : 0) |
-                    (uint32_t(extraMods.src0Sel)<<16) |
-                    ((src0Op.vopMods&VOPOP_SEXT) ? (1U<<19) : 0) |
-                    ((src0Op.vopMods&VOPOP_NEG) ? (1U<<20) : 0) |
-                    ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0) |
-                    (uint32_t(extraMods.src1Sel)<<24) |
-                    ((src1Op.vopMods&VOPOP_SEXT) ? (1U<<27) : 0) |
-                    ((src1Op.vopMods&VOPOP_NEG) ? (1U<<28) : 0) |
-                    ((src1Op.vopMods&VOPOP_ABS) ? (1U<<29) : 0) |
-                    (src0Op.range.isNonVGPR() ? (1U<<23) : 0) |
-                    (src1Op.range.isNonVGPR() ? (1U<<31) : 0) |
-                    (uint32_t(modifiers & 3) << 14));
-        else if (extraMods.needDPP)
-            // DPP encoding
-            SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) | (extraMods.dppCtrl<<8) |
-                    ((modifiers&VOP3_BOUNDCTRL) ? (1U<<19) : 0) |
-                    ((src0Op.vopMods&VOPOP_NEG) ? (1U<<20) : 0) |
-                    ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0) |
-                    ((src1Op.vopMods&VOPOP_NEG) ? (1U<<22) : 0) |
-                    ((src1Op.vopMods&VOPOP_ABS) ? (1U<<23) : 0) |
-                    (uint32_t(extraMods.bankMask)<<24) |
-                    (uint32_t(extraMods.rowMask)<<28));
-        else if (src0Op.range.isVal(255)) // otherwise we check for immediate/literal value
-            SLEV(words[wordsNum++], src0Op.value);
-        else if (src1Op.range.isVal(255))
-            // literal from SRC1
-            SLEV(words[wordsNum++], src1Op.value);
-        else if (mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM)
-            SLEV(words[wordsNum++], immValue);
-    }
+                (uint32_t(dstReg.bstart()&0xff)<<17),
+                modifiers, extraMods, src0Op, src1Op, immValue, mode1,
+                0, wordsNum, words);
     else
     {
         // VOP3 encoding
@@ -1887,39 +1900,11 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     cxuint wordsNum = 1;
     uint32_t words[2];
     if (!vop3)
-    {
         // VOP1 encoding
-        cxuint src0out = src0Op.range.bstart();
-        if (extraMods.needSDWA)
-            src0out = 0xf9;
-        else if (extraMods.needDPP)
-            src0out = 0xfa;
-        SLEV(words[0], 0x7e000000U | (uint32_t(gcnInsn.code1)<<9) | uint32_t(src0out) |
-                (uint32_t(dstReg.bstart()&0xff)<<17));
-        if (extraMods.needSDWA)
-            // SDWA encoding
-            SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) |
-                    (uint32_t(extraMods.dstSel)<<8) |
-                    (uint32_t(extraMods.dstUnused)<<11) |
-                    ((modifiers & VOP3_CLAMP) ? 0x2000 : 0) |
-                    (uint32_t(extraMods.src0Sel)<<16) |
-                    (uint32_t(extraMods.src1Sel)<<24) |
-                    ((src0Op.vopMods&VOPOP_SEXT) ? (1U<<19) : 0) |
-                    ((src0Op.vopMods&VOPOP_NEG) ? (1U<<20) : 0) |
-                    ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0) |
-                    (src0Op.range.isNonVGPR() ? (1U<<23) : 0) |
-                    (uint32_t(modifiers & 3) << 14));
-        else if (extraMods.needDPP)
-            // DPP encoding
-            SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) | (extraMods.dppCtrl<<8) | 
-                    ((modifiers&VOP3_BOUNDCTRL) ? (1U<<19) : 0) |
-                    ((src0Op.vopMods&VOPOP_NEG) ? (1U<<20) : 0) |
-                    ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0) |
-                    (uint32_t(extraMods.bankMask)<<24) |
-                    (uint32_t(extraMods.rowMask)<<28));
-        else if (src0Op.range.isVal(255))
-            SLEV(words[wordsNum++], src0Op.value);
-    }
+        encodeVOPWords(0x7e000000U | (uint32_t(gcnInsn.code1)<<9) |
+                (uint32_t(dstReg.bstart()&0xff)<<17),
+                modifiers, extraMods, src0Op, GCNOperand{ { 256, 257 } }, 0, mode1,
+                0, wordsNum, words);
     else
     {
         // VOP3 encoding
@@ -2101,47 +2086,13 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!vop3)
     {
         // VOPC encoding
-        cxuint src0out = src0Op.range.bstart();
-        if (extraMods.needSDWA)
-            src0out = 0xf9;
-        else if (extraMods.needDPP)
-            src0out = 0xfa;
-        SLEV(words[0], 0x7c000000U | (uint32_t(gcnInsn.code1)<<17) | src0out |
-                (uint32_t(src1Op.range.bstart()&0xff)<<9));
-        if (extraMods.needSDWA)
-        {
-            // SDWA encoding
-            const uint32_t dstMods = (!isGCN14) ? ((uint32_t(extraMods.dstSel)<<8) |
-                    (uint32_t(extraMods.dstUnused)<<11) |
-                    ((modifiers & VOP3_CLAMP) ? 0x2000 : 0) |
-                    (uint32_t(modifiers & 3) << 14)) : 0;
-            SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) |
-                    ((isGCN14 && !dstReg.isVal(106)) ? ((dstReg.bstart()|0x80)<<8) : 0) |
-                    (uint32_t(extraMods.src0Sel)<<16) |
-                    ((src0Op.vopMods&VOPOP_SEXT) ? (1U<<19) : 0) |
-                    ((src0Op.vopMods&VOPOP_NEG) ? (1U<<20) : 0) |
-                    ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0) |
-                    (uint32_t(extraMods.src1Sel)<<24) |
-                    ((src1Op.vopMods&VOPOP_SEXT) ? (1U<<27) : 0) |
-                    ((src1Op.vopMods&VOPOP_NEG) ? (1U<<28) : 0) |
-                    ((src1Op.vopMods&VOPOP_ABS) ? (1U<<29) : 0) |
-                    (src0Op.range.isNonVGPR() ? (1U<<23) : 0) |
-                    (src1Op.range.isNonVGPR() ? (1U<<31) : 0) | dstMods);
-        }
-        else if (extraMods.needDPP)
-            // DPP encoding
-            SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) | (extraMods.dppCtrl<<8) |
-                    ((modifiers&VOP3_BOUNDCTRL) ? (1U<<19) : 0) |
-                    ((src0Op.vopMods&VOPOP_NEG) ? (1U<<20) : 0) |
-                    ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0) |
-                    ((src1Op.vopMods&VOPOP_NEG) ? (1U<<22) : 0) |
-                    ((src1Op.vopMods&VOPOP_ABS) ? (1U<<23) : 0) |
-                    (uint32_t(extraMods.bankMask)<<24) |
-                    (uint32_t(extraMods.rowMask)<<28));
-        else if (src0Op.range.isVal(255))
-            SLEV(words[wordsNum++], src0Op.value);
-        else if (src1Op.range.isVal(255))
-            SLEV(words[wordsNum++], src1Op.value);
+        const uint32_t dstMods = (isGCN14 ? 0x10000 : 0) |
+                ((isGCN14 && !dstReg.isVal(106)) ? ((dstReg.bstart()|0x80)<<8) : 0);
+        
+        encodeVOPWords(0x7c000000U | (uint32_t(gcnInsn.code1)<<17) |
+                (uint32_t(src1Op.range.bstart()&0xff)<<9),
+                modifiers, extraMods, src0Op, src1Op, 0, 0,
+                dstMods, wordsNum, words);
     }
     else
     {
