@@ -204,6 +204,9 @@ typedef std::unordered_map<AsmSingleVReg, LastAccessBlockPos> LastAccessMap;
 class CLRX_INTERNAL RoutineDataLv
 {
     std::unordered_set<AsmSingleVReg> readBeforeWrites;
+    // holds all vreg SSA's used in routine (used while creating call point)
+    // includes subroutines called in this routines
+    std::unordered_set<size_t> allSSAs;
     // key - svreg, value - list of the last codeblocks where is svreg
     LastAccessMap lastAccessMap;
 };
