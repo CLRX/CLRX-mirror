@@ -945,7 +945,7 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
     }
     
     // fill up to this
-    for (++flit; flit != flowStack.end(); ++flit)
+    for (; flit != flowStack.end(); ++flit)
     {
         const CodeBlock& cblock = codeBlocks[flit->blockIndex];
         lv->insert(cblock.start, cblock.end);
