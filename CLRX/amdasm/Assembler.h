@@ -342,7 +342,7 @@ public:
     
     typedef Array<std::pair<size_t, size_t> > OutLiveness;
     
-    // first - orig ssaid, second - dest ssaid
+     // first - orig ssaid, second - dest ssaid
     typedef std::pair<size_t, size_t> SSAReplace;
     typedef std::unordered_map<AsmSingleVReg, VectorSet<SSAReplace> > SSAReplacesMap;
     // interference graph type
@@ -354,21 +354,6 @@ public:
         VectorSet<size_t> prevVidxes;
         VectorSet<size_t> nextVidxes;
     };
-    
-    /* call place and routine dep will be used while join dependency between
-     * svregs inside routines */
-    // call place
-    struct CallPlace
-    {
-        std::vector<size_t> routines;
-        std::vector<size_t> vidxes; // SSAs indexes used in this call place
-    };
-    // routine dependency entry
-    struct RoutineDep
-    {
-        std::vector<CallPlace> callPlaces;
-        std::vector<size_t> vidxes; // SSAs indexes used by routine (no recursion)
-    };
 private:
     Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
@@ -378,7 +363,6 @@ private:
     Array<OutLiveness> outLivenesses[MAX_REGTYPES_NUM];
     size_t graphVregsCounts[MAX_REGTYPES_NUM];
     VarIndexMap vregIndexMaps[MAX_REGTYPES_NUM]; // indices to igraph for 2 reg types
-    std::vector<RoutineDep> routineDeps;
     InterGraph interGraphs[MAX_REGTYPES_NUM]; // for 2 register 
     Array<cxuint> graphColorMaps[MAX_REGTYPES_NUM];
     std::unordered_map<size_t, LinearDep> linearDepMaps[MAX_REGTYPES_NUM];
