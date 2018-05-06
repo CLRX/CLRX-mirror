@@ -175,9 +175,10 @@ struct CLRX_INTERNAL RoutineData
     // key - loop block, value - last ssaId map for loop end
     std::unordered_map<BlockIndex, LoopSSAIdMap> loopEnds;
     bool notFirstReturn;
+    bool generated;
     size_t weight_;
     
-    RoutineData() : notFirstReturn(false), weight_(0)
+    RoutineData() : notFirstReturn(false), generated(false), weight_(0)
     { }
     
     void calculateWeight()
@@ -238,6 +239,13 @@ struct CLRX_INTERNAL CallStackEntry
     BlockIndex callBlock; // index
     size_t callNextIndex; // index of call next
     BlockIndex routineBlock;    // routine block
+};
+
+struct CLRX_INTERNAL CallStackEntry2
+{
+    size_t callBlock; // index
+    size_t callNextIndex; // index of call next
+    size_t routineBlock;    // routine block
 };
 
 typedef std::unordered_map<BlockIndex, RoutineData> RoutineMap;

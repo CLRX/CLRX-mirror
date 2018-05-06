@@ -1297,10 +1297,13 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
         }
     
     // construct vreg liveness
+    std::deque<CallStackEntry2> callStack;
     std::deque<FlowStackEntry3> flowStack;
     std::vector<bool> visited(codeBlocks.size(), false);
     // hold last vreg ssaId and position
     LastVRegMap lastVRegMap;
+    
+    std::unordered_map<size_t, RoutineDataLv> routineMap;
     
     // key - current res first key, value - previous first key and its flowStack pos
     PrevWaysIndexMap prevWaysIndexMap;
@@ -1457,8 +1460,25 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 continue;
             }
         }
+        
+        if (!callStack.empty() &&
+            entry.blockIndex == callStack.back().callBlock &&
+            entry.nextIndex-1 == callStack.back().callNextIndex)
+        {
+            ARDOut << " ret: " << entry.blockIndex << "\n";
+            callStack.pop_back(); // just return from call
+        }
+        
         if (entry.nextIndex < cblock.nexts.size())
         {
+            bool isCall = false;
+            size_t nextBlock = cblock.nexts[entry.nextIndex].block;
+            if (cblock.nexts[entry.nextIndex].isCall)
+            {
+                callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
+                isCall = true;
+            }
+            
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
             entry.nextIndex++;
         }

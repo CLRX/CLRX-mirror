@@ -1482,7 +1482,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     PrevWaysIndexMap prevWaysIndexMap;
     // to track ways last block indices pair: block index, flowStackPos)
     std::pair<size_t, size_t> lastCommonCacheWayPoint{ SIZE_MAX, SIZE_MAX };
-    CBlockBitPool isRoutineGen(codeBlocks.size(), false);
     
     CBlockBitPool waysToCache(codeBlocks.size(), false);
     CBlockBitPool flowStackBlocks(codeBlocks.size(), false);
@@ -1610,12 +1609,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             ARDOut << " ret: " << entry.blockIndex << "\n";
             const BlockIndex routineBlock = callStack.back().routineBlock;
             RoutineData& prevRdata = routineMap.find(routineBlock)->second;
-            if (!isRoutineGen[routineBlock])
+            if (!prevRdata.generated)
             {
                 createRoutineData(codeBlocks, curSSAIdMap, loopBlocks, callBlocks,
                             cblocksToCache, subroutinesCache, routineMap, prevRdata,
                             routineBlock, prevCallFlowStackBlocks, callFlowStackBlocks);
-                isRoutineGen[routineBlock] = true;
+                prevRdata.generated = true;
                 
                 auto csimsmit = curSSAIdMapStateMap.find(routineBlock.index);
                 if (csimsmit != curSSAIdMapStateMap.end() && entry.blockIndex.pass==0)
