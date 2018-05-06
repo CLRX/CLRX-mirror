@@ -1237,7 +1237,7 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
 static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
         const RoutineLvMap& routineMap, RoutineDataLv& rdata,
         size_t routineBlock, const VarIndexMap* vregIndexMaps,
-        std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
+        size_t regTypesNum, const cxuint* regRanges)
 {
     std::deque<FlowStackEntry4> flowStack;
     std::vector<bool> visited(codeBlocks.size(), false);
@@ -1584,6 +1584,10 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             entry.nextIndex-1 == callStack.back().callNextIndex)
         {
             ARDOut << " ret: " << entry.blockIndex << "\n";
+            auto res = routineMap.insert({ entry.blockIndex, { } });
+            if (res.second)
+                createRoutineDataLv(codeBlocks, routineMap, res.first->second,
+                        entry.blockIndex, vregIndexMaps, regTypesNum, regRanges);
             callStack.pop_back(); // just return from call
         }
         
@@ -1621,7 +1625,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                             lastVRegMap.erase(lvrit);
                     }
                 }
-            
             
             if (!flowStack.empty() && lastCommonCacheWayPoint.first != SIZE_MAX &&
                     lastCommonCacheWayPoint.second >= flowStack.size())
