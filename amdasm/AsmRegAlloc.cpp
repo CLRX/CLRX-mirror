@@ -750,7 +750,7 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
     for (const auto& entry: cblock.ssaInfoMap)
         if (entry.second.readBeforeWrite)
         {
-            // find last 
+            // find last
             auto lvrit = lastVRegMap.find(entry.first);
             FlowStackCIter flit = flowStack.begin();
             if (lvrit != lastVRegMap.end())
@@ -1588,6 +1588,48 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             if (res.second)
                 createRoutineDataLv(codeBlocks, routineMap, res.first->second,
                         entry.blockIndex, vregIndexMaps, regTypesNum, regRanges);
+            else
+            {
+                // already added join livenesses from all readBeforeWrites
+                for (const auto& entry: res.first->second.readBeforeWrites)
+                {
+                    // find last
+                    auto lvrit = lastVRegMap.find(entry);
+                    FlowStackCIter flit = flowStack.begin();
+                    if (lvrit != lastVRegMap.end())
+                        flit += lvrit->second.back();
+                    
+                    cxuint regType = getRegType(regTypesNum, regRanges, entry);
+                    const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+                    const std::vector<size_t>& ssaIdIndices =
+                                vregIndexMap.find(entry)->second;
+                    
+                    const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
+                    auto sinfoIt = lastBlk.ssaInfoMap.find(entry);
+                    const size_t ssaIdBefore = (sinfoIt != lastBlk.ssaInfoMap.end()) ?
+                            sinfoIt->second.ssaIdLast : 0;
+                    Liveness& lv = livenesses[regType][ssaIdIndices[ssaIdBefore]];
+                    
+                    if (lv.contain(codeBlocks[(flowStack.end()-1)->blockIndex].end-1))
+                        // already joined (check last byte from last block)
+                        continue;
+                    
+                    size_t lastPos = lastBlk.start;
+                    if (sinfoIt != lastBlk.ssaInfoMap.end())
+                    {
+                        // if begin at some point at last block
+                        lastPos = sinfoIt->second.lastPos;
+                        lv.insert(lastPos + 1, lastBlk.end);
+                        ++flit; // skip last block in stack
+                    }
+                    
+                    for (; flit != flowStack.end(); ++flit)
+                    {
+                        const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+                        lv.insert(cblock.start, cblock.end);
+                    }
+                }
+            }
             callStack.pop_back(); // just return from call
         }
         
