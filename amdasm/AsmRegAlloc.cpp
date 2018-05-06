@@ -787,6 +787,172 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
         }
 }
 
+static void fillUpInsideRoutine(std::vector<bool>& visited,
+            const std::vector<CodeBlock>& codeBlocks, size_t startBlock,
+            const AsmSingleVReg& svreg, Liveness& lv)
+{
+    std::deque<FlowStackEntry3> flowStack;
+    flowStack.push_back({ startBlock, 0 });
+    
+    if (lv.contain(codeBlocks[startBlock].end-1))
+        // already filled, then do nothing
+        return;
+    
+    while (!flowStack.empty())
+    {
+        FlowStackEntry3& entry = flowStack.back();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        {
+            if (!visited[entry.blockIndex])
+            {
+                visited[entry.blockIndex] = true;
+                size_t cbStart = cblock.start;
+                if (flowStack.size() == 1)
+                {
+                    // if first block, then get last occurrence in this path
+                    auto sinfoIt = cblock.ssaInfoMap.find(svreg);
+                    if (sinfoIt != cblock.ssaInfoMap.end())
+                        cbStart = sinfoIt->second.lastPos+1;
+                }
+                // just insert
+                lv.insert(cbStart, cblock.end);
+            }
+            else
+            {
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            flowStack.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else // back
+            flowStack.pop_back();
+    }
+}
+            
+
+static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
+            const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
+            size_t flowStackStart, const AsmSingleVReg& svreg,
+            const LastAccessBlockPos& lastAccessPos,
+            const VarIndexMap* vregIndexMaps, std::vector<Liveness>* livenesses,
+            size_t regTypesNum, const cxuint* regRanges)
+{
+    struct JoinEntry
+    {
+        size_t blockIndex; // block index where is call
+        size_t nextIndex; // next index of routine call
+        size_t lastAccessIndex; // last access pos index
+        bool inSubroutines;
+    };
+    Liveness* lv = nullptr;
+    std::vector<bool> visited(codeBlocks.size(), false);
+    
+    std::stack<JoinEntry> rjStack; // routine join stack
+    if (lastAccessPos.inSubroutines)
+        rjStack.push({ lastAccessPos.blockIndex, 0, 0, true });
+    
+    while (!rjStack.empty())
+    {
+        JoinEntry& entry = rjStack.top();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.inSubroutines && entry.nextIndex < cblock.nexts.size())
+        {
+            bool doNextIndex = false; // true if to next call
+            if (cblock.nexts[entry.nextIndex].isCall)
+            {
+                const RoutineDataLv& rdata =
+                        routineMap.find(cblock.nexts[entry.nextIndex].block)->second;
+                auto lastAccessIt = rdata.lastAccessMap.find(svreg);
+                if (lastAccessIt != rdata.lastAccessMap.end())
+                {
+                    if (entry.lastAccessIndex < lastAccessIt->second.size())
+                    {
+                        const auto& lastAccess =
+                                lastAccessIt->second[entry.lastAccessIndex];
+                        rjStack.push({ lastAccess.blockIndex, 0,
+                                    0, lastAccess.inSubroutines });
+                        entry.lastAccessIndex++;
+                    }
+                    else
+                        doNextIndex = true;
+                }
+                else
+                    doNextIndex = true;
+            }
+            else
+                doNextIndex = true;
+            
+            if (doNextIndex)
+            {
+                // to next call
+                entry.nextIndex++;
+                entry.lastAccessIndex = 0;
+            }
+        }
+        else
+        {
+            size_t blockStart = entry.blockIndex;
+            if (lv == nullptr)
+            {
+                const SSAInfo& ssaInfo = codeBlocks[blockStart]
+                            .ssaInfoMap.find(svreg)->second;
+                lv = &getLiveness2(svreg, (ssaInfo.ssaIdChange==0) ?
+                        ssaInfo.ssaIdBefore : ssaInfo.ssaIdLast,
+                        livenesses, vregIndexMaps, regTypesNum, regRanges);
+            }
+            if (!entry.inSubroutines)
+                fillUpInsideRoutine(visited, codeBlocks, blockStart, svreg, *lv);
+            else
+            {
+                // fill up next block in path (do not fill start block)
+                const CodeBlock& cbstart = codeBlocks[blockStart];
+                for (size_t k = 0; k < cbstart.nexts.size(); k++)
+                    if (!cbstart.nexts[k].isCall)
+                        fillUpInsideRoutine(visited, codeBlocks,
+                                cbstart.nexts[k].block, svreg, *lv);
+            }
+            rjStack.pop();
+        }
+    }
+    
+    auto flit = flowStack.begin() + flowStackStart;
+    if (lv == nullptr)
+    {
+        size_t blockStart = flit->blockIndex;
+        auto ssaInfoIt = codeBlocks[blockStart].ssaInfoMap.find(svreg);
+        size_t ssaId = 0;
+        if (ssaInfoIt != codeBlocks[blockStart].ssaInfoMap.end())
+            ssaId = (ssaInfoIt->second.ssaIdChange==0) ? ssaInfoIt->second.ssaIdLast :
+                    ssaInfoIt->second.ssaIdBefore;
+        lv = &getLiveness2(svreg, ssaId, livenesses, vregIndexMaps,
+                        regTypesNum, regRanges);
+    }
+    
+    // fill up to this
+    for (++flit; flit != flowStack.end(); ++flit)
+    {
+        const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+        lv->insert(cblock.start, cblock.end);
+    }
+}
+            
+
 static void joinSVregWithVisited(const SVRegMap* stackVarMap, const AsmSingleVReg& vreg,
             size_t ssaIdNextBefore, const std::deque<FlowStackEntry3>& prevFlowStack,
             const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
