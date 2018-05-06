@@ -1233,6 +1233,125 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
         }
 }
 
+
+static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
+        const RoutineLvMap& routineMap, RoutineDataLv& rdata,
+        size_t routineBlock, const VarIndexMap* vregIndexMaps,
+        std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
+{
+    std::deque<FlowStackEntry4> flowStack;
+    std::vector<bool> visited(codeBlocks.size(), false);
+    
+    // already read in current path
+    // key - vreg, value - source block where vreg of conflict found
+    SVRegMap alreadyReadMap;
+    
+    flowStack.push_back({ routineBlock, 0 });
+    SVRegMap curSVRegMap; // key - svreg, value - block index
+    
+    while (!flowStack.empty())
+    {
+        FlowStackEntry4& entry = flowStack.back();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        {
+            // process current block
+            if (!visited[entry.blockIndex])
+            {
+                visited[entry.blockIndex] = true;
+                
+                for (const auto& sentry: cblock.ssaInfoMap)
+                {
+                    if (sentry.second.readBeforeWrite)
+                        if (alreadyReadMap.insert(
+                                    { sentry.first, entry.blockIndex }).second)
+                            rdata.readBeforeWrites.insert(sentry.first);
+                    
+                    auto res = curSVRegMap.insert({ sentry.first, entry.blockIndex });
+                    if (!res.second)
+                    {   // not added because is present in map
+                        entry.prevCurSVRegMap.insert(*res.first);
+                        res.first->second = entry.blockIndex;
+                    }
+                    else
+                        entry.prevCurSVRegMap.insert({ sentry.first, SIZE_MAX });
+                    
+                    // all SSAs
+                    const SSAInfo& sinfo = sentry.second;
+                    const AsmSingleVReg& svreg = sentry.first;
+                    cxuint regType = getRegType(regTypesNum, regRanges, svreg);
+                    const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+                    const std::vector<size_t>& ssaIdIndices =
+                                vregIndexMap.find(svreg)->second;
+                    
+                    // add SSA indices to allSSAs
+                    if (sinfo.readBeforeWrite)
+                        rdata.allSSAs[regType].insert(ssaIdIndices[sinfo.ssaIdBefore]);
+                    if (sinfo.ssaIdChange != 0)
+                    {
+                        rdata.allSSAs[regType].insert(ssaIdIndices[sinfo.ssaIdFirst]);
+                        for (size_t i = 1; i < sinfo.ssaIdChange; i++)
+                            rdata.allSSAs[regType].insert(ssaIdIndices[sinfo.ssaId+i]);
+                        rdata.allSSAs[regType].insert(ssaIdIndices[sinfo.ssaIdLast]);
+                    }
+                }
+            }
+            else
+            {
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            flowStack.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else
+        {
+            if (cblock.haveReturn)
+            {
+                // handle return
+                for (const auto& entry: curSVRegMap)
+                {
+                    auto res = rdata.lastAccessMap.insert({ entry.first,
+                                    { LastAccessBlockPos{  entry.second, false } } });
+                    if (!res.second)
+                        res.first->second.insertValue(
+                                    LastAccessBlockPos{ entry.second, false });
+                }
+            }
+            // revert curSVRegMap
+            for (const auto& sentry: entry.prevCurSVRegMap)
+                if (sentry.second != SIZE_MAX)
+                    curSVRegMap.find(sentry.first)->second = sentry.second;
+                else // no before that
+                    curSVRegMap.erase(sentry.first);
+            
+            for (const auto& sentry: cblock.ssaInfoMap)
+            {
+                auto it = alreadyReadMap.find(sentry.first);
+                if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
+                    // remove old to resolve in leaved way to allow collecting next ssaId
+                    // before write (can be different due to earlier visit)
+                    alreadyReadMap.erase(it);
+            }
+            ARDOut << "  popjoin\n";
+            flowStack.pop_back();
+        }
+    }
+}
+
 /* TODO: handling livenesses between routine call:
  *   for any routine call in call point:
  *     add extra liveness point which will be added to liveness of the vars used between
@@ -1303,8 +1422,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
     // hold last vreg ssaId and position
     LastVRegMap lastVRegMap;
     
-    std::unordered_map<size_t, RoutineDataLv> routineMap;
-    
     // key - current res first key, value - previous first key and its flowStack pos
     PrevWaysIndexMap prevWaysIndexMap;
     // to track ways last block indices pair: block index, flowStackPos)
@@ -1315,6 +1432,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
     size_t rbwCount = 0;
     size_t wrCount = 0;
     
+    RoutineLvMap routineMap;
     std::vector<Liveness> livenesses[MAX_REGTYPES_NUM];
     
     for (size_t i = 0; i < regTypesNum; i++)
@@ -1471,12 +1589,12 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
         
         if (entry.nextIndex < cblock.nexts.size())
         {
-            bool isCall = false;
+            //bool isCall = false;
             size_t nextBlock = cblock.nexts[entry.nextIndex].block;
             if (cblock.nexts[entry.nextIndex].isCall)
             {
                 callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
-                isCall = true;
+                //isCall = true;
             }
             
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });

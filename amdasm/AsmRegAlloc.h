@@ -196,22 +196,28 @@ struct CLRX_INTERNAL LastAccessBlockPos
 {
     size_t blockIndex;
     bool inSubroutines; // true if last access in some called subroutine
+    
+    bool operator==(const LastAccessBlockPos& v) const
+    { return blockIndex==v.blockIndex; }
+    bool operator!=(const LastAccessBlockPos& v) const
+    { return blockIndex!=v.blockIndex; }
 };
 
-typedef std::unordered_map<AsmSingleVReg, LastAccessBlockPos> LastAccessMap;
+typedef std::unordered_map<AsmSingleVReg, VectorSet<LastAccessBlockPos> > LastAccessMap;
 
 // Routine data for createLivenesses - holds svreg read before writes and
 // last access of the svregs
-class CLRX_INTERNAL RoutineDataLv
+struct CLRX_INTERNAL RoutineDataLv
 {
     std::unordered_set<AsmSingleVReg> readBeforeWrites;
     // holds all vreg SSA's used in routine (used while creating call point)
     // includes subroutines called in this routines
-    std::unordered_set<size_t> allSSAs;
+    std::unordered_set<size_t> allSSAs[MAX_REGTYPES_NUM];
     // key - svreg, value - list of the last codeblocks where is svreg
     LastAccessMap lastAccessMap;
 };
 
+// used by createSSAData
 struct CLRX_INTERNAL FlowStackEntry
 {
     BlockIndex blockIndex;
@@ -221,17 +227,28 @@ struct CLRX_INTERNAL FlowStackEntry
     RetSSAIdMap prevRetSSAIdSets;
 };
 
+// used by resolveSSAConflicts
 struct CLRX_INTERNAL FlowStackEntry2
 {
     size_t blockIndex;
     size_t nextIndex;
 };
 
+
+// used by createLivenesses
 struct CLRX_INTERNAL FlowStackEntry3
 {
     size_t blockIndex;
     size_t nextIndex;
     bool isCall;
+};
+
+struct CLRX_INTERNAL FlowStackEntry4
+{
+    size_t blockIndex;
+    size_t nextIndex;
+    bool isCall;
+    SVRegMap prevCurSVRegMap;
 };
 
 struct CLRX_INTERNAL CallStackEntry
@@ -249,6 +266,7 @@ struct CLRX_INTERNAL CallStackEntry2
 };
 
 typedef std::unordered_map<BlockIndex, RoutineData> RoutineMap;
+typedef std::unordered_map<BlockIndex, RoutineDataLv> RoutineLvMap;
 
 typedef std::unordered_map<size_t, std::pair<size_t, size_t> > PrevWaysIndexMap;
 
