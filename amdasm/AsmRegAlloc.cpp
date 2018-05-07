@@ -1345,6 +1345,30 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
         }
 }
 
+static void joinRoutineDataLv(RoutineDataLv& dest, RoutineCurAccessMap& curSVRegMap,
+            FlowStackEntry4& entry, const RoutineDataLv& src)
+{
+    dest.rbwSSAIdMap.insert(src.rbwSSAIdMap.begin(), src.rbwSSAIdMap.end());
+    for (size_t i = 0; i < MAX_REGTYPES_NUM; i++)
+        dest.allSSAs[i].insert(src.allSSAs[i].begin(), src.allSSAs[i].end());
+    
+    // join source lastAccessMap with curSVRegMap
+    for (const auto& sentry: src.lastAccessMap)
+    {
+        auto res = curSVRegMap.insert({ sentry.first, { entry.blockIndex, true } });
+        if (!res.second)
+        {   // not added because is present in map
+            if (res.first->second.blockIndex != entry.blockIndex)
+                entry.prevCurSVRegMap.insert(*res.first);
+            // otherwise, it is same code block but inside routines
+            // and do not change prevCurSVRegMap for revert
+            // update entry
+            res.first->second = { entry.blockIndex, true };
+        }
+        else
+            entry.prevCurSVRegMap.insert({ sentry.first, { SIZE_MAX, true } });
+    }
+}
 
 static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
         const RoutineLvMap& routineMap, RoutineDataLv& rdata,
@@ -1359,7 +1383,7 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
     SVRegMap alreadyReadMap;
     
     flowStack.push_back({ routineBlock, 0 });
-    SVRegMap curSVRegMap; // key - svreg, value - block index
+    RoutineCurAccessMap curSVRegMap; // key - svreg, value - block index
     
     while (!flowStack.empty())
     {
@@ -1381,14 +1405,16 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
                             rdata.rbwSSAIdMap.insert({ sentry.first,
                                         sentry.second.ssaIdBefore });
                     
-                    auto res = curSVRegMap.insert({ sentry.first, entry.blockIndex });
+                    auto res = curSVRegMap.insert({ sentry.first,
+                        LastAccessBlockPos{ entry.blockIndex, false } });
                     if (!res.second)
                     {   // not added because is present in map
                         entry.prevCurSVRegMap.insert(*res.first);
-                        res.first->second = entry.blockIndex;
+                        res.first->second = { entry.blockIndex, false };
                     }
                     else
-                        entry.prevCurSVRegMap.insert({ sentry.first, SIZE_MAX });
+                        entry.prevCurSVRegMap.insert(
+                                        { sentry.first, { SIZE_MAX, false } });
                     
                     // all SSAs
                     const SSAInfo& sinfo = sentry.second;
@@ -1417,6 +1443,22 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
             }
         }
         
+        // join and skip calls
+        {
+            std::vector<size_t> calledRoutines;
+            for (; entry.nextIndex < cblock.nexts.size() &&
+                        cblock.nexts[entry.nextIndex].isCall; entry.nextIndex++)
+            {
+                size_t rblock = cblock.nexts[entry.nextIndex].block;
+                if (rblock != routineBlock)
+                    calledRoutines.push_back(rblock);
+            }
+            
+            for (size_t srcRoutBlock: calledRoutines)
+                joinRoutineDataLv(rdata, curSVRegMap, entry,
+                        routineMap.find(srcRoutBlock)->second);
+        }
+        
         if (entry.nextIndex < cblock.nexts.size())
         {
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
@@ -1435,18 +1477,18 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
             if (cblock.haveReturn)
             {
                 // handle return
+                // add curSVReg access positions to lastAccessMap
                 for (const auto& entry: curSVRegMap)
                 {
                     auto res = rdata.lastAccessMap.insert({ entry.first,
-                                    { LastAccessBlockPos{  entry.second, false } } });
+                                    { entry.second } });
                     if (!res.second)
-                        res.first->second.insertValue(
-                                    LastAccessBlockPos{ entry.second, false });
+                        res.first->second.insertValue(entry.second);
                 }
             }
             // revert curSVRegMap
             for (const auto& sentry: entry.prevCurSVRegMap)
-                if (sentry.second != SIZE_MAX)
+                if (sentry.second.blockIndex != SIZE_MAX)
                     curSVRegMap.find(sentry.first)->second = sentry.second;
                 else // no before that
                     curSVRegMap.erase(sentry.first);
@@ -1462,6 +1504,18 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
             ARDOut << "  popjoin\n";
             flowStack.pop_back();
         }
+    }
+}
+
+static inline void revertLastSVReg(LastVRegMap& lastVRegMap, const AsmSingleVReg& svreg)
+{
+    auto lvrit = lastVRegMap.find(svreg);
+    if (lvrit != lastVRegMap.end())
+    {
+        std::vector<LastVRegStackPos>& lastPos = lvrit->second;
+        lastPos.pop_back();
+        if (lastPos.empty()) // just remove from lastVRegs
+            lastVRegMap.erase(lvrit);
     }
 }
 
@@ -1732,8 +1786,32 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
             entry.nextIndex++;
         }
-        else if (entry.nextIndex==0 && cblock.nexts.empty() && !cblock.haveEnd)
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
         {
+            if (entry.nextIndex!=0) // if back from calls (just return from calls)
+            {
+                std::unordered_set<AsmSingleVReg> regSVRegs;
+                // just add last access of svreg from call routines to lastVRegMap
+                for (const NextBlock& next: cblock.nexts)
+                    if (next.isCall)
+                    {
+                        const RoutineDataLv& rdata = routineMap.find(next.block)->second;
+                        for (const auto& entry: rdata.lastAccessMap)
+                            if (regSVRegs.insert(entry.first).second)
+                            {
+                                auto res = lastVRegMap.insert({ entry.first,
+                                        { { flowStack.size()-1, true } } });
+                                if (!res.second) // if not first seen, just update
+                                    // update last
+                                    res.first->second.push_back(
+                                                { flowStack.size()-1, true });
+                            }
+                    }
+            }
+            
             flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
         }
@@ -1741,18 +1819,20 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
         {
             // revert lastSSAIdMap
             flowStack.pop_back();
-            if (!flowStack.empty())
-                for (const auto& sentry: cblock.ssaInfoMap)
+            
+            // revert lastVRegs in call
+            std::unordered_set<AsmSingleVReg> revertedSVRegs;
+            for (const NextBlock& next: cblock.nexts)
+                if (next.isCall)
                 {
-                    auto lvrit = lastVRegMap.find(sentry.first);
-                    if (lvrit != lastVRegMap.end())
-                    {
-                        std::vector<LastVRegStackPos>& lastPos = lvrit->second;
-                        lastPos.pop_back();
-                        if (lastPos.empty()) // just remove from lastVRegs
-                            lastVRegMap.erase(lvrit);
-                    }
+                    const RoutineDataLv& rdata = routineMap.find(next.block)->second;
+                    for (const auto& entry: rdata.lastAccessMap)
+                        if (revertedSVRegs.insert(entry.first).second)
+                            revertLastSVReg(lastVRegMap, entry.first);
                 }
+            
+            for (const auto& sentry: cblock.ssaInfoMap)
+                revertLastSVReg(lastVRegMap, sentry.first);
             
             if (!flowStack.empty() && lastCommonCacheWayPoint.first != SIZE_MAX &&
                     lastCommonCacheWayPoint.second >= flowStack.size())

@@ -210,6 +210,7 @@ struct CLRX_INTERNAL LastVRegStackPos
 };
 
 typedef std::unordered_map<AsmSingleVReg, VectorSet<LastAccessBlockPos> > LastAccessMap;
+typedef std::unordered_map<AsmSingleVReg, LastAccessBlockPos> RoutineCurAccessMap;
 
 // Routine data for createLivenesses - holds svreg read before writes and
 // last access of the svregs
@@ -254,7 +255,7 @@ struct CLRX_INTERNAL FlowStackEntry4
     size_t blockIndex;
     size_t nextIndex;
     bool isCall;
-    SVRegMap prevCurSVRegMap;
+    RoutineCurAccessMap prevCurSVRegMap;
 };
 
 struct CLRX_INTERNAL CallStackEntry
