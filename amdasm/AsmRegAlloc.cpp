@@ -929,23 +929,6 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
         }
 }
 
-static void joinSVregWithVisited(const SVRegMap* stackVarMap,
-            const RoutineLvMap& routineMap, const AsmSingleVReg& svreg,
-            size_t ssaIdNextBefore, const std::deque<FlowStackEntry3>& prevFlowStack,
-            const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
-            std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
-{
-    // join liveness for this variable ssaId>.
-    // only if in previous block previous SSAID is
-    // read before all writes
-    auto it = stackVarMap->find(svreg);
-    const size_t pfStart = (it != stackVarMap->end() ? it->second : 0);
-    
-    joinVRegRecur(prevFlowStack, codeBlocks, routineMap,
-            LastVRegStackPos{ pfStart, false }, svreg, ssaIdNextBefore, vregIndexMaps,
-            livenesses, regTypesNum, regRanges, true);
-}
-
 // add new join second cache entry with readBeforeWrite for all encountered regvars
 static void addJoinSecCacheEntry(//const RoutineMap& routineMap,
                 const std::vector<CodeBlock>& codeBlocks,
@@ -1172,9 +1155,16 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                             cacheSecPoints[sentry.first] = sinfo.ssaIdBefore;
                         
                         if (res.second && sinfo.readBeforeWrite)
-                            joinSVregWithVisited(&stackVarMap, routineMap, sentry.first,
-                                sentry.second.ssaIdBefore, prevFlowStack, codeBlocks,
-                                vregIndexMaps, livenesses, regTypesNum, regRanges);
+                        {
+                            auto it = stackVarMap.find(sentry.first);
+                            const size_t pfStart = (it != stackVarMap.end() ?
+                                        it->second : 0);
+                            
+                            joinVRegRecur(prevFlowStack, codeBlocks, routineMap,
+                                LastVRegStackPos{ pfStart, false }, sentry.first,
+                                sentry.second.ssaIdBefore, vregIndexMaps,
+                                livenesses, regTypesNum, regRanges, true);
+                        }
                     }
                 else
                 {
@@ -1190,9 +1180,14 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                             if (toCache)
                                 cacheSecPoints[rsentry.first] = rsentry.second;
                             
-                            joinSVregWithVisited(&stackVarMap, routineMap, rsentry.first,
-                                    rsentry.second, prevFlowStack, codeBlocks,
-                                    vregIndexMaps, livenesses, regTypesNum, regRanges);
+                            auto it = stackVarMap.find(rsentry.first);
+                            const size_t pfStart = (it != stackVarMap.end() ?
+                                        it->second : 0);
+                            
+                            joinVRegRecur(prevFlowStack, codeBlocks, routineMap,
+                                LastVRegStackPos{ pfStart, false }, rsentry.first,
+                                rsentry.second, vregIndexMaps,
+                                livenesses, regTypesNum, regRanges, true);
                         }
                     }
                     flowStack.pop_back();
