@@ -754,7 +754,7 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
             auto lvrit = lastVRegMap.find(entry.first);
             FlowStackCIter flit = flowStack.begin();
             if (lvrit != lastVRegMap.end())
-                flit += lvrit->second.back().blockIndex;
+                flit += lvrit->second.back().stackPos;
             
             cxuint regType = getRegType(regTypesNum, regRanges, entry.first);
             const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
@@ -1764,7 +1764,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                     auto lvrit = lastVRegMap.find(entry.first);
                     FlowStackCIter flit = flowStack.begin();
                     if (lvrit != lastVRegMap.end())
-                        flit += lvrit->second.back().blockIndex;
+                        flit += lvrit->second.back().stackPos;
                     
                     const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
                     auto sinfoIt = lastBlk.ssaInfoMap.find(entry.first);
@@ -1822,7 +1822,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                     auto lvrit = lastVRegMap.find(sentry.first);
                     if (lvrit != lastVRegMap.end())
                     {
-                        std::vector<LastAccessBlockPos>& lastPos = lvrit->second;
+                        std::vector<LastVRegStackPos>& lastPos = lvrit->second;
                         lastPos.pop_back();
                         if (lastPos.empty()) // just remove from lastVRegs
                             lastVRegMap.erase(lvrit);

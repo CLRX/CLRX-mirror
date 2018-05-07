@@ -203,6 +203,12 @@ struct CLRX_INTERNAL LastAccessBlockPos
     { return blockIndex!=v.blockIndex; }
 };
 
+struct CLRX_INTERNAL LastVRegStackPos
+{
+    size_t stackPos;
+    bool inSubroutines; // true if last access in some called subroutine
+};
+
 typedef std::unordered_map<AsmSingleVReg, VectorSet<LastAccessBlockPos> > LastAccessMap;
 
 // Routine data for createLivenesses - holds svreg read before writes and
@@ -383,7 +389,7 @@ typedef AsmRegAllocator::VarIndexMap VarIndexMap;
 typedef std::deque<FlowStackEntry3>::const_iterator FlowStackCIter;
 
 // key - singlevreg, value - code block chain
-typedef std::unordered_map<AsmSingleVReg, std::vector<LastAccessBlockPos> > LastVRegMap;
+typedef std::unordered_map<AsmSingleVReg, std::vector<LastVRegStackPos> > LastVRegMap;
 
 struct CLRX_INTERNAL LiveBlock
 {
