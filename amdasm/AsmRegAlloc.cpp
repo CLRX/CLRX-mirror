@@ -930,7 +930,7 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
 }
 
 // add new join second cache entry with readBeforeWrite for all encountered regvars
-static void addJoinSecCacheEntry(//const RoutineMap& routineMap,
+static void addJoinSecCacheEntry(const RoutineLvMap& routineMap,
                 const std::vector<CodeBlock>& codeBlocks,
                 SimpleCache<size_t, SVRegMap>& joinSecondPointsCache,
                 size_t nextBlock)
@@ -1007,15 +1007,15 @@ static void addJoinSecCacheEntry(//const RoutineMap& routineMap,
                  !cblock.haveReturn && !cblock.haveEnd)
         {
             // add toResolveMap ssaIds inside called routines
-            /*for (const auto& next: cblock.nexts)
+            for (const auto& next: cblock.nexts)
                 if (next.isCall)
                 {
-                    const RoutineData& rdata = routineMap.find(next.block)->second;
+                    const RoutineDataLv& rdata = routineMap.find(next.block)->second;
                     for (const auto& v: rdata.rbwSSAIdMap)
                         alreadyReadMap.insert({v.first, entry.blockIndex });
-                    for (const auto& v: rdata.lastSSAIdMap)
+                    for (const auto& v: rdata.lastAccessMap)
                         alreadyReadMap.insert({v.first, entry.blockIndex });
-                }*/
+                }
             
             flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
@@ -1024,23 +1024,23 @@ static void addJoinSecCacheEntry(//const RoutineMap& routineMap,
         {
             // remove old to resolve in leaved way to allow collecting next ssaId
             // before write (can be different due to earlier visit)
-            /*for (const auto& next: cblock.nexts)
+            for (const auto& next: cblock.nexts)
                 if (next.isCall)
                 {
-                    const RoutineData& rdata = routineMap.find(next.block)->second;
+                    const RoutineDataLv& rdata = routineMap.find(next.block)->second;
                     for (const auto& v: rdata.rbwSSAIdMap)
                     {
                         auto it = alreadyReadMap.find(v.first);
                         if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
                             alreadyReadMap.erase(it);
                     }
-                    for (const auto& v: rdata.lastSSAIdMap)
+                    for (const auto& v: rdata.lastAccessMap)
                     {
                         auto it = alreadyReadMap.find(v.first);
                         if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
                             alreadyReadMap.erase(it);
                     }
-                }*/
+                }
             
             for (const auto& sentry: cblock.ssaInfoMap)
             {
@@ -1058,11 +1058,27 @@ static void addJoinSecCacheEntry(//const RoutineMap& routineMap,
     joinSecondPointsCache.put(nextBlock, cacheSecPoints);
 }
 
+// apply calls (changes from these calls) from code blocks to stack var map
+static void applyCallToStackVarMap(const CodeBlock& cblock, const RoutineLvMap& routineMap,
+        LastStackPosMap& stackVarMap, size_t pfPos, size_t nextIndex)
+{
+    for (const NextBlock& next: cblock.nexts)
+        if (next.isCall)
+        {
+            ARDOut << "  japplycall: " << pfPos << ": " <<
+                    nextIndex << ": " << next.block << "\n";
+            const LastAccessMap& regVarMap =
+                    routineMap.find(next.block)->second.lastAccessMap;
+            for (const auto& sentry: regVarMap)
+                stackVarMap[sentry.first] = LastVRegStackPos{ pfPos, true };
+        }
+}
+
 static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStack,
         const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
         const PrevWaysIndexMap& prevWaysIndexMap,
         const std::vector<bool>& waysToCache, ResSecondPointsToCache& cblocksToCache,
-        SimpleCache<size_t, SVRegMap>& joinFirstPointsCache,
+        SimpleCache<size_t, LastStackPosMap>& joinFirstPointsCache,
         SimpleCache<size_t, SVRegMap>& joinSecondPointsCache,
         const VarIndexMap* vregIndexMaps,
         std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
@@ -1072,7 +1088,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
     --pfEnd;
     ARDOut << "startJoinLv: " << (pfEnd-1)->blockIndex << "," << nextBlock << "\n";
     // key - varreg, value - last position in previous flowStack
-    SVRegMap stackVarMap;
+    LastStackPosMap stackVarMap;
     
     size_t pfStartIndex = 0;
     {
@@ -1081,7 +1097,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
         auto it = prevWaysIndexMap.find(pfPrev->blockIndex);
         if (it != prevWaysIndexMap.end())
         {
-            const SVRegMap* cached = joinFirstPointsCache.use(it->second.first);
+            const LastStackPosMap* cached = joinFirstPointsCache.use(it->second.first);
             if (cached!=nullptr)
             {
                 ARDOut << "use pfcached: " << it->second.first << ", " <<
@@ -1090,11 +1106,12 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                 pfStartIndex = it->second.second+1;
                 
                 // apply missing calls at end of the cached
-                //const CodeBlock& cblock = codeBlocks[it->second.first];
+                const CodeBlock& cblock = codeBlocks[it->second.first];
                 
-                //const FlowStackEntry3& entry = *(prevFlowStack.begin()+pfStartIndex-1);
-                //if (entry.nextIndex > cblock.nexts.size())
-                   // applyCallToStackVarMap(cblock, routineMap, stackVarMap, -1, -1);
+                const FlowStackEntry3& entry = *(prevFlowStack.begin()+pfStartIndex-1);
+                if (entry.nextIndex > cblock.nexts.size())
+                    applyCallToStackVarMap(cblock, routineMap, stackVarMap,
+                                    pfStartIndex-1, -1);
             }
         }
     }
@@ -1104,7 +1121,11 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
         const FlowStackEntry3& entry = *pfit;
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
         for (const auto& sentry: cblock.ssaInfoMap)
-            stackVarMap[sentry.first] = pfit - prevFlowStack.begin();
+            stackVarMap[sentry.first] = { size_t(pfit - prevFlowStack.begin()), false };
+        
+        if (entry.nextIndex > cblock.nexts.size())
+            applyCallToStackVarMap(cblock, routineMap, stackVarMap,
+                        pfit - prevFlowStack.begin(), entry.nextIndex);
         
         // put to first point cache
         if (waysToCache[pfit->blockIndex] &&
@@ -1157,12 +1178,11 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                         if (res.second && sinfo.readBeforeWrite)
                         {
                             auto it = stackVarMap.find(sentry.first);
-                            const size_t pfStart = (it != stackVarMap.end() ?
-                                        it->second : 0);
+                            LastVRegStackPos stackPos = (it != stackVarMap.end() ?
+                                        it->second : LastVRegStackPos{ 0, false });
                             
-                            joinVRegRecur(prevFlowStack, codeBlocks, routineMap,
-                                LastVRegStackPos{ pfStart, false }, sentry.first,
-                                sentry.second.ssaIdBefore, vregIndexMaps,
+                            joinVRegRecur(prevFlowStack, codeBlocks, routineMap, stackPos,
+                                sentry.first, sentry.second.ssaIdBefore, vregIndexMaps,
                                 livenesses, regTypesNum, regRanges, true);
                         }
                     }
@@ -1181,12 +1201,11 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                                 cacheSecPoints[rsentry.first] = rsentry.second;
                             
                             auto it = stackVarMap.find(rsentry.first);
-                            const size_t pfStart = (it != stackVarMap.end() ?
-                                        it->second : 0);
+                            LastVRegStackPos stackPos = (it != stackVarMap.end() ?
+                                        it->second : LastVRegStackPos{ 0, false });
                             
-                            joinVRegRecur(prevFlowStack, codeBlocks, routineMap,
-                                LastVRegStackPos{ pfStart, false }, rsentry.first,
-                                rsentry.second, vregIndexMaps,
+                            joinVRegRecur(prevFlowStack, codeBlocks, routineMap, stackPos,
+                                rsentry.first, rsentry.second, vregIndexMaps,
                                 livenesses, regTypesNum, regRanges, true);
                         }
                     }
@@ -1217,15 +1236,15 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                  !cblock.haveReturn && !cblock.haveEnd)
         {
             // add toResolveMap ssaIds inside called routines
-            /*for (const auto& next: cblock.nexts)
+            for (const auto& next: cblock.nexts)
                 if (next.isCall)
                 {
-                    const RoutineData& rdata = routineMap.find(next.block)->second;
+                    const RoutineDataLv& rdata = routineMap.find(next.block)->second;
                     for (const auto& v: rdata.rbwSSAIdMap)
                         alreadyReadMap.insert({v.first, entry.blockIndex });
-                    for (const auto& v: rdata.lastSSAIdMap)
+                    for (const auto& v: rdata.lastAccessMap)
                         alreadyReadMap.insert({v.first, entry.blockIndex });
-                }*/
+                }
             
             flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
@@ -1234,23 +1253,23 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
         {
             // remove old to resolve in leaved way to allow collecting next ssaId
             // before write (can be different due to earlier visit)
-            /*for (const auto& next: cblock.nexts)
+            for (const auto& next: cblock.nexts)
                 if (next.isCall)
                 {
-                    const RoutineData& rdata = routineMap.find(next.block)->second;
+                    const RoutineDataLv& rdata = routineMap.find(next.block)->second;
                     for (const auto& v: rdata.rbwSSAIdMap)
                     {
                         auto it = alreadyReadMap.find(v.first);
                         if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
                             alreadyReadMap.erase(it);
                     }
-                    for (const auto& v: rdata.lastSSAIdMap)
+                    for (const auto& v: rdata.lastAccessMap)
                     {
                         auto it = alreadyReadMap.find(v.first);
                         if (it != alreadyReadMap.end() && it->second == entry.blockIndex)
                             alreadyReadMap.erase(it);
                     }
-                }*/
+                }
             
             for (const auto& sentry: cblock.ssaInfoMap)
             {
@@ -1265,7 +1284,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
             if (cblocksToCache.count(entry.blockIndex)==2 &&
                 !joinSecondPointsCache.hasKey(entry.blockIndex))
                 // add to cache
-                addJoinSecCacheEntry(codeBlocks, joinSecondPointsCache,
+                addJoinSecCacheEntry(routineMap, codeBlocks, joinSecondPointsCache,
                             entry.blockIndex);
             
             flowStack.pop_back();
@@ -1846,7 +1865,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
     
     // after, that resolve joins (join with already visited code)
     // SVRegMap in this cache: key - vreg, value - last flowStack entry position
-    SimpleCache<size_t, SVRegMap> joinFirstPointsCache(wrCount<<1);
+    SimpleCache<size_t, LastStackPosMap> joinFirstPointsCache(wrCount<<1);
     // SVRegMap in this cache: key - vreg, value - first readBefore in second part
     SimpleCache<size_t, SVRegMap> joinSecondPointsCache(rbwCount<<1);
     
@@ -1895,7 +1914,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             if (cblocksToCache.count(entry.blockIndex)==2 &&
                 !joinSecondPointsCache.hasKey(entry.blockIndex))
                 // add to cache
-                addJoinSecCacheEntry(codeBlocks, joinSecondPointsCache,
+                addJoinSecCacheEntry(routineMap, codeBlocks, joinSecondPointsCache,
                             entry.blockIndex);
             flowStack.pop_back();
         }

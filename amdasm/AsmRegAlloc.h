@@ -211,6 +211,16 @@ struct CLRX_INTERNAL LastVRegStackPos
 
 typedef std::unordered_map<AsmSingleVReg, VectorSet<LastAccessBlockPos> > LastAccessMap;
 typedef std::unordered_map<AsmSingleVReg, LastAccessBlockPos> RoutineCurAccessMap;
+class CLRX_INTERNAL LastStackPosMap
+        : public std::unordered_map<AsmSingleVReg, LastVRegStackPos>
+{
+public:
+    LastStackPosMap()
+    { }
+    
+    size_t weight() const
+    { return size(); }
+};
 
 // Routine data for createLivenesses - holds svreg read before writes and
 // last access of the svregs
