@@ -935,17 +935,6 @@ static void joinSVregWithVisited(const SVRegMap* stackVarMap,
             const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
             std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
 {
-    auto pfEnd = prevFlowStack.end();
-    --pfEnd;
-    
-    Liveness& lv = getLiveness2(svreg, ssaIdNextBefore,
-            livenesses, vregIndexMaps, regTypesNum, regRanges);
-    
-    const CodeBlock& cbLast = codeBlocks[(pfEnd-1)->blockIndex];
-    if (lv.contain(cbLast.end-1))
-        // if already filled up
-        return;
-    
     // join liveness for this variable ssaId>.
     // only if in previous block previous SSAID is
     // read before all writes
