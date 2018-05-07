@@ -1432,7 +1432,8 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
                     if (sentry.second.readBeforeWrite)
                         if (alreadyReadMap.insert(
                                     { sentry.first, entry.blockIndex }).second)
-                            rdata.readBeforeWrites.insert(sentry.first);
+                            rdata.rbwSSAIdMap.insert({ sentry.first,
+                                        sentry.second.ssaIdBefore });
                     
                     auto res = curSVRegMap.insert({ sentry.first, entry.blockIndex });
                     if (!res.second)
@@ -1757,24 +1758,18 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             else
             {
                 // already added join livenesses from all readBeforeWrites
-                for (const auto& entry: res.first->second.readBeforeWrites)
+                for (const auto& entry: res.first->second.rbwSSAIdMap)
                 {
                     // find last
-                    auto lvrit = lastVRegMap.find(entry);
+                    auto lvrit = lastVRegMap.find(entry.first);
                     FlowStackCIter flit = flowStack.begin();
                     if (lvrit != lastVRegMap.end())
                         flit += lvrit->second.back();
                     
-                    cxuint regType = getRegType(regTypesNum, regRanges, entry);
-                    const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-                    const std::vector<size_t>& ssaIdIndices =
-                                vregIndexMap.find(entry)->second;
-                    
                     const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
-                    auto sinfoIt = lastBlk.ssaInfoMap.find(entry);
-                    const size_t ssaIdBefore = (sinfoIt != lastBlk.ssaInfoMap.end()) ?
-                            sinfoIt->second.ssaIdLast : 0;
-                    Liveness& lv = livenesses[regType][ssaIdIndices[ssaIdBefore]];
+                    auto sinfoIt = lastBlk.ssaInfoMap.find(entry.first);
+                    Liveness& lv = getLiveness2(entry.first, entry.second, livenesses, 
+                                vregIndexMaps, regTypesNum, regRanges);
                     
                     if (lv.contain(codeBlocks[(flowStack.end()-1)->blockIndex].end-1))
                         // already joined (check last byte from last block)
