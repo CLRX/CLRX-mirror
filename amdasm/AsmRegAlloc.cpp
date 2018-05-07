@@ -754,7 +754,7 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
             auto lvrit = lastVRegMap.find(entry.first);
             FlowStackCIter flit = flowStack.begin();
             if (lvrit != lastVRegMap.end())
-                flit += lvrit->second.back();
+                flit += lvrit->second.back().blockIndex;
             
             cxuint regType = getRegType(regTypesNum, regRanges, entry.first);
             const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
@@ -1629,10 +1629,10 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 {
                     // update
                     auto res = lastVRegMap.insert({ sentry.first,
-                                { flowStack.size()-1 } });
+                                { { flowStack.size()-1, false } } });
                     if (!res.second) // if not first seen, just update
                         // update last
-                        res.first->second.push_back(flowStack.size()-1);
+                        res.first->second.push_back({ flowStack.size()-1, false });
                     
                     // count read before writes (for cache weight)
                     if (sentry.second.readBeforeWrite)
@@ -1764,7 +1764,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                     auto lvrit = lastVRegMap.find(entry.first);
                     FlowStackCIter flit = flowStack.begin();
                     if (lvrit != lastVRegMap.end())
-                        flit += lvrit->second.back();
+                        flit += lvrit->second.back().blockIndex;
                     
                     const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
                     auto sinfoIt = lastBlk.ssaInfoMap.find(entry.first);
@@ -1822,7 +1822,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                     auto lvrit = lastVRegMap.find(sentry.first);
                     if (lvrit != lastVRegMap.end())
                     {
-                        std::vector<size_t>& lastPos = lvrit->second;
+                        std::vector<LastAccessBlockPos>& lastPos = lvrit->second;
                         lastPos.pop_back();
                         if (lastPos.empty()) // just remove from lastVRegs
                             lastVRegMap.erase(lvrit);
