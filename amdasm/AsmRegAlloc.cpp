@@ -734,9 +734,29 @@ static Liveness& getLiveness2(const AsmSingleVReg& svreg,
     return livenesses[regType][ssaIdIndices[ssaId]];
 }
 
+
+static void applyToLiveCallTime(size_t block, Liveness& lv,
+            const std::vector<CodeBlock>& codeBlocks,
+            const std::unordered_map<size_t, size_t>& callLiveTimesMap)
+{
+    auto cit = callLiveTimesMap.find(block);
+    if (cit != callLiveTimesMap.end())
+    {
+        size_t callLiveTime = cit->second;
+        const CodeBlock& cblock = codeBlocks[block];
+        for (const NextBlock& next: cblock.nexts)
+            if (next.isCall)
+            {
+                lv.insert(callLiveTime, callLiveTime+1);
+                callLiveTime--;
+            }
+    }
+}
+
 static void fillUpInsideRoutine(std::vector<bool>& visited,
-            const std::vector<CodeBlock>& codeBlocks, size_t startBlock,
-            const AsmSingleVReg& svreg, Liveness& lv)
+            const std::vector<CodeBlock>& codeBlocks,
+            const std::unordered_map<size_t, size_t>& callLiveTimesMap,
+            size_t startBlock, const AsmSingleVReg& svreg, Liveness& lv)
 {
     std::deque<FlowStackEntry3> flowStack;
     flowStack.push_back({ startBlock, 0 });
@@ -765,6 +785,8 @@ static void fillUpInsideRoutine(std::vector<bool>& visited,
                 }
                 // just insert
                 lv.insert(cbStart, cblock.end);
+                
+                applyToLiveCallTime(entry.blockIndex, lv, codeBlocks, callLiveTimesMap);
             }
             else
             {
@@ -793,6 +815,7 @@ static void fillUpInsideRoutine(std::vector<bool>& visited,
 
 static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
             const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
+            const std::unordered_map<size_t, size_t>& callLiveTimesMap,
             LastVRegStackPos flowStkStart, const AsmSingleVReg& svreg, size_t ssaId,
             const VarIndexMap* vregIndexMaps, std::vector<Liveness>* livenesses,
             size_t regTypesNum, const cxuint* regRanges, bool skipLastBlock = false)
@@ -868,22 +891,20 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         {
             size_t blockStart = entry.blockIndex;
             if (!entry.inSubroutines)
-                fillUpInsideRoutine(visited, codeBlocks, blockStart, svreg, lv);
+                fillUpInsideRoutine(visited, codeBlocks, callLiveTimesMap,
+                            blockStart, svreg, lv);
             else
-            {
                 // fill up next block in path (do not fill start block)
-                const CodeBlock& cbstart = codeBlocks[blockStart];
-                for (size_t k = 0; k < cbstart.nexts.size(); k++)
-                    if (!cbstart.nexts[k].isCall)
-                        fillUpInsideRoutine(visited, codeBlocks,
-                                cbstart.nexts[k].block, svreg, lv);
-            }
+                fillUpInsideRoutine(visited, codeBlocks, callLiveTimesMap,
+                        blockStart+1, svreg, lv);
             rjStack.pop();
         }
     }
     
     auto flit = flowStack.begin() + flowStkStart.stackPos + (flowStkStart.inSubroutines);
     const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
+    
+    applyToLiveCallTime(flit->blockIndex, lv, codeBlocks, callLiveTimesMap);
     
     auto sinfoIt = lastBlk.ssaInfoMap.find(svreg);
     size_t lastPos = lastBlk.start;
@@ -898,18 +919,19 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
     for (; flit != flitEnd; ++flit)
     {
         const CodeBlock& cblock = codeBlocks[flit->blockIndex];
+        applyToLiveCallTime(flit->blockIndex, lv, codeBlocks, callLiveTimesMap);
         lv.insert(cblock.start, cblock.end);
     }
 }
 
-/* TODO: add handling calls
- * handle many start points in this code (for example many kernel's in same code)
+/* handle many start points in this code (for example many kernel's in same code)
  * replace sets by vector, and sort and remove same values on demand
  */
 
 /* join livenesses between consecutive code blocks */
 static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack,
         const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
+        const std::unordered_map<size_t, size_t>& callLiveTimesMap,
         const LastVRegMap& lastVRegMap, std::vector<Liveness>* livenesses,
         const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges)
 {
@@ -923,9 +945,9 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
             LastVRegStackPos flowStackStart = (lvrit != lastVRegMap.end()) ?
                 lvrit->second.back() : LastVRegStackPos{ 0, false };
             
-            joinVRegRecur(flowStack, codeBlocks, routineMap, flowStackStart,
-                    entry.first, entry.second.ssaIdBefore, vregIndexMaps, livenesses,
-                    regTypesNum, regRanges, true);
+            joinVRegRecur(flowStack, codeBlocks, routineMap, callLiveTimesMap,
+                    flowStackStart, entry.first, entry.second.ssaIdBefore,
+                    vregIndexMaps, livenesses, regTypesNum, regRanges, true);
         }
 }
 
@@ -1076,6 +1098,7 @@ static void applyCallToStackVarMap(const CodeBlock& cblock, const RoutineLvMap& 
 
 static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStack,
         const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
+        const std::unordered_map<size_t, size_t>& callLiveTimesMap,
         const PrevWaysIndexMap& prevWaysIndexMap,
         const std::vector<bool>& waysToCache, ResSecondPointsToCache& cblocksToCache,
         SimpleCache<size_t, LastStackPosMap>& joinFirstPointsCache,
@@ -1181,7 +1204,8 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                             LastVRegStackPos stackPos = (it != stackVarMap.end() ?
                                         it->second : LastVRegStackPos{ 0, false });
                             
-                            joinVRegRecur(prevFlowStack, codeBlocks, routineMap, stackPos,
+                            joinVRegRecur(prevFlowStack, codeBlocks, routineMap,
+                                callLiveTimesMap, stackPos,
                                 sentry.first, sentry.second.ssaIdBefore, vregIndexMaps,
                                 livenesses, regTypesNum, regRanges, true);
                         }
@@ -1204,7 +1228,8 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                             LastVRegStackPos stackPos = (it != stackVarMap.end() ?
                                         it->second : LastVRegStackPos{ 0, false });
                             
-                            joinVRegRecur(prevFlowStack, codeBlocks, routineMap, stackPos,
+                            joinVRegRecur(prevFlowStack, codeBlocks, routineMap,
+                                callLiveTimesMap, stackPos,
                                 rsentry.first, rsentry.second, vregIndexMaps,
                                 livenesses, regTypesNum, regRanges, true);
                         }
@@ -1620,10 +1645,15 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
     
     RoutineLvMap routineMap;
     std::vector<Liveness> livenesses[MAX_REGTYPES_NUM];
+    std::unordered_map<size_t, size_t> callLiveTimesMap;
     
     for (size_t i = 0; i < regTypesNum; i++)
         livenesses[i].resize(graphVregsCounts[i]);
     
+    // callLiveTime - call live time where routine will be called
+    // reverse counted, begin from SIZE_MAX, used for joining svreg from routines
+    // and svreg used in this time
+    size_t callLiveTime = SIZE_MAX-1;
     size_t curLiveTime = 0;
     flowStack.push_back({ 0, 0 });
     
@@ -1641,7 +1671,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 visited[entry.blockIndex] = true;
                 ARDOut << "joinpush: " << entry.blockIndex << "\n";
                 if (flowStack.size() > 1)
-                    putCrossBlockLivenesses(flowStack, codeBlocks, routineMap, lastVRegMap,
+                    putCrossBlockLivenesses(flowStack, codeBlocks, routineMap, 
+                            callLiveTimesMap, lastVRegMap,
                             livenesses, vregIndexMaps, regTypesNum, regRanges);
                 // update last vreg position
                 for (const auto& sentry: cblock.ssaInfoMap)
@@ -1784,7 +1815,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                     LastVRegStackPos flowStackStart = (lvrit != lastVRegMap.end()) ?
                             lvrit->second.back() : LastVRegStackPos{ 0, false };
                     
-                    joinVRegRecur(flowStack, codeBlocks, routineMap, flowStackStart,
+                    joinVRegRecur(flowStack, codeBlocks, routineMap,
+                            callLiveTimesMap, flowStackStart,
                             entry.first, entry.second, vregIndexMaps,
                             livenesses, regTypesNum, regRanges, false);
                 }
@@ -1812,8 +1844,11 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
         {
             if (entry.nextIndex!=0) // if back from calls (just return from calls)
             {
+                callLiveTimesMap.insert({ entry.blockIndex, callLiveTime });
+                
                 std::unordered_set<AsmSingleVReg> regSVRegs;
                 // just add last access of svreg from call routines to lastVRegMap
+                // and join svregs from routine with svreg used at this time
                 for (const NextBlock& next: cblock.nexts)
                     if (next.isCall)
                     {
@@ -1828,6 +1863,11 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                                     res.first->second.push_back(
                                                 { flowStack.size()-1, true });
                             }
+                        
+                        for (cxuint r = 0; r < regTypesNum; r++)
+                            for(size_t lvIndex: rdata.allSSAs[r])
+                                livenesses[r][lvIndex].insert(callLiveTime, callLiveTime+1);
+                        callLiveTime--;
                     }
             }
             
@@ -1886,7 +1926,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 visited[entry.blockIndex] = true;
             else
             {
-                joinRegVarLivenesses(flowStack, codeBlocks, routineMap,
+                joinRegVarLivenesses(flowStack, codeBlocks, routineMap, callLiveTimesMap,
                         prevWaysIndexMap, waysToCache, cblocksToCache,
                         joinFirstPointsCache, joinSecondPointsCache,
                         vregIndexMaps, livenesses, regTypesNum, regRanges);
