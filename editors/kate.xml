@@ -1853,9 +1853,10 @@
             <item>.endr</item>
             <item>.endrept</item>
             <item>.ends</item>
-            <item>.end</item>
             <item>.endscope</item>
+            <item>.end</item>
             <item>.entry</item>
+            <item>.enum</item>
             <item>.equ</item>
             <item>.equiv</item>
             <item>.eqv</item>

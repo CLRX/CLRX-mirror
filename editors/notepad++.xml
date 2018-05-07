@@ -1473,9 +1473,10 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .endr
 .endrept
 .ends
-.end
 .endscope
+.end
 .entry
+.enum
 .equ
 .equiv
 .eqv

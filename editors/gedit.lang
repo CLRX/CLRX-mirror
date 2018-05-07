@@ -145,9 +145,10 @@
             <keyword>endr</keyword>
             <keyword>endrept</keyword>
             <keyword>ends</keyword>
-            <keyword>end</keyword>
             <keyword>endscope</keyword>
+            <keyword>end</keyword>
             <keyword>entry</keyword>
+            <keyword>enum</keyword>
             <keyword>equ</keyword>
             <keyword>equiv</keyword>
             <keyword>eqv</keyword>
