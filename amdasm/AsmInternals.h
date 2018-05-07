@@ -297,17 +297,15 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     // do close scope (.ends or .endscope)
     static void closeScope(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
     // start using scope (.using)
-    static void startUsing(Assembler& asmr, const char* pseudoOpPlace,
-                        const char* linePtr);
+    static void startUsing(Assembler& asmr, const char* linePtr);
     // stop using scope (.unusing)
-    static void stopUsing(Assembler& asmr, const char* pseudoOpPlace,
-                        const char* linePtr);
+    static void stopUsing(Assembler& asmr, const char* linePtr);
     // .usereg ?
-    static void doUseReg(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
+    static void doUseReg(Assembler& asmr, const char* linePtr);
     // .undef
     static void undefSymbol(Assembler& asmr, const char* linePtr);
     // .regvar
-    static void defRegVar(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
+    static void defRegVar(Assembler& asmr, const char* linePtr);
     // .cf_ (code flow pseudo-ops)
     static void addCodeFlowEntries(Assembler& asmr, const char* pseudoOpPlace,
                      const char* linePtr, AsmCodeFlowType type);
@@ -316,6 +314,9 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     
     static void getPredefinedValue(Assembler& asmr, const char* linePtr,
                         AsmPredefined predefined);
+    
+    // enumerate
+    static void doEnum(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
     
     static void ignoreString(Assembler& asmr, const char* linePtr);
     

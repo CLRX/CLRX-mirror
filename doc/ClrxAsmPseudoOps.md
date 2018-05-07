@@ -204,9 +204,31 @@ Finish macro definition
 
 Finish code of repetition.
 
-#### .ends, .endscope
+### .ends, .endscope
 
 Close visibility's scope.
+
+### .enum
+
+Syntax: .enum [>STARTPOS,] SYMBOL,....
+
+Simplify defining the enumerations. For every symbol,
+define symbol with value of enumeration counter and increase an enumeration counter.
+Defined symbols can not be assigned later. Optional STARTPOS sets enumeration counter
+to STARTPOS value. Every scope has own enumeration counter. This features simplify
+joining enumerations with scopes.
+
+Examples:
+
+```
+.enum OK,BADFD,FATAL        # define OK=0, BADFD=1, FATAL=2
+.enum >8, BitOne,BitTwo     # define BitOne=8, BitTwo=9
+.enum HALO                  # define HALO=10
+.scope Result
+    # enum counter is zero in this scope
+    .enum NONE,FULL,INVALID   # NONE=0, FULL=1, INVALID=2
+.ends
+```
 
 ### .equ, .set
 

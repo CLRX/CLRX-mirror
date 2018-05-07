@@ -731,7 +731,7 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
           // initialize global scope: adds '.' to symbols
           globalScope({nullptr,{std::make_pair(".", AsmSymbol(0, uint64_t(0)))}}),
           currentScope(&globalScope),
-          flags(_flags), 
+          flags(_flags),
           lineSize(0), line(nullptr),
           endOfAssembly(false),
           messageStream(msgStream),
@@ -769,7 +769,7 @@ Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
           // initialize global scope: adds '.' to symbols
           globalScope({nullptr,{std::make_pair(".", AsmSymbol(0, uint64_t(0)))}}),
           currentScope(&globalScope),
-          flags(_flags), 
+          flags(_flags),
           lineSize(0), line(nullptr),
           endOfAssembly(false),
           messageStream(msgStream),
@@ -1645,7 +1645,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         }
         
         // create symbol clone before setting value
-            cloneSymEntryIfNeeded(*res.first);
+        cloneSymEntryIfNeeded(*res.first);
         
         if (!res.first->second.occurrencesInExprs.empty())
         {

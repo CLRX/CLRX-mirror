@@ -107,7 +107,7 @@ static const char* pseudoOpNamesTbl[] =
     "elseifnfmt", "elseifngpu", "elseifnotdef",
     "end", "endif", "endm", "endmacro",
     "endr", "endrept", "ends", "endscope",
-    "equ", "equiv", "eqv",
+    "enum", "equ", "equiv", "eqv",
     "err", "error", "exitm", "extern",
     "fail", "file", "fill", "fillq",
     "float", "for", "format", "gallium", "get_64bit", "get_arch",
@@ -150,7 +150,7 @@ enum
     ASMOP_ELSEIFNFMT, ASMOP_ELSEIFNGPU, ASMOP_ELSEIFNOTDEF,
     ASMOP_END, ASMOP_ENDIF, ASMOP_ENDM, ASMOP_ENDMACRO,
     ASMOP_ENDR, ASMOP_ENDREPT, ASMOP_ENDS, ASMOP_ENDSCOPE,
-    ASMOP_EQU, ASMOP_EQUIV, ASMOP_EQV,
+    ASMOP_ENUM, ASMOP_EQU, ASMOP_EQUIV, ASMOP_EQV,
     ASMOP_ERR, ASMOP_ERROR, ASMOP_EXITM, ASMOP_EXTERN,
     ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FILLQ,
     ASMOP_FLOAT, ASMOP_FOR, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GET_64BIT, ASMOP_GET_ARCH,
@@ -2048,8 +2048,7 @@ void AsmPseudoOps::closeScope(Assembler& asmr, const char* pseudoOpPlace,
     asmr.popScope();
 }
 
-void AsmPseudoOps::startUsing(Assembler& asmr, const char* pseudoOpPlace,
-                    const char* linePtr)
+void AsmPseudoOps::startUsing(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -2065,8 +2064,7 @@ void AsmPseudoOps::startUsing(Assembler& asmr, const char* pseudoOpPlace,
     asmr.currentScope->startUsingScope(scope);
 }
 
-void AsmPseudoOps::doUseReg(Assembler& asmr, const char* pseudoOpPlace,
-                    const char* linePtr)
+void AsmPseudoOps::doUseReg(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
     asmr.initializeOutputFormat();
@@ -2118,8 +2116,7 @@ void AsmPseudoOps::doUseReg(Assembler& asmr, const char* pseudoOpPlace,
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
-void AsmPseudoOps::stopUsing(Assembler& asmr, const char* pseudoOpPlace,
-                    const char* linePtr)
+void AsmPseudoOps::stopUsing(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -2175,8 +2172,7 @@ void AsmPseudoOps::setAbsoluteOffset(Assembler& asmr, const char* linePtr)
     asmr.currentOutPos = value;
 }
 
-void AsmPseudoOps::defRegVar(Assembler& asmr, const char* pseudoOpPlace,
-                       const char* linePtr)
+void AsmPseudoOps::defRegVar(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
     asmr.initializeOutputFormat();
@@ -2300,6 +2296,48 @@ void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
             break;
     }
     AsmParseUtils::setSymbolValue(asmr, linePtr, predefValue, ASMSECT_ABS);
+}
+
+void AsmPseudoOps::doEnum(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t& enumCount = asmr.currentScope->enumCount;
+    if (linePtr!=end && *linePtr=='>')
+    {
+        // parse enum start
+        linePtr++;
+        uint64_t enumStart = 0;
+        if (!getAbsoluteValueArg(asmr, enumStart, linePtr, false))
+            return;
+        
+        enumCount = enumStart;
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+    }
+    skipSpacesToEnd(linePtr, end);
+    do {
+        const char* strAtSymName = linePtr;
+        CString symbolName = extractScopedSymName(linePtr, end, false);
+        if (!symbolName.empty())
+        {
+            std::pair<AsmSymbolEntry*, bool> res =
+                    asmr.insertSymbolInScope(symbolName, AsmSymbol());
+            if (!res.second && res.first->second.isDefined())
+                // found and can be only once defined
+                asmr.printError(strAtSymName, (std::string("Symbol '") +
+                        symbolName.c_str() + "' is already defined").c_str());
+            else
+            {
+                asmr.setSymbol(*res.first, enumCount++, ASMSECT_ABS);
+                res.first->second.onceDefined = true;
+            }
+        }
+        else
+            asmr.printError(linePtr, "Expected symbol name");
+        
+    } while(skipCommaForMultipleArgs(asmr, linePtr));
+    checkGarbagesAtEnd(asmr, linePtr);
 }
 
 void AsmPseudoOps::ignoreString(Assembler& asmr, const char* linePtr)
@@ -2528,6 +2566,8 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_ENDSCOPE:
             AsmPseudoOps::closeScope(*this, stmtPlace, linePtr);
             break;
+        case ASMOP_ENUM:
+            AsmPseudoOps::doEnum(*this, stmtPlace, linePtr);
             break;
         case ASMOP_EQU:
         case ASMOP_SET:
@@ -2758,7 +2798,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::putIntegers<uint64_t>(*this, stmtPlace, linePtr);
             break;
         case ASMOP_REGVAR:
-            AsmPseudoOps::defRegVar(*this, stmtPlace, linePtr);
+            AsmPseudoOps::defRegVar(*this, linePtr);
             break;
         case ASMOP_REPT:
             AsmPseudoOps::doRepeat(*this, stmtPlace, linePtr);
@@ -2812,13 +2852,13 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::undefSymbol(*this, linePtr);
             break;
         case ASMOP_UNUSING:
-            AsmPseudoOps::stopUsing(*this, stmtPlace, linePtr);
+            AsmPseudoOps::stopUsing(*this, linePtr);
             break;
         case ASMOP_USEREG:
-            AsmPseudoOps::doUseReg(*this, stmtPlace, linePtr);
+            AsmPseudoOps::doUseReg(*this, linePtr);
             break;
         case ASMOP_USING:
-            AsmPseudoOps::startUsing(*this, stmtPlace, linePtr);
+            AsmPseudoOps::startUsing(*this, linePtr);
             break;
         case ASMOP_WARNING:
             AsmPseudoOps::doWarning(*this, stmtPlace, linePtr);

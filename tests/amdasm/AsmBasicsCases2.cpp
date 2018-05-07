@@ -2333,5 +2333,53 @@ aa2=6
             { "vectorAdd", 0U, 0, 0U, true, true, false, 0, 0 }
         }, true, "", ""
     },
+    {   // 81 - use enums
+        R"ffDXD(.enum sym1,sym2,sym6,xxx
+        .enum >1?100:0 ,  ala,joan,beta
+        
+        .scope Error
+            .enum OK
+            .enum BADFD
+            .enum BADIP
+        .ends
+        .scope Result
+            .enum NONE
+            .enum INCOMPLETE
+            .enum FULL
+        .ends
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { }, { },
+        {
+            { ".", 0, 0, 0, true, false, false, 0, 0 },
+            { "Error::BADFD", 1, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "Error::BADIP", 2, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "Error::OK", 0, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "Result::FULL", 2, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "Result::INCOMPLETE", 1, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "Result::NONE", 0, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "ala", 100, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "beta", 102, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "joan", 101, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "sym1", 0, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "sym2", 1, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "sym6", 2, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "xxx", 3, ASMSECT_ABS, 0, true, true, false, 0, 0 }
+        }, true, "", ""
+    },
+    {   // 82 - use enums - errors
+        R"ffDXD(mydef = 1
+        .enum mydef,mydef2
+        .enum >xxx, doOne, doSecond
+)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { }, { },
+        {
+            { ".", 0, 0, 0, true, false, false, 0, 0 },
+            { "mydef", 1, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "mydef2", 0, ASMSECT_ABS, 0, true, true, false, 0, 0 }
+        }, false,
+        "test.s:2:15: Error: Symbol 'mydef' is already defined\n"
+        "test.s:3:16: Error: Expression have unresolved symbol 'xxx'\n",
+        ""
+    },
     { nullptr }
 };

@@ -675,6 +675,7 @@ struct AsmScope
     AsmScopeMap scopeMap;   ///< scope map
     bool temporary; ///< true if temporary
     std::list<AsmScope*> usedScopes;    ///< list of used scope in this scope
+    uint64_t enumCount;
     
     /// set of used scopes in this scope
     std::unordered_map<AsmScope*, std::list<AsmScope*>::iterator> usedScopesSet;
@@ -682,11 +683,11 @@ struct AsmScope
     /// constructor
     AsmScope(AsmScope* _parent, const AsmSymbolMap& _symbolMap,
                      bool _temporary = false)
-            : parent(_parent), symbolMap(_symbolMap), temporary(_temporary)
+            : parent(_parent), symbolMap(_symbolMap), temporary(_temporary), enumCount(0)
     { }
     /// constructor
     AsmScope(AsmScope* _parent = nullptr, bool _temporary= false)
-            : parent(_parent), temporary(_temporary)
+            : parent(_parent), temporary(_temporary), enumCount(0)
     { }
     /// destructor
     ~AsmScope();
