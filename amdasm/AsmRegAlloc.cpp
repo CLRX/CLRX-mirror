@@ -734,59 +734,6 @@ static Liveness& getLiveness2(const AsmSingleVReg& svreg,
     return livenesses[regType][ssaIdIndices[ssaId]];
 }
 
-/* TODO: add handling calls
- * handle many start points in this code (for example many kernel's in same code)
- * replace sets by vector, and sort and remove same values on demand
- */
-
-/* join livenesses between consecutive code blocks */
-static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack,
-        const std::vector<CodeBlock>& codeBlocks, const LastVRegMap& lastVRegMap,
-        std::vector<Liveness>* livenesses, const VarIndexMap* vregIndexMaps,
-        size_t regTypesNum, const cxuint* regRanges)
-{
-    ARDOut << "putCrossBlockLv block: " << flowStack.back().blockIndex << "\n";
-    const CodeBlock& cblock = codeBlocks[flowStack.back().blockIndex];
-    for (const auto& entry: cblock.ssaInfoMap)
-        if (entry.second.readBeforeWrite)
-        {
-            // find last
-            auto lvrit = lastVRegMap.find(entry.first);
-            FlowStackCIter flit = flowStack.begin();
-            if (lvrit != lastVRegMap.end())
-                flit += lvrit->second.back().stackPos;
-            
-            cxuint regType = getRegType(regTypesNum, regRanges, entry.first);
-            const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-            const std::vector<size_t>& ssaIdIndices =
-                        vregIndexMap.find(entry.first)->second;
-            Liveness& lv = livenesses[regType][ssaIdIndices[entry.second.ssaIdBefore]];
-            FlowStackCIter flitEnd = flowStack.end();
-            --flitEnd; // before last element
-            
-            ARDOut << "  putCross for " << entry.first.regVar << ":" <<
-                    entry.first.index << "\n";
-            // insert live time to last seen position
-            const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
-            
-            auto sinfoIt = lastBlk.ssaInfoMap.find(entry.first);
-            size_t lastPos = lastBlk.start;
-            if (sinfoIt != lastBlk.ssaInfoMap.end())
-            {
-                // if begin at some point at last block
-                lastPos = sinfoIt->second.lastPos;
-                lv.insert(lastPos + 1, lastBlk.end);
-                ++flit; // skip last block in stack
-            }
-            
-            for (; flit != flitEnd; ++flit)
-            {
-                const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-                lv.insert(cblock.start, cblock.end);
-            }
-        }
-}
-
 static void fillUpInsideRoutine(std::vector<bool>& visited,
             const std::vector<CodeBlock>& codeBlocks, size_t startBlock,
             const AsmSingleVReg& svreg, Liveness& lv)
@@ -843,14 +790,12 @@ static void fillUpInsideRoutine(std::vector<bool>& visited,
             flowStack.pop_back();
     }
 }
-            
 
 static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
             const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
-            size_t flowStackStart, const AsmSingleVReg& svreg,
-            const LastAccessBlockPos& lastAccessPos,
+            LastVRegStackPos flowStkStart, const AsmSingleVReg& svreg, size_t ssaId,
             const VarIndexMap* vregIndexMaps, std::vector<Liveness>* livenesses,
-            size_t regTypesNum, const cxuint* regRanges)
+            size_t regTypesNum, const cxuint* regRanges, bool skipLastBlock = false)
 {
     struct JoinEntry
     {
@@ -859,12 +804,26 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         size_t lastAccessIndex; // last access pos index
         bool inSubroutines;
     };
-    Liveness* lv = nullptr;
+    
+    FlowStackCIter flitEnd = flowStack.end();
+    if (skipLastBlock)
+        --flitEnd; // before last element
+    Liveness& lv = getLiveness2(svreg, ssaId, livenesses, vregIndexMaps,
+                    regTypesNum, regRanges);
+    
+    if (flitEnd != flowStack.begin())
+    {
+        const CodeBlock& cbLast = codeBlocks[(flitEnd-1)->blockIndex];
+        if (lv.contain(cbLast.end-1))
+            // if already filled up
+            return;
+    }
+    
     std::vector<bool> visited(codeBlocks.size(), false);
     
     std::stack<JoinEntry> rjStack; // routine join stack
-    if (lastAccessPos.inSubroutines)
-        rjStack.push({ lastAccessPos.blockIndex, 0, 0, true });
+    if (flowStkStart.inSubroutines)
+        rjStack.push({ flowStack[flowStkStart.stackPos].blockIndex, 0, 0, true });
     
     while (!rjStack.empty())
     {
@@ -908,16 +867,8 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         else
         {
             size_t blockStart = entry.blockIndex;
-            if (lv == nullptr)
-            {
-                const SSAInfo& ssaInfo = codeBlocks[blockStart]
-                            .ssaInfoMap.find(svreg)->second;
-                lv = &getLiveness2(svreg, (ssaInfo.ssaIdChange==0) ?
-                        ssaInfo.ssaIdBefore : ssaInfo.ssaIdLast,
-                        livenesses, vregIndexMaps, regTypesNum, regRanges);
-            }
             if (!entry.inSubroutines)
-                fillUpInsideRoutine(visited, codeBlocks, blockStart, svreg, *lv);
+                fillUpInsideRoutine(visited, codeBlocks, blockStart, svreg, lv);
             else
             {
                 // fill up next block in path (do not fill start block)
@@ -925,35 +876,61 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
                 for (size_t k = 0; k < cbstart.nexts.size(); k++)
                     if (!cbstart.nexts[k].isCall)
                         fillUpInsideRoutine(visited, codeBlocks,
-                                cbstart.nexts[k].block, svreg, *lv);
+                                cbstart.nexts[k].block, svreg, lv);
             }
             rjStack.pop();
         }
     }
     
-    auto flit = flowStack.begin() + flowStackStart;
-    if (lv == nullptr)
-    {
-        size_t blockStart = flit->blockIndex;
-        auto ssaInfoIt = codeBlocks[blockStart].ssaInfoMap.find(svreg);
-        size_t ssaId = 0;
-        if (ssaInfoIt != codeBlocks[blockStart].ssaInfoMap.end())
-            ssaId = (ssaInfoIt->second.ssaIdChange==0) ? ssaInfoIt->second.ssaIdLast :
-                    ssaInfoIt->second.ssaIdBefore;
-        lv = &getLiveness2(svreg, ssaId, livenesses, vregIndexMaps,
-                        regTypesNum, regRanges);
-    }
+    auto flit = flowStack.begin() + flowStkStart.stackPos + (flowStkStart.inSubroutines);
+    const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
     
+    auto sinfoIt = lastBlk.ssaInfoMap.find(svreg);
+    size_t lastPos = lastBlk.start;
+    if (sinfoIt != lastBlk.ssaInfoMap.end())
+    {
+        // if begin at some point at last block
+        lastPos = sinfoIt->second.lastPos;
+        lv.insert(lastPos + 1, lastBlk.end);
+        ++flit; // skip last block in stack
+    }
     // fill up to this
-    for (; flit != flowStack.end(); ++flit)
+    for (; flit != flitEnd; ++flit)
     {
         const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-        lv->insert(cblock.start, cblock.end);
+        lv.insert(cblock.start, cblock.end);
     }
 }
-            
 
-static void joinSVregWithVisited(const SVRegMap* stackVarMap, const AsmSingleVReg& vreg,
+/* TODO: add handling calls
+ * handle many start points in this code (for example many kernel's in same code)
+ * replace sets by vector, and sort and remove same values on demand
+ */
+
+/* join livenesses between consecutive code blocks */
+static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack,
+        const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
+        const LastVRegMap& lastVRegMap, std::vector<Liveness>* livenesses,
+        const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges)
+{
+    ARDOut << "putCrossBlockLv block: " << flowStack.back().blockIndex << "\n";
+    const CodeBlock& cblock = codeBlocks[flowStack.back().blockIndex];
+    for (const auto& entry: cblock.ssaInfoMap)
+        if (entry.second.readBeforeWrite)
+        {
+            // find last
+            auto lvrit = lastVRegMap.find(entry.first);
+            LastVRegStackPos flowStackStart = (lvrit != lastVRegMap.end()) ?
+                lvrit->second.back() : LastVRegStackPos{ 0, false };
+            
+            joinVRegRecur(flowStack, codeBlocks, routineMap, flowStackStart,
+                    entry.first, entry.second.ssaIdBefore, vregIndexMaps, livenesses,
+                    regTypesNum, regRanges, true);
+        }
+}
+
+static void joinSVregWithVisited(const SVRegMap* stackVarMap,
+            const RoutineLvMap& routineMap, const AsmSingleVReg& svreg,
             size_t ssaIdNextBefore, const std::deque<FlowStackEntry3>& prevFlowStack,
             const std::vector<CodeBlock>& codeBlocks, const VarIndexMap* vregIndexMaps,
             std::vector<Liveness>* livenesses, size_t regTypesNum, const cxuint* regRanges)
@@ -961,7 +938,7 @@ static void joinSVregWithVisited(const SVRegMap* stackVarMap, const AsmSingleVRe
     auto pfEnd = prevFlowStack.end();
     --pfEnd;
     
-    Liveness& lv = getLiveness2(vreg, ssaIdNextBefore,
+    Liveness& lv = getLiveness2(svreg, ssaIdNextBefore,
             livenesses, vregIndexMaps, regTypesNum, regRanges);
     
     const CodeBlock& cbLast = codeBlocks[(pfEnd-1)->blockIndex];
@@ -972,27 +949,12 @@ static void joinSVregWithVisited(const SVRegMap* stackVarMap, const AsmSingleVRe
     // join liveness for this variable ssaId>.
     // only if in previous block previous SSAID is
     // read before all writes
-    auto it = stackVarMap->find(vreg);
-    
+    auto it = stackVarMap->find(svreg);
     const size_t pfStart = (it != stackVarMap->end() ? it->second : 0);
-    //if (it == stackVarMap.end())
-        //continue;
-    // fill up previous part
-    auto flit = prevFlowStack.begin() + pfStart;
-    {
-        // fill up liveness for first code block
-        const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-        auto ssaInfoIt = cblock.ssaInfoMap.find(vreg);
-        size_t prevLastPos = (ssaInfoIt != cblock.ssaInfoMap.end()) ?
-                ssaInfoIt->second.lastPos+1 : cblock.start;
-        lv.insert(prevLastPos, cblock.end);
-    }
     
-    for (++flit; flit != pfEnd; ++flit)
-    {
-        const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-        lv.insert(cblock.start, cblock.end);
-    }
+    joinVRegRecur(prevFlowStack, codeBlocks, routineMap,
+            LastVRegStackPos{ pfStart, false }, svreg, ssaIdNextBefore, vregIndexMaps,
+            livenesses, regTypesNum, regRanges, true);
 }
 
 // add new join second cache entry with readBeforeWrite for all encountered regvars
@@ -1125,7 +1087,7 @@ static void addJoinSecCacheEntry(//const RoutineMap& routineMap,
 }
 
 static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStack,
-        const std::vector<CodeBlock>& codeBlocks,
+        const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
         const PrevWaysIndexMap& prevWaysIndexMap,
         const std::vector<bool>& waysToCache, ResSecondPointsToCache& cblocksToCache,
         SimpleCache<size_t, SVRegMap>& joinFirstPointsCache,
@@ -1221,7 +1183,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                             cacheSecPoints[sentry.first] = sinfo.ssaIdBefore;
                         
                         if (res.second && sinfo.readBeforeWrite)
-                            joinSVregWithVisited(&stackVarMap, sentry.first,
+                            joinSVregWithVisited(&stackVarMap, routineMap, sentry.first,
                                 sentry.second.ssaIdBefore, prevFlowStack, codeBlocks,
                                 vregIndexMaps, livenesses, regTypesNum, regRanges);
                     }
@@ -1239,7 +1201,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                             if (toCache)
                                 cacheSecPoints[rsentry.first] = rsentry.second;
                             
-                            joinSVregWithVisited(&stackVarMap, rsentry.first,
+                            joinSVregWithVisited(&stackVarMap, routineMap, rsentry.first,
                                     rsentry.second, prevFlowStack, codeBlocks,
                                     vregIndexMaps, livenesses, regTypesNum, regRanges);
                         }
@@ -1622,7 +1584,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 visited[entry.blockIndex] = true;
                 ARDOut << "joinpush: " << entry.blockIndex << "\n";
                 if (flowStack.size() > 1)
-                    putCrossBlockLivenesses(flowStack, codeBlocks, lastVRegMap,
+                    putCrossBlockLivenesses(flowStack, codeBlocks, routineMap, lastVRegMap,
                             livenesses, vregIndexMaps, regTypesNum, regRanges);
                 // update last vreg position
                 for (const auto& sentry: cblock.ssaInfoMap)
@@ -1762,33 +1724,12 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 {
                     // find last
                     auto lvrit = lastVRegMap.find(entry.first);
-                    FlowStackCIter flit = flowStack.begin();
-                    if (lvrit != lastVRegMap.end())
-                        flit += lvrit->second.back().stackPos;
+                    LastVRegStackPos flowStackStart = (lvrit != lastVRegMap.end()) ?
+                            lvrit->second.back() : LastVRegStackPos{ 0, false };
                     
-                    const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
-                    auto sinfoIt = lastBlk.ssaInfoMap.find(entry.first);
-                    Liveness& lv = getLiveness2(entry.first, entry.second, livenesses, 
-                                vregIndexMaps, regTypesNum, regRanges);
-                    
-                    if (lv.contain(codeBlocks[(flowStack.end()-1)->blockIndex].end-1))
-                        // already joined (check last byte from last block)
-                        continue;
-                    
-                    size_t lastPos = lastBlk.start;
-                    if (sinfoIt != lastBlk.ssaInfoMap.end())
-                    {
-                        // if begin at some point at last block
-                        lastPos = sinfoIt->second.lastPos;
-                        lv.insert(lastPos + 1, lastBlk.end);
-                        ++flit; // skip last block in stack
-                    }
-                    
-                    for (; flit != flowStack.end(); ++flit)
-                    {
-                        const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-                        lv.insert(cblock.start, cblock.end);
-                    }
+                    joinVRegRecur(flowStack, codeBlocks, routineMap, flowStackStart,
+                            entry.first, entry.second, vregIndexMaps,
+                            livenesses, regTypesNum, regRanges, false);
                 }
             }
             callStack.pop_back(); // just return from call
@@ -1862,7 +1803,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 visited[entry.blockIndex] = true;
             else
             {
-                joinRegVarLivenesses(flowStack, codeBlocks,
+                joinRegVarLivenesses(flowStack, codeBlocks, routineMap,
                         prevWaysIndexMap, waysToCache, cblocksToCache,
                         joinFirstPointsCache, joinSecondPointsCache,
                         vregIndexMaps, livenesses, regTypesNum, regRanges);

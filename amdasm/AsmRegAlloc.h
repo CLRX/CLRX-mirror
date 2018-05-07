@@ -375,6 +375,8 @@ struct Liveness
     
     bool contain(size_t t) const
     {
+        if (l.empty())
+            return false;
         auto it = l.lower_bound(t);
         if (it==l.begin() && it->first>t)
             return false;
