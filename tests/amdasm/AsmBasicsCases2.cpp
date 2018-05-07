@@ -2347,6 +2347,7 @@ aa2=6
             .enum INCOMPLETE
             .enum FULL
         .ends
+        .enum otherEnum, blabla
 )ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { }, { },
         {
@@ -2359,7 +2360,9 @@ aa2=6
             { "Result::NONE", 0, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "ala", 100, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "beta", 102, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "blabla", 104, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "joan", 101, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "otherEnum", 103, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "sym1", 0, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "sym2", 1, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "sym6", 2, ASMSECT_ABS, 0, true, true, false, 0, 0 },
