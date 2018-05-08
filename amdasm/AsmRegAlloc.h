@@ -223,8 +223,6 @@ public:
     { return size(); }
 };
 
-class Liveness;
-
 // Routine data for createLivenesses - holds svreg read before writes and
 // last access of the svregs
 struct CLRX_INTERNAL RoutineDataLv
