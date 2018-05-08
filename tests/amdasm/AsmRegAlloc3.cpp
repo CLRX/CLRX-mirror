@@ -35,6 +35,7 @@ using namespace CLRX;
 typedef AsmRegAllocator::OutLiveness OutLiveness;
 typedef AsmRegAllocator::LinearDep LinearDep;
 typedef AsmRegAllocator::VarIndexMap VarIndexMap;
+typedef AsmRegAllocator::VVarSetEntry VVarSetEntry;
 
 struct LinearDep2
 {
@@ -43,11 +44,15 @@ struct LinearDep2
     Array<size_t> nextVidxes;
 };
 
+typedef Array<size_t> VVarSetEntry2[4];
+
 struct AsmLivenessesCase
 {
     const char* input;
     Array<OutLiveness> livenesses[MAX_REGTYPES_NUM];
     Array<std::pair<size_t, LinearDep2> > linearDepMaps[MAX_REGTYPES_NUM];
+    Array<std::pair<size_t, VVarSetEntry2> > varRoutineMap;
+    Array<std::pair<size_t, VVarSetEntry2> > varCallMap;
     bool good;
     const char* errorMessages;
 };
@@ -76,6 +81,8 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             { }
         },
         { },  // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 1 - simple case 2
@@ -101,6 +108,8 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             { }
         },
         { },  // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 2 - simple case (linear dep)
@@ -171,6 +180,8 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             { },
             { }
         },
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 3 - next simple case
@@ -209,6 +220,8 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             { }
         },
         { }, // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 4 - next test case
@@ -258,6 +271,8 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
             { }
         },
         { }, // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 5 - blocks
@@ -312,6 +327,8 @@ a2:     s_cselect_b32 sa[2], sa[4], sa[3]   # 44
             { },
             { }
         },
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 6 - blocks
@@ -390,6 +407,8 @@ a21:    v_add_f32 va[2], va[1], va[0]       # 100
             { },
             { }
         },
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 7 - empty blocks
@@ -496,12 +515,9 @@ a15:    s_mul_i32 sa[5], s4, sa[1]          # 200
             { },
             { }
         },
-        {   // linearDepMaps
-            { },
-            { },
-            { },
-            { }
-        },
+        { },  // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 8 - empty blocks
@@ -574,12 +590,9 @@ a05:    s_mul_i32 sa[5], s4, sa[6]          # 108
             { },
             { }
         },
-        {   // linearDepMaps
-            { },
-            { },
-            { },
-            { }
-        },
+        { },  // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 9 - simple joins
@@ -621,12 +634,9 @@ end:    s_xor_b32 sa[2], sa[2], s3      # 44
             { },
             { }
         },
-        {   // linearDepMaps
-            { },
-            { },
-            { },
-            { }
-        },
+        { },  // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 10 - more complex join
@@ -682,12 +692,9 @@ end:    s_xor_b32 sa[2], sa[2], s3      # 64
             { },
             { }
         },
-        {   // linearDepMaps
-            { },
-            { },
-            { },
-            { }
-        },
+        { },  // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 11 - simple loop
@@ -741,12 +748,9 @@ loop:
             { },
             { }
         },
-        {   // linearDepMaps
-            { },
-            { },
-            { },
-            { }
-        },
+        { },  // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 12 - simple loop with fork (regvar used only in these forks)
@@ -772,12 +776,9 @@ loopend:
             { },
             { }
         },
-        {   // linearDepMaps
-            { },
-            { },
-            { },
-            { }
-        },
+        { },  // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 13 - simple with forks - holes in loop (second case)
@@ -804,12 +805,9 @@ loopend:
             { },
             { }
         },
-        {   // linearDepMaps
-            { },
-            { },
-            { },
-            { }
-        },
+        { },  // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 14 - two loops, one nested
@@ -901,6 +899,8 @@ loop1end:
             { },
             { }
         },
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 15 - trick - SSA replaces beyond visited point
@@ -932,12 +932,9 @@ end:    s_xor_b32 sa[3], sa[3], sa[4]   # 28
             { },
             { }
         },
-        {   // linearDepMaps
-            { },
-            { },
-            { },
-            { }
-        },
+        { },  // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
     {   // 16 - trick - SSA replaces beyond visited point
@@ -967,12 +964,9 @@ end:    s_xor_b32 sa[3], sa[3], sa[4]   # 24
             { },
             { }
         },
-        {   // linearDepMaps
-            { },
-            { },
-            { },
-            { }
-        },
+        { },  // linearDepMaps
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     },
 #if 0
@@ -1000,12 +994,12 @@ routine:
         {
             {   // for SGPRs
                 { { 29, 32 }, { 44, 53 } }, // 0: S0
-                { }, // 1: S1
-                { }, // 2: S2
-                { }, // 3: S3
-                { }, // 4: S4
-                { }, // 5: S5
-                { }, // 6: sa[2]'0
+                { { 29, 32 }, { 44, 53 } }, // 1: S1
+                { { 9, 29 } }, // 2: S2
+                { { 9, 29 } }, // 3: S3
+                { { 0, 1 } }, // 4: S4
+                { { 0, 5 } }, // 5: S5
+                { { 1, 32 }, { 44, 45 } }, // 6: sa[2]'0
                 { }, // 7: sa[2]'1
                 { }, // 8: sa[2]'2
                 { }, // 9: sa[3]'0
@@ -1017,12 +1011,9 @@ routine:
             { },
             { }
         },
-        {
-            { },
-            { },
-            { },
-            { }
-        },
+        { }, //
+        { },  // varRoutineMap
+        { },  // varCallMap
         true, ""
     }
 #endif
@@ -1151,6 +1142,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
         }
     }
     
+    // checking linearDepMaps
     const std::unordered_map<size_t, LinearDep>* resLinearDepMaps =
                 regAlloc.getLinearDepMaps();
     for (size_t r = 0; r < MAX_REGTYPES_NUM; r++)
@@ -1199,6 +1191,96 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             
             assertArray("testAsmLivenesses", testCaseName + ldname + ".nextVidxes",
                         expLinearDep.nextVidxes, resNextVidxes);
+        }
+    }
+    
+    // checking varCallMap
+    const std::unordered_map<size_t, VVarSetEntry>& varCallMap = regAlloc.getVarCallMap();
+    assertValue("testAsmLivenesses", testCaseName + "varCallMap.size",
+            varCallMap.size(), testCase.varCallMap.size());
+    
+    for (size_t j = 0; j < varCallMap.size(); j++)
+    {
+        std::ostringstream vOss;
+        vOss << "varCallMap#" << j;
+        vOss.flush();
+        std::string vcname(vOss.str());
+        
+        auto vcit = varCallMap.find(testCase.varCallMap[j].first);
+        std::ostringstream kOss;
+        kOss << testCase.varCallMap[j].first;
+        kOss.flush();
+        assertTrue("testAsmLivenesses", testCaseName + vcname +".key=" + kOss.str(),
+                    vcit != varCallMap.end());
+        
+        const VVarSetEntry2& expEntry = testCase.varCallMap[j].second;
+        const VVarSetEntry& resEntry = vcit->second;
+        for (cxuint r = 0; r < MAX_REGTYPES_NUM; r++)
+        {
+            std::ostringstream vsOss;
+            vsOss << ".vs#" << r;
+            vsOss.flush();
+            std::string vsname = vcname + vsOss.str();
+            
+            assertValue("testAsmLivenesses", testCaseName + vsname +".size",
+                    expEntry[r].size(), resEntry.vvars[r].size());
+            
+            for (size_t k = 0; k < expEntry[r].size(); k++)
+            {
+                std::ostringstream vskOss;
+                vskOss << ".elem#" << r << "=" << expEntry[r][k];
+                vskOss.flush();
+                std::string vskname = vsname + vskOss.str();
+                
+                assertTrue("testAsmLivenesses", testCaseName + vskname +".size",
+                        resEntry.vvars[r].find(lvIndexCvtTables[r][expEntry[r][k]]) !=
+                        resEntry.vvars[r].end());
+            }
+        }
+    }
+    
+    const std::unordered_map<size_t, VVarSetEntry>& varRoutineMap =
+                regAlloc.getVarRoutineMap();
+    assertValue("testAsmLivenesses", testCaseName + "varRoutineMap.size",
+            varRoutineMap.size(), testCase.varRoutineMap.size());
+    
+    for (size_t j = 0; j < varRoutineMap.size(); j++)
+    {
+        std::ostringstream vOss;
+        vOss << "varRoutineMap#" << j;
+        vOss.flush();
+        std::string vcname(vOss.str());
+        
+        auto vcit = varRoutineMap.find(testCase.varRoutineMap[j].first);
+        std::ostringstream kOss;
+        kOss << testCase.varRoutineMap[j].first;
+        kOss.flush();
+        assertTrue("testAsmLivenesses", testCaseName + vcname +".key=" + kOss.str(),
+                    vcit != varRoutineMap.end());
+        
+        const VVarSetEntry2& expEntry = testCase.varRoutineMap[j].second;
+        const VVarSetEntry& resEntry = vcit->second;
+        for (cxuint r = 0; r < MAX_REGTYPES_NUM; r++)
+        {
+            std::ostringstream vsOss;
+            vsOss << ".vs#" << r;
+            vsOss.flush();
+            std::string vsname = vcname + vsOss.str();
+            
+            assertValue("testAsmLivenesses", testCaseName + vsname +".size",
+                    expEntry[r].size(), resEntry.vvars[r].size());
+            
+            for (size_t k = 0; k < expEntry[r].size(); k++)
+            {
+                std::ostringstream vskOss;
+                vskOss << ".elem#" << r << "=" << expEntry[r][k];
+                vskOss.flush();
+                std::string vskname = vsname + vskOss.str();
+                
+                assertTrue("testAsmLivenesses", testCaseName + vskname +".size",
+                        resEntry.vvars[r].find(lvIndexCvtTables[r][expEntry[r][k]]) !=
+                        resEntry.vvars[r].end());
+            }
         }
     }
 }
