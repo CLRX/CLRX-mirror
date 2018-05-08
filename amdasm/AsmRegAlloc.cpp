@@ -893,14 +893,11 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         }
         else
         {
-            size_t blockStart = entry.blockIndex;
-            if (!entry.inSubroutines)
-                fillUpInsideRoutine(visited, codeBlocks, routineMap, callLiveTimesMap,
-                            blockStart, svreg, lv);
-            else
-                // fill up next block in path (do not fill start block)
-                fillUpInsideRoutine(visited, codeBlocks, routineMap, callLiveTimesMap,
-                        blockStart+1, svreg, lv);
+            // fill up next block in path (do not fill start block)
+            /* if inSubroutines, then first block
+             * (that with subroutines calls) will be skipped */
+            fillUpInsideRoutine(visited, codeBlocks, routineMap, callLiveTimesMap,
+                    entry.blockIndex + (entry.inSubroutines), svreg, lv);
             rjStack.pop();
         }
     }
