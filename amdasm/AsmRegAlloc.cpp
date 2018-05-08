@@ -683,6 +683,10 @@ void AsmRegAllocator::applySSAReplaces()
     ssaReplacesMap.clear();
 }
 
+/*********
+ * createLivenesses stuff
+ *********/
+
 static cxuint getRegType(size_t regTypesNum, const cxuint* regRanges,
             const AsmSingleVReg& svreg)
 {
