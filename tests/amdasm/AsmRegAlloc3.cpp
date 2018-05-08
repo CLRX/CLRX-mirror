@@ -146,8 +146,6 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
         },
         {   // linearDepMaps
             {   // for SGPRs
-                { 0, { 0, { }, { 1 } } },  // S4
-                { 1, { 0, { 0 }, { } } },  // S5
                 { 2, { 2, { }, { 3 } } },  // sa[2]'0
                 { 3, { 0, { 2 }, { } } },  // sa[3]'0
                 { 4, { 2, { }, { 6 } } },  // sa[4]'0
@@ -160,8 +158,6 @@ static const AsmLivenessesCase createLivenessesCasesTbl[] =
                 { 12, { 0, { 11 }, { } } }  // sbuf[3]'0
             },
             {   // for VGPRs
-                { 0, { 0, { }, { 1 } } },  // V3
-                { 1, { 0, { 0 }, { } } },  // V4
                 { 2, { 1, { }, { 3 } } }, // rbx4[1]'0
                 { 3, { 0, { 2 }, { 4 } } }, // rbx4[2]'0
                 { 4, { 0, { 3 }, { 5 } } }, // rbx4[3]'0
@@ -311,10 +307,7 @@ a2:     s_cselect_b32 sa[2], sa[4], sa[3]   # 44
             { }
         },
         {   // linearDepMaps
-            {   // for SGPRs
-                { 0, { 0, { }, { 1 } } },
-                { 1, { 0, { 0 }, { } } }
-            },
+            { },
             { },
             { },
             { }
@@ -392,10 +385,7 @@ a21:    v_add_f32 va[2], va[1], va[0]       # 100
             { }
         },
         {   // linearDepMaps
-            {   // for SGPRs
-                { 0, { 0, { }, { 1 } } },
-                { 1, { 0, { 0 }, { } } }
-            },
+            { },
             { },
             { },
             { }
@@ -507,10 +497,7 @@ a15:    s_mul_i32 sa[5], s4, sa[1]          # 200
             { }
         },
         {   // linearDepMaps
-            {   // for SGPRs
-                { 0, { 0, { }, { 1 } } },
-                { 1, { 0, { 0 }, { } } }
-            },
+            { },
             { },
             { },
             { }
@@ -588,10 +575,7 @@ a05:    s_mul_i32 sa[5], s4, sa[6]          # 108
             { }
         },
         {   // linearDepMaps
-            {   // for SGPRs
-                { 0, { 0, { }, { 1 } } },
-                { 1, { 0, { 0 }, { } } }
-            },
+            { },
             { },
             { },
             { }
@@ -638,10 +622,7 @@ end:    s_xor_b32 sa[2], sa[2], s3      # 44
             { }
         },
         {   // linearDepMaps
-            { // for SGPRs
-                { 0, { 0, { }, { 1 } } },
-                { 1, { 0, { 0 }, { } } }
-            },
+            { },
             { },
             { },
             { }
@@ -702,10 +683,7 @@ end:    s_xor_b32 sa[2], sa[2], s3      # 64
             { }
         },
         {   // linearDepMaps
-            { // for SGPRs
-                { 0, { 0, { }, { 1 } } },
-                { 1, { 0, { 0 }, { } } }
-            },
+            { },
             { },
             { },
             { }
@@ -996,7 +974,38 @@ end:    s_xor_b32 sa[3], sa[3], sa[4]   # 24
             { }
         },
         true, ""
+    },
+#if 0
+    {   // 17 - simple call
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4
+        s_mov_b32 sa[3], s5
+        
+        s_getpc_b64 s[2:3]
+        s_add_u32 s2, s2, routine-.
+        s_add_u32 s3, s3, routine-.+4
+        /*
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]
+        */
+        s_lshl_b32 sa[2], sa[2], 3
+        s_lshl_b32 sa[3], sa[3], 4
+        s_endpgm
+routine:
+        /*
+        s_xor_b32 sa[2], sa[2], sa[4]
+        s_xor_b32 sa[3], sa[3], sa[4]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+        */
+)ffDXD",
+        {
+        },
+        {
+        },
+        true, ""
     }
+#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,

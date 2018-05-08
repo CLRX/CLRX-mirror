@@ -318,6 +318,8 @@ void GCNUsageHandler::getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage*
     count = 0;
     for (cxuint i = 0; i < rvusNum; i++)
     {
+        if (rvus[i].regVar == nullptr)
+            continue;
         const AsmRegField rf = rvus[i].regField;
         if (rf == GCNFIELD_M_VDATA || rf == GCNFIELD_M_VDATAH ||
             rf == GCNFIELD_M_VDATALAST ||
