@@ -1128,7 +1128,11 @@ static void applyCallToStackVarMap(const CodeBlock& cblock, const RoutineLvMap& 
             const LastAccessMap& regVarMap =
                     routineMap.find(next.block)->second.lastAccessMap;
             for (const auto& sentry: regVarMap)
-                stackVarMap[sentry.first] = LastVRegStackPos{ pfPos, true };
+            {
+                // MSVC error fix
+                auto& v = stackVarMap[sentry.first];
+                v = LastVRegStackPos{ pfPos, true };
+            }
         }
 }
 
@@ -1181,7 +1185,11 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
         const FlowStackEntry3& entry = *pfit;
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
         for (const auto& sentry: cblock.ssaInfoMap)
-            stackVarMap[sentry.first] = { size_t(pfit - prevFlowStack.begin()), false };
+        {
+            // MSVC error fix
+            auto& v = stackVarMap[sentry.first];
+            v = { size_t(pfit - prevFlowStack.begin()), false };
+        }
         
         if (entry.nextIndex > cblock.nexts.size())
             applyCallToStackVarMap(cblock, routineMap, stackVarMap,
