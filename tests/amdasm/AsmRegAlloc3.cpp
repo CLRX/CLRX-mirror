@@ -978,28 +978,50 @@ end:    s_xor_b32 sa[3], sa[3], sa[4]   # 24
 #if 0
     {   // 17 - simple call
         R"ffDXD(.regvar sa:s:8, va:v:8
-        s_mov_b32 sa[2], s4
-        s_mov_b32 sa[3], s5
+        s_mov_b32 sa[2], s4             # 0
+        s_mov_b32 sa[3], s5             # 4
         
-        s_getpc_b64 s[2:3]
-        s_add_u32 s2, s2, routine-.
-        s_add_u32 s3, s3, routine-.+4
+        s_getpc_b64 s[2:3]              # 8
+        s_add_u32 s2, s2, routine-.     # 12
+        s_add_u32 s3, s3, routine-.+4   # 20
         .cf_call routine
-        s_swappc_b64 s[0:1], s[2:3]
+        s_swappc_b64 s[0:1], s[2:3]     # 28
         
-        s_lshl_b32 sa[2], sa[2], 3
-        s_lshl_b32 sa[3], sa[3], 4
-        s_endpgm
+        s_lshl_b32 sa[2], sa[2], 3      # 32
+        s_lshl_b32 sa[3], sa[3], 4      # 36
+        s_endpgm                        # 40
         
 routine:
-        s_xor_b32 sa[2], sa[2], sa[4]
-        s_xor_b32 sa[3], sa[3], sa[4]
+        s_xor_b32 sa[2], sa[2], sa[4]   # 44
+        s_xor_b32 sa[3], sa[3], sa[4]   # 48
         .cf_ret
-        s_setpc_b64 s[0:1]
+        s_setpc_b64 s[0:1]              # 52
 )ffDXD",
         {
+            {   // for SGPRs
+                { { 29, 32 }, { 44, 53 }, { SIZE_MAX-1, SIZE_MAX } }, // 0: S0
+                { }, // 1: S1
+                { }, // 2: S2
+                { }, // 3: S3
+                { }, // 4: S4
+                { }, // 5: S5
+                { }, // 6: sa[2]'0
+                { }, // 7: sa[2]'1
+                { }, // 8: sa[2]'2
+                { }, // 9: sa[3]'0
+                { }, // 10: sa[3]'1
+                { }, // 11: sa[3]'2
+                { }  // 12: sa[4]'0
+            },
+            { },
+            { },
+            { }
         },
         {
+            { },
+            { },
+            { },
+            { }
         },
         true, ""
     }
