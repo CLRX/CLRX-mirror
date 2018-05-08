@@ -984,20 +984,18 @@ end:    s_xor_b32 sa[3], sa[3], sa[4]   # 24
         s_getpc_b64 s[2:3]
         s_add_u32 s2, s2, routine-.
         s_add_u32 s3, s3, routine-.+4
-        /*
         .cf_call routine
         s_swappc_b64 s[0:1], s[2:3]
-        */
+        
         s_lshl_b32 sa[2], sa[2], 3
         s_lshl_b32 sa[3], sa[3], 4
         s_endpgm
+        
 routine:
-        /*
         s_xor_b32 sa[2], sa[2], sa[4]
         s_xor_b32 sa[3], sa[3], sa[4]
         .cf_ret
         s_setpc_b64 s[0:1]
-        */
 )ffDXD",
         {
         },

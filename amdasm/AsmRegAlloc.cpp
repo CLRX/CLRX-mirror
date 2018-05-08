@@ -1815,10 +1815,11 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             entry.nextIndex-1 == callStack.back().callNextIndex)
         {
             ARDOut << " ret: " << entry.blockIndex << "\n";
-            auto res = routineMap.insert({ entry.blockIndex, { } });
+            const size_t routineBlock = callStack.back().routineBlock;
+            auto res = routineMap.insert({ routineBlock, { } });
             if (res.second)
                 createRoutineDataLv(codeBlocks, routineMap, res.first->second,
-                        entry.blockIndex, vregIndexMaps, livenesses,
+                        routineBlock, vregIndexMaps, livenesses,
                         regTypesNum, regRanges);
             else
             {

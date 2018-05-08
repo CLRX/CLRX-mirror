@@ -694,9 +694,12 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
         if (expr)
         {
             if (expr->isEmpty()) // empty expression print warning
+            {
                 asmr.printWarning(linePtr, "No expression, zero has been put");
-            
-            if (expr->getSymOccursNum()==0)
+                uint64_t zero = 0;
+                asmr.putData(sizeof(T), reinterpret_cast<const cxbyte*>(&zero));
+            }
+            else if (expr->getSymOccursNum()==0)
             {
                 // put directly to section
                 cxuint sectionId;
