@@ -2348,6 +2348,7 @@ aa2=6
             .enum FULL
         .ends
         .enum otherEnum, blabla
+        .enum >, myzero
 )ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { }, { },
         {
@@ -2362,6 +2363,7 @@ aa2=6
             { "beta", 102, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "blabla", 104, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "joan", 101, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "myzero", 0, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "otherEnum", 103, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "sym1", 0, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "sym2", 1, ASMSECT_ABS, 0, true, true, false, 0, 0 },

@@ -210,12 +210,13 @@ Close visibility's scope.
 
 ### .enum
 
-Syntax: .enum [>STARTPOS,] SYMBOL,....
+Syntax: .enum [>[STARTPOS],] SYMBOL,....
 
 Simplify defining the enumerations. For every symbol,
 define symbol with value of enumeration counter and increase an enumeration counter.
-Defined symbols can not be assigned later. Optional STARTPOS sets enumeration counter
-to STARTPOS value. Every scope has own enumeration counter. This features simplify
+Defined symbols can not be assigned later. Optional `>` with optional STARTPOS sets
+enumeration counter to STARTPOS value or zero (if no STARTPOS given).
+Every scope has own enumeration counter. This features simplify
 joining enumerations with scopes.
 
 Examples:
@@ -228,6 +229,7 @@ Examples:
     # enum counter is zero in this scope
     .enum NONE,FULL,INVALID   # NONE=0, FULL=1, INVALID=2
 .ends
+.enum >, myzero             # myzero=0
 ```
 
 ### .equ, .set
