@@ -222,6 +222,8 @@ public:
     { return size(); }
 };
 
+class Liveness;
+
 // Routine data for createLivenesses - holds svreg read before writes and
 // last access of the svregs
 struct CLRX_INTERNAL RoutineDataLv
@@ -229,7 +231,7 @@ struct CLRX_INTERNAL RoutineDataLv
     SVRegMap rbwSSAIdMap;
     // holds all vreg SSA's used in routine (used while creating call point)
     // includes subroutines called in this routines
-    std::unordered_set<size_t> allSSAs[MAX_REGTYPES_NUM];
+    std::unordered_set<Liveness*> allLivenesses;
     // key - svreg, value - list of the last codeblocks where is svreg
     LastAccessMap lastAccessMap;
 };
