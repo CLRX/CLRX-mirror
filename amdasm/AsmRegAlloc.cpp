@@ -896,6 +896,8 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
                         rjStack.push({ lastAccess.blockIndex, 0,
                                     0, lastAccess.inSubroutines });
                         entry.lastAccessIndex++;
+                        if (entry.lastAccessIndex == lastAccessIt->second.size())
+                            doNextIndex = true;
                     }
                     else
                         doNextIndex = true;
@@ -918,9 +920,10 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
             // fill up next block in path (do not fill start block)
             /* if inSubroutines, then first block
              * (that with subroutines calls) will be skipped */
-            fillUpInsideRoutine(visited, codeBlocks, varCallMap, varRoutineMap,
-                    entry.blockIndex + (entry.inSubroutines), svreg,
-                    lv, lvRegType, lvIndex);
+            if (rjStack.size() > 1)
+                fillUpInsideRoutine(visited, codeBlocks, varCallMap, varRoutineMap,
+                        entry.blockIndex + (entry.inSubroutines), svreg,
+                        lv, lvRegType, lvIndex);
             rjStack.pop();
         }
     }

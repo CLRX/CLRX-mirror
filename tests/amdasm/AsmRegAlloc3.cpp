@@ -20,6 +20,7 @@
 #include <CLRX/Config.h>
 #include <algorithm>
 #include <iostream>
+#include <iterator>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -44,7 +45,10 @@ struct LinearDep2
     Array<size_t> nextVidxes;
 };
 
-typedef Array<size_t> VVarSetEntry2[4];
+struct VVarSetEntry2
+{
+    Array<size_t> vvars[4];
+};
 
 struct AsmLivenessesCase
 {
@@ -969,7 +973,6 @@ end:    s_xor_b32 sa[3], sa[3], sa[4]   # 24
         { },  // varCallMap
         true, ""
     },
-#if 0
     {   // 17 - simple call
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4             # 0
@@ -1000,23 +1003,24 @@ routine:
                 { { 0, 1 } }, // 4: S4
                 { { 0, 5 } }, // 5: S5
                 { { 1, 32 }, { 44, 45 } }, // 6: sa[2]'0
-                { }, // 7: sa[2]'1
-                { }, // 8: sa[2]'2
-                { }, // 9: sa[3]'0
-                { }, // 10: sa[3]'1
-                { }, // 11: sa[3]'2
-                { }  // 12: sa[4]'0
+                { { 32, 33 }, { 45, 56 } }, // 7: sa[2]'1
+                { { 33, 34 } }, // 8: sa[2]'2
+                { { 5, 32 }, { 44, 49 } }, // 9: sa[3]'0
+                { { 32, 37 }, { 49, 56 } }, // 10: sa[3]'1
+                { { 37, 38 } }, // 11: sa[3]'2
+                { { 0, 32 }, { 44, 49 } }  // 12: sa[4]'0
             },
             { },
             { },
             { }
         },
         { }, //
-        { },  // varRoutineMap
+        {   // varRoutineMap
+            { 2, { { { 0, 1, 6, 7, 9, 10, 12 }, { }, { }, { } } } }
+        },
         { },  // varCallMap
         true, ""
     }
-#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
@@ -1213,7 +1217,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
         assertTrue("testAsmLivenesses", testCaseName + vcname +".key=" + kOss.str(),
                     vcit != varCallMap.end());
         
-        const VVarSetEntry2& expEntry = testCase.varCallMap[j].second;
+        const Array<size_t>* expEntry = testCase.varCallMap[j].second.vvars;
         const VVarSetEntry& resEntry = vcit->second;
         for (cxuint r = 0; r < MAX_REGTYPES_NUM; r++)
         {
@@ -1225,17 +1229,14 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             assertValue("testAsmLivenesses", testCaseName + vsname +".size",
                     expEntry[r].size(), resEntry.vvars[r].size());
             
-            for (size_t k = 0; k < expEntry[r].size(); k++)
-            {
-                std::ostringstream vskOss;
-                vskOss << ".elem#" << r << "=" << expEntry[r][k];
-                vskOss.flush();
-                std::string vskname = vsname + vskOss.str();
-                
-                assertTrue("testAsmLivenesses", testCaseName + vskname +".size",
-                        resEntry.vvars[r].find(lvIndexCvtTables[r][expEntry[r][k]]) !=
-                        resEntry.vvars[r].end());
-            }
+            std::vector<size_t> resVVars;
+            std::transform(resEntry.vvars[r].begin(), resEntry.vvars[r].end(),
+                    std::back_inserter(resVVars),
+                    [&r,&revLvIndexCvtTables](size_t v)
+                    { return revLvIndexCvtTables[r][v]; });
+            std::sort(resVVars.begin(), resVVars.end());
+            assertArray("testAsmLivenesses", testCaseName + vsname,
+                        expEntry[r], resVVars);
         }
     }
     
@@ -1258,7 +1259,7 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
         assertTrue("testAsmLivenesses", testCaseName + vcname +".key=" + kOss.str(),
                     vcit != varRoutineMap.end());
         
-        const VVarSetEntry2& expEntry = testCase.varRoutineMap[j].second;
+        const Array<size_t>* expEntry = testCase.varRoutineMap[j].second.vvars;
         const VVarSetEntry& resEntry = vcit->second;
         for (cxuint r = 0; r < MAX_REGTYPES_NUM; r++)
         {
@@ -1270,17 +1271,14 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
             assertValue("testAsmLivenesses", testCaseName + vsname +".size",
                     expEntry[r].size(), resEntry.vvars[r].size());
             
-            for (size_t k = 0; k < expEntry[r].size(); k++)
-            {
-                std::ostringstream vskOss;
-                vskOss << ".elem#" << r << "=" << expEntry[r][k];
-                vskOss.flush();
-                std::string vskname = vsname + vskOss.str();
-                
-                assertTrue("testAsmLivenesses", testCaseName + vskname +".size",
-                        resEntry.vvars[r].find(lvIndexCvtTables[r][expEntry[r][k]]) !=
-                        resEntry.vvars[r].end());
-            }
+            std::vector<size_t> resVVars;
+            std::transform(resEntry.vvars[r].begin(), resEntry.vvars[r].end(),
+                    std::back_inserter(resVVars),
+                    [&r,&revLvIndexCvtTables](size_t v)
+                    { return revLvIndexCvtTables[r][v]; });
+            std::sort(resVVars.begin(), resVVars.end());
+            assertArray("testAsmLivenesses", testCaseName + vsname,
+                        expEntry[r], resVVars);
         }
     }
 }
