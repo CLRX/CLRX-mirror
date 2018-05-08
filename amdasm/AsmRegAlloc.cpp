@@ -1345,6 +1345,8 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
         {
             rvuAdded |= 1U<<ldeps[pos];
             const AsmRegVarUsage& rvu = rvus[ldeps[pos++]];
+            if (rvu.regVar == nullptr)
+                continue;
             for (uint16_t k = rvu.rstart; k < rvu.rend; k++)
             {
                 AsmSingleVReg svreg = {rvu.regVar, k};
@@ -1370,6 +1372,8 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
         if ((rvuAdded & (1U<<i)) == 0 && rvus[i].rstart+1<rvus[i].rend)
         {
             const AsmRegVarUsage& rvu = rvus[i];
+            if (rvu.regVar == nullptr)
+                continue;
             std::vector<size_t> vidxes;
             cxuint regType = UINT_MAX;
             cxbyte align = rvus[i].align;
@@ -1739,7 +1743,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                         for (AsmSingleVReg svreg: writtenSVRegs)
                         {
                             size_t& ssaIdIdx = ssaIdIdxMap[svreg];
-                            ssaIdIdx++;
+                            if (svreg.regVar != nullptr)
+                                ssaIdIdx++;
                             SSAInfo& sinfo = cblock.ssaInfoMap.find(svreg)->second;
                             Liveness& lv = getLiveness(svreg, ssaIdIdx, sinfo,
                                     livenesses, vregIndexMaps, regTypesNum, regRanges);
