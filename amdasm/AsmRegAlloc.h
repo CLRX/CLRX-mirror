@@ -44,6 +44,7 @@ typedef AsmRegAllocator::CodeBlock CodeBlock;
 typedef AsmRegAllocator::NextBlock NextBlock;
 typedef AsmRegAllocator::SSAInfo SSAInfo;
 typedef std::pair<const AsmSingleVReg, SSAInfo> SSAEntry;
+typedef AsmRegAllocator::VVarSetEntry VVarSetEntry;
 
 //  BlockIndex
 
@@ -231,7 +232,7 @@ struct CLRX_INTERNAL RoutineDataLv
     SVRegMap rbwSSAIdMap;
     // holds all vreg SSA's used in routine (used while creating call point)
     // includes subroutines called in this routines
-    std::unordered_set<Liveness*> allLivenesses;
+    std::unordered_set<size_t> allSSAs[MAX_REGTYPES_NUM];
     // key - svreg, value - list of the last codeblocks where is svreg
     LastAccessMap lastAccessMap;
 };

@@ -354,6 +354,11 @@ public:
         VectorSet<size_t> prevVidxes;
         VectorSet<size_t> nextVidxes;
     };
+    
+    struct VVarSetEntry
+    {
+        std::unordered_set<size_t> vvars[MAX_REGTYPES_NUM];
+    };
 private:
     Assembler& assembler;
     std::vector<CodeBlock> codeBlocks;
@@ -366,6 +371,10 @@ private:
     InterGraph interGraphs[MAX_REGTYPES_NUM]; // for 2 register 
     Array<cxuint> graphColorMaps[MAX_REGTYPES_NUM];
     std::unordered_map<size_t, LinearDep> linearDepMaps[MAX_REGTYPES_NUM];
+    // key - routine block, value - set of svvregs (lv indexes) used in routine
+    std::unordered_map<size_t, VVarSetEntry> varRoutineMap;
+    // key - call block, value - set of svvregs (lv indexes) used between this call point
+    std::unordered_map<size_t, VVarSetEntry> varCallMap;
     
 public:
     AsmRegAllocator(Assembler& assembler);
@@ -395,6 +404,11 @@ public:
     
     const VarIndexMap* getVregIndexMaps() const
     { return vregIndexMaps; }
+    
+    const std::unordered_map<size_t, VVarSetEntry>& getVarRoutineMap() const
+    { return varRoutineMap; }
+    const std::unordered_map<size_t, VVarSetEntry>& getVarCallMap() const
+    { return varCallMap; }
 };
 
 /// type of clause
