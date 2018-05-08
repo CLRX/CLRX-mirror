@@ -697,9 +697,10 @@ static cxuint getRegType(size_t regTypesNum, const cxuint* regRanges,
     return regType;
 }
 
-static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
-        const AsmRegAllocator::SSAInfo& ssaInfo, std::vector<Liveness>* livenesses,
-        const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges)
+static void getLivenessIndex(const AsmSingleVReg& svreg, size_t ssaIdIdx,
+        const AsmRegAllocator::SSAInfo& ssaInfo,
+        const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges,
+        cxuint& regType, size_t& lvIndex)
 {
     size_t ssaId;
     if (svreg.regVar==nullptr)
@@ -713,30 +714,42 @@ static Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
     else // last
         ssaId = ssaInfo.ssaIdLast;
     
-    cxuint regType = getRegType(regTypesNum, regRanges, svreg); // regtype
+    regType = getRegType(regTypesNum, regRanges, svreg); // regtype
     const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
     const std::vector<size_t>& ssaIdIndices = vregIndexMap.find(svreg)->second;
-    ARDOut << "lvn[" << regType << "][" << ssaIdIndices[ssaId] << "]. ssaIdIdx: " <<
+    /*ARDOut << "lvn[" << regType << "][" << ssaIdIndices[ssaId] << "]. ssaIdIdx: " <<
             ssaIdIdx << ". ssaId: " << ssaId << ". svreg: " << svreg.regVar << ":" <<
-            svreg.index << "\n";
-    return livenesses[regType][ssaIdIndices[ssaId]];
+            svreg.index << "\n";*/
+    //return livenesses[regType][ssaIdIndices[ssaId]];
+    lvIndex = ssaIdIndices[ssaId];
 }
 
-static Liveness& getLiveness2(const AsmSingleVReg& svreg,
-        size_t ssaId, std::vector<Liveness>* livenesses,
+static inline Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
+        const AsmRegAllocator::SSAInfo& ssaInfo, std::vector<Liveness>* livenesses,
         const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges)
 {
-    cxuint regType = getRegType(regTypesNum, regRanges, svreg); // regtype
-    const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-    const std::vector<size_t>& ssaIdIndices = vregIndexMap.find(svreg)->second;
-    ARDOut << "lvn[" << regType << "][" << ssaIdIndices[ssaId] << "]. ssaId: " <<
-            ssaId << ". svreg: " << svreg.regVar << ":" << svreg.index << "\n";
-    return livenesses[regType][ssaIdIndices[ssaId]];
+    cxuint regType;
+    size_t lvIndex;
+    getLivenessIndex(svreg, ssaIdIdx, ssaInfo, vregIndexMaps, regTypesNum, regRanges,
+            regType, lvIndex);
+    return livenesses[regType][lvIndex];
 }
 
+static void getLiveness2Index(const AsmSingleVReg& svreg, size_t ssaId,
+        const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges,
+        cxuint& regType, size_t& lvIndex)
+{
+    regType = getRegType(regTypesNum, regRanges, svreg); // regtype
+    const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+    const std::vector<size_t>& ssaIdIndices = vregIndexMap.find(svreg)->second;
+    /*ARDOut << "lvn[" << regType << "][" << ssaIdIndices[ssaId] << "]. ssaId: " <<
+            ssaId << ". svreg: " << svreg.regVar << ":" << svreg.index << "\n";*/
+    lvIndex = ssaIdIndices[ssaId];
+}
 
 static void applyToLiveCallTime(size_t block, Liveness& lv,
-            const std::vector<CodeBlock>& codeBlocks,
+            cxuint lvRType /* lv register type */, size_t lvIndex,
+            const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
             const std::unordered_map<size_t, size_t>& callLiveTimesMap)
 {
     auto cit = callLiveTimesMap.find(block);
@@ -747,16 +760,20 @@ static void applyToLiveCallTime(size_t block, Liveness& lv,
         for (const NextBlock& next: cblock.nexts)
             if (next.isCall)
             {
-                lv.insert(callLiveTime, callLiveTime+1);
+                const RoutineDataLv& rdata = routineMap.find(next.block)->second;
+                if (rdata.allSSAs[lvRType].find(lvIndex) == rdata.allSSAs[lvRType].end())
+                    // add only if vreg not present in routine
+                    lv.insert(callLiveTime, callLiveTime+1);
                 callLiveTime--;
             }
     }
 }
 
 static void fillUpInsideRoutine(std::vector<bool>& visited,
-            const std::vector<CodeBlock>& codeBlocks,
+            const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
             const std::unordered_map<size_t, size_t>& callLiveTimesMap,
-            size_t startBlock, const AsmSingleVReg& svreg, Liveness& lv)
+            size_t startBlock, const AsmSingleVReg& svreg, Liveness& lv,
+            cxuint lvRType /* lv register type */, size_t lvIndex)
 {
     std::deque<FlowStackEntry3> flowStack;
     flowStack.push_back({ startBlock, 0 });
@@ -786,7 +803,8 @@ static void fillUpInsideRoutine(std::vector<bool>& visited,
                 // just insert
                 lv.insert(cbStart, cblock.end);
                 
-                applyToLiveCallTime(entry.blockIndex, lv, codeBlocks, callLiveTimesMap);
+                applyToLiveCallTime(entry.blockIndex, lv, lvRType, lvIndex,
+                        codeBlocks, routineMap, callLiveTimesMap);
             }
             else
             {
@@ -831,8 +849,11 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
     FlowStackCIter flitEnd = flowStack.end();
     if (skipLastBlock)
         --flitEnd; // before last element
-    Liveness& lv = getLiveness2(svreg, ssaId, livenesses, vregIndexMaps,
-                    regTypesNum, regRanges);
+    cxuint lvRegType;
+    size_t lvIndex;
+    getLiveness2Index(svreg, ssaId, vregIndexMaps, regTypesNum, regRanges,
+                      lvRegType, lvIndex);
+    Liveness& lv = livenesses[lvRegType][lvIndex];
     
     if (flitEnd != flowStack.begin())
     {
@@ -891,12 +912,12 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         {
             size_t blockStart = entry.blockIndex;
             if (!entry.inSubroutines)
-                fillUpInsideRoutine(visited, codeBlocks, callLiveTimesMap,
-                            blockStart, svreg, lv);
+                fillUpInsideRoutine(visited, codeBlocks, routineMap, callLiveTimesMap,
+                            blockStart, svreg, lv, lvRegType, lvIndex);
             else
                 // fill up next block in path (do not fill start block)
-                fillUpInsideRoutine(visited, codeBlocks, callLiveTimesMap,
-                        blockStart+1, svreg, lv);
+                fillUpInsideRoutine(visited, codeBlocks, routineMap, callLiveTimesMap,
+                        blockStart+1, svreg, lv, lvRegType, lvIndex);
             rjStack.pop();
         }
     }
@@ -904,7 +925,8 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
     auto flit = flowStack.begin() + flowStkStart.stackPos + (flowStkStart.inSubroutines);
     const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
     
-    applyToLiveCallTime(flit->blockIndex, lv, codeBlocks, callLiveTimesMap);
+    applyToLiveCallTime(flit->blockIndex, lv, lvRegType, lvIndex,
+                codeBlocks, routineMap, callLiveTimesMap);
     
     auto sinfoIt = lastBlk.ssaInfoMap.find(svreg);
     size_t lastPos = lastBlk.start;
@@ -919,7 +941,8 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
     for (; flit != flitEnd; ++flit)
     {
         const CodeBlock& cblock = codeBlocks[flit->blockIndex];
-        applyToLiveCallTime(flit->blockIndex, lv, codeBlocks, callLiveTimesMap);
+        applyToLiveCallTime(flit->blockIndex, lv, lvRegType, lvIndex, codeBlocks,
+                        routineMap, callLiveTimesMap);
         lv.insert(cblock.start, cblock.end);
     }
 }
