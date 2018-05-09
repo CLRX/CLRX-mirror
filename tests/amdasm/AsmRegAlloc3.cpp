@@ -994,7 +994,7 @@ routine:
         .cf_ret
         s_setpc_b64 s[0:1]              # 52
 )ffDXD",
-        {
+        {   // livenesses
             {   // for SGPRs
                 { { 29, 32 }, { 44, 53 } }, // 0: S0
                 { { 29, 32 }, { 44, 53 } }, // 1: S1
@@ -1053,7 +1053,7 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]   # 76
         .cf_ret
         s_setpc_b64 s[0:1]              # 84
 )ffDXD",
-        {
+        {   // livenesses
             {   // for SGPRs
                 { { 33, 36 }, { 52, 73 }, { 76, 85 } }, // 0: S0
                 { { 33, 36 }, { 52, 73 }, { 76, 85 } }, // 1: S1
@@ -1085,6 +1085,65 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]   # 76
             { 0, { { { 15 }, { }, { }, { } } } }
         },
         true, ""
+    },
+    {   // 19 - simple call, more complex routine
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4             # 0
+        s_mov_b32 sa[3], s5             # 4
+        s_mov_b32 sa[5], s5             # 8
+        
+        s_getpc_b64 s[2:3]              # 12
+        s_add_u32 s2, s2, routine-.     # 16
+        s_add_u32 s3, s3, routine-.+4   # 24
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]     # 32
+        
+        s_lshl_b32 sa[2], sa[2], 3      # 36
+        s_lshl_b32 sa[3], sa[3], sa[5]  # 40
+        s_endpgm                        # 44
+        
+routine:
+        s_xor_b32 sa[2], sa[2], sa[4]   # 48
+        s_cbranch_scc1 bb1              # 52
+        
+        s_min_u32 sa[2], sa[2], sa[4]   # 56
+        s_xor_b32 sa[3], sa[3], sa[4]   # 60
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 64
+        
+bb1:    s_and_b32 sa[2], sa[2], sa[4]   # 68
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 72
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 33, 36 }, { 48, 65 }, { 68, 73 } }, // 0: S0
+                { { 33, 36 }, { 48, 65 }, { 68, 73 } }, // 1: S1
+                { { 13, 33 } }, // 2: S2
+                { { 13, 33 } }, // 3: S3
+                { { 0, 1 } }, // 4: S4
+                { { 0, 9 } }, // 5: S5
+                { { 1, 36 }, { 48, 49 } }, // 6: sa[2]'0
+                { { 49, 57 }, { 68, 69 } }, // 7: sa[2]'1
+                { { 36, 37 }, { 57, 68 }, { 69, 76 } }, // 8: sa[2]'2
+                { { 37, 38 } }, // 9: sa[2]'3
+                { { 5, 41 }, { 48, 62 } }, // 10: sa[3]'0
+                { { 41, 42 } }, // 11: sa[3]'1
+                { { 0, 36 }, { 48, 61 }, { 68, 69 } }, // 12: sa[4]'0
+                { { 9, 41 } }  // 13: sa[5]'0
+            },
+            { },
+            { },
+            { }
+        },
+        { },
+        {   // varRoutineMap
+            { 2, { { { 0, 1, 6, 7, 8, 10, 12 }, { }, { }, { } } } }
+        },
+        {   // varCallMap
+            { 0, { { { 13 }, { }, { }, { } } } }
+        },
+        true, ""
     }
 };
 
@@ -1098,6 +1157,52 @@ static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
     if (it == rvMap.end())
         throw Exception("getTestSingleVReg: RegVar not found!!");
     return { it->second, vr.index };
+}
+
+static void checkVVarSetEntries(const std::string& testCaseName, const char* vvarSetName,
+        const Array<std::pair<size_t, VVarSetEntry2> >& expVarRoutineMap,
+        const std::unordered_map<size_t,VVarSetEntry>& varRoutineMap,
+        const std::vector<size_t>* revLvIndexCvtTables)
+{
+    assertValue("testAsmLivenesses", testCaseName + vvarSetName + ".size",
+            varRoutineMap.size(), expVarRoutineMap.size());
+    
+    for (size_t j = 0; j < varRoutineMap.size(); j++)
+    {
+        std::ostringstream vOss;
+        vOss << vvarSetName << "#" << j;
+        vOss.flush();
+        std::string vcname(vOss.str());
+        
+        auto vcit = varRoutineMap.find(expVarRoutineMap[j].first);
+        std::ostringstream kOss;
+        kOss << expVarRoutineMap[j].first;
+        kOss.flush();
+        assertTrue("testAsmLivenesses", testCaseName + vcname +".key=" + kOss.str(),
+                    vcit != varRoutineMap.end());
+        
+        const Array<size_t>* expEntry = expVarRoutineMap[j].second.vvars;
+        const VVarSetEntry& resEntry = vcit->second;
+        for (cxuint r = 0; r < MAX_REGTYPES_NUM; r++)
+        {
+            std::ostringstream vsOss;
+            vsOss << ".vs#" << r;
+            vsOss.flush();
+            std::string vsname = vcname + vsOss.str();
+            
+            assertValue("testAsmLivenesses", testCaseName + vsname +".size",
+                    expEntry[r].size(), resEntry.vvars[r].size());
+            
+            std::vector<size_t> resVVars;
+            std::transform(resEntry.vvars[r].begin(), resEntry.vvars[r].end(),
+                    std::back_inserter(resVVars),
+                    [&r,&revLvIndexCvtTables](size_t v)
+                    { return revLvIndexCvtTables[r][v]; });
+            std::sort(resVVars.begin(), resVVars.end());
+            assertArray("testAsmLivenesses", testCaseName + vsname,
+                        expEntry[r], resVVars);
+        }
+    }
 }
 
 static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase)
@@ -1263,89 +1368,13 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
         }
     }
     
+    // checking varRoutineMap
+    checkVVarSetEntries(testCaseName, "varRoutineMap", testCase.varRoutineMap,
+                regAlloc.getVarRoutineMap(), revLvIndexCvtTables);
+    
     // checking varCallMap
-    const std::unordered_map<size_t, VVarSetEntry>& varCallMap = regAlloc.getVarCallMap();
-    assertValue("testAsmLivenesses", testCaseName + "varCallMap.size",
-            varCallMap.size(), testCase.varCallMap.size());
-    
-    for (size_t j = 0; j < varCallMap.size(); j++)
-    {
-        std::ostringstream vOss;
-        vOss << "varCallMap#" << j;
-        vOss.flush();
-        std::string vcname(vOss.str());
-        
-        auto vcit = varCallMap.find(testCase.varCallMap[j].first);
-        std::ostringstream kOss;
-        kOss << testCase.varCallMap[j].first;
-        kOss.flush();
-        assertTrue("testAsmLivenesses", testCaseName + vcname +".key=" + kOss.str(),
-                    vcit != varCallMap.end());
-        
-        const Array<size_t>* expEntry = testCase.varCallMap[j].second.vvars;
-        const VVarSetEntry& resEntry = vcit->second;
-        for (cxuint r = 0; r < MAX_REGTYPES_NUM; r++)
-        {
-            std::ostringstream vsOss;
-            vsOss << ".vs#" << r;
-            vsOss.flush();
-            std::string vsname = vcname + vsOss.str();
-            
-            assertValue("testAsmLivenesses", testCaseName + vsname +".size",
-                    expEntry[r].size(), resEntry.vvars[r].size());
-            
-            std::vector<size_t> resVVars;
-            std::transform(resEntry.vvars[r].begin(), resEntry.vvars[r].end(),
-                    std::back_inserter(resVVars),
-                    [&r,&revLvIndexCvtTables](size_t v)
-                    { return revLvIndexCvtTables[r][v]; });
-            std::sort(resVVars.begin(), resVVars.end());
-            assertArray("testAsmLivenesses", testCaseName + vsname,
-                        expEntry[r], resVVars);
-        }
-    }
-    
-    const std::unordered_map<size_t, VVarSetEntry>& varRoutineMap =
-                regAlloc.getVarRoutineMap();
-    assertValue("testAsmLivenesses", testCaseName + "varRoutineMap.size",
-            varRoutineMap.size(), testCase.varRoutineMap.size());
-    
-    for (size_t j = 0; j < varRoutineMap.size(); j++)
-    {
-        std::ostringstream vOss;
-        vOss << "varRoutineMap#" << j;
-        vOss.flush();
-        std::string vcname(vOss.str());
-        
-        auto vcit = varRoutineMap.find(testCase.varRoutineMap[j].first);
-        std::ostringstream kOss;
-        kOss << testCase.varRoutineMap[j].first;
-        kOss.flush();
-        assertTrue("testAsmLivenesses", testCaseName + vcname +".key=" + kOss.str(),
-                    vcit != varRoutineMap.end());
-        
-        const Array<size_t>* expEntry = testCase.varRoutineMap[j].second.vvars;
-        const VVarSetEntry& resEntry = vcit->second;
-        for (cxuint r = 0; r < MAX_REGTYPES_NUM; r++)
-        {
-            std::ostringstream vsOss;
-            vsOss << ".vs#" << r;
-            vsOss.flush();
-            std::string vsname = vcname + vsOss.str();
-            
-            assertValue("testAsmLivenesses", testCaseName + vsname +".size",
-                    expEntry[r].size(), resEntry.vvars[r].size());
-            
-            std::vector<size_t> resVVars;
-            std::transform(resEntry.vvars[r].begin(), resEntry.vvars[r].end(),
-                    std::back_inserter(resVVars),
-                    [&r,&revLvIndexCvtTables](size_t v)
-                    { return revLvIndexCvtTables[r][v]; });
-            std::sort(resVVars.begin(), resVVars.end());
-            assertArray("testAsmLivenesses", testCaseName + vsname,
-                        expEntry[r], resVVars);
-        }
-    }
+    checkVVarSetEntries(testCaseName, "varCallMap", testCase.varCallMap,
+                regAlloc.getVarCallMap(), revLvIndexCvtTables);
 }
 
 int main(int argc, const char** argv)
