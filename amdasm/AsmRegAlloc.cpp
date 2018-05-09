@@ -816,6 +816,10 @@ static void fillUpInsideRoutine(std::unordered_set<size_t>& visited,
             }
         }
         
+        // skip calls
+        for (; entry.nextIndex < cblock.nexts.size() &&
+                    cblock.nexts[entry.nextIndex].isCall; entry.nextIndex++);
+        
         if (entry.nextIndex < cblock.nexts.size())
         {
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
