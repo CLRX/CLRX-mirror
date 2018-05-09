@@ -996,7 +996,7 @@ static void addJoinSecCacheEntry(const RoutineLvMap& routineMap,
     // traverse by graph from next block
     std::deque<FlowStackEntry3> flowStack;
     flowStack.push_back({ nextBlock, 0 });
-    CBlockBitPool visited(codeBlocks.size(), false);
+    std::unordered_set<size_t> visited;
     
     SVRegBlockMap alreadyReadMap;
     SVRegMap cacheSecPoints;
@@ -1009,9 +1009,8 @@ static void addJoinSecCacheEntry(const RoutineLvMap& routineMap,
         if (entry.nextIndex == 0)
         {
             // process current block
-            if (!visited[entry.blockIndex])
+            if (visited.insert(entry.blockIndex).second)
             {
-                visited[entry.blockIndex] = true;
                 ARDOut << "  resolv (cache): " << entry.blockIndex << "\n";
                 
                 const SVRegMap* resSecondPoints =
