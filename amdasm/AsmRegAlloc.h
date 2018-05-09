@@ -37,6 +37,11 @@ using namespace CLRX;
 
 #define ASMREGALLOC_DEBUGDUMP 0
 
+/* svreg - single regvar register
+ * ssaId - SSA id for svreg
+ * vidx - virtual variable index, refer to some ssaId for some svreg
+ */
+
 namespace CLRX
 {
 
@@ -44,7 +49,7 @@ typedef AsmRegAllocator::CodeBlock CodeBlock;
 typedef AsmRegAllocator::NextBlock NextBlock;
 typedef AsmRegAllocator::SSAInfo SSAInfo;
 typedef std::pair<const AsmSingleVReg, SSAInfo> SSAEntry;
-typedef AsmRegAllocator::VVarSetEntry VVarSetEntry;
+typedef AsmRegAllocator::VIdxSetEntry VIdxSetEntry;
 
 //  BlockIndex
 

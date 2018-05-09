@@ -701,10 +701,10 @@ static cxuint getRegType(size_t regTypesNum, const cxuint* regRanges,
     return regType;
 }
 
-static void getLivenessIndex(const AsmSingleVReg& svreg, size_t ssaIdIdx,
+static void getVIdx(const AsmSingleVReg& svreg, size_t ssaIdIdx,
         const AsmRegAllocator::SSAInfo& ssaInfo,
         const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges,
-        cxuint& regType, size_t& lvIndex)
+        cxuint& regType, size_t& vidx)
 {
     size_t ssaId;
     if (svreg.regVar==nullptr)
@@ -720,12 +720,12 @@ static void getLivenessIndex(const AsmSingleVReg& svreg, size_t ssaIdIdx,
     
     regType = getRegType(regTypesNum, regRanges, svreg); // regtype
     const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-    const std::vector<size_t>& ssaIdIndices = vregIndexMap.find(svreg)->second;
-    /*ARDOut << "lvn[" << regType << "][" << ssaIdIndices[ssaId] << "]. ssaIdIdx: " <<
+    const std::vector<size_t>& vidxes = vregIndexMap.find(svreg)->second;
+    /*ARDOut << "lvn[" << regType << "][" << vidxes[ssaId] << "]. ssaIdIdx: " <<
             ssaIdIdx << ". ssaId: " << ssaId << ". svreg: " << svreg.regVar << ":" <<
             svreg.index << "\n";*/
     //return livenesses[regType][ssaIdIndices[ssaId]];
-    lvIndex = ssaIdIndices[ssaId];
+    vidx = vidxes[ssaId];
 }
 
 static inline Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
@@ -733,51 +733,51 @@ static inline Liveness& getLiveness(const AsmSingleVReg& svreg, size_t ssaIdIdx,
         const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges)
 {
     cxuint regType;
-    size_t lvIndex;
-    getLivenessIndex(svreg, ssaIdIdx, ssaInfo, vregIndexMaps, regTypesNum, regRanges,
-            regType, lvIndex);
-    return livenesses[regType][lvIndex];
+    size_t vidx;
+    getVIdx(svreg, ssaIdIdx, ssaInfo, vregIndexMaps, regTypesNum, regRanges,
+            regType, vidx);
+    return livenesses[regType][vidx];
 }
 
-static void getLiveness2Index(const AsmSingleVReg& svreg, size_t ssaId,
+static void getVIdx2(const AsmSingleVReg& svreg, size_t ssaId,
         const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges,
-        cxuint& regType, size_t& lvIndex)
+        cxuint& regType, size_t& vidx)
 {
     regType = getRegType(regTypesNum, regRanges, svreg); // regtype
     const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-    const std::vector<size_t>& ssaIdIndices = vregIndexMap.find(svreg)->second;
-    /*ARDOut << "lvn[" << regType << "][" << ssaIdIndices[ssaId] << "]. ssaId: " <<
+    const std::vector<size_t>& vidxes = vregIndexMap.find(svreg)->second;
+    /*ARDOut << "lvn[" << regType << "][" << vidxes[ssaId] << "]. ssaId: " <<
             ssaId << ". svreg: " << svreg.regVar << ":" << svreg.index << "\n";*/
-    lvIndex = ssaIdIndices[ssaId];
+    vidx = vidxes[ssaId];
 }
 
 
-static void addVVRegsToCallEntry(size_t blockIndex, cxuint regType, size_t lvIndex,
+static void addVIdxToCallEntry(size_t blockIndex, cxuint regType, size_t vidx,
             const std::vector<CodeBlock>& codeBlocks,
-            std::unordered_map<size_t, VVarSetEntry>& varCallMap,
-            const std::unordered_map<size_t, VVarSetEntry>& varRoutineMap)
+            std::unordered_map<size_t, VIdxSetEntry>& vidxCallMap,
+            const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap)
 {
     const CodeBlock& cblock = codeBlocks[blockIndex];
     if (cblock.haveCalls)
     {
-        VVarSetEntry& varCallEntry = varCallMap[blockIndex];
+        VIdxSetEntry& varCallEntry = vidxCallMap[blockIndex];
         for (const NextBlock& next: cblock.nexts)
             if (next.isCall)
             {
-                const auto& allLvs = varRoutineMap.find(next.block)->second;
-                if (allLvs.vvars[regType].find(lvIndex) == allLvs.vvars[regType].end())
+                const auto& allLvs = vidxRoutineMap.find(next.block)->second;
+                if (allLvs.vs[regType].find(vidx) == allLvs.vs[regType].end())
                     // add callLiveTime only if vreg not present in routine
-                    varCallEntry.vvars[regType].insert(lvIndex);
+                    varCallEntry.vs[regType].insert(vidx);
             }
     }
 }
 
 static void fillUpInsideRoutine(std::vector<bool>& visited,
             const std::vector<CodeBlock>& codeBlocks,
-            std::unordered_map<size_t, VVarSetEntry>& varCallMap,
-            const std::unordered_map<size_t, VVarSetEntry>& varRoutineMap,
+            std::unordered_map<size_t, VIdxSetEntry>& vidxCallMap,
+            const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap,
             size_t startBlock, const AsmSingleVReg& svreg, Liveness& lv,
-            cxuint lvRType /* lv register type */, size_t lvIndex)
+            cxuint lvRType /* lv register type */, size_t vidx)
 {
     std::deque<FlowStackEntry3> flowStack;
     flowStack.push_back({ startBlock, 0 });
@@ -807,8 +807,8 @@ static void fillUpInsideRoutine(std::vector<bool>& visited,
                 // just insert
                 lv.insert(cbStart, cblock.end);
                 
-                addVVRegsToCallEntry(entry.blockIndex, lvRType, lvIndex,
-                        codeBlocks, varCallMap, varRoutineMap);
+                addVIdxToCallEntry(entry.blockIndex, lvRType, vidx,
+                        codeBlocks, vidxCallMap, vidxRoutineMap);
             }
             else
             {
@@ -837,8 +837,8 @@ static void fillUpInsideRoutine(std::vector<bool>& visited,
 
 static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
             const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
-            std::unordered_map<size_t, VVarSetEntry>& varCallMap,
-            const std::unordered_map<size_t, VVarSetEntry>& varRoutineMap,
+            std::unordered_map<size_t, VIdxSetEntry>& vidxCallMap,
+            const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap,
             LastVRegStackPos flowStkStart, const AsmSingleVReg& svreg, size_t ssaId,
             const VarIndexMap* vregIndexMaps, std::vector<Liveness>* livenesses,
             size_t regTypesNum, const cxuint* regRanges, bool skipLastBlock = false)
@@ -855,10 +855,9 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
     if (skipLastBlock)
         --flitEnd; // before last element
     cxuint lvRegType;
-    size_t lvIndex;
-    getLiveness2Index(svreg, ssaId, vregIndexMaps, regTypesNum, regRanges,
-                      lvRegType, lvIndex);
-    Liveness& lv = livenesses[lvRegType][lvIndex];
+    size_t vidx;
+    getVIdx2(svreg, ssaId, vregIndexMaps, regTypesNum, regRanges, lvRegType, vidx);
+    Liveness& lv = livenesses[lvRegType][vidx];
     
     if (flitEnd != flowStack.begin())
     {
@@ -921,9 +920,9 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
             /* if inSubroutines, then first block
              * (that with subroutines calls) will be skipped */
             if (rjStack.size() > 1)
-                fillUpInsideRoutine(visited, codeBlocks, varCallMap, varRoutineMap,
+                fillUpInsideRoutine(visited, codeBlocks, vidxCallMap, vidxRoutineMap,
                         entry.blockIndex + (entry.inSubroutines), svreg,
-                        lv, lvRegType, lvIndex);
+                        lv, lvRegType, vidx);
             rjStack.pop();
         }
     }
@@ -939,8 +938,8 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         {
             if (flit->nextIndex > lastBlk.nexts.size())
                 // only if pass this routine
-                addVVRegsToCallEntry(flit->blockIndex, lvRegType, lvIndex,
-                        codeBlocks, varCallMap, varRoutineMap);
+                addVIdxToCallEntry(flit->blockIndex, lvRegType, vidx,
+                        codeBlocks, vidxCallMap, vidxRoutineMap);
             // if begin at some point at last block
             lastPos = sinfoIt->second.lastPos;
             lv.insert(lastPos + 1, lastBlk.end);
@@ -953,8 +952,8 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         const CodeBlock& cblock = codeBlocks[flit->blockIndex];
         if (flit->nextIndex > cblock.nexts.size())
             // only if pass this routine
-            addVVRegsToCallEntry(flit->blockIndex, lvRegType, lvIndex, codeBlocks,
-                        varCallMap, varRoutineMap);
+            addVIdxToCallEntry(flit->blockIndex, lvRegType, vidx, codeBlocks,
+                        vidxCallMap, vidxRoutineMap);
         lv.insert(cblock.start, cblock.end);
     }
 }
@@ -966,8 +965,8 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
 /* join livenesses between consecutive code blocks */
 static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack,
         const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
-        std::unordered_map<size_t, VVarSetEntry>& varCallMap,
-        const std::unordered_map<size_t, VVarSetEntry>& varRoutineMap,
+        std::unordered_map<size_t, VIdxSetEntry>& vidxCallMap,
+        const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap,
         const LastVRegMap& lastVRegMap, std::vector<Liveness>* livenesses,
         const VarIndexMap* vregIndexMaps, size_t regTypesNum, const cxuint* regRanges)
 {
@@ -981,7 +980,7 @@ static void putCrossBlockLivenesses(const std::deque<FlowStackEntry3>& flowStack
             LastVRegStackPos flowStackStart = (lvrit != lastVRegMap.end()) ?
                 lvrit->second.back() : LastVRegStackPos{ 0, false };
             
-            joinVRegRecur(flowStack, codeBlocks, routineMap, varCallMap, varRoutineMap,
+            joinVRegRecur(flowStack, codeBlocks, routineMap, vidxCallMap, vidxRoutineMap,
                     flowStackStart, entry.first, entry.second.ssaIdBefore,
                     vregIndexMaps, livenesses, regTypesNum, regRanges, true);
         }
@@ -1138,8 +1137,8 @@ static void applyCallToStackVarMap(const CodeBlock& cblock, const RoutineLvMap& 
 
 static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStack,
         const std::vector<CodeBlock>& codeBlocks, const RoutineLvMap& routineMap,
-        std::unordered_map<size_t, VVarSetEntry>& varCallMap,
-        const std::unordered_map<size_t, VVarSetEntry>& varRoutineMap,
+        std::unordered_map<size_t, VIdxSetEntry>& vidxCallMap,
+        const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap,
         const PrevWaysIndexMap& prevWaysIndexMap,
         const std::vector<bool>& waysToCache, ResSecondPointsToCache& cblocksToCache,
         SimpleCache<size_t, LastStackPosMap>& joinFirstPointsCache,
@@ -1250,7 +1249,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                                         it->second : LastVRegStackPos{ 0, false });
                             
                             joinVRegRecur(prevFlowStack, codeBlocks, routineMap,
-                                varCallMap, varRoutineMap,
+                                vidxCallMap, vidxRoutineMap,
                                 stackPos, sentry.first, sentry.second.ssaIdBefore,
                                 vregIndexMaps, livenesses, regTypesNum, regRanges, true);
                         }
@@ -1274,7 +1273,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                                         it->second : LastVRegStackPos{ 0, false });
                             
                             joinVRegRecur(prevFlowStack, codeBlocks, routineMap,
-                                varCallMap, varRoutineMap,
+                                vidxCallMap, vidxRoutineMap,
                                 stackPos, rsentry.first, rsentry.second, vregIndexMaps,
                                 livenesses, regTypesNum, regRanges, true);
                         }
@@ -1438,13 +1437,13 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
         }
 }
 
-static void joinRoutineDataLv(RoutineDataLv& dest, VVarSetEntry& destVars,
+static void joinRoutineDataLv(RoutineDataLv& dest, VIdxSetEntry& destVars,
             RoutineCurAccessMap& curSVRegMap, FlowStackEntry4& entry,
-            const RoutineDataLv& src, const VVarSetEntry& srcVars)
+            const RoutineDataLv& src, const VIdxSetEntry& srcVars)
 {
     dest.rbwSSAIdMap.insert(src.rbwSSAIdMap.begin(), src.rbwSSAIdMap.end());
     for (size_t i = 0; i < MAX_REGTYPES_NUM; i++)
-        destVars.vvars[i].insert(srcVars.vvars[i].begin(), srcVars.vvars[i].end());
+        destVars.vs[i].insert(srcVars.vs[i].begin(), srcVars.vs[i].end());
     
     // join source lastAccessMap with curSVRegMap
     for (const auto& sentry: src.lastAccessMap)
@@ -1466,8 +1465,8 @@ static void joinRoutineDataLv(RoutineDataLv& dest, VVarSetEntry& destVars,
 
 static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
         const RoutineLvMap& routineMap,
-        const std::unordered_map<size_t, VVarSetEntry>& varRoutineMap,
-        RoutineDataLv& rdata, VVarSetEntry& routineVars,
+        const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap,
+        RoutineDataLv& rdata, VIdxSetEntry& routineVIdxes,
         size_t routineBlock, const VarIndexMap* vregIndexMaps,
         size_t regTypesNum, const cxuint* regRanges)
 {
@@ -1517,18 +1516,18 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
                     const AsmSingleVReg& svreg = sentry.first;
                     cxuint regType = getRegType(regTypesNum, regRanges, svreg);
                     const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-                    const std::vector<size_t>& ssaIdIndices =
+                    const std::vector<size_t>& vidxes =
                                 vregIndexMap.find(svreg)->second;
                     
                     // add SSA indices to allSSAs
                     if (sinfo.readBeforeWrite)
-                        routineVars.vvars[regType].insert(ssaIdIndices[sinfo.ssaIdBefore]);
+                        routineVIdxes.vs[regType].insert(vidxes[sinfo.ssaIdBefore]);
                     if (sinfo.ssaIdChange != 0)
                     {
-                        routineVars.vvars[regType].insert(ssaIdIndices[sinfo.ssaIdFirst]);
+                        routineVIdxes.vs[regType].insert(vidxes[sinfo.ssaIdFirst]);
                         for (size_t i = 1; i < sinfo.ssaIdChange; i++)
-                            routineVars.vvars[regType].insert(ssaIdIndices[sinfo.ssaId+i]);
-                        routineVars.vvars[regType].insert(ssaIdIndices[sinfo.ssaIdLast]);
+                            routineVIdxes.vs[regType].insert(vidxes[sinfo.ssaId+i]);
+                        routineVIdxes.vs[regType].insert(vidxes[sinfo.ssaIdLast]);
                     }
                 }
             }
@@ -1551,9 +1550,9 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
             }
             
             for (size_t srcRoutBlock: calledRoutines)
-                joinRoutineDataLv(rdata, routineVars, curSVRegMap, entry,
+                joinRoutineDataLv(rdata, routineVIdxes, curSVRegMap, entry,
                         routineMap.find(srcRoutBlock)->second,
-                        varRoutineMap.find(srcRoutBlock)->second);
+                        vidxRoutineMap.find(srcRoutBlock)->second);
         }
         
         if (entry.nextIndex < cblock.nexts.size())
@@ -1638,7 +1637,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             cxuint regType = getRegType(regTypesNum, regRanges, entry.first);
             VarIndexMap& vregIndices = vregIndexMaps[regType];
             size_t& graphVregsCount = graphVregsCounts[regType];
-            std::vector<size_t>& ssaIdIndices = vregIndices[entry.first];
+            std::vector<size_t>& vidxes = vregIndices[entry.first];
             size_t ssaIdCount = 0;
             if (sinfo.readBeforeWrite)
                 ssaIdCount = sinfo.ssaIdBefore+1;
@@ -1653,30 +1652,30 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             if (entry.first.regVar==nullptr)
                 ssaIdCount = 1;
             
-            if (ssaIdIndices.size() < ssaIdCount)
-                ssaIdIndices.resize(ssaIdCount, SIZE_MAX);
+            if (vidxes.size() < ssaIdCount)
+                vidxes.resize(ssaIdCount, SIZE_MAX);
             
-            // set liveness index to ssaIdIndices
+            // set liveness index to vidxes
             if (sinfo.readBeforeWrite)
             {
-                if (ssaIdIndices[sinfo.ssaIdBefore] == SIZE_MAX)
-                    ssaIdIndices[sinfo.ssaIdBefore] = graphVregsCount++;
+                if (vidxes[sinfo.ssaIdBefore] == SIZE_MAX)
+                    vidxes[sinfo.ssaIdBefore] = graphVregsCount++;
             }
             if (sinfo.ssaIdChange!=0)
             {
-                // fill up ssaIdIndices (with graph Ids)
-                if (ssaIdIndices[sinfo.ssaIdFirst] == SIZE_MAX)
-                    ssaIdIndices[sinfo.ssaIdFirst] = graphVregsCount++;
+                // fill up vidxes (with graph Ids)
+                if (vidxes[sinfo.ssaIdFirst] == SIZE_MAX)
+                    vidxes[sinfo.ssaIdFirst] = graphVregsCount++;
                 for (size_t ssaId = sinfo.ssaId+1;
                         ssaId < sinfo.ssaId+sinfo.ssaIdChange-1; ssaId++)
-                    ssaIdIndices[ssaId] = graphVregsCount++;
-                if (ssaIdIndices[sinfo.ssaIdLast] == SIZE_MAX)
-                    ssaIdIndices[sinfo.ssaIdLast] = graphVregsCount++;
+                    vidxes[ssaId] = graphVregsCount++;
+                if (vidxes[sinfo.ssaIdLast] == SIZE_MAX)
+                    vidxes[sinfo.ssaIdLast] = graphVregsCount++;
             }
             // if not readBeforeWrite and neither ssaIdChanges but it is write to
             // normal register
-            if (entry.first.regVar==nullptr && ssaIdIndices[0] == SIZE_MAX)
-                ssaIdIndices[0] = graphVregsCount++;
+            if (entry.first.regVar==nullptr && vidxes[0] == SIZE_MAX)
+                vidxes[0] = graphVregsCount++;
         }
     
     // construct vreg liveness
@@ -1723,7 +1722,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 ARDOut << "joinpush: " << entry.blockIndex << "\n";
                 if (flowStack.size() > 1)
                     putCrossBlockLivenesses(flowStack, codeBlocks, routineMap,
-                            varCallMap, varRoutineMap, lastVRegMap,
+                            vidxCallMap, vidxRoutineMap, lastVRegMap,
                             livenesses, vregIndexMaps, regTypesNum, regRanges);
                 // update last vreg position
                 for (const auto& sentry: cblock.ssaInfoMap)
@@ -1858,8 +1857,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             
             if (res.second)
             {
-                auto varRes = varRoutineMap.insert({ routineBlock, VVarSetEntry{} });
-                createRoutineDataLv(codeBlocks, routineMap, varRoutineMap,
+                auto varRes = vidxRoutineMap.insert({ routineBlock, VIdxSetEntry{} });
+                createRoutineDataLv(codeBlocks, routineMap, vidxRoutineMap,
                         res.first->second, varRes.first->second,
                         routineBlock, vregIndexMaps, regTypesNum, regRanges);
             }
@@ -1874,7 +1873,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                             lvrit->second.back() : LastVRegStackPos{ 0, false };
                     
                     joinVRegRecur(flowStack, codeBlocks, routineMap,
-                            varCallMap, varRoutineMap,
+                                  vidxCallMap, vidxRoutineMap,
                             flowStackStart, entry.first, entry.second, vregIndexMaps,
                             livenesses, regTypesNum, regRanges, false);
                 }
@@ -1978,7 +1977,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             else
             {
                 joinRegVarLivenesses(flowStack, codeBlocks, routineMap,
-                        varCallMap, varRoutineMap,
+                        vidxCallMap, vidxRoutineMap,
                         prevWaysIndexMap, waysToCache, cblocksToCache,
                         joinFirstPointsCache, joinSecondPointsCache,
                         vregIndexMaps, livenesses, regTypesNum, regRanges);
