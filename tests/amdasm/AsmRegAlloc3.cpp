@@ -1145,6 +1145,58 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]   # 68
         },
         true, ""
     }
+#if 0
+    ,
+    {   // 22 - multiple call of routine
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4
+        s_mov_b32 sa[3], s5
+        
+        s_getpc_b64 s[2:3]
+        s_add_u32 s2, s2, routine-.
+        s_add_u32 s3, s3, routine-.+4
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]
+        
+        s_lshl_b32 sa[2], sa[2], 3
+        s_lshl_b32 sa[3], sa[3], 4
+        
+        s_getpc_b64 s[2:3]
+        s_add_u32 s2, s2, routine-.
+        s_add_u32 s3, s3, routine-.+4
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]
+        
+        s_ashr_i32 sa[2], sa[2], 3
+        s_ashr_i32 sa[2], sa[2], 3
+        s_ashr_i32 sa[3], sa[3], 4
+        s_ashr_i32 sa[3], sa[3], 4
+        
+        s_getpc_b64 s[2:3]
+        s_add_u32 s2, s2, routine-.
+        s_add_u32 s3, s3, routine-.+4
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]
+        
+        s_ashr_i32 sa[2], sa[2], 3
+        s_ashr_i32 sa[3], sa[3], 3
+        s_endpgm
+        
+routine:
+        s_xor_b32 sa[2], sa[2], sa[4]
+        s_xor_b32 sa[3], sa[3], sa[4]
+        s_cbranch_scc1 bb1
+        
+        s_min_u32 sa[2], sa[2], sa[4]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+        
+bb1:    s_and_b32 sa[2], sa[2], sa[4]
+        .cf_ret
+        s_setpc_b64 s[0:1]
+)ffDXD"
+    }
+#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,

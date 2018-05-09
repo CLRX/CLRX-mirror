@@ -149,7 +149,7 @@ static void addResSecCacheEntry(const RoutineMap& routineMap,
     // traverse by graph from next block
     std::deque<FlowStackEntry2> flowStack;
     flowStack.push_back({ nextBlock, 0 });
-    CBlockBitPool visited(codeBlocks.size(), false);
+    std::unordered_set<size_t> visited;
     
     SVRegBlockMap alreadyReadMap;
     
@@ -163,9 +163,8 @@ static void addResSecCacheEntry(const RoutineMap& routineMap,
         if (entry.nextIndex == 0)
         {
             // process current block
-            if (!visited[entry.blockIndex])
+            if (visited.insert(entry.blockIndex).second)
             {
-                visited[entry.blockIndex] = true;
                 ARDOut << "  resolv (cache): " << entry.blockIndex << "\n";
                 
                 const RBWSSAIdMap* resSecondPoints =
@@ -357,7 +356,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
     // traverse by graph from next block
     std::deque<FlowStackEntry2> flowStack;
     flowStack.push_back({ nextBlock, 0 });
-    CBlockBitPool visited(codeBlocks.size(), false);
+    std::unordered_set<size_t> visited;
     
     // already read in current path
     // key - vreg, value - source block where vreg of conflict found
@@ -371,9 +370,8 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
         if (entry.nextIndex == 0)
         {
             // process current block
-            if (!visited[entry.blockIndex])
+            if (visited.insert(entry.blockIndex).second)
             {
-                visited[entry.blockIndex] = true;
                 ARDOut << "  resolv: " << entry.blockIndex << "\n";
                 
                 const RBWSSAIdMap* resSecondPoints =
@@ -971,8 +969,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
 {
     bool fromSubroutine = noMainLoop;
     ARDOut << "--------- createRoutineData ----------------\n";
-    CBlockBitPool visited(codeBlocks.size(), false);
-    CBlockBitPool haveReturnBlocks(codeBlocks.size(), false);
+    std::unordered_set<BlockIndex> visited;
+    std::unordered_set<BlockIndex> haveReturnBlocks;
     
     VectorSet<BlockIndex> activeLoops;
     SubrLoopsMap subrLoopsMap;
@@ -1116,8 +1114,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                     if (rit != routineMap.end())
                         cachedRdata = &rit->second;
                 }
-                if (!isLoop && visited[entry.blockIndex] && cachedRdata == nullptr &&
-                    subroutToCache.count(entry.blockIndex)!=0)
+                if (!isLoop && visited.find(entry.blockIndex)!=visited.end() &&
+                    cachedRdata == nullptr && subroutToCache.count(entry.blockIndex)!=0)
                 {
                     auto loopsit2 = rdata.loopEnds.find(entry.blockIndex);
                     ARDOut << "-- subrcache2 for " << entry.blockIndex << "\n";
@@ -1130,7 +1128,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             {
                 ARDOut << "use cached subr " << entry.blockIndex << "\n";
                 ARDOut << "procret2: " << entry.blockIndex << "\n";
-                if (visited[entry.blockIndex] && !haveReturnBlocks[entry.blockIndex])
+                if (visited.find(entry.blockIndex)!=visited.end() &&
+                    haveReturnBlocks.find(entry.blockIndex)==haveReturnBlocks.end())
                 {
                     // no joining. no returns
                     ARDOut << "procretend2 nojoin\n";
@@ -1173,10 +1172,10 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 flowStack.pop_back();
                 // propagate haveReturn to previous block
                 flowStack.back().haveReturn = true;
-                haveReturnBlocks[flowStack.back().blockIndex] = true;
+                haveReturnBlocks.insert(flowStack.back().blockIndex);
                 continue;
             }
-            else if (!visited[entry.blockIndex])
+            else if (visited.insert(entry.blockIndex).second)
             {
                 // set up loops for which subroutine is present
                 if (subroutToCache.count(entry.blockIndex)!=0 && !activeLoops.empty())
@@ -1193,7 +1192,6 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 if (loopBlocks.find(entry.blockIndex) != loopBlocks.end())
                     activeLoops.insertValue(entry.blockIndex);
                 ARDOut << "proc: " << entry.blockIndex << "\n";
-                visited[entry.blockIndex] = true;
                 
                 for (const auto& ssaEntry: cblock.ssaInfoMap)
                     if (ssaEntry.first.regVar != nullptr)
@@ -1319,7 +1317,7 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
                 ARDOut << "procretend\n";
                 rdata.notFirstReturn = true;
                 entry.haveReturn = true;
-                haveReturnBlocks[entry.blockIndex] = true;
+                haveReturnBlocks.insert(entry.blockIndex);
             }
             
             const bool curHaveReturn = entry.haveReturn;
@@ -1377,8 +1375,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             if (!flowStack.empty())
             {
                 flowStack.back().haveReturn |= curHaveReturn;
-                haveReturnBlocks[flowStack.back().blockIndex] =
-                        flowStack.back().haveReturn;
+                if (flowStack.back().haveReturn)
+                    haveReturnBlocks.insert(flowStack.back().blockIndex);
             }
         }
     }

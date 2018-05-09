@@ -772,7 +772,7 @@ static void addVIdxToCallEntry(size_t blockIndex, cxuint regType, size_t vidx,
     }
 }
 
-static void fillUpInsideRoutine(std::vector<bool>& visited,
+static void fillUpInsideRoutine(std::unordered_set<size_t>& visited,
             const std::vector<CodeBlock>& codeBlocks,
             std::unordered_map<size_t, VIdxSetEntry>& vidxCallMap,
             const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap,
@@ -793,9 +793,8 @@ static void fillUpInsideRoutine(std::vector<bool>& visited,
         
         if (entry.nextIndex == 0)
         {
-            if (!visited[entry.blockIndex])
+            if (visited.insert(entry.blockIndex).second)
             {
-                visited[entry.blockIndex] = true;
                 size_t cbStart = cblock.start;
                 if (flowStack.size() == 1)
                 {
@@ -867,7 +866,7 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
             return;
     }
     
-    std::vector<bool> visited(codeBlocks.size(), false);
+    std::unordered_set<size_t> visited;
     
     std::stack<JoinEntry> rjStack; // routine join stack
     if (flowStkStart.inSubroutines)
@@ -1471,7 +1470,7 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
         size_t regTypesNum, const cxuint* regRanges)
 {
     std::deque<FlowStackEntry4> flowStack;
-    std::vector<bool> visited(codeBlocks.size(), false);
+    std::unordered_set<size_t> visited;
     
     // already read in current path
     // key - vreg, value - source block where vreg of conflict found
@@ -1488,10 +1487,8 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
         if (entry.nextIndex == 0)
         {
             // process current block
-            if (!visited[entry.blockIndex])
+            if (visited.insert(entry.blockIndex).second)
             {
-                visited[entry.blockIndex] = true;
-                
                 for (const auto& sentry: cblock.ssaInfoMap)
                 {
                     if (sentry.second.readBeforeWrite)
