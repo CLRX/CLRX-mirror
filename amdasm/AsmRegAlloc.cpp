@@ -922,13 +922,13 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         }
     }
     
-    if (flitEnd != flowStack.begin())
+    /*if (flitEnd != flowStack.begin())
     {
         const CodeBlock& cbLast = codeBlocks[(flitEnd-1)->blockIndex];
         if (lv.contain(cbLast.end-1))
             // if already filled up
             return;
-    }
+    }*/
     
     auto flit = flowStack.begin() + flowStkStart.stackPos + (flowStkStart.inSubroutines);
     const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
