@@ -782,9 +782,9 @@ static void fillUpInsideRoutine(std::unordered_set<size_t>& visited,
     std::deque<FlowStackEntry3> flowStack;
     flowStack.push_back({ startBlock, 0 });
     
-    if (lv.contain(codeBlocks[startBlock].end-1))
+    //if (lv.contain(codeBlocks[startBlock].end-1))
         // already filled, then do nothing
-        return;
+        //return;
     
     while (!flowStack.empty())
     {
@@ -1474,7 +1474,10 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
     // already read in current path
     // key - vreg, value - source block where vreg of conflict found
     SVRegMap alreadyReadMap;
+    std::unordered_set<AsmSingleVReg> vregsNotInAllRets;
+    std::unordered_set<AsmSingleVReg> vregsInFirstReturn;
     
+    bool notFirstReturn = false;
     flowStack.push_back({ routineBlock, 0 });
     RoutineCurAccessMap curSVRegMap; // key - svreg, value - block index
     
@@ -1493,8 +1496,13 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
                     if (sentry.second.readBeforeWrite)
                         if (alreadyReadMap.insert(
                                     { sentry.first, entry.blockIndex }).second)
-                            rdata.rbwSSAIdMap.insert({ sentry.first,
+                        {
+                            auto res = rdata.rbwSSAIdMap.insert({ sentry.first,
                                         sentry.second.ssaIdBefore });
+                            if (res.second && notFirstReturn)
+                                // first readBeforeWrite and notFirstReturn
+                                vregsNotInAllRets.insert(sentry.first);
+                        }
                     
                     auto res = curSVRegMap.insert({ sentry.first,
                         LastAccessBlockPos{ entry.blockIndex, false } });
@@ -1546,9 +1554,17 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
             }
             
             for (size_t srcRoutBlock: calledRoutines)
+            {
+                // update svregs 'not in all returns'
+                const RoutineDataLv& srcRdata = routineMap.find(srcRoutBlock)->second;
+                if (notFirstReturn)
+                    for (const auto& vrentry: srcRdata.rbwSSAIdMap)
+                        if (rdata.rbwSSAIdMap.find(vrentry.first)==rdata.rbwSSAIdMap.end())
+                            vregsNotInAllRets.insert(vrentry.first);
+                
                 joinRoutineDataLv(rdata, routineVIdxes, curSVRegMap, entry,
-                        routineMap.find(srcRoutBlock)->second,
-                        vidxRoutineMap.find(srcRoutBlock)->second);
+                        srcRdata, vidxRoutineMap.find(srcRoutBlock)->second);
+            }
         }
         
         if (entry.nextIndex < cblock.nexts.size())
@@ -1576,7 +1592,17 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
                                     { entry.second } });
                     if (!res.second)
                         res.first->second.insertValue(entry.second);
+                    if (!notFirstReturn)
+                        // fill up vregs for first return
+                        vregsInFirstReturn.insert(entry.first);
                 }
+                if (notFirstReturn)
+                    for (const AsmSingleVReg& vreg: vregsInFirstReturn)
+                        if (curSVRegMap.find(vreg) == curSVRegMap.end())
+                            // not found in this path then add to 'not in all paths'
+                            vregsNotInAllRets.insert(vreg);
+                
+                notFirstReturn = true;
             }
             // revert curSVRegMap
             for (const auto& sentry: entry.prevCurSVRegMap)
@@ -1596,6 +1622,16 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
             ARDOut << "  popjoin\n";
             flowStack.pop_back();
         }
+    }
+    
+    // handle unused svregs in this path (from routine start) and
+    // used other paths and have this same ssaId as at routine start.
+    // just add to lastAccessMap svreg for start to join through all routine
+    for (const AsmSingleVReg& svreg: vregsNotInAllRets)
+    {
+        auto res = rdata.lastAccessMap.insert({ svreg, { { routineBlock, false } } });
+        if (!res.second)
+            res.first->second.insertValue({ routineBlock, false });
     }
 }
 
