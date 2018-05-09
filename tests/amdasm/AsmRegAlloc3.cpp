@@ -1127,7 +1127,7 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]   # 68
                 { { 49, 57 }, { 68, 69 } }, // 7: sa[2]'1
                 { { 36, 37 }, { 57, 68 }, { 69, 76 } }, // 8: sa[2]'2
                 { { 37, 38 } }, // 9: sa[2]'3
-                { { 5, 41 }, { 48, 62 } }, // 10: sa[3]'0
+                { { 5, 41 }, { 48, 68 } }, // 10: sa[3]'0
                 { { 41, 42 } }, // 11: sa[3]'1
                 { { 0, 36 }, { 48, 61 }, { 68, 69 } }, // 12: sa[4]'0
                 { { 9, 41 } }  // 13: sa[5]'0
@@ -1226,6 +1226,105 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]   # 136
         { }, // vidxCallMap
         true, ""
     }
+#if 0
+    ,
+    {   // 21 - many nested routines - path penetration
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]         # 0
+        
+        s_add_u32 sa[7], sa[7], sa[1]       # 4
+        s_add_u32 sa[7], sa[7], sa[2]       # 8
+        s_add_u32 sa[7], sa[7], sa[3]       # 12
+        s_add_u32 sa[7], sa[7], sa[4]       # 16
+        s_add_u32 sa[7], sa[7], sa[5]       # 20
+        s_add_u32 sa[7], sa[7], sa[6]       # 24
+        v_xor_b32 va[7], va[7], va[0]       # 28
+        v_xor_b32 va[7], va[7], va[1]       # 32
+        v_xor_b32 va[7], va[7], va[2]       # 36
+        v_xor_b32 va[7], va[7], va[3]       # 40
+        s_endpgm                            # 44
+        
+routine:
+        v_add_u32 va[3], vcc, va[3], va[1]  # 48
+        s_cbranch_scc0 r1_2                 # 52
+        
+r1_1:   s_add_u32 sa[2], sa[2], sa[0]       # 56
+        .cf_call routine2
+        s_swappc_b64 s[0:1], s[2:3]         # 60
+        v_add_u32 va[3], vcc, va[3], va[1]  # 64
+        .cf_ret
+        s_setpc_b64 s[0:1]                  # 68
+        
+r1_2:   s_add_u32 sa[6], sa[6], sa[0]       # 72
+        .cf_call routine3
+        s_swappc_b64 s[0:1], s[2:3]         # 76
+        v_add_u32 va[2], vcc, va[2], va[1]  # 80
+        .cf_ret
+        s_setpc_b64 s[0:1]                  # 84
+
+routine2:
+        s_add_u32 sa[2], sa[2], sa[0]       # 88
+        s_cbranch_scc0 r2_2                 # 92
+        
+r2_1:   s_add_u32 sa[2], sa[2], sa[0]       # 96
+        .cf_ret
+        s_setpc_b64 s[0:1]                  # 100
+r2_2:   s_add_u32 sa[3], sa[3], sa[0]       # 104
+        .cf_ret
+        s_setpc_b64 s[0:1]                  # 108
+
+routine3:
+        s_add_u32 sa[4], sa[4], sa[0]       # 112
+        s_cbranch_scc0 r3_2                 # 116
+        
+r3_1:   s_add_u32 sa[4], sa[4], sa[0]       # 120
+        .cf_ret
+        s_setpc_b64 s[0:1]                  # 124
+r3_2:   s_add_u32 sa[5], sa[5], sa[0]       # 128
+        s_cbranch_scc0 r3_4                 # 132
+r3_3:   v_add_u32 va[0], vcc, va[0], va[1]  # 136
+        .cf_ret
+        s_setpc_b64 s[0:1]                  # 140
+r3_4:
+        v_add_u32 va[0], vcc, va[0], va[1]  # 144
+        .cf_ret
+        s_setpc_b64 s[0:1]                  # 148
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 1, 2 }, { 61, 69 }, { 77, 85 }, { 88, 104 },
+                    { }, { }, { }, { } }, // 0: S0
+                { }, // 1: S1
+                { }, // 2: S2
+                { }, // 3: S3
+                { }, // 4: sa:0
+                { }, // 5: sa:1
+                { }, // 6: sa:2
+                { }, // 7: sa:2
+                { }, // 8: sa:3
+                { }, // 9: sa:4
+                { }, // 10: sa:5
+                { }, // 11: sa:6
+                { }, // 12: sa:7
+                { }, // 13: sa:7
+                { }, // 14: sa:7
+                { }, // 15: sa:7
+                { }, // 16: sa:7
+                { }, // 17: sa:7
+                { }  // 18: sa:7
+            },
+            {   // for VGPs
+            },
+            { },
+            { }
+        },
+        { }, // linearDepMaps
+        { }, // vidxRoutineMap
+        { }, // vidxCallMap
+        true, ""
+    }
+#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,

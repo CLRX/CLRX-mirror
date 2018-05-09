@@ -858,14 +858,6 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
     getVIdx2(svreg, ssaId, vregIndexMaps, regTypesNum, regRanges, lvRegType, vidx);
     Liveness& lv = livenesses[lvRegType][vidx];
     
-    if (flitEnd != flowStack.begin())
-    {
-        const CodeBlock& cbLast = codeBlocks[(flitEnd-1)->blockIndex];
-        if (lv.contain(cbLast.end-1))
-            // if already filled up
-            return;
-    }
-    
     std::unordered_set<size_t> visited;
     
     std::stack<JoinEntry> rjStack; // routine join stack
@@ -924,6 +916,14 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
                         lv, lvRegType, vidx);
             rjStack.pop();
         }
+    }
+    
+    if (flitEnd != flowStack.begin())
+    {
+        const CodeBlock& cbLast = codeBlocks[(flitEnd-1)->blockIndex];
+        if (lv.contain(cbLast.end-1))
+            // if already filled up
+            return;
     }
     
     auto flit = flowStack.begin() + flowStkStart.stackPos + (flowStkStart.inSubroutines);
