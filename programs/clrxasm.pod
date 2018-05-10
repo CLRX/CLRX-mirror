@@ -11,7 +11,7 @@ clrxasm [-6Swam?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
 [--output OUTFILE] [--binaryFormat=BINFORMAT] [--64bit] [--gpuType=GPUDEVICE]
 [--arch=ARCH] [--driverVersion=VERSION] [--llvmVersion=VERSION] [--newROCmBinFormat]
 [--forceAddSymbols] [--noWarnings] [--alternate] [--buggyFPLit] [--oldModParam]
-[--noMacroCase] [--help] [--usage] [--version] [file...]
+[--noMacroCase] [--policy=VERSION] [--help] [--usage] [--version] [file...]
 
 =head1 DESCRIPTION
 
@@ -109,6 +109,10 @@ for compatibility.
 =item B<-m>, B<--noMacroCase>
 
 Do not ignore letter's case in macro names (by default is ignored).
+
+=item B<--policy=VERSION>
+
+Set CLRX policy version.
 
 =item B<-?>, B<--help>
 

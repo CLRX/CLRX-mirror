@@ -1895,6 +1895,9 @@ bool AsmAmdCL2Handler::prepareBinary()
                         neededExtraSGPRsNum : 2;
             if (config.usedSGPRsNum!=BINGEN_DEFAULT)
             {
+                if (assembler.policyVersion >= ASM_POLICY_UNIFIED_SGPR_COUNT)
+                    config.usedSGPRsNum = std::max(extraSGPRsNum, config.usedSGPRsNum) -
+                            extraSGPRsNum;
                 // check only if sgprsnum set explicitly
                 if (maxTotalSgprsNum-extraSGPRsNum < config.usedSGPRsNum)
                 {

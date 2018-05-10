@@ -46,6 +46,12 @@
 namespace CLRX
 {
 
+enum: cxuint {
+    ASM_POLICY_DEFAULT = CLRX_MAJOR_VERSION*10000U + CLRX_MINOR_VERSION*100U +
+                CLRX_MICRO_VERSION,        // version 107
+    ASM_POLICY_UNIFIED_SGPR_COUNT = 200
+};
+
 enum: Flags
 {
     ASM_WARNINGS = 1,   ///< enable all warnings for assembler
@@ -470,6 +476,7 @@ private:
     bool good;
     bool resolvingRelocs;
     bool doNotRemoveFromSymbolClones;
+    cxuint policyVersion;
     ISAAssembler* isaAssembler;
     std::vector<DefSym> defSyms;
     std::vector<CString> includeDirs;
@@ -775,6 +782,12 @@ public:
     /// set new ROCm binary format
     void setNewROCmBinFormat(bool newFmt)
     { newROCmBinFormat = newFmt; }
+    /// get policy version
+    cxuint getPolicyVersion() const
+    { return policyVersion; }
+    /// set policy version
+    void setPolicyVersion(cxuint pv)
+    { policyVersion = pv; }
     /// get flags
     Flags getFlags() const
     { return flags; }

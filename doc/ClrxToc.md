@@ -25,6 +25,7 @@ Copyright (c)  2015-2018  Mateusz Szpakowski.
 * Assembler
     * [Invoking assembler](ClrxAsmInvoke)
     * [Assembler syntax](ClrxAsmSyntax)
+    * [Assembler policy](ClrxAsmPolicy)
     * [Assembler pseudo-operations](ClrxAsmPseudoOps)
     * [AMD Catalyst OpenCL 1.2 handling](ClrxAsmAmd)
     * [AMD Catalyst OpenCL 2.0 handling](ClrxAsmAmdCl2)

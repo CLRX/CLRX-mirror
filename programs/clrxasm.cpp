@@ -61,6 +61,8 @@ static const CLIOption programOptions[] =
         "use old modifier parametrization", nullptr },
     { "noMacroCase", 'm', CLIArgType::NONE, false, false,
         "do not ignore letter's case in macro names", nullptr },
+    { "policy", 0, CLIArgType::UINT, false, false,
+        "set policy version", "VERSION" },
     { "noWarnings", 'w', CLIArgType::NONE, false, false, "disable warnings", nullptr },
     CLRX_CLI_AUTOHELP
     { nullptr, 0 }
@@ -93,6 +95,8 @@ try
     uint32_t llvmVersion = 0;
     Flags flags = 0;
     bool newROCmBinFormat = false;
+    bool havePolicy = false;
+    cxuint policyVersion = 0;
     if (cli.hasShortOption('b'))
     {
         const char* binFmtName = cli.getShortOptArg<const char*>('b');
@@ -135,6 +139,11 @@ try
         flags |= ASM_OLDMODPARAM;
     if (cli.hasLongOption("newROCmBinFormat"))
         newROCmBinFormat = true;
+    if (cli.hasLongOption("policy"))
+    {
+        policyVersion = cli.getLongOptArg<cxuint>("policy");
+        havePolicy = true;
+    }
     
     cxuint argsNum = cli.getArgsNum();
     Array<CString> filenames(argsNum);
@@ -150,6 +159,8 @@ try
     assembler->setDriverVersion(driverVersion);
     assembler->setLLVMVersion(llvmVersion);
     assembler->setNewROCmBinFormat(newROCmBinFormat);
+    if (havePolicy)
+        assembler->setPolicyVersion(policyVersion);
     
     size_t defSymsNum = 0;
     const char* const* defSyms = nullptr;

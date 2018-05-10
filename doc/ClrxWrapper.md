@@ -67,6 +67,9 @@ for compatibility.
 * **-legacy**
     Force use legacy AMD Catalyst OpenCL 1.2 binary format instead AMD OpemCL 2.0.
 
+* **-policy=VERSION**
+    Set CLRX assembler policy version.
+
 ### Environment variables
 
 * CLRX_FORCE_ORIGINAL_AMDOCL=1|0 - enable forcing of the original AMDOCL

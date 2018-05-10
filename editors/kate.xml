@@ -1993,6 +1993,7 @@
             <item>.persistentbuffers</item>
             <item>.pgmrsrc1</item>
             <item>.pgmrsrc2</item>
+            <item>.policy</item>
             <item>.print</item>
             <item>.printfid</item>
             <item>.priority</item>

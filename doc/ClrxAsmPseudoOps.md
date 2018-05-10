@@ -438,6 +438,13 @@ Id  | Description
  26 | gfx904 (Radeon RX VEGA)
  27 | gfx905 (Radeon RX VEGA)
 
+### .get_policy
+
+Syntax: .get_version SYMBOL
+
+Store current CLRX policy version to symbol. Version stored as integer in form:
+`major_version*10000 + minor_version*100 + micro_version`.
+
 ### .get_version
 
 Syntax: .get_version SYMBOL
@@ -792,6 +799,15 @@ Syntax: .p2align POWOF2ALIGN[, [VALUE] [, LIMIT]]
 
 Refer to `.align`. First argument is power of two of the alignment instead of
 same alignment.
+
+### .policy
+
+Syntax: .policy VERSION
+
+Set current CLRX assembler's policy version. Version stored as integer in form:
+`major_version*10000 + minor_version*100 + micro_version`. This number controls
+behaviour of the same assembler for some things like  SGPRs counting. Refer to
+[Asssembler policy](ClrxAsmPolicy).
 
 ### .print
 

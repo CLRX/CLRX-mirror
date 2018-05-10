@@ -96,6 +96,7 @@ doc/ClrxAsmAmd.md -text
 doc/ClrxAsmAmdCl2.md -text
 doc/ClrxAsmGallium.md -text
 doc/ClrxAsmInvoke.md -text
+doc/ClrxAsmPolicy.md -text
 doc/ClrxAsmPseudoOps.md -text
 doc/ClrxAsmRocm.md -text
 doc/ClrxAsmSyntax.md -text

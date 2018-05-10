@@ -2386,5 +2386,24 @@ aa2=6
         "test.s:3:16: Error: Expression have unresolved symbol 'xxx'\n",
         ""
     },
+    /* 83 - policy version */
+    {   R"ffDXD(.amdcl2
+            .get_policy POLICY0
+            .policy 12
+            .get_policy POLICY1
+            .policy 1112222233333
+)ffDXD",
+        BinaryFormat::AMDCL2, GPUDeviceType::CAPE_VERDE, false, { },
+        {
+            { ".rodata", ASMKERN_GLOBAL, AsmSectionType::DATA, { } }
+        },
+        {
+            { ".", 0U, 0, 0U, true, false, false, 0, 0 },
+            { "POLICY0", CLRX_MAJOR_VERSION*10000U + CLRX_MINOR_VERSION*100U +
+                    CLRX_MICRO_VERSION, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "POLICY1", 12, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, true,
+        "test.s:5:21: Warning: Value 0x102f59c72f5 truncated to 0xf59c72f5\n", ""
+    },
     { nullptr }
 };

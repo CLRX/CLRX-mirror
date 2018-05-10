@@ -111,7 +111,7 @@ static const char* pseudoOpNamesTbl[] =
     "err", "error", "exitm", "extern",
     "fail", "file", "fill", "fillq",
     "float", "for", "format", "gallium", "get_64bit", "get_arch",
-    "get_format", "get_gpu", "get_version", "global",
+    "get_format", "get_gpu", "get_policy", "get_version", "global",
     "globl", "gpu", "half", "hword", "if", "if32", "if64",
     "ifarch", "ifb", "ifc", "ifdef", "ifeq",
     "ifeqs", "iffmt", "ifge", "ifgpu", "ifgt", "ifle",
@@ -122,7 +122,7 @@ static const char* pseudoOpNamesTbl[] =
     "macro", "macrocase", "main", "noaltmacro",
     "nobuggyfplit", "nomacrocase", "nooldmodparam", "octa",
     "offset", "oldmodparam", "org",
-    "p2align", "print", "purgem", "quad",
+    "p2align", "policy", "print", "purgem", "quad",
     "rawcode", "regvar", "rept", "rocm", "rodata",
     "sbttl", "scope", "section", "set",
     "short", "single", "size", "skip",
@@ -154,7 +154,7 @@ enum
     ASMOP_ERR, ASMOP_ERROR, ASMOP_EXITM, ASMOP_EXTERN,
     ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FILLQ,
     ASMOP_FLOAT, ASMOP_FOR, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GET_64BIT, ASMOP_GET_ARCH,
-    ASMOP_GET_FORMAT, ASMOP_GET_GPU, ASMOP_GET_VERSION, ASMOP_GLOBAL,
+    ASMOP_GET_FORMAT, ASMOP_GET_GPU, ASMOP_GET_POLICY, ASMOP_GET_VERSION, ASMOP_GLOBAL,
     ASMOP_GLOBL, ASMOP_GPU, ASMOP_HALF, ASMOP_HWORD, ASMOP_IF, ASMOP_IF32, ASMOP_IF64,
     ASMOP_IFARCH, ASMOP_IFB, ASMOP_IFC, ASMOP_IFDEF, ASMOP_IFEQ,
     ASMOP_IFEQS, ASMOP_IFFMT, ASMOP_IFGE, ASMOP_IFGPU, ASMOP_IFGT, ASMOP_IFLE,
@@ -165,7 +165,7 @@ enum
     ASMOP_MACRO, ASMOP_MACROCASE, ASMOP_MAIN, ASMOP_NOALTMACRO,
     ASMOP_NOBUGGYFPLIT, ASMOP_NOMACROCASE, ASMOP_NOOLDMODPARAM, ASMOP_OCTA,
     ASMOP_OFFSET, ASMOP_OLDMODPARAM, ASMOP_ORG,
-    ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
+    ASMOP_P2ALIGN, ASMOP_POLICY, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
     ASMOP_RAWCODE, ASMOP_REGVAR, ASMOP_REPT, ASMOP_ROCM, ASMOP_RODATA,
     ASMOP_SBTTL, ASMOP_SCOPE, ASMOP_SECTION, ASMOP_SET,
     ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
@@ -2295,13 +2295,16 @@ void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
             predefValue = CLRX_MAJOR_VERSION*10000U + CLRX_MINOR_VERSION*100U +
                     CLRX_MICRO_VERSION;
             break;
+        case AsmPredefined::POLICY:
+            predefValue = asmr.policyVersion;
+            break;
         default:
             break;
     }
     AsmParseUtils::setSymbolValue(asmr, linePtr, predefValue, ASMSECT_ABS);
 }
 
-void AsmPseudoOps::doEnum(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr)
+void AsmPseudoOps::doEnum(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -2341,6 +2344,23 @@ void AsmPseudoOps::doEnum(Assembler& asmr, const char* pseudoOpPlace, const char
         
     } while(skipCommaForMultipleArgs(asmr, linePtr));
     checkGarbagesAtEnd(asmr, linePtr);
+}
+
+void AsmPseudoOps::setPolicyVersion(Assembler& asmr, const char* linePtr)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value = 0;
+    skipSpacesToEnd(linePtr, end);
+    const char* valuePlace = linePtr;
+    if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    asmr.printWarningForRange(sizeof(cxuint)*8, value,
+                    asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+    asmr.setPolicyVersion(value);
 }
 
 void AsmPseudoOps::ignoreString(Assembler& asmr, const char* linePtr)
@@ -2570,7 +2590,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::closeScope(*this, stmtPlace, linePtr);
             break;
         case ASMOP_ENUM:
-            AsmPseudoOps::doEnum(*this, stmtPlace, linePtr);
+            AsmPseudoOps::doEnum(*this, linePtr);
             break;
         case ASMOP_EQU:
         case ASMOP_SET:
@@ -2626,6 +2646,9 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_GET_GPU:
             AsmPseudoOps::getPredefinedValue(*this, linePtr, AsmPredefined::GPU);
+            break;
+        case ASMOP_GET_POLICY:
+            AsmPseudoOps::getPredefinedValue(*this, linePtr, AsmPredefined::POLICY);
             break;
         case ASMOP_GET_VERSION:
             AsmPseudoOps::getPredefinedValue(*this, linePtr, AsmPredefined::VERSION);
@@ -2790,6 +2813,9 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_P2ALIGN:
             AsmPseudoOps::doAlign(*this, stmtPlace, linePtr, true);
+            break;
+        case ASMOP_POLICY:
+            AsmPseudoOps::setPolicyVersion(*this, linePtr);
             break;
         case ASMOP_PRINT:
             AsmPseudoOps::doPrint(*this, linePtr);

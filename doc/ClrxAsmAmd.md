@@ -31,7 +31,8 @@ This setup can be replaced by pseudo-ops '.sgprsnum' and '.vgprsnum'.
 ## Scalar register allocation
 
 To used scalar registers, assembler add 2 additional registers for handling VCC.
-The `.sgprsnum` set number of all SGPRs except VCC.
+The `.sgprsnum` set number of all SGPRs except VCC. Since CLRX policy 0.2 (200)
+a `.sgprsnum` set number of all SGPRs including VCC.
 
 ## List of the specific pseudo-operations
 

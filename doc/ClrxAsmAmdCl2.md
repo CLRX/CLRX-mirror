@@ -66,6 +66,9 @@ While using HSA kernel configuration (`.hsaconfig`) the `.sgprsnum` set number o
 including VCC, FLAT_SCRATCH and XNACK_MASK.
 While using kernel configuration (`.config`) the `.sgprsnum` set number of all SGPRs
 except VCC and FLAT_SCRATCH and XNACK_MASK (rule from AMD binary format support).
+Since CLRX policy 0.2 (200) a `.sgprsnum` set number of all SGPRs including
+VCC, FLAT_SCRATCH and XNACK_MASK (extra registers) for both old style configuration and
+HSA configuration.
 
 ## List of the specific pseudo-operations
 

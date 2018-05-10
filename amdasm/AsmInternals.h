@@ -141,7 +141,8 @@ enum class AsmPredefined: cxbyte
     BIT64,
     FORMAT,
     GPU,
-    VERSION
+    VERSION,
+    POLICY
 };
 
 struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
@@ -316,7 +317,9 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
                         AsmPredefined predefined);
     
     // enumerate
-    static void doEnum(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
+    static void doEnum(Assembler& asmr, const char* linePtr);
+    // set policy version
+    static void setPolicyVersion(Assembler& asmr, const char* linePtr);
     
     static void ignoreString(Assembler& asmr, const char* linePtr);
     

@@ -701,7 +701,8 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                 const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
                             asmr.deviceType);
                 cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR,
-                                       REGCOUNT_NO_VCC);
+                          (asmr.policyVersion<ASM_POLICY_UNIFIED_SGPR_COUNT ?
+                          REGCOUNT_NO_VCC : 0));
                 if (value > maxSGPRsNum)
                 {
                     char buf[64];
@@ -783,7 +784,10 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
     switch(target)
     {
         case AMDCVAL_SGPRSNUM:
-            config.usedSGPRsNum = value;
+            if (asmr.policyVersion < ASM_POLICY_UNIFIED_SGPR_COUNT)
+                config.usedSGPRsNum = value;
+            else
+                config.usedSGPRsNum = std::max(value, uint64_t(2))-2;
             break;
         case AMDCVAL_VGPRSNUM:
             config.usedVGPRsNum = value;

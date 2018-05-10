@@ -1582,6 +1582,8 @@ try
     bool useLegacy = false;
     // drivers since 200406 version uses AmdCL2 binary format by default for >=GCN1.1
     bool useCL2StdForGCN11 = detectAmdDriverVersion() >= 200406;
+    bool havePolicy = false;
+    cxuint policyVersion = 0;
     
     try
     {
@@ -1646,6 +1648,14 @@ try
                     program->asmState.store(CLRXAsmState::FAILED);
                     return CL_INVALID_BUILD_OPTIONS;
                 }
+            }
+            else if (word == "-policy=")
+            {
+                const CString policyVersionStr = word.substr(8, word.size()-8);
+                const char* str = policyVersionStr.c_str();
+                const char* outStr;
+                policyVersion = cstrtoui(str, nullptr, outStr);
+                havePolicy = true;
             }
             else if (word == "-x" )
                 nextIsLang = true;
@@ -1773,6 +1783,9 @@ try
             assembler.addIncludeDir(incPath);
         for (const auto& defSym: defSyms)
             assembler.addInitialDefSym(defSym.first, defSym.second);
+        if (havePolicy)
+            assembler.setPolicyVersion(policyVersion);
+        
         /// call main assembler routine
         bool good = false;
         try
