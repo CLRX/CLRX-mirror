@@ -1424,4 +1424,3 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
         livenesses2.clear();
     }
 }
-
