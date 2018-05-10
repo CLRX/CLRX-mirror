@@ -48,6 +48,7 @@ amdasm/AsmGalliumFormat.cpp -text
 amdasm/AsmGalliumInternals.h -text
 amdasm/AsmInternals.h -text
 amdasm/AsmPseudoOps.cpp -text
+amdasm/AsmPseudoOpsCode1.cpp -text
 amdasm/AsmROCmFormat.cpp -text
 amdasm/AsmROCmInternals.h -text
 amdasm/AsmRegAlloc.cpp -text
