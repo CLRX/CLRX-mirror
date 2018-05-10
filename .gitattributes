@@ -52,6 +52,7 @@ amdasm/AsmROCmFormat.cpp -text
 amdasm/AsmROCmInternals.h -text
 amdasm/AsmRegAlloc.cpp -text
 amdasm/AsmRegAlloc.h -text
+amdasm/AsmRegAllocLive.cpp -text
 amdasm/AsmRegAllocSSAData.cpp -text
 amdasm/AsmSource.cpp -text
 amdasm/Assembler.cpp -text
