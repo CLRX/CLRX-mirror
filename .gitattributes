@@ -63,10 +63,14 @@ amdasm/DisasmGallium.cpp -text
 amdasm/DisasmInternals.h -text
 amdasm/DisasmROCm.cpp -text
 amdasm/Disassembler.cpp -text
+amdasm/GCNAsmEncode1.cpp -text
+amdasm/GCNAsmEncode2.cpp -text
 amdasm/GCNAsmHelpers.cpp -text
 amdasm/GCNAsmInternals.h -text
 amdasm/GCNAssembler.cpp -text
 amdasm/GCNDisasm.cpp -text
+amdasm/GCNDisasmDecode.cpp -text
+amdasm/GCNDisasmInternals.h -text
 amdasm/GCNInstructions.cpp -text
 amdasm/GCNInternals.h -text
 amdbin/AmdBinGen.cpp -text

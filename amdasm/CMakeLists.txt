@@ -37,9 +37,12 @@ SET(LIBAMDASMSRC
         DisasmAmdCL2.cpp
         DisasmGallium.cpp
         DisasmROCm.cpp
+        GCNAsmEncode1.cpp
+        GCNAsmEncode2.cpp
         GCNAsmHelpers.cpp
         GCNAssembler.cpp
         GCNDisasm.cpp
+        GCNDisasmDecode.cpp
         GCNInstructions.cpp)
 
 SET(LINK_LIBRARIES CLRXAmdBin CLRXUtils)
