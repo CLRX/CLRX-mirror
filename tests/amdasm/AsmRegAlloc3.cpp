@@ -1474,6 +1474,68 @@ routine2:
             { 4, { { { 0, 1, 10 }, { }, { }, { } } } }
         },
         true, ""
+    },
+    {   // 24 - simple call, more complex routine (sa[3] and sa[6] not used after call)
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4             # 0
+        s_mov_b32 sa[3], s5             # 4
+        s_mov_b32 sa[5], s5             # 8
+        
+        s_getpc_b64 s[2:3]              # 12
+        s_add_u32 s2, s2, routine-.     # 16
+        s_add_u32 s3, s3, routine-.+4   # 24
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]     # 32
+        
+        s_lshl_b32 sa[2], sa[2], sa[5]  # 36
+        s_nop 7                         # 40
+        s_endpgm                        # 44
+        
+routine:
+        s_xor_b32 sa[2], sa[2], sa[4]   # 48
+        s_xor_b32 sa[6], sa[6], sa[4]   # 52
+        s_cbranch_scc1 bb1              # 56
+        
+        s_min_u32 sa[2], sa[2], sa[4]   # 60
+        s_xor_b32 sa[3], sa[3], sa[4]   # 64
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 68
+        
+bb1:    s_and_b32 sa[2], sa[2], sa[4]   # 72
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 76
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 33, 36 }, { 48, 69 }, { 72, 77 } }, // 0: S0
+                { { 33, 36 }, { 48, 69 }, { 72, 77 } }, // 1: S1
+                { { 13, 33 } }, // 2: S2
+                { { 13, 33 } }, // 3: S3
+                { { 0, 1 } }, // 4: S4
+                { { 0, 9 } }, // 5: S5
+                { { 1, 36 }, { 48, 49 } }, // 6: sa[2]'0
+                { { 49, 61 }, { 72, 73 } }, // 7: sa[2]'1
+                { { 36, 37 }, { 61, 72 }, { 73, 80 } }, // 8: sa[2]'2
+                { { 37, 38 } }, // 9: sa[2]'3
+                { { 5, 36 }, { 48, 65 } }, // 10: sa[3]'0
+                { { 65, 66 } }, // 11: sa[3]'1
+                { { 0, 36 }, { 48, 65 }, { 72, 73 } }, // 12: sa[4]'0
+                { { 9, 37 } },  // 13: sa[5]'0
+                { { 0, 36 }, { 48, 53 } }, // 14: sa[6]'0
+                { { 53, 54 } }  // 15: sa[6]'1
+            },
+            { },
+            { },
+            { }
+        },
+        { }, // linearDepMaps
+        {   // vidxRoutineMap
+            { 2, { { { 0, 1, 6, 7, 8, 10, 11, 12, 14, 15 }, { }, { }, { } } } }
+        },
+        {   // vidxCallMap
+            { 0, { { { 13 }, { }, { }, { } } } }
+        },
+        true, ""
     }
 };
 
