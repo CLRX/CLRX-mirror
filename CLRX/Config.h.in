@@ -35,6 +35,9 @@
 #define CLRX_MICRO_VERSION ${CLRX_MICRO_VERSION}
 /// CLRadeonExtender revision string
 #define CLRX_REVISION "${CLRX_REVISION}"
+/// CLRadeonExtender version number
+#define CLRX_VERSION_NUMBER (CLRX_MAJOR_VERSION*10000U + CLRX_MINOR_VERSION*100U + \
+                        CLRX_MICRO_VERSION)
 
 #cmakedefine HAVE_GNU11
 

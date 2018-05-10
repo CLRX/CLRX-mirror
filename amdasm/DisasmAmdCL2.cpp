@@ -667,8 +667,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     return config;
 }
 
-static void dumpAmdCL2KernelConfig(std::ostream& output,
-                    const AmdCL2KernelConfig& config, bool hsaConfig)
+static void dumpAmdCL2KernelConfig(std::ostream& output, const AmdCL2KernelConfig& config,
+                GPUArchitecture arch, bool hsaConfig)
 {
     size_t bufSize;
     char buf[100];
@@ -723,7 +723,16 @@ static void dumpAmdCL2KernelConfig(std::ostream& output,
     if (!hsaConfig)
     {
         // do not print old-config style params if HSA config enabled
+#if CLRX_VERSION_NUMBER >= CLRX_POLICY_UNIFIED_SGPR_COUNT
+        const cxuint neededExtraSGPRsNum = arch>=GPUArchitecture::GCN1_2 ? 6 : 4;
+        const cxuint extraSGPRsNum = (config.useEnqueue || config.useGeneric) ?
+                    neededExtraSGPRsNum : 2;
+        
+        bufSize = snprintf(buf, 100, "        .sgprsnum %u\n",
+                    config.usedSGPRsNum + extraSGPRsNum);
+#else
         bufSize = snprintf(buf, 100, "        .sgprsnum %u\n", config.usedSGPRsNum);
+#endif
         output.write(buf, bufSize);
         bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", config.usedVGPRsNum);
         output.write(buf, bufSize);
@@ -970,7 +979,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
                         (doHSAConfig ? nullptr : kinput.setup), samplerOffsets,
                         kinput.textRelocs, isGCN14);
             
-            dumpAmdCL2KernelConfig(output, config, doHSAConfig);
+            dumpAmdCL2KernelConfig(output, config, arch, doHSAConfig);
             if (doHSAConfig)
             {
                 // print as HSA config

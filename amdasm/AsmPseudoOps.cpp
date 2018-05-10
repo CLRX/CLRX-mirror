@@ -2292,8 +2292,7 @@ void AsmPseudoOps::getPredefinedValue(Assembler& asmr, const char* linePtr,
             predefValue = cxuint(asmr.format);
             break;
         case AsmPredefined::VERSION:
-            predefValue = CLRX_MAJOR_VERSION*10000U + CLRX_MINOR_VERSION*100U +
-                    CLRX_MICRO_VERSION;
+            predefValue = CLRX_VERSION_NUMBER;
             break;
         case AsmPredefined::POLICY:
             predefValue = asmr.policyVersion;

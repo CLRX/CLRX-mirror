@@ -39,6 +39,8 @@ enum class BinaryFormat
     ROCM         ///< ROCm (RadeonOpenCompute) format
 };
 
+#define CLRX_POLICY_UNIFIED_SGPR_COUNT (200U)
+
 };
 
 #endif

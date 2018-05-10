@@ -1407,7 +1407,11 @@ static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& con
         output.write(buf, bufSize);
     }
     
+#if CLRX_VERSION_NUMBER >= CLRX_POLICY_UNIFIED_SGPR_COUNT
+    bufSize = snprintf(buf, 100, "        .sgprsnum %u\n", config.usedSGPRsNum+2);
+#else
     bufSize = snprintf(buf, 100, "        .sgprsnum %u\n", config.usedSGPRsNum);
+#endif
     output.write(buf, bufSize);
     bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", config.usedVGPRsNum);
     output.write(buf, bufSize);

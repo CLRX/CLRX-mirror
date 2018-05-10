@@ -2004,8 +2004,7 @@ label2: .int 3,6,7
         },
         {
             { ".", 0U, 0, 0U, true, false, false, 0, 0 },
-            { "CLRX_VERSION", CLRX_MAJOR_VERSION*10000U + CLRX_MINOR_VERSION*100U +
-                    CLRX_MICRO_VERSION, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "CLRX_VERSION", CLRX_VERSION_NUMBER, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
         }, true, "", ""
     },
     /* 70 - '.for' repetition */
@@ -2399,8 +2398,7 @@ aa2=6
         },
         {
             { ".", 0U, 0, 0U, true, false, false, 0, 0 },
-            { "POLICY0", CLRX_MAJOR_VERSION*10000U + CLRX_MINOR_VERSION*100U +
-                    CLRX_MICRO_VERSION, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "POLICY0", CLRX_VERSION_NUMBER, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "POLICY1", 12, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
         }, true,
         "test.s:5:21: Warning: Value 0x102f59c72f5 truncated to 0xf59c72f5\n", ""
