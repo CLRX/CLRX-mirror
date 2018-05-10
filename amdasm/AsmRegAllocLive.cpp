@@ -276,13 +276,13 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         }
     }
     
-    /*if (flitEnd != flowStack.begin())
+    if (flitEnd != flowStack.begin())
     {
         const CodeBlock& cbLast = codeBlocks[(flitEnd-1)->blockIndex];
         if (lv.contain(cbLast.end-1))
             // if already filled up
             return;
-    }*/
+    }
     
     auto flit = flowStack.begin() + flowStkStart.stackPos + (flowStkStart.inSubroutines);
     const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
@@ -989,7 +989,14 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
     {
         auto res = rdata.lastAccessMap.insert({ svreg, { { routineBlock, false } } });
         if (!res.second)
-            res.first->second.insertValue({ routineBlock, false });
+        {
+            VectorSet<LastAccessBlockPos>& sset = res.first->second;
+            // filter before inserting (remove everything that do not point to calls)
+            sset.resize(std::remove_if(sset.begin(), sset.end(),
+                [](const LastAccessBlockPos& b)
+                { return !b.inSubroutines; }) - sset.begin());
+            sset.insertValue({ routineBlock, false });
+        }
     }
 }
 
