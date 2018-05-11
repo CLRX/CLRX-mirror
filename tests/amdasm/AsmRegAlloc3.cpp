@@ -1842,7 +1842,8 @@ r2_1:   s_and_b32 sa[2], sa[2], sa[1]   # 72
         },
         true, ""
     },
-    {   // 29 - two routines with var sharing (output-input) 2
+    {   // 30 - two routines with var sharing (output-input) 3
+        // (shared var in called routine3)
         R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
         s_mov_b32 sa[2], s4             # 0
         
@@ -1871,29 +1872,39 @@ routine:
         
 routine2:
         s_cbranch_vccz r2_1             # 48
-r2_0:   s_and_b32 sa[2], sa[2], sa[1]   # 52
+r2_0:   .cf_call routine3
+        s_swappc_b64 s[6:7], s[0:1]     # 52
         .cf_ret
         s_setpc_b64 s[0:1]              # 56
-r2_1:   s_and_b32 sa[2], sa[2], sa[1]   # 60
+r2_1:   .cf_call routine3
+        s_swappc_b64 s[6:7], s[0:1]     # 60
         s_xor_b32 sa[3], sa[3], sa[1]   # 64
         .cf_ret
         s_setpc_b64 s[0:1]              # 68
+routine3:
+        s_and_b32 sa[2], sa[2], sa[1]   # 72
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 76
 )ffDXD",
         {   // livenesses
             {   // for SGPRs
-                { { 5, 8 }, { 29, 32 }, { 40, 45 }, { 48, 57 }, { 60, 69 } }, // 0: S0
-                { { 5, 8 }, { 29, 32 }, { 40, 45 }, { 48, 57 }, { 60, 69 } }, // 1: S1
+                { { 5, 8 }, { 29, 32 }, { 40, 45 },
+                    { 48, 57 }, { 60, 69 }, { 72, 80 } }, // 0: S0
+                { { 5, 8 }, { 29, 32 }, { 40, 45 },
+                    { 48, 57 }, { 60, 69 }, { 72, 80 } }, // 1: S1
                 { { 0, 29 } }, // 2: S2
                 { { 0, 29 } }, // 3: S3
                 { { 0, 1 } }, // 4: S4
-                { { 0, 33 } }, // 5: sa[0]'0
-                { { 0, 32 }, { 40, 53 }, { 60, 65 } }, // 6: sa[1]'0
-                { { 1, 8 }, { 40, 41 } }, // 7: sa[2]'0
-                { { 8, 32 }, { 41, 53 }, { 60, 61 } }, // 8: sa[2]'1
-                { { 32, 33 }, { 53, 60 }, { 61, 72 } }, // 9: sa[2]'2
-                { { 33, 34 } }, // 10: sa[2]'3
-                { { 9, 32 }, { 48, 52 }, { 60, 65 } }, // 11: sa[3]'0
-                { { 65, 66 } }  // 12: sa[3]'1
+                { { 53, 54 }, { 61, 62 } }, // 5: S6
+                { { 53, 54 }, { 61, 62 } }, // 6: S7
+                { { 0, 33 } }, // 7: sa[0]'0
+                { { 0, 32 }, { 40, 56 }, { 60, 65 }, { 72, 80 } }, // 8: sa[1]'0
+                { { 1, 8 }, { 40, 41 } }, // 9: sa[2]'0
+                { { 8, 32 }, { 41, 56 }, { 60, 64 }, { 72, 73 } }, // 10: sa[2]'1
+                { { 32, 33 }, { 56, 60 }, { 64, 72 }, { 73, 80 } }, // 11: sa[2]'2
+                { { 33, 34 } }, // 12: sa[2]'3
+                { { 9, 32 }, { 48, 52 }, { 60, 65 } }, // 13: sa[3]'0
+                { { 65, 66 } }  // 14: sa[3]'1
             },
             { },
             { },
@@ -1901,12 +1912,14 @@ r2_1:   s_and_b32 sa[2], sa[2], sa[1]   # 60
         },
         { }, // linearDepMaps
         {   // vidxRoutineMap
-            { 7, { { { 0, 1, 6, 7, 8 }, { }, { }, { } } } },
-            { 8, { { { 0, 1, 6, 8, 9, 11, 12 }, { }, { }, { } } } }
+            { 7, { { { 0, 1, 8, 9, 10 }, { }, { }, { } } } },
+            { 8, { { { 0, 1, 8, 10, 11, 13, 14 }, { }, { }, { } } } },
+            { 13, { { { 0, 1, 8, 10, 11 }, { }, { }, { } } } }
         },
         {   // vidxCallMap
-            { 0, { { { 2, 3, 5 }, { }, { }, { } } } },
-            { 5, { { { 5 }, { }, { }, { } } } }
+            { 0, { { { 2, 3, 7 }, { }, { }, { } } } },
+            { 5, { { { 7 }, { }, { }, { } } } },
+            { 11, { { { 13 }, { }, { }, { } } } }
         },
         true, ""
     }
@@ -1930,7 +1943,7 @@ static void checkVIdxSetEntries(const std::string& testCaseName, const char* vva
         const std::vector<size_t>* revLvIndexCvtTables)
 {
     assertValue("testAsmLivenesses", testCaseName + vvarSetName + ".size",
-            vidxRoutineMap.size(), expVIdxRoutineMap.size());
+            expVIdxRoutineMap.size(), vidxRoutineMap.size());
     
     for (size_t j = 0; j < vidxRoutineMap.size(); j++)
     {
