@@ -1842,6 +1842,74 @@ r2_1:   s_and_b32 sa[2], sa[2], sa[1]   # 72
         },
         true, ""
     },
+        {   // 29 - two routines with var sharing (output-input) 2
+        R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
+        s_mov_b32 sa[2], s4             # 0
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]     # 4
+        
+        s_sub_u32 sa[3], sa[2], sa[1]   # 8
+        .cf_jump a0, a1, a2
+        s_setpc_b64 s[2:3]              # 12
+        
+a0:     s_branch mp                     # 16
+        
+a1:     s_branch mp                     # 20
+        
+a2:     s_branch mp                     # 24
+        
+mp:     .cf_call routine2
+        s_swappc_b64 s[0:1], s[2:3]     # 28
+        s_xor_b32 sa[2], sa[2], sa[0]   # 32
+        s_endpgm                        # 36
+        
+routine:
+        s_and_b32 sa[2], sa[2], sa[1]   # 40
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 44
+        
+routine2:
+        s_cbranch_vccz r2_1             # 48
+r2_0:   s_and_b32 sa[2], sa[2], sa[1]   # 52
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 56
+r2_1:   s_and_b32 sa[2], sa[2], sa[1]   # 60
+        s_xor_b32 sa[3], sa[3], sa[1]   # 64
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 68
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 5, 8 }, { 29, 32 }, { 40, 45 }, { 48, 57 }, { 60, 69 } }, // 0: S0
+                { { 5, 8 }, { 29, 32 }, { 40, 45 }, { 48, 57 }, { 60, 69 } }, // 1: S1
+                { { 0, 29 } }, // 2: S2
+                { { 0, 29 } }, // 3: S3
+                { { 0, 1 } }, // 4: S4
+                { { 0, 33 } }, // 5: sa[0]'0
+                { { 0, 32 }, { 40, 53 }, { 60, 65 } }, // 6: sa[1]'0
+                { { 1, 8 }, { 40, 41 } }, // 7: sa[2]'0
+                { { 8, 32 }, { 41, 53 }, { 60, 61 } }, // 8: sa[2]'1
+                { { 32, 33 }, { 53, 60 }, { 61, 72 } }, // 9: sa[2]'2
+                { { 33, 34 } }, // 10: sa[2]'3
+                { { 9, 32 }, { 48, 52 }, { 60, 65 } }, // 11: sa[3]'0
+                { { 65, 66 } }  // 12: sa[3]'1
+            },
+            { },
+            { },
+            { }
+        },
+        { }, // linearDepMaps
+        {   // vidxRoutineMap
+            { 7, { { { 0, 1, 6, 7, 8 }, { }, { }, { } } } },
+            { 8, { { { 0, 1, 6, 8, 9, 11, 12 }, { }, { }, { } } } }
+        },
+        {   // vidxCallMap
+            { 0, { { { 2, 3, 5 }, { }, { }, { } } } },
+            { 5, { { { 5 }, { }, { }, { } } } }
+        },
+        true, ""
+    },
     {   // 30 - two routines with var sharing (output-input) 3
         // (shared var in called routine3)
         R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
