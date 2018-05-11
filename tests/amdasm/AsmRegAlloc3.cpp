@@ -63,6 +63,7 @@ struct AsmLivenessesCase
 
 static const AsmLivenessesCase createLivenessesCasesTbl[] =
 {
+#if 0
     {   // 0 - simple case
         R"ffDXD(.regvar sa:s:8, va:v:10
         s_mov_b32 sa[4], sa[2]  # 0
@@ -1758,6 +1759,89 @@ ret2:
             { 2, { { { 0, 1, 5, 6, 7 }, { }, { }, { } } } }
         },
         { }, // vidxCallMap
+        true, ""
+    },
+#endif
+    {   // 28 - two routines with var sharing (output-input)
+        R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
+        s_mov_b32 sa[2], s4             # 0
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]     # 4
+        
+        s_sub_u32 sa[3], sa[2], sa[1]   # 8
+        .cf_jump a0, a1, a2
+        s_setpc_b64 s[2:3]              # 12
+        
+a0:     .cf_call routine2
+        s_swappc_b64 s[0:1], s[2:3]     # 16
+        s_xor_b32 sa[2], sa[2], sa[0]   # 20
+        s_endpgm                        # 24
+
+a1:     .cf_call routine2
+        s_swappc_b64 s[0:1], s[2:3]     # 28
+        s_xor_b32 sa[2], sa[2], sa[0]   # 32
+        s_endpgm                        # 36
+        
+a2:     .cf_call routine2
+        s_swappc_b64 s[0:1], s[2:3]     # 40
+        s_xor_b32 sa[2], sa[2], sa[0]   # 44
+        s_endpgm                        # 48
+        
+routine:
+        s_and_b32 sa[2], sa[2], sa[1]   # 52
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 56
+        
+routine2:
+        s_cbranch_vccz r2_1             # 60
+r2_0:   s_and_b32 sa[2], sa[2], sa[1]   # 64
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 68
+r2_1:   s_and_b32 sa[2], sa[2], sa[1]   # 72
+        s_xor_b32 sa[3], sa[3], sa[1]   # 76
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 80
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 5, 8 }, { 17, 20 }, { 29, 32 }, { 41, 44 },
+                    { 52, 57 }, { 60, 69 }, { 72, 81 } }, // 0: S0
+                { { 5, 8 }, { 17, 20 }, { 29, 32 }, { 41, 44 },
+                    { 52, 57 }, { 60, 69 }, { 72, 81 } }, // 1: S1
+                { { 0, 17 }, { 28, 29 }, { 40, 41 } }, // 2: S2
+                { { 0, 17 }, { 28, 29 }, { 40, 41 } }, // 3: S3
+                { { 0, 1 } }, // 4: S4
+                { { 0, 21 }, { 28, 33 }, { 40, 45 } }, // 5: sa[0]'0
+                { { 0, 20 }, { 28, 32 }, { 40, 44 },
+                    { 52, 65 }, { 72, 77 } }, // 6: sa[1]'0
+                { { 1, 8 }, { 52, 53 } }, // 7: sa[2]'0
+                { { 8, 20 }, { 28, 32 }, { 40, 44 },
+                    { 53, 65 }, { 72, 73 } }, // 8: sa[2]'1
+                { { 20, 21 }, { 32, 33 }, { 44, 45 },
+                    { 65, 72 }, { 73, 84 } }, // 9: sa[2]'2
+                { { 21, 22 } }, // 10: sa[2]'3
+                { { 33, 34 } }, // 11: sa[2]'4
+                { { 45, 46 } }, // 12: sa[2]'5
+                { { 9, 20 }, { 28, 32 }, { 40, 44 },
+                    { 60, 64 }, { 72, 77 } }, // 13: sa[3]'0
+                { { 77, 78 } }  // 14: sa[3]'1
+            },
+            { },
+            { },
+            { }
+        },
+        { }, // linearDepMaps
+        {   // vidxRoutineMap
+            { 8, { { { 0, 1, 6, 7, 8 }, { }, { }, { } } } },
+            { 9, { { { 0, 1, 6, 8, 9, 13, 14 }, { }, { }, { } } } }
+        },
+        {   // vidxCallMap
+            { 0, { { { 2, 3, 5 }, { }, { }, { } } } },
+            { 2, { { { 5 }, { }, { }, { } } } },
+            { 4, { { { 5 }, { }, { }, { } } } },
+            { 6, { { { 5 }, { }, { }, { } } } }
+        },
         true, ""
     }
 };
