@@ -238,6 +238,7 @@ struct CLRX_INTERNAL RoutineDataLv
     std::unordered_set<size_t> allSSAs[MAX_REGTYPES_NUM];
     // key - svreg, value - list of the last codeblocks where is svreg
     LastAccessMap lastAccessMap;
+    std::unordered_set<size_t> haveReturnBlocks;
 };
 
 // used by createSSAData
@@ -271,6 +272,7 @@ struct CLRX_INTERNAL FlowStackEntry4
     size_t blockIndex;
     size_t nextIndex;
     bool isCall;
+    bool haveReturn;
     RoutineCurAccessMap prevCurSVRegMap;
 };
 

@@ -131,7 +131,8 @@ static void fillUpInsideRoutine(std::unordered_set<size_t>& visited,
             std::unordered_map<size_t, VIdxSetEntry>& vidxCallMap,
             const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap,
             size_t startBlock, const AsmSingleVReg& svreg, Liveness& lv,
-            cxuint lvRType /* lv register type */, size_t vidx)
+            cxuint lvRType /* lv register type */, size_t vidx,
+            const std::unordered_set<size_t>& haveReturnBlocks)
 {
     std::deque<FlowStackEntry3> flowStack;
     flowStack.push_back({ startBlock, 0 });
@@ -147,7 +148,8 @@ static void fillUpInsideRoutine(std::unordered_set<size_t>& visited,
         
         if (entry.nextIndex == 0)
         {
-            if (visited.insert(entry.blockIndex).second)
+            if (visited.insert(entry.blockIndex).second &&
+                haveReturnBlocks.find(entry.blockIndex) != haveReturnBlocks.end())
             {
                 size_t cbStart = cblock.start;
                 if (flowStack.size() == 1)
@@ -206,6 +208,7 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         size_t nextIndex; // next index of routine call
         size_t lastAccessIndex; // last access pos index
         bool inSubroutines;
+        const std::unordered_set<size_t>* haveReturnBlocks;
     };
     
     FlowStackCIter flitEnd = flowStack.end();
@@ -220,7 +223,8 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
     
     std::stack<JoinEntry> rjStack; // routine join stack
     if (flowStkStart.inSubroutines)
-        rjStack.push({ flowStack[flowStkStart.stackPos].blockIndex, 0, 0, true });
+        rjStack.push({ flowStack[flowStkStart.stackPos].blockIndex,
+                            0, 0, true, nullptr });
     
     while (!rjStack.empty())
     {
@@ -241,8 +245,8 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
                     {
                         const auto& lastAccess =
                                 lastAccessIt->second[entry.lastAccessIndex];
-                        rjStack.push({ lastAccess.blockIndex, 0,
-                                    0, lastAccess.inSubroutines });
+                        rjStack.push({ lastAccess.blockIndex, 0, 0,
+                                lastAccess.inSubroutines, &rdata.haveReturnBlocks });
                         entry.lastAccessIndex++;
                         if (entry.lastAccessIndex == lastAccessIt->second.size())
                             doNextIndex = true;
@@ -271,7 +275,7 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
             if (rjStack.size() > 1)
                 fillUpInsideRoutine(visited, codeBlocks, vidxCallMap, vidxRoutineMap,
                         entry.blockIndex + (entry.inSubroutines), svreg,
-                        lv, lvRegType, vidx);
+                        lv, lvRegType, vidx, *entry.haveReturnBlocks);
             rjStack.pop();
         }
     }
@@ -834,6 +838,7 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
     SVRegMap alreadyReadMap;
     std::unordered_set<AsmSingleVReg> vregsNotInAllRets;
     std::unordered_set<AsmSingleVReg> vregsInFirstReturn;
+    std::unordered_set<size_t>& haveReturnBlocks = rdata.haveReturnBlocks;
     
     bool notFirstReturn = false;
     flowStack.push_back({ routineBlock, 0 });
@@ -895,7 +900,15 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
             }
             else
             {
+                const bool prevReturn = haveReturnBlocks.find(entry.blockIndex) !=
+                        haveReturnBlocks.end();
                 flowStack.pop_back();
+                // propagate haveReturn to previous block
+                if (prevReturn)
+                {
+                    flowStack.back().haveReturn = true;
+                    haveReturnBlocks.insert(flowStack.back().blockIndex);
+                }
                 continue;
             }
         }
@@ -950,18 +963,30 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
                                     { entry.second } });
                     if (!res.second)
                         res.first->second.insertValue(entry.second);
+                }
+                
+                entry.haveReturn = true;
+                haveReturnBlocks.insert(entry.blockIndex);
+            }
+            
+            if (cblock.haveReturn || cblock.haveEnd)
+            {
+                // handle return
+                // add curSVReg access positions to lastAccessMap
+                for (const auto& entry: curSVRegMap)
                     if (!notFirstReturn)
                         // fill up vregs for first return
                         vregsInFirstReturn.insert(entry.first);
-                }
                 if (notFirstReturn)
                     for (const AsmSingleVReg& vreg: vregsInFirstReturn)
                         if (curSVRegMap.find(vreg) == curSVRegMap.end())
                             // not found in this path then add to 'not in all paths'
                             vregsNotInAllRets.insert(vreg);
-                
                 notFirstReturn = true;
             }
+            
+            const bool curHaveReturn = entry.haveReturn;
+            
             // revert curSVRegMap
             for (const auto& sentry: entry.prevCurSVRegMap)
                 if (sentry.second.blockIndex != SIZE_MAX)
@@ -979,6 +1004,13 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
             }
             ARDOut << "  popjoin\n";
             flowStack.pop_back();
+            // set up haveReturn
+            if (!flowStack.empty())
+            {
+                flowStack.back().haveReturn |= curHaveReturn;
+                if (flowStack.back().haveReturn)
+                    haveReturnBlocks.insert(flowStack.back().blockIndex);
+            }
         }
     }
     
