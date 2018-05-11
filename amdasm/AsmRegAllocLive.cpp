@@ -969,10 +969,9 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
                 haveReturnBlocks.insert(entry.blockIndex);
             }
             
+            // handle vidxes not in all paths (both end and returns)
             if (cblock.haveReturn || cblock.haveEnd)
             {
-                // handle return
-                // add curSVReg access positions to lastAccessMap
                 for (const auto& entry: curSVRegMap)
                     if (!notFirstReturn)
                         // fill up vregs for first return
