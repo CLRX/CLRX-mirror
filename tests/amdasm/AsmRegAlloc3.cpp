@@ -1663,6 +1663,55 @@ r3_3:
             { 5, { { { 4, 6, 8, 10, 11 }, { }, { }, { } } } }
         },
         true, ""
+    },
+    {   // 26 - routine with loop
+        R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
+        s_mov_b32 sa[2], s4             # 0
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]     # 4
+        
+        s_xor_b32 sa[2], sa[2], sa[0]   # 8
+        s_endpgm                        # 12
+        
+routine:
+        s_and_b32 sa[2], sa[2], sa[1]   # 16
+loop0:
+        s_cbranch_vccz b1               # 20
+b0:     s_cbranch_scc0 loop0            # 24
+        s_branch ret2                   # 28
+        
+b1:     s_and_b32 sa[2], sa[0], sa[1]   # 32
+        s_cbranch_scc0 loop0            # 36
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 40
+ret2:
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 44
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 5, 8 }, { 16, 41 }, { 44, 45 } }, // 0: S0
+                { { 5, 8 }, { 16, 41 }, { 44, 45 } }, // 1: S1
+                { { 0, 5 } }, // 2: S2
+                { { 0, 5 } }, // 3: S3
+                { { 0, 1 } }, // 4: S4
+                { { 0, 9 }, { 16, 48 } }, // 5: sa[0]'0
+                { { 0, 8 }, { 16, 28 }, { 32, 40 } }, // 6: sa[1]'0
+                { { 1, 8 }, { 16, 17 } }, // 7: sa[2]'0
+                { { 8, 9 }, { 17, 48 } }, // 8: sa[2]'1
+                { { 9, 10 } }  // 9: sa[2]'2
+            },
+            { },
+            { },
+            { }
+        },
+        { }, // linearDepMaps
+        {   // vidxRoutineMap
+            { 2, { { { 0, 1, 5, 6, 7, 8 }, { }, { }, { } } } }
+        },
+        { }, // vidxCallMap
+        true, ""
     }
 };
 
