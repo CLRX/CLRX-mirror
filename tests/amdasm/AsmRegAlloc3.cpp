@@ -63,7 +63,6 @@ struct AsmLivenessesCase
 
 static const AsmLivenessesCase createLivenessesCasesTbl[] =
 {
-#if 0
     {   // 0 - simple case
         R"ffDXD(.regvar sa:s:8, va:v:10
         s_mov_b32 sa[4], sa[2]  # 0
@@ -1761,7 +1760,6 @@ ret2:
         { }, // vidxCallMap
         true, ""
     },
-#endif
     {   // 28 - two routines with var sharing (output-input)
         R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
         s_mov_b32 sa[2], s4             # 0
