@@ -140,9 +140,6 @@ static void fillUpInsideRoutine(const std::vector<CodeBlock>& codeBlocks,
     
     flowStack.push_back({ startBlock, 0 });
     
-    //if (lv.contain(codeBlocks[startBlock].end-1))
-        // already filled, then do nothing
-        //return;
     size_t startSSAId = ssaId;
     bool fromStartPos = false;
     if (routineBlock == startBlock)
@@ -194,20 +191,6 @@ static void fillUpInsideRoutine(const std::vector<CodeBlock>& codeBlocks,
                         // we end path at first read
                         endOfPath = true;
                 }
-                /*size_t cbStart = cblock.start;
-                if (flowStack.size() == 1)
-                {
-                    // if first block, then get last occurrence in this path
-                    auto sinfoIt = cblock.ssaInfoMap.find(svreg);
-                    if (sinfoIt != cblock.ssaInfoMap.end())
-                        cbStart = sinfoIt->second.lastPos+1;
-                }
-                // just insert
-                lv.insert(cbStart, cblock.end);
-                
-                addVIdxToCallEntry(entry.blockIndex, lvRType, vidx,
-                        codeBlocks, vidxCallMap, vidxRoutineMap);
-                */
             }
             else
             {
