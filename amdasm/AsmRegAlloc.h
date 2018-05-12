@@ -265,6 +265,7 @@ struct CLRX_INTERNAL FlowStackEntry3
     size_t blockIndex;
     size_t nextIndex;
     bool isCall;
+    bool havePath;
 };
 
 struct CLRX_INTERNAL FlowStackEntry4

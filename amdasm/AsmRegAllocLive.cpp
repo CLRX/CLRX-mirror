@@ -126,32 +126,75 @@ static void addVIdxToCallEntry(size_t blockIndex, cxuint regType, size_t vidx,
     }
 }
 
-static void fillUpInsideRoutine(std::unordered_set<size_t>& visited,
-            const std::vector<CodeBlock>& codeBlocks,
+static void fillUpInsideRoutine(const std::vector<CodeBlock>& codeBlocks,
             std::unordered_map<size_t, VIdxSetEntry>& vidxCallMap,
             const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap,
-            size_t startBlock, const AsmSingleVReg& svreg, Liveness& lv,
-            cxuint lvRType /* lv register type */, size_t vidx,
-            const std::unordered_set<size_t>& haveReturnBlocks)
+            size_t startBlock, size_t routineBlock, const AsmSingleVReg& svreg,
+            Liveness& lv, cxuint lvRType /* lv register type */, size_t vidx,
+            size_t ssaId, const RoutineDataLv& rdata,
+            std::unordered_set<size_t>& havePathBlocks)
 {
+    const std::unordered_set<size_t>& haveReturnBlocks = rdata.haveReturnBlocks;
     std::deque<FlowStackEntry3> flowStack;
+    std::unordered_set<size_t> visited;
+    
     flowStack.push_back({ startBlock, 0 });
     
     //if (lv.contain(codeBlocks[startBlock].end-1))
         // already filled, then do nothing
         //return;
+    size_t startSSAId = ssaId;
+    bool fromStartPos = false;
+    if (routineBlock == startBlock)
+    {
+        const CodeBlock& cblock = codeBlocks[startBlock];
+        auto sinfoIt = cblock.ssaInfoMap.find(svreg);
+        auto rbwIt = rdata.rbwSSAIdMap.find(svreg);
+        if (sinfoIt != cblock.ssaInfoMap.end())
+        {
+            const SSAInfo& sinfo = sinfoIt->second;
+            if (sinfo.readBeforeWrite && sinfo.ssaIdBefore==ssaId)
+                fromStartPos = true;
+            else if (sinfo.ssaIdChange == 0 || sinfo.ssaIdLast != ssaId)
+                // do nothing (last SSAId doesnt match or no change
+                return;
+        }
+        else if (rbwIt != rdata.rbwSSAIdMap.end())
+        {
+            fromStartPos = true;
+            startSSAId = rbwIt->second;
+        }
+        else
+            return; // do nothing
+    }
+    if (startSSAId != ssaId)
+        return; // also, do nothing
     
     while (!flowStack.empty())
     {
         FlowStackEntry3& entry = flowStack.back();
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
         
+        bool endOfPath = false;
         if (entry.nextIndex == 0)
         {
             if (visited.insert(entry.blockIndex).second &&
                 haveReturnBlocks.find(entry.blockIndex) != haveReturnBlocks.end())
             {
-                size_t cbStart = cblock.start;
+                auto sinfoIt = cblock.ssaInfoMap.find(svreg);
+                if (flowStack.size() > 1 && sinfoIt != cblock.ssaInfoMap.end())
+                {
+                    if (!sinfoIt->second.readBeforeWrite)
+                    {
+                        // no read before write skip this path
+                        flowStack.pop_back();
+                        continue;
+                    }
+                    else
+                        // we end path at first read
+                        endOfPath = true;
+                }
+                /*size_t cbStart = cblock.start;
                 if (flowStack.size() == 1)
                 {
                     // if first block, then get last occurrence in this path
@@ -164,24 +207,35 @@ static void fillUpInsideRoutine(std::unordered_set<size_t>& visited,
                 
                 addVIdxToCallEntry(entry.blockIndex, lvRType, vidx,
                         codeBlocks, vidxCallMap, vidxRoutineMap);
+                */
             }
             else
             {
+                const bool prevPath = havePathBlocks.find(entry.blockIndex) !=
+                        havePathBlocks.end();
                 flowStack.pop_back();
+                // propagate haveReturn to previous block
+                if (prevPath)
+                {
+                    flowStack.back().havePath = true;
+                    havePathBlocks.insert(flowStack.back().blockIndex);
+                }
                 continue;
             }
         }
         
         // skip calls
-        for (; entry.nextIndex < cblock.nexts.size() &&
+        if (!endOfPath)
+            for (; entry.nextIndex < cblock.nexts.size() &&
                     cblock.nexts[entry.nextIndex].isCall; entry.nextIndex++);
         
-        if (entry.nextIndex < cblock.nexts.size())
+        if (!endOfPath && entry.nextIndex < cblock.nexts.size())
         {
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
             entry.nextIndex++;
         }
-        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+        else if (!endOfPath &&
+            ((entry.nextIndex==0 && cblock.nexts.empty()) ||
                 // if have any call then go to next block
                 (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
                  !cblock.haveReturn && !cblock.haveEnd)
@@ -189,8 +243,46 @@ static void fillUpInsideRoutine(std::unordered_set<size_t>& visited,
             flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
         }
-        else // back
+        else
+        {
+            if (endOfPath || cblock.haveReturn)
+            {
+                havePathBlocks.insert(entry.blockIndex);
+                // we have path only if have return and if have path
+                entry.havePath = true;
+            }
+            
+            const bool curHavePath = entry.havePath;
+            if (curHavePath)
+            {
+                auto sinfoIt = cblock.ssaInfoMap.find(svreg);
+                size_t cbStart = cblock.start;
+                size_t cbEnd = cblock.end;
+                if (flowStack.size() == 1 && !fromStartPos)
+                {
+                    // if first block, then get last occurrence in this path
+                    if (sinfoIt != cblock.ssaInfoMap.end())
+                        cbStart = sinfoIt->second.lastPos+1;
+                }
+                if (endOfPath && sinfoIt != cblock.ssaInfoMap.end())
+                    cbEnd = sinfoIt->second.firstPos;
+                // fill up block
+                lv.insert(cbStart, cbEnd);
+                if (cblock.end == cbEnd)
+                    addVIdxToCallEntry(entry.blockIndex, lvRType, vidx,
+                            codeBlocks, vidxCallMap, vidxRoutineMap);
+            }
+            
+            // back
             flowStack.pop_back();
+            // propagate have Path
+            if (!flowStack.empty())
+            {
+                if (curHavePath)
+                    havePathBlocks.insert(flowStack.back().blockIndex);
+                flowStack.back().havePath |= curHavePath;
+            }
+        }
     }
 }
 
@@ -208,8 +300,11 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         size_t nextIndex; // next index of routine call
         size_t lastAccessIndex; // last access pos index
         bool inSubroutines;
-        const std::unordered_set<size_t>* haveReturnBlocks;
+        size_t routineBlock;
+        const RoutineDataLv* rdata;
     };
+    
+    std::unordered_set<size_t> havePathBlocks;
     
     FlowStackCIter flitEnd = flowStack.end();
     if (skipLastBlock)
@@ -219,12 +314,10 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
     getVIdx2(svreg, ssaId, vregIndexMaps, regTypesNum, regRanges, lvRegType, vidx);
     Liveness& lv = livenesses[lvRegType][vidx];
     
-    std::unordered_set<size_t> visited;
-    
     std::stack<JoinEntry> rjStack; // routine join stack
     if (flowStkStart.inSubroutines)
         rjStack.push({ flowStack[flowStkStart.stackPos].blockIndex,
-                            0, 0, true, nullptr });
+                            0, 0, true, SIZE_MAX, nullptr });
     
     while (!rjStack.empty())
     {
@@ -236,8 +329,9 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
             bool doNextIndex = false; // true if to next call
             if (cblock.nexts[entry.nextIndex].isCall)
             {
+                const size_t routineBlock = cblock.nexts[entry.nextIndex].block;
                 const RoutineDataLv& rdata =
-                        routineMap.find(cblock.nexts[entry.nextIndex].block)->second;
+                        routineMap.find(routineBlock)->second;
                 auto lastAccessIt = rdata.lastAccessMap.find(svreg);
                 if (lastAccessIt != rdata.lastAccessMap.end())
                 {
@@ -246,7 +340,7 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
                         const auto& lastAccess =
                                 lastAccessIt->second[entry.lastAccessIndex];
                         rjStack.push({ lastAccess.blockIndex, 0, 0,
-                                lastAccess.inSubroutines, &rdata.haveReturnBlocks });
+                                lastAccess.inSubroutines, routineBlock, &rdata });
                         entry.lastAccessIndex++;
                         if (entry.lastAccessIndex == lastAccessIt->second.size())
                             doNextIndex = true;
@@ -273,9 +367,10 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
             /* if inSubroutines, then first block
              * (that with subroutines calls) will be skipped */
             if (rjStack.size() > 1)
-                fillUpInsideRoutine(visited, codeBlocks, vidxCallMap, vidxRoutineMap,
-                        entry.blockIndex + (entry.inSubroutines), svreg,
-                        lv, lvRegType, vidx, *entry.haveReturnBlocks);
+                fillUpInsideRoutine(codeBlocks, vidxCallMap, vidxRoutineMap,
+                        entry.blockIndex + (entry.inSubroutines),
+                        entry.routineBlock, svreg, lv, lvRegType, vidx, ssaId,
+                        *entry.rdata, havePathBlocks);
             rjStack.pop();
         }
     }
@@ -1023,9 +1118,9 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
         {
             VectorSet<LastAccessBlockPos>& sset = res.first->second;
             // filter before inserting (remove everything that do not point to calls)
-            sset.resize(std::remove_if(sset.begin(), sset.end(),
+            /*sset.resize(std::remove_if(sset.begin(), sset.end(),
                 [](const LastAccessBlockPos& b)
-                { return !b.inSubroutines; }) - sset.begin());
+                { return !b.inSubroutines; }) - sset.begin());*/
             sset.insertValue({ routineBlock, false });
         }
     }
