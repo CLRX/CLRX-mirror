@@ -976,7 +976,7 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
                     if (!notFirstReturn)
                         // fill up vregs for first return
                         vregsInFirstReturn.insert(entry.first);
-                if (notFirstReturn)
+                if (notFirstReturn && cblock.haveReturn)
                     for (const AsmSingleVReg& vreg: vregsInFirstReturn)
                         if (curSVRegMap.find(vreg) == curSVRegMap.end())
                             // not found in this path then add to 'not in all paths'

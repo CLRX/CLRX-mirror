@@ -1991,7 +1991,7 @@ routine3:
         },
         true, ""
     },
-    {   // 31 - routine with ends (s_endpgm, no return) 
+    {   // 31 - routine with ends (s_endpgm, no return) 1
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4             # 0
         s_mov_b32 sa[3], s5             # 4
@@ -2034,6 +2034,66 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]   # 68
                 { { 37, 38 } }, // 10: sa[2]'4
                 { { 5, 41 }, { 48, 61 }, { 68, 76 } }, // 11: sa[3]'0
                 { { 61, 62 } }, // 12: sa[3]'1
+                { { 41, 42 } }, // 13: sa[3]'2
+                { { 0, 36 }, { 48, 61 }, { 68, 69 } }, // 14: sa[4]'0
+                { { 9, 41 } }  // 15: sa[5]'0
+            },
+            { },
+            { },
+            { }
+        },
+        { }, // linearDepMaps
+        {   // vidxRoutineMap
+            { 2, { { { 0, 1, 6, 7, 8, 9, 11, 12, 14 }, { }, { }, { } } } }
+        },
+        {   // vidxCallMap
+            { 0, { { { 15 }, { }, { }, { } } } }
+        },
+        true, ""
+    },
+    {   // 32 - routine with ends (s_endpgm, no return) 2
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4             # 0
+        s_mov_b32 sa[3], s5             # 4
+        s_mov_b32 sa[5], s5             # 8
+        
+        s_getpc_b64 s[2:3]              # 12
+        s_add_u32 s2, s2, routine-.     # 16
+        s_add_u32 s3, s3, routine-.+4   # 24
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]     # 32
+        
+        s_lshl_b32 sa[2], sa[2], 3      # 36
+        s_lshl_b32 sa[3], sa[3], sa[5]  # 40
+        s_endpgm                        # 44
+        
+routine:
+        s_xor_b32 sa[2], sa[2], sa[4]   # 48
+        s_cbranch_scc1 bb1              # 52
+        
+        s_min_u32 sa[2], sa[2], sa[4]   # 56
+        s_xor_b32 sa[3], sa[3], sa[4]   # 60
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 64
+        
+bb1:    s_and_b32 sa[2], sa[2], sa[4]   # 68
+        s_endpgm                        # 72
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 33, 36 }, { 48, 65 } }, // 0: S0
+                { { 33, 36 }, { 48, 65 } }, // 1: S1
+                { { 13, 33 } }, // 2: S2
+                { { 13, 33 } }, // 3: S3
+                { { 0, 1 } }, // 4: S4
+                { { 0, 9 } }, // 5: S5
+                { { 1, 36 }, { 48, 49 } }, // 6: sa[2]'0
+                { { 49, 57 }, { 68, 69 } }, // 7: sa[2]'1
+                { { 36, 37 }, { 57, 68 } }, // 8: sa[2]'2
+                { { 69, 70 } }, // 9: sa[2]'3
+                { { 37, 38 } }, // 10: sa[2]'4
+                { { 5, 36 }, { 48, 61 } }, // 11: sa[3]'0
+                { { 36, 41 }, { 61, 68 } }, // 12: sa[3]'1
                 { { 41, 42 } }, // 13: sa[3]'2
                 { { 0, 36 }, { 48, 61 }, { 68, 69 } }, // 14: sa[4]'0
                 { { 9, 41 } }  // 15: sa[5]'0
