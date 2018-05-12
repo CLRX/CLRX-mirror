@@ -63,6 +63,7 @@ struct AsmLivenessesCase
 
 static const AsmLivenessesCase createLivenessesCasesTbl[] =
 {
+#if 0
     {   // 0 - simple case
         R"ffDXD(.regvar sa:s:8, va:v:10
         s_mov_b32 sa[4], sa[2]  # 0
@@ -2230,7 +2231,59 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]   # 64
             { 0, { { { 15 }, { }, { }, { } } } }
         },
         true, ""
-    }
+    },
+#endif
+    {   // 35 - routine with loop
+        R"ffDXD(.regvar sa:s:8, va:v:8, xa:s:8
+        s_mov_b32 sa[2], s4             # 0
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]     # 4
+        
+        s_xor_b32 sa[2], sa[2], sa[0]   # 8
+        s_endpgm                        # 12
+        
+routine:
+        s_and_b32 sa[2], sa[2], sa[1]   # 16
+loop0:
+        s_cbranch_vccz b1               # 20
+b0:     s_cbranch_scc0 loop0            # 24
+        s_branch ret2                   # 28
+        
+b1:     s_xor_b32 sa[2], sa[2], sa[0]   # 32
+        s_and_b32 sa[2], sa[2], sa[1]   # 36
+        s_cbranch_scc0 loop0            # 40
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 44
+ret2:
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 48
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 5, 8 }, { 16, 45 }, { 48, 49 } }, // 0: S0
+                { { 5, 8 }, { 16, 45 }, { 48, 49 } }, // 1: S1
+                { { 0, 5 } }, // 2: S2
+                { { 0, 5 } }, // 3: S3
+                { { 0, 1 } }, // 4: S4
+                { { 0, 9 }, { 16, 52 } }, // 5: sa[0]'0
+                { { 0, 8 }, { 16, 28 }, { 32, 44 } }, // 6: sa[1]'0
+                { { 1, 8 }, { 16, 17 } }, // 7: sa[2]'0
+                { { 8, 9 }, { 17, 33 }, { 37, 52 } }, // 8: sa[2]'1
+                { { 33, 37 } }, // 9: sa[2]'2
+                { { 9, 10 } }  // 10: sa[2]'3
+            },
+            { },
+            { },
+            { }
+        },
+        { }, // linearDepMaps
+        {   // vidxRoutineMap
+            { 2, { { { 0, 1, 5, 6, 7, 8, 9 }, { }, { }, { } } } }
+        },
+        { }, // vidxCallMap
+        true, ""
+    },
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,

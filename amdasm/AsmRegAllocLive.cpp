@@ -971,7 +971,7 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
                     if (sinfo.ssaIdChange != 0)
                     {
                         routineVIdxes.vs[regType].insert(vidxes[sinfo.ssaIdFirst]);
-                        for (size_t i = 1; i < sinfo.ssaIdChange; i++)
+                        for (size_t i = 1; i < sinfo.ssaIdChange-1; i++)
                             routineVIdxes.vs[regType].insert(vidxes[sinfo.ssaId+i]);
                         routineVIdxes.vs[regType].insert(vidxes[sinfo.ssaIdLast]);
                     }
