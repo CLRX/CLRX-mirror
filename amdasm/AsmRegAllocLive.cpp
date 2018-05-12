@@ -151,6 +151,7 @@ static void fillUpInsideRoutine(const std::vector<CodeBlock>& codeBlocks,
         {
             const SSAInfo& sinfo = sinfoIt->second;
             if (sinfo.readBeforeWrite && sinfo.ssaIdBefore==ssaId)
+                // if ssaId is first read, then we assume start at routine start pos
                 fromStartPos = true;
             else if (sinfo.ssaIdChange == 0 || sinfo.ssaIdLast != ssaId)
                 // do nothing (last SSAId doesnt match or no change
