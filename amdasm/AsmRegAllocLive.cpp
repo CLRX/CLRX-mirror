@@ -1132,12 +1132,6 @@ static inline void revertLastSVReg(LastVRegMap& lastVRegMap, const AsmSingleVReg
     }
 }
 
-/* TODO: handling livenesses between routine call:
- *   for any routine call in call point:
- *     add extra liveness point which will be added to liveness of the vars used between
- *     call point and to liveness of the vars used inside routine
- */
-
 void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
 {
     ARDOut << "----- createLivenesses ------\n";
