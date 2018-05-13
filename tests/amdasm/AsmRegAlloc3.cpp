@@ -2487,7 +2487,101 @@ routine4:
             { 5, { { { 6 }, { }, { }, { } } } }
         },
         true, ""
-    }
+    },
+    {   // 38 - simple joins (same normal registers)
+        R"ffDXD(.regvar sa:s:12, va:v:8
+        s_mov_b32 s2, s12       # 0
+        .cf_jump a1,a2,a3
+        s_setpc_b64 s[10:11]    # 4
+        
+a1:     s_add_u32 s2, s2, s3    # 8
+        s_add_u32 s2, s2, s3    # 12
+        s_branch end            # 16
+a2:     s_add_u32 s2, s2, s4    # 20
+        s_add_u32 s2, s2, s4    # 24
+        s_branch end            # 28
+a3:     s_add_u32 s2, s2, s5    # 32
+        s_add_u32 s2, s2, s5    # 36
+        s_branch end            # 40
+
+end:    s_xor_b32 s2, s2, s13   # 44
+        s_endpgm                # 48
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 1, 46 } }, // 0: S2
+                { { 0, 13 } }, // 0: S3
+                { { 0, 8 }, { 20, 25 } }, // 0: S4
+                { { 0, 8 }, { 32, 37 } }, // 0: S5
+                { { 0, 5 } }, // 0: S10
+                { { 0, 5 } }, // 0: S11
+                { { 0, 1 } }, // 0: S12
+                { { 0, 45 } } // 0: S13
+            },
+            { },
+            { },
+            { }
+        },
+        { },  // linearDepMaps
+        { },  // vidxRoutineMap
+        { },  // vidxCallMap
+        true, ""
+    },
+    {   // 39 - simple call, more complex routine (same normal registers)
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 s2, s14               # 0
+        s_mov_b32 s3, s15               # 4
+        s_mov_b32 s5, s15               # 8
+        
+        s_getpc_b64 s[12:13]            # 12
+        s_add_u32 s12, s12, routine-.   # 16
+        s_add_u32 s13, s13, routine-.+4 # 24
+        .cf_call routine
+        s_swappc_b64 s[10:11], s[12:13] # 32
+        
+        s_lshl_b32 s2, s2, 3            # 36
+        s_lshl_b32 s3, s3, s5           # 40
+        s_endpgm                        # 44
+        
+routine:
+        s_xor_b32 s2, s2, s4            # 48
+        s_cbranch_scc1 bb1              # 52
+        
+        s_min_u32 s2, s2, s4            # 56
+        s_xor_b32 s3, s3, s4            # 60
+        .cf_ret
+        s_setpc_b64 s[10:11]            # 64
+        
+bb1:    s_and_b32 s2, s2, s4            # 68
+        .cf_ret
+        s_setpc_b64 s[10:11]            # 72
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 1, 38 }, { 48, 76 } }, // 0: S2
+                { { 5, 42 }, { 48, 76 } }, // 1: S3
+                { { 0, 36 }, { 48, 61 }, { 68, 69 } }, // 2: S4
+                { { 9, 41 } }, // 3: S5
+                { { 33, 36 }, { 48, 65 }, { 68, 73 } }, // 4: S10
+                { { 33, 36 }, { 48, 65 }, { 68, 73 } }, // 5: S11
+                { { 13, 33 } }, // 6: S12
+                { { 13, 33 } }, // 7: S13
+                { { 0, 1 } }, // 8: S14
+                { { 0, 9 } }  // 9: S15
+            },
+            { },
+            { },
+            { }
+        },
+        { }, // linearDepMaps
+        {   // vidxRoutineMap
+            { 2, { { { 0, 1, 2, 4, 5 }, { }, { }, { } } } }
+        },
+        {   // vidxCallMap
+            { 0, { { { 3 }, { }, { }, { } } } }
+        },
+        true, ""
+    },
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
