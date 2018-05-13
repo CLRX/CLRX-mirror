@@ -367,9 +367,19 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
             return;
     }
     
-    auto flit = flowStack.begin() + flowStkStart.stackPos + (flowStkStart.inSubroutines);
-    const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
+    auto flit = flowStack.begin() + flowStkStart.stackPos;
+    // applyVIdx to call entry (if needed, and if some join inside subroutines)
+    // resolve this vidx before these call point and if nexts>1
+    if (flowStkStart.inSubroutines && lv.contain(codeBlocks[flit->blockIndex].end-1) &&
+        codeBlocks[flit->blockIndex].nexts.size() > 1)
+        // just apply, only if join before call
+        addVIdxToCallEntry(flit->blockIndex, lvRegType, vidx,
+                    codeBlocks, vidxCallMap, vidxRoutineMap);
     
+    if (flowStkStart.inSubroutines)
+        ++flit; // skip this codeblock before call
+    
+    const CodeBlock& lastBlk = codeBlocks[flit->blockIndex];
     if (flit != flitEnd)
     {
         auto sinfoIt = lastBlk.ssaInfoMap.find(svreg);
