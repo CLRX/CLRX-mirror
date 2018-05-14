@@ -2642,6 +2642,101 @@ b0:     s_xor_b32 sa[3], sa[3], sa[0]   # 60
         },
         true, ""
     }
+#if 0
+    ,
+    {   // 41 - second recursion testcase
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4             # 0
+        s_mov_b32 sa[3], s4             # 4
+        s_mov_b32 sa[4], s5             # 8
+        s_mov_b32 sa[5], s6             # 12
+        s_mov_b32 sa[6], s7             # 16
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]     # 20
+        
+        s_add_u32 sa[2], sa[2], sa[0]   # 24
+        s_add_u32 sa[3], sa[3], sa[0]   # 28
+        s_add_u32 sa[4], sa[4], sa[1]   # 32
+        s_add_u32 sa[5], sa[5], sa[1]   # 36
+        s_add_u32 sa[6], sa[6], sa[1]   # 40
+        s_endpgm                        # 44
+        
+routine:
+        s_xor_b32 sa[2], sa[2], sa[0]   # 48
+        s_xor_b32 sa[3], sa[3], sa[1]   # 52
+        s_cbranch_vccnz b0              # 56
+        
+        .cf_call routine2
+        s_swappc_b64 s[0:1], s[2:3]     # 60
+        
+        s_xor_b32 sa[3], sa[3], sa[1]   # 64
+        s_xor_b32 sa[6], sa[6], sa[1]   # 68
+        s_xor_b32 sa[5], sa[5], sa[0]   # 72
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 76
+        
+b0:     s_xor_b32 sa[3], sa[3], sa[0]   # 80
+        s_xor_b32 sa[2], sa[2], sa[0]   # 84
+        s_xor_b32 sa[6], sa[6], sa[0]   # 88
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 92
+        
+routine2:
+        s_xor_b32 sa[2], sa[2], sa[0]   # 96
+        s_xor_b32 sa[3], sa[3], sa[1]   # 100
+        s_cbranch_vccnz b1              # 104
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]     # 108
+        
+        s_xor_b32 sa[3], sa[3], sa[1]   # 112
+        s_xor_b32 sa[6], sa[6], sa[1]   # 116
+        s_xor_b32 sa[4], sa[4], sa[0]   # 120
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 124
+        
+b1:     s_xor_b32 sa[3], sa[3], sa[0]   # 128
+        s_xor_b32 sa[2], sa[2], sa[0]   # 132
+        s_xor_b32 sa[6], sa[6], sa[0]   # 136
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 140
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 21, 24 }, { 48, 60 }, { 61, 108 }, { 109, 144 } }, // 0: S0
+                { { 21, 24 }, { 48, 60 }, { 61, 108 }, { 109, 144 } }, // 1: S1
+                { { 0, 24 }, { 48, 64 }, { 96, 112 } }, // 2: S2
+                { { 0, 24 }, { 48, 64 }, { 96, 112 } }, // 3: S3
+                { { 0, 5 } }, // 4: S4
+                { { 0, 9 } }, // 5: S5
+                { { 0, 13 } }, // 6: s6
+                { { 0, 17 } }, // 7: S7
+                { { 0, 29 }, { 48, 144 } }, // 8: sa[0]'0
+                { { 0, 41 }, { 48, 144 } }, // 9: sa[1]'0
+                { { 1, 25 }, { 48, 96 }, { 97, 112 }, { 128, 134 } }, // 10: sa[2]'0
+                { }, // 11: sa[2]'1
+                { }, // 12: sa[2]'2
+                { }, // 13: sa[3]'0
+                { }, // 14: sa[3]'1
+                { }, // 15: sa[3]'2
+                { }, // 16: sa[4]'0
+                { }, // 17: sa[4]'1
+                { }, // 18: sa[5]'0
+                { }, // 19: sa[5]'1
+                { }, // 20: sa[6]'0
+                { }  // 21: sa[6]'1
+            },
+            { },
+            { },
+            { }
+        },
+        { },
+        { },
+        { },
+        true, ""
+    }
+#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,

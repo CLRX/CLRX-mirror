@@ -118,7 +118,10 @@ static void addVIdxToCallEntry(size_t blockIndex, cxuint regType, size_t vidx,
         for (const NextBlock& next: cblock.nexts)
             if (next.isCall)
             {
-                const auto& allLvs = vidxRoutineMap.find(next.block)->second;
+                auto vidxRIt = vidxRoutineMap.find(next.block);
+                if (vidxRIt == vidxRoutineMap.end())
+                    continue;
+                const auto& allLvs = vidxRIt->second;
                 if (allLvs.vs[regType].find(vidx) == allLvs.vs[regType].end())
                     // add callLiveTime only if vreg not present in routine
                     varCallEntry.vs[regType].insert(vidx);
@@ -249,7 +252,7 @@ static void fillUpInsideRoutine(const std::vector<CodeBlock>& codeBlocks,
                         cbStart = sinfoIt->second.lastPos+1;
                 }
                 if (endOfPath && sinfoIt != cblock.ssaInfoMap.end())
-                    cbEnd = sinfoIt->second.firstPos;
+                    cbEnd = sinfoIt->second.firstPos+1;
                 // fill up block
                 lv.insert(cbStart, cbEnd);
                 if (cblock.end == cbEnd)
@@ -913,7 +916,7 @@ static void joinRoutineDataLv(RoutineDataLv& dest, VIdxSetEntry& destVars,
 }
 
 static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
-        const RoutineLvMap& routineMap,
+        const RoutineLvMap& routineMap, const std::unordered_set<size_t>& recurseBlocks,
         const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap,
         RoutineDataLv& rdata, VIdxSetEntry& routineVIdxes,
         size_t routineBlock, const VarIndexMap* vregIndexMaps,
@@ -1009,14 +1012,18 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
                         cblock.nexts[entry.nextIndex].isCall; entry.nextIndex++)
             {
                 size_t rblock = cblock.nexts[entry.nextIndex].block;
-                if (rblock != routineBlock)
+                if (rblock != routineBlock &&
+                    recurseBlocks.find(rblock) == recurseBlocks.end())
                     calledRoutines.push_back(rblock);
             }
             
             for (size_t srcRoutBlock: calledRoutines)
             {
+                auto srcRIt = routineMap.find(srcRoutBlock);
+                if (srcRIt == routineMap.end())
+                    continue; // skip not initialized recursion
                 // update svregs 'not in all returns'
-                const RoutineDataLv& srcRdata = routineMap.find(srcRoutBlock)->second;
+                const RoutineDataLv& srcRdata = srcRIt->second;
                 if (notFirstReturn)
                     for (const auto& vrentry: srcRdata.rbwSSAIdMap)
                         if (rdata.rbwSSAIdMap.find(vrentry.first)==rdata.rbwSSAIdMap.end())
@@ -1203,6 +1210,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
     std::vector<bool> waysToCache(codeBlocks.size(), false);
     ResSecondPointsToCache cblocksToCache(codeBlocks.size());
     std::unordered_set<size_t> callBlocks;
+    std::unordered_set<size_t> recurseBlocks;
     
     size_t rbwCount = 0;
     size_t wrCount = 0;
@@ -1370,7 +1378,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             if (res.second)
             {
                 auto varRes = vidxRoutineMap.insert({ routineBlock, VIdxSetEntry{} });
-                createRoutineDataLv(codeBlocks, routineMap, vidxRoutineMap,
+                createRoutineDataLv(codeBlocks, routineMap, recurseBlocks, vidxRoutineMap,
                         res.first->second, varRes.first->second,
                         routineBlock, vregIndexMaps, regTypesNum, regRanges);
             }
@@ -1405,6 +1413,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 if (!callBlocks.insert(nextBlock).second)
                 {
                     // just skip recursion (is good?)
+                    recurseBlocks.insert(nextBlock);
                     entry.nextIndex++;
                     continue;
                 }
