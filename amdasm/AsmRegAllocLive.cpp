@@ -1376,17 +1376,19 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             entry.nextIndex-1 == callStack.back().callNextIndex)
         {
             ARDOut << " ret: " << entry.blockIndex << "\n";
+            // check whether doNotCreateRoutine if yes then skip and only pop call stack
             if (!doNotCreateRoutine)
             {
             const size_t routineBlock = callStack.back().routineBlock.index;
             auto res = routineMap.insert({ routineBlock, { } });
             
+            // while second pass in recursion: the routine's insertion was happened
+            // later in first pass (after return from second pass)
+            // we check whether second pass happened for this routine
             if (res.second || res.first->second.inSecondPass)
             {
-                if (callStack.back().routineBlock.pass==1)
-                    res.first->second.inSecondPass = true;
-                else
-                    res.first->second.inSecondPass = false;
+                res.first->second.inSecondPass = callStack.back().routineBlock.pass==1;
+                
                 auto varRes = vidxRoutineMap.insert({ routineBlock, VIdxSetEntry{} });
                 createRoutineDataLv(codeBlocks, routineMap, recurseBlocks, vidxRoutineMap,
                         res.first->second, varRes.first->second,
@@ -1417,14 +1419,13 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
         
         if (entry.nextIndex < cblock.nexts.size())
         {
-            //bool isCall = false;
             BlockIndex nextBlock = cblock.nexts[entry.nextIndex].block;
             nextBlock.pass = entry.blockIndex.pass;
             if (cblock.nexts[entry.nextIndex].isCall)
             {
                 callStack.push_back({ entry.blockIndex,
                             entry.nextIndex, nextBlock });
-                //isCall = true;
+                
                 if (!callBlocks.insert(nextBlock).second)
                 {
                     // just skip recursion (is good?)
@@ -1435,6 +1436,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                     }
                     else if (entry.blockIndex.pass==1)
                     {
+                        /// mark that is routine call to skip
                         doNotCreateRoutine = true;
                         entry.nextIndex++;
                         continue;
@@ -1443,6 +1445,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 else if (entry.blockIndex.pass==1 &&
                     recurseBlocks.find(nextBlock.index) != recurseBlocks.end())
                 {
+                    /// mark that is routine call to skip
                     doNotCreateRoutine = true;
                     entry.nextIndex++;
                     continue;
