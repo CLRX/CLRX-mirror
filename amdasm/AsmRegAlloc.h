@@ -239,6 +239,7 @@ struct CLRX_INTERNAL RoutineDataLv
     // key - svreg, value - list of the last codeblocks where is svreg
     LastAccessMap lastAccessMap;
     std::unordered_set<size_t> haveReturnBlocks;
+    bool inSecondPass;
 };
 
 // used by createSSAData
@@ -262,7 +263,7 @@ struct CLRX_INTERNAL FlowStackEntry2
 // used by createLivenesses
 struct CLRX_INTERNAL FlowStackEntry3
 {
-    size_t blockIndex;
+    BlockIndex blockIndex;
     size_t nextIndex;
     bool isCall;
     bool havePath;
@@ -282,13 +283,6 @@ struct CLRX_INTERNAL CallStackEntry
     BlockIndex callBlock; // index
     size_t callNextIndex; // index of call next
     BlockIndex routineBlock;    // routine block
-};
-
-struct CLRX_INTERNAL CallStackEntry2
-{
-    size_t callBlock; // index
-    size_t callNextIndex; // index of call next
-    size_t routineBlock;    // routine block
 };
 
 typedef std::unordered_map<BlockIndex, RoutineData> RoutineMap;
