@@ -1202,6 +1202,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
     std::pair<size_t, size_t> lastCommonCacheWayPoint{ SIZE_MAX, SIZE_MAX };
     std::vector<bool> waysToCache(codeBlocks.size(), false);
     ResSecondPointsToCache cblocksToCache(codeBlocks.size());
+    std::unordered_set<size_t> callBlocks;
     
     size_t rbwCount = 0;
     size_t wrCount = 0;
@@ -1390,6 +1391,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 }
             }
             callStack.pop_back(); // just return from call
+            callBlocks.erase(routineBlock);
         }
         
         if (entry.nextIndex < cblock.nexts.size())
@@ -1400,6 +1402,12 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             {
                 callStack.push_back({ entry.blockIndex, entry.nextIndex, nextBlock });
                 //isCall = true;
+                if (!callBlocks.insert(nextBlock).second)
+                {
+                    // just skip recursion (is good?)
+                    entry.nextIndex++;
+                    continue;
+                }
             }
             
             flowStack.push_back({ cblock.nexts[entry.nextIndex].block, 0 });

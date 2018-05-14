@@ -2582,6 +2582,66 @@ bb1:    s_and_b32 s2, s2, s4            # 68
         },
         true, ""
     },
+    {   // 40 - first recursion testcase
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        s_mov_b32 sa[2], s4             # 0
+        s_mov_b32 sa[3], s4             # 4
+        s_mov_b32 sa[6], s7             # 8
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]     # 12
+        
+        s_add_u32 sa[2], sa[2], sa[0]   # 16
+        s_add_u32 sa[3], sa[3], sa[0]   # 20
+        s_add_u32 sa[6], sa[6], sa[0]   # 24
+        s_endpgm                        # 28
+        
+routine:
+        s_xor_b32 sa[2], sa[2], sa[0]   # 32
+        s_xor_b32 sa[3], sa[3], sa[1]   # 36
+        s_cbranch_vccnz b0              # 40
+        
+        .cf_call routine
+        s_swappc_b64 s[0:1], s[2:3]     # 44
+        
+        s_xor_b32 sa[3], sa[3], sa[1]   # 48
+        s_xor_b32 sa[6], sa[6], sa[1]   # 52
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 56
+        
+b0:     s_xor_b32 sa[3], sa[3], sa[0]   # 60
+        s_xor_b32 sa[2], sa[2], sa[0]   # 64
+        s_xor_b32 sa[6], sa[6], sa[0]   # 68
+        .cf_ret
+        s_setpc_b64 s[0:1]              # 72
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 13, 16 }, { 32, 44 }, { 45, 76 } }, // 0: S0
+                { { 13, 16 }, { 32, 44 }, { 45, 76 } }, // 1: S1
+                { { 0, 16 }, { 32, 48 } }, // 2: S2
+                { { 0, 16 }, { 32, 48 } }, // 3: S3
+                { { 0, 5 } }, // 4: S4
+                { { 0, 9 } }, // 5: S7
+                { { 0, 25 }, { 32, 76 } }, // 6: sa[0]'0
+                { { 0, 16 }, { 32, 76 } }, // 7: sa[1]'0
+                { { 1, 17 }, { 32, 76 } }, // 8: sa[2]'0
+                { { 17, 18 } }, // 9: sa[2]'1
+                { { 5, 21 }, { 32, 76 } }, // 10: sa[3]'0
+                { { 21, 22 } }, // 11: sa[3]'1
+                { { 9, 25 }, { 32, 76 } }, // 12: sa[6]'0
+                { { 25, 26 } }  // 13: sa[6]'1
+            }
+        },
+        { }, // linearDepMaps
+        {   // vidxRoutineMap
+            { 2, { { { 0, 1, 2, 3, 6, 7, 8, 10, 12 }, { }, { }, { } } } }
+        },
+        {   // vidxCallMap
+            { 3, { { { }, { }, { }, { } } } }
+        },
+        true, ""
+    }
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
