@@ -1370,6 +1370,9 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             const BlockIndex routineBlock = callStack.back().routineBlock;
             auto res = routineMap.insert({ routineBlock.index, { } });
             
+            // while second pass in recursion: the routine's insertion was happened
+            // later in first pass (after return from second pass)
+            // we check whether second pass happened for this routine
             if (res.second || res.first->second.inSecondPass)
             {
                 res.first->second.inSecondPass = routineBlock.pass==1;
