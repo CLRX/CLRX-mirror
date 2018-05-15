@@ -980,9 +980,6 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     SubrLoopsMap loopSubrsMap;
     RoutineMap subrDataForLoopMap;
     std::deque<FlowStackEntry> flowStack;
-    //CBlockBitPool flowStackBlocks(codeBlocks.size(), false);
-    //if (!prevFlowStackBlocks.empty())
-        //flowStackBlocks = prevFlowStackBlocks;
     // last SSA ids map from returns
     RetSSAIdMap retSSAIdMap;
     flowStack.push_back({ routineBlock, 0 });
@@ -1386,11 +1383,6 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
         }
     }
     
-    /*if (prevFlowStackBlocks.empty())
-        assert(std::find(flowStackBlocks.begin(), flowStackBlocks.end(), true)
-                    == flowStackBlocks.end());
-    else
-        assert(flowStackBlocks == prevFlowStackBlocks);*/
     ARDOut << "--------- createRoutineData end ------------\n";
 }
 
