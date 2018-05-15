@@ -362,14 +362,6 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         }
     }
     
-    if (flitEnd != flowStack.begin())
-    {
-        const CodeBlock& cbLast = codeBlocks[(flitEnd-1)->blockIndex.index];
-        if (lv.contain(cbLast.end-1))
-            // if already filled up
-            return;
-    }
-    
     auto flit = flowStack.begin() + flowStkStart.stackPos;
     // applyVIdx to call entry (if needed, and if some join inside subroutines)
     // resolve this vidx before these call point and if nexts>1
@@ -922,9 +914,10 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
         const RoutineLvMap& routineMap, const std::unordered_set<size_t>& recurseBlocks,
         const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap,
         RoutineDataLv& rdata, VIdxSetEntry& routineVIdxes,
-        size_t routineBlock, const VarIndexMap* vregIndexMaps,
+        BlockIndex routineBlock, const VarIndexMap* vregIndexMaps,
         size_t regTypesNum, const cxuint* regRanges)
 {
+    ARDOut << "--------- createRoutineDataLv(" << routineBlock << ")\n";
     std::deque<FlowStackEntry4> flowStack;
     std::unordered_set<size_t> visited;
     
@@ -936,7 +929,7 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
     std::unordered_set<size_t>& haveReturnBlocks = rdata.haveReturnBlocks;
     
     bool notFirstReturn = false;
-    flowStack.push_back({ routineBlock, 0 });
+    flowStack.push_back({ routineBlock.index, 0 });
     RoutineCurAccessMap curSVRegMap; // key - svreg, value - block index
     
     while (!flowStack.empty())
@@ -949,6 +942,8 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
             // process current block
             if (visited.insert(entry.blockIndex).second)
             {
+                ARDOut << "  cpjproc: " << entry.blockIndex << "\n";
+                
                 for (const auto& sentry: cblock.ssaInfoMap)
                 {
                     if (sentry.second.readBeforeWrite)
@@ -1014,10 +1009,10 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
             for (; entry.nextIndex < cblock.nexts.size() &&
                         cblock.nexts[entry.nextIndex].isCall; entry.nextIndex++)
             {
-                size_t rblock = cblock.nexts[entry.nextIndex].block;
+                BlockIndex rblock(cblock.nexts[entry.nextIndex].block, routineBlock.pass);
                 if (rblock != routineBlock &&
-                    recurseBlocks.find(rblock) == recurseBlocks.end())
-                    calledRoutines.push_back(rblock);
+                    recurseBlocks.find(rblock.index) == recurseBlocks.end())
+                    calledRoutines.push_back(rblock.index);
             }
             
             for (size_t srcRoutBlock: calledRoutines)
@@ -1117,15 +1112,12 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
     // just add to lastAccessMap svreg for start to join through all routine
     for (const AsmSingleVReg& svreg: vregsNotInAllRets)
     {
-        auto res = rdata.lastAccessMap.insert({ svreg, { { routineBlock, false } } });
+        auto res = rdata.lastAccessMap.insert(
+                    { svreg, { { routineBlock.index, false } } });
         if (!res.second)
         {
             VectorSet<LastAccessBlockPos>& sset = res.first->second;
-            // filter before inserting (remove everything that do not point to calls)
-            /*sset.resize(std::remove_if(sset.begin(), sset.end(),
-                [](const LastAccessBlockPos& b)
-                { return !b.inSubroutines; }) - sset.begin());*/
-            sset.insertValue({ routineBlock, false });
+            sset.insertValue({ routineBlock.index, false });
         }
     }
 }
@@ -1230,7 +1222,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
     size_t curLiveTime = 0;
     flowStack.push_back({ 0, 0 });
     
-    bool doNotCreateRoutine = false;
     while (!flowStack.empty())
     {
         FlowStackEntry3& entry = flowStack.back();
@@ -1376,23 +1367,16 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             entry.nextIndex-1 == callStack.back().callNextIndex)
         {
             ARDOut << " ret: " << entry.blockIndex << "\n";
-            // check whether doNotCreateRoutine if yes then skip and only pop call stack
-            if (!doNotCreateRoutine)
-            {
-            const size_t routineBlock = callStack.back().routineBlock.index;
-            auto res = routineMap.insert({ routineBlock, { } });
+            const BlockIndex routineBlock = callStack.back().routineBlock;
+            auto res = routineMap.insert({ routineBlock.index, { } });
             
-            // while second pass in recursion: the routine's insertion was happened
-            // later in first pass (after return from second pass)
-            // we check whether second pass happened for this routine
             if (res.second || res.first->second.inSecondPass)
             {
-                res.first->second.inSecondPass = callStack.back().routineBlock.pass==1;
-                
-                auto varRes = vidxRoutineMap.insert({ routineBlock, VIdxSetEntry{} });
+                res.first->second.inSecondPass = routineBlock.pass==1;
+                auto varRes = vidxRoutineMap.insert({ routineBlock.index, VIdxSetEntry{} });
                 createRoutineDataLv(codeBlocks, routineMap, recurseBlocks, vidxRoutineMap,
                         res.first->second, varRes.first->second,
-                        routineBlock, vregIndexMaps, regTypesNum, regRanges);
+                        routineBlock.index, vregIndexMaps, regTypesNum, regRanges);
             }
             else
             {
@@ -1411,11 +1395,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 }
             }
             callBlocks.erase(routineBlock);
-            }
             callStack.pop_back(); // just return from call
         }
-        
-        doNotCreateRoutine = false;
         
         if (entry.nextIndex < cblock.nexts.size())
         {
@@ -1423,9 +1404,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             nextBlock.pass = entry.blockIndex.pass;
             if (cblock.nexts[entry.nextIndex].isCall)
             {
-                callStack.push_back({ entry.blockIndex,
-                            entry.nextIndex, nextBlock });
-                
                 if (!callBlocks.insert(nextBlock).second)
                 {
                     // just skip recursion (is good?)
@@ -1437,7 +1415,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                     else if (entry.blockIndex.pass==1)
                     {
                         /// mark that is routine call to skip
-                        doNotCreateRoutine = true;
                         entry.nextIndex++;
                         continue;
                     }
@@ -1446,10 +1423,12 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                     recurseBlocks.find(nextBlock.index) != recurseBlocks.end())
                 {
                     /// mark that is routine call to skip
-                    doNotCreateRoutine = true;
                     entry.nextIndex++;
                     continue;
                 }
+                
+                callStack.push_back({ entry.blockIndex,
+                            entry.nextIndex, nextBlock });
             }
             
             flowStack.push_back({ nextBlock, 0 });

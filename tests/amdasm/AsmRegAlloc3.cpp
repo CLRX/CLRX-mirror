@@ -2484,7 +2484,7 @@ routine4:
         },
         {   // vidxCallMap
             { 0, { { { 2, 3, 6, 7, 16 }, { }, { }, { } } } },
-            { 5, { { { 6 }, { }, { }, { } } } }
+            { 5, { { { 6, 7 }, { }, { }, { } } } }
         },
         true, ""
     },
@@ -2905,6 +2905,10 @@ static void checkVIdxSetEntries(const std::string& testCaseName, const char* vva
 
 static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase)
 {
+    std::cout << "-----------------------------------------------\n"
+    "           Test " << i << "\n"
+                "------------------------------------------------\n";
+    
     std::istringstream input(testCase.input);
     std::ostringstream errorStream;
     
