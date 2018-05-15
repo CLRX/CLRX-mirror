@@ -322,8 +322,8 @@ public:
         size_t ssaId;   ///< original SSA id
         size_t ssaIdLast; ///< last SSA id in last
         size_t ssaIdChange; ///< number of SSA id changes
-        size_t firstPos;
-        size_t lastPos;
+        size_t firstPos;    ///< first position in code block (section offset)
+        size_t lastPos;     ///< last position in code block (section offset)
         bool readBeforeWrite;   ///< have read before write
         SSAInfo(size_t _bssaId = SIZE_MAX, size_t _ssaIdF = SIZE_MAX,
                 size_t _ssaId = SIZE_MAX, size_t _ssaIdL = SIZE_MAX,
@@ -336,10 +336,15 @@ public:
     struct CodeBlock
     {
         size_t start, end; // place in code
+        // next blocks rules:
+        // if only one and next block have index: empty.
+        // if have calls, then implicitly the last next block have next block index
+        //     and it is not inserted into nexts list.
+        // otherwise nexts list contains next blocks
         std::vector<NextBlock> nexts; ///< nexts blocks, if empty then direct next block
-        bool haveCalls;
-        bool haveReturn;
-        bool haveEnd;
+        bool haveCalls; ///< code have calls at its end
+        bool haveReturn; ///< code have return from routine
+        bool haveEnd;   ///< code have end
         // key - regvar, value - SSA info for this regvar
         std::unordered_map<AsmSingleVReg, SSAInfo> ssaInfoMap;
         ISAUsageHandler::ReadPos usagePos;

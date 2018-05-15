@@ -145,6 +145,7 @@ static void fillUpInsideRoutine(const std::vector<CodeBlock>& codeBlocks,
     
     size_t startSSAId = ssaId;
     bool fromStartPos = false;
+    // determine first SSAId and whether filling should begin from start of the routine
     if (routineBlock == startBlock)
     {
         const CodeBlock& cblock = codeBlocks[startBlock];
@@ -242,6 +243,7 @@ static void fillUpInsideRoutine(const std::vector<CodeBlock>& codeBlocks,
             const bool curHavePath = entry.havePath;
             if (curHavePath)
             {
+                // fill up block when in path
                 auto sinfoIt = cblock.ssaInfoMap.find(svreg);
                 size_t cbStart = cblock.start;
                 size_t cbEnd = cblock.end;
@@ -262,7 +264,7 @@ static void fillUpInsideRoutine(const std::vector<CodeBlock>& codeBlocks,
             
             // back
             flowStack.pop_back();
-            // propagate have Path
+            // propagate havePath
             if (!flowStack.empty())
             {
                 if (curHavePath)
@@ -324,6 +326,7 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
                 {
                     if (entry.lastAccessIndex < lastAccessIt->second.size())
                     {
+                        // we have new path in subroutine to fill
                         const auto& lastAccess =
                                 lastAccessIt->second[entry.lastAccessIndex];
                         rjStack.push({ lastAccess.blockIndex, 0, 0,
@@ -445,6 +448,8 @@ static void addJoinSecCacheEntry(const RoutineLvMap& routineMap,
     flowStack.push_back({ nextBlock, 0 });
     std::unordered_set<size_t> visited;
     
+    // already read in current path
+    // key - vreg, value - source block where vreg of conflict found
     SVRegBlockMap alreadyReadMap;
     SVRegMap cacheSecPoints;
     
@@ -508,7 +513,7 @@ static void addJoinSecCacheEntry(const RoutineLvMap& routineMap,
                 (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
                  !cblock.haveReturn && !cblock.haveEnd)
         {
-            // add toResolveMap ssaIds inside called routines
+            // add alreadyReadMap ssaIds inside called routines
             for (const auto& next: cblock.nexts)
                 if (next.isCall)
                 {
@@ -624,6 +629,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
         }
     }
     
+    // collect previous svreg from current path
     for (auto pfit = prevFlowStack.begin()+pfStartIndex; pfit != pfEnd; ++pfit)
     {
         const FlowStackEntry3& entry = *pfit;
@@ -749,7 +755,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
                 (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
                  !cblock.haveReturn && !cblock.haveEnd)
         {
-            // add toResolveMap ssaIds inside called routines
+            // add alreadReadMap ssaIds inside called routines
             for (const auto& next: cblock.nexts)
                 if (next.isCall)
                 {
@@ -1450,14 +1456,6 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 for (const NextBlock& next: cblock.nexts)
                     if (next.isCall)
                     {
-                        /*size_t pass = 0;
-                        if (callBlocks.find(next.block) != callBlocks.end())
-                        {
-                            ARDOut << " is secpass: " << entry.blockIndex << " : " <<
-                                    next.block << "\n";
-                            pass = 1; // it ways second pass
-                        }*/
-                        
                         auto rit = routineMap.find(next.block);
                         if (rit == routineMap.end())
                             continue;

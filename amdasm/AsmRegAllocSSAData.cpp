@@ -151,6 +151,8 @@ static void addResSecCacheEntry(const RoutineMap& routineMap,
     flowStack.push_back({ nextBlock, 0 });
     std::unordered_set<size_t> visited;
     
+    // already read in current path
+    // key - vreg, value - source block where vreg of conflict found
     SVRegBlockMap alreadyReadMap;
     
     RBWSSAIdMap cacheSecPoints;
@@ -321,6 +323,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
         }
     }
     
+    // collect previous svreg from current path
     for (auto pfit = prevFlowStack.begin()+pfStartIndex; pfit != pfEnd; ++pfit)
     {
         const FlowStackEntry2& entry = *pfit;
@@ -412,7 +415,7 @@ static void resolveSSAConflicts(const std::deque<FlowStackEntry2>& prevFlowStack
                 (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
                  !cblock.haveReturn && !cblock.haveEnd)
         {
-            // add toResolveMap ssaIds inside called routines
+            // add alreadyReadMap ssaIds inside called routines
             for (const auto& next: cblock.nexts)
                 if (next.isCall)
                 {
@@ -1093,6 +1096,8 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
             
             if (!prevFlowStackBlocks.empty() && prevFlowStackBlocks[entry.blockIndex])
             {
+                // if loop detected (from previous subroutine)
+                // handling loops inside routine
                 tryAddLoopEnd(entry, routineBlock, rdata, isLoop, noMainLoop);
                 
                 if (!fromSubroutine)
@@ -1482,9 +1487,12 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
     std::pair<size_t, size_t> lastCommonCacheWayPoint{ SIZE_MAX, SIZE_MAX };
     
     CBlockBitPool waysToCache(codeBlocks.size(), false);
+    // used for detect loop code blocks (blocks where is begin loop)
     CBlockBitPool flowStackBlocks(codeBlocks.size(), false);
     
+    // prevCallFlowStackBlocks - is always empty for createRoutineData
     CBlockBitPool prevCallFlowStackBlocks;
+    // callFlowStackBlocks - flowStackBlocks from call
     CBlockBitPool callFlowStackBlocks(codeBlocks.size(), false);
     // subroutToCache - true if given block begin subroutine to cache
     ResSecondPointsToCache cblocksToCache(codeBlocks.size());
