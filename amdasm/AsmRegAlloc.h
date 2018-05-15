@@ -239,7 +239,7 @@ struct CLRX_INTERNAL RoutineDataLv
     // key - svreg, value - list of the last codeblocks where is svreg
     LastAccessMap lastAccessMap;
     std::unordered_set<size_t> haveReturnBlocks;
-    bool inSecondPass;
+    bool fromSecondPass;
 };
 
 // used by createSSAData

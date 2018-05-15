@@ -920,7 +920,7 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
         const RoutineLvMap& routineMap, const std::unordered_set<size_t>& recurseBlocks,
         const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap,
         RoutineDataLv& rdata, VIdxSetEntry& routineVIdxes,
-        BlockIndex routineBlock, const VarIndexMap* vregIndexMaps,
+        size_t routineBlock, const VarIndexMap* vregIndexMaps,
         size_t regTypesNum, const cxuint* regRanges)
 {
     ARDOut << "--------- createRoutineDataLv(" << routineBlock << ")\n";
@@ -935,7 +935,7 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
     std::unordered_set<size_t>& haveReturnBlocks = rdata.haveReturnBlocks;
     
     bool notFirstReturn = false;
-    flowStack.push_back({ routineBlock.index, 0 });
+    flowStack.push_back({ routineBlock, 0 });
     RoutineCurAccessMap curSVRegMap; // key - svreg, value - block index
     
     while (!flowStack.empty())
@@ -1015,7 +1015,7 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
             for (; entry.nextIndex < cblock.nexts.size() &&
                         cblock.nexts[entry.nextIndex].isCall; entry.nextIndex++)
             {
-                BlockIndex rblock(cblock.nexts[entry.nextIndex].block, routineBlock.pass);
+                BlockIndex rblock = cblock.nexts[entry.nextIndex].block;
                 if (rblock != routineBlock &&
                     recurseBlocks.find(rblock.index) == recurseBlocks.end())
                     calledRoutines.push_back(rblock.index);
@@ -1118,12 +1118,11 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
     // just add to lastAccessMap svreg for start to join through all routine
     for (const AsmSingleVReg& svreg: vregsNotInAllRets)
     {
-        auto res = rdata.lastAccessMap.insert(
-                    { svreg, { { routineBlock.index, false } } });
+        auto res = rdata.lastAccessMap.insert({ svreg, { { routineBlock, false } } });
         if (!res.second)
         {
             VectorSet<LastAccessBlockPos>& sset = res.first->second;
-            sset.insertValue({ routineBlock.index, false });
+            sset.insertValue({ routineBlock, false });
         }
     }
 }
@@ -1379,9 +1378,13 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
             // while second pass in recursion: the routine's insertion was happened
             // later in first pass (after return from second pass)
             // we check whether second pass happened for this routine
-            if (res.second || res.first->second.inSecondPass)
+            // order: create in second pass recursion
+            //           (fromSecondPass && rblock.pass==0 avoids
+            //            doubles creating in second pass)
+            //        create in first pass recursion
+            if (res.second || (res.first->second.fromSecondPass && routineBlock.pass==0))
             {
-                res.first->second.inSecondPass = routineBlock.pass==1;
+                res.first->second.fromSecondPass = routineBlock.pass==1;
                 auto varRes = vidxRoutineMap.insert({ routineBlock.index, VIdxSetEntry{} });
                 createRoutineDataLv(codeBlocks, routineMap, recurseBlocks, vidxRoutineMap,
                         res.first->second, varRes.first->second,
