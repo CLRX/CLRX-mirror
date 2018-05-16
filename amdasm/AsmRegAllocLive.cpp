@@ -817,10 +817,11 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
         joinSecondPointsCache.put(nextBlock, cacheSecPoints);
 }
 
-static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
-            const AsmRegVarUsage* rvus, LinearDepMap* ldepsOut,
+static bool addUsageDeps(const cxbyte* ldeps, const std::vector<AsmRegVarUsage>& rvus,
+            const std::vector<AsmRegVarLinearDep>& instrLinDeps, LinearDepMap* ldepsOut,
             std::unordered_map<AsmSingleVReg, SSAInfo>& ssaInfoMap,
             const VarIndexMap* vregIndexMaps, const SVRegMap& ssaIdIdxMap,
+            const std::vector<AsmSingleVReg>& readSVRegs,
             const std::vector<AsmSingleVReg>& writtenSVRegs,
             size_t regTypesNum, const cxuint* regRanges)
 {
@@ -859,7 +860,8 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
                 vidxes.push_back(outVIdx);
             }
         }
-        ldepsOut[regType][vidxes[0]].align = align;
+        ldepsOut[regType][vidxes[0]].align =
+                std::max(ldepsOut[regType][vidxes[0]].align, align);
         for (size_t k = 1; k < vidxes.size(); k++)
         {
             ldepsOut[regType][vidxes[k-1]].nextVidxes.insertValue(vidxes[k]);
@@ -867,13 +869,13 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
         }
     }
     // add single arg linear dependencies
-    for (cxuint i = 0; i < rvusNum; i++)
+    for (cxuint i = 0; i < rvus.size(); i++)
         if ((rvuAdded & (1U<<i)) == 0 && rvus[i].rstart+1<rvus[i].rend)
         {
             const AsmRegVarUsage& rvu = rvus[i];
             if (rvu.regVar == nullptr)
                 continue;
-            std::vector<size_t> vidxes, vidxesPrev;
+            std::vector<size_t> vidxes;
             cxuint regType = UINT_MAX;
             cxbyte align = rvus[i].align;
             for (uint16_t k = rvu.rstart; k < rvu.rend; k++)
@@ -894,13 +896,75 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
                 // push variable index
                 vidxes.push_back(outVIdx);
             }
-            ldepsOut[regType][vidxes[0]].align = align;
+            ldepsOut[regType][vidxes[0]].align =
+                std::max(ldepsOut[regType][vidxes[0]].align, align);
             for (size_t j = 1; j < vidxes.size(); j++)
             {
                 ldepsOut[regType][vidxes[j-1]].nextVidxes.insertValue(vidxes[j]);
                 ldepsOut[regType][vidxes[j]].prevVidxes.insertValue(vidxes[j-1]);
             }
         }
+        
+    // handle user defined linear dependencies
+    for (const AsmRegVarLinearDep& ldep: instrLinDeps)
+    {
+        std::vector<size_t> vidxes, prevVidxes;
+        cxuint regType = UINT_MAX;
+        bool haveReadVidxes = false;
+        for (uint16_t k = ldep.rstart; k < ldep.rend; k++)
+        {
+            AsmSingleVReg svreg = {ldep.regVar, k};
+            auto ssaIdxIdIt = ssaIdIdxMap.find(svreg);
+            auto ssaInfoIt = ssaInfoMap.find(svreg);
+            if (ssaIdxIdIt == ssaIdIdxMap.end() || ssaInfoIt == ssaInfoMap.end())
+                return false; // failed
+            
+            size_t ssaIdIdx = ssaIdxIdIt->second;
+            const SSAInfo& ssaInfo = ssaInfoIt->second;
+            size_t outVIdx;
+            
+            // if read or read-write (but not same write)
+            if (std::find(readSVRegs.begin(), readSVRegs.end(),
+                            svreg) != readSVRegs.end() &&
+                std::find(writtenSVRegs.begin(), writtenSVRegs.end(),
+                            svreg) != writtenSVRegs.end())
+            {
+                getVIdx(svreg, ssaIdIdx-1, ssaInfo, vregIndexMaps,
+                            regTypesNum, regRanges, regType, outVIdx);
+                // push variable index
+                prevVidxes.push_back(outVIdx);
+                haveReadVidxes = true;
+            }
+            
+            getVIdx(svreg, ssaIdIdx, ssaInfo, vregIndexMaps,
+                            regTypesNum, regRanges, regType, outVIdx);
+            // push variable index
+            vidxes.push_back(outVIdx);
+            if(vidxes.size() != prevVidxes.size())
+                // if prevVidxes not filled
+                prevVidxes.push_back(outVIdx);
+        }
+        ldepsOut[regType][vidxes[0]].align = 
+            std::max(ldepsOut[regType][vidxes[0]].align, cxbyte(0));
+        for (size_t j = 1; j < vidxes.size(); j++)
+        {
+            ldepsOut[regType][vidxes[j-1]].nextVidxes.insertValue(vidxes[j]);
+            ldepsOut[regType][vidxes[j]].prevVidxes.insertValue(vidxes[j-1]);
+        }
+        
+        // add from linear deps for read vidxes (prevVidxes)
+        if (haveReadVidxes)
+        {
+            ldepsOut[regType][prevVidxes[0]].align = 
+                std::max(ldepsOut[regType][prevVidxes[0]].align, cxbyte(0));
+            for (size_t j = 1; j < prevVidxes.size(); j++)
+            {
+                ldepsOut[regType][prevVidxes[j-1]].nextVidxes.insertValue(prevVidxes[j]);
+                ldepsOut[regType][prevVidxes[j]].prevVidxes.insertValue(prevVidxes[j-1]);
+            }
+        }
+    }
+    return true;
 }
 
 static void joinRoutineDataLv(RoutineDataLv& dest, VIdxSetEntry& destVars,
@@ -1326,14 +1390,31 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                             // blocks assignment for other vars
                             lv.insert(liveTime+1, liveTime+2);
                         }
+                        
+                        // collecting linear deps for instruction
+                        std::vector<AsmRegVarLinearDep> instrLinDeps;
+                        AsmRegVarLinearDep linDep = { SIZE_MAX, nullptr, 0, 0 };
+                        while (linDep.offset < oldOffset && linDepHandler.hasNext())
+                            linDep = linDepHandler.nextLinearDep();
+                        // if found
+                        while (linDep.offset == oldOffset)
+                        {
+                            // just put
+                            instrLinDeps.push_back(linDep);
+                            if (linDepHandler.hasNext())
+                                linDep = linDepHandler.nextLinearDep();
+                            else // no data
+                                break;
+                        }
                         // get linear deps and equal to
                         cxbyte lDeps[16];
                         usageHandler.getUsageDependencies(instrRVUs.size(),
                                     instrRVUs.data(), lDeps);
                         
-                        addUsageDeps(lDeps, instrRVUs.size(), instrRVUs.data(),
-                                linearDepMaps, cblock.ssaInfoMap, vregIndexMaps,
-                                ssaIdIdxMap, writtenSVRegs, regTypesNum, regRanges);
+                        if (!addUsageDeps(lDeps, instrRVUs, instrLinDeps, linearDepMaps,
+                                cblock.ssaInfoMap, vregIndexMaps, ssaIdIdxMap,
+                                readSVRegs, writtenSVRegs, regTypesNum, regRanges))
+                            assembler.printError(nullptr, "Linear deps failed");
                         
                         readSVRegs.clear();
                         writtenSVRegs.clear();
@@ -1417,7 +1498,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                             lvrit->second.back() : LastVRegStackPos{ 0, false };
                     
                     joinVRegRecur(flowStack, codeBlocks, routineMap,
-                                  vidxCallMap, vidxRoutineMap,
+                            vidxCallMap, vidxRoutineMap,
                             flowStackStart, entry.first, entry.second, vregIndexMaps,
                             livenesses, regTypesNum, regRanges, false);
                 }

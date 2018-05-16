@@ -2642,101 +2642,6 @@ b0:     s_xor_b32 sa[3], sa[3], sa[0]   # 60
         },
         true, ""
     },
-#if 0
-    {   // 41 - some test
-        R"ffDXD(.regvar sa:s:8, va:v:8
-        s_mov_b32 sa[2], s4             # 0
-        s_mov_b32 sa[3], s4             # 4
-        s_mov_b32 sa[4], s5             # 8
-        s_mov_b32 sa[5], s6             # 12
-        s_mov_b32 sa[6], s7             # 16
-        
-        .cf_call routine
-        s_swappc_b64 s[0:1], s[2:3]     # 20
-        
-        s_add_u32 sa[2], sa[2], sa[0]   # 24
-        s_add_u32 sa[3], sa[3], sa[0]   # 28
-        s_add_u32 sa[4], sa[4], sa[1]   # 32
-        s_add_u32 sa[5], sa[5], sa[1]   # 36
-        s_add_u32 sa[6], sa[6], sa[1]   # 40
-        s_endpgm                        # 44
-        
-routine:
-        s_xor_b32 sa[2], sa[2], sa[0]   # 48
-        s_xor_b32 sa[3], sa[3], sa[1]   # 52
-        s_cbranch_vccnz b0              # 56
-        
-        .cf_call routine2
-        s_swappc_b64 s[0:1], s[2:3]     # 60
-        
-        s_xor_b32 sa[3], sa[3], sa[1]   # 64
-        s_xor_b32 sa[6], sa[6], sa[1]   # 68
-        s_xor_b32 sa[5], sa[5], sa[0]   # 72
-        .cf_ret
-        s_setpc_b64 s[0:1]              # 76
-        
-b0:     s_xor_b32 sa[3], sa[3], sa[0]   # 80
-        s_nop 7                         # 84
-        s_xor_b32 sa[6], sa[6], sa[0]   # 88
-        .cf_ret
-        s_setpc_b64 s[0:1]              # 92
-        
-routine2:
-        s_xor_b32 sa[2], sa[2], sa[0]   # 96
-        s_xor_b32 sa[3], sa[3], sa[1]   # 100
-        s_cbranch_vccnz b1              # 104
-        
-        s_xor_b32 sa[3], sa[3], sa[1]   # 108
-        s_xor_b32 sa[6], sa[6], sa[1]   # 112
-        s_xor_b32 sa[4], sa[4], sa[0]   # 116
-        .cf_ret
-        s_setpc_b64 s[0:1]              # 120
-        
-b1:     s_xor_b32 sa[3], sa[3], sa[0]   # 124
-        s_xor_b32 sa[2], sa[2], sa[0]   # 128
-        s_xor_b32 sa[6], sa[6], sa[0]   # 132
-        .cf_ret
-        s_setpc_b64 s[0:1]              # 136
-)ffDXD",
-        {   // liveness
-            {   // for SGPRs
-                { { 21, 24 }, { 48, 60 }, { 61, 77 },
-                    { 80, 93 }, { 96, 140 } }, // 0: S0
-                { { 21, 24 }, { 48, 60 }, { 61, 77 },
-                    { 80, 93 }, { 96, 140 } }, // 1: S1
-                { { 0, 24 }, { 48, 61 } }, // 2: S2
-                { { 0, 24 }, { 48, 61 } }, // 3: S3
-                { { 0, 5 } }, // 4: S4
-                { { 0, 9 } }, // 5: S5
-                { { 0, 13 } }, // 6: S6
-                { { 0, 17 } }, // 7: S7
-                { { 0, 29 }, { 48, 140 } }, // 8: sa[0]'0
-                { { 0, 41 }, { 48, 140 } }, // 9: sa[1]'0
-                { { 1, 24 }, { 48, 49 } }, // 10: sa[2]'0
-                { { 24, 25 }, { 49, 140 } }, // 11: sa[2]'1
-                { { 24, 25 }, { 64, 80 }, { 85, 96 }, { 97, 140 } }, // 12: sa[2]'2
-                { }, // 14: sa[3]'0
-                { }, // 15: sa[3]'1
-                { }, // 16: sa[3]'2
-                { }, // 17: sa[3]'3
-                { }, // 18: sa[3]'4
-                { }, // 19: sa[3]'5
-                { }, // 20: sa[4]'0
-                { }, // 21: sa[4]'1
-                { }, // 22: sa[5]'0
-                { }, // 23: sa[5]'1
-                { }, // 24: sa[6]'0
-                { }, // 25: sa[6]'1
-                { }, // 26: sa[6]'2
-                { }  // 27: sa[6]'3
-            }
-        },
-        { },
-        { },
-        { },
-        true, ""
-    },
-#endif
     {   // 41 - second recursion testcase
         R"ffDXD(.regvar sa:s:8, va:v:8
         s_mov_b32 sa[2], s4             # 0
@@ -2939,7 +2844,31 @@ b1:     s_xor_b32 sa[2], sa[2], sa[7]           # 44
         { }, // vidxRoutineMap
         { }, // vidxCallMap
         true, ""
+    },
+#if 0
+    {   // 43 - user define linear deps (by '.rvlin')
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        .rvlin sa[2:7]
+        .usereg sa[2:7]:r
+        s_mov_b32 sa[2], s4               # 0
+        s_cbranch_scc0 b1                       # 8
+b0:     .rvlin sa[2:7]
+        .usereg sa[2:7]:r
+        s_mov_b32 s1, s1
+        s_endpgm
+b1:     .rvlin va[3:6]
+        .usereg va[3:6]:w
+        s_mov_b32 s1, s1
+        s_endpgm
+)ffDXD",
+        {
+        },
+        { },
+        { },
+        { },
+        true, ""
     }
+#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,

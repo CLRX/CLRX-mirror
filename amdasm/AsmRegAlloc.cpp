@@ -172,6 +172,8 @@ void ISAUsageHandler::flush()
                 instrStruct.push_back(argFlags);
             instrStruct[instrStruct.size() - ((pushedArgs+7) >> 3) - 1] = pushedArgs;
         }
+        argFlags = 0;
+        pushedArgs = 0;
     }
 }
 

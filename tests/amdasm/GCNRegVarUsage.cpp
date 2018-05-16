@@ -1715,6 +1715,34 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 72, nullptr, 256+10, 256+11, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 0 }
         },
         true, ""
+    },
+    {   /* 28: failing testcase from AsmRegAlloc3 */
+        R"ffDXD(.regvar sa:s:8, va:v:8
+        .rvlin sa[2:7]
+        .usereg sa[2:7]:r
+        s_mov_b32 sa[2], s4               # 0
+        s_cbranch_scc0 b1                       # 8
+b0:     .rvlin sa[2:7]
+        .usereg sa[2:7]:r
+        s_mov_b32 s1, s1
+        s_endpgm
+b1:     .rvlin va[3:6]
+        .usereg va[3:6]:w
+        s_mov_b32 s1, s1
+        s_endpgm
+)ffDXD",
+        {
+            { 0, "sa", 2, 8, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 0, "sa", 2, 3, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
+            { 0, nullptr, 4, 5, GCNFIELD_SSRC0, ASMRVU_READ, 0 },
+            { 8, "sa", 2, 8, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 8, nullptr, 1, 2, GCNFIELD_SDST, ASMRVU_WRITE, 0 },
+            { 8, nullptr, 1, 2, GCNFIELD_SSRC0, ASMRVU_READ, 0 },
+            { 16, "va", 3, 7, ASMFIELD_NONE, ASMRVU_WRITE, 0 },
+            { 16, nullptr, 1, 2, GCNFIELD_SDST, ASMRVU_WRITE, 0 },
+            { 16, nullptr, 1, 2, GCNFIELD_SSRC0, ASMRVU_READ, 0 }
+        },
+        true, ""
     }
 };
 
@@ -1749,6 +1777,9 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
     const std::string testCaseName = oss.str();
     assertValue<bool>("testGCNRegVarUsages", testCaseName+".good",
                       testCase.good, good);
+    assertString("testGCNRegVarUsages", testCaseName+".errorMessages",
+              testCase.errorMessages, errorStream.str());
+    
     if (assembler.getSections().size()<1)
     {
         std::ostringstream oss;
@@ -1790,8 +1821,6 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"align",
                     cxuint(expectedRvu.align), cxuint(resultRvu.align));
     }
-    assertString("testGCNRegVarUsages", testCaseName+".errorMessages",
-              testCase.errorMessages, errorStream.str());
     assertTrue("testGCNRegVarUsages", testCaseName+"length",
                    j == testCase.regVarUsages.size());
 }
