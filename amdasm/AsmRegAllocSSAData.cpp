@@ -1386,16 +1386,19 @@ static void createRoutineData(const std::vector<CodeBlock>& codeBlocks,
     ARDOut << "--------- createRoutineData end ------------\n";
 }
 
-void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
+void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler,
+                ISALinearDepHandler& linDepHandler)
 {
     if (codeBlocks.empty())
         return;
     usageHandler.rewind();
     auto cbit = codeBlocks.begin();
     AsmRegVarUsage rvu;
+    
     if (!usageHandler.hasNext())
         return; // do nothing if no regusages
     ISAUsageHandler::ReadPos oldReadPos = usageHandler.getReadPos();
+    // old linear deps position
     rvu = usageHandler.nextUsage();
     
     cxuint regRanges[MAX_REGTYPES_NUM*2];
@@ -1456,6 +1459,45 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler)
             rvu = usageHandler.nextUsage();
         }
         ++cbit;
+    }
+    
+    // fillup linear dep position in code blocks
+    linDepHandler.rewind();
+    cbit = codeBlocks.begin();
+    
+    if (linDepHandler.hasNext())
+    {
+        AsmRegVarLinearDep linDep;
+        size_t oldLDReadPos = linDepHandler.getReadPos();
+        // old linear deps position
+        linDep = linDepHandler.nextLinearDep();
+        
+        while (true)
+        {
+            while (cbit != codeBlocks.end() && cbit->end <= linDep.offset)
+            {
+                cbit->linearDepPos = oldLDReadPos;
+                ++cbit;
+            }
+            if (cbit == codeBlocks.end())
+                break;
+            // skip linDep's before codeblock
+            while (linDep.offset < cbit->start && linDepHandler.hasNext())
+            {
+                oldLDReadPos = linDepHandler.getReadPos();
+                linDep = linDepHandler.nextLinearDep();
+            }
+            if (linDep.offset < cbit->start)
+                break;
+            
+            cbit->linearDepPos = oldLDReadPos;
+            while (linDep.offset < cbit->end && linDepHandler.hasNext())
+            {
+                oldLDReadPos = linDepHandler.getReadPos();
+                linDep = linDepHandler.nextLinearDep();
+            }
+            ++cbit;
+        }
     }
     
     size_t rbwCount = 0;

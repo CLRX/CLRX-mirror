@@ -375,6 +375,7 @@ public:
         // key - regvar, value - SSA info for this regvar
         std::unordered_map<AsmSingleVReg, SSAInfo> ssaInfoMap;
         ISAUsageHandler::ReadPos usagePos;
+        size_t linearDepPos;
     };
     
     typedef Array<std::pair<size_t, size_t> > OutLiveness;
@@ -421,9 +422,11 @@ public:
     
     void createCodeStructure(const std::vector<AsmCodeFlowEntry>& codeFlow,
              size_t codeSize, const cxbyte* code);
-    void createSSAData(ISAUsageHandler& usageHandler);
+    void createSSAData(ISAUsageHandler& usageHandler,
+                ISALinearDepHandler& linDepHandler);
     void applySSAReplaces();
-    void createLivenesses(ISAUsageHandler& usageHandler);
+    void createLivenesses(ISAUsageHandler& usageHandler,
+                ISALinearDepHandler& linDepHandler);
     void createInterferenceGraph();
     void colorInterferenceGraph();
     

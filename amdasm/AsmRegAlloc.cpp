@@ -886,9 +886,9 @@ void AsmRegAllocator::allocateRegisters(cxuint sectionId)
     // set up
     const AsmSection& section = assembler.sections[sectionId];
     createCodeStructure(section.codeFlow, section.content.size(), section.content.data());
-    createSSAData(*section.usageHandler);
+    createSSAData(*section.usageHandler, *section.linearDepHandler);
     applySSAReplaces();
-    createLivenesses(*section.usageHandler);
+    createLivenesses(*section.usageHandler, *section.linearDepHandler);
     createInterferenceGraph();
     colorInterferenceGraph();
 }

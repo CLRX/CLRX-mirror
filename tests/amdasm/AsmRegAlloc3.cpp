@@ -2928,9 +2928,9 @@ static void testCreateLivenessesCase(cxuint i, const AsmLivenessesCase& testCase
     
     regAlloc.createCodeStructure(section.codeFlow, section.getSize(),
                             section.content.data());
-    regAlloc.createSSAData(*section.usageHandler);
+    regAlloc.createSSAData(*section.usageHandler, *section.linearDepHandler);
     regAlloc.applySSAReplaces();
-    regAlloc.createLivenesses(*section.usageHandler);
+    regAlloc.createLivenesses(*section.usageHandler, *section.linearDepHandler);
     
     std::ostringstream oss;
     oss << " testAsmLivenesses case#" << i;

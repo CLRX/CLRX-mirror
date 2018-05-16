@@ -1139,7 +1139,8 @@ static inline void revertLastSVReg(LastVRegMap& lastVRegMap, const AsmSingleVReg
     }
 }
 
-void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
+void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
+                ISALinearDepHandler& linDepHandler)
 {
     ARDOut << "----- createLivenesses ------\n";
     // construct var index maps
@@ -1271,6 +1272,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler)
                 std::vector<AsmSingleVReg> writtenSVRegs;
                 
                 usageHandler.setReadPos(cblock.usagePos);
+                linDepHandler.setReadPos(cblock.linearDepPos);
                 // register in liveness
                 while (true)
                 {

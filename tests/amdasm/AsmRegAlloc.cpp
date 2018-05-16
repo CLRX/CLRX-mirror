@@ -147,7 +147,7 @@ static void testCreateSSAData(cxuint testSuiteId, cxuint i, const AsmSSADataCase
     
     regAlloc.createCodeStructure(section.codeFlow, section.getSize(),
                             section.content.data());
-    regAlloc.createSSAData(*section.usageHandler);
+    regAlloc.createSSAData(*section.usageHandler, *section.linearDepHandler);
     
     const std::vector<CodeBlock>& resCodeBlocks = regAlloc.getCodeBlocks();
     std::ostringstream oss;
