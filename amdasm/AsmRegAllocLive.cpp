@@ -847,7 +847,8 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
                 const SSAInfo& ssaInfo = ssaInfoMap.find(svreg)->second;
                 size_t outVIdx;
                 
-                if (rvu.rwFlags == ASMRVU_READ &&
+                // if read or read-write (but not same write)
+                if ((rvu.rwFlags!=ASMRVU_WRITE || rvu.regField==ASMFIELD_NONE) &&
                     std::find(writtenSVRegs.begin(), writtenSVRegs.end(),
                               svreg) != writtenSVRegs.end())
                     ssaIdIdx--; // current ssaIdIdx is for write, decrement
@@ -882,7 +883,8 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
                 const SSAInfo& ssaInfo = ssaInfoMap.find(svreg)->second;
                 size_t outVIdx;
                 
-                if (rvu.rwFlags == ASMRVU_READ &&
+                // if read or read-write (but not same write)
+                if ((rvu.rwFlags!=ASMRVU_WRITE || rvu.regField==ASMFIELD_NONE) &&
                     std::find(writtenSVRegs.begin(), writtenSVRegs.end(),
                               svreg) != writtenSVRegs.end())
                     ssaIdIdx--; // current ssaIdIdx is for write, decrement
