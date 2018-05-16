@@ -163,6 +163,22 @@ public:
                     cxbyte* linearDeps) const = 0;
 };
 
+/// ISA (register and regvar) linear handler
+class ISALinearDepHandler
+{
+private:
+    std::vector<AsmRegVarLinearDep> regVarLinDeps;
+    size_t regVarLinDepsPos;
+public:
+    ISALinearDepHandler();
+    
+    void pushLinearDep(const AsmRegVarLinearDep& linearDep);
+    
+    void rewind();
+    
+    AsmRegVarLinearDep nextLinearDep();
+};
+
 /// GCN (register and regvar) Usage handler
 class GCNUsageHandler: public ISAUsageHandler
 {

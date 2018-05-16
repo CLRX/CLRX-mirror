@@ -639,6 +639,15 @@ struct AsmRegUsage2Int
     cxbyte rwFlags;     ///< rw flags and others
 };
 
+/// internal structure for regvar linear dependencies
+struct AsmRegVarLinearDep
+{
+    size_t offset;
+    const AsmRegVar* regVar;    ///< regvar
+    uint16_t rstart;    ///< register start
+    uint16_t rend;      ///< register end
+};
+
 /// code flow type
 enum AsmCodeFlowType
 {
