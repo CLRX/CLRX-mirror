@@ -819,6 +819,7 @@ static void joinRegVarLivenesses(const std::deque<FlowStackEntry3>& prevFlowStac
 
 static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
             const AsmRegVarUsage* rvus, LinearDepMap* ldepsOut,
+            std::unordered_map<AsmSingleVReg, SSAInfo>& ssaInfoMap,
             const VarIndexMap* vregIndexMaps, const SVRegMap& ssaIdIdxMap,
             size_t regTypesNum, const cxuint* regRanges)
 {
@@ -842,13 +843,12 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
             {
                 AsmSingleVReg svreg = {rvu.regVar, k};
                 auto sit = ssaIdIdxMap.find(svreg);
-                if (regType==UINT_MAX)
-                    regType = getRegType(regTypesNum, regRanges, svreg);
-                const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-                const std::vector<size_t>& ssaIdIndices =
-                            vregIndexMap.find(svreg)->second;
+                const SSAInfo& ssaInfo = ssaInfoMap.find(svreg)->second;
+                size_t outVIdx;
+                getVIdx(svreg, sit->second, ssaInfo, vregIndexMaps,
+                                regTypesNum, regRanges, regType, outVIdx);
                 // push variable index
-                vidxes.push_back(ssaIdIndices[sit->second]);
+                vidxes.push_back(outVIdx);
             }
         }
         ldepsOut[regType][vidxes[0]].align = align;
@@ -872,14 +872,12 @@ static void addUsageDeps(const cxbyte* ldeps, cxuint rvusNum,
             {
                 AsmSingleVReg svreg = {rvu.regVar, k};
                 auto sit = ssaIdIdxMap.find(svreg);
-                assert(sit != ssaIdIdxMap.end());
-                if (regType==UINT_MAX)
-                    regType = getRegType(regTypesNum, regRanges, svreg);
-                const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
-                const std::vector<size_t>& ssaIdIndices =
-                            vregIndexMap.find(svreg)->second;
+                const SSAInfo& ssaInfo = ssaInfoMap.find(svreg)->second;
+                size_t outVIdx;
+                getVIdx(svreg, sit->second, ssaInfo, vregIndexMaps,
+                                regTypesNum, regRanges, regType, outVIdx);
                 // push variable index
-                vidxes.push_back(ssaIdIndices[sit->second]);
+                vidxes.push_back(outVIdx);
             }
             ldepsOut[regType][vidxes[0]].align = align;
             for (size_t j = 1; j < vidxes.size(); j++)
@@ -1317,8 +1315,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                         cxbyte lDeps[16];
                         usageHandler.getUsageDependencies(instrRVUsCount, instrRVUs, lDeps);
                         
-                        addUsageDeps(lDeps, instrRVUsCount, instrRVUs,
-                                linearDepMaps, vregIndexMaps, ssaIdIdxMap,
+                        addUsageDeps(lDeps, instrRVUsCount, instrRVUs, linearDepMaps,
+                                cblock.ssaInfoMap, vregIndexMaps, ssaIdIdxMap,
                                 regTypesNum, regRanges);
                         
                         readSVRegs.clear();
