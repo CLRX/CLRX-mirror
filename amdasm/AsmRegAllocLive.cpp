@@ -1277,8 +1277,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                 
                 // main routine to handle ssaInfos
                 SVRegMap ssaIdIdxMap;
-                AsmRegVarUsage instrRVUs[8];
-                cxuint instrRVUsCount = 0;
+                std::vector<AsmRegVarUsage> instrRVUs;
                 
                 size_t oldOffset = cblock.usagePos.readOffset;
                 std::vector<AsmSingleVReg> readSVRegs;
@@ -1286,6 +1285,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                 
                 usageHandler.setReadPos(cblock.usagePos);
                 linDepHandler.setReadPos(cblock.linearDepPos);
+                
                 // register in liveness
                 while (true)
                 {
@@ -1328,21 +1328,22 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                         }
                         // get linear deps and equal to
                         cxbyte lDeps[16];
-                        usageHandler.getUsageDependencies(instrRVUsCount, instrRVUs, lDeps);
+                        usageHandler.getUsageDependencies(instrRVUs.size(),
+                                    instrRVUs.data(), lDeps);
                         
-                        addUsageDeps(lDeps, instrRVUsCount, instrRVUs, linearDepMaps,
-                                cblock.ssaInfoMap, vregIndexMaps, ssaIdIdxMap,
-                                writtenSVRegs, regTypesNum, regRanges);
+                        addUsageDeps(lDeps, instrRVUs.size(), instrRVUs.data(),
+                                linearDepMaps, cblock.ssaInfoMap, vregIndexMaps,
+                                ssaIdIdxMap, writtenSVRegs, regTypesNum, regRanges);
                         
                         readSVRegs.clear();
                         writtenSVRegs.clear();
                         if (!hasNext)
                             break;
                         oldOffset = rvu.offset;
-                        instrRVUsCount = 0;
+                        instrRVUs.clear();
                     }
                     if (hasNext && oldOffset < cblock.end && !rvu.useRegMode)
-                        instrRVUs[instrRVUsCount++] = rvu;
+                        instrRVUs.push_back(rvu);
                     if (oldOffset >= cblock.end)
                         break;
                     
