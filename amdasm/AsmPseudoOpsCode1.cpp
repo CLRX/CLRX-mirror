@@ -2003,7 +2003,7 @@ void AsmPseudoOps::declareRegVarLinearDeps(Assembler& asmr, const char* linePtr)
             // put regVar usage
             if (regVar != nullptr)
                 asmr.sections[asmr.currentSection].linearDepHandler->pushLinearDep(
-                        AsmRegVarLinearDep{ asmr.currentOutPos, regVar,
+                        AsmRegVarLinearDep{ size_t(asmr.currentOutPos), regVar,
                             uint16_t(regStart), uint16_t(regEnd) });
             else
                 // otherwise, just ignore, print warning
