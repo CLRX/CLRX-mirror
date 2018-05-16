@@ -1393,19 +1393,24 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                         
                         // collecting linear deps for instruction
                         std::vector<AsmRegVarLinearDep> instrLinDeps;
-                        AsmRegVarLinearDep linDep = { SIZE_MAX, nullptr, 0, 0 };
+                        AsmRegVarLinearDep linDep = { 0, nullptr, 0, 0 };
+                        bool haveLdep = false;
                         while (linDep.offset < oldOffset && linDepHandler.hasNext())
-                            linDep = linDepHandler.nextLinearDep();
-                        // if found
-                        while (linDep.offset == oldOffset)
                         {
-                            // just put
-                            instrLinDeps.push_back(linDep);
-                            if (linDepHandler.hasNext())
-                                linDep = linDepHandler.nextLinearDep();
-                            else // no data
-                                break;
+                            linDep = linDepHandler.nextLinearDep();
+                            haveLdep = true;
                         }
+                        // if found
+                        if (haveLdep)
+                            while (linDep.offset == oldOffset)
+                            {
+                                // just put
+                                instrLinDeps.push_back(linDep);
+                                if (linDepHandler.hasNext())
+                                    linDep = linDepHandler.nextLinearDep();
+                                else // no data
+                                    break;
+                            }
                         // get linear deps and equal to
                         cxbyte lDeps[16];
                         usageHandler.getUsageDependencies(instrRVUs.size(),

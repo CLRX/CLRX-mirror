@@ -2845,30 +2845,64 @@ b1:     s_xor_b32 sa[2], sa[2], sa[7]           # 44
         { }, // vidxCallMap
         true, ""
     },
-#if 0
     {   // 43 - user define linear deps (by '.rvlin')
         R"ffDXD(.regvar sa:s:8, va:v:8
         .rvlin sa[2:7]
         .usereg sa[2:7]:r
-        s_mov_b32 sa[2], s4               # 0
-        s_cbranch_scc0 b1                       # 8
+        s_mov_b32 sa[2], s4     # 0
+        s_cbranch_scc0 b1       # 4
 b0:     .rvlin sa[2:7]
         .usereg sa[2:7]:r
-        s_mov_b32 s1, s1
-        s_endpgm
+        s_mov_b32 s1, s1        # 8
+        s_endpgm                # 12
 b1:     .rvlin va[3:6]
         .usereg va[3:6]:w
-        s_mov_b32 s1, s1
-        s_endpgm
+        s_mov_b32 s1, s1        # 16
+        s_endpgm                # 20
 )ffDXD",
-        {
+        {   // livenesses
+            {   // for SGPRs
+                { { 0, 10 }, { 16, 18 } }, // 0: S1
+                { { 0, 1 } }, // 1: S4
+                { { 0, 1 } }, // 2: sa[2]'0
+                { { 1, 9 } }, // 3: sa[2]'1
+                { { 0, 9 } }, // 4: sa[3]'0
+                { { 0, 9 } }, // 5: sa[4]'0
+                { { 0, 9 } }, // 5: sa[5]'0
+                { { 0, 9 } }, // 6: sa[6]'0
+                { { 0, 9 } }  // 7: sa[7]'0
+            },
+            {   // for VGPRs
+                { { 0, 8 }, { 16, 17 } }, // 0: sa[3]'0
+                { { 0, 8 }, { 16, 17 } }, // 0: sa[4]'0
+                { { 0, 8 }, { 16, 17 } }, // 0: sa[5]'0
+                { { 0, 8 }, { 16, 17 } }  // 0: sa[6]'0
+            },
+            { },
+            { }
         },
-        { },
-        { },
-        { },
+        {   // linearDepMaps
+            {   // for SGPRs
+                { 3, { 0, { }, { 4 } } },
+                { 4, { 0, { 3 }, { 5 } } },
+                { 5, { 0, { 4 }, { 6 } } },
+                { 6, { 0, { 5 }, { 7 } } },
+                { 7, { 0, { 6 }, { 8 } } },
+                { 8, { 0, { 7 }, { } } }
+            },
+            {   // for VGPRs
+                { 0, { 0, { }, { 1 } } },
+                { 1, { 0, { 0 }, { 2 } } },
+                { 2, { 0, { 1 }, { 3 } } },
+                { 3, { 0, { 2 }, { } } }
+            },
+            { },
+            { }
+        },
+        { }, // vidxRoutineMap
+        { }, // vidxCallMap
         true, ""
     }
-#endif
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
