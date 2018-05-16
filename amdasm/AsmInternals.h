@@ -303,6 +303,8 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     static void stopUsing(Assembler& asmr, const char* linePtr);
     // .usereg ?
     static void doUseReg(Assembler& asmr, const char* linePtr);
+    // .rvlin
+    static void declareRegVarLinearDeps(Assembler& asmr, const char* linePtr);
     // .undef
     static void undefSymbol(Assembler& asmr, const char* linePtr);
     // .regvar

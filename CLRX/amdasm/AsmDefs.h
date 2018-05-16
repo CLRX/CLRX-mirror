@@ -716,6 +716,7 @@ struct AsmScope
 };
 
 class ISAUsageHandler;
+class ISALinearDepHandler;
 
 /// assembler section
 struct AsmSection
@@ -731,6 +732,7 @@ struct AsmSection
     std::vector<cxbyte> content;    ///< content of section
     
     std::unique_ptr<ISAUsageHandler> usageHandler;  ///< usage handler
+    std::unique_ptr<ISALinearDepHandler> linearDepHandler; ///< linear dep handler
     std::vector<AsmCodeFlowEntry> codeFlow;  ///< code flow info
     
     /// constructor

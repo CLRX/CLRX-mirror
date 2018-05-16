@@ -163,19 +163,30 @@ public:
                     cxbyte* linearDeps) const = 0;
 };
 
-/// ISA (register and regvar) linear handler
+/// ISA regvar linear handler
 class ISALinearDepHandler
 {
 private:
     std::vector<AsmRegVarLinearDep> regVarLinDeps;
     size_t regVarLinDepsPos;
 public:
+    /// constructor
     ISALinearDepHandler();
     
+    /// get reading position
+    size_t getReadPos() const
+    { return regVarLinDepsPos; }
+    /// get reading position
+    void setReadPos(size_t pos)
+    { regVarLinDepsPos = pos; }
+    /// push linear dependency
     void pushLinearDep(const AsmRegVarLinearDep& linearDep);
-    
+    /// rewind read position to start
     void rewind();
-    
+    /// return true if has next
+    bool hasNext() const
+    { return regVarLinDepsPos < regVarLinDeps.size(); }
+    /// get next linear dependency
     AsmRegVarLinearDep nextLinearDep();
 };
 

@@ -258,6 +258,31 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
     return rvu;
 }
 
+
+ISALinearDepHandler::ISALinearDepHandler() : regVarLinDepsPos(0)
+{ }
+
+void ISALinearDepHandler::pushLinearDep(const AsmRegVarLinearDep& linearDep)
+{
+    regVarLinDeps.push_back(linearDep);
+}
+
+void ISALinearDepHandler::rewind()
+{
+    regVarLinDepsPos = 0;
+}
+
+AsmRegVarLinearDep ISALinearDepHandler::nextLinearDep()
+{
+    if (regVarLinDepsPos >= regVarLinDeps.size())
+        throw AsmException("No regvar linear deps in this code");
+    return regVarLinDeps[regVarLinDepsPos++];
+}
+
+/*
+ * Asm register allocator stuff
+ */
+
 AsmRegAllocator::AsmRegAllocator(Assembler& _assembler) : assembler(_assembler)
 { }
 

@@ -3001,6 +3001,10 @@ bool Assembler::assemble()
                             isaAssembler->createUsageHandler(
                                     sections[currentSection].content));
                 
+                if (sections[currentSection].linearDepHandler == nullptr)
+                    sections[currentSection].linearDepHandler.reset(
+                            new ISALinearDepHandler());
+                
                 isaAssembler->assemble(firstName, stmtPlace, linePtr, end,
                            sections[currentSection].content,
                            sections[currentSection].usageHandler.get());

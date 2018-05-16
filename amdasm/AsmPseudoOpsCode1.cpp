@@ -1981,6 +1981,40 @@ void AsmPseudoOps::doUseReg(Assembler& asmr, const char* linePtr)
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
+void AsmPseudoOps::declareRegVarLinearDeps(Assembler& asmr, const char* linePtr)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    asmr.initializeOutputFormat();
+    
+    do {
+        skipSpacesToEnd(linePtr, end);
+        const char* regVarPlace = linePtr;
+        bool good = true;
+        cxuint regStart, regEnd;
+        const AsmRegVar* regVar;
+        good = asmr.isaAssembler->parseRegisterRange(linePtr, regStart, regEnd, regVar);
+        
+        if (good) // if good
+        {
+            // create isaLinearDepHandler if needed
+            if (asmr.sections[asmr.currentSection].linearDepHandler == nullptr)
+                    asmr.sections[asmr.currentSection].linearDepHandler.reset(
+                        new ISALinearDepHandler());
+            // put regVar usage
+            if (regVar != nullptr)
+                asmr.sections[asmr.currentSection].linearDepHandler->pushLinearDep(
+                        AsmRegVarLinearDep{ asmr.currentOutPos, regVar,
+                            uint16_t(regStart), uint16_t(regEnd) });
+            else
+                // otherwise, just ignore, print warning
+                asmr.printWarning(regVarPlace, "Normal register range is ignored");
+        }
+        
+    } while(skipCommaForMultipleArgs(asmr, linePtr));
+    
+    checkGarbagesAtEnd(asmr, linePtr);
+}
+
 void AsmPseudoOps::stopUsing(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
