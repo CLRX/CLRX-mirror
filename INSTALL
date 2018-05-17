@@ -57,7 +57,7 @@ BUILD_DOXYGEN - build doxygen documentation
 BUILD_MANUAL - build Unix manual pages
 BUILD_CLRXDOC - build CLRX user documentation
 BUILD_STATIC_EXE - build with statically linked executables
-GCC5CXX11NEWABI - build with new GCC5 C++11 ABI
+GCC5CXX11NEWABI - build with new GCC5 C++11 ABI (required if GCC uses old ABI by default)
 NO_STATIC - no static libraries
 NO_CLWRAPPER - do not build CLRXWrapper
 CPU_ARCH - target CPU architecture (in GCC parameter to -march, for MSVC
