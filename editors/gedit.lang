@@ -177,6 +177,7 @@
             <keyword>get_64bit</keyword>
             <keyword>get_format</keyword>
             <keyword>get_gpu</keyword>
+            <keyword>get_policy</keyword>
             <keyword>global</keyword>
             <keyword>globalbuffers</keyword>
             <keyword>globaldata</keyword>
@@ -306,6 +307,7 @@
             <keyword>rodata</keyword>
             <keyword>runtime_handle</keyword>
             <keyword>runtime_loader_kernel_symbol</keyword>
+            <keyword>rvlin</keyword>
             <keyword>rwdata</keyword>
             <keyword>sampler</keyword>
             <keyword>samplerinit</keyword>

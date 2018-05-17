@@ -1885,6 +1885,7 @@
             <item>.get_64bit</item>
             <item>.get_gpu</item>
             <item>.get_format</item>
+            <item>.get_policy</item>
             <item>.global</item>
             <item>.globalbuffers</item>
             <item>.globaldata</item>
@@ -2014,6 +2015,7 @@
             <item>.rodata</item>
             <item>.runtime_handle</item>
             <item>.runtime_loader_kernel_symbol</item>
+            <item>.rvlin</item>
             <item>.rwdata</item>
             <item>.sampler</item>
             <item>.samplerinit</item>
