@@ -494,18 +494,6 @@ void mapSort(Iter begin, Iter end, Comp comp)
        return comp(e1.first, e2.first); });
 }
 
-};
-
-namespace std
-{
-
-/// std::swap specialization for CLRX::Array
-template<typename T>
-void swap(CLRX::Array<T>& a1, CLRX::Array<T>& a2)
-{ a1.swap(a2); }
-
-}
-
 /** Simple cache **/
 
 /// Simple cache for object. object class should have a weight method
@@ -621,5 +609,17 @@ public:
         totalWeight += elemWeight;
     }
 };
+
+};
+
+namespace std
+{
+
+/// std::swap specialization for CLRX::Array
+template<typename T>
+void swap(CLRX::Array<T>& a1, CLRX::Array<T>& a2)
+{ a1.swap(a2); }
+
+}
 
 #endif

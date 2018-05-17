@@ -116,7 +116,7 @@ static const char* pseudoOpNamesTbl[] =
     "offset", "oldmodparam", "org",
     "p2align", "policy", "print", "purgem", "quad",
     "rawcode", "regvar", "rept", "rocm", "rodata",
-    "rvlin", "sbttl", "scope", "section", "set",
+    "rvlin", "rvlin_once", "sbttl", "scope", "section", "set",
     "short", "single", "size", "skip",
     "space", "string", "string16", "string32",
     "string64", "struct", "text", "title",
@@ -159,7 +159,7 @@ enum
     ASMOP_OFFSET, ASMOP_OLDMODPARAM, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_POLICY, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
     ASMOP_RAWCODE, ASMOP_REGVAR, ASMOP_REPT, ASMOP_ROCM, ASMOP_RODATA,
-    ASMOP_RVLIN, ASMOP_SBTTL, ASMOP_SCOPE, ASMOP_SECTION, ASMOP_SET,
+    ASMOP_RVLIN, ASMOP_RVLIN_ONCE, ASMOP_SBTTL, ASMOP_SCOPE, ASMOP_SECTION, ASMOP_SET,
     ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
     ASMOP_STRING64, ASMOP_STRUCT, ASMOP_TEXT, ASMOP_TITLE,
@@ -635,7 +635,10 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::goToSection(*this, stmtPlace, stmtPlace, true);
             break;
         case ASMOP_RVLIN:
-            AsmPseudoOps::declareRegVarLinearDeps(*this, linePtr);
+            AsmPseudoOps::declareRegVarLinearDeps(*this, linePtr, false);
+            break;
+        case ASMOP_RVLIN_ONCE:
+            AsmPseudoOps::declareRegVarLinearDeps(*this, linePtr, true);
             break;
         case ASMOP_SCOPE:
             AsmPseudoOps::openScope(*this, stmtPlace, linePtr);

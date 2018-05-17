@@ -1981,7 +1981,8 @@ void AsmPseudoOps::doUseReg(Assembler& asmr, const char* linePtr)
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
-void AsmPseudoOps::declareRegVarLinearDeps(Assembler& asmr, const char* linePtr)
+void AsmPseudoOps::declareRegVarLinearDeps(Assembler& asmr, const char* linePtr,
+            bool usedOnce)
 {
     const char* end = asmr.line+asmr.lineSize;
     asmr.initializeOutputFormat();
@@ -1997,14 +1998,27 @@ void AsmPseudoOps::declareRegVarLinearDeps(Assembler& asmr, const char* linePtr)
         if (good) // if good
         {
             // create isaLinearDepHandler if needed
-            if (asmr.sections[asmr.currentSection].linearDepHandler == nullptr)
+            if (usedOnce && asmr.sections[asmr.currentSection].linearDepHandler == nullptr)
                     asmr.sections[asmr.currentSection].linearDepHandler.reset(
                         new ISALinearDepHandler());
             // put regVar usage
             if (regVar != nullptr)
-                asmr.sections[asmr.currentSection].linearDepHandler->pushLinearDep(
-                        AsmRegVarLinearDep{ size_t(asmr.currentOutPos), regVar,
-                            uint16_t(regStart), uint16_t(regEnd) });
+            {
+                if (usedOnce)
+                    asmr.sections[asmr.currentSection].linearDepHandler->pushLinearDep(
+                            AsmRegVarLinearDep{ size_t(asmr.currentOutPos), regVar,
+                                uint16_t(regStart), uint16_t(regEnd) });
+                else
+                {   // defined for whole live of regvar
+                    std::vector<uint16_t>& linears = asmr.regVarLinearsMap[regVar];
+                    for (uint16_t r = regStart; r < regEnd; r++)
+                        linears.push_back(r);
+                    // sort and remove duplicates
+                    std::sort(linears.begin(), linears.end());
+                    linears.resize(std::unique(linears.begin(), linears.end()) -
+                            linears.begin());
+                }
+            }
             else
                 // otherwise, just ignore, print warning
                 asmr.printWarning(regVarPlace, "Normal register range is ignored");

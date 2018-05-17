@@ -2847,15 +2847,15 @@ b1:     s_xor_b32 sa[2], sa[2], sa[7]           # 44
     },
     {   // 43 - user define linear deps (by '.rvlin')
         R"ffDXD(.regvar sa:s:8, va:v:8
-        .rvlin sa[2:7]
+        .rvlin_once sa[2:7]
         .usereg sa[2:7]:r
         s_mov_b32 sa[2], s4     # 0
         s_cbranch_scc0 b1       # 4
-b0:     .rvlin sa[2:7]
+b0:     .rvlin_once sa[2:7]
         .usereg sa[2:7]:r
         s_mov_b32 s1, s1        # 8
         s_endpgm                # 12
-b1:     .rvlin va[3:6]
+b1:     .rvlin_once va[3:6]
         .usereg va[3:6]:w
         s_mov_b32 s1, s1        # 16
         s_endpgm                # 20

@@ -520,6 +520,7 @@ private:
     std::unordered_set<AsmSymbolEntry*> symbolClones;
     std::vector<AsmExpression*> unevalExpressions;
     std::vector<AsmRelocation> relocations;
+    std::unordered_map<const AsmRegVar*, std::vector<uint16_t> > regVarLinearsMap;
     AsmScope globalScope;
     AsmMacroMap macroMap;
     std::stack<AsmScope*> scopeStack;
@@ -527,7 +528,6 @@ private:
     AsmScope* currentScope;
     KernelMap kernelMap;
     std::vector<AsmKernel> kernels;
-    /// register variables
     Flags flags;
     uint64_t macroCount;
     uint64_t localCount; // macro's local count
