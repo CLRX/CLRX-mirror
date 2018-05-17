@@ -1636,6 +1636,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .runtime_handle
 .runtime_loader_kernel_symbol
 .rvlin
+.rvlin_once
 .rwdata
 .sampler
 .samplerinit

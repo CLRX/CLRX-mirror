@@ -308,6 +308,7 @@
             <keyword>runtime_handle</keyword>
             <keyword>runtime_loader_kernel_symbol</keyword>
             <keyword>rvlin</keyword>
+            <keyword>rvlin_once</keyword>
             <keyword>rwdata</keyword>
             <keyword>sampler</keyword>
             <keyword>samplerinit</keyword>

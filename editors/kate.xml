@@ -2016,6 +2016,7 @@
             <item>.runtime_handle</item>
             <item>.runtime_loader_kernel_symbol</item>
             <item>.rvlin</item>
+            <item>.rvlin_once</item>
             <item>.rwdata</item>
             <item>.sampler</item>
             <item>.samplerinit</item>
