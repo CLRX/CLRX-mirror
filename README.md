@@ -66,7 +66,7 @@ Optional CMake configuration options for build:
 
 * CMAKE_BUILD_TYPE - type of build (Release, Debug, GCCSan, GCCSSP).
 * CMAKE_INSTALL_PREFIX - prefix for installation (for example '/usr/local')
-* BUILD_32BIT - build also 32-bit binaries
+* BUILD_32BIT - build 32-bit binaries
 * BUILD_TESTS - build all tests
 * BUILD_SAMPLES - build OpenCL samples
 * BUILD_DOCUMENTATION - build project documentation (doxygen, unix manuals, user doc)
