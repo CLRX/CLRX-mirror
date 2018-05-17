@@ -2010,13 +2010,8 @@ void AsmPseudoOps::declareRegVarLinearDeps(Assembler& asmr, const char* linePtr,
                                 uint16_t(regStart), uint16_t(regEnd) });
                 else
                 {   // defined for whole live of regvar
-                    std::vector<uint16_t>& linears = asmr.regVarLinearsMap[regVar];
-                    for (uint16_t r = regStart; r < regEnd; r++)
-                        linears.push_back(r);
-                    // sort and remove duplicates
-                    std::sort(linears.begin(), linears.end());
-                    linears.resize(std::unique(linears.begin(), linears.end()) -
-                            linears.begin());
+                    SimpleRanges<uint16_t>& linears = asmr.regVarLinearsMap[regVar];
+                    linears.insert(regStart, regEnd);
                 }
             }
             else

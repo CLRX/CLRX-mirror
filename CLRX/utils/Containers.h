@@ -610,6 +610,88 @@ public:
     }
 };
 
+/// Simple ranges structure (holds ranges)
+template<typename T>
+struct SimpleRanges
+{
+    std::vector<std::pair<T, T> > v;
+    
+    SimpleRanges()
+    { }
+    
+    /// insert values from k to k2-1
+    void insert(T k, T k2)
+    {
+        if (v.empty())
+        {
+            v.push_back(std::make_pair(k, k2));
+            return;
+        }
+        
+        size_t n = v.size();
+        auto it = std::lower_bound(v.begin(), v.end(), std::make_pair(k, k),
+                [](const std::pair<T, T>& e1, const std::pair<T, T>& e2)
+                { return e1.first < e2.first; });
+        auto it2 = std::upper_bound(v.begin(), v.end(), std::make_pair(k2, k2),
+                [](const std::pair<T, T>& e1, const std::pair<T, T>& e2)
+                { return e1.second < e2.second; });
+        
+        T newk = k;
+        T newk2 = k2;
+        // check left
+        if (v.begin() != it)
+        {
+            auto prevIt = it;
+            --prevIt;
+            if (prevIt->second >= k)
+            {
+                newk = prevIt->first;
+                it = prevIt;
+            }
+        }
+        // check right
+        if (v.end() != it2 && it2->first <= k2)
+        {
+            newk2 = it2->second;
+            it2++;
+        }
+        
+        // final removing with reserving one place
+        if (it2-it > 1)
+        {
+            // remove obsolete ranges
+            n -= it2-it-1;
+            std::copy(it2, v.end(), it+1);
+            v.resize(n);
+        }
+        else if (it==it2)
+        {
+            // add one element (must be resized before)
+            size_t p1 = it-v.begin();
+            n++;
+            v.resize(n);
+            it = v.begin()+p1; // it can be invalidated
+            std::copy_backward(it, v.end()-1, v.end());
+        }
+        // final join
+        it->first = newk;
+        it->second = newk2;
+    }
+    
+    /// return true if value k is present
+    bool contain(T t) const
+    {
+        if (v.empty())
+            return false;
+        auto it = std::lower_bound(v.begin(), v.end(), t);
+        if (it==v.begin() && it->first>t)
+            return false;
+        if (it==v.end() || it->first>t)
+            --it;
+        return it->first<=t && t<it->second;
+    }
+};
+
 };
 
 namespace std
