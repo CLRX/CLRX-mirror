@@ -1395,6 +1395,12 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                         std::vector<AsmRegVarLinearDep> instrLinDeps;
                         AsmRegVarLinearDep linDep = { 0, nullptr, 0, 0 };
                         bool haveLdep = false;
+                        if (oldOffset == 0 && linDepHandler.hasNext())
+                        {
+                            // special case: if offset is zero, force get linear dep
+                            linDep = linDepHandler.nextLinearDep();
+                            haveLdep = true;
+                        }
                         while (linDep.offset < oldOffset && linDepHandler.hasNext())
                         {
                             linDep = linDepHandler.nextLinearDep();
