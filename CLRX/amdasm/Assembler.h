@@ -499,7 +499,7 @@ private:
     friend struct AsmAmdCL2PseudoOps; // INTERNAL LOGIC
     friend struct AsmROCmPseudoOps; // INTERNAL LOGIC
     friend struct GCNAsmUtils; // INTERNAL LOGIC
-
+    
     Array<CString> filenames;
     BinaryFormat format;
     GPUDeviceType deviceType;
@@ -520,7 +520,7 @@ private:
     std::unordered_set<AsmSymbolEntry*> symbolClones;
     std::vector<AsmExpression*> unevalExpressions;
     std::vector<AsmRelocation> relocations;
-    std::unordered_map<const AsmRegVar*, SimpleRanges<uint16_t> > regVarLinearsMap;
+    std::unordered_map<const AsmRegVar*, AsmRegVarLinear> regVarLinearsMap;
     AsmScope globalScope;
     AsmMacroMap macroMap;
     std::stack<AsmScope*> scopeStack;

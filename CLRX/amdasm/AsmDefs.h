@@ -773,6 +773,8 @@ struct AsmKernel
     void closeCodeRegion(size_t offset);
 };
 
+typedef VectorSet<std::pair<uint16_t, uint16_t> > AsmRegVarLinear;
+
 };
 
 namespace std
