@@ -94,6 +94,17 @@
 #  define HAVE_64BIT 1
 #endif
 
+#if defined(__sparc__) || defined(__sparc)
+#  define HAVE_ARCH_SPARC 1
+#  if defined(__sparc_v9__) || defined(__sparcv9)
+#    define HAVE_ARCH_SPARC64 1
+#    define HAVE_64BIT 1
+#  else
+#    define HAVE_ARCH_SPARC32 1
+#    define HAVE_32BIT 1
+#  endif
+#endif
+
 /* endianness */
 #if defined(__BIG_ENDIAN__) || defined(__ARMEB__) || defined(__THUMBEB__) || \
     defined(__AARCH64EB__) || defined(_MIPSEB)  || defined(__MIPSEB__) || \

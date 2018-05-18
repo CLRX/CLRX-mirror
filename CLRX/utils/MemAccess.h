@@ -286,6 +286,51 @@ inline uint64_t BEV(uint64_t t)
 inline int64_t BEV(int64_t t)
 { return BSWAP64(t); }
 
+#  if defined(HAVE_ARCH_SPARCH) || defined(HAVE_ARCH_MIPS) || defined(HAVE_ARCH_IA64)
+
+/// convert from/to big endian value from unaligned memory
+inline uint16_t UBEV(const uint16_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[1] | (uint16_t(tp[0])<<8);
+}
+/// convert from/to big endian value from unaligned memory
+inline int16_t UBEV(const int16_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[1] | (uint16_t(tp[0])<<8);
+}
+/// convert from/to big endian value from unaligned memory
+inline uint32_t UBEV(const uint32_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[3] | (uint32_t(tp[2])<<8) | (uint32_t(tp[1])<<16) | (uint32_t(tp[0])<<24);
+}
+/// convert from/to big endian value from unaligned memory
+inline int32_t UBEV(const int32_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[3] | (uint32_t(tp[2])<<8) | (uint32_t(tp[1])<<16) | (uint32_t(tp[0])<<24);
+}
+/// convert from/to big endian value from unaligned memory
+inline uint64_t UBEV(const uint64_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[7] | (uint64_t(tp[6])<<8) | (uint64_t(tp[5])<<16) | (uint64_t(tp[4])<<24) |
+            (uint64_t(tp[3])<<32) | (uint64_t(tp[2])<<40) | (uint64_t(tp[1])<<48) |
+            (uint64_t(tp[0])<<56);
+}
+/// convert from/to big endian value from unaligned memory
+inline int64_t UBEV(const int64_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[7] | (uint64_t(tp[6])<<8) | (uint64_t(tp[5])<<16) | (uint64_t(tp[4])<<24) |
+            (uint64_t(tp[3])<<32) | (uint64_t(tp[2])<<40) | (uint64_t(tp[1])<<48) |
+            (uint64_t(tp[0])<<56);
+}
+
+#  else
+
 /// convert from/to big endian value from unaligned memory
 inline uint16_t UBEV(const uint16_t& t)
 { return BSWAP16(t); }
@@ -336,7 +381,9 @@ inline uint64_t UBEV(const uint64_t& t)
 /// convert from/to big endian value from unaligned memory
 inline int64_t UBEV(const int64_t& t)
 { return BSWAP64(t); }
-#  endif
+#  endif // ARM32
+
+#  endif // IA/SPARC/MIPS
 
 /// convert from/to little endian value
 inline uint16_t LEV(uint16_t t)
@@ -358,6 +405,51 @@ inline uint64_t LEV(uint64_t t)
 /// convert from/to little endian value
 inline int64_t LEV(int64_t t)
 { return t; }
+
+#  if defined(HAVE_ARCH_SPARCH) || defined(HAVE_ARCH_MIPS) || defined(HAVE_ARCH_IA64)
+
+/// convert from/to little endian value from unaligned memory
+inline uint16_t ULEV(const uint16_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[0] | (uint16_t(tp[1])<<8);
+}
+/// convert from/to little endian value from unaligned memory
+inline int16_t ULEV(const int16_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[0] | (uint16_t(tp[1])<<8);
+}
+/// convert from/to little endian value from unaligned memory
+inline uint32_t ULEV(const uint32_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[0] | (uint32_t(tp[1])<<8) | (uint32_t(tp[2])<<16) | (uint32_t(tp[3])<<24);
+}
+/// convert from/to little endian value from unaligned memory
+inline int32_t ULEV(const int32_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[0] | (uint32_t(tp[1])<<8) | (uint32_t(tp[2])<<16) | (uint32_t(tp[3])<<24);
+}
+/// convert from/to little endian value from unaligned memory
+inline uint64_t ULEV(const uint64_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[0] | (uint64_t(tp[1])<<8) | (uint64_t(tp[2])<<16) | (uint64_t(tp[3])<<24) |
+        (uint64_t(tp[4])<<32) | (uint64_t(tp[5])<<40) | (uint64_t(tp[6])<<48) |
+        (uint64_t(tp[7])<<56);
+}
+/// convert from/to little endian value from unaligned memory
+inline int64_t ULEV(const int64_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[0] | (uint64_t(tp[1])<<8) | (uint64_t(tp[2])<<16) | (uint64_t(tp[3])<<24) |
+        (uint64_t(tp[4])<<32) | (uint64_t(tp[5])<<40) | (uint64_t(tp[6])<<48) |
+        (uint64_t(tp[7])<<56);
+}
+
+#  else
 
 /// convert from/to little endian value from unaligned memory
 inline uint16_t ULEV(const uint16_t& t)
@@ -411,6 +503,8 @@ inline int64_t ULEV(const int64_t& t)
 { return t; }
 #  endif
 
+#  endif // IA64/SPARC/MIPS
+
 /// save from/to big endian value
 inline void SBEV(uint16_t& r, uint16_t v)
 { r = BSWAP16(v); }
@@ -431,6 +525,69 @@ inline void SBEV(uint64_t& r, uint64_t v)
 /// save from/to big endian value
 inline void SBEV(int64_t& r, int64_t v)
 { r = BSWAP64(v); }
+
+#  if defined(HAVE_ARCH_SPARCH) || defined(HAVE_ARCH_MIPS) || defined(HAVE_ARCH_IA64)
+
+/// save from/to big endian value to unaligned memory
+inline void SUBEV(uint16_t& r, uint16_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[0] = uint8_t(v>>8);
+    rp[1] = uint8_t(v);
+}
+/// save from/to big endian value to unaligned memory
+inline void SUBEV(int16_t& r, int16_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[0] = uint8_t(v>>8);
+    rp[1] = uint8_t(v);
+}
+/// save from/to big endian value to unaligned memory
+inline void SUBEV(uint32_t& r, uint32_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[0] = uint8_t(v>>24);
+    rp[1] = uint8_t(v>>16);
+    rp[2] = uint8_t(v>>8);
+    rp[3] = uint8_t(v);
+}
+/// save from/to big endian value to unaligned memory
+inline void SUBEV(int32_t& r, int32_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[0] = uint8_t(v>>24);
+    rp[1] = uint8_t(v>>16);
+    rp[2] = uint8_t(v>>8);
+    rp[3] = uint8_t(v);
+}
+/// save from/to big endian value to unaligned memory
+inline void SUBEV(uint64_t& r, uint64_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[0] = uint8_t(v>>56);
+    rp[1] = uint8_t(v>>48);
+    rp[2] = uint8_t(v>>40);
+    rp[3] = uint8_t(v>>32);
+    rp[4] = uint8_t(v>>24);
+    rp[5] = uint8_t(v>>16);
+    rp[6] = uint8_t(v>>8);
+    rp[7] = uint8_t(v);
+}
+/// save from/to big endian value to unaligned memory
+inline void SUBEV(int64_t& r, int64_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[0] = uint8_t(v>>56);
+    rp[1] = uint8_t(v>>48);
+    rp[2] = uint8_t(v>>40);
+    rp[3] = uint8_t(v>>32);
+    rp[4] = uint8_t(v>>24);
+    rp[5] = uint8_t(v>>16);
+    rp[6] = uint8_t(v>>8);
+    rp[7] = uint8_t(v);
+}
+
+#  else
 
 /// save from/to big endian value to unaligned memory
 inline void SUBEV(uint16_t& r, uint16_t v)
@@ -489,6 +646,7 @@ inline void SUBEV(int64_t& r, int64_t v)
 { r = BSWAP64(v); }
 #  endif
 
+#  endif // IA64/MIPS/SPARC
 
 /// save from/to little endian value
 inline void SLEV(uint16_t& r, uint16_t v)
@@ -510,6 +668,69 @@ inline void SLEV(uint64_t& r, uint64_t v)
 /// save from/to little endian value
 inline void SLEV(int64_t& r, int64_t v)
 { r = v; }
+
+#  if defined(HAVE_ARCH_SPARCH) || defined(HAVE_ARCH_MIPS) || defined(HAVE_ARCH_IA64)
+
+/// save from/to little endian value to unaligned memory
+inline void SULEV(uint16_t& r, uint16_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[0] = uint8_t(v);
+    rp[1] = uint8_t(v>>8);
+}
+/// save from/to little endian value to unaligned memory
+inline void SULEV(int16_t& r, int16_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[0] = uint8_t(v);
+    rp[1] = uint8_t(v>>8);
+}
+/// save from/to little endian value to unaligned memory
+inline void SULEV(uint32_t& r, uint32_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[0] = uint8_t(v);
+    rp[1] = uint8_t(v>>8);
+    rp[2] = uint8_t(v>>16);
+    rp[3] = uint8_t(v>>24);
+}
+/// save from/to little endian value to unaligned memory
+inline void SULEV(int32_t& r, int32_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[0] = uint8_t(v);
+    rp[1] = uint8_t(v>>8);
+    rp[2] = uint8_t(v>>16);
+    rp[3] = uint8_t(v>>24);
+}
+/// save from/to little endian value to unaligned memory
+inline void SULEV(uint64_t& r, uint64_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[0] = uint8_t(v);
+    rp[1] = uint8_t(v>>8);
+    rp[2] = uint8_t(v>>16);
+    rp[3] = uint8_t(v>>24);
+    rp[4] = uint8_t(v>>32);
+    rp[5] = uint8_t(v>>40);
+    rp[6] = uint8_t(v>>48);
+    rp[7] = uint8_t(v>>56);
+}
+/// save from/to little endian value to unaligned memory
+inline void SULEV(int64_t& r, int64_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[0] = uint8_t(v);
+    rp[1] = uint8_t(v>>8);
+    rp[2] = uint8_t(v>>16);
+    rp[3] = uint8_t(v>>24);
+    rp[4] = uint8_t(v>>32);
+    rp[5] = uint8_t(v>>40);
+    rp[6] = uint8_t(v>>48);
+    rp[7] = uint8_t(v>>56);
+}
+
+# else
 
 /// save from/to little endian value to unaligned memory
 inline void SULEV(uint16_t& r, uint16_t v)
@@ -567,6 +788,8 @@ inline void SULEV(uint64_t& r, uint64_t v)
 inline void SULEV(int64_t& r, int64_t v)
 { r = v; }
 #  endif
+
+#  endif // IA64/MIPS/SPARC
 
 #else // BIG ENDIAN
 
@@ -591,6 +814,50 @@ inline uint64_t BEV(uint64_t t)
 inline int64_t BEV(int64_t t)
 { return t; }
 
+#  if defined(HAVE_ARCH_SPARCH) || defined(HAVE_ARCH_MIPS) || defined(HAVE_ARCH_IA64)
+
+/// convert from/to big endian value from unaligned memory
+inline uint16_t UBEV(const uint16_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[1] | (uint16_t(tp[0])<<8);
+}
+/// convert from/to big endian value from unaligned memory
+inline int16_t UBEV(const int16_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[1] | (uint16_t(tp[0])<<8);
+}
+/// convert from/to big endian value from unaligned memory
+inline uint32_t UBEV(const uint32_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[3] | (uint32_t(tp[2])<<8) | (uint32_t(tp[1])<<16) | (uint32_t(tp[0])<<24);
+}
+/// convert from/to big endian value from unaligned memory
+inline int32_t UBEV(const int32_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[3] | (uint32_t(tp[2])<<8) | (uint32_t(tp[1])<<16) | (uint32_t(tp[0])<<24);
+}
+/// convert from/to big endian value from unaligned memory
+inline uint64_t UBEV(const uint64_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[7] | (uint64_t(tp[6])<<8) | (uint64_t(tp[5])<<16) | (uint64_t(tp[4])<<24) |
+        (uint64_t(tp[3])<<32) | (uint64_t(tp[2])<<40) | (uint64_t(tp[1])<<48) |
+        (uint64_t(tp[0])<<56);
+}
+/// convert from/to big endian value from unaligned memory
+inline int64_t UBEV(const int64_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[7] | (uint64_t(tp[6])<<8) | (uint64_t(tp[5])<<16) | (uint64_t(tp[4])<<24) |
+        (uint64_t(tp[3])<<32) | (uint64_t(tp[2])<<40) | (uint64_t(tp[1])<<48) |
+        (uint64_t(tp[0])<<56);
+}
+
+#  else
 
 /// convert from/to big endian value from unaligned memory
 inline uint16_t UBEV(const uint16_t& t)
@@ -644,6 +911,8 @@ inline int64_t UBEV(const int64_t& t)
 { return t; }
 #  endif
 
+#  endif // IA64/MIPS/SPARC
+
 /// convert from/to little endian value
 inline uint16_t LEV(uint16_t t)
 { return BSWAP16(t); }
@@ -664,6 +933,50 @@ inline uint64_t LEV(uint64_t t)
 /// convert from/to little endian value
 inline int64_t LEV(int64_t t)
 { return BSWAP64(t); }
+
+#  if defined(HAVE_ARCH_SPARCH) || defined(HAVE_ARCH_MIPS) || defined(HAVE_ARCH_IA64)
+
+/// convert from/to little endian value from unaligned memory
+inline uint16_t ULEV(const uint16_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[0] | (uint16_t(tp[1])<<8);
+}
+/// convert from/to little endian value from unaligned memory
+inline int16_t ULEV(const int16_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[0] | (uint16_t(tp[1])<<8);
+}
+inline uint32_t ULEV(const uint32_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[0] | (uint32_t(tp[1])<<8) | (uint32_t(tp[2])<<16) | (uint32_t(tp[3])<<24);
+}
+/// convert from/to little endian value from unaligned memory
+inline int32_t ULEV(const int32_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[0] | (uint32_t(tp[1])<<8) | (uint32_t(tp[2])<<16) | (uint32_t(tp[3])<<24);
+}
+/// convert from/to little endian value from unaligned memory
+inline uint64_t ULEV(const uint64_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[0] | (uint64_t(tp[1])<<8) | (uint64_t(tp[2])<<16) | (uint64_t(tp[3])<<24) |
+        (uint64_t(tp[4])<<32) | (uint64_t(tp[5])<<40) | (uint64_t(tp[6])<<48) |
+        (uint64_t(tp[7])<<56);
+}
+/// convert from/to little endian value from unaligned memory
+inline int64_t ULEV(const int64_t& t)
+{
+    const uint8_t* tp = (const uint8_t*)&t;
+    return tp[0] | (uint64_t(tp[1])<<8) | (uint64_t(tp[2])<<16) | (uint64_t(tp[3])<<24) |
+        (uint64_t(tp[4])<<32) | (uint64_t(tp[5])<<40) | (uint64_t(tp[6])<<48) |
+        (uint64_t(tp[7])<<56);
+}
+
+#  else
 
 /// convert from/to little endian value from unaligned memory
 inline uint16_t ULEV(const uint16_t& t)
@@ -717,6 +1030,7 @@ inline int64_t ULEV(const int64_t& t)
 { return BSWAP64(t); }
 #  endif
 
+#  endif  // IA64/MIPS/SPARC
 
 /// save from/to big endian value
 inline void SBEV(uint16_t& r, uint16_t v)
@@ -738,6 +1052,69 @@ inline void SBEV(uint64_t& r, uint64_t v)
 /// save from/to big endian value
 inline void SBEV(int64_t& r, int64_t v)
 { r = v; }
+
+#  if defined(HAVE_ARCH_SPARCH) || defined(HAVE_ARCH_MIPS) || defined(HAVE_ARCH_IA64)
+
+/// save from/to big endian value to unaligned memory
+inline void SUBEV(uint16_t& r, uint16_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[1] = uint8_t(v);
+    rp[0] = uint8_t(v>>8);
+}
+/// save from/to big endian value to unaligned memory
+inline void SUBEV(int16_t& r, int16_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[1] = uint8_t(v);
+    rp[0] = uint8_t(v>>8);
+}
+/// save from/to big endian value to unaligned memory
+inline void SUBEV(uint32_t& r, uint32_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[3] = uint8_t(v);
+    rp[2] = uint8_t(v>>8);
+    rp[1] = uint8_t(v>>16);
+    rp[0] = uint8_t(v>>24);
+}
+/// save from/to big endian value to unaligned memory
+inline void SUBEV(int32_t& r, int32_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[3] = uint8_t(v);
+    rp[2] = uint8_t(v>>8);
+    rp[1] = uint8_t(v>>16);
+    rp[0] = uint8_t(v>>24);
+}
+/// save from/to big endian value to unaligned memory
+inline void SUBEV(uint64_t& r, uint64_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[7] = uint8_t(v);
+    rp[6] = uint8_t(v>>8);
+    rp[5] = uint8_t(v>>16);
+    rp[4] = uint8_t(v>>24);
+    rp[3] = uint8_t(v>>32);
+    rp[2] = uint8_t(v>>40);
+    rp[1] = uint8_t(v>>48);
+    rp[0] = uint8_t(v>>56);
+}
+/// save from/to big endian value to unaligned memory
+inline void SUBEV(int64_t& r, int64_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[7] = uint8_t(v);
+    rp[6] = uint8_t(v>>8);
+    rp[5] = uint8_t(v>>16);
+    rp[4] = uint8_t(v>>24);
+    rp[3] = uint8_t(v>>32);
+    rp[2] = uint8_t(v>>40);
+    rp[1] = uint8_t(v>>48);
+    rp[0] = uint8_t(v>>56);
+}
+
+#  else
 
 /// save from/to big endian value to unaligned memory
 inline void SUBEV(uint16_t& r, uint16_t v)
@@ -796,6 +1173,7 @@ inline void SUBEV(int64_t& r, int64_t v)
 { r = v; }
 #  endif
 
+#  endif // IA64/MIPS/SPARC
 
 /// save from/to little endian value
 inline void SLEV(uint16_t& r, uint16_t v)
@@ -817,6 +1195,69 @@ inline void SLEV(uint64_t& r, uint64_t v)
 /// save from/to little endian value
 inline void SLEV(int64_t& r, int64_t v)
 { r = BSWAP64(v); }
+
+#  if defined(HAVE_ARCH_SPARCH) || defined(HAVE_ARCH_MIPS) || defined(HAVE_ARCH_IA64)
+
+/// save from/to little endian value to unaligned memory
+inline void SULEV(uint16_t& r, uint16_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[1] = uint8_t(v>>8);
+    rp[0] = uint8_t(v);
+}
+/// save from/to little endian value to unaligned memory
+inline void SULEV(int16_t& r, int16_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[1] = uint8_t(v>>8);
+    rp[0] = uint8_t(v);
+}
+/// save from/to little endian value to unaligned memory
+inline void SULEV(uint32_t& r, uint32_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[3] = uint8_t(v>>24);
+    rp[2] = uint8_t(v>>16);
+    rp[1] = uint8_t(v>>8);
+    rp[0] = uint8_t(v);
+}
+/// save from/to little endian value to unaligned memory
+inline void SULEV(int32_t& r, int32_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[3] = uint8_t(v>>24);
+    rp[2] = uint8_t(v>>16);
+    rp[1] = uint8_t(v>>8);
+    rp[0] = uint8_t(v);
+}
+/// save from/to little endian value to unaligned memory
+inline void SULEV(uint64_t& r, uint64_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[7] = uint8_t(v>>56);
+    rp[6] = uint8_t(v>>48);
+    rp[5] = uint8_t(v>>40);
+    rp[4] = uint8_t(v>>32);
+    rp[3] = uint8_t(v>>24);
+    rp[2] = uint8_t(v>>16);
+    rp[1] = uint8_t(v>>8);
+    rp[0] = uint8_t(v);
+}
+/// save from/to little endian value to unaligned memory
+inline void SULEV(int64_t& r, int64_t v)
+{
+    uint8_t* rp = (uint8_t*)&r;
+    rp[7] = uint8_t(v>>56);
+    rp[6] = uint8_t(v>>48);
+    rp[5] = uint8_t(v>>40);
+    rp[4] = uint8_t(v>>32);
+    rp[3] = uint8_t(v>>24);
+    rp[2] = uint8_t(v>>16);
+    rp[1] = uint8_t(v>>8);
+    rp[0] = uint8_t(v);
+}
+
+#  else
 
 /// save from/to little endian value to unaligned memory
 inline void SULEV(uint16_t& r, uint16_t v)
@@ -874,6 +1315,8 @@ inline void SULEV(uint64_t& r, uint64_t v)
 inline void SULEV(int64_t& r, int64_t v)
 { r = BSWAP64(v); }
 #  endif
+
+#  endif // IA64/MIPS/SPARC
 
 #endif
 
