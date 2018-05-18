@@ -294,7 +294,7 @@ public:
     { }
     
     /// constructor
-    VectorSet(size_t n) : std::vector<T>(n)
+    explicit VectorSet(size_t n) : std::vector<T>(n)
     { }
     
     /// constructor
