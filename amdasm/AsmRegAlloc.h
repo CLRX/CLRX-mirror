@@ -80,7 +80,6 @@ extern CLRX_INTERNAL std::ostream& operator<<(std::ostream& os, const CLRX::Bloc
 namespace std
 {
 
-/// std::hash specialization for CLRX CString
 template<>
 struct hash<BlockIndex>
 {
@@ -444,5 +443,25 @@ struct CLRX_INTERNAL SDOLDOCompare
 };
 
 };
+
+namespace std
+{
+
+template<>
+struct hash<LastAccessBlockPos>
+{
+    typedef LastAccessBlockPos argument_type;    ///< argument type
+    typedef std::size_t result_type;    ///< result type
+    
+    /// a calling operator
+    size_t operator()(const LastAccessBlockPos& r1) const
+    {
+        std::hash<size_t> h1;
+        std::hash<bool> h2;
+        return h1(r1.blockIndex) ^ h2(r1.inSubroutines);
+    }
+};
+
+}
 
 #endif

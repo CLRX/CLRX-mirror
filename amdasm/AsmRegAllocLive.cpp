@@ -293,6 +293,7 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
         const RoutineDataLv* rdata;
     };
     
+    std::unordered_set<LastAccessBlockPos> visited;
     std::unordered_set<size_t> havePathBlocks;
     
     FlowStackCIter flitEnd = flowStack.end();
@@ -329,8 +330,11 @@ static void joinVRegRecur(const std::deque<FlowStackEntry3>& flowStack,
                         // we have new path in subroutine to fill
                         const auto& lastAccess =
                                 lastAccessIt->second[entry.lastAccessIndex];
-                        rjStack.push({ lastAccess.blockIndex, 0, 0,
-                                lastAccess.inSubroutines, routineBlock, &rdata });
+                        
+                        if (visited.insert(lastAccess).second)
+                            rjStack.push({ lastAccess.blockIndex, 0, 0,
+                                    lastAccess.inSubroutines, routineBlock, &rdata });
+                        
                         entry.lastAccessIndex++;
                         if (entry.lastAccessIndex == lastAccessIt->second.size())
                             doNextIndex = true;
@@ -994,7 +998,7 @@ static void joinRoutineDataLv(RoutineDataLv& dest, VIdxSetEntry& destVars,
 }
 
 static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
-        const RoutineLvMap& routineMap, const std::unordered_set<size_t>& recurseBlocks,
+        const RoutineLvMap& routineMap,
         const std::unordered_map<size_t, VIdxSetEntry>& vidxRoutineMap,
         RoutineDataLv& rdata, VIdxSetEntry& routineVIdxes,
         size_t routineBlock, const VarIndexMap* vregIndexMaps,
@@ -1093,8 +1097,8 @@ static void createRoutineDataLv(const std::vector<CodeBlock>& codeBlocks,
                         cblock.nexts[entry.nextIndex].isCall; entry.nextIndex++)
             {
                 BlockIndex rblock = cblock.nexts[entry.nextIndex].block;
-                if (rblock != routineBlock &&
-                    recurseBlocks.find(rblock.index) == recurseBlocks.end())
+                if (rblock != routineBlock /*&&
+                    recurseBlocks.find(rblock.index) == recurseBlocks.end()*/)
                     calledRoutines.push_back(rblock.index);
             }
             
@@ -1494,7 +1498,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
             {
                 res.first->second.fromSecondPass = routineBlock.pass==1;
                 auto varRes = vidxRoutineMap.insert({ routineBlock.index, VIdxSetEntry{} });
-                createRoutineDataLv(codeBlocks, routineMap, recurseBlocks, vidxRoutineMap,
+                createRoutineDataLv(codeBlocks, routineMap, vidxRoutineMap,
                         res.first->second, varRes.first->second,
                         routineBlock.index, vregIndexMaps, regTypesNum, regRanges);
             }
