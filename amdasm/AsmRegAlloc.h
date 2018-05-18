@@ -327,7 +327,7 @@ struct NoOutput
 #define ARDOut NoOutput()
 #endif
 
-struct Liveness
+struct CLRX_INTERNAL Liveness
 {
     std::map<size_t, size_t> l;
     
