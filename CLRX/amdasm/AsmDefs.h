@@ -773,7 +773,24 @@ struct AsmKernel
     void closeCodeRegion(size_t offset);
 };
 
-typedef VectorSet<std::pair<uint16_t, uint16_t> > AsmRegVarLinear;
+/// linears for regvars
+class AsmRegVarLinears: std::vector<std::pair<uint16_t, uint16_t> >
+{
+public:
+    /// constructor
+    AsmRegVarLinears() { }
+    
+    /// insert new region if whole region is not some already region
+    void insertRegion(const std::pair<uint16_t, uint16_t>& p)
+    {
+        const_iterator it;
+        for (it = begin(); it != end(); ++it)
+            if (it->first <= p.first && it->second >= p.second)
+                break;
+        if (it == end())
+            push_back(p);
+    }
+};
 
 };
 

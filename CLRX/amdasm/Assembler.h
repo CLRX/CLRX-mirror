@@ -520,7 +520,7 @@ private:
     std::unordered_set<AsmSymbolEntry*> symbolClones;
     std::vector<AsmExpression*> unevalExpressions;
     std::vector<AsmRelocation> relocations;
-    std::unordered_map<const AsmRegVar*, AsmRegVarLinear> regVarLinearsMap;
+    std::unordered_map<const AsmRegVar*, AsmRegVarLinears> regVarLinearsMap;
     AsmScope globalScope;
     AsmMacroMap macroMap;
     std::stack<AsmScope*> scopeStack;

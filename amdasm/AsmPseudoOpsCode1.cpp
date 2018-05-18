@@ -2010,8 +2010,8 @@ void AsmPseudoOps::declareRegVarLinearDeps(Assembler& asmr, const char* linePtr,
                                 uint16_t(regStart), uint16_t(regEnd) });
                 else
                 {   // defined for whole live of regvar
-                    AsmRegVarLinear& linears = asmr.regVarLinearsMap[regVar];
-                    linears.insertValue({ regStart, regEnd });
+                    AsmRegVarLinears& linears = asmr.regVarLinearsMap[regVar];
+                    linears.insertRegion({ regStart, regEnd });
                 }
             }
             else
