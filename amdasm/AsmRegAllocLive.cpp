@@ -834,7 +834,7 @@ static bool addUsageDeps(const cxbyte* ldeps, const std::vector<AsmRegVarUsage>&
                 size_t outVIdx;
                 
                 // if read or read-write (but not same write)
-                if ((rvu.rwFlags!=ASMRVU_WRITE || rvu.regField==ASMFIELD_NONE) &&
+                if (checkNoWriteWithSSA(rvu) &&
                     std::find(writtenSVRegs.begin(), writtenSVRegs.end(),
                               svreg) != writtenSVRegs.end())
                     ssaIdIdx--; // current ssaIdIdx is for write, decrement
@@ -870,7 +870,7 @@ static bool addUsageDeps(const cxbyte* ldeps, const std::vector<AsmRegVarUsage>&
                 size_t outVIdx;
                 
                 // if read or read-write (but not same write)
-                if ((rvu.rwFlags!=ASMRVU_WRITE || rvu.regField==ASMFIELD_NONE) &&
+                if (checkNoWriteWithSSA(rvu) &&
                     std::find(writtenSVRegs.begin(), writtenSVRegs.end(),
                               svreg) != writtenSVRegs.end())
                     ssaIdIdx--; // current ssaIdIdx is for write, decrement
@@ -1421,7 +1421,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                     {
                         // per register/singlvreg
                         AsmSingleVReg svreg{ rvu.regVar, rindex };
-                        if (rvu.rwFlags == ASMRVU_WRITE && rvu.regField!=ASMFIELD_NONE)
+                        if (checkWriteWithSSA(rvu))
                             writtenSVRegs.push_back(svreg);
                         else // read or treat as reading // expand previous region
                             readSVRegs.push_back(svreg);

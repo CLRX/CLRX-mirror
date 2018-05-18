@@ -44,6 +44,24 @@ using namespace CLRX;
 
 namespace CLRX
 {
+    
+/* (rvu.rwFlags != ASMRVU_WRITE || rvu.regField==ASMFIELD_NONE) -
+ *    treat read-write as read (because is not possible to change assign different
+ *    new SSA in single field),
+ *    and treat write as read for userusage because field to assign new SSA is not
+ *    specified.
+ *  additionally use (rvu.rwFlags == ASMRVU_WRITE && rvu.regField!=ASMFIELD_NONE)
+ *   to check whether is write with possible new SSA assignment
+ * */
+static inline bool checkWriteWithSSA(const AsmRegVarUsage& rvu)
+{
+    return (rvu.rwFlags == ASMRVU_WRITE && rvu.regField!=ASMFIELD_NONE);
+}
+
+static inline bool checkNoWriteWithSSA(const AsmRegVarUsage& rvu)
+{
+    return (rvu.rwFlags != ASMRVU_WRITE || rvu.regField==ASMFIELD_NONE);
+}
 
 typedef AsmRegAllocator::CodeBlock CodeBlock;
 typedef AsmRegAllocator::NextBlock NextBlock;
