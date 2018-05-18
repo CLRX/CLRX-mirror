@@ -498,7 +498,7 @@ void mapSort(Iter begin, Iter end, Comp comp)
 
 /// Simple cache for object. object class should have a weight method
 template<typename K, typename V>
-class CLRX_INTERNAL SimpleCache
+class SimpleCache
 {
 private:
     struct Entry
