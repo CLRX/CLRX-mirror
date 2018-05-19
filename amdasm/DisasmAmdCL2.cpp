@@ -693,7 +693,12 @@ static void dumpAmdCL2KernelConfig(std::ostream& output, const AmdCL2KernelConfi
                 buf[bufSize++] = 'y';
             if ((config.dimMask & 4) != 0)
                 buf[bufSize++] = 'z';
-            if ((config.dimMask & 7) != ((config.dimMask>>3) & 7))
+            if ((config.dimMask & 7) != ((config.dimMask>>3) & 7) ||
+                // check whether is enqueue.
+                // enqueue enabled, then print second argument when
+                // no Z dimension enabled and second field is same as first
+               (config.useEnqueue && ((config.dimMask&32)==0) &&
+                    (config.dimMask & 7) == ((config.dimMask>>3) & 7)))
             {
                 buf[bufSize++] = ',';
                 buf[bufSize++] = ' ';

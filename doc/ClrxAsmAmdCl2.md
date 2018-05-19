@@ -254,7 +254,9 @@ Syntax: .dims GID_DIMS, LID_DIMS
 This pseudo-operation must be inside any kernel configuration. Define what dimensions
 (from list: x, y, z) will be used to determine space of the kernel execution.
 In second syntax form, the dimensions are given for group_id (GID_DIMS) and for local_id
-(LID_DIMS) separately.
+(LID_DIMS) separately. If you use first syntax with single argument and if your kernel use
+enqueue (`.useenqueue`) then all dimensions for local_id will be always enabled,
+if you do not want it then use second syntax.
 
 ### .driver_version
 

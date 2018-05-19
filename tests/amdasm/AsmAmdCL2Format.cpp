@@ -90,6 +90,19 @@ static std::string confValueToString(uint32_t val)
     return oss.str();
 }
 
+// helper for printing value from kernel config (print default and notsupplied)
+static std::string confDimMaskToString(uint32_t val)
+{
+    if (val == BINGEN_DEFAULT)
+        return "default";
+    if (val == BINGEN_NOTSUPPLIED)
+        return "notsup";
+    std::ostringstream oss;
+    oss << (val&0xff);
+    return oss.str();
+}
+
+
 // print dump of AMD OpenCL2.0 output to stream for comparing with testcase
 static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
 {
@@ -150,7 +163,7 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
             if (!kernel.hsaConfig)
             {
                 // print kernel config in old style
-                os << "      dims=" << confValueToString(config.dimMask) << ", "
+                os << "      dims=" << confDimMaskToString(config.dimMask) << ", "
                         "cws=" << config.reqdWorkGroupSize[0] << " " <<
                             config.reqdWorkGroupSize[1] << " " <<
                             config.reqdWorkGroupSize[2] << ", "

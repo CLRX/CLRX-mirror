@@ -28,6 +28,7 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/amdasm/AsmFormats.h>
+#include <CLRX/utils/GPUId.h>
 #include "AsmROCmInternals.h"
 #include "AsmAmdInternals.h"
 #include "AsmAmdCL2Internals.h"
@@ -2003,7 +2004,7 @@ bool AsmAmdCL2Handler::prepareBinary()
             
             /* include userData sgprs */
             cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
-                    ((config.computePgmRsrc2>>7)&7);
+                    getDefaultDimMask(arch, config.computePgmRsrc2);
             // extra sgprs for dimensions
             cxuint minRegsNum[2];
             getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,

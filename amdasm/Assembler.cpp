@@ -573,7 +573,7 @@ bool AsmParseUtils::parseDimensions(Assembler& asmr, const char*& linePtr, cxuin
             if (!parseSingleDimensions(asmr, linePtr, secondField))
                 return false;
             // replace second field
-            dimMask = (dimMask & 7) | (secondField<<3);
+            dimMask = (dimMask & 7) | (secondField<<3) | ASM_DIMMASK_SECONDFIELD_ENABLED;
         }
     }
     return true;

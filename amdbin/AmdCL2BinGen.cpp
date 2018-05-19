@@ -1323,7 +1323,25 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
 static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
                 GPUArchitecture arch, bool storeLocalSize = false)
 {
+    cxuint dimMask = config.dimMask;
     uint32_t dimValues = 0;
+    if (config.dimMask != BINGEN_DEFAULT)
+    {
+        if ((dimMask & ASM_DIMMASK_SECONDFIELD_ENABLED) == 0)
+        {
+            // use old-style default setup (if only one argument in dims)
+            // for keep compatibility with older versions
+            dimMask = BINGEN_DEFAULT;
+            dimValues = ((config.dimMask&7)<<7);
+            if (!config.useEnqueue)
+                dimValues |= (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+            else // enqueue needs TIDIG_COMP_CNT=2 ????
+                dimValues |= (2U<<11);
+        }
+    }
+    else
+        dimValues |= (config.pgmRSRC2 & 0x1b80U);
+    
     if (config.dimMask == BINGEN_DEFAULT)
         dimValues = (config.pgmRSRC2 & 0x1b80U);
     
@@ -1340,7 +1358,7 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
     
     return (config.pgmRSRC2 & 0xffffe440U) |
             calculatePgmRSrc2(arch, (config.scratchBufferSize != 0),
-                    userDatasNum, false, config.dimMask, dimValues, config.tgSize,
+                    userDatasNum, false, dimMask, dimValues, config.tgSize,
                     storeLocalSize ? config.localSize : 0, config.exceptions);
 }
 

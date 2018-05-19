@@ -98,6 +98,19 @@ static std::string confValueToString(uint32_t val)
     return oss.str();
 }
 
+// helper for printing value from kernel config (print default and notsupplied)
+static std::string confDimMaskToString(uint32_t val)
+{
+    if (val == BINGEN_DEFAULT)
+        return "default";
+    if (val == BINGEN_NOTSUPPLIED)
+        return "notsup";
+    std::ostringstream oss;
+    oss << (val&0xff);
+    return oss.str();
+}
+
+
 // print dump of AMD Catalyst output to stream for comparing with testcase
 static void printAmdOutput(std::ostream& os, const AmdInput* output)
 {
@@ -161,7 +174,7 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
                     os << " " << sampler;
                 os << '\n';
             }
-            os << "      dims=" << confValueToString(config.dimMask) << ", "
+            os << "      dims=" << confDimMaskToString(config.dimMask) << ", "
                     "cws=" << config.reqdWorkGroupSize[0] << " " <<
                             config.reqdWorkGroupSize[1] << " " <<
                             config.reqdWorkGroupSize[2] << ", "

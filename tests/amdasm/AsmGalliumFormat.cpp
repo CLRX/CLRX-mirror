@@ -52,6 +52,17 @@ static std::string confValueToString(uint32_t val)
     return oss.str();
 }
 
+static std::string confDimMaskToString(uint32_t val)
+{
+    if (val == BINGEN_DEFAULT)
+        return "default";
+    if (val == BINGEN_NOTSUPPLIED)
+        return "notsup";
+    std::ostringstream oss;
+    oss << (val&0xff);
+    return oss.str();
+}
+
 // print hex data or nullptr
 static void printHexData(std::ostream& os, cxuint indentLevel, size_t size,
              const cxbyte* data)
@@ -98,7 +109,7 @@ static void printGalliumOutput(std::ostream& os, const GalliumInput* output, boo
             // print kernel config
             const GalliumKernelConfig& config = kernel.config;
             os << "    Config:\n";
-            os << "      dims=" << confValueToString(config.dimMask) << ", "
+            os << "      dims=" << confDimMaskToString(config.dimMask) << ", "
                     "SGPRS=" << confValueToString(config.usedSGPRsNum) << ", "
                     "VGPRS=" << confValueToString(config.usedVGPRsNum) << ", "
                     "pgmRSRC2=" << std::hex << "0x" << config.pgmRSRC2 << ", "

@@ -134,6 +134,12 @@ struct AmdHsaKernelConfig
     }
 };
 
+enum: cxuint {
+    ASM_DIMMASK_SECONDFIELD_MASK = (7<<3),
+    ASM_DIMMASK_SECONDFIELD_SHIFT = 3U,
+    ASM_DIMMASK_SECONDFIELD_ENABLED = 0x100U
+};
+
 };
 
 #endif
