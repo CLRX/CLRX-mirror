@@ -281,6 +281,11 @@ AsmRegVarLinearDep ISALinearDepHandler::nextLinearDep()
     return regVarLinDeps[regVarLinDepsPos++];
 }
 
+ISALinearDepHandler* ISALinearDepHandler::copy() const
+{
+    return new ISALinearDepHandler(*this);
+}
+
 /*
  * Asm register allocator stuff
  */

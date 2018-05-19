@@ -188,6 +188,8 @@ public:
     { return regVarLinDepsPos < regVarLinDeps.size(); }
     /// get next linear dependency
     AsmRegVarLinearDep nextLinearDep();
+    /// copy linear handler (make new copy)
+    ISALinearDepHandler* copy() const;
 };
 
 /// GCN (register and regvar) Usage handler
