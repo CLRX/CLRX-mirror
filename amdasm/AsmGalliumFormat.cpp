@@ -522,7 +522,7 @@ void AsmGalliumPseudoOps::setDimensions(AsmGalliumHandler& handler,
         PSEUDOOP_RETURN_BY_ERROR("HSA configuration pseudo-op only for LLVM>=4.0.0")
         
     cxuint dimMask = 0;
-    if (!parseDimensions(asmr, linePtr, dimMask))
+    if (!parseDimensions(asmr, linePtr, dimMask, true))
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1769,7 +1769,7 @@ bool AsmGalliumHandler::prepareBinary()
         
         /* include userData sgprs */
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
-                ((config.pgmRSRC2>>7)&7);
+                getDefaultDimMask(arch, config.pgmRSRC2);
         // extra sgprs for dimensions
         cxuint minRegsNum[2];
         getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,

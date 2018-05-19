@@ -401,7 +401,7 @@ inline static int strnecmp(const char* str1, const char* str2, size_t n, const c
 /* get configuration to human readable form */
 static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metadata,
             const std::vector<CALNoteInput>& calNotes, const CString& driverInfo,
-            const cxbyte* kernelHeader)
+            const cxbyte* kernelHeader, GPUArchitecture arch)
 {
     cxuint driverVersion = 9999909U;
     {
@@ -888,7 +888,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                             config.pgmRSRC2 = ULEV(piEntry[k].value);
                             config.tgSize = (config.pgmRSRC2 & 0x400)!=0;
                             config.exceptions = (config.pgmRSRC2>>24)&0x7f;
-                            config.dimMask = (config.pgmRSRC2>>7) & 7;
+                            config.dimMask = getDefaultDimMask(arch, config.pgmRSRC2);
                             break;
                         }
                         default:
@@ -1394,6 +1394,17 @@ static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& con
             buf[bufSize++] = 'y';
         if ((config.dimMask & 4) != 0)
             buf[bufSize++] = 'z';
+        if ((config.dimMask & 7) != ((config.dimMask>>3) & 7))
+        {
+            buf[bufSize++] = ',';
+            buf[bufSize++] = ' ';
+            if ((config.dimMask & 8) != 0)
+                buf[bufSize++] = 'x';
+            if ((config.dimMask & 16) != 0)
+                buf[bufSize++] = 'y';
+            if ((config.dimMask & 32) != 0)
+                buf[bufSize++] = 'z';
+        }
         buf[bufSize++] = '\n';
         output.write(buf, bufSize);
     }
@@ -1545,7 +1556,7 @@ void CLRX::disassembleAmd(std::ostream& output, const AmdDisasmInput* amdInput,
             // dump in human readable configuration
             AmdKernelConfig config = getAmdKernelConfig(kinput.metadataSize,
                     kinput.metadata, kinput.calNotes, amdInput->driverInfo,
-                    kinput.header);
+                    kinput.header, getGPUArchitectureFromDeviceType(amdInput->deviceType));
             dumpAmdKernelConfig(output, config);
         }
         

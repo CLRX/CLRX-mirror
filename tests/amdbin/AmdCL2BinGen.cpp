@@ -24,6 +24,7 @@
 #include <CLRX/utils/Containers.h>
 #include <CLRX/amdbin/AmdCL2Binaries.h>
 #include <CLRX/amdbin/AmdCL2BinGen.h>
+#include <CLRX/utils/GPUId.h>
 
 using namespace CLRX;
 
@@ -256,7 +257,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     uint32_t pgmRSRC1 = ULEV(setupData->pgmRSRC1);
     uint32_t pgmRSRC2 = ULEV(setupData->pgmRSRC2);
     // get config values
-    config.dimMask = (pgmRSRC2>>7)&7;
+    config.dimMask = getDefaultDimMask(GPUArchitecture::GCN1_1, pgmRSRC2);
     config.ieeeMode = (pgmRSRC1>>23)&1;
     config.exceptions = (pgmRSRC2>>24)&0xff;
     config.floatMode = (pgmRSRC1>>12)&0xff;

@@ -356,7 +356,7 @@ aa23:)ffDXD",
     Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
   Kernel: name=aa23, offset=0
     Config:
-      dims=6, SGPRS=8, VGPRS=3, pgmRSRC2=0x0, ieeeMode=0x1
+      dims=54, SGPRS=8, VGPRS=3, pgmRSRC2=0x0, ieeeMode=0x1
       floatMode=0xc0, priority=3, localSize=0, scratchBuffer=0
     Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
   Comment:
@@ -553,7 +553,7 @@ aa23:
     Arg: scalar, false, gridoffset, size=4, tgtSize=4, tgtAlign=4
   Kernel: name=aa23, offset=256
     Config:
-      dims=6, SGPRS=12, VGPRS=3, pgmRSRC2=0x0, ieeeMode=0x1
+      dims=54, SGPRS=12, VGPRS=3, pgmRSRC2=0x0, ieeeMode=0x1
       floatMode=0xc0, priority=3, localSize=0, scratchBuffer=0
     AMD HSA Config:
       amdCodeVersion=1.0
@@ -746,7 +746,7 @@ aa22:
 )ffDXD", R"ffDXD(GalliumBinDump:
   Kernel: name=aa22, offset=0
     Config:
-      dims=1, SGPRS=36, VGPRS=139, pgmRSRC2=0x7fbeb, ieeeMode=0x1
+      dims=9, SGPRS=36, VGPRS=139, pgmRSRC2=0x7fbeb, ieeeMode=0x1
       floatMode=0x12, priority=1, localSize=23, scratchBuffer=230
     AMD HSA Config:
       amdCodeVersion=1.0
@@ -883,6 +883,49 @@ aa22:
         s_and_b32 s10,s5,5
         s_mov_b32 s1, (scratch+6)&0xffffffff
 )ffDXD", "", "test.s:13:23: Error: Expression must point to start of section\n", false
+    },
+    /* gallium (configured proginfo) - different group_id and local_id dimensions */
+    { R"ffDXD(            .gallium
+            .kernel aa22
+            .args
+            .arg scalar, 8,,,SEXT,griddim
+            .config
+            .priority 1
+            .floatmode 43
+            .ieeemode
+            .sgprsnum 36
+            .vgprsnum 139
+            .pgmrsrc2 523243
+            .scratchbuffer 230
+            .dims xy,xyz
+            .kernel aa23
+            .args
+            .arg scalar, 8,,,SEXT,griddim
+            .config
+            .dims yz, xy
+            .priority 3
+            .ieeemode
+            .pgmrsrc2 0
+.text
+aa22:
+aa23:)ffDXD",
+       R"ffDXD(GalliumBinDump:
+  Kernel: name=aa22, offset=0
+    Config:
+      dims=59, SGPRS=36, VGPRS=139, pgmRSRC2=0x7fbeb, ieeeMode=0x1
+      floatMode=0x2b, priority=1, localSize=0, scratchBuffer=230
+    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+  Kernel: name=aa23, offset=0
+    Config:
+      dims=30, SGPRS=8, VGPRS=2, pgmRSRC2=0x0, ieeeMode=0x1
+      floatMode=0xc0, priority=3, localSize=0, scratchBuffer=0
+    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+  Comment:
+  nullptr
+  GlobalData:
+  nullptr
+  Code:
+)ffDXD", "", true
     }
 };
 

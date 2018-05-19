@@ -378,8 +378,10 @@ static const cxuint vectorIdTable[17] =
 template<typename Types>
 static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* metadata,
         size_t setupSize, const cxbyte* setup, const std::vector<size_t> samplerOffsets,
-        const std::vector<AmdCL2RelaEntry>& textRelocs, bool isGCN14)
+        const std::vector<AmdCL2RelaEntry>& textRelocs, GPUArchitecture arch)
 {
+    const bool isGCN14 = arch >= GPUArchitecture::GCN1_4;
+    
     AmdCL2KernelConfig config{};
     const typename Types::MetadataHeader* mdHdr =
             reinterpret_cast<const typename Types::MetadataHeader*>(metadata);
@@ -398,7 +400,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
         uint32_t pgmRSRC1 = ULEV(setupData->pgmRSRC1);
         uint32_t pgmRSRC2 = ULEV(setupData->pgmRSRC2);
         /* initializing fields from PGM_RSRC1 and PGM_RSRC2 */
-        config.dimMask = (pgmRSRC2>>7)&7;
+        config.dimMask = getDefaultDimMask(arch, pgmRSRC2);
         config.ieeeMode = (pgmRSRC1>>23)&1;
         config.exceptions = (pgmRSRC2>>24)&0xff;
         config.floatMode = (pgmRSRC1>>12)&0xff;
@@ -682,6 +684,7 @@ static void dumpAmdCL2KernelConfig(std::ostream& output, const AmdCL2KernelConfi
         // do not print old-config style params if HSA config enabled
         if (config.dimMask != BINGEN_DEFAULT)
         {
+            // print dimensions (.dims xyz)
             strcpy(buf, "        .dims ");
             bufSize = 14;
             if ((config.dimMask & 1) != 0)
@@ -690,6 +693,17 @@ static void dumpAmdCL2KernelConfig(std::ostream& output, const AmdCL2KernelConfi
                 buf[bufSize++] = 'y';
             if ((config.dimMask & 4) != 0)
                 buf[bufSize++] = 'z';
+            if ((config.dimMask & 7) != ((config.dimMask>>3) & 7))
+            {
+                buf[bufSize++] = ',';
+                buf[bufSize++] = ' ';
+                if ((config.dimMask & 8) != 0)
+                    buf[bufSize++] = 'x';
+                if ((config.dimMask & 16) != 0)
+                    buf[bufSize++] = 'y';
+                if ((config.dimMask & 32) != 0)
+                    buf[bufSize++] = 'z';
+            }
             buf[bufSize++] = '\n';
             output.write(buf, bufSize);
         }
@@ -964,20 +978,20 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         
         if (doDumpConfig)
         {
-            const bool isGCN14 = getGPUArchitectureFromDeviceType(
-                        amdCL2Input->deviceType) >= GPUArchitecture::GCN1_4;
+            const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                        amdCL2Input->deviceType);
             AmdCL2KernelConfig config{};
             // get kernel config
             if (amdCL2Input->is64BitMode)
                 config = genKernelConfig<AmdCL2Types64>(kinput.metadataSize,
                         kinput.metadata, kinput.setupSize,
                         (doHSAConfig ? nullptr : kinput.setup), samplerOffsets,
-                        kinput.textRelocs, isGCN14);
+                        kinput.textRelocs, arch);
             else
                 config = genKernelConfig<AmdCL2Types32>(kinput.metadataSize,
                         kinput.metadata, kinput.setupSize,
                         (doHSAConfig ? nullptr : kinput.setup), samplerOffsets,
-                        kinput.textRelocs, isGCN14);
+                        kinput.textRelocs, arch);
             
             dumpAmdCL2KernelConfig(output, config, arch, doHSAConfig);
             if (doHSAConfig)

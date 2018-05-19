@@ -109,27 +109,27 @@ static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
         "attr39.z vop3", { { "xx", 1, 43 } } },
     /* regflags test */
     { ".gallium;.kernel xx;.config;.text;xx:s_xor_b64 "
-        "s[10:11], s[4:5], s[62:63]", { { "xx", 14, 0 } } },
+        "s[10:11], s[4:5], s[62:63]", { { "xx", 14, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_xor_b64 s[10:11], s[4:5], vcc",
-        { { "xx", 14, 0 } } },
+        { { "xx", 14, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_xor_b64 s[10:11], vcc, s[6:7]",
-        { { "xx", 14, 0 } } },
+        { { "xx", 14, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_xor_b64 s[10:11], s[0:1], s[6:7];"
-        "s_xor_b64 vcc, s[0:1], s[6:7]", { { "xx", 14, 0 } } },
+        "s_xor_b64 vcc, s[0:1], s[6:7]", { { "xx", 14, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_wqm_b32 s86, vcc_lo",
-        { { "xx", 89, 0 } } },
+        { { "xx", 89, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_wqm_b32 s86, s3; s_not_b32 vcc_lo, s5",
-        { { "xx", 89, 0 } } },
+        { { "xx", 89, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_cmp_lg_u32 vcc_lo,s3;s_not_b32 s15, s1",
-        { { "xx", 18, 0 } } },
+        { { "xx", 18, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_cmp_lg_u32 s6,vcc_hi;s_not_b32 s15, s1",
-        { { "xx", 18, 0 } } },
+        { { "xx", 18, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_movk_i32 vcc_lo,0xd3b9;"
-        "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
+        "s_not_b32 s15, s1", { { "xx", 18, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_load_dwordx2  s[2:3], s[8:9], vcc_lo;"
-        "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
+        "s_not_b32 s15, s1", { { "xx", 18, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_load_dwordx2  vcc, s[8:9], s5;"
-        "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
+        "s_not_b32 s15, s1", { { "xx", 18, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:v_sub_f32  v154, vcc_lo, v54;"
         "s_not_b32 s15, s1", { { "xx", 18, 155 } } },
     { ".gallium;.kernel xx;.config;.text;xx:v_addc_u32  v31, vcc, v21, v54, vcc;"
@@ -137,17 +137,17 @@ static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
     { ".gallium;.kernel xx;.config;.text;xx:v_addc_u32  v31, s[6:7], v21, v54, vcc;",
         { { "xx", 10, 32 } } },
     { ".gallium;.kernel xx;.config;.text;xx:v_readlane_b32  s21, vcc_lo, m0;",
-        { { "xx", 24, 0 } } },
+        { { "xx", 24, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:v_sub_f32  v154, v54, vcc_hi;"
         "s_not_b32 s15, s1", { { "xx", 18, 155 } } },
     { ".gallium;.kernel xx;.config;.text;xx:v_cvt_i32_f32  v154, vcc_lo;"
         "s_not_b32 s15, s1", { { "xx", 18, 155 } } },
     { ".gallium;.kernel xx;.config;.text;xx:v_readfirstlane_b32  s56, vcc_lo;"
-        "s_not_b32 s15, s1", { { "xx", 59, 0 } } },
+        "s_not_b32 s15, s1", { { "xx", 59, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:v_cmp_ge_f32  vcc, v32, s54;"
-        "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
+        "s_not_b32 s15, s1", { { "xx", 18, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:v_cmp_ge_f32  s[22:23], v32, vcc_lo",
-        { { "xx", 26, 0 } } },
+        { { "xx", 26, 1 } } },
     { ".gallium;.kernel xx;.config;.text;xx:v_mad_f32 v23, v4, v5, vcc_hi;"
         "s_not_b32 s15, s1", { { "xx", 18, 24 } } },
     { ".gallium;.kernel xx;.config;.text;xx:v_mad_f32 v23, v4, vcc_lo, v5;"
@@ -198,7 +198,7 @@ kx5: s_mov_b32 s11, s0
             v_sub_f32 v14,v1,v2
     .kcodeend
 .kcodeend)ffDXD",
-        { { "kx0", 13, 5 }, { "kx1", 17, 15 }, { "kx2", 22, 0 },
+        { { "kx0", 13, 5 }, { "kx1", 17, 15 }, { "kx2", 22, 1 },
             { "kx3", 19, 8 }, { "kx4", 11, 8 }, { "kx5", 14, 8 } }
     },
     {

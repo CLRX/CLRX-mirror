@@ -1554,7 +1554,7 @@ void AsmROCmPseudoOps::setDimensions(AsmROCmHandler& handler, const char* pseudo
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
         PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     cxuint dimMask = 0;
-    if (!parseDimensions(asmr, linePtr, dimMask))
+    if (!parseDimensions(asmr, linePtr, dimMask, true))
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -2548,7 +2548,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         
         /* include userData sgprs */
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
-                ((config.computePgmRsrc2>>7)&7);
+                getDefaultDimMask(arch, config.computePgmRsrc2);
         // extra sgprs for dimensions
         cxuint minRegsNum[2];
         getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,

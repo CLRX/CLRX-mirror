@@ -134,7 +134,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     const uint32_t spilledSGPRs = progInfo[3].value;
     const uint32_t spilledVGPRs = progInfo[4].value;
     
-    const cxuint dimMask = (pgmRsrc2 >> 7) & 7;
+    const cxuint dimMask = getDefaultDimMask(arch, pgmRsrc2);
     // print .dims xyz (dimensions)
     strcpy(buf, "        .dims ");
     bufSize = 14;
@@ -144,6 +144,17 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
         buf[bufSize++] = 'y';
     if ((dimMask & 4) != 0)
         buf[bufSize++] = 'z';
+    if ((dimMask & 7) != ((dimMask>>3) & 7))
+    {
+        buf[bufSize++] = ',';
+        buf[bufSize++] = ' ';
+        if ((dimMask & 8) != 0)
+            buf[bufSize++] = 'x';
+        if ((dimMask & 16) != 0)
+            buf[bufSize++] = 'y';
+        if ((dimMask & 32) != 0)
+            buf[bufSize++] = 'z';
+    }
     buf[bufSize++] = '\n';
     output.write(buf, bufSize);
     

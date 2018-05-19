@@ -183,10 +183,13 @@ set zeroes in two last component instead ones. We recomment to fill all componen
 
 ### .dims
 
-Syntax: .dims DIMENSIONS
+Syntax: .dims DIMENSIONS  
+Syntax: .dims GID_DIMS, LID_DIMS
 
 This pseudo-operation must be inside kernel configuration. Define what dimensions
 (from list: x, y, z) will be used to determine space of the kernel execution.
+In second syntax form, the dimensions are given for group_id (GID_DIMS) and for local_id
+(LID_DIMS) separately.
 
 ### .driver_info
 

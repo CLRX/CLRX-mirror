@@ -1028,7 +1028,7 @@ void AsmAmdCL2PseudoOps::setDimensions(AsmAmdCL2Handler& handler,
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
         PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     cxuint dimMask = 0;
-    if (!parseDimensions(asmr, linePtr, dimMask))
+    if (!parseDimensions(asmr, linePtr, dimMask, true))
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1884,7 +1884,7 @@ bool AsmAmdCL2Handler::prepareBinary()
             
             /* include userData sgprs */
             cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
-                    ((config.pgmRSRC2>>7)&7);
+                    getDefaultDimMask(arch, config.pgmRSRC2);
             cxuint minRegsNum[2];
             getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,
                     ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |

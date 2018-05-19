@@ -1324,17 +1324,8 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
                 GPUArchitecture arch, bool storeLocalSize = false)
 {
     uint32_t dimValues = 0;
-    if (config.dimMask != BINGEN_DEFAULT)
-    {
-        dimValues = ((config.dimMask&7)<<7);
-        if (!config.useEnqueue)
-            // useenqueue in GFX9 is enabled by default ???
-            dimValues |= (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
-        else // enqueue needs TIDIG_COMP_CNT=2 ????
-            dimValues |= (2U<<11);
-    }
-    else
-        dimValues |= (config.pgmRSRC2 & 0x1b80U);
+    if (config.dimMask == BINGEN_DEFAULT)
+        dimValues = (config.pgmRSRC2 & 0x1b80U);
     
     const bool isGCN14 = arch >= GPUArchitecture::GCN1_4;
     cxuint userDatasNum = isGCN14 ? 6 : 4;
@@ -1349,7 +1340,7 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
     
     return (config.pgmRSRC2 & 0xffffe440U) |
             calculatePgmRSrc2(arch, (config.scratchBufferSize != 0),
-                    userDatasNum, false, BINGEN_DEFAULT, dimValues, config.tgSize,
+                    userDatasNum, false, config.dimMask, dimValues, config.tgSize,
                     storeLocalSize ? config.localSize : 0, config.exceptions);
 }
 

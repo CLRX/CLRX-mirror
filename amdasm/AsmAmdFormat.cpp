@@ -1049,7 +1049,7 @@ void AsmAmdPseudoOps::setDimensions(AsmAmdHandler& handler, const char* pseudoOp
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
         PSEUDOOP_RETURN_BY_ERROR("Illegal place of configuration pseudo-op")
     cxuint dimMask = 0;
-    if (!parseDimensions(asmr, linePtr, dimMask))
+    if (!parseDimensions(asmr, linePtr, dimMask, true))
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;

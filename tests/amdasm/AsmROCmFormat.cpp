@@ -1518,6 +1518,68 @@ globalValX = 334
   Symbol: name=globalValX.GOT, value=24, size=0, section=4294967055
 )ffDXD",
         "", true
+    },
+    {   // with different dims for local_ids and group_ids
+        R"ffDXD(        .rocm
+        .gpu Fiji
+.kernel someKernelX
+    .config
+        .dims xy,xz
+        .reserved_vgprs 0, 11
+.text
+someKernelX:
+        .skip 256
+        s_endpgm)ffDXD",
+        R"ffDXD(ROCmBinDump:
+  ROCmSymbol: name=someKernelX, offset=0, size=0, type=kernel
+    Config:
+      amdCodeVersion=1.0
+      amdMachine=1:8:0:3
+      kernelCodeEntryOffset=256
+      kernelCodePrefetchOffset=0
+      kernelCodePrefetchSize=0
+      maxScrachBackingMemorySize=0
+      computePgmRsrc1=0xc0000
+      computePgmRsrc2=0x1180
+      enableSgprRegisterFlags=0x0
+      enableFeatureFlags=0x0
+      workitemPrivateSegmentSize=0
+      workgroupGroupSegmentSize=0
+      gdsSegmentSize=0
+      kernargSegmentSize=0
+      workgroupFbarrierCount=0
+      wavefrontSgprCount=4
+      workitemVgprCount=3
+      reservedVgprFirst=0
+      reservedVgprCount=12
+      reservedSgprFirst=0
+      reservedSgprCount=0
+      debugWavefrontPrivateSegmentOffsetSgpr=0
+      debugPrivateSegmentBufferSgpr=0
+      kernargSegmentAlignment=4
+      groupSegmentAlignment=4
+      privateSegmentAlignment=4
+      wavefrontSize=6
+      callConvention=0x0
+      runtimeLoaderKernelSymbol=0x0
+      ControlDirective:
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+  Comment:
+  nullptr
+  Code:
+  0100000000000000010008000000030000010000000000000000000000000000
+  0000000000000000000000000000000000000c00801100000000000000000000
+  00000000000000000000000000000000000000000400030000000c0000000000
+  0000000004040406000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  000081bf
+)ffDXD", "", true
     }
 };
 

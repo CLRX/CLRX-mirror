@@ -259,9 +259,16 @@ void CLRX::getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMa
     /// SGPRs
     gprsOut[0] = ((dimMask&1)!=0) + ((dimMask&2)!=0) + ((dimMask&4)!=0);
     /// VGPRS
-    gprsOut[1] = ((dimMask&4) ? 3 : ((dimMask&2) ? 2: (dimMask&1) ? 1 : 0));
+    gprsOut[1] = ((dimMask&32) ? 3 : ((dimMask&16) ? 2: (dimMask&8) ? 1 : 0));
     gprsOut[0] += userDataNum + ((flags & GPUSETUP_TGSIZE_EN)!=0) +
             ((flags & GPUSETUP_SCRATCH_EN)!=0);
+}
+
+cxuint CLRX::getDefaultDimMask(GPUArchitecture architecture, uint32_t pgmRSRC2)
+{
+    cxuint tidigCompCnt = (pgmRSRC2>>11)&3;
+    return ((pgmRSRC2>>7)&7) |
+            (((tidigCompCnt==0) ? 1U : ((tidigCompCnt==1) ? 3U : 7U)) << 3);
 }
 
 size_t CLRX::getGPUMaxLocalSize(GPUArchitecture architecture)
@@ -309,7 +316,7 @@ uint32_t CLRX::calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint us
     uint32_t dimValues = 0;
     // calculate dimMask (TGID_X_EN, ..., TIDIG_COMP_CNT fields)
     if (dimMask != UINT_MAX)
-        dimValues = ((dimMask&7)<<7) | (((dimMask&4) ? 2 : (dimMask&2) ? 1 : 0)<<11);
+        dimValues = ((dimMask&7)<<7) | (((dimMask&32) ? 2 : (dimMask&16) ? 1 : 0)<<11);
     else // use default value for dimensions
         dimValues = defDimValues;
     return uint32_t(scratchEn ? 1U : 0U) | (uint32_t(userDataNum)<<1) |

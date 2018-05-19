@@ -155,6 +155,9 @@ extern cxuint getGPUMaxRegsNumByArchMask(uint16_t archMask, cxuint regType);
 extern void getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,
                cxuint userDataNum, Flags flags, cxuint* gprsOut);
 
+/// get default dimMask from PGMRSRC2
+extern cxuint getDefaultDimMask(GPUArchitecture architecture, uint32_t pgmRSRC2);
+
 /// get maximum local size for GPU architecture
 extern size_t getGPUMaxLocalSize(GPUArchitecture architecture);
 

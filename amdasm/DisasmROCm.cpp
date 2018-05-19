@@ -133,7 +133,7 @@ void CLRX::dumpAMDHSAConfig(std::ostream& output, cxuint maxSgprsNum,
     const uint32_t pgmRsrc1 = computePgmRsrc1;
     const uint32_t pgmRsrc2 = computePgmRsrc2;
     
-    const cxuint dimMask = (pgmRsrc2 >> 7) & 7;
+    const cxuint dimMask = getDefaultDimMask(arch, pgmRsrc2);
     // print dims (hsadims for gallium): .[hsa_]dims xyz
     if (!amdhsaPrefix)
     {
@@ -151,6 +151,17 @@ void CLRX::dumpAMDHSAConfig(std::ostream& output, cxuint maxSgprsNum,
         buf[bufSize++] = 'y';
     if ((dimMask & 4) != 0)
         buf[bufSize++] = 'z';
+    if ((dimMask & 7) != ((dimMask>>3) & 7))
+    {
+        buf[bufSize++] = ',';
+        buf[bufSize++] = ' ';
+        if ((dimMask & 8) != 0)
+            buf[bufSize++] = 'x';
+        if ((dimMask & 16) != 0)
+            buf[bufSize++] = 'y';
+        if ((dimMask & 32) != 0)
+            buf[bufSize++] = 'z';
+    }
     buf[bufSize++] = '\n';
     output.write(buf, bufSize);
     

@@ -1086,6 +1086,58 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*4a040501         */ v_add_i32       v2, vcc, v1, v2
 )ffDXD", true, false
     },
+    /* configuration dump test cases (diff dimensions in local_id and group_id */
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amd1-diffdims.clo",
+        R"ffDXD(.amd
+.gpu Bonaire
+.32bit
+.compile_options "-O"
+.driver_info "@(#) OpenCL 1.2 AMD-APP (1912.5).  Driver version: 1912.5 (VM)"
+.kernel xT1
+    .config
+        .dims xyz, xy
+        .cws 2, 7, 1
+        .sgprsnum 18
+        .vgprsnum 222
+        .floatmode 0xc0
+        .scratchbuffer 108
+        .uavid 11
+        .uavprivate 314
+        .printfid 9
+        .privateid 8
+        .cbid 10
+        .earlyexit 1
+        .condout 5
+        .pgmrsrc2 0x75200b9d
+        .useprintf
+        .exceptions 0x75
+        .userdata ptr_uav_table, 0, 2, 2
+        .userdata imm_const_buffer, 0, 4, 4
+        .userdata imm_const_buffer, 7, 12, 2
+        .arg x, "float", float
+        .arg xff, "SP", float
+        .arg x4, "float4", float
+        .arg aaa, "SP4", float
+        .arg vv, "double3", double
+        .arg vv3, "SP4", double
+        .arg sampler, "sampler_t", sampler
+        .arg structor, "TypeX", structure, 24
+        .arg structor2, "TypeX", structure, 24
+        .arg img1, "IMG2D", image2d, read_only, 0
+        .arg img1a, "IMG2DA", image2d_array, read_only, 1
+        .arg img2, "TDIMG", image3d, write_only, 0
+        .arg buf1, "uint*", uint*, global, const, 12
+        .arg buf2, "ColorData", structure*, 52, global, const, 13
+        .arg const2, "ColorData", structure*, 52, constant, volatile, 0, 14
+        .arg dblloc, "double*", double*, local, 
+        .arg counterx, "counter32_t", counter32, 0
+        .arg sampler2, "sampler_t", sampler
+        .arg countery, "counter32_t", counter32, 1
+    .text
+/*bf810000         */ s_endpgm
+/*4a040501         */ v_add_i32       v2, vcc, v1, v2
+)ffDXD", true, false
+    },
     /* amdcl2 config */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amdcl2.clo",
         R"ffDXD(.amdcl2
@@ -1125,7 +1177,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*bf810000         */ s_endpgm
 .kernel aaa2
     .config
-        .dims x
+        .dims x, xyz
         .sgprsnum 12
         .vgprsnum 1
         .localsize 1000
@@ -1248,7 +1300,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*bf810000         */ s_endpgm
 .kernel aaa2
     .hsaconfig
-        .dims x
+        .dims x, xyz
         .sgprsnum 16
         .vgprsnum 4
         .privmode
@@ -1407,6 +1459,62 @@ one1:
 /*7e000303         */ v_mov_b32       v0, v3
 )ffDXD", true, false, 0
     },
+    /* gallium config - different dimensions for group_ids and local_ids */
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/gallium1-diffdims.clo",
+        R"ffDXD(.gallium
+.gpu CapeVerde
+.32bit
+.rodata
+    .byte 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
+    .byte 0x03, 0x00, 0x00, 0x00, 0x22, 0x00, 0x00, 0x00
+    .byte 0x2d, 0x00, 0x00, 0x00
+.kernel one1
+    .args
+        .arg scalar, 4, 8, 4, sext, general
+        .arg scalar, 16, 16, 32, sext, general
+        .arg scalar, 4, 4, 4, zext, imgformat
+        .arg global, 8, 8, 8, zext, general
+        .arg scalar, 4, 4, 4, zext, griddim
+        .arg scalar, 4, 4, 4, zext, gridoffset
+    .config
+        .dims x
+        .sgprsnum 104
+        .vgprsnum 12
+        .privmode
+        .debugmode
+        .ieeemode
+        .tgsize
+        .floatmode 0xfe
+        .priority 3
+        .exceptions 0x7f
+        .localsize 32768
+        .userdatanum 16
+        .scratchbuffer 48
+        .pgmrsrc1 0xffdfef02
+        .pgmrsrc2 0x004004a1
+.kernel secondx
+    .args
+    .config
+        .dims yz, xyz
+        .sgprsnum 8
+        .vgprsnum 56
+        .tgsize
+        .floatmode 0xd0
+        .priority 3
+        .localsize 256
+        .userdatanum 16
+        .pgmrsrc1 0x000d0c0d
+        .pgmrsrc2 0x3d009720
+.text
+secondx:
+/*3a040480         */ v_xor_b32       v2, 0, v2
+/*bf810000         */ s_endpgm
+.fill 62, 4, 0
+one1:
+/*7e000301         */ v_mov_b32       v0, v1
+/*7e000303         */ v_mov_b32       v0, v3
+)ffDXD", true, false, 0
+    },
     /* gallium config */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/new-gallium-llvm40.clo",
         R"ffDXD(.gallium
@@ -1496,6 +1604,96 @@ vectorAdd:
 /*bf810000         */ s_endpgm
 )ffDXD", true, false, 40000U
     },
+    /* gallium config - different dimensions for group_ids and local_ids */
+    { nullptr, nullptr, CLRX_SOURCE_DIR
+        "/tests/amdasm/amdbins/new-gallium-llvm40-diffdims.clo",
+        R"ffDXD(.gallium
+.gpu CapeVerde
+.64bit
+.driver_version 170000
+.llvm_version 40000
+.kernel vectorAdd
+    .args
+        .arg scalar, 4, 4, 4, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg scalar, 4, 4, 4, zext, griddim
+        .arg scalar, 4, 4, 4, zext, gridoffset
+    .config
+        .dims x, xy
+        .sgprsnum 24
+        .vgprsnum 4
+        .dx10clamp
+        .ieeemode
+        .floatmode 0xc0
+        .priority 0
+        .userdatanum 8
+        .pgmrsrc1 0x00ac0080
+        .pgmrsrc2 0x00000890
+        .spilledsgprs 0
+        .spilledvgprs 0
+        .hsa_dims x, xy
+        .hsa_sgprsnum 24
+        .hsa_vgprsnum 4
+        .hsa_dx10clamp
+        .hsa_ieeemode
+        .hsa_floatmode 0xc0
+        .hsa_priority 0
+        .hsa_userdatanum 8
+        .hsa_pgmrsrc1 0x00ac0080
+        .hsa_pgmrsrc2 0x00000890
+        .codeversion 1, 0
+        .machine 1, 0, 0, 0
+        .kernel_code_entry_offset 0x100
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .kernarg_segment_size 48
+        .wavefront_sgpr_count 18
+        .workitem_vgpr_count 4
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+        .wavefront_size 64
+        .call_convention 0x0
+    .control_directive
+        .fill 128, 1, 0x00
+.text
+vectorAdd:
+.skip 256
+/*c0000501         */ s_load_dword    s0, s[4:5], 0x1
+/*c0008709         */ s_load_dword    s1, s[6:7], 0x9
+/*c0010700         */ s_load_dword    s2, s[6:7], 0x0
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*8700ff00 0000ffff*/ s_and_b32       s0, s0, 0xffff
+/*93000800         */ s_mul_i32       s0, s0, s8
+/*81000100         */ s_add_i32       s0, s0, s1
+/*4a000000         */ v_add_i32       v0, vcc, s0, v0
+/*7d880002         */ v_cmp_gt_u32    vcc, s2, v0
+/*be80246a         */ s_and_saveexec_b64 s[0:1], vcc
+/*bf880014         */ s_cbranch_execz .L384_0
+/*7e000280         */ v_mov_b32       v0, 0
+/*c0400702         */ s_load_dwordx2  s[0:1], s[6:7], 0x2
+/*be820380         */ s_mov_b32       s2, 0
+/*be8303ff 0000f000*/ s_mov_b32       s3, 0xf000
+/*c0440704         */ s_load_dwordx2  s[8:9], s[6:7], 0x4
+/*be8a0402         */ s_mov_b64       s[10:11], s[2:3]
+/*c0460706         */ s_load_dwordx2  s[12:13], s[6:7], 0x6
+/*be8e0402         */ s_mov_b64       s[14:15], s[2:3]
+/*d2c20000 00010500*/ v_lshl_b64      v[0:1], v[0:1], 2
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*e0308000 80000200*/ buffer_load_dword v2, v[0:1], s[0:3], 0 addr64
+/*e0308000 80020300*/ buffer_load_dword v3, v[0:1], s[8:11], 0 addr64
+/*bf8c0f70         */ s_waitcnt       vmcnt(0)
+/*06040503         */ v_add_f32       v2, v3, v2
+/*e0708000 80000200*/ buffer_store_dword v2, v[0:1], s[0:3], 0 addr64
+.L384_0:
+/*bf810000         */ s_endpgm
+)ffDXD", true, false, 40000U
+    },
     /* rocm config */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/rocm-fiji.hsaco",
         R"ffDXD(.rocm
@@ -1513,6 +1711,150 @@ vectorAdd:
         .userdatanum 8
         .pgmrsrc1 0x002c0041
         .pgmrsrc2 0x00000090
+        .codeversion 1, 0
+        .machine 1, 8, 0, 3
+        .kernel_code_entry_offset 0x100
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .kernarg_segment_size 8
+        .wavefront_sgpr_count 15
+        .workitem_vgpr_count 7
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+        .wavefront_size 64
+        .call_convention 0x0
+    .control_directive
+        .fill 128, 1, 0x00
+.kernel test2
+    .config
+        .dims x
+        .sgprsnum 16
+        .vgprsnum 8
+        .dx10clamp
+        .floatmode 0xc0
+        .priority 0
+        .userdatanum 8
+        .pgmrsrc1 0x002c0041
+        .pgmrsrc2 0x00000090
+        .codeversion 1, 0
+        .machine 1, 8, 0, 3
+        .kernel_code_entry_offset 0x100
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .kernarg_segment_size 8
+        .wavefront_sgpr_count 15
+        .workitem_vgpr_count 7
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+        .wavefront_size 64
+        .call_convention 0x0
+    .control_directive
+        .fill 128, 1, 0x00
+.text
+test1:
+.skip 256
+/*c0020082 00000004*/ s_load_dword    s2, s[4:5], 0x4
+/*c0060003 00000000*/ s_load_dwordx2  s[0:1], s[6:7], 0x0
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*8602ff02 0000ffff*/ s_and_b32       s2, s2, 0xffff
+/*92020802         */ s_mul_i32       s2, s2, s8
+/*32000002         */ v_add_u32       v0, vcc, s2, v0
+/*2202009f         */ v_ashrrev_i32   v1, 31, v0
+/*d28f0001 00020082*/ v_lshlrev_b64   v[1:2], 2, v[0:1]
+/*32060200         */ v_add_u32       v3, vcc, s0, v1
+/*7e020201         */ v_mov_b32       v1, s1
+/*38080302         */ v_addc_u32      v4, vcc, v2, v1, vcc
+/*2600008f         */ v_and_b32       v0, 15, v0
+/*7e020280         */ v_mov_b32       v1, 0
+/*dc500000 02000003*/ flat_load_dword v2, v[3:4]
+/*d28f0000 00020082*/ v_lshlrev_b64   v[0:1], 2, v[0:1]
+/*be801c00         */ s_getpc_b64     s[0:1]
+/*8000ff00 00000234*/ s_add_u32       s0, s0, 0x234
+/*82018001         */ s_addc_u32      s1, s1, 0
+/*320a0000         */ v_add_u32       v5, vcc, s0, v0
+/*7e000201         */ v_mov_b32       v0, s1
+/*380c0101         */ v_addc_u32      v6, vcc, v1, v0, vcc
+/*dc500000 00000005*/ flat_load_dword v0, v[5:6]
+/*bf8c0070         */ s_waitcnt       vmcnt(0) & lgkmcnt(0)
+/*0a000500         */ v_mul_f32       v0, v0, v2
+/*dc700000 00000003*/ flat_store_dword v[3:4], v0
+/*bf810000         */ s_endpgm
+.fill 29, 4, 0
+test2:
+.skip 256
+/*c0020082 00000004*/ s_load_dword    s2, s[4:5], 0x4
+/*c0060003 00000000*/ s_load_dwordx2  s[0:1], s[6:7], 0x0
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*8602ff02 0000ffff*/ s_and_b32       s2, s2, 0xffff
+/*92020802         */ s_mul_i32       s2, s2, s8
+/*32000002         */ v_add_u32       v0, vcc, s2, v0
+/*2202009f         */ v_ashrrev_i32   v1, 31, v0
+/*d28f0001 00020082*/ v_lshlrev_b64   v[1:2], 2, v[0:1]
+/*32060200         */ v_add_u32       v3, vcc, s0, v1
+/*7e020201         */ v_mov_b32       v1, s1
+/*38080302         */ v_addc_u32      v4, vcc, v2, v1, vcc
+/*2600008f         */ v_and_b32       v0, 15, v0
+/*7e020280         */ v_mov_b32       v1, 0
+/*dc500000 02000003*/ flat_load_dword v2, v[3:4]
+/*d28f0000 00020082*/ v_lshlrev_b64   v[0:1], 2, v[0:1]
+/*be801c00         */ s_getpc_b64     s[0:1]
+/*8000ff00 00000074*/ s_add_u32       s0, s0, 0x74
+/*82018001         */ s_addc_u32      s1, s1, 0
+/*320a0000         */ v_add_u32       v5, vcc, s0, v0
+/*7e000201         */ v_mov_b32       v0, s1
+/*380c0101         */ v_addc_u32      v6, vcc, v1, v0, vcc
+/*dc500000 00000005*/ flat_load_dword v0, v[5:6]
+/*bf8c0070         */ s_waitcnt       vmcnt(0) & lgkmcnt(0)
+/*02000500         */ v_add_f32       v0, v0, v2
+/*dc700000 00000003*/ flat_store_dword v[3:4], v0
+/*bf810000         */ s_endpgm
+data1:
+.global data1
+        .byte 0xcd, 0xcc, 0x8c, 0x3f, 0x33, 0x33, 0x13, 0x40
+        .byte 0x33, 0x33, 0x93, 0x40, 0x33, 0x33, 0xa3, 0x40
+        .byte 0x85, 0xeb, 0x91, 0xbf, 0x3d, 0x0a, 0x27, 0xc0
+        .byte 0x0a, 0xd7, 0x93, 0xc0, 0xb8, 0x1e, 0xa5, 0xc0
+        .byte 0x9a, 0x99, 0x49, 0x41, 0xcd, 0xcc, 0xac, 0x40
+        .byte 0x0a, 0xd7, 0x13, 0x40, 0xd7, 0xa3, 0x98, 0x40
+        .byte 0x9a, 0x99, 0x49, 0xc1, 0xcd, 0xcc, 0xac, 0xc0
+        .byte 0x0a, 0xd7, 0x13, 0xc0, 0xd7, 0xa3, 0x98, 0xc0
+data2:
+.global data2
+        .byte 0xcd, 0x8c, 0xaa, 0x43, 0x33, 0x33, 0x13, 0x40
+        .byte 0x33, 0x33, 0x93, 0x40, 0x52, 0xb8, 0xe6, 0x40
+        .byte 0xb8, 0x1e, 0x81, 0xc1, 0x3d, 0x0a, 0x27, 0xc0
+        .byte 0x85, 0xeb, 0x09, 0xc1, 0xb8, 0x1e, 0xa5, 0xc0
+        .byte 0x9a, 0x99, 0x49, 0x41, 0xcd, 0xcc, 0xaa, 0x42
+        .byte 0x0a, 0xd7, 0x33, 0x40, 0xd7, 0xa3, 0x98, 0x40
+        .byte 0xcd, 0xcc, 0x94, 0xc1, 0x33, 0x33, 0xb3, 0xc0
+        .byte 0x0a, 0xd7, 0x13, 0xc0, 0xd7, 0xa3, 0x98, 0xc0
+)ffDXD", true, false
+    },
+    /* rocm config - different dimensions for group_ids and local_ids */
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/rocm-fiji-diffdims.hsaco",
+        R"ffDXD(.rocm
+.gpu Fiji
+.arch_minor 0
+.arch_stepping 3
+.kernel test1
+    .config
+        .dims x, xy
+        .sgprsnum 16
+        .vgprsnum 8
+        .dx10clamp
+        .floatmode 0xc0
+        .priority 0
+        .userdatanum 8
+        .pgmrsrc1 0x002c0041
+        .pgmrsrc2 0x00000890
         .codeversion 1, 0
         .machine 1, 8, 0, 3
         .kernel_code_entry_offset 0x100

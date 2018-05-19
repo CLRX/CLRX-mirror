@@ -209,10 +209,13 @@ private_elem_size to 4 bytes.
 
 ### .dims
 
-Syntax: .dims DIMENSIONS
+Syntax: .dims DIMENSIONS  
+Syntax: .dims GID_DIMS, LID_DIMS
 
 This pseudo-op must be inside kernel configuration (`.config`). Define what dimensions
 (from list: x, y, z) will be used to determine space of the kernel execution.
+In second syntax form, the dimensions are given for group_id (GID_DIMS) and for local_id
+(LID_DIMS) separately.
 
 ### .driver_version
 

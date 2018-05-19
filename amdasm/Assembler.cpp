@@ -525,8 +525,8 @@ bool AsmParseUtils::getEnumeration(Assembler& asmr, const char*& linePtr,
     return false;
 }
 
-// used by asm format pseudo op: '.dim' to parse dimensions (xyz)
-bool AsmParseUtils::parseDimensions(Assembler& asmr, const char*& linePtr, cxuint& dimMask)
+bool AsmParseUtils::parseSingleDimensions(Assembler& asmr, const char*& linePtr,
+                cxuint& dimMask)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -549,6 +549,31 @@ bool AsmParseUtils::parseDimensions(Assembler& asmr, const char*& linePtr, cxuin
     }
     else // error
         return false;
+    return true;
+}
+
+// used by asm format pseudo op: '.dim' to parse dimensions (xyz)
+bool AsmParseUtils::parseDimensions(Assembler& asmr, const char*& linePtr, cxuint& dimMask,
+            bool twoFields)
+{
+    dimMask = 0;
+    if (!parseSingleDimensions(asmr, linePtr, dimMask))
+        return false;
+    if (twoFields)
+    {
+        dimMask |= dimMask<<3; // fill up second field
+        bool haveComma = false;
+        if (!skipComma(asmr, haveComma, linePtr))
+            return false;
+        if (haveComma)
+        {
+            cxuint secondField = 0;
+            if (!parseSingleDimensions(asmr, linePtr, secondField))
+                return false;
+            // replace second field
+            dimMask = (dimMask & 7) | (secondField<<3);
+        }
+    }
     return true;
 }
 

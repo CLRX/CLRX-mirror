@@ -539,7 +539,7 @@ static const AsmTestCase asmTestCases1Tbl[] =
       Arg: "v61", "structure*", pointer, structure, constant, 0, 19, 40, 20, true
       Arg: "v62", "structure*", pointer, structure, constant, 0, 22, 40, 20, false
       Sampler: 55 44 332 121
-      dims=5, cws=554 44 11, SGPRS=24, VGPRS=47, pgmRSRC2=0xaabbccdd, ieeeMode=0x1
+      dims=45, cws=554 44 11, SGPRS=24, VGPRS=47, pgmRSRC2=0xaabbccdd, ieeeMode=0x1
       floatMode=0xe0, hwLocalSize=51, hwRegion=394, scratchBuffer=9
       uavPrivate=8, uavId=12, constBufferId=11, printfId=10
       privateId=8, earlyExit=1,condOut=2, 
@@ -805,6 +805,58 @@ test.s:110:13: Error: Illegal place of configuration pseudo-op
       Arg: "x", "float", float, void, none, 0, 0, 0, default, true
       Arg: "xff", "SP", float, void, none, 0, 0, 0, default, true
       dims=default, cws=42 1 1, SGPRS=0, VGPRS=0, pgmRSRC2=0x0, ieeeMode=0x0
+      floatMode=0xc0, hwLocalSize=0, hwRegion=default, scratchBuffer=0
+      uavPrivate=default, uavId=13, constBufferId=default, printfId=default
+      privateId=default, earlyExit=0,condOut=0, 
+  GlobalData:
+  nullptr
+)ffDXD",
+        "", true
+    },
+    {   // different dims for group_ids and local_ids
+        R"ffDXD(            .amd
+    .kernel configKernel
+        .config
+            .dims x,xy
+            .uavid 11
+            .arg x  ,  float  
+            .arg xff ,  "SP" ,  float  
+            .cws 41,6
+        .text
+            s_endpgm
+    .kernel configKernel2
+        .config
+            .dims xz,x
+            .uavid 13
+            .arg x  ,  float  
+            .arg xff ,  "SP" ,  float  
+            .cws 42
+        .text
+            s_endpgm
+)ffDXD",
+        R"ffDXD(AmdBinDump:
+  Bitness=32-bit, devType=CapeVerde, drvVersion=0, drvInfo="", compileOptions=""
+  Kernel: configKernel
+    Data:
+    nullptr
+    Code:
+    000081bf
+    Config:
+      Arg: "x", "float", float, void, none, 0, 0, 0, default, true
+      Arg: "xff", "SP", float, void, none, 0, 0, 0, default, true
+      dims=25, cws=41 6 1, SGPRS=1, VGPRS=2, pgmRSRC2=0x0, ieeeMode=0x0
+      floatMode=0xc0, hwLocalSize=0, hwRegion=default, scratchBuffer=0
+      uavPrivate=default, uavId=11, constBufferId=default, printfId=default
+      privateId=default, earlyExit=0,condOut=0, 
+  Kernel: configKernel2
+    Data:
+    nullptr
+    Code:
+    000081bf
+    Config:
+      Arg: "x", "float", float, void, none, 0, 0, 0, default, true
+      Arg: "xff", "SP", float, void, none, 0, 0, 0, default, true
+      dims=13, cws=42 1 1, SGPRS=2, VGPRS=1, pgmRSRC2=0x0, ieeeMode=0x0
       floatMode=0xc0, hwLocalSize=0, hwRegion=default, scratchBuffer=0
       uavPrivate=default, uavId=13, constBufferId=default, printfId=default
       privateId=default, earlyExit=0,condOut=0, 

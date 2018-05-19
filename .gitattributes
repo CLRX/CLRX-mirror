@@ -198,10 +198,14 @@ tests/amdasm/GCNDisasmOpc12.cpp -text
 tests/amdasm/GCNDisasmOpc14.cpp -text
 tests/amdasm/GCNDisasmOpcodes.cpp -text
 tests/amdasm/GCNRegVarUsage.cpp -text
+tests/amdasm/amdbins/amd1-diffdims.clo -text svneol=unset#application/x-executable
 tests/amdasm/amdbins/amd1.clo -text svneol=unset#application/x-executable
 tests/amdasm/amdbins/amdcl2.clo -text svneol=unset#application/x-executable
+tests/amdasm/amdbins/gallium1-diffdims.clo -text
 tests/amdasm/amdbins/gallium1.clo -text
+tests/amdasm/amdbins/new-gallium-llvm40-diffdims.clo -text
 tests/amdasm/amdbins/new-gallium-llvm40.clo -text
+tests/amdasm/amdbins/rocm-fiji-diffdims.hsaco -text svneol=unset#application/x-sharedlib
 tests/amdasm/amdbins/rocm-fiji.hsaco -text svneol=unset#application/x-sharedlib
 tests/amdasm/amdbins/samplekernels.cl -text
 tests/amdasm/amdbins/samplekernels.clo -text svneol=unset#application/x-executable
