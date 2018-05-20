@@ -1520,95 +1520,239 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
  *   3-5bit - linePos change + 1
  * 0xff - change macro substitition
  * 0xfe - change source
- * 0xfd - set short lineNo
- * 0xfc - set long lineNo
- * 0xfb - set short colNo
- * 0xfa - set long colNo
+ * 0xfd - change source and macro substitution
+ * 0xfc - no offset change
  */
 
 AsmSourcePosHandler::AsmSourcePosHandler() : sourcesPos(0), macroSubstsPos(0),
         stTransPos(0), oldLineNo(0), oldColNo(0), oldOffset(0)
 { }
 
-static void inline pushValuePer16bit(std::vector<cxbyte>& out, size_t value)
-{
-    out.push_back(value&0xff);
-    out.push_back((value>>8) & 0x7f);
-    if (value > 0x7fffU)
-    {
-        out.back() |= 0x80;
-        out.push_back((value>>15) & 0xff);
-        out.push_back((value>>23) & 0x7f);
-        if (value > 0x3fffffU)
-        {
-            out.back() |= 0x80;
-            out.push_back((value>>30) & 0xff);
-#ifdef HAVE_64BIT
-            out.push_back((value>>38) & 0x7f);
-            if (value > 0x1fffffffULL)
-            {
-                out.back() |= 0x80;
-                out.push_back((value>>45) & 0xff);
-                out.push_back((value>>53) & 0xff);
-            }
-#endif
-        }
-    }
-}
-
-static void inline pushValuePer8bit(std::vector<cxbyte>& out, size_t value)
-{
-    for (cxuint bit = 0; bit < sizeof(size_t)*8 && (value >> bit) != 0; bit += 7)
-    {
-        if (bit != 0)
-            out.back() |= 0x80;
-        out.push_back((value >> bit) & 0x7f);
-    }
-}
-
 void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourcePos)
 {
     bool doSetPos = false;
-    if (macroSubsts.empty() || macroSubsts.back() != sourcePos.macro)
+    if ((macroSubsts.empty() || macroSubsts.back() != sourcePos.macro) &&
+        (sources.empty() || sources.back() != sourcePos.source))
     {
+        // change macro and source
+        macroSubsts.push_back(sourcePos.macro);
+        sources.push_back(sourcePos.source);
+        stTrans.push_back(0xfd);
+        doSetPos = true;
+    }
+    else if (macroSubsts.back() != sourcePos.macro)
+    {
+        // change subst
         macroSubsts.push_back(sourcePos.macro);
         stTrans.push_back(0xff);
         doSetPos = true;
     }
-    if (sources.empty() || sources.back() != sourcePos.source)
+    else if (sources.back() != sourcePos.source)
     {
+        // change source
         sources.push_back(sourcePos.source);
         stTrans.push_back(0xfe);
         doSetPos = true;
     }
     
+    const size_t diffOffset = offset - oldOffset;
     // change line and column
+    bool noDiffOffset = false;
     if (!doSetPos)
     {
-        size_t diffLineNo = sourcePos.lineNo - oldLineNo;
-        size_t diffColNo = sourcePos.colNo - oldColNo;
-        if (diffColNo == 0 && diffLineNo!=0 && diffLineNo <= 8 &&
-            offset-oldOffset <= 8)
-            stTrans.push_back(cxbyte((diffLineNo-1) | (((offset-oldOffset)<<3)) | 0xc0));
+        const size_t diffLineNo = sourcePos.lineNo - oldLineNo;
+        const size_t diffColNo = sourcePos.colNo - oldColNo;
+        if (diffColNo == 0 && diffLineNo!=0 && diffLineNo <= 7 && diffOffset <= 8)
+        {
+            stTrans.push_back(cxbyte((diffLineNo-1) | (((diffOffset)<<3)) | 0xc0));
+            noDiffOffset = true;
+        }
+        else
+        {
+            // put lineNo and colNo differences
+            if (diffLineNo != 0)
+            {
+                size_t p = 0;
+                for (; p + 64 < diffLineNo; p+=64)
+                    stTrans.push_back(0x7f);
+                stTrans.push_back(diffLineNo - p + 0x40 - 1);
+            }
+            if (diffColNo != 0)
+            {
+                size_t p = 0;
+                for (; p + 64 < diffColNo; p+=64)
+                    stTrans.push_back(0xbf);
+                stTrans.push_back(diffColNo - p + 0x80 - 1);
+            }
+        }
     }
     else
     {
-        pushValuePer16bit(stTrans, sourcePos.lineNo);
-        pushValuePer8bit(stTrans, sourcePos.colNo);
+        // push lineNo value
+        stTrans.push_back(sourcePos.lineNo&0xff);
+        stTrans.push_back((sourcePos.lineNo>>8) & 0x7f);
+        if (sourcePos.lineNo > 0x7fffU)
+        {
+            stTrans.back() |= 0x80;
+            stTrans.push_back((sourcePos.lineNo>>15) & 0xff);
+            stTrans.push_back((sourcePos.lineNo>>23) & 0x7f);
+            if (sourcePos.lineNo > 0x3fffffU)
+            {
+                stTrans.back() |= 0x80;
+                stTrans.push_back((sourcePos.lineNo>>30) & 0xff);
+#ifdef HAVE_64BIT
+                stTrans.push_back((sourcePos.lineNo>>38) & 0x7f);
+                if (sourcePos.lineNo > 0x1fffffffULL)
+                {
+                    stTrans.back() |= 0x80;
+                    stTrans.push_back((sourcePos.lineNo>>45) & 0xff);
+                    stTrans.push_back((sourcePos.lineNo>>53) & 0xff);
+                }
+#endif
+            }
+        }
+        // push colNo value
+        for (cxuint bit = 0; bit < sizeof(size_t)*8 &&
+                    (sourcePos.colNo >> bit) != 0; bit += 7)
+        {
+            if (bit != 0)
+                stTrans.back() |= 0x80;
+            stTrans.push_back((sourcePos.colNo >> bit) & 0x7f);
+        }
     }
-    // change offset
-}
-
-void AsmSourcePosHandler::flush()
-{
+    // push offset difference
+    if (!noDiffOffset)
+    {
+        if (diffOffset != 0)
+        {
+            size_t p = 0;
+            for (; p + 64 < diffOffset; p+=64)
+                stTrans.push_back(0x3f);
+            stTrans.push_back(diffOffset - p - 1);
+        }
+        else
+            stTrans.push_back(0xfc); // no offset change
+    }
 }
 
 void AsmSourcePosHandler::rewind()
 {
     sourcesPos = macroSubstsPos = stTransPos = 0;
+    oldOffset = 0;
+    oldLineNo = 0;
+    oldColNo = 0;
 }
 
 std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
 {
-    return { };
+    if (stTransPos >= stTrans.size())
+        throw Exception("No source pos available");
+    const cxbyte code = stTrans[stTransPos];
+    
+    AsmSourcePos sourcePos{ };
+    if (macroSubstsPos != 0)
+        sourcePos.macro = macroSubsts[macroSubstsPos-1];
+    if (sourcesPos != 0)
+        sourcePos.source = sources[sourcesPos-1];
+    
+    bool doReadPos = false;
+    if (code == 0xfd) // source and macro
+    {
+        sourcePos.macro = macroSubsts[macroSubstsPos++];
+        sourcePos.source = sources[sourcesPos++];
+        doReadPos = true;
+        stTransPos++;
+    }
+    else if (code == 0xfe)
+    {
+        sourcePos.source = sources[sourcesPos++];
+        doReadPos = true;
+        stTransPos++;
+    }
+    else if (code == 0xff)
+    {
+        sourcePos.macro = macroSubsts[macroSubstsPos++];
+        doReadPos = true;
+        stTransPos++;
+    }
+    
+    bool offsetAlreadyChanged = false;
+    if (!doReadPos)
+    {
+        if ((code & 0xc0) == 0xc0)
+        {
+            if (code < 0xf7)
+            {
+                oldLineNo += (code&0x3f)>>3;
+                oldOffset += (code&7);
+                offsetAlreadyChanged = true;
+            }
+        }
+        else
+        {
+            // apply differences for lineNo
+            for (; stTransPos < stTrans.size() &&
+                            stTrans[stTransPos] == 0x7f; stTransPos++)
+                oldLineNo += 64;
+            
+            if (stTransPos < stTrans.size() && (stTrans[stTransPos] & 0xc0) == 0x40)
+                oldLineNo += stTrans[stTransPos] - 0x40 + 1;
+            // apply differencees for colNo
+            for (; stTransPos < stTrans.size() &&
+                            stTrans[stTransPos] == 0xbf; stTransPos++)
+                oldColNo += 64;
+            
+            if (stTransPos < stTrans.size() && (stTrans[stTransPos] & 0xc0) == 0x80)
+                oldColNo += stTrans[stTransPos] - 0x80 + 1;
+        }
+    }
+    else
+    {
+        // read lineNo value
+        oldLineNo = stTrans[stTransPos++];
+        oldLineNo |= size_t(stTrans[stTransPos++] & 0x7f) << 8;
+        if ((stTrans[stTransPos-1] & 0x80) != 0)
+        {
+            oldLineNo |= size_t(stTrans[stTransPos++]) << 15;
+            oldLineNo |= size_t(stTrans[stTransPos++] & 0x7f) << 23;
+            if ((stTrans[stTransPos-1] & 0x80) != 0)
+            {
+                oldLineNo |= size_t(stTrans[stTransPos++]) << 30;
+#ifdef HAVE_64BIT
+                oldLineNo |= size_t(stTrans[stTransPos++] & 0x7f) << 38;
+                if ((stTrans[stTransPos-1] & 0x80) != 0)
+                {
+                    oldLineNo |= size_t(stTrans[stTransPos++]) << 45;
+                    oldLineNo |= size_t(stTrans[stTransPos++]) << 53;
+                }
+#endif
+            }
+        }
+        // read columnNo value
+        oldColNo = 0;
+        cxuint bit = 0;
+        do {
+            oldColNo |= size_t(stTrans[stTransPos++] & 0x7f) << bit;
+            bit += 7;
+        } while ((stTrans[stTransPos-1] & 0x80) != 0);
+    }
+    
+    if (!offsetAlreadyChanged)
+    {
+        // if offset is not already changed
+        if (stTransPos > stTrans.size() || stTrans[stTransPos] != 0xfc)
+        {
+            // if offset changed (no code 0xfc)
+            for (; stTransPos < stTrans.size() &&
+                            stTrans[stTransPos] == 0x3f; stTransPos++)
+                oldOffset += 64;
+            
+            if (stTransPos < stTrans.size() && (stTrans[stTransPos] & 0xc0) == 0x00)
+                oldOffset += stTrans[stTransPos] + 1;
+        }
+    }
+    
+    sourcePos.lineNo = oldLineNo;
+    sourcePos.colNo = oldColNo;
+    return std::make_pair(oldOffset, sourcePos);
 }

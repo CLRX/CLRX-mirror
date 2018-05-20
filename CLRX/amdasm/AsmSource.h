@@ -532,6 +532,16 @@ public:
 /// class holds source position for section offset
 class AsmSourcePosHandler
 {
+public:
+    struct ReadPos
+    {
+        size_t sourcesPos;
+        size_t macroSubstsPos;
+        size_t stTransPos;
+        LineNo oldLineNo;
+        ColNo oldColNo;
+        size_t oldOffset;
+    };
 private:
     size_t sourcesPos;
     size_t macroSubstsPos;
@@ -547,10 +557,25 @@ public:
     AsmSourcePosHandler();
     /// push new source pos at offset
     void pushSourcePos(size_t offset, const AsmSourcePos& sourcePos);
-    /// flush written data
-    void flush();
     /// rewind read position
     void rewind();
+    /// return true if has next
+    bool hasNext() const
+    { return stTransPos < stTrans.size(); }
+    /// set read pos
+    void setReadPos(const ReadPos& rpos)
+    {
+        sourcesPos = rpos.sourcesPos;
+        macroSubstsPos = rpos.macroSubstsPos;
+        stTransPos = rpos.stTransPos;
+        oldLineNo = rpos.oldLineNo;
+        oldColNo = rpos.oldColNo;
+        oldOffset = rpos.oldOffset;
+    }
+    /// get read pos
+    ReadPos getReadPos() const
+    { return ReadPos{ sourcesPos, macroSubstsPos, stTransPos,
+                oldLineNo, oldColNo, oldOffset }; }
     /// get next source position with offset
     std::pair<size_t, AsmSourcePos> nextSourcePos();
 };
