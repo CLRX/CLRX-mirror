@@ -529,6 +529,32 @@ public:
     { return repeatCount; }
 };
 
+/// class holds source position for section offset
+class AsmSourcePosHandler
+{
+private:
+    size_t sourcesPos;
+    size_t macroSubstsPos;
+    size_t stTransPos;
+    LineNo oldLineNo;
+    ColNo oldColNo;
+    size_t oldOffset;
+    std::vector<cxbyte> stTrans;  // encoded tranlation stream
+    std::vector<RefPtr<const AsmSource> > sources;
+    std::vector<RefPtr<const AsmMacroSubst> > macroSubsts;
+public:
+    /// constructor
+    AsmSourcePosHandler();
+    /// push new source pos at offset
+    void pushSourcePos(size_t offset, const AsmSourcePos& sourcePos);
+    /// flush written data
+    void flush();
+    /// rewind read position
+    void rewind();
+    /// get next source position with offset
+    std::pair<size_t, AsmSourcePos> nextSourcePos();
+};
+
 };
 
 #endif

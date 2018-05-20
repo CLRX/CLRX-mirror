@@ -1506,3 +1506,109 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
         macroPos.print(os, indentLevel+1);
     }
 }
+
+/*
+ * AsmSourcePosHandler for sections
+ */
+
+/* STtrans byte format:
+ * 0x00 - 0x3f - byte offset change
+ * 0x40 - 0x7f - line position change ( - 0x40)
+ * 0x80 - 0xbf - column position change ( - 0x40)
+ * 0xc0 - 0xf7 - line and byte offset change
+ *   0-2bit - offset change + 1
+ *   3-5bit - linePos change + 1
+ * 0xff - change macro substitition
+ * 0xfe - change source
+ * 0xfd - set short lineNo
+ * 0xfc - set long lineNo
+ * 0xfb - set short colNo
+ * 0xfa - set long colNo
+ */
+
+AsmSourcePosHandler::AsmSourcePosHandler() : sourcesPos(0), macroSubstsPos(0),
+        stTransPos(0), oldLineNo(0), oldColNo(0), oldOffset(0)
+{ }
+
+static void inline pushValuePer16bit(std::vector<cxbyte>& out, size_t value)
+{
+    out.push_back(value&0xff);
+    out.push_back((value>>8) & 0x7f);
+    if (value > 0x7fffU)
+    {
+        out.back() |= 0x80;
+        out.push_back((value>>15) & 0xff);
+        out.push_back((value>>23) & 0x7f);
+        if (value > 0x3fffffU)
+        {
+            out.back() |= 0x80;
+            out.push_back((value>>30) & 0xff);
+#ifdef HAVE_64BIT
+            out.push_back((value>>38) & 0x7f);
+            if (value > 0x1fffffffULL)
+            {
+                out.back() |= 0x80;
+                out.push_back((value>>45) & 0xff);
+                out.push_back((value>>53) & 0xff);
+            }
+#endif
+        }
+    }
+}
+
+static void inline pushValuePer8bit(std::vector<cxbyte>& out, size_t value)
+{
+    for (cxuint bit = 0; bit < sizeof(size_t)*8 && (value >> bit) != 0; bit += 7)
+    {
+        if (bit != 0)
+            out.back() |= 0x80;
+        out.push_back((value >> bit) & 0x7f);
+    }
+}
+
+void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourcePos)
+{
+    bool doSetPos = false;
+    if (macroSubsts.empty() || macroSubsts.back() != sourcePos.macro)
+    {
+        macroSubsts.push_back(sourcePos.macro);
+        stTrans.push_back(0xff);
+        doSetPos = true;
+    }
+    if (sources.empty() || sources.back() != sourcePos.source)
+    {
+        sources.push_back(sourcePos.source);
+        stTrans.push_back(0xfe);
+        doSetPos = true;
+    }
+    
+    // change line and column
+    if (!doSetPos)
+    {
+        size_t diffLineNo = sourcePos.lineNo - oldLineNo;
+        size_t diffColNo = sourcePos.colNo - oldColNo;
+        if (diffColNo == 0 && diffLineNo!=0 && diffLineNo <= 8 &&
+            offset-oldOffset <= 8)
+            stTrans.push_back(cxbyte((diffLineNo-1) | (((offset-oldOffset)<<3)) | 0xc0));
+    }
+    else
+    {
+        pushValuePer16bit(stTrans, sourcePos.lineNo);
+        pushValuePer8bit(stTrans, sourcePos.colNo);
+    }
+    // change offset
+}
+
+void AsmSourcePosHandler::flush()
+{
+}
+
+void AsmSourcePosHandler::rewind()
+{
+    sourcesPos = macroSubstsPos = stTransPos = 0;
+}
+
+std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
+{
+    return { };
+}
