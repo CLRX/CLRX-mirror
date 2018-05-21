@@ -97,3 +97,6 @@ ADD_EXECUTABLE(AsmRegAlloc3 AsmRegAlloc3.cpp)
 TEST_LINK_LIBRARIES(AsmRegAlloc3 CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AsmRegAlloc3 AsmRegAlloc3)
 
+ADD_EXECUTABLE(AsmSourcePosHandler AsmSourcePosHandler.cpp)
+TEST_LINK_LIBRARIES(AsmSourcePosHandler CLRXAmdAsm CLRXAmdBin CLRXUtils)
+ADD_TEST(AsmSourcePosHandler AsmSourcePosHandler)

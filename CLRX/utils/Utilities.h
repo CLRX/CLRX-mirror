@@ -856,6 +856,10 @@ public:
     T* operator->() const
     { return ptr; }
     
+    /// get elem
+    T* get() const
+    { return ptr; }
+    
     /// reset refpointer
     void reset()
     {

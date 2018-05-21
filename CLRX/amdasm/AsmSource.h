@@ -65,11 +65,11 @@ enum class AsmSourceType : cxbyte
 /// descriptor of assembler source for source position
 struct AsmSource: public FastRefCountable
 {
+    size_t uniqueId;    ///< unique id for equality
     AsmSourceType type;    ///< type of Asm source (file or macro)
     
     /// constructor
-    explicit AsmSource(AsmSourceType _type) : type(_type)
-    { }
+    explicit AsmSource(AsmSourceType _type);
     /// destructor
     virtual ~AsmSource();
 };
@@ -101,6 +101,7 @@ struct AsmFile: public AsmSource
 /// descriptor assembler macro substitution
 struct AsmMacroSubst: public FastRefCountable
 {
+    size_t uniqueId;    ///< unique id for equality
     ///  parent source for this source (for file is parent file or macro substitution,
     /// for macro substitution is parent substitution
     RefPtr<const AsmMacroSubst> parent;   ///< parent macro substition
@@ -109,14 +110,10 @@ struct AsmMacroSubst: public FastRefCountable
     ColNo colNo; ///< place in line where macro substituted
     
     /// constructor
-    AsmMacroSubst(RefPtr<const AsmSource> _source, LineNo _lineNo, ColNo _colNo) :
-              source(_source), lineNo(_lineNo), colNo(_colNo)
-    { }
+    AsmMacroSubst(RefPtr<const AsmSource> _source, LineNo _lineNo, ColNo _colNo);
     /// constructor with parent macro substitution
     AsmMacroSubst(RefPtr<const AsmMacroSubst> _parent, RefPtr<const AsmSource> _source,
-              LineNo _lineNo, ColNo _colNo) : parent(_parent), source(_source),
-              lineNo(_lineNo), colNo(_colNo)
-    { }
+              LineNo _lineNo, ColNo _colNo);
 };
 
 /// descriptor of macro source (used in source fields)

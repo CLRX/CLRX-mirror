@@ -23,6 +23,7 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include <atomic>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
 #include "AsmInternals.h"
@@ -34,6 +35,12 @@ using namespace CLRX;
  * macro input filters counts incorectly columns (correct solution requires
  * cumbersome code changes) */
 
+static std::atomic<size_t> asmSourceCounter(0);
+
+AsmSource::AsmSource(AsmSourceType _type) : uniqueId(asmSourceCounter.fetch_add(1)),
+                type(_type)
+{ }
+
 AsmSource::~AsmSource()
 { }
 
@@ -44,6 +51,19 @@ AsmMacroSource::~AsmMacroSource()
 { }
 
 AsmRepeatSource::~AsmRepeatSource()
+{ }
+
+static std::atomic<size_t> asmMacroSubstCounter(0);
+
+AsmMacroSubst::AsmMacroSubst(RefPtr<const AsmSource> _source, LineNo _lineNo, ColNo _colNo)
+            : uniqueId(asmMacroSubstCounter.fetch_add(1)),
+              source(_source), lineNo(_lineNo), colNo(_colNo)
+{ }
+
+AsmMacroSubst::AsmMacroSubst(RefPtr<const AsmMacroSubst> _parent,
+            RefPtr<const AsmSource> _source, LineNo _lineNo, ColNo _colNo)
+            : uniqueId(asmMacroSubstCounter.fetch_add(1)),
+              parent(_parent), source(_source), lineNo(_lineNo), colNo(_colNo)
 { }
 
 /* Asm Macro */
@@ -1531,8 +1551,13 @@ AsmSourcePosHandler::AsmSourcePosHandler() : sourcesPos(0), macroSubstsPos(0),
 void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourcePos)
 {
     bool doSetPos = false;
-    if ((macroSubsts.empty() || macroSubsts.back() != sourcePos.macro) &&
-        (sources.empty() || sources.back() != sourcePos.source))
+    const bool thisSameSource = !sources.empty() && sources.back() == sourcePos.source &&
+            (!sourcePos.source || sources.back()->uniqueId  == sourcePos.source->uniqueId);
+    const bool thisSameMacro = !macroSubsts.empty() &&
+            macroSubsts.back() == sourcePos.macro && (!sourcePos.macro ||
+             macroSubsts.back()->uniqueId  == sourcePos.macro->uniqueId);
+    
+    if (!thisSameMacro && !thisSameSource)
     {
         // change macro and source
         macroSubsts.push_back(sourcePos.macro);
@@ -1540,14 +1565,14 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
         stTrans.push_back(0xfd);
         doSetPos = true;
     }
-    else if (macroSubsts.back() != sourcePos.macro)
+    else if (!thisSameMacro)
     {
         // change subst
         macroSubsts.push_back(sourcePos.macro);
         stTrans.push_back(0xff);
         doSetPos = true;
     }
-    else if (sources.back() != sourcePos.source)
+    else if (!thisSameSource)
     {
         // change source
         sources.push_back(sourcePos.source);
