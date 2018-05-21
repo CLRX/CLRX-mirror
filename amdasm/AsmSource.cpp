@@ -1561,7 +1561,7 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
     if (!doSetPos)
     {
         const size_t diffLineNo = sourcePos.lineNo - oldLineNo;
-        const size_t diffColNo = sourcePos.colNo - oldColNo;
+        size_t diffColNo = sourcePos.colNo - oldColNo;
         if (diffColNo == 0 && diffLineNo!=0 && diffLineNo <= 7 && diffOffset <= 8)
         {
             stTrans.push_back(cxbyte((diffLineNo-1) | (((diffOffset)<<3)) | 0xc0));
@@ -1576,6 +1576,8 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
                 for (; p + 64 < diffLineNo; p+=64)
                     stTrans.push_back(0x7f);
                 stTrans.push_back(diffLineNo - p + 0x40 - 1);
+                // we assume after new line, oldColumn is 1
+                diffColNo = sourcePos.colNo - 1;
             }
             if (diffColNo != 0)
             {
@@ -1676,6 +1678,7 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
         stTransPos++;
     }
     
+    size_t lineNo = oldLineNo;
     bool offsetAlreadyChanged = false;
     if (!doReadPos)
     {
@@ -1683,7 +1686,7 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
         {
             if (code < 0xf7)
             {
-                oldLineNo += (code&0x3f)>>3;
+                lineNo += (code&0x3f)>>3;
                 oldOffset += (code&7);
                 offsetAlreadyChanged = true;
             }
@@ -1693,10 +1696,15 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
             // apply differences for lineNo
             for (; stTransPos < stTrans.size() &&
                             stTrans[stTransPos] == 0x7f; stTransPos++)
-                oldLineNo += 64;
+                lineNo += 64;
             
             if (stTransPos < stTrans.size() && (stTrans[stTransPos] & 0xc0) == 0x40)
-                oldLineNo += stTrans[stTransPos] - 0x40 + 1;
+                lineNo += stTrans[stTransPos] - 0x40 + 1;
+            
+            if (lineNo!= oldLineNo) // line has changed
+                oldColNo = 1; // we assume that column no is 1
+            oldLineNo = lineNo;
+            
             // apply differencees for colNo
             for (; stTransPos < stTrans.size() &&
                             stTrans[stTransPos] == 0xbf; stTransPos++)
