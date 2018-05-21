@@ -1585,8 +1585,8 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
     bool noDiffOffset = false;
     if (!doSetPos)
     {
-        const size_t diffLineNo = sourcePos.lineNo - oldLineNo;
-        size_t diffColNo = sourcePos.colNo - oldColNo;
+        const LineNo diffLineNo = sourcePos.lineNo - oldLineNo;
+        ColNo diffColNo = sourcePos.colNo - oldColNo;
         if (diffColNo == 0 && diffLineNo!=0 && diffOffset!=0 &&
             diffLineNo <= 7 && diffOffset <= 8)
         {
@@ -1598,7 +1598,7 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
             // put lineNo and colNo differences
             if (diffLineNo != 0)
             {
-                size_t p = 0;
+                LineNo p = 0;
                 for (; p + 64 < diffLineNo; p+=64)
                     stTrans.push_back(0x7f);
                 stTrans.push_back(diffLineNo - p + 0x40 - 1);
@@ -1607,7 +1607,7 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
             }
             if (diffColNo != 0)
             {
-                size_t p = 0;
+                ColNo p = 0;
                 for (; p + 64 < diffColNo; p+=64)
                     stTrans.push_back(0xbf);
                 stTrans.push_back(diffColNo - p + 0x80 - 1);

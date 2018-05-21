@@ -172,7 +172,24 @@ static const SourcePosHandlerTestCase sourcePoHandlerTestTbl[] =
         { 17, "", "file0.s", 23, 129 },
         { 20, "", "file0.s", 24, 66 },
         { 24, "", "file0.s", 25, 64 }
-    }
+    },
+    // 21 - many entries for single line
+    {
+        { 0, "", "file0.s", 1, 9 },
+        { 4, "", "file0.s", 1, 20 },
+        { 9, "", "file0.s", 1, 53 },
+        { 16, "", "file0.s", 2, 5 },
+        { 24, "", "file0.s", 2, 47 }
+    },
+    // 22 - many entries for single line 2
+    {
+        { 0, "", "file0.s", 1, 9 },
+        { 4, "", "file0.s", 1, 123 },
+        { 9, "", "file0.s", 1, 370 },
+        { 16, "", "file0.s", 2, 5 },
+        { 24, "", "file0.s", 2, 70 },
+        { 28, "", "file0.s", 2, 134 }
+    },
 };
 
 static void testAsmSourcePosHandler(cxuint i, const SourcePosHandlerTestCase& testCase)
