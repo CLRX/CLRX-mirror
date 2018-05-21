@@ -183,6 +183,7 @@ tests/amdasm/AsmRegAllocCase1.cpp -text
 tests/amdasm/AsmRegAllocCase2.cpp -text
 tests/amdasm/AsmRegAllocCase3.cpp -text
 tests/amdasm/AsmRegPool.cpp -text
+tests/amdasm/AsmSourcePosHandler.cpp -text
 tests/amdasm/AssemblerBasics.cpp -text
 tests/amdasm/CMakeLists.txt -text svneol=unset#text/plain
 tests/amdasm/DisasmDataTest.cpp -text
