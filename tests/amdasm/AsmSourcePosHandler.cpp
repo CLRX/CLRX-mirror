@@ -242,6 +242,12 @@ static const SourcePosHandlerTestCase sourcePoHandlerTestTbl[] =
         { 24307, "", "file0.s", 8, 5 },
         { 24627, "", "file0.s", 11, 9 }
     },
+    // 26 - big diffs in offset
+    {
+        { 100, "", "file0.s", 1, 9 },
+        { 164, "", "file0.s", 1, 9 },
+        { 228, "", "file0.s", 1, 9 }
+    }
 };
 
 static void testAsmSourcePosHandler(cxuint i, const SourcePosHandlerTestCase& testCase)

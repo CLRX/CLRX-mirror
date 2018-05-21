@@ -1557,6 +1557,8 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
             macroSubsts.back() == sourcePos.macro && (!sourcePos.macro ||
              macroSubsts.back()->uniqueId  == sourcePos.macro->uniqueId);
     
+    const size_t diffOffset = offset - oldOffset;
+    
     if (!thisSameMacro && !thisSameSource)
     {
         // change macro and source
@@ -1572,7 +1574,10 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
         stTrans.push_back(0xff);
         doSetPos = true;
     }
-    else if (!thisSameSource)
+    else if (!thisSameSource ||
+            // fix for 64 change in offset and no change in colNo and lineNo
+                (sourcePos.lineNo == oldLineNo &&
+                 sourcePos.colNo == oldColNo && (diffOffset & 63) == 0))
     {
         // change source
         sources.push_back(sourcePos.source);
@@ -1580,7 +1585,6 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
         doSetPos = true;
     }
     
-    const size_t diffOffset = offset - oldOffset;
     // change line and column
     bool noDiffOffset = false;
     if (!doSetPos)
