@@ -83,6 +83,54 @@ static const SourcePosHandlerTestCase sourcePoHandlerTestTbl[] =
         { 8, "", "file0.s", 0x42063ca43c9a1acULL, 9 },
         { 12, "", "file0.s", 0x42063ca43c9a1acULL+1, 9 },
         { 17, "", "file0.s", 0x42063ca43c9a1acULL+2, 4 }
+    },
+    // 7 - bigger colNo
+    {
+        { 8, "", "file0.s", 1, 128 },
+        { 12, "", "file0.s", 2, 128 },
+        { 17, "", "file0.s", 3, 4 }
+    },
+    // 8 - bigger colNo
+    {
+        { 8, "", "file0.s", 1, 1271 },
+        { 12, "", "file0.s", 2, 1271 },
+        { 17, "", "file0.s", 3, 4 }
+    },
+    // 9 - bigger colNo
+    {
+        { 8, "", "file0.s", 1, 0x4000U },
+        { 12, "", "file0.s", 2, 0x4000U },
+        { 17, "", "file0.s", 3, 4 }
+    },
+    // 10 - bigger colNo
+    {
+        { 8, "", "file0.s", 1, 0x1cafaU },
+        { 12, "", "file0.s", 2, 0x1cafaU },
+        { 17, "", "file0.s", 3, 4 }
+    },
+    // 11 - bigger colNo
+    {
+        { 8, "", "file0.s", 1, 0x200000U },
+        { 12, "", "file0.s", 2, 0x200000U },
+        { 17, "", "file0.s", 3, 4 }
+    },
+    // 12 - bigger colNo
+    {
+        { 8, "", "file0.s", 1, 0xaf29c2bU },
+        { 12, "", "file0.s", 2, 0xaf29c2bU },
+        { 17, "", "file0.s", 3, 4 }
+    },
+    // 13 - bigger colNo
+    {
+        { 8, "", "file0.s", 1, 0x10000000U },
+        { 12, "", "file0.s", 2, 0x10000000U },
+        { 17, "", "file0.s", 3, 4 }
+    },
+    // 14 - bigger colNo
+    {
+        { 8, "", "file0.s", 1, 0xffaabcadU },
+        { 12, "", "file0.s", 2, 0xffaabcadU },
+        { 17, "", "file0.s", 3, 4 }
     }
 };
 
