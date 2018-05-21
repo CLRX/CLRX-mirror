@@ -190,6 +190,58 @@ static const SourcePosHandlerTestCase sourcePoHandlerTestTbl[] =
         { 24, "", "file0.s", 2, 70 },
         { 28, "", "file0.s", 2, 134 }
     },
+    // 23 - testing one encoding
+    {
+        { 0, "", "file0.s", 1, 9 },
+        { 8, "", "file0.s", 2, 9 },
+        { 16, "", "file0.s", 9, 9 },
+        { 24, "", "file0.s", 9, 9 },
+        { 24, "", "file0.s", 15, 9 },
+        { 33, "", "file0.s", 16, 9 },
+        { 40, "", "file0.s", 24, 9 }
+    },
+    // 24 - many sources and macros
+    {
+        { 0, "", "file0.s", 1, 9 },
+        { 4, "", "file1.s", 2, 10 },
+        { 8, "", "file2.s", 3, 12 },
+        { 12, "", "file0.s", 2, 5 },
+        { 16, "macro0", "macro0.s", 1, 7 },
+        { 20, "macro0", "macro0.s", 2, 7 },
+        { 24, "macro0", "macro0.s", 4, 7 },
+        { 32, "", "file0.s", 3, 6 },
+        { 34, "maxx", "file0.s", 4, 6 },
+        { 36, "maxx", "file0.s", 5, 6 },
+        { 38, "maxx", "file1.s", 10, 6 },
+        { 42, "maxx", "file0.s", 6, 6 },
+        { 46, "", "file0.s", 8, 6 }
+    },
+    // 25 - many sources and macros
+    {
+        { 0, "", "file0.s", 1001, 9 },
+        { 4, "", "file1.s", 2002, 10 },
+        { 8, "", "file2.s", 4003, 12 },
+        { 12, "", "file0.s", 1002, 5 },
+        { 16, "macro0", "macro0.s", 77001, 1007 },
+        { 20, "macro0", "macro0.s", 77002, 1007 },
+        { 24, "macro0", "macro0.s", 77004, 1007 },
+        { 32, "", "file0.s", 1003, 6 },
+        { 34, "maxx", "file0.s", 1004, 6 },
+        { 36, "maxx", "file0.s", 1055, 6 },
+        { 38, "maxx", "file1.s", 4210, 6 },
+        { 42, "maxx", "file0.s", 1066, 6 },
+        { 46, "", "file0.s", 1288, 6 }
+    },
+    // 26 - big diffs in offset
+    {
+        { 100, "", "file0.s", 1, 9 },
+        { 164, "", "file0.s", 2, 9 },
+        { 229, "", "file0.s", 3, 4 },
+        { 292, "", "file0.s", 4, 5 },
+        { 24292, "", "file0.s", 6, 5 },
+        { 24307, "", "file0.s", 8, 5 },
+        { 24627, "", "file0.s", 11, 9 }
+    },
 };
 
 static void testAsmSourcePosHandler(cxuint i, const SourcePosHandlerTestCase& testCase)
