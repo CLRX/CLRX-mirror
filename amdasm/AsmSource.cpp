@@ -1542,11 +1542,57 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
  * 0xfe - change source
  * 0xfd - change source and macro substitution
  * 0xfc - no offset change
+ * 0xfb - encode longer lineNo diff
+ * 0xfa - encode longer colNo diff
+ * 0xf9 - encode longer offset diff
  */
 
 AsmSourcePosHandler::AsmSourcePosHandler() : sourcesPos(0), macroSubstsPos(0),
         stTransPos(0), oldLineNo(0), oldColNo(0), oldOffset(0)
 { }
+
+template<typename T>
+static inline void pushDiff(std::vector<cxbyte>& out, T diff, cxbyte smallCode,
+            cxbyte longCode)
+{
+    if (diff <= 64)
+        out.push_back(cxbyte(diff-1) | smallCode);
+    else
+    {
+        out.push_back(longCode);
+        // push colNo value
+        const T value = diff-65;
+        for (cxuint bit = 0; bit < sizeof(T)*8 && (value >> bit) != 0; bit += 7)
+        {
+            if (bit != 0)
+                out.back() |= 0x80;
+            out.push_back((value >> bit) & 0x7f);
+        }
+        if (value == 0)
+            out.push_back(0); // if zero
+    }
+}
+
+template<typename T>
+static inline T getDiff(size_t& pos, const std::vector<cxbyte>& in, cxbyte smallCode,
+            cxbyte longCode)
+{
+    if ((in[pos] & 0xc0) == smallCode)
+        return T(in[pos++] & 0x3f) + 1;
+    else if (in[pos] == longCode)
+    {
+        pos++;
+        // read columnNo value
+        T value = 0;
+        cxuint bit = 0;
+        do {
+            value |= size_t(in[pos++] & 0x7f) << bit;
+            bit += 7;
+        } while ((in[pos-1] & 0x80) != 0);
+        return value + 65;
+    }
+    return 0;
+}
 
 void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourcePos)
 {
@@ -1602,20 +1648,11 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
             // put lineNo and colNo differences
             if (diffLineNo != 0)
             {
-                LineNo p = 0;
-                for (; p + 64 < diffLineNo; p+=64)
-                    stTrans.push_back(0x7f);
-                stTrans.push_back(diffLineNo - p + 0x40 - 1);
-                // we assume after new line, oldColumn is 1
+                pushDiff(stTrans, diffLineNo, 0x40, 0xfb);
                 diffColNo = sourcePos.colNo - 1;
             }
             if (diffColNo != 0)
-            {
-                ColNo p = 0;
-                for (; p + 64 < diffColNo; p+=64)
-                    stTrans.push_back(0xbf);
-                stTrans.push_back(diffColNo - p + 0x80 - 1);
-            }
+                pushDiff(stTrans, diffColNo, 0x80, 0xfa);
         }
     }
     else
@@ -1654,12 +1691,7 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
     if (!noDiffOffset)
     {
         if (diffOffset != 0)
-        {
-            size_t p = 0;
-            for (; p + 64 < diffOffset; p+=64)
-                stTrans.push_back(0x3f);
-            stTrans.push_back(diffOffset - p - 1);
-        }
+            pushDiff(stTrans, diffOffset, 0x0, 0xf9);
         else
             stTrans.push_back(0xfc); // no offset change
     }
@@ -1713,36 +1745,23 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
     bool offsetAlreadyChanged = false;
     if (!doReadPos)
     {
-        if ((code & 0xc0) == 0xc0)
+        if ((code & 0xc0) == 0xc0 && (code < 0xf8))
         {
-            if (code < 0xf8)
-            {
-                lineNo += ((code&0x3f)>>3) + 1;
-                oldOffset += (code&7) + 1;
-                offsetAlreadyChanged = true;
-                stTransPos++;
-            }
+            lineNo += ((code&0x3f)>>3) + 1;
+            oldOffset += (code&7) + 1;
+            offsetAlreadyChanged = true;
+            stTransPos++;
         }
         else
         {
             // apply differences for lineNo
-            for (; stTransPos < stTrans.size() &&
-                            stTrans[stTransPos] == 0x7f; stTransPos++)
-                lineNo += 64;
-            
-            if (stTransPos < stTrans.size() && (stTrans[stTransPos] & 0xc0) == 0x40)
-                lineNo += stTrans[stTransPos++] - 0x40 + 1;
+            lineNo += getDiff<LineNo>(stTransPos, stTrans, 0x40, 0xfb);
             
             if (lineNo != oldLineNo) // line has changed
                 oldColNo = 1; // we assume that column no is 1
             
             // apply differencees for colNo
-            for (; stTransPos < stTrans.size() &&
-                            stTrans[stTransPos] == 0xbf; stTransPos++)
-                oldColNo += 64;
-            
-            if (stTransPos < stTrans.size() && (stTrans[stTransPos] & 0xc0) == 0x80)
-                oldColNo += stTrans[stTransPos++] - 0x80 + 1;
+            oldColNo += getDiff<ColNo>(stTransPos, stTrans, 0x80, 0xfa);
         }
         oldLineNo = lineNo;
     }
@@ -1779,15 +1798,7 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
     {
         // if offset is not already changed
         if (stTransPos > stTrans.size() || stTrans[stTransPos] != 0xfc)
-        {
-            // if offset changed (no code 0xfc)
-            for (; stTransPos < stTrans.size() &&
-                            stTrans[stTransPos] == 0x3f; stTransPos++)
-                oldOffset += 64;
-            
-            if (stTransPos < stTrans.size() && (stTrans[stTransPos] & 0xc0) == 0x00)
-                oldOffset += stTrans[stTransPos++] + 1;
-        }
+            oldOffset += getDiff<size_t>(stTransPos, stTrans, 0x0, 0xf9);
         else if (stTrans[stTransPos] == 0xfc)
             stTransPos++; // skip 0xfc
     }
