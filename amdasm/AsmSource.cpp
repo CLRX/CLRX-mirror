@@ -1784,6 +1784,8 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
             if (stTransPos < stTrans.size() && (stTrans[stTransPos] & 0xc0) == 0x00)
                 oldOffset += stTrans[stTransPos++] + 1;
         }
+        else if (stTrans[stTransPos] == 0xfc)
+            stTransPos++; // skip 0xfc
     }
     
     sourcePos.lineNo = oldLineNo;
