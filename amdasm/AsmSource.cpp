@@ -1746,19 +1746,19 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
     {
         // read lineNo value
         oldLineNo = stTrans[stTransPos++];
-        oldLineNo |= size_t(stTrans[stTransPos++] & 0x7f) << 8;
+        oldLineNo |= uint64_t(stTrans[stTransPos++] & 0x7f) << 8;
         if ((stTrans[stTransPos-1] & 0x80) != 0)
         {
-            oldLineNo |= size_t(stTrans[stTransPos++]) << 15;
-            oldLineNo |= size_t(stTrans[stTransPos++] & 0x7f) << 23;
+            oldLineNo |= uint64_t(stTrans[stTransPos++]) << 15;
+            oldLineNo |= uint64_t(stTrans[stTransPos++] & 0x7f) << 23;
             if ((stTrans[stTransPos-1] & 0x80) != 0)
             {
-                oldLineNo |= size_t(stTrans[stTransPos++]) << 30;
-                oldLineNo |= size_t(stTrans[stTransPos++] & 0x7f) << 38;
+                oldLineNo |= uint64_t(stTrans[stTransPos++]) << 30;
+                oldLineNo |= uint64_t(stTrans[stTransPos++] & 0x7f) << 38;
                 if ((stTrans[stTransPos-1] & 0x80) != 0)
                 {
-                    oldLineNo |= size_t(stTrans[stTransPos++]) << 45;
-                    oldLineNo |= size_t(stTrans[stTransPos++]) << 53;
+                    oldLineNo |= uint64_t(stTrans[stTransPos++]) << 45;
+                    oldLineNo |= uint64_t(stTrans[stTransPos++]) << 53;
                 }
             }
         }
