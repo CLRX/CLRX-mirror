@@ -1705,7 +1705,7 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
         stTransPos++;
     }
     
-    size_t lineNo = oldLineNo;
+    LineNo lineNo = oldLineNo;
     bool offsetAlreadyChanged = false;
     if (!doReadPos)
     {
