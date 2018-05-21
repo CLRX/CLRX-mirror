@@ -1686,6 +1686,8 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
                 stTrans.back() |= 0x80;
             stTrans.push_back((sourcePos.colNo >> bit) & 0x7f);
         }
+        if (sourcePos.colNo == 0)
+            stTrans.push_back(0);
     }
     // push offset difference
     if (!noDiffOffset)
