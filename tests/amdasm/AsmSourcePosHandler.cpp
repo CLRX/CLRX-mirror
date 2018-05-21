@@ -47,6 +47,42 @@ static const SourcePosHandlerTestCase sourcePoHandlerTestTbl[] =
         { 8, "", "file0.s", 1, 9 },
         { 12, "", "file0.s", 2, 9 },
         { 17, "", "file0.s", 3, 4 }
+    },
+    // 1 - bigger lineNo
+    {
+        { 8, "", "file0.s", 32768U, 9 },
+        { 12, "", "file0.s", 32768U+1, 9 },
+        { 17, "", "file0.s", 32768U+2, 4 }
+    },
+    // 2 - bigger lineNo
+    {
+        { 8, "", "file0.s", 121768U, 9 },
+        { 12, "", "file0.s", 121768U+1, 9 },
+        { 17, "", "file0.s", 121768U+2, 4 }
+    },
+    // 3 - bigger lineNo
+    {
+        { 8, "", "file0.s", 0x40000000U, 9 },
+        { 12, "", "file0.s", 0x40000000U+1, 9 },
+        { 17, "", "file0.s", 0x40000000U+2, 4 }
+    },
+    // 4 - bigger lineNo
+    {
+        { 8, "", "file0.s", 0x3541fa711ULL, 9 },
+        { 12, "", "file0.s", 0x3541fa711ULL+1, 9 },
+        { 17, "", "file0.s", 0x3541fa711ULL+2, 4 }
+    },
+    // 5 - bigger lineNo
+    {
+        { 8, "", "file0.s", 0x200000000000ULL, 9 },
+        { 12, "", "file0.s", 0x200000000000ULL+1, 9 },
+        { 17, "", "file0.s", 0x200000000000ULL+2, 4 }
+    },
+    // 6 - bigger lineNo
+    {
+        { 8, "", "file0.s", 0x42063ca43c9a1acULL, 9 },
+        { 12, "", "file0.s", 0x42063ca43c9a1acULL+1, 9 },
+        { 17, "", "file0.s", 0x42063ca43c9a1acULL+2, 4 }
     }
 };
 

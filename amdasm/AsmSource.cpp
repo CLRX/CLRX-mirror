@@ -1624,19 +1624,17 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
             stTrans.back() |= 0x80;
             stTrans.push_back((sourcePos.lineNo>>15) & 0xff);
             stTrans.push_back((sourcePos.lineNo>>23) & 0x7f);
-            if (sourcePos.lineNo > 0x3fffffU)
+            if (sourcePos.lineNo > 0x3fffffffU)
             {
                 stTrans.back() |= 0x80;
                 stTrans.push_back((sourcePos.lineNo>>30) & 0xff);
-#ifdef HAVE_64BIT
                 stTrans.push_back((sourcePos.lineNo>>38) & 0x7f);
-                if (sourcePos.lineNo > 0x1fffffffULL)
+                if (sourcePos.lineNo > 0x1fffffffffffULL)
                 {
                     stTrans.back() |= 0x80;
                     stTrans.push_back((sourcePos.lineNo>>45) & 0xff);
                     stTrans.push_back((sourcePos.lineNo>>53) & 0xff);
                 }
-#endif
             }
         }
         // push colNo value
@@ -1756,14 +1754,12 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
             if ((stTrans[stTransPos-1] & 0x80) != 0)
             {
                 oldLineNo |= size_t(stTrans[stTransPos++]) << 30;
-#ifdef HAVE_64BIT
                 oldLineNo |= size_t(stTrans[stTransPos++] & 0x7f) << 38;
                 if ((stTrans[stTransPos-1] & 0x80) != 0)
                 {
                     oldLineNo |= size_t(stTrans[stTransPos++]) << 45;
                     oldLineNo |= size_t(stTrans[stTransPos++]) << 53;
                 }
-#endif
             }
         }
         // read columnNo value
