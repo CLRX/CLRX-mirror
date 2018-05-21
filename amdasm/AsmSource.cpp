@@ -1576,8 +1576,8 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
     }
     else if (!thisSameSource ||
             // fix for 64 change in offset and no change in colNo and lineNo
-                (sourcePos.lineNo == oldLineNo &&
-                 sourcePos.colNo == oldColNo && (diffOffset & 63) == 0))
+            (!stTrans.empty() && stTrans.back()==0x3f && sourcePos.lineNo == oldLineNo &&
+             sourcePos.colNo == oldColNo && (diffOffset & 63) == 0))
     {
         // change source
         sources.push_back(sourcePos.source);
