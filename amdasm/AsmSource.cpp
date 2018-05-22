@@ -1756,11 +1756,7 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
             oldColNo = 1; // we assume that column no is 1
         
         // apply differencees for colNo
-        ColNo diffColNo = 0;
-        const bool haveColNo = stTransPos < stTrans.size() &&
-                ((stTrans[stTransPos]&0xc0)==0x80 ||
-                 stTrans[stTransPos]==0xfa);
-        diffColNo = getDiff<ColNo>(stTransPos, stTrans, 0x80, 0xfa);
+        ColNo diffColNo = getDiff<ColNo>(stTransPos, stTrans, 0x80, 0xfa);
         
         if (stTransPos < stTrans.size() &&
             oldLineNo == lineNo && (stTrans[stTransPos] & 0xc0) == 0xc0 &&
@@ -1770,7 +1766,7 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
             oldOffset += (stTrans[stTransPos]&7) + 1;
             offsetAlreadyChanged = true;
             stTransPos++;
-            if (haveColNo)
+            if (diffColNo != 0)
                 oldColNo = diffColNo;
         }
         else
