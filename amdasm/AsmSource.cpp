@@ -1637,9 +1637,11 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
     {
         const LineNo diffLineNo = sourcePos.lineNo - oldLineNo;
         ColNo diffColNo = sourcePos.colNo - oldColNo;
-        if (diffColNo == 0 && diffLineNo!=0 && diffOffset!=0 &&
+        if (/*diffColNo == 0 &&*/ diffLineNo!=0 && diffOffset!=0 &&
             diffLineNo <= 7 && diffOffset <= 8)
         {
+            if (diffColNo != 0)
+                pushDiff(stTrans, sourcePos.colNo, 0x80, 0xfa);
             stTrans.push_back((cxbyte((diffLineNo-1)<<3) | cxbyte(diffOffset-1) | 0xc0));
             noDiffOffset = true;
         }
@@ -1747,24 +1749,32 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
     bool offsetAlreadyChanged = false;
     if (!doReadPos)
     {
-        if ((code & 0xc0) == 0xc0 && (code < 0xf8))
+        // apply differences for lineNo
+        lineNo += getDiff<LineNo>(stTransPos, stTrans, 0x40, 0xfb);
+        
+        if (lineNo != oldLineNo) // line has changed
+            oldColNo = 1; // we assume that column no is 1
+        
+        // apply differencees for colNo
+        ColNo diffColNo = 0;
+        const bool haveColNo = stTransPos < stTrans.size() &&
+                ((stTrans[stTransPos]&0xc0)==0x80 ||
+                 stTrans[stTransPos]==0xfa);
+        diffColNo = getDiff<ColNo>(stTransPos, stTrans, 0x80, 0xfa);
+        
+        if (stTransPos < stTrans.size() &&
+            oldLineNo == lineNo && (stTrans[stTransPos] & 0xc0) == 0xc0 &&
+            (stTrans[stTransPos] < 0xf8))
         {
-            lineNo += ((code&0x3f)>>3) + 1;
-            oldOffset += (code&7) + 1;
+            lineNo += ((stTrans[stTransPos]&0x3f)>>3) + 1;
+            oldOffset += (stTrans[stTransPos]&7) + 1;
             offsetAlreadyChanged = true;
             stTransPos++;
+            if (haveColNo)
+                oldColNo = diffColNo;
         }
         else
-        {
-            // apply differences for lineNo
-            lineNo += getDiff<LineNo>(stTransPos, stTrans, 0x40, 0xfb);
-            
-            if (lineNo != oldLineNo) // line has changed
-                oldColNo = 1; // we assume that column no is 1
-            
-            // apply differencees for colNo
-            oldColNo += getDiff<ColNo>(stTransPos, stTrans, 0x80, 0xfa);
-        }
+            oldColNo += diffColNo;
         oldLineNo = lineNo;
     }
     else

@@ -46,7 +46,9 @@ static const SourcePosHandlerTestCase sourcePoHandlerTestTbl[] =
     {
         { 8, "", "file0.s", 1, 9 },
         { 12, "", "file0.s", 2, 9 },
-        { 17, "", "file0.s", 3, 4 }
+        { 17, "", "file0.s", 3, 4 },
+        { 19, "", "file0.s", 4, 1 },
+        { 119, "", "file0.s", 7, 1 }
     },
     // 1 - bigger lineNo
     {
