@@ -1360,8 +1360,9 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                                         cblock.ssaInfoMap.end(), svreg)->second, ls);
                             if (svrres.second)
                                 // begin region from this block
-                                lv.newRegion(curLiveTime);
-                            lv.expand(liveTime);
+                                lv.insert(curLiveTime, liveTime+1);
+                            else
+                                lv.expand(liveTime);
                         }
                         for (AsmSingleVReg svreg: writtenSVRegs)
                         {

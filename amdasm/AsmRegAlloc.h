@@ -393,8 +393,6 @@ struct CLRX_INTERNAL Liveness
         it->second = std::max(it->second, k+1);
         join(it);
     }
-    void newRegion(size_t k)
-    { join(l.insert(std::make_pair(k, k)).first); }
     
     void insert(size_t k, size_t k2)
     {
