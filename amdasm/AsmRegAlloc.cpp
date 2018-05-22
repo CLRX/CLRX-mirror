@@ -47,6 +47,16 @@ std::ostream& operator<<(std::ostream& os, const CLRX::BlockIndex& v)
 }
 #endif
 
+/*
+ * instrStruct format:
+ * 0x81-0xff - skip offset by (byte&0x7f)-defaultInstrSize
+ *       (defaultInstrSize if no userusage)
+ * 0x80 - begin use reg mode usage
+ *   next byte is number of use reg usages in this place
+ *   next bytes - bitmask for regusage (1 - regvarusage, 0 - regusage)
+ * 0x00-0x7f - argFlags (bit reflect whether argument is regvarusage or regusage)
+ */
+
 ISAUsageHandler::ISAUsageHandler(const std::vector<cxbyte>& _content) :
             content(_content), lastOffset(0), readOffset(0), instrStructPos(0),
             regUsagesPos(0), regUsages2Pos(0), regVarUsagesPos(0),
