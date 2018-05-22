@@ -738,6 +738,7 @@ struct AsmSection
     std::unique_ptr<ISAUsageHandler> usageHandler;  ///< usage handler
     std::unique_ptr<ISALinearDepHandler> linearDepHandler; ///< linear dep handler
     std::vector<AsmCodeFlowEntry> codeFlow;  ///< code flow info
+    AsmSourcePosHandler sourcePosHandler;
     
     /// constructor
     AsmSection();

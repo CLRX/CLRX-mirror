@@ -778,6 +778,7 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
     lineAlreadyRead = false;
     good = true;
     resolvingRelocs = false;
+    collectSourcePoses = false;
     formatHandler = nullptr;
     input.exceptions(std::ios::badbit);
     std::unique_ptr<AsmInputFilter> thatInputFilter(
@@ -818,6 +819,7 @@ Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
     lineAlreadyRead = false;
     good = true;
     resolvingRelocs = false;
+    collectSourcePoses = false;
     formatHandler = nullptr;
     std::unique_ptr<AsmInputFilter> thatInputFilter(
                 new AsmStreamInputFilter(filenames[filenameIndex++]));
@@ -2999,6 +3001,13 @@ bool Assembler::assemble()
         // make firstname as lowercase
         toLowerString(firstName);
         
+        const cxuint oldCurrentSection = currentSection;
+        const uint64_t oldCurrentOutPos = currentOutPos;
+        AsmSourcePos sourcePos{};
+        if (collectSourcePoses)
+            // source pos for sourcePosHandler
+            sourcePos = getSourcePos(stmtPlace);
+        
         if (firstName.size() >= 2 && firstName[0] == '.') // check for pseudo-op
             parsePseudoOps(firstName, stmtPlace, linePtr);
         else if (firstName.size() >= 1 && isDigit(firstName[0]))
@@ -3038,6 +3047,12 @@ bool Assembler::assemble()
                 currentOutPos = sections[currentSection].getSize();
             }
         }
+        
+        // register offset-sourcePos (only if enabled)
+        if (collectSourcePoses && oldCurrentSection == currentSection &&
+            currentSection != ASMSECT_ABS && oldCurrentOutPos != currentOutPos)
+            sections[currentSection].sourcePosHandler.pushSourcePos(
+                            oldCurrentOutPos, sourcePos);
     }
     /* check clauses and print errors */
     while (!clauses.empty())

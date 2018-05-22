@@ -539,6 +539,7 @@ private:
     const char* line;
     bool endOfAssembly;
     bool sectionDiffsPrepared;
+    bool collectSourcePoses; /// collect offset->source positions data
     
     cxuint filenameIndex;
     std::stack<AsmInputFilter*> asmInputFilters;
