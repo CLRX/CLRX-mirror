@@ -877,6 +877,9 @@ static void testApplySSAReplaces(cxuint i, const AsmApplySSAReplacesCase& testCa
         CodeBlock inCodeBlock{ cc.start, cc.end,
             std::vector<AsmRegAllocator::NextBlock>(cc.nexts.begin(), cc.nexts.end()),
             cc.haveCalls, cc.haveReturn, cc.haveEnd };
+        
+        std::vector<std::pair<AsmSingleVReg, SSAInfo> > ssaInfoMap;
+        
         for (const auto& v: cc.ssaInfos)
         {
             AsmSingleVReg vreg{ nullptr, v.first.index };
@@ -885,8 +888,10 @@ static void testApplySSAReplaces(cxuint i, const AsmApplySSAReplacesCase& testCa
                 auto res = regVars.insert({ v.first.name , AsmRegVar{ 0, 100 } });
                 vreg.regVar = &res.first->second;
             }
-            inCodeBlock.ssaInfoMap.insert({ vreg, v.second });
+            ssaInfoMap.push_back({ vreg, v.second });
         }
+        inCodeBlock.ssaInfoMap.assign(ssaInfoMap.begin(), ssaInfoMap.end());
+        mapSort(inCodeBlock.ssaInfoMap.begin(), inCodeBlock.ssaInfoMap.end());
         inCodeBlocks.push_back(inCodeBlock);
     }
     SSAReplacesMap inSSAReplaces;

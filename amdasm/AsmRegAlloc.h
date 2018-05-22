@@ -66,7 +66,7 @@ static inline bool checkNoWriteWithSSA(const AsmRegVarUsage& rvu)
 typedef AsmRegAllocator::CodeBlock CodeBlock;
 typedef AsmRegAllocator::NextBlock NextBlock;
 typedef AsmRegAllocator::SSAInfo SSAInfo;
-typedef std::pair<const AsmSingleVReg, SSAInfo> SSAEntry;
+typedef std::pair<AsmSingleVReg, SSAInfo> SSAEntry;
 typedef AsmRegAllocator::VIdxSetEntry VIdxSetEntry;
 
 //  BlockIndex

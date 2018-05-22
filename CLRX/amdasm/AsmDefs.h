@@ -584,6 +584,10 @@ struct AsmSingleVReg // key for regvar
     /// not equal operator
     bool operator!=(const AsmSingleVReg& r2) const
     { return regVar == r2.regVar && index == r2.index; }
+    
+    /// less operator
+    bool operator<(const AsmSingleVReg& r2) const
+    { return regVar < r2.regVar || (regVar == r2.regVar && index < r2.index); }
 };
 
 /// regvar map

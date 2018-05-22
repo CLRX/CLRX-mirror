@@ -367,7 +367,7 @@ public:
         bool haveReturn; ///< code have return from routine
         bool haveEnd;   ///< code have end
         // key - regvar, value - SSA info for this regvar
-        std::unordered_map<AsmSingleVReg, SSAInfo> ssaInfoMap;
+        Array<std::pair<AsmSingleVReg, SSAInfo> > ssaInfoMap;
         ISAUsageHandler::ReadPos usagePos;
         size_t linearDepPos;
     };

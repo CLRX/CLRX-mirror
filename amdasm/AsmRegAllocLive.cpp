@@ -162,7 +162,9 @@ static void fillUpInsideRoutine(LivenessState& ls,
     if (routineBlock == startBlock)
     {
         const CodeBlock& cblock = ls.codeBlocks[startBlock];
-        auto sinfoIt = cblock.ssaInfoMap.find(svreg);
+        auto sinfoIt = binaryMapFind(cblock.ssaInfoMap.begin(),
+                cblock.ssaInfoMap.end(), svreg);
+        
         auto rbwIt = rdata.rbwSSAIdMap.find(svreg);
         if (sinfoIt != cblock.ssaInfoMap.end())
         {
@@ -196,7 +198,8 @@ static void fillUpInsideRoutine(LivenessState& ls,
             if (visited.insert(entry.blockIndex.index).second &&
                 haveReturnBlocks.find(entry.blockIndex.index) != haveReturnBlocks.end())
             {
-                auto sinfoIt = cblock.ssaInfoMap.find(svreg);
+                auto sinfoIt = binaryMapFind(cblock.ssaInfoMap.begin(),
+                            cblock.ssaInfoMap.end(), svreg);
                 if (flowStack.size() > 1 && sinfoIt != cblock.ssaInfoMap.end())
                 {
                     if (!sinfoIt->second.readBeforeWrite)
@@ -257,7 +260,8 @@ static void fillUpInsideRoutine(LivenessState& ls,
             if (curHavePath)
             {
                 // fill up block when in path
-                auto sinfoIt = cblock.ssaInfoMap.find(svreg);
+                auto sinfoIt = binaryMapFind(cblock.ssaInfoMap.begin(),
+                            cblock.ssaInfoMap.end(), svreg);
                 size_t cbStart = cblock.start;
                 size_t cbEnd = cblock.end;
                 if (flowStack.size() == 1 && !fromStartPos)
@@ -390,7 +394,8 @@ static void joinVRegRecur(LivenessState& ls, LastVRegStackPos flowStkStart,
     const CodeBlock& lastBlk = ls.codeBlocks[flit->blockIndex.index];
     if (flit != flitEnd)
     {
-        auto sinfoIt = lastBlk.ssaInfoMap.find(svreg);
+        auto sinfoIt = binaryMapFind(lastBlk.ssaInfoMap.begin(),
+                    lastBlk.ssaInfoMap.end(), svreg);
         size_t lastPos = lastBlk.start;
         if (sinfoIt != lastBlk.ssaInfoMap.end())
         {
@@ -806,7 +811,7 @@ static void joinRegVarLivenesses(LivenessState& ls,
 
 static bool addUsageDeps(const cxbyte* ldeps, const std::vector<AsmRegVarUsage>& rvus,
             const std::vector<AsmRegVarLinearDep>& instrLinDeps, LinearDepMap* ldepsOut,
-            std::unordered_map<AsmSingleVReg, SSAInfo>& ssaInfoMap,
+            Array<std::pair<AsmSingleVReg, SSAInfo> >& ssaInfoMap,
             const SVRegMap& ssaIdIdxMap, const std::vector<AsmSingleVReg>& readSVRegs,
             const std::vector<AsmSingleVReg>& writtenSVRegs, LivenessState& ls)
 {
@@ -830,7 +835,8 @@ static bool addUsageDeps(const cxbyte* ldeps, const std::vector<AsmRegVarUsage>&
             {
                 AsmSingleVReg svreg = {rvu.regVar, k};
                 auto ssaIdIdx = ssaIdIdxMap.find(svreg)->second;
-                const SSAInfo& ssaInfo = ssaInfoMap.find(svreg)->second;
+                const SSAInfo& ssaInfo = binaryMapFind(ssaInfoMap.begin(),
+                                ssaInfoMap.end(), svreg)->second;
                 size_t outVIdx;
                 
                 // if read or read-write (but not same write)
@@ -866,7 +872,8 @@ static bool addUsageDeps(const cxbyte* ldeps, const std::vector<AsmRegVarUsage>&
             {
                 AsmSingleVReg svreg = {rvu.regVar, k};
                 size_t ssaIdIdx = ssaIdIdxMap.find(svreg)->second;
-                const SSAInfo& ssaInfo = ssaInfoMap.find(svreg)->second;
+                const SSAInfo& ssaInfo = binaryMapFind(ssaInfoMap.begin(),
+                            ssaInfoMap.end(), svreg)->second;
                 size_t outVIdx;
                 
                 // if read or read-write (but not same write)
@@ -898,7 +905,7 @@ static bool addUsageDeps(const cxbyte* ldeps, const std::vector<AsmRegVarUsage>&
         {
             AsmSingleVReg svreg = {ldep.regVar, k};
             auto ssaIdxIdIt = ssaIdIdxMap.find(svreg);
-            auto ssaInfoIt = ssaInfoMap.find(svreg);
+            auto ssaInfoIt = binaryMapFind(ssaInfoMap.begin(), ssaInfoMap.end(), svreg);
             if (ssaIdxIdIt == ssaIdIdxMap.end() || ssaInfoIt == ssaInfoMap.end())
                 return false; // failed
             
@@ -1349,7 +1356,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                         {
                             auto svrres = ssaIdIdxMap.insert({ svreg, 0 });
                             Liveness& lv = getLiveness(svreg, svrres.first->second,
-                                    cblock.ssaInfoMap.find(svreg)->second, ls);
+                                    binaryMapFind(cblock.ssaInfoMap.begin(),
+                                        cblock.ssaInfoMap.end(), svreg)->second, ls);
                             if (svrres.second)
                                 // begin region from this block
                                 lv.newRegion(curLiveTime);
@@ -1360,7 +1368,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                             size_t& ssaIdIdx = ssaIdIdxMap[svreg];
                             if (svreg.regVar != nullptr)
                                 ssaIdIdx++;
-                            SSAInfo& sinfo = cblock.ssaInfoMap.find(svreg)->second;
+                            SSAInfo& sinfo = binaryMapFind(cblock.ssaInfoMap.begin(),
+                                        cblock.ssaInfoMap.end(), svreg)->second;
                             Liveness& lv = getLiveness(svreg, ssaIdIdx, sinfo, ls);
                             // works only with ISA where smallest instruction have 2 bytes!
                             // after previous read, but not after instruction.

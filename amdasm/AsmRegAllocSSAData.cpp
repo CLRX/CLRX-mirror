@@ -1426,13 +1426,14 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler,
             break;
         
         cbit->usagePos = oldReadPos;
+        std::unordered_map<AsmSingleVReg, SSAInfo> ssaInfoMap;
         while (rvu.offset < cbit->end)
         {
             // process rvu
             // only if regVar
             for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
             {
-                auto res = cbit->ssaInfoMap.insert(
+                auto res = ssaInfoMap.insert(
                         { AsmSingleVReg{ rvu.regVar, rindex }, SSAInfo() });
                 
                 SSAInfo& sinfo = res.first->second;
@@ -1453,12 +1454,18 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler,
                     sinfo.ssaIdBefore = sinfo.ssaIdFirst =
                             sinfo.ssaId = sinfo.ssaIdLast = 0;
             }
+            
             // get next rvusage
             if (!usageHandler.hasNext())
                 break;
             oldReadPos = usageHandler.getReadPos();
             rvu = usageHandler.nextUsage();
         }
+        // prepping ssaInfoMap array in cblock (put and sorting)
+        cbit->ssaInfoMap.resize(ssaInfoMap.size());
+        std::copy(ssaInfoMap.begin(), ssaInfoMap.end(), cbit->ssaInfoMap.begin());
+        mapSort(cbit->ssaInfoMap.begin(), cbit->ssaInfoMap.end());
+        
         ++cbit;
     }
     
