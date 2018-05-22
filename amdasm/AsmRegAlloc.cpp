@@ -20,6 +20,7 @@
 #include <CLRX/Config.h>
 #include <assert.h>
 #include <iostream>
+#include <cstddef>
 #include <stack>
 #include <deque>
 #include <vector>
@@ -59,8 +60,8 @@ std::ostream& operator<<(std::ostream& os, const CLRX::BlockIndex& v)
 
 ISAUsageHandler::ISAUsageHandler(const std::vector<cxbyte>& _content) :
             content(_content), lastOffset(0), readOffset(0), instrStructPos(0),
-            regUsagesPos(0), regUsages2Pos(0), regVarUsagesPos(0),
-            pushedArgs(0), argPos(0), argFlags(0), isNext(false), useRegMode(false)
+            regVarUsagesPos(0), pushedArgs(0), argPos(0), argFlags(0),
+            isNext(false), useRegMode(false)
 { }
 
 ISAUsageHandler::~ISAUsageHandler()
@@ -69,7 +70,7 @@ ISAUsageHandler::~ISAUsageHandler()
 void ISAUsageHandler::rewind()
 {
     readOffset = instrStructPos = 0;
-    regUsagesPos = regUsages2Pos = regVarUsagesPos = 0;
+    regVarUsagesPos = 0;
     useRegMode = false;
     pushedArgs = 0;
     skipBytesInInstrStruct();
@@ -112,6 +113,14 @@ void ISAUsageHandler::putSpace(size_t offset)
     } 
 }
 
+template<typename T>
+static inline void appendToByteVec(std::vector<cxbyte>& out, const T& obj)
+{
+    size_t p = out.size();
+    out.resize(p + sizeof(T));
+    memcpy(out.data()+p, &obj, sizeof(T));
+}
+
 void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
 {
     if (lastOffset == rvu.offset && useRegMode)
@@ -122,11 +131,12 @@ void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
     if (rvu.regVar != nullptr)
     {
         argFlags |= (1U<<pushedArgs);
-        regVarUsages.push_back({ rvu.regVar, rvu.rstart, rvu.rend, rvu.regField,
-            rvu.rwFlags, rvu.align });
+        appendToByteVec(regVarUsages,
+            AsmRegVarUsageInt{ rvu.regVar, rvu.rstart, rvu.rend, rvu.regField,
+                        rvu.rwFlags, rvu.align });
     }
     else // reg usages
-        regUsages.push_back({ rvu.regField,cxbyte(rvu.rwFlags |
+        appendToByteVec(regVarUsages, AsmRegUsageInt{ rvu.regField, cxbyte(rvu.rwFlags |
                     getRwFlags(rvu.regField, rvu.rstart, rvu.rend)) });
     pushedArgs++;
 }
@@ -148,11 +158,14 @@ void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
     if (rvu.regVar != nullptr)
     {
         argFlags |= (1U<<(pushedArgs & 7));
-        regVarUsages.push_back({ rvu.regVar, rvu.rstart, rvu.rend, rvu.regField,
-            rvu.rwFlags, rvu.align });
+        appendToByteVec(regVarUsages,
+                AsmRegVarUsageInt{ rvu.regVar, rvu.rstart, rvu.rend, rvu.regField,
+                rvu.rwFlags, rvu.align });
     }
     else // reg usages
-        regUsages2.push_back({ rvu.rstart, rvu.rend, rvu.rwFlags });
+        appendToByteVec(regVarUsages,
+                AsmRegUsage2Int{ rvu.rstart, rvu.rend, rvu.rwFlags });
+    
     pushedArgs++;
     if ((pushedArgs & 7) == 0) // just flush per 8 bit
     {
@@ -171,9 +184,13 @@ void ISAUsageHandler::flush()
             // normal regvarusages
             instrStruct.push_back(argFlags);
             if ((argFlags & (1U<<(pushedArgs-1))) != 0)
-                regVarUsages.back().rwFlags |= 0x80;
+                // enable 7 bit in rwFlags of previous regVarUsage entry
+                regVarUsages[regVarUsages.size() - sizeof(AsmRegVarUsageInt) +
+                        offsetof(AsmRegVarUsageInt, rwFlags)] |= 0x80;
             else // reg usages
-                regUsages.back().rwFlags |= 0x80;
+                // enable 7 bit in rwFlags of previous regUsage entry
+                regVarUsages[regVarUsages.size() - sizeof(AsmRegUsageInt) +
+                        offsetof(AsmRegUsageInt, rwFlags)] |= 0x80;
         }
         else
         {
@@ -185,6 +202,15 @@ void ISAUsageHandler::flush()
         argFlags = 0;
         pushedArgs = 0;
     }
+}
+
+template<typename T>
+static inline T getObjFromVecByte(size_t& pos, const std::vector<cxbyte>& in)
+{
+    T out;
+    memcpy(&out, in.data() + pos, sizeof(T));
+    pos += sizeof(T);
+    return out;
 }
 
 AsmRegVarUsage ISAUsageHandler::nextUsage()
@@ -210,7 +236,8 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
     if ((instrStruct[instrStructPos] & (1U << (argPos&7))) != 0)
     {
         // regvar usage
-        const AsmRegVarUsageInt& inRVU = regVarUsages[regVarUsagesPos++];
+        const AsmRegVarUsageInt inRVU = getObjFromVecByte<AsmRegVarUsageInt>(
+                        regVarUsagesPos, regVarUsages);
         rvu.regVar = inRVU.regVar;
         rvu.rstart = inRVU.rstart;
         rvu.rend = inRVU.rend;
@@ -223,7 +250,8 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
     else if (!useRegMode)
     {
         // simple reg usage
-        const AsmRegUsageInt& inRU = regUsages[regUsagesPos++];
+        const AsmRegUsageInt inRU = getObjFromVecByte<AsmRegUsageInt>(
+                        regVarUsagesPos, regVarUsages);
         rvu.regVar = nullptr;
         const std::pair<uint16_t, uint16_t> regPair =
                     getRegPair(inRU.regField, inRU.rwFlags);
@@ -237,7 +265,8 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
     else
     {
         // use reg (simple reg usage, second structure)
-        const AsmRegUsage2Int& inRU = regUsages2[regUsages2Pos++];
+        const AsmRegUsage2Int inRU = getObjFromVecByte<AsmRegUsage2Int>(
+                        regVarUsagesPos, regVarUsages);
         rvu.regVar = nullptr;
         rvu.rstart = inRU.rstart;
         rvu.rend = inRU.rend;

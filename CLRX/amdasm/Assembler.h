@@ -76,8 +76,6 @@ public:
     {
         size_t readOffset;  ///< read offset
         size_t instrStructPos;  ///< position instrStructs
-        size_t regUsagesPos;    ///< position in reg usage
-        size_t regUsages2Pos;   ///< position in regUsage2
         size_t regVarUsagesPos;    ///< position in regVarUsage
         uint16_t pushedArgs;    ///< pushed argds number
         cxbyte argPos;          ///< argument position
@@ -87,15 +85,11 @@ public:
     };
 protected:
     std::vector<cxbyte> instrStruct;    ///< structure of register usage
-    std::vector<AsmRegUsageInt> regUsages;  ///< register usage
-    std::vector<AsmRegUsage2Int> regUsages2;  ///< register usage (by .usereg)
-    std::vector<AsmRegVarUsageInt> regVarUsages;    ///< regvar usage
+    std::vector<cxbyte> regVarUsages;  ///< register usage data
     const std::vector<cxbyte>& content; ///< code content
     size_t lastOffset;  ///< last offset
     size_t readOffset;  ///< read offset
     size_t instrStructPos;  ///< position in instr struct
-    size_t regUsagesPos;    ///< position in reg usage
-    size_t regUsages2Pos;   ///< position in reg usage 2
     size_t regVarUsagesPos; ///< position in regvar usage
     uint16_t pushedArgs;    ///< pushed args
     cxbyte argPos;      ///< argument position
@@ -131,16 +125,14 @@ public:
     /// get reading position
     ReadPos getReadPos() const
     {
-        return { readOffset, instrStructPos, regUsagesPos, regUsages2Pos,
-            regVarUsagesPos, pushedArgs, argPos, argFlags, isNext, useRegMode };
+        return { readOffset, instrStructPos, regVarUsagesPos, pushedArgs,
+                argPos, argFlags, isNext, useRegMode };
     }
     /// set reading position
     void setReadPos(const ReadPos rpos)
     {
         readOffset = rpos.readOffset;
         instrStructPos = rpos.instrStructPos;
-        regUsagesPos = rpos.regUsagesPos;
-        regUsages2Pos = rpos.regUsages2Pos;
         regVarUsagesPos = rpos.regVarUsagesPos;
         pushedArgs = rpos.pushedArgs;
         argPos = rpos.argPos;
