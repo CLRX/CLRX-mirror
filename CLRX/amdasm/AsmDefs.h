@@ -617,32 +617,6 @@ struct AsmRegVarUsage
     bool useRegMode; ///< if RVU from useReg pseudo-ops
 };
 
-/// regvar usage (internal)
-struct AsmRegVarUsageInt
-{
-    const AsmRegVar* regVar;    ///< if null, then usage of called register
-    uint16_t rstart;    ///< register start
-    uint16_t rend;      ///< register end
-    AsmRegField regField;   ///< place in instruction
-    cxbyte rwFlags;  ///< 1 - read, 2 - write
-    cxbyte align;   ///< register alignment
-};
-
-/// internal structure for regusage
-struct AsmRegUsageInt
-{
-    AsmRegField regField;   ///< place in instruction
-    cxbyte rwFlags;     ///< 1 - read, 2 - write, other flags
-};
-
-/// internal structure for regusage
-struct AsmRegUsage2Int
-{
-    uint16_t rstart;    ///< register start
-    uint16_t rend;      ///< register end
-    cxbyte rwFlags;     ///< rw flags and others
-};
-
 /// internal structure for regvar linear dependencies
 struct AsmRegVarLinearDep
 {

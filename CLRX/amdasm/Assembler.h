@@ -83,6 +83,33 @@ public:
         bool isNext;            ///< isNext
         bool useRegMode;        ///< true if in usereg mode
     };
+    
+    /// regvar usage (internal)
+    struct RegVarUsageInt
+    {
+        const AsmRegVar* regVar;    ///< if null, then usage of called register
+        uint16_t rstart;    ///< register start
+        uint16_t rend;      ///< register end
+        AsmRegField regField;   ///< place in instruction
+        cxbyte rwFlags;  ///< 1 - read, 2 - write
+        cxbyte align;   ///< register alignment
+    };
+
+    /// internal structure for regusage
+    struct RegUsageInt
+    {
+        AsmRegField regField;   ///< place in instruction
+        cxbyte rwFlags;     ///< 1 - read, 2 - write, other flags
+    };
+
+    /// internal structure for regusage
+    struct RegUsage2Int
+    {
+        uint16_t rstart;    ///< register start
+        uint16_t rend;      ///< register end
+        cxbyte rwFlags;     ///< rw flags and others
+    };
+    
 protected:
     std::vector<cxbyte> instrStruct;    ///< structure of register usage
     std::vector<cxbyte> regVarUsages;  ///< register usage data
