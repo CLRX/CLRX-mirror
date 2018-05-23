@@ -1362,7 +1362,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                                 // begin region from this block
                                 lv.insert(curLiveTime, liveTime+1);
                             else
-                                lv.expand(liveTime);
+                                lv.expand(liveTime+1);
                         }
                         for (AsmSingleVReg svreg: writtenSVRegs)
                         {

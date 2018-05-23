@@ -384,13 +384,13 @@ struct CLRX_INTERNAL Liveness
     
     void expand(size_t k)
     {
-        auto it = l.upper_bound(k);
+        auto it = l.lower_bound(k);
         if (it != l.begin())
             --it;
         else // do nothing
             return;
         // try expand, lower new bound, then use older
-        it->second = std::max(it->second, k+1);
+        it->second = std::max(it->second, k);
         join(it);
     }
     
