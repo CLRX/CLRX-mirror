@@ -354,34 +354,6 @@ struct CLRX_INTERNAL Liveness
     void clear()
     { l.clear(); }
     
-    void join(std::map<size_t, size_t>::iterator it)
-    {
-        if (it != l.begin())
-        {
-            auto prevIt = it;
-            --prevIt;
-            if (prevIt->second >= it->first)
-            {
-                // join with previous region
-                prevIt->second = std::max(it->second, prevIt->second);
-                l.erase(it);
-                it = prevIt;
-            }
-        }
-        
-        auto nextIt = it;
-        ++nextIt;
-        if (nextIt != l.end())
-        {
-            if (nextIt->first <= it->second)
-            {
-                // join with next region
-                it->second = std::max(it->second, nextIt->second);
-                l.erase(nextIt);
-            }
-        }
-    }
-    
     void expand(size_t k)
     {
         auto it = l.lower_bound(k);
@@ -391,15 +363,51 @@ struct CLRX_INTERNAL Liveness
             return;
         // try expand, lower new bound, then use older
         it->second = std::max(it->second, k);
-        join(it);
+        auto nextIt = it;
+        ++nextIt;
+        if (nextIt != l.end() && nextIt->first <= it->second)
+        {
+            // join if needed
+            it->second = nextIt->second;
+            l.erase(nextIt);
+        }
     }
     
     void insert(size_t k, size_t k2)
     {
-        auto res = l.insert(std::make_pair(k, k2));
-        if (!res.second)
-            res.first->second = std::max(res.first->second, k2);
-        join(res.first);
+        auto it = l.upper_bound(k);
+        bool doCheckRight = false;
+        if (it != l.begin())
+        {
+            auto prevIt = it;
+            --prevIt;
+            if (prevIt->second >= k)
+            {
+                if (it != l.end() && it->first <= k2)
+                {
+                    // join
+                    prevIt->second = it->second;
+                    l.erase(it);
+                }
+                else
+                    prevIt->second = std::max(k2, prevIt->second);
+            }
+            else
+                doCheckRight = true;
+        }
+        else
+            doCheckRight = true;
+        
+        if (doCheckRight)
+        {
+            if (it != l.end() && it->first <= k2)
+            {
+                it = l.insert(it, std::make_pair(k, it->second));
+                l.erase(++it);
+            }
+            else
+                l.insert(it, std::make_pair(k, k2));
+        }
     }
     
     bool contain(size_t t) const
