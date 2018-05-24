@@ -32,6 +32,9 @@
 #include <cstdint>
 #include <mutex>
 #include <atomic>
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/CString.h>
 
@@ -356,9 +359,13 @@ inline cxuint CLZ32(uint32_t v)
 #ifdef __GNUC__
     return __builtin_clz(v);
 #else
+#  ifdef _MSC_VER
+    return 31-_BitScanReverse(v);
+#  else
     cxuint count = 0;
     for (uint32_t t = 1U<<31; t > v; t>>=1, count++);
     return count;
+#  endif
 #endif
 }
 
@@ -367,9 +374,13 @@ inline cxuint CLZ64(uint64_t v)
 #ifdef __GNUC__
     return __builtin_clzll(v);
 #else
+#  ifdef _MSC_VER
+    return 63-_BitScanReverse64(v);
+#  else
     cxuint count = 0;
     for (uint64_t t = 1ULL<<63; t > v; t>>=1, count++);
     return count;
+#  endif
 #endif
 }
 
