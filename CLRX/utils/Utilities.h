@@ -360,7 +360,9 @@ inline cxuint CLZ32(uint32_t v)
     return __builtin_clz(v);
 #else
 #  ifdef _MSC_VER
-    return 31-_BitScanReverse(v);
+    unsigned long index;
+    _BitScanReverse(&index, v);
+    return 31-index;
 #  else
     cxuint count = 0;
     for (uint32_t t = 1U<<31; t > v; t>>=1, count++);
@@ -375,7 +377,9 @@ inline cxuint CLZ64(uint64_t v)
     return __builtin_clzll(v);
 #else
 #  ifdef _MSC_VER
-    return 63-_BitScanReverse64(v);
+    unsigned long index;
+    _BitScanReverse64(&index, v);
+    return 63-index;
 #  else
     cxuint count = 0;
     for (uint64_t t = 1ULL<<63; t > v; t>>=1, count++);
