@@ -353,6 +353,10 @@ struct CStringHash
 inline cxuint CLZ32(uint32_t v);
 /// counts leading zeroes for 64-bit unsigned integer. For zero behavior is undefined
 inline cxuint CLZ64(uint64_t v);
+/// counts trailing zeroes for 32-bit unsigned integer. For zero behavior is undefined
+inline cxuint CTZ32(uint32_t v);
+/// counts trailing zeroes for 64-bit unsigned integer. For zero behavior is undefined
+inline cxuint CTZ64(uint64_t v);
 
 inline cxuint CLZ32(uint32_t v)
 {
@@ -397,6 +401,51 @@ inline cxuint CLZ64(uint64_t v)
 #  endif
 #endif
 }
+
+inline cxuint CTZ32(uint32_t v)
+{
+#ifdef __GNUC__
+    return __builtin_ctz(v);
+#else
+#  ifdef _MSC_VER
+    unsigned long index;
+    _BitScanForward(&index, v);
+    return index;
+#  else
+    cxuint count = 0;
+    for (uint32_t t = 1U; (t & v) == 0; t<<=1, count++);
+    return count;
+#  endif
+#endif
+}
+
+inline cxuint CTZ64(uint64_t v)
+{
+#ifdef __GNUC__
+    return __builtin_ctzll(v);
+#else
+#  ifdef _MSC_VER
+#    ifdef HAVE_ARCH_X86
+    unsigned long indexlo, indexhi;
+    unsigned char nzlo;
+    nzlo = _BitScanForward(&indexlo, uint32_t(v));
+    _BitScanForward(&indexhi, uint32_t(v>>32));
+    // final index
+    indexlo = (nzlo ? indexlo : indexhi+32);
+    return indexlo;
+#    else
+    unsigned long index;
+    _BitScanForward64(&index, v);
+    return index;
+#    endif
+#  else
+    cxuint count = 0;
+    for (uint64_t t = 1ULL; (t & v) == 0; t<<=1, count++);
+    return count;
+#  endif
+#endif
+}
+
 
 /// safely compares sum of two unsigned integers with other unsigned integer
 template<typename T, typename T2>
