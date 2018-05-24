@@ -379,8 +379,8 @@ inline cxuint CLZ64(uint64_t v)
 #  ifdef _MSC_VER
 #    ifdef HAVE_ARCH_X86
     unsigned long indexlo, indexhi;
-    unsigned char nzlo, nzhi;
-    nzlo = _BitScanReverse(&indexlo, uint32_t(v));
+    unsigned char nzhi;
+    _BitScanReverse(&indexlo, uint32_t(v));
     nzhi = _BitScanReverse(&indexhi, uint32_t(v>>32));
     // final index
     indexlo = (nzhi ? indexhi+32 : indexlo);
