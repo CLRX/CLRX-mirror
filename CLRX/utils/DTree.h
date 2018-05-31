@@ -210,9 +210,9 @@ public:
         { return array[i]; }
         
         /// get lower_bound (first index of element not less than value)
-        cxuint lower_bound(const T& v, const Comp& comp, const KeyOfVal& kofval) const
+        cxuint lower_bound(const K& k, const Comp& comp, const KeyOfVal& kofval) const
         {
-            cxuint index = std::lower_bound(array, array+capacity, v, 
+            cxuint index = std::lower_bound(array, array+capacity, T(k),
                 [&comp, &kofval](const T& v1, const T& v2)
                 { return comp(kofval(v1), kofval(v2)); }) - array;
             for (; (bitMask & (1ULL<<index)) != 0; index++);
@@ -220,9 +220,9 @@ public:
         }
         
         /// get upper_bound (first index of element greater than value)
-        cxuint upper_bound(const T& v, const Comp& comp, const KeyOfVal& kofval) const
+        cxuint upper_bound(const K& k, const Comp& comp, const KeyOfVal& kofval) const
         {
-            cxuint index = std::upper_bound(array, array+capacity, v,
+            cxuint index = std::upper_bound(array, array+capacity, T(k),
                 [&comp, &kofval](const T& v1, const T& v2)
                 { return comp(kofval(v1), kofval(v2)); }) - array;
             for (; (bitMask & (1ULL<<index)) != 0; index++);
@@ -701,6 +701,38 @@ public:
             return *this;
         }
         
+        Node0* getFirstNode0()
+        {
+            Node1* cur = this;
+            while (cur->NodeBase::type == NODE2)
+                cur = cur->array1;
+            return cur->array;
+        }
+        
+        const Node0* getFirstNode0() const
+        {
+            const Node1* cur = this;
+            while (cur->NodeBase::type == NODE2)
+                cur = cur->array1;
+            return cur->array;
+        }
+        
+        Node0* getLastNode0()
+        {
+            Node1* cur = this;
+            while (cur->NodeBase::type == NODE2)
+                cur = cur->array1 + cur->size - 1;
+            return cur->array + cur->size - 1;
+        }
+        
+        const Node0* getLastNode0() const
+        {
+            Node1* cur = this;
+            while (cur->NodeBase::type == NODE2)
+                cur = cur->array1 + cur->size - 1;
+            return cur->array + cur->size - 1;
+        }
+        
         /// get parent node
         const Node1* parent() const
         { return index!=255U ?
@@ -1046,14 +1078,8 @@ public:
             }
         }
         
-        /// go to next element
-        void next()
+        void toNextNode0()
         {
-            // skip empty space
-            while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
-                index++;
-            index++;
-            
             bool end = false;
             if (index >= n0->capacity)
             {
@@ -1100,6 +1126,17 @@ public:
             if (end)
                 // revert if end of tree
                 n0--;
+        }
+        
+        /// go to next element
+        void next()
+        {
+            // skip empty space
+            while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
+                index++;
+            index++;
+            
+            toNextNode0();
             
             // skip empty space
             while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
@@ -1518,7 +1555,9 @@ private:
     union {
         Node0 n0; // root Node0
         Node1 n1; // root Node1
-    };    
+    };
+    Node0* first;
+    Node0* last;
 public:
     ///
     typedef ConstIter const_iterator;
@@ -1528,9 +1567,8 @@ public:
     
     /// default constructor
     DTree(const Comp& comp = Comp(), const KeyOfVal& kofval = KeyOfVal())
-        : Comp(comp), KeyOfVal(kofval), n0()
-    {
-    }
+        : Comp(comp), KeyOfVal(kofval), n0(), first(&n0), last(&n0)
+    { }
     
     /// constructor with range assignment
     template<typename Iter>
@@ -1550,11 +1588,14 @@ public:
         {
             n0.array = nullptr;
             n0 = dt.n0;
+            last = first = &n0;
         }
         else
         {
             n1.array = nullptr;
             n1 = dt.n1;
+            first = n1.getFirstNode0();
+            last = n1.getLastNode0();
         }
     }
     /// move constructor
@@ -1564,11 +1605,14 @@ public:
         {
             n0.array = nullptr;
             n0 = std::move(dt.n0);
+            last = first = &n0;
         }
         else
         {
             n1.array = nullptr;
             n1 = std::move(dt.n1);
+            first = n1.getFirstNode0();
+            last = n1.getLastNode0();
         }
     }
     /// destructor
@@ -1592,11 +1636,11 @@ public:
     
     /// return true if empty
     bool empty() const
-    { return false; }
+    { return n0.type==NODE0 && n0.size==0; }
     
     /// return size
     size_t size() const
-    { return 0; }
+    { return n0.type==NODE0 ? n0.size : n1.totalSize; }
     
     /// clear (remove all elements)
     void clear()
@@ -1631,32 +1675,75 @@ public:
     
     /// return iterator to first element
     iterator begin()
-    { return {}; }
+    { return iterator(first, 0); }
     /// return iterator to first element
     const_iterator begin() const
-    { return {}; }
+    { return const_iterator(first, 0); }
     /// return iterator to first element
     const_iterator cbegin() const
-    { return {}; }
+    { return const_iterator(first, 0); }
     /// return iterator after last element
     iterator end()
-    { return {}; }
+    { return iterator(last, last->capacity); }
     /// return iterator after last element
     const_iterator end() const
-    { return {}; }
+    { return const_iterator(last, last->capacity); }
     /// return iterator after last element
     const_iterator cend() const
-    { return {}; }
+    { return const_iterator(last, last->capacity); }
     
     /// first element that not less than key
     iterator lower_bound(const key_type& key)
-    { return {}; }
+    {
+        if (n0.type == NODE0)
+            return iterator(&n0, n0.lower_bound(value_type(key), *this, *this));
+        Node1* curn1 = &n1;
+        cxuint index = 0;
+        while (curn1->type == NODE2)
+        {
+            index = curn1->upperBoundN(key, *this, *this);
+            if (index == 0)
+                return begin();
+            curn1 = curn1->array1 + index - 1;
+        }
+        // node1
+        index = curn1->upperBoundN(key, *this, *this);
+        if (index == 0)
+            return begin();
+        Node0* curn0 = curn1->array + index - 1;
+        // node0
+        iterator it = (curn0, curn0->lower_bound(value_type(key), *this, *this));
+        if (it->index == curn0->capacity)
+            it->toNextNode0();
+        return it;
+    }
     /// first element that not less than key
     const_iterator lower_bound(const key_type& key) const
     { return {}; }
     /// first element that greater than key
     iterator upper_bound(const key_type& key)
-    { return {}; }
+    {
+        if (n0.type == NODE0)
+            return iterator(&n0, n0.upper_bound(value_type(key), *this, *this));
+        Node1* curn1 = &n1;
+        cxuint index = 0;
+        while (curn1->type == NODE2)
+        {
+            index = curn1->upperBoundN(key, *this, *this);
+            if (index == 0)
+                return begin();
+            curn1 = curn1->array1 + index - 1;
+        }
+        index = curn1->upperBoundN(key, *this, *this);
+        if (index == 0)
+            return begin();
+        Node0* curn0 = curn1->array + index - 1;
+        // node0
+        iterator it = (curn0, curn0->lower_bound(value_type(key), *this, *this));
+        if (it->index == curn0->capacity)
+            it->toNextNode0();
+        return it;
+    }
     /// first element that greater than key
     const_iterator upper_bound(const key_type& key) const
     { return {}; }
