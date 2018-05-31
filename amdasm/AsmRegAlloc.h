@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
+#include <CLRX/utils/DTree.h>
 #include <CLRX/amdasm/Assembler.h>
 #include "AsmInternals.h"
 

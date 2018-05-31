@@ -21,6 +21,7 @@ CLRX/clhelper/CLHelper.h -text
 CLRX/utils/CLIParser.h -text
 CLRX/utils/CString.h -text
 CLRX/utils/Containers.h -text
+CLRX/utils/DTree.h -text
 CLRX/utils/GPUId.h -text
 CLRX/utils/InputOutput.h -text
 CLRX/utils/MemAccess.h -text

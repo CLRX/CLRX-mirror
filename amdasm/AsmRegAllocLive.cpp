@@ -25,8 +25,6 @@
 #include <vector>
 #include <utility>
 #include <unordered_set>
-#include <map>
-#include <set>
 #include <unordered_map>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
