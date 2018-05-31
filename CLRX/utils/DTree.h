@@ -1707,31 +1707,6 @@ public:
     DTreeSet(std::initializer_list<value_type> init, const Comp& comp = Comp()) 
             : Impl(init, comp)
     { }
-    /// copy constructor
-    DTreeSet(const DTreeSet& dt) : Impl(dt)
-    { }
-    /// move constructor
-    DTreeSet(DTreeSet&& dt) : Impl(dt)
-    { }
-    
-    /// lexicograhical equal to
-    bool operator==(const DTreeSet& dt) const
-    { return false; }
-    /// lexicograhical not equal
-    bool operator!=(const DTreeSet& dt) const
-    { return false; }
-    /// lexicograhical less
-    bool operator<(const DTreeSet& dt) const
-    { return false; }
-    /// lexicograhical less or equal
-    bool operator<=(const DTreeSet& dt) const
-    { return false; }
-    /// lexicograhical greater
-    bool operator>(const DTreeSet& dt) const
-    { return false; }
-    /// lexicograhical greater or equal
-    bool operator>=(const DTreeSet& dt) const
-    { return false; }
 };
 
 /// DTree map
@@ -1760,12 +1735,6 @@ public:
     DTreeMap(std::initializer_list<value_type> init, const Comp& comp = Comp()) 
             : Impl(init, comp)
     { }
-    /// copy constructor
-    DTreeMap(const DTreeMap& dt) : Impl(dt)
-    { }
-    /// move constructor
-    DTreeMap(DTreeMap&& dt) : Impl(dt)
-    { }
     
     /// get reference to element pointed by key
     mapped_type& at(const key_type& key)
@@ -1776,25 +1745,6 @@ public:
     /// get reference to element pointed by key (add if key doesn't exists)
     mapped_type& operator[](const key_type& key)
     { return mapped_type(); }
-    
-    /// lexicograhical equal to
-    bool operator==(const DTreeMap& dt) const
-    { return false; }
-    /// lexicograhical not equal
-    bool operator!=(const DTreeMap& dt) const
-    { return false; }
-    /// lexicograhical less
-    bool operator<(const DTreeMap& dt) const
-    { return false; }
-    /// lexicograhical less or equal
-    bool operator<=(const DTreeMap& dt) const
-    { return false; }
-    /// lexicograhical greater
-    bool operator>(const DTreeMap& dt) const
-    { return false; }
-    /// lexicograhical greater or equal
-    bool operator>=(const DTreeMap& dt) const
-    { return false; }
 };
 
 };
