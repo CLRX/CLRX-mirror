@@ -229,6 +229,17 @@ public:
             return index;
         }
         
+        /// get lower_bound (first index of element not less than value)
+        cxuint find(const K& k, const Comp& comp, const KeyOfVal& kofval) const
+        {
+            cxuint index = lower_bound(k, comp, kofval);
+            if (index == capacity ||
+                // if not equal
+                comp(k, kofval(array[index])) || comp(kofval(array[index]), k))
+                return capacity; // not found
+            return index;
+        }
+        
         /// internal routine to organize array with empty holes
         static void organizeArray(T& toFill,
                 cxuint& i, cxuint size, const T* array, uint64_t inBitMask,
@@ -876,7 +887,7 @@ public:
         }
         
         /// find node that hold first element not less than value
-        cxuint lowerBoundN(const K& v, const Comp& comp, const KeyOfVal& kofval)
+        cxuint lowerBoundN(const K& v, const Comp& comp, const KeyOfVal& kofval) const
         {
             if (NodeBase::type == NODE1)
             {
@@ -905,20 +916,20 @@ public:
                 while (l+1 < r)
                 {
                     m = (l+r)>>1;
-                    if (comp(array[m].first, v))
+                    if (comp(array1[m].first, v))
                         l = m;
                     else
                         //  !(array[m] < v) -> v <= array[m]
                         r = m;
                 }
-                if (comp(array[l].first, v))
+                if (comp(array1[l].first, v))
                     l++;
                 return l;
             }
         }
         
         /// find node that hold first element greater than value
-        cxuint upperBoundN(const K& v, const Comp& comp, const KeyOfVal& kofval)
+        cxuint upperBoundN(const K& v, const Comp& comp, const KeyOfVal& kofval) const
         {
             if (NodeBase::type == NODE1)
             {
@@ -944,13 +955,13 @@ public:
                 while (l+1 < r)
                 {
                     m = (l+r)>>1;
-                    if (comp(v, array[m].first))
+                    if (comp(v, array1[m].first))
                         //  !(array[m] < v) -> v <= array[m]
                         r = m;
                     else
                         l = m;
                 }
-                if (!comp(v, array[l].first))
+                if (!comp(v, array1[l].first))
                     l++;
                 return l;
             }
@@ -1126,6 +1137,10 @@ public:
             if (end)
                 // revert if end of tree
                 n0--;
+            
+            // skip empty space
+            while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
+                index++;
         }
         
         /// go to next element
@@ -1137,10 +1152,6 @@ public:
             index++;
             
             toNextNode0();
-            
-            // skip empty space
-            while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
-                index++;
         }
         
         /// go to inc previous element
@@ -1405,6 +1416,9 @@ public:
         Iter(Node0* n0 = nullptr, cxuint index = 0): IterBase{n0, index}
         { }
         
+        Iter(const IterBase& it) : IterBase(it)
+        { }
+        
         /// pre-increment
         Iter& operator++()
         {
@@ -1479,6 +1493,9 @@ public:
     {
         /// constructor
         ConstIter(const Node0* n0 = nullptr, cxuint index = 0): IterBase{n0, index}
+        { }
+        
+        ConstIter(const IterBase& it) : IterBase(it)
         { }
         
         /// pre-increment
@@ -1626,10 +1643,38 @@ public:
     
     /// copy assignment
     DTree& operator=(const DTree& dt)
-    { return *this; }
+    {
+        if (dt.n0.type == NODE0)
+        {
+            n0.~Node0();
+            n0 = dt.n0;
+            last = first = &n0;
+        }
+        else
+        {
+            n1.~Node1();
+            n1 = dt.n1;
+            first = n1.getFirstNode0();
+            last = n1.getLastNode0();
+        }
+    }
     /// move assignment
     DTree& operator=(DTree&& dt)
-    { return *this; }
+    {
+        if (dt.n0.type == NODE0)
+        {
+            n0.~Node0();
+            n0 = std::move(dt.n0);
+            last = first = &n0;
+        }
+        else
+        {
+            n1.~Node1();
+            n1 = std::move(dt.n1);
+            first = n1.getFirstNode0();
+            last = n1.getLastNode0();
+        }
+    }
     /// assignment of initilizer list
     DTree& operator=(std::initializer_list<value_type> init)
     { return *this; }
@@ -1666,12 +1711,89 @@ public:
     /// remove elemnet by key
     size_t erase(const key_type& key)
     { return 1; }
+    
+private:
+    IterBase findInt(const key_type& key) const
+    {
+        if (n0.type == NODE0)
+            return IterBase{&n0, n0.find(value_type(key), *this, *this)};
+        const Node1* curn1 = &n1;
+        cxuint index = 0;
+        while (curn1->type == NODE2)
+        {
+            index = curn1->upperBoundN(key, *this, *this);
+            if (index == 0)
+                return begin();
+            curn1 = curn1->array1 + index - 1;
+        }
+        // node1
+        index = curn1->upperBoundN(key, *this, *this);
+        if (index == 0)
+            return begin();
+        const Node0* curn0 = curn1->array + index - 1;
+        // node0
+        IterBase it{curn0, curn0->find(value_type(key), *this, *this)};
+        if (it.index == curn0->capacity)
+            return end();
+        return it;
+    }
+    
+    IterBase lower_boundInt(const key_type& key) const
+    {
+        if (n0.type == NODE0)
+            return IterBase{&n0, n0.lower_bound(value_type(key), *this, *this)};
+        const Node1* curn1 = &n1;
+        cxuint index = 0;
+        while (curn1->type == NODE2)
+        {
+            index = curn1->upperBoundN(key, *this, *this);
+            if (index == 0)
+                return begin();
+            curn1 = curn1->array1 + index - 1;
+        }
+        // node1
+        index = curn1->upperBoundN(key, *this, *this);
+        if (index == 0)
+            return begin();
+        const Node0* curn0 = curn1->array + index - 1;
+        // node0
+        IterBase it{curn0, curn0->lower_bound(value_type(key), *this, *this)};
+        if (it.index == curn0->capacity)
+            it.toNextNode0();
+        return it;
+    }
+    
+    IterBase upper_boundInt(const key_type& key) const
+    {
+        if (n0.type == NODE0)
+            return IterBase{&n0, n0.upper_bound(value_type(key), *this, *this)};
+        const Node1* curn1 = &n1;
+        cxuint index = 0;
+        while (curn1->type == NODE2)
+        {
+            index = curn1->upperBoundN(key, *this, *this);
+            if (index == 0)
+                return begin();
+            curn1 = curn1->array1 + index - 1;
+        }
+        index = curn1->upperBoundN(key, *this, *this);
+        if (index == 0)
+            return begin();
+        const Node0* curn0 = curn1->array + index - 1;
+        // node0
+        IterBase it{curn0, curn0->lower_bound(value_type(key), *this, *this)};
+        if (it.index == curn0->capacity)
+            it.toNextNode0();
+        return it;
+    }
+    
+public:
     /// find element or return end iterator
     iterator find(const key_type& key)
-    { return {}; }
+    { return findInt(key); }
     /// find element or return end iterator
     const_iterator find(const key_type& key) const
-    { return {}; }
+    { return findInt(key); }
     
     /// return iterator to first element
     iterator begin()
@@ -1694,59 +1816,16 @@ public:
     
     /// first element that not less than key
     iterator lower_bound(const key_type& key)
-    {
-        if (n0.type == NODE0)
-            return iterator(&n0, n0.lower_bound(value_type(key), *this, *this));
-        Node1* curn1 = &n1;
-        cxuint index = 0;
-        while (curn1->type == NODE2)
-        {
-            index = curn1->upperBoundN(key, *this, *this);
-            if (index == 0)
-                return begin();
-            curn1 = curn1->array1 + index - 1;
-        }
-        // node1
-        index = curn1->upperBoundN(key, *this, *this);
-        if (index == 0)
-            return begin();
-        Node0* curn0 = curn1->array + index - 1;
-        // node0
-        iterator it = (curn0, curn0->lower_bound(value_type(key), *this, *this));
-        if (it->index == curn0->capacity)
-            it->toNextNode0();
-        return it;
-    }
+    { return lower_boundInt(key); }
     /// first element that not less than key
     const_iterator lower_bound(const key_type& key) const
-    { return {}; }
+    { return lower_boundInt(key); }
     /// first element that greater than key
     iterator upper_bound(const key_type& key)
-    {
-        if (n0.type == NODE0)
-            return iterator(&n0, n0.upper_bound(value_type(key), *this, *this));
-        Node1* curn1 = &n1;
-        cxuint index = 0;
-        while (curn1->type == NODE2)
-        {
-            index = curn1->upperBoundN(key, *this, *this);
-            if (index == 0)
-                return begin();
-            curn1 = curn1->array1 + index - 1;
-        }
-        index = curn1->upperBoundN(key, *this, *this);
-        if (index == 0)
-            return begin();
-        Node0* curn0 = curn1->array + index - 1;
-        // node0
-        iterator it = (curn0, curn0->lower_bound(value_type(key), *this, *this));
-        if (it->index == curn0->capacity)
-            it->toNextNode0();
-        return it;
-    }
+    { return upper_boundInt(key); }
     /// first element that greater than key
     const_iterator upper_bound(const key_type& key) const
-    { return {}; }
+    { return upper_boundInt(key); }
     
     /// lexicograhical equal to
     bool operator==(const DTree& dt) const
@@ -1825,10 +1904,20 @@ public:
     
     /// get reference to element pointed by key
     mapped_type& at(const key_type& key)
-    { return mapped_type(); }
+    {
+        iterator it = find(key);
+        if (it == Impl::end())
+            throw std::out_of_range("DTreeMap key not found");
+        return it->second;
+    }
     /// get reference to element pointed by key
     const mapped_type& at(const key_type& key) const
-    { return mapped_type(); }
+    {
+        const_iterator it = find(key);
+        if (it == Impl::end())
+            throw std::out_of_range("DTreeMap key not found");
+        return it->second;
+    }
     /// get reference to element pointed by key (add if key doesn't exists)
     mapped_type& operator[](const key_type& key)
     { return mapped_type(); }
