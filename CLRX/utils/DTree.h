@@ -25,6 +25,7 @@
 
 #include <CLRX/Config.h>
 #include <algorithm>
+#include <iterator>
 #include <initializer_list>
 #include <climits>
 #include <cstddef>
@@ -70,6 +71,8 @@ public:
     // number of elements in Node1
     static const cxuint maxNode1Size = 8;
     static const cxuint maxNode1Shift = 3;
+    static const cxuint normalNode1Shift = 2;
+    static const cxuint maxNode1Depth = (sizeof(size_t)*8)>>1;
     
     static const cxuint maxNode0Capacity = 64;
     static const cxuint normalNode0Capacity = maxNode0Capacity>>1;
@@ -87,7 +90,7 @@ public:
     {
         if (level == 0)
             return maxNode0Size;
-        return size_t(normalNode0Size) << (maxNode1Shift * level);
+        return size_t(normalNode0Size) << (normalNode1Shift * level);
     }
     
     // get normal total size for node in depth level
@@ -95,7 +98,7 @@ public:
     {
         if (level == 0)
             return normalNode0Size;
-        return size_t(normalNode0Size) << (maxNode1Shift * level - 1);
+        return size_t(normalNode0Size) << (normalNode1Shift * level - 1);
     }
     
     // get minimal total size for node in depth level
@@ -103,7 +106,7 @@ public:
     {
         if (level == 0)
             return maxNode0Size / 3;
-        return (size_t(normalNode0Size) << (maxNode1Shift * level)) / 3;
+        return (size_t(normalNode0Size) << (normalNode1Shift * level)) / 3;
     }
     
     // parent pointer part size of array (heap)
@@ -995,7 +998,7 @@ public:
             // we need to go to next node0
             if (index >= n0->capacity)
             {
-                const Node1* n[20];
+                const Node1* n[maxNode1Depth];
                 //Node1* n1 = n0->parent();
                 n[1] = n0->parent();
                 if (n[1] != nullptr)
@@ -1096,7 +1099,7 @@ public:
             bool end = false;
             if (index >= n0->capacity)
             {
-                const Node1* n[20];
+                const Node1* n[maxNode1Depth];
                 //Node1* n1 = n0->parent();
                 n[1] = n0->parent();
                 if (n[1] != nullptr)
@@ -1169,7 +1172,7 @@ public:
             bool end = false;
             if (index == UINT_MAX)
             {
-                const Node1* n[20];
+                const Node1* n[maxNode1Depth];
                 //Node1* n1 = n0->parent();
                 n[1] = n0->parent();
                 if (n[1] != nullptr)
@@ -1271,7 +1274,7 @@ public:
             bool end = false;
             if (index == UINT_MAX)
             {
-                const Node1* n[20];
+                const Node1* n[maxNode1Depth];
                 //Node1* n1 = n0->parent();
                 n[1] = n0->parent();
                 if (n[1] != nullptr)
@@ -1341,8 +1344,8 @@ public:
                         count++;
                 return index2 == index ? count : -count;
             }
-            const Node1* n1[20];
-            const Node1* n2[20];
+            const Node1* n1[maxNode1Depth];
+            const Node1* n2[maxNode1Depth];
             const Node0* xn0_1 = n0;
             const Node0* xn0_2 = i2.n0;
             cxuint index1 = index;
@@ -1712,27 +1715,6 @@ public:
         n0 = Node0();
     }
     
-    /// insert new element
-    std::pair<iterator, bool> insert(const value_type& value)
-    { return {}; }
-    /// insert new elemnt with iterator hint
-    iterator insert(const_iterator hint, const value_type& value)
-    { return {}; }
-    void insert(std::initializer_list<value_type> ilist)
-    { }
-    /// put element (insert if doesn't exists or replace)
-    std::pair<iterator, bool> put(const value_type& value)
-    { return {}; }
-    /// replace element with key
-    void replace(iterator iter, const value_type& value)
-    { }
-    /// remove element in postion pointed by iterator
-    iterator erase(const_iterator pos)
-    { return {}; }
-    /// remove elemnet by key
-    size_t erase(const key_type& key)
-    { return 1; }
-    
 private:
     IterBase findInt(const key_type& key) const
     {
@@ -1847,6 +1829,102 @@ public:
     /// first element that greater than key
     const_iterator upper_bound(const key_type& key) const
     { return upper_boundInt(key); }
+    
+private:
+public:
+    
+    /// insert new element
+    std::pair<iterator, bool> insert(const value_type& value)
+    {
+        const key_type key = KeyOfVal::operator()(value);
+        iterator it = lower_bound(key);
+        const key_type itkey = KeyOfVal::operator()(*it);
+        if (!Comp::operator()(key, itkey) && !Comp::operator()(itkey, key))
+            // if equal
+            return std::make_pair(it, false);
+        
+        if (it.n0->size+1 <= maxNode0Size)
+        {
+            // just in node0
+            cxuint index = it.n0->insert(value, *this, *this)->first;
+            return std::make_pair(iterator(it.n0, index), true);
+        }
+        // reorganize/merge/split needed
+        if (&n0 == it.n0)
+        {
+            // simple split to first level
+            Node0 node0_2;
+            n0.split(node0_2);
+            cxuint index = 0;
+            bool secondNode = false;
+            if (Comp::operator()(key,
+                    KeyOfVal::operator()(node0_2.array[n0.firstPos])))
+                // key < first key in second node0
+                index = n0.insert(value, *this, *this)->first;
+            else
+            {   // put to node0 2
+                secondNode = true;
+                index = node0_2.insert(value, *this, *this)->first;
+            }
+            Node1 node1(std::move(n0), std::move(node0_2));
+            n1 = std::move(node1);
+            return std::make_pair(iterator(node1.array + secondNode, index), true);
+        }
+        Node1* curn1 = it.n0->parent();
+        if (curn1->totalSize+1 <= maxTotalSize(1))
+        {
+            // reorganize in first level
+            if (curn1->size+1 <= maxNode1Size)
+            {
+                // can add new node0
+                Node0 node0_2;
+                n0.split(node0_2);
+                cxuint index = 0;
+                bool secondNode = false;
+                if (Comp::operator()(key,
+                        KeyOfVal::operator()(node0_2.array[n0.firstPos])))
+                    // key < first key in second node0
+                    index = n0.insert(value, *this, *this)->first;
+                else
+                {   // put to node0 2
+                    secondNode = true;
+                    index = node0_2.insert(value, *this, *this)->first;
+                }
+            }
+            else
+            {
+                // otherwise reoganize existing nodes
+            }
+            return {};
+        }
+        
+        cxuint level = 1;
+        Node1* prevn1 = nullptr;
+        while (curn1 != nullptr && curn1->totalSize+1 > maxTotalSize(level))
+        {
+            prevn1 = curn1;
+            curn1 = curn1->parent();
+        }
+        
+        return {};
+    }
+    /// insert new elemnt with iterator hint
+    iterator insert(const_iterator hint, const value_type& value)
+    { return {}; }
+    void insert(std::initializer_list<value_type> ilist)
+    { }
+    /// put element (insert if doesn't exists or replace)
+    std::pair<iterator, bool> put(const value_type& value)
+    { return {}; }
+    /// replace element with key
+    void replace(iterator iter, const value_type& value)
+    { }
+    /// remove element in postion pointed by iterator
+    iterator erase(const_iterator pos)
+    { return {}; }
+    /// remove elemnet by key
+    size_t erase(const key_type& key)
+    { return 1; }
     
     /// lexicograhical equal to
     bool operator==(const DTree& dt) const
