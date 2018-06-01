@@ -975,6 +975,8 @@ public:
 public:
     /// main iterator class
     struct IterBase {
+        typedef T value_type;
+        
         const Node0* n0;    //< node
         cxuint index;   ///< index in array
         
@@ -1412,6 +1414,12 @@ public:
     /// iterator which allow to modify underlying element
     struct Iter: IterBase
     {
+        typedef T value_type;
+        typedef T& reference;
+        typedef T* pointer;
+        typedef ssize_t difference_type;
+        typedef std::bidirectional_iterator_tag iterator_category;
+        
         /// constructor
         Iter(Node0* n0 = nullptr, cxuint index = 0): IterBase{n0, index}
         { }
@@ -1491,6 +1499,12 @@ public:
     /// iterator that allow only to read element
     struct ConstIter: IterBase
     {
+        typedef T value_type;
+        typedef const T& reference;
+        typedef const T* pointer;
+        typedef ssize_t difference_type;
+        typedef std::bidirectional_iterator_tag iterator_category;
+        
         /// constructor
         ConstIter(const Node0* n0 = nullptr, cxuint index = 0): IterBase{n0, index}
         { }
@@ -1689,7 +1703,14 @@ public:
     
     /// clear (remove all elements)
     void clear()
-    { }
+    {
+        if (n0.type == NODE0)
+            n0.~Node0();
+        else
+            n1.~Node1();
+        n0.array = nullptr;
+        n0 = Node0();
+    }
     
     /// insert new element
     std::pair<iterator, bool> insert(const value_type& value)
@@ -1829,22 +1850,22 @@ public:
     
     /// lexicograhical equal to
     bool operator==(const DTree& dt) const
-    { return false; }
+    { return size()==dt.size() && std::equal(begin(), end(), dt.begin()); }
     /// lexicograhical not equal
     bool operator!=(const DTree& dt) const
-    { return false; }
+    { return size()!=dt.size() || !std::equal(begin(), end(), dt.begin()); }
     /// lexicograhical less
     bool operator<(const DTree& dt) const
-    { return false; }
+    { return std::lexicographical_compare(begin(), end(), dt.begin(), dt.end()); }
     /// lexicograhical less or equal
     bool operator<=(const DTree& dt) const
-    { return false; }
+    { return !(dt < *this); }
     /// lexicograhical greater
     bool operator>(const DTree& dt) const
-    { return false; }
+    { return (dt < *this); }
     /// lexicograhical greater or equal
     bool operator>=(const DTree& dt) const
-    { return false; }
+    { return !(*this < dt); }
 };
 
 
