@@ -273,6 +273,27 @@ public:
             }
         }
         
+        void allocate(cxuint size)
+        {
+            delete[] array;
+            array = nullptr;
+            capacity = std::min(cxbyte(size + (size>>freePlacesShift)),
+                        cxbyte(maxNode0Capacity));
+            firstPos = 0;
+            bitMask = 0;
+            size = 0;
+        }
+        
+        void assignArray(T& toFill, cxuint inSize, cxuint& pos, const T* array,
+                        uint64_t inBitMask, size_t newSize, cxuint& k, cxuint& factor)
+        {
+            cxuint finc = capacity - newSize;
+            cxuint remainingSize = std::min(cxuint(newSize-size), cxuint(inSize-pos));
+            organizeArray(toFill, pos, remainingSize, array,
+                          inBitMask, k, newSize, this->array, bitMask, factor, finc);
+            size += remainingSize;
+        }
+        
         /// merge this node with node2
         void merge(const Node0& node2)
         {
@@ -957,6 +978,53 @@ public:
             size--;
             if (size + (size>>1) < capacity)
                 reserve1(size+1);
+        }
+        
+        void reorganizeNode0s(cxuint start, cxuint end)
+        {
+            Node0 temps[maxNode1Size];
+            cxuint nodesSize = 0;
+            for (cxuint i = start; i < end; i++)
+                nodesSize += array[i].size;
+            
+            cxuint newNodeSize = nodesSize / (end-start);
+            cxuint withExtraElem = nodesSize - newNodeSize*(end-start);
+            cxuint ni = 0; // new item start
+            T toFill = T();
+            cxuint inPos = 0;
+            cxuint k = 0;
+            cxuint factor = 0;
+            cxuint newSize = newNodeSize + (ni < withExtraElem);
+            temps[ni].allocate(newSize);
+            // main loop to fill up new node0's
+            for (cxuint i = start; i < end; i++)
+            {
+                while(inPos < array[i].size)
+                {
+                    temps[ni].assignArray(toFill, array[i].size, inPos, array[i].array,
+                            array[i].bitMask, newSize, k, factor);
+                    if (temps[ni].size == array[i].size)
+                    {
+                        // fill up end of new node0
+                        if (k < temps[ni].capacity)
+                        {
+                            temps[ni].array[k] = toFill;
+                            temps[ni].bitMask |= (1ULL<<k);
+                        }
+                        
+                        factor = k = 0;
+                        ni++;
+                        newSize = newNodeSize + (ni < withExtraElem);
+                        temps[ni].allocate(newSize);
+                    }
+                }
+            }
+            // final move to this array
+            std::move(temps, temps + end-start, array+start);
+        }
+        
+        void reorganizeNode1s(cxuint start, cxuint end)
+        {
         }
         
         bool insert(const T& v, const Comp& comp);
@@ -1832,14 +1900,10 @@ public:
             // if equal
             return std::make_pair(it, false);
         
-        if (it.n0->size+1 <= maxNode0Size)
-        {
-            // just in node0
-            cxuint index = it.n0->insert(value, *this, *this)->first;
-            return std::make_pair(iterator(it.n0, index), true);
-        }
+        cxuint index = it.n0->insert(value, *this, *this)->first;
+        Node1* curn1 = it.n0->parent();
         // reorganize/merge/split needed
-        if (&n0 == it.n0)
+        if (it.n0->size > maxNode0Size)
         {
             // simple split to first level
             Node0 node0_2;
@@ -1855,47 +1919,48 @@ public:
                 secondNode = true;
                 index = node0_2.insert(value, *this, *this)->first;
             }
-            Node1 node1(std::move(n0), std::move(node0_2));
-            n1 = std::move(node1);
-            return std::make_pair(iterator(node1.array + secondNode, index), true);
-        }
-        Node1* curn1 = it.n0->parent();
-        if (curn1->totalSize+1 <= maxTotalSize(1))
-        {
-            // reorganize in first level
-            if (curn1->size+1 <= maxNode1Size)
+            if (curn1 == nullptr)
             {
-                // can add new node0
-                Node0 node0_2;
-                n0.split(node0_2);
-                cxuint index = 0;
-                bool secondNode = false;
-                if (Comp::operator()(key,
-                        KeyOfVal::operator()(node0_2.array[n0.firstPos])))
-                    // key < first key in second node0
-                    index = n0.insert(value, *this, *this)->first;
-                else
-                {   // put to node0 2
-                    secondNode = true;
-                    index = node0_2.insert(value, *this, *this)->first;
-                }
+                Node1 node1(std::move(n0), std::move(node0_2));
+                n1 = std::move(node1);
+                return std::make_pair(iterator(node1.array + secondNode, index), true);
             }
+            cxuint n0Index = it.n0->index;
+            if (curn1->size < maxNode1Size)
+                curn1->insertNode0(node0_2, n0Index);
             else
             {
-                // otherwise reoganize existing nodes
+                // reorganize in this level
+                cxuint n0Size = it.n0->size;
+                cxuint freeSpace = 0;
+                cxint left = n0Index-1;
+                cxint right = n0Index+1;
+                for (; left >= 0 || right < curn1->size; left--, right++)
+                {
+                    if (left >= 0)
+                        freeSpace += maxNode0Size - curn1->array[left].size;
+                    else
+                        left++;
+                    
+                    if (right < curn1->size)
+                        freeSpace += maxNode0Size - curn1->array[right].size;
+                    else
+                        right--;
+                    if (freeSpace >= n0Size)
+                        break;
+                }
+                // reorganize array from left to right
+                curn1->reorganizeNode0s(left, right+1);
             }
-            return {};
+            curn1->totalSize++; // increase
+            if (curn1->totalSize <= maxTotalSize(1))
+            {
+                
+            }
         }
+        iterator newit;
         
-        cxuint level = 1;
-        Node1* prevn1 = nullptr;
-        while (curn1 != nullptr && curn1->totalSize+1 > maxTotalSize(level))
-        {
-            prevn1 = curn1;
-            curn1 = curn1->parent();
-        }
-        
-        return {};
+        return std::make_pair(newit, true);
     }
     /// insert new elemnt with iterator hint
     iterator insert(const_iterator hint, const value_type& value)
