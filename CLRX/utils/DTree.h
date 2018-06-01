@@ -797,101 +797,12 @@ public:
             capacity = newCapacity;
         }
         
-        /// insert Node0
-        void insertNode0(const Node0& node)
-        {
-            NodeBase::type = NODE1;
-            if (size+1 > capacity)
-                reserve0(std::min(std::max(capacity + (capacity>>1), size+1),
-                                  int(maxNode1Size)));
-            array[size] = node;
-            array[size].index = size;
-            if (size == 0)
-                first = array[0].array[array[0].firstPos];
-            size++;
-            totalSize += node.size;
-        }
-        
-        /// insert Node0 - (move to this node)
-        void insertNode0(Node0&& node)
-        {
-            NodeBase::type = NODE1;
-            if (size+1 > capacity)
-                reserve0(std::min(std::max(capacity + (capacity>>1), size+1),
-                                  int(maxNode1Size)));
-            array[size] = std::move(node);
-            array[size].index = size;
-            if (size == 0)
-                first = array[0].array[array[0].firstPos];
-            size++;
-            totalSize += node.size;
-        }
-        
-        /// insert Node1
-        void insertNode1(const Node1& node)
-        {
-            NodeBase::type = NODE2;
-            if (size+1 > capacity)
-                reserve1(std::min(std::max(capacity + (capacity>>1), size+1),
-                                  int(maxNode1Size)));
-            array1[size] = node;
-            array1[size].index = size;
-            if (size == 0)
-                first = array1[0].first;
-            size++;
-            totalSize += node.totalSize;
-        }
-        
-        /// insert Node1 - (move to this node)
-        void insertNode1(Node1&& node)
-        {
-            NodeBase::type = NODE2;
-            if (size+1 > capacity)
-                reserve1(std::min(std::max(capacity + (capacity>>1), size+1),
-                                  int(maxNode1Size)));
-            array1[size] = std::move(node);
-            array1[size].index = size;
-            if (size == 0)
-                first = array1[0].first;
-            size++;
-            totalSize += node.totalSize;
-        }
-        
-        /// remove node0 with index from this node
-        void eraseNode0(cxuint index)
-        {
-            totalSize -= array[index].size;
-            std::move(array+index+1, array+size, array+index);
-            if (size == 1)
-                array[0].~Node0();
-            for (cxuint i = index; i < size-1U; i++)
-                array[i].index = i;
-            if (size > 1 && index == 0)
-                first = array[0].array[array[0].firstPos];
-            size--;
-            if (size + (size>>1) < capacity)
-                reserve0(size+1);
-        }
-        
-        /// remove node1 with index from this node
-        void eraseNode1(cxuint index)
-        {
-            totalSize -= array1[index].totalSize;
-            std::move(array1+index+1, array1+size, array1+index);
-            if (size == 1)
-                array1[0].~Node1();
-            for (cxuint i = index; i < size-1U; i++)
-                array1[i].index = i;
-            if (size > 1 && index == 0)
-                first = array1[0].first;
-            size--;
-            if (size + (size>>1) < capacity)
-                reserve1(size+1);
-        }
         
         /// find node that hold first element not less than value
         cxuint lowerBoundN(const K& v, const Comp& comp, const KeyOfVal& kofval) const
         {
+            if (size == 0)
+                return 0;
             if (NodeBase::type == NODE1)
             {
                 cxuint l = 0, r = size;
@@ -934,6 +845,8 @@ public:
         /// find node that hold first element greater than value
         cxuint upperBoundN(const K& v, const Comp& comp, const KeyOfVal& kofval) const
         {
+            if (size == 0)
+                return 0;
             if (NodeBase::type == NODE1)
             {
                 cxuint l = 0, r = size;
@@ -968,6 +881,82 @@ public:
                     l++;
                 return l;
             }
+        }
+        
+        /// insert Node0 - (move to this node)
+        void insertNode0(Node0&& node, cxuint index)
+        {
+            NodeBase::type = NODE1;
+            if (size+1 > capacity)
+                reserve0(std::min(std::max(capacity + (capacity>>1), size+1),
+                                  int(maxNode1Size)));
+            // move to next position
+            for (size_t i = size; i > index; i--)
+            {
+                array[i] = std::move(array[i-1]);
+                array[i].index = i;
+            }
+            
+            array[index] = std::move(node);
+            array[index].index = index;
+            if (index == 0)
+                first = array[0].array[array[0].firstPos];
+            size++;
+            totalSize += node.size;
+        }
+        
+        /// insert Node1 - (move to this node)
+        void insertNode1(Node1&& node, cxuint index)
+        {
+            NodeBase::type = NODE2;
+            if (size+1 > capacity)
+                reserve1(std::min(std::max(capacity + (capacity>>1), size+1),
+                                  int(maxNode1Size)));
+            // move to next position
+            for (size_t i = size; i > index; i--)
+            {
+                array1[i] = std::move(array1[i-1]);
+                array1[i].index = i;
+            }
+            
+            array1[index] = std::move(node);
+            array1[index].index = index;
+            if (index == 0)
+                first = array1[0].first;
+            size++;
+            totalSize += node.totalSize;
+        }
+        
+        /// remove node0 with index from this node
+        void eraseNode0(cxuint index)
+        {
+            totalSize -= array[index].size;
+            std::move(array+index+1, array+size, array+index);
+            if (size == 1)
+                array[0].~Node0();
+            for (cxuint i = index; i < size-1U; i++)
+                array[i].index = i;
+            if (size > 1 && index == 0)
+                first = array[0].array[array[0].firstPos];
+            size--;
+            if (size + (size>>1) < capacity)
+                reserve0(size+1);
+        }
+        
+        /// remove node1 with index from this node
+        void eraseNode1(cxuint index)
+        {
+            totalSize -= array1[index].totalSize;
+            std::move(array1+index+1, array1+size, array1+index);
+            if (size == 1)
+                array1[0].~Node1();
+            for (cxuint i = index; i < size-1U; i++)
+                array1[i].index = i;
+            if (size > 1 && index == 0)
+                first = array1[0].first;
+            size--;
+            if (size + (size>>1) < capacity)
+                reserve1(size+1);
         }
         
         bool insert(const T& v, const Comp& comp);
