@@ -1902,32 +1902,37 @@ public:
         
         cxuint index = it.n0->insert(value, *this, *this)->first;
         Node1* curn1 = it.n0->parent();
+        iterator newit;
         // reorganize/merge/split needed
         if (it.n0->size > maxNode0Size)
         {
             // simple split to first level
-            Node0 node0_2;
-            n0.split(node0_2);
-            cxuint index = 0;
-            bool secondNode = false;
-            if (Comp::operator()(key,
-                    KeyOfVal::operator()(node0_2.array[n0.firstPos])))
-                // key < first key in second node0
-                index = n0.insert(value, *this, *this)->first;
-            else
-            {   // put to node0 2
-                secondNode = true;
-                index = node0_2.insert(value, *this, *this)->first;
-            }
-            if (curn1 == nullptr)
-            {
-                Node1 node1(std::move(n0), std::move(node0_2));
-                n1 = std::move(node1);
-                return std::make_pair(iterator(node1.array + secondNode, index), true);
-            }
             cxuint n0Index = it.n0->index;
-            if (curn1->size < maxNode1Size)
+            if (curn1 == nullptr || curn1->size < maxNode1Size)
+            {
+                // put new node0 in node1 or create new node1 with two nodes
+                Node0 node0_2;
+                n0.split(node0_2);
+                cxuint index = 0;
+                bool secondNode = false;
+                if (Comp::operator()(key,
+                        KeyOfVal::operator()(node0_2.array[n0.firstPos])))
+                    // key < first key in second node0
+                    index = n0.insert(value, *this, *this)->first;
+                else
+                {   // put to node0 2
+                    secondNode = true;
+                    index = node0_2.insert(value, *this, *this)->first;
+                }
+                if (curn1 == nullptr)
+                {
+                    Node1 node1(std::move(n0), std::move(node0_2));
+                    n1 = std::move(node1);
+                    return std::make_pair(iterator(node1.array + secondNode, index), true);
+                }
                 curn1->insertNode0(node0_2, n0Index);
+                newit = iterator(curn1->array + n0Index + secondNode, index);
+            }
             else
             {
                 // reorganize in this level
@@ -1935,30 +1940,28 @@ public:
                 cxuint freeSpace = 0;
                 cxint left = n0Index-1;
                 cxint right = n0Index+1;
-                for (; left >= 0 || right < curn1->size; left--, right++)
+                for (; freeSpace >= n0Size || left >= 0 || right < curn1->size;
+                     left--, right++)
                 {
                     if (left >= 0)
                         freeSpace += maxNode0Size - curn1->array[left].size;
-                    else
-                        left++;
-                    
                     if (right < curn1->size)
                         freeSpace += maxNode0Size - curn1->array[right].size;
-                    else
-                        right--;
-                    if (freeSpace >= n0Size)
-                        break;
                 }
+                left = std::max(0, left);
+                right = std::min(curn1->size-1, right);
+                
                 // reorganize array from left to right
                 curn1->reorganizeNode0s(left, right+1);
+                // find newit for inserted value
+                newit.n0 = curn1->array + curn1->lowerBoundN(key, *this, *this);
+                newit.index = newit.n0->lower_bound(key, *this, this);
             }
             curn1->totalSize++; // increase
             if (curn1->totalSize <= maxTotalSize(1))
             {
-                
             }
         }
-        iterator newit;
         
         return std::make_pair(newit, true);
     }
