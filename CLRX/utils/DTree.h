@@ -661,8 +661,10 @@ public:
         }
         
         /// create from two Node0's
-        Node1(Node0&& n0, Node0&& n1) : NodeBase(NODE1), index(255),
-                size(2), capacity(2), totalSize(n0.size+n1.size), array(nullptr)
+        Node1(Node0&& n0, Node0&& n1, const KeyOfVal& kofval)
+                : NodeBase(NODE1), index(255), size(2), capacity(2),
+                totalSize(n0.size+n1.size), array(nullptr),
+                first(kofval(n1.array[n1.firstPos]))
         {
             cxbyte* arrayData = new cxbyte[parentEntrySize + capacity*sizeof(Node0)];
             array = reinterpret_cast<Node0*>(arrayData + parentEntrySize);
@@ -673,7 +675,7 @@ public:
         /// create from two Node1's
         Node1(Node1&& n0, Node1&& n1) : NodeBase(NODE2), index(255),
                 size(2), capacity(2), totalSize(n0.totalSize+n1.totalSize),
-                array(nullptr)
+                array(nullptr), first(n0.first)
         {
             cxbyte* arrayData = new cxbyte[parentEntrySize + capacity*sizeof(Node1)];
             array1 = reinterpret_cast<Node0*>(arrayData + parentEntrySize);
@@ -1023,14 +1025,55 @@ public:
             std::move(temps, temps + end-start, array+start);
         }
         
-        void reorganizeNode1s(cxuint start, cxuint end)
+        void splitNode(Node1& n2)
         {
+            if (NodeBase::type == NODE1)
+            {
+                cxuint halfPos = 0;
+                size_t halfTotSize = 0;
+                for (; halfPos < size && halfTotSize < (totalSize>>1); halfPos++)
+                    halfTotSize += array[halfPos].size;
+                if ((halfTotSize - (totalSize>>1)) > (array[halfPos-1].size>>1))
+                    halfPos--; // 
+                
+                cxuint newSize2 = size - halfPos;
+                n2.reserve0(std::min(newSize2, maxNode1Size));
+                std::move(array + halfPos, array + size, n2.array);
+                reserve0(halfPos);
+            }
+            else
+            {
+                cxuint halfPos = 0;
+                size_t halfTotSize = 0;
+                for (; halfPos < size && halfTotSize < (totalSize>>1); halfPos++)
+                    halfTotSize += array1[halfPos].totalSize;
+                if ((halfTotSize - (totalSize>>1)) > (array1[halfPos-1].totalSize>>1))
+                    halfPos--; // 
+                
+                cxuint newSize2 = size - halfPos;
+                n2.reserve1(std::min(newSize2, maxNode1Size));
+                std::move(array1 + halfPos, array1 + size, n2.array1);
+                reserve1(halfPos);
+            }
         }
         
-        bool insert(const T& v, const Comp& comp);
-        
-        bool erase(const T& v, const Comp& comp);
-        bool erase(cxbyte index);
+        void reorganizeNode1s(cxuint start, cxuint end)
+        {
+            Node1 temps[maxNode1Size];
+            cxuint nodesSize = 0;
+            size_t nodesTotSize = 0;
+            for (cxuint i = start; i < end; i++)
+            {
+                nodesSize += array1[i].size;
+                nodesTotSize += array1[i].totalSize;
+            }
+            
+            cxuint newNodeSize = nodesSize / (end-start);
+            cxuint withExtraElem = nodesSize - newNodeSize*(end-start);
+            ///
+            // final move to this array
+            std::move(temps, temps + end-start, array1+start);
+        }
     };
 public:
     /// main iterator class
@@ -1926,7 +1969,7 @@ public:
                 }
                 if (curn1 == nullptr)
                 {
-                    Node1 node1(std::move(n0), std::move(node0_2));
+                    Node1 node1(std::move(n0), std::move(node0_2), *this);
                     n1 = std::move(node1);
                     return std::make_pair(iterator(node1.array + secondNode, index), true);
                 }
@@ -1940,13 +1983,20 @@ public:
                 cxuint freeSpace = 0;
                 cxint left = n0Index-1;
                 cxint right = n0Index+1;
-                for (; freeSpace >= n0Size || left >= 0 || right < curn1->size;
-                     left--, right++)
+                cxuint nodeCount = 0;
+                for (; freeSpace >= (((n0Size<<4)*nodeCount)>>6) ||
+                        left >= 0 || right < curn1->size; left--, right++)
                 {
                     if (left >= 0)
+                    {
                         freeSpace += maxNode0Size - curn1->array[left].size;
+                        nodeCount++;
+                    }
                     if (right < curn1->size)
+                    {
                         freeSpace += maxNode0Size - curn1->array[right].size;
+                        nodeCount++;
+                    }
                 }
                 left = std::max(0, left);
                 right = std::min(curn1->size-1, right);
@@ -1957,9 +2007,61 @@ public:
                 newit.n0 = curn1->array + curn1->lowerBoundN(key, *this, *this);
                 newit.index = newit.n0->lower_bound(key, *this, this);
             }
-            curn1->totalSize++; // increase
-            if (curn1->totalSize <= maxTotalSize(1))
+            //curn1->totalSize++; // increase
+        }
+        
+        cxuint level = 1;
+        Node1* prevn1 = nullptr;
+        while (curn1 != nullptr)
+        {
+            prevn1 = curn1;
+            curn1 = prevn1->parent();
+            prevn1->totalSize++; // increase
+            cxuint maxN1Size = maxTotalSize(level);
+            
+            if (prevn1->totalSize > maxN1Size)
             {
+                cxuint n1Index = prevn1->index;
+                if (curn1 == nullptr || curn1->size < maxNode1Size)
+                {
+                    // simple split
+                    Node1 node1_2;
+                    prevn1->split(node1_2);
+                    if (curn1 == nullptr)
+                    {
+                        Node1 node1(std::move(*prevn1), std::move(node1_2), *this);
+                        n1 = std::move(node1);
+                    }
+                    else
+                        curn1->insertNode1(node1_2, n1Index);
+                }
+                else
+                {
+                    // reorganize nodes
+                    cxuint n1Size = prevn1->totalSize;
+                    cxuint freeSpace = 0;
+                    cxint left = n1Index-1;
+                    cxint right = n1Index+1;
+                    cxuint nodeCount = 0;
+                    for (; freeSpace >= (((maxN1Size<<4)*nodeCount)>>6) ||
+                            left >= 0 || right < curn1->size; left--, right++)
+                    {
+                        if (left >= 0)
+                        {
+                            freeSpace += maxNode0Size - curn1->array[left].size;
+                            nodeCount++;
+                        }
+                        if (right < curn1->size)
+                        {
+                            freeSpace += maxNode0Size - curn1->array[right].size;
+                            nodeCount++;
+                        }
+                    }
+                    left = std::max(0, left);
+                    right = std::min(curn1->size-1, right);
+                    // reorganize array from left to right
+                    curn1->reorganizeNode1s(left, right+1);
+                }
             }
         }
         
