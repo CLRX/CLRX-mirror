@@ -84,6 +84,7 @@ public:
             ((1<<minFreePlacesShift)+1))*(1<<minFreePlacesShift)) / 1000;
     static const cxuint normalNode0Size = ((normalNode0Capacity*1000 /
             ((1<<minFreePlacesShift)+1))*(1<<minFreePlacesShift)) / 1000;
+    static const cxuint minNode0Size = maxNode0Size / 3;
     
     // get maximal total size for node in depth level
     static size_t maxTotalSize(cxuint level)
@@ -105,7 +106,7 @@ public:
     static size_t minTotalSize(cxuint level)
     {
         if (level == 0)
-            return maxNode0Size / 3;
+            return minNode0Size;
         return (size_t(normalNode0Size) << (normalNode1Shift * level)) / 3;
     }
     
@@ -1023,6 +1024,22 @@ public:
             }
             // final move to this array
             std::move(temps, temps + end-start, array+start);
+        }
+        
+        void merge(Node1& n2)
+        {
+            if (NodeBase::type == NODE1)
+            {
+                reserve0(std::max(maxNode1Size, cxuint(capacity + n2.capacity)));
+                std::move(n2.array, n2.array + n2.size, array + size);
+            }
+            else
+            {
+                reserve1(std::max(maxNode1Size, cxuint(capacity + n2.capacity)));
+                std::move(n2.array1, n2.array1 + n2.size, array1 + size);
+            }
+            totalSize += n2.totalSize;
+            size += n2.size;
         }
         
         void splitNode(Node1& n2)
@@ -1962,7 +1979,7 @@ public:
         const key_type key = KeyOfVal::operator()(value);
         iterator it = lower_bound(key);
         const key_type itkey = KeyOfVal::operator()(*it);
-        if (!Comp::operator()(key, itkey) && !Comp::operator()(itkey, key))
+        if (it!=end() && !Comp::operator()(key, itkey) && !Comp::operator()(itkey, key))
             // if equal
             return std::make_pair(it, false);
         
@@ -2102,11 +2119,43 @@ public:
     void replace(iterator iter, const value_type& value)
     { }
     /// remove element in postion pointed by iterator
-    iterator erase(const_iterator pos)
-    { return {}; }
+    iterator erase(const_iterator it)
+    {
+        if (it == end())
+            return it; // do nothing (if end or free space)
+        if (!it.n0->erase(it.index))
+        {
+            // not finished
+            return it;
+        }
+        if (n0 == &n0)
+            return it;
+        if (it.n0->size < minNode0Size)
+        {
+            Node1* curn1 = it.n0->parent();
+            curn1->totalSize--;
+            if (it.n0->index+1 == curn1->size)
+            {
+                curn1->array[it.n0->index-1].merge(*it->n0);
+                curn1->eraseNode0(it.n0->index);
+            }
+            else
+            {
+                it.n0->merge(curn1->array[it.n0->index+1]);
+                curn1->eraseNode0(it.n0->index+1);
+            }
+        }
+        return it;
+    }
     /// remove elemnet by key
     size_t erase(const key_type& key)
-    { return 1; }
+    {
+        iterator it = find(key);
+        if (it == end())
+            return 0;
+        erase(it);
+        return 1;
+    }
     
     /// lexicograhical equal to
     bool operator==(const DTree& dt) const
