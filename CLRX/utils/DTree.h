@@ -983,15 +983,15 @@ public:
                 reserve1(size+1);
         }
         
-        void reorganizeNode0s(cxuint start, cxuint end)
+        void reorganizeNode0s(cxuint start, cxuint end, cxint newNodesNumDiff = 0)
         {
             Node0 temps[maxNode1Size];
             cxuint nodesSize = 0;
             for (cxuint i = start; i < end; i++)
                 nodesSize += array[i].size;
             
-            cxuint newNodeSize = nodesSize / (end-start);
-            cxuint withExtraElem = nodesSize - newNodeSize*(end-start);
+            cxuint newNodeSize = nodesSize / (end-start + newNodesNumDiff);
+            cxuint withExtraElem = nodesSize - newNodeSize*(end-start+newNodesNumDiff);
             cxuint ni = 0; // new item start
             T toFill = T();
             cxuint inPos = 0;
@@ -1023,7 +1023,12 @@ public:
                 }
             }
             // final move to this array
-            std::move(temps, temps + end-start, array+start);
+            std::move(temps, temps + end-start+newNodesNumDiff, array+start);
+            if (newNodesNumDiff < 0)
+            {
+                std::move(array + end, array + size, array + end + newNodesNumDiff);
+                size += newNodesNumDiff;
+            }
         }
         
         void merge(Node1& n2)
@@ -2083,17 +2088,18 @@ public:
                     cxint left = n1Index-1;
                     cxint right = n1Index+1;
                     cxuint nodeCount = 0;
+                    size_t maxN1MSize = maxTotalSize(level-1);
                     for (; freeSpace >= (((maxN1Size<<4)*nodeCount)>>6) ||
                             left >= 0 || right < curn1->size; left--, right++)
                     {
                         if (left >= 0)
                         {
-                            freeSpace += maxNode0Size - curn1->array[left].size;
+                            freeSpace += maxN1MSize - curn1->array[left].totalSize;
                             nodeCount++;
                         }
                         if (right < curn1->size)
                         {
-                            freeSpace += maxNode0Size - curn1->array[right].size;
+                            freeSpace += maxN1MSize - curn1->array[right].totalSize;
                             nodeCount++;
                         }
                     }
@@ -2134,15 +2140,33 @@ public:
         {
             Node1* curn1 = it.n0->parent();
             curn1->totalSize--;
-            if (it.n0->index+1 == curn1->size)
+            const cxuint n0Index = it.n0->index;
+            cxuint n0Left1 = n0Index > 0 ? curn1->array[n0Index-1].size : UINT_MAX;
+            cxuint n0Right1 = n0Index+1 < curn1->size ? curn1->array[n0Index+1].size :
+                    UINT_MAX;
+            cxuint mergedN0Index = UINT_MAX;
+            if (n0Left1 < n0Right1)
             {
-                curn1->array[it.n0->index-1].merge(*it->n0);
-                curn1->eraseNode0(it.n0->index);
+                if (n0Left1 < maxNode0Size)
+                {
+                    curn1->array[n0Index-1].merge(*it->n0);
+                    curn1->eraseNode0(n0Index);
+                    mergedN0Index = n0Index-1;
+                }
             }
             else
             {
-                it.n0->merge(curn1->array[it.n0->index+1]);
-                curn1->eraseNode0(it.n0->index+1);
+                if (n0Right1 < maxNode0Size)
+                {
+                    it.n0->merge(curn1->array[n0Index+1]);
+                    curn1->eraseNode0(n0Index+1);
+                    mergedN0Index = n0Index;
+                }
+            }
+            if (mergedN0Index == UINT_MAX)
+            {
+                // reorganization needed before inserting
+                curn1->reorganizeNode0s();
             }
         }
         return it;
