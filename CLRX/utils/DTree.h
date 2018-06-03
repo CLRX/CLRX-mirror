@@ -90,7 +90,7 @@ public:
     {
         if (level == 0)
             return maxNode0Size;
-        return size_t(normalNode0Size) << (normalNode1Shift * level);
+        return size_t(maxNode0Size) << (normalNode1Shift * level);
     }
     
     // get normal total size for node in depth level
@@ -1068,8 +1068,31 @@ public:
                 nodesTotSize += array1[i].totalSize;
             }
             
-            cxuint newNodeSize = nodesSize / (end-start);
-            cxuint withExtraElem = nodesSize - newNodeSize*(end-start);
+            cxuint j = start; // input node index
+            cxuint k = 0; // input child node index
+            for (cxuint i = 0; i < end-start; i++)
+            {
+                cxuint newNodeSize = nodesTotSize / (end-start-i);
+                if (j < start && k < array1[j].size)
+                {
+                    for (; j < end && temps[i].totalSize < newNodeSize; j++)
+                    {
+                        const Node1& child = array1[j];
+                        if (child.type == NODE2)
+                            for (; k < child.size && temps[i].totalSize +
+                                    (child.array1[k].totalSize>>1) < newNodeSize; k++)
+                                temps[i].insertNode1(child.array1[k]);
+                        else
+                            for (; k < child.size && temps[i].totalSize +
+                                    (child.array[k].size>>1) < newNodeSize; k++)
+                                temps[i].insertNode1(child.array1[k]);
+                        if (k >= child.size)
+                            k = 0; // if end of input node
+                    }
+                }
+                
+                nodesTotSize -= temps[i].totalSize;
+            }
             ///
             // final move to this array
             std::move(temps, temps + end-start, array1+start);
