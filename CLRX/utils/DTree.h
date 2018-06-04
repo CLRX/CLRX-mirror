@@ -1753,13 +1753,19 @@ public:
     template<typename Iter>
     DTree(Iter first, Iter last, const Comp& comp = Comp(),
           const KeyOfVal& kofval = KeyOfVal()) : Comp(comp), KeyOfVal(kofval), n0()
-    { }
+    {
+        for (Iter it = first; it != last; ++it)
+            insert(*it);
+    }
     
     /// constructor with initializer list
     template<typename Iter>
     DTree(std::initializer_list<value_type> init, const Comp& comp = Comp(),
           const KeyOfVal& kofval = KeyOfVal()) : Comp(comp), KeyOfVal(kofval), n0()
-    { }
+    {
+        for (const value_type& v: init)
+            insert(v);
+    }
     /// copy construcror
     DTree(const DTree& dt) 
     {
@@ -2115,15 +2121,24 @@ public:
     }
     /// insert new elemnt with iterator hint
     iterator insert(const_iterator hint, const value_type& value)
-    { return {}; }
+    { return insert(value)->first; }
     void insert(std::initializer_list<value_type> ilist)
-    { }
+    {
+        for (const value_type& v: ilist)
+            insert(v);
+    }
     /// put element (insert if doesn't exists or replace)
     std::pair<iterator, bool> put(const value_type& value)
-    { return {}; }
+    {
+        iterator it = find(value);
+        if (it != end())
+            *it = value;
+        else
+            insert(value);
+    }
     /// replace element with key
     void replace(iterator iter, const value_type& value)
-    { }
+    { *iter = value; }
     /// remove element in postion pointed by iterator
     iterator erase(const_iterator it)
     {
