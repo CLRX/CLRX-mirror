@@ -1982,6 +1982,57 @@ public:
     { return upper_boundInt(key); }
     
 private:
+    static void findReorgBounds0(cxuint n0Index, const Node1* curn1, cxuint n0Size,
+                          cxint& left, cxint& right)
+    {
+        cxuint freeSpace = 0;
+        left = n0Index-1;
+        right = n0Index+1;
+        cxuint nodeCount = 0;
+        for (; freeSpace >= (((n0Size<<4)*nodeCount)>>6) ||
+                left >= 0 || right < curn1->size; left--, right++)
+        {
+            if (left >= 0)
+            {
+                freeSpace += maxNode0Size - curn1->array[left].size;
+                nodeCount++;
+            }
+            if (right < curn1->size)
+            {
+                freeSpace += maxNode0Size - curn1->array[right].size;
+                nodeCount++;
+            }
+        }
+        left = std::max(0, left);
+        right = std::min(curn1->size-1, right);
+    }
+    
+    static void findReorgBounds1(const Node1* prevn1, const Node1* curn1, cxuint level,
+                    size_t maxN1Size, cxint& left, cxint& right)
+    {
+        cxuint n1Index = prevn1->index;
+        cxuint freeSpace = 0;
+        left = n1Index-1;
+        right = n1Index+1;
+        cxuint nodeCount = 0;
+        size_t maxN1MSize = maxTotalSize(level-1);
+        for (; freeSpace >= (((maxN1Size<<4)*nodeCount)>>6) ||
+                left >= 0 || right < curn1->size; left--, right++)
+        {
+            if (left >= 0)
+            {
+                freeSpace += maxN1MSize - curn1->array[left].totalSize;
+                nodeCount++;
+            }
+            if (right < curn1->size)
+            {
+                freeSpace += maxN1MSize - curn1->array[right].totalSize;
+                nodeCount++;
+            }
+        }
+        left = std::max(0, left);
+        right = std::min(curn1->size-1, right);
+    }
 public:
     
     /// insert new element
@@ -2000,6 +2051,8 @@ public:
         // reorganize/merge/split needed
         if (it.n0->size > maxNode0Size)
         {
+            Node1* firstParent = first->parent();
+            Node1* lastParent = last->parent();
             // simple split to first level
             cxuint n0Index = it.n0->index;
             if (curn1 == nullptr || curn1->size < maxNode1Size)
@@ -2012,11 +2065,11 @@ public:
                 if (Comp::operator()(key,
                         KeyOfVal::operator()(node0_2.array[n0.firstPos])))
                     // key < first key in second node0
-                    index = n0.insert(value, *this, *this)->first;
+                    index = n0.lower_bound(value, *this, *this);
                 else
                 {   // put to node0 2
                     secondNode = true;
-                    index = node0_2.insert(value, *this, *this)->first;
+                    index = node0_2.lower_bound(value, *this, *this);
                 }
                 if (curn1 == nullptr)
                 {
@@ -2029,28 +2082,9 @@ public:
             }
             else
             {
+                cxint left, right;
                 // reorganize in this level
-                cxuint n0Size = it.n0->size;
-                cxuint freeSpace = 0;
-                cxint left = n0Index-1;
-                cxint right = n0Index+1;
-                cxuint nodeCount = 0;
-                for (; freeSpace >= (((n0Size<<4)*nodeCount)>>6) ||
-                        left >= 0 || right < curn1->size; left--, right++)
-                {
-                    if (left >= 0)
-                    {
-                        freeSpace += maxNode0Size - curn1->array[left].size;
-                        nodeCount++;
-                    }
-                    if (right < curn1->size)
-                    {
-                        freeSpace += maxNode0Size - curn1->array[right].size;
-                        nodeCount++;
-                    }
-                }
-                left = std::max(0, left);
-                right = std::min(curn1->size-1, right);
+                findReorgBounds0(it.n0->index, curn1, it.n0->size, left, right);
                 
                 // reorganize array from left to right
                 curn1->reorganizeNode0s(left, right+1);
@@ -2058,7 +2092,10 @@ public:
                 newit.n0 = curn1->array + curn1->lowerBoundN(key, *this, *this);
                 newit.index = newit.n0->lower_bound(key, *this, this);
             }
-            //curn1->totalSize++; // increase
+            if (firstParent == curn1)
+                first = curn1->array;
+            if (lastParent == curn1)
+                last = curn1->array + curn1->size-1;
         }
         
         cxuint level = 1;
@@ -2089,28 +2126,9 @@ public:
                 else
                 {
                     // reorganize nodes
-                    cxuint n1Size = prevn1->totalSize;
-                    cxuint freeSpace = 0;
-                    cxint left = n1Index-1;
-                    cxint right = n1Index+1;
-                    cxuint nodeCount = 0;
+                    cxint left, right;
                     size_t maxN1MSize = maxTotalSize(level-1);
-                    for (; freeSpace >= (((maxN1Size<<4)*nodeCount)>>6) ||
-                            left >= 0 || right < curn1->size; left--, right++)
-                    {
-                        if (left >= 0)
-                        {
-                            freeSpace += maxN1MSize - curn1->array[left].totalSize;
-                            nodeCount++;
-                        }
-                        if (right < curn1->size)
-                        {
-                            freeSpace += maxN1MSize - curn1->array[right].totalSize;
-                            nodeCount++;
-                        }
-                    }
-                    left = std::max(0, left);
-                    right = std::min(curn1->size-1, right);
+                    findReorgBounds1(prevn1, curn1, level, maxN1Size, left, right);
                     // reorganize array from left to right
                     curn1->reorganizeNode1s(left, right+1);
                 }
@@ -2149,8 +2167,11 @@ public:
             // not finished
             return it;
         }
+        
         if (n0 == &n0)
             return it;
+        
+        Node1* curn1 = it.n0->parent();
         if (it.n0->size < minNode0Size)
         {
             Node1* curn1 = it.n0->parent();
@@ -2181,8 +2202,21 @@ public:
             if (mergedN0Index == UINT_MAX)
             {
                 // reorganization needed before inserting
-                curn1->reorganizeNode0s();
+                cxint left, right;
+                // reorganize in this level
+                findReorgBounds0(mergedN0Index, curn1, curn1->array[mergedN0Index].size,
+                                left, right);
+                curn1->reorganizeNode0s(left, right+1);
             }
+        }
+        
+        cxuint level = 1;
+        Node1* prevn1 = nullptr;
+        while (curn1 != nullptr)
+        {
+            prevn1 = curn1;
+            curn1 = prevn1->parent();
+            curn1->totalSize--;
         }
         return it;
     }
