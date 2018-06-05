@@ -294,5 +294,3 @@ int main(int argc, const char** argv)
     retVal |= callTest(testGetGPUExtraRegsNum);
     return retVal;
 }
-
-
