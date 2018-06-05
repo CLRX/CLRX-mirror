@@ -2193,7 +2193,7 @@ public:
             return it;
         }
         
-        if (n0 == &n0)
+        if (it.n0 == &n0)
             return it;
         
         Node1* curn1 = it.n0->parent();
@@ -2212,7 +2212,7 @@ public:
             {
                 if (n0Left1 < maxNode0Size)
                 {
-                    curn1->array[n0Index-1].merge(*it->n0);
+                    curn1->array[n0Index-1].merge(*it.n0);
                     curn1->eraseNode0(n0Index);
                     mergedN0Index = n0Index-1;
                 }
@@ -2264,7 +2264,7 @@ public:
             {
                 if (n1Left1 < maxN1Size)
                 {
-                    curn1->array[n1Index-1].merge(*prevn1);
+                    curn1->array1[n1Index-1].merge(*prevn1);
                     curn1->eraseNode1(n1Index);
                     mergedN1Index = n1Index-1;
                 }
@@ -2273,7 +2273,7 @@ public:
             {
                 if (n1Right1 < maxN1Size)
                 {
-                    prevn1->merge(curn1->array[n1Index+1]);
+                    prevn1->merge(curn1->array1[n1Index+1]);
                     curn1->eraseNode1(n1Index+1);
                     mergedN1Index = n1Index;
                 }
@@ -2283,7 +2283,7 @@ public:
                 // reorganization needed before inserting
                 cxint left, right;
                 // reorganize in this level
-                findReorgBounds1(prevn1, curn1, curn1->array[mergedN1Index].size,
+                findReorgBounds1(prevn1, curn1, curn1->array[mergedN1Index].size, level,
                                 left, right);
                 curn1->reorganizeNode1s(left, right+1);
             }

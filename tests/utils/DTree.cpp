@@ -168,6 +168,7 @@ static void testDTreeInsert(cxuint i, const Array<cxuint>& valuesToInsert)
         auto it = set.insert(valuesToInsert[i]);
         verifyDTreeState("test", "test", set);
     }
+    set.erase(11);
 }
 
 int main(int argc, const char** argv)
