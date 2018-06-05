@@ -125,6 +125,11 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
                         n1.array1[i].first);
         }
     }
+    if (level != 0)
+        assertTrue(testName, testCase + ".totalSize>=minTotalSize",
+                    n1.totalSize>=DTree<T>::minTotalSize(maxLevel-level));
+    assertTrue(testName, testCase + ".totalSize<=maxTotalSize",
+                   n1.totalSize<=DTree<T>::maxTotalSize(maxLevel-level));
     assertValue(testName, testCase + ".totalSize==n1.totalSize",
                    totalSize, n1.totalSize);
     assertValue(testName, testCase + ".first==n1.first", firstKey, n1.first);
