@@ -2133,6 +2133,7 @@ public:
                     curn1->reorganizeNode1s(left, right+1);
                 }
             }
+            level++;
         }
         
         return std::make_pair(newit, true);
@@ -2174,8 +2175,10 @@ public:
         Node1* curn1 = it.n0->parent();
         if (it.n0->size < minNode0Size)
         {
+            Node1* firstParent = first->parent();
+            Node1* lastParent = last->parent();
+            
             Node1* curn1 = it.n0->parent();
-            curn1->totalSize--;
             const cxuint n0Index = it.n0->index;
             cxuint n0Left1 = n0Index > 0 ? curn1->array[n0Index-1].size : UINT_MAX;
             cxuint n0Right1 = n0Index+1 < curn1->size ? curn1->array[n0Index+1].size :
@@ -2208,15 +2211,58 @@ public:
                                 left, right);
                 curn1->reorganizeNode0s(left, right+1);
             }
+            
+            if (firstParent == curn1)
+                first = curn1->array;
+            if (lastParent == curn1)
+                last = curn1->array + curn1->size-1;
         }
         
         cxuint level = 1;
         Node1* prevn1 = nullptr;
         while (curn1 != nullptr)
         {
+            curn1->totalSize--;
             prevn1 = curn1;
             curn1 = prevn1->parent();
-            curn1->totalSize--;
+            cxuint maxN1Size = maxTotalSize(level);
+            cxuint minN1Size = minTotalSize(level);
+            level++;
+            if (prevn1->totalSize >= minN1Size)
+                continue;
+            
+            const cxuint n1Index = prevn1->index;
+            cxuint n1Left1 = n1Index > 0 ? curn1->array[n1Index-1].size : UINT_MAX;
+            cxuint n1Right1 = n1Index+1 < curn1->size ? curn1->array[n1Index+1].size :
+                    UINT_MAX;
+            cxuint mergedN1Index = UINT_MAX;
+            if (n1Left1 < n1Right1)
+            {
+                if (n1Left1 < maxN1Size)
+                {
+                    curn1->array[n1Index-1].merge(*prevn1);
+                    curn1->eraseNode1(n1Index);
+                    mergedN1Index = n1Index-1;
+                }
+            }
+            else
+            {
+                if (n1Right1 < maxN1Size)
+                {
+                    prevn1->merge(curn1->array[n1Index+1]);
+                    curn1->eraseNode1(n1Index+1);
+                    mergedN1Index = n1Index;
+                }
+            }
+            if (mergedN1Index == UINT_MAX)
+            {
+                // reorganization needed before inserting
+                cxint left, right;
+                // reorganize in this level
+                findReorgBounds1(prevn1, curn1, curn1->array[mergedN1Index].size,
+                                left, right);
+                curn1->reorganizeNode1s(left, right+1);
+            }
         }
         return it;
     }
