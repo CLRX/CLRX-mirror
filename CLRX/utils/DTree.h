@@ -142,9 +142,9 @@ public:
                     firstPos(0), bitMask(0ULL), array(nullptr)
         { }
         
-        Node0(const Node0& node): NodeBase(NODE0), bitMask(node.bitMask),
+        Node0(const Node0& node): NodeBase(NODE0),
                     index(node.index), size(node.size), capacity(node.capacity),
-                    firstPos(node.firstPos), array(nullptr)
+                    firstPos(node.firstPos), bitMask(node.bitMask), array(nullptr)
         {
             if (node.array != nullptr)
             {

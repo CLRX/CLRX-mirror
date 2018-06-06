@@ -172,7 +172,7 @@ static void verifyDTreeState(const std::string& testName, const std::string& tes
 
 static cxuint dtreeNode0Values[] =
 {
-    532, 6421, 652, 31891, 78621, 61165, 1203, 41, 6629, 45811, 921, 2112
+    532, 6421, 652, 31891, 78621, 61165, 1203, 1203, 41, 6629, 45811, 921, 2112, 31891
 };
 
 static void testDTreeNode0()
@@ -188,8 +188,52 @@ static void testDTreeNode0()
     {
         DTreeSet<cxuint>::Node0 node0;
         for (cxuint v: dtreeNode0Values)
-            node0.insert(v, comp, kofval);
+        {
+            const cxuint index = node0.insert(v, comp, kofval).first;
+            assertTrue("DTreeNode0", "node0_0.index", node0.array[index]==v);
+        }
+        for (cxuint v: dtreeNode0Values)
+        {
+            const cxuint index = node0.lower_bound(v, comp, kofval);
+            assertTrue("DTreeNode0", "node0_0.findindex", node0.array[index]==v);
+        }
         verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0", node0, 0, 0);
+        
+        // copy node
+        DTreeSet<cxuint>::Node0 node0_1(node0);
+        for (cxuint v: dtreeNode0Values)
+        {
+            const cxuint index = node0_1.lower_bound(v, comp, kofval);
+            assertTrue("DTreeNode0", "node0_0copy.findindex", node0_1.array[index]==v);
+        }
+        verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0copy", node0_1, 0, 0);
+        
+        DTreeSet<cxuint>::Node0 node0_2;
+        node0_2 = node0;
+        for (cxuint v: dtreeNode0Values)
+        {
+            const cxuint index = node0_2.lower_bound(v, comp, kofval);
+            assertTrue("DTreeNode0", "node0_0copy2.findindex", node0_2.array[index]==v);
+        }
+        verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0copy2", node0_2, 0, 0);
+        
+        // move node
+        DTreeSet<cxuint>::Node0 node0_3(std::move(node0));
+        for (cxuint v: dtreeNode0Values)
+        {
+            const cxuint index = node0_3.lower_bound(v, comp, kofval);
+            assertTrue("DTreeNode0", "node0_0move.findindex", node0_3.array[index]==v);
+        }
+        verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0move", node0_3, 0, 0);
+        
+        DTreeSet<cxuint>::Node0 node0_4;
+        node0_4 = node0_1;
+        for (cxuint v: dtreeNode0Values)
+        {
+            const cxuint index = node0_4.lower_bound(v, comp, kofval);
+            assertTrue("DTreeNode0", "node0_0move2.findindex", node0_4.array[index]==v);
+        }
+        verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0move2", node0_4, 0, 0);
     }
 }
 
