@@ -179,7 +179,8 @@ static const size_t dtreeNode0ValuesNum = sizeof dtreeNode0Values / sizeof(cxuin
 
 static const cxuint dtreeNode0ValuesErase[] =
 {
-    532, 6421, 652, 31891, 78621, 61165, 1203, 41, 6629, 45811, 921, 2112
+    532, 6421, 652, 31891, 78621, 61165, 1203, 41, 6629, 45811, 921, 2112, 6521,
+    971, 71, 41289, 769, 8921, 37912
 };
 static const size_t dtreeNode0ValuesEraseNum =
         sizeof dtreeNode0ValuesErase / sizeof(cxuint);
@@ -247,12 +248,31 @@ static void testDTreeNode0()
     }
     {
         DTreeSet<cxuint>::Node0 node0;
-        for (cxuint v: dtreeNode0Values)
+        for (cxuint i = 0; i < dtreeNode0ValuesEraseNum; i++)
         {
+            const cxuint v = dtreeNode0ValuesErase[i];
+            const cxuint index = node0.insert(v, comp, kofval).first;
+            assertTrue("DTreeNode0", "node0_0x.indexBound", index!=node0.capacity);
+            assertTrue("DTreeNode0", "node0_0x.index", node0[index]==v);
+            verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0x", node0, 0, 0);
+            checkContentDTreeNode0("DTreeNode0", "node0_0xinsert", node0,
+                    i+1, dtreeNode0ValuesErase);
+            checkNotFoundDTreeNode0("DTreeNode0", "node0_0xinsert", node0,
+                    dtreeNode0ValuesEraseNum-(i+1), dtreeNode0ValuesErase+i+1);
+            assertValue("DTreeNode0", "node0_0x.size", i+1, cxuint(node0.size));
+        }
+    }
+    {
+        DTreeSet<cxuint>::Node0 node0;
+        for (cxuint i = 0; i < dtreeNode0ValuesNum; i++)
+        {
+            const cxuint v = dtreeNode0Values[i];
             const cxuint index = node0.insert(v, comp, kofval).first;
             assertTrue("DTreeNode0", "node0_0.indexBound", index!=node0.capacity);
             assertTrue("DTreeNode0", "node0_0.index", node0[index]==v);
             verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0", node0, 0, 0);
+            checkContentDTreeNode0("DTreeNode0", "node0_0insert", node0,
+                    i+1, dtreeNode0Values);
         }
         checkContentDTreeNode0("DTreeNode0", "node0_0", node0,
                     dtreeNode0ValuesNum, dtreeNode0Values);
@@ -372,6 +392,54 @@ static void testDTreeNode0()
     }
 }
 
+static const cxuint dtreeNode0ValuesM1[] =
+{
+    1, 13, 2, 5, 18, 8, 12, 3, 14, 20, 9, 10, 15, 7, 19, 17, 6, 11, 4, 16
+};
+static const size_t dtreeNode0ValuesM1Num = sizeof dtreeNode0ValuesM1 / sizeof(cxuint);
+
+static const cxuint dtreeNode0ValuesM2[] =
+{
+    24, 38, 27, 28, 21, 35, 29, 25, 26, 39, 23, 31, 36, 32, 40, 34, 37, 33, 30, 22
+};
+static const size_t dtreeNode0ValuesM2Num = sizeof dtreeNode0ValuesM2 / sizeof(cxuint);
+
+static void testDTreeNode0SplitMerge()
+{
+    std::less<cxuint> comp;
+    Identity<cxuint> kofval;
+    
+    DTreeSet<cxuint>::Node0 node0_1;
+    char buf[20];
+    for (cxuint i = 0; i < dtreeNode0ValuesM1Num; i++)
+    {
+        DTreeSet<cxuint>::Node0 node0_2;
+        node0_1.insert(dtreeNode0ValuesM1[i], comp, kofval);
+        for (cxuint j = 0; j < dtreeNode0ValuesM2Num; j++)
+        {
+            node0_2.insert(dtreeNode0ValuesM2[j], comp, kofval);
+            DTreeSet<cxuint>::Node0 node0_1c = node0_1;
+            DTreeSet<cxuint>::Node0 node0_2c = node0_2;
+            node0_1c.merge(node0_2c);
+            
+            snprintf(buf, sizeof buf, "merge:%u:%u", i, j);
+            verifyDTreeNode0<cxuint>("DTreeNode0SM", std::string(buf)+".verify",
+                            node0_1c, 0, 0);
+            assertValue("DTreeNode0SM", std::string(buf)+".size", i+j+2,
+                                    cxuint(node0_1c.size));
+            checkContentDTreeNode0("DTreeNode0SM", std::string(buf)+".content", node0_1c,
+                        i+1, dtreeNode0ValuesM1);
+            checkNotFoundDTreeNode0("DTreeNode0SM", std::string(buf)+".notfound", node0_1c,
+                        dtreeNode0ValuesM1Num-(i+1), dtreeNode0ValuesM1+i+1);
+            checkContentDTreeNode0("DTreeNode0SM", std::string(buf)+".content2", node0_1c,
+                        j+1, dtreeNode0ValuesM2);
+            checkNotFoundDTreeNode0("DTreeNode0SM",
+                        std::string(buf)+".notfound2", node0_1c,
+                        dtreeNode0ValuesM2Num-(j+1), dtreeNode0ValuesM2+j+1);
+        }
+    }
+}
+
 struct DTreeNode0OrgArrayCase
 {
     cxuint size;
@@ -451,5 +519,6 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; i < sizeof(dtreeNode0OrgArrayTbl) /
                             sizeof(DTreeNode0OrgArrayCase); i++)
         retVal |= callTest(testDTreeOrganizeArray, i, dtreeNode0OrgArrayTbl[i]);
+    retVal |= callTest(testDTreeNode0SplitMerge);
     return retVal;
 }
