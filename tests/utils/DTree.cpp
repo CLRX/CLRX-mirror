@@ -283,7 +283,8 @@ static void testDTreeNode0()
                             (node0.bitMask & (1ULL<<index)) == 0);
             }
             // go to previous element
-            while (index >= 0 && (node0.bitMask & (1ULL<<index)) == 0) index--;
+            index--;
+            while (index >= 0 && (node0.bitMask & (1ULL<<index)) != 0) index--;
             if (index >= 0)
                 assertTrue("DTReeNode0", "lower_bound prev", v>node0[index]);
         }
@@ -298,7 +299,8 @@ static void testDTreeNode0()
                             (node0.bitMask & (1ULL<<index)) == 0);
             }
             // go to previous element
-            while (index >= 0 && (node0.bitMask & (1ULL<<index)) == 0) index--;
+            index--;
+            while (index >= 0 && (node0.bitMask & (1ULL<<index)) != 0) index--;
             if (index >= 0)
                 assertTrue("DTReeNode0", "upper_bound prev", v>=node0[index]);
         }
