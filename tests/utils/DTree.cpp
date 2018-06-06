@@ -177,6 +177,13 @@ static const cxuint dtreeNode0Values[] =
 };
 static const size_t dtreeNode0ValuesNum = sizeof dtreeNode0Values / sizeof(cxuint);
 
+static const cxuint dtreeNode0ValuesErase[] =
+{
+    532, 6421, 652, 31891, 78621, 61165, 1203, 41, 6629, 45811, 921, 2112
+};
+static const size_t dtreeNode0ValuesEraseNum =
+        sizeof dtreeNode0ValuesErase / sizeof(cxuint);
+
 static const cxuint dtreeNode0ValuesSearch[] =
 {
     42, 24, 52, 7, 17, 42, 37, 27, 4, 62, 34, 31, 9, 41, 49, 58, 53
@@ -195,12 +202,28 @@ static void checkContentDTreeNode0(const std::string& testName,
     {
         const T& v = node0Values[i];
         const cxuint index = node0.find(v, comp, kofval);
-        assertTrue(testCase, testCase+".findindexBound", index!=node0.capacity);
-        assertTrue(testCase, testCase+".findindexAlloc",
+        assertTrue(testName, testCase+".findindexBound", index!=node0.capacity);
+        assertTrue(testName, testCase+".findindexAlloc",
                    (node0.bitMask & (1ULL<<index)) == 0);
-        assertTrue(testCase, testCase+".findindex", node0[index]==v);
+        assertTrue(testName, testCase+".findindex", node0[index]==v);
     }
 }
+
+template<typename T>
+static void checkNotFoundDTreeNode0(const std::string& testName,
+            const std::string& testCase, const typename DTreeSet<T>::Node0& node0,
+            size_t node0ValuesNum, const T* node0Values)
+{
+    std::less<T> comp;
+    Identity<T> kofval;
+    for (size_t i = 0; i < node0ValuesNum; i++)
+    {
+        const T& v = node0Values[i];
+        const cxuint index = node0.find(v, comp, kofval);
+        assertTrue(testName, testCase+".nofindindexBound", index==node0.capacity);
+    }
+}
+
 
 static void testDTreeNode0()
 {
@@ -321,6 +344,30 @@ static void testDTreeNode0()
             }
             else
                 assertTrue("DTReeNode0", "find notfound", index==node0.capacity);
+        }
+    }
+    // resize checking
+    {
+        DTreeSet<cxuint>::Node0 node0;
+        for (cxuint v: dtreeNode0Values)
+            node0.insert(v, comp, kofval);
+        node0.resize(0);
+        verifyDTreeNode0<cxuint>("DTreeNode0", "node0resize", node0, 0, 0);
+    }
+    // erase checking
+    {
+        DTreeSet<cxuint>::Node0 node0;
+        for (cxuint v: dtreeNode0ValuesErase)
+            node0.insert(v, comp, kofval);
+        for (cxuint i = 0; i < dtreeNode0ValuesEraseNum; i++)
+        {
+            cxuint v = dtreeNode0ValuesErase[i];
+            node0.erase(v, comp, kofval);
+            verifyDTreeNode0<cxuint>("DTreeNode0", "erase0", node0, 0, 0);
+            checkContentDTreeNode0("DTreeNode0", "erase0", node0,
+                        dtreeNode0ValuesEraseNum-(i+1), dtreeNode0ValuesErase+i+1);
+            checkNotFoundDTreeNode0("DTreeNode0", "erase0", node0,
+                        i+1, dtreeNode0ValuesErase);
         }
     }
 }
