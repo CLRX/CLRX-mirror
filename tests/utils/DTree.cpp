@@ -48,6 +48,9 @@ static void verifyDTreeNode0(const std::string& testName, const std::string& tes
             size++;
         }
     }
+    if (firstPos == UINT_MAX)
+        firstPos = 0;
+    
     char buf[10];
     for (cxuint i = 1; i < n0.capacity; i++)
     {
@@ -125,6 +128,11 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
                         n1.array1[i].first);
         }
     }
+    
+    assertTrue(testName, testCase + ".size<=n1.capacity", n1.size<=n1.capacity);
+    assertTrue(testName, testCase + ".size<=maxNode1Size",
+                n1.size <= DTree<T>::maxNode1Size);
+    
     if (level != 0)
         assertTrue(testName, testCase + ".totalSize>=minTotalSize",
                     n1.totalSize>=DTree<T>::minTotalSize(maxLevel-level));
@@ -160,10 +168,35 @@ static void verifyDTreeState(const std::string& testName, const std::string& tes
     }
 }
 
-struct testDTreeInsert
+/* DTree Node0 tests */
+
+static cxuint dtreeNode0Values[] =
 {
-    
+    532, 6421, 652, 31891, 78621, 61165, 1203, 41, 6629, 45811, 921, 2112
 };
+
+static void testDTreeNode0()
+{
+    std::less<cxuint> comp;
+    Identity<cxuint> kofval;
+    {
+        DTreeSet<cxuint>::Node0 empty;
+        assertTrue("DTreeNode0", "empty.array", empty.array==nullptr);
+        assertTrue("DTreeNode0", "empty.parent()", empty.parent()==nullptr);
+        verifyDTreeNode0<cxuint>("DTreeNode0", "empty", empty, 0, 0);
+    }
+    {
+        DTreeSet<cxuint>::Node0 node0;
+        for (cxuint v: dtreeNode0Values)
+            node0.insert(v, comp, kofval);
+        verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0", node0, 0, 0);
+    }
+}
+
+/* DTreeSet tests */
+
+struct testDTreeInsert
+{ };
 
 static void testDTreeInsert(cxuint i, const Array<cxuint>& valuesToInsert)
 {
@@ -179,5 +212,6 @@ static void testDTreeInsert(cxuint i, const Array<cxuint>& valuesToInsert)
 int main(int argc, const char** argv)
 {
     int retVal = 0;
+    retVal |= callTest(testDTreeNode0);
     return retVal;
 }
