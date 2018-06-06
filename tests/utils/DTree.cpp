@@ -323,6 +323,62 @@ static void testDTreeNode0()
     }
 }
 
+struct DTreeNode0OrgArrayCase
+{
+    cxuint size;
+    cxuint newSize;
+    cxuint factor;
+    cxuint finc;
+    uint64_t inBitMask;
+    Array<cxuint> input;
+    uint64_t expBitMask;
+    Array<cxuint> expOutput;
+};
+
+static const DTreeNode0OrgArrayCase dtreeNode0OrgArrayTbl[] =
+{
+    {   // case 0
+        7, 7, 0, 2, 0ULL,
+        { 1, 2, 3, 4, 5, 6, 7 },
+        0b100010000ULL,
+        { 1, 2, 3, 4, 4, 5, 6, 7, 7 }
+    },
+    {   // case 1
+        7, 7, 0, 3, 0b110ULL,
+        { 1, 1, 1, 2, 3, 4, 5, 6, 7 },
+        0b1001001000ULL,
+        { 1, 2, 3, 3, 4, 5, 5, 6, 7, 7 }
+    },
+    {   // case 2
+        7, 7, 6, 3, 0b110ULL,
+        { 1, 1, 1, 2, 3, 4, 5, 6, 7 },
+        0b10010010ULL,
+        { 1, 1, 2, 3, 3, 4, 5, 5, 6, 7 }
+    }
+};
+
+static void testDTreeOrganizeArray(cxuint id, const DTreeNode0OrgArrayCase& testCase)
+{
+    std::ostringstream oss;
+    oss << "dtreeOrgArray#" << id;
+    oss.flush();
+    
+    uint64_t outBitMask = 0;
+    cxuint output[64];
+    std::fill(output, output + 64, cxuint(0));
+    
+    cxuint toFill = 0;
+    cxuint i = 0, k = 0;
+    cxuint factor = testCase.factor;
+    DTreeSet<cxuint>::Node0::organizeArray(toFill, i, testCase.size,
+                testCase.input.data(), testCase.inBitMask, k, testCase.newSize,
+                output, outBitMask, factor, testCase.finc);
+    
+    std::string testCaseName = oss.str();
+    assertValue("DTreeOrgArray", testCaseName+".bitMask", testCase.expBitMask, outBitMask);
+    assertArray("DTreeOrgArray", testCaseName+".array", testCase.expOutput, k, output);
+}
+
 /* DTreeSet tests */
 
 struct testDTreeInsert
@@ -343,5 +399,8 @@ int main(int argc, const char** argv)
 {
     int retVal = 0;
     retVal |= callTest(testDTreeNode0);
+    for (cxuint i = 0; i < sizeof(dtreeNode0OrgArrayTbl) /
+                            sizeof(DTreeNode0OrgArrayCase); i++)
+        retVal |= callTest(testDTreeOrganizeArray, i, dtreeNode0OrgArrayTbl[i]);
     return retVal;
 }
