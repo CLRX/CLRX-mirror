@@ -20,6 +20,7 @@
 #define DTREE_TESTING 1
 
 #include <CLRX/Config.h>
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <cstring>
@@ -58,9 +59,9 @@ static void verifyDTreeNode0(const std::string& testName, const std::string& tes
         if ((n0.bitMask & (3ULL<<(i-1))) != 0)
             // some places is unused (freed) in free space can be
             // same value as in used place
-            assertTrue(testName, testCase + buf, n0.array[i-1] <= n0.array[i]);
+            assertTrue(testName, testCase + buf, n0[i-1] <= n0[i]);
         else
-            assertTrue(testName, testCase + buf, n0.array[i-1] < n0.array[i]);
+            assertTrue(testName, testCase + buf, n0[i-1] < n0[i]);
     }
     
     assertValue(testName, testCase + ".n0.firstPos==firstPos", firstPos,
@@ -170,10 +171,36 @@ static void verifyDTreeState(const std::string& testName, const std::string& tes
 
 /* DTree Node0 tests */
 
-static cxuint dtreeNode0Values[] =
+static const cxuint dtreeNode0Values[] =
 {
     532, 6421, 652, 31891, 78621, 61165, 1203, 1203, 41, 6629, 45811, 921, 2112, 31891
 };
+static const size_t dtreeNode0ValuesNum = sizeof dtreeNode0Values / sizeof(cxuint);
+
+static const cxuint dtreeNode0ValuesSearch[] =
+{
+    42, 24, 52, 7, 17, 42, 37, 27, 4, 62, 34, 31, 9, 41, 49, 58, 53
+};
+static const size_t dtreeNode0ValuesSearchNum =
+            sizeof dtreeNode0ValuesSearch / sizeof(cxuint);
+
+template<typename T>
+static void checkContentDTreeNode0(const std::string& testName,
+            const std::string& testCase, const typename DTreeSet<T>::Node0& node0,
+            size_t node0ValuesNum, const T* node0Values)
+{
+    std::less<T> comp;
+    Identity<T> kofval;
+    for (size_t i = 0; i < node0ValuesNum; i++)
+    {
+        const T& v = node0Values[i];
+        const cxuint index = node0.find(v, comp, kofval);
+        assertTrue(testCase, testCase+".findindexBound", index!=node0.capacity);
+        assertTrue(testCase, testCase+".findindexAlloc",
+                   (node0.bitMask & (1ULL<<index)) == 0);
+        assertTrue(testCase, testCase+".findindex", node0[index]==v);
+    }
+}
 
 static void testDTreeNode0()
 {
@@ -184,56 +211,115 @@ static void testDTreeNode0()
         assertTrue("DTreeNode0", "empty.array", empty.array==nullptr);
         assertTrue("DTreeNode0", "empty.parent()", empty.parent()==nullptr);
         verifyDTreeNode0<cxuint>("DTreeNode0", "empty", empty, 0, 0);
+        DTreeSet<cxuint>::Node0 empty1(empty);
+        verifyDTreeNode0<cxuint>("DTreeNode0", "empty_copy", empty1, 0, 0);
+        DTreeSet<cxuint>::Node0 empty2;
+        empty2 = empty;
+        verifyDTreeNode0<cxuint>("DTreeNode0", "empty_copy2", empty2, 0, 0);
+        DTreeSet<cxuint>::Node0 empty3(std::move(empty));
+        verifyDTreeNode0<cxuint>("DTreeNode0", "empty_move", empty3, 0, 0);
+        DTreeSet<cxuint>::Node0 empty4;
+        empty4 = std::move(empty);
+        verifyDTreeNode0<cxuint>("DTreeNode0", "empty_move2", empty4, 0, 0);
     }
     {
         DTreeSet<cxuint>::Node0 node0;
         for (cxuint v: dtreeNode0Values)
         {
             const cxuint index = node0.insert(v, comp, kofval).first;
-            assertTrue("DTreeNode0", "node0_0.index", node0.array[index]==v);
+            assertTrue("DTreeNode0", "node0_0.indexBound", index!=node0.capacity);
+            assertTrue("DTreeNode0", "node0_0.index", node0[index]==v);
+            verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0", node0, 0, 0);
         }
-        for (cxuint v: dtreeNode0Values)
-        {
-            const cxuint index = node0.lower_bound(v, comp, kofval);
-            assertTrue("DTreeNode0", "node0_0.findindex", node0.array[index]==v);
-        }
+        checkContentDTreeNode0("DTreeNode0", "node0_0", node0,
+                    dtreeNode0ValuesNum, dtreeNode0Values);
         verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0", node0, 0, 0);
         
         // copy node
         DTreeSet<cxuint>::Node0 node0_1(node0);
-        for (cxuint v: dtreeNode0Values)
-        {
-            const cxuint index = node0_1.lower_bound(v, comp, kofval);
-            assertTrue("DTreeNode0", "node0_0copy.findindex", node0_1.array[index]==v);
-        }
+        checkContentDTreeNode0("DTreeNode0", "node0_0copy", node0_1,
+                    dtreeNode0ValuesNum, dtreeNode0Values);
         verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0copy", node0_1, 0, 0);
         
         DTreeSet<cxuint>::Node0 node0_2;
         node0_2 = node0;
-        for (cxuint v: dtreeNode0Values)
-        {
-            const cxuint index = node0_2.lower_bound(v, comp, kofval);
-            assertTrue("DTreeNode0", "node0_0copy2.findindex", node0_2.array[index]==v);
-        }
+        checkContentDTreeNode0("DTreeNode0", "node0_0copy2", node0_2,
+                    dtreeNode0ValuesNum, dtreeNode0Values);
         verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0copy2", node0_2, 0, 0);
         
         // move node
         DTreeSet<cxuint>::Node0 node0_3(std::move(node0));
-        for (cxuint v: dtreeNode0Values)
-        {
-            const cxuint index = node0_3.lower_bound(v, comp, kofval);
-            assertTrue("DTreeNode0", "node0_0move.findindex", node0_3.array[index]==v);
-        }
+        checkContentDTreeNode0("DTreeNode0", "node0_0move", node0_3,
+                    dtreeNode0ValuesNum, dtreeNode0Values);
         verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0move", node0_3, 0, 0);
         
         DTreeSet<cxuint>::Node0 node0_4;
         node0_4 = node0_1;
-        for (cxuint v: dtreeNode0Values)
-        {
-            const cxuint index = node0_4.lower_bound(v, comp, kofval);
-            assertTrue("DTreeNode0", "node0_0move2.findindex", node0_4.array[index]==v);
-        }
+        checkContentDTreeNode0("DTreeNode0", "node0_0move2", node0_4,
+                    dtreeNode0ValuesNum, dtreeNode0Values);
         verifyDTreeNode0<cxuint>("DTreeNode0", "node0_0move2", node0_4, 0, 0);
+    }
+    {
+        DTreeSet<cxuint>::Node0 node0;
+        for (cxuint v: dtreeNode0ValuesSearch)
+        {
+            const cxuint index = node0.insert(v, comp, kofval).first;
+            assertTrue("DTreeNode0", "node0_1.findindex", index!=node0.capacity);
+            assertTrue("DTreeNode0", "node0_1.index", node0[index]==v);
+            verifyDTreeNode0<cxuint>("DTreeNode0", "node0_1", node0, 0, 0);
+        }
+        const cxuint lowValue = 0;
+        const cxuint highValue = *std::max_element(dtreeNode0ValuesSearch,
+                    dtreeNode0ValuesSearch + dtreeNode0ValuesSearchNum) + 5;
+        
+        // lower bound
+        for (cxuint v = lowValue; v < highValue; v++)
+        {
+            cxint index = node0.lower_bound(v, comp, kofval);
+            if (index < node0.capacity)
+            {
+                assertTrue("DTReeNode0", "lower_bound found", v<=node0[index]);
+                assertTrue("DTReeNode0", "lower_bound foundAlloc",
+                            (node0.bitMask & (1ULL<<index)) == 0);
+            }
+            // go to previous element
+            while (index >= 0 && (node0.bitMask & (1ULL<<index)) == 0) index--;
+            if (index >= 0)
+                assertTrue("DTReeNode0", "lower_bound prev", v>node0[index]);
+        }
+        // upper bound
+        for (cxuint v = lowValue; v < highValue; v++)
+        {
+            cxint index = node0.upper_bound(v, comp, kofval);
+            if (index < node0.capacity)
+            {
+                assertTrue("DTReeNode0", "upper_bound found", v<node0[index]);
+                assertTrue("DTReeNode0", "upper_bound foundAlloc",
+                            (node0.bitMask & (1ULL<<index)) == 0);
+            }
+            // go to previous element
+            while (index >= 0 && (node0.bitMask & (1ULL<<index)) == 0) index--;
+            if (index >= 0)
+                assertTrue("DTReeNode0", "upper_bound prev", v>=node0[index]);
+        }
+        // find
+        for (cxuint v = lowValue; v < highValue; v++)
+        {
+            cxint index = node0.find(v, comp, kofval);
+            const bool found = std::find(dtreeNode0ValuesSearch,
+                    dtreeNode0ValuesSearch + dtreeNode0ValuesSearchNum, v) !=
+                    dtreeNode0ValuesSearch + dtreeNode0ValuesSearchNum;
+            
+            if (found)
+            {
+                assertTrue("DTReeNode0", "find foundAlloc",
+                            (node0.bitMask & (1ULL<<index)) == 0);
+                assertTrue("DTReeNode0", "find foundBound", index<node0.capacity);
+                assertTrue("DTReeNode0", "find found2", v==node0[index]);
+            }
+            else
+                assertTrue("DTReeNode0", "find notfound", index==node0.capacity);
+        }
     }
 }
 
