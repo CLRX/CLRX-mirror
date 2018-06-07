@@ -506,13 +506,14 @@ public:
             if (indexHint != 255)
             {
                 // handle index hint
-                idx = indexHint;
                 if ((bitMask & (1ULL<<indexHint)) == 0 &&
-                    kofval(array[indexHint]) == kofval(v))
+                    (indexHint>=capacity || kofval(v) <= kofval(array[indexHint])) &&
+                    (indexHint==0 || kofval(v) > kofval(array[indexHint-1])))
                     idx = indexHint;
                 else if (indexHint>0 && (bitMask & (1ULL<<(indexHint-1))) == 0 &&
-                    kofval(array[indexHint-1]) == kofval(v))
-                    idx = indexHint - 1;
+                    (indexHint-1>=capacity || kofval(v) <= kofval(array[indexHint-1])) &&
+                    (indexHint-1==0 || kofval(v) > kofval(array[indexHint-2])))
+                    idx = indexHint-1;
             }
             if (idx == 255)
                 idx = lower_bound(v, comp, kofval);

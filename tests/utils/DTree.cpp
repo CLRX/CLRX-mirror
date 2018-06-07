@@ -234,6 +234,14 @@ static void testDTreeNode0()
         DTreeSet<cxuint>::Node0 empty;
         assertTrue("DTreeNode0", "empty.array", empty.array==nullptr);
         assertTrue("DTreeNode0", "empty.parent()", empty.parent()==nullptr);
+        
+        cxuint index = empty.lower_bound(432, comp, kofval);
+        assertValue("DTreeNode0", "empty.lower_bound", cxuint(0), index);
+        index = empty.lower_bound(432, comp, kofval);
+        assertValue("DTreeNode0", "empty.upper_bound", cxuint(0), index);
+        index = empty.lower_bound(432, comp, kofval);
+        assertValue("DTreeNode0", "empty.find", cxuint(0), index);
+        
         verifyDTreeNode0<cxuint>("DTreeNode0", "empty", empty, 0, 0);
         DTreeSet<cxuint>::Node0 empty1(empty);
         verifyDTreeNode0<cxuint>("DTreeNode0", "empty_copy", empty1, 0, 0);
@@ -247,6 +255,7 @@ static void testDTreeNode0()
         verifyDTreeNode0<cxuint>("DTreeNode0", "empty_move2", empty4, 0, 0);
     }
     {
+        // test insertion
         DTreeSet<cxuint>::Node0 node0;
         for (cxuint i = 0; i < dtreeNode0ValuesEraseNum; i++)
         {
@@ -263,6 +272,7 @@ static void testDTreeNode0()
         }
     }
     {
+        // test inserion and copying/moving
         DTreeSet<cxuint>::Node0 node0;
         for (cxuint i = 0; i < dtreeNode0ValuesNum; i++)
         {
@@ -390,6 +400,27 @@ static void testDTreeNode0()
                         i+1, dtreeNode0ValuesErase);
         }
     }
+    // test insertion with hint (good and wrong)
+    for (cxuint diffIndex = 0; diffIndex <= 1; diffIndex++)
+    {
+        DTreeSet<cxuint>::Node0 node0;
+        for (cxuint i = 0; i < 20; i += 2)
+            node0.insert(i, comp, kofval);
+        
+        verifyDTreeNode0<cxuint>("DTreeNode0", "node0insh", node0, 0, 0);
+        cxuint index = node0.find(10, comp, kofval);
+        node0.insert(9, comp, kofval, index-diffIndex);
+        verifyDTreeNode0<cxuint>("DTreeNode0", "node0insh2", node0, 0, 0);
+        index = node0.find(9, comp, kofval);
+        assertTrue("DTreeNode0", "node0insh2find", index!=node0.capacity);
+        assertValue("DTreeNode0", "node0insh2find2", cxuint(9), node0[index]);
+        index = node0.find(10, comp, kofval);
+        assertTrue("DTreeNode0", "node0insh2find", index!=node0.capacity);
+        assertValue("DTreeNode0", "node0insh2find2", cxuint(10), node0[index]);
+        index = node0.find(8, comp, kofval);
+        assertTrue("DTreeNode0", "node0insh2find", index!=node0.capacity);
+        assertValue("DTreeNode0", "node0insh2find2", cxuint(8), node0[index]);
+    }
 }
 
 static const cxuint dtreeNode0ValuesM1[] =
@@ -445,6 +476,36 @@ static void testDTreeNode0SplitMerge()
                 checkNotFoundDTreeNode0("DTreeNode0SM",
                         std::string(buf)+".notfound2", node0_1c,
                         dtreeNode0ValuesM2Num-(j+1), dtreeNode0ValuesM2+j+1);
+            }
+        }
+    }
+    {
+        // merge node0s with free spaces at start
+        DTreeSet<cxuint>::Node0 node0_1, node0_2;
+        for (cxuint i = 1; i <= 10; i++)
+            node0_1.insert(i, comp, kofval);
+        for (cxuint i = 11; i <= 20; i++)
+            node0_2.insert(i, comp, kofval);
+        // erase start
+        node0_1.erase(1, comp, kofval);
+        node0_1.erase(2, comp, kofval);
+        node0_1.erase(10, comp, kofval);
+        node0_2.erase(11, comp, kofval);
+        node0_2.erase(12, comp, kofval);
+        node0_2.erase(20, comp, kofval);
+        // merge
+        node0_1.merge(node0_2);
+        verifyDTreeNode0<cxuint>("DTreeNode0SM2", "mergefreesstart", node0_1, 0, 0);
+        for (cxuint i = 1; i <= 20; i++)
+        {
+            cxuint index = node0_1.find(i, comp, kofval);
+            if (i==1 || i==2 || i==10 || i==11 || i==12 || i==20)
+                assertTrue("DTreeNode0SM2", "mergefreesstartnf", index==node0_1.capacity);
+            else
+            {
+                // if must be found
+                assertTrue("DTreeNode0SM2", "mergefreesstart", index!=node0_1.capacity);
+                assertValue("DTreeNode0SM2", "mergefreesstartval", i, node0_1[index]);
             }
         }
     }
