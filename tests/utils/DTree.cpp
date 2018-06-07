@@ -621,6 +621,8 @@ static void createNode1FromArray(DTreeSet<cxuint>::Node1& node1, cxuint num,
 static const cxuint dtreeNode1Firsts[] = { 32, 135, 192, 243, 393, 541 };
 static const cxuint dtreeNode1FirstsNum = sizeof dtreeNode1Firsts / sizeof(cxuint);
 
+static const cxuint dtreeNode1Firsts2[] = { 32, 135, 192, 243, 393, 541, 593, 678 };
+
 static void checkNode1Firsts0(const std::string& testName, const std::string& testCase,
             const DTreeSet<cxuint>::Node1& node1, cxuint num, const cxuint* input)
 {
@@ -732,6 +734,29 @@ static void testDTreeNode1()
         verifyDTreeNode1<cxuint>("DTreeNode1", "reserve(5)", node1, 0, 1);
         checkNode1Firsts0("DTreeNode1", "reserve(5)", node1,
                           std::min(dtreeNode1FirstsNum, cxuint(5)), dtreeNode1Firsts);
+    }
+    // test lowerBoundN and upperBoundN
+    char buf[16];
+    for (cxuint size = 1; size <= 8; size++)
+    {
+        DTreeSet<cxuint>::Node1 node1;
+        createNode1FromArray(node1, size, dtreeNode1Firsts2);
+        for (cxuint i = 0; i < size; i++)
+            for (int diff = -2; diff <= 2; diff += 2)
+            {
+                const cxuint value = dtreeNode1Firsts2[i] + diff;
+                snprintf(buf, sizeof buf, "sz:%u,val:%u", size, value);
+                cxuint index = node1.lowerBoundN(value, comp, kofval);
+                cxuint expIndex = std::lower_bound(dtreeNode1Firsts2,
+                        dtreeNode1Firsts2 + size, value) - dtreeNode1Firsts2;
+                assertValue("DTreeNode1", std::string("lowerBoundN:")+buf,
+                            expIndex, index);
+                index = node1.upperBoundN(value, comp, kofval);
+                expIndex = std::upper_bound(dtreeNode1Firsts2,
+                        dtreeNode1Firsts2 + size, value) - dtreeNode1Firsts2;
+                assertValue("DTreeNode1", std::string("upperBoundN:")+buf,
+                            expIndex, index);
+            }
     }
 }
 
