@@ -610,7 +610,7 @@ public:
         };
         
         Node1(): NodeBase(NODE1), index(255), size(0), capacity(0), totalSize(0),
-                    array(nullptr)
+                    first(), array(nullptr)
         { }
         
         // copy array helper - copy array from Node1 to this node

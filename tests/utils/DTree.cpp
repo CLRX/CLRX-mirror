@@ -92,7 +92,8 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
     {
         assertTrue(testName, testCase + ".levelNode1", maxLevel-1==level);
         
-        firstKey = n1.array[0].array[n1.array[0].firstPos];
+        if (n1.size != 0)
+            firstKey = n1.array[0].array[n1.array[0].firstPos];
         for (cxuint i = 0; i < n1.size; i++)
         {
             totalSize += n1.array[i].size;
@@ -112,7 +113,8 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
     else
     {
         // Node1 with Node1's
-        firstKey = n1.array1[0].first;
+        if (n1.size != 0)
+            firstKey = n1.array1[0].first;
         for (cxuint i = 0; i < n1.size; i++)
         {
             totalSize += n1.array1[i].totalSize;
@@ -401,7 +403,7 @@ static void testDTreeNode0()
         }
     }
     // test insertion with hint (good and wrong)
-    for (cxuint diffIndex = 0; diffIndex <= 1; diffIndex++)
+    for (cxuint diffIndex = 0; diffIndex <= 3; diffIndex++)
     {
         DTreeSet<cxuint>::Node0 node0;
         for (cxuint i = 0; i < 20; i += 2)
@@ -599,6 +601,16 @@ static void testDTreeOrganizeArray(cxuint id, const DTreeNode0OrgArrayCase& test
     assertArray("DTreeOrgArray", testCaseName+".array", testCase.expOutput, k, output);
 }
 
+/* DTree Node1 tests */
+
+static void testDTreeNode1()
+{
+    {
+        DTreeSet<cxuint>::Node1 node1;
+        verifyDTreeNode1<cxuint>("DTreeNode1", "empty", node1, 0, 1);
+    }
+}
+
 /* DTreeSet tests */
 
 struct testDTreeInsert
@@ -623,5 +635,6 @@ int main(int argc, const char** argv)
                             sizeof(DTreeNode0OrgArrayCase); i++)
         retVal |= callTest(testDTreeOrganizeArray, i, dtreeNode0OrgArrayTbl[i]);
     retVal |= callTest(testDTreeNode0SplitMerge);
+    retVal |= callTest(testDTreeNode1);
     return retVal;
 }
