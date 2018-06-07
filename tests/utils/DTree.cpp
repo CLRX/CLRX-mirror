@@ -606,8 +606,18 @@ static void testDTreeOrganizeArray(cxuint id, const DTreeNode0OrgArrayCase& test
 static void testDTreeNode1()
 {
     {
-        DTreeSet<cxuint>::Node1 node1;
-        verifyDTreeNode1<cxuint>("DTreeNode1", "empty", node1, 0, 1);
+        DTreeSet<cxuint>::Node1 empty;
+        verifyDTreeNode1<cxuint>("DTreeNode1", "empty", empty, 0, 1);
+        DTreeSet<cxuint>::Node1 empty1(empty);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "empty_copy", empty1, 0, 1);
+        DTreeSet<cxuint>::Node1 empty2;
+        empty2 = empty;
+        verifyDTreeNode1<cxuint>("DTreeNode1", "empty_copy2", empty2, 0, 1);
+        DTreeSet<cxuint>::Node1 empty3(std::move(empty));
+        verifyDTreeNode1<cxuint>("DTreeNode1", "empty_move", empty3, 0, 1);
+        DTreeSet<cxuint>::Node1 empty4;
+        empty4 = std::move(empty);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "empty_move2", empty4, 0, 1);
     }
 }
 

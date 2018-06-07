@@ -650,16 +650,17 @@ public:
         
         Node1(const Node1& node): NodeBase(node.type), index(node.index),
                     size(node.size), capacity(node.capacity),
-                    totalSize(node.totalSize), array(nullptr)
+                    totalSize(node.totalSize), first(node.first), array(nullptr)
         {
             copyArray(node);
         }
         
         Node1(Node1&& node) noexcept: NodeBase(node.type), index(node.index),
                     size(node.size), capacity(node.capacity),
-                    totalSize(node.totalSize), array(node.array)
+                    totalSize(node.totalSize), first(node.first), array(node.array)
         {
-            reinterpret_cast<Node1**>(array)[parentEntryIndex] = this;
+            if (array != nullptr)
+                reinterpret_cast<Node1**>(array)[parentEntryIndex] = this;
         }
         
         /// create from two Node0's
@@ -734,7 +735,8 @@ public:
             capacity = node.capacity;
             totalSize = node.totalSize;
             array = node.array;
-            reinterpret_cast<Node1**>(array)[parentEntryIndex] = this;
+            if (array != nullptr)
+                reinterpret_cast<Node1**>(array)[parentEntryIndex] = this;
             first = node.first;
             node.array = nullptr;
             return *this;
