@@ -803,14 +803,21 @@ public:
             /// construct Node1's
             for (cxuint i = 0; i < newCapacity; i++)
                 new (newArray+i)Node0();
+            cxuint newSize = std::min(cxuint(size), newCapacity);
             if (array != nullptr)
             {
-                std::move(array, array + size, newArray);
+                for (cxuint i = newSize; i < size; i++)
+                {
+                    totalSize -= array[i].size;
+                    array[i].~Node0();
+                }
+                std::move(array, array + newSize, newArray);
                 delete[] (reinterpret_cast<cxbyte*>(array) - parentEntrySize);
             }
             
             array = newArray;
             capacity = newCapacity;
+            size = newSize;
         }
         
         /// reserve0 elements in Node0's array
@@ -823,14 +830,21 @@ public:
             /// construct Node1's
             for (cxuint i = 0; i < newCapacity; i++)
                 new (newArray+i)Node1();
+            cxuint newSize = std::min(cxuint(size), newCapacity);
             if (array != nullptr)
             {
-                std::move(array1, array1 + size, newArray);
+                for (cxuint i = newSize; i < size; i++)
+                {
+                    totalSize -= array1[i].totalSize;
+                    array1[i].~Node1();
+                }
+                std::move(array1, array1 + newSize, newArray);
                 delete[] (reinterpret_cast<cxbyte*>(array1) - parentEntrySize);
             }
             
             array1 = newArray;
             capacity = newCapacity;
+            size = newSize;
         }
         
         

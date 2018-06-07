@@ -663,6 +663,11 @@ static void testDTreeNode1()
         verifyDTreeNode1<cxuint>("DTreeNode1", "node1_0", node1, 0, 1);
         checkNode1Firsts0("DTreeNode1", "node1_0", node1,
                           dtreeNode1FirstsNum, dtreeNode1Firsts);
+        // getFirstNode0
+        const DTreeSet<cxuint>::Node0* node0f = node1.getFirstNode0();
+        assertTrue("DTreeNode1", "node1First", node0f==node1.array);
+        const DTreeSet<cxuint>::Node0* node0l = node1.getLastNode0();
+        assertTrue("DTreeNode1", "node1Last", node0l==(node1.array + node1.size-1));
         
         // checking copy/move constructor/assignment
         DTreeSet<cxuint>::Node1 node1_1(node1);
@@ -706,6 +711,27 @@ static void testDTreeNode1()
                        index != node1.array[1].capacity);
             assertValue("DTreeNode1", "node1_2n0sContent1", x+40, node1.array[1][index]);
         }
+    }
+    {
+        // test reserve0
+        DTreeSet<cxuint>::Node1 node1;
+        createNode1FromArray(node1, dtreeNode1FirstsNum, dtreeNode1Firsts);
+        node1.reserve0(8);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "reserve(8)", node1, 0, 1);
+        checkNode1Firsts0("DTreeNode1", "reserve(8)", node1,
+                          std::min(dtreeNode1FirstsNum, cxuint(8)), dtreeNode1Firsts);
+        node1.reserve0(7);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "reserve(7)", node1, 0, 1);
+        checkNode1Firsts0("DTreeNode1", "reserve(7)", node1,
+                          std::min(dtreeNode1FirstsNum, cxuint(7)), dtreeNode1Firsts);
+        node1.reserve0(6);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "reserve(6)", node1, 0, 1);
+        checkNode1Firsts0("DTreeNode1", "reserve(6)", node1,
+                          std::min(dtreeNode1FirstsNum, cxuint(6)), dtreeNode1Firsts);
+        node1.reserve0(5);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "reserve(5)", node1, 0, 1);
+        checkNode1Firsts0("DTreeNode1", "reserve(5)", node1,
+                          std::min(dtreeNode1FirstsNum, cxuint(5)), dtreeNode1Firsts);
     }
 }
 
