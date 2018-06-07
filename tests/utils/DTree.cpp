@@ -621,6 +621,19 @@ static void createNode1FromArray(DTreeSet<cxuint>::Node1& node1, cxuint num,
 static const cxuint dtreeNode1Firsts[] = { 32, 135, 192, 243, 393, 541 };
 static const cxuint dtreeNode1FirstsNum = sizeof dtreeNode1Firsts / sizeof(cxuint);
 
+static void checkNode1Firsts0(const std::string& testName, const std::string& testCase,
+            const DTreeSet<cxuint>::Node1& node1, cxuint num, const cxuint* input)
+{
+    assertValue(testName, testCase+".size", num, cxuint(node1.size));
+    char buf[20];
+    for (cxuint i = 0; i < num; i++)
+    {
+        snprintf(buf, sizeof buf, "[%u]", i);
+        assertValue(testName, testCase+buf, input[i],
+                    node1.array[i].array[node1.array[i].firstPos]);
+    }
+}
+
 static void testDTreeNode1()
 {
     std::less<cxuint> comp;
@@ -648,18 +661,51 @@ static void testDTreeNode1()
         DTreeSet<cxuint>::Node1 node1;
         createNode1FromArray(node1, dtreeNode1FirstsNum, dtreeNode1Firsts);
         verifyDTreeNode1<cxuint>("DTreeNode1", "node1_0", node1, 0, 1);
+        checkNode1Firsts0("DTreeNode1", "node1_0", node1,
+                          dtreeNode1FirstsNum, dtreeNode1Firsts);
         
         // checking copy/move constructor/assignment
         DTreeSet<cxuint>::Node1 node1_1(node1);
         verifyDTreeNode1<cxuint>("DTreeNode1", "node1_copy", node1_1, 0, 1);
+        checkNode1Firsts0("DTreeNode1", "node1_copy", node1_1,
+                          dtreeNode1FirstsNum, dtreeNode1Firsts);
         DTreeSet<cxuint>::Node1 node1_2;
         node1_2 = node1;
         verifyDTreeNode1<cxuint>("DTreeNode1", "node1_copy2", node1_2, 0, 1);
+        checkNode1Firsts0("DTreeNode1", "node1_copy2", node1_2,
+                          dtreeNode1FirstsNum, dtreeNode1Firsts);
         DTreeSet<cxuint>::Node1 node1_3(std::move(node1));
         verifyDTreeNode1<cxuint>("DTreeNode1", "node1_move", node1_3, 0, 1);
+        checkNode1Firsts0("DTreeNode1", "node1_move", node1_3,
+                          dtreeNode1FirstsNum, dtreeNode1Firsts);
         DTreeSet<cxuint>::Node1 node1_4;
         node1_4 = std::move(node1_1);
         verifyDTreeNode1<cxuint>("DTreeNode1", "node1_move2", node1_4, 0, 1);
+        checkNode1Firsts0("DTreeNode1", "node1_move2", node1_4,
+                          dtreeNode1FirstsNum, dtreeNode1Firsts);
+    }
+    {
+        DTreeSet<cxuint>::Node0 n01, n02;
+        for (cxuint x = 0; x < 20; x++)
+        {
+            n01.insert(x+10, comp, kofval);
+            n02.insert(x+40, comp, kofval);
+        }
+        // constructor with two Node0's
+        DTreeSet<cxuint>::Node1 node1(std::move(n01), std::move(n02), kofval);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "node1_2n0s", node1, 0, 1);
+        for (cxuint x = 0; x < 20; x++)
+        {
+            cxuint index = node1.array[0].find(x+10, comp, kofval);
+            assertTrue("DTreeNode1", "node1_2n0sContent0find",
+                       index != node1.array[0].capacity);
+            assertValue("DTreeNode1", "node1_2n0sContent0", x+10, node1.array[0][index]);
+            
+            index = node1.array[1].find(x+40, comp, kofval);
+            assertTrue("DTreeNode1", "node1_2n0sContent1find",
+                       index != node1.array[1].capacity);
+            assertValue("DTreeNode1", "node1_2n0sContent1", x+40, node1.array[1][index]);
+        }
     }
 }
 

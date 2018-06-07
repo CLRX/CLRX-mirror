@@ -667,14 +667,18 @@ public:
         /// create from two Node0's
         Node1(Node0&& n0, Node0&& n1, const KeyOfVal& kofval)
                 : NodeBase(NODE1), index(255), size(2), capacity(2),
-                totalSize(n0.size+n1.size), first(kofval(n1.array[n1.firstPos])),
+                totalSize(n0.size+n1.size), first(kofval(n0.array[n0.firstPos])),
                 array(nullptr)
         {
             cxbyte* arrayData = new cxbyte[parentEntrySize + capacity*sizeof(Node0)];
             array = reinterpret_cast<Node0*>(arrayData + parentEntrySize);
+            new (array+0)Node0();
+            new (array+1)Node0();
             *reinterpret_cast<Node1**>(arrayData) = this;
             array[0] = std::move(n0);
             array[1] = std::move(n1);
+            array[0].index = 0;
+            array[1].index = 1;
         }
         /// create from two Node1's
         Node1(Node1&& n0, Node1&& n1) : NodeBase(NODE2), index(255),
@@ -683,9 +687,13 @@ public:
         {
             cxbyte* arrayData = new cxbyte[parentEntrySize + capacity*sizeof(Node1)];
             array1 = reinterpret_cast<Node1*>(arrayData + parentEntrySize);
+            new (array1+0)Node1();
+            new (array1+1)Node1();
             *reinterpret_cast<Node1**>(arrayData) = this;
             array1[0] = std::move(n0);
             array1[1] = std::move(n1);
+            array1[0].index = 0;
+            array1[1].index = 1;
         }
         
         /// helper for freeing array
