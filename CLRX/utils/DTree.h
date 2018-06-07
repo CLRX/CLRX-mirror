@@ -661,6 +661,7 @@ public:
         {
             if (array != nullptr)
                 reinterpret_cast<Node1**>(array)[parentEntryIndex] = this;
+            node.array = nullptr;
         }
         
         /// create from two Node0's

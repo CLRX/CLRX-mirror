@@ -253,7 +253,7 @@ static void testDTreeNode0()
         DTreeSet<cxuint>::Node0 empty3(std::move(empty));
         verifyDTreeNode0<cxuint>("DTreeNode0", "empty_move", empty3, 0, 0);
         DTreeSet<cxuint>::Node0 empty4;
-        empty4 = std::move(empty);
+        empty4 = std::move(empty1);
         verifyDTreeNode0<cxuint>("DTreeNode0", "empty_move2", empty4, 0, 0);
     }
     {
@@ -603,10 +603,35 @@ static void testDTreeOrganizeArray(cxuint id, const DTreeNode0OrgArrayCase& test
 
 /* DTree Node1 tests */
 
+static void createNode1FromArray(DTreeSet<cxuint>::Node1& node1, cxuint num,
+                            const cxuint* input)
+{
+    std::less<cxuint> comp;
+    Identity<cxuint> kofval;
+    for (cxuint i = 0; i < num; i++)
+    {
+        const cxuint v = input[i];
+        DTreeSet<cxuint>::Node0 node0;
+        for (cxuint x = v; x < v+20; x++)
+            node0.insert(x, comp, kofval);
+        node1.insertNode0(std::move(node0), i);
+    }
+}
+
+static const cxuint dtreeNode1Firsts[] = { 32, 135, 192, 243, 393, 541 };
+static const cxuint dtreeNode1FirstsNum = sizeof dtreeNode1Firsts / sizeof(cxuint);
+
 static void testDTreeNode1()
 {
+    std::less<cxuint> comp;
+    Identity<cxuint> kofval;
     {
         DTreeSet<cxuint>::Node1 empty;
+        cxuint index = empty.lowerBoundN(53, comp, kofval);
+        assertValue("DTreeNode1", "empty.lowerBoundN", cxuint(0), index);
+        index = empty.upperBoundN(53, comp, kofval);
+        assertValue("DTreeNode1", "empty.upperBoundN", cxuint(0), index);
+        
         verifyDTreeNode1<cxuint>("DTreeNode1", "empty", empty, 0, 1);
         DTreeSet<cxuint>::Node1 empty1(empty);
         verifyDTreeNode1<cxuint>("DTreeNode1", "empty_copy", empty1, 0, 1);
@@ -616,8 +641,25 @@ static void testDTreeNode1()
         DTreeSet<cxuint>::Node1 empty3(std::move(empty));
         verifyDTreeNode1<cxuint>("DTreeNode1", "empty_move", empty3, 0, 1);
         DTreeSet<cxuint>::Node1 empty4;
-        empty4 = std::move(empty);
+        empty4 = std::move(empty1);
         verifyDTreeNode1<cxuint>("DTreeNode1", "empty_move2", empty4, 0, 1);
+    }
+    {
+        DTreeSet<cxuint>::Node1 node1;
+        createNode1FromArray(node1, dtreeNode1FirstsNum, dtreeNode1Firsts);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "node1_0", node1, 0, 1);
+        
+        // checking copy/move constructor/assignment
+        DTreeSet<cxuint>::Node1 node1_1(node1);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "node1_copy", node1_1, 0, 1);
+        DTreeSet<cxuint>::Node1 node1_2;
+        node1_2 = node1;
+        verifyDTreeNode1<cxuint>("DTreeNode1", "node1_copy2", node1_2, 0, 1);
+        DTreeSet<cxuint>::Node1 node1_3(std::move(node1));
+        verifyDTreeNode1<cxuint>("DTreeNode1", "node1_move", node1_3, 0, 1);
+        DTreeSet<cxuint>::Node1 node1_4;
+        node1_4 = std::move(node1_1);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "node1_move2", node1_4, 0, 1);
     }
 }
 
