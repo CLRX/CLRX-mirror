@@ -647,6 +647,7 @@ static const cxuint dtreeNode1FirstsNum = sizeof dtreeNode1Firsts / sizeof(cxuin
 static const cxuint dtreeNode1Firsts2[] = { 32, 135, 192, 243, 393, 541, 593, 678 };
 
 static const cxuint dtreeNode1Order[] = { 4, 3, 5, 2, 6, 7, 0, 1 };
+static const cxuint dtreeNode1EraseOrder[] = { 1, 4, 5, 0, 1, 2, 0, 0 };
 
 static void checkNode1Firsts0(const std::string& testName, const std::string& testCase,
             const DTreeSet<cxuint>::Node1& node1, cxuint num, const cxuint* input)
@@ -796,11 +797,30 @@ static void testDTreeNode1()
             node1.insertNode0(std::move(node0), insIndex);
             verifyDTreeNode1<cxuint>("DTreeNode1", "instest", node1, 0, 1);
         }
+        checkNode1Firsts0("DTreeNode1", "instest", node1, 8, dtreeNode1Firsts2);
     }
     // test erasing
     {
         DTreeSet<cxuint>::Node1 node1;
         createNode1FromArray(node1, 8, dtreeNode1Firsts2);
+        std::vector<cxuint> contentIndices;
+        for (cxuint i = 0; i < 8; i++)
+            contentIndices.push_back(i);
+        
+        cxuint size = 8;
+        for (cxuint idx: dtreeNode1EraseOrder)
+        {
+            node1.eraseNode0(idx);
+            verifyDTreeNode1<cxuint>("DTreeNode1", "erase0", node1, 0, 1);
+            contentIndices.erase(contentIndices.begin()+idx);
+            size--;
+            assertValue("DTreeNode1", "erase0.size", size, cxuint(node1.size));
+            // check content
+            for (cxuint i = 0; i < size; i++)
+                assertValue("DTreeNode1", "erase0.size",
+                            dtreeNode1Firsts2[contentIndices[i]],
+                            node1.array[i].array[node1.array[i].firstPos]);
+        }
     }
 }
 

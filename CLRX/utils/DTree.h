@@ -982,8 +982,8 @@ public:
         {
             totalSize -= array[index].size;
             std::move(array+index+1, array+size, array+index);
-            if (size == 1)
-                array[0].~Node0();
+            if (size == index+1)
+                array[size-1].~Node0();
             for (cxuint i = index; i < size-1U; i++)
                 array[i].index = i;
             if (size > 1 && index == 0)
@@ -991,6 +991,8 @@ public:
             size--;
             if (size + (size>>1) < capacity)
                 reserve0(size+1);
+            if (size == 0)
+                first = T();
         }
         
         /// remove node1 with index from this node
@@ -998,8 +1000,8 @@ public:
         {
             totalSize -= array1[index].totalSize;
             std::move(array1+index+1, array1+size, array1+index);
-            if (size == 1)
-                array1[0].~Node1();
+            if (size == index+1)
+                array1[size-1].~Node1();
             for (cxuint i = index; i < size-1U; i++)
                 array1[i].index = i;
             if (size > 1 && index == 0)
@@ -1007,6 +1009,8 @@ public:
             size--;
             if (size + (size>>1) < capacity)
                 reserve1(size+1);
+            if (size == 0)
+                first = T();
         }
         
         void reorganizeNode0s(cxuint start, cxuint end, cxint newNodesNumDiff = 0)
