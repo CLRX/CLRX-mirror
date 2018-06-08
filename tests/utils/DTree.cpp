@@ -865,6 +865,10 @@ static void checkNode2Firsts0(const std::string& testName, const std::string& te
 static const cxuint dtreeNode2Firsts[] = { 3204, 13506, 19207, 24308, 39309, 54121 };
 static const cxuint dtreeNode2FirstsNum = sizeof dtreeNode2Firsts / sizeof(cxuint);
 
+static const cxuint dtreeNode2Firsts2[] = { 3204, 13506, 19207, 24308, 39309, 54121,
+                59232, 64212 };
+static const cxuint dtreeNode2Firsts2Num = sizeof dtreeNode2Firsts / sizeof(cxuint);
+
 static void testDTreeNode2()
 {
     std::less<cxuint> comp;
@@ -933,6 +937,65 @@ static void testDTreeNode2()
                           std::min(dtreeNode2FirstsNum, cxuint(5)), dtreeNode2Firsts);
         node2.reserve1(0);
         verifyDTreeNode1<cxuint>("DTreeNode1", "reserve(0)", node2, 0, 2);
+    }
+    // test lowerBoundN and upperBoundN
+    char buf[16];
+    for (cxuint size = 1; size <= 8; size++)
+    {
+        DTreeSet<cxuint>::Node1 node2;
+        createNode2FromArray(node2, size, dtreeNode2Firsts2);
+        for (cxuint i = 0; i < size; i++)
+            for (int diff = -2; diff <= 2; diff += 2)
+            {
+                const cxuint value = dtreeNode2Firsts2[i] + diff;
+                snprintf(buf, sizeof buf, "sz:%u,val:%u", size, value);
+                cxuint index = node2.lowerBoundN(value, comp, kofval);
+                cxuint expIndex = std::lower_bound(dtreeNode2Firsts2,
+                        dtreeNode2Firsts2 + size, value) - dtreeNode2Firsts2;
+                assertValue("DTreeNode2", std::string("lowerBoundN:")+buf,
+                            expIndex, index);
+                index = node2.upperBoundN(value, comp, kofval);
+                expIndex = std::upper_bound(dtreeNode2Firsts2,
+                        dtreeNode2Firsts2 + size, value) - dtreeNode2Firsts2;
+                assertValue("DTreeNode2", std::string("upperBoundN:")+buf,
+                            expIndex, index);
+            }
+    }
+    // test insertion
+    {
+        DTreeSet<cxuint>::Node1 node2;
+        for (cxuint idx: dtreeNode1Order)
+        {
+            const cxuint v = dtreeNode2Firsts2[idx];
+            DTreeSet<cxuint>::Node1 node1;
+            createNode1FromValue(node1, v);
+            cxuint insIndex = node2.lowerBoundN(v, comp, kofval);
+            node2.insertNode1(std::move(node1), insIndex);
+            verifyDTreeNode1<cxuint>("DTreeNode2", "instest", node2, 0, 2);
+        }
+        checkNode2Firsts0("DTreeNode2", "instest", node2, 8, dtreeNode2Firsts2);
+    }
+    // test erasing
+    {
+        DTreeSet<cxuint>::Node1 node2;
+        createNode2FromArray(node2, 8, dtreeNode2Firsts2);
+        std::vector<cxuint> contentIndices;
+        for (cxuint i = 0; i < 8; i++)
+            contentIndices.push_back(i);
+        
+        cxuint size = 8;
+        for (cxuint idx: dtreeNode1EraseOrder)
+        {
+            node2.eraseNode1(idx);
+            verifyDTreeNode1<cxuint>("DTreeNode2", "erase0", node2, 0, 2);
+            contentIndices.erase(contentIndices.begin()+idx);
+            size--;
+            assertValue("DTreeNode2", "erase0.size", size, cxuint(node2.size));
+            // check content
+            for (cxuint i = 0; i < size; i++)
+                assertValue("DTreeNode2", "erase0.size",
+                        dtreeNode2Firsts2[contentIndices[i]], node2.array1[i].first);
+        }
     }
 }
 
