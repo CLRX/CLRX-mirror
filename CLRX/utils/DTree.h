@@ -818,6 +818,8 @@ public:
             array = newArray;
             capacity = newCapacity;
             size = newSize;
+            if (size == 0)
+                first = T();
         }
         
         /// reserve0 elements in Node0's array
@@ -845,6 +847,8 @@ public:
             array1 = newArray;
             capacity = newCapacity;
             size = newSize;
+            if (size == 0)
+                first = T();
         }
         
         

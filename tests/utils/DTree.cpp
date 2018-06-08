@@ -760,6 +760,8 @@ static void testDTreeNode1()
         verifyDTreeNode1<cxuint>("DTreeNode1", "reserve(5)", node1, 0, 1);
         checkNode1Firsts0("DTreeNode1", "reserve(5)", node1,
                           std::min(dtreeNode1FirstsNum, cxuint(5)), dtreeNode1Firsts);
+        node1.reserve0(0);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "reserve(0)", node1, 0, 1);
     }
     // test lowerBoundN and upperBoundN
     char buf[16];
@@ -865,6 +867,8 @@ static const cxuint dtreeNode2FirstsNum = sizeof dtreeNode2Firsts / sizeof(cxuin
 
 static void testDTreeNode2()
 {
+    std::less<cxuint> comp;
+    Identity<cxuint> kofval;
     {
         DTreeSet<cxuint>::Node1 node2;
         createNode2FromArray(node2, dtreeNode2FirstsNum, dtreeNode2Firsts);
@@ -897,20 +901,38 @@ static void testDTreeNode2()
         createNode1FromValue(n11, 100);
         createNode1FromValue(n12, 400);
         // constructor with two Node1's
-        DTreeSet<cxuint>::Node1 node1(std::move(n11), std::move(n12));
-        verifyDTreeNode1<cxuint>("DTreeNode2", "node2_2n0s", node1, 0, 2);
-        /*for (cxuint x = 0; x < 20; x++)
+        DTreeSet<cxuint>::Node1 node2(std::move(n11), std::move(n12));
+        verifyDTreeNode1<cxuint>("DTreeNode2", "node2_2n0s", node2, 0, 2);
+        for (cxuint x = 0; x < 4; x++)
         {
-            cxuint index = node1.array[0].find(x+10, comp, kofval);
-            assertTrue("DTreeNode1", "node1_2n0sContent0find",
-                       index != node1.array[0].capacity);
-            assertValue("DTreeNode1", "node1_2n0sContent0", x+10, node1.array[0][index]);
-            
-            index = node1.array[1].find(x+40, comp, kofval);
-            assertTrue("DTreeNode1", "node1_2n0sContent1find",
-                       index != node1.array[1].capacity);
-            assertValue("DTreeNode1", "node1_2n0sContent1", x+40, node1.array[1][index]);
-        }*/
+            assertValue("DTreeNode2", "node2_2n0sContent0", x*20+100,
+                        node2.array1[0].array[x][node2.array1[0].array[x].firstPos]);
+            assertValue("DTreeNode2", "node2_2n0sContent1", x*20+400,
+                        node2.array1[1].array[x][node2.array1[1].array[x].firstPos]);
+        }
+    }
+    {
+        // test reserve1
+        DTreeSet<cxuint>::Node1 node2;
+        createNode2FromArray(node2, dtreeNode2FirstsNum, dtreeNode2Firsts);
+        node2.reserve1(8);
+        verifyDTreeNode1<cxuint>("DTreeNode2", "reserve(8)", node2, 0, 2);
+        checkNode2Firsts0("DTreeNode2", "reserve(8)", node2,
+                          std::min(dtreeNode2FirstsNum, cxuint(8)), dtreeNode2Firsts);
+        node2.reserve1(7);
+        verifyDTreeNode1<cxuint>("DTreeNode2", "reserve(7)", node2, 0, 2);
+        checkNode2Firsts0("DTreeNode2", "reserve(7)", node2,
+                          std::min(dtreeNode2FirstsNum, cxuint(7)), dtreeNode2Firsts);
+        node2.reserve1(6);
+        verifyDTreeNode1<cxuint>("DTreeNode2", "reserve(6)", node2, 0, 2);
+        checkNode2Firsts0("DTreeNode2", "reserve(6)", node2,
+                          std::min(dtreeNode2FirstsNum, cxuint(6)), dtreeNode2Firsts);
+        node2.reserve1(5);
+        verifyDTreeNode1<cxuint>("DTreeNode2", "reserve(5)", node2, 0, 2);
+        checkNode2Firsts0("DTreeNode2", "reserve(5)", node2,
+                          std::min(dtreeNode2FirstsNum, cxuint(5)), dtreeNode2Firsts);
+        node2.reserve1(0);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "reserve(0)", node2, 0, 2);
     }
 }
 
