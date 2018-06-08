@@ -21,6 +21,7 @@
 
 #include <CLRX/Config.h>
 #include <algorithm>
+#include <limits>
 #include <iostream>
 #include <sstream>
 #include <cstring>
@@ -32,13 +33,19 @@
 
 using namespace CLRX;
 
+// prevValue - pointer to previous value and to set next last value (next previous)
+// prevValue pair - first - previous value, second - is valid value
+//                   (false if irst call of verifyDTreeNode0 and no previous value)
+
 template<typename T>
 static void verifyDTreeNode0(const std::string& testName, const std::string& testCase,
-                const typename DTreeSet<T>::Node0& n0, cxuint level, cxuint maxLevel)
+                const typename DTreeSet<T>::Node0& n0, cxuint level, cxuint maxLevel,
+                std::pair<T, bool>* prevValuePtr = nullptr)
 {
     assertTrue(testName, testCase + ".levelNode0", maxLevel==level);
     cxuint size = 0;
     cxuint firstPos = UINT_MAX;
+    cxuint lastPos = UINT_MAX;
     for (cxuint i = 0; i < n0.capacity; i++)
     {
         if ((n0.bitMask & (1ULL<<i)) == 0)
@@ -46,11 +53,16 @@ static void verifyDTreeNode0(const std::string& testName, const std::string& tes
             if (firstPos == UINT_MAX)
                 // set first pos
                 firstPos = i;
+            lastPos = i;
             size++;
         }
     }
     if (firstPos == UINT_MAX)
         firstPos = 0;
+    
+    if (prevValuePtr != nullptr && firstPos < n0.capacity && !prevValuePtr->second)
+        // check ordering with previous value
+        assertTrue(testName, testCase + "<e[0]", prevValuePtr->first < n0[firstPos]);
     
     char buf[10];
     for (cxuint i = 1; i < n0.capacity; i++)
@@ -77,17 +89,26 @@ static void verifyDTreeNode0(const std::string& testName, const std::string& tes
                     n0.size <= DTree<T>::maxNode0Size);
     assertTrue(testName, testCase + ".n0.capacity<=maxCapacity",
                     n0.capacity <= DTree<T>::maxNode0Capacity);
+    
+    if (prevValuePtr != nullptr && lastPos < n0.capacity)
+        *prevValuePtr = std::make_pair(n0[lastPos], false);
 }
 
 template<typename T>
 static void verifyDTreeNode1(const std::string& testName, const std::string& testCase,
-                const typename DTreeSet<T>::Node1& n1, cxuint level, cxuint maxLevel)
+                const typename DTreeSet<T>::Node1& n1, cxuint level, cxuint maxLevel,
+                std::pair<T, bool>* prevValuePtr = nullptr)
 {
     assertTrue(testName, testCase + ".n1.size<=n1.capacity",
                    n1.size <= n1.capacity);
     char buf[10];
     size_t totalSize = 0;
     T firstKey = T();
+    std::pair<T, bool> prevValue = std::make_pair(T(), true);
+    if (prevValuePtr == nullptr)
+        // we do not have previous value (initial call) just use pointer to prevValue
+        prevValuePtr = &prevValue; // by default is this value
+    
     if (n1.type == DTree<T>::NODE1)
     {
         assertTrue(testName, testCase + ".levelNode1", maxLevel-1==level);
@@ -98,7 +119,8 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
         {
             totalSize += n1.array[i].size;
             snprintf(buf, sizeof buf, "[%d]", i);
-            verifyDTreeNode0<T>(testName, testCase + buf, n1.array[i], level+1, maxLevel);
+            verifyDTreeNode0<T>(testName, testCase + buf, n1.array[i], level+1, maxLevel,
+                        prevValuePtr);
             assertValue(testName, testCase + buf + ".index", i, cxuint(n1.array[i].index));
         }
         // checking ordering
@@ -119,7 +141,8 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
         {
             totalSize += n1.array1[i].totalSize;
             snprintf(buf, sizeof buf, "[%d]", i);
-            verifyDTreeNode1<T>(testName, testCase + buf, n1.array1[i], level+1, maxLevel);
+            verifyDTreeNode1<T>(testName, testCase + buf, n1.array1[i], level+1, maxLevel,
+                        prevValuePtr);
             assertValue(testName, testCase + buf + ".index", i,
                         cxuint(n1.array1[i].index));
         }
@@ -623,6 +646,8 @@ static const cxuint dtreeNode1FirstsNum = sizeof dtreeNode1Firsts / sizeof(cxuin
 
 static const cxuint dtreeNode1Firsts2[] = { 32, 135, 192, 243, 393, 541, 593, 678 };
 
+static const cxuint dtreeNode1Order[] = { 4, 3, 5, 2, 6, 7, 0, 1 };
+
 static void checkNode1Firsts0(const std::string& testName, const std::string& testCase,
             const DTreeSet<cxuint>::Node1& node1, cxuint num, const cxuint* input)
 {
@@ -757,6 +782,25 @@ static void testDTreeNode1()
                 assertValue("DTreeNode1", std::string("upperBoundN:")+buf,
                             expIndex, index);
             }
+    }
+    // test insertion
+    {
+        DTreeSet<cxuint>::Node1 node1;
+        for (cxuint idx: dtreeNode1Order)
+        {
+            const cxuint v = dtreeNode1Firsts2[idx];
+            DTreeSet<cxuint>::Node0 node0;
+            for (cxuint x = v; x < v+20; x++)
+                node0.insert(x, comp, kofval);
+            cxuint insIndex = node1.lowerBoundN(v, comp, kofval);
+            node1.insertNode0(std::move(node0), insIndex);
+            verifyDTreeNode1<cxuint>("DTreeNode1", "instest", node1, 0, 1);
+        }
+    }
+    // test erasing
+    {
+        DTreeSet<cxuint>::Node1 node1;
+        createNode1FromArray(node1, 8, dtreeNode1Firsts2);
     }
 }
 
