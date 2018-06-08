@@ -824,6 +824,96 @@ static void testDTreeNode1()
     }
 }
 
+static void createNode1FromValue(DTreeSet<cxuint>::Node1& node1, cxuint value)
+{
+    std::less<cxuint> comp;
+    Identity<cxuint> kofval;
+    for (cxuint x = value; x < value+80; x += 20)
+    {
+        DTreeSet<cxuint>::Node0 node0;
+        for (cxuint y = x; y < + x+20; y++)
+            node0.insert(y, comp, kofval);
+        node1.insertNode0(std::move(node0), node1.size);
+    }
+}
+
+static void createNode2FromArray(DTreeSet<cxuint>::Node1& node2, cxuint num,
+                            const cxuint* input)
+{
+    for (cxuint i = 0; i < num; i++)
+    {
+        DTreeSet<cxuint>::Node1 node1;
+        createNode1FromValue(node1, input[i]);
+        node2.insertNode1(std::move(node1), i);
+    }
+}
+
+static void checkNode2Firsts0(const std::string& testName, const std::string& testCase,
+            const DTreeSet<cxuint>::Node1& node1, cxuint num, const cxuint* input)
+{
+    assertValue(testName, testCase+".size", num, cxuint(node1.size));
+    char buf[20];
+    for (cxuint i = 0; i < num; i++)
+    {
+        snprintf(buf, sizeof buf, "[%u]", i);
+        assertValue(testName, testCase+buf, input[i], node1.array1[i].first);
+    }
+}
+
+static const cxuint dtreeNode2Firsts[] = { 3204, 13506, 19207, 24308, 39309, 54121 };
+static const cxuint dtreeNode2FirstsNum = sizeof dtreeNode2Firsts / sizeof(cxuint);
+
+static void testDTreeNode2()
+{
+    {
+        DTreeSet<cxuint>::Node1 node2;
+        createNode2FromArray(node2, dtreeNode2FirstsNum, dtreeNode2Firsts);
+        verifyDTreeNode1<cxuint>("DTreeNode2", "node2_0", node2, 0, 2);
+        checkNode2Firsts0("DTreeNode2", "node2_0", node2,
+                          dtreeNode2FirstsNum, dtreeNode2Firsts);
+        
+        // checking copy/move constructor/assignment
+        DTreeSet<cxuint>::Node1 node2_1(node2);
+        verifyDTreeNode1<cxuint>("DTreeNode2", "node2_copy", node2_1, 0, 2);
+        checkNode2Firsts0("DTreeNode2", "node2_copy", node2_1,
+                          dtreeNode2FirstsNum, dtreeNode2Firsts);
+        DTreeSet<cxuint>::Node1 node2_2;
+        node2_2 = node2;
+        verifyDTreeNode1<cxuint>("DTreeNode2", "node2_copy2", node2_2, 0, 2);
+        checkNode2Firsts0("DTreeNode2", "node2_copy2", node2_2,
+                          dtreeNode2FirstsNum, dtreeNode2Firsts);
+        DTreeSet<cxuint>::Node1 node2_3(std::move(node2));
+        verifyDTreeNode1<cxuint>("DTreeNode1", "node1_move", node2_3, 0, 2);
+        checkNode2Firsts0("DTreeNode2", "node2_move", node2_3,
+                          dtreeNode2FirstsNum, dtreeNode2Firsts);
+        DTreeSet<cxuint>::Node1 node2_4;
+        node2_4 = std::move(node2_1);
+        verifyDTreeNode1<cxuint>("DTreeNode2", "node2_move2", node2_4, 0, 2);
+        checkNode2Firsts0("DTreeNode2", "node2_move2", node2_4,
+                          dtreeNode2FirstsNum, dtreeNode2Firsts);
+    }
+    {
+        DTreeSet<cxuint>::Node1 n11, n12;
+        createNode1FromValue(n11, 100);
+        createNode1FromValue(n12, 400);
+        // constructor with two Node1's
+        DTreeSet<cxuint>::Node1 node1(std::move(n11), std::move(n12));
+        verifyDTreeNode1<cxuint>("DTreeNode2", "node2_2n0s", node1, 0, 2);
+        /*for (cxuint x = 0; x < 20; x++)
+        {
+            cxuint index = node1.array[0].find(x+10, comp, kofval);
+            assertTrue("DTreeNode1", "node1_2n0sContent0find",
+                       index != node1.array[0].capacity);
+            assertValue("DTreeNode1", "node1_2n0sContent0", x+10, node1.array[0][index]);
+            
+            index = node1.array[1].find(x+40, comp, kofval);
+            assertTrue("DTreeNode1", "node1_2n0sContent1find",
+                       index != node1.array[1].capacity);
+            assertValue("DTreeNode1", "node1_2n0sContent1", x+40, node1.array[1][index]);
+        }*/
+    }
+}
+
 /* DTreeSet tests */
 
 struct testDTreeInsert
@@ -849,5 +939,6 @@ int main(int argc, const char** argv)
         retVal |= callTest(testDTreeOrganizeArray, i, dtreeNode0OrgArrayTbl[i]);
     retVal |= callTest(testDTreeNode0SplitMerge);
     retVal |= callTest(testDTreeNode1);
+    retVal |= callTest(testDTreeNode2);
     return retVal;
 }
