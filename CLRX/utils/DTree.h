@@ -1065,20 +1065,29 @@ public:
             }
         }
         
-        void merge(Node1& n2)
+        void merge(Node1&& n2)
         {
-            if (NodeBase::type == NODE1)
+            cxuint oldSize = size;
+            if ((n2.size != 0 && n2.NodeBase::type == NODE1) ||
+                (size != 0 && NodeBase::type == NODE1))
             {
                 reserve0(std::max(cxuint(maxNode1Size), cxuint(capacity + n2.capacity)));
                 std::move(n2.array, n2.array + n2.size, array + size);
+                for (cxuint i = size; i < size+n2.size; i++)
+                    array[i].index = i;
             }
             else
             {
+                NodeBase::type = NODE2;
                 reserve1(std::max(cxuint(maxNode1Size), cxuint(capacity + n2.capacity)));
                 std::move(n2.array1, n2.array1 + n2.size, array1 + size);
+                for (cxuint i = size; i < size+n2.size; i++)
+                    array1[i].index = i;
             }
             totalSize += n2.totalSize;
             size += n2.size;
+            if (oldSize == 0)
+                first = n2.first;
         }
         
         void splitNode(Node1& n2)
@@ -2298,7 +2307,7 @@ public:
             {
                 if (n1Left1 < maxN1Size)
                 {
-                    curn1->array1[n1Index-1].merge(*prevn1);
+                    curn1->array1[n1Index-1].merge(std::move(*prevn1));
                     curn1->eraseNode1(n1Index);
                     mergedN1Index = n1Index-1;
                 }
@@ -2307,7 +2316,7 @@ public:
             {
                 if (n1Right1 < maxN1Size)
                 {
-                    prevn1->merge(curn1->array1[n1Index+1]);
+                    prevn1->merge(std::move(curn1->array1[n1Index+1]));
                     curn1->eraseNode1(n1Index+1);
                     mergedN1Index = n1Index;
                 }

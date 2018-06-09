@@ -824,6 +824,20 @@ static void testDTreeNode1()
                             node1.array[i].array[node1.array[i].firstPos]);
         }
     }
+    // test merge
+    for (cxuint size = 2; size < 8; size++)
+        for (cxuint m = 0; m <= size; m++)
+        {
+            snprintf(buf, sizeof buf, "%u:%u", size, m);
+            DTreeSet<cxuint>::Node1 node1, node2;
+            createNode1FromArray(node1, m, dtreeNode1Firsts2);
+            createNode1FromArray(node2, size-m, dtreeNode1Firsts2+m);
+            node1.merge(std::move(node2));
+            verifyDTreeNode1<cxuint>("DTreeNode1",
+                        std::string("merge") + buf, node1, 0, 1);
+            checkNode1Firsts0("DTreeNode1", std::string("merge") + buf, node1,
+                          size, dtreeNode1Firsts2);
+        }
 }
 
 static void createNode1FromValue(DTreeSet<cxuint>::Node1& node1, cxuint value)
@@ -997,6 +1011,20 @@ static void testDTreeNode2()
                         dtreeNode2Firsts2[contentIndices[i]], node2.array1[i].first);
         }
     }
+    // test merge
+    for (cxuint size = 2; size < 8; size++)
+        for (cxuint m = 0; m <= size; m++)
+        {
+            snprintf(buf, sizeof buf, "%u:%u", size, m);
+            DTreeSet<cxuint>::Node1 node1, node2;
+            createNode2FromArray(node1, m, dtreeNode2Firsts2);
+            createNode2FromArray(node2, size-m, dtreeNode2Firsts2+m);
+            node1.merge(std::move(node2));
+            verifyDTreeNode1<cxuint>("DTreeNode2",
+                        std::string("merge") + buf, node1, 0, 2);
+            checkNode2Firsts0("DTreeNode2", std::string("merge") + buf, node1,
+                          size, dtreeNode2Firsts2);
+        }
 }
 
 /* DTreeSet tests */
