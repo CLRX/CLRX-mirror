@@ -1139,6 +1139,14 @@ static DNode1SplitCase dtreeNode2SplitTbl[] =
         { 33200, 42500, 49400, 56800, 73100 },
         { 90, 130, 70, 82, 156 }, 3
     },
+    {   // 1 - first
+        { 33200, 42500 },
+        { 40, 159 }, 1
+    },
+    {   // 2 - first
+        { 33200, 42500 },
+        { 159, 40 }, 1
+    }
 };
 
 static void testDTreeNode2Split(cxuint ti, const DNode1SplitCase& testCase)
