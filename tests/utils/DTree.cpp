@@ -872,6 +872,14 @@ static DNode1SplitCase dtreeNode1SplitTbl[] =
     {   // 1 - first
         { 332, 425, 494, 568, 731 },
         { 32, 37, 18, 18, 18 }, 2
+    },
+    {   // 2 - first
+        { 332, 425 },
+        { 18, 56 }, 1
+    },
+    {   // 3 - first
+        { 332, 425 },
+        { 56, 18 }, 1
     }
 };
 
@@ -887,10 +895,11 @@ static void testDTreeNode1Split(cxuint ti, const DNode1SplitCase& testCase)
     node1.splitNode(node2);
     assertValue("DTreeNode1Split", caseName+".point",
                     testCase.expectedPoint, cxuint(node1.size));
-    verifyDTreeNode1<cxuint>("DTreeNode1Split", caseName, node1, 0, 1);
-    checkNode1Firsts0("DTreeNode1Split", caseName, node1,
+    verifyDTreeNode1<cxuint>("DTreeNode1Split", caseName+"n1", node1, 0, 1);
+    checkNode1Firsts0("DTreeNode1Split", caseName+"n1", node1,
                         testCase.expectedPoint, testCase.values.data());
-    checkNode1Firsts0("DTreeNode1Split", caseName, node2,
+    verifyDTreeNode1<cxuint>("DTreeNode1Split", caseName+"n2", node2, 0, 1);
+    checkNode1Firsts0("DTreeNode1Split", caseName+"n2", node2,
                       testCase.values.size() - testCase.expectedPoint,
                       testCase.values.data() + testCase.expectedPoint);
 }

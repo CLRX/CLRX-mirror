@@ -74,7 +74,7 @@ public:
     static const cxuint normalNode1Shift = 2;
     static const cxuint maxNode1Depth = (sizeof(size_t)*8)>>1;
     
-    static const cxuint maxNode0Capacity = 64;
+    static const cxuint maxNode0Capacity = 63;
     static const cxuint normalNode0Capacity = maxNode0Capacity>>1;
     static const cxuint minNode0Capacity = 20;
     static const cxuint freePlacesShift = 1;
@@ -1145,11 +1145,19 @@ public:
                 for (; halfPos < size && halfTotSize < (totalSize>>1); halfPos++)
                     halfTotSize += array[halfPos].size;
                 if ((halfTotSize - (totalSize>>1)) > size_t(array[halfPos-1].size>>1))
+                {
                     halfPos--; // 
+                    halfTotSize -= array[halfPos].size;
+                }
                 
                 cxuint newSize2 = size - halfPos;
+                size_t secHalfTotSize = totalSize - halfTotSize;
                 n2.allocate0(std::min(newSize2, cxuint(maxNode1Size)));
                 std::move(array + halfPos, array + size, n2.array);
+                n2.totalSize = secHalfTotSize;
+                n2.first = n2.array[0].array[n2.array[0].firstPos];
+                for (cxuint i = 0; i < newSize2; i++)
+                    n2.array[i].index = i;
                 reserve0(halfPos);
                 n2.size = newSize2;
             }
@@ -1160,11 +1168,19 @@ public:
                 for (; halfPos < size && halfTotSize < (totalSize>>1); halfPos++)
                     halfTotSize += array1[halfPos].totalSize;
                 if ((halfTotSize - (totalSize>>1)) > (array1[halfPos-1].totalSize>>1))
+                {
                     halfPos--; // 
+                    halfTotSize -= array1[halfPos].totalSize;
+                }
                 
                 cxuint newSize2 = size - halfPos;
+                size_t secHalfTotSize = totalSize - halfTotSize;
                 n2.allocate1(std::min(newSize2, cxuint(maxNode1Size)));
                 std::move(array1 + halfPos, array1 + size, n2.array1);
+                n2.totalSize = secHalfTotSize;
+                n2.first = n2.array1[0].first;
+                for (cxuint i = 0; i < newSize2; i++)
+                    n2.array1[i].index = i;
                 reserve1(halfPos);
                 n2.size = newSize2;
             }
