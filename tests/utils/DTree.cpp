@@ -627,7 +627,7 @@ static void testDTreeOrganizeArray(cxuint id, const DTreeNode0OrgArrayCase& test
 /* DTree Node1 tests */
 
 static void createNode1FromArray(DTreeSet<cxuint>::Node1& node1, cxuint num,
-                            const cxuint* input)
+                            const cxuint* input, const cxuint* node0Sizes = nullptr)
 {
     std::less<cxuint> comp;
     Identity<cxuint> kofval;
@@ -635,7 +635,8 @@ static void createNode1FromArray(DTreeSet<cxuint>::Node1& node1, cxuint num,
     {
         const cxuint v = input[i];
         DTreeSet<cxuint>::Node0 node0;
-        for (cxuint x = v; x < v+20; x++)
+        const cxuint node0Size = (node0Sizes != nullptr) ? node0Sizes[i] : 20;
+        for (cxuint x = v; x < v+node0Size; x++)
             node0.insert(x, comp, kofval);
         node1.insertNode0(std::move(node0), i);
     }
@@ -763,6 +764,21 @@ static void testDTreeNode1()
         node1.reserve0(0);
         verifyDTreeNode1<cxuint>("DTreeNode1", "reserve(0)", node1, 0, 1);
     }
+    {
+        // test allocate0
+        DTreeSet<cxuint>::Node1 node1;
+        createNode1FromArray(node1, dtreeNode1FirstsNum, dtreeNode1Firsts);
+        node1.allocate0(8);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "allocate(8)", node1, 0, 1);
+        node1.allocate0(7);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "allocate(7)", node1, 0, 1);
+        node1.allocate0(6);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "allocate(6)", node1, 0, 1);
+        node1.allocate0(5);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "allocate(5)", node1, 0, 1);
+        node1.allocate0(0);
+        verifyDTreeNode1<cxuint>("DTreeNode1", "allocate(0)", node1, 0, 1);
+    }
     // test lowerBoundN and upperBoundN
     char buf[16];
     for (cxuint size = 1; size <= 8; size++)
@@ -825,7 +841,7 @@ static void testDTreeNode1()
         }
     }
     // test merge
-    for (cxuint size = 2; size < 8; size++)
+    for (cxuint size = 1; size <= 8; size++)
         for (cxuint m = 0; m <= size; m++)
         {
             snprintf(buf, sizeof buf, "%u:%u", size, m);
@@ -838,6 +854,45 @@ static void testDTreeNode1()
             checkNode1Firsts0("DTreeNode1", std::string("merge") + buf, node1,
                           size, dtreeNode1Firsts2);
         }
+}
+
+struct DNode1SplitCase
+{
+    Array<cxuint> values;
+    Array<cxuint> node0Sizes;
+    cxuint expectedPoint;
+};
+
+static DNode1SplitCase dtreeNode1SplitTbl[] =
+{
+    {   // 0 - first
+        { 332, 425, 494, 568, 731 },
+        { 23, 34, 18, 33, 39 }, 3
+    },
+    {   // 1 - first
+        { 332, 425, 494, 568, 731 },
+        { 32, 37, 18, 18, 18 }, 2
+    }
+};
+
+static void testDTreeNode1Split(cxuint ti, const DNode1SplitCase& testCase)
+{
+    std::ostringstream oss;
+    oss << "Node1Split#" << ti;
+    oss.flush();
+    std::string caseName = oss.str();
+    DTreeSet<cxuint>::Node1 node1, node2;
+    createNode1FromArray(node1, testCase.values.size(), testCase.values.data(),
+                    testCase.node0Sizes.data());
+    node1.splitNode(node2);
+    assertValue("DTreeNode1Split", caseName+".point",
+                    testCase.expectedPoint, cxuint(node1.size));
+    verifyDTreeNode1<cxuint>("DTreeNode1Split", caseName, node1, 0, 1);
+    checkNode1Firsts0("DTreeNode1Split", caseName, node1,
+                        testCase.expectedPoint, testCase.values.data());
+    checkNode1Firsts0("DTreeNode1Split", caseName, node2,
+                      testCase.values.size() - testCase.expectedPoint,
+                      testCase.values.data() + testCase.expectedPoint);
 }
 
 static void createNode1FromValue(DTreeSet<cxuint>::Node1& node1, cxuint value)
@@ -881,7 +936,6 @@ static const cxuint dtreeNode2FirstsNum = sizeof dtreeNode2Firsts / sizeof(cxuin
 
 static const cxuint dtreeNode2Firsts2[] = { 3204, 13506, 19207, 24308, 39309, 54121,
                 59232, 64212 };
-static const cxuint dtreeNode2Firsts2Num = sizeof dtreeNode2Firsts / sizeof(cxuint);
 
 static void testDTreeNode2()
 {
@@ -952,6 +1006,21 @@ static void testDTreeNode2()
         node2.reserve1(0);
         verifyDTreeNode1<cxuint>("DTreeNode1", "reserve(0)", node2, 0, 2);
     }
+    {
+        // test allocate1
+        DTreeSet<cxuint>::Node1 node2;
+        createNode2FromArray(node2, dtreeNode2FirstsNum, dtreeNode2Firsts);
+        node2.allocate1(8);
+        verifyDTreeNode1<cxuint>("DTreeNode2", "allocate(8)", node2, 0, 2);
+        node2.allocate1(7);
+        verifyDTreeNode1<cxuint>("DTreeNode2", "allocate(7)", node2, 0, 2);
+        node2.allocate1(6);
+        verifyDTreeNode1<cxuint>("DTreeNode2", "allocate(6)", node2, 0, 2);
+        node2.allocate1(5);
+        verifyDTreeNode1<cxuint>("DTreeNode2", "allocate(5)", node2, 0, 2);
+        node2.allocate1(0);
+        verifyDTreeNode1<cxuint>("DTreeNode2", "allocate(0)", node2, 0, 2);
+    }
     // test lowerBoundN and upperBoundN
     char buf[16];
     for (cxuint size = 1; size <= 8; size++)
@@ -1012,7 +1081,7 @@ static void testDTreeNode2()
         }
     }
     // test merge
-    for (cxuint size = 2; size < 8; size++)
+    for (cxuint size = 1; size <= 8; size++)
         for (cxuint m = 0; m <= size; m++)
         {
             snprintf(buf, sizeof buf, "%u:%u", size, m);
@@ -1052,6 +1121,9 @@ int main(int argc, const char** argv)
         retVal |= callTest(testDTreeOrganizeArray, i, dtreeNode0OrgArrayTbl[i]);
     retVal |= callTest(testDTreeNode0SplitMerge);
     retVal |= callTest(testDTreeNode1);
+    
+    for (cxuint i = 0; i < sizeof(dtreeNode1SplitTbl) / sizeof(DNode1SplitCase); i++)
+        retVal |= callTest(testDTreeNode1Split, i, dtreeNode1SplitTbl[i]);
     retVal |= callTest(testDTreeNode2);
     return retVal;
 }

@@ -793,6 +793,52 @@ public:
         { return index!=255U ?
             reinterpret_cast<Node1**>(this-index)[parentEntryIndex] : nullptr; }
         
+        void allocate0(cxuint newCapacity)
+        {
+            cxbyte* newData = new cxbyte[newCapacity*sizeof(Node0) + parentEntrySize];
+            // set parent node
+            *reinterpret_cast<Node1**>(newData) = this;
+            Node0* newArray = reinterpret_cast<Node0*>(newData + parentEntrySize);
+            /// construct Node1's
+            for (cxuint i = 0; i < newCapacity; i++)
+                new (newArray+i)Node0();
+            if (array != nullptr)
+            {
+                for (cxuint i = 0; i < size; i++)
+                    array[i].~Node0();
+                delete[] (reinterpret_cast<cxbyte*>(array) - parentEntrySize);
+            }
+            
+            totalSize = 0;
+            array = newArray;
+            capacity = newCapacity;
+            size = 0;
+            first = T();
+        }
+        
+        void allocate1(cxuint newCapacity)
+        {
+            cxbyte* newData = new cxbyte[newCapacity*sizeof(Node1) + parentEntrySize];
+            // set parent node
+            *reinterpret_cast<Node1**>(newData) = this;
+            Node1* newArray = reinterpret_cast<Node1*>(newData + parentEntrySize);
+            /// construct Node1's
+            for (cxuint i = 0; i < newCapacity; i++)
+                new (newArray+i)Node1();
+            if (array != nullptr)
+            {
+                for (cxuint i = 0; i < size; i++)
+                    array1[i].~Node1();
+                delete[] (reinterpret_cast<cxbyte*>(array1) - parentEntrySize);
+            }
+            
+            totalSize = 0;
+            array1 = newArray;
+            capacity = newCapacity;
+            size = 0;
+            first = T();
+        }
+        
         /// reserve0 elements in Node0's array
         void reserve0(cxuint newCapacity)
         {
@@ -822,7 +868,7 @@ public:
                 first = T();
         }
         
-        /// reserve0 elements in Node0's array
+        /// reserve1 elements in Node0's array
         void reserve1(cxuint newCapacity)
         {
             cxbyte* newData = new cxbyte[newCapacity*sizeof(Node1) + parentEntrySize];
@@ -1102,9 +1148,10 @@ public:
                     halfPos--; // 
                 
                 cxuint newSize2 = size - halfPos;
-                n2.reserve0(std::min(newSize2, cxuint(maxNode1Size)));
+                n2.allocate0(std::min(newSize2, cxuint(maxNode1Size)));
                 std::move(array + halfPos, array + size, n2.array);
                 reserve0(halfPos);
+                n2.size = newSize2;
             }
             else
             {
@@ -1116,9 +1163,10 @@ public:
                     halfPos--; // 
                 
                 cxuint newSize2 = size - halfPos;
-                n2.reserve1(std::min(newSize2, cxuint(maxNode1Size)));
+                n2.allocate1(std::min(newSize2, cxuint(maxNode1Size)));
                 std::move(array1 + halfPos, array1 + size, n2.array1);
                 reserve1(halfPos);
+                n2.size = newSize2;
             }
         }
         
