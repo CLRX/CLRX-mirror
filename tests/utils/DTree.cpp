@@ -880,7 +880,11 @@ static DNode1SplitCase dtreeNode1SplitTbl[] =
     {   // 3 - first
         { 332, 425 },
         { 56, 18 }, 1
-    }
+    },
+    {   // 4 - first
+        { 332, 425, 494, 568, 731, 797, 892, 971 },
+        { 18, 18, 18, 56, 56, 56, 56, 56 }, 5
+    },
 };
 
 static void testDTreeNode1Split(cxuint ti, const DNode1SplitCase& testCase)
@@ -904,26 +908,50 @@ static void testDTreeNode1Split(cxuint ti, const DNode1SplitCase& testCase)
                       testCase.values.data() + testCase.expectedPoint);
 }
 
-static void createNode1FromValue(DTreeSet<cxuint>::Node1& node1, cxuint value)
+static void createNode1FromValue(DTreeSet<cxuint>::Node1& node1, cxuint value,
+            cxuint size = 80)
 {
     std::less<cxuint> comp;
     Identity<cxuint> kofval;
-    for (cxuint x = value; x < value+80; x += 20)
+    if (size < 20)
     {
+        // small amout
         DTreeSet<cxuint>::Node0 node0;
-        for (cxuint y = x; y < + x+20; y++)
+        for (cxuint y = value; y < + value+size; y++)
             node0.insert(y, comp, kofval);
         node1.insertNode0(std::move(node0), node1.size);
+    }
+    else
+    {
+        cxuint xend = ((size % 20)==0) ? value + size : value + (size/20 - 1)*20;
+        cxuint x = value;
+        for (x = value; x < xend; x += 20)
+        {
+            DTreeSet<cxuint>::Node0 node0;
+            for (cxuint y = x; y < + x+20; y++)
+                node0.insert(y, comp, kofval);
+            node1.insertNode0(std::move(node0), node1.size);
+        }
+        if (xend < value+size)
+        {
+            DTreeSet<cxuint>::Node0 node0;
+            for (cxuint y = x; y < value+size; y++)
+                node0.insert(y, comp, kofval);
+            node1.insertNode0(std::move(node0), node1.size);
+        }
     }
 }
 
 static void createNode2FromArray(DTreeSet<cxuint>::Node1& node2, cxuint num,
-                            const cxuint* input)
+                    const cxuint* input, const cxuint* node1Sizes = nullptr)
 {
     for (cxuint i = 0; i < num; i++)
     {
         DTreeSet<cxuint>::Node1 node1;
-        createNode1FromValue(node1, input[i]);
+        if (node1Sizes == nullptr)
+            createNode1FromValue(node1, input[i]);
+        else
+            createNode1FromValue(node1, input[i], node1Sizes[i]);
         node2.insertNode1(std::move(node1), i);
     }
 }
@@ -1105,6 +1133,35 @@ static void testDTreeNode2()
         }
 }
 
+static DNode1SplitCase dtreeNode2SplitTbl[] =
+{
+    {   // 0 - first
+        { 33200, 42500, 49400, 56800, 73100 },
+        { 90, 130, 70, 82, 156 }, 3
+    },
+};
+
+static void testDTreeNode2Split(cxuint ti, const DNode1SplitCase& testCase)
+{
+    std::ostringstream oss;
+    oss << "Node2Split#" << ti;
+    oss.flush();
+    std::string caseName = oss.str();
+    DTreeSet<cxuint>::Node1 node1, node2;
+    createNode2FromArray(node1, testCase.values.size(), testCase.values.data(),
+                    testCase.node0Sizes.data());
+    node1.splitNode(node2);
+    assertValue("DTreeNode2Split", caseName+".point",
+                    testCase.expectedPoint, cxuint(node1.size));
+    verifyDTreeNode1<cxuint>("DTreeNode2Split", caseName+"n1", node1, 0, 2);
+    checkNode2Firsts0("DTreeNode2Split", caseName+"n1", node1,
+                        testCase.expectedPoint, testCase.values.data());
+    verifyDTreeNode1<cxuint>("DTreeNode2Split", caseName+"n2", node2, 0, 2);
+    checkNode2Firsts0("DTreeNod21Split", caseName+"n2", node2,
+                      testCase.values.size() - testCase.expectedPoint,
+                      testCase.values.data() + testCase.expectedPoint);
+}
+
 /* DTreeSet tests */
 
 struct testDTreeInsert
@@ -1133,6 +1190,9 @@ int main(int argc, const char** argv)
     
     for (cxuint i = 0; i < sizeof(dtreeNode1SplitTbl) / sizeof(DNode1SplitCase); i++)
         retVal |= callTest(testDTreeNode1Split, i, dtreeNode1SplitTbl[i]);
+    
     retVal |= callTest(testDTreeNode2);
+    for (cxuint i = 0; i < sizeof(dtreeNode2SplitTbl) / sizeof(DNode1SplitCase); i++)
+        retVal |= callTest(testDTreeNode2Split, i, dtreeNode2SplitTbl[i]);
     return retVal;
 }

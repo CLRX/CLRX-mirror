@@ -1173,6 +1173,7 @@ public:
                     halfTotSize -= array1[halfPos].totalSize;
                 }
                 
+                n2.NodeBase::type = NODE2;
                 cxuint newSize2 = size - halfPos;
                 size_t secHalfTotSize = totalSize - halfTotSize;
                 n2.allocate1(std::min(newSize2, cxuint(maxNode1Size)));
