@@ -1117,6 +1117,8 @@ public:
             {
                 std::move(array + end, array + size, array + end + newNodesNumDiff);
                 size += newNodesNumDiff;
+                for (cxuint i = end + newNodesNumDiff; i < size; i++)
+                    array[i].index = i;
             }
         }
         

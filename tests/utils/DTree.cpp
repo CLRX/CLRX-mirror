@@ -943,6 +943,16 @@ static const DNode1ReorgNode0sCase dNode1ReorgNode0sCaseTbl[] =
         { 19, 18, 22, 18, 27, 19, 18, 23 },
         0, 8, false,
         { 21, 21, 21, 21, 20, 20, 20, 20 }
+    },
+    {   // 3 - first with remove one node
+        { 19, 33, 47, 21, 26 },
+        1, 4, true,
+        { 19, 51, 50, 26 }
+    },
+    {   // 4 - second with remove one node
+        { 19, 53, 27, 48, 26, 51, 46, 21 },
+        2, 7, true,
+        { 19, 53, 50, 50, 49, 49, 21 }
     }
 };
 
