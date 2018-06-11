@@ -94,10 +94,16 @@ static void verifyDTreeNode0(const std::string& testName, const std::string& tes
         *prevValuePtr = std::make_pair(n0[lastPos], false);
 }
 
+enum {
+    VERIFY_NODE_NO_MINTOTALSIZE = 1,
+    VERIFY_NODE_NO_MAXTOTALSIZE = 2,
+    VERIFY_NODE_NO_TOTALSIZE = VERIFY_NODE_NO_MINTOTALSIZE|VERIFY_NODE_NO_MAXTOTALSIZE,
+};
+
 template<typename T>
 static void verifyDTreeNode1(const std::string& testName, const std::string& testCase,
                 const typename DTreeSet<T>::Node1& n1, cxuint level, cxuint maxLevel,
-                std::pair<T, bool>* prevValuePtr = nullptr)
+                std::pair<T, bool>* prevValuePtr = nullptr, cxuint flags = 0)
 {
     assertTrue(testName, testCase + ".n1.size<=n1.capacity",
                    n1.size <= n1.capacity);
@@ -142,7 +148,7 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
             totalSize += n1.array1[i].totalSize;
             snprintf(buf, sizeof buf, "[%d]", i);
             verifyDTreeNode1<T>(testName, testCase + buf, n1.array1[i], level+1, maxLevel,
-                        prevValuePtr);
+                        prevValuePtr, flags);
             assertValue(testName, testCase + buf + ".index", i,
                         cxuint(n1.array1[i].index));
         }
@@ -159,11 +165,12 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
     assertTrue(testName, testCase + ".size<=maxNode1Size",
                 n1.size <= DTree<T>::maxNode1Size);
     
-    if (level != 0)
+    if (level != 0 && (flags & VERIFY_NODE_NO_MINTOTALSIZE) == 0)
         assertTrue(testName, testCase + ".totalSize>=minTotalSize",
                     n1.totalSize>=DTree<T>::minTotalSize(maxLevel-level));
-    assertTrue(testName, testCase + ".totalSize<=maxTotalSize",
-                   n1.totalSize<=DTree<T>::maxTotalSize(maxLevel-level));
+    if ((flags & VERIFY_NODE_NO_MAXTOTALSIZE) == 0)
+        assertTrue(testName, testCase + ".totalSize<=maxTotalSize",
+                    n1.totalSize<=DTree<T>::maxTotalSize(maxLevel-level));
     assertValue(testName, testCase + ".totalSize==n1.totalSize",
                    totalSize, n1.totalSize);
     assertValue(testName, testCase + ".first==n1.first", firstKey, n1.first);
@@ -926,6 +933,16 @@ static const DNode1ReorgNode0sCase dNode1ReorgNode0sCaseTbl[] =
         { 19, 53, 27, 48, 26 },
         1, 4, false,
         { 19, 43, 43, 42, 26 }
+    },
+    {   // 1 - second
+        { 19, 53, 27, 48, 26, 51, 46, 21 },
+        2, 7, false,
+        { 19, 53, 40, 40, 40, 39, 39, 21 }
+    },
+    {   // 2 - third
+        { 19, 18, 22, 18, 27, 19, 18, 23 },
+        0, 8, false,
+        { 21, 21, 21, 21, 20, 20, 20, 20 }
     }
 };
 
@@ -946,11 +963,13 @@ static void testSNode1ReorganizeNode0s(cxuint ti, const DNode1ReorgNode0sCase& t
         values[i] = values[i-1] + testCase.node0Sizes[i-1];
     createNode1FromArray(node1, values.size(), values.data(),
                     testCase.node0Sizes.data());
-    verifyDTreeNode1<cxuint>("DTreeNode1Reorg", caseName+"n1", node1, 0, 1);
+    verifyDTreeNode1<cxuint>("DTreeNode1Reorg", caseName+"n1", node1, 0, 1,
+                nullptr, VERIFY_NODE_NO_MAXTOTALSIZE);
     
     node1.reorganizeNode0s(testCase.start,
                     testCase.end, testCase.removeOneNode0 ? -1 : 0);
-    verifyDTreeNode1<cxuint>("DTreeNode1Reorg", caseName+"n1_after", node1, 0, 1);
+    verifyDTreeNode1<cxuint>("DTreeNode1Reorg", caseName+"n1_after", node1, 0, 1,
+                nullptr, VERIFY_NODE_NO_MAXTOTALSIZE);
     
     // check reorganization0
     char buf[8];
