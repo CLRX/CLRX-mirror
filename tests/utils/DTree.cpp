@@ -1361,6 +1361,23 @@ static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& t
     }
 }
 
+/* DTree IterBase tests */
+
+static void testDTreeIterBase(cxuint ti, const Array<Array<cxuint> >& treeNodeSizes)
+{
+    // construct DTree from nodeSizes
+    DTreeSet<cxuint>::Node1 root;
+    
+    Array<DTreeSet<cxuint>::Node1*> parents(1);
+    Array<DTreeSet<cxuint>::Node1*> children;
+    parents[0] = &root;
+    for (cxuint level = 0; level < treeNodeSizes.size()-1; level++)
+    {
+        const Array<cxuint>& nodeSizes = treeNodeSizes[level];
+        
+    }
+}
+
 /* DTreeSet tests */
 
 struct testDTreeInsert
