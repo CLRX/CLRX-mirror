@@ -1214,9 +1214,10 @@ public:
                     {
                         const Node1& child = array1[j];
                         if (child.type == NODE2)
-                            for (; k < child.size && temps[i].totalSize +
-                                    (child.array1[k].totalSize>>1) < newNodeSize;
-                                    k++, node0Count++)
+                            for (; k < child.size && (temps[i].size < 2 ||
+                                // if no node0s in parent node
+                                temps[i].totalSize+(child.array1[k].totalSize>>1) <
+                                            newNodeSize); k++, node0Count++)
                             {
                                 if (node0sNum-node0Count <= (((end-start)-(i+1))<<1))
                                     // prevent too small node0s number for rest node1s
@@ -1225,9 +1226,10 @@ public:
                                                     temps[i].size);
                             }
                         else
-                            for (; k < child.size && temps[i].totalSize +
-                                    (child.array[k].size>>1) < newNodeSize;
-                                    k++, node0Count++)
+                            for (; k < child.size && (temps[i].size < 2 ||
+                                // if no node0s in parent node
+                                temps[i].totalSize+(child.array[k].size>>1) < newNodeSize);
+                                        k++, node0Count++)
                             {
                                 if (node0sNum-node0Count <= (((end-start)-(i+1))<<1))
                                     // prevent too small node0s number for rest node1s

@@ -1277,6 +1277,12 @@ static const DNode1ReorgNode1sCase dNode1ReorgNode1sCaseTbl[] =
         { { 18, 19, 19, 21 }, { 21, 19, 19 }, { 53, 51, 52 } },
         0, 3,
         { 5, 3, 2 }
+    },
+    {   // 4 - longer
+        { { 19, 21, 21, 23 }, { 55, 55, 54, 53 }, { 18, 18, 19 }, { 18, 20, 21 },
+          { 21, 23, 24 }, { 18, 23 }, { 19, 23 }, { 24, 21, 18 } },
+        1, 7,
+        { 4, 2, 2, 4, 3, 3, 3, 3 }
     }
 };
 
@@ -1325,8 +1331,8 @@ static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& t
     flatN0Index = 0;
     for (cxuint i = 0; i < testCase.expNode1Sizes.size(); i++)
     {
-        //cxuint endExpValue = expValue + testCase.expNode0Sizes[i];
-        assertValue("DTreeNode2Reorg", caseName+"n2 size",
+        snprintf(buf, sizeof buf, "[%u]", i);
+        assertValue("DTreeNode2Reorg", caseName+"n2 size"+buf,
                     testCase.expNode1Sizes[i], cxuint(node2.array1[i].size));
         const DTreeSet<cxuint>::Node1& node1 = node2.array1[i];
         for (cxuint j = 0; j < testCase.expNode1Sizes[i]; j++)
