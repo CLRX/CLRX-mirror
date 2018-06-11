@@ -923,36 +923,22 @@ struct DNode1ReorgNode0sCase
 {
     Array<cxuint> node0Sizes;
     cxuint start, end;
-    bool removeOneNode0;
     Array<cxuint> expNode0Sizes;
 };
 
 static const DNode1ReorgNode0sCase dNode1ReorgNode0sCaseTbl[] =
 {
     {   // 0 - first
-        { 19, 53, 27, 48, 26 },
-        1, 4, false,
+        { 19, 53, 27, 48, 26 }, 1, 4,
         { 19, 43, 43, 42, 26 }
     },
     {   // 1 - second
-        { 19, 53, 27, 48, 26, 51, 46, 21 },
-        2, 7, false,
+        { 19, 53, 27, 48, 26, 51, 46, 21 }, 2, 7,
         { 19, 53, 40, 40, 40, 39, 39, 21 }
     },
     {   // 2 - third
-        { 19, 18, 22, 18, 27, 19, 18, 23 },
-        0, 8, false,
+        { 19, 18, 22, 18, 27, 19, 18, 23 }, 0, 8,
         { 21, 21, 21, 21, 20, 20, 20, 20 }
-    },
-    {   // 3 - first with remove one node
-        { 19, 33, 47, 21, 26 },
-        1, 4, true,
-        { 19, 51, 50, 26 }
-    },
-    {   // 4 - second with remove one node
-        { 19, 53, 27, 48, 26, 51, 46, 21 },
-        2, 7, true,
-        { 19, 53, 50, 50, 49, 49, 21 }
     }
 };
 
@@ -976,8 +962,7 @@ static void testSNode1ReorganizeNode0s(cxuint ti, const DNode1ReorgNode0sCase& t
     verifyDTreeNode1<cxuint>("DTreeNode1Reorg", caseName+"n1", node1, 0, 1,
                 nullptr, VERIFY_NODE_NO_MAXTOTALSIZE);
     
-    node1.reorganizeNode0s(testCase.start,
-                    testCase.end, testCase.removeOneNode0 ? -1 : 0);
+    node1.reorganizeNode0s(testCase.start, testCase.end);
     verifyDTreeNode1<cxuint>("DTreeNode1Reorg", caseName+"n1_after", node1, 0, 1,
                 nullptr, VERIFY_NODE_NO_MAXTOTALSIZE);
     

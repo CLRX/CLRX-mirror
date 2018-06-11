@@ -1066,15 +1066,15 @@ public:
                 first = T();
         }
         
-        void reorganizeNode0s(cxuint start, cxuint end, cxint newNodesNumDiff = 0)
+        void reorganizeNode0s(cxuint start, cxuint end)
         {
             Node0 temps[maxNode1Size];
             cxuint nodesSize = 0;
             for (cxuint i = start; i < end; i++)
                 nodesSize += array[i].size;
             
-            cxuint newNodeSize = nodesSize / (end-start + newNodesNumDiff);
-            cxuint withExtraElem = nodesSize - newNodeSize*(end-start+newNodesNumDiff);
+            cxuint newNodeSize = nodesSize / (end-start);
+            cxuint withExtraElem = nodesSize - newNodeSize*(end-start);
             cxuint ni = 0; // new item start
             T toFill = T();
             cxuint inIndex, inPos;
@@ -1103,7 +1103,7 @@ public:
                         factor = k = 0;
                         ni++;
                         newSize = newNodeSize + (ni < withExtraElem);
-                        if (ni < end-start+newNodesNumDiff)
+                        if (ni < end-start)
                         {
                             temps[ni].allocate(newSize);
                             temps[ni].index = start + ni;
@@ -1112,14 +1112,7 @@ public:
                 }
             }
             // final move to this array
-            std::move(temps, temps + end-start+newNodesNumDiff, array+start);
-            if (newNodesNumDiff < 0)
-            {
-                std::move(array + end, array + size, array + end + newNodesNumDiff);
-                size += newNodesNumDiff;
-                for (cxuint i = end + newNodesNumDiff; i < size; i++)
-                    array[i].index = i;
-            }
+            std::move(temps, temps + end-start, array+start);
         }
         
         void merge(Node1&& n2)
