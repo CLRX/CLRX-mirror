@@ -280,19 +280,22 @@ public:
             array = nullptr;
             capacity = std::min(cxbyte(size + (size>>freePlacesShift)),
                         cxbyte(maxNode0Capacity));
+            array = new T[capacity];
             firstPos = 0;
             bitMask = 0;
             size = 0;
         }
         
-        void assignArray(T& toFill, cxuint inSize, cxuint& pos, const T* array,
-                        uint64_t inBitMask, size_t newSize, cxuint& k, cxuint& factor)
+        void assignArray(T& toFill, cxuint inSize, cxuint& index, cxuint& pos,
+                const T* array, uint64_t inBitMask, size_t newSize,
+                cxuint& k, cxuint& factor)
         {
             cxuint finc = capacity - newSize;
             cxuint remainingSize = std::min(cxuint(newSize-size), cxuint(inSize-pos));
-            organizeArray(toFill, pos, remainingSize, array,
+            organizeArray(toFill, index, remainingSize, array,
                           inBitMask, k, newSize, this->array, bitMask, factor, finc);
             size += remainingSize;
+            pos += remainingSize;
         }
         
         /// merge this node with node2
@@ -1074,19 +1077,21 @@ public:
             cxuint withExtraElem = nodesSize - newNodeSize*(end-start+newNodesNumDiff);
             cxuint ni = 0; // new item start
             T toFill = T();
-            cxuint inPos = 0;
+            cxuint inIndex, inPos;
             cxuint k = 0;
             cxuint factor = 0;
             cxuint newSize = newNodeSize + (ni < withExtraElem);
             temps[ni].allocate(newSize);
+            temps[ni].index = start + ni;
             // main loop to fill up new node0's
             for (cxuint i = start; i < end; i++)
             {
-                while(inPos < array[i].size)
+                inPos = inIndex = 0;
+                while(inIndex < array[i].capacity)
                 {
-                    temps[ni].assignArray(toFill, array[i].size, inPos, array[i].array,
-                            array[i].bitMask, newSize, k, factor);
-                    if (temps[ni].size == array[i].size)
+                    temps[ni].assignArray(toFill, array[i].size, inIndex, inPos,
+                            array[i].array, array[i].bitMask, newSize, k, factor);
+                    if (inPos < array[i].size)
                     {
                         // fill up end of new node0
                         if (k < temps[ni].capacity)
@@ -1098,7 +1103,11 @@ public:
                         factor = k = 0;
                         ni++;
                         newSize = newNodeSize + (ni < withExtraElem);
-                        temps[ni].allocate(newSize);
+                        if (ni < end-start+newNodesNumDiff)
+                        {
+                            temps[ni].allocate(newSize);
+                            temps[ni].index = start + ni;
+                        }
                     }
                 }
             }

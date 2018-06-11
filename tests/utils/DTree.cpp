@@ -856,6 +856,8 @@ static void testDTreeNode1()
         }
 }
 
+/* testing DTree Node1 splittng */
+
 struct DNode1SplitCase
 {
     Array<cxuint> values;
@@ -863,7 +865,7 @@ struct DNode1SplitCase
     cxuint expectedPoint;
 };
 
-static DNode1SplitCase dtreeNode1SplitTbl[] =
+static const DNode1SplitCase dtreeNode1SplitTbl[] =
 {
     {   // 0 - first
         { 332, 425, 494, 568, 731 },
@@ -907,6 +909,70 @@ static void testDTreeNode1Split(cxuint ti, const DNode1SplitCase& testCase)
                       testCase.values.size() - testCase.expectedPoint,
                       testCase.values.data() + testCase.expectedPoint);
 }
+
+/* testing Node1::reorganizeNode0s */
+
+struct DNode1ReorgNode0sCase
+{
+    Array<cxuint> node0Sizes;
+    cxuint start, end;
+    bool removeOneNode0;
+    Array<cxuint> expNode0Sizes;
+};
+
+static const DNode1ReorgNode0sCase dNode1ReorgNode0sCaseTbl[] =
+{
+    {   // 0 - first
+        { 19, 53, 27, 48, 26 },
+        1, 4, false,
+        { 19, 43, 43, 42, 26 }
+    }
+};
+
+static void testSNode1ReorganizeNode0s(cxuint ti, const DNode1ReorgNode0sCase& testCase)
+{
+    std::less<cxuint> comp;
+    Identity<cxuint> kofval;
+    
+    std::ostringstream oss;
+    oss << "Node1Reorg#" << ti;
+    oss.flush();
+    std::string caseName = oss.str();
+    
+    DTreeSet<cxuint>::Node1 node1;
+    Array<cxuint> values(testCase.node0Sizes.size());
+    values[0] = 100;
+    for (cxuint i = 1; i < testCase.node0Sizes.size(); i++)
+        values[i] = values[i-1] + testCase.node0Sizes[i-1];
+    createNode1FromArray(node1, values.size(), values.data(),
+                    testCase.node0Sizes.data());
+    verifyDTreeNode1<cxuint>("DTreeNode1Reorg", caseName+"n1", node1, 0, 1);
+    
+    node1.reorganizeNode0s(testCase.start,
+                    testCase.end, testCase.removeOneNode0 ? -1 : 0);
+    verifyDTreeNode1<cxuint>("DTreeNode1Reorg", caseName+"n1_after", node1, 0, 1);
+    
+    // check reorganization0
+    char buf[8];
+    cxuint expValue = 100;
+    for (cxuint i = 0; i < testCase.expNode0Sizes.size(); i++)
+    {
+        cxuint endExpValue = expValue + testCase.expNode0Sizes[i];
+        assertValue("DTreeNode1Reorg", caseName+"n1 size", testCase.expNode0Sizes[i],
+                    cxuint(node1.array[i].size));
+        for (; expValue < endExpValue; expValue++)
+        {
+            snprintf(buf, sizeof buf, "%u", expValue);
+            cxuint index = node1.array[i].find(expValue, comp, kofval);
+            assertTrue("DTreeNode1Reorg", caseName+"n1 index:"+buf, 
+                            index<node1.array[i].capacity);
+            assertValue("DTreeNode1Reorg", caseName+"n1 value:"+buf, 
+                            expValue, node1.array[i][index]);
+        }
+    }
+}
+
+/* testing DTree Node2s */
 
 static void createNode1FromValue(DTreeSet<cxuint>::Node1& node1, cxuint value,
             cxuint size = 80)
@@ -1133,7 +1199,9 @@ static void testDTreeNode2()
         }
 }
 
-static DNode1SplitCase dtreeNode2SplitTbl[] =
+/* testing DTree Node2 splittng */
+
+static const DNode1SplitCase dtreeNode2SplitTbl[] =
 {
     {   // 0 - first
         { 33200, 42500, 49400, 56800, 73100 },
@@ -1198,6 +1266,10 @@ int main(int argc, const char** argv)
     
     for (cxuint i = 0; i < sizeof(dtreeNode1SplitTbl) / sizeof(DNode1SplitCase); i++)
         retVal |= callTest(testDTreeNode1Split, i, dtreeNode1SplitTbl[i]);
+    
+    for (cxuint i = 0; i <
+            sizeof(dNode1ReorgNode0sCaseTbl) / sizeof(DNode1ReorgNode0sCase); i++)
+        retVal |= callTest(testSNode1ReorganizeNode0s, i, dNode1ReorgNode0sCaseTbl[i]);
     
     retVal |= callTest(testDTreeNode2);
     for (cxuint i = 0; i < sizeof(dtreeNode2SplitTbl) / sizeof(DNode1SplitCase); i++)
