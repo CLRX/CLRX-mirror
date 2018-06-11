@@ -1194,14 +1194,15 @@ public:
         void reorganizeNode1s(cxuint start, cxuint end)
         {
             Node1 temps[maxNode1Size];
-            cxuint nodesSize = 0;
+            cxuint node0sNum = 0;
             size_t nodesTotSize = 0;
             for (cxuint i = start; i < end; i++)
             {
-                nodesSize += array1[i].size;
+                node0sNum += array1[i].size;
                 nodesTotSize += array1[i].totalSize;
             }
             
+            cxuint node0Count = 0;
             cxuint j = start; // input node index
             cxuint k = 0; // input child node index
             for (cxuint i = 0; i < end-start; i++)
@@ -1214,14 +1215,26 @@ public:
                         const Node1& child = array1[j];
                         if (child.type == NODE2)
                             for (; k < child.size && temps[i].totalSize +
-                                    (child.array1[k].totalSize>>1) < newNodeSize; k++)
+                                    (child.array1[k].totalSize>>1) < newNodeSize;
+                                    k++, node0Count++)
+                            {
+                                if (node0sNum-node0Count <= (((end-start)-(i+1))<<1))
+                                    // prevent too small node0s number for rest node1s
+                                    break;
                                 temps[i].insertNode1(std::move(child.array1[k]),
                                                     temps[i].size);
+                            }
                         else
                             for (; k < child.size && temps[i].totalSize +
-                                    (child.array[k].size>>1) < newNodeSize; k++)
+                                    (child.array[k].size>>1) < newNodeSize;
+                                    k++, node0Count++)
+                            {
+                                if (node0sNum-node0Count <= (((end-start)-(i+1))<<1))
+                                    // prevent too small node0s number for rest node1s
+                                    break;
                                 temps[i].insertNode0(std::move(child.array[k]),
                                                     temps[i].size);
+                            }
                         
                         if (k >= child.size)
                             k = 0; // if end of input node
