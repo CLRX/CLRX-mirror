@@ -1503,7 +1503,7 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& testCase)
         assertValue("DTreeIterBase", caseName+".diff(end-"+buf+")",
                 ssize_t(elemsNum)-cxuint(i), iterEnd.diff(thisIter));
         assertValue("DTreeIterBase", caseName+".diff("+buf+"-end)",
-                cxuint(i)-ssize_t(elemsNum), thisIter.diff(iterEnd));
+                ssize_t(i)-ssize_t(elemsNum), thisIter.diff(iterEnd));
         assertValue("DTreeIterBase", caseName+".diff("+buf+"-"+buf+")", ssize_t(0),
                 thisIter.diff(thisIter));
     }
