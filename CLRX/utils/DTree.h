@@ -1729,7 +1729,7 @@ public:
             return *this;
         }
         // post-increment
-        Iter operator++(int) const
+        Iter operator++(int)
         {
             Iter tmp = *this;
             IterBase::next();
@@ -1755,7 +1755,7 @@ public:
             return *this;
         }
         /// post-decrement
-        Iter operator--(int) const
+        Iter operator--(int)
         {
             Iter tmp = *this;
             IterBase::prev();
@@ -1814,7 +1814,7 @@ public:
             return *this;
         }
         /// post-increment
-        ConstIter operator++(int) const
+        ConstIter operator++(int)
         {
             ConstIter tmp = *this;
             IterBase::next();
@@ -1840,7 +1840,7 @@ public:
             return *this;
         }
         /// post-decrement
-        ConstIter operator--(int) const
+        ConstIter operator--(int)
         {
             ConstIter tmp = *this;
             IterBase::prev();
