@@ -1609,6 +1609,15 @@ static void testDTreeIter()
                 diterBaseCaseTbl[0].treeNodeSizes, elemsNum);
     testDTreeIterTempl<DTreeSet<cxuint>::Iter>("DTreeIter", root);
     testDTreeIterTempl<DTreeSet<cxuint>::ConstIter>("DTreeConstIter", root);
+    
+    DTreeSet<cxuint>::Iter iter(root.getFirstNode0(), 0);
+    DTreeSet<cxuint>::ConstIter constIter(root.getFirstNode0(), 0);
+    assertTrue("DTreeIter", "iter==constIter", iter == constIter);
+    assertTrue("DTreeIter", "iter!=constIter", !(iter != constIter));
+    assertValue("DTreeIter", "iter-constIter", ssize_t(0), iter - constIter);
+    assertTrue("DTreeIter", "constIter==iter", constIter == iter);
+    assertTrue("DTreeIter", "constIter!=iter", !(constIter != iter));
+    assertValue("DTreeIter", "constIter-iter", ssize_t(0), constIter - iter);
 }
 
 /* DTreeSet tests */
