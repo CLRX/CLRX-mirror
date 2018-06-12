@@ -68,7 +68,7 @@ static void verifyDTreeNode0(const std::string& testName, const std::string& tes
     char buf[16];
     for (cxuint i = 1; i < n0.capacity; i++)
     {
-        snprintf(buf, 10, "<=e[%u]", i);
+        snprintf(buf, sizeof buf, "<=e[%u]", i);
         if ((n0.bitMask & (3ULL<<(i-1))) != 0)
             // some places is unused (freed) in free space can be
             // same value as in used place
