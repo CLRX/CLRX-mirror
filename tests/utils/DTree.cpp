@@ -1378,7 +1378,29 @@ static const DIterBaseCase diterBaseCaseTbl[] =
             { 3, 2, 4, 5 },
             { 27, 19, 20,  41, 39,  31, 33, 18, 21,  51, 54, 12, 19, 16 }
         },
-        { 26, 29, 36, 55, 56, 58, 93, 98, 111, 399, 400 }
+        { 0, 26, 29, 36, 55, 56, 58, 93, 98, 111, 399, 400, 401 }
+    },
+    {   // 1 - second
+        {
+            { 5 },
+            { 27, 19, 20, 27, 31 }
+        },
+        { 0, 26, 36, 55, 56 }
+    },
+    {   // 2 - greater
+        {
+            { 5 },
+            { 3, 3, 5, 2, 4 },
+            { 6, 4, 2,  7, 8, 6, 3, 4, 2, 6, 2,  7, 8,  5, 4, 4, 6 },
+            { 21, 28, 41, 51, 46, 34,  31, 19, 23, 44,  55, 54,
+              32, 21, 27, 27, 34, 35, 39,  19, 21, 36, 18, 25, 29, 41, 42,
+                46, 47, 31, 19, 29, 33,
+              38, 31, 21,  51, 17, 51, 19,  41, 29,  35, 31, 21, 26, 53, 44,  19, 20,
+              19 ,20, 21, 22, 23, 24, 25,  41, 40, 39, 38, 37, 36, 35, 34,
+              43, 45, 41, 24, 31,  43, 29, 21, 55,  23, 29, 28, 45,
+                40, 30, 28, 21, 49, 50 }
+        },
+        { 21, 234, 465, 1001, 1421, 1769, 2421, 2697, 2757 }
     }
 };
 
@@ -1459,6 +1481,8 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& testCase)
     }
     iter.next();
     DTreeSet<cxuint>::IterBase iterEnd(iter);
+    assertValue("DTreeIterBase", caseName+".diff(end,end)", ssize_t(0),
+                iterEnd.diff(iterEnd));
     
     for (cxuint i = elemsNum; i > 0; i--)
     {
@@ -1480,6 +1504,8 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& testCase)
                 iterEnd.diff(thisIter));
         assertValue("DTreeIterBase", caseName+".diff("+buf+"-end)", i-ssize_t(elemsNum),
                 thisIter.diff(iterEnd));
+        assertValue("DTreeIterBase", caseName+".diff("+buf+"-"+buf+")", ssize_t(0),
+                thisIter.diff(thisIter));
     }
     for (cxuint i = 1; i < elemsNum; i++)
     {
