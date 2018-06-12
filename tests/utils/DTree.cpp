@@ -1364,18 +1364,25 @@ static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& t
 
 /* DTree IterBase tests */
 
-typedef Array<Array<cxuint> > DIterBaseCase;
+struct DIterBaseCase
+{
+    Array<Array<cxuint> > treeNodeSizes;
+    Array<cxuint> traverseCases;
+};
 
 static const DIterBaseCase diterBaseCaseTbl[] =
 {
     {   // 0 - first
-        { 4 },
-        { 3, 2, 4, 5 },
-        { 27, 19, 20,  41, 39,  31, 33, 18, 21,  51, 54, 12, 19, 16 }
+        {
+            { 4 },
+            { 3, 2, 4, 5 },
+            { 27, 19, 20,  41, 39,  31, 33, 18, 21,  51, 54, 12, 19, 16 }
+        },
+        { 26, 29, 36, 55, 56, 58, 93, 98, 111, 399, 400 }
     }
 };
 
-static void testDTreeIterBase(cxuint ti, const DIterBaseCase& treeNodeSizes)
+static void testDTreeIterBase(cxuint ti, const DIterBaseCase& testCase)
 {
     std::less<cxuint> comp;
     Identity<cxuint> kofval;
@@ -1384,15 +1391,14 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& treeNodeSizes)
     oss.flush();
     std::string caseName = oss.str();
     // construct DTree from nodeSizes
-    Array<DTreeSet<cxuint>::Node1> parents(1);
+    Array<DTreeSet<cxuint>::Node1> parents;
     Array<DTreeSet<cxuint>::Node1> children;
     Array<DTreeSet<cxuint>::Node0> children0;
     
-    cxint level = treeNodeSizes.size()-1;
+    cxint level = testCase.treeNodeSizes.size()-1;
     cxuint elemsNum = 0;
     {
-        
-        const Array<cxuint>& nodeSizes = treeNodeSizes[level--];
+        const Array<cxuint>& nodeSizes = testCase.treeNodeSizes[level--];
         cxuint value = 100;
         children0.resize(nodeSizes.size());
         for (cxuint i = 0; i < nodeSizes.size(); i++)
@@ -1405,7 +1411,7 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& treeNodeSizes)
     // last node1s level
     if (level >= 0)
     {
-        const Array<cxuint>& nodeSizes = treeNodeSizes[level--];
+        const Array<cxuint>& nodeSizes = testCase.treeNodeSizes[level--];
         parents.resize(nodeSizes.size());
         
         cxuint j = 0;
@@ -1422,7 +1428,7 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& treeNodeSizes)
     }
     for (; level >= 0; level--)
     {
-        const Array<cxuint>& nodeSizes = treeNodeSizes[level];
+        const Array<cxuint>& nodeSizes = testCase.treeNodeSizes[level];
         parents.resize(nodeSizes.size());
         
         cxuint j = 0;
@@ -1440,7 +1446,8 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& treeNodeSizes)
     DTreeSet<cxuint>::Node1& root = children[0];
     
     // IterBase testing
-    DTreeSet<cxuint>::IterBase iter(root.getFirstNode0(), 0);
+    DTreeSet<cxuint>::IterBase iterStart(root.getFirstNode0(), 0);
+    DTreeSet<cxuint>::IterBase iter = iterStart;
     
     char buf[16];
     for (cxuint i = 1; i < elemsNum; i++)
@@ -1469,6 +1476,10 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& treeNodeSizes)
         snprintf(buf, sizeof buf, "it%u", i);
         assertValue("DTreeIterBase", caseName+".nextNValue."+buf,
                     i+100, (*thisIter.n0)[thisIter.index]);
+        assertValue("DTreeIterBase", caseName+".diff(end-"+buf+")", ssize_t(elemsNum)-i,
+                iterEnd.diff(thisIter));
+        assertValue("DTreeIterBase", caseName+".diff("+buf+"-end)", i-ssize_t(elemsNum),
+                thisIter.diff(iterEnd));
     }
     for (cxuint i = 1; i < elemsNum; i++)
     {
@@ -1477,6 +1488,37 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& treeNodeSizes)
         snprintf(buf, sizeof buf, "it%u", i);
         assertValue("DTreeIterBase", caseName+".prevNValue."+buf,
                     (elemsNum-i)+100, (*thisIter.n0)[thisIter.index]);
+        assertValue("DTreeIterBase", caseName+".diff(start-"+buf+")", i-ssize_t(elemsNum),
+                iterStart.diff(thisIter));
+        assertValue("DTreeIterBase", caseName+".diff("+buf+"-start)", ssize_t(elemsNum)-i,
+                thisIter.diff(iterStart));
+    }
+    
+    assertValue("DTreeIterBase", caseName+".diff(end-start)", ssize_t(elemsNum),
+                iterEnd.diff(iterStart));
+    assertValue("DTreeIterBase", caseName+".diff(start-end)", -ssize_t(elemsNum),
+                iterStart.diff(iterEnd));
+    
+    for (cxuint i = 0; i < testCase.traverseCases.size(); i++)
+    {
+        const cxuint tPos = testCase.traverseCases[i];
+        DTreeSet<cxuint>::IterBase posIter = iterStart;
+        posIter.next(tPos);
+        
+        for (cxuint j = 0; j < elemsNum; j++)
+        {
+            if (tPos == j)
+                continue;
+            DTreeSet<cxuint>::IterBase thisIter = posIter;
+            thisIter.step(ssize_t(j)-ssize_t(tPos));
+            snprintf(buf, sizeof buf, "%u:%u", tPos, j);
+            assertValue("DTreeIterBase", caseName+".iterstep:"+buf,
+                        cxuint(100+j), (*thisIter.n0)[thisIter.index]);
+            assertValue("DTreeIterBase", caseName+".iterdiff:"+buf,
+                        ssize_t(j)-ssize_t(tPos), thisIter.diff(posIter));
+            assertValue("DTreeIterBase", caseName+".iterdiffn:"+buf,
+                        ssize_t(tPos)-ssize_t(j), posIter.diff(thisIter));
+        }
     }
 }
 
