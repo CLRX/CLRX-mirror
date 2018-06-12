@@ -1384,73 +1384,60 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& treeNodeSizes)
     oss.flush();
     std::string caseName = oss.str();
     // construct DTree from nodeSizes
-    DTreeSet<cxuint>::Node1 root;
+    Array<DTreeSet<cxuint>::Node1> parents(1);
+    Array<DTreeSet<cxuint>::Node1> children;
+    Array<DTreeSet<cxuint>::Node0> children0;
     
-    Array<DTreeSet<cxuint>::Node1*> parents(1);
-    Array<DTreeSet<cxuint>::Node1*> children;
-    Array<DTreeSet<cxuint>::Node0*> children0;
-    parents[0] = &root;
-    cxuint level = 0;
-    for (level = 0; level < treeNodeSizes.size()-2; level++)
+    cxint level = treeNodeSizes.size()-1;
+    cxuint elemsNum = 0;
     {
-        const Array<cxuint>& nodeSizes = treeNodeSizes[level];
-        const cxuint childrenNum = std::accumulate(
-                    nodeSizes.begin(), nodeSizes.end(), cxuint(0));
         
-        children.resize(childrenNum);
-        
-        cxuint childrenCount = 0;
+        const Array<cxuint>& nodeSizes = treeNodeSizes[level--];
+        cxuint value = 100;
+        children0.resize(nodeSizes.size());
         for (cxuint i = 0; i < nodeSizes.size(); i++)
         {
-            DTreeSet<cxuint>::Node1* p = parents[i];
-            // insert children to parent
-            for (cxuint k = 0; k < nodeSizes[i]; k++)
-            {
-                DTreeSet<cxuint>::Node1 child;
-                p->insertNode1(std::move(child), p->size);
-            }
-            // get new children from parent
-            for (cxuint k = 0; k < nodeSizes[i]; k++, childrenCount++)
-                children[childrenCount] = p->array1 + k;
+            for (cxuint k = 0; k < nodeSizes[i]; k++, value++, elemsNum++)
+                children0[i].insert(value, comp, kofval);
         }
-        
-        parents = children;
     }
     
     // last node1s level
-    if (level < treeNodeSizes.size()-1)
+    if (level >= 0)
     {
-        const Array<cxuint>& nodeSizes = treeNodeSizes[level++];
-        const cxuint childrenNum = std::accumulate(
-                    nodeSizes.begin(), nodeSizes.end(), cxuint(0));
+        const Array<cxuint>& nodeSizes = treeNodeSizes[level--];
+        parents.resize(nodeSizes.size());
         
-        children0.resize(childrenNum);
-        
-        cxuint childrenCount = 0;
+        cxuint j = 0;
         for (cxuint i = 0; i < nodeSizes.size(); i++)
         {
-            DTreeSet<cxuint>::Node1* p = parents[i];
-            // insert children to parent
-            for (cxuint k = 0; k < nodeSizes[i]; k++)
-            {
-                DTreeSet<cxuint>::Node0 child;
-                p->insertNode0(std::move(child), p->size);
-            }
-            // get new children from parent
-            for (cxuint k = 0; k < nodeSizes[i]; k++, childrenCount++)
-                children0[childrenCount] = p->array + k;
+            DTreeSet<cxuint>::Node1& p = parents[i];
+            for (cxuint k = 0; k < nodeSizes[i]; k++, j++)
+                p.insertNode0(std::move(children0[j]), p.size);
         }
+        assertValue("DTreeIterBase", caseName+".nodeLevelSize",
+                    j, cxuint(children0.size()));
+        children = parents;
+        parents.clear();
     }
-    
-    cxuint elemsNum = 0;
-    // final value populating
+    for (; level >= 0; level--)
     {
         const Array<cxuint>& nodeSizes = treeNodeSizes[level];
-        cxuint value = 100;
+        parents.resize(nodeSizes.size());
+        
+        cxuint j = 0;
         for (cxuint i = 0; i < nodeSizes.size(); i++)
-            for (cxuint k = 0; k < nodeSizes[i]; k++, value++, elemsNum++)
-                children0[i]->insert(value, comp, kofval);
+        {
+            DTreeSet<cxuint>::Node1& p = parents[i];
+            for (cxuint k = 0; k < nodeSizes[i]; k++, j++)
+                p.insertNode1(std::move(children[j]), p.size);
+        }
+        assertValue("DTreeIterBase", caseName+".nodeLevelSize",
+                    j, cxuint(children.size()));
+        children = parents;
+        parents.clear();
     }
+    DTreeSet<cxuint>::Node1& root = children[0];
     
     // IterBase testing
     DTreeSet<cxuint>::IterBase iter(root.getFirstNode0(), 0);
@@ -1464,6 +1451,8 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& treeNodeSizes)
                     i+100, (*iter.n0)[iter.index]);
     }
     iter.next();
+    DTreeSet<cxuint>::IterBase iterEnd(iter);
+    
     for (cxuint i = elemsNum; i > 0; i--)
     {
         iter.prev();
@@ -1472,7 +1461,7 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& treeNodeSizes)
                     i-1+100, (*iter.n0)[iter.index]);
     }
     
-    /*iter = DTreeSet<cxuint>::IterBase(root.getFirstNode0(), 0);
+    iter = DTreeSet<cxuint>::IterBase(root.getFirstNode0(), 0);
     for (cxuint i = 1; i < elemsNum; i++)
     {
         DTreeSet<cxuint>::IterBase thisIter = iter;
@@ -1480,7 +1469,15 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& treeNodeSizes)
         snprintf(buf, sizeof buf, "it%u", i);
         assertValue("DTreeIterBase", caseName+".nextNValue."+buf,
                     i+100, (*thisIter.n0)[thisIter.index]);
-    }*/
+    }
+    for (cxuint i = 1; i < elemsNum; i++)
+    {
+        DTreeSet<cxuint>::IterBase thisIter = iterEnd;
+        thisIter.prev(i);
+        snprintf(buf, sizeof buf, "it%u", i);
+        assertValue("DTreeIterBase", caseName+".prevNValue."+buf,
+                    (elemsNum-i)+100, (*thisIter.n0)[thisIter.index]);
+    }
 }
 
 /* DTreeSet tests */
