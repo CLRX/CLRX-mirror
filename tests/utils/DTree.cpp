@@ -1500,10 +1500,10 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& testCase)
         snprintf(buf, sizeof buf, "it%u", i);
         assertValue("DTreeIterBase", caseName+".nextNValue."+buf,
                     i+100, (*thisIter.n0)[thisIter.index]);
-        assertValue("DTreeIterBase", caseName+".diff(end-"+buf+")", ssize_t(elemsNum)-i,
-                iterEnd.diff(thisIter));
-        assertValue("DTreeIterBase", caseName+".diff("+buf+"-end)", i-ssize_t(elemsNum),
-                thisIter.diff(iterEnd));
+        assertValue("DTreeIterBase", caseName+".diff(end-"+buf+")",
+                ssize_t(elemsNum)-cxuint(i), iterEnd.diff(thisIter));
+        assertValue("DTreeIterBase", caseName+".diff("+buf+"-end)",
+                cxuint(i)-ssize_t(elemsNum), thisIter.diff(iterEnd));
         assertValue("DTreeIterBase", caseName+".diff("+buf+"-"+buf+")", ssize_t(0),
                 thisIter.diff(thisIter));
     }
@@ -1514,10 +1514,10 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& testCase)
         snprintf(buf, sizeof buf, "it%u", i);
         assertValue("DTreeIterBase", caseName+".prevNValue."+buf,
                     (elemsNum-i)+100, (*thisIter.n0)[thisIter.index]);
-        assertValue("DTreeIterBase", caseName+".diff(start-"+buf+")", i-ssize_t(elemsNum),
-                iterStart.diff(thisIter));
-        assertValue("DTreeIterBase", caseName+".diff("+buf+"-start)", ssize_t(elemsNum)-i,
-                thisIter.diff(iterStart));
+        assertValue("DTreeIterBase", caseName+".diff(start-"+buf+")",
+                ssize_t(i)-ssize_t(elemsNum), iterStart.diff(thisIter));
+        assertValue("DTreeIterBase", caseName+".diff("+buf+"-start)",
+                ssize_t(elemsNum)-ssize_t(i), thisIter.diff(iterStart));
     }
     
     assertValue("DTreeIterBase", caseName+".diff(end-start)", ssize_t(elemsNum),
