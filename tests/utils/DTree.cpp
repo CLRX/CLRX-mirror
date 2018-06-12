@@ -21,6 +21,7 @@
 
 #include <CLRX/Config.h>
 #include <algorithm>
+#include <numeric>
 #include <limits>
 #include <iostream>
 #include <sstream>
@@ -64,10 +65,10 @@ static void verifyDTreeNode0(const std::string& testName, const std::string& tes
         // check ordering with previous value
         assertTrue(testName, testCase + "<e[0]", prevValuePtr->first < n0[firstPos]);
     
-    char buf[10];
+    char buf[16];
     for (cxuint i = 1; i < n0.capacity; i++)
     {
-        snprintf(buf, 10, "<=e[%d]", i);
+        snprintf(buf, 10, "<=e[%u]", i);
         if ((n0.bitMask & (3ULL<<(i-1))) != 0)
             // some places is unused (freed) in free space can be
             // same value as in used place
@@ -107,7 +108,7 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
 {
     assertTrue(testName, testCase + ".n1.size<=n1.capacity",
                    n1.size <= n1.capacity);
-    char buf[10];
+    char buf[16];
     size_t totalSize = 0;
     T firstKey = T();
     std::pair<T, bool> prevValue = std::make_pair(T(), true);
@@ -124,7 +125,7 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
         for (cxuint i = 0; i < n1.size; i++)
         {
             totalSize += n1.array[i].size;
-            snprintf(buf, sizeof buf, "[%d]", i);
+            snprintf(buf, sizeof buf, "[%u]", i);
             verifyDTreeNode0<T>(testName, testCase + buf, n1.array[i], level+1, maxLevel,
                         prevValuePtr);
             assertValue(testName, testCase + buf + ".index", i, cxuint(n1.array[i].index));
@@ -132,7 +133,7 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
         // checking ordering
         for (cxuint i = 1; i < n1.size; i++)
         {
-            snprintf(buf, sizeof buf, "<=f[%d]", i);
+            snprintf(buf, sizeof buf, "<=f[%u]", i);
             assertTrue(testName, testCase + buf,
                         n1.array[i-1].array[n1.array[i-1].firstPos] <
                         n1.array[i].array[n1.array[i].firstPos]);
@@ -146,7 +147,7 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
         for (cxuint i = 0; i < n1.size; i++)
         {
             totalSize += n1.array1[i].totalSize;
-            snprintf(buf, sizeof buf, "[%d]", i);
+            snprintf(buf, sizeof buf, "[%u]", i);
             verifyDTreeNode1<T>(testName, testCase + buf, n1.array1[i], level+1, maxLevel,
                         prevValuePtr, flags);
             assertValue(testName, testCase + buf + ".index", i,
@@ -155,7 +156,7 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
         // checking ordering
         for (cxuint i = 1; i < n1.size; i++)
         {
-            snprintf(buf, sizeof buf, "<=f[%d]", i);
+            snprintf(buf, sizeof buf, "<=f[%u]", i);
             assertTrue(testName, testCase + buf, n1.array1[i-1].first <
                         n1.array1[i].first);
         }
@@ -967,7 +968,7 @@ static void testDNode1ReorganizeNode0s(cxuint ti, const DNode1ReorgNode0sCase& t
                 nullptr, VERIFY_NODE_NO_MAXTOTALSIZE);
     
     // check reorganization0
-    char buf[8];
+    char buf[16];
     cxuint expValue = 100;
     for (cxuint i = 0; i < testCase.expNode0Sizes.size(); i++)
     {
@@ -1332,7 +1333,7 @@ static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& t
                 nullptr, VERIFY_NODE_NO_TOTALSIZE);
     
     // check reorganization0
-    char buf[8];
+    char buf[16];
     cxuint expValue = 100;
     flatN0Index = 0;
     for (cxuint i = 0; i < testCase.expNode1Sizes.size(); i++)
@@ -1365,16 +1366,86 @@ static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& t
 
 static void testDTreeIterBase(cxuint ti, const Array<Array<cxuint> >& treeNodeSizes)
 {
+    std::less<cxuint> comp;
+    Identity<cxuint> kofval;
     // construct DTree from nodeSizes
     DTreeSet<cxuint>::Node1 root;
     
     Array<DTreeSet<cxuint>::Node1*> parents(1);
     Array<DTreeSet<cxuint>::Node1*> children;
+    Array<DTreeSet<cxuint>::Node0*> children0;
     parents[0] = &root;
-    for (cxuint level = 0; level < treeNodeSizes.size()-1; level++)
+    cxuint level = 0;
+    for (level = 0; level < treeNodeSizes.size()-2; level++)
     {
         const Array<cxuint>& nodeSizes = treeNodeSizes[level];
+        const cxuint childrenNum = std::accumulate(
+                    nodeSizes.begin(), nodeSizes.end(), cxuint(0));
         
+        children.resize(childrenNum);
+        
+        cxuint childrenCount = 0;
+        for (cxuint i = 0; i < nodeSizes.size(); i++)
+        {
+            DTreeSet<cxuint>::Node1* p = parents[i];
+            // insert children to parent
+            for (cxuint k = 0; k < nodeSizes[i]; k++)
+            {
+                DTreeSet<cxuint>::Node1 child;
+                p->insertNode1(std::move(child), p->size);
+            }
+            // get new children from parent
+            for (cxuint k = 0; k < nodeSizes[i]; k++, childrenCount++)
+                children[childrenCount] = p->array1 + p->size-1;
+        }
+        
+        parents = children;
+    }
+    
+    // last node1s level
+    if (level < treeNodeSizes.size()-1)
+    {
+        const Array<cxuint>& nodeSizes = treeNodeSizes[level++];
+        const cxuint childrenNum = std::accumulate(
+                    nodeSizes.begin(), nodeSizes.end(), cxuint(0));
+        
+        children0.resize(childrenNum);
+        
+        cxuint childrenCount = 0;
+        for (cxuint i = 0; i < nodeSizes.size(); i++)
+        {
+            DTreeSet<cxuint>::Node1* p = parents[i];
+            // insert children to parent
+            for (cxuint k = 0; k < nodeSizes[i]; k++)
+            {
+                DTreeSet<cxuint>::Node0 child;
+                p->insertNode0(std::move(child), p->size);
+            }
+            // get new children from parent
+            for (cxuint k = 0; k < nodeSizes[i]; k++, childrenCount++)
+                children0[childrenCount] = p->array + p->size-1;
+        }
+    }
+    
+    cxuint elemsNum = 0;
+    // final value populating
+    {
+        const Array<cxuint>& nodeSizes = treeNodeSizes[level];
+        cxuint value = 100;
+        for (cxuint i = 0; i < nodeSizes.size(); i++)
+            for (cxuint k = 0; k < nodeSizes[i]; k++, value++, elemsNum++)
+                children0[i]->insert(value, comp, kofval);
+    }
+
+    
+    // IterBase testing
+    DTreeSet<cxuint>::IterBase iter(root.getFirstNode0(), 0);
+    
+    char buf[16];
+    for (cxuint i = 0; i < elemsNum-1; i++)
+    {
+        iter.next();
+        assertValue("DTreeIterBase", "Value", i+100, (*iter.n0)[iter.index]);
     }
 }
 

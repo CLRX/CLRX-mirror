@@ -1261,6 +1261,8 @@ public:
         };
         cxuint index;   ///< index in array
         
+        IterBase() : cn0(nullptr), index(0)
+        { }
         IterBase(const Node0* _n0, cxuint _index) : cn0(_n0), index(_index)
         { }
         IterBase(Node0* _n0, cxuint _index) : n0(_n0), index(_index)
