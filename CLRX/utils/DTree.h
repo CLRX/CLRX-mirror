@@ -1002,7 +1002,7 @@ public:
             
             array[index] = std::move(node);
             array[index].index = index;
-            if (index == 0)
+            if (index == 0 && array[0].array!=nullptr)
                 first = array[0].array[array[0].firstPos];
             size++;
             totalSize += node.size;

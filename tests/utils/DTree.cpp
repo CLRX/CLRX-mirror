@@ -1364,10 +1364,25 @@ static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& t
 
 /* DTree IterBase tests */
 
-static void testDTreeIterBase(cxuint ti, const Array<Array<cxuint> >& treeNodeSizes)
+typedef Array<Array<cxuint> > DIterBaseCase;
+
+static const DIterBaseCase diterBaseCaseTbl[] =
+{
+    {   // 0 - first
+        { 4 },
+        { 3, 2, 4, 5 },
+        { 27, 19, 20,  41, 39,  31, 33, 18, 21,  51, 54, 12, 19, 16 }
+    }
+};
+
+static void testDTreeIterBase(cxuint ti, const DIterBaseCase& treeNodeSizes)
 {
     std::less<cxuint> comp;
     Identity<cxuint> kofval;
+    std::ostringstream oss;
+    oss << "DIterBase" << ti;
+    oss.flush();
+    std::string caseName = oss.str();
     // construct DTree from nodeSizes
     DTreeSet<cxuint>::Node1 root;
     
@@ -1396,7 +1411,7 @@ static void testDTreeIterBase(cxuint ti, const Array<Array<cxuint> >& treeNodeSi
             }
             // get new children from parent
             for (cxuint k = 0; k < nodeSizes[i]; k++, childrenCount++)
-                children[childrenCount] = p->array1 + p->size-1;
+                children[childrenCount] = p->array1 + k;
         }
         
         parents = children;
@@ -1423,7 +1438,7 @@ static void testDTreeIterBase(cxuint ti, const Array<Array<cxuint> >& treeNodeSi
             }
             // get new children from parent
             for (cxuint k = 0; k < nodeSizes[i]; k++, childrenCount++)
-                children0[childrenCount] = p->array + p->size-1;
+                children0[childrenCount] = p->array + k;
         }
     }
     
@@ -1436,17 +1451,36 @@ static void testDTreeIterBase(cxuint ti, const Array<Array<cxuint> >& treeNodeSi
             for (cxuint k = 0; k < nodeSizes[i]; k++, value++, elemsNum++)
                 children0[i]->insert(value, comp, kofval);
     }
-
     
     // IterBase testing
     DTreeSet<cxuint>::IterBase iter(root.getFirstNode0(), 0);
     
     char buf[16];
-    for (cxuint i = 0; i < elemsNum-1; i++)
+    for (cxuint i = 1; i < elemsNum; i++)
     {
         iter.next();
-        assertValue("DTreeIterBase", "Value", i+100, (*iter.n0)[iter.index]);
+        snprintf(buf, sizeof buf, "it%u", i);
+        assertValue("DTreeIterBase", caseName+".nextValue."+buf,
+                    i+100, (*iter.n0)[iter.index]);
     }
+    iter.next();
+    for (cxuint i = elemsNum; i > 0; i--)
+    {
+        iter.prev();
+        snprintf(buf, sizeof buf, "it%u", i);
+        assertValue("DTreeIterBase", caseName+".prevValue."+buf,
+                    i-1+100, (*iter.n0)[iter.index]);
+    }
+    
+    /*iter = DTreeSet<cxuint>::IterBase(root.getFirstNode0(), 0);
+    for (cxuint i = 1; i < elemsNum; i++)
+    {
+        DTreeSet<cxuint>::IterBase thisIter = iter;
+        thisIter.next(i);
+        snprintf(buf, sizeof buf, "it%u", i);
+        assertValue("DTreeIterBase", caseName+".nextNValue."+buf,
+                    i+100, (*thisIter.n0)[thisIter.index]);
+    }*/
 }
 
 /* DTreeSet tests */
@@ -1490,5 +1524,8 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; i < sizeof(dNode1ReorgNode1sCaseTbl) /
                         sizeof(DNode1ReorgNode1sCase); i++)
         retVal |= callTest(testDNode1ReorganizeNode1s, i, dNode1ReorgNode1sCaseTbl[i]);
+    
+    for (cxuint i = 0; i < sizeof(diterBaseCaseTbl) / sizeof(DIterBaseCase); i++)
+        retVal |= callTest(testDTreeIterBase, i, diterBaseCaseTbl[i]);
     return retVal;
 }
