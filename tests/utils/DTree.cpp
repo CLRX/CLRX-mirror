@@ -1560,21 +1560,49 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& testCase)
     }
 }
 
-static void testDTreeIter()
+template<typename Iter>
+static void testDTreeIter(const std::string& testName)
 {
     cxuint elemsNum = 0;
-    DTreeSet<cxuint>::Node1 root = createDTreeFromNodeSizes("DTreeIter", "create",
+    DTreeSet<cxuint>::Node1 root = createDTreeFromNodeSizes(testName, "create",
                 diterBaseCaseTbl[0].treeNodeSizes, elemsNum);
     
-    DTreeSet<cxuint>::Iter iterStart(root.getFirstNode0(), 0);
-    DTreeSet<cxuint>::Iter iter = iterStart;
+    Iter iterStart(root.getFirstNode0(), 0);
+    Iter iter = iterStart;
     // test behaviour
-    DTreeSet<cxuint>::Iter prevIter = iter++;
-    assertTrue("DTreeIter", "postIndex", prevIter == iterStart);
+    Iter prevIter = iter++;
+    assertTrue(testName, "postInc", prevIter == iterStart);
     iter = iterStart;
-    DTreeSet<cxuint>::Iter nextIter = ++iter;
-    assertTrue("DTreeIter", "preIndex", nextIter != iterStart);
-    assertTrue("DTreeIter", "preIndex2", nextIter == iter);
+    Iter nextIter = ++iter;
+    assertTrue(testName, "preInc", nextIter != iterStart);
+    assertTrue(testName, "preInc2", nextIter == iter);
+    iter = iterStart;
+    ++iter; // next
+    ++iter; // yet next
+    Iter iterSecond = iter;
+    prevIter = iter--;
+    assertTrue(testName, "postDec", prevIter == iterSecond);
+    iter = iterSecond;
+    nextIter = --iter;
+    assertTrue(testName, "preDec", nextIter != iterSecond);
+    assertTrue(testName, "preDec2", nextIter == iter);
+    // check addition and subtract
+    iterSecond = iter = iterStart;
+    for (cxuint i = 0; i < 4; i++)
+        iterSecond++;
+    iter += 4;
+    assertTrue(testName, "add0", iter == iterSecond);
+    iter -= 4;
+    assertTrue(testName, "sub0", iter == iterStart);
+    nextIter = iter + 4;
+    assertTrue(testName, "add1it", iter == iterStart);
+    assertTrue(testName, "add1", nextIter == iterSecond);
+    prevIter = nextIter - 4;
+    assertTrue(testName, "sub1it", nextIter == iterSecond);
+    assertTrue(testName, "sub1", prevIter == iterStart);
+    assertValue(testName, "diff", ssize_t(4), iterSecond-iterStart);
+    assertValue(testName, "diff", -ssize_t(4), iterStart-iterSecond);
+    assertValue(testName, "get", cxuint(100+4), *iterSecond);
 }
 
 /* DTreeSet tests */
@@ -1622,6 +1650,7 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; i < sizeof(diterBaseCaseTbl) / sizeof(DIterBaseCase); i++)
         retVal |= callTest(testDTreeIterBase, i, diterBaseCaseTbl[i]);
     
-    retVal |= callTest(testDTreeIter);
+    retVal |= callTest(testDTreeIter<DTreeSet<cxuint>::Iter>, "DTreeIter");
+    retVal |= callTest(testDTreeIter<DTreeSet<cxuint>::ConstIter>, "DTreeConstIter");
     return retVal;
 }
