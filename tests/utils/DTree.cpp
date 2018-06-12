@@ -1561,12 +1561,9 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& testCase)
 }
 
 template<typename Iter>
-static void testDTreeIter(const std::string& testName)
+static void testDTreeIterTempl(const std::string& testName,
+            DTreeSet<cxuint>::Node1& root)
 {
-    cxuint elemsNum = 0;
-    DTreeSet<cxuint>::Node1 root = createDTreeFromNodeSizes(testName, "create",
-                diterBaseCaseTbl[0].treeNodeSizes, elemsNum);
-    
     Iter iterStart(root.getFirstNode0(), 0);
     Iter iter = iterStart;
     // test behaviour
@@ -1603,6 +1600,15 @@ static void testDTreeIter(const std::string& testName)
     assertValue(testName, "diff", ssize_t(4), iterSecond-iterStart);
     assertValue(testName, "diff", -ssize_t(4), iterStart-iterSecond);
     assertValue(testName, "get", cxuint(100+4), *iterSecond);
+}
+
+static void testDTreeIter()
+{
+    cxuint elemsNum = 0;
+    DTreeSet<cxuint>::Node1 root = createDTreeFromNodeSizes("DTreeXIter", "create",
+                diterBaseCaseTbl[0].treeNodeSizes, elemsNum);
+    testDTreeIterTempl<DTreeSet<cxuint>::Iter>("DTreeIter", root);
+    testDTreeIterTempl<DTreeSet<cxuint>::ConstIter>("DTreeConstIter", root);
 }
 
 /* DTreeSet tests */
@@ -1650,7 +1656,6 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; i < sizeof(diterBaseCaseTbl) / sizeof(DIterBaseCase); i++)
         retVal |= callTest(testDTreeIterBase, i, diterBaseCaseTbl[i]);
     
-    retVal |= callTest(testDTreeIter<DTreeSet<cxuint>::Iter>, "DTreeIter");
-    retVal |= callTest(testDTreeIter<DTreeSet<cxuint>::ConstIter>, "DTreeConstIter");
+    retVal |= callTest(testDTreeIter);
     return retVal;
 }
