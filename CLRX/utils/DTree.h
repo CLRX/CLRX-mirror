@@ -29,6 +29,7 @@
 #include <initializer_list>
 #include <climits>
 #include <cstddef>
+#include <memory>
 #include <CLRX/utils/Utilities.h>
 
 namespace CLRX
@@ -172,13 +173,14 @@ public:
             capacity = node.capacity;
             firstPos = node.firstPos;
             bitMask = node.bitMask;
-            delete[] array;
-            array = nullptr;
+            T* newArray = nullptr;
             if (node.array != nullptr)
             {
-                array = new T[capacity];
-                std::copy(node.array, node.array+capacity, array);
+                newArray = new T[capacity];
+                std::copy(node.array, node.array+capacity, newArray);
             }
+            delete[] array;
+            array = newArray;
             return *this;
         }
         
@@ -276,11 +278,11 @@ public:
         
         void allocate(cxuint size)
         {
-            delete[] array;
-            array = nullptr;
             capacity = std::min(cxbyte(size + (size>>freePlacesShift)),
                         cxbyte(maxNode0Capacity));
-            array = new T[capacity];
+            T* newArray = new T[capacity];
+            delete[] array;
+            array = newArray;
             firstPos = 0;
             bitMask = 0;
             size = 0;
@@ -348,12 +350,12 @@ public:
             cxuint newCapacity1 = std::min(
                         cxbyte(newSize1 + (newSize1>>freePlacesShift)),
                         cxbyte(maxNode0Capacity));
-            T* newArray0 = nullptr;
+            std::unique_ptr<T[]> newArray0 = nullptr;
+            std::unique_ptr<T[]> newArray1 = nullptr;
             if (newCapacity0 != 0)
-                newArray0 = new T[newCapacity0];
-            T* newArray1 = nullptr;
+                newArray0.reset(new T[newCapacity0]);
             if (newCapacity1 != 0)
-                newArray1 = new T[newCapacity1];
+                newArray1.reset(new T[newCapacity1]);
             uint64_t newBitMask0 = 0ULL;
             uint64_t newBitMask1 = 0ULL;
             
@@ -363,8 +365,8 @@ public:
             // finc - factor increment for empty holes
             cxuint finc = newCapacity0 - newSize0;
             // store first part to newArray0
-            organizeArray(toFill, i, newSize0, array, bitMask, k, newSize0, newArray0,
-                        newBitMask0, factor, finc);
+            organizeArray(toFill, i, newSize0, array, bitMask, k, newSize0,
+                        newArray0.get(), newBitMask0, factor, finc);
             
             // fill a remaining free elements
             if (k < newCapacity0)
@@ -380,7 +382,7 @@ public:
             finc = newCapacity1 - newSize1;
             // store first part to newArray1
             organizeArray(toFill, i, newSize1, array, bitMask,
-                        k, newSize1, newArray1, newBitMask1, factor, finc);
+                        k, newSize1, newArray1.get(), newBitMask1, factor, finc);
             
             // fill a remaining free elements
             if (k < newCapacity1)
@@ -391,14 +393,14 @@ public:
             
             delete[] array;
             // store into this node (array0)
-            array = newArray0;
+            array = newArray0.release();
             capacity = newCapacity0;
             size = newSize0;
             bitMask = newBitMask0;
             firstPos = 0;
             delete[] node2.array;
             // store into node2 (array1)
-            node2.array = newArray1;
+            node2.array = newArray1.release();
             node2.capacity = newCapacity1;
             node2.size = newSize1;
             node2.bitMask = newBitMask1;
