@@ -1627,21 +1627,37 @@ static const Array<cxuint> dtreeInsertCaseTbl[] =
     { 1, 3, 8, 2, 7 }
 };
 
+static void checkDTreeContent(const std::string& testName, const std::string& caseName,
+            const DTreeSet<cxuint>& set, const size_t entriesNum, const cxuint* inValues)
+{
+    assertValue(testName, caseName+".size", entriesNum, set.size());
+    char buf[16];
+    for (cxuint i = 0; i < entriesNum; i++)
+    {
+        snprintf(buf, sizeof buf, "[%u]", i);
+        auto it = set.find(inValues[i]);
+        assertTrue(testName, caseName+".value"+buf, it != set.end());
+    }
+}
+
 static void testDTreeInsert(cxuint ti, const Array<cxuint>& valuesToInsert)
 {
     std::ostringstream oss;
-    oss << "DIterBase" << ti;
+    oss << "DTreeInsert" << ti;
     oss.flush();
     std::string caseName = oss.str();
     
+    char buf[16];
     DTreeSet<cxuint> set;
-    for (size_t i = 0; i < valuesToInsert.size(); i++)
+    for (cxuint i = 0; i < valuesToInsert.size(); i++)
     {
         auto it = set.insert(valuesToInsert[i]);
-        assertValue("DTreeInsert", caseName+".value", valuesToInsert[i], *it.first);
-        verifyDTreeState("DTreeInsert", caseName+".test", set);
+        snprintf(buf, sizeof buf, "[%u]", i);
+        assertValue("DTreeInsert", caseName+buf+".value", valuesToInsert[i], *it.first);
+        verifyDTreeState("DTreeInsert", caseName+buf+".test", set);
+        checkDTreeContent("DTreeInsert", caseName+buf+".content",
+                        set, i+1, valuesToInsert.data());
     }
-    set.erase(11);
 }
 
 int main(int argc, const char** argv)
