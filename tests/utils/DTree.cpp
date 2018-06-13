@@ -1622,16 +1622,24 @@ static void testDTreeIter()
 
 /* DTreeSet tests */
 
-struct testDTreeInsert
-{ };
-
-static void testDTreeInsert(cxuint i, const Array<cxuint>& valuesToInsert)
+static const Array<cxuint> dtreeInsertCaseTbl[] =
 {
+    { 1, 3, 8, 2, 7 }
+};
+
+static void testDTreeInsert(cxuint ti, const Array<cxuint>& valuesToInsert)
+{
+    std::ostringstream oss;
+    oss << "DIterBase" << ti;
+    oss.flush();
+    std::string caseName = oss.str();
+    
     DTreeSet<cxuint> set;
-    for (size_t j = 0; j < valuesToInsert.size(); i++)
+    for (size_t i = 0; i < valuesToInsert.size(); i++)
     {
         auto it = set.insert(valuesToInsert[i]);
-        verifyDTreeState("test", "test", set);
+        assertValue("DTreeInsert", caseName+".value", valuesToInsert[i], *it.first);
+        verifyDTreeState("DTreeInsert", caseName+".test", set);
     }
     set.erase(11);
 }
@@ -1666,5 +1674,8 @@ int main(int argc, const char** argv)
         retVal |= callTest(testDTreeIterBase, i, diterBaseCaseTbl[i]);
     
     retVal |= callTest(testDTreeIter);
+    
+    for (cxuint i = 0; i < sizeof(dtreeInsertCaseTbl) / sizeof(Array<cxuint>); i++)
+        retVal |= callTest(testDTreeInsert, i, dtreeInsertCaseTbl[i]);
     return retVal;
 }

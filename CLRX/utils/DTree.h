@@ -2195,10 +2195,12 @@ public:
     {
         const key_type key = KeyOfVal::operator()(value);
         iterator it = lower_bound(key);
-        const key_type itkey = KeyOfVal::operator()(*it);
-        if (it!=end() && !Comp::operator()(key, itkey) && !Comp::operator()(itkey, key))
-            // if equal
-            return std::make_pair(it, false);
+        if (it!=end())
+        {
+            const key_type itkey = KeyOfVal::operator()(*it);
+            if (!Comp::operator()(key, itkey) && !Comp::operator()(itkey, key))
+                return std::make_pair(it, false);
+        }
         
         cxuint index = it.n0->insert(value, *this, *this).first;
         Node1* curn1 = it.n0->parent();
