@@ -1783,7 +1783,7 @@ public:
             tmp.IterBase::step(-i);
             return tmp;
         }
-        /// subtractor from iterator with assignment
+        /// subtract from iterator with assignment
         Iter& operator-=(ssize_t i)
         {
             IterBase::step(-i);
@@ -2159,8 +2159,8 @@ private:
         left = n0Index-1;
         right = n0Index+1;
         cxuint nodeCount = 0;
-        for (; freeSpace >= (((n0Size<<4)*nodeCount)>>6) ||
-                left >= 0 || right < curn1->size; left--, right++)
+        for (; freeSpace <= (((n0Size<<4)*nodeCount)>>6) &&
+                (left >= 0 || right < curn1->size); left--, right++)
         {
             if (left >= 0)
             {
@@ -2186,8 +2186,8 @@ private:
         right = n1Index+1;
         cxuint nodeCount = 0;
         size_t maxN1MSize = maxTotalSize(level-1);
-        for (; freeSpace >= (((maxN1Size<<4)*nodeCount)>>6) ||
-                left >= 0 || right < curn1->size; left--, right++)
+        for (; freeSpace <= (((maxN1Size<<4)*nodeCount)>>6) &&
+                (left >= 0 || right < curn1->size); left--, right++)
         {
             if (left >= 0)
             {

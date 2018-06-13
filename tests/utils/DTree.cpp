@@ -1677,6 +1677,12 @@ static void testDTreeInsert(cxuint ti, const Array<cxuint>& valuesToInsert)
 
 static const cxuint node0MaxSize = DTreeSet<cxuint>::maxNode0Size;
 
+static const cxuint dtreeInsertForceReorgNode0Values[] =
+{ 100, 200, 300, 400, 500, 600, 700, 800 };
+
+static const cxuint dtreeInsertForceReorgNode0Sizes[] =
+{ 18, 18, 21, 28, 56, 23, 18, 18 };
+
 static void testDTreeInsert2()
 {
     char buf[16];
@@ -1684,23 +1690,52 @@ static void testDTreeInsert2()
     std::vector<cxuint> values;
     for (cxuint v = 100; v < 100 + (node0MaxSize+1)*10; v += 10)
     {
-        auto res = set.insert(v);
+        set.insert(v);
         values.push_back(v);
         snprintf(buf, sizeof buf, "[%u]", v);
         verifyDTreeState("DTreeInsert", std::string("insert0")+buf+".test", set);
     }
     
-    for (cxuint v = 122; v < 122 + (node0MaxSize+1)*10; v += 10)
+    for (cxuint x = 0; x < 2; x++)
     {
-        auto res = set.insert(v);
-        values.push_back(v);
-        snprintf(buf, sizeof buf, "[%u]", v);
-        verifyDTreeState("DTreeInsert", std::string("insert1")+buf+".test", set);
+        for (cxuint v = 122+x; v < 122+x + (node0MaxSize+1)*10; v += 10)
+        {
+            set.insert(v);
+            values.push_back(v);
+            snprintf(buf, sizeof buf, "[%u]", v);
+            verifyDTreeState("DTreeInsert", std::string("insert1")+buf+".test", set);
+        }
+        // check content
+        std::sort(values.begin(), values.end());
+        checkDTreeContent("DTreeInsert", "insert01:content",
+                            set, values.size(), values.data());
     }
-    // check content
-    std::sort(values.begin(), values.end());
-    checkDTreeContent("DTreeInsert", "insert01:content",
-                        set, values.size(), values.data());
+    
+    set.clear();
+    set.n0.~Node0();
+    new(&set.n1) DTree<cxuint>::Node1();
+    values.clear();
+    // force reorganize code
+    // generate values for content comparison
+    for (cxuint i = 0; i < 4; i++)
+        for (cxuint v = dtreeInsertForceReorgNode0Values[i], j = 0;
+             j < dtreeInsertForceReorgNode0Sizes[i]; j++, v++)
+             values.push_back(v);
+    values.push_back(499);
+    for (cxuint i = 4; i < 8; i++)
+        for (cxuint v = dtreeInsertForceReorgNode0Values[i], j = 0;
+             j < dtreeInsertForceReorgNode0Sizes[i]; j++, v++)
+             values.push_back(v);
+    // create node arrays
+    createNode1FromArray(set.n1, 8, dtreeInsertForceReorgNode0Values,
+                dtreeInsertForceReorgNode0Sizes);
+    set.first = set.n1.array;
+    set.last = set.n1.array + set.n1.size-1;
+    // this insert force reorganizeNode0s
+    set.insert(499);
+    verifyDTreeState("DTreeInsert", std::string("insertReorg")+".test", set);
+    checkDTreeContent("DTreeInsert", "insertReorg:content",
+                            set, values.size(), values.data());
 }
 
 int main(int argc, const char** argv)
