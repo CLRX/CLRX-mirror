@@ -990,7 +990,7 @@ public:
         }
         
         /// insert Node0 - (move to this node)
-        void insertNode0(Node0&& node, cxuint index)
+        void insertNode0(Node0&& node, cxuint index, bool updateTotSize = true)
         {
             NodeBase::type = NODE1;
             if (size+1 > capacity)
@@ -1008,11 +1008,12 @@ public:
             if (index == 0 && array[0].array!=nullptr)
                 first = array[0].array[array[0].firstPos];
             size++;
-            totalSize += node.size;
+            if (updateTotSize)
+                totalSize += node.size;
         }
         
         /// insert Node1 - (move to this node)
-        void insertNode1(Node1&& node, cxuint index)
+        void insertNode1(Node1&& node, cxuint index, bool updateTotSize = true)
         {
             NodeBase::type = NODE2;
             if (size+1 > capacity)
@@ -1030,7 +1031,8 @@ public:
             if (index == 0)
                 first = array1[0].first;
             size++;
-            totalSize += node.totalSize;
+            if (updateTotSize)
+                totalSize += node.totalSize;
         }
         
         /// remove node0 with index from this node
@@ -2229,13 +2231,13 @@ public:
             {
                 // put new node0 in node1 or create new node1 with two nodes
                 Node0 node0_2;
-                n0.split(node0_2);
+                it.n0->split(node0_2);
                 cxuint index = 0;
                 bool secondNode = false;
                 if (Comp::operator()(key,
-                        KeyOfVal::operator()(node0_2.array[n0.firstPos])))
+                        KeyOfVal::operator()(node0_2.array[it.n0->firstPos])))
                     // key < first key in second node0
-                    index = n0.lower_bound(value, *this, *this);
+                    index = it.n0->lower_bound(value, *this, *this);
                 else
                 {   // put to node0 2
                     secondNode = true;
@@ -2243,7 +2245,7 @@ public:
                 }
                 if (curn1 == nullptr)
                 {
-                    Node1 node1(std::move(n0), std::move(node0_2), *this);
+                    Node1 node1(std::move(*it.n0), std::move(node0_2), *this);
                     new(&n1) Node1();
                     n1 = std::move(node1);
                     
@@ -2251,7 +2253,7 @@ public:
                     last = n1.array + 1;
                     return std::make_pair(iterator(n1.array + secondNode, index), true);
                 }
-                curn1->insertNode0(std::move(node0_2), n0Index);
+                curn1->insertNode0(std::move(node0_2), n0Index+1, false);
                 newit = iterator(curn1->array + n0Index + secondNode, index);
             }
             else
@@ -2298,7 +2300,7 @@ public:
                         n1 = std::move(node1);
                     }
                     else
-                        curn1->insertNode1(std::move(node1_2), n1Index);
+                        curn1->insertNode1(std::move(node1_2), n1Index, false);
                 }
                 else
                 {

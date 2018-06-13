@@ -1660,13 +1660,47 @@ static void testDTreeInsert(cxuint ti, const Array<cxuint>& valuesToInsert)
     DTreeSet<cxuint> set;
     for (cxuint i = 0; i < valuesToInsert.size(); i++)
     {
-        auto it = set.insert(valuesToInsert[i]);
+        auto res = set.insert(valuesToInsert[i]);
         snprintf(buf, sizeof buf, "[%u]", i);
-        assertValue("DTreeInsert", caseName+buf+".value", valuesToInsert[i], *it.first);
+        assertTrue("DTreeInsert", caseName+buf+".inserted", res.second);
+        assertValue("DTreeInsert", caseName+buf+".value", valuesToInsert[i], *res.first);
+        
         verifyDTreeState("DTreeInsert", caseName+buf+".test", set);
         checkDTreeContent("DTreeInsert", caseName+buf+".content",
                         set, i+1, valuesToInsert.data());
+        
+        res = set.insert(valuesToInsert[i]);
+        assertTrue("DTreeInsert", caseName+buf+".notinserted", !res.second);
+        assertValue("DTreeInsert", caseName+buf+".value2", valuesToInsert[i], *res.first);
     }
+}
+
+static const cxuint node0MaxSize = DTreeSet<cxuint>::maxNode0Size;
+
+static void testDTreeInsert2()
+{
+    char buf[16];
+    DTreeSet<cxuint> set;
+    std::vector<cxuint> values;
+    for (cxuint v = 100; v < 100 + (node0MaxSize+1)*10; v += 10)
+    {
+        auto res = set.insert(v);
+        values.push_back(v);
+        snprintf(buf, sizeof buf, "[%u]", v);
+        verifyDTreeState("DTreeInsert", std::string("insert0")+buf+".test", set);
+    }
+    
+    for (cxuint v = 122; v < 122 + (node0MaxSize+1)*10; v += 10)
+    {
+        auto res = set.insert(v);
+        values.push_back(v);
+        snprintf(buf, sizeof buf, "[%u]", v);
+        verifyDTreeState("DTreeInsert", std::string("insert1")+buf+".test", set);
+    }
+    // check content
+    std::sort(values.begin(), values.end());
+    checkDTreeContent("DTreeInsert", "insert01:content",
+                        set, values.size(), values.data());
 }
 
 int main(int argc, const char** argv)
@@ -1702,5 +1736,6 @@ int main(int argc, const char** argv)
     
     for (cxuint i = 0; i < sizeof(dtreeInsertCaseTbl) / sizeof(Array<cxuint>); i++)
         retVal |= callTest(testDTreeInsert, i, dtreeInsertCaseTbl[i]);
+    retVal |= callTest(testDTreeInsert2);
     return retVal;
 }
