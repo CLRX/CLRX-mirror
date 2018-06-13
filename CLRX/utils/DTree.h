@@ -618,6 +618,27 @@ public:
                     first(), array(nullptr)
         { }
         
+        /// helper for freeing array
+        void freeArray()
+        {
+            if (array != nullptr)
+            {
+                if (NodeBase::type == NODE1)
+                {
+                    for (cxuint i = 0; i < capacity; i++)
+                        array[i].~Node0();
+                    delete[] (reinterpret_cast<cxbyte*>(array) - parentEntrySize);
+                }
+                else
+                {
+                    for (cxuint i = 0; i < capacity; i++)
+                        array1[i].~Node1();
+                    delete[] (reinterpret_cast<cxbyte*>(array1) - parentEntrySize);
+                }
+                array1 = nullptr;
+            }
+        }
+        
         // copy array helper - copy array from Node1 to this node
         void copyArray(const Node1& node)
         {
@@ -628,6 +649,7 @@ public:
                 {
                     cxbyte* arrayData = new cxbyte[parentEntrySize +
                                 capacity*sizeof(Node0)];
+                    freeArray();
                     array = reinterpret_cast<Node0*>(arrayData + parentEntrySize);
                     /// set parent for this array
                     *reinterpret_cast<Node1**>(arrayData) = this;
@@ -643,6 +665,7 @@ public:
                 {
                     cxbyte* arrayData = new cxbyte[parentEntrySize +
                                 capacity*sizeof(Node1)];
+                    freeArray();
                     array1 = reinterpret_cast<Node1*>(arrayData + parentEntrySize);
                     /// set parent for this array
                     *reinterpret_cast<Node1**>(arrayData) = this;
@@ -701,27 +724,6 @@ public:
             array1[1].index = 1;
         }
         
-        /// helper for freeing array
-        void freeArray()
-        {
-            if (array != nullptr)
-            {
-                if (NodeBase::type == NODE1)
-                {
-                    for (cxuint i = 0; i < capacity; i++)
-                        array[i].~Node0();
-                    delete[] (reinterpret_cast<cxbyte*>(array) - parentEntrySize);
-                }
-                else
-                {
-                    for (cxuint i = 0; i < capacity; i++)
-                        array1[i].~Node1();
-                    delete[] (reinterpret_cast<cxbyte*>(array1) - parentEntrySize);
-                }
-                array1 = nullptr;
-            }
-        }
-        
         ~Node1()
         {
             freeArray();
@@ -729,7 +731,6 @@ public:
         
         Node1& operator=(const Node1& node)
         {
-            freeArray();
             NodeBase::type = node.NodeBase::type;
             size = node.size;
             index = node.index;
