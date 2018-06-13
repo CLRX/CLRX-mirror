@@ -1285,6 +1285,8 @@ public:
                     inc--;
                 index++;
             }
+            while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
+                index++;
             
             bool end = false;
             // we need to go to next node0
@@ -1447,6 +1449,8 @@ public:
             while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
                 index++;
             index++;
+            while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
+                index++;
             
             toNextNode0();
         }
@@ -1460,6 +1464,9 @@ public:
                     inc--;
                 index--;
             }
+            while (index != UINT_MAX &&
+                (index != n0->capacity && (n0->bitMask & (1ULL<<index)) != 0))
+                index--;
             
             bool end = false;
             if (index == UINT_MAX)
@@ -1558,11 +1565,14 @@ public:
         /// go to previous element
         void prev()
         {
-            while (index != UINT_MAX && 
+            while (index != UINT_MAX &&
+                (index != n0->capacity && (n0->bitMask & (1ULL<<index)) != 0))
+                index--;
+            index--;
+            while (index != UINT_MAX &&
                 (index != n0->capacity && (n0->bitMask & (1ULL<<index)) != 0))
                 index--;
             
-            index--;
             bool end = false;
             if (index == UINT_MAX)
             {
@@ -2231,8 +2241,12 @@ public:
                 if (curn1 == nullptr)
                 {
                     Node1 node1(std::move(n0), std::move(node0_2), *this);
+                    new(&n1) Node1();
                     n1 = std::move(node1);
-                    return std::make_pair(iterator(node1.array + secondNode, index), true);
+                    
+                    first = n1.array;
+                    last = n1.array + 1;
+                    return std::make_pair(iterator(n1.array + secondNode, index), true);
                 }
                 curn1->insertNode0(std::move(node0_2), n0Index);
                 newit = iterator(curn1->array + n0Index + secondNode, index);

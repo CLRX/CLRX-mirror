@@ -194,7 +194,7 @@ static void verifyDTreeState(const std::string& testName, const std::string& tes
         for (const typename DTreeSet<T>::Node1* n1 = &dt.n1; n1->type==DTree<T>::NODE2;
                 n1 = n1->array1, maxLevel++);
         
-        verifyDTreeNode1<T>(testName, testCase + "n1root", dt.n1, 0, 0);
+        verifyDTreeNode1<T>(testName, testCase + "n1root", dt.n1, 0, maxLevel);
         const typename DTreeSet<T>::Node1* n1;
         for (n1 = &dt.n1; n1->type == DTree<T>::NODE2; n1 = n1->array1);
         assertTrue(testName, testCase + ".first", n1->array == dt.first);
@@ -1625,7 +1625,11 @@ static void testDTreeIter()
 
 static const Array<cxuint> dtreeInsertCaseTbl[] =
 {
-    { 1, 3, 8, 2, 7 }
+    { 1, 3, 8, 2, 7 },
+    { 3, 1, 8, 2, 7, 9, 0 },
+    { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+      21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+      41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 }
 };
 
 static void checkDTreeContent(const std::string& testName, const std::string& caseName,
