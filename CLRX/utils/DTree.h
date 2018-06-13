@@ -2275,6 +2275,9 @@ public:
         {
             prevn1 = curn1;
             curn1 = prevn1->parent();
+            prevn1->first = prevn1->NodeBase::type==NODE1 ?
+                    prevn1->array[0].array[prevn1->array[0].firstPos] :
+                    prevn1->array1[0].first;
             prevn1->totalSize++; // increase
             cxuint maxN1Size = maxTotalSize(level);
             
