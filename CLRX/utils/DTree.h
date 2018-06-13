@@ -2300,7 +2300,7 @@ public:
                         n1 = std::move(node1);
                     }
                     else
-                        curn1->insertNode1(std::move(node1_2), n1Index, false);
+                        curn1->insertNode1(std::move(node1_2), n1Index+1, false);
                 }
                 else
                 {
