@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <numeric>
 #include <limits>
+#include <memory>
 #include <iostream>
 #include <sstream>
 #include <cstring>
@@ -1631,12 +1632,16 @@ static void checkDTreeContent(const std::string& testName, const std::string& ca
             const DTreeSet<cxuint>& set, const size_t entriesNum, const cxuint* inValues)
 {
     assertValue(testName, caseName+".size", entriesNum, set.size());
+    
+    std::unique_ptr<cxuint[]> sortedValues(new cxuint[entriesNum]);
+    std::copy(inValues, inValues + entriesNum, sortedValues.get());
+    std::sort(sortedValues.get(), sortedValues.get() + entriesNum);
     char buf[16];
-    for (cxuint i = 0; i < entriesNum; i++)
+    auto it = set.begin();
+    for (cxuint i = 0; i < entriesNum; i++, ++it)
     {
         snprintf(buf, sizeof buf, "[%u]", i);
-        auto it = set.find(inValues[i]);
-        assertTrue(testName, caseName+".value"+buf, it != set.end());
+        assertValue(testName, caseName+".value"+buf, sortedValues[i], *it);
     }
 }
 
