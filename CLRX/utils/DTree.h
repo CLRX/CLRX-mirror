@@ -2339,12 +2339,22 @@ public:
             
             if (prevn1->totalSize > maxN1Size)
             {
+                cxuint n0Index = newit.n0->index;
                 cxuint n1Index = prevn1->index;
                 if (curn1 == nullptr || curn1->size < maxNode1Size)
                 {
                     // simple split
                     Node1 node1_2;
                     prevn1->splitNode(node1_2);
+                    
+                    if (level==1)
+                    {
+                        if (n0Index < prevn1->size)
+                            newit.n0 = prevn1->array + n0Index;
+                        else
+                            newit.n0 = node1_2.array + n0Index - prevn1->size;
+                    }
+                    // node0 has been moved (no array/array1 pointer change/reallocate)
                     if (curn1 == nullptr)
                     {
                         Node1 node1(std::move(*prevn1), std::move(node1_2));
@@ -2360,6 +2370,12 @@ public:
                     findReorgBounds1(prevn1, curn1, maxN1Size, left, right);
                     // reorganize array from left to right
                     curn1->reorganizeNode1s(left, right+1);
+                    if (level == 1)
+                    {
+                        const Node1* pn1 = curn1->array1 +
+                                curn1->lowerBoundN(key, *this, *this);
+                        newit.n0 = pn1->array + pn1->lowerBoundN(key, *this, *this);
+                    }
                 }
             }
             level++;

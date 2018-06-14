@@ -1906,20 +1906,18 @@ static void testDTreeInsert2()
     // this insert force reorganizeNode0s
     set.insert(499);
     verifyDTreeState("DTreeInsert", std::string("insertReorg")+".test", set);
-    checkDTreeContent("DTreeInsert", "insertReorg:content",
-                            set, values.size(), values.data());
     
     /// to level depth 2
     set.clear();
     values.clear();
     
-    /*for (cxuint v = 100; v < 100 + (node0MaxSize)*10*4 + 1; v += 10)
+    for (cxuint v = 100; v < 100 + (node0MaxSize)*10*4 + 1; v += 10)
     {
         set.insert(v);
         values.push_back(v);
-        snprintf(buf, sizeof buf, "[%u]", v);
-        verifyDTreeState("DTreeInsert", std::string("insert2")+buf+".test", set);
-    }*/
+    }
+    verifyDTreeState("DTreeInsert", "insert2.test", set);
+    checkDTreeContent("DTreeInsert", "insert2:content", set, values.size(), values.data());
 }
 
 int main(int argc, const char** argv)
