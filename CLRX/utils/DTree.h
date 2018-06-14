@@ -1997,15 +1997,19 @@ public:
     /// copy assignment
     DTree& operator=(const DTree& dt)
     {
+        if (n0.type == NODE0)
+            n0.~Node0();
+        else
+            n1.~Node1();
         if (dt.n0.type == NODE0)
         {
-            n0.~Node0();
+            n0.array = nullptr;
             n0 = dt.n0;
             last = first = &n0;
         }
         else
         {
-            n1.~Node1();
+            n1.array = nullptr;
             n1 = dt.n1;
             first = n1.getFirstNode0();
             last = n1.getLastNode0();
@@ -2015,15 +2019,19 @@ public:
     /// move assignment
     DTree& operator=(DTree&& dt)
     {
+        if (n0.type == NODE0)
+            n0.~Node0();
+        else
+            n1.~Node1();
         if (dt.n0.type == NODE0)
         {
-            n0.~Node0();
+            n0.array = nullptr;
             n0 = std::move(dt.n0);
             last = first = &n0;
         }
         else
         {
-            n1.~Node1();
+            n1.array = nullptr;
             n1 = std::move(dt.n1);
             first = n1.getFirstNode0();
             last = n1.getLastNode0();
