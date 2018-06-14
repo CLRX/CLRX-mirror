@@ -1668,7 +1668,7 @@ static const DTreeFindReorgBounds0Case dtreeFindReorgBounds0Tbl[] =
 static void testDTreeFindReorgBounds0(cxuint ti, const DTreeFindReorgBounds0Case& testCase)
 {
     std::ostringstream oss;
-    oss << "DFindReorgBounds0" << ti;
+    oss << "DFindReorgBounds0_" << ti;
     oss.flush();
     std::string caseName = oss.str();
     
@@ -1691,13 +1691,23 @@ static const DTreeFindReorgBounds0Case dtreeFindReorgBounds1Tbl[] =
         { 75, 101, 83, 160, 135, 129 },
         3, 160,
         2, 4
+    },
+    {   // 1
+        { 160, 135, 129, 75, 101, 83 },
+        0, 160,
+        0, 3
+    },
+    {   // 2
+        { 75, 101, 135, 129, 83, 160 },
+        5, 160,
+        4, 5
     }
 };
 
 static void testDTreeFindReorgBounds1(cxuint ti, const DTreeFindReorgBounds0Case& testCase)
 {
     std::ostringstream oss;
-    oss << "DFindReorgBounds1" << ti;
+    oss << "DFindReorgBounds1_" << ti;
     oss.flush();
     std::string caseName = oss.str();
     
