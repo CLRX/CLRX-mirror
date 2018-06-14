@@ -2183,7 +2183,7 @@ private:
         right = std::min(curn1->size-1, right);
     }
     
-    static void findReorgBounds1(const Node1* prevn1, const Node1* curn1, cxuint level,
+    static void findReorgBounds1(const Node1* prevn1, const Node1* curn1,
                     size_t maxN1Size, cxint& left, cxint& right)
     {
         cxuint n1Index = prevn1->index;
@@ -2191,19 +2191,18 @@ private:
         left = n1Index;
         right = n1Index;
         cxuint nodeCount = 0;
-        size_t maxN1MSize = maxTotalSize(level-1);
         
         do {
             left--;
             right++;
             if (left >= 0)
             {
-                freeSpace += maxN1MSize - curn1->array1[left].totalSize;
+                freeSpace += maxN1Size - curn1->array1[left].totalSize;
                 nodeCount++;
             }
             if (right < curn1->size)
             {
-                freeSpace += maxN1MSize - curn1->array1[right].totalSize;
+                freeSpace += maxN1Size - curn1->array1[right].totalSize;
                 nodeCount++;
             }
         }
@@ -2316,7 +2315,7 @@ public:
                 {
                     // reorganize nodes
                     cxint left, right;
-                    findReorgBounds1(prevn1, curn1, level, maxN1Size, left, right);
+                    findReorgBounds1(prevn1, curn1, maxN1Size, left, right);
                     // reorganize array from left to right
                     curn1->reorganizeNode1s(left, right+1);
                 }

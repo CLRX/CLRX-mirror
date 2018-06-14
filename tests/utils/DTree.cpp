@@ -1029,14 +1029,17 @@ static void createNode1FromValue(DTreeSet<cxuint>::Node1& node1, cxuint value,
 static void createNode2FromArray(DTreeSet<cxuint>::Node1& node2, cxuint num,
                     const cxuint* input, const cxuint* node1Sizes = nullptr)
 {
+    cxuint xnext = 100;
     for (cxuint i = 0; i < num; i++)
     {
         DTreeSet<cxuint>::Node1 node1;
+        cxuint v = input!=nullptr ? input[i] : xnext;
         if (node1Sizes == nullptr)
-            createNode1FromValue(node1, input[i]);
+            createNode1FromValue(node1, v);
         else
-            createNode1FromValue(node1, input[i], node1Sizes[i]);
+            createNode1FromValue(node1, v, node1Sizes[i]);
         node2.insertNode1(std::move(node1), i);
+        v += node2.array1[node2.size-1].totalSize;
     }
 }
 
@@ -1654,13 +1657,18 @@ static const DTreeFindReorgBounds0Case dtreeFindReorgBounds0Tbl[] =
         { 25, 18, 56, 18, 18, 18, 23 },
         2, 56,
         1, 3
+    },
+    {   // 4
+        { 21, 24, 42, 41, 56, 47, 27, 21 },
+        4, 56,
+        2, 6
     }
 };
 
 static void testDTreeFindReorgBounds0(cxuint ti, const DTreeFindReorgBounds0Case& testCase)
 {
     std::ostringstream oss;
-    oss << "DFindReorgBounds" << ti;
+    oss << "DFindReorgBounds0" << ti;
     oss.flush();
     std::string caseName = oss.str();
     
@@ -1670,6 +1678,36 @@ static void testDTreeFindReorgBounds0(cxuint ti, const DTreeFindReorgBounds0Case
     cxint resLeft = UINT_MAX, resRight = UINT_MAX;
     DTreeSet<cxuint>::findReorgBounds0(testCase.n0Index, &node1, testCase.n0Size,
                             resLeft, resRight);
+    
+    assertValue("DTree", caseName+".left", testCase.expLeft, resLeft);
+    assertValue("DTree", caseName+".right", testCase.expRight, resRight);
+}
+
+/* DTree findReorgBounds1 */
+
+static const DTreeFindReorgBounds0Case dtreeFindReorgBounds1Tbl[] =
+{
+    {   // 0
+        { 75, 101, 83, 160, 135, 129 },
+        3, 160,
+        2, 4
+    }
+};
+
+static void testDTreeFindReorgBounds1(cxuint ti, const DTreeFindReorgBounds0Case& testCase)
+{
+    std::ostringstream oss;
+    oss << "DFindReorgBounds1" << ti;
+    oss.flush();
+    std::string caseName = oss.str();
+    
+    DTreeSet<cxuint>::Node1 node1;
+    createNode2FromArray(node1, testCase.node0Sizes.size(), nullptr,
+                    testCase.node0Sizes.data());
+    
+    cxint resLeft = UINT_MAX, resRight = UINT_MAX;
+    DTreeSet<cxuint>::findReorgBounds1(node1.array1 + testCase.n0Index,
+                    &node1, testCase.n0Size, resLeft, resRight);
     
     assertValue("DTree", caseName+".left", testCase.expLeft, resLeft);
     assertValue("DTree", caseName+".right", testCase.expRight, resRight);
@@ -1826,6 +1864,10 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; i < sizeof(dtreeFindReorgBounds0Tbl) /
                     sizeof(DTreeFindReorgBounds0Case); i++)
         retVal |= callTest(testDTreeFindReorgBounds0, i, dtreeFindReorgBounds0Tbl[i]);
+    
+    for (cxuint i = 0; i < sizeof(dtreeFindReorgBounds1Tbl) /
+                    sizeof(DTreeFindReorgBounds0Case); i++)
+        retVal |= callTest(testDTreeFindReorgBounds1, i, dtreeFindReorgBounds1Tbl[i]);
     
     for (cxuint i = 0; i < sizeof(dtreeInsertCaseTbl) / sizeof(Array<cxuint>); i++)
         retVal |= callTest(testDTreeInsert, i, dtreeInsertCaseTbl[i]);
