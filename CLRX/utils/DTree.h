@@ -1280,9 +1280,21 @@ public:
             return *this;
         }
         
+        void toNode0()
+        {
+            if (n0->type != NODE0)
+            {
+                // from root to last Node0
+                n0 = reinterpret_cast<Node1*>(n0)->getLastNode0();
+                index = n0->capacity;
+            }
+        }
+        
         /// go to inc next elements
         void next(size_t inc)
         {
+            toNode0();
+            
             // first skip in elements this node0
             while (index < n0->capacity && inc != 0)
             {
@@ -1318,6 +1330,8 @@ public:
                             n[i+1] = n[i]->parent();
                             if (n[i+1] == nullptr)
                             {
+                                cn0 = reinterpret_cast<const Node0*>(n[i]);
+                                index = n[i]->size;
                                 end = true;
                                 break;
                             }
@@ -1333,30 +1347,21 @@ public:
                             if (n[i] - n[i+1]->array1 < n[i+1]->size)
                                 break;
                         }
-                        for (; i > 1; i--)
-                            if (n[i+1] != nullptr)
-                            {
-                                if (end)
-                                {
-                                    /// fix for end position
-                                    n[i-1] = n[i][-1].array1 + n[i][-1].size;
-                                    continue;
-                                }
-                                // set this node1 for this level
-                                n[i-1] = n[i]->array1;
-                                /// and skip further node1's in shallow level
-                                for (; n[i-1] < n[i]->array1+n[i]->size; n[i-1]++)
-                                    if (n[i-1]->totalSize <= inc)
-                                        inc -= n[i-1]->totalSize;
-                                    else
-                                        break;
-                            }
-                        if (n[2] != nullptr)
+                        if (!end)
                         {
-                            if (end)
-                                /// set last node0 for end
-                                n0 = n[1][-1].array + n[1][-1].size-1;
-                            else
+                            for (; i > 1; i--)
+                                if (n[i+1] != nullptr)
+                                {
+                                    // set this node1 for this level
+                                    n[i-1] = n[i]->array1;
+                                    /// and skip further node1's in shallow level
+                                    for (; n[i-1] < n[i]->array1+n[i]->size; n[i-1]++)
+                                        if (n[i-1]->totalSize <= inc)
+                                            inc -= n[i-1]->totalSize;
+                                        else
+                                            break;
+                                }
+                            if (n[2] != nullptr)
                             {
                                 n0 = n[1]->array;
                                 /// skip further node0's for shallowest level
@@ -1367,12 +1372,12 @@ public:
                                         break;
                             }
                         }
+                        else
+                            // set end
+                            index = n[i]->size;
                     }
                     if (!end)
                         index = 0;
-                    else
-                        // if it is end
-                        index = n0->capacity;
                 }
                 else
                     end = true;
@@ -1414,6 +1419,8 @@ public:
                             if (n[i+1] == nullptr)
                             {
                                 // if end of tree
+                                cn0 = reinterpret_cast<const Node0*>(n[i]);
+                                index = n[i]->size;
                                 end = true;
                                 break;
                             }
@@ -1422,13 +1429,19 @@ public:
                                 // if it is this level
                                 break;
                         }
-                        for (; i > 1; i--)
-                            if (n[i+1] != nullptr && !end)
-                                // set node for shallower level
-                                n[i-1] = n[i]->array1;
-                        if (n[2] != nullptr && !end)
-                            /// set node0 for shallowest level
-                            n0 = n[1]->array;
+                        if (!end)
+                        {
+                            for (; i > 1; i--)
+                                if (n[i+1] != nullptr)
+                                    // set node for shallower level
+                                    n[i-1] = n[i]->array1;
+                            if (n[2] != nullptr)
+                                /// set node0 for shallowest level
+                                n0 = n[1]->array;
+                        }
+                        else
+                            // set end
+                            index = n[i]->size;
                     }
                     if (!end)
                         // do not set index if end of tree
@@ -1438,18 +1451,17 @@ public:
                     end = true;
             }
             
-            if (end)
-                // revert if end of tree
-                n0--;
-            
-            // skip empty space
-            while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
-                index++;
+            if (!end)
+                // skip empty space
+                while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
+                    index++;
         }
         
         /// go to next element
         void next()
         {
+            toNode0();
+            
             // skip empty space
             while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
                 index++;
@@ -1463,6 +1475,8 @@ public:
         /// go to inc previous element
         void prev(size_t inc)
         {
+            toNode0();
+            
             while (index != UINT_MAX && inc != 0)
             {
                 if (index==n0->capacity || (n0->bitMask & (1ULL<<index)) == 0)
@@ -1570,6 +1584,8 @@ public:
         /// go to previous element
         void prev()
         {
+            toNode0();
+            
             while (index != UINT_MAX &&
                 (index != n0->capacity && (n0->bitMask & (1ULL<<index)) != 0))
                 index--;
@@ -1637,27 +1653,31 @@ public:
         }
         
         /// calculate distance between iterators
-        ssize_t diff(const IterBase& i2) const
+        ssize_t diff(const IterBase& k2) const
         {
             ssize_t count = 0;
-            if (n0 == i2.n0)
+            IterBase i1 = *this;
+            IterBase i2 = k2;
+            i1.toNode0();
+            i2.toNode0();
+            if (i1.n0 == i2.n0)
             {
                 // if node0's are same
-                cxuint index1 = std::min(index, i2.index);
-                cxuint index2 = std::max(index, i2.index);
+                cxuint index1 = std::min(i1.index, i2.index);
+                cxuint index2 = std::max(i1.index, i2.index);
                 // calculate element between indices
                 for (cxuint i = index1; i < index2; i++)
-                    if ((n0->bitMask & (1ULL<<i)) == 0)
+                    if ((i1.n0->bitMask & (1ULL<<i)) == 0)
                         count++;
-                return index2 == index ? count : -count;
+                return index2 == i1.index ? count : -count;
             }
             const Node1* n1[maxNode1Depth];
             const Node1* n2[maxNode1Depth];
-            const Node0* xn0_1 = n0;
+            const Node0* xn0_1 = i1.n0;
             const Node0* xn0_2 = i2.n0;
-            cxuint index1 = index;
+            cxuint index1 = i1.index;
             cxuint index2 = i2.index;
-            n1[0] = n0->parent();
+            n1[0] = i1.n0->parent();
             n2[0] = i2.n0->parent();
             
             cxuint i = 0;
@@ -1900,8 +1920,6 @@ private:
         Node0 n0; // root Node0
         Node1 n1; // root Node1
     };
-    Node0* first;
-    Node0* last;
 public:
     ///
     typedef ConstIter const_iterator;
@@ -1912,33 +1930,22 @@ public:
     /// default constructor
     DTree(const Comp& comp = Comp(), const KeyOfVal& kofval = KeyOfVal())
         : Comp(comp), KeyOfVal(kofval), n0()
-    {
-        first = &n0;
-        last = &n0;
-    }
+    { }
     
 #if DTREE_TESTING
     DTree(const Node0& node0, const Comp& comp = Comp(),
           const KeyOfVal& kofval = KeyOfVal()) : Comp(comp), KeyOfVal(kofval), n0(node0)
-    {
-        first = &n0;
-        last = &n0;
-    }
+    { }
     
     DTree(const Node1& node1, const Comp& comp = Comp(),
           const KeyOfVal& kofval = KeyOfVal()) : Comp(comp), KeyOfVal(kofval), n1(node1)
-    {
-        first = n1.getFirstNode0();
-        last = n1.getLastNode0();
-    }
+    { }
 #endif
     /// constructor with range assignment
     template<typename Iter>
     DTree(Iter first, Iter last, const Comp& comp = Comp(),
           const KeyOfVal& kofval = KeyOfVal()) : Comp(comp), KeyOfVal(kofval), n0()
     {
-        this->first = &n0;
-        this->last = &n0;
         for (Iter it = first; it != last; ++it)
             insert(*it);
     }
@@ -1958,14 +1965,11 @@ public:
         {
             n0.array = nullptr;
             n0 = dt.n0;
-            last = first = &n0;
         }
         else
         {
             n1.array = nullptr;
             n1 = dt.n1;
-            first = n1.getFirstNode0();
-            last = n1.getLastNode0();
         }
     }
     /// move constructor
@@ -1975,14 +1979,11 @@ public:
         {
             n0.array = nullptr;
             n0 = std::move(dt.n0);
-            last = first = &n0;
         }
         else
         {
             n1.array = nullptr;
             n1 = std::move(dt.n1);
-            first = n1.getFirstNode0();
-            last = n1.getLastNode0();
         }
     }
     /// destructor
@@ -2005,14 +2006,11 @@ public:
         {
             n0.array = nullptr;
             n0 = dt.n0;
-            last = first = &n0;
         }
         else
         {
             n1.array = nullptr;
             n1 = dt.n1;
-            first = n1.getFirstNode0();
-            last = n1.getLastNode0();
         }
         return *this;
     }
@@ -2027,14 +2025,11 @@ public:
         {
             n0.array = nullptr;
             n0 = std::move(dt.n0);
-            last = first = &n0;
         }
         else
         {
             n1.array = nullptr;
             n1 = std::move(dt.n1);
-            first = n1.getFirstNode0();
-            last = n1.getLastNode0();
         }
         return *this;
     }
@@ -2059,8 +2054,6 @@ public:
             n1.~Node1();
         n0.array = nullptr;
         n0 = Node0();
-        first = &n0;
-        last = &n0;
     }
     
 private:
@@ -2148,22 +2141,49 @@ public:
     
     /// return iterator to first element
     iterator begin()
-    { return iterator(first, 0); }
+    {
+        if (n0.type == NODE0)
+            return iterator(&n0, n0.firstPos);
+        else
+        {
+            iterator it(n1.getFirstNode0());
+            it.index = it.n0->firstPos;
+            return it;
+        }
+    }
     /// return iterator to first element
     const_iterator begin() const
-    { return const_iterator(first, 0); }
+    {
+        if (n0.type == NODE0)
+            return const_iterator(&n0, n0.firstPos);
+        else
+        {
+            const_iterator it(n1.getFirstNode0());
+            it.index = it.n0->firstPos;
+            return it;
+        }
+    }
     /// return iterator to first element
     const_iterator cbegin() const
-    { return const_iterator(first, 0); }
+    {
+        if (n0.type == NODE0)
+            return const_iterator(&n0, n0.firstPos);
+        else
+        {
+            const_iterator it(n1.getFirstNode0());
+            it.index = it.n0->firstPos;
+            return it;
+        }
+    }
     /// return iterator after last element
     iterator end()
-    { return iterator(last, last->capacity); }
+    { return iterator(&n0, n0.type==NODE0 ? n0.capacity : n1.size); }
     /// return iterator after last element
     const_iterator end() const
-    { return const_iterator(last, last->capacity); }
+    { return const_iterator(&n0, n0.type==NODE0 ? n0.capacity : n1.size); }
     /// return iterator after last element
     const_iterator cend() const
-    { return const_iterator(last, last->capacity); }
+    { return const_iterator(&n0, n0.type==NODE0 ? n0.capacity : n1.size); }
     
     /// first element that not less than key
     iterator lower_bound(const key_type& key)
@@ -2253,14 +2273,15 @@ public:
                 return std::make_pair(it, false);
         }
         
+        if (it.n0->type != NODE0)
+            it.toNode0();
+        
         cxuint index = it.n0->insert(value, *this, *this).first;
         Node1* curn1 = it.n0->parent();
         iterator newit(it.n0, index);
         // reorganize/merge/split needed
         if (it.n0->size > maxNode0Size)
         {
-            Node1* firstParent = first->parent();
-            Node1* lastParent = last->parent();
             // simple split to first level
             cxuint n0Index = it.n0->index;
             if (curn1 == nullptr || curn1->size < maxNode1Size)
@@ -2285,8 +2306,6 @@ public:
                     new(&n1) Node1();
                     n1 = std::move(node1);
                     
-                    first = n1.array;
-                    last = n1.array + 1;
                     return std::make_pair(iterator(n1.array + secondNode, index), true);
                 }
                 curn1->insertNode0(std::move(node0_2), n0Index+1, false);
@@ -2304,10 +2323,6 @@ public:
                 newit.n0 = curn1->array + curn1->lowerBoundN(key, *this, *this);
                 newit.index = newit.n0->lower_bound(key, *this, *this);
             }
-            if (firstParent == curn1)
-                first = curn1->array;
-            if (lastParent == curn1)
-                last = curn1->array + curn1->size-1;
         }
         
         cxuint level = 1;
@@ -2389,9 +2404,6 @@ public:
         Node1* curn1 = it.n0->parent();
         if (it.n0->size < minNode0Size)
         {
-            Node1* firstParent = first->parent();
-            Node1* lastParent = last->parent();
-            
             Node1* curn1 = it.n0->parent();
             const cxuint n0Index = it.n0->index;
             cxuint n0Left1 = n0Index > 0 ? curn1->array[n0Index-1].size : UINT_MAX;
@@ -2425,11 +2437,6 @@ public:
                                 left, right);
                 curn1->reorganizeNode0s(left, right+1);
             }
-            
-            if (firstParent == curn1)
-                first = curn1->array;
-            if (lastParent == curn1)
-                last = curn1->array + curn1->size-1;
         }
         
         cxuint level = 1;

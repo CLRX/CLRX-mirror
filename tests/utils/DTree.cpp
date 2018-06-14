@@ -183,11 +183,7 @@ static void verifyDTreeState(const std::string& testName, const std::string& tes
             const DTreeSet<T>& dt)
 {
     if (dt.n0.type == DTree<T>::NODE0)
-    {
         verifyDTreeNode0<T>(testName, testCase + "n0root", dt.n0, 0, 0);
-        assertTrue(testName, testCase + ".first", (&dt.n0)==dt.first);
-        assertTrue(testName, testCase + ".last", (&dt.n0)==dt.last);
-    }
     else
     {
         cxuint maxLevel = 1;
@@ -195,11 +191,6 @@ static void verifyDTreeState(const std::string& testName, const std::string& tes
                 n1 = n1->array1, maxLevel++);
         
         verifyDTreeNode1<T>(testName, testCase + "n1root", dt.n1, 0, maxLevel);
-        const typename DTreeSet<T>::Node1* n1;
-        for (n1 = &dt.n1; n1->type == DTree<T>::NODE2; n1 = n1->array1);
-        assertTrue(testName, testCase + ".first", n1->array == dt.first);
-        for (n1 = &dt.n1; n1->type == DTree<T>::NODE2; n1 = n1->array1 + n1->size-1);
-        assertTrue(testName, testCase + ".last", (n1->array + n1->size-1) == dt.last);
     }
 }
 
