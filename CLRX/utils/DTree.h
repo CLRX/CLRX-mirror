@@ -1917,6 +1917,21 @@ public:
         last = &n0;
     }
     
+#if DTREE_TESTING
+    DTree(const Node0& node0, const Comp& comp = Comp(),
+          const KeyOfVal& kofval = KeyOfVal()) : Comp(comp), KeyOfVal(kofval), n0(node0)
+    {
+        first = &n0;
+        last = &n0;
+    }
+    
+    DTree(const Node1& node1, const Comp& comp = Comp(),
+          const KeyOfVal& kofval = KeyOfVal()) : Comp(comp), KeyOfVal(kofval), n1(node1)
+    {
+        first = n1.getFirstNode0();
+        last = n1.getLastNode0();
+    }
+#endif
     /// constructor with range assignment
     template<typename Iter>
     DTree(Iter first, Iter last, const Comp& comp = Comp(),
@@ -1995,6 +2010,7 @@ public:
             first = n1.getFirstNode0();
             last = n1.getLastNode0();
         }
+        return *this;
     }
     /// move assignment
     DTree& operator=(DTree&& dt)
@@ -2012,6 +2028,7 @@ public:
             first = n1.getFirstNode0();
             last = n1.getLastNode0();
         }
+        return *this;
     }
     /// assignment of initilizer list
     DTree& operator=(std::initializer_list<value_type> init)
@@ -2047,13 +2064,13 @@ private:
         {
             index = curn1->upperBoundN(key, *this, *this);
             if (index == 0)
-                return begin();
+                return end();
             curn1 = curn1->array1 + index - 1;
         }
         // node1
         index = curn1->upperBoundN(key, *this, *this);
         if (index == 0)
-            return begin();
+            return end();
         const Node0* curn0 = curn1->array + index - 1;
         // node0
         IterBase it{curn0, curn0->find(value_type(key), *this, *this)};
@@ -2105,7 +2122,7 @@ private:
             return begin();
         const Node0* curn0 = curn1->array + index - 1;
         // node0
-        IterBase it{curn0, curn0->lower_bound(value_type(key), *this, *this)};
+        IterBase it{curn0, curn0->upper_bound(value_type(key), *this, *this)};
         if (it.index == curn0->capacity)
             it.toNextNode0();
         return it;
@@ -2499,6 +2516,14 @@ public:
     /// default constructor
     DTreeSet(const Comp& comp = Comp()) : Impl(comp)
     { }
+#ifdef DTREE_TESTING
+    DTreeSet(const typename Impl::Node0& node0, const Comp& comp = Comp())
+        : Impl(node0, comp)
+    { }
+    DTreeSet(const typename Impl::Node1& node1, const Comp& comp = Comp())
+        : Impl(node1, comp)
+    { }
+#endif
     /// constructor iterator ranges
     template<typename Iter>
     DTreeSet(Iter first, Iter last, const Comp& comp = Comp()) :
