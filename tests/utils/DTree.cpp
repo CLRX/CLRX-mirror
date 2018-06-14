@@ -640,14 +640,16 @@ static void createNode1FromArray(DTreeSet<cxuint>::Node1& node1, cxuint num,
 {
     std::less<cxuint> comp;
     Identity<cxuint> kofval;
+    cxuint vnext = 100;
     for (cxuint i = 0; i < num; i++)
     {
-        const cxuint v = input[i];
+        const cxuint v = (input!=nullptr) ? input[i] : vnext;
         DTreeSet<cxuint>::Node0 node0;
         const cxuint node0Size = (node0Sizes != nullptr) ? node0Sizes[i] : 20;
         for (cxuint x = v; x < v+node0Size; x++)
             node0.insert(x, comp, kofval);
         node1.insertNode0(std::move(node0), i);
+        vnext += node0Size;
     }
 }
 
@@ -1621,6 +1623,43 @@ static void testDTreeIter()
     assertValue("DTreeIter", "constIter-iter", ssize_t(0), constIter - iter);
 }
 
+/* DTree findReorgBounds0 */
+
+struct DTreeFindReorgBounds0Case
+{
+    Array<cxuint> node0Sizes;
+    cxuint n0Index;
+    cxuint n0Size;
+    cxint expLeft, expRight;
+};
+
+static const DTreeFindReorgBounds0Case dtreeFindReorgBounds0Tbl[] =
+{
+    {   // 0
+        { 18, 22, 45, 56, 41, 48 },
+        3, 56,
+        1, 5
+    }
+};
+
+static void testDTreeFindReorgBounds0(cxuint ti, const DTreeFindReorgBounds0Case& testCase)
+{
+    std::ostringstream oss;
+    oss << "DFindReorgBounds" << ti;
+    oss.flush();
+    std::string caseName = oss.str();
+    
+    DTreeSet<cxuint>::Node1 node1;
+    createNode1FromArray(node1, testCase.node0Sizes.size(), nullptr,
+                    testCase.node0Sizes.data());
+    cxint resLeft = UINT_MAX, resRight = UINT_MAX;
+    DTreeSet<cxuint>::findReorgBounds0(testCase.n0Index, &node1, testCase.n0Size,
+                            resLeft, resRight);
+    
+    assertValue("DTree", caseName+".left", testCase.expLeft, resLeft);
+    assertValue("DTree", caseName+".right", testCase.expRight, resRight);
+}
+
 /* DTreeSet tests */
 
 static const Array<cxuint> dtreeInsertCaseTbl[] =
@@ -1768,6 +1807,10 @@ int main(int argc, const char** argv)
         retVal |= callTest(testDTreeIterBase, i, diterBaseCaseTbl[i]);
     
     retVal |= callTest(testDTreeIter);
+    
+    for (cxuint i = 0; i < sizeof(dtreeFindReorgBounds0Tbl) /
+                    sizeof(DTreeFindReorgBounds0Case); i++)
+        retVal |= callTest(testDTreeFindReorgBounds0, i, dtreeFindReorgBounds0Tbl[i]);
     
     for (cxuint i = 0; i < sizeof(dtreeInsertCaseTbl) / sizeof(Array<cxuint>); i++)
         retVal |= callTest(testDTreeInsert, i, dtreeInsertCaseTbl[i]);

@@ -2151,17 +2151,21 @@ public:
     const_iterator upper_bound(const key_type& key) const
     { return upper_boundInt(key); }
     
+#ifdef DTREE_TESTING
+public:
+#else
 private:
-    static void findReorgBounds0(cxuint n0Index, const Node1* curn1, cxuint n0Size,
+#endif
+    static void findReorgBounds0(cxuint n0Index, const Node1* curn1, cxuint neededN0Size,
                           cxint& left, cxint& right)
     {
         cxuint freeSpace = 0;
-        left = n0Index-1;
-        right = n0Index+1;
+        left = n0Index;
+        right = n0Index;
         cxuint nodeCount = 0;
-        for (; freeSpace <= (((n0Size<<4)*nodeCount)>>6) &&
-                (left >= 0 || right < curn1->size); left--, right++)
-        {
+        do {
+            left--;
+            right++;
             if (left >= 0)
             {
                 freeSpace += maxNode0Size - curn1->array[left].size;
@@ -2172,7 +2176,9 @@ private:
                 freeSpace += maxNode0Size - curn1->array[right].size;
                 nodeCount++;
             }
-        }
+        } while (freeSpace < (((neededN0Size<<4)*nodeCount)>>6) &&
+                (left >= 0 || right < curn1->size));
+        
         left = std::max(0, left);
         right = std::min(curn1->size-1, right);
     }
@@ -2182,13 +2188,14 @@ private:
     {
         cxuint n1Index = prevn1->index;
         cxuint freeSpace = 0;
-        left = n1Index-1;
-        right = n1Index+1;
+        left = n1Index;
+        right = n1Index;
         cxuint nodeCount = 0;
         size_t maxN1MSize = maxTotalSize(level-1);
-        for (; freeSpace <= (((maxN1Size<<4)*nodeCount)>>6) &&
-                (left >= 0 || right < curn1->size); left--, right++)
-        {
+        
+        do {
+            left--;
+            right++;
             if (left >= 0)
             {
                 freeSpace += maxN1MSize - curn1->array1[left].totalSize;
@@ -2200,6 +2207,9 @@ private:
                 nodeCount++;
             }
         }
+        while (freeSpace < (((maxN1Size<<4)*nodeCount)>>6) &&
+                (left >= 0 || right < curn1->size));
+        
         left = std::max(0, left);
         right = std::min(curn1->size-1, right);
     }
