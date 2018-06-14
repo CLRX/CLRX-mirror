@@ -2059,6 +2059,8 @@ public:
             n1.~Node1();
         n0.array = nullptr;
         n0 = Node0();
+        first = &n0;
+        last = &n0;
     }
     
 private:

@@ -1731,6 +1731,22 @@ static const Array<Array<cxuint> > dtreeFindCaseTbl[] =
         { 4 },
         { 3, 2, 4, 5 },
         { 27, 19, 20,  41, 39,  31, 33, 18, 21,  51, 54, 12, 19, 16 }
+    },
+    {   // 1 - second
+        { 5 },
+        { 27, 19, 20, 27, 31 }
+    },
+    {   // 2 - greater
+        { 5 },
+        { 3, 3, 5, 2, 4 },
+        { 6, 4, 2,  7, 8, 6, 3, 4, 2, 6, 2,  7, 8,  5, 4, 4, 6 },
+        { 21, 28, 41, 51, 46, 34,  31, 19, 23, 44,  55, 54,
+            32, 21, 27, 27, 34, 35, 39,  19, 21, 36, 18, 25, 29, 41, 42,
+            46, 47, 31, 19, 29, 33,
+            38, 31, 21,  51, 17, 51, 19,  41, 29,  35, 31, 21, 26, 53, 44,  19, 20,
+            19 ,20, 21, 22, 23, 24, 25,  41, 40, 39, 38, 37, 36, 35, 34,
+            43, 45, 41, 24, 31,  43, 29, 21, 55,  23, 29, 28, 45,
+            40, 30, 28, 21, 49, 50 }
     }
 };
 
@@ -1783,6 +1799,11 @@ static void testDTreeFind(cxuint ti, const Array<Array<cxuint> >& treeNodeSizes)
         else
             assertTrue("DTree", caseName+".find "+buf+" found", it!=set.end());
     }
+    
+    const DTreeSet<cxuint>& cset = set;
+    cset.lower_bound(100);
+    cset.upper_bound(100);
+    cset.find(100);
 }
 
 static const Array<cxuint> dtreeInsertCaseTbl[] =
@@ -1896,6 +1917,18 @@ static void testDTreeInsert2()
     verifyDTreeState("DTreeInsert", std::string("insertReorg")+".test", set);
     checkDTreeContent("DTreeInsert", "insertReorg:content",
                             set, values.size(), values.data());
+    
+    /// to level depth 2
+    set.clear();
+    values.clear();
+    
+    /*for (cxuint v = 100; v < 100 + (node0MaxSize)*10*4 + 1; v += 10)
+    {
+        set.insert(v);
+        values.push_back(v);
+        snprintf(buf, sizeof buf, "[%u]", v);
+        verifyDTreeState("DTreeInsert", std::string("insert2")+buf+".test", set);
+    }*/
 }
 
 int main(int argc, const char** argv)
