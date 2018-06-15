@@ -2269,7 +2269,7 @@ public:
         if (it!=end())
         {
             const key_type itkey = KeyOfVal::operator()(*it);
-            if (!Comp::operator()(key, itkey) && !Comp::operator()(itkey, key))
+            if (!Comp::operator()(key, itkey))
                 return std::make_pair(it, false);
         }
         

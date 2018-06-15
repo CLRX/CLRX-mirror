@@ -2147,7 +2147,6 @@ static void testDTreeInsertRandom()
                     vit==values.end() && sit==set.end());
         }
     }
-    std::cout << "aaa" << std::endl;
 }
 
 int main(int argc, const char** argv)
