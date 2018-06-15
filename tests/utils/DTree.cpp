@@ -1926,6 +1926,8 @@ static void testDTreeInsert2()
     assertTrue("DTreeInsert", "insertReorg.inserted", res.second);
     assertValue("DTreeInsert", "insertReorg.value", cxuint(499), *res.first);
     verifyDTreeState("DTreeInsert", std::string("insertReorg")+".test", set);
+    checkDTreeContent("DTreeInsert", "insertReorg1:content",
+                      set, values.size(), values.data());
     
     /// to level depth 2
     set.clear();
@@ -1966,6 +1968,10 @@ static void testDTreeInsert2()
     verifyDTreeState("DTreeInsert", "insertReorg2Before.test", set);
     res = set.insert(1022);
     verifyDTreeState("DTreeInsert", "insertReorg2Before.test", set);
+    values.insert(std::lower_bound(values.begin(), values.end(), 1022), 1022);
+    checkDTreeContent("DTreeInsert", "insertReorg2:content",
+                      set, values.size(), values.data());
+    
     assertTrue("DTreeInsert", "insertReorg2.inserted", res.second);
     assertValue("DTreeInsert", "insertReorg2.value", cxuint(1022), *res.first);
 }
