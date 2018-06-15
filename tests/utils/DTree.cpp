@@ -1857,20 +1857,6 @@ static const cxuint dtreeInsertForceReorgNode0Values[] =
 static const cxuint dtreeInsertForceReorgNode0Sizes[] =
 { 18, 18, 21, 28, 56, 23, 18, 18 };
 
-static const Array<Array<cxuint> > dtreeInsertForceReorgNode1Sizes =
-{
-    { 8 },
-    { 4, 5, 2, 8, 3, 5, 6, 5 },
-    { 18, 18, 20, 22,
-      22, 21, 26, 19, 31,
-      25, 31,
-      31, 23, 32, 41, 23, 27, 28, 19,
-      23, 23, 28,
-      22, 19, 18, 24, 26,
-      18, 18, 18, 19, 18, 18,
-      23, 22, 18, 22, 31 }
-};
-
 static void testDTreeInsert2()
 {
     char buf[16];
@@ -1903,32 +1889,6 @@ static void testDTreeInsert2()
                             set, values.size(), values.data());
     }
     
-    set.clear();
-    values.clear();
-    DTreeSet<cxuint>::Node1 node1;
-    // force reorganize code
-    // generate values for content comparison
-    for (cxuint i = 0; i < 4; i++)
-        for (cxuint v = dtreeInsertForceReorgNode0Values[i], j = 0;
-             j < dtreeInsertForceReorgNode0Sizes[i]; j++, v++)
-             values.push_back(v);
-    values.push_back(499);
-    for (cxuint i = 4; i < 8; i++)
-        for (cxuint v = dtreeInsertForceReorgNode0Values[i], j = 0;
-             j < dtreeInsertForceReorgNode0Sizes[i]; j++, v++)
-             values.push_back(v);
-    // create node arrays
-    createNode1FromArray(node1, 8, dtreeInsertForceReorgNode0Values,
-                dtreeInsertForceReorgNode0Sizes);
-    set = DTreeSet<cxuint>(node1);
-    // this insert force reorganizeNode0s
-    auto res = set.insert(499);
-    assertTrue("DTreeInsert", "insertReorg.inserted", res.second);
-    assertValue("DTreeInsert", "insertReorg.value", cxuint(499), *res.first);
-    verifyDTreeState("DTreeInsert", std::string("insertReorg")+".test", set);
-    checkDTreeContent("DTreeInsert", "insertReorg1:content",
-                      set, values.size(), values.data());
-    
     /// to level depth 2
     set.clear();
     values.clear();
@@ -1954,26 +1914,70 @@ static void testDTreeInsert2()
     }
     verifyDTreeState("DTreeInsert", "insert2.test", set);
     checkDTreeContent("DTreeInsert", "insert2:content", set, values.size(), values.data());
+}
+
+struct DTreeForceBehCase
+{
+    Array<Array<cxuint> > treeNodeSizes;
+    cxuint step;
+    cxuint insertValue;
+};
+
+static const DTreeForceBehCase dtreeInsertBehCaseTbl[] =
+{
+    {   // 0 - first - force reorganizeNode0s in level 0
+        {
+            { 8 },
+            { 18, 18, 21, 28, 56, 23, 18, 18 }
+        },
+        3, 359
+    },
+    {   // 1 - second - force reorganizeNode1s in level 1
+        {
+            { 8 },
+            { 4, 5, 2, 8, 3, 5, 6, 5 },
+            { 18, 18, 20, 22,
+            22, 21, 26, 19, 31,
+            25, 31,
+            31, 23, 32, 41, 23, 27, 28, 19,
+            23, 23, 28,
+            22, 19, 18, 24, 26,
+            18, 18, 18, 19, 18, 18,
+            23, 22, 18, 22, 31 }
+        },
+        3, 1022
+    }
+};
+
+static void testDTreeInsertBehaviour(cxuint ti, const DTreeForceBehCase& testCase)
+{
+    std::ostringstream oss;
+    oss << "DTreeInsertBeh" << ti;
+    oss.flush();
+    std::string caseName = oss.str();
     
-    set.clear();
-    values.clear();
-    /// force reorganize in level depth 2
+    ;
+    std::vector<cxuint> values;
+    
     cxuint elemsNum = 0;
     // construct DTree from nodeSizes
-    node1 = createDTreeFromNodeSizes("DTreeIterBase", "insertReorg2",
-                dtreeInsertForceReorgNode1Sizes, elemsNum, 3);
-    set = DTreeSet<cxuint>(node1);
+    const DTreeSet<cxuint>::Node1 node1 = createDTreeFromNodeSizes("DTree", caseName,
+                testCase.treeNodeSizes, elemsNum, testCase.step);
+    DTreeSet<cxuint> set(node1);
     for (cxuint v: set)
         values.push_back(v);
-    verifyDTreeState("DTreeInsert", "insertReorg2Before.test", set);
-    res = set.insert(1022);
-    verifyDTreeState("DTreeInsert", "insertReorg2Before.test", set);
-    values.insert(std::lower_bound(values.begin(), values.end(), 1022), 1022);
-    checkDTreeContent("DTreeInsert", "insertReorg2:content",
+    verifyDTreeState("DTree", caseName+".test", set);
+    
+    auto res = set.insert(testCase.insertValue);
+    
+    verifyDTreeState("DTree", caseName+".test", set);
+    values.insert(std::lower_bound(values.begin(), values.end(), testCase.insertValue),
+                    testCase.insertValue);
+    checkDTreeContent("DTree", caseName+".content",
                       set, values.size(), values.data());
     
-    assertTrue("DTreeInsert", "insertReorg2.inserted", res.second);
-    assertValue("DTreeInsert", "insertReorg2.value", cxuint(1022), *res.first);
+    assertTrue("DTree", caseName+".inserted", res.second);
+    assertValue("DTree", caseName+".value", cxuint(testCase.insertValue), *res.first);
 }
 
 int main(int argc, const char** argv)
@@ -2021,5 +2025,8 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; i < sizeof(dtreeInsertCaseTbl) / sizeof(Array<cxuint>); i++)
         retVal |= callTest(testDTreeInsert, i, dtreeInsertCaseTbl[i]);
     retVal |= callTest(testDTreeInsert2);
+    
+    for (cxuint i = 0; i < sizeof(dtreeInsertBehCaseTbl) / sizeof(DTreeForceBehCase); i++)
+        retVal |= callTest(testDTreeInsertBehaviour, i, dtreeInsertBehCaseTbl[i]);
     return retVal;
 }
