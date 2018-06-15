@@ -1857,6 +1857,20 @@ static const cxuint dtreeInsertForceReorgNode0Values[] =
 static const cxuint dtreeInsertForceReorgNode0Sizes[] =
 { 18, 18, 21, 28, 56, 23, 18, 18 };
 
+static const Array<Array<cxuint> > dtreeInsertForceReorgNode1Sizes =
+{
+    { 8 },
+    { 4, 5, 2, 8, 3, 5, 6, 5 },
+    { 18, 18, 20, 22,
+      22, 21, 26, 19, 31,
+      25, 31,
+      31, 23, 32, 41, 23, 27, 28, 19,
+      23, 23, 28,
+      22, 19, 18, 24, 26,
+      18, 18, 18, 19, 18, 18,
+      23, 22, 18, 22, 31 }
+};
+
 static void testDTreeInsert2()
 {
     char buf[16];
@@ -1864,9 +1878,11 @@ static void testDTreeInsert2()
     std::vector<cxuint> values;
     for (cxuint v = 100; v < 100 + (node0MaxSize+1)*10; v += 10)
     {
-        set.insert(v);
+        auto res = set.insert(v);
         values.push_back(v);
         snprintf(buf, sizeof buf, "[%u]", v);
+        assertTrue("DTreeInsert", std::string("insert0")+buf+".inserted", res.second);
+        assertValue("DTreeInsert", std::string("insert0")+buf+".value", v, *res.first);
         verifyDTreeState("DTreeInsert", std::string("insert0")+buf+".test", set);
     }
     
@@ -1874,9 +1890,11 @@ static void testDTreeInsert2()
     {
         for (cxuint v = 122+x; v < 122+x + (node0MaxSize+1)*10; v += 10)
         {
-            set.insert(v);
+            auto res = set.insert(v);
             values.push_back(v);
             snprintf(buf, sizeof buf, "[%u]", v);
+            assertTrue("DTreeInsert", std::string("insert1")+buf+".inserted", res.second);
+            assertValue("DTreeInsert", std::string("insert1")+buf+".value", v, *res.first);
             verifyDTreeState("DTreeInsert", std::string("insert1")+buf+".test", set);
         }
         // check content
@@ -1904,20 +1922,52 @@ static void testDTreeInsert2()
                 dtreeInsertForceReorgNode0Sizes);
     set = DTreeSet<cxuint>(node1);
     // this insert force reorganizeNode0s
-    set.insert(499);
+    auto res = set.insert(499);
+    assertTrue("DTreeInsert", "insertReorg.inserted", res.second);
+    assertValue("DTreeInsert", "insertReorg.value", cxuint(499), *res.first);
     verifyDTreeState("DTreeInsert", std::string("insertReorg")+".test", set);
     
     /// to level depth 2
     set.clear();
     values.clear();
     
-    for (cxuint v = 100; v < 100 + (node0MaxSize)*10*4 + 1; v += 10)
+    cxuint v = 100;
+    for (v = 100; v < 100 + (node0MaxSize)*10*4 + 10; v += 10)
     {
-        set.insert(v);
+        auto res = set.insert(v);
         values.push_back(v);
+        snprintf(buf, sizeof buf, "[%u]", v);
+        assertTrue("DTreeInsert", std::string("insert2")+buf+".inserted", res.second);
+        assertValue("DTreeInsert", std::string("insert2")+buf+".value", v, *res.first);
     }
     verifyDTreeState("DTreeInsert", "insert2.test", set);
     checkDTreeContent("DTreeInsert", "insert2:content", set, values.size(), values.data());
+    for (; v < 100 + (node0MaxSize)*10*6; v += 10)
+    {
+        auto res = set.insert(v);
+        values.push_back(v);
+        snprintf(buf, sizeof buf, "[%u]", v);
+        assertTrue("DTreeInsert", std::string("insert2")+buf+".inserted2", res.second);
+        assertValue("DTreeInsert", std::string("insert2")+buf+".value2", v, *res.first);
+    }
+    verifyDTreeState("DTreeInsert", "insert2.test", set);
+    checkDTreeContent("DTreeInsert", "insert2:content", set, values.size(), values.data());
+    
+    set.clear();
+    values.clear();
+    /// force reorganize in level depth 2
+    cxuint elemsNum = 0;
+    // construct DTree from nodeSizes
+    node1 = createDTreeFromNodeSizes("DTreeIterBase", "insertReorg2",
+                dtreeInsertForceReorgNode1Sizes, elemsNum, 3);
+    set = DTreeSet<cxuint>(node1);
+    for (cxuint v: set)
+        values.push_back(v);
+    verifyDTreeState("DTreeInsert", "insertReorg2Before.test", set);
+    res = set.insert(1022);
+    verifyDTreeState("DTreeInsert", "insertReorg2Before.test", set);
+    assertTrue("DTreeInsert", "insertReorg2.inserted", res.second);
+    assertValue("DTreeInsert", "insertReorg2.value", cxuint(1022), *res.first);
 }
 
 int main(int argc, const char** argv)

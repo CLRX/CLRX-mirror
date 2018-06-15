@@ -2320,7 +2320,7 @@ public:
                 // reorganize array from left to right
                 curn1->reorganizeNode0s(left, right+1);
                 // find newit for inserted value
-                newit.n0 = curn1->array + curn1->lowerBoundN(key, *this, *this);
+                newit.n0 = curn1->array + curn1->upperBoundN(key, *this, *this) - 1;
                 newit.index = newit.n0->lower_bound(key, *this, *this);
             }
         }
@@ -2373,8 +2373,8 @@ public:
                     if (level == 1)
                     {
                         const Node1* pn1 = curn1->array1 +
-                                curn1->lowerBoundN(key, *this, *this);
-                        newit.n0 = pn1->array + pn1->lowerBoundN(key, *this, *this);
+                                curn1->upperBoundN(key, *this, *this) - 1;
+                        newit.n0 = pn1->array + pn1->upperBoundN(key, *this, *this) - 1;
                     }
                 }
             }
