@@ -29,6 +29,8 @@
 #include <cstring>
 #include <cstdio>
 #include <utility>
+#include <set>
+#include <random>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/DTree.h>
 #include "../TestUtils.h"
@@ -2116,6 +2118,38 @@ static void testDTreeInsertBehaviour(cxuint ti, const DTreeForceBehCase& testCas
     assertValue("DTree", caseName+".value", cxuint(testCase.insertValue), *res.first);
 }
 
+static void testDTreeInsertRandom()
+{
+    std::minstd_rand0 ranen(13453312);
+    DTreeSet<cxuint> set;
+    std::set<cxuint> values;
+    
+    char buf[16];
+    for (cxuint i = 0; i < 3000; i++)
+    {
+        //std::cout << "dt" << i << std::endl;
+        snprintf(buf, sizeof buf, "%u", i);
+        cxuint value = ranen();
+        values.insert(value);
+        set.insert(value);
+        
+        if ((i%10) == 9)
+        {
+            verifyDTreeState("DTree", std::string("InsertRan")+buf+".test", set);
+            
+            snprintf(buf, sizeof buf, "%u", i);
+            // check content
+            auto vit = values.begin();
+            auto sit = set.begin();
+            for (; vit != values.end() && sit != set.end(); ++vit, ++sit)
+                assertValue("DTree", std::string("InsertRan")+buf+".content", *vit, *sit);
+            assertTrue("DTree", std::string("InsertRan")+buf+"contentend",
+                    vit==values.end() && sit==set.end());
+        }
+    }
+    std::cout << "aaa" << std::endl;
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -2164,5 +2198,6 @@ int main(int argc, const char** argv)
     
     for (cxuint i = 0; i < sizeof(dtreeInsertBehCaseTbl) / sizeof(DTreeForceBehCase); i++)
         retVal |= callTest(testDTreeInsertBehaviour, i, dtreeInsertBehCaseTbl[i]);
+    retVal |= callTest(testDTreeInsertRandom);
     return retVal;
 }
