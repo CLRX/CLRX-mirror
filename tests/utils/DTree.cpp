@@ -1851,12 +1851,6 @@ static void testDTreeInsert(cxuint ti, const Array<cxuint>& valuesToInsert)
 
 static const cxuint node0MaxSize = DTreeSet<cxuint>::maxNode0Size;
 
-static const cxuint dtreeInsertForceReorgNode0Values[] =
-{ 100, 200, 300, 400, 500, 600, 700, 800 };
-
-static const cxuint dtreeInsertForceReorgNode0Sizes[] =
-{ 18, 18, 21, 28, 56, 23, 18, 18 };
-
 static void testDTreeInsert2()
 {
     char buf[16];
@@ -1976,6 +1970,50 @@ static const DTreeForceBehCase dtreeInsertBehCaseTbl[] =
               23, 25, 18, 22, 31 }
         },
         3, 1287
+    },
+    {   // 4 - split in level 0, reorganize in level 1
+        {
+            { 8 },
+            { 4, 5, 2, 7, 3, 5, 6, 5 },
+            { 18, 18, 20, 22,
+              22, 21, 26, 19, 31,
+              25, 31,
+              26, 24, 37, 56, 36, 24, 21,
+              23, 23, 28,
+              22, 19, 18, 22, 26,
+              18, 18, 18, 19, 18, 18,
+              22, 22, 18, 22, 31 }
+        },
+        3, 1157
+    },
+    {   // 5 - split in level 0 and in level 1
+        {
+            { 7 },
+            { 4, 5, 2, 7, 3, 5, 6 },
+            { 18, 18, 20, 22,
+              22, 21, 26, 19, 31,
+              25, 31,
+              26, 24, 37, 56, 36, 24, 21,
+              23, 23, 28,
+              22, 19, 18, 22, 26,
+              18, 18, 18, 19, 18, 18 }
+        },
+        3, 1157
+    },
+    {   // 6 - split in level 0, reorganize in level 1, level 2 split
+        {
+            { 8 },
+            { 4, 5, 2, 7, 3, 5, 6, 5 },
+            { 18, 18, 24, 22,
+              22, 21, 26, 19, 31,
+              25, 32,
+              26, 24, 37, 56, 36, 24, 21,
+              23, 23, 32,
+              22, 19, 18, 22, 26,
+              18, 18, 18, 19, 18, 18,
+              22, 22, 18, 27, 31 }
+        },
+        3, 1178
     }
 };
 
