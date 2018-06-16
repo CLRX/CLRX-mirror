@@ -1036,9 +1036,10 @@ public:
         }
         
         /// remove node0 with index from this node
-        void eraseNode0(cxuint index)
+        void eraseNode0(cxuint index, bool updateTotSize = true)
         {
-            totalSize -= array[index].size;
+            if (updateTotSize)
+                totalSize -= array[index].size;
             std::move(array+index+1, array+size, array+index);
             if (size == index+1)
                 array[size-1].~Node0();
@@ -1054,9 +1055,10 @@ public:
         }
         
         /// remove node1 with index from this node
-        void eraseNode1(cxuint index)
+        void eraseNode1(cxuint index, bool updateTotSize = true)
         {
-            totalSize -= array1[index].totalSize;
+            if (updateTotSize)
+                totalSize -= array1[index].totalSize;
             std::move(array1+index+1, array1+size, array1+index);
             if (size == index+1)
                 array1[size-1].~Node1();
@@ -2434,7 +2436,7 @@ public:
                 if (n0Left1 < maxNode0Size)
                 {
                     curn1->array[n0Index-1].merge(*it.n0);
-                    curn1->eraseNode0(n0Index);
+                    curn1->eraseNode0(n0Index, false);
                     mergedN0Index = n0Index-1;
                     newit.n0 = curn1->array + n0Index-1;
                     newit.index = newit.n0->lower_bound(key, *this, *this);
@@ -2445,7 +2447,7 @@ public:
                 if (n0Right1 < maxNode0Size)
                 {
                     it.n0->merge(curn1->array[n0Index+1]);
-                    curn1->eraseNode0(n0Index+1);
+                    curn1->eraseNode0(n0Index+1, false);
                     mergedN0Index = n0Index;
                     newit.n0 = curn1->array + n0Index;
                     newit.index = newit.n0->lower_bound(key, *this, *this);
@@ -2494,7 +2496,7 @@ public:
                 if (n1Left1 < maxN1Size)
                 {
                     curn1->array1[n1Index-1].merge(std::move(*prevn1));
-                    curn1->eraseNode1(n1Index);
+                    curn1->eraseNode1(n1Index, false);
                     mergedN1Index = n1Index-1;
                     if (level == 1 && newItN1 == prevn1)
                         newit.n0 = curn1->array1[n1Index-1].array +
@@ -2506,7 +2508,7 @@ public:
                 if (n1Right1 < maxN1Size)
                 {
                     prevn1->merge(std::move(curn1->array1[n1Index+1]));
-                    curn1->eraseNode1(n1Index+1);
+                    curn1->eraseNode1(n1Index+1, false);
                     mergedN1Index = n1Index;
                     if (level == 1 && newItN1 == prevn1)
                         newit.n0 = curn1->array1[n1Index].array +

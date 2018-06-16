@@ -2208,6 +2208,13 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
             { 18, 18, 21, 28, 56, 23, 18, 18 }
         },
         3, 358
+    },
+    {   // 1 - second - force merge
+        {
+            { 8 },
+            { 18, 18, 21, 28, 56, 23, 18, 18 }
+        },
+        3, 187
     }
 };
 
