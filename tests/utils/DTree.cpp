@@ -2258,13 +2258,20 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
         },
         3, 121
     },
-    {   // 3 - force merge in left side (last node0)
+    {   // 4 - force merge in left side (last node0)
         {
             { 8 },
             { 18, 27, 21, 28, 34, 23, 27, 18 }
         },
         3, 649
     },
+    {   // 5 - force reogranizeNode0
+        {
+            { 8 },
+            { 20, 47, 18, 41, 23, 18, 22, 21 }
+        },
+        3, 334
+    }
 };
 
 static void testDTreeEraseBehaviour(cxuint ti, const DTreeForceBehCase& testCase)

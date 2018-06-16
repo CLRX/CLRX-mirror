@@ -2439,7 +2439,7 @@ public:
             cxuint mergedN0Index = UINT_MAX;
             if (n0Left1 < n0Right1)
             {
-                if (n0Left1 < maxNode0Size)
+                if (n0Left1+minNode0Size-1 < maxNode0Size)
                 {
                     curn1->array[n0Index-1].merge(*it.n0);
                     curn1->eraseNode0(n0Index, false);
@@ -2448,9 +2448,9 @@ public:
                     newit.index = newit.n0->lower_bound(key, *this, *this);
                 }
             }
-            else
+            else if (n0Right1 != UINT_MAX)
             {
-                if (n0Right1 < maxNode0Size)
+                if (n0Right1+minNode0Size-1 < maxNode0Size)
                 {
                     it.n0->merge(curn1->array[n0Index+1]);
                     curn1->eraseNode0(n0Index+1, false);
@@ -2493,9 +2493,9 @@ public:
                 continue;
             
             const cxuint n1Index = prevn1->index;
-            cxuint n1Left1 = n1Index > 0 ? curn1->array[n1Index-1].size : UINT_MAX;
-            cxuint n1Right1 = n1Index+1 < curn1->size ? curn1->array[n1Index+1].size :
-                    UINT_MAX;
+            size_t n1Left1 = n1Index > 0 ? curn1->array1[n1Index-1].totalSize : SIZE_MAX;
+            size_t n1Right1 = n1Index+1 < curn1->size ?
+                    curn1->array1[n1Index+1].totalSize : SIZE_MAX;
             cxuint mergedN1Index = UINT_MAX;
             if (n1Left1 < n1Right1)
             {
@@ -2509,7 +2509,7 @@ public:
                             curn1->array1[n1Index-1].upperBoundN(key, *this, *this) - 1;
                 }
             }
-            else
+            else if (n1Right1 != SIZE_MAX)
             {
                 if (n1Right1 < maxN1Size)
                 {
