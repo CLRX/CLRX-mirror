@@ -419,11 +419,20 @@ static void testDTreeNode0()
         for (cxuint i = 0; i < dtreeNode0ValuesEraseNum; i++)
         {
             cxuint v = dtreeNode0ValuesErase[i];
-            node0.erase(v, comp, kofval);
+            bool erased = node0.erase(v, comp, kofval);
+            assertTrue("DTreeNode0", "erase0.erased", erased);
             verifyDTreeNode0<cxuint>("DTreeNode0", "erase0", node0, 0, 0);
-            checkContentDTreeNode0("DTreeNode0", "erase0", node0,
+            checkContentDTreeNode0("DTreeNode0", "erase0.content1", node0,
                         dtreeNode0ValuesEraseNum-(i+1), dtreeNode0ValuesErase+i+1);
-            checkNotFoundDTreeNode0("DTreeNode0", "erase0", node0,
+            checkNotFoundDTreeNode0("DTreeNode0", "erase0.content2", node0,
+                        i+1, dtreeNode0ValuesErase);
+            
+            erased = node0.erase(v, comp, kofval);
+            assertTrue("DTreeNode0", "erase0.erased2", !erased);
+            verifyDTreeNode0<cxuint>("DTreeNode0", "erase0_2", node0, 0, 0);
+            checkContentDTreeNode0("DTreeNode0", "erase0_2.content1", node0,
+                        dtreeNode0ValuesEraseNum-(i+1), dtreeNode0ValuesErase+i+1);
+            checkNotFoundDTreeNode0("DTreeNode0", "erase0_2.content2", node0,
                         i+1, dtreeNode0ValuesErase);
         }
     }
