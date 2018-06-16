@@ -2271,6 +2271,13 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
             { 20, 47, 18, 41, 23, 18, 22, 21 }
         },
         3, 334
+    },
+    {   // 6 - force reogranizeNode0
+        {
+            { 8 },
+            { 20, 52, 18, 38, 23, 18, 22, 21 }
+        },
+        3, 334
     }
 };
 

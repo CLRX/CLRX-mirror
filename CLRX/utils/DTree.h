@@ -108,7 +108,7 @@ public:
     {
         if (level == 0)
             return minNode0Size;
-        return (size_t(normalNode0Size) << (normalNode1Shift * level)) / 3;
+        return (size_t(maxNode0Size) << (normalNode1Shift * level)) / 3;
     }
     
     // parent pointer part size of array (heap)
@@ -2439,7 +2439,7 @@ public:
             cxuint mergedN0Index = UINT_MAX;
             if (n0Left1 < n0Right1)
             {
-                if (n0Left1+minNode0Size-1 < maxNode0Size)
+                if (n0Left1+minNode0Size-1 <= maxNode0Size)
                 {
                     curn1->array[n0Index-1].merge(*it.n0);
                     curn1->eraseNode0(n0Index, false);
@@ -2450,7 +2450,7 @@ public:
             }
             else if (n0Right1 != UINT_MAX)
             {
-                if (n0Right1+minNode0Size-1 < maxNode0Size)
+                if (n0Right1+minNode0Size-1 <= maxNode0Size)
                 {
                     it.n0->merge(curn1->array[n0Index+1]);
                     curn1->eraseNode0(n0Index+1, false);
@@ -2499,7 +2499,8 @@ public:
             cxuint mergedN1Index = UINT_MAX;
             if (n1Left1 < n1Right1)
             {
-                if (n1Left1 < maxN1Size)
+                if (n1Left1+minN1Size-1 <= maxN1Size &&
+                    prevn1->size + curn1->array1[n1Index-1].size <= maxNode1Size)
                 {
                     curn1->array1[n1Index-1].merge(std::move(*prevn1));
                     curn1->eraseNode1(n1Index, false);
@@ -2511,7 +2512,8 @@ public:
             }
             else if (n1Right1 != SIZE_MAX)
             {
-                if (n1Right1 < maxN1Size)
+                if (n1Right1+minN1Size-1 <= maxN1Size &&
+                    prevn1->size + curn1->array1[n1Index+1].size <= maxNode1Size)
                 {
                     prevn1->merge(std::move(curn1->array1[n1Index+1]));
                     curn1->eraseNode1(n1Index+1, false);
