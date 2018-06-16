@@ -2158,6 +2158,29 @@ static void testDTreeInsertRandom()
     }
 }
 
+/* DTreeSet erase */
+
+static void testDTreeErase0()
+{
+    DTreeSet<cxuint> set;
+    for (cxuint i = 0; i < 40; i++)
+        set.insert(i);
+    verifyDTreeState("DTree", "erase0.test", set);
+    
+    char buf[16];
+    for (cxuint i = 0; i < 40; i++)
+    {
+        snprintf(buf, sizeof buf, "[%u]", i);
+        auto it = set.erase(set.find(i));
+        if (i == 39)
+            assertTrue("DTree", std::string("erase0")+buf+".it", it==set.end());
+        else
+            assertValue("DTree", std::string("erase0")+buf+".it", i+1, *it);
+        
+        verifyDTreeState("DTree", std::string("erase0")+buf+".test", set);
+    }
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -2207,5 +2230,7 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; i < sizeof(dtreeInsertBehCaseTbl) / sizeof(DTreeForceBehCase); i++)
         retVal |= callTest(testDTreeInsertBehaviour, i, dtreeInsertBehCaseTbl[i]);
     retVal |= callTest(testDTreeInsertRandom);
+    
+    retVal |= callTest(testDTreeErase0);
     return retVal;
 }

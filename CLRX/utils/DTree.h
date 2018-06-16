@@ -2407,6 +2407,8 @@ public:
     /// remove element in postion pointed by iterator
     iterator erase(const_iterator it)
     {
+        K key = KeyOfVal::operator()(*it);
+        
         const_iterator newit(it);
         if (it == end())
             return newit; // do nothing (if end or free space)
@@ -2414,10 +2416,10 @@ public:
             // not finished
             return newit;
         
+        newit.index = newit.n0->lower_bound(key, *this, *this);
         if (it.n0 == &n0)
             return newit;
         
-        K key = KeyOfVal::operator()(*it);
         Node1* curn1 = it.n0->parent();
         if (it.n0->size < minNode0Size)
         {
