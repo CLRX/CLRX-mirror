@@ -1925,7 +1925,7 @@ struct DTreeForceBehCase
 {
     Array<Array<cxuint> > treeNodeSizes;
     cxuint step;
-    cxuint insertValue;
+    cxuint valueToProcess;
 };
 
 static const DTreeForceBehCase dtreeInsertBehCaseTbl[] =
@@ -2115,16 +2115,15 @@ static void testDTreeInsertBehaviour(cxuint ti, const DTreeForceBehCase& testCas
         values.push_back(v);
     verifyDTreeState("DTree", caseName+".test", set);
     
-    auto res = set.insert(testCase.insertValue);
+    auto res = set.insert(testCase.valueToProcess);
     
     verifyDTreeState("DTree", caseName+".test", set);
-    values.insert(std::lower_bound(values.begin(), values.end(), testCase.insertValue),
-                    testCase.insertValue);
-    checkDTreeContent("DTree", caseName+".content",
-                      set, values.size(), values.data());
+    values.insert(std::lower_bound(values.begin(), values.end(), testCase.valueToProcess),
+                    testCase.valueToProcess);
+    checkDTreeContent("DTree", caseName+".content", set, values.size(), values.data());
     
     assertTrue("DTree", caseName+".inserted", res.second);
-    assertValue("DTree", caseName+".value", cxuint(testCase.insertValue), *res.first);
+    assertValue("DTree", caseName+".value", cxuint(testCase.valueToProcess), *res.first);
 }
 
 static void testDTreeInsertRandom()
@@ -2175,10 +2174,77 @@ static void testDTreeErase0()
         if (i == 39)
             assertTrue("DTree", std::string("erase0")+buf+".it", it==set.end());
         else
-            assertValue("DTree", std::string("erase0")+buf+".it", i+1, *it);
+            assertValue("DTree", std::string("erase0")+buf+".it", cxuint(i+1), *it);
         
         verifyDTreeState("DTree", std::string("erase0")+buf+".test", set);
     }
+    
+    set.clear();
+    
+    for (cxuint i = 0; i < 40; i++)
+        set.insert(i);
+    
+    auto it = set.erase(set.find(27));
+    assertValue("DTree", "erase0x[0].it", cxuint(28), *it);
+    it = set.erase(set.find(39));
+    assertTrue("DTree", "erase0x[1].it", it==set.end());
+    it = set.erase(set.find(0));
+    assertValue("DTree", "erase0x[2].it", cxuint(1), *it);
+    
+    for (cxuint i = 10; i < 20; i++)
+    {
+        snprintf(buf, sizeof buf, "[%u]", i);
+        auto it = set.erase(set.find(i));
+        assertValue("DTree", std::string("erase0x")+buf+".it", cxuint(i+1), *it);
+        verifyDTreeState("DTree", std::string("erase0x")+buf+".test", set);
+    }
+}
+
+static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
+{
+    {   // 0 - first - force reorganizeNode0s in level 0
+        {
+            { 8 },
+            { 18, 18, 21, 28, 56, 23, 18, 18 }
+        },
+        3, 358
+    }
+};
+
+static void testDTreeEraseBehaviour(cxuint ti, const DTreeForceBehCase& testCase)
+{
+    std::ostringstream oss;
+    oss << "DTreeEraseBeh" << ti;
+    oss.flush();
+    std::string caseName = oss.str();
+    
+    std::vector<cxuint> values;
+    
+    cxuint elemsNum = 0;
+    // construct DTree from nodeSizes
+    const DTreeSet<cxuint>::Node1 node1 = createDTreeFromNodeSizes("DTree", caseName,
+                testCase.treeNodeSizes, elemsNum, testCase.step);
+    DTreeSet<cxuint> set(node1);
+    for (cxuint v: set)
+        if (v != testCase.valueToProcess)
+            values.push_back(v);
+    verifyDTreeState("DTree", caseName+".test", set);
+    auto lastIt = set.end();
+    --lastIt;
+    const bool isLast = (*lastIt == testCase.valueToProcess);
+    
+    auto toErase = set.find(testCase.valueToProcess);
+    assertValue("DTree", caseName+".toErase", cxuint(testCase.valueToProcess), *toErase);
+    auto it = set.erase(toErase);
+    
+    verifyDTreeState("DTree", caseName+".test", set);
+    checkDTreeContent("DTree", caseName+".content", set, values.size(), values.data());
+    
+    if (!isLast)
+        assertValue("DTree", caseName+".value",
+                        cxuint(testCase.valueToProcess+testCase.step), *it);
+    else
+        assertTrue("DTree", caseName+".end", it==set.end());
 }
 
 int main(int argc, const char** argv)
@@ -2232,5 +2298,7 @@ int main(int argc, const char** argv)
     retVal |= callTest(testDTreeInsertRandom);
     
     retVal |= callTest(testDTreeErase0);
+    for (cxuint i = 0; i < sizeof(dtreeEraseBehCaseTbl) / sizeof(DTreeForceBehCase); i++)
+        retVal |= callTest(testDTreeEraseBehaviour, i, dtreeEraseBehCaseTbl[i]);
     return retVal;
 }

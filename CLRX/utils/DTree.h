@@ -2463,11 +2463,11 @@ public:
                 newit.n0 = curn1->array + curn1->upperBoundN(key, *this, *this) - 1;
                 newit.index = newit.n0->lower_bound(key, *this, *this);
             }
-            if (newit.index == newit.n0->capacity)
-            {
-                newit.toNextNode0();
-                key = newit.n0->array[newit.n0->firstPos];
-            }
+        }
+        if (newit.index == newit.n0->capacity)
+        {
+            newit.toNextNode0();
+            key = newit.n0->array[newit.n0->firstPos];
         }
         
         cxuint level = 1;
