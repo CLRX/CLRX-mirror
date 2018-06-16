@@ -2386,6 +2386,7 @@ public:
     /// insert new elemnt with iterator hint
     iterator insert(const_iterator hint, const value_type& value)
     { return insert(value)->first; }
+    /// insert new elements from initializer list
     void insert(std::initializer_list<value_type> ilist)
     {
         for (const value_type& v: ilist)
@@ -2406,17 +2407,17 @@ public:
     /// remove element in postion pointed by iterator
     iterator erase(const_iterator it)
     {
+        const_iterator newit(it);
         if (it == end())
-            return it; // do nothing (if end or free space)
+            return newit; // do nothing (if end or free space)
         if (!it.n0->erase(it.index))
-        {
             // not finished
-            return it;
-        }
+            return newit;
         
         if (it.n0 == &n0)
-            return it;
+            return newit;
         
+        K key = KeyOfVal::operator()(*it);
         Node1* curn1 = it.n0->parent();
         if (it.n0->size < minNode0Size)
         {
@@ -2433,6 +2434,8 @@ public:
                     curn1->array[n0Index-1].merge(*it.n0);
                     curn1->eraseNode0(n0Index);
                     mergedN0Index = n0Index-1;
+                    newit.n0 = curn1->array + n0Index-1;
+                    newit.index = newit.n0->lower_bound(key, *this, *this);
                 }
             }
             else
@@ -2442,6 +2445,8 @@ public:
                     it.n0->merge(curn1->array[n0Index+1]);
                     curn1->eraseNode0(n0Index+1);
                     mergedN0Index = n0Index;
+                    newit.n0 = curn1->array + n0Index;
+                    newit.index = newit.n0->lower_bound(key, *this, *this);
                 }
             }
             if (mergedN0Index == UINT_MAX)
@@ -2449,14 +2454,23 @@ public:
                 // reorganization needed before inserting
                 cxint left, right;
                 // reorganize in this level
-                findReorgBounds0(mergedN0Index, curn1, curn1->array[mergedN0Index].size,
+                findReorgBounds0(n0Index, curn1, curn1->array[n0Index].size,
                                 left, right);
                 curn1->reorganizeNode0s(left, right+1);
+                // find newit for inserted value
+                newit.n0 = curn1->array + curn1->upperBoundN(key, *this, *this) - 1;
+                newit.index = newit.n0->lower_bound(key, *this, *this);
+            }
+            if (newit.index == newit.n0->capacity)
+            {
+                newit.toNextNode0();
+                key = newit.n0->array[newit.n0->firstPos];
             }
         }
         
         cxuint level = 1;
         Node1* prevn1 = nullptr;
+        const Node1* newItN1 = newit.n0->parent();
         while (curn1 != nullptr)
         {
             curn1->totalSize--;
@@ -2480,6 +2494,9 @@ public:
                     curn1->array1[n1Index-1].merge(std::move(*prevn1));
                     curn1->eraseNode1(n1Index);
                     mergedN1Index = n1Index-1;
+                    if (level == 1 && newItN1 == prevn1)
+                        newit.n0 = curn1->array1[n1Index-1].array +
+                            curn1->array1[n1Index-1].upperBoundN(key, *this, *this) - 1;
                 }
             }
             else
@@ -2489,6 +2506,9 @@ public:
                     prevn1->merge(std::move(curn1->array1[n1Index+1]));
                     curn1->eraseNode1(n1Index+1);
                     mergedN1Index = n1Index;
+                    if (level == 1 && newItN1 == prevn1)
+                        newit.n0 = curn1->array1[n1Index].array +
+                            curn1->array1[n1Index].upperBoundN(key, *this, *this) - 1;
                 }
             }
             if (mergedN1Index == UINT_MAX)
@@ -2496,12 +2516,18 @@ public:
                 // reorganization needed before inserting
                 cxint left, right;
                 // reorganize in this level
-                findReorgBounds1(prevn1, curn1, curn1->array[mergedN1Index].size, level,
+                findReorgBounds1(prevn1, curn1, curn1->array[n1Index].size,
                                 left, right);
                 curn1->reorganizeNode1s(left, right+1);
+                if (level == 1 && newItN1 == prevn1)
+                {
+                    const Node1* pn1 = curn1->array1 +
+                            curn1->upperBoundN(key, *this, *this) - 1;
+                    newit.n0 = pn1->array + pn1->upperBoundN(key, *this, *this) - 1;
+                }
             }
         }
-        return it;
+        return newit;
     }
     /// remove elemnet by key
     size_t erase(const key_type& key)
