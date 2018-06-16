@@ -107,11 +107,11 @@ IF(BUILD_32BIT)
     SET(CMAKE_CXX_FLAGS_GCCSSP
         "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all")
     SET(CMAKE_CXX_FLAGS_RELEASE
-        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -O2 -fomit-frame-pointer")
+        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -O2")
     SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO
         "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -funroll-loops -DDEBUG=1")
     SET(CMAKE_CXX_FLAGS_RELWITHPROFILE
-        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -pg -funroll-loops")
+        "-Wall -m32 ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -pg")
 ELSE(BUILD_32BIT)
     IF(MSVC)
     SET(CMAKE_CXX_FLAGS "/W1 ${EXTRA_OPTS} /EHsc")
@@ -128,11 +128,11 @@ ELSE(BUILD_32BIT)
     SET(CMAKE_CXX_FLAGS_GCCSSP
         "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all")
     SET(CMAKE_CXX_FLAGS_RELEASE
-        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -O2 -fomit-frame-pointer")
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -O2")
     SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO
         "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -funroll-loops -DDEBUG=1")
     SET(CMAKE_CXX_FLAGS_RELWITHPROFILE
-        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -pg -funroll-loops")
+        "-Wall ${EXTRA_OPTS} ${CPP_STANDARD} -g -O2 -pg")
     ENDIF(MSVC)
 ENDIF(BUILD_32BIT)
 
