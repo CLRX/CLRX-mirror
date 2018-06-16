@@ -2095,6 +2095,34 @@ static const DTreeForceBehCase dtreeInsertBehCaseTbl[] =
         },
         3, 2789
     },
+    {   // 10 - force split in level 0 (right)
+        {
+            { 7 },
+            { 18, 18, 21, 56, 23, 18, 18 }
+        },
+        3, 414
+    },
+    {   // 11 - force split in level 0 (left)
+        {
+            { 7 },
+            { 18, 18, 21, 56, 23, 18, 18 }
+        },
+        3, 303
+    },
+    {   // 12 - force reorganizeNode0s in level 0
+        {
+            { 8 },
+            { 26, 25, 21, 26, 53, 23, 32, 18 }
+        },
+        3, 359
+    },
+    {   // 13 - force reorganizeNode0s in level 0
+        {
+            { 8 },
+            { 26, 25, 21, 26, 53, 23, 32, 18 }
+        },
+        3, 600
+    }
 };
 
 static void testDTreeInsertBehaviour(cxuint ti, const DTreeForceBehCase& testCase)
