@@ -1042,7 +1042,10 @@ public:
                 totalSize -= array[index].size;
             std::move(array+index+1, array+size, array+index);
             if (size == index+1)
+            {
                 array[size-1].~Node0();
+                array[size-1].array = nullptr;
+            }
             for (cxuint i = index; i < size-1U; i++)
                 array[i].index = i;
             if (size > 1 && index == 0)
@@ -1061,7 +1064,10 @@ public:
                 totalSize -= array1[index].totalSize;
             std::move(array1+index+1, array1+size, array1+index);
             if (size == index+1)
+            {
                 array1[size-1].~Node1();
+                array1[size-1].array = nullptr;
+            }
             for (cxuint i = index; i < size-1U; i++)
                 array1[i].index = i;
             if (size > 1 && index == 0)

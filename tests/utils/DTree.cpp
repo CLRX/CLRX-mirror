@@ -2230,7 +2230,7 @@ static void testDTreeErase0()
 
 static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
 {
-    {   // 0 - first - force reorganizeNode0s in level 0
+    {   // 0 - first - in level 1 - it causes nothing
         {
             { 8 },
             { 18, 18, 21, 28, 56, 23, 18, 18 }
@@ -2243,7 +2243,28 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
             { 18, 18, 21, 28, 56, 23, 18, 18 }
         },
         3, 187
-    }
+    },
+    {   // 2 - force merge in righ side
+        {
+            { 8 },
+            { 24, 18, 21, 28, 56, 23, 18, 18 }
+        },
+        3, 196
+    },
+    {   // 3 - force merge in right side (first node0)
+        {
+            { 8 },
+            { 18, 27, 21, 28, 34, 23, 18, 18 }
+        },
+        3, 121
+    },
+    {   // 3 - force merge in left side (last node0)
+        {
+            { 8 },
+            { 18, 27, 21, 28, 34, 23, 27, 18 }
+        },
+        3, 649
+    },
 };
 
 static void testDTreeEraseBehaviour(cxuint ti, const DTreeForceBehCase& testCase)
