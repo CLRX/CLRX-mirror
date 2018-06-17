@@ -2314,7 +2314,7 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
         },
         3, 334
     },
-    {   // 7 - force merge in level 1
+    {   // 7 - force merge in level 1 (left side)
         {
             { 3 },
             { 3, 3, 5 },
@@ -2324,7 +2324,7 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
         },
         3, 406
     },
-    {   // 7 - force merge in level 1
+    {   // 8 - force merge in level 1 (right side)
         {
             { 3 },
             { 5, 3, 3 },
@@ -2333,6 +2333,18 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
               41, 22, 34 }
         },
         3, 589
+    },
+    {   // 9 - force reorganize in level 1 (right side)
+        {
+            { 5 },
+            { 2, 5, 3, 6, 4 },
+            { 39, 53,
+              42, 51, 35, 43, 42,
+              27, 22, 25,
+              42, 21, 53, 34, 41, 22,
+              23, 43, 21, 27 }
+        },
+        3, 1126
     }
 };
 
