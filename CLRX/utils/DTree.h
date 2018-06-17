@@ -2493,9 +2493,11 @@ public:
             curn1 = prevn1->parent();
             cxuint maxN1Size = maxTotalSize(level);
             cxuint minN1Size = minTotalSize(level);
-            level++;
             if (prevn1->totalSize >= minN1Size)
+            {
+                level++;
                 continue;
+            }
             
             const cxuint n1Index = prevn1->index;
             size_t n1Left1 = n1Index > 0 ? curn1->array1[n1Index-1].totalSize : SIZE_MAX;
@@ -2548,6 +2550,7 @@ public:
                     newit.n0 = pn1->array + pn1->upperBoundN(key, *this, *this) - 1;
                 }
             }
+            level++;
         }
         return newit;
     }

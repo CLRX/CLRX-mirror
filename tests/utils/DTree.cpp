@@ -2313,6 +2313,26 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
             { 20, 52, 18, 38, 23, 18, 22, 21 }
         },
         3, 334
+    },
+    {   // 7 - force merge in level 1
+        {
+            { 3 },
+            { 3, 3, 5 },
+            { 41, 22, 34,
+              27, 22, 25,
+              32, 21, 25, 23, 32 }
+        },
+        3, 406
+    },
+    {   // 7 - force merge in level 1
+        {
+            { 3 },
+            { 5, 3, 3 },
+            { 32, 21, 25, 23, 32,
+              27, 22, 25,
+              41, 22, 34 }
+        },
+        3, 589
     }
 };
 
@@ -2342,7 +2362,7 @@ static void testDTreeEraseBehaviour(cxuint ti, const DTreeForceBehCase& testCase
     assertValue("DTree", caseName+".toErase", cxuint(testCase.valueToProcess), *toErase);
     auto it = set.erase(toErase);
     
-    verifyDTreeState("DTree", caseName+".test", set);
+    verifyDTreeState("DTree", caseName+".testafter", set);
     checkDTreeContent("DTree", caseName+".content", set, values.size(), values.data());
     
     if (!isLast)
