@@ -1218,7 +1218,8 @@ public:
             cxuint node0Count = 0;
             cxuint j = start; // input node index
             cxuint k = 0; // input child node index
-            for (cxuint i = 0; i < end-start; i++)
+            cxuint remaining = end-start-1;
+            for (cxuint i = 0; i < end-start; i++, remaining--)
             {
                 temps[i].index = start+i;
                 cxuint newNodeSize = nodesTotSize / (end-start-i);
@@ -1228,11 +1229,12 @@ public:
                     if (child.type == NODE2)
                         for (; k < child.size && temps[i].size < maxNode1Size &&
                             (temps[i].size < 2 ||
+                            (node0sNum-node0Count > remaining*maxNode1Size) ||
                             // if no node0s in parent node
                             temps[i].totalSize+(child.array1[k].totalSize>>1) <
                                         newNodeSize); k++, node0Count++)
                         {
-                            if (node0sNum-node0Count <= (((end-start)-(i+1))<<1))
+                            if (node0sNum-node0Count <= (remaining<<1))
                                 // prevent too small node0s number for rest node1s
                                 break;
                             temps[i].insertNode1(std::move(child.array1[k]),
@@ -1241,12 +1243,13 @@ public:
                     else
                         for (; k < child.size && temps[i].size < maxNode1Size &&
                             (temps[i].size < 2 ||
+                            (node0sNum-node0Count > remaining*maxNode1Size) ||
                             // if no node0s in parent node
                             temps[i].totalSize+(child.array[k].size>>1) < newNodeSize);
                                     k++, node0Count++)
                         {
-                            if (node0sNum-node0Count <= (((end-start)-(i+1))<<1))
-                                // prevent too small node0s number for rest node1s
+                            if (node0sNum-node0Count <= (remaining<<1))
+                                // prevent too small node0s number for rest node1s and
                                 break;
                             temps[i].insertNode0(std::move(child.array[k]),
                                                 temps[i].size);
@@ -1262,8 +1265,7 @@ public:
             }
             
             // final move to this array
-            if (j == end)
-                std::move(temps, temps + end-start, array1+start);
+            std::move(temps, temps + end-start, array1+start);
         }
     };
 public:

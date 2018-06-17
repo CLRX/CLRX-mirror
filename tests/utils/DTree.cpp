@@ -1317,11 +1317,11 @@ static const DNode1ReorgNode1sCase dNode1ReorgNode1sCaseTbl[] =
         0, 8,
         { 4, 7, 7, 7, 6, 8, 8, 7 }
     },
-    /*{   // 7 - with high node children number
+    {   // 7 - try to provoke higher children number than maxNode1Size
         { { 56, 56, 56, 56, 18, 18 }, { 18, 18, 19, 20, 18, 20, 19, 18 }, },
         0, 2,
-        { 0, 0 }
-    }*/
+        { 6, 8 }
+    }
 };
 
 static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& testCase)
