@@ -1298,6 +1298,15 @@ static const DNode1ReorgNode1sCase dNode1ReorgNode1sCaseTbl[] =
           { 21, 23, 24 }, { 18, 23 }, { 19, 23 }, { 24, 21, 18 } },
         1, 6,
         { 4, 2, 2, 4, 4, 3, 2, 3 }
+    },
+    {   // 6 - with node children higher than maxNode1Size
+        { { 51, 56 }, { 18, 18, 19, 20, 18, 20, 19, 18 },
+          { 18, 18, 19, 20, 18, 20, 19, 18 },
+          { 18, 18, 19, 20, 18, 20, 19, 18 }, { 56, 56 },
+          { 18, 18, 19, 20, 18, 20, 19, 18 }, { 30, 39, 53 },
+          { 18, 18, 19, 20, 18, 20, 19, 18 } },
+        0, 8,
+        { 4, 7, 7, 7, 3, 7, 4, 8 }
     }
 };
 
@@ -1340,12 +1349,19 @@ static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& t
     verifyDTreeNode1<cxuint>("DTreeNode2Reorg", caseName+"n1_after", node2, 0, 2,
                 nullptr, VERIFY_NODE_NO_TOTALSIZE);
     
+    assertValue("DTreeNode2Reorg", caseName+"n1 children", testCase.node0Sizes.size(),
+                testCase.expNode1Sizes.size());
+    
     // check reorganization0
     char buf[16];
     cxuint expValue = 100;
     flatN0Index = 0;
+    cxuint expNode1Children = 0;
+    cxuint resNode1Children = 0;
     for (cxuint i = 0; i < testCase.expNode1Sizes.size(); i++)
     {
+        expNode1Children += testCase.node0Sizes[i].size();
+        resNode1Children += testCase.expNode1Sizes[i];
         snprintf(buf, sizeof buf, "[%u]", i);
         assertValue("DTreeNode2Reorg", caseName+"n2 size"+buf,
                     testCase.expNode1Sizes[i], cxuint(node2.array1[i].size));
@@ -1368,6 +1384,8 @@ static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& t
         }
         flatN0Index += testCase.expNode1Sizes[i];
     }
+    assertValue("DTreeNode2Reorg", caseName+"n1n1 children", expNode1Children,
+                resNode1Children);
 }
 
 /* DTree IterBase tests */
