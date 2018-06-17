@@ -182,7 +182,7 @@ static void verifyDTreeNode1(const std::string& testName, const std::string& tes
 
 template<typename T>
 static void verifyDTreeState(const std::string& testName, const std::string& testCase,
-            const DTreeSet<T>& dt)
+            const DTreeSet<T>& dt, cxuint flags = 0)
 {
     if (dt.n0.type == DTree<T>::NODE0)
         verifyDTreeNode0<T>(testName, testCase + "n0root", dt.n0, 0, 0);
@@ -192,7 +192,8 @@ static void verifyDTreeState(const std::string& testName, const std::string& tes
         for (const typename DTreeSet<T>::Node1* n1 = &dt.n1; n1->type==DTree<T>::NODE2;
                 n1 = n1->array1, maxLevel++);
         
-        verifyDTreeNode1<T>(testName, testCase + "n1root", dt.n1, 0, maxLevel);
+        verifyDTreeNode1<T>(testName, testCase + "n1root", dt.n1, 0, maxLevel,
+                        nullptr, flags);
     }
 }
 
@@ -1252,10 +1253,12 @@ static void testDTreeNode2Split(cxuint ti, const DNode1SplitCase& testCase)
     node1.splitNode(node2);
     assertValue("DTreeNode2Split", caseName+".point",
                     testCase.expectedPoint, cxuint(node1.size));
-    verifyDTreeNode1<cxuint>("DTreeNode2Split", caseName+"n1", node1, 0, 2);
+    verifyDTreeNode1<cxuint>("DTreeNode2Split", caseName+"n1", node1, 0, 2, nullptr,
+            VERIFY_NODE_NO_MINTOTALSIZE);
     checkNode2Firsts0("DTreeNode2Split", caseName+"n1", node1,
                         testCase.expectedPoint, testCase.values.data());
-    verifyDTreeNode1<cxuint>("DTreeNode2Split", caseName+"n2", node2, 0, 2);
+    verifyDTreeNode1<cxuint>("DTreeNode2Split", caseName+"n2", node2, 0, 2, nullptr,
+            VERIFY_NODE_NO_MINTOTALSIZE);
     checkNode2Firsts0("DTreeNod21Split", caseName+"n2", node2,
                       testCase.values.size() - testCase.expectedPoint,
                       testCase.values.data() + testCase.expectedPoint);
@@ -1357,7 +1360,7 @@ static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& t
         node2.insertNode1(std::move(node1), node2.size);
     }
     verifyDTreeNode1<cxuint>("DTreeNode2Reorg", caseName+"n1", node2, 0, 2,
-                nullptr, VERIFY_NODE_NO_MAXTOTALSIZE);
+                nullptr, VERIFY_NODE_NO_TOTALSIZE);
     
     node2.reorganizeNode1s(testCase.start, testCase.end);
     verifyDTreeNode1<cxuint>("DTreeNode2Reorg", caseName+"n1_after", node2, 0, 2,
@@ -2173,11 +2176,11 @@ static void testDTreeInsertBehaviour(cxuint ti, const DTreeForceBehCase& testCas
     DTreeSet<cxuint> set(node1);
     for (cxuint v: set)
         values.push_back(v);
-    verifyDTreeState("DTree", caseName+".test", set);
+    verifyDTreeState("DTree", caseName+".test", set, VERIFY_NODE_NO_MINTOTALSIZE);
     
     auto res = set.insert(testCase.valueToProcess);
     
-    verifyDTreeState("DTree", caseName+".test", set);
+    verifyDTreeState("DTree", caseName+".test", set, VERIFY_NODE_NO_MINTOTALSIZE);
     values.insert(std::lower_bound(values.begin(), values.end(), testCase.valueToProcess),
                     testCase.valueToProcess);
     checkDTreeContent("DTree", caseName+".content", set, values.size(), values.data());

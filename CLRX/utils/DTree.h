@@ -108,7 +108,7 @@ public:
     {
         if (level == 0)
             return minNode0Size;
-        return (size_t(normalNode0Size) << (normalNode1Shift * level)) / 3;
+        return (size_t(maxNode0Size) << (normalNode1Shift * level)) / 3;
     }
     
     // parent pointer part size of array (heap)
