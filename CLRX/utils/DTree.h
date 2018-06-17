@@ -1226,7 +1226,8 @@ public:
                 {
                     const Node1& child = array1[j];
                     if (child.type == NODE2)
-                        for (; k < child.size && (temps[i].size < 2 ||
+                        for (; k < child.size && temps[i].size <= maxNode1Size &&
+                            (temps[i].size < 2 ||
                             // if no node0s in parent node
                             temps[i].totalSize+(child.array1[k].totalSize>>1) <
                                         newNodeSize); k++, node0Count++)
@@ -1238,7 +1239,8 @@ public:
                                                 temps[i].size);
                         }
                     else
-                        for (; k < child.size && (temps[i].size < 2 ||
+                        for (; k < child.size && temps[i].size <= maxNode1Size &&
+                            (temps[i].size < 2 ||
                             // if no node0s in parent node
                             temps[i].totalSize+(child.array[k].size>>1) < newNodeSize);
                                     k++, node0Count++)
@@ -2496,11 +2498,17 @@ public:
             size_t n1Left1 = n1Index > 0 ? curn1->array1[n1Index-1].totalSize : SIZE_MAX;
             size_t n1Right1 = n1Index+1 < curn1->size ?
                     curn1->array1[n1Index+1].totalSize : SIZE_MAX;
+            
+            // check number of total children after merging
+            if (prevn1->size + curn1->array1[n1Index-1].size > maxNode1Size)
+                n1Left1 = SIZE_MAX;
+            if (prevn1->size + curn1->array1[n1Index+1].size > maxNode1Size)
+                n1Right1 = SIZE_MAX;
+                
             cxuint mergedN1Index = UINT_MAX;
-            if (n1Left1 < n1Right1)
+            if (n1Left1 < n1Right1 && n1Left1 != SIZE_MAX)
             {
-                if (n1Left1+minN1Size-1 <= maxN1Size &&
-                    prevn1->size + curn1->array1[n1Index-1].size <= maxNode1Size)
+                if (n1Left1+minN1Size-1 <= maxN1Size)
                 {
                     curn1->array1[n1Index-1].merge(std::move(*prevn1));
                     curn1->eraseNode1(n1Index, false);
@@ -2512,8 +2520,7 @@ public:
             }
             else if (n1Right1 != SIZE_MAX)
             {
-                if (n1Right1+minN1Size-1 <= maxN1Size &&
-                    prevn1->size + curn1->array1[n1Index+1].size <= maxNode1Size)
+                if (n1Right1+minN1Size-1 <= maxN1Size)
                 {
                     prevn1->merge(std::move(curn1->array1[n1Index+1]));
                     curn1->eraseNode1(n1Index+1, false);
