@@ -1226,7 +1226,7 @@ public:
                 {
                     const Node1& child = array1[j];
                     if (child.type == NODE2)
-                        for (; k < child.size && temps[i].size <= maxNode1Size &&
+                        for (; k < child.size && temps[i].size < maxNode1Size &&
                             (temps[i].size < 2 ||
                             // if no node0s in parent node
                             temps[i].totalSize+(child.array1[k].totalSize>>1) <
@@ -1239,7 +1239,7 @@ public:
                                                 temps[i].size);
                         }
                     else
-                        for (; k < child.size && temps[i].size <= maxNode1Size &&
+                        for (; k < child.size && temps[i].size < maxNode1Size &&
                             (temps[i].size < 2 ||
                             // if no node0s in parent node
                             temps[i].totalSize+(child.array[k].size>>1) < newNodeSize);
@@ -1260,9 +1260,10 @@ public:
                 
                 nodesTotSize -= temps[i].totalSize;
             }
-            ///
+            
             // final move to this array
-            std::move(temps, temps + end-start, array1+start);
+            if (j == end)
+                std::move(temps, temps + end-start, array1+start);
         }
     };
 public:

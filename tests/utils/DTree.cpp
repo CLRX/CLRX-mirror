@@ -1299,7 +1299,7 @@ static const DNode1ReorgNode1sCase dNode1ReorgNode1sCaseTbl[] =
         1, 6,
         { 4, 2, 2, 4, 4, 3, 2, 3 }
     },
-    {   // 6 - with node children higher than maxNode1Size
+    {   // 6 - with high node children number
         { { 51, 56 }, { 18, 18, 19, 20, 18, 20, 19, 18 },
           { 18, 18, 19, 20, 18, 20, 19, 18 },
           { 18, 18, 19, 20, 18, 20, 19, 18 }, { 56, 56 },
@@ -1307,7 +1307,21 @@ static const DNode1ReorgNode1sCase dNode1ReorgNode1sCaseTbl[] =
           { 18, 18, 19, 20, 18, 20, 19, 18 } },
         0, 8,
         { 4, 7, 7, 7, 3, 7, 4, 8 }
-    }
+    },
+    {   // 7 - with high node children number
+        { { 51, 56 }, { 18, 18, 19, 20, 18, 20, 19, 18 },
+          { 18, 18, 19, 20, 18, 20, 19, 18 },
+          { 18, 18, 19, 20, 18, 20, 19, 18 }, { 56, 18, 18, 18, 18 },
+          { 18, 18, 19, 20, 18, 20, 19, 18 }, { 18, 18, 18, 18, 18, 18, 18 },
+          { 18, 18, 19, 20, 18, 20, 19, 18 } },
+        0, 8,
+        { 4, 7, 7, 7, 6, 8, 8, 7 }
+    },
+    /*{   // 7 - with high node children number
+        { { 56, 56, 56, 56, 18, 18 }, { 18, 18, 19, 20, 18, 20, 19, 18 }, },
+        0, 2,
+        { 0, 0 }
+    }*/
 };
 
 static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& testCase)
