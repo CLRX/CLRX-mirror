@@ -2261,13 +2261,15 @@ private:
     }
     
     static void findReorgBounds1(const Node1* prevn1, const Node1* curn1,
-                    size_t maxN1Size, cxint& left, cxint& right)
+            size_t neededN1Size, size_t maxN1Size, cxint& left, cxint& right,
+            bool* removeOneNode = nullptr)
     {
         cxuint n1Index = prevn1->index;
         cxuint freeSpace = 0;
         left = n1Index;
         right = n1Index;
         cxuint nodeCount = 0;
+        cxuint children = prevn1->size;
         
         do {
             left--;
@@ -2276,18 +2278,23 @@ private:
             {
                 freeSpace += maxN1Size - curn1->array1[left].totalSize;
                 nodeCount++;
+                children += curn1->array1[left].size;
             }
             if (right < curn1->size)
             {
                 freeSpace += maxN1Size - curn1->array1[right].totalSize;
                 nodeCount++;
+                children += curn1->array1[right].size;
             }
         }
-        while (freeSpace < (((maxN1Size<<4)*nodeCount)>>6) &&
+        while (freeSpace < (((neededN1Size<<4)*nodeCount)>>6) &&
                 (left >= 0 || right < curn1->size));
         
         left = std::max(0, left);
         right = std::min(curn1->size-1, right);
+        if (removeOneNode != nullptr)
+            *removeOneNode = (freeSpace >= neededN1Size &&
+                    children < maxNode1Size*(right-left));
     }
 public:
     
@@ -2397,7 +2404,8 @@ public:
                 {
                     // reorganize nodes
                     cxint left, right;
-                    findReorgBounds1(prevn1, curn1, maxN1Size, left, right);
+                    findReorgBounds1(prevn1, curn1, prevn1->totalSize,
+                            maxN1Size, left, right);
                     // reorganize array from left to right
                     curn1->reorganizeNode1s(left, right+1);
                     if (level == 1)
@@ -2585,10 +2593,11 @@ public:
             {
                 // reorganization needed before inserting
                 cxint left, right;
+                bool removeNode1 = false;
                 // reorganize in this level
-                findReorgBounds1(prevn1, curn1, curn1->array[n1Index].size,
-                                left, right);
-                curn1->reorganizeNode1s(left, right+1);
+                findReorgBounds1(prevn1, curn1, prevn1->totalSize, maxN1Size,
+                                left, right, &removeNode1);
+                curn1->reorganizeNode1s(left, right+1, removeNode1);
                 if (level == 1 && newItN1 == prevn1)
                 {
                     const Node1* pn1 = curn1->array1 +
