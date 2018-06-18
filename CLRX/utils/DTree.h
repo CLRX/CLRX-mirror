@@ -2251,8 +2251,7 @@ private:
                 freeSpace += maxNode0Size - curn1->array[right].size;
                 nodeCount++;
             }
-        } while (freeSpace < (((neededN0Size<<4)*nodeCount)>>6) &&
-                (left >= 0 || right < curn1->size));
+        } while (freeSpace < neededN0Size && (left >= 0 || right < curn1->size));
         
         left = std::max(0, left);
         right = std::min(curn1->size-1, right);
@@ -2287,8 +2286,7 @@ private:
                 children += curn1->array1[right].size;
             }
         }
-        while (freeSpace < (((neededN1Size<<4)*nodeCount)>>6) &&
-                (left >= 0 || right < curn1->size));
+        while (freeSpace < neededN1Size && (left >= 0 || right < curn1->size));
         
         left = std::max(0, left);
         right = std::min(curn1->size-1, right);

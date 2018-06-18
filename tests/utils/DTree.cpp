@@ -1759,12 +1759,12 @@ static const DTreeFindReorgBounds0Case dtreeFindReorgBounds1Tbl[] =
     {   // 1
         { 160, 135, 129, 75, 101, 83 },
         0, 160,
-        0, 1, false
+        0, 2, false
     },
     {   // 2
         { 75, 101, 135, 129, 83, 160 },
         5, 160,
-        4, 5, false
+        3, 5, false
     }
 };
 
