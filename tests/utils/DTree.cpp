@@ -1759,7 +1759,7 @@ static const DTreeFindReorgBounds0Case dtreeFindReorgBounds1Tbl[] =
     {   // 1
         { 160, 135, 129, 75, 101, 83 },
         0, 160,
-        0, 2, false
+        0, 3, true
     },
     {   // 2
         { 75, 101, 135, 129, 83, 160 },
@@ -2404,7 +2404,7 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
         },
         3, 529
     },
-    {   // 13 - force reorganizeNodeXs in level 0 and 1
+    {   // 13 - force reorganizeNodeXs in level 0 and merge left in level 1
         {
             { 3 },
             { 3, 2, 5 },
@@ -2413,6 +2413,16 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
               32, 21, 25, 23, 32 }
         },
         3, 409
+    },
+    {   // 14 - force reorganizeNodeXs in level 0 and 1
+        {
+            { 3 },
+            { 3, 2, 5 },
+            { 48, 50, 53,
+              18, 56,
+              47, 37, 38, 40, 33 }
+        },
+        3, 601
     }
 };
 

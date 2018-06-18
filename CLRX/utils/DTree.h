@@ -2235,8 +2235,7 @@ private:
                           cxint& left, cxint& right, bool* removeOneNode = nullptr)
     {
         cxuint freeSpace = 0;
-        left = n0Index;
-        right = n0Index;
+        left = right = n0Index;
         cxuint nodeCount = 0;
         do {
             left--;
@@ -2264,11 +2263,10 @@ private:
             bool* removeOneNode = nullptr)
     {
         cxuint n1Index = prevn1->index;
-        cxuint freeSpace = 0;
-        left = n1Index;
-        right = n1Index;
-        cxuint nodeCount = 0;
+        size_t freeSpace = 0;
+        left = right = n1Index;
         cxuint children = prevn1->size;
+        const size_t needed = neededN1Size + (neededN1Size>>2);
         
         do {
             left--;
@@ -2276,22 +2274,19 @@ private:
             if (left >= 0)
             {
                 freeSpace += maxN1Size - curn1->array1[left].totalSize;
-                nodeCount++;
                 children += curn1->array1[left].size;
             }
             if (right < curn1->size)
             {
                 freeSpace += maxN1Size - curn1->array1[right].totalSize;
-                nodeCount++;
                 children += curn1->array1[right].size;
             }
-        }
-        while (freeSpace < neededN1Size && (left >= 0 || right < curn1->size));
+        } while (freeSpace < needed && (left >= 0 || right < curn1->size));
         
         left = std::max(0, left);
         right = std::min(curn1->size-1, right);
         if (removeOneNode != nullptr)
-            *removeOneNode = (freeSpace >= neededN1Size &&
+            *removeOneNode = (freeSpace >= needed &&
                     children < maxNode1Size*(right-left));
     }
 public:
