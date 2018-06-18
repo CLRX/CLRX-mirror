@@ -2519,16 +2519,16 @@ public:
                 break;
             }
             
-            if (prevn1->totalSize >= minN1Size)
-            {
-                level++;
-                continue;
-            }
-            
             const cxuint n1Index = prevn1->index;
             size_t n1Left1 = n1Index > 0 ? curn1->array1[n1Index-1].totalSize : SIZE_MAX;
             size_t n1Right1 = n1Index+1 < curn1->size ?
                     curn1->array1[n1Index+1].totalSize : SIZE_MAX;
+            
+            if (prevn1->totalSize >= minN1Size && prevn1->size > 1)
+            {
+                level++;
+                continue;
+            }
             
             // check number of total children after merging
             if (n1Left1!=SIZE_MAX &&

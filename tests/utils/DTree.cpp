@@ -2373,6 +2373,16 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
               21, 24, 29 }
         },
         3, 529
+    },
+    {   // 13 - force reorganizeNodeXs in level 0 and 1
+        {
+            { 3 },
+            { 3, 2, 5 },
+            { 41, 22, 34,
+              18, 56,
+              32, 21, 25, 23, 32 }
+        },
+        3, 409
     }
 };
 
