@@ -930,22 +930,31 @@ struct DNode1ReorgNode0sCase
 {
     Array<cxuint> node0Sizes;
     cxuint start, end;
+    bool removeOneNode0;
     Array<cxuint> expNode0Sizes;
 };
 
 static const DNode1ReorgNode0sCase dNode1ReorgNode0sCaseTbl[] =
 {
     {   // 0 - first
-        { 19, 53, 27, 48, 26 }, 1, 4,
+        { 19, 53, 27, 48, 26 }, 1, 4, false,
         { 19, 43, 43, 42, 26 }
     },
     {   // 1 - second
-        { 19, 53, 27, 48, 26, 51, 46, 21 }, 2, 7,
+        { 19, 53, 27, 48, 26, 51, 46, 21 }, 2, 7, false,
         { 19, 53, 40, 40, 40, 39, 39, 21 }
     },
     {   // 2 - third
-        { 19, 18, 22, 18, 27, 19, 18, 23 }, 0, 8,
+        { 19, 18, 22, 18, 27, 19, 18, 23 }, 0, 8, false,
         { 21, 21, 21, 21, 20, 20, 20, 20 }
+    },
+    {   // 3 - with removing one node0
+        { 19, 18, 22, 18, 27, 19, 18, 23 }, 0, 8, true,
+        { 24, 24, 24, 23, 23, 23, 23 }
+    },
+    {   // 4 - with removing one node0
+        { 19, 18, 22, 18, 27, 19, 18, 23 }, 1, 6, true,
+        { 19, 26, 26, 26, 26, 18, 23 }
     }
 };
 
@@ -969,7 +978,7 @@ static void testDNode1ReorganizeNode0s(cxuint ti, const DNode1ReorgNode0sCase& t
     verifyDTreeNode1<cxuint>("DTreeNode1Reorg", caseName+"n1", node1, 0, 1,
                 nullptr, VERIFY_NODE_NO_MAXTOTALSIZE);
     
-    node1.reorganizeNode0s(testCase.start, testCase.end);
+    node1.reorganizeNode0s(testCase.start, testCase.end, testCase.removeOneNode0);
     verifyDTreeNode1<cxuint>("DTreeNode1Reorg", caseName+"n1_after", node1, 0, 1,
                 nullptr, VERIFY_NODE_NO_MAXTOTALSIZE);
     
@@ -1270,6 +1279,7 @@ struct DNode1ReorgNode1sCase
 {
     Array<Array<cxuint> > node0Sizes;
     cxuint start, end;
+    bool removeOneNode1;
     Array<cxuint> expNode1Sizes;
 };
 
@@ -1277,29 +1287,29 @@ static const DNode1ReorgNode1sCase dNode1ReorgNode1sCaseTbl[] =
 {
     {   // 0 - first
         { { 34, 18, 42, 31 }, { 35, 51, 18 }, { 19, 21, 18 } },
-        0, 3,
+        0, 3, false,
         { 3, 3, 4 }
     },
     {   // 1 - second
         { { 18, 19, 19, 21 }, { 23, 19, 38 }, { 49, 51, 47 } },
-        0, 3,
+        0, 3, false,
         { 5, 3, 2 }
     },
     {   // 2 - third
         { { 18, 19, 19, 21 }, { 21, 19, 19 }, { 53, 51, 52 } },
-        0, 3,
+        0, 3, false,
         { 5, 3, 2 }
     },
     {   // 4 - longer
         { { 19, 21, 21, 23 }, { 55, 55, 54, 53 }, { 18, 18, 19 }, { 18, 20, 21 },
           { 21, 23, 24 }, { 18, 23 }, { 19, 23 }, { 24, 21, 18 } },
-        1, 7,
+        1, 7, false,
         { 4, 2, 2, 4, 3, 3, 3, 3 }
     },
     {   // 5 - longer
         { { 19, 21, 21, 23 }, { 25, 25, 54, 33 }, { 18, 18, 19 }, { 18, 20, 21 },
           { 21, 23, 24 }, { 18, 23 }, { 19, 23 }, { 24, 21, 18 } },
-        1, 6,
+        1, 6, false,
         { 4, 2, 2, 4, 4, 3, 2, 3 }
     },
     {   // 6 - with high node children number
@@ -1308,7 +1318,7 @@ static const DNode1ReorgNode1sCase dNode1ReorgNode1sCaseTbl[] =
           { 18, 18, 19, 20, 18, 20, 19, 18 }, { 56, 56 },
           { 18, 18, 19, 20, 18, 20, 19, 18 }, { 30, 39, 53 },
           { 18, 18, 19, 20, 18, 20, 19, 18 } },
-        0, 8,
+        0, 8, false,
         { 4, 7, 7, 7, 3, 7, 4, 8 }
     },
     {   // 7 - with high node children number
@@ -1317,13 +1327,24 @@ static const DNode1ReorgNode1sCase dNode1ReorgNode1sCaseTbl[] =
           { 18, 18, 19, 20, 18, 20, 19, 18 }, { 56, 18, 18, 18, 18 },
           { 18, 18, 19, 20, 18, 20, 19, 18 }, { 18, 18, 18, 18, 18, 18, 18 },
           { 18, 18, 19, 20, 18, 20, 19, 18 } },
-        0, 8,
+        0, 8, false,
         { 4, 7, 7, 7, 6, 8, 8, 7 }
     },
     {   // 7 - try to provoke higher children number than maxNode1Size
         { { 56, 56, 56, 56, 18, 18 }, { 18, 18, 19, 20, 18, 20, 19, 18 }, },
-        0, 2,
+        0, 2, false,
         { 6, 8 }
+    },
+    {   // 8 - with removeNode1
+        { { 34, 18, 42, 31 }, { 35, 51, 18 }, { 19, 21, 18 } },
+        0, 3, true,
+        { 5, 5 }
+    },
+    {   // 9 - with removeNode1
+        { { 19, 21, 21, 23 }, { 25, 25, 54, 33 }, { 18, 18, 19 }, { 18, 20, 21 },
+          { 21, 23, 24 }, { 18, 23 }, { 19, 23 }, { 24, 21, 18 } },
+        1, 6, true,
+        { 4, 3, 4, 4, 4, 2, 3 }
     }
 };
 
@@ -1345,16 +1366,19 @@ static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& t
     
     cxuint value = 100;
     cxuint flatN0Index = 0;
-    for (const Array<cxuint>& n0Sizes: testCase.node0Sizes)
+    cxuint expNode1Children = 0;
+    for (cxuint i = 0; i < testCase.node0Sizes.size(); i++)
     {
+        const Array<cxuint>& n0Sizes = testCase.node0Sizes[i];
+        expNode1Children += n0Sizes.size();
         DTreeSet<cxuint>::Node1 node1;
         Array<cxuint> values(n0Sizes.size());
         values[0] = value;
-        for (cxuint i = 0; i < n0Sizes.size(); i++)
+        for (cxuint j = 0; j < n0Sizes.size(); j++)
         {
-            values[i] = value;
-            value += n0Sizes[i];
-            flatNode0Sizes[flatN0Index++] = n0Sizes[i];
+            values[j] = value;
+            value += n0Sizes[j];
+            flatNode0Sizes[flatN0Index++] = n0Sizes[j];
         }
         createNode1FromArray(node1, values.size(), values.data(), n0Sizes.data());
         node2.insertNode1(std::move(node1), node2.size);
@@ -1362,22 +1386,21 @@ static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& t
     verifyDTreeNode1<cxuint>("DTreeNode2Reorg", caseName+"n1", node2, 0, 2,
                 nullptr, VERIFY_NODE_NO_TOTALSIZE);
     
-    node2.reorganizeNode1s(testCase.start, testCase.end);
+    node2.reorganizeNode1s(testCase.start, testCase.end, testCase.removeOneNode1);
     verifyDTreeNode1<cxuint>("DTreeNode2Reorg", caseName+"n1_after", node2, 0, 2,
                 nullptr, VERIFY_NODE_NO_TOTALSIZE);
     
-    assertValue("DTreeNode2Reorg", caseName+"n1 children", testCase.node0Sizes.size(),
+    assertValue("DTreeNode2Reorg", caseName+"n1 children",
+                testCase.node0Sizes.size() - testCase.removeOneNode1,
                 testCase.expNode1Sizes.size());
     
     // check reorganization0
     char buf[16];
     cxuint expValue = 100;
     flatN0Index = 0;
-    cxuint expNode1Children = 0;
     cxuint resNode1Children = 0;
     for (cxuint i = 0; i < testCase.expNode1Sizes.size(); i++)
     {
-        expNode1Children += testCase.node0Sizes[i].size();
         resNode1Children += testCase.expNode1Sizes[i];
         snprintf(buf, sizeof buf, "[%u]", i);
         assertValue("DTreeNode2Reorg", caseName+"n2 size"+buf,

@@ -1079,15 +1079,15 @@ public:
                 first = T();
         }
         
-        void reorganizeNode0s(cxuint start, cxuint end)
+        void reorganizeNode0s(cxuint start, cxuint end, bool removeOneNode0 = false)
         {
             Node0 temps[maxNode1Size];
             cxuint nodesSize = 0;
             for (cxuint i = start; i < end; i++)
                 nodesSize += array[i].size;
             
-            cxuint newNodeSize = nodesSize / (end-start);
-            cxuint withExtraElem = nodesSize - newNodeSize*(end-start);
+            cxuint newNodeSize = nodesSize / (end-start - removeOneNode0);
+            cxuint withExtraElem = nodesSize - newNodeSize*(end-start - removeOneNode0);
             cxuint ni = 0; // new item start
             T toFill = T();
             cxuint inIndex, inPos;
@@ -1125,7 +1125,14 @@ public:
                 }
             }
             // final move to this array
-            std::move(temps, temps + end-start, array+start);
+            std::move(temps, temps + end-start - removeOneNode0, array+start);
+            if (removeOneNode0)
+            {
+                std::move(array + end, array + size, array + end - 1);
+                for (cxuint i = end-1; i < cxuint(size - 1); i++)
+                    array[i].index = i;
+                size--;
+            }
         }
         
         void merge(Node1&& n2)
@@ -1204,7 +1211,7 @@ public:
             }
         }
         
-        void reorganizeNode1s(cxuint start, cxuint end)
+        void reorganizeNode1s(cxuint start, cxuint end, bool removeOneNode1 = false)
         {
             Node1 temps[maxNode1Size];
             cxuint node0sNum = 0;
@@ -1215,14 +1222,15 @@ public:
                 nodesTotSize += array1[i].totalSize;
             }
             
+            const cxuint end2 = end - removeOneNode1;
             cxuint node0Count = 0;
             cxuint j = start; // input node index
             cxuint k = 0; // input child node index
-            cxuint remaining = end-start-1;
-            for (cxuint i = 0; i < end-start; i++, remaining--)
+            cxuint remaining = end2-start-1;
+            for (cxuint i = 0; i < end2-start; i++, remaining--)
             {
                 temps[i].index = start+i;
-                cxuint newNodeSize = nodesTotSize / (end-start-i);
+                cxuint newNodeSize = nodesTotSize / (end2-start-i);
                 for (; j < end; j++)
                 {
                     const Node1& child = array1[j];
@@ -1265,7 +1273,14 @@ public:
             }
             
             // final move to this array
-            std::move(temps, temps + end-start, array1+start);
+            std::move(temps, temps + end-start - removeOneNode1, array1+start);
+            if (removeOneNode1)
+            {
+                std::move(array1 + end, array1 + size, array1 + end - 1);
+                for (cxuint i = end-1; i < cxuint(size - 1); i++)
+                    array1[i].index = i;
+                size--;
+            }
         }
     };
 public:
