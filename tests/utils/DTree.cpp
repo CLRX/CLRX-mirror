@@ -1694,6 +1694,7 @@ struct DTreeFindReorgBounds0Case
     cxuint n0Index;
     cxuint n0Size;
     cxint expLeft, expRight;
+    bool expRemoveNode0;
 };
 
 static const DTreeFindReorgBounds0Case dtreeFindReorgBounds0Tbl[] =
@@ -1701,27 +1702,27 @@ static const DTreeFindReorgBounds0Case dtreeFindReorgBounds0Tbl[] =
     {   // 0
         { 18, 22, 45, 56, 41, 48 },
         3, 56,
-        1, 5
+        1, 5, true
     },
     {   // 1
         { 47, 52, 49, 56, 55, 52 },
         3, 56,
-        0, 5
+        0, 5, false
     },
     {   // 2
         { 47, 56, 49, 48, 42 },
         1, 56,
-        0, 4
+        0, 4, false
     },
     {   // 3
         { 25, 18, 56, 18, 18, 18, 23 },
         2, 56,
-        1, 3
+        1, 3, true
     },
     {   // 4
         { 21, 24, 42, 41, 56, 47, 27, 21 },
         4, 56,
-        2, 6
+        2, 6, true
     }
 };
 
@@ -1736,11 +1737,14 @@ static void testDTreeFindReorgBounds0(cxuint ti, const DTreeFindReorgBounds0Case
     createNode1FromArray(node1, testCase.node0Sizes.size(), nullptr,
                     testCase.node0Sizes.data());
     cxint resLeft = UINT_MAX, resRight = UINT_MAX;
+    bool resRemoveNode0 = false;
     DTreeSet<cxuint>::findReorgBounds0(testCase.n0Index, &node1, testCase.n0Size,
-                            resLeft, resRight);
+                            resLeft, resRight, &resRemoveNode0);
     
     assertValue("DTree", caseName+".left", testCase.expLeft, resLeft);
     assertValue("DTree", caseName+".right", testCase.expRight, resRight);
+    assertValue("DTree", caseName+".removeNode0", cxuint(testCase.expRemoveNode0),
+                cxuint(resRemoveNode0));
 }
 
 /* DTree findReorgBounds1 */

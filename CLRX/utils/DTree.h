@@ -2232,7 +2232,7 @@ public:
 private:
 #endif
     static void findReorgBounds0(cxuint n0Index, const Node1* curn1, cxuint neededN0Size,
-                          cxint& left, cxint& right)
+                          cxint& left, cxint& right, bool* removeOneNode = nullptr)
     {
         cxuint freeSpace = 0;
         left = n0Index;
@@ -2256,6 +2256,8 @@ private:
         
         left = std::max(0, left);
         right = std::min(curn1->size-1, right);
+        if (removeOneNode != nullptr)
+            *removeOneNode = freeSpace >= neededN0Size;
     }
     
     static void findReorgBounds1(const Node1* prevn1, const Node1* curn1,
@@ -2483,10 +2485,11 @@ public:
             {
                 // reorganization needed before inserting
                 cxint left, right;
+                bool removeNode0 = false;
                 // reorganize in this level
                 findReorgBounds0(n0Index, curn1, curn1->array[n0Index].size,
-                                left, right);
-                curn1->reorganizeNode0s(left, right+1);
+                                left, right, &removeNode0);
+                curn1->reorganizeNode0s(left, right+1, removeNode0);
                 // find newit for inserted value
                 newit.n0 = curn1->array + curn1->upperBoundN(key, *this, *this) - 1;
                 newit.index = newit.n0->lower_bound(key, *this, *this);
