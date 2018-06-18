@@ -2273,12 +2273,14 @@ private:
             right++;
             if (left >= 0)
             {
-                freeSpace += maxN1Size - curn1->array1[left].totalSize;
+                freeSpace += maxN1Size -
+                        std::min(curn1->array1[left].totalSize, maxN1Size);
                 children += curn1->array1[left].size;
             }
             if (right < curn1->size)
             {
-                freeSpace += maxN1Size - curn1->array1[right].totalSize;
+                freeSpace += maxN1Size -
+                        std::min(curn1->array1[right].totalSize, maxN1Size);
                 children += curn1->array1[right].size;
             }
         } while (freeSpace < needed && (left >= 0 || right < curn1->size));

@@ -2423,6 +2423,36 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
               47, 37, 38, 40, 33 }
         },
         3, 601
+    },
+    {   // 15 - force merge in level 0 and 1
+        {
+            { 3 },
+            { 3, 3, 4 },
+            { 48, 50, 53,
+              18, 20, 36,
+              36, 32, 28, 40 }
+        },
+        3, 601
+    },
+    {   // 16 - force merge in level 0 and 1 (right, right)
+        {
+            { 3 },
+            { 3, 3, 4 },
+            { 48, 50, 53,
+              36, 18, 20,
+              36, 32, 28, 40 }
+        },
+        3, 697
+    },
+    {   // 17 - force merge in level 0 and 1 (left,left)
+        {
+            { 3 },
+            { 3, 3, 4 },
+            { 43, 42, 43,
+              20, 18, 36,
+              36, 32, 28, 40 }
+        },
+        3, 586
     }
 };
 
