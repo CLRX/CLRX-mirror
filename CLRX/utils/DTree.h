@@ -2531,9 +2531,11 @@ public:
                     curn1->array1[n1Index+1].totalSize : SIZE_MAX;
             
             // check number of total children after merging
-            if (prevn1->size + curn1->array1[n1Index-1].size > maxNode1Size)
+            if (n1Left1!=SIZE_MAX &&
+                prevn1->size + curn1->array1[n1Index-1].size > maxNode1Size)
                 n1Left1 = SIZE_MAX;
-            if (prevn1->size + curn1->array1[n1Index+1].size > maxNode1Size)
+            if (n1Right1!=SIZE_MAX &&
+                prevn1->size + curn1->array1[n1Index+1].size > maxNode1Size)
                 n1Right1 = SIZE_MAX;
                 
             cxuint mergedN1Index = UINT_MAX;
