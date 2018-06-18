@@ -2357,7 +2357,14 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
               23, 43, 21, 27 }
         },
         3, 934
-    }
+    },
+    {   // 11 - force remove root
+        {
+            { 2 },
+            { 18, 24 }
+        },
+        3, 130
+    },
 };
 
 static void testDTreeEraseBehaviour(cxuint ti, const DTreeForceBehCase& testCase)

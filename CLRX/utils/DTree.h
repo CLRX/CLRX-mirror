@@ -2493,6 +2493,32 @@ public:
             curn1 = prevn1->parent();
             cxuint maxN1Size = maxTotalSize(level);
             cxuint minN1Size = minTotalSize(level);
+            if (curn1 == nullptr)
+            {
+                if (prevn1->size == 1)
+                {
+                    // remove old root
+                    if (prevn1->type == NODE1)
+                    {
+                        Node0 tempN0 = std::move(prevn1->array[0]);
+                        n1.~Node1();
+                        n0.array = nullptr;
+                        n0 = std::move(tempN0);
+                        n0.index = 255;
+                        newit.n0 = &n0;
+                    }
+                    else
+                    {
+                        Node1 tempN1 = std::move(prevn1->array1[0]);
+                        n1.~Node1();
+                        n1.array = nullptr;
+                        n1 = std::move(tempN1);
+                        n1.index = 255;
+                    }
+                }
+                break;
+            }
+            
             if (prevn1->totalSize >= minN1Size)
             {
                 level++;
