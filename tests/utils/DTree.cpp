@@ -2453,6 +2453,49 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
               36, 32, 28, 40 }
         },
         3, 586
+    },
+    {   // 18 - force merge in level 0 and 1 (left,left)
+        {
+            { 2 },
+            { 4, 3 },
+            { 23, 26, 25, 23,
+              20, 18, 36 }
+        },
+        3, 472
+    },
+    {   // 19 - force merge - iterator beyond right side
+        {
+            { 8 },
+            { 18, 18, 21, 28, 56, 23, 18, 18 }
+        },
+        3, 205 // last elem in second node0
+    },
+    {   // 20 - force merge in level 0 and 1 (left,left) (last elem in right merge)
+        {
+            { 3 },
+            { 3, 3, 4 },
+            { 43, 42, 43,
+              20, 36, 18,
+              36, 34, 28, 40 }
+        },
+        3, 703
+    },
+    {   // 21 - force merge in level 0 (last elem in right merge)
+        {
+            { 3 },
+            { 3, 3, 4 },
+            { 43, 42, 43,
+              30, 36, 18,
+              36, 34, 28, 40 }
+        },
+        3, 733
+    },
+    {   // 22 - in level 1 - it causes nothing (last elem in node0)
+        {
+            { 8 },
+            { 18, 18, 21, 28, 56, 23, 18, 18 }
+        },
+        3, 352
     }
 };
 
