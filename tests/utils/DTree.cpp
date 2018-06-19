@@ -2947,6 +2947,30 @@ static void testDTreeEmptySizeClear()
     assertValue("DTree", "set2.size()5", size_t(0), set2.size());
 }
 
+static void testDTreeCompare()
+{
+    DTreeSet<cxuint> set, set2, set3;
+    for (cxuint v = 10; v < 200; v++)
+    {
+        set.insert(v);
+        set3.insert(v+1);
+    }
+    set2 = set;
+    assertTrue("DTree", "set==set2", set==set2);
+    assertTrue("DTree", "set!=set2", !(set!=set2));
+    assertTrue("DTree", "set==set3", !(set==set3));
+    assertTrue("DTree", "set!=set3", set!=set3);
+    
+    assertTrue("DTree", "set<set3", set<set3);
+    assertTrue("DTree", "set<set2", !(set<set2));
+    assertTrue("DTree", "set<=set3", set<=set3);
+    assertTrue("DTree", "set<=set2", set<=set2);
+    assertTrue("DTree", "set3>set", set3>set);
+    assertTrue("DTree", "set2>set", !(set2>set));
+    assertTrue("DTree", "set3>=set", set3>=set);
+    assertTrue("DTree", "set2>=set", set2>=set);
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -3004,5 +3028,6 @@ int main(int argc, const char** argv)
     retVal |= callTest(testEraseValue);
     retVal |= callTest(testDTreeConstructors);
     retVal |= callTest(testDTreeEmptySizeClear);
+    retVal |= callTest(testDTreeCompare);
     return retVal;
 }
