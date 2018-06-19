@@ -158,6 +158,8 @@ public:
     /// move-assignment
     CString& operator=(CString&& cstr) noexcept
     {
+        if (this==&cstr)
+            return *this;
         delete[] ptr;   // delete old
         ptr = cstr.ptr;
         cstr.ptr = nullptr;

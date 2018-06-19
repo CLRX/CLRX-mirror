@@ -2026,6 +2026,8 @@ public:
     /// copy assignment
     DTree& operator=(const DTree& dt)
     {
+        if (this == &dt)
+            return *this;
         if (n0.type == NODE0)
             n0.~Node0();
         else
@@ -2045,6 +2047,8 @@ public:
     /// move assignment
     DTree& operator=(DTree&& dt)
     {
+        if (this == &dt)
+            return *this;
         if (n0.type == NODE0)
             n0.~Node0();
         else
