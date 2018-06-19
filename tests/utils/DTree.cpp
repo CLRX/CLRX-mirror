@@ -2565,7 +2565,6 @@ static void testDTreeEraseBehaviour(cxuint ti, const DTreeForceBehCase& testCase
 int main(int argc, const char** argv)
 {
     int retVal = 0;
-#if 0
     retVal |= callTest(testDTreeNode0);
     for (cxuint i = 0; i < sizeof(dtreeNode0OrgArrayTbl) /
                             sizeof(DTreeNode0OrgArrayCase); i++)
@@ -2614,7 +2613,6 @@ int main(int argc, const char** argv)
     retVal |= callTest(testDTreeInsertRandom);
     
     retVal |= callTest(testDTreeErase0);
-#endif
     for (cxuint i = 0; i < sizeof(dtreeEraseBehCaseTbl) / sizeof(DTreeForceBehCase); i++)
         retVal |= callTest(testDTreeEraseBehaviour, i, dtreeEraseBehCaseTbl[i]);
     return retVal;
