@@ -2611,7 +2611,7 @@ public:
         }
         return newit;
     }
-    /// remove elemnet by key
+    /// remove element by key
     size_t erase(const key_type& key)
     {
         iterator it = find(key);

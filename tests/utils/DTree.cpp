@@ -2751,6 +2751,29 @@ static void testDTreeEraseRandom()
     }
 }
 
+static void testEraseValue()
+{
+    DTreeSet<cxuint> set;
+    set.insert(33);
+    set.insert(473);
+    verifyDTreeState("DTree", "eraseValue.test", set);
+    
+    size_t count = set.erase(34);
+    assertValue("DTree", "eraseValue(34)", size_t(0), count);
+    count = set.erase(33);
+    assertValue("DTree", "eraseValue(33)", size_t(1), count);
+    verifyDTreeState("DTree", "eraseValue.test2", set);
+    count = set.erase(33);
+    assertValue("DTree", "eraseValue(33)2", size_t(0), count);
+    count = set.erase(475);
+    assertValue("DTree", "eraseValue(475)", size_t(0), count);
+    count = set.erase(473);
+    assertValue("DTree", "eraseValue(473)", size_t(1), count);
+    verifyDTreeState("DTree", "eraseValue.test3", set);
+    count = set.erase(473);
+    assertValue("DTree", "eraseValue(473)2", size_t(0), count);
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -2805,5 +2828,6 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; i < sizeof(dtreeEraseBehCaseTbl) / sizeof(DTreeForceBehCase); i++)
         retVal |= callTest(testDTreeEraseBehaviour, i, dtreeEraseBehCaseTbl[i]);
     retVal |= callTest(testDTreeEraseRandom);
+    retVal |= callTest(testEraseValue);
     return retVal;
 }
