@@ -395,7 +395,6 @@ protected:
     template<typename Types>
     GPUDeviceType determineGPUDeviceTypeInt(const typename Types::ElfBinary& elfBin,
                 uint32_t& archMinor, uint32_t& archStepping, cxuint driverVersion) const;
-    
 public:
     /// constructor
     explicit AmdCL2MainGPUBinaryBase(AmdMainType amdMainType);
@@ -483,6 +482,8 @@ public:
     /// get acl version string
     const CString& getAclVersionString() const
     { return aclVersionString; }
+    
+    static cxuint determineMinDriverVersionForGPUDeviceType(GPUDeviceType devType);
 };
 
 /// AMD OpenCL 2.0 main binary for GPU for 32-bit mode

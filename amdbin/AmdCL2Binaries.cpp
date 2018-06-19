@@ -1099,6 +1099,49 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
     return deviceType;
 }
 
+static const cxuint cl2GPUDeviceTypeMinDriverVersion[] =
+{
+    UINT_MAX, // CAPE_VERDE = 0, ///< Radeon HD7700
+    UINT_MAX, // PITCAIRN, ///< Radeon HD7800
+    UINT_MAX, // TAHITI, ///< Radeon HD7900
+    UINT_MAX, // OLAND, ///< Radeon R7 250
+    180005U, // BONAIRE, ///< Radeon R7 260
+    180005U, // SPECTRE, ///< Kaveri
+    180005U, // SPOOKY, ///< Kaveri
+    180005U, // KALINDI, ///< ???  GCN1.1
+    UINT_MAX, // HAINAN, ///< ????  GCN1.0
+    180005U, // HAWAII, ///< Radeon R9 290
+    180005U, // ICELAND, ///< ???
+    180005U, // TONGA, ///< Radeon R9 285
+    180005U, // MULLINS, ///< ???
+    180005U, // FIJI,  ///< Radeon Fury
+    180005U, // CARRIZO, ///< APU
+    191205U, // DUMMY,
+    200406U, // GOOSE,
+    200406U, // HORSE,
+    200406U, // STONEY,
+    200406U, // ELLESMERE,
+    200406U, // BAFFIN,
+    223600U, // GFX804,
+    223600U, // GFX900,
+    226400U, // GFX901,
+    252700U, // GFX902,
+    252700U, // GFX903,
+    252700U, // GFX904,
+    252700U  // GFX905,
+};
+
+cxuint AmdCL2MainGPUBinaryBase::determineMinDriverVersionForGPUDeviceType(
+                GPUDeviceType devType)
+{
+    if (devType > GPUDeviceType::GPUDEVICE_MAX)
+        throw Exception("Wrong device type");
+    const cxuint minDriverVersion = cl2GPUDeviceTypeMinDriverVersion[cxuint(devType)];
+    if (minDriverVersion == UINT_MAX)
+        throw Exception("Device is not supported by this format");
+    return minDriverVersion;
+}
+
 /* AMD CL2 32-bit */
 
 AmdCL2MainGPUBinary32::AmdCL2MainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,

@@ -65,7 +65,9 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
     input->deviceType = binary.determineGPUDeviceType(input->archMinor,
                   input->archStepping, driverVersion);
     if (driverVersion == 0)
-        input->driverVersion = binary.getDriverVersion();
+        input->driverVersion = std::max(binary.getDriverVersion(),
+                AmdCL2MainGPUBinaryBase::determineMinDriverVersionForGPUDeviceType(
+                            input->deviceType));
     else
         input->driverVersion = driverVersion;
     
