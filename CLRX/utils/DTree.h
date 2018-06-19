@@ -2450,6 +2450,9 @@ public:
             return newit;
         
         newit.index = newit.n0->lower_bound(key, *this, *this);
+        if (newit.index == newit.n0->firstPos)
+            // update key because will be removed and first will be greater than it
+            key = KeyOfVal::operator()(*newit);
         if (it.n0 == &n0)
             return newit;
         

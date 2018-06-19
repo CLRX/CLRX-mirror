@@ -2496,6 +2496,33 @@ static const DTreeForceBehCase dtreeEraseBehCaseTbl[] =
             { 18, 18, 21, 28, 56, 23, 18, 18 }
         },
         3, 352
+    },
+    {   // 23 - in level 1 - it causes nothing (last elem in node0)
+        {
+            { 8 },
+            { 18, 18, 21, 28, 56, 23, 18, 18 }
+        },
+        3, 208
+    },
+    {   // 24 - force merge in level 0 and 1 (left,left) (first elem in left merge)
+        {
+            { 3 },
+            { 3, 3, 4 },
+            { 43, 42, 43,
+              18, 20, 36,
+              36, 34, 28, 40 }
+        },
+        3, 484
+    },
+    {   // 25 - force merge in level 0 and 1 (left,left) (second elem in left merge)
+        {
+            { 3 },
+            { 3, 3, 4 },
+            { 43, 42, 43,
+              18, 20, 36,
+              36, 34, 28, 40 }
+        },
+        3, 487
     }
 };
 
@@ -2538,6 +2565,7 @@ static void testDTreeEraseBehaviour(cxuint ti, const DTreeForceBehCase& testCase
 int main(int argc, const char** argv)
 {
     int retVal = 0;
+#if 0
     retVal |= callTest(testDTreeNode0);
     for (cxuint i = 0; i < sizeof(dtreeNode0OrgArrayTbl) /
                             sizeof(DTreeNode0OrgArrayCase); i++)
@@ -2586,6 +2614,7 @@ int main(int argc, const char** argv)
     retVal |= callTest(testDTreeInsertRandom);
     
     retVal |= callTest(testDTreeErase0);
+#endif
     for (cxuint i = 0; i < sizeof(dtreeEraseBehCaseTbl) / sizeof(DTreeForceBehCase); i++)
         retVal |= callTest(testDTreeEraseBehaviour, i, dtreeEraseBehCaseTbl[i]);
     return retVal;
