@@ -57,7 +57,7 @@ struct Identity
 
 /// main D-Tree container (D-Tree is kind of the B-Tree
 template<typename K, typename T = K, typename Comp = std::less<K>,
-        typename KeyOfVal = Identity<K> >
+        typename KeyOfVal = Identity<K>, typename AT = T>
 class DTree: private Comp, KeyOfVal
 {
 public:
@@ -137,7 +137,7 @@ public:
         cxbyte capacity;    // capacity of array
         cxbyte firstPos;    // first position with element
         uint64_t bitMask;   // bitmask: 0 - hold element, 1 - free space
-        T* array;   // array
+        AT* array;   // array
         
         Node0(): NodeBase(NODE0), index(255), size(0), capacity(0),
                     firstPos(0), bitMask(0ULL), array(nullptr)
@@ -149,7 +149,7 @@ public:
         {
             if (node.array != nullptr)
             {
-                array = new T[capacity];
+                array = new AT[capacity];
                 std::copy(node.array, node.array+capacity, array);
             }
         }
@@ -176,7 +176,7 @@ public:
             T* newArray = nullptr;
             if (node.array != nullptr)
             {
-                newArray = new T[capacity];
+                newArray = new AT[capacity];
                 std::copy(node.array, node.array+capacity, newArray);
             }
             delete[] array;
@@ -218,8 +218,10 @@ public:
         /// get lower_bound (first index of element not less than value)
         cxuint lower_bound(const K& k, const Comp& comp, const KeyOfVal& kofval) const
         {
-            cxuint index = std::lower_bound(array, array+capacity, T(k),
-                [&comp, &kofval](const T& v1, const T& v2)
+            AT kt;
+            kofval(kt) = k;
+            cxuint index = std::lower_bound(array, array+capacity, kt,
+                [&comp, &kofval](const AT& v1, const AT& v2)
                 { return comp(kofval(v1), kofval(v2)); }) - array;
             for (; (bitMask & (1ULL<<index)) != 0; index++);
             return index;
@@ -228,7 +230,9 @@ public:
         /// get upper_bound (first index of element greater than value)
         cxuint upper_bound(const K& k, const Comp& comp, const KeyOfVal& kofval) const
         {
-            cxuint index = std::upper_bound(array, array+capacity, T(k),
+            AT kt;
+            kofval(kt) = k;
+            cxuint index = std::upper_bound(array, array+capacity, kt,
                 [&comp, &kofval](const T& v1, const T& v2)
                 { return comp(kofval(v1), kofval(v2)); }) - array;
             for (; (bitMask & (1ULL<<index)) != 0; index++);
@@ -247,9 +251,9 @@ public:
         }
         
         /// internal routine to organize array with empty holes
-        static void organizeArray(T& toFill,
-                cxuint& i, cxuint size, const T* array, uint64_t inBitMask,
-                cxuint& k, cxuint newSize, T* out, uint64_t& outBitMask,
+        static void organizeArray(AT& toFill,
+                cxuint& i, cxuint size, const AT* array, uint64_t inBitMask,
+                cxuint& k, cxuint newSize, AT* out, uint64_t& outBitMask,
                 cxuint& factor, cxuint finc)
         {
             while ((inBitMask & (1ULL<<i)) != 0)
@@ -280,7 +284,7 @@ public:
         {
             capacity = std::min(cxbyte(size + (size>>freePlacesShift)),
                         cxbyte(maxNode0Capacity));
-            T* newArray = new T[capacity];
+            AT* newArray = new AT[capacity];
             delete[] array;
             array = newArray;
             firstPos = 0;
@@ -288,8 +292,8 @@ public:
             size = 0;
         }
         
-        void assignArray(T& toFill, cxuint inSize, cxuint& index, cxuint& pos,
-                const T* array, uint64_t inBitMask, size_t newSize,
+        void assignArray(AT& toFill, cxuint inSize, cxuint& index, cxuint& pos,
+                const AT* array, uint64_t inBitMask, size_t newSize,
                 cxuint& k, cxuint& factor)
         {
             cxuint finc = capacity - newSize;
@@ -307,15 +311,15 @@ public:
             cxuint newCapacity = std::min(
                         cxbyte(newSize + (newSize>>freePlacesShift)),
                         cxbyte(maxNode0Capacity));
-            T* newArray = nullptr;
+            AT* newArray = nullptr;
             if (newCapacity != 0)
-                newArray = new T[newCapacity];
+                newArray = new AT[newCapacity];
             
             uint64_t newBitMask = 0ULL;
             cxuint factor = 0;
             // finc - factor increment for empty holes
             const cxuint finc = newCapacity - newSize;
-            T toFill = T();
+            AT toFill = AT();
             cxuint i = 0, j = 0, k = 0;
             
             organizeArray(toFill, i, size, array, bitMask, k, newSize, newArray,
@@ -350,16 +354,16 @@ public:
             cxuint newCapacity1 = std::min(
                         cxbyte(newSize1 + (newSize1>>freePlacesShift)),
                         cxbyte(maxNode0Capacity));
-            std::unique_ptr<T[]> newArray0 = nullptr;
-            std::unique_ptr<T[]> newArray1 = nullptr;
+            std::unique_ptr<AT[]> newArray0 = nullptr;
+            std::unique_ptr<AT[]> newArray1 = nullptr;
             if (newCapacity0 != 0)
-                newArray0.reset(new T[newCapacity0]);
+                newArray0.reset(new AT[newCapacity0]);
             if (newCapacity1 != 0)
-                newArray1.reset(new T[newCapacity1]);
+                newArray1.reset(new AT[newCapacity1]);
             uint64_t newBitMask0 = 0ULL;
             uint64_t newBitMask1 = 0ULL;
             
-            T toFill = T();
+            AT toFill = AT();
             cxuint i = 0, k = 0;
             cxuint factor = 0;
             // finc - factor increment for empty holes
@@ -375,7 +379,7 @@ public:
                 newBitMask0 |= (1ULL<<k);
             }
             
-            toFill = T();
+            toFill = AT();
             k = 0;
             factor = 0;
             // finc - factor increment for empty holes
@@ -414,16 +418,16 @@ public:
             cxuint newCapacity = std::min(
                         cxbyte(size+extraSize + ((size+extraSize)>>freePlacesShift)),
                         cxbyte(maxNode0Capacity));
-            T* newArray = nullptr;
+            AT* newArray = nullptr;
             if (newCapacity != 0)
-                newArray = new T[newCapacity];
+                newArray = new AT[newCapacity];
             
             uint64_t newBitMask = 0ULL;
             cxuint factor = 0;
             const cxuint finc = newCapacity - size;
             cxuint newIdx = 255; // new indx after reorganizing
             
-            T toFill = T();
+            AT toFill = AT();
             cxuint i = 0, j = 0;
             
             while ((bitMask & (1ULL<<i)) != 0)
@@ -476,15 +480,15 @@ public:
             cxuint newCapacity = std::min(
                         cxbyte(size+extraSize + ((size+extraSize)>>freePlacesShift)),
                         cxbyte(maxNode0Capacity));
-            T* newArray = nullptr;
+            AT* newArray = nullptr;
             if (newCapacity != 0)
-                newArray = new T[newCapacity];
+                newArray = new AT[newCapacity];
             
             uint64_t newBitMask = 0ULL;
             cxuint factor = 0;
             const cxuint finc = newCapacity - size;
             
-            T toFill = T();
+            AT toFill = AT();
             cxuint i = 0, j = 0;
             
             organizeArray(toFill, i, size, array, bitMask, j, size, newArray,
@@ -521,7 +525,7 @@ public:
                     idx = indexHint-1;
             }
             if (idx == 255)
-                idx = lower_bound(v, comp, kofval);
+                idx = lower_bound(kofval(v), comp, kofval);
             if (idx < capacity && !comp(kofval(v), kofval(array[idx])))
                 // is equal, then skip insertion
                 return std::make_pair(idx, false);
@@ -819,7 +823,7 @@ public:
             array = newArray;
             capacity = newCapacity;
             size = 0;
-            first = T();
+            first = K();
         }
         
         void allocate1(cxuint newCapacity)
@@ -842,7 +846,7 @@ public:
             array1 = newArray;
             capacity = newCapacity;
             size = 0;
-            first = T();
+            first = K();
         }
         
         /// reserve0 elements in Node0's array
@@ -871,7 +875,7 @@ public:
             capacity = newCapacity;
             size = newSize;
             if (size == 0)
-                first = T();
+                first = K();
         }
         
         /// reserve1 elements in Node0's array
@@ -900,7 +904,7 @@ public:
             capacity = newCapacity;
             size = newSize;
             if (size == 0)
-                first = T();
+                first = K();
         }
         
         
@@ -990,7 +994,8 @@ public:
         }
         
         /// insert Node0 - (move to this node)
-        void insertNode0(Node0&& node, cxuint index, bool updateTotSize = true)
+        void insertNode0(Node0&& node, cxuint index, const KeyOfVal& kofval,
+                         bool updateTotSize = true)
         {
             NodeBase::type = NODE1;
             if (size+1 > capacity)
@@ -1006,7 +1011,7 @@ public:
             array[index] = std::move(node);
             array[index].index = index;
             if (index == 0 && array[0].array!=nullptr)
-                first = array[0].array[array[0].firstPos];
+                first = kofval(array[0].array[array[0].firstPos]);
             size++;
             if (updateTotSize)
                 totalSize += node.size;
@@ -1036,7 +1041,7 @@ public:
         }
         
         /// remove node0 with index from this node
-        void eraseNode0(cxuint index, bool updateTotSize = true)
+        void eraseNode0(cxuint index, const KeyOfVal& kofval, bool updateTotSize = true)
         {
             if (updateTotSize)
                 totalSize -= array[index].size;
@@ -1049,12 +1054,12 @@ public:
             for (cxuint i = index; i < size-1U; i++)
                 array[i].index = i;
             if (size > 1 && index == 0)
-                first = array[0].array[array[0].firstPos];
+                first = kofval(array[0].array[array[0].firstPos]);
             size--;
             if (size + (size>>1) < capacity)
                 reserve0(size+1);
             if (size == 0)
-                first = T();
+                first = K();
         }
         
         /// remove node1 with index from this node
@@ -1076,7 +1081,7 @@ public:
             if (size + (size>>1) < capacity)
                 reserve1(size+1);
             if (size == 0)
-                first = T();
+                first = K();
         }
         
         void reorganizeNode0s(cxuint start, cxuint end, bool removeOneNode0 = false)
@@ -1089,7 +1094,7 @@ public:
             cxuint newNodeSize = nodesSize / (end-start - removeOneNode0);
             cxuint withExtraElem = nodesSize - newNodeSize*(end-start - removeOneNode0);
             cxuint ni = 0; // new item start
-            T toFill = T();
+            AT toFill = AT();
             cxuint inIndex, inPos;
             cxuint k = 0;
             cxuint factor = 0;
@@ -1160,7 +1165,7 @@ public:
                 first = n2.first;
         }
         
-        void splitNode(Node1& n2)
+        void splitNode(Node1& n2, const KeyOfVal& kofval)
         {
             if (NodeBase::type == NODE1)
             {
@@ -1179,7 +1184,7 @@ public:
                 n2.allocate0(std::min(newSize2, cxuint(maxNode1Size)));
                 std::move(array + halfPos, array + size, n2.array);
                 n2.totalSize = secHalfTotSize;
-                n2.first = n2.array[0].array[n2.array[0].firstPos];
+                n2.first = kofval(n2.array[0].array[n2.array[0].firstPos]);
                 for (cxuint i = 0; i < newSize2; i++)
                     n2.array[i].index = i;
                 reserve0(halfPos);
@@ -1211,7 +1216,8 @@ public:
             }
         }
         
-        void reorganizeNode1s(cxuint start, cxuint end, bool removeOneNode1 = false)
+        void reorganizeNode1s(cxuint start, cxuint end, const KeyOfVal& kofval,
+                        bool removeOneNode1 = false)
         {
             Node1 temps[maxNode1Size];
             cxuint node0sNum = 0;
@@ -1260,7 +1266,7 @@ public:
                                 // prevent too small node0s number for rest node1s and
                                 break;
                             temps[i].insertNode0(std::move(child.array[k]),
-                                                temps[i].size);
+                                                temps[i].size, kofval);
                         }
                     
                     if (k >= child.size)
@@ -1841,10 +1847,10 @@ public:
         ssize_t operator-(const IterBase& i2) const
         { return IterBase::diff(i2); }
         /// get element
-        T& operator*() const
+        AT& operator*() const
         { return IterBase::n0->array[IterBase::index]; }
         /// get element
-        T& operator->() const
+        AT& operator->() const
         { return IterBase::n0->array[IterBase::index]; }
         /// equal to
         bool operator==(const IterBase& it) const
@@ -1927,10 +1933,10 @@ public:
         ssize_t operator-(const IterBase& i2) const
         { return IterBase::diff(i2); }
         /// get element
-        const T& operator*() const
+        const AT& operator*() const
         { return IterBase::n0->array[IterBase::index]; }
         /// get element
-        const T& operator->() const
+        const AT& operator->() const
         { return IterBase::n0->array[IterBase::index]; }
         /// equal to
         bool operator==(const IterBase& it) const
@@ -1979,7 +1985,6 @@ public:
     }
     
     /// constructor with initializer list
-    template<typename Iter>
     DTree(std::initializer_list<value_type> init, const Comp& comp = Comp(),
           const KeyOfVal& kofval = KeyOfVal()) : Comp(comp), KeyOfVal(kofval), n0()
     {
@@ -2092,7 +2097,7 @@ private:
     IterBase findInt(const key_type& key) const
     {
         if (n0.type == NODE0)
-            return IterBase{&n0, n0.find(value_type(key), *this, *this)};
+            return IterBase{&n0, n0.find(key, *this, *this)};
         const Node1* curn1 = &n1;
         cxuint index = 0;
         while (curn1->type == NODE2)
@@ -2108,7 +2113,7 @@ private:
             return end();
         const Node0* curn0 = curn1->array + index - 1;
         // node0
-        IterBase it{curn0, curn0->find(value_type(key), *this, *this)};
+        IterBase it{curn0, curn0->find(key, *this, *this)};
         if (it.index == curn0->capacity)
             return end();
         return it;
@@ -2117,7 +2122,7 @@ private:
     IterBase lower_boundInt(const key_type& key) const
     {
         if (n0.type == NODE0)
-            return IterBase{&n0, n0.lower_bound(value_type(key), *this, *this)};
+            return IterBase{&n0, n0.lower_bound(key, *this, *this)};
         const Node1* curn1 = &n1;
         cxuint index = 0;
         while (curn1->type == NODE2)
@@ -2133,7 +2138,7 @@ private:
             return begin();
         const Node0* curn0 = curn1->array + index - 1;
         // node0
-        IterBase it{curn0, curn0->lower_bound(value_type(key), *this, *this)};
+        IterBase it{curn0, curn0->lower_bound(key, *this, *this)};
         if (it.index == curn0->capacity)
             it.toNextNode0();
         return it;
@@ -2142,7 +2147,7 @@ private:
     IterBase upper_boundInt(const key_type& key) const
     {
         if (n0.type == NODE0)
-            return IterBase{&n0, n0.upper_bound(value_type(key), *this, *this)};
+            return IterBase{&n0, n0.upper_bound(key, *this, *this)};
         const Node1* curn1 = &n1;
         cxuint index = 0;
         while (curn1->type == NODE2)
@@ -2157,7 +2162,7 @@ private:
             return begin();
         const Node0* curn0 = curn1->array + index - 1;
         // node0
-        IterBase it{curn0, curn0->upper_bound(value_type(key), *this, *this)};
+        IterBase it{curn0, curn0->upper_bound(key, *this, *this)};
         if (it.index == curn0->capacity)
             it.toNextNode0();
         return it;
@@ -2330,11 +2335,11 @@ public:
                 if (Comp::operator()(key,
                         KeyOfVal::operator()(node0_2.array[it.n0->firstPos])))
                     // key < first key in second node0
-                    index = it.n0->lower_bound(value, *this, *this);
+                    index = it.n0->lower_bound(key, *this, *this);
                 else
                 {   // put to node0 2
                     secondNode = true;
-                    index = node0_2.lower_bound(value, *this, *this);
+                    index = node0_2.lower_bound(key, *this, *this);
                 }
                 if (curn1 == nullptr)
                 {
@@ -2344,7 +2349,7 @@ public:
                     
                     return std::make_pair(iterator(n1.array + secondNode, index), true);
                 }
-                curn1->insertNode0(std::move(node0_2), n0Index+1, false);
+                curn1->insertNode0(std::move(node0_2), n0Index+1, *this, false);
                 newit = iterator(curn1->array + n0Index + secondNode, index);
             }
             else
@@ -2368,8 +2373,10 @@ public:
             prevn1 = curn1;
             curn1 = prevn1->parent();
             prevn1->first = prevn1->NodeBase::type==NODE1 ?
-                    prevn1->array[0].array[prevn1->array[0].firstPos] :
+                    KeyOfVal::operator()(
+                        prevn1->array[0].array[prevn1->array[0].firstPos]) :
                     prevn1->array1[0].first;
+            
             prevn1->totalSize++; // increase
             cxuint maxN1Size = maxTotalSize(level);
             
@@ -2381,7 +2388,7 @@ public:
                 {
                     // simple split
                     Node1 node1_2;
-                    prevn1->splitNode(node1_2);
+                    prevn1->splitNode(node1_2, *this);
                     
                     if (level==1)
                     {
@@ -2406,7 +2413,7 @@ public:
                     findReorgBounds1(prevn1, curn1, prevn1->totalSize,
                             maxN1Size, left, right);
                     // reorganize array from left to right
-                    curn1->reorganizeNode1s(left, right+1);
+                    curn1->reorganizeNode1s(left, right+1, *this);
                     if (level == 1)
                     {
                         const Node1* pn1 = curn1->array1 +
@@ -2474,7 +2481,7 @@ public:
                 if (n0Left1+minNode0Size-1 <= maxNode0Size)
                 {
                     curn1->array[n0Index-1].merge(*it.n0);
-                    curn1->eraseNode0(n0Index, false);
+                    curn1->eraseNode0(n0Index, *this, false);
                     mergedN0Index = n0Index-1;
                     newit.n0 = curn1->array + n0Index-1;
                     newit.index = newit.n0->lower_bound(key, *this, *this);
@@ -2485,7 +2492,7 @@ public:
                 if (n0Right1+minNode0Size-1 <= maxNode0Size)
                 {
                     it.n0->merge(curn1->array[n0Index+1]);
-                    curn1->eraseNode0(n0Index+1, false);
+                    curn1->eraseNode0(n0Index+1, *this, false);
                     mergedN0Index = n0Index;
                     newit.n0 = curn1->array + n0Index;
                     newit.index = newit.n0->lower_bound(key, *this, *this);
@@ -2509,7 +2516,7 @@ public:
         {
             newit.toNextNode0();
             if (newit != end())
-                key = newit.n0->array[newit.n0->firstPos];
+                key = KeyOfVal::operator()(newit.n0->array[newit.n0->firstPos]);
         }
         
         cxuint level = 1;
@@ -2521,8 +2528,10 @@ public:
             prevn1 = curn1;
             curn1 = prevn1->parent();
             prevn1->first = prevn1->NodeBase::type==NODE1 ?
-                    prevn1->array[0].array[prevn1->array[0].firstPos] :
+                    KeyOfVal::operator()(
+                        prevn1->array[0].array[prevn1->array[0].firstPos]) :
                     prevn1->array1[0].first;
+            
             cxuint maxN1Size = maxTotalSize(level);
             cxuint minN1Size = minTotalSize(level);
             if (curn1 == nullptr)
@@ -2603,7 +2612,7 @@ public:
                 // reorganize in this level
                 findReorgBounds1(prevn1, curn1, prevn1->totalSize, maxN1Size,
                                 left, right, &removeNode1);
-                curn1->reorganizeNode1s(left, right+1, removeNode1);
+                curn1->reorganizeNode1s(left, right+1, *this, removeNode1);
                 if (level == 1 && newItN1 == prevn1)
                 {
                     const Node1* pn1 = curn1->array1 +
@@ -2675,7 +2684,6 @@ public:
             Impl(first, last, comp)
     { }
     /// constructor with element ranges
-    template<typename Iter>
     DTreeSet(std::initializer_list<value_type> init, const Comp& comp = Comp()) 
             : Impl(init, comp)
     { }
@@ -2683,10 +2691,12 @@ public:
 
 /// DTree map
 template<typename K, typename V, typename Comp = std::less<K> >
-class DTreeMap: public DTree<K, std::pair<const K, V>, Comp, SelectFirst<K, V> >
+class DTreeMap: public DTree<K, std::pair<const K, V>, Comp, SelectFirst<K, V>,
+            std::pair<K, V> >
 {
 private:
-    typedef DTree<K, std::pair<const K, V>, Comp, SelectFirst<K, V> > Impl;
+    typedef DTree<K, std::pair<const K, V>, Comp, SelectFirst<K, V>,
+                std::pair<K, V> > Impl;
 public:
     typedef typename Impl::const_iterator const_iterator;
     typedef typename Impl::iterator iterator;
@@ -2703,7 +2713,6 @@ public:
             Impl(first, last, comp)
     { }
     /// constructor with element ranges
-    template<typename Iter>
     DTreeMap(std::initializer_list<value_type> init, const Comp& comp = Comp()) 
             : Impl(init, comp)
     { }

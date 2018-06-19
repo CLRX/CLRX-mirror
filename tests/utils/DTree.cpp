@@ -651,7 +651,7 @@ static void createNode1FromArray(DTreeSet<cxuint>::Node1& node1, cxuint num,
         const cxuint node0Size = (node0Sizes != nullptr) ? node0Sizes[i] : 20;
         for (cxuint x = v; x < v+node0Size; x++)
             node0.insert(x, comp, kofval);
-        node1.insertNode0(std::move(node0), i);
+        node1.insertNode0(std::move(node0), i, kofval);
         vnext += node0Size;
     }
 }
@@ -826,7 +826,7 @@ static void testDTreeNode1()
             for (cxuint x = v; x < v+20; x++)
                 node0.insert(x, comp, kofval);
             cxuint insIndex = node1.lowerBoundN(v, comp, kofval);
-            node1.insertNode0(std::move(node0), insIndex);
+            node1.insertNode0(std::move(node0), insIndex, kofval);
             verifyDTreeNode1<cxuint>("DTreeNode1", "instest", node1, 0, 1);
         }
         checkNode1Firsts0("DTreeNode1", "instest", node1, 8, dtreeNode1Firsts2);
@@ -842,7 +842,7 @@ static void testDTreeNode1()
         cxuint size = 8;
         for (cxuint idx: dtreeNode1EraseOrder)
         {
-            node1.eraseNode0(idx);
+            node1.eraseNode0(idx, kofval);
             verifyDTreeNode1<cxuint>("DTreeNode1", "erase0", node1, 0, 1);
             contentIndices.erase(contentIndices.begin()+idx);
             size--;
@@ -905,6 +905,7 @@ static const DNode1SplitCase dtreeNode1SplitTbl[] =
 
 static void testDTreeNode1Split(cxuint ti, const DNode1SplitCase& testCase)
 {
+    Identity<cxuint> kofval;
     std::ostringstream oss;
     oss << "Node1Split#" << ti;
     oss.flush();
@@ -912,7 +913,7 @@ static void testDTreeNode1Split(cxuint ti, const DNode1SplitCase& testCase)
     DTreeSet<cxuint>::Node1 node1, node2;
     createNode1FromArray(node1, testCase.values.size(), testCase.values.data(),
                     testCase.node0Sizes.data());
-    node1.splitNode(node2);
+    node1.splitNode(node2, kofval);
     assertValue("DTreeNode1Split", caseName+".point",
                     testCase.expectedPoint, cxuint(node1.size));
     verifyDTreeNode1<cxuint>("DTreeNode1Split", caseName+"n1", node1, 0, 1);
@@ -1015,7 +1016,7 @@ static void createNode1FromValue(DTreeSet<cxuint>::Node1& node1, cxuint value,
         DTreeSet<cxuint>::Node0 node0;
         for (cxuint y = value; y < + value+size; y++)
             node0.insert(y, comp, kofval);
-        node1.insertNode0(std::move(node0), node1.size);
+        node1.insertNode0(std::move(node0), node1.size, kofval);
     }
     else
     {
@@ -1026,14 +1027,14 @@ static void createNode1FromValue(DTreeSet<cxuint>::Node1& node1, cxuint value,
             DTreeSet<cxuint>::Node0 node0;
             for (cxuint y = x; y < + x+20; y++)
                 node0.insert(y, comp, kofval);
-            node1.insertNode0(std::move(node0), node1.size);
+            node1.insertNode0(std::move(node0), node1.size, kofval);
         }
         if (xend < value+size)
         {
             DTreeSet<cxuint>::Node0 node0;
             for (cxuint y = x; y < value+size; y++)
                 node0.insert(y, comp, kofval);
-            node1.insertNode0(std::move(node0), node1.size);
+            node1.insertNode0(std::move(node0), node1.size, kofval);
         }
     }
 }
@@ -1252,6 +1253,7 @@ static const DNode1SplitCase dtreeNode2SplitTbl[] =
 
 static void testDTreeNode2Split(cxuint ti, const DNode1SplitCase& testCase)
 {
+    Identity<cxuint> kofval;
     std::ostringstream oss;
     oss << "Node2Split#" << ti;
     oss.flush();
@@ -1259,7 +1261,7 @@ static void testDTreeNode2Split(cxuint ti, const DNode1SplitCase& testCase)
     DTreeSet<cxuint>::Node1 node1, node2;
     createNode2FromArray(node1, testCase.values.size(), testCase.values.data(),
                     testCase.node0Sizes.data());
-    node1.splitNode(node2);
+    node1.splitNode(node2, kofval);
     assertValue("DTreeNode2Split", caseName+".point",
                     testCase.expectedPoint, cxuint(node1.size));
     verifyDTreeNode1<cxuint>("DTreeNode2Split", caseName+"n1", node1, 0, 2, nullptr,
@@ -1386,7 +1388,7 @@ static void testDNode1ReorganizeNode1s(cxuint ti, const DNode1ReorgNode1sCase& t
     verifyDTreeNode1<cxuint>("DTreeNode2Reorg", caseName+"n1", node2, 0, 2,
                 nullptr, VERIFY_NODE_NO_TOTALSIZE);
     
-    node2.reorganizeNode1s(testCase.start, testCase.end, testCase.removeOneNode1);
+    node2.reorganizeNode1s(testCase.start, testCase.end, kofval, testCase.removeOneNode1);
     verifyDTreeNode1<cxuint>("DTreeNode2Reorg", caseName+"n1_after", node2, 0, 2,
                 nullptr, VERIFY_NODE_NO_TOTALSIZE);
     
@@ -1505,7 +1507,7 @@ static DTreeSet<cxuint>::Node1 createDTreeFromNodeSizes(const std::string& testN
         {
             DTreeSet<cxuint>::Node1& p = parents[i];
             for (cxuint k = 0; k < nodeSizes[i]; k++, j++)
-                p.insertNode0(std::move(children0[j]), p.size);
+                p.insertNode0(std::move(children0[j]), p.size, kofval);
         }
         assertValue(testName, caseName+".nodeLevelSize", j, cxuint(children0.size()));
         children = parents;
@@ -1984,6 +1986,22 @@ static void testDTreeInsert2()
     }
     verifyDTreeState("DTreeInsert", "insert2.test", set);
     checkDTreeContent("DTreeInsert", "insert2:content", set, values.size(), values.data());
+}
+
+static void testDTreeInsertInitList()
+{
+    DTreeSet<cxuint> set;
+    std::vector<cxuint> values;
+    set.insert({ 34, 67, 11, 99 });
+    values.insert(values.begin(), { 34, 67, 11, 99 });
+    verifyDTreeState("DTreeInsert", "insertInitList.test", set);
+    checkDTreeContent("DTreeInsert", "insertInitList:content", set,
+                      values.size(), values.data());
+    
+    DTreeSet<cxuint> set2({ 34, 67, 11, 99 });
+    verifyDTreeState("DTreeInsert", "constrInitList.test", set2);
+    checkDTreeContent("DTreeInsert", "constrInitList:content", set2,
+                      values.size(), values.data());
 }
 
 struct DTreeForceBehCase
@@ -2971,6 +2989,16 @@ static void testDTreeCompare()
     assertTrue("DTree", "set2>=set", set2>=set);
 }
 
+static void testDTreeMapUsage()
+{
+    DTreeMap<cxuint, uint64_t> map;
+    map.insert(std::make_pair(55, uint64_t(256)));
+    map.erase(55);
+    map.find(55);
+    map.lower_bound(55);
+    map.upper_bound(55);
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -3016,6 +3044,7 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; i < sizeof(dtreeInsertCaseTbl) / sizeof(Array<cxuint>); i++)
         retVal |= callTest(testDTreeInsert, i, dtreeInsertCaseTbl[i]);
     retVal |= callTest(testDTreeInsert2);
+    retVal |= callTest(testDTreeInsertInitList);
     
     for (cxuint i = 0; i < sizeof(dtreeInsertBehCaseTbl) / sizeof(DTreeForceBehCase); i++)
         retVal |= callTest(testDTreeInsertBehaviour, i, dtreeInsertBehCaseTbl[i]);
@@ -3029,5 +3058,6 @@ int main(int argc, const char** argv)
     retVal |= callTest(testDTreeConstructors);
     retVal |= callTest(testDTreeEmptySizeClear);
     retVal |= callTest(testDTreeCompare);
+    retVal |= callTest(testDTreeMapUsage);
     return retVal;
 }
