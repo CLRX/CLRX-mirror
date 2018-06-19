@@ -2504,7 +2504,8 @@ public:
         if (newit.index == newit.n0->capacity)
         {
             newit.toNextNode0();
-            key = newit.n0->array[newit.n0->firstPos];
+            if (newit != end())
+                key = newit.n0->array[newit.n0->firstPos];
         }
         
         cxuint level = 1;
@@ -2515,6 +2516,9 @@ public:
             curn1->totalSize--;
             prevn1 = curn1;
             curn1 = prevn1->parent();
+            prevn1->first = prevn1->NodeBase::type==NODE1 ?
+                    prevn1->array[0].array[prevn1->array[0].firstPos] :
+                    prevn1->array1[0].first;
             cxuint maxN1Size = maxTotalSize(level);
             cxuint minN1Size = minTotalSize(level);
             if (curn1 == nullptr)

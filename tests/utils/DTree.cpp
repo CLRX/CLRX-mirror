@@ -2668,6 +2668,55 @@ static void testDTreeEraseBehaviour(cxuint ti, const DTreeForceBehCase& testCase
         assertTrue("DTree", caseName+".end", it==set.end());
 }
 
+static void testDTreeEraseRandom()
+{
+    std::minstd_rand0 ranen(753561124);
+    DTreeSet<cxuint> set;
+    std::vector<cxuint> values;
+    
+    char buf[16];
+    for (cxuint i = 0; i < 1500; i++)
+    {
+        //std::cout << "dt" << i << std::endl;
+        snprintf(buf, sizeof buf, "%u", i);
+        cxuint value = ranen();
+        values.push_back(value);
+        set.insert(value);
+    }
+    // sort values
+    std::sort(values.begin(), values.end());
+    {
+        verifyDTreeState("DTree", std::string("EraseIRan")+buf+".test", set);
+        // check content
+        auto vit = values.begin();
+        auto sit = set.begin();
+        for (; vit != values.end() && sit != set.end(); ++vit, ++sit)
+            assertValue("DTree", "EraseIRan.content", *vit, *sit);
+        assertTrue("DTree", "EraseIRan.contentend", vit==values.end() && sit==set.end());
+    }
+    
+    /// erasing
+    for (cxuint i = 0; i < 1500; i++)
+    {
+        const cxuint index = ranen() % values.size();
+        set.erase(set.begin() + index);
+        values.erase(values.begin() + index);
+        
+        if ((i%10) == 9)
+        {
+            verifyDTreeState("DTree", std::string("EraseRan")+buf+".test", set);
+            snprintf(buf, sizeof buf, "%u", i);
+            // check content
+            auto vit = values.begin();
+            auto sit = set.begin();
+            for (; vit != values.end() && sit != set.end(); ++vit, ++sit)
+                assertValue("DTree", std::string("EraseRan")+buf+".content", *vit, *sit);
+            assertTrue("DTree", std::string("EraseRan")+buf+"contentend",
+                    vit==values.end() && sit==set.end());
+        }
+    }
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -2721,5 +2770,6 @@ int main(int argc, const char** argv)
     retVal |= callTest(testDTreeErase0);
     for (cxuint i = 0; i < sizeof(dtreeEraseBehCaseTbl) / sizeof(DTreeForceBehCase); i++)
         retVal |= callTest(testDTreeEraseBehaviour, i, dtreeEraseBehCaseTbl[i]);
+    retVal |= callTest(testDTreeEraseRandom);
     return retVal;
 }
