@@ -2004,6 +2004,22 @@ static void testDTreeInsertInitList()
                       values.size(), values.data());
 }
 
+static void testDTreeInsertIters()
+{
+    std::vector<cxuint> values;
+    values.insert(values.begin(), { 34, 67, 11, 99 });
+    DTreeSet<cxuint> set;
+    set.insert(values.begin(), values.end());
+    verifyDTreeState("DTreeInsert", "insertIters.test", set);
+    checkDTreeContent("DTreeInsert", "insertIters:content", set,
+                      values.size(), values.data());
+    
+    DTreeSet<cxuint> set2(values.begin(), values.end());
+    verifyDTreeState("DTreeInsert", "constrIters.test", set2);
+    checkDTreeContent("DTreeInsert", "constrIters:content", set2,
+                      values.size(), values.data());
+}
+
 struct DTreeForceBehCase
 {
     Array<Array<cxuint> > treeNodeSizes;
@@ -2965,6 +2981,21 @@ static void testDTreeEmptySizeClear()
     assertValue("DTree", "set2.size()5", size_t(0), set2.size());
 }
 
+static void testDTreeSwap()
+{
+    DTreeSet<cxuint> set0;
+    DTreeSet<cxuint> set1;
+    set1.insert(48);
+    set1.insert(557);
+    DTreeSet<cxuint> set2;
+    for (cxuint v = 10; v < 200; v++)
+        set2.insert(v);
+    
+    std::swap(set1, set2); // node0<->node1
+    std::swap(set1, set0); // node1<->empty
+    std::swap(set1, set2); // empty<->node0
+}
+
 static void testDTreeCompare()
 {
     DTreeSet<cxuint> set, set2, set3;
@@ -3080,6 +3111,7 @@ int main(int argc, const char** argv)
         retVal |= callTest(testDTreeInsert, i, dtreeInsertCaseTbl[i]);
     retVal |= callTest(testDTreeInsert2);
     retVal |= callTest(testDTreeInsertInitList);
+    retVal |= callTest(testDTreeInsertIters);
     
     for (cxuint i = 0; i < sizeof(dtreeInsertBehCaseTbl) / sizeof(DTreeForceBehCase); i++)
         retVal |= callTest(testDTreeInsertBehaviour, i, dtreeInsertBehCaseTbl[i]);
@@ -3093,6 +3125,7 @@ int main(int argc, const char** argv)
     retVal |= callTest(testDTreeConstructors);
     retVal |= callTest(testDTreeEmptySizeClear);
     retVal |= callTest(testDTreeCompare);
+    retVal |= callTest(testDTreeSwap);
     retVal |= callTest(testDTreeMapUsage);
     return retVal;
 }

@@ -2453,6 +2453,13 @@ public:
         for (const value_type& v: ilist)
             insert(v);
     }
+    // insert new elements from iterators
+    template<typename Iter>
+    void insert(Iter first, Iter last)
+    {
+        for (Iter it = first; it != last; ++it)
+            insert(*it);
+    }
     /// put element (insert if doesn't exists or replace)
     std::pair<iterator, bool> put(const value_type& value)
     {
