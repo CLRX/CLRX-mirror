@@ -2736,8 +2736,15 @@ public:
         ++nextIt;
         if (nextIt != Impl::end() && value.first >= nextIt->first)
             throw std::out_of_range("Key out of range");
-        iter.n0->array[iter.index].first = value.first;
-        iter.n0->array[iter.index].second = value.second;
+        typename Impl::Node0* n0 = iter.n0;
+        n0->array[iter.index].first = value.first;
+        n0->array[iter.index].second = value.second;
+        // fill up surrounding freespace for correct order
+        for (cxint i = iter.index-1; i >= 0 && (n0->bitMask & (1ULL<<i)) != 0; i--)
+            n0->array[i].first = value.first;
+        for (cxint i = iter.index+1; i < n0->capacity &&
+                                (n0->bitMask & (1ULL<<i)) != 0; i++)
+            n0->array[i].first = value.first;
     }
     
     /// put element, insert or replace if found
