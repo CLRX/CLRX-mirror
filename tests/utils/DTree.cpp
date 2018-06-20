@@ -3154,6 +3154,62 @@ static void testDTreeMapUsage()
                 uint64_t(4212), map.find(47)->second);
 }
 
+static void testDTreeMapReplace()
+{
+    DTreeMap<cxuint, uint64_t> map;
+    map.insert(std::make_pair(45, uint64_t(276)));
+    map.insert(std::make_pair(67, uint64_t(276)));
+    map.insert(std::make_pair(87, uint64_t(872)));
+    auto it = map.find(67);
+    map.replace(it, std::make_pair(57, 87992));
+    assertTrue("DTreeMapRep", "replace(it, 57).old", map.find(67)==map.end());
+    assertValue("DTreeMapRep", "replace(it, {57, xxx})",
+                uint64_t(87992), map.find(57)->second);
+    
+    map.replace(it, std::make_pair(86, 1212));
+    assertTrue("DTreeMapRep", "replace(it, 86).old", map.find(57)==map.end());
+    assertValue("DTreeMapRep", "replace(it, {86, xxx})",
+                uint64_t(1212), map.find(86)->second);
+    
+    assertCLRXException("DTreeMapRep", "replace(it, 87)", "Key out of range",
+                    [&map, &it]() { map.replace(it, std::make_pair(87, 8621)); });
+    assertCLRXException("DTreeMapRep", "replace(it, 88)", "Key out of range",
+                    [&map, &it]() { map.replace(it, std::make_pair(88, 8621)); });
+    assertCLRXException("DTreeMapRep", "replace(it, 45)", "Key out of range",
+                    [&map, &it]() { map.replace(it, std::make_pair(45, 8621)); });
+    assertCLRXException("DTreeMapRep", "replace(it, 44)", "Key out of range",
+                    [&map, &it]() { map.replace(it, std::make_pair(45, 8621)); });
+    
+    it = map.find(45);
+    map.replace(it, std::make_pair(11, 87662));
+    assertTrue("DTreeMapRep", "replace(it2, 11).old", map.find(45)==map.end());
+    assertValue("DTreeMapRep", "replace(it2, {11, xxx})",
+                uint64_t(87662), map.find(11)->second);
+    
+    map.replace(it, std::make_pair(85, 18311));
+    assertTrue("DTreeMapRep", "replace(it2, 85).old", map.find(11)==map.end());
+    assertValue("DTreeMapRep", "replace(it2, {85, xxx})",
+                uint64_t(18311), map.find(85)->second);
+    
+    assertCLRXException("DTreeMapRep", "replace(it2, 86)", "Key out of range",
+                    [&map, &it]() { map.replace(it, std::make_pair(86, 8621)); });
+    assertCLRXException("DTreeMapRep", "replace(it2, 111)", "Key out of range",
+                    [&map, &it]() { map.replace(it, std::make_pair(111, 8621)); });
+    
+    it = map.find(87);
+    map.replace(it, std::make_pair(98, 112233));
+    assertTrue("DTreeMapRep", "replace(it3, 98).old", map.find(87)==map.end());
+    assertValue("DTreeMapRep", "replace(it3, {98, xxx})",
+                uint64_t(112233), map.find(98)->second);
+    
+    assertCLRXException("DTreeMapRep", "replace(it3, 86)", "Key out of range",
+                    [&map, &it]() { map.replace(it, std::make_pair(86, 8621)); });
+    assertCLRXException("DTreeMapRep", "replace(it3, 85)", "Key out of range",
+                    [&map, &it]() { map.replace(it, std::make_pair(85, 8621)); });
+    assertCLRXException("DTreeMapRep", "replace(it3, 23)", "Key out of range",
+                    [&map, &it]() { map.replace(it, std::make_pair(23, 8621)); });
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -3217,5 +3273,6 @@ int main(int argc, const char** argv)
     retVal |= callTest(testDTreeBeginEnd);
     retVal |= callTest(testDTreeSwap);
     retVal |= callTest(testDTreeMapUsage);
+    retVal |= callTest(testDTreeMapReplace);
     return retVal;
 }

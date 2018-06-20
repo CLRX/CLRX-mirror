@@ -2734,7 +2734,7 @@ public:
         }
         iterator nextIt = iter;
         ++nextIt;
-        if (nextIt != Impl::end() && value.first >= nextIt->second)
+        if (nextIt != Impl::end() && value.first >= nextIt->first)
             throw std::out_of_range("Key out of range");
         iter.n0->array[iter.index].first = value.first;
         iter.n0->array[iter.index].second = value.second;
