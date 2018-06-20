@@ -126,7 +126,7 @@ public:
     }
     
     // parent pointer part size of array (heap)
-    static const int parentEntrySize = 8;
+    static const int parentEntrySize = sizeof(void*) <= 8 ? 8 : sizeof(void*);
     
     struct NodeBase
     {
