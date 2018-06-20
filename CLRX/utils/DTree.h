@@ -55,7 +55,21 @@ struct Identity
     { return v; }
 };
 
-/// main D-Tree container (D-Tree is kind of the B-Tree
+/// main D-Tree container of the unique ordered elements (D-Tree is kind of the B-Tree)
+/** The DTree is container very similar to the B+Tree (B-Tree that holds values in leafs).
+ * This container holds unique values in sorted order (from smallest to greatest).
+ * Arrays of values is held in Node0 nodes which can hold 18-56 elements.
+ * Array of values holds empty spaces to improve insertion
+ * (shorter moving of the elements).
+ * Second type of Node is Node1 that holds Node0's or Node1's. It can hold 2-8 children.
+ * DTree have static depth for all leafs
+ * (from every leaf is this same step number to root).
+ * 
+ * About invalidation: every insertion or removal can invalidate pointers,
+ * references and iterators to over 200 neighbors of the inserted/removed element.
+ * Best way is assumption any insert/erase can invalidate any reference,
+ * pointer or iterator.
+ */
 template<typename K, typename T = K, typename Comp = std::less<K>,
         typename KeyOfVal = Identity<K>, typename AT = T>
 class DTree: private Comp, KeyOfVal
