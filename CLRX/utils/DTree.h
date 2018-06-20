@@ -137,7 +137,10 @@ public:
         cxbyte capacity;    // capacity of array
         cxbyte firstPos;    // first position with element
         uint64_t bitMask;   // bitmask: 0 - hold element, 1 - free space
-        AT* array;   // array
+        union {
+            AT* array;   // array (internal)
+            T* arrayOut;  // array out for iterator
+        };
         
         Node0(): NodeBase(NODE0), index(255), size(0), capacity(0),
                     firstPos(0), bitMask(0ULL), array(nullptr)
@@ -1847,11 +1850,11 @@ public:
         ssize_t operator-(const IterBase& i2) const
         { return IterBase::diff(i2); }
         /// get element
-        AT& operator*() const
-        { return IterBase::n0->array[IterBase::index]; }
+        T& operator*() const
+        { return IterBase::n0->arrayOut[IterBase::index]; }
         /// get element
-        AT& operator->() const
-        { return IterBase::n0->array[IterBase::index]; }
+        T* operator->() const
+        { return IterBase::n0->arrayOut + IterBase::index; }
         /// equal to
         bool operator==(const IterBase& it) const
         { return IterBase::n0==it.n0 && IterBase::index==it.index; }
@@ -1933,11 +1936,11 @@ public:
         ssize_t operator-(const IterBase& i2) const
         { return IterBase::diff(i2); }
         /// get element
-        const AT& operator*() const
-        { return IterBase::n0->array[IterBase::index]; }
+        const T& operator*() const
+        { return IterBase::n0->arrayOut[IterBase::index]; }
         /// get element
-        const AT& operator->() const
-        { return IterBase::n0->array[IterBase::index]; }
+        const T* operator->() const
+        { return IterBase::n0->arrayOut + IterBase::index; }
         /// equal to
         bool operator==(const IterBase& it) const
         { return IterBase::n0==it.n0 && IterBase::index==it.index; }
@@ -2006,7 +2009,7 @@ public:
         }
     }
     /// move constructor
-    DTree(DTree&& dt)
+    DTree(DTree&& dt) noexcept
     {
         if (dt.n0.type == NODE0)
         {
@@ -2050,7 +2053,7 @@ public:
         return *this;
     }
     /// move assignment
-    DTree& operator=(DTree&& dt)
+    DTree& operator=(DTree&& dt) noexcept
     {
         if (this == &dt)
             return *this;
@@ -2720,7 +2723,7 @@ public:
     /// get reference to element pointed by key
     mapped_type& at(const key_type& key)
     {
-        iterator it = find(key);
+        iterator it = Impl::find(key);
         if (it == Impl::end())
             throw std::out_of_range("DTreeMap key not found");
         return it->second;
@@ -2728,14 +2731,17 @@ public:
     /// get reference to element pointed by key
     const mapped_type& at(const key_type& key) const
     {
-        const_iterator it = find(key);
+        const_iterator it = Impl::find(key);
         if (it == Impl::end())
             throw std::out_of_range("DTreeMap key not found");
         return it->second;
     }
     /// get reference to element pointed by key (add if key doesn't exists)
     mapped_type& operator[](const key_type& key)
-    { return mapped_type(); }
+    {
+        iterator it = Impl::insert(std::pair<const K, V>(key, V())).first;
+        return it->second;
+    }
 };
 
 };

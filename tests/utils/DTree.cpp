@@ -2993,10 +2993,33 @@ static void testDTreeMapUsage()
 {
     DTreeMap<cxuint, uint64_t> map;
     map.insert(std::make_pair(55, uint64_t(256)));
-    map.erase(55);
     map.find(55);
+    map.at(55);
+    map[55] = 567;
+    *map.begin();
+    *map.cbegin();
+    map.erase(55);
+    const DTreeMap<cxuint, uint64_t>& cmap = map;
     map.lower_bound(55);
     map.upper_bound(55);
+    map.find(55);
+    map.begin();
+    map.cbegin();
+    map.end();
+    map.cend();
+    map.size();
+    map.empty();
+    map[55] = 567;
+    cmap.lower_bound(55);
+    cmap.upper_bound(55);
+    cmap.find(55);
+    cmap.begin();
+    cmap.cbegin();
+    cmap.end();
+    cmap.cend();
+    cmap.size();
+    cmap.empty();
+    cmap.at(55);
 }
 
 int main(int argc, const char** argv)
