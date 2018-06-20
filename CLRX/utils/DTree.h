@@ -2451,9 +2451,6 @@ public:
         for (Iter it = first; it != last; ++it)
             insert(*it);
     }
-    /// replace element with key
-    void replace(iterator iter, const value_type& value)
-    { *iter = value; }
     /// remove element in postion pointed by iterator
     iterator erase(const_iterator it)
     {
@@ -2723,6 +2720,27 @@ public:
             : Impl(init, comp)
     { }
     
+    /// replace element with key
+    void replace(iterator iter, const value_type& value)
+    {
+        if (iter == Impl::end())
+            return;
+        if (iter != Impl::begin())
+        {
+            iterator prevIt = iter;
+            --prevIt;
+            if (prevIt->first >= value.first)
+                throw std::out_of_range("Key out of range");
+        }
+        iterator nextIt = iter;
+        ++nextIt;
+        if (nextIt != Impl::end() && value.first >= nextIt->second)
+            throw std::out_of_range("Key out of range");
+        iter.n0->array[iter.index].first = value.first;
+        iter.n0->array[iter.index].second = value.second;
+    }
+    
+    /// put element, insert or replace if found
     std::pair<iterator, bool> put(const value_type& value)
     {
         auto res = Impl::insert(value);

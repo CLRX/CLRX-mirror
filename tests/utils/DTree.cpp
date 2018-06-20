@@ -3147,6 +3147,11 @@ static void testDTreeMapUsage()
     assertValue("DTreeMap", "put(55)", uint64_t(5123), map.find(46)->second);
     map.put(std::make_pair(46, 6123));
     assertValue("DTreeMap", "put(55)2", uint64_t(6123), map.find(46)->second);
+    auto it = map.find(46);
+    map.replace(it, std::make_pair(47, 4212));
+    assertTrue("DTreeMap", "replace(it, 47).old", map.find(46)==map.end());
+    assertValue("DTreeMap", "replace(it, {47, 4212})",
+                uint64_t(4212), map.find(47)->second);
 }
 
 int main(int argc, const char** argv)
