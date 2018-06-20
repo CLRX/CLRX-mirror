@@ -2206,18 +2206,6 @@ public:
         }
     }
     /// return iterator to first element
-    const_iterator begin() const
-    {
-        if (n0.type == NODE0)
-            return const_iterator(&n0, n0.firstPos);
-        else
-        {
-            const_iterator it(n1.getFirstNode0());
-            it.index = it.n0->firstPos;
-            return it;
-        }
-    }
-    /// return iterator to first element
     const_iterator cbegin() const
     {
         if (n0.type == NODE0)
@@ -2229,6 +2217,9 @@ public:
             return it;
         }
     }
+    /// return iterator to first element
+    const_iterator begin() const
+    { return cbegin(); }
     /// return iterator after last element
     iterator end()
     { return iterator(&n0, n0.type==NODE0 ? n0.capacity : n1.size); }

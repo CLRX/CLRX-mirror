@@ -3069,6 +3069,9 @@ static void testDTreeBeginEnd()
     assertValue("DTree", "set1.begin()", cxuint(10), *set.begin());
     assertValue("DTree", "set2.begin()", cxuint(10), *set2.begin());
     assertValue("DTree", "set3.begin()", cxuint(10), *set3.begin());
+    assertValue("DTree", "set1.cbegin()", cxuint(10), *set.cbegin());
+    assertValue("DTree", "set2.cbegin()", cxuint(10), *set2.cbegin());
+    assertValue("DTree", "set3.cbegin()", cxuint(10), *set3.cbegin());
     assertValue("DTree", "set1.end()", cxuint(29), *--set.end());
     assertValue("DTree", "set2.end()", cxuint(199), *--set2.end());
     assertValue("DTree", "set3.end()", cxuint(1499), *--set3.end());
@@ -3081,9 +3084,19 @@ static void testDTreeBeginEnd()
     assertValue("DTree", "set1.begin()2", cxuint(11), *set.begin());
     assertValue("DTree", "set2.begin()2", cxuint(11), *set2.begin());
     assertValue("DTree", "set3.begin()2", cxuint(11), *set3.begin());
+    assertValue("DTree", "set1.cbegin()2", cxuint(11), *set.cbegin());
+    assertValue("DTree", "set2.cbegin()2", cxuint(11), *set2.cbegin());
+    assertValue("DTree", "set3.cbegin()2", cxuint(11), *set3.cbegin());
     assertValue("DTree", "set1.end()2", cxuint(28), *--set.end());
     assertValue("DTree", "set2.end()2", cxuint(198), *--set2.end());
     assertValue("DTree", "set3.end()2", cxuint(1498), *--set3.end());
+    
+    const DTree<cxuint>& cset = set;
+    assertValue("DTree", "const set1.begin()2", cxuint(11), *cset.begin());
+    assertValue("DTree", "const set1.begin()2", cxuint(28), *--cset.end());
+    
+    set.clear();
+    assertTrue("DTree", "set1.begin()==set1.end()", set.begin()==set.end());
 }
 
 static void testDTreeMapUsage()
