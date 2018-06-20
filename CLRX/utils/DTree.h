@@ -2460,15 +2460,6 @@ public:
         for (Iter it = first; it != last; ++it)
             insert(*it);
     }
-    /// put element (insert if doesn't exists or replace)
-    std::pair<iterator, bool> put(const value_type& value)
-    {
-        iterator it = find(value);
-        if (it != end())
-            *it = value;
-        else
-            insert(value);
-    }
     /// replace element with key
     void replace(iterator iter, const value_type& value)
     { *iter = value; }
@@ -2740,6 +2731,14 @@ public:
     DTreeMap(std::initializer_list<value_type> init, const Comp& comp = Comp()) 
             : Impl(init, comp)
     { }
+    
+    std::pair<iterator, bool> put(const value_type& value)
+    {
+        auto res = Impl::insert(value);
+        if (!res.second)
+            res.first->second = value.second;
+        return res;
+    }
     
     /// get reference to element pointed by key
     mapped_type& at(const key_type& key)

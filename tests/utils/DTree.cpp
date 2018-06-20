@@ -2908,6 +2908,42 @@ static void testDTreeConstructors()
         verifyDTreeState("DTree", "3assign3a.test", set3a);
         checkDTreeContent("DTree", "3assign3a.content", set3a, 2, eraseValueCaseValues);
     }
+    
+    {
+        DTreeSet<cxuint> set;
+        std::vector<cxuint> values;
+        for (cxuint v = 10; v < 1100; v++)
+        {
+            set.insert(v);
+            values.push_back(v);
+        }
+        
+        verifyDTreeState("DTree", "4construct.test", set);
+        checkDTreeContent("DTree", "4construct.content", set,
+                          values.size(), values.data());
+        
+        DTreeSet<cxuint> set2(set);
+        verifyDTreeState("DTree", "4construct2.test", set2);
+        checkDTreeContent("DTree", "4construct2.content", set2,
+                          values.size(), values.data());
+        
+        DTreeSet<cxuint> set2a(setx);
+        set2a = set;
+        verifyDTreeState("DTree", "4assign.test", set2a);
+        checkDTreeContent("DTree", "4assign.content", set2a,
+                        values.size(), values.data());
+        
+        DTreeSet<cxuint> set3(std::move(set));
+        verifyDTreeState("DTree", "4construct3.test", set3);
+        checkDTreeContent("DTree", "4construct3.content", set3,
+                          values.size(), values.data());
+        
+        DTreeSet<cxuint> set4(setx);
+        set4 = std::move(set2);
+        verifyDTreeState("DTree", "4assign4.test", set4);
+        checkDTreeContent("DTree", "4assign4.content", set4,
+                        values.size(), values.data());
+    }
 }
 
 static void testDTreeEmptySizeClear()
