@@ -3056,6 +3056,36 @@ static void testDTreeCompare()
     assertTrue("DTree", "set2>=set", set2>=set);
 }
 
+static void testDTreeBeginEnd()
+{
+    DTreeSet<cxuint> set, set2, set3;
+    for (cxuint v = 10; v < 30; v++)
+        set.insert(v);
+    for (cxuint v = 10; v < 200; v++)
+        set2.insert(v);
+    for (cxuint v = 10; v < 1500; v++)
+        set3.insert(v);
+    
+    assertValue("DTree", "set1.begin()", cxuint(10), *set.begin());
+    assertValue("DTree", "set2.begin()", cxuint(10), *set2.begin());
+    assertValue("DTree", "set3.begin()", cxuint(10), *set3.begin());
+    assertValue("DTree", "set1.end()", cxuint(29), *--set.end());
+    assertValue("DTree", "set2.end()", cxuint(199), *--set2.end());
+    assertValue("DTree", "set3.end()", cxuint(1499), *--set3.end());
+    set.erase(10);
+    set2.erase(10);
+    set3.erase(10);
+    set.erase(29);
+    set2.erase(199);
+    set3.erase(1499);
+    assertValue("DTree", "set1.begin()2", cxuint(11), *set.begin());
+    assertValue("DTree", "set2.begin()2", cxuint(11), *set2.begin());
+    assertValue("DTree", "set3.begin()2", cxuint(11), *set3.begin());
+    assertValue("DTree", "set1.end()2", cxuint(28), *--set.end());
+    assertValue("DTree", "set2.end()2", cxuint(198), *--set2.end());
+    assertValue("DTree", "set3.end()2", cxuint(1498), *--set3.end());
+}
+
 static void testDTreeMapUsage()
 {
     DTreeMap<cxuint, uint64_t> map;
@@ -3099,6 +3129,11 @@ static void testDTreeMapUsage()
     assertValue("DTreeMap", "c at(55)", uint64_t(1567), map.at(55));
     assertCLRXException("DTreeMap", "c at(55) except", "DTreeMap key not found",
                         [&map](cxuint v) { map.at(v); } , 57);
+    //
+    map.put(std::make_pair(46, 5123));
+    assertValue("DTreeMap", "put(55)", uint64_t(5123), map.find(46)->second);
+    map.put(std::make_pair(46, 6123));
+    assertValue("DTreeMap", "put(55)2", uint64_t(6123), map.find(46)->second);
 }
 
 int main(int argc, const char** argv)
@@ -3161,6 +3196,7 @@ int main(int argc, const char** argv)
     retVal |= callTest(testDTreeConstructors);
     retVal |= callTest(testDTreeEmptySizeClear);
     retVal |= callTest(testDTreeCompare);
+    retVal |= callTest(testDTreeBeginEnd);
     retVal |= callTest(testDTreeSwap);
     retVal |= callTest(testDTreeMapUsage);
     return retVal;
