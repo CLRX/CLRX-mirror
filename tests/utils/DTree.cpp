@@ -2993,15 +2993,20 @@ static void testDTreeMapUsage()
 {
     DTreeMap<cxuint, uint64_t> map;
     map.insert(std::make_pair(55, uint64_t(256)));
-    map.find(55);
+    assertValue("DTreeMap", "find(55)", uint64_t(256), map.find(55)->second);
     map.at(55);
     map[55] = 567;
-    *map.begin();
-    *map.cbegin();
+    assertValue("DTreeMap", "[55]", uint64_t(567), map[55]);
+    assertValue("DTreeMap", "at(55)", uint64_t(567), map.at(55));
+    assertValue("DTreeMap", "begin()", uint64_t(567), map.begin()->second);
+    assertValue("DTreeMap", "cbegin()", uint64_t(567), map.cbegin()->second);
+    assertValue("DTreeMap", "find(55)", uint64_t(567), map.find(55)->second);
+    assertValue("DTreeMap", "lower_bound(55)", uint64_t(567), map.lower_bound(55)->second);
+    assertTrue("DTreeMap", "upper_bound(55)", map.upper_bound(55)==map.end());
     map.erase(55);
+    assertCLRXException("DTreeMap", "at(55) except", "DTreeMap key not found",
+                        [&map](cxuint v) { map.at(v); } , 55);
     const DTreeMap<cxuint, uint64_t>& cmap = map;
-    map.lower_bound(55);
-    map.upper_bound(55);
     map.find(55);
     map.begin();
     map.cbegin();
@@ -3009,9 +3014,14 @@ static void testDTreeMapUsage()
     map.cend();
     map.size();
     map.empty();
-    map[55] = 567;
+    map[55] = 1567;
+    assertValue("DTreeMap", "find(55)", uint64_t(1567), map.find(55)->second);
     cmap.lower_bound(55);
     cmap.upper_bound(55);
+    assertValue("DTreeMap", "cfind(55)", uint64_t(1567), cmap.find(55)->second);
+    assertValue("DTreeMap", "clower_bound(55)", uint64_t(1567),
+                cmap.lower_bound(55)->second);
+    assertTrue("DTreeMap", "cupper_bound(55)", cmap.upper_bound(55)==cmap.end());
     cmap.find(55);
     cmap.begin();
     cmap.cbegin();
@@ -3019,7 +3029,9 @@ static void testDTreeMapUsage()
     cmap.cend();
     cmap.size();
     cmap.empty();
-    cmap.at(55);
+    assertValue("DTreeMap", "c at(55)", uint64_t(1567), map.at(55));
+    assertCLRXException("DTreeMap", "c at(55) except", "DTreeMap key not found",
+                        [&map](cxuint v) { map.at(v); } , 57);
 }
 
 int main(int argc, const char** argv)
