@@ -2315,16 +2315,14 @@ static void testDTreeInsertRandom()
     for (cxuint i = 0; i < 3000; i++)
     {
         //std::cout << "dt" << i << std::endl;
-        snprintf(buf, sizeof buf, "%u", i);
         cxuint value = ranen();
         values.insert(value);
         set.insert(value);
         
         if ((i%10) == 9)
         {
-            verifyDTreeState("DTree", std::string("InsertRan")+buf+".test", set);
-            
             snprintf(buf, sizeof buf, "%u", i);
+            verifyDTreeState("DTree", std::string("InsertRan")+buf+".test", set);
             // check content
             auto vit = values.begin();
             auto sit = set.begin();
@@ -2747,7 +2745,6 @@ static void testDTreeEraseRandom()
     for (cxuint i = 0; i < 1500; i++)
     {
         //std::cout << "dt" << i << std::endl;
-        snprintf(buf, sizeof buf, "%u", i);
         cxuint value = ranen();
         values.push_back(value);
         set.insert(value);
@@ -2755,7 +2752,7 @@ static void testDTreeEraseRandom()
     // sort values
     std::sort(values.begin(), values.end());
     {
-        verifyDTreeState("DTree", std::string("EraseIRan")+buf+".test", set);
+        verifyDTreeState("DTree", "EraseIRan.test", set);
         // check content
         auto vit = values.begin();
         auto sit = set.begin();
@@ -2773,8 +2770,8 @@ static void testDTreeEraseRandom()
         
         if ((i%10) == 9)
         {
-            verifyDTreeState("DTree", std::string("EraseRan")+buf+".test", set);
             snprintf(buf, sizeof buf, "%u", i);
+            verifyDTreeState("DTree", std::string("EraseRan")+buf+".test", set);
             // check content
             auto vit = values.begin();
             auto sit = set.begin();
@@ -3211,11 +3208,28 @@ static void testDTreeMapReplace()
                     [&map, &it]() { map.replace(it, std::make_pair(23, 8621)); });
 }
 
-static void testDTreeInsertEraseRandom()
+static void testDTreeInsertEraseRandom(cxuint initialElemsNum)
 {
     std::minstd_rand0 ranen(753561124);
     DTreeSet<cxuint> set;
     std::set<cxuint> values;
+    
+    for (cxuint i = 0; i < initialElemsNum; i++)
+    {
+        cxuint value = ranen();
+        values.insert(value);
+        set.insert(value);
+    }
+    if (initialElemsNum != 0)
+    {
+        verifyDTreeState("DTree", "InErRanInit.test", set);
+        // check content
+        auto vit = values.begin();
+        auto sit = set.begin();
+        for (; vit != values.end() && sit != set.end(); ++vit, ++sit)
+            assertValue("DTree", "InErRanInit.content", *vit, *sit);
+        assertTrue("DTree", "InErRanInitcontentend", vit==values.end() && sit==set.end());
+    }
     
     char buf[16];
     for (cxuint i = 0; i < 3000; i++)
@@ -3240,8 +3254,6 @@ static void testDTreeInsertEraseRandom()
         
         {
             verifyDTreeState("DTree", std::string("InErRan")+buf+".test", set);
-            
-            snprintf(buf, sizeof buf, "%u", i);
             // check content
             auto vit = values.begin();
             auto sit = set.begin();
@@ -3318,6 +3330,8 @@ int main(int argc, const char** argv)
     retVal |= callTest(testDTreeMapUsage);
     retVal |= callTest(testDTreeMapReplace);
     
-    retVal |= callTest(testDTreeInsertEraseRandom);
+    retVal |= callTest(testDTreeInsertEraseRandom, 0);
+    retVal |= callTest(testDTreeInsertEraseRandom, 100);
+    //retVal |= callTest(testDTreeInsertEraseRandom, 500);
     return retVal;
 }
