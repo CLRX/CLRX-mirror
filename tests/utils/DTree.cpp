@@ -3211,6 +3211,48 @@ static void testDTreeMapReplace()
                     [&map, &it]() { map.replace(it, std::make_pair(23, 8621)); });
 }
 
+static void testDTreeInsertEraseRandom()
+{
+    std::minstd_rand0 ranen(753561124);
+    DTreeSet<cxuint> set;
+    std::set<cxuint> values;
+    
+    char buf[16];
+    for (cxuint i = 0; i < 3000; i++)
+    {
+        //std::cout << "dt" << i << std::endl;
+        snprintf(buf, sizeof buf, "%u", i);
+        if ((ranen() & 1) == 0 || values.empty())
+        {
+            //std::cout << "Insert " << i << std::endl;
+            cxuint value = ranen();
+            values.insert(value);
+            set.insert(value);
+        }
+        else
+        {
+            //std::cout << "Erase " << i << std::endl;
+            cxuint index = ranen()%set.size();
+            auto it = set.begin() + index;
+            values.erase(*it);
+            set.erase(it);
+        }
+        
+        {
+            verifyDTreeState("DTree", std::string("InErRan")+buf+".test", set);
+            
+            snprintf(buf, sizeof buf, "%u", i);
+            // check content
+            auto vit = values.begin();
+            auto sit = set.begin();
+            for (; vit != values.end() && sit != set.end(); ++vit, ++sit)
+                assertValue("DTree", std::string("InErRan")+buf+".content", *vit, *sit);
+            assertTrue("DTree", std::string("InErRan")+buf+"contentend",
+                    vit==values.end() && sit==set.end());
+        }
+    }
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -3275,5 +3317,7 @@ int main(int argc, const char** argv)
     retVal |= callTest(testDTreeSwap);
     retVal |= callTest(testDTreeMapUsage);
     retVal |= callTest(testDTreeMapReplace);
+    
+    retVal |= callTest(testDTreeInsertEraseRandom);
     return retVal;
 }

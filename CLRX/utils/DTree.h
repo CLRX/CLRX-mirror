@@ -233,6 +233,17 @@ public:
         { return array[i]; }
         
         /// get lower_bound (first index of element not less than value)
+        cxuint lower_boundFree(const K& k, const Comp& comp, const KeyOfVal& kofval) const
+        {
+            AT kt;
+            kofval(kt) = k;
+            cxuint index = std::lower_bound(array, array+capacity, kt,
+                [&comp, &kofval](const AT& v1, const AT& v2)
+                { return comp(kofval(v1), kofval(v2)); }) - array;
+            return index;
+        }
+        
+        /// get lower_bound (first index of element not less than value)
         cxuint lower_bound(const K& k, const Comp& comp, const KeyOfVal& kofval) const
         {
             AT kt;
@@ -428,68 +439,6 @@ public:
             node2.firstPos = 0;
         }
         
-        /// resize with index update (idx is index to update, used while inserting)
-        void resizeWithIndexUpdate(cxint extraSize, cxuint& idx)
-        {
-            // reorganize array
-            cxuint newCapacity = std::min(
-                        cxbyte(size+extraSize + ((size+extraSize)>>freePlacesShift)),
-                        cxbyte(maxNode0Capacity));
-            AT* newArray = nullptr;
-            if (newCapacity != 0)
-                newArray = new AT[newCapacity];
-            
-            uint64_t newBitMask = 0ULL;
-            cxuint factor = 0;
-            const cxuint finc = newCapacity - size;
-            cxuint newIdx = 255; // new indx after reorganizing
-            
-            AT toFill = AT();
-            cxuint i = 0, j = 0;
-            
-            while ((bitMask & (1ULL<<i)) != 0)
-                i++; // skip free elem
-            
-            // fill newArray with skipping free spaces
-            for (; i < capacity; j++)
-            {
-                toFill = newArray[j] = array[i];
-                if (idx == i)
-                    newIdx = j; // if is it this element
-                
-                factor += finc;
-                if (factor >= size)
-                {
-                    // add additional (empty) element
-                    factor -= size;
-                    j++;
-                    newArray[j] = array[i];
-                    newBitMask |= (1ULL<<j);
-                }
-                
-                i++;
-                while ((bitMask & (1ULL<<i)) != 0)
-                    i++; // skip free elem
-            }
-            // fill a remaining free elements
-            if (j < newCapacity)
-            {
-                newArray[j] = toFill;
-                newBitMask |= (1ULL<<j);
-            }
-            
-            // determine new index if it is last
-            if (newIdx == 255)
-                newIdx = newCapacity -
-                        ((newBitMask & (1ULL<<(newCapacity-1))) != 0 ? 1 : 0);
-            idx = newIdx;
-            delete[] array;
-            array = newArray;
-            capacity = newCapacity;
-            bitMask = newBitMask;
-            firstPos = 0;
-        }
-        
         /// simple resize
         void resize(cxint extraSize)
         {
@@ -542,14 +491,19 @@ public:
                     idx = indexHint-1;
             }
             if (idx == 255)
-                idx = lower_bound(kofval(v), comp, kofval);
-            if (idx < capacity && !comp(kofval(v), kofval(array[idx])))
+                idx = lower_boundFree(kofval(v), comp, kofval);
+            
+            if (idx < capacity && (bitMask & (1ULL<<idx))==0 &&
+                        !comp(kofval(v), kofval(array[idx])))
                 // is equal, then skip insertion
                 return std::make_pair(idx, false);
             
             cxuint minFreePlaces = ((size+1)>>minFreePlacesShift);
             if ((size+1) + minFreePlaces > capacity)
-                resizeWithIndexUpdate(1, idx);
+            {
+                resize(1);
+                idx = lower_boundFree(kofval(v), comp, kofval);
+            }
             
             if ((bitMask & (1ULL<<idx)) == 0)
             {
@@ -581,6 +535,10 @@ public:
                     for (; k < idx-1; k++)
                         array[k] = array[k+1];
                     idx--; // before element
+                    
+                    firstPos = 0;
+                    while ((bitMask & (1U<<firstPos)) != 0)
+                        firstPos++; // skip free places
                 }
                 array[idx] = v;
             }
@@ -591,6 +549,7 @@ public:
                 bitMask &= ~(1ULL<<idx);
             }
             size++;
+            firstPos = std::min(cxuint(firstPos), idx);
             return std::make_pair(idx, true);
         }
         
