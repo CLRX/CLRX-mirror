@@ -2637,6 +2637,32 @@ public:
         return 1;
     }
     
+    /// replace element with checking range
+    void replace(iterator iter, const value_type& value)
+    {
+        if (iter == end())
+            return;
+        if (iter != begin())
+        {
+            iterator prevIt = iter;
+            --prevIt;
+            if (*prevIt >= value)
+                throw std::out_of_range("Key out of range");
+        }
+        iterator nextIt = iter;
+        ++nextIt;
+        if (nextIt != end() && value >= *nextIt)
+            throw std::out_of_range("Key out of range");
+        Node0* n0 = iter.n0;
+        n0->array[iter.index]= value;
+        // fill up surrounding freespace for correct order
+        for (cxint i = iter.index-1; i >= 0 && (n0->bitMask & (1ULL<<i)) != 0; i--)
+            n0->array[i] = value;
+        for (cxint i = iter.index+1; i < n0->capacity &&
+                                (n0->bitMask & (1ULL<<i)) != 0; i++)
+            n0->array[i] = value;
+    }
+    
     /// lexicograhical equal to
     bool operator==(const DTree& dt) const
     { return size()==dt.size() && std::equal(begin(), end(), dt.begin()); }
@@ -2720,7 +2746,7 @@ public:
             : Impl(init, comp)
     { }
     
-    /// replace element with key
+    /// replace element with checking range of the key
     void replace(iterator iter, const value_type& value)
     {
         if (iter == Impl::end())
