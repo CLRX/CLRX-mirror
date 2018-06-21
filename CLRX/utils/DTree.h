@@ -2637,12 +2637,12 @@ public:
             iterator prevIt = iter;
             --prevIt;
             if (*prevIt >= value)
-                throw std::out_of_range("Key out of range");
+                throw std::out_of_range("Value out of range");
         }
         iterator nextIt = iter;
         ++nextIt;
         if (nextIt != end() && value >= *nextIt)
-            throw std::out_of_range("Key out of range");
+            throw std::out_of_range("Value out of range");
         Node0* n0 = iter.n0;
         n0->array[iter.index]= value;
         // fill up surrounding freespace for correct order
