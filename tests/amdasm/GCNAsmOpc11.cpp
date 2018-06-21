@@ -2899,6 +2899,11 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:6: Error: Unknown EXP target\n" },
     { "exp  param, v116, v93, v27, v124 done vm", 0, 0, false, false,
         "test.s:1:6: Error: Missing number\n" },
+    // glitch SGPR test
+    { "vcc_mask = %s[48:49]\ns_and_saveexec_b64 vcc_mask, vcc\n",
+        0xbeb0246aU, 0, false, true, "" },
+    { "exec_masc = %s[48:49]\ns_and_saveexec_b64 exec_masc, vcc\n",
+        0xbeb0246aU, 0, false, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
@@ -3079,5 +3084,7 @@ const GCNAsmOpcodeCase encGCN11OpcodeCases[] =
         0xdd7c0000U, 0x2f0041bbU, true, true, "" },
     { "flat_atomic_fmax_x2 v[47:48], v[187:188], v[65:66]",
         0xdd800000U, 0x2f0041bbU, true, true, "" },
+    { "flat_scratch_masc = %s[48:49]\ns_and_saveexec_b64 flat_scratch_masc, vcc\n",
+        0xbeb0246aU, 0, false, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };

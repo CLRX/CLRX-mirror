@@ -570,20 +570,32 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         {
             if (regName[loHiRegSuffix] == '_')
             {
+                bool isLoHiName = false;
                 // if suffix _lo
                 if (regName[loHiRegSuffix+1] == 'l' && regName[loHiRegSuffix+2] == 'o' &&
                     regName[loHiRegSuffix+3] == 0)
+                {
                     regPair = { loHiReg, loHiReg+1 };
+                    isLoHiName = true;
+                }
                 // if suffxi _hi
                 else if (regName[loHiRegSuffix+1] == 'h' &&
                     regName[loHiRegSuffix+2] == 'i' && regName[loHiRegSuffix+3] == 0)
-                    regPair = { loHiReg+1, loHiReg+2 };
-                if (regsNum!=0 && regsNum != 1)
                 {
-                    printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
-                    return false;
+                    regPair = { loHiReg+1, loHiReg+2 };
+                    isLoHiName = true;
                 }
-                return true;
+                if (isLoHiName)
+                {
+                    if (regsNum!=0 && regsNum != 1)
+                    {
+                        printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
+                        return false;
+                    }
+                    return true;
+                }
+                else
+                    trySymReg = true;
             }
             else if (regName[loHiRegSuffix] == 0)
             {
