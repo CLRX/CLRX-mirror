@@ -1545,6 +1545,7 @@ static void testDTreeIterBase(cxuint ti, const DIterBaseCase& testCase)
     
     // IterBase testing
     DTreeSet<cxuint>::IterBase iterStart(root.getFirstNode0(), 0);
+    iterStart.index = iterStart.n0->firstPos;
     DTreeSet<cxuint>::IterBase iter = iterStart;
     
     char buf[16];

@@ -1428,7 +1428,7 @@ public:
                             index = n[i]->size;
                     }
                     if (!end)
-                        index = 0;
+                        index = n0->firstPos;
                 }
                 else
                     end = true;
@@ -1496,16 +1496,11 @@ public:
                     }
                     if (!end)
                         // do not set index if end of tree
-                        index = 0;
+                        index = n0->firstPos;
                 }
                 else
                     end = true;
             }
-            
-            if (!end)
-                // skip empty space
-                while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
-                    index++;
         }
         
         /// go to next element
@@ -1514,8 +1509,6 @@ public:
             toNode0();
             
             // skip empty space
-            while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
-                index++;
             index++;
             while (index < n0->capacity && (n0->bitMask & (1ULL<<index)) != 0)
                 index++;
@@ -1637,9 +1630,6 @@ public:
         {
             toNode0();
             
-            while (index != UINT_MAX &&
-                (index != n0->capacity && (n0->bitMask & (1ULL<<index)) != 0))
-                index--;
             index--;
             while (index != UINT_MAX &&
                 (index != n0->capacity && (n0->bitMask & (1ULL<<index)) != 0))
