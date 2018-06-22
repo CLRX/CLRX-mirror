@@ -317,7 +317,7 @@ public:
             array = newArray;
             firstPos = 0;
             bitMask = 0;
-            size = 0;
+            this->size = 0;
         }
         
         void assignArray(AT& toFill, cxuint inSize, cxuint& index, cxuint& pos,
