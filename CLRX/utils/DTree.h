@@ -80,7 +80,8 @@ public:
     {
         NODE0 = 0,  ///< Node0
         NODE1,  ///< Node1 that holds Node0's
-        NODE2   ///< Node1 that holds Node1's
+        NODE2,  ///< Node1 that holds Node1's
+        NODEV   ///< NodeV - holds short array with elements its space
     };
     
     // number of elements in Node1
@@ -306,6 +307,34 @@ public:
                 while ((inBitMask & (1ULL<<i)) != 0)
                     i++; // skip free elem
             }
+        }
+        
+        void setFromArray(cxuint size, const AT* input)
+        {
+            cxuint newCapacity = std::min(cxbyte(size + (size>>freePlacesShift)),
+                        cxbyte(maxNode0Capacity));
+            AT* newArray = new AT[newCapacity];
+            
+            cxuint factor = 0;
+            // finc - factor increment for empty holes
+            const cxuint finc = newCapacity - size;
+            AT toFill = AT();
+            cxuint i = 0, k = 0;
+            uint64_t newBitMask = 0;
+            organizeArray(toFill, i, size, input, 0ULL, k, size, newArray,
+                        newBitMask, factor, finc);
+            if (k < newCapacity)
+            {
+                newArray[k] = toFill;
+                newBitMask |= (1ULL<<k);
+            }
+            
+            delete[] array;
+            array = newArray;
+            this->size = size;
+            bitMask = newBitMask;
+            capacity = newCapacity;
+            firstPos = 0;
         }
         
         void allocate(cxuint size)
@@ -1265,6 +1294,89 @@ public:
             }
         }
     };
+    
+    static const size_t MaxNode01Size = sizeof(Node0) < sizeof(Node1) ?
+                sizeof(Node1) : sizeof(Node0);
+    
+    static const size_t NodeVElemsNum = (MaxNode01Size -
+            // calculate space took by NodeV fields
+            (2 < alignof(T) ? alignof(T) : 2)) / sizeof(T);
+    
+    struct NodeV: NodeBase
+    {
+        cxbyte size;
+        union {
+            AT array[NodeVElemsNum];
+            T arrayOut[NodeVElemsNum];
+        };
+        
+        NodeV() : NodeBase(NODEV), size(0)
+        { }
+        
+        void assignNode0(const Node0& n0)
+        {
+            size = n0.size;
+            cxuint j = 0;
+            for (cxuint i = 0; j < size; i++)
+                if ((n0.bitMask & (1ULL<<i)) == 0)
+                    array[j++] = n0.array[i];
+        }
+        
+        bool isFull() const
+        { return size >= NodeVElemsNum; }
+        
+        cxuint lower_bound(const K& key, const Comp& comp, const KeyOfVal& kofval) const
+        {
+            cxuint index = 0;
+            for (; index < size && comp(kofval(array[index]), key); index++);
+            return index;
+        }
+        
+        cxuint upper_bound(const K& key, const Comp& comp, const KeyOfVal& kofval) const
+        {
+            cxuint index = 0;
+            for (; index < size && !comp(key, kofval(array[index])); index++);
+            return index;
+        }
+        
+        cxuint find(const K& key, const Comp& comp, const KeyOfVal& kofval) const
+        {
+            cxuint index = 0;
+            for (; index < size && comp(kofval(array[index]), key); index++);
+            if (index < size && !comp(key, kofval(array[index])))
+                // if elem already found
+                return index;
+            return size;
+        }
+        
+        std::pair<cxuint, bool> insert(const T& v,
+                    const Comp& comp, const KeyOfVal& kofval)
+        {
+            const K key = kofval(v);
+            cxuint index = lower_bound(key, comp, kofval);
+            if (index < size && !comp(key, kofval(array[index])))
+                // if elem already found
+                return std::make_pair(index, false);
+            
+            std::copy_backward(array + index, array + size, array + size + 1);
+            array[index] = v;
+            size++;
+            return std::make_pair(index, true);
+        }
+        
+        void erase(cxuint index)
+        {
+            std::copy(array + index + 1, array + size, array + index);
+            size--;
+        }
+        
+        const T& operator[](cxuint i) const
+        { return array[i]; }
+        
+        T& operator[](cxuint i)
+        { return array[i]; }
+    };
+    
 public:
     /// main iterator class
     struct IterBase {
@@ -1273,6 +1385,8 @@ public:
         union {
             Node0* n0;    //< node
             const Node0* cn0;    //< node
+            NodeV* nv;
+            const NodeV* cnv;
         };
         cxuint index;   ///< index in array
         
@@ -1303,6 +1417,11 @@ public:
         /// go to inc next elements
         void next(size_t inc)
         {
+            if (n0->type == NODEV)
+            {
+                index += inc;
+                return;
+            }
             toNode0();
             
             // first skip in elements this node0
@@ -1465,6 +1584,12 @@ public:
         /// go to next element
         void next()
         {
+            if (n0->type == NODEV)
+            {
+                index++;
+                return;
+            }
+            
             toNode0();
             
             // skip empty space
@@ -1478,6 +1603,11 @@ public:
         /// go to inc previous element
         void prev(size_t inc)
         {
+            if (n0->type == NODEV)
+            {
+                index -= inc;
+                return;
+            }
             toNode0();
             
             while (index != UINT_MAX && inc != 0)
@@ -1587,6 +1717,11 @@ public:
         /// go to previous element
         void prev()
         {
+            if (n0->type == NODEV)
+            {
+                index--;
+                return;
+            }
             toNode0();
             
             index--;
@@ -1655,6 +1790,9 @@ public:
         /// calculate distance between iterators
         ssize_t diff(const IterBase& k2) const
         {
+            if (n0->type == NODEV)
+                return index - k2.index;
+            
             ssize_t count = 0;
             IterBase i1 = *this;
             IterBase i2 = k2;
@@ -1814,10 +1952,18 @@ public:
         { return IterBase::diff(i2); }
         /// get element
         T& operator*() const
-        { return IterBase::n0->arrayOut[IterBase::index]; }
+        {
+            return (IterBase::n0->type == NODE0) ?
+                    IterBase::n0->arrayOut[IterBase::index] :
+                    IterBase::nv->arrayOut[IterBase::index];
+        }
         /// get element
         T* operator->() const
-        { return IterBase::n0->arrayOut + IterBase::index; }
+        {
+            return (IterBase::n0->type == NODE0) ?
+                    IterBase::n0->arrayOut + IterBase::index :
+                    IterBase::nv->arrayOut + IterBase::index;
+        }
         /// equal to
         bool operator==(const IterBase& it) const
         { return IterBase::n0==it.n0 && IterBase::index==it.index; }
@@ -1900,10 +2046,18 @@ public:
         { return IterBase::diff(i2); }
         /// get element
         const T& operator*() const
-        { return IterBase::n0->arrayOut[IterBase::index]; }
+        {
+            return (IterBase::n0->type == NODE0) ?
+                    IterBase::n0->arrayOut[IterBase::index] :
+                    IterBase::nv->arrayOut[IterBase::index];
+        }
         /// get element
         const T* operator->() const
-        { return IterBase::n0->arrayOut + IterBase::index; }
+        {
+            return (IterBase::n0->type == NODE0) ?
+                    IterBase::n0->arrayOut + IterBase::index :
+                    IterBase::nv->arrayOut + IterBase::index;
+        }
         /// equal to
         bool operator==(const IterBase& it) const
         { return IterBase::n0==it.n0 && IterBase::index==it.index; }
@@ -1919,6 +2073,7 @@ private:
     union {
         Node0 n0; // root Node0
         Node1 n1; // root Node1
+        NodeV nv; // root NodeV
     };
 public:
     ///
@@ -1929,7 +2084,7 @@ public:
     
     /// default constructor
     DTree(const Comp& comp = Comp(), const KeyOfVal& kofval = KeyOfVal())
-        : Comp(comp), KeyOfVal(kofval), n0()
+        : Comp(comp), KeyOfVal(kofval), nv()
     { }
     
 #if DTREE_TESTING
@@ -1944,7 +2099,7 @@ public:
     /// constructor with range assignment
     template<typename Iter>
     DTree(Iter first, Iter last, const Comp& comp = Comp(),
-          const KeyOfVal& kofval = KeyOfVal()) : Comp(comp), KeyOfVal(kofval), n0()
+          const KeyOfVal& kofval = KeyOfVal()) : Comp(comp), KeyOfVal(kofval), nv()
     {
         for (Iter it = first; it != last; ++it)
             insert(*it);
@@ -1952,7 +2107,7 @@ public:
     
     /// constructor with initializer list
     DTree(std::initializer_list<value_type> init, const Comp& comp = Comp(),
-          const KeyOfVal& kofval = KeyOfVal()) : Comp(comp), KeyOfVal(kofval), n0()
+          const KeyOfVal& kofval = KeyOfVal()) : Comp(comp), KeyOfVal(kofval), nv()
     {
         for (const value_type& v: init)
             insert(v);
@@ -1960,7 +2115,9 @@ public:
     /// copy construcror
     DTree(const DTree& dt) 
     {
-        if (dt.n0.type == NODE0)
+        if (dt.nv.type == NODEV)
+            nv = dt.nv;
+        else if (dt.n0.type == NODE0)
         {
             n0.array = nullptr;
             n0 = dt.n0;
@@ -1974,7 +2131,9 @@ public:
     /// move constructor
     DTree(DTree&& dt) noexcept
     {
-        if (dt.n0.type == NODE0)
+        if (dt.nv.type == NODEV)
+            nv = dt.nv;
+        else if (dt.n0.type == NODE0)
         {
             n0.array = nullptr;
             n0 = std::move(dt.n0);
@@ -1990,7 +2149,7 @@ public:
     {
         if (n0.type == NODE0)
             n0.~Node0();
-        else
+        else if (n0.type != NODEV)
             n1.~Node1();
     }
     
@@ -2001,9 +2160,12 @@ public:
             return *this;
         if (n0.type == NODE0)
             n0.~Node0();
-        else
+        else if (n0.type != NODEV)
             n1.~Node1();
-        if (dt.n0.type == NODE0)
+        
+        if (dt.n0.type == NODEV)
+            nv = dt.nv;
+        else if (dt.n0.type == NODE0)
         {
             n0.array = nullptr;
             n0 = dt.n0;
@@ -2022,9 +2184,12 @@ public:
             return *this;
         if (n0.type == NODE0)
             n0.~Node0();
-        else
+        else if (n0.type != NODEV)
             n1.~Node1();
-        if (dt.n0.type == NODE0)
+        
+        if (dt.n0.type == NODEV)
+            nv = dt.nv;
+        else if (dt.n0.type == NODE0)
         {
             n0.array = nullptr;
             n0 = std::move(dt.n0);
@@ -2042,26 +2207,32 @@ public:
     
     /// return true if empty
     bool empty() const
-    { return n0.type==NODE0 && n0.size==0; }
+    { return (n0.type==NODE0 && n0.size==0) || (nv.type==NODEV && nv.size==0); }
     
     /// return size
     size_t size() const
-    { return n0.type==NODE0 ? n0.size : n1.totalSize; }
+    {
+        if (nv.type==NODEV)
+            return nv.size;
+        return n0.type==NODE0 ? n0.size : n1.totalSize;
+    }
     
     /// clear (remove all elements)
     void clear()
     {
         if (n0.type == NODE0)
             n0.~Node0();
-        else
+        else if (n0.type != NODEV)
             n1.~Node1();
-        n0.array = nullptr;
-        n0 = Node0();
+        nv = NodeV();
     }
     
 private:
     IterBase findInt(const key_type& key) const
     {
+        if (n0.type == NODEV)
+            return IterBase{&n0, nv.find(key, *this, *this)};
+        
         if (n0.type == NODE0)
             return IterBase{&n0, n0.find(key, *this, *this)};
         const Node1* curn1 = &n1;
@@ -2087,6 +2258,9 @@ private:
     
     IterBase lower_boundInt(const key_type& key) const
     {
+        if (n0.type == NODEV)
+            return IterBase{&n0, nv.lower_bound(key, *this, *this)};
+        
         if (n0.type == NODE0)
             return IterBase{&n0, n0.lower_bound(key, *this, *this)};
         const Node1* curn1 = &n1;
@@ -2112,6 +2286,9 @@ private:
     
     IterBase upper_boundInt(const key_type& key) const
     {
+        if (n0.type == NODEV)
+            return IterBase{&n0, nv.upper_bound(key, *this, *this)};
+        
         if (n0.type == NODE0)
             return IterBase{&n0, n0.upper_bound(key, *this, *this)};
         const Node1* curn1 = &n1;
@@ -2145,6 +2322,8 @@ public:
     /// return iterator to first element
     iterator begin()
     {
+        if (nv.type == NODEV)
+            return iterator(&n0, 0);
         if (n0.type == NODE0)
             return iterator(&n0, n0.firstPos);
         else
@@ -2157,6 +2336,8 @@ public:
     /// return iterator to first element
     const_iterator cbegin() const
     {
+        if (nv.type == NODEV)
+            return const_iterator(&n0, 0);
         if (n0.type == NODE0)
             return const_iterator(&n0, n0.firstPos);
         else
@@ -2171,13 +2352,25 @@ public:
     { return cbegin(); }
     /// return iterator after last element
     iterator end()
-    { return iterator(&n0, n0.type==NODE0 ? n0.capacity : n1.size); }
+    {
+        if (nv.type == NODEV)
+            return iterator(&n0, nv.size);
+        return iterator(&n0, n0.type==NODE0 ? n0.capacity : n1.size);
+    }
     /// return iterator after last element
     const_iterator end() const
-    { return const_iterator(&n0, n0.type==NODE0 ? n0.capacity : n1.size); }
+    {
+        if (nv.type == NODEV)
+            return const_iterator(&n0, nv.size);
+        return const_iterator(&n0, n0.type==NODE0 ? n0.capacity : n1.size);
+    }
     /// return iterator after last element
     const_iterator cend() const
-    { return const_iterator(&n0, n0.type==NODE0 ? n0.capacity : n1.size); }
+    {
+        if (nv.type == NODEV)
+            return const_iterator(&n0, nv.size);
+        return const_iterator(&n0, n0.type==NODE0 ? n0.capacity : n1.size);
+    }
     
     /// first element that not less than key
     iterator lower_bound(const key_type& key)
@@ -2262,6 +2455,22 @@ public:
     /// insert new element
     std::pair<iterator, bool> insert(const value_type& value)
     {
+        if (nv.type == NODEV)
+        {
+            if (!nv.isFull())
+            {
+                auto res = nv.insert(value, *this, *this);
+                return std::make_pair(iterator(&n0, res.first), res.second);
+            }
+            else
+            {
+                // if full
+                NodeV tmpnv = nv;
+                n0.array = nullptr;
+                n0 = Node0();
+                n0.setFromArray(tmpnv.size, tmpnv.array);
+            }
+        }
         const key_type key = KeyOfVal::operator()(value);
         iterator it = lower_bound(key);
         if (it!=end())
@@ -2403,6 +2612,14 @@ public:
     /// remove element in postion pointed by iterator
     iterator erase(const_iterator it)
     {
+        
+        if (nv.type == NODEV)
+        {
+            if (nv.size == 0)
+                return it;
+            nv.erase(it.index);
+            return it;
+        }
         K key = KeyOfVal::operator()(*it);
         
         const_iterator newit(it);
@@ -2417,7 +2634,17 @@ public:
             // update key because will be removed and first will be greater than it
             key = KeyOfVal::operator()(*newit);
         if (it.n0 == &n0)
+        {
+            if (n0.size <= NodeVElemsNum)
+            {
+                // to NodeV
+                Node0 tmpn0 = std::move(n0);
+                n0.array = nullptr;
+                nv.type = NODEV;
+                nv.assignNode0(tmpn0);
+            }
             return newit;
+        }
         
         Node1* curn1 = it.n0->parent();
         if (it.n0->size < minNode0Size)
@@ -2602,14 +2829,20 @@ public:
         ++nextIt;
         if (nextIt != end() && value >= *nextIt)
             throw std::out_of_range("Value out of range");
-        Node0* n0 = iter.n0;
-        n0->array[iter.index]= value;
-        // fill up surrounding freespace for correct order
-        for (cxint i = iter.index-1; i >= 0 && (n0->bitMask & (1ULL<<i)) != 0; i--)
-            n0->array[i] = value;
-        for (cxint i = iter.index+1; i < n0->capacity &&
-                                (n0->bitMask & (1ULL<<i)) != 0; i++)
-            n0->array[i] = value;
+        
+        if (iter.n0->type == NODE0)
+        {
+            Node0* n0 = iter.n0;
+            n0->array[iter.index] = value;
+            // fill up surrounding freespace for correct order
+            for (cxint i = iter.index-1; i >= 0 && (n0->bitMask & (1ULL<<i)) != 0; i--)
+                n0->array[i] = value;
+            for (cxint i = iter.index+1; i < n0->capacity &&
+                                    (n0->bitMask & (1ULL<<i)) != 0; i++)
+                n0->array[i] = value;
+        }
+        else if (iter.n0->type == NODEV)
+            nv.array[iter.index] = value;
     }
     
     /// lexicograhical equal to
@@ -2711,15 +2944,23 @@ public:
         ++nextIt;
         if (nextIt != Impl::end() && value.first >= nextIt->first)
             throw std::out_of_range("Key out of range");
-        typename Impl::Node0* n0 = iter.n0;
-        n0->array[iter.index].first = value.first;
-        n0->array[iter.index].second = value.second;
-        // fill up surrounding freespace for correct order
-        for (cxint i = iter.index-1; i >= 0 && (n0->bitMask & (1ULL<<i)) != 0; i--)
-            n0->array[i].first = value.first;
-        for (cxint i = iter.index+1; i < n0->capacity &&
-                                (n0->bitMask & (1ULL<<i)) != 0; i++)
-            n0->array[i].first = value.first;
+        if (iter.n0->type == Impl::NODE0)
+        {
+            typename Impl::Node0* n0 = iter.n0;
+            n0->array[iter.index].first = value.first;
+            n0->array[iter.index].second = value.second;
+            // fill up surrounding freespace for correct order
+            for (cxint i = iter.index-1; i >= 0 && (n0->bitMask & (1ULL<<i)) != 0; i--)
+                n0->array[i].first = value.first;
+            for (cxint i = iter.index+1; i < n0->capacity &&
+                                    (n0->bitMask & (1ULL<<i)) != 0; i++)
+                n0->array[i].first = value.first;
+        }
+        else if (iter.n0->type == Impl::NODEV)
+        {
+            Impl::nv.array[iter.index].first = value.first;
+            Impl::nv.array[iter.index].second = value.second;
+        }
     }
     
     /// put element, insert or replace if found

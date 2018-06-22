@@ -37,6 +37,20 @@
 
 using namespace CLRX;
 
+template<typename T>
+static void verifyDTreeNodeV(const std::string& testName, const std::string& testCase,
+                const typename DTreeSet<T>::NodeV& nv)
+{
+    char buf[16];
+    for (cxuint i = 1; i < nv.size; i++)
+    {
+        snprintf(buf, sizeof buf, "<=e[%u]", i);
+        assertTrue(testName, testCase + buf, nv[i-1] < nv[i]);
+    }
+    assertTrue(testName, testCase + ".nv.size<=maxSize",
+                    nv.size <= DTree<T>::NodeVElemsNum);
+}
+
 // prevValue - pointer to previous value and to set next last value (next previous)
 // prevValue pair - first - previous value, second - is valid value
 //                   (false if irst call of verifyDTreeNode0 and no previous value)
@@ -184,7 +198,9 @@ template<typename T>
 static void verifyDTreeState(const std::string& testName, const std::string& testCase,
             const DTreeSet<T>& dt, cxuint flags = 0)
 {
-    if (dt.n0.type == DTree<T>::NODE0)
+    if (dt.nv.type == DTree<T>::NODEV)
+        verifyDTreeNodeV<T>(testName, testCase + "nvroot", dt.nv);
+    else if (dt.n0.type == DTree<T>::NODE0)
         verifyDTreeNode0<T>(testName, testCase + "n0root", dt.n0, 0, 0);
     else
     {
