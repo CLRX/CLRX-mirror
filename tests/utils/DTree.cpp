@@ -453,27 +453,6 @@ static void testDTreeNode0()
                         i+1, dtreeNode0ValuesErase);
         }
     }
-    // test insertion with hint (good and wrong)
-    for (cxuint diffIndex = 0; diffIndex <= 3; diffIndex++)
-    {
-        DTreeSet<cxuint>::Node0 node0;
-        for (cxuint i = 0; i < 20; i += 2)
-            node0.insert(i, comp, kofval);
-        
-        verifyDTreeNode0<cxuint>("DTreeNode0", "node0insh", node0, 0, 0);
-        cxuint index = node0.find(10, comp, kofval);
-        node0.insert(9, comp, kofval, index-diffIndex);
-        verifyDTreeNode0<cxuint>("DTreeNode0", "node0insh2", node0, 0, 0);
-        index = node0.find(9, comp, kofval);
-        assertTrue("DTreeNode0", "node0insh2find", index!=node0.capacity);
-        assertValue("DTreeNode0", "node0insh2find2", cxuint(9), node0[index]);
-        index = node0.find(10, comp, kofval);
-        assertTrue("DTreeNode0", "node0insh2find", index!=node0.capacity);
-        assertValue("DTreeNode0", "node0insh2find2", cxuint(10), node0[index]);
-        index = node0.find(8, comp, kofval);
-        assertTrue("DTreeNode0", "node0insh2find", index!=node0.capacity);
-        assertValue("DTreeNode0", "node0insh2find2", cxuint(8), node0[index]);
-    }
 }
 
 static const cxuint dtreeNode0ValuesM1[] =

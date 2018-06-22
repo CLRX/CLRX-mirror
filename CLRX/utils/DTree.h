@@ -504,23 +504,10 @@ public:
         
         /// insert element
         std::pair<cxuint, bool> insert(const T& v, const Comp& comp,
-                        const KeyOfVal& kofval, cxuint indexHint = 255)
+                        const KeyOfVal& kofval)
         {
             cxuint idx = 255;
-            if (indexHint != 255)
-            {
-                // handle index hint
-                if ((bitMask & (1ULL<<indexHint)) == 0 &&
-                    (indexHint>=capacity || kofval(v) <= kofval(array[indexHint])) &&
-                    (indexHint==0 || kofval(v) > kofval(array[indexHint-1])))
-                    idx = indexHint;
-                else if (indexHint>0 && (bitMask & (1ULL<<(indexHint-1))) == 0 &&
-                    (indexHint-1>=capacity || kofval(v) <= kofval(array[indexHint-1])) &&
-                    (indexHint-1==0 || kofval(v) > kofval(array[indexHint-2])))
-                    idx = indexHint-1;
-            }
-            if (idx == 255)
-                idx = lower_boundFree(kofval(v), comp, kofval);
+            idx = lower_boundFree(kofval(v), comp, kofval);
             
             if (idx < capacity && (bitMask & (1ULL<<idx))==0 &&
                         !comp(kofval(v), kofval(array[idx])))
@@ -2593,9 +2580,6 @@ public:
         
         return std::make_pair(newit, true);
     }
-    /// insert new elemnt with iterator hint
-    iterator insert(const_iterator hint, const value_type& value)
-    { return insert(value)->first; }
     /// insert new elements from initializer list
     void insert(std::initializer_list<value_type> ilist)
     {
