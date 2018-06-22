@@ -348,7 +348,7 @@ struct NoOutput
 
 struct CLRX_INTERNAL Liveness
 {
-    std::map<size_t, size_t> l;
+    DTreeMap<size_t, size_t> l;
     
     Liveness() { }
     
@@ -403,11 +403,13 @@ struct CLRX_INTERNAL Liveness
         {
             if (it != l.end() && it->first <= k2)
             {
-                it = l.insert(it, std::make_pair(k, it->second));
-                l.erase(++it);
+                //it = l.insert(it, std::make_pair(k, it->second));
+                //l.erase(++it);
+                l.replace(it, std::make_pair(k, it->second));
             }
             else
-                l.insert(it, std::make_pair(k, k2));
+                //l.insert(it, std::make_pair(k, k2));
+                l.insert(std::make_pair(k, k2));
         }
     }
     

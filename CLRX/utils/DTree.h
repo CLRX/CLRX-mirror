@@ -1292,10 +1292,7 @@ public:
     struct NodeV: NodeBase
     {
         cxbyte size;
-        union {
-            AT array[NodeVElemsNum];
-            T arrayOut[NodeVElemsNum];
-        };
+        AT array[NodeVElemsNum];
         
         NodeV() : NodeBase(NODEV), size(0)
         { }
@@ -1942,14 +1939,14 @@ public:
         {
             return (IterBase::n0->type == NODE0) ?
                     IterBase::n0->arrayOut[IterBase::index] :
-                    IterBase::nv->arrayOut[IterBase::index];
+                    reinterpret_cast<T*>(IterBase::nv->array)[IterBase::index];
         }
         /// get element
         T* operator->() const
         {
             return (IterBase::n0->type == NODE0) ?
                     IterBase::n0->arrayOut + IterBase::index :
-                    IterBase::nv->arrayOut + IterBase::index;
+                    reinterpret_cast<T*>(IterBase::nv->array) + IterBase::index;
         }
         /// equal to
         bool operator==(const IterBase& it) const
@@ -2036,14 +2033,14 @@ public:
         {
             return (IterBase::n0->type == NODE0) ?
                     IterBase::n0->arrayOut[IterBase::index] :
-                    IterBase::nv->arrayOut[IterBase::index];
+                    reinterpret_cast<const T*>(IterBase::nv->array)[IterBase::index];
         }
         /// get element
         const T* operator->() const
         {
             return (IterBase::n0->type == NODE0) ?
                     IterBase::n0->arrayOut + IterBase::index :
-                    IterBase::nv->arrayOut + IterBase::index;
+                    reinterpret_cast<const T*>(IterBase::nv->array) + IterBase::index;
         }
         /// equal to
         bool operator==(const IterBase& it) const
@@ -2055,7 +2052,7 @@ public:
 #ifdef DTREE_TESTING
 public:
 #else
-private:
+protected:
 #endif
     union {
         Node0 n0; // root Node0
