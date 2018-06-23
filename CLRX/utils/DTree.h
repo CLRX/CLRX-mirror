@@ -1292,10 +1292,33 @@ public:
     struct NodeV: NodeBase
     {
         cxbyte size;
-        AT array[NodeVElemsNum];
+        union {
+            AT array[NodeVElemsNum];
+            T arrayOut[NodeVElemsNum];
+        };
         
         NodeV() : NodeBase(NODEV), size(0)
         { }
+        
+        NodeV(const NodeV& nv) : NodeBase(nv.NodeBase::type), size(nv.size)
+        { std::copy(nv.array, nv.array + nv.size, array); }
+        NodeV(NodeV&& nv) :  NodeBase(nv.NodeBase::type), size(nv.size)
+        { std::copy(nv.array, nv.array + nv.size, array); }
+        
+        NodeV& operator=(const NodeV& nv)
+        {
+            NodeBase::type = nv.NodeBase::type;
+            size = nv.size;
+            std::copy(nv.array, nv.array + nv.size, array);
+            return *this;
+        }
+        NodeV& operator=(NodeV&& nv)
+        {
+            NodeBase::type = nv.NodeBase::type;
+            size = nv.size;
+            std::copy(nv.array, nv.array + nv.size, array);
+            return *this;
+        }
         
         void assignNode0(const Node0& n0)
         {
@@ -1939,14 +1962,14 @@ public:
         {
             return (IterBase::n0->type == NODE0) ?
                     IterBase::n0->arrayOut[IterBase::index] :
-                    reinterpret_cast<T*>(IterBase::nv->array)[IterBase::index];
+                    IterBase::nv->arrayOut[IterBase::index];
         }
         /// get element
         T* operator->() const
         {
             return (IterBase::n0->type == NODE0) ?
                     IterBase::n0->arrayOut + IterBase::index :
-                    reinterpret_cast<T*>(IterBase::nv->array) + IterBase::index;
+                    IterBase::nv->arrayOut + IterBase::index;
         }
         /// equal to
         bool operator==(const IterBase& it) const
@@ -2033,14 +2056,14 @@ public:
         {
             return (IterBase::n0->type == NODE0) ?
                     IterBase::n0->arrayOut[IterBase::index] :
-                    reinterpret_cast<const T*>(IterBase::nv->array)[IterBase::index];
+                    IterBase::nv->arrayOut[IterBase::index];
         }
         /// get element
         const T* operator->() const
         {
             return (IterBase::n0->type == NODE0) ?
                     IterBase::n0->arrayOut + IterBase::index :
-                    reinterpret_cast<const T*>(IterBase::nv->array) + IterBase::index;
+                    IterBase::nv->arrayOut + IterBase::index;
         }
         /// equal to
         bool operator==(const IterBase& it) const
