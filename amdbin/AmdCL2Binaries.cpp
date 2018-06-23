@@ -989,6 +989,16 @@ static const CL2GPUCodeTable cl2CodeTables[] =
         sizeof(cl2_2527GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry) }
 };
 
+static const GPUDeviceType gpuGFX9SteppingTable[] =
+{
+    GPUDeviceType::GFX900,
+    GPUDeviceType::GFX901,
+    GPUDeviceType::GFX902,
+    GPUDeviceType::GFX903,
+    GPUDeviceType::GFX904,
+    GPUDeviceType::GFX905
+};
+
 template<typename Types>
 GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
         const typename Types::ElfBinary& binary, uint32_t& outArchMinor,
@@ -1079,10 +1089,14 @@ GPUDeviceType AmdCL2MainGPUBinaryBase::determineGPUDeviceTypeInt(
                             ((major == 8) ? GPUArchitecture::GCN1_2 :
                             GPUArchitecture::GCN1_4);
                     deviceType = getLowestGPUDeviceTypeFromArchitecture(arch);
-                    // special case for GFX901
-                    if (major == 9 && archMinor == 0 && archStepping == 1)
-                        deviceType = GPUDeviceType::GFX901;
-                    
+                    // determine GPU type from arch minor,stepping for GFX9
+                    if (major == 9 && archMinor == 0)
+                    {
+                        if (archStepping < 6)
+                            deviceType = gpuGFX9SteppingTable[archStepping];
+                        else // default
+                            deviceType = GPUDeviceType::GFX900;
+                    }
                     knownGPUType = true;
                 }
             }
