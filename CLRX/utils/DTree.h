@@ -227,10 +227,10 @@ public:
         { return index!=255U ?
             reinterpret_cast<Node1**>(this-index)[parentEntryIndex] : nullptr; }
         
-        const T& operator[](cxuint i) const
+        const AT& operator[](cxuint i) const
         { return array[i]; }
         
-        T& operator[](cxuint i)
+        AT& operator[](cxuint i)
         { return array[i]; }
         
         /// get lower_bound (first index of element not less than value)
@@ -569,15 +569,6 @@ public:
             return std::make_pair(idx, true);
         }
         
-        /// erase element of value v
-        bool erase(const T& v, const Comp& comp, const KeyOfVal& kofval)
-        {
-            cxuint index = lower_bound(v, comp, kofval);
-            if (index >= capacity || comp(kofval(v), kofval(array[index])))
-                return false;  // if not found
-            return erase(index);
-        }
-        
         /// erase element in index
         bool erase(cxuint index)
         {
@@ -593,6 +584,15 @@ public:
                 while ((bitMask & (1U<<firstPos)) != 0)
                     firstPos++; // skip free places
             return true;
+        }
+        
+        /// erase element of value v
+        bool erase(const K& k, const Comp& comp, const KeyOfVal& kofval)
+        {
+            cxuint index = lower_bound(k, comp, kofval);
+            if (index >= capacity || comp(k, kofval(array[index])))
+                return false;  // if not found
+            return erase(index);
         }
     };
     
@@ -779,7 +779,7 @@ public:
         
         const Node0* getLastNode0() const
         {
-            Node1* cur = this;
+            const Node1* cur = this;
             while (cur->NodeBase::type == NODE2)
                 cur = cur->array1 + cur->size - 1;
             return cur->array + cur->size - 1;
@@ -1377,10 +1377,10 @@ public:
             size--;
         }
         
-        const T& operator[](cxuint i) const
+        const AT& operator[](cxuint i) const
         { return array[i]; }
         
-        T& operator[](cxuint i)
+        AT& operator[](cxuint i)
         { return array[i]; }
     };
     
