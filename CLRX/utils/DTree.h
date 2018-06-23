@@ -191,7 +191,7 @@ public:
             capacity = node.capacity;
             firstPos = node.firstPos;
             bitMask = node.bitMask;
-            T* newArray = nullptr;
+            AT* newArray = nullptr;
             if (node.array != nullptr)
             {
                 newArray = new AT[capacity];
