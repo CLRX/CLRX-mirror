@@ -1553,6 +1553,13 @@
             <item>v_div_fmas_f64</item>
             <item>v_div_scale_f32</item>
             <item>v_div_scale_f64</item>
+            <item>v_dot2_f32_f16</item>
+            <item>v_dot2_i32_i16</item>
+            <item>v_dot2_u32_u16</item>
+            <item>v_dot4_i32_i8</item>
+            <item>v_dot4_u32_u8</item>
+            <item>v_dot8_i32_i4</item>
+            <item>v_dot8_u32_u4</item>
             <item>v_exp_f16</item>
             <item>v_exp_f32</item>
             <item>v_exp_legacy_f32</item>
@@ -1566,6 +1573,7 @@
             <item>v_fma_f32</item>
             <item>v_fma_f64</item>
             <item>v_fma_legacy_f16</item>
+            <item>v_fmac_f32</item>
             <item>v_fract_f16</item>
             <item>v_fract_f32</item>
             <item>v_fract_f64</item>
@@ -1768,6 +1776,7 @@
             <item>v_writelane_b32</item>
             <item>v_writelane_regwr_b32</item>
             <item>v_xad_u32</item>
+            <item>v_xnor_b32</item>
             <item>v_xor_b32</item>
         </list>
         <list name="PseudoOps">

@@ -1146,6 +1146,13 @@ v_div_fmas_f32
 v_div_fmas_f64
 v_div_scale_f32
 v_div_scale_f64
+v_dot2_f32_f16
+v_dot2_i32_i16
+v_dot2_u32_u16
+v_dot4_i32_i8
+v_dot4_u32_u8
+v_dot8_i32_i4
+v_dot8_u32_u4
 v_exp_f16
 v_exp_f32
 v_exp_legacy_f32
@@ -1159,6 +1166,7 @@ v_fma_f16
 v_fma_f32
 v_fma_f64
 v_fma_legacy_f16
+v_fmac_f32
 v_fract_f16
 v_fract_f32
 v_fract_f64
@@ -1361,6 +1369,7 @@ v_trunc_f64
 v_writelane_b32
 v_writelane_regwr_b32
 v_xad_u32
+v_xnor_b32
 v_xor_b32
             </KeyWords>
             <Keywords name="Words2">

@@ -1541,6 +1541,13 @@ syntax keyword asmInstr v_div_fmas_f32
 syntax keyword asmInstr v_div_fmas_f64
 syntax keyword asmInstr v_div_scale_f32
 syntax keyword asmInstr v_div_scale_f64
+syntax keyword asmInstr v_dot2_f32_f16
+syntax keyword asmInstr v_dot2_i32_i16
+syntax keyword asmInstr v_dot2_u32_u16
+syntax keyword asmInstr v_dot4_i32_i8
+syntax keyword asmInstr v_dot4_u32_u8
+syntax keyword asmInstr v_dot8_i32_i4
+syntax keyword asmInstr v_dot8_u32_u4
 syntax keyword asmInstr v_exp_f16
 syntax keyword asmInstr v_exp_f32
 syntax keyword asmInstr v_exp_legacy_f32
@@ -1554,6 +1561,7 @@ syntax keyword asmInstr v_fma_f16
 syntax keyword asmInstr v_fma_f32
 syntax keyword asmInstr v_fma_f64
 syntax keyword asmInstr v_fma_legacy_f16
+syntax keyword asmInstr v_fmac_f32
 syntax keyword asmInstr v_fract_f16
 syntax keyword asmInstr v_fract_f32
 syntax keyword asmInstr v_fract_f64
@@ -1756,6 +1764,7 @@ syntax keyword asmInstr v_trunc_f64
 syntax keyword asmInstr v_writelane_b32
 syntax keyword asmInstr v_writelane_regwr_b32
 syntax keyword asmInstr v_xad_u32
+syntax keyword asmInstr v_xnor_b32
 syntax keyword asmInstr v_xor_b32
 
 highlight default link asmCondit PreCondit
