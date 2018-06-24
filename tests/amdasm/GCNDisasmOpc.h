@@ -33,5 +33,6 @@ extern const GCNDisasmOpcodeCase decGCNOpcodeCases[];
 extern const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[];
 extern const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[];
 extern const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[];
+extern const GCNDisasmOpcodeCase decGCNOpcodeGCN141Cases[];
 
 #endif

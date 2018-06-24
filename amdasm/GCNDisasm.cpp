@@ -155,7 +155,7 @@ static void initializeGCNDisassembler()
                         GCNENC_MAXVAL+3+instr.encoding];
             if (gcnInstrTableByCode[encSpace3.offset + instr.code].mnemonic == nullptr)
                 gcnInstrTableByCode[encSpace3.offset + instr.code] = instr;
-            else if((instr.archMask & ARCH_RXVEGA) != 0 &&
+            else if((instr.archMask & ARCH_GCN_1_4) != 0 &&
                 (instr.encoding == GCNENC_VOP2 || instr.encoding == GCNENC_VOP1 ||
                 instr.encoding == GCNENC_VOP3A || instr.encoding == GCNENC_VOP3B))
             {
@@ -167,7 +167,7 @@ static void initializeGCNDisassembler()
                     gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 + encNoVOP2 + encVOP1];
                 gcnInstrTableByCode[encSpace4.offset + instr.code] = instr;
             }
-            else if((instr.archMask & ARCH_RXVEGA) != 0 &&
+            else if((instr.archMask & ARCH_GCN_1_4) != 0 &&
                 instr.encoding == GCNENC_FLAT && (instr.mode & GCN_FLAT_MODEMASK) != 0)
             {
                 /* FLAT SCRATCH and GLOBAL instructions */
@@ -716,6 +716,19 @@ void GCNDisassembler::disassemble()
             
             const GCNInstruction defaultInsn = { nullptr, gcnInsn->encoding, GCN_STDMODE,
                         0, 0 };
+            
+            // try to replace by FMA_MIX for VEGA20
+            if ((curArchMask&ARCH_VEGA20) != 0 && gcnInsn->encoding == GCNENC_VOP3A)
+            {
+                const GCNEncodingSpace& encSpace4 =
+                    gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 + 1];
+                const GCNInstruction* thisGCNInstr =
+                        gcnInstrTableByCode.get() + encSpace4.offset + opcode;
+                if (thisGCNInstr->mnemonic != nullptr)
+                    // replace
+                    gcnInsn = thisGCNInstr;
+            }
+            
             cxuint spacesToAdd = 16;
             bool isIllegal = false;
             if (!isGCN124 && gcnInsn->mnemonic != nullptr &&

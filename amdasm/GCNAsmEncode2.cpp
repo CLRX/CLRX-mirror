@@ -77,7 +77,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     GCNOperand soffsetOp{};
     RegRange srsrcReg(0, 0);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
-    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     skipSpacesToEnd(linePtr, end);
@@ -435,7 +435,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const char* end = asmr.line+asmr.lineSize;
     if (gcnEncSize==GCNEncSize::BIT32)
         ASM_FAIL_BY_ERROR(instrPlace, "Only 64-bit size for MIMG encoding")
-    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     bool good = true;
     RegRange vaddrReg(0, 0);
     RegRange vdataReg(0, 0);
@@ -831,7 +831,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const char* end = asmr.line+asmr.lineSize;
     if (gcnEncSize==GCNEncSize::BIT32)
         ASM_FAIL_BY_ERROR(instrPlace, "Only 64-bit size for FLAT encoding")
-    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     const cxuint flatMode = (gcnInsn.mode & GCN_FLAT_MODEMASK);
     bool good = true;
     RegRange vaddrReg(0, 0);

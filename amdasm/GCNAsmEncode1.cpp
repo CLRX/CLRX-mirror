@@ -283,7 +283,7 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool good = true;
     RegRange dstReg(0, 0);
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
-    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     
     gcnAsm->setCurrentRVU(0);
     bool doWrite = (gcnInsn.mode&GCN_MASK1) != GCN_DST_SRC &&
@@ -580,7 +580,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const char* end = asmr.line+asmr.lineSize;
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     bool good = true;
-    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     if (gcnEncSize==GCNEncSize::BIT64)
         ASM_FAIL_BY_ERROR(instrPlace, "Only 32-bit size for SOPP encoding")
     
@@ -954,7 +954,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> soffsetExpr;
     std::unique_ptr<AsmExpression> simm7Expr;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
-    const bool isGCN14 = (arch & ARCH_RXVEGA) != 0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4) != 0;
     
     const char* soffsetPlace = nullptr;
     AsmSourcePos soffsetPos;
@@ -1225,7 +1225,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
-    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     RegRange dstReg(0, 0);
@@ -1493,7 +1493,7 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
-    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     RegRange dstReg(0, 0);
@@ -1636,7 +1636,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool good = true;
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
-    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     RegRange dstReg(0, 0);
@@ -1815,7 +1815,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
-    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     const bool vop3p = (gcnInsn.mode & GCN_VOP3_VOP3P) != 0;
     if (gcnVOPEnc!=GCNVOPEnc::NORMAL)
         ASM_FAIL_BY_ERROR(instrPlace, "DPP and SDWA encoding is illegal for VOP3")

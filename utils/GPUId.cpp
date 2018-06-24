@@ -31,7 +31,7 @@ GPUIdException::GPUIdException(const std::string& message) : Exception(message)
 { }
 
 // length of GPU device table (number of recognized GPU devices)
-static const size_t gpuDeviceTableSize = 28;
+static const size_t gpuDeviceTableSize = 30;
 
 static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
 {
@@ -62,7 +62,9 @@ static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
     "GFX902",
     "GFX903",
     "GFX904",
-    "GFX905"
+    "GFX905",
+    "GFX906",
+    "GFX907"
 };
 
 // sorted GPU device names with device types
@@ -88,6 +90,8 @@ lowerCaseGpuDeviceEntryTable[] =
     { "gfx903", GPUDeviceType::GFX903 },
     { "gfx904", GPUDeviceType::GFX904 },
     { "gfx905", GPUDeviceType::GFX905 },
+    { "gfx906", GPUDeviceType::GFX906 },
+    { "gfx907", GPUDeviceType::GFX907 },
     { "goose", GPUDeviceType::GOOSE },
     { "hainan", GPUDeviceType::HAINAN },
     { "hawaii", GPUDeviceType::HAWAII },
@@ -111,7 +115,8 @@ lowerCaseGpuDeviceEntryTable[] =
     { "tonga", GPUDeviceType::TONGA },
     { "topaz", GPUDeviceType::ICELAND },
     { "vega10", GPUDeviceType::GFX900 },
-    { "vega11", GPUDeviceType::GFX901 }
+    { "vega11", GPUDeviceType::GFX901 },
+    { "vega20", GPUDeviceType::GFX906 }
 };
 
 static const size_t lowerCaseGpuDeviceEntryTableSize =
@@ -147,34 +152,39 @@ static const GPUArchitecture gpuDeviceArchTable[gpuDeviceTableSize] =
     GPUArchitecture::GCN1_4, // GFX902
     GPUArchitecture::GCN1_4, // GFX903
     GPUArchitecture::GCN1_4, // GFX904
-    GPUArchitecture::GCN1_4  // GFX905
+    GPUArchitecture::GCN1_4, // GFX905
+    GPUArchitecture::GCN1_4_1, // GFX906
+    GPUArchitecture::GCN1_4_1  // GFX907
 };
 
-static const char* gpuArchitectureNameTable[4] =
+static const char* gpuArchitectureNameTable[5] =
 {
     "GCN1.0",
     "GCN1.1",
     "GCN1.2",
-    "GCN1.4"
+    "GCN1.4",
+    "GCN1.4.1"
 };
 
 /* three names for every architecture (GCN, GFX?, Shortcut) used by recognizing
  * architecture by name */
-static const char* gpuArchitectureNameTable2[12] =
+static const char* gpuArchitectureNameTable2[15] =
 {
     "GCN1.0", "GFX6", "SI",
     "GCN1.1", "GFX7", "CI",
     "GCN1.2", "GFX8", "VI",
-    "GCN1.4", "GFX9", "Vega"
+    "GCN1.4", "GFX9", "Vega",
+    "GCN1.4.1", "GFX906", "Vega20"
 };
 
 /// lowest device for architecture
-static const GPUDeviceType gpuLowestDeviceFromArchTable[4] =
+static const GPUDeviceType gpuLowestDeviceFromArchTable[5] =
 {
     GPUDeviceType::CAPE_VERDE,
     GPUDeviceType::BONAIRE,
     GPUDeviceType::ICELAND,
-    GPUDeviceType::GFX900
+    GPUDeviceType::GFX900,
+    GPUDeviceType::GFX906
 };
 
 GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
@@ -355,7 +365,9 @@ static const AMDGPUArchVersion galliumGpuArchVersionTbl[] =
     { 9, 0, 2 }, // GPUDeviceType::GFX902
     { 9, 0, 3 }, // GPUDeviceType::GFX903
     { 9, 0, 4 }, // GPUDeviceType::GFX904
-    { 9, 0, 5 }  // GPUDeviceType::GFX905
+    { 9, 0, 5 }, // GPUDeviceType::GFX905
+    { 9, 0, 6 }, // GPUDeviceType::GFX906
+    { 9, 0, 7 }  // GPUDeviceType::GFX907
 };
 
 // AMD GPU architecture for ROCm
@@ -388,7 +400,9 @@ static const AMDGPUArchVersion rocmGpuArchVersionTbl[] =
     { 9, 0, 2 }, // GPUDeviceType::GFX902
     { 9, 0, 3 }, // GPUDeviceType::GFX903
     { 9, 0, 4 }, // GPUDeviceType::GFX904
-    { 9, 0, 5 }  // GPUDeviceType::GFX905
+    { 9, 0, 5 }, // GPUDeviceType::GFX905
+    { 9, 0, 6 }, // GPUDeviceType::GFX906
+    { 9, 0, 7 }  // GPUDeviceType::GFX907
 };
 
 // AMDGPU architecture values for specific GPU device type for AMDOCL 2.0
@@ -421,7 +435,9 @@ static const AMDGPUArchVersion amdCL2GpuArchVersionTbl[] =
     { 9, 0, 2 }, // GPUDeviceType::GFX902
     { 9, 0, 3 }, // GPUDeviceType::GFX903
     { 9, 0, 4 }, // GPUDeviceType::GFX904
-    { 9, 0, 5 }  // GPUDeviceType::GFX905
+    { 9, 0, 5 }, // GPUDeviceType::GFX905
+    { 9, 0, 6 }, // GPUDeviceType::GFX906
+    { 9, 0, 7 }  // GPUDeviceType::GFX907
 };
 
 AMDGPUArchVersion CLRX::getGPUArchVersion(GPUDeviceType deviceType,
@@ -463,7 +479,9 @@ static const AMDGPUArchVersionEntry amdGpuArchVersionEntriesTbl[] =
     { 9, 0, 2, GPUDeviceType::GFX902 },
     { 9, 0, 3, GPUDeviceType::GFX903 },
     { 9, 0, 4, GPUDeviceType::GFX904 },
-    { 9, 0, 5, GPUDeviceType::GFX905 }
+    { 9, 0, 5, GPUDeviceType::GFX905 },
+    { 9, 0, 6, GPUDeviceType::GFX906 },
+    { 9, 0, 7, GPUDeviceType::GFX907 }
 };
 
 static const size_t amdGpuArchVersionEntriesNum = sizeof(amdGpuArchVersionEntriesTbl) /

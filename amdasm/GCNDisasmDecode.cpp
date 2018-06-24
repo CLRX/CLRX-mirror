@@ -149,7 +149,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
            cxuint regNum, char*& bufPtr, uint16_t arch, FloatLitType floatLit)
 {
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
-    const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
     const cxuint maxSgprsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
     if ((op < maxSgprsNum) || (op >= 256 && op < 512))
     {
@@ -438,7 +438,7 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
          uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
          uint32_t literal, size_t pos)
 {
-    const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(70);
     char* bufPtr = bufStart;
@@ -706,7 +706,7 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
         putChars(bufPtr, "hwreg(", 6);
         const cxuint hwregId = imm16&0x3f;
         cxuint hwregNamesNum = 13 + ((arch&ARCH_GCN_1_2_4)!=0);
-        if ((arch&ARCH_RXVEGA) != 0)
+        if ((arch&ARCH_GCN_1_4) != 0)
             hwregNamesNum = 20;
         if (hwregId < hwregNamesNum)
             putChars(bufPtr, hwregNames[hwregId], ::strlen(hwregNames[hwregId]));
@@ -840,7 +840,7 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     bool useDst = false;
     bool useOthers = false;
     bool spacesAdded = false;
-    const bool isGCN14 = ((arch&ARCH_RXVEGA) != 0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4) != 0);
     bool printOffset = false;
     
     if (mode1 == GCN_SMRD_ONLYDST)
@@ -988,7 +988,7 @@ static const char* sdwaDstUnusedTbl[] =
 /* returns mask of abs,neg,sext for src0 and src1 argument and src0 register */
 static inline VOPExtraWordOut decodeVOPSDWAFlags(uint32_t insnCode2, uint16_t arch)
 {
-    const bool isGCN14 = (arch & ARCH_RXVEGA)!=0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     return { uint16_t((insnCode2&0xff) +
         ((!isGCN14 || (insnCode2 & (1U<<23))==0) ? 256 : 0)),
         (insnCode2&(1U<<19))!=0, (insnCode2&(1U<<20))!=0, (insnCode2&(1U<<21))!=0,
@@ -1002,7 +1002,7 @@ static void decodeVOPSDWA(FastOutputBuffer& output, uint16_t arch, uint32_t insn
 {
     char* bufStart = output.reserve(100);
     char* bufPtr = bufStart;
-    const bool isGCN14 = ((arch&ARCH_RXVEGA) != 0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4) != 0);
     cxuint dstSel = 6;
     cxuint dstUnused = 0;
     if (!isGCN14 || !vopc)
@@ -1184,7 +1184,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     const cxuint src0Field = (insnCode&0x1ff);
     // extra flags are zeroed by default
     VOPExtraWordOut extraFlags = { 0, 0, 0, 0, 0, 0, 0 };
-    if ((arch & ARCH_RXVEGA) != 0 && src0Field==0xf9 && (literal & 0x8000) != 0)
+    if ((arch & ARCH_GCN_1_4) != 0 && src0Field==0xf9 && (literal & 0x8000) != 0)
     {
         // SDWAB replacement of SDST
         output.forward(bufPtr-bufStart);
@@ -1482,7 +1482,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     char* bufStart = output.reserve(170);
     char* bufPtr = bufStart;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
-    const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
     const cxuint opcode = (isGCN12) ? ((insnCode>>16)&0x3ff) : ((insnCode>>17)&0x1ff);
     
     const cxuint vdst = insnCode&0xff;
@@ -2028,7 +2028,7 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
     char* bufStart = output.reserve(170);
     char* bufPtr = bufStart;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
-    const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
     const cxuint vaddr = insnCode2&0xff;
     const cxuint vdata = (insnCode2>>8)&0xff;
     const cxuint srsrc = (insnCode2>>16)&0x1f;
@@ -2153,7 +2153,7 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
          uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
          uint32_t insnCode2)
 {
-    const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(170);
     char* bufPtr = bufStart;
@@ -2356,7 +2356,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
             uint32_t insnCode2)
 {
-    const bool isGCN14 = ((arch&ARCH_RXVEGA)!=0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(150);
     char* bufPtr = bufStart;

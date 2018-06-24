@@ -438,7 +438,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
     }
     
     /* parse single SGPR */
-    const bool isGCN14 = (arch & ARCH_RXVEGA) != 0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4) != 0;
     const cxuint ttmpSize = isGCN14 ? 16 : 12;
     const cxuint ttmpStart = isGCN14 ? 108 : 112;
         
@@ -524,7 +524,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             loHiRegSuffix = 4;
             loHiReg = 126;
         }
-        else if ((arch & ARCH_RXVEGA) == 0 && regName[0]=='t')
+        else if ((arch & ARCH_GCN_1_4) == 0 && regName[0]=='t')
         {
             /* tma,tba */
             if (regName[1] == 'b' && regName[2] == 'a')
@@ -1173,11 +1173,11 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             toLowerString(regName);
             operand.range = {0, 0};
             
-            auto regNameTblEnd = (arch & ARCH_RXVEGA) ?
+            auto regNameTblEnd = (arch & ARCH_GCN_1_4) ?
                         ssourceNamesGCN14Tbl + ssourceNamesGCN14TblSize :
                         ssourceNamesTbl + ssourceNamesTblSize;
             auto regNameIt = binaryMapFind(
-                    (arch & ARCH_RXVEGA) ? ssourceNamesGCN14Tbl : ssourceNamesTbl,
+                    (arch & ARCH_GCN_1_4) ? ssourceNamesGCN14Tbl : ssourceNamesTbl,
                     regNameTblEnd, regName, CStringLess());
             
             // if found in table
@@ -2379,7 +2379,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
         opMods.sextMod!=0 || haveSDWA);
     const bool vopDPP = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask ||
             haveDPP);
-    const bool isGCN14 = (arch & ARCH_RXVEGA) != 0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4) != 0;
     // mul/div modifier does not apply to vop3 if RXVEGA (this case will be checked later)
     const bool vop3 = (mods & ((isGCN14 ? 0 : 3)|VOP3_VOP3))!=0 ||
                 ((opMods.opselMod&15)!=0);
@@ -2551,10 +2551,10 @@ bool GCNAsmUtils::checkGCNVOPExtraModifers(Assembler& asmr, uint16_t arch, bool 
 {
     if (needImm)
         ASM_FAIL_BY_ERROR(instrPlace, "Literal with SDWA or DPP word is illegal")
-    if ((arch & ARCH_RXVEGA)==0 && !src0Op.range.isVGPR())
+    if ((arch & ARCH_GCN_1_4)==0 && !src0Op.range.isVGPR())
         ASM_FAIL_BY_ERROR(instrPlace, "SRC0 must be a vector register with "
                     "SDWA or DPP word")
-    if ((arch & ARCH_RXVEGA)!=0 && extraMods.needDPP && !src0Op.range.isVGPR())
+    if ((arch & ARCH_GCN_1_4)!=0 && extraMods.needDPP && !src0Op.range.isVGPR())
         ASM_FAIL_BY_ERROR(instrPlace, "SRC0 must be a vector register with DPP word")
     if (vop3)
         // if VOP3 and (VOP_DPP or VOP_SDWA)

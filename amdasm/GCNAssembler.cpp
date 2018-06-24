@@ -534,7 +534,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                     insnCode==0xbf82U ? AsmCodeFlowType::JUMP :
                     // CALL from S_CALL_B64
                     (((insnCode&0xff80)==0xba80 &&
-                            (curArchMask&ARCH_RXVEGA)!=0) ? AsmCodeFlowType::CALL :
+                            (curArchMask&ARCH_GCN_1_4)!=0) ? AsmCodeFlowType::CALL :
                                 AsmCodeFlowType::CJUMP) });
             return true;
         }

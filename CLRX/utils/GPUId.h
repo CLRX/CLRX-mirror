@@ -78,7 +78,9 @@ enum class GPUDeviceType: cxbyte
     GFX903,
     GFX904,
     GFX905,
-    GPUDEVICE_MAX = GFX905,    ///< last value
+    GFX906,
+    GFX907,
+    GPUDEVICE_MAX = GFX907,    ///< last value
     
     RADEON_HD7700 = CAPE_VERDE, ///< Radeon HD7700
     RADEON_HD7800 = PITCAIRN,   ///< Radeon HD7800
@@ -95,7 +97,8 @@ enum class GPUArchitecture: cxbyte
     GCN1_1,     ///< second iteration (Radeon Rx 200 series)
     GCN1_2,     ///< third iteration (Radeon Rx 300 series and Tonga)
     GCN1_4,     ///< GFX9 architecture (AMD RX VEGA)
-    GPUARCH_MAX = GCN1_4    /// last value
+    GCN1_4_1,    ///< GFX9 architecture with NN extensions (AMD VEGA 20)
+    GPUARCH_MAX = GCN1_4_1    /// last value
 };
 
 /// get GPU device type from name

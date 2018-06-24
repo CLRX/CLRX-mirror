@@ -905,3 +905,32 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         0, 0, false, false, "test.s:1:24: Error: Required 1 vector register\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
+
+const GCNAsmOpcodeCase encGCN141OpcodeCases[] =
+{
+    { "v_mad_mix_f32   v55, v79, v166, v229\n", 0xd3a04037U, 0x1f974d4fU, true, true, "" },
+    { "v_mad_mixlo_f16 v55, v79, v166, v229\n", 0xd3a14037U, 0x1f974d4fU, true, true, "" },
+    { "v_mad_mixhi_f16 v55, v79, v166, v229\n", 0xd3a24037U, 0x1f974d4fU, true, true, "" },
+    { "v_fma_mix_f32   v55, v79, v166, v229\n", 0xd3a04037U, 0x1f974d4fU, true, true, "" },
+    { "v_fma_mixlo_f16 v55, v79, v166, v229\n", 0xd3a14037U, 0x1f974d4fU, true, true, "" },
+    { "v_fma_mixhi_f16 v55, v79, v166, v229\n", 0xd3a24037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot2_f32_f16  v55, v79, v166, v229\n", 0xd3a34037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot2_i32_i16  v55, v79, v166, v229\n", 0xd3a64037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot2_u32_u16  v55, v79, v166, v229\n", 0xd3a74037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot4_i32_i8   v55, v79, v166, v229\n", 0xd3a84037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot4_u32_u8   v55, v79, v166, v229\n", 0xd3a94037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot8_i32_i4   v55, v79, v166, v229\n", 0xd3aa4037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot8_u32_u4   v55, v79, v166, v229\n", 0xd3ab4037U, 0x1f974d4fU, true, true, "" },
+    { "v_fmac_f32      v154, v21, v107\n", 0x7734d715U, 0, false, true, ""  },
+    { "v_fmac_f32      v55, s27, v90 vop3\n", 0xd13b0037U, 0x0002b41bU, true, true, "" },
+    { "v_xnor_b32      v154, v21, v107\n", 0x7b34d715U, 0, false, true, "" },
+    { "v_xnor_b32      v55, s27, v90 vop3\n", 0xd13d0037U, 0x0002b41bU, true, true, "" },
+    // VOP3P from GCN 1.4
+    { "v_pk_mad_i16    v55, v79, v166, v229 op_sel_hi:[0,0,0]\n",
+        0xd3800037U, 0x07974d4fU, true, true, "" },
+    { "v_pk_mad_i16    v55, v79, v166, v229\n",
+        0xd3804037U, 0x1f974d4fU, true, true, "" },
+    { "v_pk_mad_i16    v55, v79, v166, v229 op_sel_hi:[1,0,0]\n",
+        0xd3800037U, 0x0f974d4fU, true, true, "" },
+    { nullptr, 0, 0, false, false, 0 }
+};
