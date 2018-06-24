@@ -130,13 +130,13 @@ void AsmPseudoOps::setGPUArchitecture(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    char deviceName[64];
+    char archName[64];
     const char* archNamePlace = linePtr;
-    if (!getNameArg(asmr, 64, deviceName, linePtr, "GPU architecture name"))
+    if (!getNameArg(asmr, 64, archName, linePtr, "GPU architecture name"))
         return;
     try
     {
-        GPUArchitecture arch = getGPUArchitectureFromName(deviceName);
+        GPUArchitecture arch = getGPUArchitectureFromName(archName);
         GPUDeviceType deviceType = getLowestGPUDeviceTypeFromArchitecture(arch);
         if (checkGarbagesAtEnd(asmr, linePtr))
             // set if no garbages at end
