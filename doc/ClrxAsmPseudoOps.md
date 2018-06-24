@@ -471,10 +471,11 @@ Syntax: .gpu GPUDEVICE
 
 This pseudo-operation should to be at begin of source. Set GPU device.
 One of following device type can be set:
-CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
-Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose, Horse, Stoney,
-Ellesmere, Baffin, GFX804, GFX900, GFX901, GFX902, GFX903, GFX904, GFX905,
-GFX906 and GFX907.
+Baffin, Bonaire, CapeVerde, Carrizo, Dummy, Ellesmere, Fiji, GFX700, GFX701, GFX801,
+GFX802, GFX803, GFX804, GFX900, GFX901, GFX902, GFX903, GFX904, GFX905, GFX906, GFX907,
+Goose, Hainan, Hawaii, Horse, Iceland, Kalindi, Mullins, Oland, Pitcairn, Polaris10,
+Polaris11, Polaris12, Polaris20, Polaris21, Polaris22, Raven, Spectre, Spooky, Stoney,
+Tahiti, Tonga, Topaz, Vega10, Vega11, Vega12 and Vega20.
 
 ### .half
 
