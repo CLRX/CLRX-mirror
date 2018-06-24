@@ -30,10 +30,15 @@ static const char* genericPtrSource = R"ffDXD(
     .error "Unsupported GCN1.0 architecture"
 .endif
 SMUL = 1
+GCN1_4 = 0
 .ifarch gcn1.2
     SMUL = 4
 .elseifarch gcn1.4
     SMUL = 4
+    GCN1_4 = 1
+.elseifarch gcn1.4.1
+    SMUL = 4
+    GCN1_4 = 1
 .endif
 .ifnfmt amdcl2  # AMD OpenCL 2.0 code
     .error "Only AMD OpenCL 2.0 binary format is supported"
@@ -52,7 +57,7 @@ SMUL = 1
         .error "this example doesn't work in 32-bit OpenCL 2.0!"
     .endif
         # initialize flat_scratch
-    .ifarch GCN1.4
+    .if GCN1_4
         s_add_u32 flat_scratch_lo, s10, s13
         s_addc_u32 flat_scratch_hi, s11, 0
     .else
@@ -110,7 +115,7 @@ SMUL = 1
     .if32
         buffer_store_dword v2, v0, s[12:15], s8 offset:4 # store value
     .else
-    .ifarch GCN1.4
+    .if GCN1_4
         v_add_co_u32 v3, vcc, 4, v3        # next entry in output buffer
         v_addc_co_u32 v4, vcc, 0, v4, vcc
     .else

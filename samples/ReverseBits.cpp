@@ -34,15 +34,21 @@ using namespace CLRX;
 static const char* reverseBitsSource = R"ffDXD(# ReverseBits example
 SMUL = 1
 GCN1_2_4 = 0
+GCN1_4 = 0
 .ifarch gcn1.2
     SMUL = 4
     GCN1_2_4 = 1
 .elseifarch gcn1.4
     SMUL = 4
     GCN1_2_4 = 1
+    GCN1_4 = 1
+.elseifarch gcn1.4.1
+    SMUL = 4
+    GCN1_2_4 = 1
+    GCN1_4 = 1
 .endif
 
-.ifarch GCN1.4
+.if GCN1_4
     # helper macros for integer add/sub instructions
     .macro VADD_U32 dest, cdest, src0, src1, mods:vararg
         v_add_co_u32 \dest, \cdest, \src0, \src1 \mods
@@ -235,7 +241,7 @@ end:
         .arg input, uchar*, global, const   # const global uint* input
         .arg output, uchar*, global         # global uint* output
     .text
-    .ifarch GCN1.4
+    .if GCN1_4
         GID = %s10
     .else
         GID = %s8
