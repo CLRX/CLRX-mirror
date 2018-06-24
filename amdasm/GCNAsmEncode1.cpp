@@ -1240,7 +1240,9 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     else
     {
          // if VGPRS as destination
-        bool v_mac = ::strncmp(gcnInsn.mnemonic, "v_mac_", 6)==0;
+        bool v_mac = ::strncmp(gcnInsn.mnemonic, "v_mac_", 6)==0 ||
+                // for V_FMAC_F32 (VEGA20)
+                ::strncmp(gcnInsn.mnemonic, "v_fmac_", 7)==0;
         good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
                         GCNFIELD_VOP_VDST, true, INSTROP_SYMREGRANGE|INSTROP_WRITE|
                               (v_mac?INSTROP_READ:0));
