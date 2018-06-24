@@ -595,7 +595,7 @@ static const cxbyte kernelIsaMetadata[] =
 // arch name in metadata
 static const char* amdcl2GPUArchNameWordTable[] =
 {
-    "GFX6", "GFX7", "GFX8", "GFX9"
+    "GFX6", "GFX7", "GFX8", "GFX9", "GFX9"
 };
 
 static void prepareKernelTempData(const AmdCL2Input* input,
