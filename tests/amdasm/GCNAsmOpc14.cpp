@@ -903,6 +903,9 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
     /* GLOBAL error wrong VADDR */
     { "global_load_ubyte v47, v[187:188], s[50:51] glc slc\n",
         0, 0, false, false, "test.s:1:24: Error: Required 1 vector register\n" },
+    // VOP3 CMP
+    { "    v_cmp_f_f16 s[46:47], v78, v201", 0xd020002eU, 0x3934eU, true, true, "" },
+    { "    v_cmp_lt_f16 s[46:47], v78, v201", 0xd021002eU, 0x3934eU, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
@@ -932,5 +935,13 @@ const GCNAsmOpcodeCase encGCN141OpcodeCases[] =
         0xd3804037U, 0x1f974d4fU, true, true, "" },
     { "v_pk_mad_i16    v55, v79, v166, v229 op_sel_hi:[1,0,0]\n",
         0xd3800037U, 0x0f974d4fU, true, true, "" },
+    { "v_addc_co_u32   v154, vcc, v21, v107, vcc\n", 0x3934d715U, 0, false, true, "" },
+    { "v_subb_co_u32   v154, vcc, v21, v107, vcc\n", 0x3b34d715U, 0, false, true, "" },
+    { "v_mov_prsv_b32  v55, v27 vop3\n", 0xd1760037U, 0x0000011bU, true, true, "" },
+    { "v_screen_partition_4se_b32 v55, v27 vop3\n",
+        0xd1770037U, 0x0000011bU, true, true, "" },
+    // VOP3 CMP
+    { "    v_cmp_f_f16 s[46:47], v78, v201", 0xd020002eU, 0x3934eU, true, true, "" },
+    { "    v_cmp_lt_f16 s[46:47], v78, v201", 0xd021002eU, 0x3934eU, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };

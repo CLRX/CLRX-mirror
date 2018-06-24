@@ -718,7 +718,7 @@ void GCNDisassembler::disassemble()
                         0, 0 };
             
             // try to replace by FMA_MIX for VEGA20
-            if ((curArchMask&ARCH_VEGA20) != 0 && gcnInsn->encoding == GCNENC_VOP3A)
+            if ((curArchMask&ARCH_VEGA20) != 0 && gcnInsn->code>=928 && gcnInsn->code<=930)
             {
                 const GCNEncodingSpace& encSpace4 =
                     gcnInstrTableByCodeSpaces[2*GCNENC_MAXVAL+4 + 1];

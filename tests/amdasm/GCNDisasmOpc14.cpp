@@ -736,6 +736,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
         "v[47:48], v187, v[65:66], s[49:50] glc slc\n" },
     { 0xddb38000, 0x2f3141bbU, true, "        global_atomic_dec_x2 "
         "v[47:48], v187, v[65:66], s[49:50] glc slc\n" },
+    // VOP3 CMP
+    { 0x7c7f92ffU, 0x3d4cU, true, "        v_cmpx_tru_f16  "
+                "vcc, 0x3d4c /* 1.3242h */, v201\n" },
     { 0, 0, false, nullptr }
 };
 
@@ -763,5 +766,14 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN141Cases[] =
         "        v_pk_mad_i16    v55, v79, v166, v229\n" },
     { 0xd3800037U, 0x0f974d4fU, true,
         "        v_pk_mad_i16    v55, v79, v166, v229 op_sel_hi:[1,0,0]\n" },
+    { 0x3334d715U, 0, false, "        v_add_co_u32    v154, vcc, v21, v107\n" },
+    { 0x3534d715U, 0, false, "        v_sub_co_u32    v154, vcc, v21, v107\n" },
+    // test for other opcodes (mapping of RX VEGA VOP3 code table
+    // VOP3 CMP
+    { 0x7c7f92ffU, 0x3d4cU, true, "        v_cmpx_tru_f16  "
+                "vcc, 0x3d4c /* 1.3242h */, v201\n" },
+    { 0xd1760037U, 0x0000011bU, true, "        v_mov_prsv_b32  v55, v27 vop3\n" },
+    { 0xd1770037U, 0x0000011bU, true,
+        "        v_screen_partition_4se_b32 v55, v27 vop3\n" },
     { 0, 0, false, nullptr }
 };
