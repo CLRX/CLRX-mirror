@@ -100,7 +100,8 @@ Syntax: .arch ARCHITECTURE
 
 This pseudo-operation should to be at begin of source. Set GPU architecture.
 One of following architecture can be set:
-SI, VI, CI, VEGA, GFX6, GFX7, GFX8, GFX9, GCN1.0, GCN1.1, GCN1.2 and GCN1.4.
+SI, VI, CI, VEGA, VEGA20, GFX6, GFX7, GFX8, GFX9, GFX906, GCN1.0, GCN1.1, GCN1.2,
+GCN1.4 and GCN1.4.1.
 
 ### .ascii
 
@@ -386,6 +387,7 @@ Id | Description
  1 | GCN1.1 (Bonaire, Hawaii)
  2 | GCN1.2 (Tonga, Fiji, Ellesmere)
  3 | VEGA (AMD RX VEGA)
+ 4 | VEGA20 (GFX906)
 
 ### .get_format
 
@@ -437,6 +439,8 @@ Id  | Description
  25 | gfx903 (Radeon RX VEGA)
  26 | gfx904 (Radeon RX VEGA)
  27 | gfx905 (Radeon RX VEGA)
+ 28 | gfx906 (Radeon VEGA 20)
+ 29 | gfx907 (Radeon VEGA 20 ???)
 
 ### .get_policy
 
@@ -468,8 +472,9 @@ Syntax: .gpu GPUDEVICE
 This pseudo-operation should to be at begin of source. Set GPU device.
 One of following device type can be set:
 CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
-Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Goose, Horse, Stoney,
-Ellesmere, and Baffin.
+Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose, Horse, Stoney,
+Ellesmere, Baffin, GFX804, GFX900, GFX901, GFX902, GFX903, GFX904, GFX905,
+GFX906 and GFX907.
 
 ### .half
 

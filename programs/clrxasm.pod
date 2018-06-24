@@ -60,13 +60,15 @@ Choose device type. Device type name is case-insensitive.
 List of supported GPUs: 
 CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
 Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose, Horse, Stoney,
-Ellesmere, Baffin, GFX804, GFX900, GFX901, GFX902, GFX903, GFX904 and GFX905.
+Ellesmere, Baffin, GFX804, GFX900, GFX901, GFX902, GFX903, GFX904, GFX905,
+GFX906 and GFX907.
 
 =item B<-A ARCH>, B<--arch=ARCH>
 
 Choose device architecture. Architecture name is case-insensitive.
 List of supported architectures:
-SI, VI, CI, VEGA, GFX6, GFX7, GFX8, GFX9, GCN1.0, GCN1.1, GCN1.2 and GCN1.4.
+SI, VI, CI, VEGA, VEGA20, GFX6, GFX7, GFX8, GFX9, GFX906, GCN1.0, GCN1.1, GCN1.2,
+GCN1.4 and GCN1.4.1.
 
 =item B<-t VERSION>, B<--driverVersion=VERSION>
 
