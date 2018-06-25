@@ -31,15 +31,10 @@ using namespace CLRX;
 
 static const char* imageMixSource = R"ffDXD(# ImageMix example
 SMUL = 1
-GCN1_4 = 0
 .ifarch GCN1.2
     SMUL = 4
 .elseifarch GCN1.4
     SMUL = 4
-    GCN1_4 = 1
-.elseifarch GCN1.4.1
-    SMUL = 4
-    GCN1_4 = 1
 .endif
 .iffmt amd    # if AMD Catalyst
 .kernel imageMix
@@ -62,7 +57,7 @@ GCN1_4 = 0
         s_mul_i32  s1, s15, s1
         s_add_u32  s0, s4, s0           # s[0:1] + global_offset(0,1)
         s_add_u32  s1, s5, s1
-    .if GCN1_4
+    .ifarch GCN1.4
         v_add_co_u32  v0, vcc, s0, v0      #  v[0:1] - global_id(0,1)
         v_add_co_u32  v1, vcc, s1, v1
     .else
@@ -103,7 +98,7 @@ end:
         .arg img2, image, read_only     # read_only image2d_t img2
         .arg outimg, image, write_only    # write_only image2d_t outimg
     .text
-    .if GCN1_4
+    .ifarch GCN1.4
         GIDX = %s10
         GIDY = %s11
     .else
@@ -129,7 +124,7 @@ end:
         s_add_u32 s4, s4, s2                # +global_offset(0)
         s_mul_i32 s5, GIDY, s5              # localsize(1)*groupid(1)
         s_add_u32 s5, s5, s3                # +global_offset(1)
-    .if GCN1_4
+    .ifarch GCN1.4
         v_add_co_u32 v0, vcc, s4, v0           # globalid(0)
         v_add_co_u32 v1, vcc, s5, v1           # globalid(1)
     .else

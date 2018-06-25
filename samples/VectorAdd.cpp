@@ -28,21 +28,15 @@ using namespace CLRX;
 static const char* vectorAddSource = R"ffDXD(# VectorAdd example
 SMUL = 1
 GCN1_2_4 = 0
-GCN1_4 = 0
 .ifarch GCN1.2
     GCN1_2_4 = 1
     SMUL = 4
 .elseifarch GCN1.4
     GCN1_2_4 = 1
     SMUL = 4
-    GCN1_4 = 1
-.elseifarch GCN1.4.1
-    GCN1_2_4 = 1
-    SMUL = 4
-    GCN1_4 = 1
 .endif
 
-.if GCN1_4
+.ifarch GCN1.4
     # helper macros for integer add/sub instructions
     .macro VADD_U32 dest, cdest, src0, src1, mods:vararg
         v_add_co_u32 \dest, \cdest, \src0, \src1 \mods
@@ -226,7 +220,7 @@ R"ffDXD(.elseiffmt amdcl2  # AMD OpenCL 2.0 code
         .arg bBuf, float*, global, const    # argument const float* bBuf
         .arg cBuf, float*, global           # argument float* cBuf
     .text
-    .if GCN1_4
+    .ifarch GCN1.4
         GID = %s10
     .else
         GID = %s8
