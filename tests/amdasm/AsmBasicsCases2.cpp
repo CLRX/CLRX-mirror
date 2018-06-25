@@ -2403,5 +2403,101 @@ aa2=6
         }, true,
         "test.s:5:21: Warning: Value 0x102f59c72f5 truncated to 0xf59c72f5\n", ""
     },
+    /* 84 - GPU arch check (ifarch) */
+    {   ".amd\n.gpu Tahiti\n"
+        ".ifarch GCN1.1\n"
+        ".print \"isGCN1.1\"\n"
+        ".endif\n"
+        ".ifnarch GCN1.1\n"
+        ".print \"isNotGCN1.1\"\n"
+        ".endif\n",
+        BinaryFormat::AMD, GPUDeviceType::TAHITI, false,
+        { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true,
+        "", "isNotGCN1.1\n",
+    },
+    /* 85 - GPU arch check (ifarch) */
+    {   ".amd\n.gpu Bonaire\n"
+        ".ifarch GCN1.1\n"
+        ".print \"isGCN1.1\"\n"
+        ".endif\n"
+        ".ifnarch GCN1.1\n"
+        ".print \"isNotGCN1.1\"\n"
+        ".endif\n",
+        BinaryFormat::AMD, GPUDeviceType::BONAIRE, false,
+        { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true,
+        "", "isGCN1.1\n",
+    },
+    /* 86 - GPU arch check (ifarch) */
+    {   ".amdcl2\n.gpu Bonaire\n"
+        ".ifarch GCN1.4\n"
+        ".print \"isGCN1.4\"\n"
+        ".endif\n"
+        ".ifnarch GCN1.4\n"
+        ".print \"isNotGCN1.4\"\n"
+        ".endif\n",
+        BinaryFormat::AMDCL2, GPUDeviceType::BONAIRE, false,
+        { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true,
+        "", "isNotGCN1.4\n",
+    },
+    /* 87 - GPU arch check (ifarch) */
+    {   ".amdcl2\n.gpu vega10\n"
+        ".ifarch GCN1.4\n"
+        ".print \"isGCN1.4\"\n"
+        ".endif\n"
+        ".ifnarch GCN1.4\n"
+        ".print \"isNotGCN1.4\"\n"
+        ".endif\n",
+        BinaryFormat::AMDCL2, GPUDeviceType::GFX900, false,
+        { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true,
+        "", "isGCN1.4\n",
+    },
+    /* 88 - GPU arch check (ifarch) */
+    {   ".amdcl2\n.gpu vega20\n"
+        ".ifarch GCN1.4\n"
+        ".print \"isGCN1.4\"\n"
+        ".endif\n"
+        ".ifnarch GCN1.4\n"
+        ".print \"isNotGCN1.4\"\n"
+        ".endif\n",
+        BinaryFormat::AMDCL2, GPUDeviceType::GFX906, false,
+        { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true,
+        "", "isGCN1.4\n",
+    },
+    /* 89 - GPU arch check (ifarch) */
+    {   ".amdcl2\n.gpu vega10\n"
+        ".ifarch GCN1.4.1\n"
+        ".print \"isGCN1.4.1\"\n"
+        ".endif\n"
+        ".ifnarch GCN1.4.1\n"
+        ".print \"isNotGCN1.4.1\"\n"
+        ".endif\n",
+        BinaryFormat::AMDCL2, GPUDeviceType::GFX900, false,
+        { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true,
+        "", "isNotGCN1.4.1\n",
+    },
+    /* 90 - GPU arch check (ifarch) */
+    {   ".amdcl2\n.gpu vega20\n"
+        ".ifarch GCN1.4.1\n"
+        ".print \"isGCN1.4.1\"\n"
+        ".endif\n"
+        ".ifnarch GCN1.4.1\n"
+        ".print \"isNotGCN1.4.1\"\n"
+        ".endif\n",
+        BinaryFormat::AMDCL2, GPUDeviceType::GFX906, false,
+        { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true,
+        "", "isGCN1.4.1\n",
+    },
+    /* 89 - GPU arch check (ifarch) */
+    {   ".amdcl2\n.gpu fiji\n"
+        ".ifarch GCN1.4.1\n"
+        ".print \"isGCN1.4.1\"\n"
+        ".endif\n"
+        ".ifnarch GCN1.4.1\n"
+        ".print \"isNotGCN1.4.1\"\n"
+        ".endif\n",
+        BinaryFormat::AMDCL2, GPUDeviceType::FIJI, false,
+        { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true,
+        "", "isNotGCN1.4.1\n",
+    },
     { nullptr }
 };

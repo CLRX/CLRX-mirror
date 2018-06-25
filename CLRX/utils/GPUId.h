@@ -119,6 +119,9 @@ extern GPUDeviceType getLowestGPUDeviceTypeFromArchitecture(GPUArchitecture arch
 /// get GPU architecture name
 extern const char* getGPUArchitectureName(GPUArchitecture architecture);
 
+/// check whether is this GPU architecture
+extern bool isThisGPUArchitecture(GPUArchitecture requiredArch, GPUArchitecture thisArch);
+
 enum: Flags {
     REGCOUNT_NO_VCC = 1,
     REGCOUNT_NO_FLAT = 2,

@@ -238,6 +238,16 @@ const char* CLRX::getGPUArchitectureName(GPUArchitecture architecture)
     return gpuArchitectureNameTable[cxuint(architecture)];
 }
 
+bool CLRX::isThisGPUArchitecture(GPUArchitecture requiredArch, GPUArchitecture thisArch)
+{
+    if (requiredArch == GPUArchitecture::GCN1_4 &&
+        thisArch == GPUArchitecture::GCN1_4_1)
+        // we assume, that GCN1.4 (VEGA) is have same encoding as GCN1.4.1
+        // (VEGA 20 with DeepLearning) except new instructions
+        return true;
+    return thisArch==requiredArch;
+}
+
 cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
                          Flags flags)
 {

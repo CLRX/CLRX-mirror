@@ -1415,7 +1415,8 @@ void AsmPseudoOps::doIfArch(Assembler& asmr, const char* pseudoOpPlace,
             AsmClauseType::IF;
     bool included;
     GPUArchitecture curArch = getGPUArchitectureFromDeviceType(asmr.getDeviceType());
-    bool satisfied = (!negation) ? arch==curArch : arch!=curArch;
+    const bool isThisArch = isThisGPUArchitecture(arch, curArch);
+    bool satisfied = (!negation) ? isThisArch : !isThisArch;
     if (asmr.pushClause(pseudoOpPlace, clauseType, satisfied, included))
     {   // 
         if (!included) // skip clauses (do not perform statements)

@@ -552,6 +552,11 @@ List of the `.if` kinds:
 * `.ifngpu` - perform code if specified GPU device type was not set.
 * `.ifnotdef` - perform code if symbol was not defined.
 
+NOTE: For `ifarch` or `.ifnarch`:
+The assembler assumes that VEGA20 is this same ISA as VEGA10 (GFX9)
+and if you set VEGA20 GPU architecture and if you put GFX9 architecture in `.ifarch`
+then code for this clause will be assembled (or will not be assembled for `.ifnarch`).
+
 ### .incbin
 
 Syntax: .incbin FILENAME[, [OFFSET] [, COUNT]]
