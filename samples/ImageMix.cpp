@@ -131,7 +131,7 @@ end:
         v_add_i32 v0, vcc, s4, v0           # globalid(0)
         v_add_i32 v1, vcc, s5, v1           # globalid(1)
     .endif
-        s_load_dword s8, s[0:1], 2*SMUL     # load first image desc dword
+        s_load_dword s8, s[0:1], 2*SMUL     # load third image desc dword (width,height)
         s_waitcnt lgkmcnt(0)
         s_and_b32 s4, s8, (1<<14)-1         # img width-1
         s_bfe_u32 s5, s8, (14<<16)+14       # img height-1
