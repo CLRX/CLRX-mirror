@@ -70,9 +70,11 @@ enum: Flags
     DISASM_BUGGYFPLIT = 0x100,
     DISASM_CODEPOS = 0x200,   ///< print code position
     DISASM_HSACONFIG = 0x400,  ///< print HSA configuration
+    DISASM_HSALAYOUT = 0x800,  ///< print in HSA layout (like Gallium or ROCm)
     
     ///< all disassembler flags (without config)
-    DISASM_ALL = FLAGS_ALL&(~(DISASM_CONFIG|DISASM_BUGGYFPLIT|DISASM_HSACONFIG))
+    DISASM_ALL = FLAGS_ALL&(~(DISASM_CONFIG|DISASM_BUGGYFPLIT|
+                    DISASM_HSACONFIG|DISASM_HSALAYOUT))
 };
 
 struct GCNDisasmUtils;
@@ -285,6 +287,8 @@ struct AmdCL2DisasmInput
     size_t bssSize;         ///< size of global bss section
     size_t samplerInitSize;     ///< sampler init data size
     const cxbyte* samplerInit;  ///< sampler init data
+    size_t codeSize;            ///< code size
+    const cxbyte* code;         ///< code
     
     /// sampler relocations
     std::vector<std::pair<size_t, size_t> > samplerRelocs;

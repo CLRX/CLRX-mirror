@@ -83,6 +83,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
     input->rwDataSize = 0;
     input->rwData = nullptr;
     input->bssAlignment = input->bssSize = 0;
+    input->codeSize = 0;
+    input->code = nullptr;
     std::vector<std::pair<size_t, size_t> > sortedRelocs; // by offset
     const cxbyte* textPtr = nullptr;
     const size_t kernelInfosNum = binary.getKernelInfosNum();
@@ -118,7 +120,9 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         // sort map
         mapSort(sortedRelocs.begin(), sortedRelocs.end());
         // get code section pointer for determine relocation position kernel code
-        textPtr = innerBin.getSectionContent(".hsatext");
+        uint16_t hsaTextSectionIdx = innerBin.getSectionIndex(".hsatext");
+        input->code = textPtr = innerBin.getSectionContent(hsaTextSectionIdx);
+        input->codeSize = ULEV(innerBin.getSectionHeader(hsaTextSectionIdx).sh_size);
         
         // getting optional sections in inner binary
         try
@@ -836,6 +840,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
     const bool doSetup = ((flags & DISASM_SETUP) != 0);
     const bool doHSAConfig = ((flags & DISASM_HSACONFIG) != 0);
+    const bool doHSALayout = ((flags & DISASM_HSALAYOUT) != 0);
     
     if (amdCL2Input->is64BitMode)
         output.write(".64bit\n", 7);
@@ -853,6 +858,9 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
                    amdCL2Input->driverVersion);
         output.write(buf, size);
     }
+    
+    if (doHSALayout)
+        output.write(".hsalayout\n", 11);
     
     if (doMetadata)
     {
@@ -1012,7 +1020,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
             dumpAmdCL2ArgsAndSamplers(output, config);
         }
         
-        if (doDumpCode && kinput.code != nullptr && kinput.codeSize != 0)
+        if (!doHSALayout && doDumpCode && kinput.code != nullptr && kinput.codeSize != 0)
         {
             // input kernel code (main disassembly)
             isaDisassembler->clearRelocations();
@@ -1022,12 +1030,55 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
             for (const AmdCL2RelaEntry& entry: kinput.textRelocs)
                 isaDisassembler->addRelocation(entry.offset, entry.type, 
                                cxuint(entry.symbol), entry.addend);
-    
+            
             output.write("    .text\n", 10);
             isaDisassembler->setInput(kinput.codeSize, kinput.code);
             isaDisassembler->beforeDisassemble();
             isaDisassembler->disassemble();
             sectionCount++;
         }
+    }
+    
+    if (doDumpCode && doHSALayout &&
+        amdCL2Input->code != nullptr && amdCL2Input->codeSize != 0)
+    {
+        // TODO: add relocations!
+        // print like Gallium or ROCm
+        std::vector<ROCmDisasmRegionInput> regions(amdCL2Input->kernels.size());
+        Array<size_t> sortedIndices(amdCL2Input->kernels.size());
+        for (size_t i = 0; i < sortedIndices.size(); i++)
+            sortedIndices[i] = i;
+        
+        // sort by offset (sortedRegions is indices of sorted regions)
+        std::sort(sortedIndices.begin(), sortedIndices.end(), [&amdCL2Input]
+                (size_t a, size_t b)
+                {
+                    return amdCL2Input->kernels[a].setup <
+                            amdCL2Input->kernels[b].setup;
+                });
+        
+        // preparing ROCMDIsasm region inputs for dissasemblying in AMDHSA form
+        for (size_t i = 0; i < amdCL2Input->kernels.size(); i++)
+        {
+            const AmdCL2DisasmKernelInput& kernel = amdCL2Input->kernels[i];
+            ROCmDisasmRegionInput& region = regions[i];
+            region.regionName = kernel.kernelName;
+            region.offset = kernel.setup - amdCL2Input->code;
+            region.type = ROCmRegionType::KERNEL;
+        }
+        
+        // set correct region size using sorted indices by region offsets
+        for (size_t i = 0; i < sortedIndices.size(); i++)
+        {
+            const size_t index = sortedIndices[i];
+            const size_t end = (i+1 < amdCL2Input->kernels.size()) ?
+                    (amdCL2Input->kernels[sortedIndices[i+1]].setup - amdCL2Input->code) :
+                    amdCL2Input->codeSize;
+            ROCmDisasmRegionInput& region = regions[index];
+            region.size = end - (amdCL2Input->kernels[index].setup - amdCL2Input->code);
+        }
+        
+        disassembleAMDHSACode(output, regions, amdCL2Input->codeSize,
+                            amdCL2Input->code, isaDisassembler, flags);
     }
 }
