@@ -454,7 +454,7 @@ public:
 };
 
 /// handles GalliumCompute format
-class AsmGalliumHandler: public AsmFormatHandler
+class AsmGalliumHandler: public AsmKcodeHandler
 {
 private:
     enum class Inside : cxbyte {
@@ -488,11 +488,7 @@ private:
     };
     std::vector<Kernel*> kernelStates;
     std::vector<Section> sections;
-    std::vector<cxuint> kcodeSelection; // kcode
-    std::stack<std::vector<cxuint> > kcodeSelStack;
-    cxuint currentKcodeKernel;
     SectionMap extraSectionMap;
-    cxuint codeSection;
     cxuint dataSection;
     cxuint commentSection;
     cxuint scratchSection;
@@ -505,9 +501,6 @@ private:
     
     uint32_t archMinor;
     uint32_t archStepping;
-    
-    void restoreKcodeCurrentAllocRegs();
-    void saveKcodeCurrentAllocRegs();
     
     cxuint determineDriverVersion() const;
     cxuint determineLLVMVersion() const;
@@ -527,7 +520,6 @@ public:
     SectionInfo getSectionInfo(cxuint sectionId) const;
     bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
-    void handleLabel(const CString& label);
     
     bool resolveSymbol(const AsmSymbol& symbol, uint64_t& value, cxuint& sectionId);
     bool resolveRelocation(const AsmExpression* expr, uint64_t& value, cxuint& sectionId);
@@ -537,12 +529,17 @@ public:
     /// get output object (input for bingenerator)
     const GalliumInput* getOutput() const
     { return &output; }
+    
+    // kcode support
+    bool isCodeSection() const;
+    KernelBase& getKernelBase(cxuint index);
+    size_t getKernelsNum() const;
 };
 
 typedef AsmAmdHsaKernelConfig AsmROCmKernelConfig;
 
 /// handles ROCM binary format
-class AsmROCmHandler: public AsmFormatHandler
+class AsmROCmHandler: public AsmKcodeHandler
 {
 private:
     typedef std::unordered_map<CString, cxuint> SectionMap;
@@ -573,12 +570,8 @@ private:
     };
     std::vector<Kernel*> kernelStates;
     std::vector<Section> sections;
-    std::vector<cxuint> kcodeSelection; // kcode
-    std::stack<std::vector<cxuint> > kcodeSelStack;
     std::vector<CString> gotSymbols;
-    cxuint currentKcodeKernel;
     SectionMap extraSectionMap;
-    cxuint codeSection;
     cxuint commentSection;
     cxuint metadataSection;
     cxuint dataSection;
@@ -590,9 +583,6 @@ private:
     
     bool unresolvedGlobals;
     bool good;
-    
-    void restoreKcodeCurrentAllocRegs();
-    void saveKcodeCurrentAllocRegs();
     
     void addSymbols(bool sectionDiffsPrepared);
 public:
@@ -611,7 +601,6 @@ public:
     SectionInfo getSectionInfo(cxuint sectionId) const;
     bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
-    void handleLabel(const CString& label);
     
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;
@@ -621,6 +610,11 @@ public:
     { return &output; }
     
     bool prepareSectionDiffsResolving();
+    
+    // kcode support
+    bool isCodeSection() const;
+    KernelBase& getKernelBase(cxuint index);
+    size_t getKernelsNum() const;
 };
 
 };

@@ -168,15 +168,6 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
     static void doEntry(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
-    // .kcode (open kernel code)
-    static void doKCode(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    // .kcodeend (close kernel code)
-    static void doKCodeEnd(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void updateKCodeSel(AsmGalliumHandler& handler,
-          const std::vector<cxuint>& oldset);
-    
     static void scratchSymbol(AsmGalliumHandler& handler, const char* linePtr);
 };
 

@@ -214,15 +214,6 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     
     // .nosectdiffs
     static void noSectionDiffs(AsmROCmHandler& handler, const char* linePtr);
-    
-    // .kcode (open kernel code)
-    static void doKCode(AsmROCmHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    // .kcodeend (close kernel code)
-    static void doKCodeEnd(AsmROCmHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void updateKCodeSel(AsmROCmHandler& handler,
-                      const std::vector<cxuint>& oldset);
 };
 
 };
