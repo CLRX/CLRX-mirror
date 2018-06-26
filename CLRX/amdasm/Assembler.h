@@ -505,6 +505,7 @@ private:
     friend class AsmForInputFilter;
     friend class AsmExpression;
     friend class AsmFormatHandler;
+    friend class AsmKcodeHandler;
     friend class AsmRawCodeHandler;
     friend class AsmAmdHandler;
     friend class AsmAmdCL2Handler;
@@ -515,6 +516,7 @@ private:
     
     friend struct AsmParseUtils; // INTERNAL LOGIC
     friend struct AsmPseudoOps; // INTERNAL LOGIC
+    friend struct AsmKcodePseudoOps; // INTERNAL LOGIC
     friend struct AsmGalliumPseudoOps; // INTERNAL LOGIC
     friend struct AsmAmdPseudoOps; // INTERNAL LOGIC
     friend struct AsmAmdCL2PseudoOps; // INTERNAL LOGIC

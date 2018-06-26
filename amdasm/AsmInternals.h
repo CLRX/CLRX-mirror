@@ -332,6 +332,18 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     static bool checkPseudoOpName(const CString& string);
 };
 
+struct CLRX_INTERNAL AsmKcodePseudoOps : AsmParseUtils
+{
+    // .kcode (open kernel code)
+    static void doKCode(AsmKcodeHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    // .kcodeend (close kernel code)
+    static void doKCodeEnd(AsmKcodeHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void updateKCodeSel(AsmKcodeHandler& handler,
+                      const std::vector<cxuint>& oldset);
+};
+
 // macro helper to handle printing error
 
 #define PSEUDOOP_RETURN_BY_ERROR(STRING) \

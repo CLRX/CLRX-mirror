@@ -117,7 +117,7 @@ public:
     virtual ~AsmFormatException() noexcept = default;
 };
 
-/// assdembler format handler
+/// assembler format handler
 class AsmFormatHandler: public NonCopyableAndNonMovable
 {
 public:
@@ -208,6 +208,34 @@ public:
     
     /// prepare before section diference resolving
     virtual bool prepareSectionDiffsResolving();
+};
+
+/// format handler with Kcode (kernel-code) handling
+class AsmKcodeHandler: public AsmFormatHandler
+{
+protected:
+    friend struct AsmKcodePseudoOps;
+    std::vector<cxuint> kcodeSelection; // kcode
+    std::stack<std::vector<cxuint> > kcodeSelStack;
+    cxuint currentKcodeKernel;
+    cxuint codeSection;
+    
+    explicit AsmKcodeHandler(Assembler& assembler);
+    ~AsmKcodeHandler() = default;
+    
+    void restoreKcodeCurrentAllocRegs();
+    void saveKcodeCurrentAllocRegs();
+    // prepare kcode state while preparing binary
+    void prepareKcodeState();
+public:
+    void handleLabel(const CString& label);
+    
+    /// return true if current section is code section
+    virtual bool isCodeSection() const = 0;
+    /// return KernelBase for kernel index
+    virtual KernelBase& getKernelBase(cxuint index) = 0;
+    /// return kernel number
+    virtual size_t getKernelsNum() const = 0;
 };
 
 /// handles raw code format
