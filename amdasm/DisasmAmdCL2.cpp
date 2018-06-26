@@ -1042,7 +1042,6 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     if (doDumpCode && doHSALayout &&
         amdCL2Input->code != nullptr && amdCL2Input->codeSize != 0)
     {
-        // TODO: add relocations!
         // print like Gallium or ROCm
         std::vector<ROCmDisasmRegionInput> regions(amdCL2Input->kernels.size());
         Array<size_t> sortedIndices(amdCL2Input->kernels.size());
@@ -1067,6 +1066,10 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
             region.type = ROCmRegionType::KERNEL;
         }
         
+        isaDisassembler->clearRelocations();
+        isaDisassembler->addRelSymbol(".gdata");
+        isaDisassembler->addRelSymbol(".ddata"); // rw data
+        isaDisassembler->addRelSymbol(".bdata"); // .bss data
         // set correct region size using sorted indices by region offsets
         for (size_t i = 0; i < sortedIndices.size(); i++)
         {
@@ -1076,6 +1079,16 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
                     amdCL2Input->codeSize;
             ROCmDisasmRegionInput& region = regions[index];
             region.size = end - (amdCL2Input->kernels[index].setup - amdCL2Input->code);
+        }
+        
+        // prepare relocations
+        for (size_t i = 0; i < amdCL2Input->kernels.size(); i++)
+        {
+            const AmdCL2DisasmKernelInput& kernel = amdCL2Input->kernels[sortedIndices[i]];
+            for (const AmdCL2RelaEntry& entry: kernel.textRelocs)
+                isaDisassembler->addRelocation(
+                    (kernel.code - amdCL2Input->code) + entry.offset,
+                    entry.type, cxuint(entry.symbol), entry.addend);
         }
         
         disassembleAMDHSACode(output, regions, amdCL2Input->codeSize,
