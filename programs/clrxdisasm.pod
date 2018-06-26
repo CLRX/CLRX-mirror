@@ -6,9 +6,9 @@ clrxdisasm - disassemble Radeon code binaries
 
 =head1 SYNOPSIS
 
-clrxdisasm [-mdcCfsHhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
-[--calNotes] [--config] [--floats] [--hexcode] [--all] [--setup] [--HSAConfig
-[--raw] [--gpuType=GPUDEVICE] [--arch=ARCH] [--driverVersion=VERSION]
+clrxdisasm [-mdcCfsHLhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
+[--calNotes] [--config] [--floats] [--hexcode] [--all] [--setup] [--HSAConfig]
+[--HSALayout] [--raw] [--gpuType=GPUDEVICE] [--arch=ARCH] [--driverVersion=VERSION]
 [--llvmVersion=VERSION] [--buggyFPLit] [--help] [--usage] [--version] [file...]
 
 =head1 DESCRIPTION
@@ -55,6 +55,11 @@ Print AMD OpenCL 2.0 kernel setup data.
 =item B<-H>, B<--HSAConfig>
 
 Print AMD OpenCL 2.0 kernel setup configuration as AMD HSA configuration.
+
+=item B<-L>, B<--HSALayout>
+
+Print AMD OpenCL 2.0 code like Gallium or ROCm: print text section as program code
+with kernel names.
 
 =item B<-f>, B<--float>
 

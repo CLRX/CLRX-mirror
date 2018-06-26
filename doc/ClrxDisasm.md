@@ -13,9 +13,9 @@ can be used as input to the CLRX assembler if option '--all' will be used.
 
 The `clrxdisasm` can be invoked in following way:
 
-clrxdisasm [-mdcCfsHhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
-[--calNotes] [--config] [--floats] [--hexcode] [--setup] [--HSAConfig] [--all]
-[--raw] [--gpuType=GPUDEVICE] [--arch=ARCH] [--driverVersion=VERSION]
+clrxdisasm [-mdcCfsHLhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
+[--calNotes] [--config] [--floats] [--hexcode] [--setup] [--HSAConfig] [--HSALayout]
+[--all] [--raw] [--gpuType=GPUDEVICE] [--arch=ARCH] [--driverVersion=VERSION]
 [--llvmVersion=VERSION] [--buggyFPLit] [--help] [--usage] [--version] [file...]
 
 ### Program Options
@@ -56,9 +56,14 @@ will be printed in 4-byte words.
 
     Print AMD OpenCL 2.0 kernel setup data.
 
-* **-H*, **--HSAConfig**
+* **-H**, **--HSAConfig**
 
     Print AMD OpenCL 2.0 kernel setup configuration as AMD HSA configuration.
+
+* **-L**, **--HSALayout**
+
+    Print AMD OpenCL 2.0 code like Gallium or ROCm: print text section as program code
+with kernel names.
 
 * **-a**, **--all**
 
