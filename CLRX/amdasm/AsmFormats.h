@@ -137,6 +137,12 @@ public:
                     relSpace(_relSpace)
         { }
     };
+    
+    struct KernelBase
+    {
+        cxuint allocRegs[MAX_REGTYPES_NUM];
+        Flags allocRegFlags;
+    };
 protected:
     Assembler& assembler;   ///< assembler reference
     bool sectionDiffsResolvable;
@@ -245,7 +251,7 @@ private:
         const char* name;
         uint32_t extraId; // for example CALNote id
     };
-    struct Kernel
+    struct Kernel : KernelBase
     {
         cxuint headerSection;
         cxuint metadataSection;
@@ -257,8 +263,13 @@ private:
         cxuint extraSectionCount;
         cxuint savedSection;
         std::unordered_set<CString> argNamesSet;
-        cxuint allocRegs[MAX_REGTYPES_NUM];
-        Flags allocRegFlags;
+        
+        explicit Kernel(cxuint _codeSection = ASMSECT_NONE) : KernelBase{},
+                headerSection(ASMSECT_NONE), metadataSection(ASMSECT_NONE),
+                configSection(ASMSECT_NONE), codeSection(_codeSection),
+                dataSection(ASMSECT_NONE), extraSectionCount(0),
+                savedSection(ASMSECT_NONE)
+        { }
     };
     std::vector<Section> sections;
     // use pointer to prevents copying Kernel objects
@@ -342,7 +353,7 @@ private:
     };
     /* relocmap: key - symbol, value - relocation */
     typedef std::unordered_map<CString, Relocation> RelocMap;
-    struct Kernel
+    struct Kernel : KernelBase
     {
         cxuint stubSection;
         cxuint setupSection;
@@ -355,8 +366,14 @@ private:
         bool useHsaConfig; // 
         std::unique_ptr<AsmAmdHsaKernelConfig> hsaConfig; // hsaConfig
         std::unordered_set<CString> argNamesSet;
-        cxuint allocRegs[MAX_REGTYPES_NUM];
-        Flags allocRegFlags;
+        
+        explicit Kernel(cxuint _codeSection = ASMSECT_NONE) : KernelBase{},
+            stubSection(ASMSECT_NONE), setupSection(ASMSECT_NONE),
+            metadataSection(ASMSECT_NONE), isaMetadataSection(ASMSECT_NONE),
+            configSection(ASMSECT_NONE), ctrlDirSection(ASMSECT_NONE),
+            codeSection(_codeSection), savedSection(ASMSECT_NONE),
+            useHsaConfig(false)
+        { }
         
         void initializeKernelConfig();
     };
@@ -426,15 +443,18 @@ private:
         cxuint elfBinSectId;
         const char* name;    // must be available by whole lifecycle
     };
-    struct Kernel
+    struct Kernel : KernelBase
     {
         cxuint defaultSection;
         std::unique_ptr<AsmAmdHsaKernelConfig> hsaConfig;
         cxuint ctrlDirSection;
         bool hasProgInfo;
         cxbyte progInfoEntries;
-        cxuint allocRegs[MAX_REGTYPES_NUM];
-        Flags allocRegFlags;
+        
+        explicit Kernel(cxuint _defaultSection = ASMSECT_NONE) : KernelBase{},
+                defaultSection(_defaultSection), hsaConfig(nullptr),
+                ctrlDirSection(ASMSECT_NONE), hasProgInfo(false), progInfoEntries(0)
+        { }
         
         void initializeAmdHsaKernelConfig();
     };
@@ -508,15 +528,18 @@ private:
         cxuint elfBinSectId;
         const char* name;    // must be available by whole lifecycle
     };
-    struct Kernel
+    struct Kernel : KernelBase
     {
         cxuint configSection;
         std::unique_ptr<AsmROCmKernelConfig> config;
         bool isFKernel;
         cxuint ctrlDirSection;
         cxuint savedSection;
-        Flags allocRegFlags;
-        cxuint allocRegs[MAX_REGTYPES_NUM];
+        
+        explicit Kernel(cxuint _configSection = ASMSECT_NONE): KernelBase{},
+                configSection(_configSection), config(nullptr), isFKernel(false),
+                ctrlDirSection(ASMSECT_NONE), savedSection(ASMSECT_NONE)
+        { }
         
         void initializeKernelConfig();
     };

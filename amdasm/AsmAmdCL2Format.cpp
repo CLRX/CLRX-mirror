@@ -203,10 +203,8 @@ cxuint AsmAmdCL2Handler::addKernel(const char* kernelName)
     cxuint thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
     output.addEmptyKernel(kernelName);
-    Kernel kernelState{ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
-            ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE, thisSection, ASMSECT_NONE, false };
     /* add new kernel and their section (.text) */
-    kernelStates.push_back(new Kernel(std::move(kernelState)));
+    kernelStates.push_back(new Kernel(thisSection));
     sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
     
     saveCurrentAllocRegs();

@@ -187,7 +187,7 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
     output.addEmptyKernel(kernelName, determineLLVMVersion());
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
-    kernelStates.push_back(new Kernel{ thisSection, nullptr, ASMSECT_NONE, false, 0 });
+    kernelStates.push_back(new Kernel(thisSection));
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;

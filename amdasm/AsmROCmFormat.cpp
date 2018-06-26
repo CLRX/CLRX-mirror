@@ -150,8 +150,7 @@ cxuint AsmROCmHandler::addKernel(const char* kernelName)
     output.addEmptyKernel(kernelName);
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
-    kernelStates.push_back(
-        new Kernel{ thisSection, nullptr, false, ASMSECT_NONE, thisSection });
+    kernelStates.push_back(new Kernel(thisSection));
     output.metadataInfo.kernels.push_back(ROCmKernelMetadata());
     output.metadataInfo.kernels.back().initialize();
     output.metadataInfo.kernels.back().name = kernelName;
