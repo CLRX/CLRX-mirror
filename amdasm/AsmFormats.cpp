@@ -298,7 +298,8 @@ void AsmKcodePseudoOps::doKCode(AsmKcodeHandler& handler, const char* pseudoOpPl
             if (linePtr==end)
             {
                 // add all kernels
-                for (cxuint k = 0; k < handler.getKernelsNum(); k++)
+                const cxuint kernelsNum = handler.getKernelsNum();
+                for (cxuint k = 0; k < kernelsNum; k++)
                     newSel.insert(k);
                 break;
             }
@@ -321,7 +322,6 @@ void AsmKcodePseudoOps::doKCode(AsmKcodeHandler& handler, const char* pseudoOpPl
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    //if (handler.sections[asmr.currentSection].type != AsmSectionType::CODE)
     if (!handler.isCodeSection())
         PSEUDOOP_RETURN_BY_ERROR("KCode outside code")
     if (handler.kcodeSelStack.empty())
@@ -351,7 +351,6 @@ void AsmKcodePseudoOps::doKCodeEnd(AsmKcodeHandler& handler, const char* pseudoO
                     const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    //if (handler.sections[asmr.currentSection].type != AsmSectionType::CODE)
     if (!handler.isCodeSection())
         PSEUDOOP_RETURN_BY_ERROR("KCodeEnd outside code")
     if (handler.kcodeSelStack.empty())
