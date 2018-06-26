@@ -52,6 +52,8 @@ gpuDeviceEntryTable[] =
     { "gfx903", GPUDeviceType::GFX903 },
     { "gfx904", GPUDeviceType::GFX904 },
     { "gfx905", GPUDeviceType::GFX905 },
+    { "gfx906", GPUDeviceType::GFX906 },
+    { "gfx907", GPUDeviceType::GFX907 },
     { "goose", GPUDeviceType::GOOSE },
     { "hainan", GPUDeviceType::HAINAN },
     { "hawaii", GPUDeviceType::HAWAII },
@@ -76,6 +78,8 @@ gpuDeviceEntryTable[] =
     { "topaz", GPUDeviceType::ICELAND },
     { "vega10", GPUDeviceType::GFX900 },
     { "vega11", GPUDeviceType::GFX901 },
+    { "vega12", GPUDeviceType::GFX904 },
+    { "vega20", GPUDeviceType::GFX906 },
     
     { "bAffin", GPUDeviceType::BAFFIN },
     { "boNAIre", GPUDeviceType::BONAIRE },
@@ -96,6 +100,8 @@ gpuDeviceEntryTable[] =
     { "gfX903", GPUDeviceType::GFX903 },
     { "gFX904", GPUDeviceType::GFX904 },
     { "Gfx905", GPUDeviceType::GFX905 },
+    { "Gfx906", GPUDeviceType::GFX906 },
+    { "Gfx907", GPUDeviceType::GFX907 },
     { "goOSe", GPUDeviceType::GOOSE },
     { "hAINAn", GPUDeviceType::HAINAN },
     { "hAWaII", GPUDeviceType::HAWAII },
@@ -119,7 +125,9 @@ gpuDeviceEntryTable[] =
     { "toNGa", GPUDeviceType::TONGA },
     { "tOPAz", GPUDeviceType::ICELAND },
     { "VEga10", GPUDeviceType::GFX900 },
-    { "veGA11", GPUDeviceType::GFX901 }
+    { "veGA11", GPUDeviceType::GFX901 },
+    { "VeGa12", GPUDeviceType::GFX904 },
+    { "VeGa20", GPUDeviceType::GFX906 }
 };
 
 static const size_t gpuDeviceEntryTableSize =
@@ -155,14 +163,17 @@ gpuArchitectureEntryTable[] =
     { "gcn1.1", GPUArchitecture::GCN1_1 },
     { "gcn1.2", GPUArchitecture::GCN1_2 },
     { "gcn1.4", GPUArchitecture::GCN1_4 },
+    { "gcn1.4.1", GPUArchitecture::GCN1_4_1 },
     { "gfx6", GPUArchitecture::GCN1_0 },
     { "gfx7", GPUArchitecture::GCN1_1 },
     { "gfx8", GPUArchitecture::GCN1_2 },
     { "gfx9", GPUArchitecture::GCN1_4 },
+    { "gfx906", GPUArchitecture::GCN1_4_1 },
     { "si", GPUArchitecture::GCN1_0 },
     { "ci", GPUArchitecture::GCN1_1 },
     { "vi", GPUArchitecture::GCN1_2 },
     { "vega", GPUArchitecture::GCN1_4 },
+    { "vega20", GPUArchitecture::GCN1_4_1 },
     { "gCn1.0", GPUArchitecture::GCN1_0 },
     { "Gcn1.1", GPUArchitecture::GCN1_1 },
     { "gCn1.2", GPUArchitecture::GCN1_2 },
@@ -171,10 +182,12 @@ gpuArchitectureEntryTable[] =
     { "gFX7", GPUArchitecture::GCN1_1 },
     { "GfX8", GPUArchitecture::GCN1_2 },
     { "gFX9", GPUArchitecture::GCN1_4 },
+    { "gFX906", GPUArchitecture::GCN1_4_1 },
     { "Si", GPUArchitecture::GCN1_0 },
     { "CI", GPUArchitecture::GCN1_1 },
     { "vI", GPUArchitecture::GCN1_2 },
-    { "vEGa", GPUArchitecture::GCN1_4 }
+    { "vEGa", GPUArchitecture::GCN1_4 },
+    { "vEGa20", GPUArchitecture::GCN1_4_1 }
 };
 
 static const size_t gpuArchitectureEntryTableSize =
@@ -217,19 +230,24 @@ static const GPUMaxRegTestCase gpuMaxRegTestTable[] =
     { GPUArchitecture::GCN1_1, REGTYPE_VGPR, 0, 256 },
     { GPUArchitecture::GCN1_2, REGTYPE_VGPR, 0, 256 },
     { GPUArchitecture::GCN1_4, REGTYPE_VGPR, 0, 256 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_VGPR, 0, 256 },
     { GPUArchitecture::GCN1_0, REGTYPE_SGPR, 0, 104 },
     { GPUArchitecture::GCN1_1, REGTYPE_SGPR, 0, 104 },
     { GPUArchitecture::GCN1_2, REGTYPE_SGPR, 0, 102 },
     { GPUArchitecture::GCN1_4, REGTYPE_SGPR, 0, 102 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, 0, 102 },
     { GPUArchitecture::GCN1_0, REGTYPE_SGPR, REGCOUNT_NO_VCC, 102 },
     { GPUArchitecture::GCN1_1, REGTYPE_SGPR, REGCOUNT_NO_VCC, 102 },
     { GPUArchitecture::GCN1_2, REGTYPE_SGPR, REGCOUNT_NO_VCC, 100 },
     { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_VCC, 100 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, REGCOUNT_NO_VCC, 100 },
     { GPUArchitecture::GCN1_1, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 100 },
     { GPUArchitecture::GCN1_2, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 96 },
     { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 96 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 96 },
     { GPUArchitecture::GCN1_2, REGTYPE_SGPR, REGCOUNT_NO_XNACK, 98 },
-    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_XNACK, 98 }
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_XNACK, 98 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, REGCOUNT_NO_XNACK, 98 }
 };
 
 static void testGetGPUMaxRegistersNum()
@@ -254,19 +272,24 @@ static const GPUMaxRegTestCase gpuExtraRegsTestTable[] =
     { GPUArchitecture::GCN1_1, REGTYPE_VGPR, 0, 0 },
     { GPUArchitecture::GCN1_2, REGTYPE_VGPR, 0, 0 },
     { GPUArchitecture::GCN1_4, REGTYPE_VGPR, 0, 0 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_VGPR, 0, 0 },
     { GPUArchitecture::GCN1_0, REGTYPE_SGPR, 0, 0 },
     { GPUArchitecture::GCN1_1, REGTYPE_SGPR, 0, 0 },
     { GPUArchitecture::GCN1_2, REGTYPE_SGPR, 0, 0 },
     { GPUArchitecture::GCN1_4, REGTYPE_SGPR, 0, 0 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, 0, 0 },
     { GPUArchitecture::GCN1_0, REGTYPE_SGPR, GCN_VCC, 2 },
     { GPUArchitecture::GCN1_1, REGTYPE_SGPR, GCN_VCC, 2 },
     { GPUArchitecture::GCN1_2, REGTYPE_SGPR, GCN_VCC, 2 },
     { GPUArchitecture::GCN1_4, REGTYPE_SGPR, GCN_VCC, 2 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, GCN_VCC, 2 },
     { GPUArchitecture::GCN1_1, REGTYPE_SGPR, GCN_FLAT, 4 },
     { GPUArchitecture::GCN1_2, REGTYPE_SGPR, GCN_FLAT, 6 },
     { GPUArchitecture::GCN1_4, REGTYPE_SGPR, GCN_FLAT, 6 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, GCN_FLAT, 6 },
     { GPUArchitecture::GCN1_2, REGTYPE_SGPR, GCN_XNACK, 4 },
-    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, GCN_XNACK, 4 }
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, GCN_XNACK, 4 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, GCN_XNACK, 4 }
 };
 
 static void testGetGPUExtraRegsNum()
