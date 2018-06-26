@@ -77,7 +77,7 @@ gpuDeviceEntryTable[] =
     { "tonga", GPUDeviceType::TONGA },
     { "topaz", GPUDeviceType::ICELAND },
     { "vega10", GPUDeviceType::GFX900 },
-    { "vega11", GPUDeviceType::GFX901 },
+    { "vega11", GPUDeviceType::GFX902 },
     { "vega12", GPUDeviceType::GFX904 },
     { "vega20", GPUDeviceType::GFX906 },
     
@@ -125,7 +125,7 @@ gpuDeviceEntryTable[] =
     { "toNGa", GPUDeviceType::TONGA },
     { "tOPAz", GPUDeviceType::ICELAND },
     { "VEga10", GPUDeviceType::GFX900 },
-    { "veGA11", GPUDeviceType::GFX901 },
+    { "veGA11", GPUDeviceType::GFX902 },
     { "VeGa12", GPUDeviceType::GFX904 },
     { "VeGa20", GPUDeviceType::GFX906 }
 };

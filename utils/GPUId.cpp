@@ -115,7 +115,7 @@ lowerCaseGpuDeviceEntryTable[] =
     { "tonga", GPUDeviceType::TONGA },
     { "topaz", GPUDeviceType::ICELAND },
     { "vega10", GPUDeviceType::GFX900 },
-    { "vega11", GPUDeviceType::GFX901 },
+    { "vega11", GPUDeviceType::GFX902 },
     { "vega12", GPUDeviceType::GFX904 },
     { "vega20", GPUDeviceType::GFX906 }
 };
