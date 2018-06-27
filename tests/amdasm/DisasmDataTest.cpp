@@ -26,6 +26,7 @@
 #include <CLRX/amdbin/AmdCL2Binaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdasm/Disassembler.h>
+#include "../TestUtils.h"
 
 using namespace CLRX;
 
@@ -244,11 +245,13 @@ struct DisasmAmdTestCase
     bool config;
     bool hsaConfig;
     cxuint llvmVersion;
+    const char* exceptionString;
 };
 
 // disasm testcases
 static const DisasmAmdTestCase disasmDataTestCases[] =
 {
+    /* 0 - */
     { &disasmInput1, nullptr, nullptr,
         R"xxFxx(.amd
 .gpu Spooky
@@ -356,6 +359,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
     .uavopmask 4556
 )xxFxx", false, false
     },
+    /* 1 - */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/samplekernels.clo",
         R"xxFxx(.amd
 .gpu Pitcairn
@@ -663,6 +667,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*bf810000         */ s_endpgm
 )xxFxx", false, false
     },
+    /* 2 - */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/samplekernels_64.clo",
         R"xxFxx(.amd
 .gpu Pitcairn
@@ -991,6 +996,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*bf810000         */ s_endpgm
 )xxFxx", false, false
     },
+    /* 3 - */
     { nullptr, &galliumDisasmData, nullptr,
         R"fxDfx(.gallium
 .gpu Pitcairn
@@ -1034,7 +1040,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
         .entry 0x00011122, 0x0f3424dd
 )fxDfx", false, false, 0
     },
-    /* configuration dump test cases */
+    /* 4 - configuration dump test cases */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amd1.clo",
         R"ffDXD(.amd
 .gpu Bonaire
@@ -1086,7 +1092,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*4a040501         */ v_add_i32       v2, vcc, v1, v2
 )ffDXD", true, false
     },
-    /* configuration dump test cases (diff dimensions in local_id and group_id */
+    /* 5 - configuration dump test cases (diff dimensions in local_id and group_id */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amd1-diffdims.clo",
         R"ffDXD(.amd
 .gpu Bonaire
@@ -1138,7 +1144,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*4a040501         */ v_add_i32       v2, vcc, v1, v2
 )ffDXD", true, false
     },
-    /* amdcl2 config */
+    /* 6 - amdcl2 config */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amdcl2.clo",
         R"ffDXD(.amdcl2
 .gpu Bonaire
@@ -1243,7 +1249,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*bf810000         */ s_endpgm
 )ffDXD", true, false
     },
-    /* amdcl2 config */
+    /* 7 - amdcl2 config */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amdcl2.clo",
         R"ffDXD(.amdcl2
 .gpu Bonaire
@@ -1403,7 +1409,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*bf810000         */ s_endpgm
 )ffDXD", true, true
     },
-    /* gallium config */
+    /* 8 - gallium config */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/gallium1.clo",
         R"ffDXD(.gallium
 .gpu CapeVerde
@@ -1459,7 +1465,7 @@ one1:
 /*7e000303         */ v_mov_b32       v0, v3
 )ffDXD", true, false, 0
     },
-    /* gallium config - different dimensions for group_ids and local_ids */
+    /* 9 - gallium config - different dimensions for group_ids and local_ids */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/gallium1-diffdims.clo",
         R"ffDXD(.gallium
 .gpu CapeVerde
@@ -1515,7 +1521,7 @@ one1:
 /*7e000303         */ v_mov_b32       v0, v3
 )ffDXD", true, false, 0
     },
-    /* gallium config */
+    /* 10 - gallium config */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/new-gallium-llvm40.clo",
         R"ffDXD(.gallium
 .gpu CapeVerde
@@ -1604,7 +1610,7 @@ vectorAdd:
 /*bf810000         */ s_endpgm
 )ffDXD", true, false, 40000U
     },
-    /* gallium config - different dimensions for group_ids and local_ids */
+    /* 11 - gallium config - different dimensions for group_ids and local_ids */
     { nullptr, nullptr, CLRX_SOURCE_DIR
         "/tests/amdasm/amdbins/new-gallium-llvm40-diffdims.clo",
         R"ffDXD(.gallium
@@ -1694,7 +1700,7 @@ vectorAdd:
 /*bf810000         */ s_endpgm
 )ffDXD", true, false, 40000U
     },
-    /* rocm config */
+    /* 12 - rocm config */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/rocm-fiji.hsaco",
         R"ffDXD(.rocm
 .gpu Fiji
@@ -1838,7 +1844,7 @@ data2:
         .byte 0x0a, 0xd7, 0x13, 0xc0, 0xd7, 0xa3, 0x98, 0xc0
 )ffDXD", true, false
     },
-    /* rocm config - different dimensions for group_ids and local_ids */
+    /* 13 - rocm config - different dimensions for group_ids and local_ids */
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/rocm-fiji-diffdims.hsaco",
         R"ffDXD(.rocm
 .gpu Fiji
@@ -1981,7 +1987,12 @@ data2:
         .byte 0xcd, 0xcc, 0x94, 0xc1, 0x33, 0x33, 0xb3, 0xc0
         .byte 0x0a, 0xd7, 0x13, 0xc0, 0xd7, 0xa3, 0x98, 0xc0
 )ffDXD", true, false
-    }
+    },
+    /* 14 - gallium old bin format disassembled as new binformat - error */
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/gallium1.clo",
+        "", true, false, 40000U,
+        "Gallium kernel region is too small" // error
+    },
 };
 
 static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
@@ -1993,6 +2004,11 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
         disasmFlags |= DISASM_CONFIG;
     if (testCase.hsaConfig)
         disasmFlags |= DISASM_HSACONFIG;
+    
+    bool haveException = false;
+    std::string resExceptionStr;
+    try
+    {
     if (testCase.filename == nullptr)
     {
         // disassemble input provided in testcase
@@ -2057,6 +2073,26 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
             resultStr = disasmOss.str();
         }
     }
+    }
+    catch(const DisasmException& ex)
+    {
+        resExceptionStr = ex.what();
+        haveException = true;
+    }
+    
+    std::string caseName;
+    {
+        std::ostringstream oss;
+        oss << "DisasmCase#" << testId;
+        oss.flush();
+        caseName = oss.str();
+    }
+    
+    if (testCase.exceptionString == nullptr)
+        assertTrue("DisasmData", caseName + ".noexception", !haveException);
+    else
+        assertString("DisasmData", caseName + ".exception",
+                     testCase.exceptionString, resExceptionStr);
     
     // compare output with expected string
     if (::strcmp(testCase.expectedString, resultStr.c_str()) != 0)
