@@ -457,12 +457,22 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
     isaDisassembler->clearNumberedLabels();
     
     /// analyze code with collecting labels
+    // before first kernel
+    if (doDumpCode && (regionsNum == 0 || sorted[0].first > 0))
+    {
+        const size_t regionSize = (regionsNum!=0 ? sorted[0].first : codeSize);
+        isaDisassembler->setInput(regionSize, code, 0);
+        isaDisassembler->analyzeBeforeDisassemble();
+    }
+    
     for (size_t i = 0; i < regionsNum; i++)
     {
         const ROCmDisasmRegionInput& region = regions[sorted[i].second];
         if ((region.type==ROCmRegionType::KERNEL ||
              region.type==ROCmRegionType::FKERNEL) && doDumpCode)
         {
+            if (region.offset+256 > codeSize)
+                throw DisasmException("Region Offset out of range");
             // kernel code begin after HSA config
             isaDisassembler->setInput(region.size-256, code + region.offset+256,
                                 region.offset+256);
@@ -476,8 +486,23 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
     ISADisassembler::NamedLabelIter curNamedLabel;
     const auto& labels = isaDisassembler->getLabels();
     const auto& namedLabels = isaDisassembler->getNamedLabels();
+    
     // real disassemble
+    // before first kernel
     size_t prevRegionPos = 0;
+    if (doDumpCode && (regionsNum == 0 || sorted[0].first > 0))
+    {
+        const size_t regionSize = (regionsNum!=0 ? sorted[0].first : codeSize);
+        if (doDumpCode)
+        {
+            // dump code of region
+            isaDisassembler->setInput(regionSize, code, 0, 0);
+            isaDisassembler->setDontPrintLabels(true);
+            isaDisassembler->disassemble();
+        }
+        prevRegionPos = regionSize+1;
+    }
+    
     for (size_t i = 0; i < regionsNum; i++)
     {
         const ROCmDisasmRegionInput& region = regions[sorted[i].second];

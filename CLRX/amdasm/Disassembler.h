@@ -310,7 +310,7 @@ struct ROCmDisasmRegionInput
     CString regionName; ///< region name
     size_t size;    ///< region size
     size_t offset;  ///< region offset in code
-    ROCmRegionType type ;  ///< type
+    ROCmRegionType type;  ///< type
 };
 
 /// disasm ROCm input
