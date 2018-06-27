@@ -1106,17 +1106,6 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     {
         // print like Gallium or ROCm
         std::vector<ROCmDisasmRegionInput> regions(amdCL2Input->kernels.size());
-        Array<size_t> sortedIndices(amdCL2Input->kernels.size());
-        for (size_t i = 0; i < sortedIndices.size(); i++)
-            sortedIndices[i] = i;
-        
-        // sort by offset (sortedRegions is indices of sorted regions)
-        std::sort(sortedIndices.begin(), sortedIndices.end(), [&amdCL2Input]
-                (size_t a, size_t b)
-                {
-                    return amdCL2Input->kernels[a].setup <
-                            amdCL2Input->kernels[b].setup;
-                });
         
         // preparing ROCMDIsasm region inputs for dissasemblying in AMDHSA form
         for (size_t i = 0; i < amdCL2Input->kernels.size(); i++)
@@ -1126,24 +1115,13 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
             region.regionName = kernel.kernelName;
             region.offset = kernel.setup - amdCL2Input->code;
             region.type = ROCmRegionType::KERNEL;
+            region.size = kernel.codeSize + kernel.setupSize;
         }
         
         isaDisassembler->clearRelocations();
         isaDisassembler->addRelSymbol(".gdata");
         isaDisassembler->addRelSymbol(".ddata"); // rw data
         isaDisassembler->addRelSymbol(".bdata"); // .bss data
-        // set correct region size using sorted indices by region offsets
-        for (size_t i = 0; i < sortedIndices.size(); i++)
-        {
-            const size_t index = sortedIndices[i];
-            const size_t end = (i+1 < amdCL2Input->kernels.size()) ?
-                    (amdCL2Input->kernels[sortedIndices[i+1]].setup - amdCL2Input->code) :
-                    amdCL2Input->codeSize;
-            ROCmDisasmRegionInput& region = regions[index];
-            region.size = end - (amdCL2Input->kernels[index].setup - amdCL2Input->code);
-            if (region.size < 256)
-                throw DisasmException("AmdCL2 kernel region is too small");
-        }
         
         // prepare relocations
         for (const AmdCL2RelaEntry& entry: amdCL2Input->textRelocs)
