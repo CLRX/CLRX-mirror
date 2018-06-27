@@ -208,21 +208,32 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         }
     }
     
+    Array<size_t> sortedKIndices(kernelInfosNum);
+    for (size_t i = 0; i < sortedKIndices.size(); i++)
+        sortedKIndices[i] = i;
+    
+    // sort by offset (sortedRegions is indices of sorted regions)
+    if (!sortedRelocs.empty() && !hsaLayout)
+        std::sort(sortedKIndices.begin(), sortedKIndices.end(), [&input]
+                (size_t a, size_t b)
+                { return input->kernels[a].setup < input->kernels[b].setup; });
+    
     // preparing kernel inputs
     for (cxuint i = 0; i < kernelInfosNum; i++)
     {
-        const KernelInfo& kernelInfo = binary.getKernelInfo(i);
-        AmdCL2DisasmKernelInput& kinput = input->kernels[i];
+        size_t kindex = sortedKIndices[i];
+        const KernelInfo& kernelInfo = binary.getKernelInfo(kindex);
+        AmdCL2DisasmKernelInput& kinput = input->kernels[kindex];
         kinput.kernelName = kernelInfo.kernelName;
-        kinput.metadataSize = binary.getMetadataSize(i);
-        kinput.metadata = binary.getMetadata(i);
+        kinput.metadataSize = binary.getMetadataSize(kindex);
+        kinput.metadata = binary.getMetadata(kindex);
         
         kinput.isaMetadataSize = 0;
         kinput.isaMetadata = nullptr;
         // setup isa metadata content
         const AmdCL2GPUKernelMetadata* isaMetadata = nullptr;
-        if (i < binary.getISAMetadatasNum())
-            isaMetadata = &binary.getISAMetadataEntry(i);
+        if (kindex < binary.getISAMetadatasNum())
+            isaMetadata = &binary.getISAMetadataEntry(kindex);
         if (isaMetadata == nullptr || isaMetadata->kernelName != kernelInfo.kernelName)
         {
             // fallback if not in order
@@ -250,8 +261,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         // get kernel code, setup and stub content
         const AmdCL2InnerGPUBinaryBase& innerBin = binary.getInnerBinaryBase();
         const AmdCL2GPUKernel* kernelData = nullptr;
-        if (i < innerBin.getKernelsNum())
-            kernelData = &innerBin.getKernelData(i);
+        if (kindex < innerBin.getKernelsNum())
+            kernelData = &innerBin.getKernelData(kindex);
         if (kernelData==nullptr || kernelData->kernelName != kernelInfo.kernelName)
             kernelData = &innerBin.getKernelData(kernelInfo.kernelName.c_str());
         
@@ -268,8 +279,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
             // old drivers
             const AmdCL2OldInnerGPUBinary& oldInnerBin = binary.getOldInnerBinary();
             const AmdCL2GPUKernelStub* kstub = nullptr;
-            if (i < innerBin.getKernelsNum())
-                kstub = &oldInnerBin.getKernelStub(i);
+            if (kindex < innerBin.getKernelsNum())
+                kstub = &oldInnerBin.getKernelStub(kindex);
             if (kstub==nullptr || kernelData->kernelName != kernelInfo.kernelName)
                 kstub = &oldInnerBin.getKernelStub(kernelInfo.kernelName.c_str());
             if (kstub!=nullptr)
