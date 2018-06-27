@@ -280,17 +280,20 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         }
     }
     
-    Array<size_t> sortedKIndices(kernelInfosNum);
-    for (size_t i = 0; i < sortedKIndices.size(); i++)
-        sortedKIndices[i] = i;
-    
-    // sort by offset (sortedRegions is indices of sorted regions)
-    if (!sortedRelocs.empty() && !hsaLayout)
-        std::sort(sortedKIndices.begin(), sortedKIndices.end(), [&input]
-                (size_t a, size_t b)
-                { return input->kernels[a].setup < input->kernels[b].setup; });
-    
-    if (!hsaLayout)
+    if (isInnerNewBinary && !hsaLayout)
+    {
+        // sort kernels by order before putting text relocations
+        Array<size_t> sortedKIndices(kernelInfosNum);
+        for (size_t i = 0; i < sortedKIndices.size(); i++)
+            sortedKIndices[i] = i;
+        
+        // sort by offset (sortedRegions is indices of sorted regions)
+        if (!sortedRelocs.empty() && !hsaLayout)
+            std::sort(sortedKIndices.begin(), sortedKIndices.end(), [&input]
+                    (size_t a, size_t b)
+                    { return input->kernels[a].setup < input->kernels[b].setup; });
+        
+        // put text relocations to kernels in offset order
         for (cxuint i = 0; i < kernelInfosNum; i++)
         {
             const size_t kindex = sortedKIndices[i];
@@ -340,6 +343,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
                 }
             }
         }
+    }
     
     if (sortedRelocIter != sortedRelocs.end())
         throw DisasmException("Code relocation offset outside kernel code");
