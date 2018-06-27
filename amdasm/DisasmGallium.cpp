@@ -394,6 +394,8 @@ void CLRX::disassembleGallium(std::ostream& output,
                         galliumInput->codeSize;
                 ROCmDisasmRegionInput& region = regions[index];
                 region.size = end - galliumInput->kernels[index].offset;
+                if (region.size < 256)
+                    throw DisasmException("Gallium kernel region is too small");
             }
             
             disassembleAMDHSACode(output, regions, galliumInput->codeSize,
