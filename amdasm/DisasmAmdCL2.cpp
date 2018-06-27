@@ -208,32 +208,21 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         }
     }
     
-    Array<size_t> sortedKIndices(kernelInfosNum);
-    for (size_t i = 0; i < sortedKIndices.size(); i++)
-        sortedKIndices[i] = i;
-    
-    // sort by offset (sortedRegions is indices of sorted regions)
-    if (!sortedRelocs.empty() && !hsaLayout)
-        std::sort(sortedKIndices.begin(), sortedKIndices.end(), [&input]
-                (size_t a, size_t b)
-                { return input->kernels[a].setup < input->kernels[b].setup; });
-    
     // preparing kernel inputs
     for (cxuint i = 0; i < kernelInfosNum; i++)
     {
-        size_t kindex = sortedKIndices[i];
-        const KernelInfo& kernelInfo = binary.getKernelInfo(kindex);
-        AmdCL2DisasmKernelInput& kinput = input->kernels[kindex];
+        const KernelInfo& kernelInfo = binary.getKernelInfo(i);
+        AmdCL2DisasmKernelInput& kinput = input->kernels[i];
         kinput.kernelName = kernelInfo.kernelName;
-        kinput.metadataSize = binary.getMetadataSize(kindex);
-        kinput.metadata = binary.getMetadata(kindex);
+        kinput.metadataSize = binary.getMetadataSize(i);
+        kinput.metadata = binary.getMetadata(i);
         
         kinput.isaMetadataSize = 0;
         kinput.isaMetadata = nullptr;
         // setup isa metadata content
         const AmdCL2GPUKernelMetadata* isaMetadata = nullptr;
-        if (kindex < binary.getISAMetadatasNum())
-            isaMetadata = &binary.getISAMetadataEntry(kindex);
+        if (i < binary.getISAMetadatasNum())
+            isaMetadata = &binary.getISAMetadataEntry(i);
         if (isaMetadata == nullptr || isaMetadata->kernelName != kernelInfo.kernelName)
         {
             // fallback if not in order
@@ -261,8 +250,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         // get kernel code, setup and stub content
         const AmdCL2InnerGPUBinaryBase& innerBin = binary.getInnerBinaryBase();
         const AmdCL2GPUKernel* kernelData = nullptr;
-        if (kindex < innerBin.getKernelsNum())
-            kernelData = &innerBin.getKernelData(kindex);
+        if (i < innerBin.getKernelsNum())
+            kernelData = &innerBin.getKernelData(i);
         if (kernelData==nullptr || kernelData->kernelName != kernelInfo.kernelName)
             kernelData = &innerBin.getKernelData(kernelInfo.kernelName.c_str());
         
@@ -279,8 +268,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
             // old drivers
             const AmdCL2OldInnerGPUBinary& oldInnerBin = binary.getOldInnerBinary();
             const AmdCL2GPUKernelStub* kstub = nullptr;
-            if (kindex < innerBin.getKernelsNum())
-                kstub = &oldInnerBin.getKernelStub(kindex);
+            if (i < innerBin.getKernelsNum())
+                kstub = &oldInnerBin.getKernelStub(i);
             if (kstub==nullptr || kernelData->kernelName != kernelInfo.kernelName)
                 kstub = &oldInnerBin.getKernelStub(kernelInfo.kernelName.c_str());
             if (kstub!=nullptr)
@@ -289,8 +278,24 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
                 kinput.stub = kstub->data;
             }
         }
-        else if (!hsaLayout)
+    }
+    
+    Array<size_t> sortedKIndices(kernelInfosNum);
+    for (size_t i = 0; i < sortedKIndices.size(); i++)
+        sortedKIndices[i] = i;
+    
+    // sort by offset (sortedRegions is indices of sorted regions)
+    if (!sortedRelocs.empty() && !hsaLayout)
+        std::sort(sortedKIndices.begin(), sortedKIndices.end(), [&input]
+                (size_t a, size_t b)
+                { return input->kernels[a].setup < input->kernels[b].setup; });
+    
+    if (!hsaLayout)
+        for (cxuint i = 0; i < kernelInfosNum; i++)
         {
+            const size_t kindex = sortedKIndices[i];
+            AmdCL2DisasmKernelInput& kinput = input->kernels[kindex];
+            
             // relocations
             const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
             
@@ -335,7 +340,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
                 }
             }
         }
-    }
+    
     if (sortedRelocIter != sortedRelocs.end())
         throw DisasmException("Code relocation offset outside kernel code");
     return input.release();
