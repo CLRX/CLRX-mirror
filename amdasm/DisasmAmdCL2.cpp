@@ -296,11 +296,15 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
         // put text relocations to kernels in offset order
         for (cxuint i = 0; i < kernelInfosNum; i++)
         {
-            const size_t kindex = sortedKIndices[i];
-            AmdCL2DisasmKernelInput& kinput = input->kernels[kindex];
+            AmdCL2DisasmKernelInput& kinput = input->kernels[sortedKIndices[i]];
             
             // relocations
             const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
+            
+            // skip relocation between kernels
+            for (; sortedRelocIter != sortedRelocs.end(); ++sortedRelocIter)
+                if (sortedRelocIter->first >= size_t(kinput.code-textPtr))
+                    break;
             
             if (sortedRelocIter != sortedRelocs.end() &&
                     sortedRelocIter->first < size_t(kinput.code-textPtr))
