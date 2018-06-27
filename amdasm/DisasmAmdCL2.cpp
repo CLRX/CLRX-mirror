@@ -1079,6 +1079,8 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
                     amdCL2Input->codeSize;
             ROCmDisasmRegionInput& region = regions[index];
             region.size = end - (amdCL2Input->kernels[index].setup - amdCL2Input->code);
+            if (region.size < 256)
+                throw DisasmException("AmdCL2 kernel region is too small");
         }
         
         // prepare relocations
