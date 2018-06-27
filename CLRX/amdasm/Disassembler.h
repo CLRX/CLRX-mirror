@@ -289,6 +289,7 @@ struct AmdCL2DisasmInput
     const cxbyte* samplerInit;  ///< sampler init data
     size_t codeSize;            ///< code size
     const cxbyte* code;         ///< code
+    std::vector<AmdCL2RelaEntry> textRelocs;    ///< text relocations
     
     /// sampler relocations
     std::vector<std::pair<size_t, size_t> > samplerRelocs;
@@ -519,10 +520,12 @@ extern AmdDisasmInput* getAmdDisasmInputFromBinary64(
             const AmdMainGPUBinary64& binary, Flags flags);
 /// prepare AMD OpenCL 2.0 input from AMD 32-bit binary
 extern AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary32(
-            const AmdCL2MainGPUBinary32& binary, cxuint driverVersion);
+            const AmdCL2MainGPUBinary32& binary, cxuint driverVersion,
+            bool hsaLayout = false);
 /// prepare AMD OpenCL 2.0 input from AMD 64-bit binary
 extern AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary64(
-            const AmdCL2MainGPUBinary64& binary, cxuint driverVersion);
+            const AmdCL2MainGPUBinary64& binary, cxuint driverVersion,
+            bool hsaLayout = false);
 /// prepare ROCM input from ROCM binary
 extern ROCmDisasmInput* getROCmDisasmInputFromBinary(
             const ROCmBinary& binary);

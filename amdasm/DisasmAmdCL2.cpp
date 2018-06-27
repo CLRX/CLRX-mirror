@@ -57,7 +57,8 @@ struct CLRX_INTERNAL AmdCL2Types64: Elf64Types
 // generate AMD CL2.0 disasm input from main binary
 template<typename AmdCL2Types>
 static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
-            const typename AmdCL2Types::AmdCL2MainBinary& binary, cxuint driverVersion)
+            const typename AmdCL2Types::AmdCL2MainBinary& binary, cxuint driverVersion,
+            bool hsaLayout)
 {
     std::unique_ptr<AmdCL2DisasmInput> input(new AmdCL2DisasmInput);
     input->is64BitMode = (binary.getHeader().e_ident[EI_CLASS] == ELFCLASS64);
@@ -163,12 +164,49 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
             input->samplerRelocs.push_back({ size_t(ULEV(rel.r_offset)),
                 size_t(value>>3) });
         }
+        
     }
     else if (kernelInfosNum==0)
         return input.release();
     
     input->kernels.resize(kernelInfosNum);
     auto sortedRelocIter = sortedRelocs.begin();
+    if (isInnerNewBinary && hsaLayout)
+    {
+        const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
+        // put textRelocations to main input
+        for (; sortedRelocIter != sortedRelocs.end(); ++sortedRelocIter)
+        {
+            // add relocations
+            const Elf64_Rela& rela = innerBin.getTextRelaEntry(
+                        sortedRelocIter->second);
+            uint32_t symIndex = ELF64_R_SYM(ULEV(rela.r_info));
+            int64_t addend = ULEV(rela.r_addend);
+            cxuint rsym = 0;
+            // check this symbol
+            const Elf64_Sym& sym = innerBin.getSymbol(symIndex);
+            uint16_t symShndx = ULEV(sym.st_shndx);
+            if (symShndx!=gDataSectionIdx && symShndx!=rwDataSectionIdx &&
+                symShndx!=bssDataSectionIdx)
+                throw DisasmException("Symbol is not placed in global or "
+                        "rwdata data or bss is illegal");
+            addend += ULEV(sym.st_value);
+            rsym = (symShndx==rwDataSectionIdx) ? 1 : 
+                ((symShndx==bssDataSectionIdx) ? 2 : 0);
+            // determine relocation type
+            RelocType relocType;
+            uint32_t rtype = ELF64_R_TYPE(ULEV(rela.r_info));
+            if (rtype==1)
+                relocType = RELTYPE_LOW_32BIT;
+            else if (rtype==2)
+                relocType = RELTYPE_HIGH_32BIT;
+            else
+                throw DisasmException("Unknown relocation type");
+            // put text relocs. compute offset by subtracting current code offset
+            input->textRelocs.push_back(AmdCL2RelaEntry{sortedRelocIter->first,
+                        relocType, rsym, addend });
+        }
+    }
     
     // preparing kernel inputs
     for (cxuint i = 0; i < kernelInfosNum; i++)
@@ -240,7 +278,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
                 kinput.stub = kstub->data;
             }
         }
-        else
+        else if (!hsaLayout)
         {
             // relocations
             const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
@@ -294,16 +332,16 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
 
 // get AMD CL2 input from 32-bit binary
 AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary32(
-                const AmdCL2MainGPUBinary32& binary, cxuint driverVersion)
+        const AmdCL2MainGPUBinary32& binary, cxuint driverVersion, bool hsaLayout)
 {
-    return getAmdCL2DisasmInputFromBinary<AmdCL2Types32>(binary, driverVersion);
+    return getAmdCL2DisasmInputFromBinary<AmdCL2Types32>(binary, driverVersion, hsaLayout);
 }
 
 // get AMD CL2 input from 64-bit binary
 AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary64(
-                const AmdCL2MainGPUBinary64& binary, cxuint driverVersion)
+        const AmdCL2MainGPUBinary64& binary, cxuint driverVersion, bool hsaLayout)
 {
-    return getAmdCL2DisasmInputFromBinary<AmdCL2Types64>(binary, driverVersion);
+    return getAmdCL2DisasmInputFromBinary<AmdCL2Types64>(binary, driverVersion, hsaLayout);
 }
 
 // internal AMD OpenCL 2.0 Kernel setup (part of AMD HSA config)
@@ -1084,14 +1122,9 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         }
         
         // prepare relocations
-        for (size_t i = 0; i < amdCL2Input->kernels.size(); i++)
-        {
-            const AmdCL2DisasmKernelInput& kernel = amdCL2Input->kernels[sortedIndices[i]];
-            for (const AmdCL2RelaEntry& entry: kernel.textRelocs)
-                isaDisassembler->addRelocation(
-                    (kernel.code - amdCL2Input->code) + entry.offset,
-                    entry.type, cxuint(entry.symbol), entry.addend);
-        }
+        for (const AmdCL2RelaEntry& entry: amdCL2Input->textRelocs)
+            isaDisassembler->addRelocation(entry.offset,
+                entry.type, cxuint(entry.symbol), entry.addend);
         
         disassembleAMDHSACode(output, regions, amdCL2Input->codeSize,
                             amdCL2Input->code, isaDisassembler, flags);
