@@ -553,6 +553,8 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
     amdCL2Input.compileOptions = binary.getCompileOptions();
     bool isNewBinary = (binary.hasInnerBinary() && binary.getDriverVersion()>=191205);
     amdCL2Input.driverVersion = binary.getDriverVersion();
+    amdCL2Input.codeSize = 0;
+    amdCL2Input.code = nullptr;
     
     amdCL2Input.samplerInitSize = 0;
     amdCL2Input.samplerInit = nullptr;

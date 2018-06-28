@@ -1904,6 +1904,10 @@ public:
     
     size_t size() const
     {
+        if (input->code != nullptr)
+            // if HSA layout (main code is set)
+            return input->codeSize;
+        
         size_t out = 0;
         for (const TempAmdCL2KernelData& tempData: tempDatas)
         {
@@ -1917,6 +1921,13 @@ public:
     
     void operator()(FastOutputBuffer& fob) const
     {
+        if (input->code != nullptr)
+        {
+            // if HSA layout (code is set)
+            fob.writeArray(input->codeSize, input->code);
+            return;
+        }
+        
         GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
         size_t outSize = 0;
         for (size_t i = 0; i < input->kernels.size(); i++)
@@ -2060,6 +2071,10 @@ public:
     
     size_t size() const
     {
+        if (input->code != nullptr)
+            // if HSA layout
+            return input->relocations.size()*sizeof(Elf64_Rela);
+        
         size_t out = 0;
         for (const AmdCL2KernelInput& kernel: input->kernels)
             out += kernel.relocations.size()*sizeof(Elf64_Rela);
@@ -2089,6 +2104,23 @@ public:
             bssSymIndex = gdataSymIndex; // first is bss data symbol index
             gdataSymIndex++;
         }
+        
+        if (input->code != nullptr)
+        {
+            // if HSA layout (main code for inner binary)
+            for (const AmdCL2RelInput& inRel: input->relocations)
+            {
+                SLEV(rela.r_offset, inRel.offset);
+                uint32_t type = (inRel.type==RELTYPE_LOW_32BIT) ? 1 : 2;
+                uint32_t symIndex = (inRel.symbol==1) ? adataSymIndex : 
+                    ((inRel.symbol==2) ? bssSymIndex : gdataSymIndex);
+                SLEV(rela.r_info, ELF64_R_INFO(symIndex, type));
+                SLEV(rela.r_addend, inRel.addend);
+                fob.writeObject(rela);
+            }
+            return;
+        }
+        
         for (size_t i = 0; i < input->kernels.size(); i++)
         {
             const AmdCL2KernelInput& kernel = input->kernels[i];
@@ -2096,12 +2128,12 @@ public:
             
             codeOffset += tempData.setupSize;
             // write relocations in kernel code
-            for (const AmdCL2RelInput inRel: kernel.relocations)
+            for (const AmdCL2RelInput& inRel: kernel.relocations)
             {
                 SLEV(rela.r_offset, inRel.offset + codeOffset);
                 uint32_t type = (inRel.type==RELTYPE_LOW_32BIT) ? 1 : 2;
                 uint32_t symIndex = (inRel.symbol==1) ? adataSymIndex : 
-                    ((inRel.symbol==2) ? bssSymIndex: gdataSymIndex);
+                    ((inRel.symbol==2) ? bssSymIndex : gdataSymIndex);
                 SLEV(rela.r_info, ELF64_R_INFO(symIndex, type));
                 SLEV(rela.r_addend, inRel.addend);
                 fob.writeObject(rela);
