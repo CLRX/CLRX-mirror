@@ -177,6 +177,8 @@ cxuint AsmAmdCL2Handler::getDriverVersion() const
 
 void AsmAmdCL2Handler::restoreCurrentAllocRegs()
 {
+    if (hsaLayout)
+        return;
     if (assembler.currentKernel!=ASMKERN_GLOBAL &&
         assembler.currentKernel!=ASMKERN_INNER &&
         assembler.currentSection==kernelStates[assembler.currentKernel]->codeSection)
@@ -187,6 +189,8 @@ void AsmAmdCL2Handler::restoreCurrentAllocRegs()
 
 void AsmAmdCL2Handler::saveCurrentAllocRegs()
 {
+    if (hsaLayout)
+        return;
     if (assembler.currentKernel!=ASMKERN_GLOBAL &&
         assembler.currentKernel!=ASMKERN_INNER &&
         assembler.currentSection==kernelStates[assembler.currentKernel]->codeSection)
@@ -206,14 +210,20 @@ cxuint AsmAmdCL2Handler::addKernel(const char* kernelName)
     output.addEmptyKernel(kernelName);
     /* add new kernel and their section (.text) */
     kernelStates.push_back(new Kernel(thisSection));
-    sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
+    if (!hsaLayout)
+        sections.push_back({ thisKernel, AsmSectionType::CODE,
+                            ELFSECTID_TEXT, ".text" });
+    else
+        sections.push_back({ thisKernel, AsmSectionType::AMDCL2_DUMMY,
+                            ELFSECTID_UNDEF, nullptr });
     
     saveCurrentAllocRegs();
     saveCurrentSection();
     
     assembler.currentKernel = thisKernel;
     assembler.currentSection = thisSection;
-    assembler.isaAssembler->setAllocatedRegisters();
+    if (!hsaLayout)
+        assembler.isaAssembler->setAllocatedRegisters();
     return thisKernel;
 }
 
@@ -250,6 +260,13 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
         bssSection = sections.size();
         sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_BSS,
                 ELFSECTID_BSS, ".bss" });
+    }
+    else if (hsaLayout && ::strcmp(sectionName, ".text")==0 &&
+             (kernelId == ASMKERN_GLOBAL || kernelId == ASMKERN_INNER))
+    {
+        codeSection = sections.size();
+        sections.push_back({ ASMKERN_INNER,  AsmSectionType::CODE,
+                ELFSECTID_TEXT, ".text" });
     }
     else if (kernelId == ASMKERN_GLOBAL)
     {
@@ -306,6 +323,8 @@ cxuint AsmAmdCL2Handler::getSectionId(const char* sectionName) const
             return dataSection;
         else if (::strcmp(sectionName, ".bss")==0)
             return bssSection;
+        else if (hsaLayout && ::strcmp(sectionName, ".text")==0)
+            return codeSection;
         // find extra section by name in main binary
         SectionMap::const_iterator it = extraSectionMap.find(sectionName);
         if (it != extraSectionMap.end())
@@ -397,6 +416,7 @@ AsmFormatHandler::SectionInfo AsmAmdCL2Handler::getSectionInfo(cxuint sectionId)
     // any other section (except config) are absolute addressable and writeable
     else if (info.type != AsmSectionType::CONFIG)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+    // config and kernel DUMMY section have no flags
     info.name = sections[sectionId].name;
     return info;
 }

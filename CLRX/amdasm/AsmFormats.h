@@ -63,6 +63,7 @@ enum class AsmSectionType: cxbyte
     AMDCL2_METADATA,
     AMDCL2_ISAMETADATA,
     AMDCL2_CONFIG_CTRL_DIRECTIVE,
+    AMDCL2_DUMMY,   ///< dummy (empty) section for kernel
     
     GALLIUM_COMMENT = LAST_COMMON+1,    ///< gallium comment section
     GALLIUM_CONFIG_CTRL_DIRECTIVE,
