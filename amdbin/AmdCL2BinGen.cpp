@@ -66,9 +66,23 @@ AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(bool _64bitMode,
        const std::vector<AmdCL2KernelInput>& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    input = new AmdCL2Input{_64bitMode, deviceType, archMinor, archStepping,
-                globalDataSize, globalData, rwDataSize, rwData, 0, 0, 0,
-                nullptr, false, { }, { }, driverVersion, "", "", kernelInputs };
+    std::unique_ptr<AmdCL2Input> _input(new AmdCL2Input{});
+    _input->is64Bit = _64bitMode;
+    _input->deviceType = deviceType;
+    _input->archMinor = archMinor;
+    _input->archStepping = archStepping;
+    _input->globalDataSize = globalDataSize;
+    _input->globalData = globalData;
+    _input->rwDataSize = rwDataSize;
+    _input->rwData = rwData;
+    _input->bssAlignment = _input->bssSize = _input->samplerInitSize = 0;
+    _input->samplerInit = nullptr;
+    _input->samplerConfig = false;
+    _input->driverVersion = driverVersion;
+    _input->compileOptions = "";
+    _input->aclVersion = "";
+    _input->kernels = kernelInputs;
+    input = _input.release();
 }
 
 AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(bool _64bitMode,
@@ -78,10 +92,23 @@ AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(bool _64bitMode,
        std::vector<AmdCL2KernelInput>&& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    input = new AmdCL2Input{_64bitMode, deviceType, archMinor, archStepping,
-                globalDataSize, globalData, rwDataSize, rwData, 0, 0, 0,
-                nullptr, false, { }, { }, driverVersion, "", "",
-                std::move(kernelInputs) };
+    std::unique_ptr<AmdCL2Input> _input(new AmdCL2Input{});
+    _input->is64Bit = _64bitMode;
+    _input->deviceType = deviceType;
+    _input->archMinor = archMinor;
+    _input->archStepping = archStepping;
+    _input->globalDataSize = globalDataSize;
+    _input->globalData = globalData;
+    _input->rwDataSize = rwDataSize;
+    _input->rwData = rwData;
+    _input->bssAlignment = _input->bssSize = _input->samplerInitSize = 0;
+    _input->samplerInit = nullptr;
+    _input->samplerConfig = false;
+    _input->driverVersion = driverVersion;
+    _input->compileOptions = "";
+    _input->aclVersion = "";
+    _input->kernels = std::move(kernelInputs);
+    input = _input.release();
 }
 
 AmdCL2GPUBinGenerator::~AmdCL2GPUBinGenerator()

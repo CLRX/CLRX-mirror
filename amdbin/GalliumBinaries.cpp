@@ -463,8 +463,18 @@ GalliumBinGenerator::GalliumBinGenerator(bool _64bitMode, GPUDeviceType deviceTy
         const std::vector<GalliumKernelInput>& kernels)
         : manageable(true), input(nullptr)
 {
-    input = new GalliumInput{ _64bitMode, false, false, deviceType, globalDataSize,
-            globalData, kernels, codeSize, code, 0, nullptr };
+    std::unique_ptr<GalliumInput> _input(new GalliumInput{});
+    _input->is64BitElf = _64bitMode;
+    _input->isLLVM390 = _input->isMesa170 = false;
+    _input->deviceType = deviceType;
+    _input->globalDataSize = globalDataSize;
+    _input->globalData = globalData;
+    _input->kernels = kernels;
+    _input->codeSize = codeSize;
+    _input->code = code;
+    _input->commentSize = 0;
+    _input->comment = nullptr;
+    input = _input.release();
 }
 
 GalliumBinGenerator::GalliumBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
@@ -473,8 +483,18 @@ GalliumBinGenerator::GalliumBinGenerator(bool _64bitMode, GPUDeviceType deviceTy
         std::vector<GalliumKernelInput>&& kernels)
         : manageable(true), input(nullptr)
 {
-    input = new GalliumInput{ _64bitMode, false, false, deviceType, globalDataSize,
-            globalData, std::move(kernels), codeSize, code, 0, nullptr };
+    std::unique_ptr<GalliumInput> _input(new GalliumInput{});
+    _input->is64BitElf = _64bitMode;
+    _input->isLLVM390 = _input->isMesa170 = false;
+    _input->deviceType = deviceType;
+    _input->globalDataSize = globalDataSize;
+    _input->globalData = globalData;
+    _input->kernels = std::move(kernels);
+    _input->codeSize = codeSize;
+    _input->code = code;
+    _input->commentSize = 0;
+    _input->comment = nullptr;
+    input = _input.release();
 }
 
 

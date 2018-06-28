@@ -190,8 +190,16 @@ AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType
        const std::vector<AmdKernelInput>& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    input = new AmdInput{_64bitMode, deviceType, globalDataSize, globalData,
-                driverVersion, "", "", kernelInputs };
+    std::unique_ptr<AmdInput> _input(new AmdInput{});
+    _input->is64Bit = _64bitMode;
+    _input->deviceType = deviceType;
+    _input->globalDataSize = globalDataSize;
+    _input->globalData = globalData;
+    _input->driverVersion = driverVersion;
+    _input->compileOptions = "";
+    _input->driverInfo = "";
+    _input->kernels = kernelInputs;
+    input = _input.release();
 }
 
 AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
@@ -199,8 +207,16 @@ AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType
        std::vector<AmdKernelInput>&& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    input = new AmdInput{_64bitMode, deviceType, globalDataSize, globalData,
-                driverVersion, "", "", std::move(kernelInputs) };
+    std::unique_ptr<AmdInput> _input(new AmdInput{});
+    _input->is64Bit = _64bitMode;
+    _input->deviceType = deviceType;
+    _input->globalDataSize = globalDataSize;
+    _input->globalData = globalData;
+    _input->driverVersion = driverVersion;
+    _input->compileOptions = "";
+    _input->driverInfo = "";
+    _input->kernels = std::move(kernelInputs);
+    input = _input.release();
 }
 
 AmdGPUBinGenerator::~AmdGPUBinGenerator()

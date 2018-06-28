@@ -26,6 +26,7 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#include <memory>
 #include <unordered_set>
 #include <CLRX/amdbin/ElfBinaries.h>
 #include <CLRX/utils/Utilities.h>
@@ -2041,8 +2042,26 @@ ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
         const std::vector<ROCmSymbolInput>& symbols) :
         rocmGotGen(nullptr), rocmRelaDynGen(nullptr)
 {
-    input = new ROCmInput{ deviceType, archMinor, archStepping, 0, false,
-            globalDataSize, globalData, symbols, codeSize, code };
+    std::unique_ptr<ROCmInput> _input(new ROCmInput{});
+    _input->deviceType = deviceType;
+    _input->archMinor = archMinor;
+    _input->archStepping = archStepping;
+    _input->eflags = 0;
+    _input->newBinFormat = false;
+    _input->globalDataSize = globalDataSize;
+    _input->globalData = globalData;
+    _input->symbols = symbols;
+    _input->codeSize = codeSize;
+    _input->code = code;
+    _input->commentSize = 0;
+    _input->comment = nullptr;
+    _input->target = "";
+    _input->targetTripple = "";
+    _input->metadataSize = 0;
+    _input->metadata = nullptr;
+    _input->useMetadataInfo = false;
+    _input->metadataInfo = ROCmMetadata{};
+    input = _input.release();
 }
 
 ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
@@ -2051,8 +2070,26 @@ ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
         std::vector<ROCmSymbolInput>&& symbols) :
         rocmGotGen(nullptr), rocmRelaDynGen(nullptr)
 {
-    input = new ROCmInput{ deviceType, archMinor, archStepping, 0, false,
-            globalDataSize, globalData, std::move(symbols), codeSize, code };
+    std::unique_ptr<ROCmInput> _input(new ROCmInput{});
+    _input->deviceType = deviceType;
+    _input->archMinor = archMinor;
+    _input->archStepping = archStepping;
+    _input->eflags = 0;
+    _input->newBinFormat = false;
+    _input->globalDataSize = globalDataSize;
+    _input->globalData = globalData;
+    _input->symbols = std::move(symbols);
+    _input->codeSize = codeSize;
+    _input->code = code;
+    _input->commentSize = 0;
+    _input->comment = nullptr;
+    _input->target = "";
+    _input->targetTripple = "";
+    _input->metadataSize = 0;
+    _input->metadata = nullptr;
+    _input->useMetadataInfo = false;
+    _input->metadataInfo = ROCmMetadata{};
+    input = _input.release();
 }
 
 ROCmBinGenerator::~ROCmBinGenerator()
