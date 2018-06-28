@@ -1456,7 +1456,7 @@ void AsmAmdCL2PseudoOps::doHSALayout(AsmAmdCL2Handler& handler, const char* pseu
     if (!handler.kernelStates.empty())
         PSEUDOOP_RETURN_BY_ERROR("HSALayout must be enabled before any kernel")
     if (handler.getDriverVersion() < 191205)
-        PSEUDOOP_RETURN_BY_ERROR("HSALayout mode allows only for new binary format");
+        PSEUDOOP_RETURN_BY_ERROR("HSALayout mode is illegal in old binary format");
     
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
