@@ -127,7 +127,7 @@ void AsmAmdCL2Handler::Kernel::initializeKernelConfig()
  * AmdCL2Catalyst format handler
  */
 
-AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmFormatHandler(assembler),
+AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmKcodeHandler(assembler),
         output{}, rodataSection(0), dataSection(ASMSECT_NONE), bssSection(ASMSECT_NONE), 
         samplerInitSection(ASMSECT_NONE), extraSectionCount(0),
         innerExtraSectionCount(0), hsaLayout(false)
@@ -399,6 +399,25 @@ AsmFormatHandler::SectionInfo AsmAmdCL2Handler::getSectionInfo(cxuint sectionId)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     info.name = sections[sectionId].name;
     return info;
+}
+
+bool AsmAmdCL2Handler::isCodeSection() const
+{
+    return sections[assembler.currentSection].type == AsmSectionType::CODE;
+}
+
+AsmKcodeHandler::KernelBase& AsmAmdCL2Handler::getKernelBase(cxuint index)
+{ return *kernelStates[index]; }
+
+size_t AsmAmdCL2Handler::getKernelsNum() const
+{ return kernelStates.size(); }
+
+void AsmAmdCL2Handler::handleLabel(const CString& label)
+{
+    if (hsaLayout)
+        AsmKcodeHandler::handleLabel(label);
+    else
+        AsmFormatHandler::handleLabel(label);
 }
 
 namespace CLRX
@@ -1436,6 +1455,9 @@ void AsmAmdCL2PseudoOps::doHSALayout(AsmAmdCL2Handler& handler, const char* pseu
     Assembler& asmr = handler.assembler;
     if (!handler.kernelStates.empty())
         PSEUDOOP_RETURN_BY_ERROR("HSALayout must be enabled before any kernel")
+    
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
     handler.hsaLayout = true;
 }
 

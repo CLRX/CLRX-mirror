@@ -359,7 +359,7 @@ struct AsmAmdHsaKernelConfig: AmdHsaKernelConfig
 };
 
 /// handles AMD OpenCL 2.0 binary format
-class AsmAmdCL2Handler: public AsmFormatHandler
+class AsmAmdCL2Handler: public AsmKcodeHandler
 {
 private:
     typedef std::unordered_map<CString, cxuint> SectionMap;
@@ -452,6 +452,12 @@ public:
     /// get output structure pointer
     const AmdCL2Input* getOutput() const
     { return &output; }
+    
+    // kcode support
+    bool isCodeSection() const;
+    KernelBase& getKernelBase(cxuint index);
+    size_t getKernelsNum() const;
+    void handleLabel(const CString& label);
 };
 
 /// handles GalliumCompute format
