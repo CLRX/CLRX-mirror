@@ -1921,14 +1921,45 @@ public:
     
     void operator()(FastOutputBuffer& fob) const
     {
+        GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
         if (input->code != nullptr)
         {
+            Array<size_t> sortedKIndices(input->kernels.size());
+            for (size_t i = 0; i < sortedKIndices.size(); i++)
+                sortedKIndices[i] = i;
+            // sort by offset
+            std::sort(sortedKIndices.begin(), sortedKIndices.end(),
+                [this] (size_t a, size_t b)
+                { return input->kernels[a].offset < input->kernels[b].offset; });
+            
+            // put code and kernel setups
+            size_t curOffset = 0;
+            for (size_t ki = 0; ki < input->kernels.size(); ki++)
+            {
+                const size_t kindex = sortedKIndices[ki];
+                const AmdCL2KernelInput& kernel = input->kernels[kindex];
+                const TempAmdCL2KernelData& tempData = tempDatas[kindex];
+                fob.writeArray(kernel.offset - curOffset, input->code + curOffset);
+                
+                // write kernel setup
+                if (!kernel.useConfig || kernel.hsaConfig)
+                {
+                    if (kernel.setup != nullptr)
+                        fob.writeArray(tempData.setupSize, kernel.setup);
+                    else
+                        // no changes if no setup supplied
+                        fob.writeArray(tempData.setupSize, input->code + kernel.offset);
+                }
+                else
+                    generateKernelSetup(arch, kernel.config, fob, true, tempData.useLocals,
+                            tempData.pipesUsed!=0, input->is64Bit, input->driverVersion);
+                curOffset = kernel.offset + tempData.setupSize;
+            }
             // if HSA layout (code is set)
-            fob.writeArray(input->codeSize, input->code);
+            fob.writeArray(input->codeSize - curOffset, input->code + curOffset);
             return;
         }
         
-        GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
         size_t outSize = 0;
         for (size_t i = 0; i < input->kernels.size(); i++)
         {

@@ -537,7 +537,7 @@ static const CL2GPUGenDeviceCodeEntry cl2GpuDeviceCodeTable[11] =
 
 template<typename Types>
 static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBinary& binary,
-            bool addBrig, bool samplerConfig)
+            bool addBrig, bool samplerConfig, bool hsaLayout)
 {
     AmdCL2Input amdCL2Input{ };
     cxuint index;
@@ -612,6 +612,22 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
         }
     }
     
+    if (!isNewBinary)
+        hsaLayout = false; // new hsaLayout for old binary format
+        
+    if (hsaLayout)
+    {
+        const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
+        try
+        {
+            Elf64_Shdr textHdr = innerBin.getSectionHeader(".hsatext");
+            amdCL2Input.codeSize = ULEV(textHdr.sh_size);
+            amdCL2Input.code = innerBin.getBinaryCode() + ULEV(textHdr.sh_offset);
+        }
+        catch(const Exception& ex)
+        { }
+    }
+    
     size_t kernelsNum = binary.getKernelInfosNum();
     const AmdCL2InnerGPUBinaryBase& innerBinBase = binary.getInnerBinaryBase();
     for (size_t k = 0; k < kernelsNum; k++)
@@ -625,6 +641,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
         kernel.isaMetadata = nullptr;
         kernel.useConfig = useConfig;
         kernel.hsaConfig = false;
+        kernel.offset = 0;
         if (!isNewBinary)
         {
             kernel.isaMetadataSize = binary.getISAMetadataSize(k);
@@ -635,8 +652,17 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
         kernel.stub = nullptr;
         kernel.setupSize = kdata.setupSize;
         kernel.setup = kdata.setup;
-        kernel.codeSize = kdata.codeSize;
-        kernel.code = kdata.code;
+        if (!hsaLayout)
+        {
+            kernel.codeSize = kdata.codeSize;
+            kernel.code = kdata.code;
+        }
+        else
+        {
+            kernel.codeSize = kdata.codeSize;
+            kernel.code = nullptr;
+            kernel.offset = kdata.setup - amdCL2Input.code;
+        }
         amdCL2Input.kernels.push_back(kernel);
     }
     
@@ -717,6 +743,37 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
             if ((offset & 255) != 0)
                 offset += 256 - (offset & 255);
         }
+        relaId = 0;
+        
+        if (hsaLayout)
+            // HSA layout
+            for (; relaId < textRelsNum; relaId++)
+            {
+                const Elf64_Rela& rela = innerBin.getTextRelaEntry(relaId);
+                    cxuint typev = ELF64_R_TYPE(ULEV(rela.r_info));
+                    uint32_t symIndex = ELF64_R_SYM(ULEV(rela.r_info));
+                    RelocType rtype;
+                    if (typev == 1)
+                        rtype = RELTYPE_LOW_32BIT;
+                    else if (typev == 2)
+                        rtype = RELTYPE_HIGH_32BIT;
+                    else
+                        throw Exception("Unknown relocation type");
+                    
+                    int64_t addend = ULEV(rela.r_addend);
+                    // check this symbol
+                    const Elf64_Sym& sym = innerBin.getSymbol(symIndex);
+                    uint16_t symShndx = ULEV(sym.st_shndx);
+                    if (symShndx!=gDataSectionIdx && symShndx!=rwDataSectionIdx &&
+                        symShndx!=bssDataSectionIdx)
+                        throw Exception("Symbol is not placed in global or "
+                                "rwdata data or bss is illegal");
+                    addend += ULEV(sym.st_value);
+                    cxuint rsym = symShndx==rwDataSectionIdx?1U:
+                                (symShndx==bssDataSectionIdx?2U:0U);
+                    amdCL2Input.relocations.push_back({size_t(ULEV(rela.r_offset)),
+                                rtype, rsym, size_t(addend)});
+            }
     }
     
     if (useConfig)
@@ -732,6 +789,11 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
             kernel.metadataSize = kernel.isaMetadataSize = 0;
             kernel.stubSize = kernel.setupSize = 0;
         }
+        
+    if (hsaLayout)
+        // clear all kernel text relocations
+        for (AmdCL2KernelInput& kernel: amdCL2Input.kernels)
+            kernel.relocations.clear();
     
     // add BRIG content
     uint16_t brigIndex = binary.getSectionIndex(".brig");
@@ -744,7 +806,8 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const typename Types::MainBina
     return amdCL2Input;
 }
 
-static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool reconf)
+static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool reconf,
+                    bool hsaLayout)
 {
     Array<cxbyte> inputData;
     Array<cxbyte> output;
@@ -768,14 +831,16 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
         // generate input from 64-bit binary
         const AmdCL2MainGPUBinary64& binary = *reinterpret_cast<
                         const AmdCL2MainGPUBinary64*>(amdCL2GpuBin.get());
-        amdCL2Input = genAmdCL2Input<AmdCL2Types64>(reconf, binary, false, false);
+        amdCL2Input = genAmdCL2Input<AmdCL2Types64>(reconf, binary,
+                                    false, false, hsaLayout);
     }
     else
     {
         // generate input from 32-bit binary
         const AmdCL2MainGPUBinary32& binary = *reinterpret_cast<
                         const AmdCL2MainGPUBinary32*>(amdCL2GpuBin.get());
-        amdCL2Input = genAmdCL2Input<AmdCL2Types32>(reconf, binary, false, false);
+        amdCL2Input = genAmdCL2Input<AmdCL2Types32>(reconf, binary,
+                                    false, false, hsaLayout);
     }
     // generate output binary
     AmdCL2GPUBinGenerator binGen(&amdCL2Input);
@@ -785,7 +850,8 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
     if (output.size() != inputData.size())
     {
         std::ostringstream oss;
-        oss << "Failed for #" << testCase << " file=" << origBinaryFilename <<
+        oss << "Failed for #" << testCase << (hsaLayout ? " HSALayout" : "") <<
+                " file=" << origBinaryFilename <<
                 ": expectedSize=" << inputData.size() <<
                 ", resultSize=" << output.size();
         throw Exception(oss.str());
@@ -794,8 +860,8 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
         if (output[i] != inputData[i])
         {
             std::ostringstream oss;
-            oss << "Failed for #" << testCase << " file=" << origBinaryFilename <<
-                    ": byte=" << i;
+            oss << "Failed for #" << testCase << (hsaLayout ? " HSALayout" : "") <<
+            " file=" << origBinaryFilename << ": byte=" << i;
             throw Exception(oss.str());
         }
 }
@@ -812,14 +878,29 @@ int main(int argc, const char** argv)
         filesystemPath(reconfName); // convert to system path (native separators)
         reconfName += ".reconf";
         try
-        { testOrigBinary(i, regenName.c_str(), false); }
+        { testOrigBinary(i, regenName.c_str(), false, false); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;
             retVal = 1;
         }
         try
-        { testOrigBinary(i, reconfName.c_str(), true); }
+        { testOrigBinary(i, reconfName.c_str(), true, false); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+        
+        try
+        { testOrigBinary(i, regenName.c_str(), false, true); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+        try
+        { testOrigBinary(i, reconfName.c_str(), true, true); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;
