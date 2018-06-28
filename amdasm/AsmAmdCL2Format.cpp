@@ -1837,8 +1837,16 @@ bool AsmAmdCL2Handler::prepareBinary()
         switch(asmSection.type)
         {
             case AsmSectionType::CODE:
-                kernel->codeSize = sectionSize;
-                kernel->code = sectionData;
+                if (!hsaLayout)
+                {
+                    kernel->codeSize = sectionSize;
+                    kernel->code = sectionData;
+                }
+                else
+                {
+                    output.codeSize = sectionSize;
+                    output.code = sectionData;
+                }
                 break;
             case AsmSectionType::AMDCL2_METADATA:
                 kernel->metadataSize = sectionSize;
@@ -2151,6 +2159,63 @@ bool AsmAmdCL2Handler::prepareBinary()
         }
     }
     
+    // set kernel code size and offset
+    if (hsaLayout)
+    {
+        const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
+        
+        for (size_t ki = 0; ki < kernelsNum; ki++)
+        {
+            AmdCL2KernelInput& kinput = output.kernels[ki];
+            auto it = symbolMap.find(kinput.kernelName);
+            if (it == symbolMap.end() || !it->second.isDefined())
+            {
+                // error, undefined
+                assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
+                            "Symbol for kernel '")+kinput.kernelName.c_str()+
+                            "' is undefined").c_str());
+                good = false;
+                continue;
+            }
+            const AsmSymbol& symbol = it->second;
+            if (!symbol.hasValue)
+            {
+                // error, unresolved
+                assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
+                        "Symbol for kernel '") + kinput.kernelName.c_str() +
+                        "' is not resolved").c_str());
+                good = false;
+                continue;
+            }
+            if (symbol.sectionId != codeSection)
+            {
+                /// error, wrong section
+                assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
+                        "Symbol for kernel '")+kinput.kernelName.c_str()+
+                        "' is defined for section other than '.text'").c_str());
+                good = false;
+                continue;
+            }
+            kinput.offset = symbol.value;
+        }
+        
+        // prepare sorted kernel indices by offset order
+        Array<size_t> sortedKIndices(kernelsNum);
+        for (size_t ki = 0; ki < kernelsNum; ki++)
+            sortedKIndices[ki] = ki;
+        std::sort(sortedKIndices.begin(), sortedKIndices.end(), [this]
+                (size_t a, size_t b)
+                { return output.kernels[a].offset < output.kernels[b].offset; });
+        // set kernel code sizes
+        for (size_t ki = 0; ki < kernelsNum; ki++)
+        {
+            const size_t end = ki+1 < kernelsNum ?
+                    output.kernels[sortedKIndices[ki+1]].offset : output.codeSize;
+            AmdCL2KernelInput& kinput = output.kernels[sortedKIndices[ki]];
+            output.kernels[ki].codeSize = (end - kinput.offset) - kinput.setupSize;
+        }
+    }
+    
     /* put kernels relocations */
     for (const AsmRelocation& reloc: assembler.relocations)
     {
@@ -2158,8 +2223,12 @@ bool AsmAmdCL2Handler::prepareBinary()
         cxuint kernelId = sections[reloc.sectionId].kernelId;
         cxuint symbol = sections[reloc.relSectionId].type==AsmSectionType::DATA ? 0 :
             (sections[reloc.relSectionId].type==AsmSectionType::AMDCL2_RWDATA ? 1 : 2);
-        output.kernels[kernelId].relocations.push_back({reloc.offset, reloc.type,
-                    symbol, size_t(reloc.addend) });
+        if (kernelId != ASMKERN_GLOBAL && kernelId != ASMKERN_INNER)
+            output.kernels[kernelId].relocations.push_back({reloc.offset, reloc.type,
+                        symbol, size_t(reloc.addend) });
+        else
+            output.relocations.push_back({reloc.offset, reloc.type, symbol,
+                        size_t(reloc.addend) });
     }
     
     for (AmdCL2KernelInput& kernel: output.kernels)
