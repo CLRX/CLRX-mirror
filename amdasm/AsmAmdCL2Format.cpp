@@ -46,7 +46,8 @@ static const char* amdCL2PseudoOpNamesTbl[] =
     "debugmode", "default_hsa_features",
     "dims", "driver_version", "dx10clamp", "exceptions",
     "floatmode", "gds_segment_size", "gdssize", "get_driver_version",
-    "globaldata", "group_segment_align", "hsaconfig", "ieeemode", "inner",
+    "globaldata", "group_segment_align",
+    "hsaconfig", "hsalayout", "ieeemode", "inner",
     "isametadata", "kernarg_segment_align",
     "kernarg_segment_size", "kernel_code_entry_offset",
     "kernel_code_prefetch_offset", "kernel_code_prefetch_size",
@@ -85,7 +86,7 @@ enum
     AMDCL2OP_FLOATMODE, AMDCL2OP_GDS_SEGMENT_SIZE,
     AMDCL2OP_GDSSIZE, AMDCL2OP_GET_DRIVER_VERSION,
     AMDCL2OP_GLOBALDATA, AMDCL2OP_GROUP_SEGMENT_ALIGN,
-    AMDCL2OP_HSACONFIG, AMDCL2OP_IEEEMODE, AMDCL2OP_INNER,
+    AMDCL2OP_HSACONFIG, AMDCL2OP_HSALAYOUT, AMDCL2OP_IEEEMODE, AMDCL2OP_INNER,
     AMDCL2OP_ISAMETADATA, AMDCL2OP_KERNARG_SEGMENT_ALIGN,
     AMDCL2OP_KERNARG_SEGMENT_SIZE, AMDCL2OP_KERNEL_CODE_ENTRY_OFFSET,
     AMDCL2OP_KERNEL_CODE_PREFETCH_OFFSET,
@@ -129,7 +130,7 @@ void AsmAmdCL2Handler::Kernel::initializeKernelConfig()
 AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmFormatHandler(assembler),
         output{}, rodataSection(0), dataSection(ASMSECT_NONE), bssSection(ASMSECT_NONE), 
         samplerInitSection(ASMSECT_NONE), extraSectionCount(0),
-        innerExtraSectionCount(0)
+        innerExtraSectionCount(0), hsaLayout(false)
 {
     output.archMinor = output.archStepping = UINT32_MAX;
     assembler.currentKernel = ASMKERN_GLOBAL;
@@ -1429,6 +1430,15 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
     handler.output.kernels[asmr.currentKernel].useConfig = true;
 }
 
+void AsmAmdCL2PseudoOps::doHSALayout(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                        const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (!handler.kernelStates.empty())
+        PSEUDOOP_RETURN_BY_ERROR("HSALayout must be enabled before any kernel")
+    handler.hsaLayout = true;
+}
+
 };
 
 bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
@@ -1528,6 +1538,9 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             break;
         case AMDCL2OP_HSACONFIG:
             AsmAmdCL2PseudoOps::doConfig(*this, stmtPlace, linePtr, true);
+            break;
+        case AMDCL2OP_HSALAYOUT:
+            AsmAmdCL2PseudoOps::doHSALayout(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_IEEEMODE:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,

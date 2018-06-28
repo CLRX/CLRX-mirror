@@ -419,6 +419,7 @@ private:
     cxuint innerSavedSection;
     cxuint extraSectionCount;
     cxuint innerExtraSectionCount;
+    bool hsaLayout;
     
     cxuint detectedDriverVersion;
     

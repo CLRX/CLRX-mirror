@@ -203,6 +203,10 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
     // open config (.config)
     static void doConfig(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr, bool hsaConfig);
+    
+    // open config (.hsalayout)
+    static void doHSALayout(AsmAmdCL2Handler& handler, const char* pseudoOOpPlace,
+                    const char* linePtr);
 };
 
 };
