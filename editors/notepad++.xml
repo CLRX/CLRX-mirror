@@ -1540,6 +1540,8 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .hsa_tgsize
 .hsa_userdatanum
 .hsa_vgprsnum
+.hsaconfig
+.hsalayout
 .hwlocal
 .hword
 .hwregion

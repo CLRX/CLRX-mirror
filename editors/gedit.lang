@@ -203,6 +203,8 @@
             <keyword>hsa_tgsize</keyword>
             <keyword>hsa_userdatanum</keyword>
             <keyword>hsa_vgprsnum</keyword>
+            <keyword>hsaconfig</keyword>
+            <keyword>hsalayout</keyword>
             <keyword>hwlocal</keyword>
             <keyword>hword</keyword>
             <keyword>hwregion</keyword>

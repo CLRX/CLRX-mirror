@@ -1920,6 +1920,8 @@
             <item>.hsa_tgsize</item>
             <item>.hsa_userdatanum</item>
             <item>.hsa_vgprsnum</item>
+            <item>.hsaconfig</item>
+            <item>.hsalayout</item>
             <item>.hwlocal</item>
             <item>.hword</item>
             <item>.hwregion</item>
