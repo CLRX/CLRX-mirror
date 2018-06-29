@@ -1935,7 +1935,11 @@ bool AsmAmdCL2Handler::prepareBinary()
     for (size_t i = 0; i < kernelsNum; i++)
     {
         if (!output.kernels[i].useConfig)
+        {
+            if (hsaLayout && output.kernels[i].setup == nullptr)
+                output.kernels[i].setupSize = 256;
             continue;
+        }
         
         if (!kernelStates[i]->useHsaConfig)
         {
