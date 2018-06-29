@@ -41,7 +41,8 @@ struct AsmRegPoolTestCase
 };
 
 static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
-{   /* gcn asm test cases */
+{
+    /* gcn asm test cases */
     { ".amd;.kernel xx;.config;.tgsize;.text;s_add_u32 s5,s0,s1", { { "xx", 6, 0 } } },
     { ".amd;.kernel xx;.config;.tgsize;.text;s_and_b64 s[6:7],s[0:1],s[2:3]",
         { { "xx", 8, 0 } } },
@@ -379,7 +380,57 @@ s_mov_b32 s23, s0
 .kcodeend)ffDXD",
         { { "kx0", 13, 25 }, { "kx1", 17, 42 }, { "kx2", 22, 16 }, { "kx3", 19, 42 },
           { "kx4", 11, 19 }, { "kx5", 14, 25 }, { "kx6", 24, 18 }, { "kx7", 26, 35 } }
-    }
+    },
+    /* amdcl2 kcode test */
+    {
+        R"ffDXD(            .amdcl2; .gpu bonaire;
+        .hsalayout
+        .driver_version 240000
+            .kernel kx0
+            .config
+            .kernel kx1
+            .config
+            .kernel kx2
+            .config
+            .kernel kx3
+            .config
+            .kernel kx4
+            .config
+            .kernel kx5
+            .config
+            .text
+.p2align 8
+kx0: .skip 256;s_mov_b32 s10, s0
+.p2align 8
+kx1: .skip 256; s_mov_b32 s14, s0
+.p2align 8
+kx2: .skip 256; s_mov_b32 s19, s0
+.p2align 8
+kx3: .skip 256; s_mov_b32 s16, s0
+.p2align 8
+kx4: .skip 256; s_mov_b32 s8, s0
+.p2align 8
+kx5: .skip 256; s_mov_b32 s11, s0
+.kcode + kx1 , + kx3
+            v_sub_f32 v4,v1,v2
+    .kcode kx4
+            v_sub_f32 v6,v1,v2
+        .kcode kx5
+            v_sub_f32 v7,v1,v2
+        .kcodeend
+    .kcodeend
+            v_sub_f32 v7,v1,v2
+    .kcode + kx0
+            v_sub_f32 v4,v1,v2
+    .kcodeend
+    .kcode -kx3
+            v_sub_f32 v14,v1,v2
+    .kcodeend
+.kcodeend)ffDXD",
+        // sgprs without VCC
+        { { "kx0", 11, 5 }, { "kx1", 15, 15 }, { "kx2", 20, 1 },
+            { "kx3", 17, 8 }, { "kx4", 9, 8 }, { "kx5", 12, 8 } }
+    },
 };
 
 static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& testCase)
@@ -466,6 +517,30 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
                         cxuint(ULEV(config->wavefrontSgprCount)));
             assertValue(testName, caseName+"vgprsNum", regPool.vgprsNum,
                         cxuint(ULEV(config->workitemVgprCount)));
+        }
+    }
+    else if (assembler.getBinaryFormat()==BinaryFormat::AMDCL2)
+    {
+        // AmdCL2
+        const AmdCL2Input* input = static_cast<const AsmAmdCL2Handler*>(
+                    assembler.getFormatHandler())->getOutput();
+        assertTrue(testName, "input!=nullptr", input!=nullptr);
+        assertValue(testName, "kernels.length", testCase.regPools.size(),
+                    input->kernels.size());
+        char buf[32];
+        // compare register counting for kernels
+        for (cxuint i = 0; i < input->kernels.size(); i++)
+        {
+            const AmdCL2KernelInput& kinput = input->kernels[i];
+            const KernelRegPool& regPool = testCase.regPools[i];
+            snprintf(buf, 32, "Kernel=%u.", i);
+            std::string caseName(buf);
+            assertString(testName, caseName+"name", regPool.kernelName, kinput.kernelName);
+            assertTrue(testName, caseName+"useConfig", kinput.useConfig);
+            assertValue(testName, caseName+"sgprsNum", regPool.sgprsNum,
+                        kinput.config.usedSGPRsNum);
+            assertValue(testName, caseName+"vgprsNum", regPool.vgprsNum,
+                        kinput.config.usedVGPRsNum);
         }
     }
     else

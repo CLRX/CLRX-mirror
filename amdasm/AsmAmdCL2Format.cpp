@@ -48,7 +48,7 @@ static const char* amdCL2PseudoOpNamesTbl[] =
     "floatmode", "gds_segment_size", "gdssize", "get_driver_version",
     "globaldata", "group_segment_align",
     "hsaconfig", "hsalayout", "ieeemode", "inner",
-    "isametadata", "kernarg_segment_align",
+    "isametadata", "kcode", "kcodeend", "kernarg_segment_align",
     "kernarg_segment_size", "kernel_code_entry_offset",
     "kernel_code_prefetch_offset", "kernel_code_prefetch_size",
     "localsize", "machine", "max_scratch_backing_memory",
@@ -87,7 +87,8 @@ enum
     AMDCL2OP_GDSSIZE, AMDCL2OP_GET_DRIVER_VERSION,
     AMDCL2OP_GLOBALDATA, AMDCL2OP_GROUP_SEGMENT_ALIGN,
     AMDCL2OP_HSACONFIG, AMDCL2OP_HSALAYOUT, AMDCL2OP_IEEEMODE, AMDCL2OP_INNER,
-    AMDCL2OP_ISAMETADATA, AMDCL2OP_KERNARG_SEGMENT_ALIGN,
+    AMDCL2OP_ISAMETADATA, AMDCL2OP_KCODE, AMDCL2OP_KCODEEND,
+    AMDCL2OP_KERNARG_SEGMENT_ALIGN,
     AMDCL2OP_KERNARG_SEGMENT_SIZE, AMDCL2OP_KERNEL_CODE_ENTRY_OFFSET,
     AMDCL2OP_KERNEL_CODE_PREFETCH_OFFSET,
     AMDCL2OP_KERNEL_CODE_PREFETCH_SIZE, AMDCL2OP_LOCALSIZE,
@@ -1597,6 +1598,12 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             break;
         case AMDCL2OP_ISAMETADATA:
             AsmAmdCL2PseudoOps::addISAMetadata(*this, stmtPlace, linePtr);
+            break;
+        case AMDCL2OP_KCODE:
+            AsmKcodePseudoOps::doKCode(*this, stmtPlace, linePtr);
+            break;
+        case AMDCL2OP_KCODEEND:
+            AsmKcodePseudoOps::doKCodeEnd(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_KERNARG_SEGMENT_ALIGN:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,

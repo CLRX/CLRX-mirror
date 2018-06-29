@@ -335,6 +335,33 @@ Go to inner binary place. By default assembler is in main binary.
 This pseudo-operation must be inside kernel. Go to ISA metadata content
 (only older driver binaries).
 
+### .kcode
+
+Syntax: .kcode KERNEL1,....  
+Syntax: .kcode +
+
+Open code that will be belonging to specified kernels. By default any code between
+two consecutive kernel labels belongs to the kernel with first label name.
+This pseudo-operation can change membership of the code to specified kernels.
+You can nest this `.kcode` any times. Just next .kcode adds or remove membership code
+to kernels. The most important reason why this feature has been added is register usage
+calculation. Any kernel given in this pseudo-operation must be already defined.
+
+Sample usage:
+
+```
+.kcode + # this code belongs to all kernels
+.kcodeend
+.kcode kernel1, kernel2 #  this code belongs to kernel1, kernel2
+    .kcode -kernel1 #  this code belongs only to kernel2 (kernel1 removed)
+    .kcodeend
+.kcodeend
+```
+
+### .kcodeend
+
+Close `.kcode` clause. Refer to `.kcode`.
+
 ### .kernarg_segment_align
 
 Syntax: .kernarg_segment_align ALIGN
