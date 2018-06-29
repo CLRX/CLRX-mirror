@@ -231,8 +231,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
 {
     const cxuint thisSection = sections.size();
     
-    if (::strcmp(sectionName, ".rodata")==0 && (kernelId == ASMKERN_GLOBAL ||
-            kernelId == ASMKERN_INNER))
+    if (::strcmp(sectionName, ".rodata")==0)
     {
         // .rodata section (main and in inner binary)
         if (getDriverVersion() < 191205)
@@ -241,8 +240,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
         sections.push_back({ ASMKERN_INNER,  AsmSectionType::DATA,
                 ELFSECTID_RODATA, ".rodata" });
     }
-    else if (::strcmp(sectionName, ".data")==0 && (kernelId == ASMKERN_GLOBAL ||
-            kernelId == ASMKERN_INNER))
+    else if (::strcmp(sectionName, ".data")==0)
     {
         // .data section (main and in inner binary)
         if (getDriverVersion() < 191205)
@@ -251,8 +249,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
         sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_RWDATA,
                 ELFSECTID_DATA, ".data" });
     }
-    else if (::strcmp(sectionName, ".bss")==0 && (kernelId == ASMKERN_GLOBAL ||
-            kernelId == ASMKERN_INNER))
+    else if (::strcmp(sectionName, ".bss")==0)
     {
         // .bss section (main and in inner binary)
         if (getDriverVersion() < 191205)
@@ -261,8 +258,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
         sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_BSS,
                 ELFSECTID_BSS, ".bss" });
     }
-    else if (hsaLayout && ::strcmp(sectionName, ".text")==0 &&
-             (kernelId == ASMKERN_GLOBAL || kernelId == ASMKERN_INNER))
+    else if (hsaLayout && ::strcmp(sectionName, ".text")==0)
     {
         codeSection = sections.size();
         sections.push_back({ ASMKERN_INNER,  AsmSectionType::CODE,
