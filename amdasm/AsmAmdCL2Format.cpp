@@ -2239,15 +2239,19 @@ bool AsmAmdCL2Handler::prepareBinary()
     /* put extra symbols */
     if (assembler.flags & ASM_FORCE_ADD_SYMBOLS)
     {
-        std::vector<size_t> codeOffsets(kernelsNum);
+        std::vector<size_t> codeOffsets;
         size_t codeOffset = 0;
         // make offset translation table
-        for (size_t i = 0; i < kernelsNum; i++)
+        if (!hsaLayout)
         {
-            const AmdCL2KernelInput& kernel = output.kernels[i];
-            codeOffset += (kernel.useConfig) ? 256 : kernel.setupSize;
-            codeOffsets[i] = codeOffset;
-            codeOffset += (kernel.codeSize+255)&~size_t(255);
+            codeOffsets.resize(kernelsNum, size_t(0));
+            for (size_t i = 0; i < kernelsNum; i++)
+            {
+                const AmdCL2KernelInput& kernel = output.kernels[i];
+                codeOffset += (kernel.useConfig) ? 256 : kernel.setupSize;
+                codeOffsets[i] = codeOffset;
+                codeOffset += (kernel.codeSize+255)&~size_t(255);
+            }
         }
         
         // put symbols
@@ -2274,7 +2278,9 @@ bool AsmAmdCL2Handler::prepareBinary()
             else if (sections[symEntry.second.sectionId].type == AsmSectionType::CODE)
             {
                 // put to inner binary
-                binSym.value += codeOffsets[sections[symEntry.second.sectionId].kernelId];
+                if (!hsaLayout)
+                    binSym.value +=
+                            codeOffsets[sections[symEntry.second.sectionId].kernelId];
                 output.innerExtraSymbols.push_back(std::move(binSym));
             }
         }

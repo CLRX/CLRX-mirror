@@ -2269,8 +2269,13 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
         // first, we put sampler objects
         const AmdCL2KernelInput& kernel = input->kernels[i];
         const TempAmdCL2KernelData& tempData = tempDatas[i];
-        if ((codePos & 255) != 0)
-            codePos += 256-(codePos&255);
+        if (input->code == nullptr)
+        {
+            if ((codePos & 255) != 0)
+                codePos += 256-(codePos&255);
+        }
+        else
+            codePos = kernel.offset;
         
         if (kernel.useConfig)
             for (cxuint samp: kernel.config.samplers)
@@ -2297,7 +2302,8 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
                   ELF64_ST_INFO(STB_GLOBAL, 10), 0, false, codePos, 
                   kernel.codeSize + tempData.setupSize));
         nameIdx++;
-        codePos += kernel.codeSize + tempData.setupSize;
+        if (input->code == nullptr)
+            codePos += kernel.codeSize + tempData.setupSize;
     }
     
     // symbols for global samplers
@@ -2429,6 +2435,15 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     
     Array<TempAmdCL2KernelData> tempDatas(kernelsNum);
     prepareKernelTempData(input, tempDatas);
+    
+    if (newBinaries && input->code != nullptr)
+        for (const AmdCL2RelInput& rel: input->relocations)
+        {
+            if (rel.type > RELTYPE_HIGH_32BIT || rel.symbol > 2)
+                throw BinGenException("Wrong relocation symbol or type");
+            if (rel.offset+4 > input->codeSize)
+                throw BinGenException("Relocation offset outside code size");
+        }
     
     const size_t dataSymbolsNum = std::count_if(input->innerExtraSymbols.begin(),
         input->innerExtraSymbols.end(), [](const BinSymbol& symbol)
