@@ -1986,6 +1986,8 @@ bool AsmAmdCL2Handler::prepareBinary()
             if (config.usedVGPRsNum==BINGEN_DEFAULT)
                 config.usedVGPRsNum = std::max(minRegsNum[1],
                                 kernelStates[i]->allocRegs[1]);
+            
+            output.kernels[i].setupSize = 256;
         }
         else
         {
