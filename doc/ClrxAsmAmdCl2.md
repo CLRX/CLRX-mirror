@@ -313,6 +313,12 @@ This pseudo-op must be inside kernel HSA configuration (`.hsaconfig`). Set
 Open kernel HSA configuration. Must be inside kernel. Kernel configuration can not be
 defined if any isametadata, metadata or stub was defined. Do not mix with `.config`.
 
+### .hsalayout
+
+This pseudo-op enabled HSA layout mode (source code layout similar to Gallium binary format
+layout or ROCm layout) where code of the kernels is in single main code section and
+kernels are aligned and kernel setup is skipped in section code.
+
 ### .ieeemode
 
 This pseudo-op must be inside any kernel configuration. Set ieee-mode.
@@ -718,6 +724,60 @@ This is sample of the kernel with configuration:
         .arg inverse,uint
         .......
     .text
+/*c0000501         */ s_load_dword    s0, s[4:5], 0x1
+....
+/*bf810000         */ s_endpgm
+```
+
+This is sample of two kernels with configuration in HSA layout mode:
+
+```
+.amdcl2
+.64bit
+.gpu Bonaire
+.driver_version 191205
+.hsalayout
+.compile_options "-I ./ -cl-std=CL2.0"
+.acl_version "AMD-COMP-LIB-v0.8 (0.0.SC_BUILD_NUMBER)"
+.kernel DCT
+    .config
+        .dims xy
+        .useargs
+        .usesetup
+        .setupargs
+        .arg output,float*
+        .arg input,float*
+        .arg dct8x8,float*
+        .arg dct8x8_trans,float*
+        .arg inter,float*,local
+        .arg width,uint
+        .arg blockWidth,uint
+        .arg inverse,uint
+        .......
+.kernel DCT2
+    .config
+        .dims xy
+        .useargs
+        .usesetup
+        .setupargs
+        .arg output,float*
+        .arg input,float*
+        .arg dct8x8,float*
+        .arg dct8x8_trans,float*
+        .arg inter,float*,local
+        .arg width,uint
+        .arg blockWidth,uint
+        .arg inverse,uint
+        .......
+.text
+DCT:
+.skip 256   # setup kernel skip
+/*c0000501         */ s_load_dword    s0, s[4:5], 0x1
+....
+/*bf810000         */ s_endpgm
+.p2align
+DCT2:
+.skip 256   # setup kernel skip
 /*c0000501         */ s_load_dword    s0, s[4:5], 0x1
 ....
 /*bf810000         */ s_endpgm
