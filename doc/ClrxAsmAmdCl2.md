@@ -778,7 +778,7 @@ DCT:
 /*c0000501         */ s_load_dword    s0, s[4:5], 0x1
 ....
 /*bf810000         */ s_endpgm
-.p2align
+.p2align 8
 DCT2:
 .skip 256   # setup kernel skip
 /*c0000501         */ s_load_dword    s0, s[4:5], 0x1
