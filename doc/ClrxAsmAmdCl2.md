@@ -50,6 +50,9 @@ s_mov_b32       s14, (gdata+160)&0xffffffff
 The CLRX assembler allow to use one of two ways to configure kernel setup:
 for human (`.config`) and for quick recompilation (kernel setup, stub, metadata content).
 
+In HSA layout mode the kernel codes in single main code section and no code section
+for each kernel.
+
 ## Register usage setup
 
 The CLRX assembler automatically sets number of used VGPRs and number of used SGPRs.
