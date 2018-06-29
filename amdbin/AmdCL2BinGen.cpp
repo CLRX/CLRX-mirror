@@ -2437,6 +2437,11 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     prepareKernelTempData(input, tempDatas);
     
     if (newBinaries && input->code != nullptr)
+    {
+        for (const AmdCL2KernelInput& kernel: input->kernels)
+            if (kernel.offset >= input->codeSize)
+                throw BinGenException("Kernel offset outside code size");
+        
         for (const AmdCL2RelInput& rel: input->relocations)
         {
             if (rel.type > RELTYPE_HIGH_32BIT || rel.symbol > 2)
@@ -2444,6 +2449,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             if (rel.offset+4 > input->codeSize)
                 throw BinGenException("Relocation offset outside code size");
         }
+    }
     
     const size_t dataSymbolsNum = std::count_if(input->innerExtraSymbols.begin(),
         input->innerExtraSymbols.end(), [](const BinSymbol& symbol)
@@ -2511,7 +2517,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         for (const AmdCL2KernelInput& kernel: input->kernels)
             for (const AmdCL2RelInput& rel: kernel.relocations)
                 if (rel.offset >= kernel.codeSize)
-                    throw BinGenException("Kernel text relocation offset outside kernel code");
+                    throw BinGenException(
+                            "Kernel text relocation offset outside kernel code");
         
         std::fill(innerBinSectionTable,
                   innerBinSectionTable+innerBinSectonTableLen, SHN_UNDEF);
