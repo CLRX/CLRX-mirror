@@ -315,6 +315,10 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
 
 cxuint AsmAmdCL2Handler::getSectionId(const char* sectionName) const
 {
+    // if HSA layout always treat '.text' as main '.text'
+    if (hsaLayout && ::strcmp(sectionName, ".text")==0)
+        return codeSection;
+    
     if (assembler.currentKernel == ASMKERN_GLOBAL)
     {
         if (::strcmp(sectionName, ".rodata")==0)
@@ -323,8 +327,6 @@ cxuint AsmAmdCL2Handler::getSectionId(const char* sectionName) const
             return dataSection;
         else if (::strcmp(sectionName, ".bss")==0)
             return bssSection;
-        else if (hsaLayout && ::strcmp(sectionName, ".text")==0)
-            return codeSection;
         // find extra section by name in main binary
         SectionMap::const_iterator it = extraSectionMap.find(sectionName);
         if (it != extraSectionMap.end())
