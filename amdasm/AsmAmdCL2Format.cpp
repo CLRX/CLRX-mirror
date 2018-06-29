@@ -239,6 +239,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
         rodataSection = sections.size();
         sections.push_back({ ASMKERN_INNER,  AsmSectionType::DATA,
                 ELFSECTID_RODATA, ".rodata" });
+        kernelId = ASMKERN_INNER;
     }
     else if (::strcmp(sectionName, ".data")==0)
     {
@@ -248,6 +249,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
         dataSection = sections.size();
         sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_RWDATA,
                 ELFSECTID_DATA, ".data" });
+        kernelId = ASMKERN_INNER;
     }
     else if (::strcmp(sectionName, ".bss")==0)
     {
@@ -257,12 +259,14 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
         bssSection = sections.size();
         sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_BSS,
                 ELFSECTID_BSS, ".bss" });
+        kernelId = ASMKERN_INNER;
     }
     else if (hsaLayout && ::strcmp(sectionName, ".text")==0)
     {
         codeSection = sections.size();
         sections.push_back({ ASMKERN_INNER,  AsmSectionType::CODE,
                 ELFSECTID_TEXT, ".text" });
+        kernelId = ASMKERN_INNER;
     }
     else if (kernelId == ASMKERN_GLOBAL)
     {
