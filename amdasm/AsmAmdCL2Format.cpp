@@ -2227,6 +2227,13 @@ bool AsmAmdCL2Handler::prepareBinary()
             const size_t end = ki+1 < kernelsNum ?
                     output.kernels[sortedKIndices[ki+1]].offset : output.codeSize;
             AmdCL2KernelInput& kinput = output.kernels[sortedKIndices[ki]];
+            if ((end - kinput.offset) < kinput.setupSize)
+            {
+                assembler.printError(assembler.kernels[sortedKIndices[ki]].sourcePos,
+                        (std::string("Kernel '")+kinput.kernelName.c_str()+
+                            "' size is too small").c_str());
+                good = false;
+            }
             kinput.codeSize = (end - kinput.offset) - kinput.setupSize;
         }
     }
