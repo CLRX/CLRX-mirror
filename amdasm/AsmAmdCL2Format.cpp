@@ -2216,7 +2216,7 @@ bool AsmAmdCL2Handler::prepareBinary()
             const size_t end = ki+1 < kernelsNum ?
                     output.kernels[sortedKIndices[ki+1]].offset : output.codeSize;
             AmdCL2KernelInput& kinput = output.kernels[sortedKIndices[ki]];
-            output.kernels[ki].codeSize = (end - kinput.offset) - kinput.setupSize;
+            kinput.codeSize = (end - kinput.offset) - kinput.setupSize;
         }
     }
     
