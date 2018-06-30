@@ -849,3 +849,78 @@ vectorAdd:
 .skip 256           # skip ROCm kernel configuration (required)
 ...
 ```
+
+The sample with metadata info with two kernels:
+
+```
+.rocm
+.gpu Fiji
+.arch_minor 0
+.arch_stepping 4
+.eflags 2
+.newbinfmt
+.tripple "amdgcn-amd-amdhsa-amdgizcl"
+.md_version 1, 0
+.kernel vectorAdd
+    .config
+        .dims x
+        .codeversion 1, 1
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+    .control_directive
+        .fill 128, 1, 0x00
+    .config
+        .md_language "OpenCL", 1, 2
+        .arg n, "uint", 4, , value, u32
+        .arg a, "float*", 8, , globalbuf, f32, global, default const volatile
+        .arg b, "float*", 8, , globalbuf, f32, global, default const
+        .arg c, "float*", 8, , globalbuf, f32, global, default
+        .arg , "", 8, , gox, i64
+        .arg , "", 8, , goy, i64
+        .arg , "", 8, , goz, i64
+        .arg , "", 8, , printfbuf, i8
+.kernel vectorAdd2
+    .config
+        .dims x
+        .codeversion 1, 1
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .private_elem_size 4
+        .use_ptr64
+        .kernarg_segment_align 16
+        .group_segment_align 16
+        .private_segment_align 16
+    .control_directive
+        .fill 128, 1, 0x00
+    .config
+        .md_language "OpenCL", 1, 2
+        .arg n, "uint", 4, , value, u32
+        .arg a, "float*", 8, , globalbuf, f32, global, default const volatile
+        .arg b, "float*", 8, , globalbuf, f32, global, default const
+        .arg c, "float*", 8, , globalbuf, f32, global, default
+        .arg , "", 8, , gox, i64
+        .arg , "", 8, , goy, i64
+        .arg , "", 8, , goz, i64
+        .arg , "", 8, , printfbuf, i8
+.text
+vectorAdd:
+.skip 256           # skip ROCm kernel configuration (required)
+            s_mov_b32 s8, s1
+...
+...
+            s_endpgm
+.p2align 8      # important alignment to 256-byte boundary
+vectorAdd2
+.skip 256
+            s_mov_b32 s8, s1
+...
+...
+            s_endpgm
+```

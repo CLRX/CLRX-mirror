@@ -805,7 +805,7 @@ DCT:
 /*c0000501         */ s_load_dword    s0, s[4:5], 0x1
 ....
 /*bf810000         */ s_endpgm
-.p2align 8
+.p2align 8            # important alignment to 256-byte boundary
 DCT2:
 .skip 256   # setup kernel skip
 /*c0000501         */ s_load_dword    s0, s[4:5], 0x1

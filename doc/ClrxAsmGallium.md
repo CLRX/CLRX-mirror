@@ -823,3 +823,54 @@ DCT:
 /* we skip rest of instruction to demonstrate how to write GalliumCompute program */
 /*bf810000         */ s_endpgm
 ```
+
+This sample for new Gallium format (LLVM>=4.0, Mesa>=17.0.0) with two kernels:
+
+```
+.gallium
+.llvm_version 40000         # set LLVM version 4.0.0
+.driver_version 170000      # set Mesa version 17.0.0
+.gpu CapeVerde
+.kernel DCT
+    .args
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg local, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, griddim
+        .arg scalar, 4, 4, 4, zext, gridoffset
+    .config
+        .dims xyz
+        .tgsize
+.kernel DCT2
+    .args
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg local, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, griddim
+        .arg scalar, 4, 4, 4, zext, gridoffset
+    .config
+        .dims xyz
+        .tgsize
+.text
+DCT:
+.skip 256   # skip HSA configuration
+/*c0030106         */ s_load_dword    s6, s[0:1], 0x6
+/*c0038107         */ s_load_dword    s7, s[0:1], 0x7
+/* we skip rest of instruction to demonstrate how to write GalliumCompute program */
+/*bf810000         */ s_endpgm
+.p2align 8        # important alignment to 256-byte boundary
+DCT2:
+.skip 256   # skip HSA configuration
+/*c0030106         */ s_load_dword    s6, s[0:1], 0x6
+/*c0038107         */ s_load_dword    s7, s[0:1], 0x7
+/* we skip rest of instruction to demonstrate how to write GalliumCompute program */
+/*bf810000         */ s_endpgm
+```
