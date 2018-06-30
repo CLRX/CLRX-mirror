@@ -3130,7 +3130,9 @@ bool Assembler::assemble()
                 currentKernel = ASMKERN_GLOBAL;
                 sectionId = formatHandler->getSectionId(".text");
             }
-            kernels[i].closeCodeRegion(sections[sectionId].content.size());
+            const size_t contentSize = (sectionId != ASMSECT_NONE) ?
+                    sections[sectionId].content.size() : size_t(0);
+            kernels[i].closeCodeRegion(contentSize);
         }
         // prepare binary
         formatHandler->prepareBinary();
