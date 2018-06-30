@@ -65,6 +65,10 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
     
     input->deviceType = binary.determineGPUDeviceType(input->archMinor,
                   input->archStepping, driverVersion);
+    if (binary.getDriverVersion() < 191205)
+        // if old binary format and old driver version
+        driverVersion = binary.getDriverVersion();
+    
     if (driverVersion == 0)
         input->driverVersion = std::max(binary.getDriverVersion(),
                 AmdCL2MainGPUBinaryBase::determineMinDriverVersionForGPUDeviceType(
@@ -902,7 +906,8 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
     const bool doSetup = ((flags & DISASM_SETUP) != 0);
     const bool doHSAConfig = ((flags & DISASM_HSACONFIG) != 0);
-    const bool doHSALayout = ((flags & DISASM_HSALAYOUT) != 0);
+    const bool doHSALayout = ((flags & DISASM_HSALAYOUT) != 0) &&
+                (amdCL2Input->driverVersion >= 191205);
     
     if (amdCL2Input->is64BitMode)
         output.write(".64bit\n", 7);
@@ -1045,7 +1050,9 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
                 output.write("    .stub\n", 10);
                 printDisasmData(kinput.stubSize, kinput.stub, output, true);
             }
-            if (kinput.setup != nullptr && kinput.setupSize != 0)
+            // print when setup dump, no config dump
+            // and if no HSAlayout - in HSA layout setup in text code
+            if (kinput.setup != nullptr && kinput.setupSize != 0 && !doHSALayout)
             {
                 // if kernel setup available
                 output.write("    .setup\n", 11);
