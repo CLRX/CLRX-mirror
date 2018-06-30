@@ -906,6 +906,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
     const bool doSetup = ((flags & DISASM_SETUP) != 0);
     const bool doHSAConfig = ((flags & DISASM_HSACONFIG) != 0);
+    // enable HSA layout only if new binary format present
     const bool doHSALayout = ((flags & DISASM_HSALAYOUT) != 0) &&
                 (amdCL2Input->driverVersion >= 191205);
     
