@@ -384,8 +384,8 @@ s_mov_b32 s23, s0
     /* amdcl2 kcode test */
     {
         R"ffDXD(            .amdcl2; .gpu bonaire;
-        .hsalayout
         .driver_version 240000
+        .hsalayout
             .kernel kx0
             .config
             .kernel kx1
