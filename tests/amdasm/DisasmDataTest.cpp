@@ -2091,8 +2091,11 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
     if (testCase.exceptionString == nullptr)
         assertTrue("DisasmData", caseName + ".noexception", !haveException);
     else
-        assertString("DisasmData", caseName + ".exception",
+    {
+        assertTrue("DisasmData", caseName + ".exception", haveException);
+        assertString("DisasmData", caseName + ".exceptionString",
                      testCase.exceptionString, resExceptionStr);
+    }
     
     // compare output with expected string
     if (::strcmp(testCase.expectedString, resultStr.c_str()) != 0)

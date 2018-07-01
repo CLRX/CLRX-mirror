@@ -1834,11 +1834,15 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"offset",
                     expectedRvu.offset, resultRvu.offset);
         if (expectedRvu.regVarName==nullptr)
-            assertTrue("testGCNRegVarUsages", testCaseName+rvuName+"regVarName",
+            assertTrue("testGCNRegVarUsages", testCaseName+rvuName+"regVar",
                        resultRvu.regVar==nullptr);
         else // otherwise
+        {
+            assertTrue("testGCNRegVarUsages", testCaseName+rvuName+"regVar",
+                       resultRvu.regVar!=nullptr);
             assertString("testGCNRegVarUsages", testCaseName+rvuName+"regVarName",
                     expectedRvu.regVarName, regVarNamesMap.find(resultRvu.regVar)->second);
+        }
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"rstart",
                     expectedRvu.rstart, resultRvu.rstart);
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"rend",
