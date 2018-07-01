@@ -50,8 +50,8 @@ s_mov_b32       s14, (gdata+160)&0xffffffff
 The CLRX assembler allow to use one of two ways to configure kernel setup:
 for human (`.config`) and for quick recompilation (kernel setup, stub, metadata content).
 
-In HSA layout mode the kernel codes in single main code section and no code section
-for each kernel.
+In the HSA layout mode the kernel codes in single main code section and no code section
+for each kernel. The HSA layout mode can be enabled only for newer binary format.
 
 ## Register usage setup
 
@@ -321,6 +321,7 @@ defined if any isametadata, metadata or stub was defined. Do not mix with `.conf
 This pseudo-op enabled HSA layout mode (source code layout similar to Gallium binary format
 layout or ROCm layout) where code of the kernels is in single main code section and
 kernels are aligned and kernel setup is skipped in section code.
+Only allowed for newer driver version binaries.
 
 ### .ieeemode
 
