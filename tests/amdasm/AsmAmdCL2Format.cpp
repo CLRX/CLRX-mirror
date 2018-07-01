@@ -115,8 +115,11 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
     for (const AmdCL2KernelInput& kernel: output->kernels)
     {
         os << "  Kernel: " << kernel.kernelName << "\n";
-        os << "    Code:\n";
-        printHexData(os, 2, kernel.codeSize, kernel.code);
+        if (kernel.code != nullptr)
+        {
+            os << "    Code:\n";
+            printHexData(os, 2, kernel.codeSize, kernel.code);
+        }
         if (!kernel.useConfig)
         {
             // print metadata, setup and stub (if no config)
@@ -267,7 +270,24 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
             os << "    Rel: offset=" << rel.offset << ", type=" << rel.type << ", "
                 "symbol=" << rel.symbol << ", addend=" << rel.addend << "\n";
     }
-    
+    // print code
+    if (output->code != nullptr)
+    {
+        os << "  Code:\n";
+        printHexData(os,  1, output->codeSize, output->code);
+    }
+    {
+        // sort relocation before printing
+        std::vector<AmdCL2RelInput> relocs(output->relocations.begin(),
+                            output->relocations.end());
+        std::sort(relocs.begin(), relocs.end(),
+                  [] (const AmdCL2RelInput& a, const AmdCL2RelInput& b)
+                  { return a.offset < b.offset; });
+        // print relocations
+        for (const AmdCL2RelInput& rel: relocs)
+            os << "  Rel: offset=" << rel.offset << ", type=" << rel.type << ", "
+                "symbol=" << rel.symbol << ", addend=" << rel.addend << "\n";
+    }
     // print globaldata, rwdata, bss
     os << "  GlobalData:\n";
     printHexData(os,  1, output->globalDataSize, output->globalData);
@@ -318,7 +338,7 @@ struct AsmTestCase
 
 static const AsmTestCase asmTestCases1Tbl[] =
 {
-/* AMD CL2 (no config) */
+    /* AMD CL2 (no config) */
     {
 R"ffDXD(            .amdcl2
             .64bit
@@ -353,6 +373,94 @@ R"ffDXD(            .amdcl2
             .inner
                 .byte 0xff,0xfd
             .main
+            .bssdata
+                .skip 10
+            .main
+            .section .xx
+                .byte 1,23
+            .inner
+            .section .xx
+                .byte 12,13
+            .kernel vu
+                .section aaaxx
+                .text
+                    s_endpgm
+            .inner
+                .section aaaxx
+                .byte 0xcd,0xdc)ffDXD",
+        R"ffDXD(AmdCL2BinDump:
+  devType=Bonaire, aclVersion=, drvVersion=191205, compileOptions=""
+  Kernel: aaa1
+    Code:
+    Metadata:
+    010203042c
+    Setup:
+    0006000304c1c4
+  Kernel: aaa2
+    Code:
+    Metadata:
+    010203042c
+    Setup:
+    0006000304
+  Kernel: vu
+    Code:
+    000081bf
+    Metadata:
+    nullptr
+    Setup:
+    nullptr
+  GlobalData:
+  2c3742
+  RwData:
+  nullptr
+  Bss size: 60, bssAlign: 8
+  SamplerInit:
+  nullptr
+    ISection .beta, type=1, flags=0:
+    6265746100fffd
+    ISection .xx, type=1, flags=0:
+    0c0d
+    ISection aaaxx, type=1, flags=0:
+    cddc
+  Section .ala, type=1, flags=0:
+  616c61000aba
+  Section .xx, type=1, flags=0:
+  0117
+)ffDXD", "", true
+    },
+    /* AMD CL2 (no config) (no main before rodata or bss) */
+    {
+R"ffDXD(            .amdcl2
+            .64bit
+            .gpu Bonaire
+            .driver_version 191205
+            .kernel aaa1
+                .metadata
+                    .byte 1,2,3,4,44
+                .setup
+                    .byte 0,6,0,3,4
+
+            .kernel aaa2
+                .setup
+                    .byte 0,6,0,3,4
+                .metadata
+                    .byte 1,2,3,4,44
+            .kernel aaa1
+                    .byte 0xc1,0xc4
+            .section .rodata
+                .byte 44,55,66
+            .bssdata align=8
+                .skip 50
+            .main
+            .section .ala
+                .string "ala"
+            .inner
+            .section .beta
+                .string "beta"
+            .main
+                .byte 0xa,0xba
+            .inner
+                .byte 0xff,0xfd
             .bssdata
                 .skip 10
             .main
@@ -1169,6 +1277,130 @@ test.s:45:5: Error: Config can't be defined if metadata,header,setup,stub sectio
   SamplerInit:
   nullptr
 )ffDXD", "", true
+    },
+    /* AMDCL2 with HSA layout */
+    {
+        R"ffDXD(.64bit
+.amdcl2
+.driver_version 240000
+.gpu Bonaire
+.hsalayout
+.globaldata
+dat0: .int 1,2,3
+dat1: .int 6,7,11
+        
+.kernel aaa1
+    .config
+        .dims x
+        .useargs
+        .usesetup
+        .setupargs
+        .arg n, int
+        .arg a, int*, global, const
+        .arg b, int*, global, const
+        .arg c, int*, global
+.kernel aaa2
+    .config
+        .dims x
+        .localsize 1000
+        .useargs
+        .usesetup
+        .setupargs
+        .arg n, int
+        .arg a, int*, global, const
+        .arg b, int*, global, const
+        .arg c, int*, global
+.text
+aaa2:
+.skip 256
+        s_mov_b32 s27, s1
+        v_mov_b32 v16, v1
+        v_mov_b32 v11, dat1&0xffffffff
+        s_nop 4
+        v_mov_b32 v12, dat0>>32
+        s_endpgm
+.p2align 8
+aaa1:
+.skip 256
+        s_mov_b32 s14, s1
+        v_mov_b32 v26, v1
+        v_mov_b32 v11, dat0&0xffffffff
+        v_mov_b32 v12, dat1>>32
+        s_endpgm
+)ffDXD",
+        R"ffDXD(AmdCL2BinDump:
+  devType=Bonaire, aclVersion=, drvVersion=240000, compileOptions=""
+  Kernel: aaa1
+    Config:
+      Arg: "_.global_offset_0", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_1", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_2", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 3, 0, 0, 0
+      Arg: "_.vqueue_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.aqlwrap_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "n", "int", int, void, none, 0, 0, 0, default, 3
+      Arg: "a", "int*", pointer, int, global, 4, 0, 0, default, 3
+      Arg: "b", "int*", pointer, int, global, 4, 0, 0, default, 3
+      Arg: "c", "int*", pointer, int, global, 0, 0, 0, default, 3
+      dims=9, cws=0 0 0, SGPRS=15, VGPRS=27
+      pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x0, floatMode=0xc0
+      priority=0, exceptions=0, localSize=0, scratchBuffer=0
+      useSetup useArgs 
+  Kernel: aaa2
+    Config:
+      Arg: "_.global_offset_0", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_1", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_2", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 3, 0, 0, 0
+      Arg: "_.vqueue_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.aqlwrap_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "n", "int", int, void, none, 0, 0, 0, default, 3
+      Arg: "a", "int*", pointer, int, global, 4, 0, 0, default, 3
+      Arg: "b", "int*", pointer, int, global, 4, 0, 0, default, 3
+      Arg: "c", "int*", pointer, int, global, 0, 0, 0, default, 3
+      dims=9, cws=0 0 0, SGPRS=28, VGPRS=17
+      pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x0, floatMode=0xc0
+      priority=0, exceptions=0, localSize=1000, scratchBuffer=0
+      useSetup useArgs 
+  Code:
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  01039bbe0103207eff02167e55555555040080bfff02187e55555555000081bf
+  000080bf000080bf000080bf000080bf000080bf000080bf000080bf000080bf
+  000080bf000080bf000080bf000080bf000080bf000080bf000080bf000080bf
+  000080bf000080bf000080bf000080bf000080bf000080bf000080bf000080bf
+  000080bf000080bf000080bf000080bf000080bf000080bf000080bf000080bf
+  000080bf000080bf000080bf000080bf000080bf000080bf000080bf000080bf
+  000080bf000080bf000080bf000080bf000080bf000080bf000080bf000080bf
+  000080bf000080bf000080bf000080bf000080bf000080bf000080bf000080bf
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  01038ebe0103347eff02167e55555555ff02187e55555555000081bf
+  Rel: offset=268, type=1, symbol=0, addend=12
+  Rel: offset=280, type=2, symbol=0, addend=0
+  Rel: offset=780, type=1, symbol=0, addend=0
+  Rel: offset=788, type=2, symbol=0, addend=12
+  GlobalData:
+  01000000020000000300000006000000070000000b000000
+  RwData:
+  nullptr
+  Bss size: 0, bssAlign: 0
+  SamplerInit:
+  nullptr
+)ffDXD",
+        "", true
     }
 };
 
