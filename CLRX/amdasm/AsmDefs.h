@@ -582,6 +582,8 @@ struct AsmDelayInstrTypeEntry
 /// asm wait system configuration
 struct AsmWaitConfig
 {
+    cxuint delayInstrTypesNum;
+    cxuint waitQueuesNum;
     AsmDelayInstrTypeEntry delayInstrTypes[ASM_DELAY_INSTR_MAX_TYPES_NUM];
     uint16_t waitQueueSizes[ASM_WAIT_MAX_TYPES_NUM];
 };

@@ -865,3 +865,40 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
     }
     return words<<2;
 }
+
+static const AsmWaitConfig gcnWaitConfig =
+{
+    cxuint(GCNDELINSTR_MAX+1),
+    cxuint(GCNWAIT_MAX+1),
+    {
+        { GCNWAIT_VMCNT, true },  // GCNDELINSTR_VMINSTR
+        { GCNWAIT_LGKMCNT, true },  // GCNDELINSTR_LDSINSTR
+        { GCNWAIT_LGKMCNT, true },  // GCNDELINSTR_GDSINSTR
+        { GCNWAIT_LGKMCNT, true },  // GCNDELINSTR_SENDMSG
+        { GCNWAIT_LGKMCNT, false },  // GCNDELINSTR_SMINSTR
+        { GCNWAIT_EXPCNT, true },  // GCNDELINSTR_EXPVMWRITE
+        { GCNWAIT_EXPCNT, false }  // GCNDELINSTR_EXPORT
+    },
+    { 16, 8, 16 }
+};
+
+static const AsmWaitConfig gcnWaitConfig14 =
+{
+    cxuint(GCNDELINSTR_MAX+1),
+    cxuint(GCNWAIT_MAX+1),
+    {
+        { GCNWAIT_VMCNT, true },  // GCNDELINSTR_VMINSTR
+        { GCNWAIT_LGKMCNT, true },  // GCNDELINSTR_LDSINSTR
+        { GCNWAIT_LGKMCNT, true },  // GCNDELINSTR_GDSINSTR
+        { GCNWAIT_LGKMCNT, true },  // GCNDELINSTR_SENDMSG
+        { GCNWAIT_LGKMCNT, false },  // GCNDELINSTR_SMINSTR
+        { GCNWAIT_EXPCNT, true },  // GCNDELINSTR_EXPVMWRITE
+        { GCNWAIT_EXPCNT, false }  // GCNDELINSTR_EXPORT
+    },
+    { 64, 8, 16 }
+};
+
+const AsmWaitConfig& GCNAssembler::getWaitConfig() const
+{
+    return (curArchMask&ARCH_GCN_1_4)!=0 ? gcnWaitConfig14 : gcnWaitConfig;
+}

@@ -329,6 +329,7 @@ public:
                        const char* end, cxuint& type) = 0;
     /// get size of instruction
     virtual size_t getInstructionSize(size_t codeSize, const cxbyte* code) const = 0;
+    virtual const AsmWaitConfig& getWaitConfig() const = 0;
 };
 
 /// GCN arch assembler
@@ -393,6 +394,7 @@ public:
     bool relocationIsFit(cxuint bits, AsmExprTargetType tgtType);
     bool parseRegisterType(const char*& linePtr, const char* end, cxuint& type);
     size_t getInstructionSize(size_t codeSize, const cxbyte* code) const;
+    const AsmWaitConfig& getWaitConfig() const;
 };
 
 class AsmRegAllocator

@@ -3047,6 +3047,9 @@ bool Assembler::assemble()
                     sections[currentSection].linearDepHandler.reset(
                             new ISALinearDepHandler());
                 
+                if (sections[currentSection].waitHandler == nullptr)
+                    sections[currentSection].waitHandler.reset(new ISAWaitHandler());
+                
                 isaAssembler->assemble(firstName, stmtPlace, linePtr, end,
                            sections[currentSection].content,
                            sections[currentSection].usageHandler.get());

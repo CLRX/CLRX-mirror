@@ -80,10 +80,11 @@ bool ISAWaitHandler::nextInstr(std::pair<size_t, AsmDelayedResult>* delRes,
 AsmWaitScheduler::AsmWaitScheduler(const AsmWaitConfig& _asmWaitConfig,
             Assembler& _assembler,
             const std::vector<AsmRegAllocator::CodeBlock>& _codeBlocks,
-            bool onlyWarnings)
-        : waitConfig(_asmWaitConfig), assembler(_assembler), codeBlocks(_codeBlocks)
+            bool _onlyWarnings)
+        : waitConfig(_asmWaitConfig), assembler(_assembler), codeBlocks(_codeBlocks),
+          onlyWarnings(_onlyWarnings)
 { }
-    
+
 void AsmWaitScheduler::schedule()
 {
 }
