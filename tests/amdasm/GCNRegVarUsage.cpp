@@ -24,6 +24,7 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/utils/Containers.h>
+#include <CLRX/amdasm/GCNDefs.h>
 #include "../TestUtils.h"
 
 using namespace CLRX;

@@ -26,6 +26,7 @@
 #include <mutex>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/amdasm/GCNDefs.h>
 #include "GCNAsmInternals.h"
 
 using namespace CLRX;

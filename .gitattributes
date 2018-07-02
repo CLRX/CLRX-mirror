@@ -8,6 +8,7 @@ CLRX/amdasm/AsmSource.h -text
 CLRX/amdasm/Assembler.h -text
 CLRX/amdasm/Commons.h -text
 CLRX/amdasm/Disassembler.h -text
+CLRX/amdasm/GCNDefs.h -text
 CLRX/amdbin/AmdBinGen.h -text
 CLRX/amdbin/AmdBinaries.h -text
 CLRX/amdbin/AmdCL2BinGen.h -text

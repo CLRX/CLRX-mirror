@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/amdasm/GCNDefs.h>
 #include "GCNAsmInternals.h"
 
 namespace CLRX
