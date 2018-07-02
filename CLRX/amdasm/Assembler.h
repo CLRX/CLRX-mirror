@@ -264,7 +264,8 @@ public:
     { return readPos.delResPos < delayedResults.size() ||
                 readPos.waitInstrPos < waitInstrs.size(); }
     /// get next instruction, return true if waitInstr
-    bool nextInstr(AsmDelayedResult* delRes, AsmWaitInstr* waitInstr);
+    bool nextInstr(std::pair<size_t, AsmDelayedResult>* delRes,
+                   std::pair<size_t, AsmWaitInstr>* waitInstr);
     
     /// copy wait handler (make new copy)
     ISAWaitHandler* copy() const;

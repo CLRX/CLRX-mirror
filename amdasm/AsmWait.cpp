@@ -19,6 +19,7 @@
 
 #include <CLRX/Config.h>
 #include <vector>
+#include <cstddef>
 #include <utility>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
@@ -27,14 +28,49 @@
 
 using namespace CLRX;
 
-ISAWaitHandler::ISAWaitHandler()
+ISAWaitHandler::ISAWaitHandler() : readPos{ size_t(0), size_t(0) }
 { }
 
 void ISAWaitHandler::rewind()
-{ }
+{
+    readPos = { size_t(0), size_t(0) };
+}
+
+void ISAWaitHandler::setReadPos(const ReadPos& _readPos)
+{
+    readPos = _readPos;
+}
 
 ISAWaitHandler* ISAWaitHandler::copy() const
 {
     return new ISAWaitHandler(*this);
 }
 
+
+void ISAWaitHandler::pushDelayedResult(size_t offset, const AsmDelayedResult& delResult)
+{
+    delayedResults.push_back(std::make_pair(offset, delResult));
+}
+
+void ISAWaitHandler::pushWaitInstr(size_t offset, const AsmWaitInstr& waitInstr)
+{
+    waitInstrs.push_back(std::make_pair(offset, waitInstr));
+}
+
+bool ISAWaitHandler::nextInstr(std::pair<size_t, AsmDelayedResult>* delRes,
+                    std::pair<size_t, AsmWaitInstr>* waitInstr)
+{
+    size_t delResOffset = SIZE_MAX;
+    size_t waitInstrOffset = SIZE_MAX;
+    if (readPos.delResPos < delayedResults.size())
+        delResOffset = delayedResults[readPos.delResPos].first;
+    if (readPos.waitInstrPos < waitInstrs.size())
+        waitInstrOffset = waitInstrs[readPos.waitInstrPos].first;
+    if (delResOffset < waitInstrOffset)
+    {
+        *delRes = delayedResults[readPos.delResPos++];
+        return false;
+    }
+    *waitInstr = waitInstrs[readPos.waitInstrPos++];
+    return true;
+}

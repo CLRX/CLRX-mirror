@@ -596,7 +596,10 @@ struct AsmDelayedResult
 };
 
 /// description of the WAIT instruction (for waiting for results)
-typedef uint16_t AsmWaitInstr[ASM_WAIT_MAX_TYPES_NUM];
+struct AsmWaitInstr
+{
+    uint16_t waits[ASM_WAIT_MAX_TYPES_NUM];
+};
 
 /// code flow type
 enum AsmCodeFlowType
