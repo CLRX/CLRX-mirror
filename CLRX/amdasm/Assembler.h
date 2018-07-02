@@ -351,6 +351,10 @@ private:
     uint16_t curArchMask;
     cxbyte currentRVUIndex;
     AsmRegVarUsage instrRVUs[6];
+    bool hasWaitInstr;
+    bool hasDelayedResult;
+    AsmWaitConfig waitInstr;
+    AsmDelayedResult delayedResult;
     
     void resetInstrRVUs()
     {
