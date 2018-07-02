@@ -231,6 +231,42 @@ public:
                     cxbyte* linearDeps) const;
 };
 
+/// wait handler
+class ISAWaitHandler
+{
+public:
+    struct ReadPos
+    {
+        size_t delResPos;
+        size_t waitInstrPos;
+    };
+private:
+    ReadPos readPos;
+    std::vector<std::pair<size_t, AsmDelayedResult> > delayedResults;
+    std::vector<std::pair<size_t, AsmWaitInstr> > waitInstrs;
+public:
+    /// constructor
+    ISAWaitHandler();
+    
+    /// rewind to start position
+    void rewind();
+    /// set read position
+    void setReadPos(const ReadPos& readPos);
+    /// get read position
+    ReadPos getReadPos() const
+    { return readPos; }
+    /// push delayed result
+    void pushDelayedResult(size_t offset, const AsmDelayedResult& delResult);
+    /// wait instruction
+    void pushWaitInstr(size_t offset, const AsmWaitInstr& waitInstr);
+    /// return true if has next instruction
+    bool hasNext() const
+    { return readPos.delResPos < delayedResults.size() ||
+                readPos.waitInstrPos < waitInstrs.size(); }
+    /// get next instruction, return true if waitInstr
+    bool nextInstr(AsmDelayedResult* delRes, AsmWaitInstr* waitInstr);
+};
+
 /// ISA assembler class
 class ISAAssembler: public NonCopyableAndNonMovable
 {

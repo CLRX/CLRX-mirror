@@ -568,12 +568,12 @@ struct AsmRegVarLinearDep
 };
 
 enum {
-    ASM_WAIT_REQ_MAX_TYPES_NUM = 8,
-    ASM_WAIT_MAX_TYPES_NUM = 8
+    ASM_DELAY_INSTR_MAX_TYPES_NUM = 8,
+    ASM_WAIT_MAX_TYPES_NUM = 4
 };
 
-/// asm wait request type config entry
-struct AsmWaitReqTypeEntry
+/// asm delay instr type entry
+struct AsmDelayInstrTypeEntry
 {
     cxbyte waitType;
     bool ordered;
@@ -582,17 +582,17 @@ struct AsmWaitReqTypeEntry
 /// asm wait system configuration
 struct AsmWaitConfig
 {
-    AsmWaitReqTypeEntry reqTypes[ASM_WAIT_REQ_MAX_TYPES_NUM];
+    AsmDelayInstrTypeEntry delayInstrTypes[ASM_DELAY_INSTR_MAX_TYPES_NUM];
     uint16_t waitQueueSizes[ASM_WAIT_MAX_TYPES_NUM];
 };
 
-/// wait request for register for instruction with delayed results
-struct AsmWaitRequest
+/// delayed result for register for instruction with delayed results
+struct AsmDelayedResult
 {
     const AsmRegVar* regVar;
     uint16_t rstart;
     uint16_t rend;
-    cxbyte waitReqType;
+    cxbyte delayInstrType;
 };
 
 /// description of the WAIT instruction (for waiting for results)
