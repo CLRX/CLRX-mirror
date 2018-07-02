@@ -67,6 +67,8 @@ AsmSection::AsmSection(const AsmSection& section)
         usageHandler.reset(section.usageHandler->copy());
     if (section.linearDepHandler!=nullptr)
         linearDepHandler.reset(section.linearDepHandler->copy());
+    if (section.waitHandler!=nullptr)
+        waitHandler.reset(section.waitHandler->copy());
     codeFlow = section.codeFlow;
 }
 
@@ -85,6 +87,10 @@ AsmSection& AsmSection::operator=(const AsmSection& section)
     
     if (section.usageHandler!=nullptr)
         usageHandler.reset(section.usageHandler->copy());
+    if (section.linearDepHandler!=nullptr)
+        linearDepHandler.reset(section.linearDepHandler->copy());
+    if (section.waitHandler!=nullptr)
+        waitHandler.reset(section.waitHandler->copy());
     codeFlow = section.codeFlow;
     return *this;
 }

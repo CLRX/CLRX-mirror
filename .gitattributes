@@ -58,6 +58,7 @@ amdasm/AsmRegAlloc.h -text
 amdasm/AsmRegAllocLive.cpp -text
 amdasm/AsmRegAllocSSAData.cpp -text
 amdasm/AsmSource.cpp -text
+amdasm/AsmWait.cpp -text
 amdasm/Assembler.cpp -text
 amdasm/CMakeLists.txt -text svneol=unset#text/plain
 amdasm/DisasmAmd.cpp -text

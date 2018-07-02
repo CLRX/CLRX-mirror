@@ -32,6 +32,7 @@ SET(LIBAMDASMSRC
         AsmRegAllocLive.cpp
         AsmRegAllocSSAData.cpp
         AsmSource.cpp
+        AsmWait.cpp
         Assembler.cpp
         Disassembler.cpp
         DisasmAmd.cpp

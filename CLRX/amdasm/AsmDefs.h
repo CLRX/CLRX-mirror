@@ -667,6 +667,7 @@ struct AsmScope
 
 class ISAUsageHandler;
 class ISALinearDepHandler;
+class ISAWaitHandler;
 
 /// assembler section
 struct AsmSection
@@ -683,6 +684,7 @@ struct AsmSection
     
     std::unique_ptr<ISAUsageHandler> usageHandler;  ///< usage handler
     std::unique_ptr<ISALinearDepHandler> linearDepHandler; ///< linear dep handler
+    std::unique_ptr<ISAWaitHandler> waitHandler; ///< wait handler
     std::vector<AsmCodeFlowEntry> codeFlow;  ///< code flow info
     AsmSourcePosHandler sourcePosHandler;
     

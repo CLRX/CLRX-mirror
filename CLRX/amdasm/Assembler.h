@@ -265,6 +265,9 @@ public:
                 readPos.waitInstrPos < waitInstrs.size(); }
     /// get next instruction, return true if waitInstr
     bool nextInstr(AsmDelayedResult* delRes, AsmWaitInstr* waitInstr);
+    
+    /// copy wait handler (make new copy)
+    ISAWaitHandler* copy() const;
 };
 
 /// ISA assembler class
