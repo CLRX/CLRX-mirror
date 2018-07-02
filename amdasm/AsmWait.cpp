@@ -74,3 +74,16 @@ bool ISAWaitHandler::nextInstr(std::pair<size_t, AsmDelayedResult>* delRes,
     *waitInstr = waitInstrs[readPos.waitInstrPos++];
     return true;
 }
+
+/* AsmWaitScheduler */
+
+AsmWaitScheduler::AsmWaitScheduler(const AsmWaitConfig& _asmWaitConfig,
+            Assembler& _assembler,
+            const std::vector<AsmRegAllocator::CodeBlock>& _codeBlocks,
+            bool onlyWarnings)
+        : waitConfig(_asmWaitConfig), assembler(_assembler), codeBlocks(_codeBlocks)
+{ }
+    
+void AsmWaitScheduler::schedule()
+{
+}

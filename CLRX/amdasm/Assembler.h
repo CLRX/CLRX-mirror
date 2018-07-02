@@ -512,6 +512,26 @@ public:
     { return vidxCallMap; }
 };
 
+/// Assembler Wait scheduler
+class AsmWaitScheduler
+{
+private:
+    const AsmWaitConfig& waitConfig;
+    Assembler& assembler;
+    const std::vector<AsmRegAllocator::CodeBlock>& codeBlocks;
+    bool onlyWarnings;
+    std::vector<std::pair<size_t, AsmWaitInstr> > neededWaitInstrs;
+public:
+    AsmWaitScheduler(const AsmWaitConfig& asmWaitConfig, Assembler& assembler,
+            const std::vector<AsmRegAllocator::CodeBlock>& codeBlocks,
+            bool onlyWarnings);
+    
+    void schedule();
+    
+    const std::vector<std::pair<size_t, AsmWaitInstr> >& getNeededWaitInstrs() const
+    { return neededWaitInstrs; }
+};
+
 /// type of clause
 enum class AsmClauseType
 {
