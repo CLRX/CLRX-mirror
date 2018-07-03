@@ -695,6 +695,16 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 if (linePtr[0] == '&')
                     ++linePtr;
             }
+            
+            if (gcnInsn.code1==12)
+            {
+                // S_WAITCNT
+                const uint16_t lgkmCnt = (imm16>>8) & 7;
+                const uint16_t expCnt = (imm16>>4) & 7;
+                const uint16_t vmCnt = ((imm16) & 15) + (isGCN14 ? ((imm16>>10)&0x30) : 0);
+                gcnAsm->waitInstr = { output.size(), { vmCnt, lgkmCnt, expCnt } };
+                gcnAsm->hasWaitInstr = true;
+            }
             break;
         }
         case GCN_IMM_MSGS:
@@ -909,6 +919,15 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     
+    if (mode1 != GCN_ARG_NONE)
+    {
+        gcnAsm->delayedResult[0] = AsmDelayedResult{ output.size(),
+                    gcnAsm->instrRVUs[0].regVar, gcnAsm->instrRVUs[0].rstart,
+                    gcnAsm->instrRVUs[0].rend, GCNDELINSTR_SMINSTR,
+                    gcnAsm->instrRVUs[0].rwFlags };
+        gcnAsm->hasDelayedResult = true;
+    }
+    
     if (soffsetExpr!=nullptr)
         soffsetExpr->setTarget(AsmExprTarget(GCNTGT_SMRDOFFSET, asmr.currentSection,
                        output.size()));
@@ -1061,6 +1080,15 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
+    
+    if (mode1 != GCN_ARG_NONE)
+    {
+        gcnAsm->delayedResult[0] = AsmDelayedResult{ output.size(),
+                    gcnAsm->instrRVUs[0].regVar, gcnAsm->instrRVUs[0].rstart,
+                    gcnAsm->instrRVUs[0].rend, GCNDELINSTR_SMINSTR,
+                    gcnAsm->instrRVUs[0].rwFlags };
+        gcnAsm->hasDelayedResult = true;
+    }
     
     // set expression target for offsets and immediates
     if (soffsetExpr!=nullptr)
@@ -2207,6 +2235,8 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     
     bool beforeData = false;
     bool vdstUsed = false;
+    cxuint delayRVU = 0;
+    bool secondDelay = false;
     
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
@@ -2223,6 +2253,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         good &= parseVRegRange(asmr, linePtr, dstReg, regsNum, GCNFIELD_DS_VDST, true,
                     INSTROP_SYMREGRANGE|INSTROP_WRITE);
         vdstUsed = beforeData = true;
+        delayRVU = 0;
     }
     
     if ((gcnInsn.mode & GCN_ONLYDST) == 0 && (gcnInsn.mode & GCN_ONLY_SRC) == 0)
@@ -2258,7 +2289,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     INSTROP_SYMREGRANGE|INSTROP_READ);
         if (srcMode == GCN_2SRCS)
         {
-            // insturction have second source
+            // instruction have second source
             if (!skipRequiredComma(asmr, linePtr))
                 return false;
             // parse VDATA0 (VGPR)
@@ -2266,7 +2297,9 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
             good &= parseVRegRange(asmr, linePtr, data1Reg,
                        (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, GCNFIELD_DS_DATA1, true,
                                INSTROP_SYMREGRANGE|INSTROP_READ);
+            secondDelay = true;
         }
+        delayRVU = 2;
     }
     
     bool haveGds = false;
@@ -2360,6 +2393,25 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
+    
+    {
+        // register Delayed results
+        gcnAsm->delayedResult[0] = { output.size(), gcnAsm->instrRVUs[delayRVU].regVar,
+                    gcnAsm->instrRVUs[delayRVU].rstart, gcnAsm->instrRVUs[delayRVU].rend,
+                    haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
+                    gcnAsm->instrRVUs[delayRVU].rwFlags };
+        if (secondDelay)
+        {
+            gcnAsm->delayedResult[1] = { output.size(),
+                    gcnAsm->instrRVUs[delayRVU+1].regVar,
+                    gcnAsm->instrRVUs[delayRVU+1].rstart,
+                    gcnAsm->instrRVUs[delayRVU+1].rend,
+                    haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
+                    gcnAsm->instrRVUs[delayRVU+1].rwFlags };
+            gcnAsm->hasSecondDelayResult = true;
+        }
+        gcnAsm->hasDelayedResult = true;
+    }
     
     if ((gcnInsn.mode&GCN_ONLYGDS) != 0 && !haveGds)
         ASM_FAIL_BY_ERROR(instrPlace, "Instruction requires GDS modifier")

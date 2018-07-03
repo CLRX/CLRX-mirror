@@ -596,6 +596,7 @@ struct AsmDelayedResult
     uint16_t rstart;
     uint16_t rend;
     cxbyte delayInstrType;
+    cxbyte rwFlags;
 };
 
 /// description of the WAIT instruction (for waiting for results)

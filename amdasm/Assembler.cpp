@@ -3052,7 +3052,8 @@ bool Assembler::assemble()
                 
                 isaAssembler->assemble(firstName, stmtPlace, linePtr, end,
                            sections[currentSection].content,
-                           sections[currentSection].usageHandler.get());
+                           sections[currentSection].usageHandler.get(),
+                           sections[currentSection].waitHandler.get());
                 currentOutPos = sections[currentSection].getSize();
             }
         }

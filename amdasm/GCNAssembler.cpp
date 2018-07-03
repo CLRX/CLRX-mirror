@@ -345,6 +345,23 @@ GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
 GCNAssembler::~GCNAssembler()
 { }
 
+void GCNAssembler::flushInstrRVUs(ISAUsageHandler* usageHandler)
+{
+    for (const AsmRegVarUsage& rvu: instrRVUs)
+        if (rvu.regField != ASMFIELD_NONE)
+            usageHandler->pushUsage(rvu);
+}
+void GCNAssembler::flushWaitInstrs(ISAWaitHandler* waitHandler)
+{
+    if (hasDelayedResult)
+    {
+        waitHandler->pushDelayedResult(delayedResult[0]);
+        if (hasSecondDelayResult)
+            waitHandler->pushDelayedResult(delayedResult[1]);
+    }
+    else if (hasWaitInstr)
+        waitHandler->pushWaitInstr(waitInstr);
+}
 
 ISAUsageHandler* GCNAssembler::createUsageHandler(std::vector<cxbyte>& content) const
 {
@@ -353,7 +370,7 @@ ISAUsageHandler* GCNAssembler::createUsageHandler(std::vector<cxbyte>& content) 
 
 void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
             const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output,
-            ISAUsageHandler* usageHandler)
+            ISAUsageHandler* usageHandler, ISAWaitHandler* waitHandler)
 {
     CString mnemonic;
     size_t inMnemLen = inMnemonic.size();
@@ -406,6 +423,7 @@ void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
     }
     
     resetInstrRVUs();
+    resetWaitInstrs();
     setCurrentRVU(0);
     /* decode instruction line */
     bool good = false;
@@ -486,7 +504,10 @@ void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
     }
     // register RegVarUsage in tests, do not apply normal usage
     if (good && (assembler.getFlags() & ASM_TESTRUN) != 0)
+    {
         flushInstrRVUs(usageHandler);
+        flushWaitInstrs(waitHandler);
+    }
 }
 
 #define GCN_FAIL_BY_ERROR(PLACE, STRING) \
@@ -879,7 +900,7 @@ static const AsmWaitConfig gcnWaitConfig =
         { GCNWAIT_EXPCNT, true },  // GCNDELINSTR_EXPVMWRITE
         { GCNWAIT_EXPCNT, false }  // GCNDELINSTR_EXPORT
     },
-    { 16, 8, 16 }
+    { 16, 8, 8 }
 };
 
 static const AsmWaitConfig gcnWaitConfig14 =
@@ -895,7 +916,7 @@ static const AsmWaitConfig gcnWaitConfig14 =
         { GCNWAIT_EXPCNT, true },  // GCNDELINSTR_EXPVMWRITE
         { GCNWAIT_EXPCNT, false }  // GCNDELINSTR_EXPORT
     },
-    { 64, 8, 16 }
+    { 64, 8, 8 }
 };
 
 const AsmWaitConfig& GCNAssembler::getWaitConfig() const
