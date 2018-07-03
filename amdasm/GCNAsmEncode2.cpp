@@ -370,10 +370,15 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     
     if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {
-        gcnAsm->delayedResults[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
-                gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
-                GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
-        if (vdataToRead && (arch & ARCH_HD7X00) != 0)
+        if (!haveLds)
+            gcnAsm->delayedResults[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
+                    GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
+        else
+            gcnAsm->delayedResults[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+                    GCNDELINSTR_VMINSTR, cxbyte(0)};
+        
+        if (vdataToRead && (arch & ARCH_HD7X00) != 0 && !haveLds)
         {
             // add EXPORT VM write to exportCNT (only GCN 1.0)
             gcnAsm->delayedResults[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
@@ -1094,9 +1099,14 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (delayedRVU != 255)
     {
-        gcnAsm->delayedResults[0] = { output.size(), gcnAsm->instrRVUs[delayedRVU].regVar,
+        if (!haveLds)
+            gcnAsm->delayedResults[0] = { output.size(),
+                gcnAsm->instrRVUs[delayedRVU].regVar,
                 gcnAsm->instrRVUs[delayedRVU].rstart, gcnAsm->instrRVUs[delayedRVU].rend,
                 GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[delayedRVU].rwFlags};
+        else
+            gcnAsm->delayedResults[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+                    GCNDELINSTR_VMINSTR, cxbyte(0) };
         gcnAsm->hasDelayedResult = true;
     }
     
