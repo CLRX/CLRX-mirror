@@ -591,6 +591,7 @@ struct AsmWaitConfig
 /// delayed result for register for instruction with delayed results
 struct AsmDelayedResult
 {
+    size_t offset;
     const AsmRegVar* regVar;
     uint16_t rstart;
     uint16_t rend;
@@ -600,6 +601,7 @@ struct AsmDelayedResult
 /// description of the WAIT instruction (for waiting for results)
 struct AsmWaitInstr
 {
+    size_t offset;
     uint16_t waits[ASM_WAIT_MAX_TYPES_NUM];
 };
 

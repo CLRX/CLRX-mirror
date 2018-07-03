@@ -242,8 +242,8 @@ public:
     };
 private:
     ReadPos readPos;
-    std::vector<std::pair<size_t, AsmDelayedResult> > delayedResults;
-    std::vector<std::pair<size_t, AsmWaitInstr> > waitInstrs;
+    std::vector<AsmDelayedResult> delayedResults;
+    std::vector<AsmWaitInstr> waitInstrs;
 public:
     /// constructor
     ISAWaitHandler();
@@ -256,16 +256,15 @@ public:
     ReadPos getReadPos() const
     { return readPos; }
     /// push delayed result
-    void pushDelayedResult(size_t offset, const AsmDelayedResult& delResult);
+    void pushDelayedResult(const AsmDelayedResult& delResult);
     /// wait instruction
-    void pushWaitInstr(size_t offset, const AsmWaitInstr& waitInstr);
+    void pushWaitInstr(const AsmWaitInstr& waitInstr);
     /// return true if has next instruction
     bool hasNext() const
     { return readPos.delResPos < delayedResults.size() ||
                 readPos.waitInstrPos < waitInstrs.size(); }
     /// get next instruction, return true if waitInstr
-    bool nextInstr(std::pair<size_t, AsmDelayedResult>* delRes,
-                   std::pair<size_t, AsmWaitInstr>* waitInstr);
+    bool nextInstr(AsmDelayedResult* delRes, AsmWaitInstr* waitInstr);
     
     /// copy wait handler (make new copy)
     ISAWaitHandler* copy() const;
@@ -526,7 +525,7 @@ private:
     Assembler& assembler;
     const std::vector<AsmRegAllocator::CodeBlock>& codeBlocks;
     bool onlyWarnings;
-    std::vector<std::pair<size_t, AsmWaitInstr> > neededWaitInstrs;
+    std::vector<AsmWaitInstr> neededWaitInstrs;
 public:
     AsmWaitScheduler(const AsmWaitConfig& asmWaitConfig, Assembler& assembler,
             const std::vector<AsmRegAllocator::CodeBlock>& codeBlocks,
@@ -534,7 +533,7 @@ public:
     
     void schedule();
     
-    const std::vector<std::pair<size_t, AsmWaitInstr> >& getNeededWaitInstrs() const
+    const std::vector<AsmWaitInstr>& getNeededWaitInstrs() const
     { return neededWaitInstrs; }
 };
 
