@@ -841,6 +841,10 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
         vsrcsReg[2] = vsrcsReg[3] = { 0, 0 };
     }
     
+    gcnAsm->delayedResults[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+            GCNDELINSTR_EXPORT, cxbyte(0) };
+    gcnAsm->hasDelayedResult = true;
+    
     // put instruction words
     uint32_t words[2];
     SLEV(words[0], ((arch&ARCH_GCN_1_2_4) ? 0xc4000000 : 0xf8000000U) | enMask |
@@ -873,6 +877,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     RegRange saddrReg(0, 0);
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
+    cxbyte delayedRVU = 255;
     skipSpacesToEnd(linePtr, end);
     const char* vdstPlace = nullptr;
     
@@ -888,6 +893,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         vdstPlace = linePtr;
         
         gcnAsm->setCurrentRVU(0);
+        delayedRVU = 0;
         good &= parseVRegRange(asmr, linePtr, vdstReg, 0, GCNFIELD_FLAT_VDST, true,
                         INSTROP_SYMREGRANGE|INSTROP_WRITE);
         if (!skipRequiredComma(asmr, linePtr))
@@ -935,6 +941,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             skipSpacesToEnd(linePtr, end);
             vdstPlace = linePtr;
             gcnAsm->setCurrentRVU(0);
+            delayedRVU = 0;
             // parse VDST (VGPRs, various number of register, verified later)
             good &= parseVRegRange(asmr, linePtr, vdstReg, 0, GCNFIELD_FLAT_VDST, true,
                         INSTROP_SYMREGRANGE|INSTROP_WRITE);
@@ -946,6 +953,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!skipRequiredComma(asmr, linePtr))
             return false;
         gcnAsm->setCurrentRVU(2);
+        delayedRVU = 2;
         // parse VDATA (VGPRS, 1-4 registers)
         good &= parseVRegRange(asmr, linePtr, vdataReg, dregsNum, GCNFIELD_FLAT_DATA,
                                true, INSTROP_SYMREGRANGE|INSTROP_READ);
@@ -1083,6 +1091,14 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
+    
+    if (delayedRVU != 255)
+    {
+        gcnAsm->delayedResults[0] = { output.size(), gcnAsm->instrRVUs[delayedRVU].regVar,
+                gcnAsm->instrRVUs[delayedRVU].rstart, gcnAsm->instrRVUs[delayedRVU].rend,
+                GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[delayedRVU].rwFlags};
+        gcnAsm->hasDelayedResult = true;
+    }
     
     if (instOffsetExpr!=nullptr)
         instOffsetExpr->setTarget(AsmExprTarget(flatMode!=0 ?
