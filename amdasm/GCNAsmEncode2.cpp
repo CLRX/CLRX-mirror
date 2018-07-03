@@ -368,6 +368,22 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     if (haveLds)
         gcnAsm->instrRVUs[0].regField = ASMFIELD_NONE;
     
+    if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
+    {
+        gcnAsm->delayedResults[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+                gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
+                GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
+        if (vdataToRead && (arch & ARCH_HD7X00) != 0)
+        {
+            // add EXPORT VM write to exportCNT (only GCN 1.0)
+            gcnAsm->delayedResults[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
+                    GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
+            gcnAsm->hasSecondDelayResult = true;
+        }
+        gcnAsm->hasDelayedResult = true;
+    }
+    
     if (haveTfe && (vdataDivided ||
             gcnAsm->instrRVUs[0].rwFlags!=(ASMRVU_READ|ASMRVU_WRITE)) &&
             gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
@@ -618,6 +634,22 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         nextRvu.rend = rvu.rstart + size;
         nextRvu.rwFlags = ASMRVU_READ;
         vdataDivided = true;
+    }
+    
+    if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
+    {
+        gcnAsm->delayedResults[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+                gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
+                GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
+        if (vdataToRead && (arch & ARCH_HD7X00) != 0)
+        {
+            // add EXPORT VM write to exportCNT (only GCN 1.0)
+            gcnAsm->delayedResults[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
+                    GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
+            gcnAsm->hasSecondDelayResult = true;
+        }
+        gcnAsm->hasDelayedResult = true;
     }
     
     if (haveTfe && (vdataDivided ||

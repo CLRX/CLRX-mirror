@@ -355,9 +355,9 @@ void GCNAssembler::flushWaitInstrs(ISAWaitHandler* waitHandler)
 {
     if (hasDelayedResult)
     {
-        waitHandler->pushDelayedResult(delayedResult[0]);
+        waitHandler->pushDelayedResult(delayedResults[0]);
         if (hasSecondDelayResult)
-            waitHandler->pushDelayedResult(delayedResult[1]);
+            waitHandler->pushDelayedResult(delayedResults[1]);
     }
     else if (hasWaitInstr)
         waitHandler->pushWaitInstr(waitInstr);

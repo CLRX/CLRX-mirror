@@ -698,7 +698,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             
             if (gcnInsn.code1==12)
             {
-                // S_WAITCNT
+                // S_WAICTNT
                 const uint16_t lgkmCnt = (imm16>>8) & 7;
                 const uint16_t expCnt = (imm16>>4) & 7;
                 const uint16_t vmCnt = ((imm16) & 15) + (isGCN14 ? ((imm16>>10)&0x30) : 0);
@@ -824,6 +824,10 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 ASM_FAIL_BY_ERROR(linePtr, "Unterminated sendmsg function")
             ++linePtr;
             imm16 = sendMessage | (gsopIndex<<4) | (streamId<<8);
+            
+            gcnAsm->delayedResults[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+                    GCNDELINSTR_SENDMSG, cxbyte(0) };
+            gcnAsm->hasDelayedResult = true;
             break;
         }
         case GCN_IMM_NONE:
@@ -921,7 +925,7 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (mode1 != GCN_ARG_NONE)
     {
-        gcnAsm->delayedResult[0] = AsmDelayedResult{ output.size(),
+        gcnAsm->delayedResults[0] = AsmDelayedResult{ output.size(),
                     gcnAsm->instrRVUs[0].regVar, gcnAsm->instrRVUs[0].rstart,
                     gcnAsm->instrRVUs[0].rend, GCNDELINSTR_SMINSTR,
                     gcnAsm->instrRVUs[0].rwFlags };
@@ -1083,7 +1087,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (mode1 != GCN_ARG_NONE)
     {
-        gcnAsm->delayedResult[0] = AsmDelayedResult{ output.size(),
+        gcnAsm->delayedResults[0] = AsmDelayedResult{ output.size(),
                     gcnAsm->instrRVUs[0].regVar, gcnAsm->instrRVUs[0].rstart,
                     gcnAsm->instrRVUs[0].rend, GCNDELINSTR_SMINSTR,
                     gcnAsm->instrRVUs[0].rwFlags };
@@ -1098,7 +1102,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (simm7Expr!=nullptr)
         simm7Expr->setTarget(AsmExprTarget(GCNTGT_SMEMIMM, asmr.currentSection,
                        output.size()));
-    // TODO: add RVU modification for atomics
+    
     bool dataToRead = false;
     bool dataToWrite = false;
     if (dataReg)
@@ -2396,13 +2400,13 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     
     {
         // register Delayed results
-        gcnAsm->delayedResult[0] = { output.size(), gcnAsm->instrRVUs[delayRVU].regVar,
+        gcnAsm->delayedResults[0] = { output.size(), gcnAsm->instrRVUs[delayRVU].regVar,
                     gcnAsm->instrRVUs[delayRVU].rstart, gcnAsm->instrRVUs[delayRVU].rend,
                     haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
                     gcnAsm->instrRVUs[delayRVU].rwFlags };
         if (secondDelay)
         {
-            gcnAsm->delayedResult[1] = { output.size(),
+            gcnAsm->delayedResults[1] = { output.size(),
                     gcnAsm->instrRVUs[delayRVU+1].regVar,
                     gcnAsm->instrRVUs[delayRVU+1].rstart,
                     gcnAsm->instrRVUs[delayRVU+1].rend,

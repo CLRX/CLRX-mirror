@@ -354,7 +354,7 @@ private:
     bool hasDelayedResult;
     bool hasSecondDelayResult;
     AsmWaitInstr waitInstr;
-    AsmDelayedResult delayedResult[2];
+    AsmDelayedResult delayedResults[2];
     
     void resetInstrRVUs()
     {
