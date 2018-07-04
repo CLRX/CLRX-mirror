@@ -198,7 +198,6 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 136U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ }
         }, true, ""
     },
-#if 0
     {   /* 6 - SMEM (GFX9) */
          R"ffDXD(.gpu GFX900
             .regvar bax:s, dbx:v, dcx:s:8
@@ -230,11 +229,40 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
 )ffDXD",
         { },
         {
+            // S_ATOMIC without GLC
             { 0U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
             { 8U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 16U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 24U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 32U, "dcx", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 40U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            // S_ATOMIC with GLC
+            { 48U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 56U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 56U, "dcx", 3, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 64U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 72U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 80U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 80U, "dcx", 6, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 88U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            // S_BUFFER_ATOMIC without GLC
+            { 96U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 104U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 112U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 120U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 128U, "dcx", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 136U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            // S_BUFFER_ATOMIC with GLC
+            { 144U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 152U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 152U, "dcx", 3, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 160U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 168U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 176U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 176U, "dcx", 6, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 184U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE }
         }, true, ""
     }
-#endif
 };
 
 static void pushRegVarsFromScopes(const AsmScope& scope,

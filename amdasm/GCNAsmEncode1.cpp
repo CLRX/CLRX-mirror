@@ -1085,15 +1085,6 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     
-    if (mode1 != GCN_ARG_NONE)
-    {
-        gcnAsm->delayedOps[0] = AsmDelayedOp { output.size(),
-                    gcnAsm->instrRVUs[0].regVar, gcnAsm->instrRVUs[0].rstart,
-                    gcnAsm->instrRVUs[0].rend, GCNDELINSTR_SMINSTR,
-                    gcnAsm->instrRVUs[0].rwFlags };
-        gcnAsm->hasDelayedOps = true;
-    }
-    
     // set expression target for offsets and immediates
     if (soffsetExpr!=nullptr)
         soffsetExpr->setTarget(AsmExprTarget(isGCN14 ?
@@ -1129,6 +1120,23 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         nextRvu.rend = rvu.rstart + size;
         nextRvu.rwFlags = ASMRVU_READ;
         nextRvu.align = 0;
+    }
+    
+    if (mode1 != GCN_ARG_NONE)
+    {
+        gcnAsm->delayedOps[0] = AsmDelayedOp { output.size(),
+                    gcnAsm->instrRVUs[0].regVar, gcnAsm->instrRVUs[0].rstart,
+                    gcnAsm->instrRVUs[0].rend, GCNDELINSTR_SMINSTR,
+                    gcnAsm->instrRVUs[0].rwFlags };
+        if (gcnAsm->instrRVUs[3].regField != ASMFIELD_NONE)
+        {
+            gcnAsm->delayedOps[1] = AsmDelayedOp { output.size(),
+                    gcnAsm->instrRVUs[3].regVar, gcnAsm->instrRVUs[3].rstart,
+                    gcnAsm->instrRVUs[3].rend, GCNDELINSTR_SMINSTR,
+                    gcnAsm->instrRVUs[3].rwFlags };
+            gcnAsm->hasSecondDelayedOp = true;
+        }
+        gcnAsm->hasDelayedOps = true;
     }
     
     // put data (2 instruction words)
