@@ -262,6 +262,54 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 176U, "dcx", 6, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ },
             { 184U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE }
         }, true, ""
+    },
+    {   /* 7 - S_SENDMSG */
+        "s_mov_b32 s1, s2\n"
+        "s_sendmsg sendmsg(gs_done, nop)",
+        { },
+        {
+            { 4U, nullptr, 0, 0, GCNDELINSTR_SENDMSG, 0 }
+        }, true, ""
+    },
+    {   /* 8 - DS encoding */
+        R"ffDXD(.arch gcn1.1
+            .regvar bax:v, dbx:v:8, dcx:v:8
+            ds_read_b32 v1, v2 offset:12
+            ds_read_b32 bax, v2 offset:12
+            ds_write_b32 v2, v1 offset:12
+            ds_write_b32 v2, bax offset:12
+            ds_read_b64 v[1:2], v2 offset:112
+            ds_read_b64 dbx[5:6], v2 offset:112
+            ds_write_b64 v2, v[2:3] offset:112
+            ds_write_b64 v2, dbx[6:7] offset:112
+            ds_read_b128 v[1:4], v2 offset:38
+            ds_read_b128 dbx[3:6], v2 offset:38
+            ds_write_b128 v2, v[7:10] offset:38
+            ds_write_b128 v2, dbx[2:5] offset:38
+            
+            ds_sub_u32 bax, dcx[3] offset:4
+            #ds_sub_rtn_u32 dbx[5], bax, dcx[3] offset:4
+)ffDXD",
+        { },
+        {
+            { 0U, nullptr, 256+1, 256+2, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 8U, "bax", 0, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 16U, nullptr, 256+1, 256+2, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 24U, "bax", 0, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            // read/write 64-bit
+            { 32U, nullptr, 256+1, 256+3, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 40U, "dbx", 5, 7, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 48U, nullptr, 256+2, 256+4, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 56U, "dbx", 6, 8, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            // read/write 128-bit
+            { 64U, nullptr, 256+1, 256+5, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 72U, "dbx", 3, 7, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 80U, nullptr, 256+7, 256+11, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 88U, "dbx", 2, 6, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            /* atomics 32-bit */
+            { 96U, "dcx", 3, 4, GCNDELINSTR_LDSINSTR, ASMRVU_READ }
+            //{ 104U, "dcx", 3, 4, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+        }, true, ""
     }
 };
 
