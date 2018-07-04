@@ -85,7 +85,143 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             // s_load_dword dcx[2], s[10:11], 4
             { 4U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_WRITE }
         }, true, ""
+    },
+    {   /* 2 - s_waitcnt tests */
+        R"ffDXD(
+            s_waitcnt vmcnt(3) & lgkmcnt(5) & expcnt(4)
+            s_waitcnt vmcnt(3) & lgkmcnt(5)
+            s_waitcnt vmcnt(3)
+            s_waitcnt expcnt(3)
+            s_waitcnt lgkmcnt(3)
+            s_waitcnt vmcnt(3) & expcnt(4)
+            s_waitcnt lgkmcnt(3) & expcnt(4)
+            s_waitcnt vmcnt(15) lgkmcnt(15) expcnt(7)
+)ffDXD",
+        {
+            { 0U, { 3, 5, 4, 0 } },
+            { 4U, { 3, 5, 7, 0 } },
+            { 8U, { 3, 7, 7, 0 } },
+            { 12U, { 15, 7, 3, 0 } },
+            { 16U, { 15, 3, 7, 0 } },
+            { 20U, { 3, 7, 4, 0 } },
+            { 24U, { 15, 3, 4, 0 } },
+            { 28U, { 15, 7, 7, 0 } }
+        },
+        { }, true, ""
+    },
+    {   /* 3 - s_waitcnt tests (GFX9) */
+        R"ffDXD(.arch GFX9
+            s_waitcnt vmcnt(47) & lgkmcnt(5) & expcnt(4)
+            s_waitcnt lgkmcnt(5)
+)ffDXD",
+        {
+            { 0U, { 47, 5, 4, 0 } },
+            { 4U, { 63, 5, 7, 0 } }
+        },
+        { }, true, ""
+    },
+    {   /* 4 - SMRD */
+         R"ffDXD(
+            .regvar bax:s, dbx:v, dcx:s:8
+            .regvar bb:s:28
+            s_load_dword dcx[2], s[10:11], 4
+            s_load_dwordx2 dcx[4:5], s[10:11], 4
+            s_load_dwordx4 bb[4:7], s[10:11], 4
+            s_load_dwordx8 bb[16:23], s[10:11], 4
+            s_load_dwordx16 bb[12:27], s[10:11], 4
+            s_buffer_load_dword dcx[2], s[12:15], 4
+            s_buffer_load_dwordx2 dcx[4:5], s[12:15], 4
+            s_buffer_load_dwordx4 bb[4:7], s[12:15], 4
+            s_buffer_load_dwordx8 bb[16:23], s[12:15], 4
+            s_buffer_load_dwordx16 bb[12:27], s[12:15], 4
+            s_memtime s[4:5]
+            s_memtime dcx[5:6]
+)ffDXD",
+        { },
+        {
+            { 0U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 4U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 8U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 12U, "bb", 16, 24, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 16U, "bb", 12, 28, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 20U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 24U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 28U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 32U, "bb", 16, 24, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 36U, "bb", 12, 28, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 40U, nullptr, 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 44U, "dcx", 5, 7, GCNDELINSTR_SMINSTR, ASMRVU_WRITE }
+        }, true, ""
+    },
+    {   /* 5 - SMEM */
+         R"ffDXD(.gpu Fiji
+            .regvar bax:s, dbx:v, dcx:s:8
+            .regvar bb:s:28
+            s_load_dword dcx[2], s[10:11], 4
+            s_load_dwordx2 dcx[4:5], s[10:11], 4
+            s_load_dwordx4 bb[4:7], s[10:11], 4
+            s_load_dwordx8 bb[16:23], s[10:11], 4
+            s_load_dwordx16 bb[12:27], s[10:11], 4
+            s_buffer_load_dword dcx[2], s[12:15], 4
+            s_buffer_load_dwordx2 dcx[4:5], s[12:15], 4
+            s_buffer_load_dwordx4 bb[4:7], s[12:15], 4
+            s_buffer_load_dwordx8 bb[16:23], s[12:15], 4
+            s_buffer_load_dwordx16 bb[12:27], s[12:15], 4
+            s_memtime s[4:5]
+            s_memtime dcx[5:6]
+            s_store_dword dcx[2], s[10:11], 4
+            s_store_dwordx2 dcx[4:5], s[10:11], 4
+            s_store_dwordx4 bb[4:7], s[10:11], 4
+            s_buffer_store_dword dcx[2], s[20:23], 4
+            s_buffer_store_dwordx2 dcx[4:5], s[20:23], 4
+            s_buffer_store_dwordx4 bb[4:7], s[20:23], 4
+)ffDXD",
+        { },
+        {
+            { 0U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 8U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 16U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 24U, "bb", 16, 24, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 32U, "bb", 12, 28, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 40U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 48U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 56U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 64U, "bb", 16, 24, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 72U, "bb", 12, 28, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 80U, nullptr, 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 88U, "dcx", 5, 7, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 96U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 104U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 112U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 120U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 128U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 136U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ }
+        }, true, ""
     }
+#if 0
+    {   /* 6 - SMEM (GFX9) */
+         R"ffDXD(.gpu GFX900
+            .regvar bax:s, dbx:v, dcx:s:8
+            s_atomic_swap bax, s[14:15], 18
+            s_atomic_cmpswap dcx[2:3], s[14:15], 18
+            s_atomic_umin bax, s[14:15], 20
+            s_atomic_swap_x2 dcx[2:3], s[14:15], 18
+            s_atomic_cmpswap_x2 dcx[4:7], s[14:15], 18
+            s_atomic_umin_x2 dcx[2:3], s[14:15], 20
+            
+            s_buffer_atomic_swap bax, s[16:19], 18
+            s_buffer_atomic_cmpswap dcx[2:3], s[16:19], 18
+            s_buffer_atomic_umin bax, s[16:19], 20
+            s_buffer_atomic_swap_x2 dcx[2:3], s[16:19], 18
+            s_buffer_atomic_cmpswap_x2 dcx[4:7], s[16:19], 18
+            s_buffer_atomic_umin_x2 dcx[2:3], s[16:19], 20
+)ffDXD",
+        { },
+        {
+            { 0U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+        }, true, ""
+    }
+#endif
 };
 
 static void pushRegVarsFromScopes(const AsmScope& scope,
@@ -145,7 +281,7 @@ static void testWaitHandlerCase(cxuint i, const AsmWaitHandlerCase& testCase)
             /// check Asm wait instruction
             assertTrue("testWaitHandle", testCaseName+".wlength",
                     j < testCase.waitInstrs.size());
-            koss << testCaseName << ".waitIstr#" << j;
+            koss << testCaseName << ".waitInstr#" << j;
             std::string wiStr = koss.str();
             
             const AsmWaitInstr& expWaitInstr = testCase.waitInstrs[j++];
