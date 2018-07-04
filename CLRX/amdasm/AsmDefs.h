@@ -579,6 +579,7 @@ struct AsmDelayInstrTypeEntry
     bool ordered;
     /// waiting finished on register read out (true) or on operation
     bool finishOnRegReadOut;
+    cxbyte counting; ///< couting (255 - per instr), 1-254 - per element size
 };
 
 /// asm wait system configuration
