@@ -197,7 +197,7 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 128U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_READ },
             { 136U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ }
         }, true, ""
-    }
+    },
 #if 0
     {   /* 6 - SMEM (GFX9) */
          R"ffDXD(.gpu GFX900
@@ -208,6 +208,12 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             s_atomic_swap_x2 dcx[2:3], s[14:15], 18
             s_atomic_cmpswap_x2 dcx[4:7], s[14:15], 18
             s_atomic_umin_x2 dcx[2:3], s[14:15], 20
+            s_atomic_swap bax, s[14:15], 18 glc
+            s_atomic_cmpswap dcx[2:3], s[14:15], 18 glc
+            s_atomic_umin bax, s[14:15], 20 glc
+            s_atomic_swap_x2 dcx[2:3], s[14:15], 18 glc
+            s_atomic_cmpswap_x2 dcx[4:7], s[14:15], 18 glc
+            s_atomic_umin_x2 dcx[2:3], s[14:15], 20 glc
             
             s_buffer_atomic_swap bax, s[16:19], 18
             s_buffer_atomic_cmpswap dcx[2:3], s[16:19], 18
@@ -215,10 +221,17 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             s_buffer_atomic_swap_x2 dcx[2:3], s[16:19], 18
             s_buffer_atomic_cmpswap_x2 dcx[4:7], s[16:19], 18
             s_buffer_atomic_umin_x2 dcx[2:3], s[16:19], 20
+            s_buffer_atomic_swap bax, s[16:19], 18 glc
+            s_buffer_atomic_cmpswap dcx[2:3], s[16:19], 18 glc
+            s_buffer_atomic_umin bax, s[16:19], 20 glc
+            s_buffer_atomic_swap_x2 dcx[2:3], s[16:19], 18 glc
+            s_buffer_atomic_cmpswap_x2 dcx[4:7], s[16:19], 18 glc
+            s_buffer_atomic_umin_x2 dcx[2:3], s[16:19], 20 glc
 )ffDXD",
         { },
         {
-            { 0U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 0U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 8U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
         }, true, ""
     }
 #endif

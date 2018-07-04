@@ -307,7 +307,8 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "s_buffer_atomic_add rax4[0], rbx5[8:11], 0x5b\n"
         "s_buffer_atomic_add rax4[0], rbx5[8:11], 0x5b glc\n"
         "s_buffer_atomic_cmpswap rax4[0:1], rbx5[8:11], 0x5b glc\n"
-        "s_buffer_atomic_cmpswap_x2 rax4[0:3], rbx5[8:11], 0x5b glc\n",
+        "s_buffer_atomic_cmpswap_x2 rax4[0:3], rbx5[8:11], 0x5b glc\n"
+        "s_buffer_atomic_cmpswap rax4[0:1], rbx5[8:11], 0x5b\n",
         {
             // s_load_dword rbx, rbx5[2:3], 0x5b
             { 0, "rbx", 0, 1, GCNFIELD_SMRD_SDST, ASMRVU_WRITE, 1 },
@@ -359,7 +360,10 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             // s_buffer_atomic_cmpswap_x2 rax4[0:3], rbx5[8:11], 0x5b glc
             { 136, "rax4", 0, 2, GCNFIELD_SMRD_SDST, ASMRVU_READ|ASMRVU_WRITE, 4 },
             { 136, "rbx5", 8, 12, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 4 },
-            { 136, "rax4", 2, 4, GCNFIELD_SMRD_SDSTH, ASMRVU_READ, 0 }
+            { 136, "rax4", 2, 4, GCNFIELD_SMRD_SDSTH, ASMRVU_READ, 0 },
+            // s_buffer_atomic_cmpswap rax4[0:1], rbx5[8:11], 0x5b glc
+            { 144, "rax4", 0, 2, GCNFIELD_SMRD_SDST, ASMRVU_READ, 2 },
+            { 144, "rbx5", 8, 12, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 4 },
         },
         true, ""
     },
@@ -915,7 +919,9 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "tbuffer_load_format_xyz v[55:57], v76, s[44:47], s61 idxen offset:603\n"
         // have LDS
         "buffer_load_dword rbx, rex, srdx3[0:3], srbx idxen lds offset:603\n"
-        "buffer_load_dword v45, v21, s[12:15], s52 idxen lds offset:603\n",
+        "buffer_load_dword v45, v21, s[12:15], s52 idxen lds offset:603\n"
+        // atomic_cmpswap no glc
+        "buffer_atomic_cmpswap_x2 v[71:74], v41, s[16:19], s43 idxen offset:603\n",
         {
             // buffer_load_dword rbx, rex, srdx3[0:3], srbx idxen offset:603
             { 0, "rbx", 0, 1, GCNFIELD_M_VDATA, ASMRVU_WRITE, 1 },
@@ -1078,6 +1084,11 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 240, nullptr, 256+21, 256+22, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
             { 240, nullptr, 12, 16, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
             { 240, nullptr, 52, 53, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
+            // buffer_atomic_cmpswap_x2 v[71:74], v41, s[16:19], s43 idxen offset:603
+            { 248, nullptr, 256+71, 256+75, GCNFIELD_M_VDATA, ASMRVU_READ, 0 },
+            { 248, nullptr, 256+41, 256+42, GCNFIELD_M_VADDR, ASMRVU_READ, 0 },
+            { 248, nullptr, 16, 20, GCNFIELD_M_SRSRC, ASMRVU_READ, 0 },
+            { 248, nullptr, 43, 44, GCNFIELD_M_SOFFSET, ASMRVU_READ, 0 },
         },
         true, ""
     },
@@ -1304,7 +1315,8 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         // tfe
         "flat_load_dword v[26:27], v[53:54] tfe\n"
         "flat_load_dwordx4 v[31:35], v[73:74] tfe\n"
-        "flat_atomic_add_x2 v[39:41], v[91:92], v[14:15] tfe\n",
+        "flat_atomic_add_x2 v[39:41], v[91:92], v[14:15] tfe\n"
+        "flat_atomic_cmpswap_x2 rex5[5:6], rcx4[3:4], rbx4[1:4]\n",
         {
             // flat_load_dword  rbx, rcx4[3:4]
             { 0, "rbx", 0, 1, GCNFIELD_FLAT_VDST, ASMRVU_WRITE, 1 },
@@ -1382,6 +1394,9 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 152, nullptr, 256+14, 256+16, GCNFIELD_FLAT_DATA, ASMRVU_READ, 0 },
             { 152, nullptr, 256+41, 256+42, GCNFIELD_FLAT_VDSTLAST,
                         ASMRVU_READ|ASMRVU_WRITE, 0 },
+            // flat_atomic_cmpswap_x2 rex5[5:6], rcx4[3:4], rbx4[1:4]
+            { 160, "rcx4", 3, 5, GCNFIELD_FLAT_ADDR, ASMRVU_READ, 1 },
+            { 160, "rbx4", 1, 5, GCNFIELD_FLAT_DATA, ASMRVU_READ, 1 }
         },
         true, ""
     },
@@ -1781,7 +1796,8 @@ b1:     .rvlin va[3:6]
         "s_atomic_add rax4[0], rbx5[8:9], 0x5b\n"
         "s_atomic_add rax4[0], rbx5[8:9], 0x5b glc\n"
         "s_atomic_cmpswap rax4[0:1], rbx5[8:9], 0x5b glc\n"
-        "s_atomic_cmpswap_x2 rax4[0:3], rbx5[8:9], 0x5b glc\n",
+        "s_atomic_cmpswap_x2 rax4[0:3], rbx5[8:9], 0x5b glc\n"
+        "s_atomic_cmpswap rax4[0:1], rbx5[8:9], 0x5b\n",
         {
             // s_atomic_add rax4[0], rbx5[8:11], 0x5b
             { 0, "rax4", 0, 1, GCNFIELD_SMRD_SDST, ASMRVU_READ, 1 },
@@ -1796,7 +1812,10 @@ b1:     .rvlin va[3:6]
             // s_atomic_cmpswap_x2 rax4[0:3], rbx5[8:11], 0x5b glc
             { 24, "rax4", 0, 2, GCNFIELD_SMRD_SDST, ASMRVU_READ|ASMRVU_WRITE, 4 },
             { 24, "rbx5", 8, 10, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 2 },
-            { 24, "rax4", 2, 4, GCNFIELD_SMRD_SDSTH, ASMRVU_READ, 0 }
+            { 24, "rax4", 2, 4, GCNFIELD_SMRD_SDSTH, ASMRVU_READ, 0 },
+            // s_atomic_cmpswap rax4[0:1], rbx5[8:11], 0x5b
+            { 32, "rax4", 0, 2, GCNFIELD_SMRD_SDST, ASMRVU_READ, 2 },
+            { 32, "rbx5", 8, 10, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 2 },
         },
         true, ""
     }
