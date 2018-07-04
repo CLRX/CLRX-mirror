@@ -577,6 +577,7 @@ struct AsmDelayInstrTypeEntry
 {
     cxbyte waitType;
     bool ordered;
+    bool finishOnRegWrite;  ///< waiting finished on register write (true) or on operation
 };
 
 /// asm wait system configuration

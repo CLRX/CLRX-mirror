@@ -892,13 +892,13 @@ static const AsmWaitConfig gcnWaitConfig =
     cxuint(GCNDELINSTR_MAX+1),
     cxuint(GCNWAIT_MAX+1),
     {
-        { GCNWAIT_VMCNT, true },  // GCNDELINSTR_VMINSTR
-        { GCNWAIT_LGKMCNT, true },  // GCNDELINSTR_LDSINSTR
-        { GCNWAIT_LGKMCNT, true },  // GCNDELINSTR_GDSINSTR
-        { GCNWAIT_LGKMCNT, true },  // GCNDELINSTR_SENDMSG
-        { GCNWAIT_LGKMCNT, false },  // GCNDELINSTR_SMINSTR
-        { GCNWAIT_EXPCNT, true },  // GCNDELINSTR_EXPVMWRITE
-        { GCNWAIT_EXPCNT, false }  // GCNDELINSTR_EXPORT
+        { GCNWAIT_VMCNT, true, false },  // GCNDELINSTR_VMINSTR
+        { GCNWAIT_LGKMCNT, true, false },  // GCNDELINSTR_LDSINSTR
+        { GCNWAIT_LGKMCNT, true, false },  // GCNDELINSTR_GDSINSTR
+        { GCNWAIT_LGKMCNT, true, false },  // GCNDELINSTR_SENDMSG
+        { GCNWAIT_LGKMCNT, false, false },  // GCNDELINSTR_SMINSTR
+        { GCNWAIT_EXPCNT, true, true },  // GCNDELINSTR_EXPVMWRITE
+        { GCNWAIT_EXPCNT, false, false }  // GCNDELINSTR_EXPORT
     },
     { 16, 8, 8 }
 };
@@ -908,13 +908,13 @@ static const AsmWaitConfig gcnWaitConfig14 =
     cxuint(GCNDELINSTR_MAX+1),
     cxuint(GCNWAIT_MAX+1),
     {
-        { GCNWAIT_VMCNT, true },  // GCNDELINSTR_VMINSTR
-        { GCNWAIT_LGKMCNT, true },  // GCNDELINSTR_LDSINSTR
-        { GCNWAIT_LGKMCNT, true },  // GCNDELINSTR_GDSINSTR
-        { GCNWAIT_LGKMCNT, true },  // GCNDELINSTR_SENDMSG
-        { GCNWAIT_LGKMCNT, false },  // GCNDELINSTR_SMINSTR
-        { GCNWAIT_EXPCNT, true },  // GCNDELINSTR_EXPVMWRITE
-        { GCNWAIT_EXPCNT, false }  // GCNDELINSTR_EXPORT
+        { GCNWAIT_VMCNT, true, false },  // GCNDELINSTR_VMINSTR
+        { GCNWAIT_LGKMCNT, true, false },  // GCNDELINSTR_LDSINSTR
+        { GCNWAIT_LGKMCNT, true, false },  // GCNDELINSTR_GDSINSTR
+        { GCNWAIT_LGKMCNT, true, false },  // GCNDELINSTR_SENDMSG
+        { GCNWAIT_LGKMCNT, false, false },  // GCNDELINSTR_SMINSTR
+        { GCNWAIT_EXPCNT, true, true },  // GCNDELINSTR_EXPVMWRITE
+        { GCNWAIT_EXPCNT, false, false }  // GCNDELINSTR_EXPORT
     },
     { 64, 8, 8 }
 };
