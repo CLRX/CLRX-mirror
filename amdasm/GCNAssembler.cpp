@@ -353,11 +353,11 @@ void GCNAssembler::flushInstrRVUs(ISAUsageHandler* usageHandler)
 }
 void GCNAssembler::flushWaitInstrs(ISAWaitHandler* waitHandler)
 {
-    if (hasDelayedResult)
+    if (hasDelayedOps)
     {
-        waitHandler->pushDelayedOp(delayedResults[0]);
-        if (hasSecondDelayResult)
-            waitHandler->pushDelayedOp(delayedResults[1]);
+        waitHandler->pushDelayedOp(delayedOps[0]);
+        if (hasSecondDelayedOp)
+            waitHandler->pushDelayedOp(delayedOps[1]);
     }
     else if (hasWaitInstr)
         waitHandler->pushWaitInstr(waitInstr);

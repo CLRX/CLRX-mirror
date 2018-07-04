@@ -351,10 +351,10 @@ private:
     cxbyte currentRVUIndex;
     AsmRegVarUsage instrRVUs[6];
     bool hasWaitInstr;
-    bool hasDelayedResult;
-    bool hasSecondDelayResult;
+    bool hasDelayedOps;
+    bool hasSecondDelayedOp;
     AsmWaitInstr waitInstr;
-    AsmDelayedOp delayedResults[2];
+    AsmDelayedOp delayedOps[2];
     
     void resetInstrRVUs()
     {
@@ -362,7 +362,7 @@ private:
             rvu.regField = ASMFIELD_NONE;
     }
     void resetWaitInstrs()
-    { hasWaitInstr = hasDelayedResult = hasSecondDelayResult = false; }
+    { hasWaitInstr = hasDelayedOps = hasSecondDelayedOp = false; }
     
     void setCurrentRVU(cxbyte idx)
     { currentRVUIndex = idx; }

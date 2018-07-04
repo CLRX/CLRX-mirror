@@ -371,22 +371,22 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {
         if (!haveLds)
-            gcnAsm->delayedResults[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+            gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
                     GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
         else
-            gcnAsm->delayedResults[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+            gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
                     GCNDELINSTR_VMINSTR, cxbyte(0)};
         
         if (vdataToRead && (arch & ARCH_HD7X00) != 0 && !haveLds)
         {
             // add EXPORT VM write to exportCNT (only GCN 1.0)
-            gcnAsm->delayedResults[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+            gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
                     GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
-            gcnAsm->hasSecondDelayResult = true;
+            gcnAsm->hasSecondDelayedOp = true;
         }
-        gcnAsm->hasDelayedResult = true;
+        gcnAsm->hasDelayedOps = true;
     }
     
     if (haveTfe && (vdataDivided ||
@@ -643,18 +643,18 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {
-        gcnAsm->delayedResults[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+        gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                 gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
                 GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
         if (vdataToRead && (arch & ARCH_HD7X00) != 0)
         {
             // add EXPORT VM write to exportCNT (only GCN 1.0)
-            gcnAsm->delayedResults[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+            gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
                     GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
-            gcnAsm->hasSecondDelayResult = true;
+            gcnAsm->hasSecondDelayedOp = true;
         }
-        gcnAsm->hasDelayedResult = true;
+        gcnAsm->hasDelayedOps = true;
     }
     
     if (haveTfe && (vdataDivided ||
@@ -846,9 +846,9 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
         vsrcsReg[2] = vsrcsReg[3] = { 0, 0 };
     }
     
-    gcnAsm->delayedResults[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+    gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
             GCNDELINSTR_EXPORT, cxbyte(0) };
-    gcnAsm->hasDelayedResult = true;
+    gcnAsm->hasDelayedOps = true;
     
     // put instruction words
     uint32_t words[2];
@@ -1100,14 +1100,14 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (delayedRVU != 255)
     {
         if (!haveLds)
-            gcnAsm->delayedResults[0] = { output.size(),
+            gcnAsm->delayedOps[0] = { output.size(),
                 gcnAsm->instrRVUs[delayedRVU].regVar,
                 gcnAsm->instrRVUs[delayedRVU].rstart, gcnAsm->instrRVUs[delayedRVU].rend,
                 GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[delayedRVU].rwFlags};
         else
-            gcnAsm->delayedResults[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+            gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
                     GCNDELINSTR_VMINSTR, cxbyte(0) };
-        gcnAsm->hasDelayedResult = true;
+        gcnAsm->hasDelayedOps = true;
     }
     
     if (instOffsetExpr!=nullptr)
