@@ -1856,7 +1856,7 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
         assertValue("testGCNRegVarUsages", testCaseName+rvuName+"align",
                     cxuint(expectedRvu.align), cxuint(resultRvu.align));
     }
-    assertTrue("testGCNRegVarUsages", testCaseName+"length",
+    assertTrue("testGCNRegVarUsages", testCaseName+".length",
                    j == testCase.regVarUsages.size());
 }
 

@@ -31,11 +31,21 @@
 
 using namespace CLRX;
 
+struct AsmDelayedOpData
+{
+    size_t offset;
+    const char* regVarName;
+    uint16_t rstart;
+    uint16_t rend;
+    cxbyte delayInstrType;
+    cxbyte rwFlags;
+};
+
 struct AsmWaitHandlerCase
 {
     const char* input;
     Array<AsmWaitInstr> waitInstrs;
-    Array<AsmDelayedOp> delayedResults;
+    Array<AsmDelayedOpData> delayedOps;
     bool good;
     const char* errorMessages;
 };
@@ -90,18 +100,74 @@ static void testWaitHandlerCase(cxuint i, const AsmWaitHandlerCase& testCase)
     pushRegVarsFromScopes(assembler.getGlobalScope(), regVarNamesMap, "");
     ISAWaitHandler* waitHandler = assembler.getSections()[0].waitHandler.get();
     waitHandler->rewind();
-    /*size_t j, k;
+    size_t j, k;
     for (j = k = 0; waitHandler->hasNext();)
     {
-        AsmWaitInstr waitInstr;
-        AsmDelayedResult delayedResult;
-        assertTrue("testWaitHandle", testCaseName+".length",
-                   j < testCase.waitInstrs.size());
-    }*/
+        AsmWaitInstr waitInstr{};
+        AsmDelayedOp delayedOp{};
+        std::ostringstream koss;
+        if (waitHandler->nextInstr(delayedOp, waitInstr))
+        {
+            /// check Asm wait instruction
+            assertTrue("testWaitHandle", testCaseName+".wlength",
+                    j < testCase.waitInstrs.size());
+            koss << testCaseName << ".waitIstr#" << j;
+            std::string wiStr = koss.str();
+            
+            const AsmWaitInstr& expWaitInstr = testCase.waitInstrs[j++];
+            assertValue("testWaitHandle", wiStr+".offset", expWaitInstr.offset,
+                        waitInstr.offset);
+            assertArray("testWaitHandle", wiStr+".waits",
+                        Array<uint16_t>(expWaitInstr.waits, expWaitInstr.waits+4),
+                        4, waitInstr.waits);
+        }
+        else
+        {
+            // test asm delayed op
+            assertTrue("testWaitHandle", testCaseName+".dolength",
+                    k < testCase.delayedOps.size());
+            koss << testCaseName << ".delayedOp#" << k;
+            std::string doStr = koss.str();
+            
+            const AsmDelayedOpData& expDelayedOp = testCase.delayedOps[k++];
+            assertValue("testWaitHandle", doStr+".offset", expDelayedOp.offset,
+                        delayedOp.offset);
+            if (expDelayedOp.regVarName==nullptr)
+                assertTrue("testWaitHandle", doStr+".regVar", delayedOp.regVar==nullptr);
+            else // otherwise
+            {
+                assertTrue("testWaitHandle", doStr+".regVar", delayedOp.regVar!=nullptr);
+                assertString("testWaitHandle", doStr+".regVarName",
+                        expDelayedOp.regVarName,
+                        regVarNamesMap.find(delayedOp.regVar)->second);
+            }
+            assertValue("testWaitHandle", doStr+".rstart", expDelayedOp.rstart,
+                        delayedOp.rstart);
+            assertValue("testWaitHandle", doStr+".rend", expDelayedOp.rend,
+                        delayedOp.rend);
+            assertValue("testWaitHandle", doStr+".delayedInstrType",
+                        cxuint(expDelayedOp.delayInstrType),
+                        cxuint(delayedOp.delayInstrType));
+            assertValue("testWaitHandle", doStr+".rwFlags",
+                        cxuint(expDelayedOp.rwFlags), cxuint(delayedOp.rwFlags));
+        }
+    }
+    assertTrue("testWaitHandle", testCaseName+".wlength",
+                   j == testCase.waitInstrs.size());
+    assertTrue("testWaitHandle", testCaseName+".dolength",
+                   k == testCase.delayedOps.size());
 }
 
 int main(int argc, const char** argv)
 {
     int retVal = 0;
+    for (cxuint i = 0; i < sizeof(waitHandlerTestCases) / sizeof(AsmWaitHandlerCase); i++)
+        try
+        { testWaitHandlerCase(i, waitHandlerTestCases[i]); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
     return retVal;
 }
