@@ -1773,6 +1773,32 @@ b1:     .rvlin va[3:6]
             { 16, nullptr, 256+24, 256+25, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 0 }
         },
         true, ""
+    },
+    {   /* 30: S_ATOMIC_* (GFX9) */
+        ".gpu gfx900\n"
+        ".regvar rax:v, rbx:v, rex:v\n"
+        ".regvar rax4:s:20, rbx5:s:16\n"
+        "s_atomic_add rax4[0], rbx5[8:9], 0x5b\n"
+        "s_atomic_add rax4[0], rbx5[8:9], 0x5b glc\n"
+        "s_atomic_cmpswap rax4[0:1], rbx5[8:9], 0x5b glc\n"
+        "s_atomic_cmpswap_x2 rax4[0:3], rbx5[8:9], 0x5b glc\n",
+        {
+            // s_atomic_add rax4[0], rbx5[8:11], 0x5b
+            { 0, "rax4", 0, 1, GCNFIELD_SMRD_SDST, ASMRVU_READ, 1 },
+            { 0, "rbx5", 8, 10, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 2 },
+            // s_atomic_add rax4[0], rbx5[8:11], 0x5b glc
+            { 8, "rax4", 0, 1, GCNFIELD_SMRD_SDST, ASMRVU_READ|ASMRVU_WRITE, 1 },
+            { 8, "rbx5", 8, 10, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 2 },
+            // s_atomic_cmpswap rax4[0:1], rbx5[8:11], 0x5b glc
+            { 16, "rax4", 0, 1, GCNFIELD_SMRD_SDST, ASMRVU_READ|ASMRVU_WRITE, 2 },
+            { 16, "rbx5", 8, 10, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 2 },
+            { 16, "rax4", 1, 2, GCNFIELD_SMRD_SDSTH, ASMRVU_READ, 0 },
+            // s_atomic_cmpswap_x2 rax4[0:3], rbx5[8:11], 0x5b glc
+            { 24, "rax4", 0, 2, GCNFIELD_SMRD_SDST, ASMRVU_READ|ASMRVU_WRITE, 4 },
+            { 24, "rbx5", 8, 10, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 2 },
+            { 24, "rax4", 2, 4, GCNFIELD_SMRD_SDSTH, ASMRVU_READ, 0 }
+        },
+        true, ""
     }
 };
 
