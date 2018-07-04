@@ -925,7 +925,7 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (mode1 != GCN_ARG_NONE)
     {
-        gcnAsm->delayedResults[0] = AsmDelayedResult{ output.size(),
+        gcnAsm->delayedResults[0] = AsmDelayedOp { output.size(),
                     gcnAsm->instrRVUs[0].regVar, gcnAsm->instrRVUs[0].rstart,
                     gcnAsm->instrRVUs[0].rend, GCNDELINSTR_SMINSTR,
                     gcnAsm->instrRVUs[0].rwFlags };
@@ -1087,7 +1087,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (mode1 != GCN_ARG_NONE)
     {
-        gcnAsm->delayedResults[0] = AsmDelayedResult{ output.size(),
+        gcnAsm->delayedResults[0] = AsmDelayedOp { output.size(),
                     gcnAsm->instrRVUs[0].regVar, gcnAsm->instrRVUs[0].rstart,
                     gcnAsm->instrRVUs[0].rend, GCNDELINSTR_SMINSTR,
                     gcnAsm->instrRVUs[0].rwFlags };

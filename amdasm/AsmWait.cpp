@@ -47,9 +47,9 @@ ISAWaitHandler* ISAWaitHandler::copy() const
 }
 
 
-void ISAWaitHandler::pushDelayedResult(const AsmDelayedResult& delResult)
+void ISAWaitHandler::pushDelayedOp(const AsmDelayedOp& delOp)
 {
-    delayedResults.push_back(delResult);
+    delayedOps.push_back(delOp);
 }
 
 void ISAWaitHandler::pushWaitInstr(const AsmWaitInstr& waitInstr)
@@ -57,20 +57,20 @@ void ISAWaitHandler::pushWaitInstr(const AsmWaitInstr& waitInstr)
     waitInstrs.push_back(waitInstr);
 }
 
-bool ISAWaitHandler::nextInstr(AsmDelayedResult* delRes, AsmWaitInstr* waitInstr)
+bool ISAWaitHandler::nextInstr(AsmDelayedOp& delOp, AsmWaitInstr& waitInstr)
 {
     size_t delResOffset = SIZE_MAX;
     size_t waitInstrOffset = SIZE_MAX;
-    if (readPos.delResPos < delayedResults.size())
-        delResOffset = delayedResults[readPos.delResPos].offset;
+    if (readPos.delOpPos < delayedOps.size())
+        delResOffset = delayedOps[readPos.delOpPos].offset;
     if (readPos.waitInstrPos < waitInstrs.size())
         waitInstrOffset = waitInstrs[readPos.waitInstrPos].offset;
     if (delResOffset < waitInstrOffset)
     {
-        *delRes = delayedResults[readPos.delResPos++];
+        delOp = delayedOps[readPos.delOpPos++];
         return false;
     }
-    *waitInstr = waitInstrs[readPos.waitInstrPos++];
+    waitInstr = waitInstrs[readPos.waitInstrPos++];
     return true;
 }
 

@@ -1804,6 +1804,7 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
     bool good = assembler.assemble();
     std::ostringstream oss;
     oss << " regVarUsageGCNCase#" << i;
+    oss.flush();
     const std::string testCaseName = oss.str();
     assertValue<bool>("testGCNRegVarUsages", testCaseName+".good",
                       testCase.good, good);
@@ -1824,7 +1825,7 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
     size_t j;
     for (j = 0; usageHandler->hasNext(); j++)
     {
-        assertTrue("testGCNRegVarUsages", testCaseName+"length",
+        assertTrue("testGCNRegVarUsages", testCaseName+".length",
                    j < testCase.regVarUsages.size());
         const AsmRegVarUsage resultRvu = usageHandler->nextUsage();
         std::ostringstream rvuOss;

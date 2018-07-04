@@ -237,12 +237,12 @@ class ISAWaitHandler
 public:
     struct ReadPos
     {
-        size_t delResPos;
+        size_t delOpPos;
         size_t waitInstrPos;
     };
 private:
     ReadPos readPos;
-    std::vector<AsmDelayedResult> delayedResults;
+    std::vector<AsmDelayedOp> delayedOps;
     std::vector<AsmWaitInstr> waitInstrs;
 public:
     /// constructor
@@ -256,15 +256,15 @@ public:
     ReadPos getReadPos() const
     { return readPos; }
     /// push delayed result
-    void pushDelayedResult(const AsmDelayedResult& delResult);
+    void pushDelayedOp(const AsmDelayedOp& delOp);
     /// wait instruction
     void pushWaitInstr(const AsmWaitInstr& waitInstr);
     /// return true if has next instruction
     bool hasNext() const
-    { return readPos.delResPos < delayedResults.size() ||
+    { return readPos.delOpPos < delayedOps.size() ||
                 readPos.waitInstrPos < waitInstrs.size(); }
     /// get next instruction, return true if waitInstr
-    bool nextInstr(AsmDelayedResult* delRes, AsmWaitInstr* waitInstr);
+    bool nextInstr(AsmDelayedOp& delOp, AsmWaitInstr& waitInstr);
     
     /// copy wait handler (make new copy)
     ISAWaitHandler* copy() const;
@@ -354,7 +354,7 @@ private:
     bool hasDelayedResult;
     bool hasSecondDelayResult;
     AsmWaitInstr waitInstr;
-    AsmDelayedResult delayedResults[2];
+    AsmDelayedOp delayedResults[2];
     
     void resetInstrRVUs()
     {

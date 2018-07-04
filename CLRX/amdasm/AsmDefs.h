@@ -577,7 +577,8 @@ struct AsmDelayInstrTypeEntry
 {
     cxbyte waitType;
     bool ordered;
-    bool finishOnRegWrite;  ///< waiting finished on register write (true) or on operation
+    /// waiting finished on register read out (true) or on operation
+    bool finishOnRegReadOut;
 };
 
 /// asm wait system configuration
@@ -590,7 +591,7 @@ struct AsmWaitConfig
 };
 
 /// delayed result for register for instruction with delayed results
-struct AsmDelayedResult
+struct AsmDelayedOp
 {
     size_t offset;
     const AsmRegVar* regVar;
