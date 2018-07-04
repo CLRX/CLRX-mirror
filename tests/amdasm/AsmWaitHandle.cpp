@@ -27,6 +27,7 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/utils/Containers.h>
+#include <CLRX/amdasm/GCNDefs.h>
 #include "../TestUtils.h"
 
 using namespace CLRX;
@@ -52,6 +53,39 @@ struct AsmWaitHandlerCase
 
 static const AsmWaitHandlerCase waitHandlerTestCases[] =
 {
+    {   /* 0 - first test - empty */
+        R"ffDXD(
+            .regvar bax:s, dbx:v, dcx:s:8
+            s_mov_b32 bax, s11
+            s_mov_b32 bax, dcx[1]
+            s_branch aa0
+            s_endpgm
+aa0:        s_add_u32 bax, dcx[1], dcx[2]
+            s_endpgm
+)ffDXD",
+        { }, { }, true, ""
+    },
+    {   /* 1 - SMRD instr */
+        R"ffDXD(
+            .regvar bax:s, dbx:v, dcx:s:8
+            s_mov_b32 bax, s11
+            s_load_dword dcx[2], s[10:11], 4
+            s_mov_b32 bax, dcx[1]
+            s_waitcnt lgkmcnt(0)
+            s_branch aa0
+            s_endpgm
+aa0:        s_add_u32 bax, dcx[1], dcx[2]
+            s_endpgm
+)ffDXD",
+        {
+            // s_waitcnt lgkmcnt(0)
+            { 12U, { 15, 0, 7, 0 } },
+        },
+        {
+            // s_load_dword dcx[2], s[10:11], 4
+            { 4U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_WRITE }
+        }, true, ""
+    }
 };
 
 static void pushRegVarsFromScopes(const AsmScope& scope,
