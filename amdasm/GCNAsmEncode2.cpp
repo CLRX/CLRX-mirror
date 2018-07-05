@@ -372,17 +372,17 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     {
         if (!haveLds)
             gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
-                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
+                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
                     GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
         else
             gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
-                    GCNDELINSTR_VMINSTR, cxbyte(0)};
+                    1, GCNDELINSTR_VMINSTR, cxbyte(0)};
         
         if (vdataToRead && (arch & ARCH_HD7X00) != 0 && !haveLds)
         {
             // add EXPORT VM write to exportCNT (only GCN 1.0)
             gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
-                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
+                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
                     GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
             gcnAsm->hasSecondDelayedOp = true;
         }
@@ -644,13 +644,13 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {
         gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
-                gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
+                gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
                 GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
         if (vdataToRead && (arch & ARCH_HD7X00) != 0)
         {
             // add EXPORT VM write to exportCNT (only GCN 1.0)
             gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
-                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
+                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
                     GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
             gcnAsm->hasSecondDelayedOp = true;
         }
@@ -846,7 +846,7 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
         vsrcsReg[2] = vsrcsReg[3] = { 0, 0 };
     }
     
-    gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+    gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0), 1,
             GCNDELINSTR_EXPORT, cxbyte(0) };
     gcnAsm->hasDelayedOps = true;
     
@@ -1103,10 +1103,10 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             gcnAsm->delayedOps[0] = { output.size(),
                 gcnAsm->instrRVUs[delayedRVU].regVar,
                 gcnAsm->instrRVUs[delayedRVU].rstart, gcnAsm->instrRVUs[delayedRVU].rend,
-                GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[delayedRVU].rwFlags};
+                1, GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[delayedRVU].rwFlags};
         else
             gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
-                    GCNDELINSTR_VMINSTR, cxbyte(0) };
+                    1, GCNDELINSTR_VMINSTR, cxbyte(0) };
         gcnAsm->hasDelayedOps = true;
     }
     

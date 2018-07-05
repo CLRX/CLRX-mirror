@@ -38,6 +38,7 @@ struct AsmDelayedOpData
     const char* regVarName;
     uint16_t rstart;
     uint16_t rend;
+    cxbyte count;
     cxbyte delayInstrType;
     cxbyte rwFlags;
 };
@@ -83,7 +84,7 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
         },
         {
             // s_load_dword dcx[2], s[10:11], 4
-            { 4U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_WRITE }
+            { 4U, "dcx", 2, 3, 1, GCNDELINSTR_SMINSTR, ASMRVU_WRITE }
         }, true, ""
     },
     {   /* 2 - s_waitcnt tests */
@@ -139,18 +140,18 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
 )ffDXD",
         { },
         {
-            { 0U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 4U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 8U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 12U, "bb", 16, 24, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 16U, "bb", 12, 28, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 20U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 24U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 28U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 32U, "bb", 16, 24, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 36U, "bb", 12, 28, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 40U, nullptr, 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 44U, "dcx", 5, 7, GCNDELINSTR_SMINSTR, ASMRVU_WRITE }
+            { 0U, "dcx", 2, 3, 1, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 4U, "dcx", 4, 6, 2, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 8U, "bb", 4, 8, 4, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 12U, "bb", 16, 24, 8, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 16U, "bb", 12, 28, 16, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 20U, "dcx", 2, 3, 1, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 24U, "dcx", 4, 6, 2, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 28U, "bb", 4, 8, 4, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 32U, "bb", 16, 24, 8, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 36U, "bb", 12, 28, 16, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 40U, nullptr, 4, 6, 2, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 44U, "dcx", 5, 7, 2, GCNDELINSTR_SMINSTR, ASMRVU_WRITE }
         }, true, ""
     },
     {   /* 5 - SMEM */
@@ -178,24 +179,24 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
 )ffDXD",
         { },
         {
-            { 0U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 8U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 16U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 24U, "bb", 16, 24, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 32U, "bb", 12, 28, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 40U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 48U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 56U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 64U, "bb", 16, 24, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 72U, "bb", 12, 28, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 80U, nullptr, 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 88U, "dcx", 5, 7, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
-            { 96U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 104U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 112U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 120U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 128U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 136U, "bb", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ }
+            { 0U, "dcx", 2, 3, 1, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 8U, "dcx", 4, 6, 2, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 16U, "bb", 4, 8, 4, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 24U, "bb", 16, 24, 8, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 32U, "bb", 12, 28, 16, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 40U, "dcx", 2, 3, 1, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 48U, "dcx", 4, 6, 2, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 56U, "bb", 4, 8, 4, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 64U, "bb", 16, 24, 8, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 72U, "bb", 12, 28, 16, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 80U, nullptr, 4, 6, 2, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 88U, "dcx", 5, 7, 2, GCNDELINSTR_SMINSTR, ASMRVU_WRITE },
+            { 96U, "dcx", 2, 3, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 104U, "dcx", 4, 6, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 112U, "bb", 4, 8, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 120U, "dcx", 2, 3, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 128U, "dcx", 4, 6, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 136U, "bb", 4, 8, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ }
         }, true, ""
     },
     {   /* 6 - SMEM (GFX9) */
@@ -230,37 +231,37 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
         { },
         {
             // S_ATOMIC without GLC
-            { 0U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 8U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 16U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 24U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 32U, "dcx", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 40U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 0U, "bax", 0, 1, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 8U, "dcx", 2, 4, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 16U, "bax", 0, 1, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 24U, "dcx", 2, 4, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 32U, "dcx", 4, 8, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 40U, "dcx", 2, 4, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ },
             // S_ATOMIC with GLC
-            { 48U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
-            { 56U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
-            { 56U, "dcx", 3, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 64U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
-            { 72U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
-            { 80U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
-            { 80U, "dcx", 6, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 88U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 48U, "bax", 0, 1, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 56U, "dcx", 2, 3, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 56U, "dcx", 3, 4, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 64U, "bax", 0, 1, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 72U, "dcx", 2, 4, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 80U, "dcx", 4, 6, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 80U, "dcx", 6, 8, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 88U, "dcx", 2, 4, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
             // S_BUFFER_ATOMIC without GLC
-            { 96U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 104U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 112U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 120U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 128U, "dcx", 4, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 136U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 96U, "bax", 0, 1, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 104U, "dcx", 2, 4, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 112U, "bax", 0, 1, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 120U, "dcx", 2, 4, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 128U, "dcx", 4, 8, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 136U, "dcx", 2, 4, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ },
             // S_BUFFER_ATOMIC with GLC
-            { 144U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
-            { 152U, "dcx", 2, 3, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
-            { 152U, "dcx", 3, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 160U, "bax", 0, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
-            { 168U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
-            { 176U, "dcx", 4, 6, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
-            { 176U, "dcx", 6, 8, GCNDELINSTR_SMINSTR, ASMRVU_READ },
-            { 184U, "dcx", 2, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE }
+            { 144U, "bax", 0, 1, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 152U, "dcx", 2, 3, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 152U, "dcx", 3, 4, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 160U, "bax", 0, 1, 1, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 168U, "dcx", 2, 4, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 176U, "dcx", 4, 6, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 176U, "dcx", 6, 8, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ },
+            { 184U, "dcx", 2, 4, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE }
         }, true, ""
     },
     {   /* 7 - S_SENDMSG */
@@ -268,7 +269,7 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
         "s_sendmsg sendmsg(gs_done, nop)",
         { },
         {
-            { 4U, nullptr, 0, 0, GCNDELINSTR_SENDMSG, 0 }
+            { 4U, nullptr, 0, 0, 1, GCNDELINSTR_SENDMSG, 0 }
         }, true, ""
     },
     {   /* 8 - DS encoding */
@@ -292,22 +293,22 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
 )ffDXD",
         { },
         {
-            { 0U, nullptr, 256+1, 256+2, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
-            { 8U, "bax", 0, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
-            { 16U, nullptr, 256+1, 256+2, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
-            { 24U, "bax", 0, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 0U, nullptr, 256+1, 256+2, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 8U, "bax", 0, 1, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 16U, nullptr, 256+1, 256+2, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 24U, "bax", 0, 1, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
             // read/write 64-bit
-            { 32U, nullptr, 256+1, 256+3, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
-            { 40U, "dbx", 5, 7, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
-            { 48U, nullptr, 256+2, 256+4, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
-            { 56U, "dbx", 6, 8, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 32U, nullptr, 256+1, 256+3, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 40U, "dbx", 5, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 48U, nullptr, 256+2, 256+4, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 56U, "dbx", 6, 8, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
             // read/write 128-bit
-            { 64U, nullptr, 256+1, 256+5, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
-            { 72U, "dbx", 3, 7, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
-            { 80U, nullptr, 256+7, 256+11, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
-            { 88U, "dbx", 2, 6, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 64U, nullptr, 256+1, 256+5, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 72U, "dbx", 3, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 80U, nullptr, 256+7, 256+11, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 88U, "dbx", 2, 6, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
             /* atomics 32-bit */
-            { 96U, "dcx", 3, 4, GCNDELINSTR_LDSINSTR, ASMRVU_READ }
+            { 96U, "dcx", 3, 4, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ }
             //{ 104U, "dcx", 3, 4, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
         }, true, ""
     }
@@ -404,6 +405,8 @@ static void testWaitHandlerCase(cxuint i, const AsmWaitHandlerCase& testCase)
                         delayedOp.rstart);
             assertValue("testWaitHandle", doStr+".rend", expDelayedOp.rend,
                         delayedOp.rend);
+            assertValue("testWaitHandle", doStr+".count",
+                        cxuint(expDelayedOp.count), cxuint(delayedOp.count));
             assertValue("testWaitHandle", doStr+".delayedInstrType",
                         cxuint(expDelayedOp.delayInstrType),
                         cxuint(delayedOp.delayInstrType));

@@ -598,6 +598,7 @@ struct AsmDelayedOp
     const AsmRegVar* regVar;
     uint16_t rstart;
     uint16_t rend;
+    cxbyte count;
     cxbyte delayInstrType;
     cxbyte rwFlags;
 };

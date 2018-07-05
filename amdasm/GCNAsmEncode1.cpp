@@ -826,7 +826,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             imm16 = sendMessage | (gsopIndex<<4) | (streamId<<8);
             
             gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
-                    GCNDELINSTR_SENDMSG, cxbyte(0) };
+                    1, GCNDELINSTR_SENDMSG, cxbyte(0) };
             gcnAsm->hasDelayedOps = true;
             break;
         }
@@ -927,8 +927,9 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         gcnAsm->delayedOps[0] = AsmDelayedOp { output.size(),
                     gcnAsm->instrRVUs[0].regVar, gcnAsm->instrRVUs[0].rstart,
-                    gcnAsm->instrRVUs[0].rend, GCNDELINSTR_SMINSTR,
-                    gcnAsm->instrRVUs[0].rwFlags };
+                    gcnAsm->instrRVUs[0].rend,
+                    cxbyte(gcnAsm->instrRVUs[0].rend - gcnAsm->instrRVUs[0].rstart),
+                    GCNDELINSTR_SMINSTR, gcnAsm->instrRVUs[0].rwFlags };
         gcnAsm->hasDelayedOps = true;
     }
     
@@ -1126,14 +1127,16 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         gcnAsm->delayedOps[0] = AsmDelayedOp { output.size(),
                     gcnAsm->instrRVUs[0].regVar, gcnAsm->instrRVUs[0].rstart,
-                    gcnAsm->instrRVUs[0].rend, GCNDELINSTR_SMINSTR,
-                    gcnAsm->instrRVUs[0].rwFlags };
+                    gcnAsm->instrRVUs[0].rend,
+                    cxbyte(gcnAsm->instrRVUs[0].rend - gcnAsm->instrRVUs[0].rstart),
+                    GCNDELINSTR_SMINSTR, gcnAsm->instrRVUs[0].rwFlags };
         if (gcnAsm->instrRVUs[3].regField != ASMFIELD_NONE)
         {
             gcnAsm->delayedOps[1] = AsmDelayedOp { output.size(),
                     gcnAsm->instrRVUs[3].regVar, gcnAsm->instrRVUs[3].rstart,
-                    gcnAsm->instrRVUs[3].rend, GCNDELINSTR_SMINSTR,
-                    gcnAsm->instrRVUs[3].rwFlags };
+                    gcnAsm->instrRVUs[3].rend,
+                    cxbyte(gcnAsm->instrRVUs[0].rend - gcnAsm->instrRVUs[0].rstart),
+                    GCNDELINSTR_SMINSTR, gcnAsm->instrRVUs[3].rwFlags };
             gcnAsm->hasSecondDelayedOp = true;
         }
         gcnAsm->hasDelayedOps = true;
@@ -2410,7 +2413,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         // register Delayed results
         gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[delayRVU].regVar,
                     gcnAsm->instrRVUs[delayRVU].rstart, gcnAsm->instrRVUs[delayRVU].rend,
-                    haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
+                    1, haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
                     gcnAsm->instrRVUs[delayRVU].rwFlags };
         if (secondDelay)
         {
@@ -2418,7 +2421,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     gcnAsm->instrRVUs[delayRVU+1].regVar,
                     gcnAsm->instrRVUs[delayRVU+1].rstart,
                     gcnAsm->instrRVUs[delayRVU+1].rend,
-                    haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
+                    1, haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
                     gcnAsm->instrRVUs[delayRVU+1].rwFlags };
             gcnAsm->hasSecondDelayedOp = true;
         }
