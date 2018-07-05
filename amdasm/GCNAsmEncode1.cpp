@@ -2425,10 +2425,22 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     gcnAsm->instrRVUs[delayRVU+1].rend,
                     1, haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
                     gcnAsm->instrRVUs[delayRVU+1].rwFlags };
+        if (haveGds)
+        {
+            gcnAsm->delayedOps[3] = { output.size(), gcnAsm->instrRVUs[delayRVU].regVar,
+                    gcnAsm->instrRVUs[delayRVU].rstart, gcnAsm->instrRVUs[delayRVU].rend,
+                    1, GCNDELINSTR_EXPORT, gcnAsm->instrRVUs[delayRVU].rwFlags };
+            if (secondDelay)
+                gcnAsm->delayedOps[4] = { output.size(),
+                    gcnAsm->instrRVUs[delayRVU+1].regVar,
+                    gcnAsm->instrRVUs[delayRVU+1].rstart,
+                    gcnAsm->instrRVUs[delayRVU+1].rend, 1, GCNDELINSTR_EXPORT,
+                    gcnAsm->instrRVUs[delayRVU+1].rwFlags };
+        }
     }
     if ((gcnInsn.mode & GCN_SRC_ADDR2) != 0)
         // register for DS_*_SRC2_* instructions
-        gcnAsm->delayedOps[3] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+        gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
                 1, haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR, cxbyte(0) };
     
     if ((gcnInsn.mode&GCN_ONLYGDS) != 0 && !haveGds)

@@ -914,7 +914,7 @@ static const AsmWaitConfig gcnWaitConfig =
         { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_SENDMSG
         { GCNWAIT_LGKMCNT, false, false, 4 },  // GCNDELINSTR_SMINSTR
         { GCNWAIT_EXPCNT, true, true, 255 },  // GCNDELINSTR_EXPVMWRITE
-        { GCNWAIT_EXPCNT, false, false, 255 }  // GCNDELINSTR_EXPORT
+        { GCNWAIT_EXPCNT, false, true, 255 }  // GCNDELINSTR_EXPORT
     },
     { 16, 16, 8 }
 };
@@ -931,7 +931,7 @@ static const AsmWaitConfig gcnWaitConfig14 =
         { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_SENDMSG
         { GCNWAIT_LGKMCNT, false, false, 4 },  // GCNDELINSTR_SMINSTR
         { GCNWAIT_EXPCNT, true, true, 255 },  // GCNDELINSTR_EXPVMWRITE
-        { GCNWAIT_EXPCNT, false, false, 255 }  // GCNDELINSTR_EXPORT
+        { GCNWAIT_EXPCNT, false, true, 255 }  // GCNDELINSTR_EXPORT
     },
     { 64, 16, 8 }
 };

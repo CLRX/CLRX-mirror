@@ -358,7 +358,7 @@ private:
     AsmRegVarUsage instrRVUs[6];
     bool hasWaitInstr;
     AsmWaitInstr waitInstr;
-    AsmDelayedOp delayedOps[4];
+    AsmDelayedOp delayedOps[6];
     
     void resetInstrRVUs()
     {
