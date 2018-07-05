@@ -2244,7 +2244,8 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     
     bool beforeData = false;
     bool vdstUsed = false;
-    cxuint delayRVU = 0;
+    cxuint delayRVU = UINT_MAX;
+    cxuint destDelayRVU = UINT_MAX;
     bool secondDelay = false;
     
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
@@ -2262,7 +2263,7 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         good &= parseVRegRange(asmr, linePtr, dstReg, regsNum, GCNFIELD_DS_VDST, true,
                     INSTROP_SYMREGRANGE|INSTROP_WRITE);
         vdstUsed = beforeData = true;
-        delayRVU = 0;
+        destDelayRVU = 0;
     }
     
     if ((gcnInsn.mode & GCN_ONLYDST) == 0 && (gcnInsn.mode & GCN_ONLY_SRC) == 0)
@@ -2403,20 +2404,32 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     
+    // register Delayed results
+    if (destDelayRVU != UINT_MAX)
+        gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[destDelayRVU].regVar,
+                    gcnAsm->instrRVUs[destDelayRVU].rstart,
+                    gcnAsm->instrRVUs[destDelayRVU].rend,
+                    1, haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
+                    gcnAsm->instrRVUs[destDelayRVU].rwFlags };
+    
+    if (delayRVU != UINT_MAX)
     {
-        // register Delayed results
-        gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[delayRVU].regVar,
+        gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[delayRVU].regVar,
                     gcnAsm->instrRVUs[delayRVU].rstart, gcnAsm->instrRVUs[delayRVU].rend,
                     1, haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
                     gcnAsm->instrRVUs[delayRVU].rwFlags };
         if (secondDelay)
-            gcnAsm->delayedOps[1] = { output.size(),
+            gcnAsm->delayedOps[2] = { output.size(),
                     gcnAsm->instrRVUs[delayRVU+1].regVar,
                     gcnAsm->instrRVUs[delayRVU+1].rstart,
                     gcnAsm->instrRVUs[delayRVU+1].rend,
                     1, haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
                     gcnAsm->instrRVUs[delayRVU+1].rwFlags };
     }
+    if ((gcnInsn.mode & GCN_SRC_ADDR2) != 0)
+        // register for DS_*_SRC2_* instructions
+        gcnAsm->delayedOps[3] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+                1, haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR, cxbyte(0) };
     
     if ((gcnInsn.mode&GCN_ONLYGDS) != 0 && !haveGds)
         ASM_FAIL_BY_ERROR(instrPlace, "Instruction requires GDS modifier")

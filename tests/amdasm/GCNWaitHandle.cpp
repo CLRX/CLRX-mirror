@@ -316,7 +316,42 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             ds_write_b128 v2, dbx[2:5] offset:38
             
             ds_sub_u32 bax, dcx[3] offset:4
-            #ds_sub_rtn_u32 dbx[5], bax, dcx[3] offset:4
+            ds_sub_rtn_u32 dbx[5], bax, dcx[3] offset:4
+            ds_sub_src2_u32 bax offset:4
+            ds_add_u64 bax, dcx[5:6] offset:4
+            ds_add_rtn_u64 dbx[3:4], bax, dcx[1:2] offset:4
+            ds_add_src2_u64 bax offset:4
+            
+            ds_cmpst_b32 bax, dbx[4], dcx[1]
+            ds_cmpst_b64 bax, dbx[4:5], dcx[3:4]
+            ds_cmpst_rtn_b32 dcx[5], bax, dbx[4], dcx[1]
+            ds_cmpst_rtn_b64 dcx[0:1], bax, dbx[4:5], dcx[3:4]
+            
+            # GDS
+            ds_read_b32 v1, v2 offset:12 gds
+            ds_read_b32 bax, v2 offset:12 gds
+            ds_write_b32 v2, v1 offset:12 gds
+            ds_write_b32 v2, bax offset:12 gds
+            ds_read_b64 v[1:2], v2 offset:112 gds
+            ds_read_b64 dbx[5:6], v2 offset:112 gds
+            ds_write_b64 v2, v[2:3] offset:112 gds
+            ds_write_b64 v2, dbx[6:7] offset:112 gds
+            ds_read_b128 v[1:4], v2 offset:38 gds
+            ds_read_b128 dbx[3:6], v2 offset:38 gds
+            ds_write_b128 v2, v[7:10] offset:38 gds
+            ds_write_b128 v2, dbx[2:5] offset:38 gds
+            
+            ds_sub_u32 bax, dcx[3] offset:4 gds
+            ds_sub_rtn_u32 dbx[5], bax, dcx[3] offset:4 gds
+            ds_sub_src2_u32 bax offset:4 gds
+            ds_add_u64 bax, dcx[5:6] offset:4 gds
+            ds_add_rtn_u64 dbx[3:4], bax, dcx[1:2] offset:4 gds
+            ds_add_src2_u64 bax offset:4 gds
+            
+            ds_cmpst_b32 bax, dbx[4], dcx[1] gds
+            ds_cmpst_b64 bax, dbx[4:5], dcx[3:4] gds
+            ds_cmpst_rtn_b32 dcx[5], bax, dbx[4], dcx[1] gds
+            ds_cmpst_rtn_b64 dcx[0:1], bax, dbx[4:5], dcx[3:4] gds
 )ffDXD",
         { },
         {
@@ -335,8 +370,62 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 80U, nullptr, 256+7, 256+11, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
             { 88U, "dbx", 2, 6, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
             /* atomics 32-bit */
-            { 96U, "dcx", 3, 4, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ }
-            //{ 104U, "dcx", 3, 4, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 96U, "dcx", 3, 4, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 104U, "dbx", 5, 6, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 104U, "dcx", 3, 4, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 112U, nullptr, 0, 0, 1, GCNDELINSTR_LDSINSTR, 0 },
+            /* atomics 64-bit */
+            { 120U, "dcx", 5, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 128U, "dbx", 3, 5, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 128U, "dcx", 1, 3, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 136U, nullptr, 0, 0, 1, GCNDELINSTR_LDSINSTR, 0 },
+            /* ds_cmpst_* */
+            { 144U, "dbx", 4, 5, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 144U, "dcx", 1, 2, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 152U, "dbx", 4, 6, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 152U, "dcx", 3, 5, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 160U, "dcx", 5, 6, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 160U, "dbx", 4, 5, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 160U, "dcx", 1, 2, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 168U, "dcx", 0, 2, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 168U, "dbx", 4, 6, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 168U, "dcx", 3, 5, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            /* GDS -- */
+            { 176U, nullptr, 256+1, 256+2, 1, GCNDELINSTR_GDSINSTR, ASMRVU_WRITE },
+            { 184U, "bax", 0, 1, 1, GCNDELINSTR_GDSINSTR, ASMRVU_WRITE },
+            { 192U, nullptr, 256+1, 256+2, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 200U, "bax", 0, 1, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            // read/write 64-bit
+            { 208U, nullptr, 256+1, 256+3, 1, GCNDELINSTR_GDSINSTR, ASMRVU_WRITE },
+            { 216U, "dbx", 5, 7, 1, GCNDELINSTR_GDSINSTR, ASMRVU_WRITE },
+            { 224U, nullptr, 256+2, 256+4, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 232U, "dbx", 6, 8, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            // read/write 128-bit
+            { 240U, nullptr, 256+1, 256+5, 1, GCNDELINSTR_GDSINSTR, ASMRVU_WRITE },
+            { 248U, "dbx", 3, 7, 1, GCNDELINSTR_GDSINSTR, ASMRVU_WRITE },
+            { 256U, nullptr, 256+7, 256+11, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 264U, "dbx", 2, 6, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            /* atomics 32-bit */
+            { 272U, "dcx", 3, 4, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 280U, "dbx", 5, 6, 1, GCNDELINSTR_GDSINSTR, ASMRVU_WRITE },
+            { 280U, "dcx", 3, 4, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 288U, nullptr, 0, 0, 1, GCNDELINSTR_GDSINSTR, 0 },
+            /* atomics 64-bit */
+            { 296U, "dcx", 5, 7, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 304U, "dbx", 3, 5, 1, GCNDELINSTR_GDSINSTR, ASMRVU_WRITE },
+            { 304U, "dcx", 1, 3, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 312U, nullptr, 0, 0, 1, GCNDELINSTR_GDSINSTR, 0 },
+            /* ds_cmpst_* */
+            { 320U, "dbx", 4, 5, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 320U, "dcx", 1, 2, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 328U, "dbx", 4, 6, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 328U, "dcx", 3, 5, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 336U, "dcx", 5, 6, 1, GCNDELINSTR_GDSINSTR, ASMRVU_WRITE },
+            { 336U, "dbx", 4, 5, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 336U, "dcx", 1, 2, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 344U, "dcx", 0, 2, 1, GCNDELINSTR_GDSINSTR, ASMRVU_WRITE },
+            { 344U, "dbx", 4, 6, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ },
+            { 344U, "dcx", 3, 5, 1, GCNDELINSTR_GDSINSTR, ASMRVU_READ }
         }, true, ""
     }
 };
