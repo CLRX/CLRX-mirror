@@ -699,7 +699,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             if (gcnInsn.code1==12)
             {
                 // S_WAICTNT
-                const uint16_t lgkmCnt = (imm16>>8) & 7;
+                const uint16_t lgkmCnt = (imm16>>8) & 15;
                 const uint16_t expCnt = (imm16>>4) & 7;
                 const uint16_t vmCnt = ((imm16) & 15) + (isGCN14 ? ((imm16>>10)&0x30) : 0);
                 gcnAsm->waitInstr = { output.size(), { vmCnt, lgkmCnt, expCnt } };

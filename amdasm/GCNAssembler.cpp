@@ -900,7 +900,7 @@ static const AsmWaitConfig gcnWaitConfig =
         { GCNWAIT_EXPCNT, true, true, 255 },  // GCNDELINSTR_EXPVMWRITE
         { GCNWAIT_EXPCNT, false, false, 255 }  // GCNDELINSTR_EXPORT
     },
-    { 16, 8, 8 }
+    { 16, 16, 8 }
 };
 
 static const AsmWaitConfig gcnWaitConfig14 =
@@ -916,7 +916,7 @@ static const AsmWaitConfig gcnWaitConfig14 =
         { GCNWAIT_EXPCNT, true, true, 255 },  // GCNDELINSTR_EXPVMWRITE
         { GCNWAIT_EXPCNT, false, false, 255 }  // GCNDELINSTR_EXPORT
     },
-    { 64, 8, 8 }
+    { 64, 16, 8 }
 };
 
 const AsmWaitConfig& GCNAssembler::getWaitConfig() const

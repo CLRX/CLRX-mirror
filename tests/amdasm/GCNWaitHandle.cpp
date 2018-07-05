@@ -97,16 +97,18 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             s_waitcnt vmcnt(3) & expcnt(4)
             s_waitcnt lgkmcnt(3) & expcnt(4)
             s_waitcnt vmcnt(15) lgkmcnt(15) expcnt(7)
+            s_waitcnt vmcnt(15) lgkmcnt(11) expcnt(7)
 )ffDXD",
         {
             { 0U, { 3, 5, 4, 0 } },
             { 4U, { 3, 5, 7, 0 } },
-            { 8U, { 3, 7, 7, 0 } },
-            { 12U, { 15, 7, 3, 0 } },
+            { 8U, { 3, 15, 7, 0 } },
+            { 12U, { 15, 15, 3, 0 } },
             { 16U, { 15, 3, 7, 0 } },
-            { 20U, { 3, 7, 4, 0 } },
+            { 20U, { 3, 15, 4, 0 } },
             { 24U, { 15, 3, 4, 0 } },
-            { 28U, { 15, 7, 7, 0 } }
+            { 28U, { 15, 15, 7, 0 } },
+            { 32U, { 15, 11, 7, 0 } }
         },
         { }, true, ""
     },
