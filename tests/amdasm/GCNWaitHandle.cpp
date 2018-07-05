@@ -450,6 +450,92 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             /* DS_SWIZZLE */
             { 352U, nullptr, 256+4, 256+5, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE }
         }, true, ""
+    },
+    {   /* 10 - MTBUF encoding */
+        R"ffDXD(
+            .regvar bax:v, dbx:v:8, dcx:v:8, sr:s:8
+            tbuffer_load_format_x dbx[4], bax, sr[0:3], 0 offen format:[32,uint]
+            tbuffer_load_format_xy dbx[2:3], bax, sr[0:3], 0 offen format:[32_32,uint]
+            tbuffer_load_format_xyz dcx[5:7], bax, sr[0:3], 0 \
+                            offen format:[32_32_32,uint]
+            tbuffer_load_format_xyzw dcx[2:5], bax, sr[0:3], 0 \
+                            offen format:[32_32_32_32,uint]
+            
+            tbuffer_store_format_x dbx[7], bax, sr[0:3], 0 offen format:[32,uint]
+            tbuffer_store_format_xy dbx[2:3], bax, sr[0:3], 0 offen format:[32_32,uint]
+            tbuffer_store_format_xyz dbx[5:7], bax, sr[0:3], 0 \
+                            offen format:[32_32_32,uint]
+            tbuffer_store_format_xyzw dbx[2:5], bax, sr[0:3], 0 \
+                            offen format:[32_32_32_32,uint]
+            # GLC
+            tbuffer_load_format_x dbx[4], bax, sr[0:3], 0 offen format:[32,uint] glc
+            tbuffer_store_format_x dbx[7], bax, sr[0:3], 0 offen format:[32,uint] glc
+            # TFE
+            tbuffer_load_format_x dbx[4:5], bax, sr[0:3], 0 offen format:[32,uint] tfe
+            tbuffer_load_format_xy dbx[2:4], bax, sr[0:3], 0 offen format:[32,uint] tfe
+            tbuffer_store_format_xy dbx[2:4], bax, sr[0:3], 0 offen format:[32,uint] tfe
+)ffDXD",
+        { },
+        {
+            // tbuffer_load_format_*
+            { 0U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 8U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 16U, "dcx", 5, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 24U, "dcx", 2, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            // tbuffer_store_format_*
+            { 32U, "dbx", 7, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 32U, "dbx", 7, 8, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 40U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 40U, "dbx", 2, 4, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 48U, "dbx", 5, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 48U, "dbx", 5, 8, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 56U, "dbx", 2, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 56U, "dbx", 2, 6, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            /* glc */
+            { 64U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 72U, "dbx", 7, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 72U, "dbx", 7, 8, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            /* tfe */
+            { 80U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 80U, "dbx", 5, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 88U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 88U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 96U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 96U, "dbx", 2, 4, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 96U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE }
+        }, true, ""
+    },
+    {   /* 11 - MTBUF encoding (GCN1.1-1.4) */
+        R"ffDXD(.arch gcn1.1
+            .regvar bax:v, dbx:v:8, dcx:v:8, sr:s:8
+            tbuffer_load_format_x dbx[4], bax, sr[0:3], 0 offen format:[32,uint]
+            
+            tbuffer_store_format_x dbx[7], bax, sr[0:3], 0 offen format:[32,uint]
+            tbuffer_store_format_xy dbx[2:3], bax, sr[0:3], 0 offen format:[32_32,uint]
+            tbuffer_store_format_xyz dbx[5:7], bax, sr[0:3], 0 \
+                            offen format:[32_32_32,uint]
+            tbuffer_store_format_xyzw dbx[2:5], bax, sr[0:3], 0 \
+                            offen format:[32_32_32_32,uint]
+            # GLC
+            tbuffer_store_format_x dbx[7], bax, sr[0:3], 0 offen format:[32,uint] glc
+            # TFE
+            tbuffer_store_format_xy dbx[2:4], bax, sr[0:3], 0 offen format:[32,uint] tfe
+)ffDXD",
+        { },
+        {
+            // tbuffer_load_format_*
+            { 0U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            // tbuffer_store_format_*
+            { 8U, "dbx", 7, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 16U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 24U, "dbx", 5, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 32U, "dbx", 2, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            /* glc */
+            { 40U, "dbx", 7, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            /* tfe */
+            { 48U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 48U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE }
+        }, true, ""
     }
 };
 
