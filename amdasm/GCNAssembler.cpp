@@ -887,6 +887,24 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
     return words<<2;
 }
 
+// for GCN 1.0
+static const AsmWaitConfig gcnWaitConfig10 =
+{
+    cxuint(GCNDELINSTR_MAX+1),
+    cxuint(GCNWAIT_MAX+1),
+    {
+        { GCNWAIT_VMCNT, true, false, 255 },  // GCNDELINSTR_VMINSTR
+        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_LDSINSTR
+        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_GDSINSTR
+        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_SENDMSG
+        { GCNWAIT_LGKMCNT, false, false, 4 },  // GCNDELINSTR_SMINSTR
+        { GCNWAIT_EXPCNT, true, true, 255 },  // GCNDELINSTR_EXPVMWRITE
+        { GCNWAIT_EXPCNT, false, false, 255 }  // GCNDELINSTR_EXPORT
+    },
+    { 16, 8, 8 }
+};
+
+
 static const AsmWaitConfig gcnWaitConfig =
 {
     cxuint(GCNDELINSTR_MAX+1),
@@ -903,6 +921,7 @@ static const AsmWaitConfig gcnWaitConfig =
     { 16, 16, 8 }
 };
 
+// for RX VEGA
 static const AsmWaitConfig gcnWaitConfig14 =
 {
     cxuint(GCNDELINSTR_MAX+1),
@@ -921,5 +940,7 @@ static const AsmWaitConfig gcnWaitConfig14 =
 
 const AsmWaitConfig& GCNAssembler::getWaitConfig() const
 {
+    if ((curArchMask&ARCH_HD7X00)!=0)
+        return gcnWaitConfig10;
     return (curArchMask&ARCH_GCN_1_4)!=0 ? gcnWaitConfig14 : gcnWaitConfig;
 }

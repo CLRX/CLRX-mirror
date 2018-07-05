@@ -88,7 +88,7 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
         }, true, ""
     },
     {   /* 2 - s_waitcnt tests */
-        R"ffDXD(
+        R"ffDXD(.gpu Bonaire
             s_waitcnt vmcnt(3) & lgkmcnt(5) & expcnt(4)
             s_waitcnt vmcnt(3) & lgkmcnt(5)
             s_waitcnt vmcnt(3)
@@ -112,7 +112,32 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
         },
         { }, true, ""
     },
-    {   /* 3 - s_waitcnt tests (GFX9) */
+    {   /* 3 - s_waitcnt tests (GCN 1.0) */
+        R"ffDXD(
+            s_waitcnt vmcnt(3) & lgkmcnt(5) & expcnt(4)
+            s_waitcnt vmcnt(3) & lgkmcnt(5)
+            s_waitcnt vmcnt(3)
+            s_waitcnt expcnt(3)
+            s_waitcnt lgkmcnt(3)
+            s_waitcnt vmcnt(3) & expcnt(4)
+            s_waitcnt lgkmcnt(3) & expcnt(4)
+            s_waitcnt vmcnt(15) lgkmcnt(15) expcnt(7)
+            s_waitcnt vmcnt(15) lgkmcnt(11) expcnt(7)
+)ffDXD",
+        {
+            { 0U, { 3, 5, 4, 0 } },
+            { 4U, { 3, 5, 7, 0 } },
+            { 8U, { 3, 7, 7, 0 } },
+            { 12U, { 15, 7, 3, 0 } },
+            { 16U, { 15, 3, 7, 0 } },
+            { 20U, { 3, 7, 4, 0 } },
+            { 24U, { 15, 3, 4, 0 } },
+            { 28U, { 15, 7, 7, 0 } },
+            { 32U, { 15, 7, 7, 0 } }
+        },
+        { }, true, ""
+    },
+    {   /* 4 - s_waitcnt tests (GFX9) */
         R"ffDXD(.arch GFX9
             s_waitcnt vmcnt(47) & lgkmcnt(5) & expcnt(4)
             s_waitcnt lgkmcnt(5)
@@ -123,7 +148,7 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
         },
         { }, true, ""
     },
-    {   /* 4 - SMRD */
+    {   /* 5 - SMRD */
          R"ffDXD(
             .regvar bax:s, dbx:v, dcx:s:8
             .regvar bb:s:28
@@ -156,7 +181,7 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 44U, "dcx", 5, 7, 2, GCNDELINSTR_SMINSTR, ASMRVU_WRITE }
         }, true, ""
     },
-    {   /* 5 - SMEM */
+    {   /* 6 - SMEM */
          R"ffDXD(.gpu Fiji
             .regvar bax:s, dbx:v, dcx:s:8
             .regvar bb:s:28
@@ -201,7 +226,7 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 136U, "bb", 4, 8, 4, GCNDELINSTR_SMINSTR, ASMRVU_READ }
         }, true, ""
     },
-    {   /* 6 - SMEM (GFX9) */
+    {   /* 7 - SMEM (GFX9) */
          R"ffDXD(.gpu GFX900
             .regvar bax:s, dbx:v, dcx:s:8
             s_atomic_swap bax, s[14:15], 18
@@ -266,7 +291,7 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 184U, "dcx", 2, 4, 2, GCNDELINSTR_SMINSTR, ASMRVU_READ|ASMRVU_WRITE }
         }, true, ""
     },
-    {   /* 7 - S_SENDMSG */
+    {   /* 8 - S_SENDMSG */
         "s_mov_b32 s1, s2\n"
         "s_sendmsg sendmsg(gs_done, nop)",
         { },
@@ -274,7 +299,7 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 4U, nullptr, 0, 0, 1, GCNDELINSTR_SENDMSG, 0 }
         }, true, ""
     },
-    {   /* 8 - DS encoding */
+    {   /* 9 - DS encoding */
         R"ffDXD(.arch gcn1.1
             .regvar bax:v, dbx:v:8, dcx:v:8
             ds_read_b32 v1, v2 offset:12
