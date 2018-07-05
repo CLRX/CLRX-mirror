@@ -536,6 +536,122 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 48U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
             { 48U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE }
         }, true, ""
+    },
+    {   /* 12 - MUBUF encoding */
+        R"ffDXD(
+            .regvar bax:v, dbx:v:8, dcx:v:8, sr:s:8
+            buffer_load_format_x dbx[4], bax, sr[0:3], 0 offen
+            buffer_load_format_xy dbx[2:3], bax, sr[0:3], 0 offen
+            buffer_load_format_xyz dcx[5:7], bax, sr[0:3], 0 offen
+            buffer_load_format_xyzw dcx[2:5], bax, sr[0:3], 0 offen
+            
+            buffer_store_format_x dbx[7], bax, sr[0:3], 0 offen
+            buffer_store_format_xy dbx[2:3], bax, sr[0:3], 0 offen
+            buffer_store_format_xyz dbx[5:7], bax, sr[0:3], 0 offen
+            buffer_store_format_xyzw dbx[2:5], bax, sr[0:3], 0 offen
+            # GLC
+            buffer_load_format_x dbx[4], bax, sr[0:3], 0 offen glc
+            buffer_store_format_x dbx[7], bax, sr[0:3], 0 offen glc
+            # TFE
+            buffer_load_format_x dbx[4:5], bax, sr[0:3], 0 offen tfe
+            buffer_load_format_xy dbx[2:4], bax, sr[0:3], 0 offen tfe
+            buffer_store_format_xy dbx[2:4], bax, sr[0:3], 0 offen tfe
+            # DWORD
+            buffer_load_dword dcx[4], bax, sr[0:3], 0 offen
+            buffer_load_dwordx2 dcx[2:3], bax, sr[0:3], 0 offen
+            # LDS
+            buffer_load_format_x dbx[4], bax, sr[0:3], 0 offen lds
+            buffer_store_format_x dbx[4], bax, sr[0:3], 0 offen lds
+            # ATOMIC
+            buffer_atomic_add dbx[6], bax, sr[0:3], 0 offen
+            buffer_atomic_add dbx[6], bax, sr[0:3], 0 offen glc
+            buffer_atomic_cmpswap dbx[0:1], bax, sr[0:3], 0 offen
+            buffer_atomic_cmpswap dbx[0:1], bax, sr[0:3], 0 offen glc
+            # ATOMIC_X2
+            buffer_atomic_add_x2 dbx[4:5], bax, sr[0:3], 0 offen
+            buffer_atomic_add_x2 dbx[4:5], bax, sr[0:3], 0 offen glc
+            buffer_atomic_cmpswap_x2 dbx[1:4], bax, sr[0:3], 0 offen
+            buffer_atomic_cmpswap_x2 dbx[1:4], bax, sr[0:3], 0 offen glc
+            # ATOMIC_X2 TFE
+            buffer_atomic_add_x2 dbx[4:6], bax, sr[0:3], 0 offen tfe
+            buffer_atomic_add_x2 dbx[4:6], bax, sr[0:3], 0 offen glc tfe
+            buffer_atomic_cmpswap_x2 dbx[1:5], bax, sr[0:3], 0 offen tfe
+            buffer_atomic_cmpswap_x2 dbx[1:5], bax, sr[0:3], 0 offen glc tfe
+)ffDXD",
+        { },
+        {
+            // tbuffer_load_format_*
+            { 0U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 8U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 16U, "dcx", 5, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 24U, "dcx", 2, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            // tbuffer_store_format_*
+            { 32U, "dbx", 7, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 32U, "dbx", 7, 8, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 40U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 40U, "dbx", 2, 4, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 48U, "dbx", 5, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 48U, "dbx", 5, 8, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 56U, "dbx", 2, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 56U, "dbx", 2, 6, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            /* glc */
+            { 64U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 72U, "dbx", 7, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 72U, "dbx", 7, 8, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            /* tfe */
+            { 80U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 80U, "dbx", 5, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 88U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 88U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 96U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 96U, "dbx", 2, 4, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 96U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            /* DWORD */
+            { 104U, "dcx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 112U, "dcx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            /* LDS */
+            { 120U, nullptr, 0, 0, 1, GCNDELINSTR_VMINSTR, 0 },
+            { 128U, nullptr, 0, 0, 1, GCNDELINSTR_VMINSTR, 0 },
+            /* ATOMIC */
+            { 136U, "dbx", 6, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 136U, "dbx", 6, 7, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 144U, "dbx", 6, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 144U, "dbx", 6, 7, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ|ASMRVU_WRITE },
+            /* CMPSWAP */
+            { 152U, "dbx", 0, 2, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 152U, "dbx", 0, 2, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 160U, "dbx", 0, 1, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 160U, "dbx", 0, 1, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ|ASMRVU_WRITE },
+            { 160U, "dbx", 1, 2, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            /* ATOMIC_X2 */
+            { 168U, "dbx", 4, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 168U, "dbx", 4, 6, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 176U, "dbx", 4, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 176U, "dbx", 4, 6, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ|ASMRVU_WRITE },
+            /* CMPSWAP_X2 */
+            { 184U, "dbx", 1, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 184U, "dbx", 1, 5, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 192U, "dbx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 192U, "dbx", 1, 3, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ|ASMRVU_WRITE },
+            { 192U, "dbx", 3, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            /* ATOMIC_X2 TFE */
+            { 200U, "dbx", 4, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 200U, "dbx", 4, 6, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 200U, "dbx", 6, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 208U, "dbx", 4, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            /* TODO: why dbx[4-6] ???: check */
+            { 208U, "dbx", 4, 7, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ|ASMRVU_WRITE },
+            // ????
+            { 208U, "dbx", 6, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            /* CMPSWAP_X2 TFE */
+            { 216U, "dbx", 1, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 216U, "dbx", 1, 5, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 216U, "dbx", 5, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 224U, "dbx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 224U, "dbx", 1, 3, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ|ASMRVU_WRITE },
+            { 224U, "dbx", 5, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 224U, "dbx", 3, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ }
+        }, true, ""
     }
 };
 

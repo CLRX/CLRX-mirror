@@ -120,10 +120,11 @@ void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, uint16_t arch, bool vd
                 gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[5].regVar,
                         gcnAsm->instrRVUs[5].rstart, gcnAsm->instrRVUs[5].rend, 1,
                         GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[5].rwFlags};
+            if (vdataDivided)
+                gcnAsm->delayedOps[3] = { output.size(), gcnAsm->instrRVUs[4].regVar,
+                    gcnAsm->instrRVUs[4].rstart, gcnAsm->instrRVUs[4].rend, 1,
+                    GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[4].rwFlags};
         }
-        else
-            gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
-                    1, GCNDELINSTR_VMINSTR, cxbyte(0)};
         
         if (vdataToRead && (arch & ARCH_HD7X00) != 0 && !haveLds)
             // add EXPORT VM write to exportCNT (only GCN 1.0)
@@ -131,6 +132,9 @@ void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, uint16_t arch, bool vd
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
                     GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
     }
+    else if (haveLds)
+        gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+                1, GCNDELINSTR_VMINSTR, cxbyte(0)};
 }
 
 bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
