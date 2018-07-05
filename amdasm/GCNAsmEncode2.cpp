@@ -63,6 +63,70 @@ static const std::pair<const char*, cxuint> mtbufNFMTNamesMap[] =
     { "uscaled", 2 }
 };
 
+void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, uint16_t arch, bool vdataToRead,
+            bool vdataToWrite, bool haveLds, bool haveTfe, std::vector<cxbyte>& output,
+            const GCNAsmInstruction& gcnInsn)
+{
+    // fix access for VDATA field
+    gcnAsm->instrRVUs[0].rwFlags = (vdataToWrite ? ASMRVU_WRITE : 0) |
+            (vdataToRead ? ASMRVU_READ : 0);
+    // check fcmpswap
+    bool vdataDivided = false;
+    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && vdataToWrite &&
+        gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
+    {
+        // fix access
+        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
+        uint16_t size = rvu.rend-rvu.rstart;
+        rvu.rend = rvu.rstart + (size>>1);
+        AsmRegVarUsage& nextRvu = gcnAsm->instrRVUs[4];
+        nextRvu = rvu;
+        nextRvu.regField = GCNFIELD_M_VDATAH;
+        nextRvu.rstart += (size>>1);
+        nextRvu.rend = rvu.rstart + size;
+        nextRvu.rwFlags = ASMRVU_READ;
+        vdataDivided = true;
+    }
+    
+    if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
+    {
+        if (!haveLds)
+            gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
+                    GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
+        else
+            gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+                    1, GCNDELINSTR_VMINSTR, cxbyte(0)};
+        
+        if (vdataToRead && (arch & ARCH_HD7X00) != 0 && !haveLds)
+            // add EXPORT VM write to exportCNT (only GCN 1.0)
+            gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
+                    GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
+    }
+    
+    if (haveTfe && (vdataDivided ||
+            gcnAsm->instrRVUs[0].rwFlags!=(ASMRVU_READ|ASMRVU_WRITE)) &&
+            gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
+    {
+        // fix for tfe
+        const cxuint rvuId = (vdataDivided ? 4 : 0);
+        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[rvuId];
+        AsmRegVarUsage& lastRvu = gcnAsm->instrRVUs[5];
+        lastRvu = rvu;
+        lastRvu.rstart = lastRvu.rend-1;
+        lastRvu.rwFlags = ASMRVU_READ|ASMRVU_WRITE;
+        lastRvu.regField = GCNFIELD_M_VDATALAST;
+        if (lastRvu.regVar==nullptr) // fix for regusage
+        {
+            // to save register size for VDATALAST
+            lastRvu.rstart = gcnAsm->instrRVUs[0].rstart;
+            lastRvu.rend--;
+        }
+        rvu.rend--;
+    }
+}
+
 bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
@@ -344,68 +408,12 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     // ignore vdata if LDS
     if (haveLds)
         gcnAsm->instrRVUs[0].regField = ASMFIELD_NONE;
-    
-    // fix access for VDATA field
-    gcnAsm->instrRVUs[0].rwFlags = (vdataToWrite ? ASMRVU_WRITE : 0) |
-            (vdataToRead ? ASMRVU_READ : 0);
-    // check fcmpswap
-    bool vdataDivided = false;
-    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && vdataToWrite &&
-        gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
-    {
-        // fix access
-        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
-        uint16_t size = rvu.rend-rvu.rstart;
-        rvu.rend = rvu.rstart + (size>>1);
-        AsmRegVarUsage& nextRvu = gcnAsm->instrRVUs[4];
-        nextRvu = rvu;
-        nextRvu.regField = GCNFIELD_M_VDATAH;
-        nextRvu.rstart += (size>>1);
-        nextRvu.rend = rvu.rstart + size;
-        nextRvu.rwFlags = ASMRVU_READ;
-        vdataDivided = true;
-    }
     // do not read vaddr if no offen and idxen and no addr64
     if (!haveAddr64 && !haveOffen && !haveIdxen)
         gcnAsm->instrRVUs[1].regField = ASMFIELD_NONE; // ignore this
     
-    if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
-    {
-        if (!haveLds)
-            gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
-                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
-                    GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
-        else
-            gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
-                    1, GCNDELINSTR_VMINSTR, cxbyte(0)};
-        
-        if (vdataToRead && (arch & ARCH_HD7X00) != 0 && !haveLds)
-            // add EXPORT VM write to exportCNT (only GCN 1.0)
-            gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
-                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
-                    GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
-    }
-    
-    if (haveTfe && (vdataDivided ||
-            gcnAsm->instrRVUs[0].rwFlags!=(ASMRVU_READ|ASMRVU_WRITE)) &&
-            gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
-    {
-        // fix for tfe
-        const cxuint rvuId = (vdataDivided ? 4 : 0);
-        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[rvuId];
-        AsmRegVarUsage& lastRvu = gcnAsm->instrRVUs[5];
-        lastRvu = rvu;
-        lastRvu.rstart = lastRvu.rend-1;
-        lastRvu.rwFlags = ASMRVU_READ|ASMRVU_WRITE;
-        lastRvu.regField = GCNFIELD_M_VDATALAST;
-        if (lastRvu.regVar==nullptr) // fix for regusage
-        {
-            // to save register size for VDATALAST
-            lastRvu.rstart = gcnAsm->instrRVUs[0].rstart;
-            lastRvu.rend--;
-        }
-        rvu.rend--;
-    }
+    prepareRVUAndWait(gcnAsm, arch, vdataToRead, vdataToWrite, haveLds, haveTfe,
+                      output, gcnInsn);
     
     if (offsetExpr!=nullptr)
         offsetExpr->setTarget(AsmExprTarget(GCNTGT_MXBUFOFFSET, asmr.currentSection,
@@ -625,60 +633,8 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (gcnAsm->instrRVUs[2].regVar != nullptr)
         gcnAsm->instrRVUs[2].align = 4;
     
-    // fix access for VDATA field
-    gcnAsm->instrRVUs[0].rwFlags = (vdataToWrite ? ASMRVU_WRITE : 0) |
-            (vdataToRead ? ASMRVU_READ : 0);
-    
-    // check fcmpswap
-    bool vdataDivided = false;
-    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && vdataToWrite &&
-        gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
-    {
-        // fix access
-        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[0];
-        uint16_t size = rvu.rend-rvu.rstart;
-        rvu.rend = rvu.rstart + (size>>1);
-        AsmRegVarUsage& nextRvu = gcnAsm->instrRVUs[4];
-        nextRvu = rvu;
-        nextRvu.regField = GCNFIELD_M_VDATAH;
-        nextRvu.rstart += (size>>1);
-        nextRvu.rend = rvu.rstart + size;
-        nextRvu.rwFlags = ASMRVU_READ;
-        vdataDivided = true;
-    }
-    
-    if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
-    {
-        gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
-                gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
-                GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
-        if (vdataToRead && (arch & ARCH_HD7X00) != 0)
-            // add EXPORT VM write to exportCNT (only GCN 1.0)
-            gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
-                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
-                    GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
-    }
-    
-    if (haveTfe && (vdataDivided ||
-            gcnAsm->instrRVUs[0].rwFlags!=(ASMRVU_READ|ASMRVU_WRITE)) &&
-       gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
-    {
-        // fix for tfe
-        const cxuint rvuId = (vdataDivided ? 4 : 0);
-        AsmRegVarUsage& rvu = gcnAsm->instrRVUs[rvuId];
-        AsmRegVarUsage& lastRvu = gcnAsm->instrRVUs[5];
-        lastRvu = rvu;
-        lastRvu.rstart = lastRvu.rend-1;
-        lastRvu.rwFlags = ASMRVU_READ|ASMRVU_WRITE;
-        lastRvu.regField = GCNFIELD_M_VDATALAST;
-        if (lastRvu.regVar==nullptr) // fix for regusage
-        {
-            // to save register size for VDATALAST
-            lastRvu.rstart = gcnAsm->instrRVUs[0].rstart;
-            lastRvu.rend--;
-        }
-        rvu.rend--;
-    }
+    prepareRVUAndWait(gcnAsm, arch, vdataToRead, vdataToWrite, false, haveTfe,
+                      output, gcnInsn);
     
     // put instruction words
     uint32_t words[2];

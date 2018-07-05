@@ -381,6 +381,10 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                       const char* instrPlace, const char* linePtr, uint16_t arch,
                       std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                       GCNEncSize gcnEncSize);
+    
+    static void prepareRVUAndWait(GCNAssembler* gcnAsm, uint16_t arch, bool vdataToRead,
+            bool vdataToWrite, bool haveLds, bool haveTfe, std::vector<cxbyte>& output,
+            const GCNAsmInstruction& gcnInsn);
 };
 
 static inline bool isXRegRange(RegRange pair, cxuint regsNum = 1)
