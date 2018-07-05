@@ -331,12 +331,26 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                         "Required 2 vector registers" : "Required 1 vector register")
         }
     }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return false;
+    
+    /* checking modifiers conditions */
+    if (haveAddr64 && (haveOffen || haveIdxen))
+        ASM_FAIL_BY_ERROR(instrPlace, "Idxen and offen must be zero in 64-bit address mode")
+    if (haveTfe && haveLds)
+        ASM_FAIL_BY_ERROR(instrPlace, "Both LDS and TFE is illegal")
+    
+    // ignore vdata if LDS
+    if (haveLds)
+        gcnAsm->instrRVUs[0].regField = ASMFIELD_NONE;
+    
     // fix access for VDATA field
     gcnAsm->instrRVUs[0].rwFlags = (vdataToWrite ? ASMRVU_WRITE : 0) |
             (vdataToRead ? ASMRVU_READ : 0);
     // check fcmpswap
     bool vdataDivided = false;
-    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && vdataToWrite && !haveLds &&
+    if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && vdataToWrite &&
         gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {
         // fix access
@@ -354,19 +368,6 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     // do not read vaddr if no offen and idxen and no addr64
     if (!haveAddr64 && !haveOffen && !haveIdxen)
         gcnAsm->instrRVUs[1].regField = ASMFIELD_NONE; // ignore this
-    
-    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
-        return false;
-    
-    /* checking modifiers conditions */
-    if (haveAddr64 && (haveOffen || haveIdxen))
-        ASM_FAIL_BY_ERROR(instrPlace, "Idxen and offen must be zero in 64-bit address mode")
-    if (haveTfe && haveLds)
-        ASM_FAIL_BY_ERROR(instrPlace, "Both LDS and TFE is illegal")
-    
-    // ignore vdata if LDS
-    if (haveLds)
-        gcnAsm->instrRVUs[0].regField = ASMFIELD_NONE;
     
     if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {
@@ -607,17 +608,26 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         ASM_NOTGOOD_BY_ERROR(srsrcPlace, (haveR128) ? "Required 4 scalar registers" :
                     "Required 8 scalar registers")
     
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return false;
+    
+    /* checking modifiers conditions */
+    if (!haveUnorm && ((gcnInsn.mode&GCN_MLOAD) == 0 || (gcnInsn.mode&GCN_MATOMIC)!=0))
+        // unorm is not set for this instruction
+        ASM_FAIL_BY_ERROR(instrPlace, "Unorm is not set for store or atomic instruction")
+    
     const bool vdataToWrite = ((gcnInsn.mode&GCN_MLOAD) != 0 ||
                 ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc));
     const bool vdataToRead = ((gcnInsn.mode&GCN_MLOAD) == 0 ||
                 ((gcnInsn.mode&GCN_MATOMIC)!=0));
     
-    // fix access for VDATA field
-    gcnAsm->instrRVUs[0].rwFlags = (vdataToWrite ? ASMRVU_WRITE : 0) |
-            (vdataToRead ? ASMRVU_READ : 0);
     // fix alignment
     if (gcnAsm->instrRVUs[2].regVar != nullptr)
         gcnAsm->instrRVUs[2].align = 4;
+    
+    // fix access for VDATA field
+    gcnAsm->instrRVUs[0].rwFlags = (vdataToWrite ? ASMRVU_WRITE : 0) |
+            (vdataToRead ? ASMRVU_READ : 0);
     
     // check fcmpswap
     bool vdataDivided = false;
@@ -669,14 +679,6 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
         rvu.rend--;
     }
-    
-    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
-        return false;
-    
-    /* checking modifiers conditions */
-    if (!haveUnorm && ((gcnInsn.mode&GCN_MLOAD) == 0 || (gcnInsn.mode&GCN_MATOMIC)!=0))
-        // unorm is not set for this instruction
-        ASM_FAIL_BY_ERROR(instrPlace, "Unorm is not set for store or atomic instruction")
     
     // put instruction words
     uint32_t words[2];
