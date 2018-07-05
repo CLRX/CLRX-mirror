@@ -696,12 +696,12 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
 )ffDXD",
         { },
         {
-            // tbuffer_load_format_*
+            // buffer_load_format_*
             { 0U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
             { 8U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
             { 16U, "dcx", 5, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
             { 24U, "dcx", 2, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
-            // tbuffer_store_format_*
+            // buffer_store_format_*
             { 32U, "dbx", 7, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
             { 40U, "dbx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
             { 48U, "dbx", 5, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
@@ -748,6 +748,84 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 224U, "dbx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
             { 224U, "dbx", 5, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
             { 224U, "dbx", 3, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ }
+        }, true, ""
+    },
+    {   /* 14 - MIMG encoding */
+        R"ffDXD(
+            .regvar bax:v:8, dbx:v:8, dcx:v:8, sr:s:8
+            # load
+            image_load dcx[5], bax[1:4], sr[0:3] dmask:1 unorm r128
+            image_load dcx[5:7], bax[1:4], sr[0:3] dmask:13 unorm r128
+            # store
+            image_store dbx[4], bax[1:4], sr[0:3] dmask:1 unorm r128
+            image_store dbx[3:5], bax[1:4], sr[0:3] dmask:13 unorm r128
+            # load tfe
+            image_load dcx[4:5], bax[1:4], sr[0:3] dmask:1 unorm r128 tfe
+            image_load dcx[4:7], bax[1:4], sr[0:3] dmask:13 unorm r128 tfe
+            # ATOMIC
+            image_atomic_inc dbx[1:2], bax[1:4], sr[0:3] dmask:5 unorm r128
+            image_atomic_inc dbx[1:2], bax[1:4], sr[0:3] dmask:5 unorm r128 glc
+            # CMPSWAP
+            image_atomic_cmpswap dbx[1:2], bax[1:4], sr[0:3] dmask:5 unorm r128
+            image_atomic_cmpswap dbx[1:2], bax[1:4], sr[0:3] dmask:5 unorm r128 glc
+)ffDXD",
+        { },
+        {
+            // LOAD
+            { 0U, "dcx", 5, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 8U, "dcx", 5, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            // STORE
+            { 16U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 16U, "dbx", 4, 5, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 24U, "dbx", 3, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 24U, "dbx", 3, 6, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            // LOAD TFE
+            { 32U, "dcx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 32U, "dcx", 5, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 40U, "dcx", 4, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 40U, "dcx", 7, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            // ATOMIC
+            { 48U, "dbx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 48U, "dbx", 1, 3, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 56U, "dbx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 56U, "dbx", 1, 3, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ|ASMRVU_WRITE },
+            // ATOMIC CMPSWAP
+            { 64U, "dbx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 64U, "dbx", 1, 3, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 72U, "dbx", 1, 2, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 72U, "dbx", 1, 2, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ|ASMRVU_WRITE },
+            { 72U, "dbx", 2, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ }
+        }, true, ""
+    },
+    {   /* 15 - MIMG encoding (GCN 1.1) */
+        R"ffDXD(.arch gcn1.1
+            .regvar bax:v:8, dbx:v:8, dcx:v:8, sr:s:8
+            # load
+            image_load dcx[5], bax[1:4], sr[0:3] dmask:1 unorm r128
+            # store
+            image_store dbx[4], bax[1:4], sr[0:3] dmask:1 unorm r128
+            image_store dbx[3:5], bax[1:4], sr[0:3] dmask:13 unorm r128
+            # ATOMIC
+            image_atomic_inc dbx[1:2], bax[1:4], sr[0:3] dmask:5 unorm r128
+            image_atomic_inc dbx[1:2], bax[1:4], sr[0:3] dmask:5 unorm r128 glc
+            # CMPSWAP
+            image_atomic_cmpswap dbx[1:2], bax[1:4], sr[0:3] dmask:5 unorm r128
+            image_atomic_cmpswap dbx[1:2], bax[1:4], sr[0:3] dmask:5 unorm r128 glc
+)ffDXD",
+        { },
+        {
+            // LOAD
+            { 0U, "dcx", 5, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            // STORE
+            { 8U, "dbx", 4, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 16U, "dbx", 3, 6, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            // ATOMIC
+            { 24U, "dbx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 32U, "dbx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            // ATOMIC CMPSWAP
+            { 40U, "dbx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 48U, "dbx", 1, 2, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 48U, "dbx", 2, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ }
         }, true, ""
     }
 };
