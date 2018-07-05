@@ -379,14 +379,10 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     1, GCNDELINSTR_VMINSTR, cxbyte(0)};
         
         if (vdataToRead && (arch & ARCH_HD7X00) != 0 && !haveLds)
-        {
             // add EXPORT VM write to exportCNT (only GCN 1.0)
             gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
                     GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
-            gcnAsm->hasSecondDelayedOp = true;
-        }
-        gcnAsm->hasDelayedOps = true;
     }
     
     if (haveTfe && (vdataDivided ||
@@ -647,14 +643,10 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
                 GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
         if (vdataToRead && (arch & ARCH_HD7X00) != 0)
-        {
             // add EXPORT VM write to exportCNT (only GCN 1.0)
             gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
                     GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
-            gcnAsm->hasSecondDelayedOp = true;
-        }
-        gcnAsm->hasDelayedOps = true;
     }
     
     if (haveTfe && (vdataDivided ||
@@ -848,7 +840,6 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
     
     gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0), 1,
             GCNDELINSTR_EXPORT, cxbyte(0) };
-    gcnAsm->hasDelayedOps = true;
     
     // put instruction words
     uint32_t words[2];
@@ -1107,7 +1098,6 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         else
             gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
                     1, GCNDELINSTR_VMINSTR, cxbyte(0) };
-        gcnAsm->hasDelayedOps = true;
     }
     
     if (instOffsetExpr!=nullptr)

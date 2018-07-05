@@ -232,6 +232,12 @@ public:
 };
 
 /// wait handler
+/** wait handler that collect wait instructions and delayed operations.
+ * an delayed operations are registered per instruction if they have same offset.
+ * field 'count' determine number of operations per instructions.
+ * If two or more delayed ops for instruction present and they delayed ops have this same
+ * type then they will be treated as single delayed op.
+ */
 class ISAWaitHandler
 {
 public:
@@ -351,10 +357,8 @@ private:
     cxbyte currentRVUIndex;
     AsmRegVarUsage instrRVUs[6];
     bool hasWaitInstr;
-    bool hasDelayedOps;
-    bool hasSecondDelayedOp;
     AsmWaitInstr waitInstr;
-    AsmDelayedOp delayedOps[2];
+    AsmDelayedOp delayedOps[4];
     
     void resetInstrRVUs()
     {
@@ -362,7 +366,11 @@ private:
             rvu.regField = ASMFIELD_NONE;
     }
     void resetWaitInstrs()
-    { hasWaitInstr = hasDelayedOps = hasSecondDelayedOp = false; }
+    {
+        hasWaitInstr = false;
+        for (AsmDelayedOp& op: delayedOps)
+            op.delayInstrType = ASMDELINSTR_NONE;
+    }
     
     void setCurrentRVU(cxbyte idx)
     { currentRVUIndex = idx; }

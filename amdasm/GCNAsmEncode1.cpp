@@ -829,7 +829,6 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             
             gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
                     1, GCNDELINSTR_SENDMSG, cxbyte(0) };
-            gcnAsm->hasDelayedOps = true;
             break;
         }
         case GCN_IMM_NONE:
@@ -926,14 +925,11 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         return false;
     
     if (mode1 != GCN_ARG_NONE)
-    {
         gcnAsm->delayedOps[0] = AsmDelayedOp { output.size(),
                     gcnAsm->instrRVUs[0].regVar, gcnAsm->instrRVUs[0].rstart,
                     gcnAsm->instrRVUs[0].rend,
                     cxbyte(gcnAsm->instrRVUs[0].rend - gcnAsm->instrRVUs[0].rstart),
                     GCNDELINSTR_SMINSTR, gcnAsm->instrRVUs[0].rwFlags };
-        gcnAsm->hasDelayedOps = true;
-    }
     
     if (soffsetExpr!=nullptr)
         soffsetExpr->setTarget(AsmExprTarget(GCNTGT_SMRDOFFSET, asmr.currentSection,
@@ -1133,15 +1129,11 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     cxbyte(gcnAsm->instrRVUs[0].rend - gcnAsm->instrRVUs[0].rstart),
                     GCNDELINSTR_SMINSTR, gcnAsm->instrRVUs[0].rwFlags };
         if (gcnAsm->instrRVUs[3].regField != ASMFIELD_NONE)
-        {
             gcnAsm->delayedOps[1] = AsmDelayedOp { output.size(),
                     gcnAsm->instrRVUs[3].regVar, gcnAsm->instrRVUs[3].rstart,
                     gcnAsm->instrRVUs[3].rend,
                     cxbyte(gcnAsm->instrRVUs[0].rend - gcnAsm->instrRVUs[0].rstart),
                     GCNDELINSTR_SMINSTR, gcnAsm->instrRVUs[3].rwFlags };
-            gcnAsm->hasSecondDelayedOp = true;
-        }
-        gcnAsm->hasDelayedOps = true;
     }
     
     // put data (2 instruction words)
@@ -2418,16 +2410,12 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     1, haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
                     gcnAsm->instrRVUs[delayRVU].rwFlags };
         if (secondDelay)
-        {
             gcnAsm->delayedOps[1] = { output.size(),
                     gcnAsm->instrRVUs[delayRVU+1].regVar,
                     gcnAsm->instrRVUs[delayRVU+1].rstart,
                     gcnAsm->instrRVUs[delayRVU+1].rend,
                     1, haveGds ? GCNDELINSTR_GDSINSTR : GCNDELINSTR_LDSINSTR,
                     gcnAsm->instrRVUs[delayRVU+1].rwFlags };
-            gcnAsm->hasSecondDelayedOp = true;
-        }
-        gcnAsm->hasDelayedOps = true;
     }
     
     if ((gcnInsn.mode&GCN_ONLYGDS) != 0 && !haveGds)

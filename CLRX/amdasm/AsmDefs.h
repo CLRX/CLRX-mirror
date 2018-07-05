@@ -591,6 +591,11 @@ struct AsmWaitConfig
     uint16_t waitQueueSizes[ASM_WAIT_MAX_TYPES_NUM];
 };
 
+enum : cxbyte
+{
+    ASMDELINSTR_NONE = 255
+};
+
 /// delayed result for register for instruction with delayed results
 struct AsmDelayedOp
 {
