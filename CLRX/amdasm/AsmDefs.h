@@ -605,6 +605,7 @@ struct AsmDelayedOp
     uint16_t rend;
     cxbyte count;
     cxbyte delayedOpType;
+    cxbyte delayedOpType2;
     cxbyte rwFlags;
 };
 

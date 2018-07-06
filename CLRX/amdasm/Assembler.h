@@ -369,7 +369,7 @@ private:
     {
         hasWaitInstr = false;
         for (AsmDelayedOp& op: delayedOps)
-            op.delayedOpType = ASMDELOP_NONE;
+            op.delayedOpType = op.delayedOpType2 = ASMDELOP_NONE;
     }
     
     void setCurrentRVU(cxbyte idx)

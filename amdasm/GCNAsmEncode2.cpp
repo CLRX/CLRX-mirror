@@ -110,32 +110,29 @@ void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, uint16_t arch, bool vd
     }
     
     // register delayed operations
+    const bool needExpWrite = (vdataToRead && (arch & ARCH_HD7X00) != 0);
     if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {
         if (!haveLds)
         {
             gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
-                    GCNDELOP_VMOP, gcnAsm->instrRVUs[0].rwFlags };
+                    GCNDELOP_VMOP, needExpWrite ? GCNDELOP_EXPVMWRITE : GCNDELOP_NONE,
+                    gcnAsm->instrRVUs[0].rwFlags };
             if (haveTfe)
                 gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[5].regVar,
                         gcnAsm->instrRVUs[5].rstart, gcnAsm->instrRVUs[5].rend, 1,
-                        GCNDELOP_VMOP, gcnAsm->instrRVUs[5].rwFlags };
+                        GCNDELOP_VMOP, GCNDELOP_NONE, gcnAsm->instrRVUs[5].rwFlags };
             if (vdataDivided)
                 gcnAsm->delayedOps[3] = { output.size(), gcnAsm->instrRVUs[4].regVar,
                         gcnAsm->instrRVUs[4].rstart, gcnAsm->instrRVUs[4].rend, 1,
-                        GCNDELOP_VMOP, gcnAsm->instrRVUs[4].rwFlags };
+                        GCNDELOP_VMOP, GCNDELOP_NONE, gcnAsm->instrRVUs[4].rwFlags };
         }
-        
-        if (vdataToRead && (arch & ARCH_HD7X00) != 0 && !haveLds)
-            // add EXPORT VM write to exportCNT (only GCN 1.0)
-            gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
-                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
-                    GCNDELOP_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
     }
     else if (haveLds)
         gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
-                1, GCNDELOP_VMOP, cxbyte(0)};
+                1, GCNDELOP_VMOP, needExpWrite ? GCNDELOP_EXPVMWRITE : GCNDELOP_NONE,
+                cxbyte(0) };
 }
 
 bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -758,7 +755,7 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
                         true, INSTROP_SYMREGRANGE|INSTROP_READ);
             gcnAsm->delayedOps[i] = { output.size(), gcnAsm->instrRVUs[i].regVar,
                         gcnAsm->instrRVUs[i].rstart, gcnAsm->instrRVUs[i].rend,
-                        1, GCNDELOP_EXPORT, gcnAsm->instrRVUs[i].rwFlags };
+                        1, GCNDELOP_EXPORT, GCNDELOP_NONE, gcnAsm->instrRVUs[i].rwFlags };
         }
         else
         {
@@ -1057,30 +1054,28 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     
+    const cxbyte secondDelOpType = (flatMode==GCN_FLAT_FLAT) ? GCNDELOP_LDSOP :
+                GCNDELOP_NONE;
     if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {
         if (!haveLds)
             gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
-                    1, GCNDELOP_VMOP, gcnAsm->instrRVUs[0].rwFlags };
+                    1, GCNDELOP_VMOP, secondDelOpType, gcnAsm->instrRVUs[0].rwFlags };
         else
             gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
-                        1, GCNDELOP_VMOP, cxbyte(0) };
-        gcnAsm->delayedOps[1] = gcnAsm->delayedOps[0];
-        gcnAsm->delayedOps[1].delayedOpType = GCNDELOP_LDSOP;
+                        1, GCNDELOP_VMOP, secondDelOpType, cxbyte(0) };
         
         if (haveTfe && vdstReg && !haveLds)
-            gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[3].regVar,
+            gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[3].regVar,
                     gcnAsm->instrRVUs[3].rstart, gcnAsm->instrRVUs[3].rend, 1,
-                    GCNDELOP_VMOP, gcnAsm->instrRVUs[3].rwFlags };
+                    GCNDELOP_VMOP, GCNDELOP_NONE, gcnAsm->instrRVUs[3].rwFlags };
     }
     if ((gcnInsn.mode & GCN_FLAT_NODATA) == 0)
     {
-        gcnAsm->delayedOps[3] = { output.size(), gcnAsm->instrRVUs[2].regVar,
+        gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[2].regVar,
                 gcnAsm->instrRVUs[2].rstart, gcnAsm->instrRVUs[2].rend,
-                1, GCNDELOP_VMOP, gcnAsm->instrRVUs[2].rwFlags };
-        gcnAsm->delayedOps[4] = gcnAsm->delayedOps[3];
-        gcnAsm->delayedOps[4].delayedOpType = GCNDELOP_LDSOP;
+                1, GCNDELOP_VMOP, secondDelOpType, gcnAsm->instrRVUs[2].rwFlags };
     }
     
     if (instOffsetExpr!=nullptr)
