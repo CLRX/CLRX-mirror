@@ -756,6 +756,9 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
             gcnAsm->setCurrentRVU(i);
             good &= parseVRegRange(asmr, linePtr, vsrcsReg[i], 1, GCNFIELD_EXP_VSRC0+i,
                         true, INSTROP_SYMREGRANGE|INSTROP_READ);
+            gcnAsm->delayedOps[i] = { output.size(), gcnAsm->instrRVUs[i].regVar,
+                        gcnAsm->instrRVUs[i].rstart, gcnAsm->instrRVUs[i].rend,
+                        1, GCNDELINSTR_EXPORT, gcnAsm->instrRVUs[i].rwFlags };
         }
         else
         {
@@ -806,9 +809,6 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
         vsrcsReg[1] = vsrcsReg[2];
         vsrcsReg[2] = vsrcsReg[3] = { 0, 0 };
     }
-    
-    gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0), 1,
-            GCNDELINSTR_EXPORT, cxbyte(0) };
     
     // put instruction words
     uint32_t words[2];

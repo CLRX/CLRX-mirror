@@ -849,6 +849,30 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 64U, "dbx", 1, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
             { 64U, "dbx", 3, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE }
         }, true, ""
+    },
+    {   /* 16 - EXP encoding */
+        R"ffDXD(
+            .regvar fax:v, fbx:v, fcx:v, fex:v, fbx4:v:8, fcx4:v:12
+            exp  param5, fax, fbx, fcx, fbx4[5] done vm
+            exp  param5, off, fcx4[2], off, fbx4[6] done vm
+            exp  param5, v54, v28, v83, v161 done vm
+            exp  param5, off, v42, off, v97 done vm
+)ffDXD",
+        { },
+        {
+            { 0U, "fax", 0, 1, 1, GCNDELINSTR_EXPORT, ASMRVU_READ },
+            { 0U, "fbx", 0, 1, 1, GCNDELINSTR_EXPORT, ASMRVU_READ },
+            { 0U, "fcx", 0, 1, 1, GCNDELINSTR_EXPORT, ASMRVU_READ },
+            { 0U, "fbx4", 5, 6, 1, GCNDELINSTR_EXPORT, ASMRVU_READ },
+            { 8U, "fcx4", 2, 3, 1, GCNDELINSTR_EXPORT, ASMRVU_READ },
+            { 8U, "fbx4", 6, 7, 1, GCNDELINSTR_EXPORT, ASMRVU_READ },
+            { 16U, nullptr, 256+54, 256+55, 1, GCNDELINSTR_EXPORT, ASMRVU_READ },
+            { 16U, nullptr, 256+28, 256+29, 1, GCNDELINSTR_EXPORT, ASMRVU_READ },
+            { 16U, nullptr, 256+83, 256+84, 1, GCNDELINSTR_EXPORT, ASMRVU_READ },
+            { 16U, nullptr, 256+161, 256+162, 1, GCNDELINSTR_EXPORT, ASMRVU_READ },
+            { 24U, nullptr, 256+42, 256+43, 1, GCNDELINSTR_EXPORT, ASMRVU_READ },
+            { 24U, nullptr, 256+97, 256+98, 1, GCNDELINSTR_EXPORT, ASMRVU_READ }
+        }, true, ""
     }
 };
 
