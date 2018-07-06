@@ -1053,19 +1053,18 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     
-    cxuint firstDelayOp = UINT_MAX;
-    if ((gcnInsn.mode & GCN_FLAT_NODST) == 0)
+    if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {
-        firstDelayOp = 0;
         gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                 gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
                 1, GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags };
+        gcnAsm->delayedOps[1] = gcnAsm->delayedOps[0];
+        gcnAsm->delayedOps[1].delayInstrType = GCNDELINSTR_LDSINSTR;
+        
         if (haveTfe && vdstReg)
             gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[3].regVar,
                     gcnAsm->instrRVUs[3].rstart, gcnAsm->instrRVUs[3].rend, 1,
                     GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[3].rwFlags };
-        gcnAsm->delayedOps[1] = gcnAsm->delayedOps[0];
-        gcnAsm->delayedOps[1].delayInstrType = GCNDELINSTR_LDSINSTR;
     }
     if ((gcnInsn.mode & GCN_FLAT_NODATA) == 0)
     {

@@ -895,6 +895,10 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             # ATOMIC
             flat_atomic_smax dbx[6], vr[1:2], dcx[1]
             flat_atomic_smax_x2 dbx[6:7], vr[1:2], dcx[1:2]
+            flat_atomic_cmpswap_x2 dbx[6:7], vr[1:2], dcx[1:4]
+            # ATOMIC GLC
+            flat_atomic_smax dbx[6], vr[1:2], dcx[1] glc
+            flat_atomic_cmpswap_x2 dbx[6:7], vr[1:2], dcx[1:4] glc
 )ffDXD",
         { },
         {
@@ -928,15 +932,22 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 88U, "dbx", 0, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
             { 88U, "dbx", 0, 3, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
             // ATOMIC
-            { 96U, "dbx", 6, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
-            { 96U, "dbx", 6, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
             { 96U, "dcx", 1, 2, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
             { 96U, "dcx", 1, 2, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
             // ATOMIC_X2
-            { 104U, "dbx", 6, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
-            { 104U, "dbx", 6, 8, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
             { 104U, "dcx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
-            { 104U, "dcx", 1, 3, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ }
+            { 104U, "dcx", 1, 3, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 112U, "dcx", 1, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 112U, "dcx", 1, 5, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            // ATOMIC GLC
+            { 120U, "dbx", 6, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 120U, "dbx", 6, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 120U, "dcx", 1, 2, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 120U, "dcx", 1, 2, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 128U, "dbx", 6, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 128U, "dbx", 6, 8, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 128U, "dcx", 1, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 128U, "dcx", 1, 5, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
         }, true, ""
     }
 };
