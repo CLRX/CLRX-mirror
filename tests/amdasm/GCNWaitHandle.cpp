@@ -770,6 +770,9 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             image_atomic_cmpswap dbx[1:2], bax[1:4], sr[0:3] dmask:5 unorm r128 glc
             # image_lod
             image_get_lod dbx[3], bax[1:4], sr[0:3], sr[4:7] dmask:1 unorm r128
+            # ATOMIC TFE
+            image_atomic_inc dbx[1:3], bax[1:4], sr[0:3] dmask:5 unorm r128 tfe
+            image_atomic_inc dbx[1:3], bax[1:4], sr[0:3] dmask:5 unorm r128 glc tfe
 )ffDXD",
         { },
         {
@@ -798,7 +801,14 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 72U, "dbx", 1, 2, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ|ASMRVU_WRITE },
             { 72U, "dbx", 2, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
             // IMAGE_GET_LOD
-            { 80U, "dbx", 3, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE }
+            { 80U, "dbx", 3, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            // ATOMIC TFE
+            { 88U, "dbx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 88U, "dbx", 1, 3, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ },
+            { 88U, "dbx", 3, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 96U, "dbx", 1, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 96U, "dbx", 1, 4, 1, GCNDELINSTR_EXPVMWRITE, ASMRVU_READ|ASMRVU_WRITE },
+            { 96U, "dbx", 3, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE }
         }, true, ""
     },
     {   /* 15 - MIMG encoding (GCN 1.1) */
