@@ -1050,6 +1050,10 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             gcnAsm->instrRVUs[0].regField = ASMFIELD_NONE;
     }
     
+    if (haveLds && flatMode == GCN_FLAT_FLAT)
+        ASM_NOTGOOD_BY_ERROR(vdstPlace,
+                        "LDS is allowed only for SCRATCH and GLOBAL instructions")
+    
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     

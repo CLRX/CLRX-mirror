@@ -704,7 +704,6 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
     /* FLAT encoding */
     { "flat_load_ubyte v47, v[187:188] nv\n", 0xdc400000U, 0x2f8000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188]\n", 0xdc400000U, 0x2f0000bbU, true, true, "" },
-    { "flat_load_ubyte v47, v[187:188] lds\n", 0xdc402000U, 0x2f0000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188] inst_offset:529\n",
         0xdc400211U, 0x2f0000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188] inst_offset:zzz\nzzz=529\n",
@@ -746,6 +745,8 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
     { "scratch_load_ubyte v47, v187, off inst_offset:zzx glc slc\nzzx=-4096\n",
         0xdc435000U, 0x2f7f00bbU, true, true, "" },
     /* FLAT SCRATCH instructions */
+    { "scratch_load_sbyte v47, off, s49 glc slc lds\n",
+        0xdc476000U, 0x2f310000U, true, true, "" },
     { "scratch_load_sbyte v47, off, s49 glc slc\n",
         0xdc474000U, 0x2f310000U, true, true, "" },
     { "scratch_load_ushort v47, off, s49 glc slc\n",
@@ -789,6 +790,8 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
     { "scratch_load_short_d16_hi v47, off, s49 glc slc\n",
         0xdc974000U, 0x2f310000U, true, true, "" },
     /* FLAT GLOBAL encoding */
+    { "global_load_ubyte v47, v187, s[50:51] glc slc lds\n",
+        0xdc43a000U, 0x2f3200bbU, true, true, "" },
     { "global_load_ubyte v47, v187, s[50:51] glc slc\n",
         0xdc438000U, 0x2f3200bbU, true, true, "" },
     { "global_load_ubyte v47, v[187:188], off glc slc\n",
