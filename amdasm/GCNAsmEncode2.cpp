@@ -70,7 +70,7 @@ void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, uint16_t arch, bool vd
     // fix access for VDATA field
     gcnAsm->instrRVUs[0].rwFlags = (vdataToWrite ? ASMRVU_WRITE : 0) |
             (vdataToRead ? ASMRVU_READ : 0);
-    // check fcmpswap
+    // check cmp_swap/fcmp_swap
     bool vdataDivided = false;
     if ((gcnInsn.mode & GCN_MHALFWRITE) != 0 && vdataToWrite &&
         gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
@@ -109,6 +109,7 @@ void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, uint16_t arch, bool vd
         rvu.rend--;
     }
     
+    // register delayed operations
     if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {
         if (!haveLds)
