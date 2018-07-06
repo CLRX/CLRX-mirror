@@ -825,6 +825,9 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             # CMPSWAP
             image_atomic_cmpswap dbx[1:2], bax[1:4], sr[0:3] dmask:5 unorm r128
             image_atomic_cmpswap dbx[1:2], bax[1:4], sr[0:3] dmask:5 unorm r128 glc
+            # ATOMIC TFE
+            image_atomic_inc dbx[1:3], bax[1:4], sr[0:3] dmask:5 unorm r128 tfe
+            image_atomic_inc dbx[1:3], bax[1:4], sr[0:3] dmask:5 unorm r128 glc tfe
 )ffDXD",
         { },
         {
@@ -839,7 +842,12 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             // ATOMIC CMPSWAP
             { 40U, "dbx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
             { 48U, "dbx", 1, 2, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
-            { 48U, "dbx", 2, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ }
+            { 48U, "dbx", 2, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            // ATOMIC TFE
+            { 56U, "dbx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 56U, "dbx", 3, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 64U, "dbx", 1, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 64U, "dbx", 3, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE }
         }, true, ""
     }
 };
