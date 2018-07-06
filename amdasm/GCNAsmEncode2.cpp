@@ -1069,7 +1069,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         gcnAsm->delayedOps[1] = gcnAsm->delayedOps[0];
         gcnAsm->delayedOps[1].delayInstrType = GCNDELINSTR_LDSINSTR;
         
-        if (haveTfe && vdstReg)
+        if (haveTfe && vdstReg && !haveLds)
             gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[3].regVar,
                     gcnAsm->instrRVUs[3].rstart, gcnAsm->instrRVUs[3].rend, 1,
                     GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[3].rwFlags };
