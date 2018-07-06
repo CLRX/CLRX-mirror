@@ -1055,9 +1055,13 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (gcnAsm->instrRVUs[0].regField != ASMFIELD_NONE)
     {
-        gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
-                gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
-                1, GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags };
+        if (!haveLds)
+            gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+                    gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
+                    1, GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags };
+        else
+            gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+                        1, GCNDELINSTR_VMINSTR, cxbyte(0) };
         gcnAsm->delayedOps[1] = gcnAsm->delayedOps[0];
         gcnAsm->delayedOps[1].delayInstrType = GCNDELINSTR_LDSINSTR;
         
@@ -1074,9 +1078,6 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         gcnAsm->delayedOps[4] = gcnAsm->delayedOps[3];
         gcnAsm->delayedOps[4].delayInstrType = GCNDELINSTR_LDSINSTR;
     }
-    if (haveLds)
-        gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
-                    1, GCNDELINSTR_VMINSTR, cxbyte(0) };
     
     if (instOffsetExpr!=nullptr)
         instOffsetExpr->setTarget(AsmExprTarget(flatMode!=0 ?

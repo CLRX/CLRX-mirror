@@ -899,6 +899,9 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             # ATOMIC GLC
             flat_atomic_smax dbx[6], vr[1:2], dcx[1] glc
             flat_atomic_cmpswap_x2 dbx[6:7], vr[1:2], dcx[1:4] glc
+            # ATOMIC TFE
+            flat_atomic_smax dbx[6:7], vr[1:2], dcx[1] tfe
+            flat_atomic_smax dbx[6:7], vr[1:2], dcx[1] tfe glc
 )ffDXD",
         { },
         {
@@ -948,6 +951,34 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 128U, "dbx", 6, 8, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
             { 128U, "dcx", 1, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
             { 128U, "dcx", 1, 5, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            // ATOMIC TFE
+            { 136U, "dcx", 1, 2, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 136U, "dcx", 1, 2, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 144U, "dbx", 6, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 144U, "dbx", 6, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 144U, "dbx", 7, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 144U, "dcx", 1, 2, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 144U, "dcx", 1, 2, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+        }, true, ""
+    },
+    {   /* 18 - FLAT encoding (GCN 1.4, GFX9) */
+        R"ffDXD(.arch gcn1.4
+            .regvar bax:v, dbx:v:8, dcx:v:8, vr:v:8
+            global_load_dword dbx[6], vr[1:2], off lds
+            global_load_dwordx2 dbx[6:7], vr[1:2], off lds
+            global_load_dwordx3 dbx[5:7], vr[1:2], off lds
+            global_load_dwordx4 dbx[3:6], vr[1:2], off lds
+)ffDXD",
+        { },
+        {
+            { 0U, nullptr, 0, 0, 1, GCNDELINSTR_VMINSTR, 0 },
+            { 0U, nullptr, 0, 0, 1, GCNDELINSTR_LDSINSTR, 0 },
+            { 8U, nullptr, 0, 0, 1, GCNDELINSTR_VMINSTR, 0 },
+            { 8U, nullptr, 0, 0, 1, GCNDELINSTR_LDSINSTR, 0 },
+            { 16U, nullptr, 0, 0, 1, GCNDELINSTR_VMINSTR, 0 },
+            { 16U, nullptr, 0, 0, 1, GCNDELINSTR_LDSINSTR, 0 },
+            { 24U, nullptr, 0, 0, 1, GCNDELINSTR_VMINSTR, 0 },
+            { 24U, nullptr, 0, 0, 1, GCNDELINSTR_LDSINSTR, 0 }
         }, true, ""
     }
 };
