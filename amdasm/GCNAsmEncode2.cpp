@@ -842,7 +842,6 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     RegRange saddrReg(0, 0);
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
-    cxbyte delayedRVU = 255;
     skipSpacesToEnd(linePtr, end);
     const char* vdstPlace = nullptr;
     
@@ -858,7 +857,6 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         vdstPlace = linePtr;
         
         gcnAsm->setCurrentRVU(0);
-        delayedRVU = 0;
         good &= parseVRegRange(asmr, linePtr, vdstReg, 0, GCNFIELD_FLAT_VDST, true,
                         INSTROP_SYMREGRANGE|INSTROP_WRITE);
         if (!skipRequiredComma(asmr, linePtr))
@@ -906,7 +904,6 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             skipSpacesToEnd(linePtr, end);
             vdstPlace = linePtr;
             gcnAsm->setCurrentRVU(0);
-            delayedRVU = 0;
             // parse VDST (VGPRs, various number of register, verified later)
             good &= parseVRegRange(asmr, linePtr, vdstReg, 0, GCNFIELD_FLAT_VDST, true,
                         INSTROP_SYMREGRANGE|INSTROP_WRITE);
@@ -918,7 +915,6 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!skipRequiredComma(asmr, linePtr))
             return false;
         gcnAsm->setCurrentRVU(2);
-        delayedRVU = 2;
         // parse VDATA (VGPRS, 1-4 registers)
         good &= parseVRegRange(asmr, linePtr, vdataReg, dregsNum, GCNFIELD_FLAT_DATA,
                                true, INSTROP_SYMREGRANGE|INSTROP_READ);
@@ -1057,22 +1053,31 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
     
-    if (delayedRVU != 255)
+    cxuint firstDelayOp = UINT_MAX;
+    if ((gcnInsn.mode & GCN_FLAT_NODST) == 0)
     {
-        gcnAsm->delayedOps[0] = { output.size(),
-            gcnAsm->instrRVUs[delayedRVU].regVar,
-            gcnAsm->instrRVUs[delayedRVU].rstart, gcnAsm->instrRVUs[delayedRVU].rend,
-            1, GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[delayedRVU].rwFlags };
+        firstDelayOp = 0;
+        gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
+                gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
+                1, GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags };
         if (haveTfe && vdstReg)
             gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[3].regVar,
                     gcnAsm->instrRVUs[3].rstart, gcnAsm->instrRVUs[3].rend, 1,
                     GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[3].rwFlags };
+        gcnAsm->delayedOps[1] = gcnAsm->delayedOps[0];
+        gcnAsm->delayedOps[1].delayInstrType = GCNDELINSTR_LDSINSTR;
     }
-    else if (!haveLds)
+    if ((gcnInsn.mode & GCN_FLAT_NODATA) == 0)
+    {
+        gcnAsm->delayedOps[3] = { output.size(), gcnAsm->instrRVUs[2].regVar,
+                gcnAsm->instrRVUs[2].rstart, gcnAsm->instrRVUs[2].rend,
+                1, GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[2].rwFlags };
+        gcnAsm->delayedOps[4] = gcnAsm->delayedOps[3];
+        gcnAsm->delayedOps[4].delayInstrType = GCNDELINSTR_LDSINSTR;
+    }
+    if (haveLds)
         gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
                     1, GCNDELINSTR_VMINSTR, cxbyte(0) };
-    gcnAsm->delayedOps[1] = gcnAsm->delayedOps[0];
-    gcnAsm->delayedOps[1].delayInstrType = GCNDELINSTR_LDSINSTR;
     
     if (instOffsetExpr!=nullptr)
         instOffsetExpr->setTarget(AsmExprTarget(flatMode!=0 ?

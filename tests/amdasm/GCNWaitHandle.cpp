@@ -892,6 +892,9 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             # TFE
             flat_load_dwordx4 dbx[3:7], vr[1:2] tfe
             flat_store_dwordx3 vr[1:2], dbx[0:2] tfe
+            # ATOMIC
+            flat_atomic_smax dbx[6], vr[1:2], dcx[1]
+            flat_atomic_smax_x2 dbx[6:7], vr[1:2], dcx[1:2]
 )ffDXD",
         { },
         {
@@ -923,7 +926,17 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 80U, "dbx", 3, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
             { 80U, "dbx", 7, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
             { 88U, "dbx", 0, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
-            { 88U, "dbx", 0, 3, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ }
+            { 88U, "dbx", 0, 3, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            // ATOMIC
+            { 96U, "dbx", 6, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 96U, "dbx", 6, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 96U, "dcx", 1, 2, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 96U, "dcx", 1, 2, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            // ATOMIC_X2
+            { 104U, "dbx", 6, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 104U, "dbx", 6, 8, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 104U, "dcx", 1, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 104U, "dcx", 1, 3, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ }
         }, true, ""
     }
 };
