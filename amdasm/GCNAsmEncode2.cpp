@@ -116,15 +116,15 @@ void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, uint16_t arch, bool vd
         {
             gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
-                    GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags};
+                    GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags };
             if (haveTfe)
                 gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[5].regVar,
                         gcnAsm->instrRVUs[5].rstart, gcnAsm->instrRVUs[5].rend, 1,
-                        GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[5].rwFlags};
+                        GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[5].rwFlags };
             if (vdataDivided)
                 gcnAsm->delayedOps[3] = { output.size(), gcnAsm->instrRVUs[4].regVar,
                     gcnAsm->instrRVUs[4].rstart, gcnAsm->instrRVUs[4].rend, 1,
-                    GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[4].rwFlags};
+                    GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[4].rwFlags };
         }
         
         if (vdataToRead && (arch & ARCH_HD7X00) != 0 && !haveLds)
@@ -1059,15 +1059,20 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (delayedRVU != 255)
     {
-        if (!haveLds)
-            gcnAsm->delayedOps[0] = { output.size(),
-                gcnAsm->instrRVUs[delayedRVU].regVar,
-                gcnAsm->instrRVUs[delayedRVU].rstart, gcnAsm->instrRVUs[delayedRVU].rend,
-                1, GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[delayedRVU].rwFlags};
-        else
-            gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
-                    1, GCNDELINSTR_VMINSTR, cxbyte(0) };
+        gcnAsm->delayedOps[0] = { output.size(),
+            gcnAsm->instrRVUs[delayedRVU].regVar,
+            gcnAsm->instrRVUs[delayedRVU].rstart, gcnAsm->instrRVUs[delayedRVU].rend,
+            1, GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[delayedRVU].rwFlags };
+        if (haveTfe && vdstReg)
+            gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[3].regVar,
+                    gcnAsm->instrRVUs[3].rstart, gcnAsm->instrRVUs[3].rend, 1,
+                    GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[3].rwFlags };
     }
+    else if (!haveLds)
+        gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
+                    1, GCNDELINSTR_VMINSTR, cxbyte(0) };
+    gcnAsm->delayedOps[1] = gcnAsm->delayedOps[0];
+    gcnAsm->delayedOps[1].delayInstrType = GCNDELINSTR_LDSINSTR;
     
     if (instOffsetExpr!=nullptr)
         instOffsetExpr->setTarget(AsmExprTarget(flatMode!=0 ?

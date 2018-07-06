@@ -873,6 +873,58 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 24U, nullptr, 256+42, 256+43, 1, GCNDELINSTR_EXPORT, ASMRVU_READ },
             { 24U, nullptr, 256+97, 256+98, 1, GCNDELINSTR_EXPORT, ASMRVU_READ }
         }, true, ""
+    },
+    {   /* 17 - FLAT encoding */
+        R"ffDXD(.arch gcn1.1
+            .regvar bax:v, dbx:v:8, dcx:v:8, vr:v:8
+            flat_load_dword dbx[6], vr[1:2]
+            flat_load_dwordx2 dbx[6:7], vr[1:2]
+            flat_load_dwordx3 dbx[5:7], vr[1:2]
+            flat_load_dwordx4 dbx[3:6], vr[1:2]
+            
+            flat_store_dword vr[1:2], dcx[6]
+            flat_store_dwordx2 vr[1:2], dcx[2:3]
+            flat_store_dwordx3 vr[1:2], dcx[2:4]
+            flat_store_dwordx4 vr[1:2], dcx[4:7]
+            # GLC
+            flat_load_dwordx4 dbx[3:6], vr[1:2] glc
+            flat_store_dwordx3 vr[1:2], dcx[2:4] glc
+            # TFE
+            flat_load_dwordx4 dbx[3:7], vr[1:2] tfe
+            flat_store_dwordx3 vr[1:2], dbx[0:2] tfe
+)ffDXD",
+        { },
+        {
+            // FLAT_LOAD
+            { 0U, "dbx", 6, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 0U, "dbx", 6, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 8U, "dbx", 6, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 8U, "dbx", 6, 8, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 16U, "dbx", 5, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 16U, "dbx", 5, 8, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 24U, "dbx", 3, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 24U, "dbx", 3, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            // FLAT_STORE
+            { 32U, "dcx", 6, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 32U, "dcx", 6, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 40U, "dcx", 2, 4, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 40U, "dcx", 2, 4, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 48U, "dcx", 2, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 48U, "dcx", 2, 5, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            { 56U, "dcx", 4, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 56U, "dcx", 4, 8, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            // GLC
+            { 64U, "dbx", 3, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 64U, "dbx", 3, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 72U, "dcx", 2, 5, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 72U, "dcx", 2, 5, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ },
+            // TFE
+            { 80U, "dbx", 3, 7, 1, GCNDELINSTR_VMINSTR, ASMRVU_WRITE },
+            { 80U, "dbx", 3, 7, 1, GCNDELINSTR_LDSINSTR, ASMRVU_WRITE },
+            { 80U, "dbx", 7, 8, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ|ASMRVU_WRITE },
+            { 88U, "dbx", 0, 3, 1, GCNDELINSTR_VMINSTR, ASMRVU_READ },
+            { 88U, "dbx", 0, 3, 1, GCNDELINSTR_LDSINSTR, ASMRVU_READ }
+        }, true, ""
     }
 };
 
