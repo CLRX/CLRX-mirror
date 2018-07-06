@@ -593,7 +593,7 @@ struct AsmWaitConfig
 
 enum : cxbyte
 {
-    ASMDELINSTR_NONE = 255
+    ASMDELOP_NONE = 255
 };
 
 /// delayed result for register for instruction with delayed results
@@ -604,7 +604,7 @@ struct AsmDelayedOp
     uint16_t rstart;
     uint16_t rend;
     cxbyte count;
-    cxbyte delayInstrType;
+    cxbyte delayedOpType;
     cxbyte rwFlags;
 };
 

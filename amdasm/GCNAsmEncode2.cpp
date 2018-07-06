@@ -116,26 +116,26 @@ void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, uint16_t arch, bool vd
         {
             gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
-                    GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags };
+                    GCNDELOP_VMOP, gcnAsm->instrRVUs[0].rwFlags };
             if (haveTfe)
                 gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[5].regVar,
                         gcnAsm->instrRVUs[5].rstart, gcnAsm->instrRVUs[5].rend, 1,
-                        GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[5].rwFlags };
+                        GCNDELOP_VMOP, gcnAsm->instrRVUs[5].rwFlags };
             if (vdataDivided)
                 gcnAsm->delayedOps[3] = { output.size(), gcnAsm->instrRVUs[4].regVar,
-                    gcnAsm->instrRVUs[4].rstart, gcnAsm->instrRVUs[4].rend, 1,
-                    GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[4].rwFlags };
+                        gcnAsm->instrRVUs[4].rstart, gcnAsm->instrRVUs[4].rend, 1,
+                        GCNDELOP_VMOP, gcnAsm->instrRVUs[4].rwFlags };
         }
         
         if (vdataToRead && (arch & ARCH_HD7X00) != 0 && !haveLds)
             // add EXPORT VM write to exportCNT (only GCN 1.0)
             gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
-                    GCNDELINSTR_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
+                    GCNDELOP_EXPVMWRITE, gcnAsm->instrRVUs[0].rwFlags };
     }
     else if (haveLds)
         gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
-                1, GCNDELINSTR_VMINSTR, cxbyte(0)};
+                1, GCNDELOP_VMOP, cxbyte(0)};
 }
 
 bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -758,7 +758,7 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
                         true, INSTROP_SYMREGRANGE|INSTROP_READ);
             gcnAsm->delayedOps[i] = { output.size(), gcnAsm->instrRVUs[i].regVar,
                         gcnAsm->instrRVUs[i].rstart, gcnAsm->instrRVUs[i].rend,
-                        1, GCNDELINSTR_EXPORT, gcnAsm->instrRVUs[i].rwFlags };
+                        1, GCNDELOP_EXPORT, gcnAsm->instrRVUs[i].rwFlags };
         }
         else
         {
@@ -1062,25 +1062,25 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!haveLds)
             gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
-                    1, GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[0].rwFlags };
+                    1, GCNDELOP_VMOP, gcnAsm->instrRVUs[0].rwFlags };
         else
             gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
-                        1, GCNDELINSTR_VMINSTR, cxbyte(0) };
+                        1, GCNDELOP_VMOP, cxbyte(0) };
         gcnAsm->delayedOps[1] = gcnAsm->delayedOps[0];
-        gcnAsm->delayedOps[1].delayInstrType = GCNDELINSTR_LDSINSTR;
+        gcnAsm->delayedOps[1].delayedOpType = GCNDELOP_LDSOP;
         
         if (haveTfe && vdstReg && !haveLds)
             gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[3].regVar,
                     gcnAsm->instrRVUs[3].rstart, gcnAsm->instrRVUs[3].rend, 1,
-                    GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[3].rwFlags };
+                    GCNDELOP_VMOP, gcnAsm->instrRVUs[3].rwFlags };
     }
     if ((gcnInsn.mode & GCN_FLAT_NODATA) == 0)
     {
         gcnAsm->delayedOps[3] = { output.size(), gcnAsm->instrRVUs[2].regVar,
                 gcnAsm->instrRVUs[2].rstart, gcnAsm->instrRVUs[2].rend,
-                1, GCNDELINSTR_VMINSTR, gcnAsm->instrRVUs[2].rwFlags };
+                1, GCNDELOP_VMOP, gcnAsm->instrRVUs[2].rwFlags };
         gcnAsm->delayedOps[4] = gcnAsm->delayedOps[3];
-        gcnAsm->delayedOps[4].delayInstrType = GCNDELINSTR_LDSINSTR;
+        gcnAsm->delayedOps[4].delayedOpType = GCNDELOP_LDSOP;
     }
     
     if (instOffsetExpr!=nullptr)

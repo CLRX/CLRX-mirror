@@ -354,7 +354,7 @@ void GCNAssembler::flushInstrRVUs(ISAUsageHandler* usageHandler)
 void GCNAssembler::flushWaitInstrs(ISAWaitHandler* waitHandler)
 {
     for (const AsmDelayedOp& op: delayedOps)
-        if (op.delayInstrType != ASMDELINSTR_NONE)
+        if (op.delayedOpType != ASMDELOP_NONE)
             waitHandler->pushDelayedOp(op);
     
     if (hasWaitInstr)
@@ -888,16 +888,16 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
 // for GCN 1.0
 static const AsmWaitConfig gcnWaitConfig10 =
 {
-    cxuint(GCNDELINSTR_MAX+1),
+    cxuint(GCNDELOP_MAX+1),
     cxuint(GCNWAIT_MAX+1),
     {
-        { GCNWAIT_VMCNT, true, false, 255 },  // GCNDELINSTR_VMINSTR
-        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_LDSINSTR
-        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_GDSINSTR
-        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_SENDMSG
-        { GCNWAIT_LGKMCNT, false, false, 4 },  // GCNDELINSTR_SMINSTR
-        { GCNWAIT_EXPCNT, true, true, 255 },  // GCNDELINSTR_EXPVMWRITE
-        { GCNWAIT_EXPCNT, false, false, 255 }  // GCNDELINSTR_EXPORT
+        { GCNWAIT_VMCNT, true, false, 255 },  // GCNDELOP_VMOP
+        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELOP_LDSOP
+        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELOP_GDSOP
+        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELOP_SENDMSG
+        { GCNWAIT_LGKMCNT, false, false, 4 },  // GCNDELOP_SMOP
+        { GCNWAIT_EXPCNT, true, true, 255 },  // GCNDELOP_EXPVMWRITE
+        { GCNWAIT_EXPCNT, false, false, 255 }  // GCNDELOP_EXPORT
     },
     { 16, 8, 8 }
 };
@@ -905,16 +905,16 @@ static const AsmWaitConfig gcnWaitConfig10 =
 
 static const AsmWaitConfig gcnWaitConfig =
 {
-    cxuint(GCNDELINSTR_MAX+1),
+    cxuint(GCNDELOP_MAX+1),
     cxuint(GCNWAIT_MAX+1),
     {
-        { GCNWAIT_VMCNT, true, false, 255 },  // GCNDELINSTR_VMINSTR
-        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_LDSINSTR
-        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_GDSINSTR
-        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_SENDMSG
-        { GCNWAIT_LGKMCNT, false, false, 4 },  // GCNDELINSTR_SMINSTR
-        { GCNWAIT_EXPCNT, true, true, 255 },  // GCNDELINSTR_EXPVMWRITE
-        { GCNWAIT_EXPCNT, false, true, 255 }  // GCNDELINSTR_EXPORT
+        { GCNWAIT_VMCNT, true, false, 255 },  // GCNDELOP_VMOP
+        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELOP_LDSOP
+        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELOP_GDSOP
+        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELOP_SENDMSG
+        { GCNWAIT_LGKMCNT, false, false, 4 },  // GCNDELOP_SMOP
+        { GCNWAIT_EXPCNT, true, true, 255 },  // GCNDELOP_EXPVMWRITE
+        { GCNWAIT_EXPCNT, false, true, 255 }  // GCNDELOP_EXPORT
     },
     { 16, 16, 8 }
 };
@@ -922,16 +922,16 @@ static const AsmWaitConfig gcnWaitConfig =
 // for RX VEGA
 static const AsmWaitConfig gcnWaitConfig14 =
 {
-    cxuint(GCNDELINSTR_MAX+1),
+    cxuint(GCNDELOP_MAX+1),
     cxuint(GCNWAIT_MAX+1),
     {
-        { GCNWAIT_VMCNT, true, false, 255 },  // GCNDELINSTR_VMINSTR
-        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_LDSINSTR
-        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_GDSINSTR
-        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELINSTR_SENDMSG
-        { GCNWAIT_LGKMCNT, false, false, 4 },  // GCNDELINSTR_SMINSTR
-        { GCNWAIT_EXPCNT, true, true, 255 },  // GCNDELINSTR_EXPVMWRITE
-        { GCNWAIT_EXPCNT, false, true, 255 }  // GCNDELINSTR_EXPORT
+        { GCNWAIT_VMCNT, true, false, 255 },  // GCNDELOP_VMOP
+        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELOP_LDSOP
+        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELOP_GDSOP
+        { GCNWAIT_LGKMCNT, true, false, 255 },  // GCNDELOP_SENDMSG
+        { GCNWAIT_LGKMCNT, false, false, 4 },  // GCNDELOP_SMOP
+        { GCNWAIT_EXPCNT, true, true, 255 },  // GCNDELOP_EXPVMWRITE
+        { GCNWAIT_EXPCNT, false, true, 255 }  // GCNDELOP_EXPORT
     },
     { 64, 16, 8 }
 };
