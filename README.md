@@ -2,7 +2,9 @@
 
 This is mirror of the CLRadeonExtender project.
 
-Original site is here [https://clrx.nativeboinc.org](https://clrx.nativeboinc.org).
+Original site is here [https://clrx.nativeboinc.org](https://clrx.nativeboinc.org) or
+[http://clrx.nativeboinc.org](http://clrx.nativeboinc.org)
+if SSL certificate doesn't work.
 
 CLRadeonExtender provides tools to develop software in low-level for the Radeon GPU's
 compatible with GCN 1.0/1.1/1.2/1.4 (AMD VEGA) architecture.
