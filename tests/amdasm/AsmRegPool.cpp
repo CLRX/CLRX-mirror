@@ -455,7 +455,7 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
         
         char buf[32];
         // compare register counting for kernels
-        for (cxuint i = 0; i < input->kernels.size(); i++)
+        for (AsmKernelId i = 0; i < input->kernels.size(); i++)
         {
             const AmdKernelInput& kinput = input->kernels[i];
             const KernelRegPool& regPool = testCase.regPools[i];
@@ -479,7 +479,7 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
                     input->kernels.size());
         char buf[32];
         // compare register counting for kernels
-        for (cxuint i = 0; i < input->kernels.size(); i++)
+        for (AsmKernelId i = 0; i < input->kernels.size(); i++)
         {
             const GalliumKernelInput& kinput = input->kernels[i];
             const KernelRegPool& regPool = testCase.regPools[i];
@@ -503,7 +503,7 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
                     input->symbols.size());
         char buf[32];
         // compare register counting for kernels
-        for (cxuint i = 0; i < input->symbols.size(); i++)
+        for (AsmKernelId i = 0; i < input->symbols.size(); i++)
         {
             const ROCmSymbolInput& kinput = input->symbols[i];
             const KernelRegPool& regPool = testCase.regPools[i];
@@ -529,7 +529,7 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
                     input->kernels.size());
         char buf[32];
         // compare register counting for kernels
-        for (cxuint i = 0; i < input->kernels.size(); i++)
+        for (AsmKernelId i = 0; i < input->kernels.size(); i++)
         {
             const AmdCL2KernelInput& kinput = input->kernels[i];
             const KernelRegPool& regPool = testCase.regPools[i];
