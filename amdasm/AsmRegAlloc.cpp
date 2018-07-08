@@ -911,7 +911,7 @@ void AsmRegAllocator::colorInterferenceGraph()
     }
 }
 
-void AsmRegAllocator::allocateRegisters(cxuint sectionId)
+void AsmRegAllocator::allocateRegisters(AsmSectionId sectionId)
 {
     // before any operation, clear all
     codeBlocks.clear();

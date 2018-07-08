@@ -183,7 +183,7 @@ cxuint AsmGalliumHandler::determineDriverVersion() const
 AsmKernelId AsmGalliumHandler::addKernel(const char* kernelName)
 {
     AsmKernelId thisKernel = output.kernels.size();
-    cxuint thisSection = sections.size();
+    AsmSectionId thisSection = sections.size();
     output.addEmptyKernel(kernelName, determineLLVMVersion());
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
@@ -198,9 +198,9 @@ AsmKernelId AsmGalliumHandler::addKernel(const char* kernelName)
     return thisKernel;
 }
 
-cxuint AsmGalliumHandler::addSection(const char* sectionName, AsmKernelId kernelId)
+AsmSectionId AsmGalliumHandler::addSection(const char* sectionName, AsmKernelId kernelId)
 {
-    const cxuint thisSection = sections.size();
+    const AsmSectionId thisSection = sections.size();
     Section section;
     section.kernelId = ASMKERN_GLOBAL;  // we ignore input kernelId, we go to main
     
@@ -254,7 +254,7 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, AsmKernelId kernel
     return thisSection;
 }
 
-cxuint AsmGalliumHandler::getSectionId(const char* sectionName) const
+AsmSectionId AsmGalliumHandler::getSectionId(const char* sectionName) const
 {
     if (::strcmp(sectionName, ".rodata") == 0) // data
         return dataSection;
@@ -289,7 +289,7 @@ void AsmGalliumHandler::setCurrentKernel(AsmKernelId kernel)
     inside = Inside::MAINLAYOUT;
 }
 
-void AsmGalliumHandler::setCurrentSection(cxuint sectionId)
+void AsmGalliumHandler::setCurrentSection(AsmSectionId sectionId)
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("SectionId out of range");
@@ -302,7 +302,8 @@ void AsmGalliumHandler::setCurrentSection(cxuint sectionId)
     inside = Inside::MAINLAYOUT;
 }
 
-AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId) const
+AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(
+                            AsmSectionId sectionId) const
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("Section doesn't exists");
@@ -453,7 +454,7 @@ void AsmGalliumPseudoOps::doControlDirective(AsmGalliumHandler& handler,
     if (kernel.ctrlDirSection == ASMSECT_NONE)
     {
         // create control directive if not exists
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel,
             AsmSectionType::GALLIUM_CONFIG_CTRL_DIRECTIVE,
             ELFSECTID_UNDEF, nullptr });
@@ -1079,7 +1080,7 @@ void AsmGalliumPseudoOps::scratchSymbol(AsmGalliumHandler& handler, const char* 
     if (handler.scratchSection == ASMSECT_NONE)
     {
         // add scratch section if not added
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_GLOBAL,
                 AsmSectionType::GALLIUM_SCRATCH, ELFSECTID_UNDEF, nullptr });
         handler.scratchSection = thisSection;
@@ -1436,7 +1437,7 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
 }
 
 bool AsmGalliumHandler::resolveSymbol(const AsmSymbol& symbol,
-                    uint64_t& value, cxuint& sectionId)
+                    uint64_t& value, AsmSectionId& sectionId)
 {
     if (!assembler.isResolvableSection(symbol.sectionId))
     {
@@ -1448,10 +1449,10 @@ bool AsmGalliumHandler::resolveSymbol(const AsmSymbol& symbol,
 }
 
 bool AsmGalliumHandler::resolveRelocation(const AsmExpression* expr, uint64_t& outValue,
-                    cxuint& outSectionId)
+                    AsmSectionId& outSectionId)
 {
     RelocType relType = RELTYPE_LOW_32BIT;
-    cxuint relSectionId = 0;
+    AsmSectionId relSectionId = 0;
     uint64_t relValue = 0;
     const AsmExprTarget& target = expr->getTarget();
     const AsmExprTargetType tgtType = target.type;
@@ -1651,7 +1652,7 @@ bool AsmGalliumHandler::prepareBinary()
             }
             if (assembler.kernelMap.find(symEntry.first.c_str())!=assembler.kernelMap.end())
                 continue; // if kernel name
-            cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
+            AsmSectionId binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
             if (binSectId==ELFSECTID_UNDEF)
                 continue; // no section

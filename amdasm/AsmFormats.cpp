@@ -68,19 +68,19 @@ void AsmFormatHandler::handleLabel(const CString& label)
 { }
 
 bool AsmFormatHandler::resolveSymbol(const AsmSymbol& symbol, uint64_t& value,
-                 cxuint& sectionId)
+                 AsmSectionId& sectionId)
 {
     return false;
 }
 
 bool AsmFormatHandler::resolveRelocation(const AsmExpression* expr, uint64_t& value,
-                 cxuint& sectionId)
+                 AsmSectionId& sectionId)
 {
     return false;
 }
 
 bool AsmFormatHandler::resolveLoHiRelocExpression(const AsmExpression* expr,
-                RelocType& relType, cxuint& relSectionId, uint64_t& relValue)
+                RelocType& relType, AsmSectionId& relSectionId, uint64_t& relValue)
 {
     const AsmExprTarget& target = expr->getTarget();
     const AsmExprTargetType tgtType = target.type;
@@ -114,7 +114,7 @@ bool AsmFormatHandler::resolveLoHiRelocExpression(const AsmExpression* expr,
         relOpStart = 0;
         relOpEnd = expr->toTop(ops.size()-2);
         /// evaluate second argument
-        cxuint tmpSectionId;
+        AsmSectionId tmpSectionId;
         uint64_t secondArg;
         if (!expr->evaluate(assembler, relOpEnd, ops.size()-1, secondArg, tmpSectionId))
             return false;
@@ -391,7 +391,7 @@ AsmKernelId AsmRawCodeHandler::addKernel(const char* kernelName)
     throw AsmFormatException("In rawcode defining kernels is not allowed");
 }
 
-cxuint AsmRawCodeHandler::addSection(const char* name, AsmKernelId kernelId)
+AsmSectionId AsmRawCodeHandler::addSection(const char* name, AsmKernelId kernelId)
 {
     if (::strcmp(name, ".text")!=0)
         throw AsmFormatException("Only section '.text' can be in raw code");
@@ -399,7 +399,7 @@ cxuint AsmRawCodeHandler::addSection(const char* name, AsmKernelId kernelId)
         throw AsmFormatException("Section '.text' already exists");
 }
 
-cxuint AsmRawCodeHandler::getSectionId(const char* sectionName) const
+AsmSectionId AsmRawCodeHandler::getSectionId(const char* sectionName) const
 {
     return ::strcmp(sectionName, ".text") ? ASMSECT_NONE : 0;
 }
@@ -410,13 +410,14 @@ void AsmRawCodeHandler::setCurrentKernel(AsmKernelId kernel)
         throw AsmFormatException("No kernels available");
 }
 
-void AsmRawCodeHandler::setCurrentSection(cxuint sectionId)
+void AsmRawCodeHandler::setCurrentSection(AsmSectionId sectionId)
 {
     if (sectionId!=0)
         throw AsmFormatException("Section doesn't exists");
 }
 
-AsmFormatHandler::SectionInfo AsmRawCodeHandler::getSectionInfo(cxuint sectionId) const
+AsmFormatHandler::SectionInfo AsmRawCodeHandler::getSectionInfo(
+                                AsmSectionId sectionId) const
 {
     if (sectionId!=0)
         throw AsmFormatException("Section doesn't exists");

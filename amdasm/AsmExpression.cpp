@@ -119,7 +119,7 @@ struct RelMultiply
 {
     // multiplication of section
     uint64_t multiply;
-    cxuint sectionId;
+    AsmSectionId sectionId;
 };
 
 template<typename T1, typename T2>
@@ -199,7 +199,7 @@ static bool checkSectionDiffs(size_t n, const RelMultiply* relMultiplies,
                 withSectionDiffs, sectDiffsPrepared, tryLater)
 
 AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, size_t opEnd,
-                 uint64_t& outValue, cxuint& outSectionId, bool withSectionDiffs) const
+            uint64_t& outValue, AsmSectionId& outSectionId, bool withSectionDiffs) const
 {
     if (symOccursNum != 0)
         throw AsmException("Expression can't be evaluated if "
@@ -208,7 +208,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
     bool failed = false;
     bool tryLater = false;
     uint64_t value = 0; // by default is zero
-    cxuint sectionId = 0;
+    AsmSectionId sectionId = 0;
     if (!relativeSymOccurs)
     {
         // all value is absolute
@@ -429,7 +429,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
             
             ValueAndMultiplies(uint64_t _value = 0) : value(_value)
             { }
-            ValueAndMultiplies(uint64_t _value, cxuint _sectionId) : value(_value),
+            ValueAndMultiplies(uint64_t _value, AsmSectionId _sectionId) : value(_value),
                 relatives({{1,_sectionId}})
             { }
         };
@@ -449,7 +449,8 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                 messagePosIndex++;
         }
         
-        const std::vector<Array<cxuint> >& relSpacesSects = assembler.relSpacesSections;
+        const std::vector<Array<AsmSectionId> >& relSpacesSects =
+                    assembler.relSpacesSections;
         const std::vector<AsmSection>& sections = assembler.sections;
         
         while (opPos < opEnd)
@@ -460,11 +461,12 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                 if (args[argPos].relValue.sectionId != ASMSECT_ABS)
                 {
                     uint64_t ovalue = args[argPos].relValue.value;
-                    cxuint osectId = args[argPos].relValue.sectionId;
+                    AsmSectionId osectId = args[argPos].relValue.sectionId;
                     if (sectDiffsPrepared && sections[osectId].relSpace!=UINT_MAX)
                     {
                         // resolve section in relspace
-                        cxuint rsectId = relSpacesSects[sections[osectId].relSpace][0];
+                        AsmSectionId rsectId =
+                                relSpacesSects[sections[osectId].relSpace][0];
                         ovalue += sections[osectId].relAddress -
                                 sections[rsectId].relAddress;
                         osectId = rsectId;
@@ -924,11 +926,11 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
         if (sectDiffsPrepared && sectionId != ASMSECT_ABS &&
             sections[sectionId].relSpace != UINT_MAX)
         {   // find proper section
-            const Array<cxuint>& rlSections  = relSpacesSects[
+            const Array<AsmSectionId>& rlSections  = relSpacesSects[
                                 sections[sectionId].relSpace];
             uint64_t valAddr = sections[sectionId].relAddress + value;
             auto it = std::lower_bound(rlSections.begin(), rlSections.end(), ASMSECT_ABS,
-                [&sections,valAddr](cxuint a, cxuint b)
+                [&sections,valAddr](AsmSectionId a, AsmSectionId b)
                 {
                     uint64_t relAddr1 = a!=ASMSECT_ABS ? sections[a].relAddress : valAddr;
                     uint64_t relAddr2 = b!=ASMSECT_ABS ? sections[b].relAddress : valAddr;
@@ -939,7 +941,7 @@ AsmTryStatus AsmExpression::tryEvaluate(Assembler& assembler, size_t opStart, si
                     it != rlSections.begin())
                 --it;
             
-            cxuint newSectionId = (it != rlSections.end()) ? *it : rlSections.back();
+            AsmSectionId newSectionId = (it != rlSections.end()) ? *it : rlSections.back();
             value += sections[sectionId].relAddress - sections[newSectionId].relAddress;
             sectionId = newSectionId;
         }

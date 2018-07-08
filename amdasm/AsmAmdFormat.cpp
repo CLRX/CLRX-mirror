@@ -141,7 +141,7 @@ void AsmAmdHandler::saveCurrentAllocRegs()
 AsmKernelId AsmAmdHandler::addKernel(const char* kernelName)
 {
     AsmKernelId thisKernel = output.kernels.size();
-    cxuint thisSection = sections.size();
+    AsmSectionId thisSection = sections.size();
     output.addEmptyKernel(kernelName);
     /* add new kernel and their section (.text) */
     kernelStates.push_back(new Kernel(thisSection));
@@ -156,9 +156,9 @@ AsmKernelId AsmAmdHandler::addKernel(const char* kernelName)
     return thisKernel;
 }
 
-cxuint AsmAmdHandler::addSection(const char* sectionName, AsmKernelId kernelId)
+AsmSectionId AsmAmdHandler::addSection(const char* sectionName, AsmKernelId kernelId)
 {
-    const cxuint thisSection = sections.size();
+    const AsmSectionId thisSection = sections.size();
     Section section;
     section.kernelId = kernelId;
     if (::strcmp(sectionName, ".data") == 0)
@@ -210,7 +210,7 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, AsmKernelId kernelId)
     return thisSection;
 }
 
-cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
+AsmSectionId AsmAmdHandler::getSectionId(const char* sectionName) const
 {
     if (assembler.currentKernel == ASMKERN_GLOBAL)
     {
@@ -253,7 +253,7 @@ void AsmAmdHandler::setCurrentKernel(AsmKernelId kernel)
     restoreCurrentAllocRegs();
 }
 
-void AsmAmdHandler::setCurrentSection(cxuint sectionId)
+void AsmAmdHandler::setCurrentSection(AsmSectionId sectionId)
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("SectionId out of range");
@@ -265,7 +265,7 @@ void AsmAmdHandler::setCurrentSection(cxuint sectionId)
     restoreCurrentAllocRegs();
 }
 
-AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) const
+AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(AsmSectionId sectionId) const
 {
     /* find section */
     if (sectionId >= sections.size())
@@ -351,7 +351,7 @@ void AsmAmdPseudoOps::doGlobalData(AsmAmdHandler& handler, const char* pseudoOpP
     if (handler.dataSection==ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::DATA,
             ELFSECTID_UNDEF, nullptr });
         handler.dataSection = thisSection;
@@ -371,11 +371,12 @@ void AsmAmdPseudoOps::addMetadata(AsmAmdHandler& handler, const char* pseudoOpPl
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    cxuint& metadataSection = handler.kernelStates[asmr.currentKernel]->metadataSection;
+    AsmSectionId& metadataSection =
+            handler.kernelStates[asmr.currentKernel]->metadataSection;
     if (metadataSection == ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMD_METADATA,
             ELFSECTID_UNDEF, nullptr });
         metadataSection = thisSection;
@@ -401,7 +402,7 @@ void AsmAmdPseudoOps::doConfig(AsmAmdHandler& handler, const char* pseudoOpPlace
     if (kernel.configSection == ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::CONFIG,
             ELFSECTID_UNDEF, nullptr });
         kernel.configSection = thisSection;
@@ -442,7 +443,7 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
         return;
     
     // always add new CALnote
-    const cxuint thisSection = handler.sections.size();
+    const AsmSectionId thisSection = handler.sections.size();
     handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMD_CALNOTE,
             ELFSECTID_UNDEF, nullptr, calNoteId });
     kernel.calNoteSections.push_back({thisSection});
@@ -490,11 +491,11 @@ void AsmAmdPseudoOps::addHeader(AsmAmdHandler& handler, const char* pseudoOpPlac
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    cxuint& headerSection = handler.kernelStates[asmr.currentKernel]->headerSection;
+    AsmSectionId& headerSection = handler.kernelStates[asmr.currentKernel]->headerSection;
     if (headerSection == ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMD_HEADER,
             ELFSECTID_UNDEF, nullptr });
         headerSection = thisSection;
@@ -1828,7 +1829,7 @@ bool AsmAmdHandler::prepareBinary()
             if (!symEntry.second.hasValue ||
                 ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
                 continue; // unresolved or local
-            cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
+            AsmSectionId binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
             if (binSectId==ELFSECTID_UNDEF)
                 continue; // no section

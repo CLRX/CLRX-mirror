@@ -207,7 +207,7 @@ void AsmAmdCL2Handler::saveCurrentAllocRegs()
 AsmKernelId AsmAmdCL2Handler::addKernel(const char* kernelName)
 {
     AsmKernelId thisKernel = output.kernels.size();
-    cxuint thisSection = sections.size();
+    AsmSectionId thisSection = sections.size();
     output.addEmptyKernel(kernelName);
     /* add new kernel and their section (.text) */
     kernelStates.push_back(new Kernel(thisSection));
@@ -228,9 +228,9 @@ AsmKernelId AsmAmdCL2Handler::addKernel(const char* kernelName)
     return thisKernel;
 }
 
-cxuint AsmAmdCL2Handler::addSection(const char* sectionName, AsmKernelId kernelId)
+AsmSectionId AsmAmdCL2Handler::addSection(const char* sectionName, AsmKernelId kernelId)
 {
-    const cxuint thisSection = sections.size();
+    const AsmSectionId thisSection = sections.size();
     
     if (::strcmp(sectionName, ".rodata")==0)
     {
@@ -314,7 +314,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, AsmKernelId kernelI
     return thisSection;
 }
 
-cxuint AsmAmdCL2Handler::getSectionId(const char* sectionName) const
+AsmSectionId AsmAmdCL2Handler::getSectionId(const char* sectionName) const
 {
     // if HSA layout always treat '.text' as main '.text'
     if (hsaLayout && ::strcmp(sectionName, ".text")==0)
@@ -368,7 +368,7 @@ void AsmAmdCL2Handler::setCurrentKernel(AsmKernelId kernel)
     restoreCurrentAllocRegs();
 }
 
-void AsmAmdCL2Handler::setCurrentSection(cxuint sectionId)
+void AsmAmdCL2Handler::setCurrentSection(AsmSectionId sectionId)
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("SectionId out of range");
@@ -397,7 +397,7 @@ void AsmAmdCL2Handler::setCurrentSection(cxuint sectionId)
     restoreCurrentAllocRegs();
 }
 
-AsmFormatHandler::SectionInfo AsmAmdCL2Handler::getSectionInfo(cxuint sectionId) const
+AsmFormatHandler::SectionInfo AsmAmdCL2Handler::getSectionInfo(AsmSectionId sectionId) const
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("Section doesn't exists");
@@ -566,7 +566,7 @@ void AsmAmdCL2PseudoOps::doGlobalData(AsmAmdCL2Handler& handler, const char* pse
     if (handler.rodataSection==ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_INNER,  AsmSectionType::DATA,
             ELFSECTID_RODATA, ".rodata" });
         handler.rodataSection = thisSection;
@@ -587,7 +587,7 @@ void AsmAmdCL2PseudoOps::doRwData(AsmAmdCL2Handler& handler, const char* pseudoO
     if (handler.dataSection==ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_RWDATA,
             ELFSECTID_DATA, ".data" });
         handler.dataSection = thisSection;
@@ -636,7 +636,7 @@ void AsmAmdCL2PseudoOps::doBssData(AsmAmdCL2Handler& handler, const char* pseudo
     if (handler.bssSection==ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_BSS,
             ELFSECTID_BSS, ".bss" });
         handler.bssSection = thisSection;
@@ -660,7 +660,7 @@ void AsmAmdCL2PseudoOps::doSamplerInit(AsmAmdCL2Handler& handler, const char* ps
     if (handler.samplerInitSection==ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_SAMPLERINIT,
             AMDCL2SECTID_SAMPLERINIT, nullptr });
         handler.samplerInitSection = thisSection;
@@ -738,7 +738,7 @@ void AsmAmdCL2PseudoOps::doSamplerReloc(AsmAmdCL2Handler& handler,
     const char* offsetPlace = linePtr;
     uint64_t samplerId = 0;
     uint64_t offset = 0;
-    cxuint sectionId = 0;
+    AsmSectionId sectionId = 0;
     bool good = getAnyValueArg(asmr, offset, sectionId, linePtr);
     if (!skipRequiredComma(asmr, linePtr))
         return;
@@ -777,7 +777,7 @@ void AsmAmdCL2PseudoOps::doControlDirective(AsmAmdCL2Handler& handler,
     if (kernel.ctrlDirSection == ASMSECT_NONE)
     {
         // create control directive if not exists
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel,
             AsmSectionType::AMDCL2_CONFIG_CTRL_DIRECTIVE,
             ELFSECTID_UNDEF, nullptr });
@@ -1346,11 +1346,12 @@ void AsmAmdCL2PseudoOps::addMetadata(AsmAmdCL2Handler& handler, const char* pseu
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    cxuint& metadataSection = handler.kernelStates[asmr.currentKernel]->metadataSection;
+    AsmSectionId& metadataSection =
+            handler.kernelStates[asmr.currentKernel]->metadataSection;
     if (metadataSection == ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMDCL2_METADATA,
             ELFSECTID_UNDEF, nullptr });
         metadataSection = thisSection;
@@ -1374,11 +1375,12 @@ void AsmAmdCL2PseudoOps::addISAMetadata(AsmAmdCL2Handler& handler,
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    cxuint& isaMDSection = handler.kernelStates[asmr.currentKernel]->isaMetadataSection;
+    AsmSectionId& isaMDSection =
+            handler.kernelStates[asmr.currentKernel]->isaMetadataSection;
     if (isaMDSection == ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel,
                 AsmSectionType::AMDCL2_ISAMETADATA, ELFSECTID_UNDEF, nullptr });
         isaMDSection = thisSection;
@@ -1399,11 +1401,11 @@ void AsmAmdCL2PseudoOps::addKernelSetup(AsmAmdCL2Handler& handler,
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    cxuint& setupSection = handler.kernelStates[asmr.currentKernel]->setupSection;
+    AsmSectionId& setupSection = handler.kernelStates[asmr.currentKernel]->setupSection;
     if (setupSection == ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMDCL2_SETUP,
             ELFSECTID_UNDEF, nullptr });
         setupSection = thisSection;
@@ -1426,11 +1428,11 @@ void AsmAmdCL2PseudoOps::addKernelStub(AsmAmdCL2Handler& handler,
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    cxuint& stubSection = handler.kernelStates[asmr.currentKernel]->stubSection;
+    AsmSectionId& stubSection = handler.kernelStates[asmr.currentKernel]->stubSection;
     if (stubSection == ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMDCL2_STUB,
             ELFSECTID_UNDEF, nullptr });
         stubSection = thisSection;
@@ -1459,7 +1461,7 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
     if (kernel.configSection == ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel, AsmSectionType::CONFIG,
             ELFSECTID_UNDEF, nullptr });
         kernel.configSection = thisSection;
@@ -2282,7 +2284,7 @@ bool AsmAmdCL2Handler::prepareBinary()
             if (!symEntry.second.hasValue ||
                 ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
                 continue; // unresolved or local
-            cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
+            AsmSectionId binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
             if (binSectId==ELFSECTID_UNDEF)
                 continue; // no section
@@ -2311,7 +2313,7 @@ bool AsmAmdCL2Handler::prepareBinary()
 }
 
 bool AsmAmdCL2Handler::resolveSymbol(const AsmSymbol& symbol, uint64_t& value,
-                 cxuint& sectionId)
+                 AsmSectionId& sectionId)
 {
     if (!assembler.isResolvableSection(symbol.sectionId))
     {
@@ -2324,10 +2326,10 @@ bool AsmAmdCL2Handler::resolveSymbol(const AsmSymbol& symbol, uint64_t& value,
 
 // routine to resolve relocations (given as expression)
 bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& outValue,
-                 cxuint& outSectionId)
+                 AsmSectionId& outSectionId)
 {
     RelocType relType = RELTYPE_LOW_32BIT;
-    cxuint relSectionId = 0;
+    AsmSectionId relSectionId = 0;
     uint64_t relValue = 0;
     const AsmExprTarget& target = expr->getTarget();
     const AsmExprTargetType tgtType = target.type;

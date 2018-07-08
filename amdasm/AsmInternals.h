@@ -84,7 +84,7 @@ struct CLRX_INTERNAL AsmParseUtils
     static bool getAbsoluteValueArg(Assembler& asmr, uint64_t& value, const char*& linePtr,
                     bool requiredExpr = false);
     
-    static bool getAnyValueArg(Assembler& asmr, uint64_t& value, cxuint& sectionId,
+    static bool getAnyValueArg(Assembler& asmr, uint64_t& value, AsmSectionId& sectionId,
                     const char*& linePtr);
     
     static bool getJumpValueArg(Assembler& asmr, uint64_t& value,
@@ -135,7 +135,7 @@ struct CLRX_INTERNAL AsmParseUtils
                     bool twoFields = false);
     
     static void setSymbolValue(Assembler& asmr, const char* linePtr,
-                    uint64_t value, cxuint sectionId);
+                    uint64_t value, AsmSectionId sectionId);
 };
 
 enum class AsmPredefined: cxbyte

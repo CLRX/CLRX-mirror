@@ -143,7 +143,7 @@ struct AsmScope;
 struct AsmSymbol
 {
     cxuint refCount;    ///< reference counter (for internal use only)
-    cxuint sectionId;       ///< section id
+    AsmSectionId sectionId;       ///< section id
     cxbyte info;           ///< ELF symbol info
     cxbyte other;           ///< ELF symbol other
     cxuint hasValue:1;         ///< symbol is defined
@@ -179,8 +179,8 @@ struct AsmSymbol
             value(0), size(0), expression(expr)
     { }
     /// constructor with value and section id
-    explicit AsmSymbol(cxuint _sectionId, uint64_t _value, bool _onceDefined = false) :
-            refCount(1), sectionId(_sectionId), info(0), other(0), hasValue(true),
+    explicit AsmSymbol(AsmSectionId _sectionId, uint64_t _value, bool _onceDefined = false)
+            : refCount(1), sectionId(_sectionId), info(0), other(0), hasValue(true),
             onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
             regRange(false), detached(false), withUnevalExpr(false),
             value(_value), size(0), expression(nullptr)
@@ -215,7 +215,7 @@ struct AsmExprTarget
     {
         AsmSymbolEntry* symbol; ///< symbol entry (if ASMXTGT_SYMBOL)
         struct {
-            cxuint sectionId;   ///< section id of destination
+            AsmSectionId sectionId;   ///< section id of destination
             union {
                 size_t offset;      ///< offset of destination
                 size_t cflowId;     ///< cflow index of destination
@@ -226,7 +226,7 @@ struct AsmExprTarget
     AsmExprTarget() { }
     
     /// constructor to create custom target
-    AsmExprTarget(AsmExprTargetType _type, cxuint _sectionId, size_t _offset)
+    AsmExprTarget(AsmExprTargetType _type, AsmSectionId _sectionId, size_t _offset)
             : type(_type), sectionId(_sectionId), offset(_offset)
     { }
     
@@ -239,7 +239,7 @@ struct AsmExprTarget
         return target;
     }
     /// make code flow target for expression
-    static AsmExprTarget codeFlowTarget(cxuint sectionId, size_t cflowIndex)
+    static AsmExprTarget codeFlowTarget(AsmSectionId sectionId, size_t cflowIndex)
     {
         AsmExprTarget target;
         target.type = ASMXTGT_CODEFLOW;
@@ -250,7 +250,7 @@ struct AsmExprTarget
     
     /// make n-bit word target for expression
     template<typename T>
-    static AsmExprTarget dataTarget(cxuint sectionId, size_t offset)
+    static AsmExprTarget dataTarget(AsmSectionId sectionId, size_t offset)
     {
         AsmExprTarget target;
         target.type = (sizeof(T)==1) ? ASMXTGT_DATA8 : (sizeof(T)==2) ? ASMXTGT_DATA16 :
@@ -264,12 +264,12 @@ struct AsmExprTarget
 /// assembler relocation
 struct AsmRelocation
 {
-    cxuint sectionId;   ///< section id where relocation is present
+    AsmSectionId sectionId;   ///< section id where relocation is present
     size_t offset;  ///< offset of relocation
     RelocType type; ///< relocation type
     union {
         AsmSymbolEntry* symbol; ///< symbol
-        cxuint relSectionId;    ///< section for which relocation is defined
+        AsmSectionId relSectionId;    ///< section for which relocation is defined
     };
     uint64_t addend;    ///< addend
 };
@@ -347,7 +347,7 @@ public:
      * \return operation status
      */
     AsmTryStatus tryEvaluate(Assembler& assembler, size_t opStart, size_t opEnd,
-                  uint64_t& value, cxuint& sectionId, bool withSectionDiffs = false) const;
+            uint64_t& value, AsmSectionId& sectionId, bool withSectionDiffs = false) const;
     
     /// try to evaluate expression with/without section differences
     /** 
@@ -357,7 +357,7 @@ public:
      * \param withSectionDiffs evaluate including precalculated section differences
      * \return operation status
      */
-    AsmTryStatus tryEvaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId,
+    AsmTryStatus tryEvaluate(Assembler& assembler, uint64_t& value, AsmSectionId& sectionId,
                     bool withSectionDiffs = false) const
     { return tryEvaluate(assembler, 0, ops.size(), value, sectionId, withSectionDiffs); }
     
@@ -368,7 +368,7 @@ public:
      * \param sectionId output section id
      * \return true if evaluated
      */
-    bool evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const
+    bool evaluate(Assembler& assembler, uint64_t& value, AsmSectionId& sectionId) const
     { return tryEvaluate(assembler, 0, ops.size(), value, sectionId) !=
                     AsmTryStatus::FAILED; }
     
@@ -382,7 +382,7 @@ public:
      * \return true if evaluated
      */
     bool evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
-                  uint64_t& value, cxuint& sectionId) const
+                  uint64_t& value, AsmSectionId& sectionId) const
     { return tryEvaluate(assembler, opStart, opEnd, value, sectionId) !=
                     AsmTryStatus::FAILED; }
     
@@ -432,7 +432,7 @@ public:
     
     /// substitute occurrence in expression by value
     void substituteOccurrence(AsmExprSymbolOccurrence occurrence, uint64_t value,
-                  cxuint sectionId = ASMSECT_ABS);
+                  AsmSectionId sectionId = ASMSECT_ABS);
     /// replace symbol in expression
     void replaceOccurrenceSymbol(AsmExprSymbolOccurrence occurrence,
                     AsmSymbolEntry* newSymEntry);
@@ -476,12 +476,12 @@ union AsmExprArg
     uint64_t value;         ///< value
     struct {
         uint64_t value;         ///< value
-        cxuint sectionId;       ///< sectionId
+        AsmSectionId sectionId;       ///< sectionId
     } relValue; ///< relative value (with section)
 };
 
 inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurrence,
-                        uint64_t value, cxuint sectionId)
+                        uint64_t value, AsmSectionId sectionId)
 {
     ops[occurrence.opIndex] = AsmExprOp::ARG_VALUE;
     args[occurrence.argIndex].relValue.value = value;

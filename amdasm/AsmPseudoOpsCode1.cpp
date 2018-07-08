@@ -564,7 +564,7 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
             else if (expr->getSymOccursNum()==0)
             {
                 // put directly to section
-                cxuint sectionId;
+                AsmSectionId sectionId;
                 AsmTryStatus  evalStatus = expr->tryEvaluate(asmr, value, sectionId,
                                         asmr.withSectionDiffs());
                 if (evalStatus == AsmTryStatus::SUCCESS)
@@ -1149,7 +1149,7 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char* linePtr)
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     uint64_t value;
-    cxuint sectionId = ASMSECT_ABS;
+    AsmSectionId sectionId = ASMSECT_ABS;
     const char* valuePlace = linePtr;
     bool good = getAnyValueArg(asmr, value, sectionId, linePtr);
     
@@ -1778,7 +1778,7 @@ void AsmPseudoOps::doFor(Assembler& asmr, const char* pseudoOpPlace, const char*
         ASM_NOTGOOD_BY_ERROR(linePtr, "Expected '='")
     skipCharAndSpacesToEnd(linePtr, end);
     uint64_t value = 0;
-    cxuint sectionId = ASMSECT_ABS;
+    AsmSectionId sectionId = ASMSECT_ABS;
     good &= AsmParseUtils::getAnyValueArg(asmr, value, sectionId, linePtr);
     if (good)
     {

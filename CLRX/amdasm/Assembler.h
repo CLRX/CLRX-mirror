@@ -294,7 +294,7 @@ protected:
     /// print warning about integer out of range
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
                 cxbyte signess = WS_BOTH);
-    void addCodeFlowEntry(cxuint sectionId, const AsmCodeFlowEntry& entry);
+    void addCodeFlowEntry(AsmSectionId sectionId, const AsmCodeFlowEntry& entry);
     /// constructor
     explicit ISAAssembler(Assembler& assembler);
 public:
@@ -308,9 +308,9 @@ public:
               const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output,
               ISAUsageHandler* usageHandler, ISAWaitHandler* waitHandler) = 0;
     /// resolve code with location, target and value
-    virtual bool resolveCode(const AsmSourcePos& sourcePos, cxuint targetSectionId,
+    virtual bool resolveCode(const AsmSourcePos& sourcePos, AsmSectionId targetSectionId,
                  cxbyte* sectionData, size_t offset, AsmExprTargetType targetType,
-                 cxuint sectionId, uint64_t value) = 0;
+                 AsmSectionId sectionId, uint64_t value) = 0;
     /// check if name is mnemonic
     virtual bool checkMnemonic(const CString& mnemonic) const = 0;
     /// set allocated registers (if regs is null then reset them)
@@ -392,9 +392,9 @@ public:
     void assemble(const CString& mnemonic, const char* mnemPlace, const char* linePtr,
                   const char* lineEnd, std::vector<cxbyte>& output,
                   ISAUsageHandler* usageHandler, ISAWaitHandler* waitHandler);
-    bool resolveCode(const AsmSourcePos& sourcePos, cxuint targetSectionId,
+    bool resolveCode(const AsmSourcePos& sourcePos, AsmSectionId targetSectionId,
                  cxbyte* sectionData, size_t offset, AsmExprTargetType targetType,
-                 cxuint sectionId, uint64_t value);
+                 AsmSectionId sectionId, uint64_t value);
     bool checkMnemonic(const CString& mnemonic) const;
     void setAllocatedRegisters(const cxuint* regs, Flags regFlags);
     const cxuint* getAllocatedRegisters(size_t& regTypesNum, Flags& regFlags) const;
@@ -505,7 +505,7 @@ public:
     void createInterferenceGraph();
     void colorInterferenceGraph();
     
-    void allocateRegisters(cxuint sectionId);
+    void allocateRegisters(AsmSectionId sectionId);
     
     const std::vector<CodeBlock>& getCodeBlocks() const
     { return codeBlocks; }
@@ -612,7 +612,7 @@ private:
     std::vector<DefSym> defSyms;
     std::vector<CString> includeDirs;
     std::vector<AsmSection> sections;
-    std::vector<Array<cxuint> > relSpacesSections;
+    std::vector<Array<AsmSectionId> > relSpacesSections;
     std::unordered_set<AsmSymbolEntry*> symbolSnapshots;
     std::unordered_set<AsmSymbolEntry*> symbolClones;
     std::vector<AsmExpression*> unevalExpressions;
@@ -656,7 +656,7 @@ private:
     std::stack<AsmClause> clauses;
     
     AsmKernelId currentKernel;
-    cxuint& currentSection;
+    AsmSectionId& currentSection;
     uint64_t& currentOutPos;
     
     bool withSectionDiffs() const
@@ -709,13 +709,13 @@ private:
                    bool localLabel = true, bool dontCreateSymbol = false);
     bool skipSymbol(const char*& linePtr);
     
-    bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId);
+    bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value, AsmSectionId sectionId);
     
     bool assignSymbol(const CString& symbolName, const char* symbolPlace,
                   const char* linePtr, bool reassign = true, bool baseExpr = false);
     
-    bool assignOutputCounter(const char* symbolPlace, uint64_t value, cxuint sectionId,
-                     cxbyte fillValue = 0);
+    bool assignOutputCounter(const char* symbolPlace, uint64_t value,
+                    AsmSectionId sectionId, cxbyte fillValue = 0);
     
     void parsePseudoOps(const CString& firstName, const char* stmtPlace,
                 const char* linePtr);
@@ -791,7 +791,7 @@ private:
     void goToSection(const char* pseudoOpPlace, const char* sectionName, uint64_t align=0);
     void goToSection(const char* pseudoOpPlace, const char* sectionName,
                      AsmSectionType type, Flags flags, uint64_t align=0);
-    void goToSection(const char* pseudoOpPlace, cxuint sectionId, uint64_t align=0);
+    void goToSection(const char* pseudoOpPlace, AsmSectionId sectionId, uint64_t align=0);
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
                   cxbyte signess = WS_BOTH);
@@ -811,7 +811,7 @@ private:
         return currentSection==ASMSECT_ABS ||
                 (sections[currentSection].flags & ASMSECT_UNRESOLVABLE) == 0;
     }
-    bool isResolvableSection(cxuint sectionId) const
+    bool isResolvableSection(AsmSectionId sectionId) const
     {
         return sectionId==ASMSECT_ABS ||
                 (sections[sectionId].flags & ASMSECT_UNRESOLVABLE) == 0;
@@ -819,13 +819,14 @@ private:
     
     // oldKernels and newKernels must be sorted
     void handleRegionsOnKernels(const std::vector<AsmKernelId>& newKernels,
-                const std::vector<AsmKernelId>& oldKernels, cxuint codeSection);
+                const std::vector<AsmKernelId>& oldKernels, AsmSectionId codeSection);
     
     void tryToResolveSymbol(AsmSymbolEntry& symEntry);
     void tryToResolveSymbols(AsmScope* scope);
     void printUnresolvedSymbols(AsmScope* scope);
     
-    bool resolveExprTarget(const AsmExpression* expr, uint64_t value, cxuint sectionId);
+    bool resolveExprTarget(const AsmExpression* expr, uint64_t value,
+                        AsmSectionId sectionId);
     
     void cloneSymEntryIfNeeded(AsmSymbolEntry& symEntry);
     
@@ -950,7 +951,7 @@ public:
     const std::vector<AsmSection>& getSections() const
     { return sections; }
     // get first sections for rel spaces
-    const std::vector<Array<cxuint> >& getRelSpacesSections() const
+    const std::vector<Array<AsmSectionId> >& getRelSpacesSections() const
     { return relSpacesSections; }
     /// get kernel map
     const KernelMap& getKernelMap() const
@@ -998,7 +999,8 @@ inline void ISAAssembler::printWarning(const AsmSourcePos& sourcePos, const char
 inline void ISAAssembler::printError(const AsmSourcePos& sourcePos, const char* message)
 { assembler.printError(sourcePos, message); }
 
-inline void ISAAssembler::addCodeFlowEntry(cxuint sectionId, const AsmCodeFlowEntry& entry)
+inline void ISAAssembler::addCodeFlowEntry(AsmSectionId sectionId,
+                    const AsmCodeFlowEntry& entry)
 { assembler.sections[sectionId].addCodeFlowEntry(entry); }
 
 };

@@ -995,7 +995,7 @@ const char* AsmForInputFilter::readLine(Assembler& assembler, size_t& lineSize)
     {
         repeatCount++;
         uint64_t value = 0;
-        cxuint sectionId = ASMSECT_ABS;
+        AsmSectionId sectionId = ASMSECT_ABS;
         bool good = true;
         if (asmFor->getNextExpr() != nullptr)
         {
@@ -1003,7 +1003,7 @@ const char* AsmForInputFilter::readLine(Assembler& assembler, size_t& lineSize)
             std::unique_ptr<AsmExpression> nextEvExpr(asmFor->getNextExpr()->
                         createExprToEvaluate(assembler));
             uint64_t nextValue = 0;
-            cxuint nextSectionId = ASMSECT_ABS;
+            AsmSectionId nextSectionId = ASMSECT_ABS;
             if (nextEvExpr != nullptr &&
                 nextEvExpr->evaluate(assembler, nextValue, nextSectionId))
                 // set symbol if evaluated without errors

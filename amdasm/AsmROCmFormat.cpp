@@ -146,7 +146,7 @@ AsmROCmHandler::~AsmROCmHandler()
 AsmKernelId AsmROCmHandler::addKernel(const char* kernelName)
 {
     AsmKernelId thisKernel = output.symbols.size();
-    cxuint thisSection = sections.size();
+    AsmSectionId thisSection = sections.size();
     output.addEmptyKernel(kernelName);
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
@@ -163,9 +163,9 @@ AsmKernelId AsmROCmHandler::addKernel(const char* kernelName)
     return thisKernel;
 }
 
-cxuint AsmROCmHandler::addSection(const char* sectionName, AsmKernelId kernelId)
+AsmSectionId AsmROCmHandler::addSection(const char* sectionName, AsmKernelId kernelId)
 {
-    const cxuint thisSection = sections.size();
+    const AsmSectionId thisSection = sections.size();
     Section section;
     section.kernelId = ASMKERN_GLOBAL;  // we ignore input kernelId, we go to main
     
@@ -218,7 +218,7 @@ cxuint AsmROCmHandler::addSection(const char* sectionName, AsmKernelId kernelId)
     return thisSection;
 }
 
-cxuint AsmROCmHandler::getSectionId(const char* sectionName) const
+AsmSectionId AsmROCmHandler::getSectionId(const char* sectionName) const
 {
     if (::strcmp(sectionName, ".rodata") == 0) // data
         return dataSection;
@@ -253,7 +253,7 @@ void AsmROCmHandler::setCurrentKernel(AsmKernelId kernel)
         assembler.currentSection = savedSection;
 }
 
-void AsmROCmHandler::setCurrentSection(cxuint sectionId)
+void AsmROCmHandler::setCurrentSection(AsmSectionId sectionId)
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("SectionId out of range");
@@ -268,7 +268,7 @@ void AsmROCmHandler::setCurrentSection(cxuint sectionId)
 }
 
 
-AsmFormatHandler::SectionInfo AsmROCmHandler::getSectionInfo(cxuint sectionId) const
+AsmFormatHandler::SectionInfo AsmROCmHandler::getSectionInfo(AsmSectionId sectionId) const
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("Section doesn't exists");
@@ -428,7 +428,7 @@ void AsmROCmPseudoOps::doControlDirective(AsmROCmHandler& handler,
     if (kernel.ctrlDirSection == ASMSECT_NONE)
     {
         // define control directive section (if not exists)
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ asmr.currentKernel,
             AsmSectionType::ROCM_CONFIG_CTRL_DIRECTIVE,
             ELFSECTID_UNDEF, nullptr });
@@ -468,11 +468,11 @@ void AsmROCmPseudoOps::addMetadata(AsmROCmHandler& handler, const char* pseudoOp
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    cxuint& metadataSection = handler.metadataSection;
+    AsmSectionId& metadataSection = handler.metadataSection;
     if (metadataSection == ASMSECT_NONE)
     {
         /* add this section */
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::ROCM_METADATA,
             ELFSECTID_UNDEF, nullptr });
         metadataSection = thisSection;
@@ -1809,7 +1809,7 @@ void AsmROCmPseudoOps::addGotSymbol(AsmROCmHandler& handler,
     if (handler.gotSection == ASMSECT_NONE)
     {
         // create GOT section
-        cxuint thisSection = handler.sections.size();
+        AsmSectionId thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_GLOBAL,
             AsmSectionType::ROCM_GOT, ROCMSECTID_GOT, nullptr });
         handler.gotSection = thisSection;
@@ -2502,9 +2502,9 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         assembler.sections[codeSection].relAddress =
                     binGen->getSectionOffset(ELFSECTID_TEXT);
         
-        Array<cxuint> relSections(1 + (dataSection != ASMSECT_NONE) +
+        Array<AsmSectionId> relSections(1 + (dataSection != ASMSECT_NONE) +
                     (gotSection != ASMSECT_NONE));
-        cxuint relSectionId = 0;
+        AsmSectionId relSectionId = 0;
         if (dataSection != ASMSECT_NONE)
         {
             assembler.sections[dataSection].relAddress =
@@ -2564,7 +2564,7 @@ void AsmROCmHandler::addSymbols(bool sectionDiffsPrepared)
             if (symEntry.second.sectionId==dataSection)
                 info = ELF32_ST_INFO(ELF32_ST_BIND(symEntry.second.info), STT_OBJECT);
             
-            cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
+            AsmSectionId binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
             if (binSectId==ELFSECTID_UNDEF)
                 continue; // no section

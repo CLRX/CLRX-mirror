@@ -81,7 +81,7 @@ enum class AsmSectionType: cxbyte
     EXTRA_SECTION = 0xff
 };
 
-enum: cxuint
+enum: AsmSectionId
 {
     ASMSECT_ABS = UINT_MAX,  ///< absolute section id
     ASMSECT_NONE = UINT_MAX,  ///< none section id
@@ -157,7 +157,7 @@ protected:
     
     // resolve LO32BIT/HI32BIT relocations (partially, helper)
     bool resolveLoHiRelocExpression(const AsmExpression* expr, RelocType& relType,
-                    cxuint& relSectionId, uint64_t& relValue);
+                    AsmSectionId& relSectionId, uint64_t& relValue);
 public:
     virtual ~AsmFormatHandler();
     
@@ -181,18 +181,18 @@ public:
      * \param kernelId kernel id (may ASMKERN_GLOBAL)
      * \return section id
      */
-    virtual cxuint addSection(const char* sectionName, AsmKernelId kernelId) = 0;
+    virtual AsmSectionId addSection(const char* sectionName, AsmKernelId kernelId) = 0;
     
     /// get section id if exists in current context, otherwise returns ASMSECT_NONE
-    virtual cxuint getSectionId(const char* sectionName) const = 0;
+    virtual AsmSectionId getSectionId(const char* sectionName) const = 0;
     
     /// set current kernel
     virtual void setCurrentKernel(AsmKernelId kernel) = 0;
     /// set current section, this method can change current kernel if that required 
-    virtual void setCurrentSection(cxuint sectionId) = 0;
+    virtual void setCurrentSection(AsmSectionId sectionId) = 0;
     
     /// get current section flags and type
-    virtual SectionInfo getSectionInfo(cxuint sectionId) const = 0;
+    virtual SectionInfo getSectionInfo(AsmSectionId sectionId) const = 0;
     /// parse pseudo-op (return true if recognized pseudo-op)
     virtual bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr) = 0;
@@ -200,10 +200,10 @@ public:
     virtual void handleLabel(const CString& label);
     /// resolve symbol if needed (for example that comes from unresolvable sections)
     virtual bool resolveSymbol(const AsmSymbol& symbol,
-               uint64_t& value, cxuint& sectionId);
+               uint64_t& value, AsmSectionId& sectionId);
     /// resolve relocation for specified expression
     virtual bool resolveRelocation(const AsmExpression* expr,
-                uint64_t& value, cxuint& sectionId);
+                uint64_t& value, AsmSectionId& sectionId);
     /// prepare binary for use
     virtual bool prepareBinary() = 0;
     /// write binary to output stream
@@ -223,7 +223,7 @@ protected:
     std::vector<AsmKernelId> kcodeSelection; // kcode
     std::stack<std::vector<AsmKernelId> > kcodeSelStack;
     AsmKernelId currentKcodeKernel;
-    cxuint codeSection;
+    AsmSectionId codeSection;
     
     explicit AsmKcodeHandler(Assembler& assembler);
     ~AsmKcodeHandler() = default;
@@ -253,14 +253,14 @@ public:
     ~AsmRawCodeHandler() = default;
     
     AsmKernelId addKernel(const char* kernelName);
-    cxuint addSection(const char* sectionName, AsmKernelId kernelId);
+    AsmSectionId addSection(const char* sectionName, AsmKernelId kernelId);
 
-    cxuint getSectionId(const char* sectionName) const;
+    AsmSectionId getSectionId(const char* sectionName) const;
     
     void setCurrentKernel(AsmKernelId kernel);
-    void setCurrentSection(cxuint sectionId);
+    void setCurrentSection(AsmSectionId sectionId);
     
-    SectionInfo getSectionInfo(cxuint sectionId) const;
+    SectionInfo getSectionInfo(AsmSectionId sectionId) const;
     bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
     
@@ -273,31 +273,31 @@ public:
 class AsmAmdHandler: public AsmFormatHandler
 {
 private:
-    typedef std::unordered_map<CString, cxuint> SectionMap;
+    typedef std::unordered_map<CString, AsmSectionId> SectionMap;
     friend struct AsmAmdPseudoOps;
     AmdInput output;
     struct Section
     {
         AsmKernelId kernelId;
         AsmSectionType type;
-        cxuint elfBinSectId;
+        AsmSectionId elfBinSectId;
         const char* name;
         uint32_t extraId; // for example CALNote id
     };
     struct Kernel : KernelBase
     {
-        cxuint headerSection;
-        cxuint metadataSection;
-        cxuint configSection;
-        cxuint codeSection;
-        cxuint dataSection;
-        std::vector<cxuint> calNoteSections;
+        AsmSectionId headerSection;
+        AsmSectionId metadataSection;
+        AsmSectionId configSection;
+        AsmSectionId codeSection;
+        AsmSectionId dataSection;
+        std::vector<AsmSectionId> calNoteSections;
         SectionMap extraSectionMap;
-        cxuint extraSectionCount;
-        cxuint savedSection;
+        AsmSectionId extraSectionCount;
+        AsmSectionId savedSection;
         std::unordered_set<CString> argNamesSet;
         
-        explicit Kernel(cxuint _codeSection = ASMSECT_NONE) : KernelBase{},
+        explicit Kernel(AsmSectionId _codeSection = ASMSECT_NONE) : KernelBase{},
                 headerSection(ASMSECT_NONE), metadataSection(ASMSECT_NONE),
                 configSection(ASMSECT_NONE), codeSection(_codeSection),
                 dataSection(ASMSECT_NONE), extraSectionCount(0),
@@ -308,9 +308,9 @@ private:
     // use pointer to prevents copying Kernel objects
     std::vector<Kernel*> kernelStates;
     SectionMap extraSectionMap;
-    cxuint dataSection; // global
-    cxuint savedSection;
-    cxuint extraSectionCount;
+    AsmSectionId dataSection; // global
+    AsmSectionId savedSection;
+    AsmSectionId extraSectionCount;
     
     cxuint detectedDriverVersion;
     
@@ -326,13 +326,13 @@ public:
     ~AsmAmdHandler();
     
     AsmKernelId addKernel(const char* kernelName);
-    cxuint addSection(const char* sectionName, AsmKernelId kernelId);
+    AsmSectionId addSection(const char* sectionName, AsmKernelId kernelId);
     
-    cxuint getSectionId(const char* sectionName) const;
+    AsmSectionId getSectionId(const char* sectionName) const;
     void setCurrentKernel(AsmKernelId kernel);
-    void setCurrentSection(cxuint sectionId);
+    void setCurrentSection(AsmSectionId sectionId);
     
-    SectionInfo getSectionInfo(cxuint sectionId) const;
+    SectionInfo getSectionInfo(AsmSectionId sectionId) const;
     bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
     
@@ -367,14 +367,14 @@ struct AsmAmdHsaKernelConfig: AmdHsaKernelConfig
 class AsmAmdCL2Handler: public AsmKcodeHandler
 {
 private:
-    typedef std::unordered_map<CString, cxuint> SectionMap;
+    typedef std::unordered_map<CString, AsmSectionId> SectionMap;
     friend struct AsmAmdCL2PseudoOps;
     AmdCL2Input output;
     struct Section
     {
         AsmKernelId kernelId;
         AsmSectionType type;
-        cxuint elfBinSectId;
+        AsmSectionId elfBinSectId;
         const char* name;
         uint32_t extraId;
     };
@@ -388,19 +388,19 @@ private:
     typedef std::unordered_map<CString, Relocation> RelocMap;
     struct Kernel : KernelBase
     {
-        cxuint stubSection;
-        cxuint setupSection;
-        cxuint metadataSection;
-        cxuint isaMetadataSection;
-        cxuint configSection;
-        cxuint ctrlDirSection;
-        cxuint codeSection;
-        cxuint savedSection;
+        AsmSectionId stubSection;
+        AsmSectionId setupSection;
+        AsmSectionId metadataSection;
+        AsmSectionId isaMetadataSection;
+        AsmSectionId configSection;
+        AsmSectionId ctrlDirSection;
+        AsmSectionId codeSection;
+        AsmSectionId savedSection;
         bool useHsaConfig; // 
         std::unique_ptr<AsmAmdHsaKernelConfig> hsaConfig; // hsaConfig
         std::unordered_set<CString> argNamesSet;
         
-        explicit Kernel(cxuint _codeSection = ASMSECT_NONE) : KernelBase{},
+        explicit Kernel(AsmSectionId _codeSection = ASMSECT_NONE) : KernelBase{},
             stubSection(ASMSECT_NONE), setupSection(ASMSECT_NONE),
             metadataSection(ASMSECT_NONE), isaMetadataSection(ASMSECT_NONE),
             configSection(ASMSECT_NONE), ctrlDirSection(ASMSECT_NONE),
@@ -416,14 +416,14 @@ private:
     RelocMap relocsMap;
     SectionMap extraSectionMap;
     SectionMap innerExtraSectionMap;
-    cxuint rodataSection; // global inner
-    cxuint dataSection; // global inner
-    cxuint bssSection; // global inner
-    cxuint samplerInitSection;
-    cxuint savedSection;
-    cxuint innerSavedSection;
-    cxuint extraSectionCount;
-    cxuint innerExtraSectionCount;
+    AsmSectionId rodataSection; // global inner
+    AsmSectionId dataSection; // global inner
+    AsmSectionId bssSection; // global inner
+    AsmSectionId samplerInitSection;
+    AsmSectionId savedSection;
+    AsmSectionId innerSavedSection;
+    AsmSectionId extraSectionCount;
+    AsmSectionId innerExtraSectionCount;
     bool hsaLayout;
     
     cxuint detectedDriverVersion;
@@ -439,18 +439,19 @@ public:
     ~AsmAmdCL2Handler();
     
     AsmKernelId addKernel(const char* kernelName);
-    cxuint addSection(const char* sectionName, AsmKernelId kernelId);
+    AsmSectionId addSection(const char* sectionName, AsmKernelId kernelId);
     
-    cxuint getSectionId(const char* sectionName) const;
+    AsmSectionId getSectionId(const char* sectionName) const;
     void setCurrentKernel(AsmKernelId kernel);
-    void setCurrentSection(cxuint sectionId);
+    void setCurrentSection(AsmSectionId sectionId);
     
-    SectionInfo getSectionInfo(cxuint sectionId) const;
+    SectionInfo getSectionInfo(AsmSectionId sectionId) const;
     bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
     
-    bool resolveSymbol(const AsmSymbol& symbol, uint64_t& value, cxuint& sectionId);
-    bool resolveRelocation(const AsmExpression* expr, uint64_t& value, cxuint& sectionId);
+    bool resolveSymbol(const AsmSymbol& symbol, uint64_t& value, AsmSectionId& sectionId);
+    bool resolveRelocation(const AsmExpression* expr, uint64_t& value,
+                           AsmSectionId& sectionId);
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;
     void writeBinary(Array<cxbyte>& array) const;
@@ -473,25 +474,25 @@ private:
         MAINLAYOUT, CONFIG, ARGS, PROGINFO
     };
     
-    typedef std::unordered_map<CString, cxuint> SectionMap;
+    typedef std::unordered_map<CString, AsmSectionId> SectionMap;
     friend struct AsmGalliumPseudoOps;
     GalliumInput output;
     struct Section
     {
         AsmKernelId kernelId;
         AsmSectionType type;
-        cxuint elfBinSectId;
+        AsmSectionId elfBinSectId;
         const char* name;    // must be available by whole lifecycle
     };
     struct Kernel : KernelBase
     {
-        cxuint defaultSection;
+        AsmSectionId defaultSection;
         std::unique_ptr<AsmAmdHsaKernelConfig> hsaConfig;
-        cxuint ctrlDirSection;
+        AsmSectionId ctrlDirSection;
         bool hasProgInfo;
         cxbyte progInfoEntries;
         
-        explicit Kernel(cxuint _defaultSection = ASMSECT_NONE) : KernelBase{},
+        explicit Kernel(AsmSectionId _defaultSection = ASMSECT_NONE) : KernelBase{},
                 defaultSection(_defaultSection), hsaConfig(nullptr),
                 ctrlDirSection(ASMSECT_NONE), hasProgInfo(false), progInfoEntries(0)
         { }
@@ -501,12 +502,12 @@ private:
     std::vector<Kernel*> kernelStates;
     std::vector<Section> sections;
     SectionMap extraSectionMap;
-    cxuint dataSection;
-    cxuint commentSection;
-    cxuint scratchSection;
-    cxuint savedSection;
+    AsmSectionId dataSection;
+    AsmSectionId commentSection;
+    AsmSectionId scratchSection;
+    AsmSectionId savedSection;
     Inside inside;
-    cxuint extraSectionCount;
+    AsmSectionId extraSectionCount;
     
     cxuint detectedDriverVersion;
     cxuint detectedLLVMVersion;
@@ -523,18 +524,19 @@ public:
     ~AsmGalliumHandler();
     
     AsmKernelId addKernel(const char* kernelName);
-    cxuint addSection(const char* sectionName, AsmKernelId kernelId);
+    AsmSectionId addSection(const char* sectionName, AsmKernelId kernelId);
     
-    cxuint getSectionId(const char* sectionName) const;
+    AsmSectionId getSectionId(const char* sectionName) const;
     void setCurrentKernel(AsmKernelId kernel);
-    void setCurrentSection(cxuint sectionId);
+    void setCurrentSection(AsmSectionId sectionId);
     
-    SectionInfo getSectionInfo(cxuint sectionId) const;
+    SectionInfo getSectionInfo(AsmSectionId sectionId) const;
     bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
     
-    bool resolveSymbol(const AsmSymbol& symbol, uint64_t& value, cxuint& sectionId);
-    bool resolveRelocation(const AsmExpression* expr, uint64_t& value, cxuint& sectionId);
+    bool resolveSymbol(const AsmSymbol& symbol, uint64_t& value, AsmSectionId& sectionId);
+    bool resolveRelocation(const AsmExpression* expr, uint64_t& value,
+                    AsmSectionId& sectionId);
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;
     void writeBinary(Array<cxbyte>& array) const;
@@ -554,7 +556,7 @@ typedef AsmAmdHsaKernelConfig AsmROCmKernelConfig;
 class AsmROCmHandler: public AsmKcodeHandler
 {
 private:
-    typedef std::unordered_map<CString, cxuint> SectionMap;
+    typedef std::unordered_map<CString, AsmSectionId> SectionMap;
     friend struct AsmROCmPseudoOps;
     ROCmInput output;
     std::unique_ptr<ROCmBinGenerator> binGen;
@@ -562,18 +564,18 @@ private:
     {
         AsmKernelId kernelId;
         AsmSectionType type;
-        cxuint elfBinSectId;
+        AsmSectionId elfBinSectId;
         const char* name;    // must be available by whole lifecycle
     };
     struct Kernel : KernelBase
     {
-        cxuint configSection;
+        AsmSectionId configSection;
         std::unique_ptr<AsmROCmKernelConfig> config;
         bool isFKernel;
-        cxuint ctrlDirSection;
-        cxuint savedSection;
+        AsmSectionId ctrlDirSection;
+        AsmSectionId savedSection;
         
-        explicit Kernel(cxuint _configSection = ASMSECT_NONE): KernelBase{},
+        explicit Kernel(AsmSectionId _configSection = ASMSECT_NONE): KernelBase{},
                 configSection(_configSection), config(nullptr), isFKernel(false),
                 ctrlDirSection(ASMSECT_NONE), savedSection(ASMSECT_NONE)
         { }
@@ -584,12 +586,12 @@ private:
     std::vector<Section> sections;
     std::vector<CString> gotSymbols;
     SectionMap extraSectionMap;
-    cxuint commentSection;
-    cxuint metadataSection;
-    cxuint dataSection;
-    cxuint gotSection;
-    cxuint savedSection;
-    cxuint extraSectionCount;
+    AsmSectionId commentSection;
+    AsmSectionId metadataSection;
+    AsmSectionId dataSection;
+    AsmSectionId gotSection;
+    AsmSectionId savedSection;
+    AsmSectionId extraSectionCount;
     
     size_t prevSymbolsCount;
     
@@ -604,13 +606,13 @@ public:
     ~AsmROCmHandler();
     
     AsmKernelId addKernel(const char* kernelName);
-    cxuint addSection(const char* sectionName, AsmKernelId kernelId);
+    AsmSectionId addSection(const char* sectionName, AsmKernelId kernelId);
     
-    cxuint getSectionId(const char* sectionName) const;
+    AsmSectionId getSectionId(const char* sectionName) const;
     void setCurrentKernel(AsmKernelId kernel);
-    void setCurrentSection(cxuint sectionId);
+    void setCurrentSection(AsmSectionId sectionId);
     
-    SectionInfo getSectionInfo(cxuint sectionId) const;
+    SectionInfo getSectionInfo(AsmSectionId sectionId) const;
     bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
     

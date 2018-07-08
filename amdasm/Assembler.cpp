@@ -281,7 +281,7 @@ bool AsmParseUtils::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
         ASM_FAIL_BY_ERROR(exprPlace, "Expected expression")
     if (expr->isEmpty()) // do not set if empty expression
         return true;
-    cxuint sectionId; // for getting
+    AsmSectionId sectionId; // for getting
     if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
         return false;
     else if (sectionId != ASMSECT_ABS)
@@ -292,7 +292,7 @@ bool AsmParseUtils::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
 
 // get any value (also position in section)
 bool AsmParseUtils::getAnyValueArg(Assembler& asmr, uint64_t& value,
-                   cxuint& sectionId, const char*& linePtr)
+                   AsmSectionId& sectionId, const char*& linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -327,7 +327,7 @@ bool AsmParseUtils::getJumpValueArg(Assembler& asmr, uint64_t& value,
         ASM_FAIL_BY_ERROR(exprPlace, "Expected expression")
     if (expr->getSymOccursNum()==0)
     {
-        cxuint sectionId;
+        AsmSectionId sectionId;
         AsmTryStatus evalStatus = expr->tryEvaluate(asmr, value, sectionId,
                             asmr.withSectionDiffs());
         if (evalStatus == AsmTryStatus::FAILED) // failed evaluation!
@@ -586,7 +586,7 @@ bool AsmParseUtils::parseDimensions(Assembler& asmr, const char*& linePtr, cxuin
 }
 
 void AsmParseUtils::setSymbolValue(Assembler& asmr, const char* linePtr,
-                    uint64_t value, cxuint sectionId)
+                    uint64_t value, AsmSectionId sectionId)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1413,7 +1413,7 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
 }
 
 bool Assembler::resolveExprTarget(const AsmExpression* expr,
-                        uint64_t value, cxuint sectionId)
+                        uint64_t value, AsmSectionId sectionId)
 {
     const AsmExprTarget& target = expr->getTarget();
     switch(target.type)
@@ -1525,7 +1525,7 @@ void Assembler::cloneSymEntryIfNeeded(AsmSymbolEntry& symEntry)
     }
 }
 
-bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId)
+bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, AsmSectionId sectionId)
 {
     cloneSymEntryIfNeeded(symEntry);
     symEntry.second.value = value;
@@ -1562,7 +1562,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
             {
                 // expresion has been fully resolved
                 uint64_t value;
-                cxuint sectionId;
+                AsmSectionId sectionId;
                 const AsmExprTarget& target = expr->getTarget();
                 if (!resolvingRelocs || target.type==ASMXTGT_SYMBOL)
                 {
@@ -1739,7 +1739,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     
     std::unique_ptr<AsmExpression> expr;
     uint64_t value;
-    cxuint sectionId = ASMSECT_ABS;
+    AsmSectionId sectionId = ASMSECT_ABS;
     if (makeBaseExpr || !AsmExpression::fastExprEvaluate(*this, linePtr, value))
     {
         expr.reset(AsmExpression::parse(*this, linePtr, makeBaseExpr));
@@ -1786,7 +1786,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     {
         // can evalute, assign now
         uint64_t value;
-        cxuint sectionId;
+        AsmSectionId sectionId;
         
         AsmTryStatus evalStatus = expr->tryEvaluate(*this, value, sectionId,
                                     withSectionDiffs());
@@ -1841,7 +1841,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
 }
 
 bool Assembler::assignOutputCounter(const char* symbolPlace, uint64_t value,
-            cxuint sectionId, cxbyte fillValue)
+            AsmSectionId sectionId, cxbyte fillValue)
 {
     initializeOutputFormat();
     // checking conditions and fail if not satisfied
@@ -2577,11 +2577,11 @@ void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
 void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
                             uint64_t align)
 {
-    const cxuint sectionId = formatHandler->getSectionId(sectionName);
+    const AsmSectionId sectionId = formatHandler->getSectionId(sectionName);
     if (sectionId == ASMSECT_NONE)
     {
         // try to add new section
-        cxuint sectionId;
+        AsmSectionId sectionId;
         try
         { sectionId = formatHandler->addSection(sectionName, currentKernel); }
         catch(const AsmFormatException& ex)
@@ -2616,11 +2616,11 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
 void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
         AsmSectionType type, Flags flags, uint64_t align)
 {
-    const cxuint sectionId = formatHandler->getSectionId(sectionName);
+    const AsmSectionId sectionId = formatHandler->getSectionId(sectionName);
     if (sectionId == ASMSECT_NONE)
     {
         // try to add new section
-        cxuint sectionId;
+        AsmSectionId sectionId;
         try
         { sectionId = formatHandler->addSection(sectionName, currentKernel); }
         catch(const AsmFormatException& ex)
@@ -2659,7 +2659,8 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
 }
 
 // go to section, when not exists create it with specified alignment
-void Assembler::goToSection(const char* pseudoOpPlace, cxuint sectionId, uint64_t align)
+void Assembler::goToSection(const char* pseudoOpPlace, AsmSectionId sectionId,
+                        uint64_t align)
 {
     try
     { formatHandler->setCurrentSection(sectionId); }
@@ -2720,7 +2721,7 @@ bool Assembler::getRegVar(const CString& name, const AsmRegVar*& regVar)
 }
 
 void Assembler::handleRegionsOnKernels(const std::vector<AsmKernelId>& newKernels,
-                const std::vector<AsmKernelId>& oldKernels, cxuint codeSection)
+                const std::vector<AsmKernelId>& oldKernels, AsmSectionId codeSection)
 {
     auto oldit = oldKernels.begin();
     auto newit = newKernels.begin();
@@ -2764,7 +2765,7 @@ void Assembler::tryToResolveSymbol(AsmSymbolEntry& symEntry)
     {
         // try to resolve symbols
         uint64_t value;
-        cxuint sectionId;
+        AsmSectionId sectionId;
         if (formatHandler!=nullptr &&
             formatHandler->resolveSymbol(symEntry.second, value, sectionId))
             setSymbol(symEntry, value, sectionId);
@@ -3007,7 +3008,7 @@ bool Assembler::assemble()
         // make firstname as lowercase
         toLowerString(firstName);
         
-        const cxuint oldCurrentSection = currentSection;
+        const AsmSectionId oldCurrentSection = currentSection;
         const uint64_t oldCurrentOutPos = currentOutPos;
         AsmSourcePos sourcePos{};
         if (collectSourcePoses)
@@ -3112,7 +3113,7 @@ bool Assembler::assemble()
         {
             // try to resolve unevaluated expressions
             uint64_t value;
-            cxuint sectionId;
+            AsmSectionId sectionId;
             if (expr->evaluate(*this, value, sectionId))
                 resolveExprTarget(expr, value, sectionId);
             delete expr;
@@ -3134,7 +3135,7 @@ bool Assembler::assemble()
         for (AsmKernelId i = 0; i < kernels.size(); i++)
         {
             currentKernel = i;
-            cxuint sectionId = formatHandler->getSectionId(".text");
+            AsmSectionId sectionId = formatHandler->getSectionId(".text");
             if (sectionId == ASMSECT_NONE)
             {
                 currentKernel = ASMKERN_GLOBAL;
