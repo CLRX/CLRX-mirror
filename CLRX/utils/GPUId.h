@@ -101,6 +101,27 @@ enum class GPUArchitecture: cxbyte
     GPUARCH_MAX = GCN1_4_1    /// last value
 };
 
+typedef uint16_t GPUArchMask;
+
+// GCN architecture masks (bit represents architecture)
+enum : GPUArchMask
+{
+    ARCH_SOUTHERN_ISLANDS = 1,
+    ARCH_SEA_ISLANDS = 2,
+    ARCH_VOLCANIC_ISLANDS = 4,
+    ARCH_HD7X00 = 1,
+    ARCH_RX2X0 = 2,
+    ARCH_RX3X0 = 4,
+    ARCH_RXVEGA = 8,
+    ARCH_VEGA20 = 16,
+    ARCH_GCN_1_0_1 = 0x3,
+    ARCH_GCN_1_1_2 = 0x6,
+    ARCH_GCN_1_1_2_4 = 0x1e,
+    ARCH_GCN_1_2_4 = 0x1c,
+    ARCH_GCN_1_4 = 0x18,
+    ARCH_GCN_ALL = 0xffff
+};
+
 /// get GPU device type from name
 extern GPUDeviceType getGPUDeviceTypeFromName(const char* name);
 
@@ -155,7 +176,7 @@ extern cxuint getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType
                          Flags flags = 0);
 
 /// get maximum available registers for GPU (type: 0 - scalar, 1 - vector)
-extern cxuint getGPUMaxRegsNumByArchMask(uint16_t archMask, cxuint regType);
+extern cxuint getGPUMaxRegsNumByArchMask(GPUArchMask archMask, cxuint regType);
 
 /// get minimal number of required registers
 extern void getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,

@@ -24,6 +24,7 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
+#include <CLRX/utils/GPUId.h>
 #include "GCNAsmInternals.h"
 
 using namespace CLRX;
@@ -72,7 +73,7 @@ void GCNAsmUtils::printXRegistersRequired(Assembler& asmr, const char* linePtr,
 }
 
 bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
-                 RegRange& regPair, uint16_t arch, cxuint regsNum, AsmRegField regField,
+                 RegRange& regPair, GPUArchMask arch, cxuint regsNum, AsmRegField regField,
                  Flags flags, bool required)
 {
     const char* oldLinePtr = linePtr;
@@ -163,7 +164,7 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
 }
 
 bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
-            RegRange& regPair, uint16_t arch, cxuint regsNum, AsmRegField regField,
+            RegRange& regPair, GPUArchMask arch, cxuint regsNum, AsmRegField regField,
             Flags flags, bool required)
 {
     const char* oldLinePtr = linePtr;
@@ -400,7 +401,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
 }
 
 bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
-                    uint16_t arch, cxuint regsNum, AsmRegField regField,
+                    GPUArchMask arch, cxuint regsNum, AsmRegField regField,
                     bool required, Flags flags)
 {
     const char* oldLinePtr = linePtr;
@@ -1007,7 +1008,7 @@ static const size_t ssourceNamesGCN14TblSize = sizeof(ssourceNamesGCN14Tbl) /
 
 // main routine to parse operand
 bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
-             std::unique_ptr<AsmExpression>* outTargetExpr, uint16_t arch,
+             std::unique_ptr<AsmExpression>* outTargetExpr, GPUArchMask arch,
              cxuint regsNum, Flags instrOpMask, AsmRegField regField)
 {
     if (outTargetExpr!=nullptr)
@@ -1608,7 +1609,7 @@ bool GCNAsmUtils::parseImmWithBoolArray(Assembler& asmr, const char*& linePtr,
 }
 
 bool GCNAsmUtils::parseSingleOMODCLAMP(Assembler& asmr, const char*& linePtr,
-                    const char* modPlace, const char* mod, uint16_t arch,
+                    const char* modPlace, const char* mod, GPUArchMask arch,
                     cxbyte& mods, VOPOpModifiers& opMods, cxuint modOperands,
                     cxuint flags, bool& haveAbs, bool& haveNeg,
                     bool& alreadyModDefined, bool& good)
@@ -1760,7 +1761,7 @@ static const size_t vopSDWADSTSelNamesNum = sizeof(vopSDWADSTSelNamesMap)/
  * modifier specific for VOP_SDWA and VOP_DPP stored in extraMods structure
  * withSDWAOperands - specify number of operand for that modifier will be parsed */
 bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
-                uint16_t arch, cxbyte& mods, VOPOpModifiers& opMods, cxuint modOperands,
+                GPUArchMask arch, cxbyte& mods, VOPOpModifiers& opMods, cxuint modOperands,
                 VOPExtraModifiers* extraMods, cxuint flags, cxuint withSDWAOperands)
 {
     const char* end = asmr.line+asmr.lineSize;
@@ -2545,7 +2546,7 @@ bool GCNAsmUtils::checkGCNVOPEncoding(Assembler& asmr, const char* insnPtr,
     return true;
 }
 
-bool GCNAsmUtils::checkGCNVOPExtraModifers(Assembler& asmr, uint16_t arch, bool needImm,
+bool GCNAsmUtils::checkGCNVOPExtraModifers(Assembler& asmr, GPUArchMask arch, bool needImm,
                  bool sextFlags, bool vop3, GCNVOPEnc gcnVOPEnc, const GCNOperand& src0Op,
                  VOPExtraModifiers& extraMods, const char* instrPlace)
 {

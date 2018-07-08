@@ -266,7 +266,7 @@ cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
     return maxSgprs;
 }
 
-cxuint CLRX::getGPUMaxRegsNumByArchMask(uint16_t archMask, cxuint regType)
+cxuint CLRX::getGPUMaxRegsNumByArchMask(GPUArchMask archMask, cxuint regType)
 {
     if (regType == REGTYPE_VGPR)
         return 256;

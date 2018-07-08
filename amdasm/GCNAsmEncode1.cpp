@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/GPUId.h>
 #include <CLRX/amdasm/GCNDefs.h>
 #include "GCNAsmInternals.h"
 
@@ -38,7 +39,7 @@ static const uint32_t constImmFloatLiterals[9] =
 };
 
 // used while converting 32-bit SOPx encoding to 64-bit SOPx encoding
-static void tryPromoteConstImmToLiteral(GCNOperand& src0Op, uint16_t arch)
+static void tryPromoteConstImmToLiteral(GCNOperand& src0Op, GPUArchMask arch)
 {
     if (!src0Op.range.isRegVar() && src0Op.range.start>=128 && src0Op.range.start<=208)
     {
@@ -64,7 +65,7 @@ static inline bool regRangeCanEqual(const RegRange& r1, const RegRange& r2)
 }
 
 bool GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize)
 {
@@ -153,7 +154,7 @@ bool GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 }
 
 bool GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize)
 {
@@ -276,7 +277,7 @@ static const size_t hwregNamesGCN14MapSize = sizeof(hwregNamesGCN14Map) /
             sizeof(std::pair<const char*, uint16_t>);
 
 bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize)
 {
@@ -456,7 +457,7 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 }
 
 bool GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize)
 {
@@ -574,7 +575,7 @@ static const char* sendMsgGSOPTable[] =
 static const size_t sendMsgGSOPTableSize = sizeof(sendMsgGSOPTable) / sizeof(const char*);
 
 bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize)
 {
@@ -860,7 +861,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 }
 
 bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize)
 {
@@ -960,7 +961,7 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 }
 
 bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize)
 {
@@ -1254,7 +1255,7 @@ static void encodeVOP3Words(bool isGCN12, const GCNAsmInstruction& gcnInsn,
 }
 
 bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize, GCNVOPEnc gcnVOPEnc)
 {
@@ -1525,7 +1526,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 }
 
 bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize, GCNVOPEnc gcnVOPEnc)
 {
@@ -1669,7 +1670,7 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 }
 
 bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize, GCNVOPEnc gcnVOPEnc)
 {
@@ -1847,7 +1848,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 }
 
 bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize, GCNVOPEnc gcnVOPEnc)
 {
@@ -2178,7 +2179,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 }
 
 bool GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize, GCNVOPEnc gcnVOPEnc)
 {
@@ -2230,7 +2231,7 @@ bool GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
 }
 
 bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize)
 {

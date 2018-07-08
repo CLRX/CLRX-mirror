@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+#include <CLRX/utils/GPUId.h>
 #include "GCNInternals.h"
 
 using namespace CLRX;

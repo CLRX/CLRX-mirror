@@ -146,7 +146,7 @@ void GCNDisasmUtils::printLiteral(GCNDisassembler& dasm, size_t codePos,
 }
 
 void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
-           cxuint regNum, char*& bufPtr, uint16_t arch, FloatLitType floatLit)
+           cxuint regNum, char*& bufPtr, GPUArchMask arch, FloatLitType floatLit)
 {
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
     const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
@@ -348,7 +348,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
 }
 
 char* GCNDisasmUtils::decodeGCNOperand(GCNDisassembler& dasm, size_t codePos,
-              RelocIter& relocIter, cxuint op, cxuint regNum, uint16_t arch,
+              RelocIter& relocIter, cxuint op, cxuint regNum, GPUArchMask arch,
               uint32_t literal, FloatLitType floatLit)
 {
     FastOutputBuffer& output = dasm.output;
@@ -406,7 +406,7 @@ static void addSpaces(char*& bufPtr, cxuint spacesToAdd)
 }
 
 void GCNDisasmUtils::decodeSOPCEncoding(GCNDisassembler& dasm, size_t codePos,
-         RelocIter& relocIter, cxuint spacesToAdd, uint16_t arch,
+         RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
     FastOutputBuffer& output = dasm.output;
@@ -435,7 +435,7 @@ void GCNDisasmUtils::decodeSOPCEncoding(GCNDisassembler& dasm, size_t codePos,
 
 /// about label writer - label is workaround for class hermetization
 void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
-         uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
+         GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
          uint32_t literal, size_t pos)
 {
     const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
@@ -587,7 +587,7 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
 }
 
 void GCNDisasmUtils::decodeSOP1Encoding(GCNDisassembler& dasm, size_t codePos,
-         RelocIter& relocIter, cxuint spacesToAdd, uint16_t arch,
+         RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
     FastOutputBuffer& output = dasm.output;
@@ -629,7 +629,7 @@ void GCNDisasmUtils::decodeSOP1Encoding(GCNDisassembler& dasm, size_t codePos,
 }
 
 void GCNDisasmUtils::decodeSOP2Encoding(GCNDisassembler& dasm, size_t codePos,
-         RelocIter& relocIter, cxuint spacesToAdd, uint16_t arch,
+         RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
     FastOutputBuffer& output = dasm.output;
@@ -676,7 +676,7 @@ static const char* hwregNames[20] =
 
 /// about label writer - label is workaround for class hermetization
 void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
-         RelocIter& relocIter, cxuint spacesToAdd, uint16_t arch,
+         RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
     FastOutputBuffer& output = dasm.output;
@@ -755,7 +755,7 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
 }
 
 void GCNDisasmUtils::decodeSMRDEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
-             uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode)
+             GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode)
 {
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(100);
@@ -830,7 +830,7 @@ void GCNDisasmUtils::decodeSMRDEncoding(GCNDisassembler& dasm, cxuint spacesToAd
 }
 
 void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
-         uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
+         GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
          uint32_t insnCode2)
 {
     FastOutputBuffer& output = dasm.output;
@@ -986,7 +986,7 @@ static const char* sdwaDstUnusedTbl[] =
 };
 
 /* returns mask of abs,neg,sext for src0 and src1 argument and src0 register */
-static inline VOPExtraWordOut decodeVOPSDWAFlags(uint32_t insnCode2, uint16_t arch)
+static inline VOPExtraWordOut decodeVOPSDWAFlags(uint32_t insnCode2, GPUArchMask arch)
 {
     const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     return { uint16_t((insnCode2&0xff) +
@@ -997,7 +997,7 @@ static inline VOPExtraWordOut decodeVOPSDWAFlags(uint32_t insnCode2, uint16_t ar
 }
 
 // decode and print VOP SDWA encoding
-static void decodeVOPSDWA(FastOutputBuffer& output, uint16_t arch, uint32_t insnCode2,
+static void decodeVOPSDWA(FastOutputBuffer& output, GPUArchMask arch, uint32_t insnCode2,
           bool src0Used, bool src1Used, bool vopc = false)
 {
     char* bufStart = output.reserve(100);
@@ -1171,7 +1171,7 @@ static void decodeVOPDPP(FastOutputBuffer& output, uint32_t insnCode2,
 }
 
 void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
-         RelocIter& relocIter, cxuint spacesToAdd, uint16_t arch,
+         RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
          FloatLitType displayFloatLits)
 {
@@ -1257,7 +1257,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
 }
 
 void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
-         RelocIter& relocIter, cxuint spacesToAdd, uint16_t arch,
+         RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
          FloatLitType displayFloatLits)
 {
@@ -1344,7 +1344,7 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
 }
 
 void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
-         RelocIter& relocIter, cxuint spacesToAdd, uint16_t arch,
+         RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
          FloatLitType displayFloatLits)
 {
@@ -1475,7 +1475,7 @@ static void decodeVINTRPParam(uint16_t p, char*& bufPtr)
 }
 
 void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAdd,
-         uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
+         GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
          uint32_t insnCode2, FloatLitType displayFloatLits)
 {
     FastOutputBuffer& output = dasm.output;
@@ -1863,7 +1863,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
 }
 
 void GCNDisasmUtils::decodeVINTRPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
-          uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode)
+          GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode)
 {
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(90);
@@ -1887,7 +1887,7 @@ void GCNDisasmUtils::decodeVINTRPEncoding(GCNDisassembler& dasm, cxuint spacesTo
 }
 
 void GCNDisasmUtils::decodeDSEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
-          uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
+          GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
           uint32_t insnCode2)
 {
     FastOutputBuffer& output = dasm.output;
@@ -2021,7 +2021,7 @@ static const char* mtbufNFMTTable[] =
 };
 
 void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
-          uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
+          GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
           uint32_t insnCode2)
 {
     FastOutputBuffer& output = dasm.output;
@@ -2150,7 +2150,7 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
 }
 
 void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
-         uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
+         GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
          uint32_t insnCode2)
 {
     const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
@@ -2239,7 +2239,7 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
 }
 
 void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
-            uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
+            GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
             uint32_t insnCode2)
 {
     FastOutputBuffer& output = dasm.output;
@@ -2353,7 +2353,7 @@ void GCNDisasmUtils::printFLATAddr(cxuint flatMode, char*& bufPtr, uint32_t insn
 }
 
 void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
-            uint16_t arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
+            GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
             uint32_t insnCode2)
 {
     const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);

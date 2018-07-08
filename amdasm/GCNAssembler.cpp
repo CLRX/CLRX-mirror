@@ -26,6 +26,7 @@
 #include <mutex>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/GPUId.h>
 #include <CLRX/amdasm/GCNDefs.h>
 #include "GCNAsmInternals.h"
 
@@ -121,7 +122,7 @@ static void initializeGCNAssembler()
 // GCN Usage handler
 
 GCNUsageHandler::GCNUsageHandler(const std::vector<cxbyte>& content,
-                 uint16_t _archMask) : ISAUsageHandler(content), archMask(_archMask)
+                 GPUArchMask _archMask) : ISAUsageHandler(content), archMask(_archMask)
 {
     defaultInstrSize = 4;
 }

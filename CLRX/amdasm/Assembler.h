@@ -37,6 +37,7 @@
 #include <unordered_map>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
+#include <CLRX/utils/GPUId.h>
 #include <CLRX/amdasm/Commons.h>
 #include <CLRX/amdasm/AsmSource.h>
 #include <CLRX/amdasm/AsmFormats.h>
@@ -215,10 +216,10 @@ public:
 class GCNUsageHandler: public ISAUsageHandler
 {
 private:
-    uint16_t archMask;
+    GPUArchMask archMask;
 public:
     /// constructor
-    GCNUsageHandler(const std::vector<cxbyte>& content, uint16_t archMask);
+    GCNUsageHandler(const std::vector<cxbyte>& content, GPUArchMask archMask);
     /// destructor
     ~GCNUsageHandler();
     

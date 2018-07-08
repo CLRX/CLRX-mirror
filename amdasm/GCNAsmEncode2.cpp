@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/GPUId.h>
 #include <CLRX/amdasm/GCNDefs.h>
 #include "GCNAsmInternals.h"
 
@@ -63,9 +64,9 @@ static const std::pair<const char*, cxuint> mtbufNFMTNamesMap[] =
     { "uscaled", 2 }
 };
 
-void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, uint16_t arch, bool vdataToRead,
-            bool vdataToWrite, bool haveLds, bool haveTfe, std::vector<cxbyte>& output,
-            const GCNAsmInstruction& gcnInsn)
+void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, GPUArchMask arch,
+            bool vdataToRead, bool vdataToWrite, bool haveLds, bool haveTfe,
+            std::vector<cxbyte>& output, const GCNAsmInstruction& gcnInsn)
 {
     // fix access for VDATA field
     gcnAsm->instrRVUs[0].rwFlags = (vdataToWrite ? ASMRVU_WRITE : 0) |
@@ -136,7 +137,7 @@ void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, uint16_t arch, bool vd
 }
 
 bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize)
 {
@@ -463,7 +464,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
 }
 
 bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize)
 {
@@ -664,7 +665,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 }
 
 bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize)
 {
@@ -823,7 +824,7 @@ bool GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
 }
 
 bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
                   GCNEncSize gcnEncSize)
 {
