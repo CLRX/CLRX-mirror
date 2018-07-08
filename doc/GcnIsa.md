@@ -19,6 +19,17 @@ CLRX Version | AMD Version  | Example devices
  GCN 1.1     | GCN 2        | Bonaire (R7 260), Hawaii (R9 290)
  GCN 1.2     | GCN 3, GCN 4 | Tonga (R9 285), Fiji (Fury X), Ellesmere (RX 480), Baffin
  GCN 1.4     | GCN 5        | VEGA (GFX900) (RX VEGA 64)
+ GCN 1.4.1   | GCN 5,VEGA20 | VEGA20 (GFX906)
+ 
+List of architecture names:
+
+CLRX Version | CLRX names
+-------------|----------------------------
+ GCN 1.0     | GCN1.0, GFX6, SI
+ GCN 1.1     | GCN1.1, GFX7, CI
+ GCN 1.2     | GCN1.2, GFX8, VI
+ GCN 1.4     | GCN1.4, GFX9, VEGA
+ GCN 1.4.1   | GCN1.4.1, GFX906, VEGA20
 
 ### Instruction suffixes
 
