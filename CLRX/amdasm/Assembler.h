@@ -354,7 +354,7 @@ private:
         Regs regs;
         cxuint regTable[2];
     };
-    uint16_t curArchMask;
+    GPUArchMask curArchMask;
     cxbyte currentRVUIndex;
     AsmRegVarUsage instrRVUs[6];
     bool hasWaitInstr;

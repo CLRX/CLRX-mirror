@@ -468,7 +468,7 @@ void GCNDisassembler::disassemble()
     const bool isGCN11 = (arch == GPUArchitecture::GCN1_1);
     const bool isGCN124 = (arch >= GPUArchitecture::GCN1_2);
     const bool isGCN14 = (arch >= GPUArchitecture::GCN1_4);
-    const uint16_t curArchMask = 
+    const GPUArchMask curArchMask = 
             1U<<int(getGPUArchitectureFromDeviceType(disassembler.getDeviceType()));
     const size_t codeWordsNum = (inputSize>>2);
     
