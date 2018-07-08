@@ -915,12 +915,12 @@ private:
     const Array<TempAmdCL2KernelData>& tempDatas;
     const CString& aclVersion;
     const uint16_t* mainSectTable;
-    cxuint extraSectionIndex;
+    ElfBinSectId extraSectionIndex;
 public:
     CL2MainSymTabGen(const AmdCL2Input* _input,
              const Array<TempAmdCL2KernelData>& _tempDatas,
              const CString& _aclVersion, const uint16_t* _mainSectTable,
-             cxuint _extraSectionIndex)
+             ElfBinSectId _extraSectionIndex)
              : input(_input), withBrig(false), tempDatas(_tempDatas),
                aclVersion(_aclVersion), mainSectTable(_mainSectTable),
                extraSectionIndex(_extraSectionIndex)
@@ -2232,7 +2232,8 @@ static CString constructName(size_t prefixSize, const char* prefix, const CStrin
 // uses stringPool to correctly holds symbol names
 static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* input,
         const Array<TempAmdCL2KernelData>& tempDatas, const uint16_t* builtinSectionTable,
-        cxuint extraSeciontIndex, std::vector<CString>& stringPool, size_t dataSymbolsNum)
+        ElfBinSectId extraSeciontIndex, std::vector<CString>& stringPool,
+        size_t dataSymbolsNum)
 {
     const size_t samplersNum = (input->samplerConfig) ? input->samplers.size() :
                 (input->samplerInitSize>>3);

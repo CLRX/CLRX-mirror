@@ -522,9 +522,11 @@ typedef ElfHeaderTemplate<Elf32Types> ElfHeader32;
 /// 64-bit elf header
 typedef ElfHeaderTemplate<Elf64Types> ElfHeader64;
 
+typedef cxuint ElfBinSectId;
 
-enum: cxuint {
-    ELFSECTID_START = UINT_MAX-255,
+enum: ElfBinSectId {
+    ELFSECTID_VAL_MAX = UINT_MAX,
+    ELFSECTID_START = ELFSECTID_VAL_MAX-255,
     ELFSECTID_SHSTRTAB = ELFSECTID_START,
     ELFSECTID_STRTAB,
     ELFSECTID_SYMTAB,
@@ -537,9 +539,9 @@ enum: cxuint {
     ELFSECTID_COMMENT,
     ELFSECTID_STD_MAX = ELFSECTID_COMMENT,
     ELFSECTID_OTHER_BUILTIN = ELFSECTID_STD_MAX+1,
-    ELFSECTID_NULL = UINT_MAX-2,
-    ELFSECTID_ABS = UINT_MAX-1,
-    ELFSECTID_UNDEF = UINT_MAX
+    ELFSECTID_NULL = ELFSECTID_VAL_MAX-2,
+    ELFSECTID_ABS = ELFSECTID_VAL_MAX-1,
+    ELFSECTID_UNDEF = ELFSECTID_VAL_MAX
 };
 
 /// section structure to external usage (for example in the binary generator input)
@@ -570,7 +572,7 @@ struct BinSymbol
 
 /// convert section id to elf section id
 extern uint16_t convertSectionId(cxuint sectionIndex, const uint16_t* builtinSections,
-                  cxuint maxBuiltinSection, cxuint extraSectionIndex);
+                  cxuint maxBuiltinSection, ElfBinSectId extraSectionIndex);
 
 /// template of ElfRegion
 template<typename Types>
@@ -669,7 +671,7 @@ struct ElfRegionTemplate
      * \param startExtraIndex first ELF section id for extra section
      */
     ElfRegionTemplate(const BinSection& binSection, const uint16_t* builtinSections,
-                  cxuint maxBuiltinSection, cxuint startExtraIndex)
+                  cxuint maxBuiltinSection, ElfBinSectId startExtraIndex)
             : type(ElfRegionType::SECTION), dataFromPointer(true), size(binSection.size),
               align(binSection.align), data(binSection.data)
     {
@@ -796,7 +798,7 @@ struct ElfSymbolTemplate
      * \param startExtraIndex first ELF section id for extra section
      */
     ElfSymbolTemplate(const BinSymbol& binSymbol, const uint16_t* builtinSections,
-                  cxuint maxBuiltinSection, cxuint startExtraIndex)
+                  cxuint maxBuiltinSection, ElfBinSectId startExtraIndex)
     {
         name = binSymbol.name.c_str();
         sectionIndex = convertSectionId(binSymbol.sectionId, builtinSections,

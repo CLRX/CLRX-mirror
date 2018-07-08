@@ -507,7 +507,7 @@ public:
     {
         const uint16_t* mainSectTable = input->kernels.empty() ?
                 emptyMainBuiltinSectionTable : mainBuiltinSectionTable;
-        const cxuint extraSectId = input->kernels.empty() ? 5 : 7;
+        const ElfBinSectId extraSectId = input->kernels.empty() ? 5 : 7;
         
         fob.fill(sizeof(typename Types::Sym), 0);
         typename Types::Sym sym;

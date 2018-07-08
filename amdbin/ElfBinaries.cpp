@@ -373,7 +373,7 @@ bool CLRX::isElfBinary(size_t binarySize, const cxbyte* binary)
  */
 
 uint16_t CLRX::convertSectionId(cxuint sectionIndex, const uint16_t* builtinSections,
-                  cxuint maxBuiltinSection, cxuint extraSectionIndex)
+                  cxuint maxBuiltinSection, ElfBinSectId extraSectionIndex)
 {
     if (sectionIndex == ELFSECTID_NULL)
         return 0;
