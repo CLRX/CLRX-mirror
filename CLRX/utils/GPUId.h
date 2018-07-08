@@ -101,6 +101,7 @@ enum class GPUArchitecture: cxbyte
     GPUARCH_MAX = GCN1_4_1    /// last value
 };
 
+/// GPU architecture mask (one bit represents single GPU architecture)
 typedef uint16_t GPUArchMask;
 
 // GCN architecture masks (bit represents architecture)
