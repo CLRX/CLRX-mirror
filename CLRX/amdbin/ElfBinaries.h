@@ -522,6 +522,7 @@ typedef ElfHeaderTemplate<Elf32Types> ElfHeader32;
 /// 64-bit elf header
 typedef ElfHeaderTemplate<Elf64Types> ElfHeader64;
 
+/// type for Elf BinSection Id (sectionIndex)
 typedef cxuint ElfBinSectId;
 
 enum: ElfBinSectId {
