@@ -85,6 +85,10 @@ enum: cxuint
 {
     ASMSECT_ABS = UINT_MAX,  ///< absolute section id
     ASMSECT_NONE = UINT_MAX,  ///< none section id
+};
+
+enum: AsmKernelId
+{
     ASMKERN_GLOBAL = UINT_MAX, ///< no kernel, global space
     ASMKERN_INNER = UINT_MAX-1 ///< no kernel, inner global space
 };
@@ -168,7 +172,7 @@ public:
      * \param kernelName kernel name
      * \return kernel id
      */
-    virtual cxuint addKernel(const char* kernelName) = 0;
+    virtual AsmKernelId addKernel(const char* kernelName) = 0;
     /// add section
     /** adds new section . throw AsmFormatException when addition failed.
      * Method should handles any constraint that doesn't allow to add section except
@@ -177,13 +181,13 @@ public:
      * \param kernelId kernel id (may ASMKERN_GLOBAL)
      * \return section id
      */
-    virtual cxuint addSection(const char* sectionName, cxuint kernelId) = 0;
+    virtual cxuint addSection(const char* sectionName, AsmKernelId kernelId) = 0;
     
     /// get section id if exists in current context, otherwise returns ASMSECT_NONE
     virtual cxuint getSectionId(const char* sectionName) const = 0;
     
     /// set current kernel
-    virtual void setCurrentKernel(cxuint kernel) = 0;
+    virtual void setCurrentKernel(AsmKernelId kernel) = 0;
     /// set current section, this method can change current kernel if that required 
     virtual void setCurrentSection(cxuint sectionId) = 0;
     
@@ -216,9 +220,9 @@ class AsmKcodeHandler: public AsmFormatHandler
 {
 protected:
     friend struct AsmKcodePseudoOps;
-    std::vector<cxuint> kcodeSelection; // kcode
-    std::stack<std::vector<cxuint> > kcodeSelStack;
-    cxuint currentKcodeKernel;
+    std::vector<AsmKernelId> kcodeSelection; // kcode
+    std::stack<std::vector<AsmKernelId> > kcodeSelStack;
+    AsmKernelId currentKcodeKernel;
     cxuint codeSection;
     
     explicit AsmKcodeHandler(Assembler& assembler);
@@ -234,7 +238,7 @@ public:
     /// return true if current section is code section
     virtual bool isCodeSection() const = 0;
     /// return KernelBase for kernel index
-    virtual KernelBase& getKernelBase(cxuint index) = 0;
+    virtual KernelBase& getKernelBase(AsmKernelId index) = 0;
     /// return kernel number
     virtual size_t getKernelsNum() const = 0;
 };
@@ -248,12 +252,12 @@ public:
     /// destructor
     ~AsmRawCodeHandler() = default;
     
-    cxuint addKernel(const char* kernelName);
-    cxuint addSection(const char* sectionName, cxuint kernelId);
+    AsmKernelId addKernel(const char* kernelName);
+    cxuint addSection(const char* sectionName, AsmKernelId kernelId);
 
     cxuint getSectionId(const char* sectionName) const;
     
-    void setCurrentKernel(cxuint kernel);
+    void setCurrentKernel(AsmKernelId kernel);
     void setCurrentSection(cxuint sectionId);
     
     SectionInfo getSectionInfo(cxuint sectionId) const;
@@ -274,7 +278,7 @@ private:
     AmdInput output;
     struct Section
     {
-        cxuint kernelId;
+        AsmKernelId kernelId;
         AsmSectionType type;
         cxuint elfBinSectId;
         const char* name;
@@ -321,11 +325,11 @@ public:
     /// destructor
     ~AsmAmdHandler();
     
-    cxuint addKernel(const char* kernelName);
-    cxuint addSection(const char* sectionName, cxuint kernelId);
+    AsmKernelId addKernel(const char* kernelName);
+    cxuint addSection(const char* sectionName, AsmKernelId kernelId);
     
     cxuint getSectionId(const char* sectionName) const;
-    void setCurrentKernel(cxuint kernel);
+    void setCurrentKernel(AsmKernelId kernel);
     void setCurrentSection(cxuint sectionId);
     
     SectionInfo getSectionInfo(cxuint sectionId) const;
@@ -368,7 +372,7 @@ private:
     AmdCL2Input output;
     struct Section
     {
-        cxuint kernelId;
+        AsmKernelId kernelId;
         AsmSectionType type;
         cxuint elfBinSectId;
         const char* name;
@@ -434,11 +438,11 @@ public:
     /// destructor
     ~AsmAmdCL2Handler();
     
-    cxuint addKernel(const char* kernelName);
-    cxuint addSection(const char* sectionName, cxuint kernelId);
+    AsmKernelId addKernel(const char* kernelName);
+    cxuint addSection(const char* sectionName, AsmKernelId kernelId);
     
     cxuint getSectionId(const char* sectionName) const;
-    void setCurrentKernel(cxuint kernel);
+    void setCurrentKernel(AsmKernelId kernel);
     void setCurrentSection(cxuint sectionId);
     
     SectionInfo getSectionInfo(cxuint sectionId) const;
@@ -456,7 +460,7 @@ public:
     
     // kcode support
     bool isCodeSection() const;
-    KernelBase& getKernelBase(cxuint index);
+    KernelBase& getKernelBase(AsmKernelId index);
     size_t getKernelsNum() const;
     void handleLabel(const CString& label);
 };
@@ -474,7 +478,7 @@ private:
     GalliumInput output;
     struct Section
     {
-        cxuint kernelId;
+        AsmKernelId kernelId;
         AsmSectionType type;
         cxuint elfBinSectId;
         const char* name;    // must be available by whole lifecycle
@@ -518,11 +522,11 @@ public:
     /// destructor
     ~AsmGalliumHandler();
     
-    cxuint addKernel(const char* kernelName);
-    cxuint addSection(const char* sectionName, cxuint kernelId);
+    AsmKernelId addKernel(const char* kernelName);
+    cxuint addSection(const char* sectionName, AsmKernelId kernelId);
     
     cxuint getSectionId(const char* sectionName) const;
-    void setCurrentKernel(cxuint kernel);
+    void setCurrentKernel(AsmKernelId kernel);
     void setCurrentSection(cxuint sectionId);
     
     SectionInfo getSectionInfo(cxuint sectionId) const;
@@ -540,7 +544,7 @@ public:
     
     // kcode support
     bool isCodeSection() const;
-    KernelBase& getKernelBase(cxuint index);
+    KernelBase& getKernelBase(AsmKernelId index);
     size_t getKernelsNum() const;
 };
 
@@ -556,7 +560,7 @@ private:
     std::unique_ptr<ROCmBinGenerator> binGen;
     struct Section
     {
-        cxuint kernelId;
+        AsmKernelId kernelId;
         AsmSectionType type;
         cxuint elfBinSectId;
         const char* name;    // must be available by whole lifecycle
@@ -599,11 +603,11 @@ public:
     /// destructor
     ~AsmROCmHandler();
     
-    cxuint addKernel(const char* kernelName);
-    cxuint addSection(const char* sectionName, cxuint kernelId);
+    AsmKernelId addKernel(const char* kernelName);
+    cxuint addSection(const char* sectionName, AsmKernelId kernelId);
     
     cxuint getSectionId(const char* sectionName) const;
-    void setCurrentKernel(cxuint kernel);
+    void setCurrentKernel(AsmKernelId kernel);
     void setCurrentSection(cxuint sectionId);
     
     SectionInfo getSectionInfo(cxuint sectionId) const;
@@ -621,7 +625,7 @@ public:
     
     // kcode support
     bool isCodeSection() const;
-    KernelBase& getKernelBase(cxuint index);
+    KernelBase& getKernelBase(AsmKernelId index);
     size_t getKernelsNum() const;
 };
 

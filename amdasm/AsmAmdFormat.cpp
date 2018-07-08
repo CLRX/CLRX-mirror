@@ -138,9 +138,9 @@ void AsmAmdHandler::saveCurrentAllocRegs()
     }
 }
 
-cxuint AsmAmdHandler::addKernel(const char* kernelName)
+AsmKernelId AsmAmdHandler::addKernel(const char* kernelName)
 {
-    cxuint thisKernel = output.kernels.size();
+    AsmKernelId thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
     output.addEmptyKernel(kernelName);
     /* add new kernel and their section (.text) */
@@ -156,7 +156,7 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
     return thisKernel;
 }
 
-cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
+cxuint AsmAmdHandler::addSection(const char* sectionName, AsmKernelId kernelId)
 {
     const cxuint thisSection = sections.size();
     Section section;
@@ -238,7 +238,7 @@ cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
     }
 }
 
-void AsmAmdHandler::setCurrentKernel(cxuint kernel)
+void AsmAmdHandler::setCurrentKernel(AsmKernelId kernel)
 {
     if (kernel != ASMKERN_GLOBAL && kernel >= kernelStates.size())
         throw AsmFormatException("KernelId out of range");

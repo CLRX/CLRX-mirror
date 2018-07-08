@@ -180,9 +180,9 @@ cxuint AsmGalliumHandler::determineDriverVersion() const
         return assembler.getDriverVersion();
 }
 
-cxuint AsmGalliumHandler::addKernel(const char* kernelName)
+AsmKernelId AsmGalliumHandler::addKernel(const char* kernelName)
 {
-    cxuint thisKernel = output.kernels.size();
+    AsmKernelId thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
     output.addEmptyKernel(kernelName, determineLLVMVersion());
     /// add kernel config section
@@ -198,7 +198,7 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
     return thisKernel;
 }
 
-cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
+cxuint AsmGalliumHandler::addSection(const char* sectionName, AsmKernelId kernelId)
 {
     const cxuint thisSection = sections.size();
     Section section;
@@ -272,7 +272,7 @@ cxuint AsmGalliumHandler::getSectionId(const char* sectionName) const
     return ASMSECT_NONE;
 }
 
-void AsmGalliumHandler::setCurrentKernel(cxuint kernel)
+void AsmGalliumHandler::setCurrentKernel(AsmKernelId kernel)
 {
     // set kernel and their default section
     if (kernel != ASMKERN_GLOBAL && kernel >= kernelStates.size())
@@ -329,7 +329,7 @@ bool AsmGalliumHandler::isCodeSection() const
     return sections[assembler.currentSection].type == AsmSectionType::CODE;
 }
 
-AsmKcodeHandler::KernelBase& AsmGalliumHandler::getKernelBase(cxuint index)
+AsmKcodeHandler::KernelBase& AsmGalliumHandler::getKernelBase(AsmKernelId index)
 { return *kernelStates[index]; }
 
 size_t AsmGalliumHandler::getKernelsNum() const

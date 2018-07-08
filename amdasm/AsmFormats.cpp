@@ -249,7 +249,7 @@ void AsmKcodeHandler::handleLabel(const CString& label)
 /* update kernel code selection, join all regallocation and store to
  * current kernel regalloc */
 void AsmKcodePseudoOps::updateKCodeSel(AsmKcodeHandler& handler,
-                    const std::vector<cxuint>& oldset)
+                    const std::vector<AsmKernelId>& oldset)
 {
     Assembler& asmr = handler.assembler;
     // old elements - join current regstate with all them
@@ -278,7 +278,7 @@ void AsmKcodePseudoOps::doKCode(AsmKcodeHandler& handler, const char* pseudoOpPl
     skipSpacesToEnd(linePtr, end);
     if (linePtr==end)
         return;
-    std::unordered_set<cxuint> newSel(handler.kcodeSelection.begin(),
+    std::unordered_set<AsmKernelId> newSel(handler.kcodeSelection.begin(),
                           handler.kcodeSelection.end());
     do {
         CString kname;
@@ -298,8 +298,8 @@ void AsmKcodePseudoOps::doKCode(AsmKcodeHandler& handler, const char* pseudoOpPl
             if (linePtr==end)
             {
                 // add all kernels
-                const cxuint kernelsNum = handler.getKernelsNum();
-                for (cxuint k = 0; k < kernelsNum; k++)
+                const AsmKernelId kernelsNum = handler.getKernelsNum();
+                for (AsmKernelId k = 0; k < kernelsNum; k++)
                     newSel.insert(k);
                 break;
             }
@@ -332,13 +332,13 @@ void AsmKcodePseudoOps::doKCode(AsmKcodeHandler& handler, const char* pseudoOpPl
     handler.kcodeSelection.assign(newSel.begin(), newSel.end());
     std::sort(handler.kcodeSelection.begin(), handler.kcodeSelection.end());
     
-    const std::vector<cxuint>& oldKCodeSel = handler.kcodeSelStack.top();
+    const std::vector<AsmKernelId>& oldKCodeSel = handler.kcodeSelStack.top();
     if (!oldKCodeSel.empty())
         asmr.handleRegionsOnKernels(handler.kcodeSelection, oldKCodeSel,
                             handler.codeSection);
     else if (handler.currentKcodeKernel != ASMKERN_GLOBAL)
     {
-        std::vector<cxuint> tempKCodeSel;
+        std::vector<AsmKernelId> tempKCodeSel;
         tempKCodeSel.push_back(handler.currentKcodeKernel);
         asmr.handleRegionsOnKernels(handler.kcodeSelection, tempKCodeSel,
                             handler.codeSection);
@@ -359,7 +359,7 @@ void AsmKcodePseudoOps::doKCodeEnd(AsmKcodeHandler& handler, const char* pseudoO
         return;
     
     updateKCodeSel(handler, handler.kcodeSelection);
-    std::vector<cxuint> oldKCodeSel = handler.kcodeSelection;
+    std::vector<AsmKernelId> oldKCodeSel = handler.kcodeSelection;
     handler.kcodeSelection = handler.kcodeSelStack.top();
     
     if (!handler.kcodeSelection.empty())
@@ -368,7 +368,7 @@ void AsmKcodePseudoOps::doKCodeEnd(AsmKcodeHandler& handler, const char* pseudoO
     else if (handler.currentKcodeKernel != ASMKERN_GLOBAL)
     {
         // if choosen current kernel
-        std::vector<cxuint> curKernelSel;
+        std::vector<AsmKernelId> curKernelSel;
         curKernelSel.push_back(handler.currentKcodeKernel);
         asmr.handleRegionsOnKernels(curKernelSel, oldKCodeSel, handler.codeSection);
     }
@@ -386,12 +386,12 @@ AsmRawCodeHandler::AsmRawCodeHandler(Assembler& assembler): AsmFormatHandler(ass
     assembler.currentSection = 0;
 }
 
-cxuint AsmRawCodeHandler::addKernel(const char* kernelName)
+AsmKernelId AsmRawCodeHandler::addKernel(const char* kernelName)
 {
     throw AsmFormatException("In rawcode defining kernels is not allowed");
 }
 
-cxuint AsmRawCodeHandler::addSection(const char* name, cxuint kernelId)
+cxuint AsmRawCodeHandler::addSection(const char* name, AsmKernelId kernelId)
 {
     if (::strcmp(name, ".text")!=0)
         throw AsmFormatException("Only section '.text' can be in raw code");
@@ -404,7 +404,7 @@ cxuint AsmRawCodeHandler::getSectionId(const char* sectionName) const
     return ::strcmp(sectionName, ".text") ? ASMSECT_NONE : 0;
 }
 
-void AsmRawCodeHandler::setCurrentKernel(cxuint kernel)
+void AsmRawCodeHandler::setCurrentKernel(AsmKernelId kernel)
 {
     if (kernel != ASMKERN_GLOBAL)
         throw AsmFormatException("No kernels available");

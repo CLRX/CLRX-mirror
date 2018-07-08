@@ -29,6 +29,8 @@
 namespace CLRX
 {
 
+typedef cxuint AsmKernelId;
+
 /// binary for Disassembler
 enum class BinaryFormat
 {

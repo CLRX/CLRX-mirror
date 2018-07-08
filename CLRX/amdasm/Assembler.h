@@ -572,7 +572,7 @@ public:
     /// defined symbol entry
     typedef std::pair<CString, uint64_t> DefSym;
     /// kernel map type
-    typedef std::unordered_map<CString, cxuint> KernelMap;
+    typedef std::unordered_map<CString, AsmKernelId> KernelMap;
 private:
     friend class AsmStreamInputFilter;
     friend class AsmMacroInputFilter;
@@ -655,7 +655,7 @@ private:
     
     std::stack<AsmClause> clauses;
     
-    cxuint currentKernel;
+    AsmKernelId currentKernel;
     cxuint& currentSection;
     uint64_t& currentOutPos;
     
@@ -818,8 +818,8 @@ private:
     }
     
     // oldKernels and newKernels must be sorted
-    void handleRegionsOnKernels(const std::vector<cxuint>& newKernels,
-                const std::vector<cxuint>& oldKernels, cxuint codeSection);
+    void handleRegionsOnKernels(const std::vector<AsmKernelId>& newKernels,
+                const std::vector<AsmKernelId>& oldKernels, cxuint codeSection);
     
     void tryToResolveSymbol(AsmSymbolEntry& symEntry);
     void tryToResolveSymbols(AsmScope* scope);

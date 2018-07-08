@@ -143,9 +143,9 @@ AsmROCmHandler::~AsmROCmHandler()
         delete kernel;
 }
 
-cxuint AsmROCmHandler::addKernel(const char* kernelName)
+AsmKernelId AsmROCmHandler::addKernel(const char* kernelName)
 {
-    cxuint thisKernel = output.symbols.size();
+    AsmKernelId thisKernel = output.symbols.size();
     cxuint thisSection = sections.size();
     output.addEmptyKernel(kernelName);
     /// add kernel config section
@@ -163,7 +163,7 @@ cxuint AsmROCmHandler::addKernel(const char* kernelName)
     return thisKernel;
 }
 
-cxuint AsmROCmHandler::addSection(const char* sectionName, cxuint kernelId)
+cxuint AsmROCmHandler::addSection(const char* sectionName, AsmKernelId kernelId)
 {
     const cxuint thisSection = sections.size();
     Section section;
@@ -236,7 +236,7 @@ cxuint AsmROCmHandler::getSectionId(const char* sectionName) const
     return ASMSECT_NONE;
 }
 
-void AsmROCmHandler::setCurrentKernel(cxuint kernel)
+void AsmROCmHandler::setCurrentKernel(AsmKernelId kernel)
 {
     if (kernel != ASMKERN_GLOBAL && kernel >= kernelStates.size())
         throw AsmFormatException("KernelId out of range");
@@ -307,7 +307,7 @@ bool AsmROCmHandler::isCodeSection() const
     return sections[assembler.currentSection].type == AsmSectionType::CODE;
 }
 
-AsmKcodeHandler::KernelBase& AsmROCmHandler::getKernelBase(cxuint index)
+AsmKcodeHandler::KernelBase& AsmROCmHandler::getKernelBase(AsmKernelId index)
 { return *kernelStates[index]; }
 
 size_t AsmROCmHandler::getKernelsNum() const

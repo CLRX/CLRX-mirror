@@ -2542,7 +2542,7 @@ void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
     if (kmit == kernelMap.end())
     {
         // not found, add new kernel
-        cxuint kernelId;
+        AsmKernelId kernelId;
         try
         { kernelId = formatHandler->addKernel(kernelName); }
         catch(const AsmFormatException& ex)
@@ -2719,8 +2719,8 @@ bool Assembler::getRegVar(const CString& name, const AsmRegVar*& regVar)
     return true;
 }
 
-void Assembler::handleRegionsOnKernels(const std::vector<cxuint>& newKernels,
-                const std::vector<cxuint>& oldKernels, cxuint codeSection)
+void Assembler::handleRegionsOnKernels(const std::vector<AsmKernelId>& newKernels,
+                const std::vector<AsmKernelId>& oldKernels, cxuint codeSection)
 {
     auto oldit = oldKernels.begin();
     auto newit = newKernels.begin();
@@ -3131,7 +3131,7 @@ bool Assembler::assemble()
                 section.usageHandler->flush();
         
         // code opened regions for kernels
-        for (cxuint i = 0; i < kernels.size(); i++)
+        for (AsmKernelId i = 0; i < kernels.size(); i++)
         {
             currentKernel = i;
             cxuint sectionId = formatHandler->getSectionId(".text");

@@ -691,7 +691,7 @@ class ISAWaitHandler;
 struct AsmSection
 {
     const char* name;       ///< section name
-    cxuint kernelId;    ///< kernel id (optional)
+    AsmKernelId kernelId;    ///< kernel id (optional)
     AsmSectionType type;        ///< type of section
     Flags flags;   ///< section flags
     uint64_t alignment; ///< section alignment
@@ -709,7 +709,7 @@ struct AsmSection
     /// constructor
     AsmSection();
     /// constructor
-    AsmSection(const char* _name, cxuint _kernelId, AsmSectionType _type, Flags _flags,
+    AsmSection(const char* _name, AsmKernelId _kernelId, AsmSectionType _type, Flags _flags,
                uint64_t _alignment, uint64_t _size = 0, cxuint _relSpace = UINT_MAX,
                uint64_t _relAddress = UINT64_MAX)
             : name(_name), kernelId(_kernelId), type(_type), flags(_flags),

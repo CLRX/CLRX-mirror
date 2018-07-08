@@ -204,9 +204,9 @@ void AsmAmdCL2Handler::saveCurrentAllocRegs()
     }
 }
 
-cxuint AsmAmdCL2Handler::addKernel(const char* kernelName)
+AsmKernelId AsmAmdCL2Handler::addKernel(const char* kernelName)
 {
-    cxuint thisKernel = output.kernels.size();
+    AsmKernelId thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
     output.addEmptyKernel(kernelName);
     /* add new kernel and their section (.text) */
@@ -228,7 +228,7 @@ cxuint AsmAmdCL2Handler::addKernel(const char* kernelName)
     return thisKernel;
 }
 
-cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
+cxuint AsmAmdCL2Handler::addSection(const char* sectionName, AsmKernelId kernelId)
 {
     const cxuint thisSection = sections.size();
     
@@ -351,7 +351,7 @@ cxuint AsmAmdCL2Handler::getSectionId(const char* sectionName) const
     return 0;
 }
 
-void AsmAmdCL2Handler::setCurrentKernel(cxuint kernel)
+void AsmAmdCL2Handler::setCurrentKernel(AsmKernelId kernel)
 {
     if (kernel!=ASMKERN_GLOBAL && kernel!=ASMKERN_INNER && kernel >= kernelStates.size())
         throw AsmFormatException("KernelId out of range");
@@ -429,7 +429,7 @@ bool AsmAmdCL2Handler::isCodeSection() const
     return sections[assembler.currentSection].type == AsmSectionType::CODE;
 }
 
-AsmKcodeHandler::KernelBase& AsmAmdCL2Handler::getKernelBase(cxuint index)
+AsmKcodeHandler::KernelBase& AsmAmdCL2Handler::getKernelBase(AsmKernelId index)
 { return *kernelStates[index]; }
 
 size_t AsmAmdCL2Handler::getKernelsNum() const
@@ -2242,7 +2242,7 @@ bool AsmAmdCL2Handler::prepareBinary()
     for (const AsmRelocation& reloc: assembler.relocations)
     {
         /* put only code relocations */
-        cxuint kernelId = sections[reloc.sectionId].kernelId;
+        AsmKernelId kernelId = sections[reloc.sectionId].kernelId;
         cxuint symbol = sections[reloc.relSectionId].type==AsmSectionType::DATA ? 0 :
             (sections[reloc.relSectionId].type==AsmSectionType::AMDCL2_RWDATA ? 1 : 2);
         if (kernelId != ASMKERN_GLOBAL && kernelId != ASMKERN_INNER)
