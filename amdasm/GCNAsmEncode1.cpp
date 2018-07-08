@@ -876,7 +876,7 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     RegRange soffsetReg(0, 0);
     cxbyte soffsetVal = 0;
     std::unique_ptr<AsmExpression> soffsetExpr;
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
     if (mode1 == GCN_SMRD_ONLYDST)
     {
         // parse SDST (SGPR)
@@ -977,7 +977,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t soffsetVal = 0;
     std::unique_ptr<AsmExpression> soffsetExpr;
     std::unique_ptr<AsmExpression> simm7Expr;
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
     const bool isGCN14 = (arch & ARCH_GCN_1_4) != 0;
     
     const char* soffsetPlace = nullptr;
@@ -1178,7 +1178,7 @@ static Flags correctOpType(uint32_t regsNum, Flags typeMask)
 
 static void encodeVOPWords(uint32_t vop0Word, cxbyte modifiers,
         const VOPExtraModifiers& extraMods, const GCNOperand& src0Op,
-        const GCNOperand& src1Op, uint32_t immValue, uint16_t mode1,
+        const GCNOperand& src1Op, uint32_t immValue, GCNInsnMode mode1,
         // dstMod - (16bits lower value, 16bit - use dstMod instead std encoding
         uint32_t inDstMod, cxuint& wordsNum, uint32_t* words)
 {
@@ -1261,8 +1261,8 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 {
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
-    const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
+    const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
+    const GCNInsnMode mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
     const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
@@ -1531,8 +1531,8 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                   GCNEncSize gcnEncSize, GCNVOPEnc gcnVOPEnc)
 {
     bool good = true;
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
-    const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
+    const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
+    const GCNInsnMode mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
     const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     
@@ -1675,7 +1675,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                   GCNEncSize gcnEncSize, GCNVOPEnc gcnVOPEnc)
 {
     bool good = true;
-    const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
+    const GCNInsnMode mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
     const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     
@@ -1853,8 +1853,8 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                   GCNEncSize gcnEncSize, GCNVOPEnc gcnVOPEnc)
 {
     bool good = true;
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
-    const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
+    const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
+    const GCNInsnMode mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
     const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
     const bool vop3p = (gcnInsn.mode & GCN_VOP3_VOP3P) != 0;

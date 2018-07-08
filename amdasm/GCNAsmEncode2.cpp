@@ -145,7 +145,7 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     bool good = true;
     if (gcnEncSize==GCNEncSize::BIT32)
         ASM_FAIL_BY_ERROR(instrPlace, "Only 64-bit size for MUBUF/MTBUF encoding")
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
     RegRange vaddrReg(0, 0);
     RegRange vdataReg(0, 0);
     GCNOperand soffsetOp{};

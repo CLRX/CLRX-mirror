@@ -760,7 +760,7 @@ void GCNDisasmUtils::decodeSMRDEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(100);
     char* bufPtr = bufStart;
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
     bool useDst = false;
     bool useOthers = false;
     
@@ -836,7 +836,7 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(120);
     char* bufPtr = bufStart;
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
     bool useDst = false;
     bool useOthers = false;
     bool spacesAdded = false;
@@ -1354,7 +1354,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     char* bufPtr = bufStart;
     
     addSpaces(bufPtr, spacesToAdd);
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
     
     const cxuint src0Field = (insnCode&0x1ff);
     // extra flags are zeroed by default
@@ -1490,7 +1490,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     const cxuint vsrc1 = (insnCode2>>9)&0x1ff;
     const cxuint vsrc2 = (insnCode2>>18)&0x1ff;
     const cxuint sdst = (insnCode>>8)&0x7f;
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t vop3Mode = (gcnInsn.mode&GCN_VOP3_MASK2);
     
     bool vdstUsed = false;
@@ -2033,7 +2033,7 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
     const cxuint vdata = (insnCode2>>8)&0xff;
     const cxuint srsrc = (insnCode2>>16)&0x1f;
     const cxuint soffset = insnCode2>>24;
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
     if (mode1 != GCN_ARG_NONE)
     {
         addSpaces(bufPtr, spacesToAdd);

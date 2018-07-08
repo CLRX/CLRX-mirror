@@ -56,8 +56,10 @@ enum : cxbyte
 };
 
 
+typedef uint16_t GCNInsnMode;
+
 // modes for GCN instructions
-enum : uint16_t
+enum : GCNInsnMode
 {
     GCN_STDMODE = 0,    /// standard mode
     GCN_REG_ALL_64 = 15,    /// all register operand is 64-bit
@@ -203,7 +205,7 @@ struct CLRX_INTERNAL GCNInstruction
 {
     const char* mnemonic;
     cxbyte encoding;
-    uint16_t mode;
+    GCNInsnMode mode;
     uint16_t code;
     GPUArchMask archMask; // mask of architectures whose have instruction
 };
@@ -213,7 +215,7 @@ struct CLRX_INTERNAL GCNAsmInstruction
 {
     const char* mnemonic;
     cxbyte encoding;
-    uint16_t mode;
+    GCNInsnMode mode;
     uint16_t code1, code2; // code1 - first code, code2 - VOP3 encoding code
     GPUArchMask archMask; // mask of architectures whose have instruction
 };
