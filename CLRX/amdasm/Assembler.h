@@ -533,12 +533,15 @@ private:
     const AsmWaitConfig& waitConfig;
     Assembler& assembler;
     const std::vector<AsmRegAllocator::CodeBlock>& codeBlocks;
+    const AsmRegAllocator::VarIndexMap* vregIndexMaps;
+    const Array<cxuint>* graphColorMaps;
     bool onlyWarnings;
     std::vector<AsmWaitInstr> neededWaitInstrs;
 public:
     AsmWaitScheduler(const AsmWaitConfig& asmWaitConfig, Assembler& assembler,
             const std::vector<AsmRegAllocator::CodeBlock>& codeBlocks,
-            bool onlyWarnings);
+            const AsmRegAllocator::VarIndexMap* vregIndexMaps,
+            const Array<cxuint>* graphColorMaps, bool onlyWarnings);
     
     void schedule();
     

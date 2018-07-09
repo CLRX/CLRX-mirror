@@ -77,10 +77,11 @@ bool ISAWaitHandler::nextInstr(AsmDelayedOp& delOp, AsmWaitInstr& waitInstr)
 /* AsmWaitScheduler */
 
 AsmWaitScheduler::AsmWaitScheduler(const AsmWaitConfig& _asmWaitConfig,
-            Assembler& _assembler,
-            const std::vector<AsmRegAllocator::CodeBlock>& _codeBlocks,
-            bool _onlyWarnings)
+        Assembler& _assembler, const std::vector<AsmRegAllocator::CodeBlock>& _codeBlocks,
+        const AsmRegAllocator::VarIndexMap* _vregIndexMaps,
+        const Array<cxuint>* _graphColorMaps, bool _onlyWarnings)
         : waitConfig(_asmWaitConfig), assembler(_assembler), codeBlocks(_codeBlocks),
+          vregIndexMaps(_vregIndexMaps), graphColorMaps(_graphColorMaps),
           onlyWarnings(_onlyWarnings)
 { }
 
