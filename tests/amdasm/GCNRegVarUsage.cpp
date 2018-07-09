@@ -1818,7 +1818,29 @@ b1:     .rvlin va[3:6]
             { 32, "rbx5", 8, 10, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 2 },
         },
         true, ""
+    },
+#if 0
+    {   /* 31: ssources */
+        ".regvar rax:s, rbx:s, rdx:s\n"
+        ".regvar rax4:s:8, rbx5:s:8, rcx3:s:6\n"
+        "s_and_b32 rdx, scc, rbx\n"
+        "s_or_b32 rdx, s11, vcc_lo\n"
+        "xreg=%vcc_lo\n"
+        "s_or_b32 rdx, s11, xreg\n",
+        {
+            // s_and_b32 rdx, rax, rbx
+            { 0, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
+            { 0, "rbx", 0, 1, GCNFIELD_SSRC1, ASMRVU_READ, 1 },
+            // s_or_b32 rdx, s11, rbx
+            { 4, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
+            { 4, nullptr, 11, 12, GCNFIELD_SSRC0, ASMRVU_READ, 0 },
+            // s_or_b32 rdx, s11, xreg
+            { 8, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
+            { 8, nullptr, 11, 12, GCNFIELD_SSRC0, ASMRVU_READ, 0 }
+        },
+        true, ""
     }
+#endif
 };
 
 static void pushRegVarsFromScopes(const AsmScope& scope,

@@ -49,6 +49,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
             0x80153dfcU, 0, false, true, "" },
     { "xrg=%32; s_add_u32  xrg, s4, s61", 0, 0, false, false,
         "test.s:1:21: Error: Expected 1 scalar register\n" },
+    { "x1=%s[0:11]; x2=%x1[4]; s_add_u32  s[21:21], x2, s61",
+        0x80153d04U, 0, false, true, "" },
     /* symregranges with names of other registers (vcc,exec,...) */
     { "execmi=%s[20:23]; vcctf=%s4; tmad=%s[57:67];s_add_u32  execmi[1], vcctf, tmad[4]",
             0x80153d04U, 0, false, true, "" },
