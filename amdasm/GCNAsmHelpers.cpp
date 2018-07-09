@@ -163,6 +163,13 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
     return true;
 }
 
+static inline bool isGCNConstLiteral(uint16_t rstart, GPUArchMask arch)
+{
+    if ((rstart >= 128 && rstart <= 208) || (rstart >= 240 && rstart <= 247))
+        return true;
+    return ((arch & ARCH_GCN_1_4) != 0 && rstart == 248);
+}
+
 bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
             RegRange& regPair, GPUArchMask arch, cxuint regsNum, AsmRegField regField,
             Flags flags, bool required)
@@ -192,9 +199,13 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
          * other scalar register, (ignore VCCZ, EXECZ, SCC if no SSOURCE enabled) */
         if (((flags & INSTROP_VREGS)!=0 && rstart >= 256 && rend >= 256) ||
             ((flags & INSTROP_SREGS)!=0 && rstart < 256 && rend < 256 &&
-            (((flags&INSTROP_SSOURCE)!=0) || (rstart!=251 && rstart!=252 && rstart!=253))))
+            (((flags&INSTROP_SSOURCE)!=0) || (rstart >= 128 || rstart<255))))
         {
             skipSpacesToEnd(linePtr, end);
+            
+            const bool isConstLit = (symEntry->second.regVar==nullptr &&
+                        isGCNConstLiteral(rstart, arch));
+            
             if (linePtr != end && *linePtr == '[')
             {
                 uint64_t value1, value2;
@@ -225,40 +236,54 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                     ASM_FAIL_BY_ERROR(regRangePlace, "Illegal register range")
                 if (value2 >= rend-rstart || value1 >= rend-rstart)
                     ASM_FAIL_BY_ERROR(regRangePlace, "Register range out of range")
+                    
+                if (isConstLit && (value1!=0 || (value2!=0 && value2+1!=regsNum)))
+                {
+                    ASM_FAIL_BY_ERROR(linePtr, "Register range for const literals must be"
+                            "[0] or [0:regsNum-1]");
+                    return false;
+                }
+                
                 rend = rstart + value2+1;
                 rstart += value1;
             }
             
-            if (regsNum!=0 && regsNum != rend-rstart)
+            if (!isConstLit)
             {
-                printXRegistersRequired(asmr, regRangePlace, regTypeName, regsNum);
-                return false;
-            }
-            /// check aligned for scalar registers
-            if (rstart<maxSGPRsNum)
-            {
-                if ((flags & INSTROP_UNALIGNED) == 0)
+                if (regsNum!=0 && regsNum != rend-rstart)
                 {
-                    if ((rend-rstart==2 && (rstart&1)!=0) ||
-                        (rend-rstart>2 && (rstart&3)!=0))
-                        ASM_FAIL_BY_ERROR(regRangePlace, "Unaligned scalar register range")
+                    printXRegistersRequired(asmr, regRangePlace, regTypeName, regsNum);
+                    return false;
                 }
-                else if ((flags & INSTROP_UNALIGNED) == INSTROP_SGPR_UNALIGNED)
-                    if ((rstart & 0xfc) != ((rend-1) & 0xfc))
-                        // unaligned, but some restrictions:
-                        // two regs can be in single 4-dword register line
-                        ASM_FAIL_BY_ERROR(regRangePlace,
-                                "Scalar register range cross two register lines")
+                /// check aligned for scalar registers
+                if (rstart<maxSGPRsNum)
+                {
+                    if ((flags & INSTROP_UNALIGNED) == 0)
+                    {
+                        if ((rend-rstart==2 && (rstart&1)!=0) ||
+                            (rend-rstart>2 && (rstart&3)!=0))
+                            ASM_FAIL_BY_ERROR(regRangePlace,
+                                        "Unaligned scalar register range")
+                    }
+                    else if ((flags & INSTROP_UNALIGNED) == INSTROP_SGPR_UNALIGNED)
+                        if ((rstart & 0xfc) != ((rend-1) & 0xfc))
+                            // unaligned, but some restrictions:
+                            // two regs can be in single 4-dword register line
+                            ASM_FAIL_BY_ERROR(regRangePlace,
+                                    "Scalar register range cross two register lines")
+                }
+                
+                // set reg var usage for current position and instruction field
+                if (regField != ASMFIELD_NONE)
+                    gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                        uint16_t(rstart), uint16_t(rend), regField,
+                        cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
+                        ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
+                regPair = { rstart, rend, symEntry->second.regVar };
             }
+            else
+                regPair = { rstart, 0, nullptr };
             
-            // set reg var usage for current position and instruction field
-            if (regField != ASMFIELD_NONE)
-                gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
-                    uint16_t(rstart), uint16_t(rend), regField,
-                    cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
-                    ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
-            
-            regPair = { rstart, rend, symEntry->second.regVar };
             return true;
         }
     }

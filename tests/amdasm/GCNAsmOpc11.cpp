@@ -53,6 +53,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_add_u32  s21, s4, 0", 0x80158004U, 0, false, true, "" },
     { "lit=3;s_add_u32  s21, s4, lit*5", 0x80158f04U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 1", 0x80158104U, 0, false, true, "" },
+    { "  dreg=%1 ; s_add_u32  s21, s4, dreg", 0x80158104U, 0, false, true, "" },
+    { "  dreg=%1 ; s_add_u32  s21, s4, dreg[0]", 0x80158104U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 0x2a", 0x8015aa04U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, -7", 0x8015c704U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, lit(-7)", 0x8015ff04U, 0xfffffff9, true, true, "" },
@@ -124,6 +126,18 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_xor_b64 exec, s[4:5], 4000\n", 0x89feff04U, 4000, true, true, "" },
     { "    s_xor_b64 s[22:23], 0x2e, s[62:63]\n", 0x89963eaeU, 0, false, true, "" },
     { "    s_xor_b64 s[22:23], -12, s[62:63]\n", 0x89963eccU, 0, false, true, "" },
+    { " dreg=%-12; s_xor_b64 s[22:23], dreg, s[62:63]\n", 0x89963eccU, 0, false, true, "" },
+    { " dreg=%-12; s_xor_b64 s[22:23], dreg[0:1], s[62:63]\n",
+            0x89963eccU, 0, false, true, "" },
+    { " dreg=%-12; s_xor_b64 s[22:23], dreg[1:1], s[62:63]\n", 0, 0, false, false,
+        "test.s:1:42: Error: Register range for const "
+                "literals must be[0] or [0:regsNum-1]\n" },
+    { " dreg=%-12; s_xor_b64 s[22:23], dreg[0:2], s[62:63]\n", 0, 0, false, false,
+        "test.s:1:42: Error: Register range for const "
+                "literals must be[0] or [0:regsNum-1]\n" },
+    { " dreg=%-12; s_xor_b64 s[22:23], dreg[1:2], s[62:63]\n", 0, 0, false, false,
+        "test.s:1:42: Error: Register range for const "
+                "literals must be[0] or [0:regsNum-1]\n" },
     { "    s_xor_b64 s[22:23], 1.0, s[62:63]\n", 0x89963ef2U, 0, false, true, "" },
     { "    s_xor_b64 s[22:23], vccz, s[62:63]\n", 0x89963efbU, 0, false, true, "" },
     { "    s_xor_b64 s[22:23], execz, s[62:63]\n", 0x89963efcU, 0, false, true, "" },
