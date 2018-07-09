@@ -73,6 +73,10 @@ zx = 10 # zx symbol
 v_xor_b32 regpool[zx+1], regpool[zx+5], regpool[zx+7]    # v_xor_b32 v27, v31, v33
 ```
 
+Additionally, an assembler accepts constant literals in symreganges like `zz=%1` or
+`xx=%0.5`. These symreganges are permitted in fields that accepts a scalar sources and
+are not permitted in a scalar destination.
+
 Special operator 'lit' force literal encoding for operand immediates:
 
 ```
