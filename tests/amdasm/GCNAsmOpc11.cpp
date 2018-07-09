@@ -47,6 +47,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "s_add_u32  zx[1], ss, b[4]", 0x80153d04U, 0, false, true, "" },
     { "zx=%s[20:23]; ss=%execz; b=%s[57:67];s_add_u32  zx[1], ss, b[4]",
             0x80153dfcU, 0, false, true, "" },
+    { "xrg=%32; s_add_u32  xrg, s4, s61", 0, 0, false, false,
+        "test.s:1:21: Error: Expected 1 scalar register\n" },
     /* symregranges with names of other registers (vcc,exec,...) */
     { "execmi=%s[20:23]; vcctf=%s4; tmad=%s[57:67];s_add_u32  execmi[1], vcctf, tmad[4]",
             0x80153d04U, 0, false, true, "" },
@@ -122,6 +124,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
                 "test.s:1:7: Error: Only one literal can be used in instruction\n"
                 "test.s:1:25: Error: Expected 2 scalar registers\n"
                 "test.s:1:29: Error: Expected ',' before argument\n" },
+    { " dreg=%12 ;  s_xor_b64 dreg, s[4:5], s[62:63]\n", 0, 0, false, false,
+        "test.s:1:24: Error: Expected 2 scalar registers\n" },
     { "    s_xor_b64 exec, s[4:5], s[62:63]\n", 0x89fe3e04U, 0, false, true, "" },
     { "    s_xor_b64 exec, s[4:5], 4000\n", 0x89feff04U, 4000, true, true, "" },
     { "    s_xor_b64 s[22:23], 0x2e, s[62:63]\n", 0x89963eaeU, 0, false, true, "" },

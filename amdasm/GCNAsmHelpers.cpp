@@ -198,8 +198,8 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
          * vector/scalar register enabled and is vector/scalar register or
          * other scalar register, (ignore VCCZ, EXECZ, SCC if no SSOURCE enabled) */
         if (((flags & INSTROP_VREGS)!=0 && rstart >= 256 && rend >= 256) ||
-            ((flags & INSTROP_SREGS)!=0 && rstart < 256 && rend < 256 &&
-            (((flags&INSTROP_SSOURCE)!=0) || (rstart >= 128 || rstart<255))))
+            ((flags & INSTROP_SREGS)!=0 && rstart < 128 && rend < 128) ||
+            (((flags&INSTROP_SSOURCE)!=0) && (rstart >= 128 && rstart<255)))
         {
             skipSpacesToEnd(linePtr, end);
             
