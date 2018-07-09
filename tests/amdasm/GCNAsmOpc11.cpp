@@ -2265,6 +2265,13 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    buffer_load_format_x  v[61:62], s[80:83], s35 "
         "offset:603 glc slc addr64 tfe", 0, 0, false, false,
         "test.s:1:37: Error: VADDR is required if idxen, offen or addr64 is enabled\n" },
+    { "vxr=%21; buffer_load_format_x  v[61:62], v[18:19], vxr, s35 "
+        "offset:603 glc slc addr64 tfe", 0, 0, false, false,
+        "test.s:1:52: Error: Expected 4 scalar registers\n" },
+    { "vxr=%21; buffer_load_format_x  v[61:62], v[18:19], vxr[0:3], s35 "
+        "offset:603 glc slc addr64 tfe", 0, 0, false, false,
+        "test.s:1:52: Error: Expected 4 scalar registers\n"
+        "test.s:1:55: Error: Expected ',' before argument\n" },
     /* other MUBUF instructions */
     { "    buffer_load_format_x v61, v18, s[80:83], s35 idxen offset:603",
         0xe000225bU, 0x23143d12U, true, true, "" },
