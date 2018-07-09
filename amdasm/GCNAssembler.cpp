@@ -721,7 +721,8 @@ bool GCNAssembler::parseRegisterRange(const char*& linePtr, cxuint& regStart,
     GCNOperand operand;
     regVar = nullptr;
     if (!GCNAsmUtils::parseOperand(assembler, linePtr, operand, nullptr, curArchMask, 0,
-                INSTROP_SREGS|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_UNALIGNED,
+                INSTROP_SREGS|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_UNALIGNED|
+                INSTROP_ONLYINLINECONSTS,
                 ASMFIELD_NONE))
         return false;
     regStart = operand.range.start;

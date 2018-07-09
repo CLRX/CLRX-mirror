@@ -116,6 +116,10 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
                 0x89f43e04U, 0, false, true, "" },
     { " dreg=%ttmp[0:10] ;  s_xor_b64 dreg[4:5], s[4:5], s[62:63]\n",
                 0x89f43e04U, 0, false, true, "" },
+    { "dreg=%ttmp ;  s_xor_b64 dreg[4:5], s[4:5], s[62:63]\n", 0, 0, false, false,
+                "test.s:1:7: Error: Only one literal can be used in instruction\n"
+                "test.s:1:25: Error: Expected 2 scalar registers\n"
+                "test.s:1:29: Error: Expected ',' before argument\n" },
     { "    s_xor_b64 exec, s[4:5], s[62:63]\n", 0x89fe3e04U, 0, false, true, "" },
     { "    s_xor_b64 exec, s[4:5], 4000\n", 0x89feff04U, 4000, true, true, "" },
     { "    s_xor_b64 s[22:23], 0x2e, s[62:63]\n", 0x89963eaeU, 0, false, true, "" },
