@@ -167,7 +167,7 @@ static inline bool isGCNConstLiteral(uint16_t rstart, GPUArchMask arch)
 {
     if ((rstart >= 128 && rstart <= 208) || (rstart >= 240 && rstart <= 247))
         return true;
-    return ((arch & ARCH_GCN_1_4) != 0 && rstart == 248);
+    return ((arch & ARCH_GCN_1_2_4) != 0 && rstart == 248);
 }
 
 bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
