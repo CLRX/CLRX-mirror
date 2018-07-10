@@ -72,6 +72,13 @@ void GCNAsmUtils::printXRegistersRequired(Assembler& asmr, const char* linePtr,
     asmr.printError(linePtr, buf);
 }
 
+static inline cxbyte getRegVarAlign(const AsmRegVar* regVar, cxuint regsNum, Flags flags)
+{
+    if ((flags & INSTROP_UNALIGNED) == 0 && regVar->type==REGTYPE_SGPR)
+        return regsNum==2 ? 2 : regsNum>=3 ? 4 : 1;
+    return 1;
+}
+
 bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
                  RegRange& regPair, GPUArchMask arch, cxuint regsNum, AsmRegField regField,
                  Flags flags, bool required)
@@ -141,11 +148,7 @@ bool GCNAsmUtils::parseRegVarRange(Assembler& asmr, const char*& linePtr,
             
             if (regField!=ASMFIELD_NONE)
             {
-                cxbyte align = 1;
-                // set correct alignment for range
-                if ((flags & INSTROP_UNALIGNED) == 0 && regVar->type==REGTYPE_SGPR)
-                    align = regsNum==2 ? 2 : regsNum>=3 ? 4 : 1;
-                
+                cxbyte align = getRegVarAlign(regVar, regsNum, flags);
                 // set reg var usage for current position and instruction field
                 gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), regVar,
                     uint16_t(rstart), uint16_t(rend), regField,
@@ -288,12 +291,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                 {
                     cxbyte align = 0;
                     if (regVar != nullptr)
-                    {
-                        align = 1;
-                        // set correct alignment for range
-                        if ((flags & INSTROP_UNALIGNED) == 0 && regVar->type==REGTYPE_SGPR)
-                            align = regsNum==2 ? 2 : regsNum>=3 ? 4 : 1;
-                    }
+                        align = getRegVarAlign(regVar, regsNum, flags);
                     
                     gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), regVar,
                         uint16_t(rstart), uint16_t(rend), regField,
@@ -1065,7 +1063,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         // buggy fplit does not accept 64-bit values (high 32-bits)
         instrOpMask = (instrOpMask&~INSTROP_TYPE_MASK) | INSTROP_INT;
     
-    const cxuint optionFlags = (instrOpMask & (INSTROP_UNALIGNED|INSTROP_ACCESS_MASK));
+    const Flags optionFlags = (instrOpMask & (INSTROP_UNALIGNED|INSTROP_ACCESS_MASK));
     // fast path to parse only VGPR or SGPR
     if ((instrOpMask&~INSTROP_UNALIGNED) == INSTROP_SREGS)
         return parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, regField, true,
