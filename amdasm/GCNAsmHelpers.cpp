@@ -170,6 +170,17 @@ static inline bool isGCNConstLiteral(uint16_t rstart, GPUArchMask arch)
     return ((arch & ARCH_GCN_1_2_4) != 0 && rstart == 248);
 }
 
+static inline bool isGCNVReg(uint16_t rstart, uint16_t rend, const AsmRegVar* regVar)
+{ return (regVar==nullptr && rstart >= 256 && rend >= 256) ||
+            (regVar!=nullptr && regVar->type == REGTYPE_VGPR); }
+
+static inline bool isGCNSReg(uint16_t rstart, uint16_t rend, const AsmRegVar* regVar)
+{ return (regVar==nullptr && rstart < 128 && rend < 128) ||
+        (regVar!=nullptr && regVar->type == REGTYPE_SGPR); }
+
+static inline bool isGCNSSource(uint16_t rstart, uint16_t rend, const AsmRegVar* regVar)
+{ return (regVar==nullptr && rstart >= 128 && rstart<255); }
+
 bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
             RegRange& regPair, GPUArchMask arch, cxuint regsNum, AsmRegField regField,
             Flags flags, bool required)
@@ -193,19 +204,18 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
         symEntry->second.regRange)
     {
         // set up regrange
+        const AsmRegVar* regVar = symEntry->second.regVar;
         cxuint rstart = symEntry->second.value&UINT_MAX;
         cxuint rend = symEntry->second.value>>32;
         /* parse register range if:
          * vector/scalar register enabled and is vector/scalar register or
          * other scalar register, (ignore VCCZ, EXECZ, SCC if no SSOURCE enabled) */
-        if (((flags & INSTROP_VREGS)!=0 && rstart >= 256 && rend >= 256) ||
-            ((flags & INSTROP_SREGS)!=0 && rstart < 128 && rend < 128) ||
-            (((flags&INSTROP_SSOURCE)!=0) && (rstart >= 128 && rstart<255)))
+        if (((flags & INSTROP_VREGS)!=0 && isGCNVReg(rstart, rend, regVar)) ||
+            ((flags & INSTROP_SREGS)!=0 && isGCNSReg(rstart, rend, regVar)) ||
+            (((flags&INSTROP_SSOURCE)!=0) && isGCNSSource(rstart, rend, regVar)))
         {
             skipSpacesToEnd(linePtr, end);
-            
-            const bool isConstLit = (symEntry->second.regVar==nullptr &&
-                        isGCNConstLiteral(rstart, arch));
+            const bool isConstLit = (regVar==nullptr && isGCNConstLiteral(rstart, arch));
             
             if (linePtr != end && *linePtr == '[')
             {
@@ -256,8 +266,8 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                     printXRegistersRequired(asmr, regRangePlace, regTypeName, regsNum);
                     return false;
                 }
-                /// check aligned for scalar registers
-                if (rstart<maxSGPRsNum)
+                /// check aligned for scalar registers but not regvars
+                if (regVar==nullptr && rstart<maxSGPRsNum)
                 {
                     if ((flags & INSTROP_UNALIGNED) == 0)
                     {
@@ -280,7 +290,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                         uint16_t(rstart), uint16_t(rend), regField,
                         cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
                         ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
-                regPair = { rstart, rend, symEntry->second.regVar };
+                regPair = { rstart, rend, regVar };
             }
             else
                 regPair = { rstart, 0, nullptr };
