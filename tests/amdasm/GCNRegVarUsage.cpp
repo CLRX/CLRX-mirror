@@ -1932,7 +1932,6 @@ b1:     .rvlin va[3:6]
         },
         true, ""
     },
-#if 0
     {   /* 31: ssources */
         ".regvar rax:s, rbx:s, rdx:s\n"
         ".regvar rax4:s:8, rbx5:s:8, rcx3:s:6\n"
@@ -1953,7 +1952,6 @@ b1:     .rvlin va[3:6]
         },
         true, ""
     }
-#endif
 };
 
 static void pushRegVarsFromScopes(const AsmScope& scope,

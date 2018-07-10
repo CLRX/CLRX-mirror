@@ -271,7 +271,7 @@ cxuint CLRX::getGPUMaxRegsNumByArchMask(GPUArchMask archMask, cxuint regType)
     if (regType == REGTYPE_VGPR)
         return 256;
     else
-        return (archMask&(7U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
+        return (archMask&(15U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
 }
 
 void CLRX::getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,

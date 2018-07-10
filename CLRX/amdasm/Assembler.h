@@ -377,7 +377,11 @@ private:
     { currentRVUIndex = idx; }
     
     void setRegVarUsage(const AsmRegVarUsage& rvu)
-    { instrRVUs[currentRVUIndex] = rvu; }
+    {
+        const cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(curArchMask, REGTYPE_SGPR);
+        if (rvu.regVar != nullptr || rvu.rstart < maxSGPRsNum || rvu.rstart >= 256)
+            instrRVUs[currentRVUIndex] = rvu;
+    }
     
     void flushInstrRVUs(ISAUsageHandler* usageHandler);
     void flushWaitInstrs(ISAWaitHandler* waitHandler);
