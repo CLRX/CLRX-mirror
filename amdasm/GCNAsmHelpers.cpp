@@ -198,7 +198,6 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
     const cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
-    // TODO: add handling symregranges with regvars
     if (asmr.parseSymbol(linePtr, symEntry, false, true)==
         Assembler::ParseState::PARSED && symEntry!=nullptr &&
         symEntry->second.regRange)
