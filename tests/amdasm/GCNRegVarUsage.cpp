@@ -1869,6 +1869,69 @@ b1:     .rvlin va[3:6]
         },
         true, ""
     },
+    {   /* 32: VOP2 - symregranges with regvars */
+        ".regvar rax:v, rbx:v, rex:v\n"
+        ".regvar rax2:v:8, rbx4:v:8, rex5:v:10\n"
+        ".regvar srex:s, srdx3:s:6, srbx:s\n"
+        "drax=%rax2[2:5]; arax=%rax; dstx=%rex\n"
+        "smax=%arax\n"
+        "v_sub_f32  rex, arax, rbx\n"
+        "v_sub_f32  rex, srex, rbx\n"
+        "v_cndmask_b32 rex, rax, rbx, vcc\n"
+        "v_addc_u32  rex, vcc, rax, rbx, vcc\n"
+        "v_readlane_b32 srex, drax[1], srdx3[4]\n"
+        "v_writelane_b32 smax, drax[2], srdx3[3]\n"
+        "v_sub_f32  rex, arax, rbx vop3\n"
+        "v_readlane_b32 srex, drax[1], srdx3[4] vop3\n"
+        "v_addc_u32  dstx, srdx3[0:1], rax, rbx, srdx3[2:3]\n"
+        "v_sub_f32  dstx, arax, srbx\n",
+        {
+            // v_sub_f32  rex, rax, rbx
+            { 0, "rex", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 0, "rax", 0, 1, GCNFIELD_VOP_SRC0, ASMRVU_READ, 1 },
+            { 0, "rbx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_sub_f32  rex, srex, rbx
+            { 4, "rex", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 4, "srex", 0, 1, GCNFIELD_VOP_SRC0, ASMRVU_READ, 1 },
+            { 4, "rbx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_cndmask_b32 rex, rax, rbx, vcc
+            { 8, "rex", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 8, "rax", 0, 1, GCNFIELD_VOP_SRC0, ASMRVU_READ, 1 },
+            { 8, "rbx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_addc_u32  rex, vcc, rax, rbx, vcc
+            { 12, "rex", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 12, "rax", 0, 1, GCNFIELD_VOP_SRC0, ASMRVU_READ, 1 },
+            { 12, "rbx", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_readlane_b32 srex, rax2[3], srdx3[4]
+            { 16, "srex", 0, 1, GCNFIELD_VOP_SDST, ASMRVU_WRITE, 1 },
+            { 16, "rax2", 3, 4, GCNFIELD_VOP_SRC0, ASMRVU_READ, 1 },
+            { 16, "srdx3", 4, 5, GCNFIELD_VOP_SSRC1, ASMRVU_READ, 1 },
+            // v_writelane_b32 rax, rax2[4], srdx3[3]
+            { 20, "rax", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 20, "rax2", 4, 5, GCNFIELD_VOP_SRC0, ASMRVU_READ, 1 },
+            { 20, "srdx3", 3, 4, GCNFIELD_VOP_SSRC1, ASMRVU_READ, 1 },
+            /* vop3 encoding */
+            // v_sub_f32  rex, rax, rbx vop3
+            { 24, "rex", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 24, "rax", 0, 1, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 24, "rbx", 0, 1, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            // v_readlane_b32 srex, rax2[3], srdx3[4] vop3
+            { 32, "srex", 0, 1, GCNFIELD_VOP3_SDST0, ASMRVU_WRITE, 1 },
+            { 32, "rax2", 3, 4, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 32, "srdx3", 4, 5, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            // v_addc_u32  rex, srex, rax, rbx, srdx3[1]
+            { 40, "rex", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 40, "srdx3", 0, 2, GCNFIELD_VOP3_SDST1, ASMRVU_WRITE, 1 },
+            { 40, "rax", 0, 1, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 40, "rbx", 0, 1, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 },
+            { 40, "srdx3", 2, 4, GCNFIELD_VOP3_SSRC, ASMRVU_READ, 1 },
+            // v_sub_f32  rex, rax, srbx
+            { 48, "rex", 0, 1, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 48, "rax", 0, 1, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 48, "srbx", 0, 1, GCNFIELD_VOP3_SRC1, ASMRVU_READ, 1 }
+        },
+        true, ""
+    },
 #if 0
     {   /* 31: ssources */
         ".regvar rax:s, rbx:s, rdx:s\n"
