@@ -1932,13 +1932,24 @@ b1:     .rvlin va[3:6]
         },
         true, ""
     },
-    {   /* 31: ssources */
+    {   /* 33: ssources */
         ".regvar rax:s, rbx:s, rdx:s\n"
         ".regvar rax4:s:8, rbx5:s:8, rcx3:s:6\n"
         "s_and_b32 rdx, scc, rbx\n"
         "s_or_b32 rdx, s11, vcc_lo\n"
         "xreg=%vcc_lo\n"
-        "s_or_b32 rdx, s11, xreg\n",
+        "s_or_b32 rdx, s11, xreg\n"  // 8
+        "xreg2=%2.0\n"
+        "s_or_b32 rdx, 22, xreg2\n"  // 12
+        "xreg3=%ttmp1\n"
+        "s_or_b32 rdx, ttmp3, xreg3\n" // 16
+        "xreg4=%execz\n"
+        "s_or_b32 rdx, vccz, xreg4\n" // 20
+        "s_or_b32 rdx, rcx3[4], 1223\n" // 24
+        "s_or_b32 m0, vccz, xreg4\n" // 32
+        "s_or_b32 ttmp3, vccz, xreg4\n" // 36
+        "s_or_b32 exec_hi, vccz, xreg4\n" // 40
+        "s_endpgm\n",
         {
             // s_and_b32 rdx, rax, rbx
             { 0, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
@@ -1948,7 +1959,12 @@ b1:     .rvlin va[3:6]
             { 4, nullptr, 11, 12, GCNFIELD_SSRC0, ASMRVU_READ, 0 },
             // s_or_b32 rdx, s11, xreg
             { 8, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
-            { 8, nullptr, 11, 12, GCNFIELD_SSRC0, ASMRVU_READ, 0 }
+            { 8, nullptr, 11, 12, GCNFIELD_SSRC0, ASMRVU_READ, 0 },
+            { 12, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
+            { 16, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
+            { 20, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
+            { 24, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
+            { 24, "rcx3", 4, 5, GCNFIELD_SSRC0, ASMRVU_READ, 1 }
         },
         true, ""
     }
