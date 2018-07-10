@@ -286,10 +286,21 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                 
                 // set reg var usage for current position and instruction field
                 if (regField != ASMFIELD_NONE)
-                    gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                {
+                    cxbyte align = 0;
+                    if (regVar != nullptr)
+                    {
+                        align = 1;
+                        // set correct alignment for range
+                        if ((flags & INSTROP_UNALIGNED) == 0 && regVar->type==REGTYPE_SGPR)
+                            align = regsNum==2 ? 2 : regsNum>=3 ? 4 : 1;
+                    }
+                    
+                    gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), regVar,
                         uint16_t(rstart), uint16_t(rend), regField,
                         cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
-                        ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
+                        ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), align });
+                }
                 regPair = { rstart, rend, regVar };
             }
             else
@@ -369,7 +380,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
             // try to parse regrange symbol
             linePtr = oldLinePtr;
             return parseSymRegRange(asmr, linePtr, regPair, 0, regsNum,
-                            regField, INSTROP_VREGS, required);
+                        regField, INSTROP_VREGS|(flags&INSTROP_ACCESS_MASK), required);
         }
         else if (regPair)
             return true;
@@ -662,7 +673,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             {
                 linePtr = oldLinePtr;
                 return parseSymRegRange(asmr, linePtr, regPair, arch, regsNum,
-                        regField, INSTROP_SREGS | (flags & INSTROP_UNALIGNED), required);
+                        regField, INSTROP_SREGS |
+                        (flags & (INSTROP_ACCESS_MASK|INSTROP_UNALIGNED)), required);
             }
             else if (regPair)
                 return true;
