@@ -165,6 +165,7 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             s_buffer_load_dwordx16 bb[12:27], s[12:15], 4
             s_memtime s[4:5]
             s_memtime dcx[5:6]
+            s_buffer_load_dwordx2 vcc, s[12:15], 4
 )ffDXD",
         { },
         {
@@ -179,7 +180,8 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 32U, "bb", 16, 24, 8, GCNDELOP_SMEMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 36U, "bb", 12, 28, 16, GCNDELOP_SMEMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 40U, nullptr, 4, 6, 2, GCNDELOP_SMEMOP, ASMDELOP_NONE, ASMRVU_WRITE },
-            { 44U, "dcx", 5, 7, 2, GCNDELOP_SMEMOP, ASMDELOP_NONE, ASMRVU_WRITE }
+            { 44U, "dcx", 5, 7, 2, GCNDELOP_SMEMOP, ASMDELOP_NONE, ASMRVU_WRITE },
+            { 48U, nullptr, 106, 108, 2, GCNDELOP_SMEMOP, ASMDELOP_NONE, ASMRVU_WRITE }
         }, true, ""
     },
     {   /* 6 - SMEM */
