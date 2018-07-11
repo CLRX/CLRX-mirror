@@ -304,6 +304,11 @@ std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
         case GCNFIELD_SDWAB_SDST:
             rstart = (code2>>8)&0x7f;
             break;
+        case GCNFIELD_VOP_VCC_SSRC:
+        case GCNFIELD_VOP_VCC_SDST0:
+        case GCNFIELD_VOP_VCC_SDST1:
+            rstart = 106;
+            break;
         default:
             throw AsmException("Unknown GCNField");
     }

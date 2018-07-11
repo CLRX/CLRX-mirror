@@ -179,6 +179,9 @@ extern cxuint getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType
 /// get maximum available registers for GPU (type: 0 - scalar, 1 - vector)
 extern cxuint getGPUMaxRegsNumByArchMask(GPUArchMask archMask, cxuint regType);
 
+/// get maximum number of scalar register + extra scalar reg (VCC, FLAT_SCRATCH, ...)
+extern bool isSpecialSGPRRegister(GPUArchMask archMask, cxuint index);
+
 /// get minimal number of required registers
 extern void getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,
                cxuint userDataNum, Flags flags, cxuint* gprsOut);

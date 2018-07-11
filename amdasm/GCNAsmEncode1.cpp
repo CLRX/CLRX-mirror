@@ -1400,9 +1400,9 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
          src1Op.range.isSGPR() || src1Op.range.isVal(124)))
         ASM_FAIL_BY_ERROR(instrPlace, "Literal with SGPR or M0 is illegal")
     
+    AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
     if (vop3) // modify fields in reg usage
     {
-        AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
         if (rvus[0].regField != ASMFIELD_NONE)
             rvus[0].regField = (rvus[0].regField==GCNFIELD_VOP_VDST) ? GCNFIELD_VOP3_VDST :
                             GCNFIELD_VOP3_SDST0;
@@ -1410,6 +1410,14 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             rvus[2].regField = GCNFIELD_VOP3_SRC0;
         if (rvus[3].regField != ASMFIELD_NONE)
             rvus[3].regField = GCNFIELD_VOP3_SRC1;
+    }
+    else
+    {
+        // vop2
+        if (rvus[1].regField != ASMFIELD_NONE)
+            rvus[1].regField = GCNFIELD_VOP_VCC_SDST1;
+        if (rvus[4].regField != ASMFIELD_NONE)
+            rvus[4].regField = GCNFIELD_VOP_VCC_SSRC;
     }
     
     // count number SGPR operands readed by instruction
@@ -1445,7 +1453,6 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (extraMods.needSDWA && isGCN14)
         {
             // fix for extra type operand from SDWA
-            AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
             if (rvus[2].regField != ASMFIELD_NONE && src0Op.range.isNonVGPR())
                 rvus[2].regField = GCNFIELD_DPPSDWA_SSRC0;
             if (rvus[3].regField != ASMFIELD_NONE && src1Op.range.isNonVGPR())
@@ -1753,15 +1760,17 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         /* include VCCs (???) */
         ASM_FAIL_BY_ERROR(instrPlace, "More than one SGPR to read in instruction")
     
+    AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
     if (vop3)
     {
         // modify fields in reg usage
-        AsmRegVarUsage* rvus = gcnAsm->instrRVUs;
         if (rvus[1].regField != ASMFIELD_NONE)
             rvus[1].regField = GCNFIELD_VOP3_SRC0;
         if (rvus[2].regField != ASMFIELD_NONE)
             rvus[2].regField = GCNFIELD_VOP3_SRC1;
     }
+    else if (rvus[0].regField != ASMFIELD_NONE)
+        rvus[0].regField = GCNFIELD_VOP_VCC_SDST0;
     
     const bool needImm = src0Op.range.start==255 || src1Op.range.start==255;
     

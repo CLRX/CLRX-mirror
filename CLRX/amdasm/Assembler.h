@@ -379,7 +379,8 @@ private:
     void setRegVarUsage(const AsmRegVarUsage& rvu)
     {
         const cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(curArchMask, REGTYPE_SGPR);
-        if (rvu.regVar != nullptr || rvu.rstart < maxSGPRsNum || rvu.rstart >= 256)
+        if (rvu.regVar != nullptr || rvu.rstart < maxSGPRsNum || rvu.rstart >= 256 ||
+            isSpecialSGPRRegister(curArchMask, rvu.rstart))
             instrRVUs[currentRVUIndex] = rvu;
     }
     

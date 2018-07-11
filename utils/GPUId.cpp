@@ -274,6 +274,22 @@ cxuint CLRX::getGPUMaxRegsNumByArchMask(GPUArchMask archMask, cxuint regType)
         return (archMask&(15U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
 }
 
+bool CLRX::isSpecialSGPRRegister(GPUArchMask archMask, cxuint index)
+{
+    cxuint rindex = index&~1U;
+    if (rindex == 106) // VCC
+        return true;
+    if ((archMask&(31U<<int(GPUArchitecture::GCN1_1))) != 0)
+    {
+        if (rindex == 104) // XNACK_MASK or FLAT_SCRATCH
+            return true;
+        if ((archMask&(15U<<int(GPUArchitecture::GCN1_2))) != 0 && rindex == 102)
+            // FLAT_SCRATCH
+            return true;
+    }
+    return false;
+}
+
 void CLRX::getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,
               cxuint userDataNum, Flags flags, cxuint* gprsOut)
 {

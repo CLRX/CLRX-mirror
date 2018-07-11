@@ -557,11 +557,13 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         
         size_t loHiRegSuffix = 0;
         cxuint loHiReg = 0;
+        bool specialSGPRReg = false;
         if (regName[0] == 'v' && regName[1] == 'c' && regName[2] == 'c')
         {
             /// vcc
             loHiRegSuffix = 3;
             loHiReg = 106;
+            specialSGPRReg = true;
         }
         else if (::strncmp(regName, "exec", 4)==0)
         {
@@ -601,12 +603,14 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                 // flat
                 loHiRegSuffix = 12;
                 loHiReg = (arch&ARCH_GCN_1_2_4)?102:104;
+                specialSGPRReg = true;
             }
             else if ((arch&ARCH_GCN_1_2_4)!=0 && ::strncmp(regName, "xnack_mask", 10)==0)
             {
                 // xnack
                 loHiRegSuffix = 10;
                 loHiReg = 104;
+                specialSGPRReg = true;
             }
         }
         
@@ -637,6 +641,13 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                         printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
                         return false;
                     }
+                    
+                    // set reg var usage for current position and instruction field
+                    if (regField != ASMFIELD_NONE)
+                        gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                            regPair.start, regPair.end, regField,
+                            cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
+                            ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
                     return true;
                 }
                 else
@@ -651,6 +662,13 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                     return false;
                 }
                 regPair = { loHiReg, loHiReg+2 };
+                
+                // set reg var usage for current position and instruction field
+                if (regField != ASMFIELD_NONE)
+                    gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                        regPair.start, regPair.end, regField,
+                        cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
+                        ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
                 return true;
             }
             else // this is not this register
