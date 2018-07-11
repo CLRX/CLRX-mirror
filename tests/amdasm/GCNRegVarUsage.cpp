@@ -2005,6 +2005,7 @@ b1:     .rvlin va[3:6]
         "v_or_b32 vrd[1], vccz, vrd[2]\n" // 44
         "v_or_b32 vrd[1], vrd[3], scc\n" // 48
         "v_or_b32 vrd[1], vrd[3], exec_hi\n" // 56
+        "v_or_b32 vrd[1], vrd[3], m0\n" // 64
         "s_endpgm\n",
         {
             // s_and_b32 rdx, rax, rbx
@@ -2026,7 +2027,9 @@ b1:     .rvlin va[3:6]
             { 48, "vrd", 1, 2, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
             { 48, "vrd", 3, 4, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
             { 56, "vrd", 1, 2, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
-            { 56, "vrd", 3, 4, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 }
+            { 56, "vrd", 3, 4, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 },
+            { 64, "vrd", 1, 2, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 64, "vrd", 3, 4, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 }
         },
         true, ""
     }
