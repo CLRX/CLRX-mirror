@@ -185,21 +185,15 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
                 break;
             case 106:
                 // vcc
-                *bufPtr++ = 'v';
-                *bufPtr++ = 'c';
-                *bufPtr++ = 'c';
+                putChars(bufPtr, "vcc", 3);
                 break;
             case 108:
                 // tba
-                *bufPtr++ = 't';
-                *bufPtr++ = 'b';
-                *bufPtr++ = 'a';
+                putChars(bufPtr, "tba", 3);
                 break;
             case 110:
                 // tma
-                *bufPtr++ = 't';
-                *bufPtr++ = 'm';
-                *bufPtr++ = 'a';
+                putChars(bufPtr, "tma", 3);
                 break;
             case 126:
                 putChars(bufPtr, "exec", 4);
@@ -209,11 +203,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
         if (regNum >= 2)
         {
             if (op&1) // unaligned!!
-            {
-                *bufPtr++ = '_';
-                *bufPtr++ = 'u';
-                *bufPtr++ = '!';
-            }
+                putChars(bufPtr, "_u!", 3);
             if (regNum > 2)
                 putChars(bufPtr, "&ill!", 5);
             return;
@@ -229,9 +219,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
     
     if (op == 255) // if literal
     {
-        *bufPtr++ = '0'; // zero 
-        *bufPtr++ = 'x'; // zero 
-        *bufPtr++ = '0'; // zero 
+        putChars(bufPtr, "0x0", 3); // zero 
         return;
     }
     
@@ -328,15 +316,11 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
             return;
         case 253:
             // scc
-            *bufPtr++ = 's';
-            *bufPtr++ = 'c';
-            *bufPtr++ = 'c';
+            putChars(bufPtr, "scc", 3);
             return;
         case 254:
             // lds
-            *bufPtr++ = 'l';
-            *bufPtr++ = 'd';
-            *bufPtr++ = 's';
+            putChars(bufPtr, "lds", 3);
             return;
     }
     
@@ -479,12 +463,8 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             if (((imm16>>4)&7) != 7 || isf7f)
             {
                 if (prevLock)
-                {
                     // print & before previous lock: vmcnt()
-                    *bufPtr++ = ' ';
-                    *bufPtr++ = '&';
-                    *bufPtr++ = ' ';
-                }
+                    putChars(bufPtr, " & ", 3);
                 putChars(bufPtr, "expcnt(", 7);
                 // print value
                 *bufPtr++ = '0' + ((imm16>>4)&7);
@@ -497,12 +477,8 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                 /* LGKMCNT bits is 4 (5????) */
                 const cxuint lockCnt = (imm16>>8)&15;
                 if (prevLock)
-                {
                     // print & before previous lock: vmcnt()
-                    *bufPtr++ = ' ';
-                    *bufPtr++ = '&';
-                    *bufPtr++ = ' ';
-                }
+                    putChars(bufPtr, " & ", 3);
                 putChars(bufPtr, "lgkmcnt(", 8);
                 const cxuint digit2 = lockCnt/10U;
                 if (lockCnt >= 10)
@@ -515,10 +491,7 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             {
                 /* additional info about imm16 */
                 if (prevLock)
-                {
-                    *bufPtr++ = ' ';
-                    *bufPtr++ = ':';
-                }
+                    putChars(bufPtr, " :", 2);
                 bufPtr += itocstrCStyle(imm16, bufPtr, 11, 16);
             }
             break;
@@ -2220,12 +2193,8 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     if (insnCode & 0x20000)
         putChars(bufPtr, " lwe", 4);
     if (insnCode & 0x4000)
-    {
-        // DA modifier
-        *bufPtr++ = ' ';
-        *bufPtr++ = 'd';
-        *bufPtr++ = 'a';
-    }
+        putChars(bufPtr, " da", 3);
+    
     if ((arch & ARCH_GCN_1_2_4)!=0 && (insnCode2 & (1U<<31)) != 0)
         putChars(bufPtr, " d16", 4);
     
@@ -2312,12 +2281,7 @@ void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd
     if (insnCode&0x400)
         putChars(bufPtr, " compr", 6);
     if (insnCode&0x1000)
-    {
-        // VM modifier
-        *bufPtr++ = ' ';
-        *bufPtr++ = 'v';
-        *bufPtr++ = 'm';
-    }
+        putChars(bufPtr, " vm", 3);
     
     // print value, if some are not used, but values is not default
     for (cxuint i = 0; i < 4; i++)
