@@ -296,7 +296,7 @@ a1:     v_add_f32 va[2], sa[5], va[0]   # 32
         s_endpgm                        # 40
         
 a2:     s_cselect_b32 sa[2], sa[4], sa[3]   # 44
-        v_cndmask_b32 va[3], va[0], va[1], vcc     # 48
+        v_xor_b32 va[3], va[0], va[1]     # 48
         s_endpgm                        # 52
 )ffDXD",
         {   // livenesses
@@ -361,7 +361,7 @@ a11:    v_add_f32 va[5], va[3], va[1]       # 72
         s_endpgm                            # 76
         
 a2:     s_cselect_b32 sa[2], sa[4], sa[3]   # 80
-        v_cndmask_b32 va[3], va[0], va[1], vcc  # 84
+        v_xor_b32 va[3], va[0], va[1]       # 84
         s_cbranch_scc1 a21                  # 88
 a20:    v_add_f32 va[1], va[3], va[4]       # 92
         s_endpgm                            # 96
@@ -717,7 +717,7 @@ loop:
         v_xor_b32 va[4], va[4], va[2]   # 48
         v_not_b32 va[4], va[0]          # 52
         v_xor_b32 va[4], 0xfff, va[0]   # 56
-        v_add_u32 va[1], vcc, 1001, va[1]   # 64
+        v_xor_b32 va[1], 1001, va[1]   # 64
         
         s_add_u32 sa[0], sa[0], 1       # 72
         s_cmp_lt_u32 sa[0], sa[1]       # 76
@@ -829,23 +829,23 @@ loop0:  v_lshrrev_b32 va[0], va[2], va[0]   # 16
         s_cbranch_scc1 bb0              # 32
         
         v_and_b32 va[0], -15, va[0]         # 36
-        v_sub_u32 va[0], vcc, -13, va[0]    # 40
+        v_xor_b32 va[0], -13, va[0]         # 40
         s_branch loop1start                 # 44
         
 bb0:    v_xor_b32 va[0], 15, va[0]          # 48
-        v_add_u32 va[0], vcc, 17, va[0]     # 52
+        v_and_b32 va[0], 17, va[0]          # 52
 loop1start:
         s_mov_b32 sa[1], sa[0]              # 56
         
-loop1:  v_add_u32 va[2], vcc, va[2], va[1]  # 60
+loop1:  v_and_b32 va[2], va[2], va[1]       # 60
         v_xor_b32 va[2], 0xffaaaa, va[0]    # 64
         
         s_xor_b32 sa[2], sa[1], 0x5     # 72
         s_cmp_eq_u32 sa[2], 7           # 76
         s_cbranch_scc1 bb1              # 80
         
-        v_sub_u32 va[1], vcc, 5, va[1]      # 84
-        v_sub_u32 va[2], vcc, 7, va[2]      # 88
+        v_xor_b32 va[1], 5, va[1]      # 84
+        v_xor_b32 va[2], 7, va[2]      # 88
         s_branch loop1end                   # 92
         
 bb1:    v_xor_b32 va[1], 15, va[1]          # 96
@@ -1244,20 +1244,20 @@ bb1:    s_and_b32 sa[2], sa[2], sa[4]   # 136
         s_endpgm                            # 44
         
 routine:
-        v_add_u32 va[3], vcc, va[3], va[1]  # 48
+        v_add_f32 va[3], va[3], va[1]       # 48
         s_cbranch_scc0 r1_2                 # 52
         
 r1_1:   s_add_u32 sa[2], sa[2], sa[0]       # 56
         .cf_call routine2
         s_swappc_b64 s[0:1], s[2:3]         # 60
-        v_add_u32 va[3], vcc, va[3], va[1]  # 64
+        v_add_f32 va[3], va[3], va[1]       # 64
         .cf_ret
         s_setpc_b64 s[0:1]                  # 68
         
 r1_2:   s_add_u32 sa[6], sa[6], sa[0]       # 72
         .cf_call routine3
         s_swappc_b64 s[0:1], s[2:3]         # 76
-        v_add_u32 va[2], vcc, va[2], va[1]  # 80
+        v_add_f32 va[2], va[2], va[1]       # 80
         .cf_ret
         s_setpc_b64 s[0:1]                  # 84
 
@@ -1281,11 +1281,11 @@ r3_1:   s_add_u32 sa[4], sa[4], sa[0]       # 120
         s_setpc_b64 s[0:1]                  # 124
 r3_2:   s_add_u32 sa[5], sa[5], sa[0]       # 128
         s_cbranch_scc0 r3_4                 # 132
-r3_3:   v_add_u32 va[0], vcc, va[0], va[1]  # 136
+r3_3:   v_add_f32 va[0], va[0], va[1]       # 136
         .cf_ret
         s_setpc_b64 s[0:1]                  # 140
 r3_4:
-        v_add_u32 va[0], vcc, va[0], va[1]  # 144
+        v_add_f32 va[0], va[0], va[1]       # 144
         .cf_ret
         s_setpc_b64 s[0:1]                  # 148
 )ffDXD",
@@ -1555,12 +1555,12 @@ routine:
         s_add_u32 sa[2], sa[2], sa[0]       # 36
         s_cbranch_scc0 r1_2                 # 40
 r1_1:
-        v_add_u32 va[2], vcc, va[2], va[0]  # 44
+        v_add_f32 va[2], va[2], va[0]       # 44
         .cf_call routine2
         s_swappc_b64 s[0:1], s[2:3]         # 48
-        v_add_u32 va[1], vcc, va[1], va[0]  # 52
+        v_add_f32 va[1], va[1], va[0]       # 52
         s_add_u32 sa[1], sa[1], sa[0]       # 56
-        v_add_u32 va[3], vcc, va[3], va[0]  # 60
+        v_add_f32 va[3], va[3], va[0]       # 60
         .cf_ret
         s_setpc_b64 s[0:1]                  # 64
 r1_2:
@@ -1585,20 +1585,20 @@ r2_2:
         s_setpc_b64 s[0:1]                  # 108
         
 routine3:
-        v_add_u32 va[1], vcc, va[1], va[0]  # 112
-        v_add_u32 va[3], vcc, va[3], va[0]  # 116
+        v_add_f32 va[1], va[1], va[0]       # 112
+        v_add_f32 va[3], va[3], va[0]       # 116
         s_cbranch_scc0 r3_2                 # 120
 r3_1:
-        v_add_u32 va[2], vcc, va[2], va[0]  # 124
+        v_add_f32 va[2], va[2], va[0]       # 124
         .cf_ret
         s_setpc_b64 s[0:1]                  # 128
 r3_2:
-        v_add_u32 va[2], vcc, va[2], va[0]  # 132
+        v_add_f32 va[2], va[2], va[0]       # 132
         s_cbranch_scc1 r3_3                 # 136
         .cf_ret
         s_setpc_b64 s[0:1]                  # 140
 r3_3:
-        v_add_u32 va[3], vcc, va[3], va[0]  # 144
+        v_add_f32 va[3], va[3], va[0]       # 144
         .cf_ret
         s_setpc_b64 s[0:1]                  # 148
 )ffDXD",

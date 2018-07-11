@@ -1140,6 +1140,8 @@ loop:
             { 24, 84,
                 { { 1, false }, { 2, false } },
                 {
+                    { { "", 106 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 107 }, SSAInfo(0, 0, 0, 0, 0, false) },
                     { { "sa", 0 }, SSAInfo(1, 2, 2, 2, 1, true) },
                     { { "sa", 1 }, SSAInfo(1, SIZE_MAX, 2, SIZE_MAX, 0, true) },
                     { { "va", 0 }, SSAInfo(1, 2, 2, 4, 3, false) },
@@ -1373,12 +1375,16 @@ loop1end:
             { 36, 48,
                 { { 4, false } },
                 {
+                    { { "", 106 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 107 }, SSAInfo(0, 0, 0, 0, 0, false) },
                     { { "va", 0 }, SSAInfo(3, 4, 4, 5, 2, true) }
                 }, false, false, true },
             // block 3 (bb0)
             { 48, 56,
                 { },
                 {
+                    { { "", 106 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 107 }, SSAInfo(0, 0, 0, 0, 0, false) },
                     { { "va", 0 }, SSAInfo(3, 9, 9, 10, 2, true) }
                 }, false, false, false },
             // block 4 (loop1start)
@@ -1392,6 +1398,8 @@ loop1end:
             { 60, 84,
                 { { 6, false }, { 7, false } },
                 {
+                    { { "", 106 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 107 }, SSAInfo(0, 0, 0, 0, 0, false) },
                     { { "sa", 1 }, SSAInfo(2, SIZE_MAX, 3, SIZE_MAX, 0, true) },
                     { { "sa", 2 }, SSAInfo(0, 1, 1, 1, 1, false) },
                     { { "va", 0 }, SSAInfo(5, SIZE_MAX, 6, SIZE_MAX, 0, true) },
@@ -1402,6 +1410,8 @@ loop1end:
             { 84, 96,
                 { { 8, false } },
                 {
+                    { { "", 106 }, SSAInfo(0, 0, 0, 0, 0, false) },
+                    { { "", 107 }, SSAInfo(0, 0, 0, 0, 0, false) },
                     { { "va", 1 }, SSAInfo(1, 2, 2, 2, 1, true) },
                     { { "va", 2 }, SSAInfo(3, 4, 4, 4, 1, true) }
                 }, false, false, true },

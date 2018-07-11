@@ -700,7 +700,7 @@ void GCNAssembler::getMaxRegistersNum(size_t& regTypesNum, cxuint* maxRegs) cons
 void GCNAssembler::getRegisterRanges(size_t& regTypesNum, cxuint* regRanges) const
 {
     regRanges[0] = 0;
-    regRanges[1] = getGPUMaxRegsNumByArchMask(curArchMask, 0);
+    regRanges[1] = 108; // to extra SGPR register number
     regRanges[2] = 256; // vgpr
     regRanges[3] = 256+getGPUMaxRegsNumByArchMask(curArchMask, 1);
     regTypesNum = 2;
