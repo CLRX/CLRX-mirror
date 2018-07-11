@@ -249,6 +249,10 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         "test.s:1:19: Error: Required 1 scalar register\n" },
     { "    s_load_dword  s50, s[58:58], 0x1345b", 0, 0, false, false,
         "test.s:1:24: Error: Required 2 scalar registers\n" },
+    { "    s_load_dword    s50, -1, 0x5b", 0, 0, false, false,
+        "test.s:1:26: Error: Some garbages at register name place\n" },
+    { "    s_load_dword    s50, execz, 0x5b", 0, 0, false, false,
+        "test.s:1:26: Error: Expected 2 scalar registers\n" },
     // non M0 register
     { "    s_store_dword  s50, s[58:59], s32", 0, 0, false, false,
         "test.s:1:35: Error: Store/Atomic SMEM instructions accepts only M0 register\n" },

@@ -599,6 +599,10 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:21: Error: Expected 1 scalar register\n" },
     { "    s_load_dword    s50, s[59:60], 0x5b", 0, 0, false, false,
         "test.s:1:26: Error: Unaligned scalar register range\n" },
+    { "    s_load_dword    s50, -1, 0x5b", 0, 0, false, false,
+        "test.s:1:26: Error: Some garbages at register name place\n" },
+    { "    s_load_dword    s50, execz, 0x5b", 0, 0, false, false,
+        "test.s:1:26: Error: Expected 2 scalar registers\n" },
     /* VOP2/(VOP2 in VOP3) encoding */
     { "    v_cndmask_b32   v154, v21, v107, vcc", 0x0134d715U, 0, false, true, "" },
     { "    v_cndmask_b32   v154, v21, v107, vcc     ", 0x0134d715U, 0, false, true, "" },
@@ -2276,6 +2280,15 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "offset:603 glc slc addr64 tfe", 0, 0, false, false,
         "test.s:1:52: Error: Expected 4 scalar registers\n"
         "test.s:1:55: Error: Expected ',' before argument\n" },
+    { "    buffer_load_format_x  v[61:62], v[18:19], 15, s35 "
+        "offset:603 glc slc addr64 tfe", 0, 0, false, false,
+        "test.s:1:47: Error: Some garbages at register name place\n" },
+    { "    buffer_load_format_x  v[61:62], v[18:19], scc, s35 "
+        "offset:603 glc slc addr64 tfe", 0, 0, false, false,
+        "test.s:1:47: Error: Expected 4 scalar registers\n" },
+    { "    buffer_load_format_x  v[61:62], v[18:19], exec, s35 "
+        "offset:603 glc slc addr64 tfe", 0, 0, false, false,
+        "test.s:1:47: Error: Required 4 scalar registers\n" },
     /* other MUBUF instructions */
     { "    buffer_load_format_x v61, v18, s[80:83], s35 idxen offset:603",
         0xe000225bU, 0x23143d12U, true, true, "" },

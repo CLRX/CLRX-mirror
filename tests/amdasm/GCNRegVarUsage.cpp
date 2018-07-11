@@ -1934,7 +1934,7 @@ b1:     .rvlin va[3:6]
     },
     {   /* 33: ssources */
         ".regvar rax:s, rbx:s, rdx:s\n"
-        ".regvar rax4:s:8, rbx5:s:8, rcx3:s:6\n"
+        ".regvar rax4:s:8, rbx5:s:8, rcx3:s:6, vrd:v:8\n"
         "s_and_b32 rdx, scc, rbx\n"
         "s_or_b32 rdx, s11, vcc_lo\n"
         "xreg=%vcc_lo\n"
@@ -1949,6 +1949,8 @@ b1:     .rvlin va[3:6]
         "s_or_b32 m0, vccz, xreg4\n" // 32
         "s_or_b32 ttmp3, vccz, xreg4\n" // 36
         "s_or_b32 exec_hi, vccz, xreg4\n" // 40
+        "v_or_b32 vrd[1], vccz, vrd[2]\n" // 44
+        "v_or_b32 vrd[1], vrd[3], scc\n" // 48
         "s_endpgm\n",
         {
             // s_and_b32 rdx, rax, rbx
@@ -1964,7 +1966,11 @@ b1:     .rvlin va[3:6]
             { 16, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
             { 20, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
             { 24, "rdx", 0, 1, GCNFIELD_SDST, ASMRVU_WRITE, 1 },
-            { 24, "rcx3", 4, 5, GCNFIELD_SSRC0, ASMRVU_READ, 1 }
+            { 24, "rcx3", 4, 5, GCNFIELD_SSRC0, ASMRVU_READ, 1 },
+            { 44, "vrd", 1, 2, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 44, "vrd", 2, 3, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            { 48, "vrd", 1, 2, GCNFIELD_VOP3_VDST, ASMRVU_WRITE, 1 },
+            { 48, "vrd", 3, 4, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 }
         },
         true, ""
     }
