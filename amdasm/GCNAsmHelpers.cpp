@@ -643,7 +643,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                     }
                     
                     // set reg var usage for current position and instruction field
-                    if (regField != ASMFIELD_NONE)
+                    if (regField != ASMFIELD_NONE && specialSGPRReg)
                         gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
                             regPair.start, regPair.end, regField,
                             cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
@@ -664,7 +664,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                 regPair = { loHiReg, loHiReg+2 };
                 
                 // set reg var usage for current position and instruction field
-                if (regField != ASMFIELD_NONE)
+                if (regField != ASMFIELD_NONE && specialSGPRReg)
                     gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
                         regPair.start, regPair.end, regField,
                         cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
