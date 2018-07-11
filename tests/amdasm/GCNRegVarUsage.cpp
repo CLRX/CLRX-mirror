@@ -2032,6 +2032,28 @@ b1:     .rvlin va[3:6]
             { 64, "vrd", 3, 4, GCNFIELD_VOP3_SRC0, ASMRVU_READ, 1 }
         },
         true, ""
+    },
+    {   /* 34: usereg 2 */
+        ".regvar rax:v, rbx:v, rex:v\n"
+        ".regvar rax2:v:8, rbx4:v:8, rex5:v:10\n"
+        ".usereg rbx4[0:4]:r\n"
+        "v_mul_f32 rex, rbx, rbx4[0]\n"
+        ".usereg rex5[0:7]:w, rbx4[0:7]:r, rax2[0:7]:r\n"
+        "v_min_f32 rex5[0], rbx4[0], rax2[0]\n",
+        {
+            // v_mul_f32 rex, rbx, rbx4[0]
+            { 0, "rbx4", 0, 5, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 0, "rex", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 0, "rbx", 0, 1, GCNFIELD_VOP_SRC0, ASMRVU_READ, 1 },
+            { 0, "rbx4", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 },
+            // v_min_f32 rex5[0], rbx4[0], rax2[0]
+            { 4, "rex5", 0, 8, ASMFIELD_NONE, ASMRVU_WRITE, 0 },
+            { 4, "rbx4", 0, 8, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 4, "rax2", 0, 8, ASMFIELD_NONE, ASMRVU_READ, 0 },
+            { 4, "rex5", 0, 1, GCNFIELD_VOP_VDST, ASMRVU_WRITE, 1 },
+            { 4, "rbx4", 0, 1, GCNFIELD_VOP_SRC0, ASMRVU_READ, 1 },
+            { 4, "rax2", 0, 1, GCNFIELD_VOP_VSRC1, ASMRVU_READ, 1 }
+        }, true, ""
     }
 };
 
