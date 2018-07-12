@@ -540,7 +540,9 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         else
             linePtr = oldPlace;
     }
-        
+    
+    bool doubleReg = false; // register that have two 32-bit regs
+    bool specialSGPRReg = false;
     if (!isRange) // if not sgprs
     {
         const char* oldLinePtr = linePtr;
@@ -557,7 +559,6 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         
         size_t loHiRegSuffix = 0;
         cxuint loHiReg = 0;
-        bool specialSGPRReg = false;
         if (regName[0] == 'v' && regName[1] == 'c' && regName[2] == 'c')
         {
             /// vcc
@@ -656,20 +657,29 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             else if (regName[loHiRegSuffix] == 0)
             {
                 // full 64-bit register
-                if (regsNum!=0 && regsNum != 2)
-                {
-                    printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
-                    return false;
-                }
                 regPair = { loHiReg, loHiReg+2 };
                 
-                // set reg var usage for current position and instruction field
-                if (regField != ASMFIELD_NONE && specialSGPRReg)
-                    gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
-                        regPair.start, regPair.end, regField,
-                        cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
-                        ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
-                return true;
+                if (linePtr == end || *linePtr!='[')
+                {
+                    if (regsNum!=0 && regsNum != 2)
+                    {
+                        printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
+                        return false;
+                    }
+                    // set reg var usage for current position and instruction field
+                    if (regField != ASMFIELD_NONE && specialSGPRReg)
+                        gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                            regPair.start, regPair.end, regField,
+                            cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
+                            ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
+                    return true;
+                }
+                else
+                {
+                    // if regrange []
+                    isRange = true;
+                    doubleReg = true;
+                }
             }
             else // this is not this register
                 trySymReg = true;
@@ -727,13 +737,16 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ']')
+        {
             // error
-            ASM_FAIL_BY_ERROR(sgprRangePlace, (!ttmpReg) ?
-                        "Unterminated scalar register range" :
-                        "Unterminated TTMPRegister range")
+            const char* errMessage = (doubleReg ? "Unterminated double register range" :
+                    (ttmpReg ? "Unterminated TTMPRegister range" :
+                            "Unterminated scalar register range"));
+            ASM_FAIL_BY_ERROR(sgprRangePlace, errMessage)
+        }
         ++linePtr;
         
-        if (!ttmpReg)
+        if (!ttmpReg && !doubleReg)
         {
             // is scalar register
             if (value2 < value1)
@@ -743,7 +756,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                 ASM_FAIL_BY_ERROR(sgprRangePlace,
                             "Some scalar register number out of range")
         }
-        else
+        else if (!doubleReg)
         {
             // is TTMP register
             if (value2 < value1)
@@ -754,6 +767,16 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                             isGCN14 ? "Some TTMPRegister number out of range (0-15)" :
                             "Some TTMPRegister number out of range (0-11)")
         }
+        else
+        {
+            // double reg - VCC, flat_scratch, xnack_mask
+            if (value2 < value1)
+                // error (illegal register range)
+                ASM_FAIL_BY_ERROR(sgprRangePlace, "Illegal doublereg range")
+            if (value1 >= 2 || value2 >= 2)
+                ASM_FAIL_BY_ERROR(sgprRangePlace,
+                            "Some doublereg number out of range (0-1)")
+        }
         
         if (regsNum!=0 && regsNum != value2-value1+1)
         {
@@ -761,7 +784,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             return false;
         }
         /// check alignment
-        if (!ttmpReg)
+        if (!ttmpReg && !doubleReg)
         {
             if ((flags & INSTROP_UNALIGNED)==0)
             {
@@ -784,8 +807,18 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                     cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
                     ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
         }
-        else
+        else if (!doubleReg)
             regPair = { ttmpStart+value1, ttmpStart+uint16_t(value2)+1 };
+        else
+        {
+            regPair = { regPair.start+value1, regPair.start+uint16_t(value2)+1 };
+            // set reg var usage for current position and instruction field
+            if (regField != ASMFIELD_NONE && specialSGPRReg)
+                gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                    regPair.start, regPair.end, regField,
+                    cxbyte(((flags & INSTROP_READ)!=0 ? ASMRVU_READ: 0) |
+                    ((flags & INSTROP_WRITE)!=0 ? ASMRVU_WRITE : 0)), 0 });
+        }
         return true;
     }
     } catch(const ParseException& ex)

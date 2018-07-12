@@ -254,7 +254,8 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
         "s_buffer_load_dwordx4 s[44:47], s[12:15], 0x5b\n"
         "s_load_dwordx2 vcc, s[38:39], 0x5b\n"
         "myreg=%vcc\n"
-        "s_load_dwordx2 myreg, s[38:39], 0x5b\n",
+        "s_load_dwordx2 myreg, s[38:39], 0x5b\n"
+        "s_load_dwordx2 vcc[0:1], s[48:49], 0x5b\n",
         {
             // s_load_dword rbx, rbx5[2:3], 0x5b
             { 0, "rbx", 0, 1, GCNFIELD_SMRD_SDST, ASMRVU_WRITE, 1 },
@@ -291,7 +292,10 @@ static const GCNRegVarUsageCase gcnRvuTestCases1Tbl[] =
             { 44, nullptr, 38, 40, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 0 },
             // s_load_dwordx2 myreg, s[38:39], 0x5b
             { 48, nullptr, 106, 108, GCNFIELD_SMRD_SDST, ASMRVU_WRITE, 0 },
-            { 48, nullptr, 38, 40, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 0 }
+            { 48, nullptr, 38, 40, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 0 },
+            // s_load_dwordx2 vcc[0:1], s[48:49], 0x5b
+            { 52, nullptr, 106, 108, GCNFIELD_SMRD_SDST, ASMRVU_WRITE, 0 },
+            { 52, nullptr, 48, 50, GCNFIELD_SMRD_SBASE, ASMRVU_READ, 0 }
         },
         true, ""
     },
