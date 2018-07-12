@@ -543,6 +543,13 @@ public:
 /// Assembler Wait scheduler
 class AsmWaitScheduler
 {
+public:
+    struct WCodeBlock
+    {
+        std::vector<AsmWaitInstr> waitInstrs;
+        std::unordered_map<size_t, size_t> readRegs;
+        std::unordered_map<size_t, size_t> writeRegs;
+    };
 private:
     const AsmWaitConfig& waitConfig;
     Assembler& assembler;

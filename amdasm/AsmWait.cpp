@@ -76,6 +76,32 @@ bool ISAWaitHandler::nextInstr(AsmDelayedOp& delOp, AsmWaitInstr& waitInstr)
 
 /* AsmWaitScheduler */
 
+namespace CLRX
+{
+
+// key -register number, value - previous register queue position
+typedef std::unordered_map<cxuint, cxuint> QueueEntry;
+
+struct QueueState
+{
+    std::vector<QueueEntry> ordered;
+    std::vector<QueueEntry> random;
+};
+
+struct QueueState2: QueueState
+{
+    // register place in queue - key - reg, value - position
+    std::unordered_map<cxuint, cxuint> regPlace;
+};
+
+struct CLRX_INTERNAL WaitFlowStackEntry0
+{
+    std::unordered_map<size_t, size_t> readRegs;
+    std::unordered_map<size_t, size_t> writeRegs;
+};
+
+};
+
 AsmWaitScheduler::AsmWaitScheduler(const AsmWaitConfig& _asmWaitConfig,
         Assembler& _assembler, const std::vector<AsmRegAllocator::CodeBlock>& _codeBlocks,
         const AsmRegAllocator::VarIndexMap* _vregIndexMaps,
