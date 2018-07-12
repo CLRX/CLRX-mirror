@@ -351,20 +351,12 @@ GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
 GCNAssembler::~GCNAssembler()
 { }
 
-void GCNAssembler::flushInstrRVUs(ISAUsageHandler* usageHandler)
+void GCNAssembler::setRegVarUsage(const AsmRegVarUsage& rvu)
 {
-    for (const AsmRegVarUsage& rvu: instrRVUs)
-        if (rvu.regField != ASMFIELD_NONE)
-            usageHandler->pushUsage(rvu);
-}
-void GCNAssembler::flushWaitInstrs(ISAWaitHandler* waitHandler)
-{
-    for (const AsmDelayedOp& op: delayedOps)
-        if (op.delayedOpType != ASMDELOP_NONE)
-            waitHandler->pushDelayedOp(op);
-    
-    if (hasWaitInstr)
-        waitHandler->pushWaitInstr(waitInstr);
+    const cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(curArchMask, REGTYPE_SGPR);
+    if (rvu.regVar != nullptr || rvu.rstart < maxSGPRsNum || rvu.rstart >= 256 ||
+        isSpecialSGPRRegister(curArchMask, rvu.rstart))
+        instrRVUs[currentRVUIndex] = rvu;
 }
 
 ISAUsageHandler* GCNAssembler::createUsageHandler(std::vector<cxbyte>& content) const

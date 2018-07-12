@@ -376,16 +376,24 @@ private:
     void setCurrentRVU(cxbyte idx)
     { currentRVUIndex = idx; }
     
-    void setRegVarUsage(const AsmRegVarUsage& rvu)
-    {
-        const cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(curArchMask, REGTYPE_SGPR);
-        if (rvu.regVar != nullptr || rvu.rstart < maxSGPRsNum || rvu.rstart >= 256 ||
-            isSpecialSGPRRegister(curArchMask, rvu.rstart))
-            instrRVUs[currentRVUIndex] = rvu;
-    }
+    void setRegVarUsage(const AsmRegVarUsage& rvu);
     
-    void flushInstrRVUs(ISAUsageHandler* usageHandler);
-    void flushWaitInstrs(ISAWaitHandler* waitHandler);
+    void flushInstrRVUs(ISAUsageHandler* usageHandler)
+    {
+        for (const AsmRegVarUsage& rvu: instrRVUs)
+            if (rvu.regField != ASMFIELD_NONE)
+                usageHandler->pushUsage(rvu);
+    }
+    void flushWaitInstrs(ISAWaitHandler* waitHandler)
+    {
+        for (const AsmDelayedOp& op: delayedOps)
+            if (op.delayedOpType != ASMDELOP_NONE)
+                waitHandler->pushDelayedOp(op);
+        
+        if (hasWaitInstr)
+            waitHandler->pushWaitInstr(waitInstr);
+    }
+
 public:
     /// constructor
     explicit GCNAssembler(Assembler& assembler);
