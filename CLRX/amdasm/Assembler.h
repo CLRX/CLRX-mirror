@@ -37,6 +37,7 @@
 #include <unordered_map>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
+#include <CLRX/utils/DTree.h>
 #include <CLRX/utils/GPUId.h>
 #include <CLRX/amdasm/Commons.h>
 #include <CLRX/amdasm/AsmSource.h>
@@ -472,7 +473,7 @@ public:
     typedef std::pair<size_t, size_t> SSAReplace;
     typedef std::unordered_map<AsmSingleVReg, VectorSet<SSAReplace> > SSAReplacesMap;
     // interference graph type
-    typedef Array<std::unordered_set<size_t> > InterGraph;
+    typedef Array<DTreeSet<size_t> > InterGraph;
     typedef std::unordered_map<AsmSingleVReg, std::vector<size_t> > VarIndexMap;
     struct LinearDep
     {
@@ -483,7 +484,7 @@ public:
     
     struct VIdxSetEntry
     {
-        std::unordered_set<size_t> vs[MAX_REGTYPES_NUM];
+        DTree<size_t> vs[MAX_REGTYPES_NUM];
     };
 private:
     Assembler& assembler;
