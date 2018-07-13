@@ -26,6 +26,7 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/amdasm/Assembler.h>
+#include "AsmRegAlloc.h"
 
 using namespace CLRX;
 
@@ -115,11 +116,52 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
 };
 
 typedef AsmRegAllocator::CodeBlock CodeBlock;
+typedef AsmRegAllocator::VarIndexMap VarIndexMap;
+
+static cxuint getRegType(size_t regTypesNum, const cxuint* regRanges,
+            const AsmSingleVReg& svreg)
+{
+    cxuint regType; // regtype
+    if (svreg.regVar!=nullptr)
+        regType = svreg.regVar->type;
+    else
+        for (regType = 0; regType < regTypesNum; regType++)
+            if (svreg.index >= regRanges[regType<<1] &&
+                svreg.index < regRanges[(regType<<1)+1])
+                break;
+    return regType;
+}
+
+static void getVIdx(const AsmSingleVReg& svreg, size_t ssaIdIdx,
+        const AsmRegAllocator::SSAInfo& ssaInfo, const VarIndexMap* vregIndexMaps,
+        size_t regTypesNum, const cxuint* regRanges, cxuint& regType, size_t& vidx)
+{
+    size_t ssaId;
+    if (svreg.regVar==nullptr)
+        ssaId = 0;
+    else if (ssaIdIdx==0)
+        ssaId = ssaInfo.ssaIdBefore;
+    else if (ssaIdIdx==1)
+        ssaId = ssaInfo.ssaIdFirst;
+    else if (ssaIdIdx<ssaInfo.ssaIdChange)
+        ssaId = ssaInfo.ssaId + ssaIdIdx-1;
+    else // last
+        ssaId = ssaInfo.ssaIdLast;
+    
+    regType = getRegType(regTypesNum, regRanges, svreg); // regtype
+    const VarIndexMap& vregIndexMap = vregIndexMaps[regType];
+    const std::vector<size_t>& vidxes = vregIndexMap.find(svreg)->second;
+    /*ARDOut << "lvn[" << regType << "][" << vidxes[ssaId] << "]. ssaIdIdx: " <<
+            ssaIdIdx << ". ssaId: " << ssaId << ". svreg: " << svreg.regVar << ":" <<
+            svreg.index << "\n";*/
+    //return livenesses[regType][ssaIdIndices[ssaId]];
+    vidx = vidxes[ssaId];
+}
 
 AsmWaitScheduler::AsmWaitScheduler(const AsmWaitConfig& _asmWaitConfig,
         Assembler& _assembler, const std::vector<CodeBlock>& _codeBlocks,
-        const AsmRegAllocator::VarIndexMap* _vregIndexMaps,
-        const Array<cxuint>* _graphColorMaps, bool _onlyWarnings)
+        const VarIndexMap* _vregIndexMaps, const Array<cxuint>* _graphColorMaps,
+        bool _onlyWarnings)
         : waitConfig(_asmWaitConfig), assembler(_assembler), codeBlocks(_codeBlocks),
           vregIndexMaps(_vregIndexMaps), graphColorMaps(_graphColorMaps),
           onlyWarnings(_onlyWarnings), waitCodeBlocks(_codeBlocks.size())
@@ -142,9 +184,61 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     
     for (size_t i = 0; i < codeBlocks.size(); i++)
     {
-        //const WCodeBlock& wblock = waitCodeBlocks[i];
+        WCodeBlock& wblock = waitCodeBlocks[i];
         const CodeBlock& cblock = codeBlocks[i];
         // fill usage of registers (real access) to wCblock
         usageHandler.setReadPos(cblock.usagePos);
+        
+        SVRegMap ssaIdIdxMap;
+        std::vector<AsmRegVarUsage> instrRVUs;
+        
+        std::unordered_map<size_t, size_t> readRegs;
+        std::unordered_map<size_t, size_t> writeRegs;
+        while (usageHandler.hasNext())
+        {
+            const AsmRegVarUsage rvu = usageHandler.nextUsage();
+            if (rvu.offset >= cblock.end)
+                break;
+            
+            // 
+            for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
+            {
+                AsmSingleVReg svreg{ rvu.regVar, rindex };
+                size_t outSSAIdIdx = 0;
+                // TODO: fix read and write ordering in this same offset (ssaIdIdx)
+                if (checkWriteWithSSA(rvu))
+                {
+                    size_t& ssaIdIdx = ssaIdIdxMap[svreg];
+                    if (svreg.regVar != nullptr)
+                        ssaIdIdx++;
+                    outSSAIdIdx = ssaIdIdx;
+                }
+                else // insert zero
+                    ssaIdIdxMap.insert({ svreg, 0 });
+                
+                // get real register index
+                const SSAInfo& ssaInfo = binaryMapFind(cblock.ssaInfoMap.begin(),
+                        cblock.ssaInfoMap.end(), svreg)->second;
+                cxuint regType;
+                size_t vidx;
+                getVIdx(svreg, outSSAIdIdx, ssaInfo, vregIndexMaps,
+                        regTypesNum, regRanges, regType, vidx);
+                const cxuint rreg = graphColorMaps[regType][vidx];
+                
+                // put to readRegs and writeRegs
+                if ((rvu.rwFlags & ASMRVU_READ) != 0)
+                    readRegs.insert({ rreg, rvu.offset });
+                if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
+                    writeRegs.insert({ rreg, rvu.offset });
+            }
+            
+            // copy to wblock as array
+            wblock.readRegs.resize(readRegs.size());
+            wblock.writeRegs.resize(writeRegs.size());
+            std::copy(readRegs.begin(), readRegs.end(), wblock.readRegs.begin());
+            std::copy(writeRegs.begin(), writeRegs.end(), wblock.writeRegs.begin());
+            mapSort(wblock.readRegs.begin(), wblock.readRegs.end());
+            mapSort(wblock.writeRegs.begin(), wblock.writeRegs.end());
+        }
     }
 }
