@@ -120,9 +120,6 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
 
 };
 
-typedef AsmRegAllocator::CodeBlock CodeBlock;
-typedef AsmRegAllocator::VarIndexMap VarIndexMap;
-
 static cxuint getRegType(size_t regTypesNum, const cxuint* regRanges,
             const AsmSingleVReg& svreg)
 {
