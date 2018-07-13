@@ -106,6 +106,11 @@ struct CLRX_INTERNAL QueueState2
 
 struct CLRX_INTERNAL WaitFlowStackEntry0
 {
+    size_t blockIndex;
+    size_t nextIndex;
+    bool isCall;
+    bool haveReturn;
+    
     QueueState queues[ASM_WAIT_MAX_TYPES_NUM];
     // key - reg, value - offset in codeblock
     std::unordered_map<size_t, size_t> readRegs;
@@ -171,12 +176,6 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
 {
     if (codeBlocks.empty())
         return;
-    usageHandler.rewind();
-    waitHandler.rewind();
-    AsmRegVarUsage rvu;
-    
-    // old linear deps position
-    rvu = usageHandler.nextUsage();
     
     cxuint regRanges[MAX_REGTYPES_NUM*2];
     size_t regTypesNum;
@@ -249,4 +248,101 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             mapSort(wblock.writeRegs.begin(), wblock.writeRegs.end());
         }
     }
+    
+    // fill up waitInstrs
+    waitHandler.rewind();
+    if (!waitHandler.hasNext())
+        return;
+    
+    ISAWaitHandler::ReadPos oldReadPos = waitHandler.getReadPos();
+    auto cbit = codeBlocks.begin();
+    auto wcbit = waitCodeBlocks.begin();
+    
+    bool isWaitInstr;
+    AsmDelayedOp delayedOp;
+    AsmWaitInstr waitInstr;
+    isWaitInstr =  waitHandler.nextInstr(delayedOp, waitInstr);
+    
+    while (true)
+    {
+        size_t offset = isWaitInstr ? waitInstr.offset : delayedOp.offset;
+        while (cbit != codeBlocks.end() && cbit->end <= offset)
+        {
+            wcbit->waitPos = oldReadPos;
+            ++cbit;
+            ++wcbit;
+        }
+        if (cbit == codeBlocks.end())
+            break;
+        
+        // skip rvu's before codeblock
+        while (offset < cbit->start && waitHandler.hasNext())
+        {
+            oldReadPos = waitHandler.getReadPos();
+            isWaitInstr =  waitHandler.nextInstr(delayedOp, waitInstr);
+            offset = isWaitInstr ? waitInstr.offset : delayedOp.offset;
+        }
+        if (offset < cbit->start)
+            break;
+        
+        wcbit->waitPos = oldReadPos;
+        while (offset < cbit->end)
+        {
+            if (isWaitInstr)
+                wcbit->waitInstrs.push_back(waitInstr);
+            // next position
+            oldReadPos = waitHandler.getReadPos();
+            isWaitInstr =  waitHandler.nextInstr(delayedOp, waitInstr);
+            offset = isWaitInstr ? waitInstr.offset : delayedOp.offset;
+        }
+        // next code block
+        ++cbit;
+        ++wcbit;
+    }
+    
+    std::vector<bool> visited(codeBlocks.size());
+    std::deque<WaitFlowStackEntry0> flowStack;
+    flowStack.push_back({ 0, 0 });
+    /*
+     * main loop - processing wait instrs and delayed ops
+     */
+    while (!flowStack.empty())
+    {
+        WaitFlowStackEntry0& entry = flowStack.back();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        WCodeBlock& wblock = waitCodeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        {
+            // process current block
+            if (!visited[entry.blockIndex])
+            {
+                visited[entry.blockIndex] = true;
+            }
+            else
+            {
+            }
+        }
+        
+        /*if (!callStack.empty() &&
+            entry.blockIndex == callStack.back().callBlock &&
+            entry.nextIndex-1 == callStack.back().callNextIndex)
+        {
+        }*/
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+        }
+        else
+        {
+        }
+    }
+    
+    // after processing. we clean up wait instructions list
 }
