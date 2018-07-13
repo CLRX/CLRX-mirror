@@ -22,6 +22,7 @@
 #include <cstddef>
 #include <utility>
 #include <algorithm>
+#include <deque>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/amdasm/Assembler.h>
@@ -79,24 +80,30 @@ bool ISAWaitHandler::nextInstr(AsmDelayedOp& delOp, AsmWaitInstr& waitInstr)
 namespace CLRX
 {
 
-// key -register number, value - previous register queue position
-typedef std::unordered_map<cxuint, cxuint> QueueEntry;
+typedef std::unordered_set<uint16_t> QueueEntry1;
+// key - register number, value - previous register queue position
+typedef std::unordered_map<uint16_t, uint16_t> QueueEntry2;
 
-struct QueueState
+struct CLRX_INTERNAL QueueState
 {
-    std::vector<QueueEntry> ordered;
-    std::vector<QueueEntry> random;
+    std::vector<QueueEntry1> ordered;
+    std::vector<QueueEntry1> random;
 };
 
-struct QueueState2: QueueState
+struct CLRX_INTERNAL QueueState2
 {
+    std::deque<QueueEntry2> ordered;
+    std::deque<QueueEntry2> random;
     // register place in queue - key - reg, value - position
-    std::unordered_map<cxuint, cxuint> regPlace;
+    std::unordered_map<uint16_t, uint16_t> regPlace;
 };
 
 struct CLRX_INTERNAL WaitFlowStackEntry0
 {
+    QueueState queues[ASM_WAIT_MAX_TYPES_NUM];
+    // key - reg, value - offset in codeblock
     std::unordered_map<size_t, size_t> readRegs;
+    // key - reg, value - offset in codeblock
     std::unordered_map<size_t, size_t> writeRegs;
 };
 
