@@ -200,37 +200,43 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             if (rvu.offset >= cblock.end)
                 break;
             
-            // 
             for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
             {
-                AsmSingleVReg svreg{ rvu.regVar, rindex };
-                size_t outSSAIdIdx = 0;
-                if (checkWriteWithSSA(rvu))
-                {
-                    size_t& ssaIdIdx = ssaIdIdxMap[svreg];
-                    if (svreg.regVar != nullptr)
-                        ssaIdIdx++;
-                    outSSAIdIdx = ssaIdIdx;
-                    svregWriteOffsets.insert({ svreg, rvu.offset });
-                }
-                else // insert zero
-                {
-                    auto svrres = ssaIdIdxMap.insert({ svreg, 0 });
-                    outSSAIdIdx = svrres.first->second;
-                    auto swit = svregWriteOffsets.find(svreg);
-                    if (swit != svregWriteOffsets.end() &&
-                        swit->second == rvu.offset)
-                        outSSAIdIdx--; // before this write
-                }
+                cxuint rreg = rindex;
                 
-                // get real register index
-                const SSAInfo& ssaInfo = binaryMapFind(cblock.ssaInfoMap.begin(),
-                        cblock.ssaInfoMap.end(), svreg)->second;
-                cxuint regType;
-                size_t vidx;
-                getVIdx(svreg, outSSAIdIdx, ssaInfo, vregIndexMaps,
-                        regTypesNum, regRanges, regType, vidx);
-                const cxuint rreg = graphColorMaps[regType][vidx];
+                if (rvu.regVar != nullptr)
+                {
+                    // if regvar, get vidx and get from vidx register index
+                    AsmSingleVReg svreg{ rvu.regVar, rindex };
+                    size_t outSSAIdIdx = 0;
+                    if (checkWriteWithSSA(rvu))
+                    {
+                        size_t& ssaIdIdx = ssaIdIdxMap[svreg];
+                        if (svreg.regVar != nullptr)
+                            ssaIdIdx++;
+                        outSSAIdIdx = ssaIdIdx;
+                        svregWriteOffsets.insert({ svreg, rvu.offset });
+                    }
+                    else // insert zero
+                    {
+                        outSSAIdIdx = 0;
+                        auto svrres = ssaIdIdxMap.insert({ svreg, 0 });
+                        outSSAIdIdx = svrres.first->second;
+                        auto swit = svregWriteOffsets.find(svreg);
+                        if (swit != svregWriteOffsets.end() &&
+                            swit->second == rvu.offset)
+                            outSSAIdIdx--; // before this write
+                    }
+                    
+                    // get real register index
+                    const SSAInfo& ssaInfo = binaryMapFind(cblock.ssaInfoMap.begin(),
+                            cblock.ssaInfoMap.end(), svreg)->second;
+                    cxuint regType;
+                    size_t vidx;
+                    getVIdx(svreg, outSSAIdIdx, ssaInfo, vregIndexMaps,
+                            regTypesNum, regRanges, regType, vidx);
+                    rreg = regRanges[2*regType] + graphColorMaps[regType][vidx];
+                }
                 
                 // put to readRegs and writeRegs
                 if ((rvu.rwFlags & ASMRVU_READ) != 0)
