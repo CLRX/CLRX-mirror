@@ -190,6 +190,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         usageHandler.setReadPos(cblock.usagePos);
         
         SVRegMap ssaIdIdxMap;
+        SVRegMap svregWriteOffsets;
         std::vector<AsmRegVarUsage> instrRVUs;
         
         std::unordered_map<size_t, size_t> readRegs;
@@ -205,16 +206,23 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             {
                 AsmSingleVReg svreg{ rvu.regVar, rindex };
                 size_t outSSAIdIdx = 0;
-                // TODO: fix read and write ordering in this same offset (ssaIdIdx)
                 if (checkWriteWithSSA(rvu))
                 {
                     size_t& ssaIdIdx = ssaIdIdxMap[svreg];
                     if (svreg.regVar != nullptr)
                         ssaIdIdx++;
                     outSSAIdIdx = ssaIdIdx;
+                    svregWriteOffsets.insert({ svreg, rvu.offset });
                 }
                 else // insert zero
-                    ssaIdIdxMap.insert({ svreg, 0 });
+                {
+                    auto svrres = ssaIdIdxMap.insert({ svreg, 0 });
+                    outSSAIdIdx = svrres.first->second;
+                    auto swit = svregWriteOffsets.find(svreg);
+                    if (swit != svregWriteOffsets.end() &&
+                        swit->second == rvu.offset)
+                        outSSAIdIdx--; // before this write
+                }
                 
                 // get real register index
                 const SSAInfo& ssaInfo = binaryMapFind(cblock.ssaInfoMap.begin(),
