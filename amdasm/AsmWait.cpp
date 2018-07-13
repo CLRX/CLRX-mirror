@@ -86,14 +86,19 @@ typedef std::unordered_map<uint16_t, uint16_t> QueueEntry2;
 
 struct CLRX_INTERNAL QueueState
 {
-    std::vector<QueueEntry1> ordered;
-    std::vector<QueueEntry1> random;
+    std::vector<QueueEntry1> ordered;  // ordered items
+    std::vector<QueueEntry1> random;   // items in random order
+};
+
+enum {
+    REGPLACE_NONE = UINT16_MAX,
+    REGPLACE_RANDOM = UINT16_MAX-1
 };
 
 struct CLRX_INTERNAL QueueState2
 {
-    std::deque<QueueEntry2> ordered;
-    std::deque<QueueEntry2> random;
+    std::deque<QueueEntry2> ordered;  // ordered items
+    std::deque<QueueEntry2> random;   // items in random order
     // register place in queue - key - reg, value - position
     std::unordered_map<uint16_t, uint16_t> regPlace;
 };
@@ -109,15 +114,37 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
 
 };
 
+typedef AsmRegAllocator::CodeBlock CodeBlock;
+
 AsmWaitScheduler::AsmWaitScheduler(const AsmWaitConfig& _asmWaitConfig,
-        Assembler& _assembler, const std::vector<AsmRegAllocator::CodeBlock>& _codeBlocks,
+        Assembler& _assembler, const std::vector<CodeBlock>& _codeBlocks,
         const AsmRegAllocator::VarIndexMap* _vregIndexMaps,
         const Array<cxuint>* _graphColorMaps, bool _onlyWarnings)
         : waitConfig(_asmWaitConfig), assembler(_assembler), codeBlocks(_codeBlocks),
           vregIndexMaps(_vregIndexMaps), graphColorMaps(_graphColorMaps),
-          onlyWarnings(_onlyWarnings)
+          onlyWarnings(_onlyWarnings), waitCodeBlocks(_codeBlocks.size())
 { }
 
-void AsmWaitScheduler::schedule()
+void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& waitHandler)
 {
+    if (codeBlocks.empty())
+        return;
+    usageHandler.rewind();
+    waitHandler.rewind();
+    AsmRegVarUsage rvu;
+    
+    // old linear deps position
+    rvu = usageHandler.nextUsage();
+    
+    cxuint regRanges[MAX_REGTYPES_NUM*2];
+    size_t regTypesNum;
+    assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
+    
+    for (size_t i = 0; i < codeBlocks.size(); i++)
+    {
+        //const WCodeBlock& wblock = waitCodeBlocks[i];
+        const CodeBlock& cblock = codeBlocks[i];
+        // fill usage of registers (real access) to wCblock
+        usageHandler.setReadPos(cblock.usagePos);
+    }
 }

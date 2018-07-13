@@ -547,8 +547,8 @@ public:
     struct WCodeBlock
     {
         std::vector<AsmWaitInstr> waitInstrs;
-        std::unordered_map<size_t, size_t> readRegs;
-        std::unordered_map<size_t, size_t> writeRegs;
+        Array<std::pair<size_t, size_t> > readRegs;
+        Array<std::pair<size_t, size_t> > writeRegs;
     };
 private:
     const AsmWaitConfig& waitConfig;
@@ -557,6 +557,7 @@ private:
     const AsmRegAllocator::VarIndexMap* vregIndexMaps;
     const Array<cxuint>* graphColorMaps;
     bool onlyWarnings;
+    std::vector<WCodeBlock> waitCodeBlocks;
     std::vector<AsmWaitInstr> neededWaitInstrs;
 public:
     AsmWaitScheduler(const AsmWaitConfig& asmWaitConfig, Assembler& assembler,
@@ -564,7 +565,7 @@ public:
             const AsmRegAllocator::VarIndexMap* vregIndexMaps,
             const Array<cxuint>* graphColorMaps, bool onlyWarnings);
     
-    void schedule();
+    void schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& waitHandler);
     
     const std::vector<AsmWaitInstr>& getNeededWaitInstrs() const
     { return neededWaitInstrs; }
@@ -611,6 +612,7 @@ private:
     friend class AsmROCmHandler;
     friend class ISAAssembler;
     friend class AsmRegAllocator;
+    friend class AsmWaitScheduler;
     
     friend struct AsmParseUtils; // INTERNAL LOGIC
     friend struct AsmPseudoOps; // INTERNAL LOGIC
@@ -1005,6 +1007,9 @@ public:
     /// get format handler
     const AsmFormatHandler* getFormatHandler() const
     { return formatHandler; }
+    /// get ISA assembler
+    const ISAAssembler* getISAAssembler() const
+    { return isaAssembler; }
 };
 
 inline void ISAAssembler::printWarning(const char* linePtr, const char* message)

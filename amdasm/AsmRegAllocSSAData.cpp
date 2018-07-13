@@ -1402,8 +1402,6 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler,
     rvu = usageHandler.nextUsage();
     
     cxuint regRanges[MAX_REGTYPES_NUM*2];
-    cxuint realRegsCount[MAX_REGTYPES_NUM];
-    std::fill(realRegsCount, realRegsCount+MAX_REGTYPES_NUM, 0);
     size_t regTypesNum;
     assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
     
