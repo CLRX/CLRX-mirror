@@ -1547,7 +1547,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
  * 0xf9 - encode longer offset diff
  */
 
-AsmSourcePosHandler::AsmSourcePosHandler() : chunkPos(0), itemPos(0)
+AsmSourcePosHandler::AsmSourcePosHandler()
 { }
 
 void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourcePos)
@@ -1577,20 +1577,15 @@ void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourc
             uint16_t(sourcePos.lineNo & 0xffff), uint16_t(sourcePos.colNo & 0xffff) });
 }
 
-void AsmSourcePosHandler::rewind()
+std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos(ReadPos& rPos)
 {
-    chunkPos = itemPos = 0;
-}
-
-std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
-{
-    const Chunk& chunk = chunks[chunkPos];
-    const Item& item = chunk.items[itemPos];
-    itemPos++;
-    if (itemPos >= chunk.items.size())
+    const Chunk& chunk = chunks[rPos.chunkPos];
+    const Item& item = chunk.items[rPos.itemPos];
+    rPos.itemPos++;
+    if (rPos.itemPos >= chunk.items.size())
     {
-        itemPos = 0;
-        chunkPos++;
+        rPos.itemPos = 0;
+        rPos.chunkPos++;
     }
     return std::make_pair((chunk.offsetFirst&~size_t(0xffff))|item.offsetLo,
         AsmSourcePos{ chunk.macro, chunk.source, chunk.lineNoHigh|item.lineNoLo,

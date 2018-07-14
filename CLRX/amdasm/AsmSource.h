@@ -551,31 +551,18 @@ private:
         ColNo colNoHigh;
         std::vector<Item> items;
     };
-    size_t chunkPos;
-    size_t itemPos;
     std::vector<Chunk> chunks;
 public:
     /// constructor
     AsmSourcePosHandler();
     /// push new source pos at offset
     void pushSourcePos(size_t offset, const AsmSourcePos& sourcePos);
-    /// rewind read position
-    void rewind();
     /// return true if has next
-    bool hasNext() const
-    { return chunkPos < chunks.size() && (chunkPos+1 != chunks.size() ||
-        itemPos < chunks.back().items.size()); }
-    /// set read pos
-    void setReadPos(const ReadPos& rpos)
-    {
-        chunkPos = rpos.chunkPos;
-        itemPos = rpos.itemPos;
-    }
-    /// get read pos
-    ReadPos getReadPos() const
-    { return ReadPos{ chunkPos, itemPos }; }
+    bool hasNext(const ReadPos& readPos) const
+    { return readPos.chunkPos < chunks.size() && (readPos.chunkPos+1 != chunks.size() ||
+        readPos.itemPos < chunks.back().items.size()); }
     /// get next source position with offset
-    std::pair<size_t, AsmSourcePos> nextSourcePos();
+    std::pair<size_t, AsmSourcePos> nextSourcePos(ReadPos& rPos);
 };
 
 };
