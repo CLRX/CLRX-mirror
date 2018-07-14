@@ -201,10 +201,10 @@ public:
     size_t size() const
     { return regVarLinDeps.size(); }
     /// get next linear dependency
-    AsmRegVarLinearDep getLinearDep(size_t pos)
+    AsmRegVarLinearDep getLinearDep(size_t pos) const
     { return regVarLinDeps[pos]; }
     /// find position to offset
-    size_t findPositionByOffset(size_t offset)
+    size_t findPositionByOffset(size_t offset) const
     {
         return std::lower_bound(regVarLinDeps.begin(), regVarLinDeps.end(),
                 AsmRegVarLinearDep{offset},
