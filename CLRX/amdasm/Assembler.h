@@ -251,30 +251,24 @@ public:
         size_t waitInstrPos;
     };
 private:
-    ReadPos readPos;
     std::vector<AsmDelayedOp> delayedOps;
     std::vector<AsmWaitInstr> waitInstrs;
 public:
     /// constructor
     ISAWaitHandler();
     
-    /// rewind to start position
-    void rewind();
-    /// set read position
-    void setReadPos(const ReadPos& readPos);
-    /// get read position
-    ReadPos getReadPos() const
-    { return readPos; }
     /// push delayed result
-    void pushDelayedOp(const AsmDelayedOp& delOp);
+    void pushDelayedOp(const AsmDelayedOp& delOp)
+    { delayedOps.push_back(delOp); }
     /// wait instruction
-    void pushWaitInstr(const AsmWaitInstr& waitInstr);
+    void pushWaitInstr(const AsmWaitInstr& waitInstr)
+    { waitInstrs.push_back(waitInstr); }
     /// return true if has next instruction
-    bool hasNext() const
+    bool hasNext(const ReadPos& readPos) const
     { return readPos.delOpPos < delayedOps.size() ||
                 readPos.waitInstrPos < waitInstrs.size(); }
     /// get next instruction, return true if waitInstr
-    bool nextInstr(AsmDelayedOp& delOp, AsmWaitInstr& waitInstr);
+    bool nextInstr(ReadPos& readPos, AsmDelayedOp& delOp, AsmWaitInstr& waitInstr);
     
     /// copy wait handler (make new copy)
     ISAWaitHandler* copy() const;

@@ -30,36 +30,16 @@
 
 using namespace CLRX;
 
-ISAWaitHandler::ISAWaitHandler() : readPos{ size_t(0), size_t(0) }
+ISAWaitHandler::ISAWaitHandler()
 { }
-
-void ISAWaitHandler::rewind()
-{
-    readPos = { size_t(0), size_t(0) };
-}
-
-void ISAWaitHandler::setReadPos(const ReadPos& _readPos)
-{
-    readPos = _readPos;
-}
 
 ISAWaitHandler* ISAWaitHandler::copy() const
 {
     return new ISAWaitHandler(*this);
 }
 
-
-void ISAWaitHandler::pushDelayedOp(const AsmDelayedOp& delOp)
-{
-    delayedOps.push_back(delOp);
-}
-
-void ISAWaitHandler::pushWaitInstr(const AsmWaitInstr& waitInstr)
-{
-    waitInstrs.push_back(waitInstr);
-}
-
-bool ISAWaitHandler::nextInstr(AsmDelayedOp& delOp, AsmWaitInstr& waitInstr)
+bool ISAWaitHandler::nextInstr(ReadPos& readPos,
+                AsmDelayedOp& delOp, AsmWaitInstr& waitInstr)
 {
     size_t delResOffset = SIZE_MAX;
     size_t waitInstrOffset = SIZE_MAX;
@@ -253,18 +233,18 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     }
     
     // fill up waitInstrs
-    waitHandler.rewind();
-    if (!waitHandler.hasNext())
+    ISAWaitHandler::ReadPos waitPos{ 0, 0 };
+    if (!waitHandler.hasNext(waitPos))
         return;
     
-    ISAWaitHandler::ReadPos oldReadPos = waitHandler.getReadPos();
+    ISAWaitHandler::ReadPos oldReadPos = waitPos;
     auto cbit = codeBlocks.begin();
     auto wcbit = waitCodeBlocks.begin();
     
     bool isWaitInstr;
     AsmDelayedOp delayedOp;
     AsmWaitInstr waitInstr;
-    isWaitInstr =  waitHandler.nextInstr(delayedOp, waitInstr);
+    isWaitInstr =  waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
     
     while (true)
     {
@@ -279,10 +259,10 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             break;
         
         // skip rvu's before codeblock
-        while (offset < cbit->start && waitHandler.hasNext())
+        while (offset < cbit->start && waitHandler.hasNext(waitPos))
         {
-            oldReadPos = waitHandler.getReadPos();
-            isWaitInstr =  waitHandler.nextInstr(delayedOp, waitInstr);
+            oldReadPos = waitPos;
+            isWaitInstr =  waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
             offset = isWaitInstr ? waitInstr.offset : delayedOp.offset;
         }
         if (offset < cbit->start)
@@ -294,8 +274,8 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             if (isWaitInstr)
                 wcbit->waitInstrs.push_back(waitInstr);
             // next position
-            oldReadPos = waitHandler.getReadPos();
-            isWaitInstr =  waitHandler.nextInstr(delayedOp, waitInstr);
+            oldReadPos = waitPos;
+            isWaitInstr =  waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
             offset = isWaitInstr ? waitInstr.offset : delayedOp.offset;
         }
         // next code block

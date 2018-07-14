@@ -1003,14 +1003,14 @@ static void testWaitHandlerCase(cxuint i, const AsmWaitHandlerCase& testCase)
     std::unordered_map<const AsmRegVar*, CString> regVarNamesMap;
     pushRegVarsFromScopes(assembler.getGlobalScope(), regVarNamesMap, "");
     ISAWaitHandler* waitHandler = assembler.getSections()[0].waitHandler.get();
-    waitHandler->rewind();
+    ISAWaitHandler::ReadPos waitPos{ 0, 0 };
     size_t j, k;
-    for (j = k = 0; waitHandler->hasNext();)
+    for (j = k = 0; waitHandler->hasNext(waitPos);)
     {
         AsmWaitInstr waitInstr{};
         AsmDelayedOp delayedOp{};
         std::ostringstream koss;
-        if (waitHandler->nextInstr(delayedOp, waitInstr))
+        if (waitHandler->nextInstr(waitPos, delayedOp, waitInstr))
         {
             /// check Asm wait instruction
             assertTrue("testWaitHandle", testCaseName+".wlength",
