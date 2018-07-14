@@ -1531,22 +1531,6 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
  * AsmSourcePosHandler for sections
  */
 
-/* STtrans byte format:
- * 0x00 - 0x3f - byte offset change
- * 0x40 - 0x7f - line position change ( - 0x40)
- * 0x80 - 0xbf - column position change ( - 0x40)
- * 0xc0 - 0xf7 - line and byte offset change
- *   0-2bit - offset change + 1
- *   3-5bit - linePos change + 1
- * 0xff - change macro substitition
- * 0xfe - change source
- * 0xfd - change source and macro substitution
- * 0xfc - no offset change
- * 0xfb - encode longer lineNo diff
- * 0xfa - encode longer colNo diff
- * 0xf9 - encode longer offset diff
- */
-
 AsmSourcePosHandler::AsmSourcePosHandler()
 { }
 
