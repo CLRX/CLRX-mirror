@@ -203,14 +203,8 @@ public:
     /// get next linear dependency
     AsmRegVarLinearDep getLinearDep(size_t pos) const
     { return regVarLinDeps[pos]; }
-    /// find position to offset
-    size_t findPositionByOffset(size_t offset) const
-    {
-        return std::lower_bound(regVarLinDeps.begin(), regVarLinDeps.end(),
-                AsmRegVarLinearDep{offset},
-                [](const AsmRegVarLinearDep& a, const AsmRegVarLinearDep& b)
-                { return a.offset < b.offset; }) - regVarLinDeps.begin();
-    }
+    /// find position by offset
+    size_t findPositionByOffset(size_t offset) const;
     /// copy linear handler (make new copy)
     ISALinearDepHandler* copy() const;
 };
@@ -269,7 +263,8 @@ public:
                 readPos.waitInstrPos < waitInstrs.size(); }
     /// get next instruction, return true if waitInstr
     bool nextInstr(ReadPos& readPos, AsmDelayedOp& delOp, AsmWaitInstr& waitInstr);
-    
+    /// find position by offset
+    ReadPos findPositionByOffset(size_t offset) const;
     /// copy wait handler (make new copy)
     ISAWaitHandler* copy() const;
 };

@@ -301,6 +301,14 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
 ISALinearDepHandler::ISALinearDepHandler()
 { }
 
+size_t ISALinearDepHandler::findPositionByOffset(size_t offset) const
+{
+    return std::lower_bound(regVarLinDeps.begin(), regVarLinDeps.end(),
+            AsmRegVarLinearDep{offset},
+            [](const AsmRegVarLinearDep& a, const AsmRegVarLinearDep& b)
+            { return a.offset < b.offset; }) - regVarLinDeps.begin();
+}
+
 ISALinearDepHandler* ISALinearDepHandler::copy() const
 {
     return new ISALinearDepHandler(*this);

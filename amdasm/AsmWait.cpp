@@ -56,6 +56,17 @@ bool ISAWaitHandler::nextInstr(ReadPos& readPos,
     return true;
 }
 
+ISAWaitHandler::ReadPos ISAWaitHandler::findPositionByOffset(size_t offset) const
+{
+    const size_t dPos = std::lower_bound(delayedOps.begin(), delayedOps.end(),
+        AsmDelayedOp{ offset }, [](const AsmDelayedOp& a, const AsmDelayedOp& b)
+        { return a.offset < b.offset; }) - delayedOps.begin();
+    const size_t wPos = std::lower_bound(waitInstrs.begin(), waitInstrs.end(),
+        AsmWaitInstr{ offset }, [](const AsmWaitInstr& a, const AsmWaitInstr& b)
+        { return a.offset < b.offset; }) - waitInstrs.begin();
+    return ISAWaitHandler::ReadPos{ dPos, wPos };
+}
+
 /* AsmWaitScheduler */
 
 namespace CLRX
