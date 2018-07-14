@@ -208,7 +208,8 @@ public:
     bool hasNext() const
     { return regVarLinDepsPos < regVarLinDeps.size(); }
     /// get next linear dependency
-    AsmRegVarLinearDep nextLinearDep();
+    AsmRegVarLinearDep nextLinearDep()
+    { return regVarLinDeps[regVarLinDepsPos++]; }
     /// copy linear handler (make new copy)
     ISALinearDepHandler* copy() const;
 };

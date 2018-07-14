@@ -311,13 +311,6 @@ void ISALinearDepHandler::rewind()
     regVarLinDepsPos = 0;
 }
 
-AsmRegVarLinearDep ISALinearDepHandler::nextLinearDep()
-{
-    if (regVarLinDepsPos >= regVarLinDeps.size())
-        throw AsmException("No regvar linear deps in this code");
-    return regVarLinDeps[regVarLinDepsPos++];
-}
-
 ISALinearDepHandler* ISALinearDepHandler::copy() const
 {
     return new ISALinearDepHandler(*this);
