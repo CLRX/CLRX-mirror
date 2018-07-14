@@ -532,23 +532,28 @@ class AsmSourcePosHandler
 public:
     struct ReadPos
     {
-        size_t sourcesPos;
-        size_t macroSubstsPos;
-        size_t stTransPos;
-        LineNo oldLineNo;
-        ColNo oldColNo;
-        size_t oldOffset;
+        size_t chunkPos;
+        size_t itemPos;
     };
 private:
-    size_t sourcesPos;
-    size_t macroSubstsPos;
-    size_t stTransPos;
-    LineNo oldLineNo;
-    ColNo oldColNo;
-    size_t oldOffset;
-    std::vector<cxbyte> stTrans;  // encoded tranlation stream
-    std::vector<RefPtr<const AsmSource> > sources;
-    std::vector<RefPtr<const AsmMacroSubst> > macroSubsts;
+    struct Item
+    {
+        uint16_t offsetLo;
+        uint16_t lineNoLo;
+        uint16_t colNoLo;
+    };
+    struct Chunk
+    {
+        size_t offsetFirst; // first offset in chunk
+        RefPtr<const AsmSource> source;
+        RefPtr<const AsmMacroSubst> macro;
+        LineNo lineNoHigh;
+        ColNo colNoHigh;
+        std::vector<Item> items;
+    };
+    size_t chunkPos;
+    size_t itemPos;
+    std::vector<Chunk> chunks;
 public:
     /// constructor
     AsmSourcePosHandler();
@@ -558,21 +563,17 @@ public:
     void rewind();
     /// return true if has next
     bool hasNext() const
-    { return stTransPos < stTrans.size(); }
+    { return chunkPos < chunks.size() && (chunkPos+1 != chunks.size() ||
+        itemPos < chunks.back().items.size()); }
     /// set read pos
     void setReadPos(const ReadPos& rpos)
     {
-        sourcesPos = rpos.sourcesPos;
-        macroSubstsPos = rpos.macroSubstsPos;
-        stTransPos = rpos.stTransPos;
-        oldLineNo = rpos.oldLineNo;
-        oldColNo = rpos.oldColNo;
-        oldOffset = rpos.oldOffset;
+        chunkPos = rpos.chunkPos;
+        itemPos = rpos.itemPos;
     }
     /// get read pos
     ReadPos getReadPos() const
-    { return ReadPos{ sourcesPos, macroSubstsPos, stTransPos,
-                oldLineNo, oldColNo, oldOffset }; }
+    { return ReadPos{ chunkPos, itemPos }; }
     /// get next source position with offset
     std::pair<size_t, AsmSourcePos> nextSourcePos();
 };

@@ -1547,271 +1547,52 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
  * 0xf9 - encode longer offset diff
  */
 
-AsmSourcePosHandler::AsmSourcePosHandler() : sourcesPos(0), macroSubstsPos(0),
-        stTransPos(0), oldLineNo(0), oldColNo(0), oldOffset(0)
+AsmSourcePosHandler::AsmSourcePosHandler() : chunkPos(0), itemPos(0)
 { }
-
-template<typename T>
-static inline void pushDiff(std::vector<cxbyte>& out, T diff, cxbyte smallCode,
-            cxbyte longCode)
-{
-    if (diff <= 64)
-        out.push_back(cxbyte(diff-1) | smallCode);
-    else
-    {
-        out.push_back(longCode);
-        // push colNo value
-        const T value = diff-65;
-        for (cxuint bit = 0; bit < sizeof(T)*8 && (value >> bit) != 0; bit += 7)
-        {
-            if (bit != 0)
-                out.back() |= 0x80;
-            out.push_back((value >> bit) & 0x7f);
-        }
-        if (value == 0)
-            out.push_back(0); // if zero
-    }
-}
-
-template<typename T>
-static inline T getDiff(size_t& pos, const std::vector<cxbyte>& in, cxbyte smallCode,
-            cxbyte longCode)
-{
-    if ((in[pos] & 0xc0) == smallCode)
-        return T(in[pos++] & 0x3f) + 1;
-    else if (in[pos] == longCode)
-    {
-        pos++;
-        // read columnNo value
-        T value = 0;
-        cxuint bit = 0;
-        do {
-            value |= size_t(in[pos++] & 0x7f) << bit;
-            bit += 7;
-        } while ((in[pos-1] & 0x80) != 0);
-        return value + 65;
-    }
-    return 0;
-}
 
 void AsmSourcePosHandler::pushSourcePos(size_t offset, const AsmSourcePos& sourcePos)
 {
-    bool doSetPos = false;
-    const bool thisSameSource = !sources.empty() && sources.back() == sourcePos.source &&
-            (!sourcePos.source || sources.back()->uniqueId  == sourcePos.source->uniqueId);
-    const bool thisSameMacro = !macroSubsts.empty() &&
-            macroSubsts.back() == sourcePos.macro && (!sourcePos.macro ||
-             macroSubsts.back()->uniqueId  == sourcePos.macro->uniqueId);
-    
-    const size_t diffOffset = offset - oldOffset;
-    
-    if (!thisSameMacro && !thisSameSource)
+    if (!chunks.empty())
     {
-        // change macro and source
-        macroSubsts.push_back(sourcePos.macro);
-        sources.push_back(sourcePos.source);
-        stTrans.push_back(0xfd);
-        doSetPos = true;
-    }
-    else if (!thisSameMacro)
-    {
-        // change subst
-        macroSubsts.push_back(sourcePos.macro);
-        stTrans.push_back(0xff);
-        doSetPos = true;
-    }
-    else if (!thisSameSource ||
-            // fix for 64 change in offset and no change in colNo and lineNo
-            (!stTrans.empty() && stTrans.back()==0x3f && sourcePos.lineNo == oldLineNo &&
-             sourcePos.colNo == oldColNo && (diffOffset & 63) == 0))
-    {
-        // change source
-        sources.push_back(sourcePos.source);
-        stTrans.push_back(0xfe);
-        doSetPos = true;
-    }
-    
-    // change line and column
-    bool noDiffOffset = false;
-    if (!doSetPos)
-    {
-        const LineNo diffLineNo = sourcePos.lineNo - oldLineNo;
-        ColNo diffColNo = sourcePos.colNo - oldColNo;
-        if (/*diffColNo == 0 &&*/ diffLineNo!=0 && diffOffset!=0 &&
-            diffLineNo <= 7 && diffOffset <= 8)
-        {
-            if (diffColNo != 0)
-                pushDiff(stTrans, sourcePos.colNo, 0x80, 0xfa);
-            stTrans.push_back((cxbyte((diffLineNo-1)<<3) | cxbyte(diffOffset-1) | 0xc0));
-            noDiffOffset = true;
-        }
-        else
-        {
-            // put lineNo and colNo differences
-            if (diffLineNo != 0)
-            {
-                pushDiff(stTrans, diffLineNo, 0x40, 0xfb);
-                diffColNo = sourcePos.colNo - 1;
-            }
-            if (diffColNo != 0)
-                pushDiff(stTrans, diffColNo, 0x80, 0xfa);
-        }
+        const Chunk& last = chunks.back();
+        
+        const bool thisSameSource = last.source == sourcePos.source &&
+            (!sourcePos.source || last.source->uniqueId  == sourcePos.source->uniqueId);
+        const bool thisSameMacro = last.macro == sourcePos.macro &&
+            (!sourcePos.macro || last.macro->uniqueId  == sourcePos.macro->uniqueId);
+        
+        if ((last.offsetFirst & ~size_t(0xffff)) != (offset & ~size_t(0xffff)) ||
+            !thisSameSource || !thisSameMacro ||
+            last.lineNoHigh != (sourcePos.lineNo&~LineNo(0xffff)) ||
+            last.colNoHigh != (sourcePos.colNo&~ColNo(0xffff)))
+            // add new chunk
+            chunks.push_back(Chunk{ offset, sourcePos.source, sourcePos.macro,
+                    sourcePos.lineNo&~LineNo(0xffff), sourcePos.colNo&~ColNo(0xffff) });
     }
     else
-    {
-        // push lineNo value
-        stTrans.push_back(sourcePos.lineNo&0xff);
-        stTrans.push_back((sourcePos.lineNo>>8) & 0x7f);
-        if (sourcePos.lineNo > 0x7fffU)
-        {
-            stTrans.back() |= 0x80;
-            stTrans.push_back((sourcePos.lineNo>>15) & 0xff);
-            stTrans.push_back((sourcePos.lineNo>>23) & 0x7f);
-            if (sourcePos.lineNo > 0x3fffffffU)
-            {
-                stTrans.back() |= 0x80;
-                stTrans.push_back((sourcePos.lineNo>>30) & 0xff);
-                stTrans.push_back((sourcePos.lineNo>>38) & 0x7f);
-                if (sourcePos.lineNo > 0x1fffffffffffULL)
-                {
-                    stTrans.back() |= 0x80;
-                    stTrans.push_back((sourcePos.lineNo>>45) & 0xff);
-                    stTrans.push_back((sourcePos.lineNo>>53) & 0xff);
-                }
-            }
-        }
-        // push colNo value
-        for (cxuint bit = 0; bit < sizeof(size_t)*8 &&
-                    (sourcePos.colNo >> bit) != 0; bit += 7)
-        {
-            if (bit != 0)
-                stTrans.back() |= 0x80;
-            stTrans.push_back((sourcePos.colNo >> bit) & 0x7f);
-        }
-        if (sourcePos.colNo == 0)
-            stTrans.push_back(0);
-    }
-    // push offset difference
-    if (!noDiffOffset)
-    {
-        if (diffOffset != 0)
-            pushDiff(stTrans, diffOffset, 0x0, 0xf9);
-        else
-            stTrans.push_back(0xfc); // no offset change
-    }
-    oldLineNo = sourcePos.lineNo;
-    oldColNo = sourcePos.colNo;
-    oldOffset = offset;
+        chunks.push_back(Chunk{ offset, sourcePos.source, sourcePos.macro,
+                    sourcePos.lineNo&~LineNo(0xffff), sourcePos.colNo&~ColNo(0xffff) });
+    // push item
+    chunks.back().items.push_back(Item{ uint16_t(offset & 0xffff),
+            uint16_t(sourcePos.lineNo & 0xffff), uint16_t(sourcePos.colNo & 0xffff) });
 }
 
 void AsmSourcePosHandler::rewind()
 {
-    sourcesPos = macroSubstsPos = stTransPos = 0;
-    oldOffset = 0;
-    oldLineNo = 0;
-    oldColNo = 0;
+    chunkPos = itemPos = 0;
 }
 
 std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos()
 {
-    if (stTransPos >= stTrans.size())
-        throw Exception("No source pos available");
-    const cxbyte code = stTrans[stTransPos];
-    
-    AsmSourcePos sourcePos{ };
-    if (macroSubstsPos != 0)
-        sourcePos.macro = macroSubsts[macroSubstsPos-1];
-    if (sourcesPos != 0)
-        sourcePos.source = sources[sourcesPos-1];
-    
-    bool doReadPos = false;
-    if (code == 0xfd) // source and macro
+    const Chunk& chunk = chunks[chunkPos];
+    const Item& item = chunk.items[itemPos];
+    itemPos++;
+    if (itemPos >= chunk.items.size())
     {
-        sourcePos.macro = macroSubsts[macroSubstsPos++];
-        sourcePos.source = sources[sourcesPos++];
-        doReadPos = true;
-        stTransPos++;
+        itemPos = 0;
+        chunkPos++;
     }
-    else if (code == 0xfe)
-    {
-        sourcePos.source = sources[sourcesPos++];
-        doReadPos = true;
-        stTransPos++;
-    }
-    else if (code == 0xff)
-    {
-        sourcePos.macro = macroSubsts[macroSubstsPos++];
-        doReadPos = true;
-        stTransPos++;
-    }
-    
-    LineNo lineNo = oldLineNo;
-    bool offsetAlreadyChanged = false;
-    if (!doReadPos)
-    {
-        // apply differences for lineNo
-        lineNo += getDiff<LineNo>(stTransPos, stTrans, 0x40, 0xfb);
-        
-        if (lineNo != oldLineNo) // line has changed
-            oldColNo = 1; // we assume that column no is 1
-        
-        // apply differencees for colNo
-        ColNo diffColNo = getDiff<ColNo>(stTransPos, stTrans, 0x80, 0xfa);
-        
-        if (stTransPos < stTrans.size() &&
-            oldLineNo == lineNo && (stTrans[stTransPos] & 0xc0) == 0xc0 &&
-            (stTrans[stTransPos] < 0xf8))
-        {
-            lineNo += ((stTrans[stTransPos]&0x3f)>>3) + 1;
-            oldOffset += (stTrans[stTransPos]&7) + 1;
-            offsetAlreadyChanged = true;
-            stTransPos++;
-            if (diffColNo != 0)
-                oldColNo = diffColNo;
-        }
-        else
-            oldColNo += diffColNo;
-        oldLineNo = lineNo;
-    }
-    else
-    {
-        // read lineNo value
-        oldLineNo = stTrans[stTransPos++];
-        oldLineNo |= uint64_t(stTrans[stTransPos++] & 0x7f) << 8;
-        if ((stTrans[stTransPos-1] & 0x80) != 0)
-        {
-            oldLineNo |= uint64_t(stTrans[stTransPos++]) << 15;
-            oldLineNo |= uint64_t(stTrans[stTransPos++] & 0x7f) << 23;
-            if ((stTrans[stTransPos-1] & 0x80) != 0)
-            {
-                oldLineNo |= uint64_t(stTrans[stTransPos++]) << 30;
-                oldLineNo |= uint64_t(stTrans[stTransPos++] & 0x7f) << 38;
-                if ((stTrans[stTransPos-1] & 0x80) != 0)
-                {
-                    oldLineNo |= uint64_t(stTrans[stTransPos++]) << 45;
-                    oldLineNo |= uint64_t(stTrans[stTransPos++]) << 53;
-                }
-            }
-        }
-        // read columnNo value
-        oldColNo = 0;
-        cxuint bit = 0;
-        do {
-            oldColNo |= size_t(stTrans[stTransPos++] & 0x7f) << bit;
-            bit += 7;
-        } while ((stTrans[stTransPos-1] & 0x80) != 0);
-    }
-    
-    if (!offsetAlreadyChanged)
-    {
-        // if offset is not already changed
-        if (stTransPos > stTrans.size() || stTrans[stTransPos] != 0xfc)
-            oldOffset += getDiff<size_t>(stTransPos, stTrans, 0x0, 0xf9);
-        else if (stTrans[stTransPos] == 0xfc)
-            stTransPos++; // skip 0xfc
-    }
-    
-    sourcePos.lineNo = oldLineNo;
-    sourcePos.colNo = oldColNo;
-    return std::make_pair(oldOffset, sourcePos);
+    return std::make_pair((chunk.offsetFirst&~size_t(0xffff))|item.offsetLo,
+        AsmSourcePos{ chunk.macro, chunk.source, chunk.lineNoHigh|item.lineNoLo,
+        chunk.colNoHigh|item.colNoLo });
 }
