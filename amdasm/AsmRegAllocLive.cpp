@@ -1292,6 +1292,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
         prevWaysIndexMap, livenesses, vregIndexMaps, vidxCallMap, vidxRoutineMap,
         routineMap, regTypesNum, regRanges };
     
+    const size_t linearDepSize = linDepHandler.size();
+    
     while (!flowStack.empty())
     {
         FlowStackEntry3& entry = flowStack.back();
@@ -1333,7 +1335,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                 std::vector<AsmSingleVReg> writtenSVRegs;
                 
                 usageHandler.setReadPos(cblock.usagePos);
-                linDepHandler.setReadPos(cblock.linearDepPos);
+                size_t linearDepPos = linDepHandler.findPositionByOffset(cblock.start);
                 
                 // register in liveness
                 while (true)
@@ -1381,15 +1383,15 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                         std::vector<AsmRegVarLinearDep> instrLinDeps;
                         AsmRegVarLinearDep linDep = { 0, nullptr, 0, 0 };
                         bool haveLdep = false;
-                        if (oldOffset == 0 && linDepHandler.hasNext())
+                        if (oldOffset == 0 && linearDepPos < linearDepSize)
                         {
                             // special case: if offset is zero, force get linear dep
-                            linDep = linDepHandler.nextLinearDep();
+                            linDep = linDepHandler.getLinearDep(linearDepPos++);
                             haveLdep = true;
                         }
-                        while (linDep.offset < oldOffset && linDepHandler.hasNext())
+                        while (linDep.offset < oldOffset && linearDepPos < linearDepSize)
                         {
-                            linDep = linDepHandler.nextLinearDep();
+                            linDep = linDepHandler.getLinearDep(linearDepPos++);
                             haveLdep = true;
                         }
                         // if found
@@ -1398,8 +1400,8 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                             {
                                 // just put
                                 instrLinDeps.push_back(linDep);
-                                if (linDepHandler.hasNext())
-                                    linDep = linDepHandler.nextLinearDep();
+                                if (linearDepPos < linearDepSize)
+                                    linDep = linDepHandler.getLinearDep(linearDepPos++);
                                 else // no data
                                     break;
                             }

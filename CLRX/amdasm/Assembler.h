@@ -24,6 +24,7 @@
 #define __CLRX_ASSEMBLER_H__
 
 #include <CLRX/Config.h>
+#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <istream>
@@ -189,27 +190,27 @@ class ISALinearDepHandler
 {
 private:
     std::vector<AsmRegVarLinearDep> regVarLinDeps;
-    size_t regVarLinDepsPos;
 public:
     /// constructor
     ISALinearDepHandler();
     
-    /// get reading position
-    size_t getReadPos() const
-    { return regVarLinDepsPos; }
-    /// get reading position
-    void setReadPos(size_t pos)
-    { regVarLinDepsPos = pos; }
     /// push linear dependency
-    void pushLinearDep(const AsmRegVarLinearDep& linearDep);
-    /// rewind read position to start
-    void rewind();
+    void pushLinearDep(const AsmRegVarLinearDep& linearDep)
+    { regVarLinDeps.push_back(linearDep); }
     /// return true if has next
-    bool hasNext() const
-    { return regVarLinDepsPos < regVarLinDeps.size(); }
+    size_t size() const
+    { return regVarLinDeps.size(); }
     /// get next linear dependency
-    AsmRegVarLinearDep nextLinearDep()
-    { return regVarLinDeps[regVarLinDepsPos++]; }
+    AsmRegVarLinearDep getLinearDep(size_t pos)
+    { return regVarLinDeps[pos]; }
+    /// find position to offset
+    size_t findPositionByOffset(size_t offset)
+    {
+        return std::lower_bound(regVarLinDeps.begin(), regVarLinDeps.end(),
+                AsmRegVarLinearDep{offset},
+                [](const AsmRegVarLinearDep& a, const AsmRegVarLinearDep& b)
+                { return a.offset < b.offset; }) - regVarLinDeps.begin();
+    }
     /// copy linear handler (make new copy)
     ISALinearDepHandler* copy() const;
 };
@@ -465,7 +466,6 @@ public:
         // key - regvar, value - SSA info for this regvar
         Array<std::pair<AsmSingleVReg, SSAInfo> > ssaInfoMap;
         ISAUsageHandler::ReadPos usagePos;
-        size_t linearDepPos;
     };
     
     typedef Array<std::pair<size_t, size_t> > OutLiveness;

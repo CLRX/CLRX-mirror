@@ -298,18 +298,8 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
 }
 
 
-ISALinearDepHandler::ISALinearDepHandler() : regVarLinDepsPos(0)
+ISALinearDepHandler::ISALinearDepHandler()
 { }
-
-void ISALinearDepHandler::pushLinearDep(const AsmRegVarLinearDep& linearDep)
-{
-    regVarLinDeps.push_back(linearDep);
-}
-
-void ISALinearDepHandler::rewind()
-{
-    regVarLinDepsPos = 0;
-}
 
 ISALinearDepHandler* ISALinearDepHandler::copy() const
 {
