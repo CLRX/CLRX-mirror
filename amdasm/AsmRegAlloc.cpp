@@ -72,7 +72,6 @@ void ISAUsageHandler::rewind()
     {
         const Chunk& chunk = chunks.front();
         const RegVarUsageInt& item = chunk.items.front();
-        readPos.readOffset = (chunk.offsetFirst & ~size_t(0xffffU)) | item.offsetLo;
     }
 }
 
@@ -120,15 +119,6 @@ AsmRegVarUsage ISAUsageHandler::nextUsage()
         readPos.itemPos = 0;
         readPos.chunkPos++;
     }
-    if (readPos.chunkPos < chunks.size())
-    {
-        // next
-        const Chunk& chunk = chunks[readPos.chunkPos];
-        const RegVarUsageInt& item = chunk.items[readPos.itemPos];
-        readPos.readOffset = (chunk.offsetFirst & ~size_t(0xffffU)) | item.offsetLo;
-    }
-    else
-        readPos.readOffset = SIZE_MAX;
     return AsmRegVarUsage{ (chunk.offsetFirst & ~size_t(0xffffU)) | item.offsetLo,
             item.regVar, item.rstart, item.rend, item.regField, item.rwFlags, item.align,
             item.useRegMode };

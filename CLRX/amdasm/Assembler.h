@@ -79,7 +79,6 @@ public:
     {
         size_t chunkPos;
         size_t itemPos;
-        size_t readOffset;
     };
     
 protected:

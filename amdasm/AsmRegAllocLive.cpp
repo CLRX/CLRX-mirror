@@ -1330,11 +1330,12 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                 SVRegMap ssaIdIdxMap;
                 std::vector<AsmRegVarUsage> instrRVUs;
                 
-                size_t oldOffset = cblock.usagePos.readOffset;
                 std::vector<AsmSingleVReg> readSVRegs;
                 std::vector<AsmSingleVReg> writtenSVRegs;
                 
                 usageHandler.setReadPos(cblock.usagePos);
+                size_t oldOffset = usageHandler.hasNext() ? cblock.start : cblock.end;
+                
                 size_t linearDepPos = linDepHandler.findPositionByOffset(cblock.start);
                 
                 // register in liveness
