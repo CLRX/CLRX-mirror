@@ -123,9 +123,7 @@ static void initializeGCNAssembler()
 
 GCNUsageHandler::GCNUsageHandler(const std::vector<cxbyte>& content,
                  GPUArchMask _archMask) : ISAUsageHandler(content), archMask(_archMask)
-{
-    defaultInstrSize = 4;
-}
+{ }
 GCNUsageHandler::~GCNUsageHandler()
 { }
 
@@ -165,8 +163,8 @@ cxbyte GCNUsageHandler::getRwFlags(AsmRegField regField,
 }
 
 /* get register pair from specified field from instruction in current code position */
-std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(AsmRegField regField,
-                 cxbyte rwFlags) const
+std::pair<uint16_t,uint16_t> GCNUsageHandler::getRegPair(size_t readOffset,
+                AsmRegField regField, cxbyte rwFlags) const
 {
     cxbyte regSize = ((rwFlags >> ASMRVU_REGSIZE_SHIFT) & 15) + 1;
     uint16_t rstart;

@@ -77,60 +77,35 @@ public:
     /// stgructure that hold read position to store later
     struct ReadPos
     {
-        size_t readOffset;  ///< read offset
-        size_t instrStructPos;  ///< position instrStructs
-        size_t regVarUsagesPos;    ///< position in regVarUsage
-        uint16_t pushedArgs;    ///< pushed argds number
-        cxbyte argPos;          ///< argument position
-        cxbyte argFlags;        ///< ???
-        bool isNext;            ///< isNext
-        bool useRegMode;        ///< true if in usereg mode
+        size_t chunkPos;
+        size_t itemPos;
+        size_t readOffset;
     };
     
-    /// regvar usage (internal)
+protected:
     struct RegVarUsageInt
     {
         const AsmRegVar* regVar;    ///< if null, then usage of called register
         uint16_t rstart;    ///< register start
         uint16_t rend;      ///< register end
         AsmRegField regField;   ///< place in instruction
-        cxbyte rwFlags;  ///< 1 - read, 2 - write
-        cxbyte align;   ///< register alignment
-    };
-
-    /// internal structure for regusage
-    struct RegUsageInt
-    {
-        AsmRegField regField;   ///< place in instruction
-        cxbyte rwFlags;     ///< 1 - read, 2 - write, other flags
-    };
-
-    /// internal structure for regusage
-    struct RegUsage2Int
-    {
-        uint16_t rstart;    ///< register start
-        uint16_t rend;      ///< register end
-        cxbyte rwFlags;     ///< rw flags and others
+        cxbyte rwFlags:2;  ///< 1 - read, 2 - write
+        cxbyte align:5;   ///< register alignment
+        cxbyte useRegMode:1; // usereg mode
+        uint16_t offsetLo;
     };
     
-protected:
-    std::vector<cxbyte> instrStruct;    ///< structure of register usage
-    std::vector<cxbyte> regVarUsages;  ///< register usage data
-    const std::vector<cxbyte>& content; ///< code content
-    size_t lastOffset;  ///< last offset
-    size_t readOffset;  ///< read offset
-    size_t instrStructPos;  ///< position in instr struct
-    size_t regVarUsagesPos; ///< position in regvar usage
-    uint16_t pushedArgs;    ///< pushed args
-    cxbyte argPos;      ///< argument position
-    cxbyte argFlags;    ///< ???
-    cxbyte defaultInstrSize;    ///< default instruction size
-    bool isNext;        ///< is next
-    bool useRegMode;    ///< true if in usereg mode
+    struct Chunk
+    {
+        size_t offsetFirst;
+        std::vector<RegVarUsageInt> items;
+    };
     
-    void skipBytesInInstrStruct();
-    /// put space to offset
-    void putSpace(size_t offset);
+    const std::vector<cxbyte>& content;
+    std::vector<Chunk> chunks;
+    ReadPos readPos;
+    
+    void pushChunk(size_t offset);
     
     /// constructor
     explicit ISAUsageHandler(const std::vector<cxbyte>& content);
@@ -148,28 +123,17 @@ public:
     void flush();
     /// has next regvar usage
     bool hasNext() const
-    { return isNext; }
+    { return readPos.chunkPos < chunks.size() && (readPos.chunkPos+1 != chunks.size() ||
+        readPos.itemPos < chunks.back().items.size());; }
     /// get next usage
     AsmRegVarUsage nextUsage();
     
     /// get reading position
     ReadPos getReadPos() const
-    {
-        return { readOffset, instrStructPos, regVarUsagesPos, pushedArgs,
-                argPos, argFlags, isNext, useRegMode };
-    }
+    { return readPos; }
     /// set reading position
     void setReadPos(const ReadPos rpos)
-    {
-        readOffset = rpos.readOffset;
-        instrStructPos = rpos.instrStructPos;
-        regVarUsagesPos = rpos.regVarUsagesPos;
-        pushedArgs = rpos.pushedArgs;
-        argPos = rpos.argPos;
-        argFlags = rpos.argFlags;
-        isNext = rpos.isNext;
-        useRegMode = rpos.useRegMode;
-    }
+    { readPos = rpos; }
     
     /// push regvar or register from usereg pseudo-op
     void pushUseRegUsage(const AsmRegVarUsage& rvu);
@@ -178,8 +142,8 @@ public:
     virtual cxbyte getRwFlags(AsmRegField regField, uint16_t rstart,
                       uint16_t rend) const = 0;
     /// get reg pair (used by assembler)
-    virtual std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField,
-                    cxbyte rwFlags) const = 0;
+    virtual std::pair<uint16_t,uint16_t> getRegPair(size_t readOffset,
+                    AsmRegField regField, cxbyte rwFlags) const = 0;
     /// get usage dependencies around single instruction
     virtual void getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
                     cxbyte* linearDeps) const = 0;
@@ -224,7 +188,8 @@ public:
     ISAUsageHandler* copy() const;
     
     cxbyte getRwFlags(AsmRegField regFied, uint16_t rstart, uint16_t rend) const;
-    std::pair<uint16_t,uint16_t> getRegPair(AsmRegField regField, cxbyte rwFlags) const;
+    std::pair<uint16_t,uint16_t> getRegPair(size_t readOffset, AsmRegField regField,
+                                    cxbyte rwFlags) const;
     void getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
                     cxbyte* linearDeps) const;
 };

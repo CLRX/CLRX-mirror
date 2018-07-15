@@ -101,12 +101,6 @@ void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, GPUArchMask arch,
         lastRvu.rstart = lastRvu.rend-1;
         lastRvu.rwFlags = ASMRVU_READ|ASMRVU_WRITE;
         lastRvu.regField = GCNFIELD_M_VDATALAST;
-        if (lastRvu.regVar==nullptr) // fix for regusage
-        {
-            // to save register size for VDATALAST
-            lastRvu.rstart = gcnAsm->instrRVUs[0].rstart;
-            lastRvu.rend--;
-        }
         rvu.rend--;
     }
     
@@ -1035,12 +1029,6 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             lastRvu.rstart = lastRvu.rend-1;
             lastRvu.rwFlags = ASMRVU_READ|ASMRVU_WRITE;
             lastRvu.regField = GCNFIELD_FLAT_VDSTLAST;
-            if (lastRvu.regVar==nullptr) // fix for regusage
-            {
-                // to save register size for VDSTLAST
-                lastRvu.rstart = rvu.rstart;
-                lastRvu.rend--;
-            }
             rvu.rend--;
         }
         

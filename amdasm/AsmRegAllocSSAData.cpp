@@ -1466,6 +1466,13 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler,
         
         ++cbit;
     }
+    oldReadPos = usageHandler.getReadPos();
+    // fill up remaining codeblocks oldReadPos
+    for (; cbit != codeBlocks.end(); ++cbit)
+    {
+        oldReadPos.readOffset = cbit->end;
+        cbit->usagePos = oldReadPos;
+    }
     
     size_t rbwCount = 0;
     size_t wrCount = 0;
