@@ -244,11 +244,31 @@ static const SourcePosHandlerTestCase sourcePoHandlerTestTbl[] =
         { 24307, "", "file0.s", 8, 5 },
         { 24627, "", "file0.s", 11, 9 }
     },
-    // 26 - big diffs in offset
+    // 27 - big diffs in offset
     {
         { 100, "", "file0.s", 1, 9 },
         { 164, "", "file0.s", 1, 9 },
         { 228, "", "file0.s", 1, 9 }
+    },
+    // 28 - big diffs in offset 2
+    {
+        { 100, "", "file0.s", 1, 9 },
+        { 164, "", "file0.s", 2, 9 },
+        { 229, "", "file0.s", 3, 4 },
+        { 292, "", "file0.s", 4, 5 },
+        { 124292, "", "file0.s", 6, 5 },
+        { 524307, "", "file0.s", 8, 5 },
+        { 594627, "", "file0.s", 11, 9 },
+        { 791112, "", "file0.s", 12, 9 },
+        { 1472678, "", "file0.s", 14, 9 }
+    },
+    // 29 - bigger colNo
+    {
+        { 8, "", "file0.s", 1, 2331 },
+        { 12, "", "file0.s", 2, 552567 },
+        { 18, "", "file0.s", 2, 578567 },
+        { 23, "", "file0.s", 3, 773215 },
+        { 28, "", "file0.s", 3, 7 }
     }
 };
 
