@@ -83,7 +83,7 @@ void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
 {
     pushChunk(rvu.offset);
     chunks.back().items.push_back(RegVarUsageInt{ rvu.regVar, rvu.rstart, rvu.rend, 
-                rvu.regField, rvu.rwFlags, rvu.align, false,
+                rvu.regField, rvu.rwFlags, rvu.align, cxbyte(0),
                 uint16_t(rvu.offset & 0xffffU) });
 }
 
@@ -92,7 +92,8 @@ void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
     pushChunk(rvu.offset);
     // push item
     chunks.back().items.push_back(RegVarUsageInt{ rvu.regVar, rvu.rstart, rvu.rend, 
-            rvu.regField, rvu.rwFlags, rvu.align, true, uint16_t(rvu.offset & 0xffffU) });
+            rvu.regField, rvu.rwFlags, rvu.align, cxbyte(1),
+            uint16_t(rvu.offset & 0xffffU) });
 }
 
 AsmRegVarUsage ISAUsageHandler::nextUsage(ReadPos& readPos)
