@@ -1566,6 +1566,7 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos(ReadPos& rPos
     const Chunk& chunk = chunks[rPos.chunkPos];
     const Item& item = chunk.items[rPos.itemPos];
     rPos.itemPos++;
+    // fix itemPos to zero
     if (rPos.itemPos >= chunk.items.size())
     {
         rPos.itemPos = 0;
@@ -1574,4 +1575,28 @@ std::pair<size_t, AsmSourcePos> AsmSourcePosHandler::nextSourcePos(ReadPos& rPos
     return std::make_pair((chunk.offsetFirst&~size_t(0xffff))|item.offsetLo,
         AsmSourcePos{ chunk.macro, chunk.source, chunk.lineNoHigh|item.lineNoLo,
         chunk.colNoHigh|item.colNoLo });
+}
+
+AsmSourcePosHandler::ReadPos AsmSourcePosHandler::findPositionByOffset(size_t offset) const
+{
+    if (chunks.empty())
+        return ReadPos{ 0, 0 };
+    size_t chunkPos = std::lower_bound(chunks.begin(), chunks.end(), Chunk{ offset },
+            [](const Chunk& a, const Chunk& b)
+            { return a.offsetFirst < b.offsetFirst; }) - chunks.begin();
+    // fix - move back if found offset is greater or if end
+    if (chunkPos == chunks.size() ||
+        (chunkPos != 0 && chunks[chunkPos].offsetFirst != offset))
+        chunkPos--;
+    const std::vector<Item>& items = chunks[chunkPos].items;
+    size_t itemPos = std::lower_bound(items.begin(), items.end(),
+            Item{uint16_t(offset & 0xffff)}, [](const Item& a, const Item& b)
+            { return a.offsetLo < b.offsetLo; }) - items.begin();
+    // fix itemPos to zero
+    if (itemPos >= items.size())
+    {
+        chunkPos++;
+        itemPos = 0;
+    }
+    return ReadPos{ chunkPos, itemPos };
 }

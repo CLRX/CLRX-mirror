@@ -563,6 +563,8 @@ public:
         readPos.itemPos < chunks.back().items.size()); }
     /// get next source position with offset
     std::pair<size_t, AsmSourcePos> nextSourcePos(ReadPos& rPos);
+    // find position by offset
+    ReadPos findPositionByOffset(size_t offset) const;
 };
 
 };
