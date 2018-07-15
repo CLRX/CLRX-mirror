@@ -1391,15 +1391,15 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler,
 {
     if (codeBlocks.empty())
         return;
-    usageHandler.rewind();
     auto cbit = codeBlocks.begin();
     AsmRegVarUsage rvu;
+    ISAUsageHandler::ReadPos usagePos{ 0, 0 };
     
-    if (!usageHandler.hasNext())
+    if (!usageHandler.hasNext(usagePos))
         return; // do nothing if no regusages
-    ISAUsageHandler::ReadPos oldReadPos = usageHandler.getReadPos();
+    ISAUsageHandler::ReadPos oldReadPos = usagePos;
     // old linear deps position
-    rvu = usageHandler.nextUsage();
+    rvu = usageHandler.nextUsage(usagePos);
     
     cxuint regRanges[MAX_REGTYPES_NUM*2];
     size_t regTypesNum;
@@ -1415,10 +1415,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler,
         if (cbit == codeBlocks.end())
             break;
         // skip rvu's before codeblock
-        while (rvu.offset < cbit->start && usageHandler.hasNext())
+        while (rvu.offset < cbit->start && usageHandler.hasNext(usagePos))
         {
-            oldReadPos = usageHandler.getReadPos();
-            rvu = usageHandler.nextUsage();
+            oldReadPos = usagePos;
+            rvu = usageHandler.nextUsage(usagePos);
         }
         if (rvu.offset < cbit->start)
             break;
@@ -1454,10 +1454,10 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler,
             }
             
             // get next rvusage
-            if (!usageHandler.hasNext())
+            if (!usageHandler.hasNext(usagePos))
                 break;
-            oldReadPos = usageHandler.getReadPos();
-            rvu = usageHandler.nextUsage();
+            oldReadPos = usagePos;
+            rvu = usageHandler.nextUsage(usagePos);
         }
         // prepping ssaInfoMap array in cblock (put and sorting)
         cbit->ssaInfoMap.resize(ssaInfoMap.size());
@@ -1466,7 +1466,7 @@ void AsmRegAllocator::createSSAData(ISAUsageHandler& usageHandler,
         
         ++cbit;
     }
-    oldReadPos = usageHandler.getReadPos();
+    oldReadPos = usagePos;
     // fill up remaining codeblocks oldReadPos
     for (; cbit != codeBlocks.end(); ++cbit)
         cbit->usagePos = oldReadPos;

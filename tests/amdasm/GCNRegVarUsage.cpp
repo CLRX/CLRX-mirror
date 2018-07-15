@@ -2106,13 +2106,13 @@ static void testGCNRegVarUsages(cxuint i, const GCNRegVarUsageCase& testCase)
     std::unordered_map<const AsmRegVar*, CString> regVarNamesMap;
     pushRegVarsFromScopes(assembler.getGlobalScope(), regVarNamesMap, "");
     ISAUsageHandler* usageHandler = assembler.getSections()[0].usageHandler.get();
-    usageHandler->rewind();
+    ISAUsageHandler::ReadPos usagePos{ 0, 0 };
     size_t j;
-    for (j = 0; usageHandler->hasNext(); j++)
+    for (j = 0; usageHandler->hasNext(usagePos); j++)
     {
         assertTrue("testGCNRegVarUsages", testCaseName+".length",
                    j < testCase.regVarUsages.size());
-        const AsmRegVarUsage resultRvu = usageHandler->nextUsage();
+        const AsmRegVarUsage resultRvu = usageHandler->nextUsage(usagePos);
         std::ostringstream rvuOss;
         rvuOss << ".regVarUsage#" << j << ".";
         rvuOss.flush();

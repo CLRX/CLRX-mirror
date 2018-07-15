@@ -59,21 +59,11 @@ std::ostream& operator<<(std::ostream& os, const CLRX::BlockIndex& v)
  */
 
 ISAUsageHandler::ISAUsageHandler(const std::vector<cxbyte>& _content)
-        : content(_content), readPos{ 0, 0 }
+        : content(_content)
 { }
 
 ISAUsageHandler::~ISAUsageHandler()
 { }
-
-void ISAUsageHandler::rewind()
-{
-    readPos = { 0, 0 };
-    if (!chunks.empty())
-    {
-        const Chunk& chunk = chunks.front();
-        const RegVarUsageInt& item = chunk.items.front();
-    }
-}
 
 void ISAUsageHandler::pushChunk(size_t offset)
 {
@@ -105,10 +95,7 @@ void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
             rvu.regField, rvu.rwFlags, rvu.align, true, uint16_t(rvu.offset & 0xffffU) });
 }
 
-void ISAUsageHandler::flush()
-{ }
-
-AsmRegVarUsage ISAUsageHandler::nextUsage()
+AsmRegVarUsage ISAUsageHandler::nextUsage(ReadPos& readPos)
 {
     const Chunk& chunk = chunks[readPos.chunkPos];
     const RegVarUsageInt& item = chunk.items[readPos.itemPos];

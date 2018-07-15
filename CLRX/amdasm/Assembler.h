@@ -102,7 +102,6 @@ protected:
     
     const std::vector<cxbyte>& content;
     std::vector<Chunk> chunks;
-    ReadPos readPos;
     
     void pushChunk(size_t offset);
     
@@ -116,33 +115,16 @@ public:
     
     /// push regvar or register usage
     void pushUsage(const AsmRegVarUsage& rvu);
-    /// rewind to start for reading
-    void rewind();
-    /// flush last pending register usages
-    void flush();
     /// has next regvar usage
-    bool hasNext() const
+    bool hasNext(const ReadPos& readPos) const
     { return readPos.chunkPos < chunks.size() && (readPos.chunkPos+1 != chunks.size() ||
         readPos.itemPos < chunks.back().items.size());; }
     /// get next usage
-    AsmRegVarUsage nextUsage();
-    
-    /// get reading position
-    ReadPos getReadPos() const
-    { return readPos; }
-    /// set reading position
-    void setReadPos(const ReadPos rpos)
-    { readPos = rpos; }
+    AsmRegVarUsage nextUsage(ReadPos& readPos);
     
     /// push regvar or register from usereg pseudo-op
     void pushUseRegUsage(const AsmRegVarUsage& rvu);
     
-    /// get RW flags (used by assembler)
-    virtual cxbyte getRwFlags(AsmRegField regField, uint16_t rstart,
-                      uint16_t rend) const = 0;
-    /// get reg pair (used by assembler)
-    virtual std::pair<uint16_t,uint16_t> getRegPair(size_t readOffset,
-                    AsmRegField regField, cxbyte rwFlags) const = 0;
     /// get usage dependencies around single instruction
     virtual void getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
                     cxbyte* linearDeps) const = 0;

@@ -3126,11 +3126,6 @@ bool Assembler::assemble()
     
     if (good && formatHandler!=nullptr)
     {
-        // flushing regvar usage handlers
-        for(AsmSection& section: sections)
-            if (section.usageHandler!=nullptr)
-                section.usageHandler->flush();
-        
         // code opened regions for kernels
         for (AsmKernelId i = 0; i < kernels.size(); i++)
         {

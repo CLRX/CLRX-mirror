@@ -174,7 +174,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         WCodeBlock& wblock = waitCodeBlocks[i];
         const CodeBlock& cblock = codeBlocks[i];
         // fill usage of registers (real access) to wCblock
-        usageHandler.setReadPos(cblock.usagePos);
+        ISAUsageHandler::ReadPos usagePos = cblock.usagePos;
         
         SVRegMap ssaIdIdxMap;
         SVRegMap svregWriteOffsets;
@@ -182,9 +182,9 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         
         std::unordered_map<size_t, size_t> readRegs;
         std::unordered_map<size_t, size_t> writeRegs;
-        while (usageHandler.hasNext())
+        while (usageHandler.hasNext(usagePos))
         {
-            const AsmRegVarUsage rvu = usageHandler.nextUsage();
+            const AsmRegVarUsage rvu = usageHandler.nextUsage(usagePos);
             if (rvu.offset >= cblock.end)
                 break;
             
