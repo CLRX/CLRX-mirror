@@ -3041,8 +3041,7 @@ bool Assembler::assemble()
                 
                 if (sections[currentSection].usageHandler == nullptr)
                     sections[currentSection].usageHandler.reset(
-                            isaAssembler->createUsageHandler(
-                                    sections[currentSection].content));
+                            isaAssembler->createUsageHandler());
                 
                 if (sections[currentSection].linearDepHandler == nullptr)
                     sections[currentSection].linearDepHandler.reset(

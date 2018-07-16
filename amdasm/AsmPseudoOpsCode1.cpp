@@ -1969,8 +1969,7 @@ void AsmPseudoOps::doUseReg(Assembler& asmr, const char* linePtr)
             // create usageHandler if needed
             if (asmr.sections[asmr.currentSection].usageHandler == nullptr)
                     asmr.sections[asmr.currentSection].usageHandler.reset(
-                            asmr.isaAssembler->createUsageHandler(
-                                    asmr.sections[asmr.currentSection].content));
+                            asmr.isaAssembler->createUsageHandler());
             // put regVar usage
             asmr.sections[asmr.currentSection].usageHandler->pushUseRegUsage(
                 AsmRegVarUsage{ size_t(asmr.currentOutPos), regVar,

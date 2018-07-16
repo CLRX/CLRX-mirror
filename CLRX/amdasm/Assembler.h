@@ -100,13 +100,12 @@ protected:
         std::vector<RegVarUsageInt> items;
     };
     
-    const std::vector<cxbyte>& content;
     std::vector<Chunk> chunks;
     
     void pushChunk(size_t offset);
     
     /// constructor
-    explicit ISAUsageHandler(const std::vector<cxbyte>& content);
+    explicit ISAUsageHandler();
 public:
     /// destructor
     virtual ~ISAUsageHandler();
@@ -161,7 +160,7 @@ private:
     GPUArchMask archMask;
 public:
     /// constructor
-    GCNUsageHandler(const std::vector<cxbyte>& content, GPUArchMask archMask);
+    explicit GCNUsageHandler(GPUArchMask archMask);
     /// destructor
     ~GCNUsageHandler();
     
@@ -239,7 +238,7 @@ public:
     /// destructor
     virtual ~ISAAssembler();
     /// create usage handler
-    virtual ISAUsageHandler* createUsageHandler(std::vector<cxbyte>& content) const = 0;
+    virtual ISAUsageHandler* createUsageHandler() const = 0;
     
     /// assemble single line
     virtual void assemble(const CString& mnemonic, const char* mnemPlace,
@@ -338,7 +337,7 @@ public:
     /// destructor
     ~GCNAssembler();
     
-    ISAUsageHandler* createUsageHandler(std::vector<cxbyte>& content) const;
+    ISAUsageHandler* createUsageHandler() const;
     
     void assemble(const CString& mnemonic, const char* mnemPlace, const char* linePtr,
                   const char* lineEnd, std::vector<cxbyte>& output,
