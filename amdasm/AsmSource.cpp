@@ -22,6 +22,7 @@
 #include <fstream>
 #include <vector>
 #include <utility>
+#include <memory>
 #include <algorithm>
 #include <atomic>
 #include <CLRX/utils/Utilities.h>
