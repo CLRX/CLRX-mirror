@@ -1340,6 +1340,7 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                 size_t linearDepPos = linDepHandler.findPositionByOffset(cblock.start);
                 
                 // register in liveness
+                bool rvuFirst = true;
                 while (true)
                 {
                     AsmRegVarUsage rvu = { 0U, nullptr, 0U, 0U };
@@ -1348,6 +1349,11 @@ void AsmRegAllocator::createLivenesses(ISAUsageHandler& usageHandler,
                     {
                         hasNext = true;
                         rvu = usageHandler.nextUsage(usagePos);
+                        if (rvuFirst)
+                        {
+                            oldOffset = rvu.offset;
+                            rvuFirst = false;
+                        }
                     }
                     const size_t liveTime = oldOffset;
                     if ((!hasNext || rvu.offset > oldOffset) && oldOffset < cblock.end)
