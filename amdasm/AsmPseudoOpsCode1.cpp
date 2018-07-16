@@ -1971,9 +1971,9 @@ void AsmPseudoOps::doUseReg(Assembler& asmr, const char* linePtr)
                     asmr.sections[asmr.currentSection].usageHandler.reset(
                             asmr.isaAssembler->createUsageHandler());
             // put regVar usage
-            asmr.sections[asmr.currentSection].usageHandler->pushUseRegUsage(
-                AsmRegVarUsage{ size_t(asmr.currentOutPos), regVar,
-                    uint16_t(regStart), uint16_t(regEnd), ASMFIELD_NONE, rwFlags, 0 });
+            asmr.sections[asmr.currentSection].usageHandler->pushUsage(
+                AsmRegVarUsage{ size_t(asmr.currentOutPos), regVar, uint16_t(regStart),
+                    uint16_t(regEnd), ASMFIELD_NONE, rwFlags, 0, true });
         }
         
     } while(skipCommaForMultipleArgs(asmr, linePtr));

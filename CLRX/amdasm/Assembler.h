@@ -102,8 +102,6 @@ protected:
     
     std::vector<Chunk> chunks;
     
-    void pushChunk(size_t offset);
-    
     /// constructor
     explicit ISAUsageHandler();
 public:
@@ -120,9 +118,6 @@ public:
         readPos.itemPos < chunks.back().items.size());; }
     /// get next usage
     AsmRegVarUsage nextUsage(ReadPos& readPos);
-    
-    /// push regvar or register from usereg pseudo-op
-    void pushUseRegUsage(const AsmRegVarUsage& rvu);
     
     /// get usage dependencies around single instruction
     virtual void getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
@@ -167,9 +162,6 @@ public:
     /// copy this usage handler
     ISAUsageHandler* copy() const;
     
-    cxbyte getRwFlags(AsmRegField regFied, uint16_t rstart, uint16_t rend) const;
-    std::pair<uint16_t,uint16_t> getRegPair(size_t readOffset, AsmRegField regField,
-                                    cxbyte rwFlags) const;
     void getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,
                     cxbyte* linearDeps) const;
 };
@@ -301,7 +293,10 @@ private:
     void resetInstrRVUs()
     {
         for (AsmRegVarUsage& rvu: instrRVUs)
+        {
+            rvu.useRegMode = false;
             rvu.regField = ASMFIELD_NONE;
+        }
     }
     void resetWaitInstrs()
     {

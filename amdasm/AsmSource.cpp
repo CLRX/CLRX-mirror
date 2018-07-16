@@ -1588,15 +1588,20 @@ AsmSourcePosHandler::ReadPos AsmSourcePosHandler::findPositionByOffset(size_t of
     if (chunkPos == chunks.size() ||
         (chunkPos != 0 && chunks[chunkPos].offsetFirst != offset))
         chunkPos--;
-    const std::vector<Item>& items = chunks[chunkPos].items;
-    size_t itemPos = std::lower_bound(items.begin(), items.end(),
-            Item{uint16_t(offset & 0xffff)}, [](const Item& a, const Item& b)
-            { return a.offsetLo < b.offsetLo; }) - items.begin();
-    // fix itemPos to zero
-    if (itemPos >= items.size())
+    
+    size_t itemPos = 0;
+    if (chunks[chunkPos].offsetFirst != offset)
     {
-        chunkPos++;
-        itemPos = 0;
+        const std::vector<Item>& items = chunks[chunkPos].items;
+        size_t itemPos = std::lower_bound(items.begin(), items.end(),
+                Item{uint16_t(offset & 0xffff)}, [](const Item& a, const Item& b)
+                { return a.offsetLo < b.offsetLo; }) - items.begin();
+        // fix itemPos to zero
+        if (itemPos >= items.size())
+        {
+            chunkPos++;
+            itemPos = 0;
+        }
     }
     return ReadPos{ chunkPos, itemPos };
 }

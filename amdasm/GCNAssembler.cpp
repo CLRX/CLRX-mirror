@@ -163,6 +163,8 @@ GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
                     getGPUArchitectureFromDeviceType(assembler.getDeviceType())))
 {
     callOnce(clrxGCNAssemblerOnceFlag, initializeGCNAssembler);
+    std::fill(instrRVUs, instrRVUs + sizeof(instrRVUs)/sizeof(AsmRegVarUsage),
+            AsmRegVarUsage{});
 }
 
 GCNAssembler::~GCNAssembler()

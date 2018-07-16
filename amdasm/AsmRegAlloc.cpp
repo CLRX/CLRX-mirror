@@ -54,36 +54,23 @@ ISAUsageHandler::ISAUsageHandler()
 ISAUsageHandler::~ISAUsageHandler()
 { }
 
-void ISAUsageHandler::pushChunk(size_t offset)
+void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
 {
     if (!chunks.empty())
     {
         const Chunk& last = chunks.back();
         
-        if ((last.offsetFirst & ~size_t(0xffff)) != (offset & ~size_t(0xffff)))
+        if ((last.offsetFirst & ~size_t(0xffff)) != (rvu.offset & ~size_t(0xffff)))
             // add new chunk
-            chunks.push_back(Chunk{ offset });
+            chunks.push_back(Chunk{ rvu.offset });
     }
     else
-        chunks.push_back(Chunk{ offset });
-}
-
-void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
-{
-    pushChunk(rvu.offset);
+        chunks.push_back(Chunk{ rvu.offset });
+    
     const cxbyte align = rvu.align!=0 ? 32-CLZ32(rvu.align) : 0;
     chunks.back().items.push_back(RegVarUsageInt{ rvu.regVar, rvu.rstart, rvu.rend, 
-                rvu.regField, rvu.rwFlags, align, false,
+                rvu.regField, rvu.rwFlags, align, rvu.useRegMode,
                 uint16_t(rvu.offset & 0xffffU) });
-}
-
-void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
-{
-    pushChunk(rvu.offset);
-    // push item
-    const cxbyte align = rvu.align!=0 ? 32-CLZ32(rvu.align) : 0;
-    chunks.back().items.push_back(RegVarUsageInt{ rvu.regVar, rvu.rstart, rvu.rend, 
-            rvu.regField, rvu.rwFlags, align, true, uint16_t(rvu.offset & 0xffffU) });
 }
 
 AsmRegVarUsage ISAUsageHandler::nextUsage(ReadPos& readPos)
