@@ -118,6 +118,8 @@ public:
         readPos.itemPos < chunks.back().items.size());; }
     /// get next usage
     AsmRegVarUsage nextUsage(ReadPos& readPos);
+    // find position by offset
+    ReadPos findPositionByOffset(size_t offset) const;
     
     /// get usage dependencies around single instruction
     virtual void getUsageDependencies(cxuint rvusNum, const AsmRegVarUsage* rvus,

@@ -90,6 +90,37 @@ AsmRegVarUsage ISAUsageHandler::nextUsage(ReadPos& readPos)
             cxbyte(outAlign), item.useRegMode!=0 };
 }
 
+ISAUsageHandler::ReadPos ISAUsageHandler::findPositionByOffset(size_t offset) const
+{
+    if (chunks.empty())
+        return ReadPos{ 0, 0 };
+    size_t chunkPos = std::lower_bound(chunks.begin(), chunks.end(), Chunk{ offset },
+            [](const Chunk& a, const Chunk& b)
+            { return a.offsetFirst < b.offsetFirst; }) - chunks.begin();
+    // fix - move back if found offset is greater or if end
+    if (chunkPos == chunks.size() ||
+        (chunkPos != 0 && chunks[chunkPos].offsetFirst != offset))
+        chunkPos--;
+    
+    size_t itemPos = 0;
+    if (chunks[chunkPos].offsetFirst != offset)
+    {
+        const std::vector<RegVarUsageInt>& items = chunks[chunkPos].items;
+        RegVarUsageInt rvu;
+        rvu.offsetLo = uint16_t(offset & 0xffff);
+        size_t itemPos = std::lower_bound(items.begin(), items.end(), rvu,
+                [](const RegVarUsageInt& a, const RegVarUsageInt& b)
+                { return a.offsetLo < b.offsetLo; }) - items.begin();
+        // fix itemPos to zero
+        if (itemPos >= items.size())
+        {
+            chunkPos++;
+            itemPos = 0;
+        }
+    }
+    return ReadPos{ chunkPos, itemPos };
+}
+
 
 ISALinearDepHandler::ISALinearDepHandler()
 { }
