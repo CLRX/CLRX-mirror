@@ -2903,7 +2903,34 @@ b1:     .rvlin_once va[3:6]
         { }, // vidxRoutineMap
         { }, // vidxCallMap
         true, ""
-    }
+    },
+    {   // 44 - simple case (first rvu in next instruction)
+        R"ffDXD(.regvar sa:s:8, va:v:10
+        s_nop 4
+        s_mov_b32 sa[4], sa[2]  # 0
+        s_add_u32 sa[4], sa[4], s3
+        v_xor_b32 va[4], va[2], v3
+)ffDXD",
+        {   // livenesses
+            {   // for SGPRs
+                { { 0, 9 } }, // S3
+                { { 0, 5 } }, // sa[2]'0
+                { { 5, 9 } }, // sa[4]'0
+                { { 9, 10 } }  // sa[4]'1
+            },
+            {   // for VGPRs
+                { { 0, 13 } }, // V3
+                { { 0, 13 } }, // va[2]'0
+                { { 13, 14 } } // va[4]'0 : out of range code block
+            },
+            { },
+            { }
+        },
+        { },  // linearDepMaps
+        { },  // vidxRoutineMap
+        { },  // vidxCallMap
+        true, ""
+    },
 };
 
 static TestSingleVReg getTestSingleVReg(const AsmSingleVReg& vr,
