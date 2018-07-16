@@ -82,8 +82,9 @@ void ISAUsageHandler::pushChunk(size_t offset)
 void ISAUsageHandler::pushUsage(const AsmRegVarUsage& rvu)
 {
     pushChunk(rvu.offset);
+    const cxbyte align = rvu.align!=0 ? 32-CLZ32(rvu.align) : 0;
     chunks.back().items.push_back(RegVarUsageInt{ rvu.regVar, rvu.rstart, rvu.rend, 
-                rvu.regField, rvu.rwFlags, rvu.align, false,
+                rvu.regField, rvu.rwFlags, align, false,
                 uint16_t(rvu.offset & 0xffffU) });
 }
 
@@ -91,8 +92,9 @@ void ISAUsageHandler::pushUseRegUsage(const AsmRegVarUsage& rvu)
 {
     pushChunk(rvu.offset);
     // push item
+    const cxbyte align = rvu.align!=0 ? 32-CLZ32(rvu.align) : 0;
     chunks.back().items.push_back(RegVarUsageInt{ rvu.regVar, rvu.rstart, rvu.rend, 
-            rvu.regField, rvu.rwFlags, rvu.align, true, uint16_t(rvu.offset & 0xffffU) });
+            rvu.regField, rvu.rwFlags, align, true, uint16_t(rvu.offset & 0xffffU) });
 }
 
 AsmRegVarUsage ISAUsageHandler::nextUsage(ReadPos& readPos)
@@ -106,9 +108,10 @@ AsmRegVarUsage ISAUsageHandler::nextUsage(ReadPos& readPos)
         readPos.itemPos = 0;
         readPos.chunkPos++;
     }
+    const cxbyte outAlign = item.align!=0 ? 1U<<(item.align-1) : 0;
     return AsmRegVarUsage{ (chunk.offsetFirst & ~size_t(0xffffU)) | item.offsetLo,
-            item.regVar, item.rstart, item.rend, item.regField, item.rwFlags, item.align,
-            item.useRegMode!=0 };
+            item.regVar, item.rstart, item.rend, item.regField, item.rwFlags,
+            cxbyte(outAlign), item.useRegMode!=0 };
 }
 
 
