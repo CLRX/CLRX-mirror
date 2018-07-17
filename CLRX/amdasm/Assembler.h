@@ -481,7 +481,6 @@ public:
         std::vector<AsmWaitInstr> waitInstrs;
         Array<std::pair<size_t, size_t> > readRegs; ///< first occurence of reg read
         Array<std::pair<size_t, size_t> > writeRegs; ///< first occurecence of reg write
-        ISAWaitHandler::ReadPos waitPos;
     };
 private:
     const AsmWaitConfig& waitConfig;

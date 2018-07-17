@@ -243,98 +243,35 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         }
     }
     
-    // fill up waitInstrs
+    // fill queue states
     ISAWaitHandler::ReadPos waitPos{ 0, 0 };
-    if (!waitHandler.hasNext(waitPos))
-        return;
-    
-    ISAWaitHandler::ReadPos oldReadPos = waitPos;
-    auto cbit = codeBlocks.begin();
-    auto wcbit = waitCodeBlocks.begin();
-    
-    bool isWaitInstr;
-    AsmDelayedOp delayedOp;
-    AsmWaitInstr waitInstr;
-    isWaitInstr =  waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
-    
-    while (true)
+    for (size_t i = 0; i < codeBlocks.size(); i++)
     {
-        size_t offset = isWaitInstr ? waitInstr.offset : delayedOp.offset;
-        while (cbit != codeBlocks.end() && cbit->end <= offset)
-        {
-            wcbit->waitPos = oldReadPos;
-            ++cbit;
-            ++wcbit;
-        }
-        if (cbit == codeBlocks.end())
-            break;
+        const CodeBlock& cblock = codeBlocks[i];
+        WCodeBlock& wblock = waitCodeBlocks[i];
         
-        // skip rvu's before codeblock
-        while (offset < cbit->start && waitHandler.hasNext(waitPos))
+        AsmWaitInstr waitInstr;
+        AsmDelayedOp delayedOp;
+        if (!waitHandler.hasNext(waitPos))
+            continue;
+        bool isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
+        size_t instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
+        // skip instrs between codeblock
+        while (instrOffset < cblock.start)
         {
-            oldReadPos = waitPos;
-            isWaitInstr =  waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
-            offset = isWaitInstr ? waitInstr.offset : delayedOp.offset;
-        }
-        if (offset < cbit->start)
-            break;
-        
-        wcbit->waitPos = oldReadPos;
-        while (offset < cbit->end)
-        {
-            if (isWaitInstr)
-                wcbit->waitInstrs.push_back(waitInstr);
-            // next position
-            oldReadPos = waitPos;
-            isWaitInstr =  waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
-            offset = isWaitInstr ? waitInstr.offset : delayedOp.offset;
-        }
-        // next code block
-        ++cbit;
-        ++wcbit;
-    }
-    
-    std::vector<bool> visited(codeBlocks.size());
-    std::deque<WaitFlowStackEntry0> flowStack;
-    flowStack.push_back({ 0, 0 });
-    /*
-     * main loop - processing wait instrs and delayed ops
-     */
-    while (!flowStack.empty())
-    {
-        WaitFlowStackEntry0& entry = flowStack.back();
-        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
-        WCodeBlock& wblock = waitCodeBlocks[entry.blockIndex];
-        
-        if (entry.nextIndex == 0)
-        {
-            // process current block
-            if (!visited[entry.blockIndex])
-            {
-                visited[entry.blockIndex] = true;
-            }
-            else
-            {
-            }
+            if (!waitHandler.hasNext(waitPos))
+                break;
+            isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
+            instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
         }
         
-        /*if (!callStack.empty() &&
-            entry.blockIndex == callStack.back().callBlock &&
-            entry.nextIndex-1 == callStack.back().callNextIndex)
+        // real loop
+        while (instrOffset < cblock.end)
         {
-        }*/
-        
-        if (entry.nextIndex < cblock.nexts.size())
-        {
-        }
-        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
-                // if have any call then go to next block
-                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
-                 !cblock.haveReturn && !cblock.haveEnd)
-        {
-        }
-        else
-        {
+            if (!waitHandler.hasNext(waitPos))
+                break;
+            isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
+            instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
         }
     }
     
