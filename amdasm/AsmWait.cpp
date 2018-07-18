@@ -103,11 +103,13 @@ struct CLRX_INTERNAL QueueState2
     QueueEntry1 random;   // items in random order
     // register place in queue - key - reg, value - position
     std::unordered_map<uint16_t, uint16_t> regPlaces;
-    // request queue size at end of block (by enqueuing and waiting/flushing)
+    // request queue size at start of block (by enqueuing and waiting/flushing)
+    // used while joining with previous block
     cxuint requestedQueueSize;
+    bool firstFlush;
     
     QueueState2(cxuint _maxQueueSize) : maxQueueSize(_maxQueueSize),
-                orderedStartPos(0), requestedQueueSize(0)
+                orderedStartPos(0), requestedQueueSize(0), firstFlush(true)
     { }
     
     void pushOrdered(uint16_t reg)
@@ -145,12 +147,14 @@ struct CLRX_INTERNAL QueueState2
     }
     void flushTo(cxuint size)
     {
-        if (requestedQueueSize < size)
+        if (firstFlush && requestedQueueSize < size)
         {
             // if higher than queue size and higher than requested queue size
             requestedQueueSize = size;
+            firstFlush = false;
             return;
         }
+        firstFlush = false;
         if (size == 0)
             random.clear(); // clear randomly ordered if must be empty
         if (size < maxQueueSize)
