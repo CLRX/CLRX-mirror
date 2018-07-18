@@ -79,20 +79,79 @@ typedef std::unordered_map<uint16_t, uint16_t> QueueEntry2;
 struct CLRX_INTERNAL QueueState
 {
     std::vector<QueueEntry1> ordered;  // ordered items
-    std::vector<QueueEntry1> random;   // items in random order
-};
-
-enum {
-    REGPLACE_NONE = UINT16_MAX,
-    REGPLACE_RANDOM = UINT16_MAX-1
+    QueueEntry1 random;   // items in random order
+    // request queue size at end of block (by enqueuing and waiting/flushing)
+    cxuint requestedQueueSize;
 };
 
 struct CLRX_INTERNAL QueueState2
 {
+    cxuint maxQueueSize;
+    uint16_t orderedStartPos;
+    QueueEntry1 firstOrdered; // on full
     std::deque<QueueEntry2> ordered;  // ordered items
-    std::deque<QueueEntry2> random;   // items in random order
+    QueueEntry1 random;   // items in random order
     // register place in queue - key - reg, value - position
-    std::unordered_map<uint16_t, uint16_t> regPlace;
+    std::unordered_map<uint16_t, uint16_t> regPlaces;
+    // request queue size at end of block (by enqueuing and waiting/flushing)
+    cxuint requestedQueueSize;
+    
+    QueueState2(cxuint _maxQueueSize) : maxQueueSize(_maxQueueSize),
+                orderedStartPos(0), requestedQueueSize(0)
+    { }
+    
+    void pushOrdered(uint16_t reg)
+    {
+        uint16_t prevPlace = orderedStartPos-2; // no place
+        const uint16_t lastPlace = orderedStartPos + ordered.size()-1;
+        auto rpres = regPlaces.insert(std::make_pair(reg, lastPlace));
+        if (!rpres.second)
+        {
+            // if already exists
+            prevPlace = rpres.first->second; // if some place
+            rpres.first->second = lastPlace;
+        }
+        ordered.back().insert(std::make_pair(reg, prevPlace));
+    }
+    
+    void pushRandom(uint16_t reg)
+    { random.insert(reg); }
+    
+    void nextOrder()
+    {
+        if (ordered.empty() || !ordered.back().empty())
+            // push only if empty or previous is filled
+            ordered.push_back(QueueEntry2());
+        
+        if (ordered.size() == maxQueueSize)
+        {
+            // move first entry in ordered queue to first ordered
+            for (const auto& e: ordered.front())
+                firstOrdered.insert(e.first);
+            ordered.pop_front();
+            orderedStartPos++; // next start pos for ordered queue for first entry
+        }
+        requestedQueueSize = std::min(requestedQueueSize+1, maxQueueSize);
+    }
+    void flushTo(cxuint size)
+    {
+        if (requestedQueueSize < size)
+        {
+            // if higher than queue size and higher than requested queue size
+            requestedQueueSize = size;
+            return;
+        }
+        if (size == 0)
+            random.clear(); // clear randomly ordered if must be empty
+        if (size < maxQueueSize)
+            firstOrdered.clear(); // clear first in full
+        while (size > ordered.size())
+        {
+            ordered.pop_front();
+            orderedStartPos++;
+        }
+        requestedQueueSize = std::min(size, requestedQueueSize);
+    }
 };
 
 struct CLRX_INTERNAL WaitFlowStackEntry0
@@ -169,6 +228,8 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     size_t regTypesNum;
     assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
     
+    // fill queue states
+    ISAWaitHandler::ReadPos waitPos{ 0, 0 };
     for (size_t i = 0; i < codeBlocks.size(); i++)
     {
         WCodeBlock& wblock = waitCodeBlocks[i];
@@ -243,8 +304,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         }
     }
     
-    // fill queue states
-    ISAWaitHandler::ReadPos waitPos{ 0, 0 };
+    
     for (size_t i = 0; i < codeBlocks.size(); i++)
     {
         const CodeBlock& cblock = codeBlocks[i];
