@@ -69,6 +69,16 @@ ISAWaitHandler::ReadPos ISAWaitHandler::findPositionByOffset(size_t offset) cons
 
 /* AsmWaitScheduler */
 
+// QReg - queue register - contain - reg index and access type (read or write)
+static inline uint16_t qreg(uint16_t reg, bool write)
+{ return reg | (write ? 0x8000 : 0); }
+
+static inline bool qregWrite(uint16_t qreg)
+{ return (qreg & 0x8000)!=0; }
+
+static inline uint16_t qregReg(uint16_t qreg)
+{ return qreg & 0x7ffff; }
+
 namespace CLRX
 {
 
@@ -152,6 +162,24 @@ struct CLRX_INTERNAL QueueState2
         }
         requestedQueueSize = std::min(size, requestedQueueSize);
     }
+    
+    cxuint findMinQueueSizeForReg(uint16_t reg) const
+    {
+        auto it = regPlaces.find(reg);
+        if (it == regPlaces.end())
+            // if found, then 0 otherwize not found (UINT_MAX)
+            return random.find(reg) != random.end() ? 0 : UINT_MAX;
+        const uint16_t pos = it->second - orderedStartPos;
+        if (pos == 0xffff) // before start (is first)
+            return firstOrdered.find(reg)!= firstOrdered.end() ? 
+                    ordered.size() : UINT_MAX;
+        return ordered.size()-1 - cxuint(pos);
+    }
+    
+    /*QueueState toQueueState() const
+    {
+        QueueState
+    }*/
 };
 
 struct CLRX_INTERNAL WaitFlowStackEntry0
