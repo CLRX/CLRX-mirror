@@ -121,8 +121,7 @@ static void initializeGCNAssembler()
 
 // GCN Usage handler
 
-GCNUsageHandler::GCNUsageHandler(GPUArchMask _archMask)
-        : ISAUsageHandler(), archMask(_archMask)
+GCNUsageHandler::GCNUsageHandler() : ISAUsageHandler()
 { }
 GCNUsageHandler::~GCNUsageHandler()
 { }
@@ -180,7 +179,7 @@ void GCNAssembler::setRegVarUsage(const AsmRegVarUsage& rvu)
 
 ISAUsageHandler* GCNAssembler::createUsageHandler() const
 {
-    return new GCNUsageHandler(curArchMask);
+    return new GCNUsageHandler();
 }
 
 void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,

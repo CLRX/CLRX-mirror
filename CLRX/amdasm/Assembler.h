@@ -153,11 +153,9 @@ public:
 /// GCN (register and regvar) Usage handler
 class GCNUsageHandler: public ISAUsageHandler
 {
-private:
-    GPUArchMask archMask;
 public:
     /// constructor
-    explicit GCNUsageHandler(GPUArchMask archMask);
+    GCNUsageHandler();
     /// destructor
     ~GCNUsageHandler();
     
