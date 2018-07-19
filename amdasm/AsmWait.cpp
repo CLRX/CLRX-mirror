@@ -92,6 +92,26 @@ struct QueueEntry1
     
     bool empty() const
     { return haveDelayedOp || !regs.empty(); }
+    
+    void join(const QueueEntry1& b)
+    {
+        regs.insert(b.regs.begin(), b.regs.end());
+        haveDelayedOp |= b.haveDelayedOp;
+    }
+    
+    void joinWithRegPlaces(const QueueEntry1& b, uint16_t startPos, uint16_t opos,
+            std::unordered_map<uint16_t, uint16_t>& regPlaces)
+    {
+        for (auto e: b.regs)
+            if (regs.insert(e).second)
+            {
+                auto rres = regPlaces.insert(std::make_pair(e, opos));
+                if (rres.second && rres.first->second-startPos < opos-startPos)
+                    rres.first->second = opos;
+            }
+        regs.insert(b.regs.begin(), b.regs.end());
+        haveDelayedOp |= b.haveDelayedOp;
+    }
 };
 
 struct CLRX_INTERNAL QueueState1
@@ -175,6 +195,12 @@ struct CLRX_INTERNAL QueueState1
             random.regs.clear(); // clear randomly ordered if must be empty
         while (size > ordered.size())
         {
+            for (auto e: ordered.front().regs)
+            {
+                auto prit = regPlaces.find(e);
+                if (prit != regPlaces.end() && prit->second == orderedStartPos)
+                regPlaces.erase(prit); // remove from regPlaces if in this place
+            }
             ordered.pop_front();
             orderedStartPos++;
         }
@@ -189,6 +215,35 @@ struct CLRX_INTERNAL QueueState1
             return random.regs.find(reg) != random.regs.end() ? 0 : UINT_MAX;
         const uint16_t pos = it->second - orderedStartPos;
         return ordered.size()-1 - cxuint(pos);
+    }
+    
+    void joinWay(const QueueState1& way)
+    {
+        random.join(way.random);
+        
+        auto oit1 = ordered.begin();
+        auto oit2 = way.ordered.begin();
+        const int queueSizeDiff = way.ordered.size() - ordered.size();
+        uint16_t qpos = orderedStartPos;
+        if (queueSizeDiff > 0)
+        {
+            ordered.insert(ordered.begin(), way.ordered.begin(),
+                    way.ordered.begin() + queueSizeDiff);
+            oit2 += queueSizeDiff;
+            qpos = orderedStartPos;
+            orderedStartPos -= queueSizeDiff;
+        }
+        else
+        {
+            oit1 -= queueSizeDiff;
+            qpos -= queueSizeDiff;
+        }
+        // join entries
+        for (; oit1 != ordered.end(); ++oit1, ++oit2, ++qpos)
+            oit1->joinWithRegPlaces(*oit2, orderedStartPos, qpos, regPlaces);
+        
+        firstFlush |= way.firstFlush;
+        requestedQueueSize = std::max(requestedQueueSize, way.requestedQueueSize);
     }
 };
 
