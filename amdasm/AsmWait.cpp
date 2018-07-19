@@ -82,9 +82,29 @@ static inline uint16_t qregReg(uint16_t qreg)
 namespace CLRX
 {
 
-typedef std::unordered_set<uint16_t> QueueEntry1;
+struct QueueEntry1
+{
+    std::unordered_set<uint16_t> regs;
+    bool haveDelayedOp;
+    
+    QueueEntry1() : haveDelayedOp(false)
+    { }
+    
+    bool empty() const
+    { return haveDelayedOp || !regs.empty(); }
+};
 // key - register number, value - previous register queue position
-typedef std::unordered_map<uint16_t, uint16_t> QueueEntry2;
+struct QueueEntry2
+{
+    std::unordered_map<uint16_t, uint16_t> regs;
+    bool haveDelayedOp;
+    
+    QueueEntry2() : haveDelayedOp(false)
+    { }
+    
+    bool empty() const
+    { return haveDelayedOp || !regs.empty(); }
+};
 
 struct CLRX_INTERNAL QueueState
 {
@@ -118,6 +138,12 @@ struct CLRX_INTERNAL QueueState2
     
     void pushOrdered(uint16_t reg)
     {
+        if (reg == UINT16_MAX)
+        {
+            // push same delayed op (no reg)
+            ordered.back().haveDelayedOp = true;
+            return;
+        }
         uint16_t prevPlace = orderedStartPos-2; // no place
         const uint16_t lastPlace = orderedStartPos + ordered.size()-1;
         auto rpres = regPlaces.insert(std::make_pair(reg, lastPlace));
@@ -127,11 +153,17 @@ struct CLRX_INTERNAL QueueState2
             prevPlace = rpres.first->second; // if some place
             rpres.first->second = lastPlace;
         }
-        ordered.back().insert(std::make_pair(reg, prevPlace));
+        ordered.back().regs.insert(std::make_pair(reg, prevPlace));
     }
     
     void pushRandom(uint16_t reg)
-    { random.insert(reg); }
+    {
+        if (reg != UINT16_MAX)
+            random.regs.insert(reg);
+        else
+            // push same delayed op (no reg)
+            random.haveDelayedOp = true;
+    }
     
     void nextOrder()
     {
@@ -142,8 +174,8 @@ struct CLRX_INTERNAL QueueState2
         if (ordered.size() == maxQueueSize)
         {
             // move first entry in ordered queue to first ordered
-            for (const auto& e: ordered.front())
-                firstOrdered.insert(e.first);
+            for (const auto& e: ordered.front().regs)
+                firstOrdered.regs.insert(e.first);
             ordered.pop_front();
             orderedStartPos++; // next start pos for ordered queue for first entry
         }
@@ -160,9 +192,9 @@ struct CLRX_INTERNAL QueueState2
         }
         firstFlush = false;
         if (size == 0)
-            random.clear(); // clear randomly ordered if must be empty
+            random.regs.clear(); // clear randomly ordered if must be empty
         if (size < maxQueueSize)
-            firstOrdered.clear(); // clear first in full
+            firstOrdered.regs.clear(); // clear first in full
         while (size > ordered.size())
         {
             ordered.pop_front();
@@ -176,10 +208,10 @@ struct CLRX_INTERNAL QueueState2
         auto it = regPlaces.find(reg);
         if (it == regPlaces.end())
             // if found, then 0 otherwize not found (UINT_MAX)
-            return random.find(reg) != random.end() ? 0 : UINT_MAX;
+            return random.regs.find(reg) != random.regs.end() ? 0 : UINT_MAX;
         const uint16_t pos = it->second - orderedStartPos;
         if (pos == 0xffff) // before start (is first)
-            return firstOrdered.find(reg)!= firstOrdered.end() ? 
+            return firstOrdered.regs.find(reg)!= firstOrdered.regs.end() ? 
                     ordered.size() : UINT_MAX;
         return ordered.size()-1 - cxuint(pos);
     }
