@@ -98,7 +98,6 @@ struct CLRX_INTERNAL QueueState1
 {
     cxuint maxQueueSize;
     uint16_t orderedStartPos;
-    QueueEntry1 firstOrdered; // on full
     std::deque<QueueEntry1> ordered;  // ordered items
     QueueEntry1 random;   // items in random order
     // register place in queue - key - reg, value - position
@@ -143,15 +142,19 @@ struct CLRX_INTERNAL QueueState1
         if (ordered.size() == maxQueueSize)
         {
             // move first entry in ordered queue to first ordered
+            QueueEntry1& firstOrdered = ordered.front();
             for (auto e: firstOrdered.regs)
             {
                 auto rpit = regPlaces.find(e);
                  // update regPlaces for firstOrdered before joining
-                if (rpit->second == orderedStartPos-1)
+                if (rpit->second == orderedStartPos)
                     rpit->second++;
             }
-            firstOrdered.regs.insert(ordered.front().regs.begin(),
-                        ordered.front().regs.end());
+            auto ordit = ordered.begin();
+            ++ordit; // second entry
+            QueueEntry1& second = *ordit;
+            // to second entry
+            second.regs.insert(firstOrdered.regs.begin(), firstOrdered.regs.end());
             ordered.pop_front();
             orderedStartPos++; // next start pos for ordered queue for first entry
         }
@@ -170,8 +173,6 @@ struct CLRX_INTERNAL QueueState1
         firstFlush = false;
         if (size == 0)
             random.regs.clear(); // clear randomly ordered if must be empty
-        if (size < maxQueueSize)
-            firstOrdered.regs.clear(); // clear first in full
         while (size > ordered.size())
         {
             ordered.pop_front();
@@ -187,9 +188,6 @@ struct CLRX_INTERNAL QueueState1
             // if found, then 0 otherwize not found (UINT_MAX)
             return random.regs.find(reg) != random.regs.end() ? 0 : UINT_MAX;
         const uint16_t pos = it->second - orderedStartPos;
-        if (pos == 0xffff) // before start (is first)
-            return firstOrdered.regs.find(reg)!= firstOrdered.regs.end() ? 
-                    ordered.size() : UINT_MAX;
         return ordered.size()-1 - cxuint(pos);
     }
 };
