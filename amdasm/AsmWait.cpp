@@ -93,37 +93,13 @@ struct QueueEntry1
     bool empty() const
     { return haveDelayedOp || !regs.empty(); }
 };
-// key - register number, value - previous register queue position
-struct QueueEntry2
-{
-    std::unordered_map<uint16_t, uint16_t> regs;
-    bool haveDelayedOp;
-    
-    QueueEntry2() : haveDelayedOp(false)
-    { }
-    
-    bool empty() const
-    { return haveDelayedOp || !regs.empty(); }
-};
 
-struct CLRX_INTERNAL QueueState
-{
-    std::vector<QueueEntry1> ordered;  // ordered items
-    QueueEntry1 random;   // items in random order
-    // request queue size at end of block (by enqueuing and waiting/flushing)
-    cxuint requestedQueueSize;
-};
-
-struct CLRX_INTERNAL QueueState2
+struct CLRX_INTERNAL QueueState1
 {
     cxuint maxQueueSize;
     uint16_t orderedStartPos;
-    size_t lastFlushOffset; // last offset where queue has been flushed
-    /// offset in block where live begin for first ordered entry
-    /// SIZE_MAX - before this block
-    size_t firstOrderedLiveStart;
     QueueEntry1 firstOrdered; // on full
-    std::deque<QueueEntry2> ordered;  // ordered items
+    std::deque<QueueEntry1> ordered;  // ordered items
     QueueEntry1 random;   // items in random order
     // register place in queue - key - reg, value - position
     std::unordered_map<uint16_t, uint16_t> regPlaces;
@@ -131,9 +107,10 @@ struct CLRX_INTERNAL QueueState2
     // used while joining with previous block
     cxuint requestedQueueSize;
     bool firstFlush;
+    bool reallyFlushed; // if really already flushed (queue size has been shrinked)
     
-    QueueState2(cxuint _maxQueueSize) : maxQueueSize(_maxQueueSize),
-                orderedStartPos(0), requestedQueueSize(0), firstFlush(true)
+    QueueState1(cxuint _maxQueueSize) : maxQueueSize(_maxQueueSize), orderedStartPos(0),
+                requestedQueueSize(0), firstFlush(true), reallyFlushed(false)
     { }
     
     void pushOrdered(uint16_t reg)
@@ -144,16 +121,8 @@ struct CLRX_INTERNAL QueueState2
             ordered.back().haveDelayedOp = true;
             return;
         }
-        uint16_t prevPlace = orderedStartPos-2; // no place
-        const uint16_t lastPlace = orderedStartPos + ordered.size()-1;
-        auto rpres = regPlaces.insert(std::make_pair(reg, lastPlace));
-        if (!rpres.second)
-        {
-            // if already exists
-            prevPlace = rpres.first->second; // if some place
-            rpres.first->second = lastPlace;
-        }
-        ordered.back().regs.insert(std::make_pair(reg, prevPlace));
+        regPlaces[reg] = orderedStartPos + ordered.size()-1;
+        ordered.back().regs.insert(reg);
     }
     
     void pushRandom(uint16_t reg)
@@ -165,17 +134,24 @@ struct CLRX_INTERNAL QueueState2
             random.haveDelayedOp = true;
     }
     
-    void nextOrder()
+    void nextEntry()
     {
         if (ordered.empty() || !ordered.back().empty())
             // push only if empty or previous is filled
-            ordered.push_back(QueueEntry2());
+            ordered.push_back(QueueEntry1());
         
         if (ordered.size() == maxQueueSize)
         {
             // move first entry in ordered queue to first ordered
-            for (const auto& e: ordered.front().regs)
-                firstOrdered.regs.insert(e.first);
+            for (auto e: firstOrdered.regs)
+            {
+                auto rpit = regPlaces.find(e);
+                 // update regPlaces for firstOrdered before joining
+                if (rpit->second == orderedStartPos-1)
+                    rpit->second++;
+            }
+            firstOrdered.regs.insert(ordered.front().regs.begin(),
+                        ordered.front().regs.end());
             ordered.pop_front();
             orderedStartPos++; // next start pos for ordered queue for first entry
         }
@@ -190,6 +166,7 @@ struct CLRX_INTERNAL QueueState2
             firstFlush = false;
             return;
         }
+        reallyFlushed = true;
         firstFlush = false;
         if (size == 0)
             random.regs.clear(); // clear randomly ordered if must be empty
@@ -215,11 +192,6 @@ struct CLRX_INTERNAL QueueState2
                     ordered.size() : UINT_MAX;
         return ordered.size()-1 - cxuint(pos);
     }
-    
-    /*QueueState toQueueState() const
-    {
-        QueueState
-    }*/
 };
 
 struct CLRX_INTERNAL WaitFlowStackEntry0
@@ -229,7 +201,7 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
     bool isCall;
     bool haveReturn;
     
-    QueueState queues[ASM_WAIT_MAX_TYPES_NUM];
+    QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
     // key - reg, value - offset in codeblock
     std::unordered_map<size_t, size_t> readRegs;
     // key - reg, value - offset in codeblock
