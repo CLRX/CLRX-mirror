@@ -568,26 +568,26 @@ struct AsmRegVarLinearDep
 };
 
 enum {
-    ASM_DELAY_INSTR_MAX_TYPES_NUM = 8,
+    ASM_DELAYED_OP_MAX_TYPES_NUM = 8,
     ASM_WAIT_MAX_TYPES_NUM = 4
 };
 
 /// asm delay instr type entry
-struct AsmDelayInstrTypeEntry
+struct AsmDelayedOpTypeEntry
 {
     cxbyte waitType;
     bool ordered;
     /// waiting finished on register read out (true) or on operation
     bool finishOnRegReadOut;
-    cxbyte counting; ///< couting (255 - per instr), 1-254 - per element size
+    cxbyte counting; ///< counting (255 - per instr), 1-254 - per element size
 };
 
 /// asm wait system configuration
 struct AsmWaitConfig
 {
-    cxuint delayInstrTypesNum;
+    cxuint delayedOpTypesNum;
     cxuint waitQueuesNum;
-    AsmDelayInstrTypeEntry delayInstrTypes[ASM_DELAY_INSTR_MAX_TYPES_NUM];
+    AsmDelayedOpTypeEntry delayOpTypes[ASM_DELAYED_OP_MAX_TYPES_NUM];
     uint16_t waitQueueSizes[ASM_WAIT_MAX_TYPES_NUM];
 };
 

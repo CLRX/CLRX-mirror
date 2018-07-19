@@ -98,8 +98,10 @@ struct CLRX_INTERNAL QueueState2
 {
     cxuint maxQueueSize;
     uint16_t orderedStartPos;
-    // previous ordered entries (flushed), value is offset wait instr that flush entry
-    std::vector<size_t> prevOrderedOffsets;
+    size_t lastFlushOffset; // last offset where queue has been flushed
+    /// offset in block where live begin for first ordered entry
+    /// SIZE_MAX - before this block
+    size_t firstOrderedLiveStart;
     QueueEntry1 firstOrdered; // on full
     std::deque<QueueEntry2> ordered;  // ordered items
     QueueEntry1 random;   // items in random order
