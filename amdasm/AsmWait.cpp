@@ -230,8 +230,19 @@ struct CLRX_INTERNAL QueueState1
             ordered.insert(ordered.begin(), way.ordered.begin(),
                     way.ordered.begin() + queueSizeDiff);
             oit2 += queueSizeDiff;
-            qpos = orderedStartPos;
             orderedStartPos -= queueSizeDiff;
+            oit1 = ordered.begin() + queueSizeDiff;
+            qpos = orderedStartPos;
+            // update regPlaces after pushing to front
+            for (auto oitx = ordered.begin(); oitx != oit1; ++oitx)
+                for (auto e: oitx->regs)
+                    if (oitx->regs.insert(e).second)
+                    {
+                        auto rres = regPlaces.insert(std::make_pair(e, qpos));
+                        if (rres.second && rres.first->second-orderedStartPos <
+                                            qpos-orderedStartPos)
+                            rres.first->second = qpos;
+                    }
         }
         else
         {
@@ -244,6 +255,21 @@ struct CLRX_INTERNAL QueueState1
         
         firstFlush |= way.firstFlush;
         requestedQueueSize = std::max(requestedQueueSize, way.requestedQueueSize);
+    }
+    
+    void joinNext(const QueueState1& next)
+    {
+        if (next.reallyFlushed)
+        {
+            // just copy
+            *this = next;
+            return;
+        }
+        if (next.requestedQueueSize != ordered.size())
+            flushTo(next.requestedQueueSize - ordered.size());
+        ordered.insert(ordered.end(), next.ordered.begin(), next.ordered.end());
+        // join with previous
+        random.join(next.random);
     }
 };
 
