@@ -140,9 +140,13 @@ struct CLRX_INTERNAL QueueState1
     bool firstFlush;
     bool reallyFlushed; // if really already flushed (queue size has been shrinked)
     
-    QueueState1(cxuint _maxQueueSize) : maxQueueSize(_maxQueueSize), orderedStartPos(0),
-                requestedQueueSize(0), firstFlush(true), reallyFlushed(false)
+    QueueState1(cxuint _maxQueueSize = 0) : maxQueueSize(_maxQueueSize),
+                orderedStartPos(0), requestedQueueSize(0), firstFlush(true),
+                reallyFlushed(false)
     { }
+    
+    void setMaxQueueSize(cxuint _maxQueueSize)
+    { maxQueueSize = _maxQueueSize; }
     
     void pushOrdered(uint16_t reg)
     {
@@ -279,6 +283,7 @@ struct CLRX_INTERNAL QueueState1
                 updateRegPlaces(*oitx, orderedStartPos, qpos, regPlaces);
             // join with previous
             random.join(next.random);
+            requestedQueueSize = ordered.size();
         }
     }
 };
@@ -295,6 +300,26 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
     std::unordered_map<size_t, size_t> readRegs;
     // key - reg, value - offset in codeblock
     std::unordered_map<size_t, size_t> writeRegs;
+    
+    void setMaxQueueSizes(const AsmWaitConfig& waitConfig)
+    {
+        for (cxuint i = 0; i < waitConfig.waitQueuesNum; i++)
+            queues[i].setMaxQueueSize(waitConfig.waitQueueSizes[i]);
+    }
+};
+
+struct CLRX_INTERNAL WCodeBlock
+{
+    QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
+    std::vector<AsmWaitInstr> waitInstrs;
+    Array<std::pair<size_t, size_t> > readRegs; ///< first occurence of reg read
+    Array<std::pair<size_t, size_t> > writeRegs; ///< first occurecence of reg write
+    
+    void setMaxQueueSizes(const AsmWaitConfig& waitConfig)
+    {
+        for (cxuint i = 0; i < waitConfig.waitQueuesNum; i++)
+            queues[i].setMaxQueueSize(waitConfig.waitQueueSizes[i]);
+    }
 };
 
 };
@@ -345,7 +370,7 @@ AsmWaitScheduler::AsmWaitScheduler(const AsmWaitConfig& _asmWaitConfig,
         bool _onlyWarnings)
         : waitConfig(_asmWaitConfig), assembler(_assembler), codeBlocks(_codeBlocks),
           vregIndexMaps(_vregIndexMaps), graphColorMaps(_graphColorMaps),
-          onlyWarnings(_onlyWarnings), waitCodeBlocks(_codeBlocks.size())
+          onlyWarnings(_onlyWarnings)
 { }
 
 void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& waitHandler)
@@ -355,6 +380,10 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     
     cxuint regRanges[MAX_REGTYPES_NUM*2];
     size_t regTypesNum;
+    std::vector<WCodeBlock> waitCodeBlocks(codeBlocks.size());
+    for(WCodeBlock& wblock: waitCodeBlocks)
+        wblock.setMaxQueueSizes(waitConfig);
+    
     assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
     
     // fill queue states

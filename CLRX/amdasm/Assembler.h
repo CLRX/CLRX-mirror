@@ -473,13 +473,6 @@ public:
 /// Assembler Wait scheduler
 class AsmWaitScheduler
 {
-public:
-    struct WCodeBlock
-    {
-        std::vector<AsmWaitInstr> waitInstrs;
-        Array<std::pair<size_t, size_t> > readRegs; ///< first occurence of reg read
-        Array<std::pair<size_t, size_t> > writeRegs; ///< first occurecence of reg write
-    };
 private:
     const AsmWaitConfig& waitConfig;
     Assembler& assembler;
@@ -487,7 +480,6 @@ private:
     const AsmRegAllocator::VarIndexMap* vregIndexMaps;
     const Array<cxuint>* graphColorMaps;
     bool onlyWarnings;
-    std::vector<WCodeBlock> waitCodeBlocks;
     std::vector<AsmWaitInstr> neededWaitInstrs;
 public:
     AsmWaitScheduler(const AsmWaitConfig& asmWaitConfig, Assembler& assembler,
