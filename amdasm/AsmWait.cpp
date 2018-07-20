@@ -114,6 +114,18 @@ struct QueueEntry1
     }
 };
 
+static inline void updateRegPlaces(const QueueEntry1& b, uint16_t startPos, uint16_t opos,
+            std::unordered_map<uint16_t, uint16_t>& regPlaces)
+{
+    for (auto e: b.regs)
+    {
+        auto rres = regPlaces.insert(std::make_pair(e, opos));
+        if (rres.second && rres.first->second-startPos < opos-startPos)
+            rres.first->second = opos;
+    }
+}
+
+
 struct CLRX_INTERNAL QueueState1
 {
     cxuint maxQueueSize;
@@ -234,15 +246,8 @@ struct CLRX_INTERNAL QueueState1
             oit1 = ordered.begin() + queueSizeDiff;
             qpos = orderedStartPos;
             // update regPlaces after pushing to front
-            for (auto oitx = ordered.begin(); oitx != oit1; ++oitx)
-                for (auto e: oitx->regs)
-                    if (oitx->regs.insert(e).second)
-                    {
-                        auto rres = regPlaces.insert(std::make_pair(e, qpos));
-                        if (rres.second && rres.first->second-orderedStartPos <
-                                            qpos-orderedStartPos)
-                            rres.first->second = qpos;
-                    }
+            for (auto oitx = ordered.begin(); oitx != oit1; ++oitx, ++qpos)
+                updateRegPlaces(*oitx, orderedStartPos, qpos, regPlaces);
         }
         else
         {
@@ -269,15 +274,9 @@ struct CLRX_INTERNAL QueueState1
             ordered.insert(ordered.end(), next.ordered.begin(), next.ordered.end());
             // update regPlaces after pushing to front
             uint16_t qpos = orderedStartPos + orderedSize;
-            for (auto oitx = ordered.begin() + orderedSize; oitx != ordered.end(); ++oitx)
-                for (auto e: oitx->regs)
-                    if (oitx->regs.insert(e).second)
-                    {
-                        auto rres = regPlaces.insert(std::make_pair(e, qpos));
-                        if (rres.second && rres.first->second-orderedStartPos <
-                                            qpos-orderedStartPos)
-                            rres.first->second = qpos;
-                    }
+            for (auto oitx = ordered.begin() + orderedSize; oitx != ordered.end();
+                            ++oitx, ++qpos)
+                updateRegPlaces(*oitx, orderedStartPos, qpos, regPlaces);
             // join with previous
             random.join(next.random);
         }
