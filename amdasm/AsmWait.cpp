@@ -260,16 +260,27 @@ struct CLRX_INTERNAL QueueState1
     void joinNext(const QueueState1& next)
     {
         if (next.reallyFlushed)
+            *this = next; // just copy
+        else
         {
-            // just copy
-            *this = next;
-            return;
+            if (next.requestedQueueSize != ordered.size())
+                flushTo(next.requestedQueueSize - ordered.size());
+            size_t orderedSize = ordered.size();
+            ordered.insert(ordered.end(), next.ordered.begin(), next.ordered.end());
+            // update regPlaces after pushing to front
+            uint16_t qpos = orderedStartPos + orderedSize;
+            for (auto oitx = ordered.begin() + orderedSize; oitx != ordered.end(); ++oitx)
+                for (auto e: oitx->regs)
+                    if (oitx->regs.insert(e).second)
+                    {
+                        auto rres = regPlaces.insert(std::make_pair(e, qpos));
+                        if (rres.second && rres.first->second-orderedStartPos <
+                                            qpos-orderedStartPos)
+                            rres.first->second = qpos;
+                    }
+            // join with previous
+            random.join(next.random);
         }
-        if (next.requestedQueueSize != ordered.size())
-            flushTo(next.requestedQueueSize - ordered.size());
-        ordered.insert(ordered.end(), next.ordered.begin(), next.ordered.end());
-        // join with previous
-        random.join(next.random);
     }
 };
 
