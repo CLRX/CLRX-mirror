@@ -460,14 +460,8 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             mapSort(wblock.readRegs.begin(), wblock.readRegs.end());
             mapSort(wblock.writeRegs.begin(), wblock.writeRegs.end());
         }
-    }
-    
-    
-    for (size_t i = 0; i < codeBlocks.size(); i++)
-    {
-        const CodeBlock& cblock = codeBlocks[i];
-        WCodeBlock& wblock = waitCodeBlocks[i];
         
+        // process waits and delayed ops
         AsmWaitInstr waitInstr;
         AsmDelayedOp delayedOp;
         if (!waitHandler.hasNext(waitPos))
@@ -492,6 +486,4 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
         }
     }
-    
-    // after processing. we clean up wait instructions list
 }
