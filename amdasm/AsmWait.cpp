@@ -223,12 +223,12 @@ struct CLRX_INTERNAL QueueState1
         requestedQueueSize = std::min(size, requestedQueueSize);
     }
     
-    cxuint findMinQueueSizeForReg(uint16_t reg) const
+    uint16_t findMinQueueSizeForReg(uint16_t reg) const
     {
         auto it = regPlaces.find(reg);
         if (it == regPlaces.end())
             // if found, then 0 otherwize not found (UINT_MAX)
-            return random.regs.find(reg) != random.regs.end() ? 0 : UINT_MAX;
+            return random.regs.find(reg) != random.regs.end() ? 0 : UINT16_MAX;
         const uint16_t pos = it->second - orderedStartPos;
         return ordered.size()-1 - cxuint(pos);
     }
@@ -440,6 +440,11 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             if (rvu.offset >= cblock.end && instrOffset >= cblock.end)
                 break;
             
+            bool genWaitCnt = false;
+            AsmWaitInstr gwaitInstr{ rvu.offset, { } };
+            for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                gwaitInstr.waits[q] = waitConfig.waitQueueSizes[q]-1;
+            
             if (rvu.offset < cblock.end && rvu.offset <= instrOffset)
             {
                 // process RegVar usage
@@ -478,8 +483,31 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                         readRegs.insert({ rreg, rvu.offset });
                     if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
                         writeRegs.insert({ rreg, rvu.offset });
+                    
+                    // rreg
+                    for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                    {
+                        uint16_t waitCnt = wblock.queues[q].findMinQueueSizeForReg(rreg);
+                        if (waitCnt != UINT16_MAX)
+                        {
+                            if (!onlyWarnings)
+                            {
+                                gwaitInstr.waits[q] =
+                                        std::min(gwaitInstr.waits[q], waitCnt);
+                                genWaitCnt = true;
+                            }
+                        }
+                    }
                 }
-            
+                
+                if (genWaitCnt && rvu.offset != instrOffset)
+                {
+                    // generate wait instr
+                    wblock.waitInstrs.push_back(gwaitInstr);
+                    for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
+                        wblock.queues[w].flushTo(gwaitInstr.waits[w]);
+                }
+                
                 // copy to wblock as array
                 wblock.readRegs.resize(readRegs.size());
                 wblock.writeRegs.resize(writeRegs.size());
@@ -494,9 +522,24 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                 // process wait instr
                 if (isWaitInstr)
                 {
-                    wblock.waitInstrs.push_back(waitInstr);
-                    for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                        wblock.queues[w].flushTo(waitInstr.waits[w]);
+                    if (genWaitCnt)
+                    {
+                        // if user waitinstr and generate wait instr
+                        // then choose min queue sizes in wait instr and generate new
+                        // wait instr.
+                        for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
+                            gwaitInstr.waits[w] = std::min(gwaitInstr.waits[w],
+                                    waitInstr.waits[w]);
+                        wblock.waitInstrs.push_back(gwaitInstr);
+                        for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
+                            wblock.queues[w].flushTo(gwaitInstr.waits[w]);
+                    }
+                    else
+                    {
+                        wblock.waitInstrs.push_back(waitInstr);
+                        for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
+                            wblock.queues[w].flushTo(waitInstr.waits[w]);
+                    }
                 }
                 else
                 {
