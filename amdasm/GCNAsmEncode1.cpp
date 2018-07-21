@@ -2428,7 +2428,8 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     gcnAsm->instrRVUs[delayRVU].rstart, gcnAsm->instrRVUs[delayRVU].rend,
                     1, haveGds ? GCNDELOP_GDSOP : GCNDELOP_LDSOP,
                     haveGds ? GCNDELOP_EXPORT : GCNDELOP_NONE,
-                    gcnAsm->instrRVUs[delayRVU].rwFlags };
+                    gcnAsm->instrRVUs[delayRVU].rwFlags,
+                    cxbyte(haveGds ? ASMRVU_READ : 0) };
         if (secondDelay)
             gcnAsm->delayedOps[2] = { output.size(),
                     gcnAsm->instrRVUs[delayRVU+1].regVar,
@@ -2436,7 +2437,8 @@ bool GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     gcnAsm->instrRVUs[delayRVU+1].rend,
                     1, haveGds ? GCNDELOP_GDSOP : GCNDELOP_LDSOP,
                     haveGds ? GCNDELOP_EXPORT : GCNDELOP_NONE,
-                    gcnAsm->instrRVUs[delayRVU+1].rwFlags };
+                    gcnAsm->instrRVUs[delayRVU+1].rwFlags,
+                    cxbyte(haveGds ? ASMRVU_READ : 0) };
     }
     if ((gcnInsn.mode & GCN_SRC_ADDR2) != 0)
         // register for DS_*_SRC2_* instructions

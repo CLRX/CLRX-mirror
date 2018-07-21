@@ -113,7 +113,8 @@ void GCNAsmUtils::prepareRVUAndWait(GCNAssembler* gcnAsm, GPUArchMask arch,
             gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend, 1,
                     GCNDELOP_VMOP, needExpWrite ? GCNDELOP_EXPVMWRITE : GCNDELOP_NONE,
-                    gcnAsm->instrRVUs[0].rwFlags };
+                    gcnAsm->instrRVUs[0].rwFlags,
+                    cxbyte(needExpWrite ? ASMRVU_READ : 0) };
             if (haveTfe)
                 gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[5].regVar,
                         gcnAsm->instrRVUs[5].rstart, gcnAsm->instrRVUs[5].rend, 1,
@@ -1050,10 +1051,12 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!haveLds)
             gcnAsm->delayedOps[0] = { output.size(), gcnAsm->instrRVUs[0].regVar,
                     gcnAsm->instrRVUs[0].rstart, gcnAsm->instrRVUs[0].rend,
-                    1, GCNDELOP_VMOP, secondDelOpType, gcnAsm->instrRVUs[0].rwFlags };
+                    1, GCNDELOP_VMOP, secondDelOpType, gcnAsm->instrRVUs[0].rwFlags,
+                    cxbyte(secondDelOpType!=GCNDELOP_NONE ?
+                            gcnAsm->instrRVUs[0].rwFlags : 0) };
         else
             gcnAsm->delayedOps[0] = { output.size(), nullptr, uint16_t(0), uint16_t(0),
-                        1, GCNDELOP_VMOP, secondDelOpType, cxbyte(0) };
+                        1, GCNDELOP_VMOP, secondDelOpType, cxbyte(0), cxbyte(0) };
         
         if (haveTfe && vdstReg && !haveLds)
             gcnAsm->delayedOps[1] = { output.size(), gcnAsm->instrRVUs[3].regVar,
@@ -1061,11 +1064,11 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     GCNDELOP_VMOP, GCNDELOP_NONE, gcnAsm->instrRVUs[3].rwFlags };
     }
     if ((gcnInsn.mode & GCN_FLAT_NODATA) == 0)
-    {
         gcnAsm->delayedOps[2] = { output.size(), gcnAsm->instrRVUs[2].regVar,
                 gcnAsm->instrRVUs[2].rstart, gcnAsm->instrRVUs[2].rend,
-                1, GCNDELOP_VMOP, secondDelOpType, gcnAsm->instrRVUs[2].rwFlags };
-    }
+                1, GCNDELOP_VMOP, secondDelOpType, gcnAsm->instrRVUs[2].rwFlags,
+                cxbyte(secondDelOpType!=GCNDELOP_NONE ?
+                            gcnAsm->instrRVUs[2].rwFlags : 0) };
     
     if (instOffsetExpr!=nullptr)
         instOffsetExpr->setTarget(AsmExprTarget(flatMode!=0 ?

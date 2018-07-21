@@ -606,7 +606,8 @@ struct AsmDelayedOp
     cxbyte count;
     cxbyte delayedOpType;
     cxbyte delayedOpType2;
-    cxbyte rwFlags;
+    cxbyte rwFlags:2;
+    cxbyte rwFlags2:2;
 };
 
 /// description of the WAIT instruction (for waiting for results)

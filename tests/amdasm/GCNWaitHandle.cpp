@@ -42,6 +42,7 @@ struct AsmDelayedOpData
     cxbyte delayedOpType;
     cxbyte delayedOpType2;
     cxbyte rwFlags;
+    cxbyte rwFlags2;
 };
 
 struct AsmWaitHandlerCase
@@ -412,41 +413,56 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 176U, nullptr, 256+1, 256+2, 1, GCNDELOP_GDSOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 184U, "bax", 0, 1, 1, GCNDELOP_GDSOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 192U, nullptr, 256+1, 256+2, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
-                ASMRVU_READ },
-            { 200U, "bax", 0, 1, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
+                ASMRVU_READ, ASMRVU_READ },
+            { 200U, "bax", 0, 1, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
             // read/write 64-bit
             { 208U, nullptr, 256+1, 256+3, 1, GCNDELOP_GDSOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 216U, "dbx", 5, 7, 1, GCNDELOP_GDSOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 224U, nullptr, 256+2, 256+4, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
-                ASMRVU_READ },
-            { 232U, "dbx", 6, 8, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
+                ASMRVU_READ, ASMRVU_READ },
+            { 232U, "dbx", 6, 8, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
             // read/write 128-bit
             { 240U, nullptr, 256+1, 256+5, 1, GCNDELOP_GDSOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 248U, "dbx", 3, 7, 1, GCNDELOP_GDSOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 256U, nullptr, 256+7, 256+11, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
-                ASMRVU_READ },
-            { 264U, "dbx", 2, 6, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
+                ASMRVU_READ, ASMRVU_READ },
+            { 264U, "dbx", 2, 6, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
             /* atomics 32-bit */
-            { 272U, "dcx", 3, 4, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
+            { 272U, "dcx", 3, 4, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
             { 280U, "dbx", 5, 6, 1, GCNDELOP_GDSOP, ASMDELOP_NONE, ASMRVU_WRITE },
-            { 280U, "dcx", 3, 4, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
+            { 280U, "dcx", 3, 4, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
             { 288U, nullptr, 0, 0, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, 0 },
             /* atomics 64-bit */
-            { 296U, "dcx", 5, 7, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
+            { 296U, "dcx", 5, 7, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
             { 304U, "dbx", 3, 5, 1, GCNDELOP_GDSOP, ASMDELOP_NONE, ASMRVU_WRITE },
-            { 304U, "dcx", 1, 3, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
+            { 304U, "dcx", 1, 3, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
             { 312U, nullptr, 0, 0, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, 0 },
             /* ds_cmpst_* */
-            { 320U, "dbx", 4, 5, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
-            { 320U, "dcx", 1, 2, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
-            { 328U, "dbx", 4, 6, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
-            { 328U, "dcx", 3, 5, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
+            { 320U, "dbx", 4, 5, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
+            { 320U, "dcx", 1, 2, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
+            { 328U, "dbx", 4, 6, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
+            { 328U, "dcx", 3, 5, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
             { 336U, "dcx", 5, 6, 1, GCNDELOP_GDSOP, ASMDELOP_NONE, ASMRVU_WRITE },
-            { 336U, "dbx", 4, 5, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
-            { 336U, "dcx", 1, 2, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
+            { 336U, "dbx", 4, 5, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
+            { 336U, "dcx", 1, 2, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
             { 344U, "dcx", 0, 2, 1, GCNDELOP_GDSOP, ASMDELOP_NONE, ASMRVU_WRITE },
-            { 344U, "dbx", 4, 6, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
-            { 344U, "dcx", 3, 5, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT, ASMRVU_READ },
+            { 344U, "dbx", 4, 6, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
+            { 344U, "dcx", 3, 5, 1, GCNDELOP_GDSOP, GCNDELOP_EXPORT,
+                ASMRVU_READ, ASMRVU_READ },
             /* DS_SWIZZLE */
             { 352U, nullptr, 256+4, 256+5, 1, GCNDELOP_LDSOP, ASMDELOP_NONE, ASMRVU_WRITE }
         }, true, ""
@@ -483,19 +499,25 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 16U, "dcx", 5, 8, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 24U, "dcx", 2, 6, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             // tbuffer_store_format_*
-            { 32U, "dbx", 7, 8, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
-            { 40U, "dbx", 2, 4, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
-            { 48U, "dbx", 5, 8, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
-            { 56U, "dbx", 2, 6, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 32U, "dbx", 7, 8, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
+            { 40U, "dbx", 2, 4, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
+            { 48U, "dbx", 5, 8, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
+            { 56U, "dbx", 2, 6, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             /* glc */
             { 64U, "dbx", 4, 5, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
-            { 72U, "dbx", 7, 8, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 72U, "dbx", 7, 8, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             /* tfe */
             { 80U, "dbx", 4, 5, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 80U, "dbx", 5, 6, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ|ASMRVU_WRITE },
             { 88U, "dbx", 2, 4, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 88U, "dbx", 4, 5, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ|ASMRVU_WRITE },
-            { 96U, "dbx", 2, 4, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 96U, "dbx", 2, 4, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             { 96U, "dbx", 4, 5, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ|ASMRVU_WRITE }
         }, true, ""
     },
@@ -580,60 +602,72 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 16U, "dcx", 5, 8, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 24U, "dcx", 2, 6, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             // tbuffer_store_format_*
-            { 32U, "dbx", 7, 8, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
-            { 40U, "dbx", 2, 4, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
-            { 48U, "dbx", 5, 8, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
-            { 56U, "dbx", 2, 6, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 32U, "dbx", 7, 8, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
+            { 40U, "dbx", 2, 4, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
+            { 48U, "dbx", 5, 8, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
+            { 56U, "dbx", 2, 6, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             /* glc */
             { 64U, "dbx", 4, 5, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
-            { 72U, "dbx", 7, 8, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 72U, "dbx", 7, 8, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             /* tfe */
             { 80U, "dbx", 4, 5, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 80U, "dbx", 5, 6, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ|ASMRVU_WRITE },
             { 88U, "dbx", 2, 4, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 88U, "dbx", 4, 5, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ|ASMRVU_WRITE },
-            { 96U, "dbx", 2, 4, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 96U, "dbx", 2, 4, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             { 96U, "dbx", 4, 5, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ|ASMRVU_WRITE },
             /* DWORD */
             { 104U, "dcx", 4, 5, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 112U, "dcx", 2, 4, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             /* LDS */
             { 120U, nullptr, 0, 0, 1, GCNDELOP_VMOP, ASMDELOP_NONE, 0 },
-            { 128U, nullptr, 0, 0, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, 0 },
+            { 128U, nullptr, 0, 0, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, 0, 0 },
             /* ATOMIC */
-            { 136U, "dbx", 6, 7, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 136U, "dbx", 6, 7, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             { 144U, "dbx", 6, 7, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
-                ASMRVU_READ|ASMRVU_WRITE },
+                ASMRVU_READ|ASMRVU_WRITE, ASMRVU_READ },
             /* CMPSWAP */
-            { 152U, "dbx", 0, 2, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 152U, "dbx", 0, 2, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             { 160U, "dbx", 0, 1, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
-                ASMRVU_READ|ASMRVU_WRITE },
+                ASMRVU_READ|ASMRVU_WRITE, ASMRVU_READ },
             { 160U, "dbx", 1, 2, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ },
             /* ATOMIC_X2 */
-            { 168U, "dbx", 4, 6, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 168U, "dbx", 4, 6, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             { 176U, "dbx", 4, 6, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
-                ASMRVU_READ|ASMRVU_WRITE },
+                ASMRVU_READ|ASMRVU_WRITE, ASMRVU_READ },
             /* CMPSWAP_X2 */
-            { 184U, "dbx", 1, 5, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 184U, "dbx", 1, 5, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             { 192U, "dbx", 1, 3, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
-                ASMRVU_READ|ASMRVU_WRITE },
+                ASMRVU_READ|ASMRVU_WRITE, ASMRVU_READ },
             { 192U, "dbx", 3, 5, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ },
             /* ATOMIC_X2 TFE */
-            { 200U, "dbx", 4, 6, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 200U, "dbx", 4, 6, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             { 200U, "dbx", 6, 7, 1, GCNDELOP_VMOP, ASMDELOP_NONE,
                 ASMRVU_READ|ASMRVU_WRITE },
             /* TODO: why dbx[4-6] ???: check */
             { 208U, "dbx", 4, 7, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
-                ASMRVU_READ|ASMRVU_WRITE },
+                ASMRVU_READ|ASMRVU_WRITE, ASMRVU_READ },
             // ????
             { 208U, "dbx", 6, 7, 1, GCNDELOP_VMOP, ASMDELOP_NONE,
                 ASMRVU_READ|ASMRVU_WRITE },
             /* CMPSWAP_X2 TFE */
-            { 216U, "dbx", 1, 5, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 216U, "dbx", 1, 5, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             { 216U, "dbx", 5, 6, 1, GCNDELOP_VMOP, ASMDELOP_NONE,
                 ASMRVU_READ|ASMRVU_WRITE },
             { 224U, "dbx", 1, 3, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
-                ASMRVU_READ|ASMRVU_WRITE },
+                ASMRVU_READ|ASMRVU_WRITE, ASMRVU_READ },
             { 224U, "dbx", 5, 6, 1, GCNDELOP_VMOP, ASMDELOP_NONE,
                 ASMRVU_READ|ASMRVU_WRITE },
             { 224U, "dbx", 3, 5, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ }
@@ -776,29 +810,34 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 0U, "dcx", 5, 6, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 8U, "dcx", 5, 8, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             // STORE
-            { 16U, "dbx", 4, 5, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
-            { 24U, "dbx", 3, 6, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 16U, "dbx", 4, 5, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
+            { 24U, "dbx", 3, 6, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             // LOAD TFE
             { 32U, "dcx", 4, 5, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 32U, "dcx", 5, 6, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ|ASMRVU_WRITE },
             { 40U, "dcx", 4, 7, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             { 40U, "dcx", 7, 8, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ|ASMRVU_WRITE },
             // ATOMIC
-            { 48U, "dbx", 1, 3, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 48U, "dbx", 1, 3, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             { 56U, "dbx", 1, 3, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
-                ASMRVU_READ|ASMRVU_WRITE },
+                ASMRVU_READ|ASMRVU_WRITE, ASMRVU_READ },
             // ATOMIC CMPSWAP
-            { 64U, "dbx", 1, 3, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 64U, "dbx", 1, 3, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             { 72U, "dbx", 1, 2, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
-                ASMRVU_READ|ASMRVU_WRITE },
+                ASMRVU_READ|ASMRVU_WRITE, ASMRVU_READ },
             { 72U, "dbx", 2, 3, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ },
             // IMAGE_GET_LOD
             { 80U, "dbx", 3, 4, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_WRITE },
             // ATOMIC TFE
-            { 88U, "dbx", 1, 3, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE, ASMRVU_READ },
+            { 88U, "dbx", 1, 3, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
+                ASMRVU_READ, ASMRVU_READ },
             { 88U, "dbx", 3, 4, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ|ASMRVU_WRITE },
             { 96U, "dbx", 1, 4, 1, GCNDELOP_VMOP, GCNDELOP_EXPVMWRITE,
-                ASMRVU_READ|ASMRVU_WRITE },
+                ASMRVU_READ|ASMRVU_WRITE, ASMRVU_READ },
             { 96U, "dbx", 3, 4, 1, GCNDELOP_VMOP, ASMDELOP_NONE, ASMRVU_READ|ASMRVU_WRITE }
         }, true, ""
     },
@@ -903,39 +942,61 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
         { },
         {
             // FLAT_LOAD
-            { 0U, "dbx", 6, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_WRITE },
-            { 8U, "dbx", 6, 8, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_WRITE },
-            { 16U, "dbx", 5, 8, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_WRITE },
-            { 24U, "dbx", 3, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_WRITE },
+            { 0U, "dbx", 6, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_WRITE, ASMRVU_WRITE },
+            { 8U, "dbx", 6, 8, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_WRITE, ASMRVU_WRITE },
+            { 16U, "dbx", 5, 8, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_WRITE, ASMRVU_WRITE },
+            { 24U, "dbx", 3, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_WRITE, ASMRVU_WRITE },
             // FLAT_STORE
-            { 32U, "dcx", 6, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ },
-            { 40U, "dcx", 2, 4, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ },
-            { 48U, "dcx", 2, 5, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ },
-            { 56U, "dcx", 4, 8, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ },
+            { 32U, "dcx", 6, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ },
+            { 40U, "dcx", 2, 4, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ },
+            { 48U, "dcx", 2, 5, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ },
+            { 56U, "dcx", 4, 8, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ },
             // GLC
-            { 64U, "dbx", 3, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_WRITE },
-            { 72U, "dcx", 2, 5, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ },
+            { 64U, "dbx", 3, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_WRITE, ASMRVU_WRITE },
+            { 72U, "dcx", 2, 5, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ },
             // TFE
-            { 80U, "dbx", 3, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_WRITE },
+            { 80U, "dbx", 3, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_WRITE, ASMRVU_WRITE },
             { 80U, "dbx", 7, 8, 1, GCNDELOP_VMOP, ASMDELOP_NONE,
                 ASMRVU_READ|ASMRVU_WRITE },
-            { 88U, "dbx", 0, 3, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ },
+            { 88U, "dbx", 0, 3, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ },
             // ATOMIC
-            { 96U, "dcx", 1, 2, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ },
+            { 96U, "dcx", 1, 2, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ },
             // ATOMIC_X2
-            { 104U, "dcx", 1, 3, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ },
-            { 112U, "dcx", 1, 5, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ },
+            { 104U, "dcx", 1, 3, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ },
+            { 112U, "dcx", 1, 5, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ },
             // ATOMIC GLC
-            { 120U, "dbx", 6, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_WRITE },
-            { 120U, "dcx", 1, 2, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ },
-            { 128U, "dbx", 6, 8, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_WRITE },
-            { 128U, "dcx", 1, 5, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ },
+            { 120U, "dbx", 6, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_WRITE, ASMRVU_WRITE },
+            { 120U, "dcx", 1, 2, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ },
+            { 128U, "dbx", 6, 8, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_WRITE, ASMRVU_WRITE },
+            { 128U, "dcx", 1, 5, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ },
             // ATOMIC TFE
-            { 136U, "dcx", 1, 2, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ },
-            { 144U, "dbx", 6, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_WRITE },
+            { 136U, "dcx", 1, 2, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ },
+            { 144U, "dbx", 6, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_WRITE, ASMRVU_WRITE },
             { 144U, "dbx", 7, 8, 1, GCNDELOP_VMOP, ASMDELOP_NONE,
                 ASMRVU_READ|ASMRVU_WRITE },
-            { 144U, "dcx", 1, 2, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_READ }
+            { 144U, "dcx", 1, 2, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_READ, ASMRVU_READ }
         }, true, ""
     },
     {   /* 18 - FLAT encoding (GCN 1.4, GFX9) */
@@ -953,7 +1014,8 @@ aa0:        s_add_u32 bax, dcx[1], dcx[2]
             { 8U, nullptr, 0, 0, 1, GCNDELOP_VMOP, ASMDELOP_NONE, 0 },
             { 16U, nullptr, 0, 0, 1, GCNDELOP_VMOP, ASMDELOP_NONE, 0 },
             { 24U, nullptr, 0, 0, 1, GCNDELOP_VMOP, ASMDELOP_NONE, 0 },
-            { 32U, "dbx", 3, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP, ASMRVU_WRITE },
+            { 32U, "dbx", 3, 7, 1, GCNDELOP_VMOP, GCNDELOP_LDSOP,
+                ASMRVU_WRITE, ASMRVU_WRITE },
         }, true, ""
     }
 };
@@ -1059,6 +1121,8 @@ static void testWaitHandlerCase(cxuint i, const AsmWaitHandlerCase& testCase)
                         cxuint(delayedOp.delayedOpType2));
             assertValue("testWaitHandle", doStr+".rwFlags",
                         cxuint(expDelayedOp.rwFlags), cxuint(delayedOp.rwFlags));
+            assertValue("testWaitHandle", doStr+".rwFlags2",
+                        cxuint(expDelayedOp.rwFlags2), cxuint(delayedOp.rwFlags2));
         }
     }
     assertTrue("testWaitHandle", testCaseName+".wlength",

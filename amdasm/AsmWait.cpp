@@ -543,7 +543,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                         {
                             const AsmDelayedOpTypeEntry& delOpEntry2 =
                                     waitConfig.delayOpTypes[delayedOp.delayedOpType2];
-                            if ((delayedOp.rwFlags & ASMRVU_READ) != 0 &&
+                            if ((delayedOp.rwFlags2 & ASMRVU_READ) != 0 &&
                                     delOpEntry2.finishOnRegReadOut)
                             {
                                 const uint16_t qreg = qregVal(rreg, false);
@@ -552,7 +552,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                                 else
                                     wblock.queues[queue2Idx].pushRandom(qreg);
                             }
-                            if ((delayedOp.rwFlags & ASMRVU_WRITE) != 0)
+                            if ((delayedOp.rwFlags2 & ASMRVU_WRITE) != 0)
                             {
                                 const uint16_t qreg = qregVal(rreg, true);
                                 if (delOpEntry2.ordered)
