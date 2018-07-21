@@ -209,7 +209,7 @@ struct CLRX_INTERNAL QueueState1
         firstFlush = false;
         if (size == 0)
             random.regs.clear(); // clear randomly ordered if must be empty
-        while (size > ordered.size())
+        while (size < ordered.size())
         {
             for (auto e: ordered.front().regs)
             {
