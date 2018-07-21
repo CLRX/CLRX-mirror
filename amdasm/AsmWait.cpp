@@ -23,6 +23,8 @@
 #include <utility>
 #include <algorithm>
 #include <deque>
+#include <unordered_set>
+#include <unordered_map>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/amdasm/Assembler.h>
@@ -300,6 +302,13 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
     std::unordered_map<size_t, size_t> readRegs;
     // key - reg, value - offset in codeblock
     std::unordered_map<size_t, size_t> writeRegs;
+    
+    WaitFlowStackEntry0(size_t _blockIndex, size_t _nextIndex,
+                        const AsmWaitConfig& waitConfig)
+            : blockIndex(_blockIndex), nextIndex(_nextIndex)
+    {
+        setMaxQueueSizes(waitConfig);
+    }
     
     void setMaxQueueSizes(const AsmWaitConfig& waitConfig)
     {
@@ -651,6 +660,54 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                 break;
             isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
             instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
+        }
+    }
+    
+    /// join queue state together and add a missing wait instructions
+    std::deque<WaitFlowStackEntry0> flowStack;
+    std::vector<bool> visited(codeBlocks.size(), false);
+    
+    flowStack.push_back(WaitFlowStackEntry0(0, 0, waitConfig));
+    
+    while (!flowStack.empty())
+    {
+        WaitFlowStackEntry0& entry = flowStack.back();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        if (entry.nextIndex == 0)
+        {
+            // process current block
+            if (!visited[entry.blockIndex])
+            {
+                visited[entry.blockIndex] = true;
+            }
+            else
+            {
+                // back, already visited
+                flowStack.pop_back();
+            }
+        }
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            size_t nextBlock = cblock.nexts[entry.nextIndex].block;
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            if (entry.nextIndex!=0) // if back from calls (just return from calls)
+            {
+                
+            
+            }
+            flowStack.push_back(WaitFlowStackEntry0(entry.blockIndex+1, 0, waitConfig));
+            entry.nextIndex++;
+        }
+        else // back
+        {
+            // revert lastSSAIdMap
+            flowStack.pop_back();
         }
     }
 }
