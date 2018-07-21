@@ -70,7 +70,7 @@ ISAWaitHandler::ReadPos ISAWaitHandler::findPositionByOffset(size_t offset) cons
 /* AsmWaitScheduler */
 
 // QReg - queue register - contain - reg index and access type (read or write)
-static inline uint16_t qreg(uint16_t reg, bool write)
+static inline uint16_t qregVal(uint16_t reg, bool write)
 { return reg | (write ? 0x8000 : 0); }
 
 static inline bool qregWrite(uint16_t qreg)
@@ -493,10 +493,93 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             {
                 // process wait instr
                 if (isWaitInstr)
+                {
                     wblock.waitInstrs.push_back(waitInstr);
+                    for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
+                        wblock.queues[w].flushTo(waitInstr.waits[w]);
+                }
                 else
                 {
                     // delayed op
+                    const AsmDelayedOpTypeEntry& delOpEntry = waitConfig.delayOpTypes[
+                                    delayedOp.delayedOpType];
+                    const cxuint queue1Idx = delOpEntry.waitType;
+                    const cxuint queue2Idx = delayedOp.delayedOpType!=ASMDELOP_NONE ?
+                            waitConfig.delayOpTypes[delayedOp.delayedOpType].waitType :
+                            UINT_MAX;
+                    // next entry
+                    wblock.queues[queue1Idx].nextEntry();
+                    if (queue2Idx != UINT_MAX)
+                        wblock.queues[queue2Idx].nextEntry();
+                    cxuint rcount = 0, rcount2 = 0;
+                    
+                    for (uint16_t rindex = delayedOp.rstart;
+                                        rindex < delayedOp.rend; rindex++)
+                    {
+                        AsmSingleVReg svreg{ delayedOp.regVar, rindex };
+                        const size_t ssaIdIdx = ssaIdIdxMap.find(svreg)->second;
+                        const cxuint rreg = getRRegFromSVReg(svreg, ssaIdIdx, cblock,
+                                vregIndexMaps, graphColorMaps, regTypesNum, regRanges);
+                        
+                        if ((delayedOp.rwFlags & ASMRVU_READ) != 0 &&
+                                    delOpEntry.finishOnRegReadOut)
+                        {
+                            const uint16_t qreg = qregVal(rreg, false);
+                            if (delOpEntry.ordered)
+                                wblock.queues[queue1Idx].pushOrdered(qreg);
+                            else
+                                wblock.queues[queue1Idx].pushRandom(qreg);
+                        }
+                        if ((delayedOp.rwFlags & ASMRVU_WRITE) != 0)
+                        {
+                            const uint16_t qreg = qregVal(rreg, true);
+                            if (delOpEntry.ordered)
+                                wblock.queues[queue1Idx].pushOrdered(qreg);
+                            else
+                                wblock.queues[queue1Idx].pushRandom(qreg);
+                        }
+                        // if queue2
+                        if (queue2Idx != UINT_MAX)
+                        {
+                            const AsmDelayedOpTypeEntry& delOpEntry2 =
+                                    waitConfig.delayOpTypes[delayedOp.delayedOpType2];
+                            if ((delayedOp.rwFlags & ASMRVU_READ) != 0 &&
+                                    delOpEntry2.finishOnRegReadOut)
+                            {
+                                const uint16_t qreg = qregVal(rreg, false);
+                                if (delOpEntry2.ordered)
+                                    wblock.queues[queue2Idx].pushOrdered(qreg);
+                                else
+                                    wblock.queues[queue2Idx].pushRandom(qreg);
+                            }
+                            if ((delayedOp.rwFlags & ASMRVU_WRITE) != 0)
+                            {
+                                const uint16_t qreg = qregVal(rreg, true);
+                                if (delOpEntry2.ordered)
+                                    wblock.queues[queue2Idx].pushOrdered(qreg);
+                                else
+                                    wblock.queues[queue2Idx].pushRandom(qreg);
+                            }
+                            // do next queue entry if registered per element
+                            rcount2 += 4;
+                            if (delOpEntry2.counting!=255 &&
+                                delOpEntry2.counting <= rcount)
+                            {
+                                // new entry
+                                wblock.queues[queue2Idx].nextEntry();
+                                rcount2 = 0;
+                            }
+                        }
+                        
+                        // do next queue entry if registered per element
+                        rcount += 4;
+                        if (delOpEntry.counting!=255 && delOpEntry.counting <= rcount)
+                        {
+                            // new entry
+                            wblock.queues[queue1Idx].nextEntry();
+                            rcount = 0;
+                        }
+                    }
                 }
                 // get next instr
                 if (!waitHandler.hasNext(waitPos))
