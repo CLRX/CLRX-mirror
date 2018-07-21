@@ -364,6 +364,28 @@ static void getVIdx(const AsmSingleVReg& svreg, size_t ssaIdIdx,
     vidx = vidxes[ssaId];
 }
 
+static cxuint getRRegFromSVReg(const AsmSingleVReg& svreg, size_t outSSAIdIdx,
+        const CodeBlock& cblock, const VarIndexMap* vregIndexMaps,
+        const Array<cxuint>* graphColorMaps, size_t regTypesNum, const cxuint* regRanges)
+{
+    cxuint rreg = svreg.index;
+    
+    if (svreg.regVar != nullptr)
+    {
+        // if regvar, get vidx and get from vidx register index
+        // get real register index
+        const SSAInfo& ssaInfo = binaryMapFind(cblock.ssaInfoMap.begin(),
+                cblock.ssaInfoMap.end(), svreg)->second;
+        cxuint regType;
+        size_t vidx;
+        getVIdx(svreg, outSSAIdIdx, ssaInfo, vregIndexMaps,
+                regTypesNum, regRanges, regType, vidx);
+        rreg = regRanges[2*regType] + graphColorMaps[regType][vidx];
+    }
+    
+    return rreg;
+}
+
 AsmWaitScheduler::AsmWaitScheduler(const AsmWaitConfig& _asmWaitConfig,
         Assembler& _assembler, const std::vector<CodeBlock>& _codeBlocks,
         const VarIndexMap* _vregIndexMaps, const Array<cxuint>* _graphColorMaps,
@@ -401,73 +423,92 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         
         std::unordered_map<size_t, size_t> readRegs;
         std::unordered_map<size_t, size_t> writeRegs;
-        while (usageHandler.hasNext(usagePos))
-        {
-            const AsmRegVarUsage rvu = usageHandler.nextUsage(usagePos);
-            if (rvu.offset >= cblock.end)
-                break;
-            
-            for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
-            {
-                cxuint rreg = rindex;
-                
-                if (rvu.regVar != nullptr)
-                {
-                    // if regvar, get vidx and get from vidx register index
-                    AsmSingleVReg svreg{ rvu.regVar, rindex };
-                    size_t outSSAIdIdx = 0;
-                    if (checkWriteWithSSA(rvu))
-                    {
-                        size_t& ssaIdIdx = ssaIdIdxMap[svreg];
-                        if (svreg.regVar != nullptr)
-                            ssaIdIdx++;
-                        outSSAIdIdx = ssaIdIdx;
-                        svregWriteOffsets.insert({ svreg, rvu.offset });
-                    }
-                    else // insert zero
-                    {
-                        outSSAIdIdx = 0;
-                        auto svrres = ssaIdIdxMap.insert({ svreg, 0 });
-                        outSSAIdIdx = svrres.first->second;
-                        auto swit = svregWriteOffsets.find(svreg);
-                        if (swit != svregWriteOffsets.end() &&
-                            swit->second == rvu.offset)
-                            outSSAIdIdx--; // before this write
-                    }
-                    
-                    // get real register index
-                    const SSAInfo& ssaInfo = binaryMapFind(cblock.ssaInfoMap.begin(),
-                            cblock.ssaInfoMap.end(), svreg)->second;
-                    cxuint regType;
-                    size_t vidx;
-                    getVIdx(svreg, outSSAIdIdx, ssaInfo, vregIndexMaps,
-                            regTypesNum, regRanges, regType, vidx);
-                    rreg = regRanges[2*regType] + graphColorMaps[regType][vidx];
-                }
-                
-                // put to readRegs and writeRegs
-                if ((rvu.rwFlags & ASMRVU_READ) != 0)
-                    readRegs.insert({ rreg, rvu.offset });
-                if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
-                    writeRegs.insert({ rreg, rvu.offset });
-            }
-            
-            // copy to wblock as array
-            wblock.readRegs.resize(readRegs.size());
-            wblock.writeRegs.resize(writeRegs.size());
-            std::copy(readRegs.begin(), readRegs.end(), wblock.readRegs.begin());
-            std::copy(writeRegs.begin(), writeRegs.end(), wblock.writeRegs.begin());
-            mapSort(wblock.readRegs.begin(), wblock.readRegs.end());
-            mapSort(wblock.writeRegs.begin(), wblock.writeRegs.end());
-        }
-        
         // process waits and delayed ops
         AsmWaitInstr waitInstr;
         AsmDelayedOp delayedOp;
-        if (!waitHandler.hasNext(waitPos))
-            continue;
-        bool isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
-        size_t instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
+        size_t instrOffset = SIZE_MAX;
+        bool isWaitInstr = false;
+        if (waitHandler.hasNext(waitPos))
+        {
+            isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
+            instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
+        }
+        
+        while (usageHandler.hasNext(usagePos))
+        {
+            const AsmRegVarUsage rvu = usageHandler.nextUsage(usagePos);
+            if (rvu.offset >= cblock.end && instrOffset >= cblock.end)
+                break;
+            
+            if (rvu.offset < cblock.end && rvu.offset <= instrOffset)
+            {
+                // process RegVar usage
+                for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
+                {
+                    AsmSingleVReg svreg{ rvu.regVar, rindex };
+                    
+                    size_t outSSAIdIdx = 0;
+                    if (rvu.regVar != nullptr)
+                    {
+                        // if regvar, get vidx and get from vidx register index
+                        if (checkWriteWithSSA(rvu))
+                        {
+                            size_t& ssaIdIdx = ssaIdIdxMap[svreg];
+                            if (svreg.regVar != nullptr)
+                                ssaIdIdx++;
+                            outSSAIdIdx = ssaIdIdx;
+                            svregWriteOffsets.insert({ svreg, rvu.offset });
+                        }
+                        else // insert zero
+                        {
+                            outSSAIdIdx = 0;
+                            auto svrres = ssaIdIdxMap.insert({ svreg, 0 });
+                            outSSAIdIdx = svrres.first->second;
+                            auto swit = svregWriteOffsets.find(svreg);
+                            if (swit != svregWriteOffsets.end() &&
+                                swit->second == rvu.offset)
+                                outSSAIdIdx--; // before this write
+                        }
+                    }
+                    const cxuint rreg = getRRegFromSVReg(svreg, outSSAIdIdx, cblock,
+                                vregIndexMaps, graphColorMaps, regTypesNum, regRanges);
+                    
+                    // put to readRegs and writeRegs
+                    if ((rvu.rwFlags & ASMRVU_READ) != 0)
+                        readRegs.insert({ rreg, rvu.offset });
+                    if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
+                        writeRegs.insert({ rreg, rvu.offset });
+                }
+            
+                // copy to wblock as array
+                wblock.readRegs.resize(readRegs.size());
+                wblock.writeRegs.resize(writeRegs.size());
+                std::copy(readRegs.begin(), readRegs.end(), wblock.readRegs.begin());
+                std::copy(writeRegs.begin(), writeRegs.end(), wblock.writeRegs.begin());
+                mapSort(wblock.readRegs.begin(), wblock.readRegs.end());
+                mapSort(wblock.writeRegs.begin(), wblock.writeRegs.end());
+            }
+            
+            if (instrOffset < cblock.end && rvu.offset >= instrOffset)
+            {
+                // process wait instr
+                if (isWaitInstr)
+                    wblock.waitInstrs.push_back(waitInstr);
+                else
+                {
+                    // delayed op
+                }
+                // get next instr
+                if (!waitHandler.hasNext(waitPos))
+                    instrOffset = SIZE_MAX;
+                else
+                {
+                    isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
+                    instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
+                }
+            }
+        }
+        
         // skip instrs between codeblock
         while (instrOffset < cblock.start)
         {
