@@ -141,10 +141,11 @@ struct CLRX_INTERNAL QueueState1
     cxuint requestedQueueSize;
     bool firstFlush;
     bool reallyFlushed; // if really already flushed (queue size has been shrinked)
+    size_t reallyFlushOffset;
     
     QueueState1(cxuint _maxQueueSize = 0) : maxQueueSize(_maxQueueSize),
                 orderedStartPos(0), requestedQueueSize(0), firstFlush(true),
-                reallyFlushed(false)
+                reallyFlushed(false), reallyFlushOffset(SIZE_MAX)
     { }
     
     void setMaxQueueSize(cxuint _maxQueueSize)
@@ -198,10 +199,12 @@ struct CLRX_INTERNAL QueueState1
         }
         requestedQueueSize = std::min(requestedQueueSize+1, maxQueueSize);
     }
-    void flushTo(cxuint size)
+    void flushTo(cxuint size, size_t _reallyFlushOffset)
     {
         if (firstFlush && requestedQueueSize < size)
         {
+            if (_reallyFlushOffset != SIZE_MAX)
+                reallyFlushOffset = _reallyFlushOffset;
             // if higher than queue size and higher than requested queue size
             requestedQueueSize = size;
             firstFlush = false;
@@ -275,7 +278,7 @@ struct CLRX_INTERNAL QueueState1
         else
         {
             if (next.requestedQueueSize != ordered.size())
-                flushTo(next.requestedQueueSize - ordered.size());
+                flushTo(next.requestedQueueSize - ordered.size(), SIZE_MAX);
             size_t orderedSize = ordered.size();
             ordered.insert(ordered.end(), next.ordered.begin(), next.ordered.end());
             // update regPlaces after pushing to front
@@ -531,7 +534,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                     // generate wait instr
                     wblock.waitInstrs.push_back(gwaitInstr);
                     for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                        wblock.queues[w].flushTo(gwaitInstr.waits[w]);
+                        wblock.queues[w].flushTo(gwaitInstr.waits[w], gwaitInstr.offset);
                 }
                 
                 // copy to wblock as array
@@ -558,13 +561,15 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                                     waitInstr.waits[w]);
                         wblock.waitInstrs.push_back(gwaitInstr);
                         for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                            wblock.queues[w].flushTo(gwaitInstr.waits[w]);
+                            wblock.queues[w].flushTo(gwaitInstr.waits[w],
+                                                     gwaitInstr.offset);
                     }
                     else
                     {
                         wblock.waitInstrs.push_back(waitInstr);
                         for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                            wblock.queues[w].flushTo(waitInstr.waits[w]);
+                            wblock.queues[w].flushTo(waitInstr.waits[w],
+                                                     waitInstr.offset);
                     }
                 }
                 else
@@ -715,8 +720,6 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         {
             if (entry.nextIndex!=0) // if back from calls (just return from calls)
             {
-                
-            
             }
             flowStack.push_back(WaitFlowStackEntry0(entry.blockIndex+1, 0, waitConfig));
             entry.nextIndex++;
