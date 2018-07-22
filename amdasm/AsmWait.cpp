@@ -79,7 +79,7 @@ static inline bool qregWrite(uint16_t qreg)
 { return (qreg & 0x8000)!=0; }
 
 static inline uint16_t qregReg(uint16_t qreg)
-{ return qreg & 0x7ffff; }
+{ return qreg & 0x7fff; }
 
 namespace CLRX
 {
@@ -494,19 +494,36 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                         writeRegs.insert({ rreg, rvu.offset });
                     
                     // rreg
-                    for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
-                    {
-                        uint16_t waitCnt = wblock.queues[q].findMinQueueSizeForReg(rreg);
-                        if (waitCnt != UINT16_MAX)
+                    if ((rvu.rwFlags & ASMRVU_READ) != 0)
+                        for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
                         {
-                            if (!onlyWarnings)
+                            uint16_t waitCnt = wblock.queues[q]
+                                .findMinQueueSizeForReg(qregVal(rreg, false));
+                            if (waitCnt != UINT16_MAX)
                             {
-                                gwaitInstr.waits[q] =
-                                        std::min(gwaitInstr.waits[q], waitCnt);
-                                genWaitCnt = true;
+                                if (!onlyWarnings)
+                                {
+                                    gwaitInstr.waits[q] =
+                                            std::min(gwaitInstr.waits[q], waitCnt);
+                                    genWaitCnt = true;
+                                }
                             }
                         }
-                    }
+                    if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
+                        for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                        {
+                            uint16_t waitCnt = wblock.queues[q]
+                                .findMinQueueSizeForReg(qregVal(rreg, true));
+                            if (waitCnt != UINT16_MAX)
+                            {
+                                if (!onlyWarnings)
+                                {
+                                    gwaitInstr.waits[q] =
+                                            std::min(gwaitInstr.waits[q], waitCnt);
+                                    genWaitCnt = true;
+                                }
+                            }
+                        }
                 }
                 
                 if (genWaitCnt && rvu.offset != instrOffset)
