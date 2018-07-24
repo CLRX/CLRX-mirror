@@ -274,7 +274,7 @@ struct CLRX_INTERNAL QueueState1
         requestedQueueSize = std::max(requestedQueueSize, way.requestedQueueSize);
     }
     
-    void joinPrev(const QueueState1& prev)
+    bool joinPrev(const QueueState1& prev)
     {
         if (!reallyFlushed)
         {
@@ -294,7 +294,7 @@ struct CLRX_INTERNAL QueueState1
             }
             
             if (orderedSizeBeforeJoin+prev.ordered.size() <= ordered.size())
-                return; // no to join
+                return true; // no to join
             
             cxuint prevOrdSize0 = prev.ordered.size() - skipLastPrev;
             const cxuint prevOrderedSize = (curReqQueueSize!=prevOrdSize0 ?
@@ -325,7 +325,9 @@ struct CLRX_INTERNAL QueueState1
             
             if (orderedSizeBeforeJoin == UINT_MAX)
                 orderedSizeBeforeJoin = ordered.size();
+            return true;
         }
+        return false;
     }
 };
 
@@ -335,34 +337,6 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
     size_t nextIndex;
     bool isCall;
     bool haveReturn;
-    
-    QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
-    // key - reg, value - offset in codeblock
-    std::unordered_map<size_t, size_t> readRegs;
-    // key - reg, value - offset in codeblock
-    std::unordered_map<size_t, size_t> writeRegs;
-    
-    WaitFlowStackEntry0(size_t _blockIndex, size_t _nextIndex,
-                        const AsmWaitConfig& waitConfig)
-            : blockIndex(_blockIndex), nextIndex(_nextIndex)
-    {
-        setMaxQueueSizes(waitConfig);
-    }
-    
-    WaitFlowStackEntry0(size_t _blockIndex, size_t _nextIndex,
-                        const WaitFlowStackEntry0& prev,
-                        const AsmWaitConfig& waitConfig)
-            : blockIndex(_blockIndex), nextIndex(_nextIndex)
-    {
-        setMaxQueueSizes(waitConfig);
-        std::copy(prev.queues, prev.queues + waitConfig.waitQueuesNum, queues);
-    }
-    
-    void setMaxQueueSizes(const AsmWaitConfig& waitConfig)
-    {
-        for (cxuint i = 0; i < waitConfig.waitQueuesNum; i++)
-            queues[i].setMaxQueueSize(waitConfig.waitQueueSizes[i]);
-    }
 };
 
 struct CLRX_INTERNAL WCodeBlock
@@ -734,38 +708,38 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     std::deque<WaitFlowStackEntry0> flowStack;
     std::vector<bool> visited(codeBlocks.size(), false);
     
-    flowStack.push_back(WaitFlowStackEntry0(0, 0, waitConfig));
+    flowStack.push_back({ 0, 0 });
     
     while (!flowStack.empty())
     {
         WaitFlowStackEntry0& entry = flowStack.back();
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
-        const WCodeBlock& wblock = waitCodeBlocks[entry.blockIndex];
+        WCodeBlock& wblock = waitCodeBlocks[entry.blockIndex];
         if (entry.nextIndex == 0)
         {
             // process current block
-            if (!visited[entry.blockIndex])
+            if (flowStack.size() > 1)
             {
-                visited[entry.blockIndex] = true;
-                /*for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
-                    entry.queues[q].joinNext(wblock.queues[q]);*/
-                
-                // update entry.rege
-                for (const auto& rege: wblock.readRegs)
-                    entry.readRegs[rege.first] = rege.second;
-                for (const auto& rege: wblock.writeRegs)
-                    entry.writeRegs[rege.first] = rege.second;
+                auto flit = flowStack.end();
+                flit -= 2;
+                bool changed = false;
+                for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                    changed |= wblock.queues[q].joinPrev(
+                        waitCodeBlocks[flit->blockIndex].queues[q]);
+                if (!changed && visited[entry.blockIndex])
+                {
+                    flowStack.pop_back();
+                    continue;
+                }   
             }
-            else
-            {
-                // back, already visited
-                flowStack.pop_back();
-            }
+            visited[entry.blockIndex] = true;
         }
         
         if (entry.nextIndex < cblock.nexts.size())
         {
             size_t nextBlock = cblock.nexts[entry.nextIndex].block;
+            bool isCall = cblock.nexts[entry.nextIndex].isCall;
+            flowStack.push_back({ nextBlock, 0,  isCall });
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
                 // if have any call then go to next block
@@ -775,8 +749,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             if (entry.nextIndex!=0) // if back from calls (just return from calls)
             {
             }
-            flowStack.push_back(WaitFlowStackEntry0(entry.blockIndex+1, 0,
-                                    entry, waitConfig));
+            flowStack.push_back({ entry.blockIndex+1, 0 });
             entry.nextIndex++;
         }
         else // back
