@@ -139,14 +139,16 @@ struct CLRX_INTERNAL QueueState1
     // request queue size at start of block (by enqueuing and waiting/flushing)
     // used while joining with previous block
     cxuint requestedQueueSize;
+    cxuint requestedQueueSizeBeforeJoin;
     cxuint orderedSizeBeforeJoin; // used while joining next way with next block
     bool firstFlush;
     bool reallyFlushed; // if really already flushed (queue size has been shrinked)
     size_t reallyFlushOffset;
     
     QueueState1(cxuint _maxQueueSize = 0) : maxQueueSize(_maxQueueSize),
-                orderedStartPos(0), requestedQueueSize(0), firstFlush(true),
-                reallyFlushed(false), reallyFlushOffset(SIZE_MAX)
+                orderedStartPos(0), requestedQueueSize(0),
+                requestedQueueSizeBeforeJoin(UINT_MAX), orderedSizeBeforeJoin(UINT_MAX),
+                firstFlush(true), reallyFlushed(false), reallyFlushOffset(SIZE_MAX)
     { }
     
     void setMaxQueueSize(cxuint _maxQueueSize)
@@ -276,10 +278,30 @@ struct CLRX_INTERNAL QueueState1
     {
         if (!reallyFlushed)
         {
-            const cxuint prevOrderedSize = (requestedQueueSize!=prev.ordered.size() ?
-                    requestedQueueSize-prev.ordered.size() : ordered.size());
-            ordered.insert(ordered.begin(), prev.ordered.end() - prevOrderedSize,
-                           prev.ordered.end());
+            const cxuint skipLastPrev = (orderedSizeBeforeJoin != UINT_MAX ?
+                    ordered.size() - orderedSizeBeforeJoin : 0);
+            cxuint curReqQueueSize = requestedQueueSize;
+            if (skipLastPrev != 0)
+            {   // join with
+                uint16_t qpos = orderedStartPos;
+                auto oitx2 = ordered.begin();
+                if (prev.ordered.size() < skipLastPrev)
+                    oitx2 += skipLastPrev - prev.ordered.size();
+                for (auto oitx = prev.ordered.end()-skipLastPrev;
+                     oitx!=prev.ordered.end(); ++oitx, ++qpos, ++oitx2)
+                     oitx2->joinWithRegPlaces(*oitx, orderedStartPos, qpos, regPlaces);
+                curReqQueueSize = requestedQueueSizeBeforeJoin;
+            }
+            
+            if (orderedSizeBeforeJoin+prev.ordered.size() <= ordered.size())
+                return; // no to join
+            
+            cxuint prevOrdSize0 = prev.ordered.size() - skipLastPrev;
+            const cxuint prevOrderedSize = (curReqQueueSize!=prevOrdSize0 ?
+                    requestedQueueSize-prevOrdSize0 : ordered.size());
+            ordered.insert(ordered.begin(),
+                           prev.ordered.end()-prevOrderedSize-skipLastPrev,
+                           prev.ordered.end()-skipLastPrev);
             orderedStartPos -= prevOrderedSize;
             uint16_t qpos = orderedStartPos;
             auto oitend = ordered.begin() + prevOrderedSize;
@@ -300,6 +322,9 @@ struct CLRX_INTERNAL QueueState1
             }
             random.join(prev.random);
             requestedQueueSize = ordered.size();
+            
+            if (orderedSizeBeforeJoin == UINT_MAX)
+                orderedSizeBeforeJoin = ordered.size();
         }
     }
 };
