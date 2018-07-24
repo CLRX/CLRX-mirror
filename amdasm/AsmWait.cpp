@@ -278,6 +278,11 @@ struct CLRX_INTERNAL QueueState1
     {
         if (!reallyFlushed)
         {
+            if (!prev.random.empty() && !prev.ordered.empty() &&
+                prev.requestedQueueSize == 0)
+                // no change
+                return false;
+            
             const cxuint skipLastPrev = (orderedSizeBeforeJoin != UINT_MAX ?
                     ordered.size() - orderedSizeBeforeJoin : 0);
             cxuint curReqQueueSize = requestedQueueSize;
@@ -704,10 +709,70 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         }
     }
     
-    /// join queue state together and add a missing wait instructions
-    std::deque<WaitFlowStackEntry0> flowStack;
     std::vector<bool> visited(codeBlocks.size(), false);
+    std::unordered_map<size_t, size_t> visitedCount;
+    std::unordered_map<size_t, VectorSet<cxuint> > loopWays;
+    std::deque<WaitFlowStackEntry0> flowStack;
+    std::unordered_set<size_t> flowStackBlocks;
+    flowStackBlocks.insert(size_t(0));
     
+    flowStack.push_back({ 0, 0 });
+    /// find multiply visited points to schedule
+    while (!flowStack.empty())
+    {
+        WaitFlowStackEntry0& entry = flowStack.back();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        if (entry.nextIndex == 0)
+        {
+            if (!visited[entry.blockIndex])
+            {
+                visited[entry.blockIndex] = true;
+                flowStackBlocks.insert(entry.blockIndex);
+            }
+            else
+            {
+                if (flowStackBlocks.find(entry.blockIndex) != flowStackBlocks.end())
+                {
+                    // if loop
+                    auto flit = flowStack.end();
+                    flit -= 2;
+                    loopWays[flit->blockIndex].insertValue(flit->nextIndex);
+                }
+                auto vcres = visitedCount.insert({ entry.blockIndex, size_t(2)});
+                if (!vcres.second)
+                    vcres.first->second++;
+                flowStack.pop_back();
+                continue;
+            }
+        }
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            size_t nextBlock = cblock.nexts[entry.nextIndex].block;
+            bool isCall = cblock.nexts[entry.nextIndex].isCall;
+            flowStack.push_back({ nextBlock, 0,  isCall });
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            if (entry.nextIndex!=0) // if back from calls (just return from calls)
+            {
+            }
+            flowStack.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else // back
+        {
+            flowStackBlocks.erase(entry.blockIndex);
+            flowStack.pop_back();
+        }
+    }
+    
+    /// join queue state together and add a missing wait instructions
+    flowStack.clear();
+    std::fill(visited.begin(), visited.end(), false);
     flowStack.push_back({ 0, 0 });
     
     while (!flowStack.empty())
@@ -717,8 +782,11 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         WCodeBlock& wblock = waitCodeBlocks[entry.blockIndex];
         if (entry.nextIndex == 0)
         {
+            auto vcIt = visitedCount.find(entry.blockIndex);
+            
             // process current block
-            if (flowStack.size() > 1)
+            // process only if this ways will be visited from all predecessors
+            if ((vcIt==visitedCount.end() || vcIt->second==0) && flowStack.size() > 1)
             {
                 auto flit = flowStack.end();
                 flit -= 2;
@@ -732,6 +800,9 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                     continue;
                 }   
             }
+            else
+                vcIt->second--;
+            
             visited[entry.blockIndex] = true;
         }
         
