@@ -272,16 +272,21 @@ struct CLRX_INTERNAL QueueState1
         requestedQueueSize = std::max(requestedQueueSize, way.requestedQueueSize);
     }
     
-    void joinNext(const QueueState1& next)
+    void joinPrev(const QueueState1& prev)
     {
-        if (next.reallyFlushed)
-            *this = next; // just copy
-        else
+        if (!reallyFlushed)
         {
-            if (next.requestedQueueSize != ordered.size())
-                flushTo(next.requestedQueueSize - ordered.size(), SIZE_MAX);
-            size_t orderedSize = ordered.size();
-            ordered.insert(ordered.end(), next.ordered.begin(), next.ordered.end());
+            const cxuint prevOrderedSize = (requestedQueueSize!=prev.ordered.size() ?
+                    requestedQueueSize-prev.ordered.size() : ordered.size());
+            ordered.insert(ordered.begin(), prev.ordered.end() - prevOrderedSize,
+                           prev.ordered.end());
+            orderedStartPos -= prevOrderedSize;
+            uint16_t qpos = orderedStartPos;
+            auto oitend = ordered.begin() + prevOrderedSize;
+            // update regplaces for front
+            for (auto oitx = ordered.begin(); oitx != oitend; ++oitx, ++qpos)
+                updateRegPlaces(*oitx, orderedStartPos, qpos, regPlaces);
+            
             if (ordered.size() > maxQueueSize)
             {
                 // push to first ordered
@@ -291,16 +296,9 @@ struct CLRX_INTERNAL QueueState1
                     firstOrderedIt->joinWithRegPlaces(*it, orderedStartPos,
                             orderedStartPos + toFirst, regPlaces);
                 ordered.erase(ordered.begin(), firstOrderedIt);
-                orderedSize = ordered.size() - next.ordered.size();
                 orderedStartPos += toFirst;
             }
-            // update regPlaces after pushing to front
-            uint16_t qpos = orderedStartPos + orderedSize;
-            for (auto oitx = ordered.begin() + orderedSize; oitx != ordered.end();
-                            ++oitx, ++qpos)
-                updateRegPlaces(*oitx, orderedStartPos, qpos, regPlaces);
-            // join with previous
-            random.join(next.random);
+            random.join(prev.random);
             requestedQueueSize = ordered.size();
         }
     }
@@ -724,8 +722,8 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
-                for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
-                    entry.queues[q].joinNext(wblock.queues[q]);
+                /*for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                    entry.queues[q].joinNext(wblock.queues[q]);*/
                 
                 // update entry.rege
                 for (const auto& rege: wblock.readRegs)
