@@ -325,6 +325,15 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
         setMaxQueueSizes(waitConfig);
     }
     
+    WaitFlowStackEntry0(size_t _blockIndex, size_t _nextIndex,
+                        const WaitFlowStackEntry0& prev,
+                        const AsmWaitConfig& waitConfig)
+            : blockIndex(_blockIndex), nextIndex(_nextIndex)
+    {
+        setMaxQueueSizes(waitConfig);
+        std::copy(prev.queues, prev.queues + waitConfig.waitQueuesNum, queues);
+    }
+    
     void setMaxQueueSizes(const AsmWaitConfig& waitConfig)
     {
         for (cxuint i = 0; i < waitConfig.waitQueuesNum; i++)
@@ -707,12 +716,15 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     {
         WaitFlowStackEntry0& entry = flowStack.back();
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        const WCodeBlock& wblock = waitCodeBlocks[entry.blockIndex];
         if (entry.nextIndex == 0)
         {
             // process current block
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
+                for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                    entry.queues[q].joinNext(wblock.queues[q]);
             }
             else
             {
@@ -733,7 +745,8 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             if (entry.nextIndex!=0) // if back from calls (just return from calls)
             {
             }
-            flowStack.push_back(WaitFlowStackEntry0(entry.blockIndex+1, 0, waitConfig));
+            flowStack.push_back(WaitFlowStackEntry0(entry.blockIndex+1, 0,
+                                    entry, waitConfig));
             entry.nextIndex++;
         }
         else // back
