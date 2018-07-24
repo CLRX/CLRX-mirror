@@ -773,6 +773,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     /// join queue state together and add a missing wait instructions
     flowStack.clear();
     flowStack.push_back({ 0, 0 });
+    std::unordered_map<size_t, size_t> touchedLoops;
     
     while (!flowStack.empty())
     {
@@ -789,6 +790,21 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             if (flowStack.size() > 1)
             {
                 flit -= 2;
+                auto loopWayIt = loopWays.find(flit->blockIndex);
+                if (loopWayIt != loopWays.end() &&
+                    loopWayIt->second.hasValue(flit->nextIndex))
+                {
+                    // if is loop point, check whether visited more than twice
+                    auto tlres = touchedLoops.insert({ entry.blockIndex, 1 });
+                    if (!tlres.second)
+                        tlres.first->second++; // add
+                    if (tlres.first->second == 2)
+                    {
+                        // second touch. skip skip 
+                        flowStack.pop_back();
+                        continue;
+                    }
+                }
                 bool changed = false;
                 for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
                     changed |= wblock.queues[q].joinPrev(
