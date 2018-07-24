@@ -772,7 +772,6 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     
     /// join queue state together and add a missing wait instructions
     flowStack.clear();
-    std::fill(visited.begin(), visited.end(), false);
     flowStack.push_back({ 0, 0 });
     
     while (!flowStack.empty())
@@ -786,24 +785,22 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             
             // process current block
             // process only if this ways will be visited from all predecessors
-            if ((vcIt==visitedCount.end() || vcIt->second==0) && flowStack.size() > 1)
+            auto flit = flowStack.end();
+            if (flowStack.size() > 1)
             {
-                auto flit = flowStack.end();
                 flit -= 2;
                 bool changed = false;
                 for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
                     changed |= wblock.queues[q].joinPrev(
                         waitCodeBlocks[flit->blockIndex].queues[q]);
-                if (!changed && visited[entry.blockIndex])
-                {
-                    flowStack.pop_back();
-                    continue;
-                }   
             }
-            else
+            if (vcIt!=visitedCount.end() && vcIt->second!=0)
+            {
                 vcIt->second--;
-            
-            visited[entry.blockIndex] = true;
+                // go back (not all ways were merged)
+                flowStack.pop_back();
+                continue;
+            }
         }
         
         if (entry.nextIndex < cblock.nexts.size())
