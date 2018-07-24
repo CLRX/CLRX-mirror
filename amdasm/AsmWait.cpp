@@ -281,6 +281,18 @@ struct CLRX_INTERNAL QueueState1
                 flushTo(next.requestedQueueSize - ordered.size(), SIZE_MAX);
             size_t orderedSize = ordered.size();
             ordered.insert(ordered.end(), next.ordered.begin(), next.ordered.end());
+            if (ordered.size() > maxQueueSize)
+            {
+                // push to first ordered
+                size_t toFirst = ordered.size() - maxQueueSize;
+                auto firstOrderedIt = ordered.begin() + toFirst;
+                for (auto it = ordered.begin(); it!=firstOrderedIt; ++it)
+                    firstOrderedIt->joinWithRegPlaces(*it, orderedStartPos,
+                            orderedStartPos + toFirst, regPlaces);
+                ordered.erase(ordered.begin(), firstOrderedIt);
+                orderedSize = ordered.size() - next.ordered.size();
+                orderedStartPos += toFirst;
+            }
             // update regPlaces after pushing to front
             uint16_t qpos = orderedStartPos + orderedSize;
             for (auto oitx = ordered.begin() + orderedSize; oitx != ordered.end();
