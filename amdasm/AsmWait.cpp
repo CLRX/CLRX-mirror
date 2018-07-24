@@ -139,6 +139,7 @@ struct CLRX_INTERNAL QueueState1
     // request queue size at start of block (by enqueuing and waiting/flushing)
     // used while joining with previous block
     cxuint requestedQueueSize;
+    cxuint orderedSizeBeforeJoin; // used while joining next way with next block
     bool firstFlush;
     bool reallyFlushed; // if really already flushed (queue size has been shrinked)
     size_t reallyFlushOffset;
@@ -725,6 +726,12 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                 visited[entry.blockIndex] = true;
                 for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
                     entry.queues[q].joinNext(wblock.queues[q]);
+                
+                // update entry.rege
+                for (const auto& rege: wblock.readRegs)
+                    entry.readRegs[rege.first] = rege.second;
+                for (const auto& rege: wblock.writeRegs)
+                    entry.writeRegs[rege.first] = rege.second;
             }
             else
             {
