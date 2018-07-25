@@ -810,7 +810,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                     changed |= wblock.queues[q].joinPrev(
                         waitCodeBlocks[flit->blockIndex].queues[q]);
             }
-            if (vcIt!=visitedCount.end() && vcIt->second!=0)
+            if (vcIt!=visitedCount.end() && vcIt->second>1)
             {
                 vcIt->second--;
                 // go back (not all ways were merged)
