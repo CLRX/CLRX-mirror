@@ -782,7 +782,6 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         cxuint count;
     };
     
-    std::unordered_map<size_t, size_t> touchedLoops;
     std::deque<LoopStackEntry> loopStack;
     
     while (!flowStack.empty())
@@ -840,10 +839,8 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                     loopStack.push_back({ entry.blockIndex, flit->blockIndex,
                             flit->nextIndex, cxuint(1) });
                 }
-                bool changed = false;
                 for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
-                    changed |= wblock.queues[q].joinPrev(
-                        waitCodeBlocks[flit->blockIndex].queues[q]);
+                    wblock.queues[q].joinPrev(waitCodeBlocks[flit->blockIndex].queues[q]);
             }
             if (vcIt!=visitedCount.end() && vcIt->second>1)
             {
