@@ -422,6 +422,247 @@ static cxuint getRRegFromSVReg(const AsmSingleVReg& svreg, size_t outSSAIdIdx,
     return rreg;
 }
 
+static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
+        ISAWaitHandler& waitHandler, ISAWaitHandler::ReadPos& waitPos,
+        ISAUsageHandler& usageHandler, const AsmWaitConfig& waitConfig,
+        const VarIndexMap* vregIndexMaps, const Array<cxuint>* graphColorMaps,
+        size_t regTypesNum, const cxuint* regRanges, bool onlyWarnings)
+{
+    // fill usage of registers (real access) to wCblock
+    ISAUsageHandler::ReadPos usagePos = cblock.usagePos;
+    
+    SVRegMap ssaIdIdxMap;
+    SVRegMap svregWriteOffsets;
+    std::vector<AsmRegVarUsage> instrRVUs;
+    
+    std::unordered_map<size_t, size_t> readRegs;
+    std::unordered_map<size_t, size_t> writeRegs;
+    // process waits and delayed ops
+    AsmWaitInstr waitInstr;
+    AsmDelayedOp delayedOp;
+    size_t instrOffset = SIZE_MAX;
+    bool isWaitInstr = false;
+    if (waitHandler.hasNext(waitPos))
+    {
+        isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
+        instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
+    }
+    
+    while (usageHandler.hasNext(usagePos))
+    {
+        const AsmRegVarUsage rvu = usageHandler.nextUsage(usagePos);
+        if (rvu.offset >= cblock.end && instrOffset >= cblock.end)
+            break;
+        
+        bool genWaitCnt = false;
+        // gwaitI - current wait instruction
+        AsmWaitInstr gwaitI { rvu.offset, { } };
+        for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+            gwaitI.waits[q] = waitConfig.waitQueueSizes[q]-1;
+        
+        if (rvu.offset < cblock.end && rvu.offset <= instrOffset)
+        {
+            // process RegVar usage
+            for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
+            {
+                AsmSingleVReg svreg{ rvu.regVar, rindex };
+                
+                size_t outSSAIdIdx = 0;
+                if (rvu.regVar != nullptr)
+                {
+                    // if regvar, get vidx and get from vidx register index
+                    if (checkWriteWithSSA(rvu))
+                    {
+                        size_t& ssaIdIdx = ssaIdIdxMap[svreg];
+                        if (svreg.regVar != nullptr)
+                            ssaIdIdx++;
+                        outSSAIdIdx = ssaIdIdx;
+                        svregWriteOffsets.insert({ svreg, rvu.offset });
+                    }
+                    else // insert zero
+                    {
+                        outSSAIdIdx = 0;
+                        auto svrres = ssaIdIdxMap.insert({ svreg, 0 });
+                        outSSAIdIdx = svrres.first->second;
+                        auto swit = svregWriteOffsets.find(svreg);
+                        if (swit != svregWriteOffsets.end() && swit->second == rvu.offset)
+                            outSSAIdIdx--; // before this write
+                    }
+                }
+                const cxuint rreg = getRRegFromSVReg(svreg, outSSAIdIdx, cblock,
+                            vregIndexMaps, graphColorMaps, regTypesNum, regRanges);
+                
+                // put to readRegs and writeRegs
+                if ((rvu.rwFlags & ASMRVU_READ) != 0)
+                    readRegs.insert({ rreg, rvu.offset });
+                if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
+                    writeRegs.insert({ rreg, rvu.offset });
+                
+                // rreg
+                if ((rvu.rwFlags & ASMRVU_READ) != 0)
+                    for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                    {
+                        uint16_t waitCnt = wblock.queues[q]
+                            .findMinQueueSizeForReg(qregVal(rreg, false));
+                        if (waitCnt != UINT16_MAX)
+                        {
+                            if (!onlyWarnings)
+                            {
+                                gwaitI.waits[q] = std::min(gwaitI.waits[q], waitCnt);
+                                genWaitCnt = true;
+                            }
+                        }
+                    }
+                if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
+                    for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                    {
+                        uint16_t waitCnt = wblock.queues[q]
+                            .findMinQueueSizeForReg(qregVal(rreg, true));
+                        if (waitCnt != UINT16_MAX)
+                        {
+                            if (!onlyWarnings)
+                            {
+                                gwaitI.waits[q] = std::min(gwaitI.waits[q], waitCnt);
+                                genWaitCnt = true;
+                            }
+                        }
+                    }
+            }
+            
+            if (genWaitCnt && rvu.offset != instrOffset)
+            {
+                // generate wait instr
+                wblock.waitInstrs.push_back(gwaitI);
+                for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
+                    wblock.queues[w].flushTo(gwaitI.waits[w], gwaitI.offset);
+            }
+            
+            // copy to wblock as array
+            wblock.readRegs.resize(readRegs.size());
+            wblock.writeRegs.resize(writeRegs.size());
+            std::copy(readRegs.begin(), readRegs.end(), wblock.readRegs.begin());
+            std::copy(writeRegs.begin(), writeRegs.end(), wblock.writeRegs.begin());
+            mapSort(wblock.readRegs.begin(), wblock.readRegs.end());
+            mapSort(wblock.writeRegs.begin(), wblock.writeRegs.end());
+        }
+        
+        if (instrOffset < cblock.end && rvu.offset >= instrOffset)
+        {
+            // process wait instr
+            if (isWaitInstr)
+            {
+                if (genWaitCnt)
+                {
+                    // if user waitinstr and generate wait instr
+                    // then choose min queue sizes in wait instr and generate new
+                    // wait instr.
+                    for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
+                        gwaitI.waits[w] = std::min(gwaitI.waits[w], waitInstr.waits[w]);
+                    wblock.waitInstrs.push_back(gwaitI);
+                    for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
+                        wblock.queues[w].flushTo(gwaitI.waits[w], gwaitI.offset);
+                }
+                else
+                {
+                    wblock.waitInstrs.push_back(waitInstr);
+                    for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
+                        wblock.queues[w].flushTo(waitInstr.waits[w], waitInstr.offset);
+                }
+            }
+            else
+            {
+                // delayed op
+                const AsmDelayedOpTypeEntry& delOpEntry = waitConfig.delayOpTypes[
+                                delayedOp.delayedOpType];
+                const cxuint queue1Idx = delOpEntry.waitType;
+                const cxuint queue2Idx = delayedOp.delayedOpType!=ASMDELOP_NONE ?
+                        waitConfig.delayOpTypes[delayedOp.delayedOpType].waitType :
+                        UINT_MAX;
+                // next entry
+                wblock.queues[queue1Idx].nextEntry();
+                if (queue2Idx != UINT_MAX)
+                    wblock.queues[queue2Idx].nextEntry();
+                cxuint rcount = 0, rcount2 = 0;
+                
+                for (uint16_t rindex = delayedOp.rstart;
+                                    rindex < delayedOp.rend; rindex++)
+                {
+                    AsmSingleVReg svreg{ delayedOp.regVar, rindex };
+                    const size_t ssaIdIdx = ssaIdIdxMap.find(svreg)->second;
+                    const cxuint rreg = getRRegFromSVReg(svreg, ssaIdIdx, cblock,
+                            vregIndexMaps, graphColorMaps, regTypesNum, regRanges);
+                    
+                    if ((delayedOp.rwFlags & ASMRVU_READ) != 0 &&
+                                delOpEntry.finishOnRegReadOut)
+                    {
+                        const uint16_t qreg = qregVal(rreg, false);
+                        if (delOpEntry.ordered)
+                            wblock.queues[queue1Idx].pushOrdered(qreg);
+                        else
+                            wblock.queues[queue1Idx].pushRandom(qreg);
+                    }
+                    if ((delayedOp.rwFlags & ASMRVU_WRITE) != 0)
+                    {
+                        const uint16_t qreg = qregVal(rreg, true);
+                        if (delOpEntry.ordered)
+                            wblock.queues[queue1Idx].pushOrdered(qreg);
+                        else
+                            wblock.queues[queue1Idx].pushRandom(qreg);
+                    }
+                    // if queue2
+                    if (queue2Idx != UINT_MAX)
+                    {
+                        const AsmDelayedOpTypeEntry& delOpEntry2 =
+                                waitConfig.delayOpTypes[delayedOp.delayedOpType2];
+                        if ((delayedOp.rwFlags2 & ASMRVU_READ) != 0 &&
+                                delOpEntry2.finishOnRegReadOut)
+                        {
+                            const uint16_t qreg = qregVal(rreg, false);
+                            if (delOpEntry2.ordered)
+                                wblock.queues[queue2Idx].pushOrdered(qreg);
+                            else
+                                wblock.queues[queue2Idx].pushRandom(qreg);
+                        }
+                        if ((delayedOp.rwFlags2 & ASMRVU_WRITE) != 0)
+                        {
+                            const uint16_t qreg = qregVal(rreg, true);
+                            if (delOpEntry2.ordered)
+                                wblock.queues[queue2Idx].pushOrdered(qreg);
+                            else
+                                wblock.queues[queue2Idx].pushRandom(qreg);
+                        }
+                        // do next queue entry if registered per element
+                        rcount2 += 4;
+                        if (delOpEntry2.counting!=255 && delOpEntry2.counting <= rcount)
+                        {
+                            // new entry
+                            wblock.queues[queue2Idx].nextEntry();
+                            rcount2 = 0;
+                        }
+                    }
+                    
+                    // do next queue entry if registered per element
+                    rcount += 4;
+                    if (delOpEntry.counting!=255 && delOpEntry.counting <= rcount)
+                    {
+                        // new entry
+                        wblock.queues[queue1Idx].nextEntry();
+                        rcount = 0;
+                    }
+                }
+            }
+            // get next instr
+            if (!waitHandler.hasNext(waitPos))
+                instrOffset = SIZE_MAX;
+            else
+            {
+                isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
+                instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
+            }
+        }
+    }
+}
+
 AsmWaitScheduler::AsmWaitScheduler(const AsmWaitConfig& _asmWaitConfig,
         Assembler& _assembler, const std::vector<CodeBlock>& _codeBlocks,
         const VarIndexMap* _vregIndexMaps, const Array<cxuint>* _graphColorMaps,
@@ -450,263 +691,9 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     {
         WCodeBlock& wblock = waitCodeBlocks[i];
         const CodeBlock& cblock = codeBlocks[i];
-        // fill usage of registers (real access) to wCblock
-        ISAUsageHandler::ReadPos usagePos = cblock.usagePos;
         
-        SVRegMap ssaIdIdxMap;
-        SVRegMap svregWriteOffsets;
-        std::vector<AsmRegVarUsage> instrRVUs;
-        
-        std::unordered_map<size_t, size_t> readRegs;
-        std::unordered_map<size_t, size_t> writeRegs;
-        // process waits and delayed ops
-        AsmWaitInstr waitInstr;
-        AsmDelayedOp delayedOp;
-        size_t instrOffset = SIZE_MAX;
-        bool isWaitInstr = false;
-        if (waitHandler.hasNext(waitPos))
-        {
-            isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
-            instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
-        }
-        
-        while (usageHandler.hasNext(usagePos))
-        {
-            const AsmRegVarUsage rvu = usageHandler.nextUsage(usagePos);
-            if (rvu.offset >= cblock.end && instrOffset >= cblock.end)
-                break;
-            
-            bool genWaitCnt = false;
-            AsmWaitInstr gwaitInstr{ rvu.offset, { } };
-            for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
-                gwaitInstr.waits[q] = waitConfig.waitQueueSizes[q]-1;
-            
-            if (rvu.offset < cblock.end && rvu.offset <= instrOffset)
-            {
-                // process RegVar usage
-                for (uint16_t rindex = rvu.rstart; rindex < rvu.rend; rindex++)
-                {
-                    AsmSingleVReg svreg{ rvu.regVar, rindex };
-                    
-                    size_t outSSAIdIdx = 0;
-                    if (rvu.regVar != nullptr)
-                    {
-                        // if regvar, get vidx and get from vidx register index
-                        if (checkWriteWithSSA(rvu))
-                        {
-                            size_t& ssaIdIdx = ssaIdIdxMap[svreg];
-                            if (svreg.regVar != nullptr)
-                                ssaIdIdx++;
-                            outSSAIdIdx = ssaIdIdx;
-                            svregWriteOffsets.insert({ svreg, rvu.offset });
-                        }
-                        else // insert zero
-                        {
-                            outSSAIdIdx = 0;
-                            auto svrres = ssaIdIdxMap.insert({ svreg, 0 });
-                            outSSAIdIdx = svrres.first->second;
-                            auto swit = svregWriteOffsets.find(svreg);
-                            if (swit != svregWriteOffsets.end() &&
-                                swit->second == rvu.offset)
-                                outSSAIdIdx--; // before this write
-                        }
-                    }
-                    const cxuint rreg = getRRegFromSVReg(svreg, outSSAIdIdx, cblock,
-                                vregIndexMaps, graphColorMaps, regTypesNum, regRanges);
-                    
-                    // put to readRegs and writeRegs
-                    if ((rvu.rwFlags & ASMRVU_READ) != 0)
-                        readRegs.insert({ rreg, rvu.offset });
-                    if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
-                        writeRegs.insert({ rreg, rvu.offset });
-                    
-                    // rreg
-                    if ((rvu.rwFlags & ASMRVU_READ) != 0)
-                        for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
-                        {
-                            uint16_t waitCnt = wblock.queues[q]
-                                .findMinQueueSizeForReg(qregVal(rreg, false));
-                            if (waitCnt != UINT16_MAX)
-                            {
-                                if (!onlyWarnings)
-                                {
-                                    gwaitInstr.waits[q] =
-                                            std::min(gwaitInstr.waits[q], waitCnt);
-                                    genWaitCnt = true;
-                                }
-                            }
-                        }
-                    if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
-                        for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
-                        {
-                            uint16_t waitCnt = wblock.queues[q]
-                                .findMinQueueSizeForReg(qregVal(rreg, true));
-                            if (waitCnt != UINT16_MAX)
-                            {
-                                if (!onlyWarnings)
-                                {
-                                    gwaitInstr.waits[q] =
-                                            std::min(gwaitInstr.waits[q], waitCnt);
-                                    genWaitCnt = true;
-                                }
-                            }
-                        }
-                }
-                
-                if (genWaitCnt && rvu.offset != instrOffset)
-                {
-                    // generate wait instr
-                    wblock.waitInstrs.push_back(gwaitInstr);
-                    for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                        wblock.queues[w].flushTo(gwaitInstr.waits[w], gwaitInstr.offset);
-                }
-                
-                // copy to wblock as array
-                wblock.readRegs.resize(readRegs.size());
-                wblock.writeRegs.resize(writeRegs.size());
-                std::copy(readRegs.begin(), readRegs.end(), wblock.readRegs.begin());
-                std::copy(writeRegs.begin(), writeRegs.end(), wblock.writeRegs.begin());
-                mapSort(wblock.readRegs.begin(), wblock.readRegs.end());
-                mapSort(wblock.writeRegs.begin(), wblock.writeRegs.end());
-            }
-            
-            if (instrOffset < cblock.end && rvu.offset >= instrOffset)
-            {
-                // process wait instr
-                if (isWaitInstr)
-                {
-                    if (genWaitCnt)
-                    {
-                        // if user waitinstr and generate wait instr
-                        // then choose min queue sizes in wait instr and generate new
-                        // wait instr.
-                        for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                            gwaitInstr.waits[w] = std::min(gwaitInstr.waits[w],
-                                    waitInstr.waits[w]);
-                        wblock.waitInstrs.push_back(gwaitInstr);
-                        for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                            wblock.queues[w].flushTo(gwaitInstr.waits[w],
-                                                     gwaitInstr.offset);
-                    }
-                    else
-                    {
-                        wblock.waitInstrs.push_back(waitInstr);
-                        for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                            wblock.queues[w].flushTo(waitInstr.waits[w],
-                                                     waitInstr.offset);
-                    }
-                }
-                else
-                {
-                    // delayed op
-                    const AsmDelayedOpTypeEntry& delOpEntry = waitConfig.delayOpTypes[
-                                    delayedOp.delayedOpType];
-                    const cxuint queue1Idx = delOpEntry.waitType;
-                    const cxuint queue2Idx = delayedOp.delayedOpType!=ASMDELOP_NONE ?
-                            waitConfig.delayOpTypes[delayedOp.delayedOpType].waitType :
-                            UINT_MAX;
-                    // next entry
-                    wblock.queues[queue1Idx].nextEntry();
-                    if (queue2Idx != UINT_MAX)
-                        wblock.queues[queue2Idx].nextEntry();
-                    cxuint rcount = 0, rcount2 = 0;
-                    
-                    for (uint16_t rindex = delayedOp.rstart;
-                                        rindex < delayedOp.rend; rindex++)
-                    {
-                        AsmSingleVReg svreg{ delayedOp.regVar, rindex };
-                        const size_t ssaIdIdx = ssaIdIdxMap.find(svreg)->second;
-                        const cxuint rreg = getRRegFromSVReg(svreg, ssaIdIdx, cblock,
-                                vregIndexMaps, graphColorMaps, regTypesNum, regRanges);
-                        
-                        if ((delayedOp.rwFlags & ASMRVU_READ) != 0 &&
-                                    delOpEntry.finishOnRegReadOut)
-                        {
-                            const uint16_t qreg = qregVal(rreg, false);
-                            if (delOpEntry.ordered)
-                                wblock.queues[queue1Idx].pushOrdered(qreg);
-                            else
-                                wblock.queues[queue1Idx].pushRandom(qreg);
-                        }
-                        if ((delayedOp.rwFlags & ASMRVU_WRITE) != 0)
-                        {
-                            const uint16_t qreg = qregVal(rreg, true);
-                            if (delOpEntry.ordered)
-                                wblock.queues[queue1Idx].pushOrdered(qreg);
-                            else
-                                wblock.queues[queue1Idx].pushRandom(qreg);
-                        }
-                        // if queue2
-                        if (queue2Idx != UINT_MAX)
-                        {
-                            const AsmDelayedOpTypeEntry& delOpEntry2 =
-                                    waitConfig.delayOpTypes[delayedOp.delayedOpType2];
-                            if ((delayedOp.rwFlags2 & ASMRVU_READ) != 0 &&
-                                    delOpEntry2.finishOnRegReadOut)
-                            {
-                                const uint16_t qreg = qregVal(rreg, false);
-                                if (delOpEntry2.ordered)
-                                    wblock.queues[queue2Idx].pushOrdered(qreg);
-                                else
-                                    wblock.queues[queue2Idx].pushRandom(qreg);
-                            }
-                            if ((delayedOp.rwFlags2 & ASMRVU_WRITE) != 0)
-                            {
-                                const uint16_t qreg = qregVal(rreg, true);
-                                if (delOpEntry2.ordered)
-                                    wblock.queues[queue2Idx].pushOrdered(qreg);
-                                else
-                                    wblock.queues[queue2Idx].pushRandom(qreg);
-                            }
-                            // do next queue entry if registered per element
-                            rcount2 += 4;
-                            if (delOpEntry2.counting!=255 &&
-                                delOpEntry2.counting <= rcount)
-                            {
-                                // new entry
-                                wblock.queues[queue2Idx].nextEntry();
-                                rcount2 = 0;
-                            }
-                        }
-                        
-                        // do next queue entry if registered per element
-                        rcount += 4;
-                        if (delOpEntry.counting!=255 && delOpEntry.counting <= rcount)
-                        {
-                            // new entry
-                            wblock.queues[queue1Idx].nextEntry();
-                            rcount = 0;
-                        }
-                    }
-                }
-                // get next instr
-                if (!waitHandler.hasNext(waitPos))
-                    instrOffset = SIZE_MAX;
-                else
-                {
-                    isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
-                    instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
-                }
-            }
-        }
-        
-        // skip instrs between codeblock
-        while (instrOffset < cblock.start)
-        {
-            if (!waitHandler.hasNext(waitPos))
-                break;
-            isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
-            instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
-        }
-        
-        // real loop
-        while (instrOffset < cblock.end)
-        {
-            if (!waitHandler.hasNext(waitPos))
-                break;
-            isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
-            instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
-        }
+        processQueueBlock(cblock, wblock, waitHandler, waitPos, usageHandler, waitConfig,
+                    vregIndexMaps, graphColorMaps, regTypesNum, regRanges, onlyWarnings);
     }
     
     std::vector<bool> visited(codeBlocks.size(), false);
