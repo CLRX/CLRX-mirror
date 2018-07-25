@@ -773,7 +773,17 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     /// join queue state together and add a missing wait instructions
     flowStack.clear();
     flowStack.push_back({ 0, 0 });
+    
+    struct LoopStackEntry
+    {
+        size_t loopBlock;
+        size_t blockBeforeLoop;
+        size_t wayToLoop;
+        cxuint count;
+    };
+    
     std::unordered_map<size_t, size_t> touchedLoops;
+    std::deque<LoopStackEntry> loopStack;
     
     while (!flowStack.empty())
     {
@@ -794,16 +804,41 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                 if (loopWayIt != loopWays.end() &&
                     loopWayIt->second.hasValue(flit->nextIndex))
                 {
-                    // if is loop point, check whether visited more than twice
-                    auto tlres = touchedLoops.insert({ entry.blockIndex, 1 });
-                    if (!tlres.second)
-                        tlres.first->second++; // add
-                    if (tlres.first->second == 2)
+                    if (!loopStack.empty())
                     {
-                        // second touch. skip skip 
-                        flowStack.pop_back();
-                        continue;
+                        LoopStackEntry& loopEntry = loopStack.back();
+                        auto lsit = loopStack.end();
+                        if (loopEntry.blockBeforeLoop == flit->blockIndex &&
+                            loopEntry.wayToLoop == flit->nextIndex)
+                        {
+                            // this way
+                            // check whether previous loop is touched twice or
+                            // no loop before
+                            if (loopStack.size() > 1)
+                            {
+                                lsit -= 2;
+                                if (lsit->count < 2)
+                                {
+                                    // if not then skip
+                                    loopStack.pop_back();
+                                    flowStack.pop_back();
+                                    continue;
+                                }
+                            }
+                            
+                            loopEntry.count++;
+                            if (loopEntry.count > 2)
+                            {
+                                // skip, loop has been visited twice
+                                loopStack.pop_back();
+                                flowStack.pop_back();
+                                continue;
+                            }
+                        }
                     }
+                    // push new loop to stack
+                    loopStack.push_back({ entry.blockIndex, flit->blockIndex,
+                            flit->nextIndex, cxuint(1) });
                 }
                 bool changed = false;
                 for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
@@ -838,7 +873,8 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         }
         else // back
         {
-            // revert lastSSAIdMap
+            if (!loopStack.empty() && loopStack.back().loopBlock==entry.blockIndex)
+                loopStack.pop_back();
             flowStack.pop_back();
         }
     }
