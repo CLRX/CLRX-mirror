@@ -101,14 +101,14 @@ struct QueueEntry1
         haveDelayedOp |= b.haveDelayedOp;
     }
     
-    void joinWithRegPlaces(const QueueEntry1& b, uint16_t startPos, uint16_t opos,
-            std::unordered_map<uint16_t, uint16_t>& regPlaces)
+    void joinWithRegPlaces(const QueueEntry1& b, size_t bstartPos, size_t startPos,
+            size_t opos, std::unordered_map<size_t, size_t>& regPlaces)
     {
         for (auto e: b.regs)
             if (regs.insert(e).second)
             {
                 auto rres = regPlaces.insert(std::make_pair(e, opos));
-                if (rres.second && rres.first->second-startPos < opos-startPos)
+                if (rres.second && rres.first->second-startPos < opos-bstartPos)
                     rres.first->second = opos;
             }
         regs.insert(b.regs.begin(), b.regs.end());
@@ -116,13 +116,13 @@ struct QueueEntry1
     }
 };
 
-static inline void updateRegPlaces(const QueueEntry1& b, uint16_t startPos, uint16_t opos,
-            std::unordered_map<uint16_t, uint16_t>& regPlaces)
+static inline void updateRegPlaces(const QueueEntry1& b, size_t bstartPos, size_t startPos,
+                size_t opos, std::unordered_map<size_t, size_t>& regPlaces)
 {
     for (auto e: b.regs)
     {
         auto rres = regPlaces.insert(std::make_pair(e, opos));
-        if (rres.second && rres.first->second-startPos < opos-startPos)
+        if (rres.second && rres.first->second-startPos < opos-bstartPos)
             rres.first->second = opos;
     }
 }
@@ -131,11 +131,11 @@ static inline void updateRegPlaces(const QueueEntry1& b, uint16_t startPos, uint
 struct CLRX_INTERNAL QueueState1
 {
     cxuint maxQueueSize;
-    uint16_t orderedStartPos;
+    size_t orderedStartPos;
     std::deque<QueueEntry1> ordered;  // ordered items
     QueueEntry1 random;   // items in random order
     // register place in queue - key - reg, value - position
-    std::unordered_map<uint16_t, uint16_t> regPlaces;
+    std::unordered_map<size_t, size_t> regPlaces;
     // request queue size at start of block (by enqueuing and waiting/flushing)
     // used while joining with previous block
     cxuint requestedQueueSize;
@@ -181,13 +181,6 @@ struct CLRX_INTERNAL QueueState1
         {
             // move first entry in ordered queue to first ordered
             QueueEntry1& firstOrdered = ordered.front();
-            for (auto e: firstOrdered.regs)
-            {
-                auto rpit = regPlaces.find(e);
-                 // update regPlaces for firstOrdered before joining
-                if (rpit->second == orderedStartPos)
-                    rpit->second++;
-            }
             auto ordit = ordered.begin();
             ++ordit; // second entry
             QueueEntry1& second = *ordit;
@@ -225,13 +218,13 @@ struct CLRX_INTERNAL QueueState1
         requestedQueueSize = std::min(size, requestedQueueSize);
     }
     
-    uint16_t findMinQueueSizeForReg(uint16_t reg) const
+    size_t findMinQueueSizeForReg(uint16_t reg) const
     {
         auto it = regPlaces.find(reg);
         if (it == regPlaces.end())
             // if found, then 0 otherwize not found (UINT_MAX)
             return random.regs.find(reg) != random.regs.end() ? 0 : UINT16_MAX;
-        const uint16_t pos = it->second - orderedStartPos;
+        const ssize_t pos = std::max(ssize_t(it->second - orderedStartPos), ssize_t(0));
         return ordered.size()-1 - cxuint(pos);
     }
     
@@ -242,7 +235,8 @@ struct CLRX_INTERNAL QueueState1
         auto oit1 = ordered.begin();
         auto oit2 = way.ordered.begin();
         const int queueSizeDiff = way.ordered.size() - ordered.size();
-        uint16_t qpos = orderedStartPos;
+        size_t qpos = orderedStartPos;
+        size_t wayStartPos = way.orderedStartPos;
         if (queueSizeDiff > 0)
         {
             ordered.insert(ordered.begin(), way.ordered.begin(),
@@ -253,7 +247,8 @@ struct CLRX_INTERNAL QueueState1
             qpos = orderedStartPos;
             // update regPlaces after pushing to front
             for (auto oitx = ordered.begin(); oitx != oit1; ++oitx, ++qpos)
-                updateRegPlaces(*oitx, orderedStartPos, qpos, regPlaces);
+                updateRegPlaces(*oitx, orderedStartPos, wayStartPos, qpos, regPlaces);
+            wayStartPos += queueSizeDiff;
         }
         else
         {
@@ -262,7 +257,7 @@ struct CLRX_INTERNAL QueueState1
         }
         // join entries
         for (; oit1 != ordered.end(); ++oit1, ++oit2, ++qpos)
-            oit1->joinWithRegPlaces(*oit2, orderedStartPos, qpos, regPlaces);
+            oit1->joinWithRegPlaces(*oit2, orderedStartPos, wayStartPos, qpos, regPlaces);
         
         firstFlush |= way.firstFlush;
         requestedQueueSize = std::max(requestedQueueSize, way.requestedQueueSize);
@@ -282,20 +277,18 @@ struct CLRX_INTERNAL QueueState1
             ordered.erase(ordered.begin(), ordered.end()-prevOrderedSize);
             ordered.insert(ordered.end(), next.ordered.begin(), next.ordered.end());
             orderedStartPos += ordered.size()-oldOrderedSize;
-            uint16_t qpos = orderedStartPos;
+            size_t nextStartPos = next.orderedStartPos - prevOrderedSize;
+            size_t qpos = orderedStartPos;
             // update regplaces for front
             for (auto oitx = ordered.begin() + prevOrderedSize; oitx != ordered.end();
                         ++oitx, ++qpos)
-                updateRegPlaces(*oitx, orderedStartPos, qpos, regPlaces);
+                updateRegPlaces(*oitx, nextStartPos, orderedStartPos, qpos, regPlaces);
             
             if (ordered.size() > maxQueueSize)
             {
                 // push to first ordered
                 size_t toFirst = ordered.size() - maxQueueSize;
                 auto firstOrderedIt = ordered.begin() + toFirst;
-                for (auto it = ordered.begin(); it!=firstOrderedIt; ++it)
-                    firstOrderedIt->joinWithRegPlaces(*it, orderedStartPos,
-                            orderedStartPos + toFirst, regPlaces);
                 ordered.erase(ordered.begin(), firstOrderedIt);
                 orderedStartPos += toFirst;
             }
