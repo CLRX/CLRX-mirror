@@ -595,6 +595,9 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                     if (curQueueSizes[q] != UINT16_MAX)
                         flushedQueues++;
                     curQueueSizes[q] = UINT16_MAX;
+                    // update wait after flush
+                    curWaits[q] = std::min(curWaits[q],
+                                uint16_t(wblock.queues[q].ordered.size()));
                 }
             }
         
@@ -685,9 +688,17 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                 // update current queue sizes from last delayed ops
                 if (flushedQueues < waitConfig.waitQueuesNum)
                 {
-                    curQueueSizes[queue2Idx] = wblock.queues[queue1Idx].ordered.size();
-                    if (queue1Idx != UINT_MAX)
+                    curQueueSizes[queue1Idx] = wblock.queues[queue1Idx].ordered.size();
+                    // increment curWait for queue1
+                    curWaits[queue1Idx] = std::min(uint16_t(curWaits[queue1Idx]+1),
+                                    waitConfig.waitQueueSizes[queue1Idx]);
+                    if (queue2Idx != UINT_MAX)
+                    {
+                        // increment curWait for queue2
+                        curWaits[queue2Idx] = std::min(uint16_t(curWaits[queue2Idx]+1),
+                                    waitConfig.waitQueueSizes[queue2Idx]);
                         curQueueSizes[queue2Idx] = wblock.queues[queue2Idx].ordered.size();
+                    }
                 }
             }
             
@@ -696,8 +707,12 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
             {
                 // update current queue sizes
                 for (auto& re: curRegs)
+                {
                     std::copy(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum,
                                 re.second.qsizes);
+                    std::copy(curWaits, curWaits + waitConfig.waitQueuesNum,
+                                re.second.waits);
+                }
                 // put current regs to firstRegs
                 firstRegs.insert(curRegs.begin(), curRegs.end());
             }
