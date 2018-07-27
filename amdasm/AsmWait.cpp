@@ -139,15 +139,12 @@ struct CLRX_INTERNAL QueueState1
     // request queue size at start of block (by enqueuing and waiting/flushing)
     // used while joining with previous block
     cxuint requestedQueueSize;
-    cxuint requestedQueueSizeBeforeJoin;
-    cxuint orderedSizeBeforeJoin; // used while joining next way with next block
     bool firstFlush;
     bool reallyFlushed; // if really already flushed (queue size has been shrinked)
     size_t reallyFlushOffset;
     
     QueueState1(cxuint _maxQueueSize = 0) : maxQueueSize(_maxQueueSize),
                 orderedStartPos(0), requestedQueueSize(0),
-                requestedQueueSizeBeforeJoin(UINT_MAX), orderedSizeBeforeJoin(UINT_MAX),
                 firstFlush(true), reallyFlushed(false), reallyFlushOffset(SIZE_MAX)
     { }
     
@@ -283,30 +280,10 @@ struct CLRX_INTERNAL QueueState1
                 // no change
                 return false;
             
-            const cxuint skipLastPrev = (orderedSizeBeforeJoin != UINT_MAX ?
-                    ordered.size() - orderedSizeBeforeJoin : 0);
-            cxuint curReqQueueSize = requestedQueueSize;
-            if (skipLastPrev != 0)
-            {   // join with
-                uint16_t qpos = orderedStartPos;
-                auto oitx2 = ordered.begin();
-                if (prev.ordered.size() < skipLastPrev)
-                    oitx2 += skipLastPrev - prev.ordered.size();
-                for (auto oitx = prev.ordered.end()-skipLastPrev;
-                     oitx!=prev.ordered.end(); ++oitx, ++qpos, ++oitx2)
-                     oitx2->joinWithRegPlaces(*oitx, orderedStartPos, qpos, regPlaces);
-                curReqQueueSize = requestedQueueSizeBeforeJoin;
-            }
-            
-            if (orderedSizeBeforeJoin+prev.ordered.size() <= ordered.size())
-                return true; // no to join
-            
-            cxuint prevOrdSize0 = prev.ordered.size() - skipLastPrev;
-            const cxuint prevOrderedSize = (curReqQueueSize!=prevOrdSize0 ?
-                    requestedQueueSize-prevOrdSize0 : ordered.size());
-            ordered.insert(ordered.begin(),
-                           prev.ordered.end()-prevOrderedSize-skipLastPrev,
-                           prev.ordered.end()-skipLastPrev);
+            const cxuint prevOrderedSize = (requestedQueueSize!=prev.ordered.size() ?
+                    requestedQueueSize-prev.ordered.size() : ordered.size());
+            ordered.insert(ordered.begin(), prev.ordered.end() - prevOrderedSize,
+                           prev.ordered.end());
             orderedStartPos -= prevOrderedSize;
             uint16_t qpos = orderedStartPos;
             auto oitend = ordered.begin() + prevOrderedSize;
@@ -327,13 +304,17 @@ struct CLRX_INTERNAL QueueState1
             }
             random.join(prev.random);
             requestedQueueSize = ordered.size();
-            
-            if (orderedSizeBeforeJoin == UINT_MAX)
-                orderedSizeBeforeJoin = ordered.size();
             return true;
         }
+        
         return false;
     }
+};
+
+struct CLRX_INTERNAL RRegInfo
+{
+    size_t offset;  /// offset where is usage
+    uint16_t waits[ASM_WAIT_MAX_TYPES_NUM]; /// queue sizes
 };
 
 struct CLRX_INTERNAL WaitFlowStackEntry0
@@ -342,14 +323,49 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
     size_t nextIndex;
     bool isCall;
     bool haveReturn;
+    
+    QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
+    // key - reg, value - offset in codeblock
+    std::unordered_map<size_t, RRegInfo> readRegs;
+    // key - reg, value - offset in codeblock
+    std::unordered_map<size_t, RRegInfo> writeRegs;
+    
+    WaitFlowStackEntry0(size_t _blockIndex, size_t _nextIndex,
+                        const AsmWaitConfig& waitConfig)
+            : blockIndex(_blockIndex), nextIndex(_nextIndex), isCall(false)
+    {
+        setMaxQueueSizes(waitConfig);
+    }
+    
+    WaitFlowStackEntry0(size_t _blockIndex, size_t _nextIndex, bool _isCall,
+                        const AsmWaitConfig& waitConfig)
+            : blockIndex(_blockIndex), nextIndex(_nextIndex), isCall(_isCall)
+    {
+        setMaxQueueSizes(waitConfig);
+    }
+    
+    WaitFlowStackEntry0(size_t _blockIndex, size_t _nextIndex,
+                        const WaitFlowStackEntry0& prev,
+                        const AsmWaitConfig& waitConfig)
+            : blockIndex(_blockIndex), nextIndex(_nextIndex)
+    {
+        setMaxQueueSizes(waitConfig);
+        std::copy(prev.queues, prev.queues + waitConfig.waitQueuesNum, queues);
+    }
+    
+    void setMaxQueueSizes(const AsmWaitConfig& waitConfig)
+    {
+        for (cxuint i = 0; i < waitConfig.waitQueuesNum; i++)
+            queues[i].setMaxQueueSize(waitConfig.waitQueueSizes[i]);
+    }
 };
 
 struct CLRX_INTERNAL WCodeBlock
 {
     QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
     std::vector<AsmWaitInstr> waitInstrs;
-    Array<std::pair<size_t, size_t> > readRegs; ///< first occurence of reg read
-    Array<std::pair<size_t, size_t> > writeRegs; ///< first occurecence of reg write
+    Array<std::pair<size_t, RRegInfo> > readRegs; ///< first occurence of reg read
+    Array<std::pair<size_t, RRegInfo> > writeRegs; ///< first occurecence of reg write
     
     void setMaxQueueSizes(const AsmWaitConfig& waitConfig)
     {
@@ -435,8 +451,8 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
     SVRegMap svregWriteOffsets;
     std::vector<AsmRegVarUsage> instrRVUs;
     
-    std::unordered_map<size_t, size_t> readRegs;
-    std::unordered_map<size_t, size_t> writeRegs;
+    std::unordered_map<size_t, RRegInfo> readRegs;
+    std::unordered_map<size_t, RRegInfo> writeRegs;
     // process waits and delayed ops
     AsmWaitInstr waitInstr;
     AsmDelayedOp delayedOp;
@@ -448,6 +464,8 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
         instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
     }
     
+    uint16_t curQueueSizes[ASM_WAIT_MAX_TYPES_NUM];
+    std::fill(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum, uint16_t(0));
     while (usageHandler.hasNext(usagePos))
     {
         const AsmRegVarUsage rvu = usageHandler.nextUsage(usagePos);
@@ -494,9 +512,9 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                 
                 // put to readRegs and writeRegs
                 if ((rvu.rwFlags & ASMRVU_READ) != 0)
-                    readRegs.insert({ rreg, rvu.offset });
+                    readRegs.insert({ rreg, { rvu.offset } });
                 if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
-                    writeRegs.insert({ rreg, rvu.offset });
+                    writeRegs.insert({ rreg, { rvu.offset } });
                 
                 // rreg
                 if ((rvu.rwFlags & ASMRVU_READ) != 0)
@@ -536,40 +554,41 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                 for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
                     wblock.queues[w].flushTo(gwaitI.waits[w], gwaitI.offset);
             }
-            
-            // copy to wblock as array
-            wblock.readRegs.resize(readRegs.size());
-            wblock.writeRegs.resize(writeRegs.size());
-            std::copy(readRegs.begin(), readRegs.end(), wblock.readRegs.begin());
-            std::copy(writeRegs.begin(), writeRegs.end(), wblock.writeRegs.begin());
-            mapSort(wblock.readRegs.begin(), wblock.readRegs.end());
-            mapSort(wblock.writeRegs.begin(), wblock.writeRegs.end());
         }
+        
+        if (instrOffset < cblock.end && rvu.offset >= instrOffset && isWaitInstr)
+        {
+            // process wait instr
+            if (genWaitCnt)
+            {
+                // if user waitinstr and generate wait instr
+                // then choose min queue sizes in wait instr and generate new
+                // wait instr.
+                for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
+                    gwaitI.waits[w] = std::min(gwaitI.waits[w], waitInstr.waits[w]);
+                wblock.waitInstrs.push_back(gwaitI);
+                for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
+                    wblock.queues[w].flushTo(gwaitI.waits[w], gwaitI.offset);
+            }
+            else
+            {
+                wblock.waitInstrs.push_back(waitInstr);
+                for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
+                {
+                    wblock.queues[w].flushTo(waitInstr.waits[w], waitInstr.offset);
+                    gwaitI.waits[w] = waitInstr.waits[w];
+                    genWaitCnt = true;
+                }
+            }
+        }
+            
+        if (genWaitCnt)
+            for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                curQueueSizes[q] = std::min(curQueueSizes[q], gwaitI.waits[q]);
         
         if (instrOffset < cblock.end && rvu.offset >= instrOffset)
         {
-            // process wait instr
-            if (isWaitInstr)
-            {
-                if (genWaitCnt)
-                {
-                    // if user waitinstr and generate wait instr
-                    // then choose min queue sizes in wait instr and generate new
-                    // wait instr.
-                    for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                        gwaitI.waits[w] = std::min(gwaitI.waits[w], waitInstr.waits[w]);
-                    wblock.waitInstrs.push_back(gwaitI);
-                    for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                        wblock.queues[w].flushTo(gwaitI.waits[w], gwaitI.offset);
-                }
-                else
-                {
-                    wblock.waitInstrs.push_back(waitInstr);
-                    for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                        wblock.queues[w].flushTo(waitInstr.waits[w], waitInstr.offset);
-                }
-            }
-            else
+            if (!isWaitInstr)
             {
                 // delayed op
                 const AsmDelayedOpTypeEntry& delOpEntry = waitConfig.delayOpTypes[
@@ -650,6 +669,10 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                         rcount = 0;
                     }
                 }
+                
+                curQueueSizes[queue2Idx] = wblock.queues[queue1Idx].ordered.size();
+                if (queue1Idx != UINT_MAX)
+                    curQueueSizes[queue2Idx] = wblock.queues[queue2Idx].ordered.size();
             }
             // get next instr
             if (!waitHandler.hasNext(waitPos))
@@ -659,6 +682,23 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                 isWaitInstr = waitHandler.nextInstr(waitPos, delayedOp, waitInstr);
                 instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
             }
+        }
+        
+        if (rvu.offset < cblock.end && rvu.offset <= instrOffset)
+        {
+            for (auto& re: readRegs)
+                std::copy(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum,
+                          re.second.waits);
+            for (auto& re: writeRegs)
+                std::copy(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum,
+                          re.second.waits);
+            // copy to wblock as array
+            wblock.readRegs.resize(readRegs.size());
+            wblock.writeRegs.resize(writeRegs.size());
+            std::copy(readRegs.begin(), readRegs.end(), wblock.readRegs.begin());
+            std::copy(writeRegs.begin(), writeRegs.end(), wblock.writeRegs.begin());
+            mapSort(wblock.readRegs.begin(), wblock.readRegs.end());
+            mapSort(wblock.writeRegs.begin(), wblock.writeRegs.end());
         }
     }
 }
@@ -703,7 +743,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     std::unordered_set<size_t> flowStackBlocks;
     flowStackBlocks.insert(size_t(0));
     
-    flowStack.push_back({ 0, 0 });
+    flowStack.push_back(WaitFlowStackEntry0(0, 0, waitConfig));
     /// find multiply visited points to schedule
     while (!flowStack.empty())
     {
@@ -737,7 +777,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         {
             size_t nextBlock = cblock.nexts[entry.nextIndex].block;
             bool isCall = cblock.nexts[entry.nextIndex].isCall;
-            flowStack.push_back({ nextBlock, 0,  isCall });
+            flowStack.push_back(WaitFlowStackEntry0(nextBlock, 0, isCall, waitConfig));
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
                 // if have any call then go to next block
@@ -747,7 +787,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             if (entry.nextIndex!=0) // if back from calls (just return from calls)
             {
             }
-            flowStack.push_back({ entry.blockIndex+1, 0 });
+            flowStack.push_back(WaitFlowStackEntry0(entry.blockIndex+1, 0, waitConfig));
             entry.nextIndex++;
         }
         else // back
@@ -759,7 +799,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     
     /// join queue state together and add a missing wait instructions
     flowStack.clear();
-    flowStack.push_back({ 0, 0 });
+    flowStack.push_back(WaitFlowStackEntry0(0, 0, waitConfig));
     
     struct LoopStackEntry
     {
@@ -842,7 +882,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
         {
             size_t nextBlock = cblock.nexts[entry.nextIndex].block;
             bool isCall = cblock.nexts[entry.nextIndex].isCall;
-            flowStack.push_back({ nextBlock, 0,  isCall });
+            flowStack.push_back(WaitFlowStackEntry0(nextBlock, 0,  isCall, waitConfig));
         }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
                 // if have any call then go to next block
@@ -852,7 +892,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             if (entry.nextIndex!=0) // if back from calls (just return from calls)
             {
             }
-            flowStack.push_back({ entry.blockIndex+1, 0 });
+            flowStack.push_back(WaitFlowStackEntry0(entry.blockIndex+1, 0, waitConfig));
             entry.nextIndex++;
         }
         else // back
