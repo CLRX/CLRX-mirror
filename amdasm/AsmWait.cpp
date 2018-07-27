@@ -326,9 +326,7 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
     
     QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
     // key - reg, value - offset in codeblock
-    std::unordered_map<size_t, RRegInfo> readRegs;
-    // key - reg, value - offset in codeblock
-    std::unordered_map<size_t, RRegInfo> writeRegs;
+    std::unordered_map<uint16_t, RRegInfo> firstRegs;
     
     WaitFlowStackEntry0(size_t _blockIndex, size_t _nextIndex,
                         const AsmWaitConfig& waitConfig)
@@ -364,8 +362,7 @@ struct CLRX_INTERNAL WCodeBlock
 {
     QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
     std::vector<AsmWaitInstr> waitInstrs;
-    Array<std::pair<size_t, RRegInfo> > readRegs; ///< first occurence of reg read
-    Array<std::pair<size_t, RRegInfo> > writeRegs; ///< first occurecence of reg write
+    Array<std::pair<uint16_t, RRegInfo> > firstRegs; ///< first occurence of reg
     
     void setMaxQueueSizes(const AsmWaitConfig& waitConfig)
     {
@@ -451,8 +448,7 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
     SVRegMap svregWriteOffsets;
     std::vector<AsmRegVarUsage> instrRVUs;
     
-    std::unordered_map<size_t, RRegInfo> readRegs;
-    std::unordered_map<size_t, RRegInfo> writeRegs;
+    std::unordered_map<uint16_t, RRegInfo> firstRegs;
     // process waits and delayed ops
     AsmWaitInstr waitInstr;
     AsmDelayedOp delayedOp;
@@ -477,6 +473,8 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
         AsmWaitInstr gwaitI { rvu.offset, { } };
         for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
             gwaitI.waits[q] = waitConfig.waitQueueSizes[q]-1;
+        
+        std::vector<std::pair<uint16_t, RRegInfo> > curRegs;
         
         if (rvu.offset < cblock.end && rvu.offset <= instrOffset)
         {
@@ -512,9 +510,9 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                 
                 // put to readRegs and writeRegs
                 if ((rvu.rwFlags & ASMRVU_READ) != 0)
-                    readRegs.insert({ rreg, { rvu.offset } });
+                    curRegs.push_back({ qregVal(rreg, false), { rvu.offset } });
                 if ((rvu.rwFlags & ASMRVU_WRITE) != 0)
-                    writeRegs.insert({ rreg, { rvu.offset } });
+                    curRegs.push_back({ qregVal(rreg, true), { rvu.offset } });
                 
                 // rreg
                 if ((rvu.rwFlags & ASMRVU_READ) != 0)
@@ -581,7 +579,8 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                 }
             }
         }
-            
+        
+        // update curQueue sizes from curent waitcnt
         if (genWaitCnt)
             for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
                 curQueueSizes[q] = std::min(curQueueSizes[q], gwaitI.waits[q]);
@@ -670,10 +669,18 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                     }
                 }
                 
+                // update current queue sizes from last delayed ops
                 curQueueSizes[queue2Idx] = wblock.queues[queue1Idx].ordered.size();
                 if (queue1Idx != UINT_MAX)
                     curQueueSizes[queue2Idx] = wblock.queues[queue2Idx].ordered.size();
             }
+            
+            // update current queue sizes
+            for (auto& re: curRegs)
+                std::copy(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum,
+                            re.second.waits);
+            // put current regs to firstRegs
+            firstRegs.insert(curRegs.begin(), curRegs.end());
             // get next instr
             if (!waitHandler.hasNext(waitPos))
                 instrOffset = SIZE_MAX;
@@ -684,22 +691,10 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
             }
         }
         
-        if (rvu.offset < cblock.end && rvu.offset <= instrOffset)
-        {
-            for (auto& re: readRegs)
-                std::copy(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum,
-                          re.second.waits);
-            for (auto& re: writeRegs)
-                std::copy(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum,
-                          re.second.waits);
-            // copy to wblock as array
-            wblock.readRegs.resize(readRegs.size());
-            wblock.writeRegs.resize(writeRegs.size());
-            std::copy(readRegs.begin(), readRegs.end(), wblock.readRegs.begin());
-            std::copy(writeRegs.begin(), writeRegs.end(), wblock.writeRegs.begin());
-            mapSort(wblock.readRegs.begin(), wblock.readRegs.end());
-            mapSort(wblock.writeRegs.begin(), wblock.writeRegs.end());
-        }
+        // copy to wblock as array
+        wblock.firstRegs.resize(firstRegs.size());
+        std::copy(firstRegs.begin(), firstRegs.end(), wblock.firstRegs.begin());
+        mapSort(wblock.firstRegs.begin(), wblock.firstRegs.end());
     }
 }
 
