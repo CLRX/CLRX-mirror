@@ -103,8 +103,8 @@ struct QueueEntry1
 
     // toBEntry - difference offset between output orderedStartPos and
     // b entry orderedStartPos
-    void joinWithRegPlaces(const QueueEntry1& b, size_t toBEntry,
-            size_t opos, std::unordered_map<size_t, size_t>& regPlaces)
+    void joinWithRegPlaces(const QueueEntry1& b, uint16_t toBEntry,
+            uint16_t opos, std::unordered_map<uint16_t, uint16_t>& regPlaces)
     {
         for (auto e: b.regs)
             if (regs.insert(e).second)
@@ -120,8 +120,8 @@ struct QueueEntry1
 
 // toBEntry - difference offset between output orderedStartPos and
 // regPlaces entry orderedStartPos
-static inline void updateRegPlaces(const QueueEntry1& b, size_t toBEntry,
-                size_t opos, std::unordered_map<size_t, size_t>& regPlaces)
+static inline void updateRegPlaces(const QueueEntry1& b, uint16_t toBEntry,
+                uint16_t opos, std::unordered_map<uint16_t, uint16_t>& regPlaces)
 {
     for (auto e: b.regs)
     {
@@ -135,11 +135,11 @@ static inline void updateRegPlaces(const QueueEntry1& b, size_t toBEntry,
 struct CLRX_INTERNAL QueueState1
 {
     cxuint maxQueueSize;
-    size_t orderedStartPos;
+    uint16_t orderedStartPos;
     std::deque<QueueEntry1> ordered;  // ordered items
     QueueEntry1 random;   // items in random order
     // register place in queue - key - reg, value - position
-    std::unordered_map<size_t, size_t> regPlaces;
+    std::unordered_map<uint16_t, uint16_t> regPlaces;
     // request queue size at start of block (by enqueuing and waiting/flushing)
     // used while joining with previous block
     cxuint requestedQueueSize;
@@ -222,13 +222,13 @@ struct CLRX_INTERNAL QueueState1
         requestedQueueSize = std::min(size, requestedQueueSize);
     }
     
-    size_t findMinQueueSizeForReg(uint16_t reg) const
+    uint16_t findMinQueueSizeForReg(uint16_t reg) const
     {
         auto it = regPlaces.find(reg);
         if (it == regPlaces.end())
             // if found, then 0 otherwize not found (UINT_MAX)
             return random.regs.find(reg) != random.regs.end() ? 0 : UINT16_MAX;
-        const ssize_t pos = std::max(ssize_t(it->second - orderedStartPos), ssize_t(0));
+        const int16_t pos = std::max(int16_t(it->second - orderedStartPos), int16_t(0));
         return ordered.size()-1 - cxuint(pos);
     }
     
@@ -239,8 +239,8 @@ struct CLRX_INTERNAL QueueState1
         auto oit1 = ordered.begin();
         auto oit2 = way.ordered.begin();
         const int queueSizeDiff = way.ordered.size() - ordered.size();
-        size_t qpos = orderedStartPos;
-        size_t wayStartPos = way.orderedStartPos;
+        uint16_t qpos = orderedStartPos;
+        uint16_t wayStartPos = way.orderedStartPos;
         if (queueSizeDiff > 0)
         {
             ordered.insert(ordered.begin(), way.ordered.begin(),
@@ -281,8 +281,8 @@ struct CLRX_INTERNAL QueueState1
             ordered.erase(ordered.begin(), ordered.end()-prevOrderedSize);
             ordered.insert(ordered.end(), next.ordered.begin(), next.ordered.end());
             orderedStartPos += ordered.size()-oldOrderedSize;
-            size_t nextStartPos = next.orderedStartPos - prevOrderedSize;
-            size_t qpos = orderedStartPos;
+            uint16_t nextStartPos = next.orderedStartPos - prevOrderedSize;
+            uint16_t qpos = orderedStartPos;
             // update regplaces for front
             for (auto oitx = ordered.begin() + prevOrderedSize; oitx != ordered.end();
                         ++oitx, ++qpos)
