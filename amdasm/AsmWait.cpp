@@ -311,7 +311,8 @@ struct CLRX_INTERNAL QueueState1
 struct CLRX_INTERNAL RRegInfo
 {
     size_t offset;  /// offset where is usage
-    uint16_t waits[ASM_WAIT_MAX_TYPES_NUM]; /// queue sizes
+    uint16_t qsizes[ASM_WAIT_MAX_TYPES_NUM]; /// queue sizes
+    uint16_t waits[ASM_WAIT_MAX_TYPES_NUM];  /// pending waits from block to this place
 };
 
 struct CLRX_INTERNAL WaitFlowStackEntry0
@@ -458,9 +459,11 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
     }
     
     uint16_t curQueueSizes[ASM_WAIT_MAX_TYPES_NUM];
+    uint16_t curWaits[ASM_WAIT_MAX_TYPES_NUM];
     std::fill(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum, uint16_t(0));
+    std::fill(curWaits, curWaits + waitConfig.waitQueuesNum, uint16_t(0));
     
-    bool flushedQueues = 0;
+    cxuint flushedQueues = 0;
     while (usageHandler.hasNext(usagePos))
     {
         const AsmRegVarUsage rvu = usageHandler.nextUsage(usagePos);
@@ -694,7 +697,7 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                 // update current queue sizes
                 for (auto& re: curRegs)
                     std::copy(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum,
-                                re.second.waits);
+                                re.second.qsizes);
                 // put current regs to firstRegs
                 firstRegs.insert(curRegs.begin(), curRegs.end());
             }
