@@ -101,14 +101,16 @@ struct QueueEntry1
         haveDelayedOp |= b.haveDelayedOp;
     }
     
-    void joinWithRegPlaces(const QueueEntry1& b, size_t bstartPos, size_t startPos,
+    // toBEntry - difference offset between b entry orderedStartPos and output
+    // orderedStartPos
+    void joinWithRegPlaces(const QueueEntry1& b, size_t toBEntry,
             size_t opos, std::unordered_map<size_t, size_t>& regPlaces)
     {
         for (auto e: b.regs)
             if (regs.insert(e).second)
             {
                 auto rres = regPlaces.insert(std::make_pair(e, opos));
-                if (rres.second && rres.first->second-startPos < opos-bstartPos)
+                if (rres.second && rres.first->second-toBEntry < opos)
                     rres.first->second = opos;
             }
         regs.insert(b.regs.begin(), b.regs.end());
@@ -116,13 +118,15 @@ struct QueueEntry1
     }
 };
 
-static inline void updateRegPlaces(const QueueEntry1& b, size_t bstartPos, size_t startPos,
+// toBEntry - difference offset between b entry orderedStartPos and output
+// orderedStartPos
+static inline void updateRegPlaces(const QueueEntry1& b, size_t toBEntry,
                 size_t opos, std::unordered_map<size_t, size_t>& regPlaces)
 {
     for (auto e: b.regs)
     {
         auto rres = regPlaces.insert(std::make_pair(e, opos));
-        if (rres.second && rres.first->second-startPos < opos-bstartPos)
+        if (rres.second && rres.first->second-toBEntry < opos)
             rres.first->second = opos;
     }
 }
@@ -247,7 +251,7 @@ struct CLRX_INTERNAL QueueState1
             qpos = orderedStartPos;
             // update regPlaces after pushing to front
             for (auto oitx = ordered.begin(); oitx != oit1; ++oitx, ++qpos)
-                updateRegPlaces(*oitx, orderedStartPos, wayStartPos, qpos, regPlaces);
+                updateRegPlaces(*oitx, orderedStartPos-wayStartPos, qpos, regPlaces);
             wayStartPos += queueSizeDiff;
         }
         else
@@ -257,7 +261,7 @@ struct CLRX_INTERNAL QueueState1
         }
         // join entries
         for (; oit1 != ordered.end(); ++oit1, ++oit2, ++qpos)
-            oit1->joinWithRegPlaces(*oit2, orderedStartPos, wayStartPos, qpos, regPlaces);
+            oit1->joinWithRegPlaces(*oit2, orderedStartPos-wayStartPos, qpos, regPlaces);
         
         firstFlush |= way.firstFlush;
         requestedQueueSize = std::max(requestedQueueSize, way.requestedQueueSize);
@@ -282,7 +286,7 @@ struct CLRX_INTERNAL QueueState1
             // update regplaces for front
             for (auto oitx = ordered.begin() + prevOrderedSize; oitx != ordered.end();
                         ++oitx, ++qpos)
-                updateRegPlaces(*oitx, nextStartPos, orderedStartPos, qpos, regPlaces);
+                updateRegPlaces(*oitx, orderedStartPos-nextStartPos, qpos, regPlaces);
             
             if (ordered.size() > maxQueueSize)
             {
