@@ -268,24 +268,24 @@ struct CLRX_INTERNAL QueueState1
         requestedQueueSize = std::max(requestedQueueSize, way.requestedQueueSize);
     }
     
-    bool joinPrev(const QueueState1& prev)
+    bool joinNext(const QueueState1& next)
     {
         if (!reallyFlushed)
         {
-            if (!prev.random.empty() && !prev.ordered.empty() &&
-                prev.requestedQueueSize == 0)
+            if (!random.empty() && !ordered.empty() && requestedQueueSize == 0)
                 // no change
                 return false;
             
-            const cxuint prevOrderedSize = (requestedQueueSize!=prev.ordered.size() ?
-                    requestedQueueSize-prev.ordered.size() : ordered.size());
-            ordered.insert(ordered.begin(), prev.ordered.end() - prevOrderedSize,
-                           prev.ordered.end());
-            orderedStartPos -= prevOrderedSize;
+            const cxuint oldOrderedSize = ordered.size();
+            const cxuint prevOrderedSize = (next.requestedQueueSize!=ordered.size() ?
+                    next.requestedQueueSize-ordered.size() : next.ordered.size());
+            ordered.erase(ordered.begin(), ordered.end()-prevOrderedSize);
+            ordered.insert(ordered.end(), next.ordered.begin(), next.ordered.end());
+            orderedStartPos += ordered.size()-oldOrderedSize;
             uint16_t qpos = orderedStartPos;
-            auto oitend = ordered.begin() + prevOrderedSize;
             // update regplaces for front
-            for (auto oitx = ordered.begin(); oitx != oitend; ++oitx, ++qpos)
+            for (auto oitx = ordered.begin() + prevOrderedSize; oitx != ordered.end();
+                        ++oitx, ++qpos)
                 updateRegPlaces(*oitx, orderedStartPos, qpos, regPlaces);
             
             if (ordered.size() > maxQueueSize)
@@ -299,7 +299,7 @@ struct CLRX_INTERNAL QueueState1
                 ordered.erase(ordered.begin(), firstOrderedIt);
                 orderedStartPos += toFirst;
             }
-            random.join(prev.random);
+            random.join(next.random);
             requestedQueueSize = ordered.size();
             return true;
         }
@@ -747,162 +747,85 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     // fill queue states
     ISAWaitHandler::ReadPos waitPos{ 0, 0 };
     for (size_t i = 0; i < codeBlocks.size(); i++)
-    {
-        WCodeBlock& wblock = waitCodeBlocks[i];
-        const CodeBlock& cblock = codeBlocks[i];
-        
-        processQueueBlock(cblock, wblock, waitHandler, waitPos, usageHandler, waitConfig,
-                    vregIndexMaps, graphColorMaps, regTypesNum, regRanges, onlyWarnings);
-    }
+        processQueueBlock(codeBlocks[i], waitCodeBlocks[i], waitHandler, waitPos,
+                usageHandler, waitConfig, vregIndexMaps, graphColorMaps, regTypesNum,
+                regRanges, onlyWarnings);
     
-    std::vector<bool> visited(codeBlocks.size(), false);
-    std::unordered_map<size_t, size_t> visitedCount;
-    std::unordered_map<size_t, VectorSet<cxuint> > loopWays;
+    // key - current res first key, value - previous first key and its flowStack pos
+    PrevWaysIndexMap prevWaysIndexMap;
+    // to track ways last block indices pair: block index, flowStackPos)
+    std::pair<size_t, size_t> lastCommonCacheWayPoint{ SIZE_MAX, SIZE_MAX };
+    ResSecondPointsToCache cblocksToCache(codeBlocks.size());
+    std::vector<bool> waysToCache(codeBlocks.size(), false);
+    // main loop variables
+    std::deque<CallStackEntry> callStack;
+    std::unordered_set<BlockIndex> callBlocks;
     std::deque<WaitFlowStackEntry0> flowStack;
-    std::unordered_set<size_t> flowStackBlocks;
-    flowStackBlocks.insert(size_t(0));
-    
     flowStack.push_back(WaitFlowStackEntry0(0, 0, waitConfig));
-    /// find multiply visited points to schedule
+    std::vector<bool> visited(codeBlocks.size(), false);
+    
+    /*
+     * main loop to fill up ssaInfos
+     */
     while (!flowStack.empty())
     {
         WaitFlowStackEntry0& entry = flowStack.back();
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        const WCodeBlock& wblock = waitCodeBlocks[entry.blockIndex];
+        
         if (entry.nextIndex == 0)
         {
+            // process current block
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
-                flowStackBlocks.insert(entry.blockIndex);
+                // code to join queue state in previous with current block
+                for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                    entry.queues[q].joinNext(wblock.queues[q]);
             }
             else
             {
-                if (flowStackBlocks.find(entry.blockIndex) != flowStackBlocks.end())
-                {
-                    // if loop
-                    auto flit = flowStack.end();
-                    flit -= 2;
-                    loopWays[flit->blockIndex].insertValue(flit->nextIndex);
-                }
-                auto vcres = visitedCount.insert({ entry.blockIndex, size_t(2)});
-                if (!vcres.second)
-                    vcres.first->second++;
+                cblocksToCache.increase(entry.blockIndex);
+                ARDOut << "jcblockToCache: " << entry.blockIndex << "=" <<
+                            cblocksToCache.count(entry.blockIndex) << "\n";
+                
+                // back, already visited
                 flowStack.pop_back();
+                
+                size_t curWayBIndex = flowStack.back().blockIndex;
+                if (lastCommonCacheWayPoint.first != SIZE_MAX)
+                {
+                    // mark point of way to cache (res first point)
+                    waysToCache[lastCommonCacheWayPoint.first] = true;
+                    ARDOut << "mark to pfcache " <<
+                            lastCommonCacheWayPoint.first << ", " <<
+                            curWayBIndex << "\n";
+                    prevWaysIndexMap[curWayBIndex] = lastCommonCacheWayPoint;
+                }
+                lastCommonCacheWayPoint = { curWayBIndex, flowStack.size()-1 };
+                ARDOut << "lastCcwP: " << curWayBIndex << "\n";
                 continue;
             }
+        }
+        
+        if (!callStack.empty() &&
+            entry.blockIndex == callStack.back().callBlock.index &&
+            entry.nextIndex-1 == callStack.back().callNextIndex)
+        {
+            const BlockIndex routineBlock = callStack.back().routineBlock;
+            callBlocks.erase(routineBlock);
+            callStack.pop_back(); // just return from call
         }
         
         if (entry.nextIndex < cblock.nexts.size())
         {
             size_t nextBlock = cblock.nexts[entry.nextIndex].block;
-            bool isCall = cblock.nexts[entry.nextIndex].isCall;
-            flowStack.push_back(WaitFlowStackEntry0(nextBlock, 0, isCall, waitConfig));
-        }
-        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
-                // if have any call then go to next block
-                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
-                 !cblock.haveReturn && !cblock.haveEnd)
-        {
-            if (entry.nextIndex!=0) // if back from calls (just return from calls)
-            {
-            }
-            flowStack.push_back(WaitFlowStackEntry0(entry.blockIndex+1, 0, waitConfig));
-            entry.nextIndex++;
-        }
-        else // back
-        {
-            flowStackBlocks.erase(entry.blockIndex);
-            flowStack.pop_back();
-        }
-    }
-    
-    /// join queue state together and add a missing wait instructions
-    flowStack.clear();
-    flowStack.push_back(WaitFlowStackEntry0(0, 0, waitConfig));
-    
-    struct LoopStackEntry
-    {
-        size_t loopBlock;
-        size_t blockBeforeLoop;
-        size_t wayToLoop;
-        cxuint count;
-    };
-    
-    std::deque<LoopStackEntry> loopStack;
-    
-    while (!flowStack.empty())
-    {
-        WaitFlowStackEntry0& entry = flowStack.back();
-        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
-        WCodeBlock& wblock = waitCodeBlocks[entry.blockIndex];
-        if (entry.nextIndex == 0)
-        {
-            auto vcIt = visitedCount.find(entry.blockIndex);
+            //nextBlock.pass = entry.blockIndex.pass;
             
-            // process current block
-            // process only if this ways will be visited from all predecessors
-            auto flit = flowStack.end();
-            if (flowStack.size() > 1)
-            {
-                flit -= 2;
-                auto loopWayIt = loopWays.find(flit->blockIndex);
-                if (loopWayIt != loopWays.end() &&
-                    loopWayIt->second.hasValue(flit->nextIndex))
-                {
-                    if (!loopStack.empty())
-                    {
-                        LoopStackEntry& loopEntry = loopStack.back();
-                        auto lsit = loopStack.end();
-                        if (loopEntry.blockBeforeLoop == flit->blockIndex &&
-                            loopEntry.wayToLoop == flit->nextIndex)
-                        {
-                            // this way
-                            // check whether previous loop is touched twice or
-                            // no loop before
-                            if (loopStack.size() > 1)
-                            {
-                                lsit -= 2;
-                                if (lsit->count < 2)
-                                {
-                                    // if not then skip
-                                    loopStack.pop_back();
-                                    flowStack.pop_back();
-                                    continue;
-                                }
-                            }
-                            
-                            loopEntry.count++;
-                            if (loopEntry.count > 2)
-                            {
-                                // skip, loop has been visited twice
-                                loopStack.pop_back();
-                                flowStack.pop_back();
-                                continue;
-                            }
-                        }
-                    }
-                    // push new loop to stack
-                    loopStack.push_back({ entry.blockIndex, flit->blockIndex,
-                            flit->nextIndex, cxuint(1) });
-                }
-                for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
-                    wblock.queues[q].joinPrev(waitCodeBlocks[flit->blockIndex].queues[q]);
-            }
-            if (vcIt!=visitedCount.end() && vcIt->second>1)
-            {
-                vcIt->second--;
-                // go back (not all ways were merged)
-                flowStack.pop_back();
-                continue;
-            }
+            flowStack.push_back(WaitFlowStackEntry0(nextBlock, 0, waitConfig));
+            entry.nextIndex++;
         }
         
-        if (entry.nextIndex < cblock.nexts.size())
-        {
-            size_t nextBlock = cblock.nexts[entry.nextIndex].block;
-            bool isCall = cblock.nexts[entry.nextIndex].isCall;
-            flowStack.push_back(WaitFlowStackEntry0(nextBlock, 0,  isCall, waitConfig));
-        }
         else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
                 // if have any call then go to next block
                 (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
@@ -914,11 +837,21 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             flowStack.push_back(WaitFlowStackEntry0(entry.blockIndex+1, 0, waitConfig));
             entry.nextIndex++;
         }
-        else // back
+        else
         {
-            if (!loopStack.empty() && loopStack.back().loopBlock==entry.blockIndex)
-                loopStack.pop_back();
+            // back
             flowStack.pop_back();
+            
+            if (!flowStack.empty() && lastCommonCacheWayPoint.first != SIZE_MAX &&
+                    lastCommonCacheWayPoint.second >= flowStack.size())
+            {
+                lastCommonCacheWayPoint =
+                        { flowStack.back().blockIndex, flowStack.size()-1 };
+                ARDOut << "POPlastCcwP: " << lastCommonCacheWayPoint.first << "\n";
+            }
         }
     }
+    
+    // after, that resolve joins (join with already visited code)
+    // next loop
 }
