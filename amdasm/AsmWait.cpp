@@ -583,10 +583,19 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
         if (genWaitCnt && flushedQueues < waitConfig.waitQueuesNum)
             for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
             {
-                if (wblock.queues[q].reallyFlushed)
+                if (!wblock.queues[q].reallyFlushed)
+                {
                     // update wait after flush
                     curWaits[q] = std::min(curWaits[q],
                                 uint16_t(wblock.queues[q].ordered.size()));
+                }
+                else
+                {
+                    // increment flushQueues when queue has been flushed now
+                    if (curWaits[q] != UINT16_MAX)
+                        flushedQueues++;
+                    curWaits[q] = UINT16_MAX;
+                }
             }
         
         if (instrOffset < cblock.end && rvu.offset >= instrOffset)
