@@ -100,9 +100,9 @@ struct QueueEntry1
         regs.insert(b.regs.begin(), b.regs.end());
         haveDelayedOp |= b.haveDelayedOp;
     }
-    
-    // toBEntry - difference offset between b entry orderedStartPos and output
-    // orderedStartPos
+
+    // toBEntry - difference offset between output orderedStartPos and
+    // b entry orderedStartPos
     void joinWithRegPlaces(const QueueEntry1& b, size_t toBEntry,
             size_t opos, std::unordered_map<size_t, size_t>& regPlaces)
     {
@@ -110,7 +110,7 @@ struct QueueEntry1
             if (regs.insert(e).second)
             {
                 auto rres = regPlaces.insert(std::make_pair(e, opos));
-                if (rres.second && rres.first->second-toBEntry < opos)
+                if (rres.second && rres.first->second+toBEntry < opos)
                     rres.first->second = opos;
             }
         regs.insert(b.regs.begin(), b.regs.end());
@@ -118,15 +118,15 @@ struct QueueEntry1
     }
 };
 
-// toBEntry - difference offset between b entry orderedStartPos and output
-// orderedStartPos
+// toBEntry - difference offset between output orderedStartPos and
+// regPlaces entry orderedStartPos
 static inline void updateRegPlaces(const QueueEntry1& b, size_t toBEntry,
                 size_t opos, std::unordered_map<size_t, size_t>& regPlaces)
 {
     for (auto e: b.regs)
     {
         auto rres = regPlaces.insert(std::make_pair(e, opos));
-        if (rres.second && rres.first->second-toBEntry < opos)
+        if (rres.second && rres.first->second+toBEntry < opos)
             rres.first->second = opos;
     }
 }
