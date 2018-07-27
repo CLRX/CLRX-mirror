@@ -141,11 +141,10 @@ struct CLRX_INTERNAL QueueState1
     cxuint requestedQueueSize;
     bool firstFlush;
     bool reallyFlushed; // if really already flushed (queue size has been shrinked)
-    size_t reallyFlushOffset;
     
     QueueState1(cxuint _maxQueueSize = 0) : maxQueueSize(_maxQueueSize),
                 orderedStartPos(0), requestedQueueSize(0),
-                firstFlush(true), reallyFlushed(false), reallyFlushOffset(SIZE_MAX)
+                firstFlush(true), reallyFlushed(false)
     { }
     
     void setMaxQueueSize(cxuint _maxQueueSize)
@@ -199,18 +198,16 @@ struct CLRX_INTERNAL QueueState1
         }
         requestedQueueSize = std::min(requestedQueueSize+1, maxQueueSize);
     }
-    void flushTo(cxuint size, size_t _reallyFlushOffset)
+    void flushTo(cxuint size)
     {
         if (firstFlush && requestedQueueSize < size)
         {
-            if (_reallyFlushOffset != SIZE_MAX)
-                reallyFlushOffset = _reallyFlushOffset;
             // if higher than queue size and higher than requested queue size
             requestedQueueSize = size;
             firstFlush = false;
             return;
         }
-        reallyFlushed = true;
+        reallyFlushed = (ordered.size() <= size);
         firstFlush = false;
         if (size == 0)
             random.regs.clear(); // clear randomly ordered if must be empty
@@ -462,6 +459,8 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
     
     uint16_t curQueueSizes[ASM_WAIT_MAX_TYPES_NUM];
     std::fill(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum, uint16_t(0));
+    
+    bool flushedQueues = 0;
     while (usageHandler.hasNext(usagePos))
     {
         const AsmRegVarUsage rvu = usageHandler.nextUsage(usagePos);
@@ -550,7 +549,7 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                 // generate wait instr
                 wblock.waitInstrs.push_back(gwaitI);
                 for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                    wblock.queues[w].flushTo(gwaitI.waits[w], gwaitI.offset);
+                    wblock.queues[w].flushTo(gwaitI.waits[w]);
             }
         }
         
@@ -566,14 +565,14 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                     gwaitI.waits[w] = std::min(gwaitI.waits[w], waitInstr.waits[w]);
                 wblock.waitInstrs.push_back(gwaitI);
                 for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
-                    wblock.queues[w].flushTo(gwaitI.waits[w], gwaitI.offset);
+                    wblock.queues[w].flushTo(gwaitI.waits[w]);
             }
             else
             {
                 wblock.waitInstrs.push_back(waitInstr);
                 for (cxuint w = 0; w < waitConfig.waitQueuesNum; w++)
                 {
-                    wblock.queues[w].flushTo(waitInstr.waits[w], waitInstr.offset);
+                    wblock.queues[w].flushTo(waitInstr.waits[w]);
                     gwaitI.waits[w] = waitInstr.waits[w];
                     genWaitCnt = true;
                 }
@@ -581,9 +580,20 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
         }
         
         // update curQueue sizes from curent waitcnt
-        if (genWaitCnt)
+        if (genWaitCnt && flushedQueues < waitConfig.waitQueuesNum)
             for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
-                curQueueSizes[q] = std::min(curQueueSizes[q], gwaitI.waits[q]);
+            {
+                if (!wblock.queues[q].reallyFlushed)
+                    curQueueSizes[q] = std::min(curQueueSizes[q],
+                                        uint16_t(wblock.queues[q].ordered.size()));
+                else
+                {
+                    // queues flushes free space (entries) before this block
+                    if (curQueueSizes[q] != UINT16_MAX)
+                        flushedQueues++;
+                    curQueueSizes[q] = UINT16_MAX;
+                }
+            }
         
         if (instrOffset < cblock.end && rvu.offset >= instrOffset)
         {
@@ -670,17 +680,24 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                 }
                 
                 // update current queue sizes from last delayed ops
-                curQueueSizes[queue2Idx] = wblock.queues[queue1Idx].ordered.size();
-                if (queue1Idx != UINT_MAX)
-                    curQueueSizes[queue2Idx] = wblock.queues[queue2Idx].ordered.size();
+                if (flushedQueues < waitConfig.waitQueuesNum)
+                {
+                    curQueueSizes[queue2Idx] = wblock.queues[queue1Idx].ordered.size();
+                    if (queue1Idx != UINT_MAX)
+                        curQueueSizes[queue2Idx] = wblock.queues[queue2Idx].ordered.size();
+                }
             }
             
-            // update current queue sizes
-            for (auto& re: curRegs)
-                std::copy(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum,
-                            re.second.waits);
-            // put current regs to firstRegs
-            firstRegs.insert(curRegs.begin(), curRegs.end());
+            // only if any not flushed queue
+            if (flushedQueues < waitConfig.waitQueuesNum)
+            {
+                // update current queue sizes
+                for (auto& re: curRegs)
+                    std::copy(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum,
+                                re.second.waits);
+                // put current regs to firstRegs
+                firstRegs.insert(curRegs.begin(), curRegs.end());
+            }
             // get next instr
             if (!waitHandler.hasNext(waitPos))
                 instrOffset = SIZE_MAX;
