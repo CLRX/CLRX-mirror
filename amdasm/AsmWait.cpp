@@ -185,6 +185,13 @@ struct CLRX_INTERNAL QueueState1
         {
             // move first entry in ordered queue to first ordered
             QueueEntry1& firstOrdered = ordered.front();
+            for (auto e: firstOrdered.regs)
+            {
+                auto rpit = regPlaces.find(e);
+                 // update regPlaces for firstOrdered before joining
+                if (rpit->second == orderedStartPos)
+                    rpit->second++;
+            }
             auto ordit = ordered.begin();
             ++ordit; // second entry
             QueueEntry1& second = *ordit;
@@ -228,7 +235,7 @@ struct CLRX_INTERNAL QueueState1
         if (it == regPlaces.end())
             // if found, then 0 otherwize not found (UINT_MAX)
             return random.regs.find(reg) != random.regs.end() ? 0 : UINT16_MAX;
-        const int16_t pos = std::max(int16_t(it->second - orderedStartPos), int16_t(0));
+        const uint16_t pos = it->second - orderedStartPos;
         return ordered.size()-1 - cxuint(pos);
     }
     
@@ -252,7 +259,6 @@ struct CLRX_INTERNAL QueueState1
             // update regPlaces after pushing to front
             for (auto oitx = ordered.begin(); oitx != oit1; ++oitx, ++qpos)
                 updateRegPlaces(*oitx, orderedStartPos-wayStartPos, qpos, regPlaces);
-            wayStartPos += queueSizeDiff;
         }
         else
         {
@@ -293,6 +299,9 @@ struct CLRX_INTERNAL QueueState1
                 // push to first ordered
                 size_t toFirst = ordered.size() - maxQueueSize;
                 auto firstOrderedIt = ordered.begin() + toFirst;
+                for (auto it = ordered.begin(); it!=firstOrderedIt; ++it)
+                    firstOrderedIt->joinWithRegPlaces(*it, 0,
+                            orderedStartPos + toFirst, regPlaces);
                 ordered.erase(ordered.begin(), firstOrderedIt);
                 orderedStartPos += toFirst;
             }
