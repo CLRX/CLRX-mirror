@@ -374,7 +374,7 @@ struct CLRX_INTERNAL WaitCodeBlock
 {
     QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
     std::vector<AsmWaitInstr> waitInstrs;
-    Array<std::pair<uint16_t, RRegInfo> > firstRegs; ///< first occurence of reg
+    std::vector<std::pair<uint16_t, RRegInfo> > firstRegs; ///< first occurence of reg
     
     void setMaxQueueSizes(const AsmWaitConfig& waitConfig)
     {
@@ -750,6 +750,66 @@ static void processQueueBlock(const CodeBlock& cblock, WaitCodeBlock& wblock,
     }
 }
 
+static void generateWaitInstrsWhileJoining(const AsmWaitConfig& waitConfig,
+        const QueueState1* queues,
+        const std::vector<std::pair<uint16_t, RRegInfo> >& firstRegs,
+        std::vector<AsmWaitInstr>& waitInstrs, bool onlyWarnings)
+{
+    for (const auto& entry: firstRegs)
+    {
+        bool genWaitCnt = false;
+        AsmWaitInstr gwaitI { entry.second.offset, { } };
+        for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+            gwaitI.waits[q] = waitConfig.waitQueueSizes[q]-1;
+        
+        for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+        {
+            uint16_t waitCnt = queues[q].findMinQueueSizeForReg(entry.first);
+            if (waitCnt != UINT16_MAX)
+            {
+                if (!onlyWarnings)
+                {
+                    gwaitI.waits[q] = std::min(gwaitI.waits[q], waitCnt);
+                    genWaitCnt = true;
+                }
+            }
+            if (genWaitCnt)
+            {
+                // generate wait instr
+                auto witStart = std::lower_bound(waitInstrs.begin(), waitInstrs.end(),
+                    AsmWaitInstr{entry.second.offset},
+                    [](const AsmWaitInstr& a, const AsmWaitInstr& b)
+                    { return a.offset < b.offset; });
+                // remove obsolete flushes
+                for (auto wit = witStart; wit != waitInstrs.end(); ++wit)
+                {
+                    cxuint toRemoveCount = 0;
+                    for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                        if (wit->waits[q] >= entry.second.qsizes[q])
+                        {
+                            toRemoveCount++;
+                            // set as no wait (max wait queue size)
+                            wit->waits[q] = waitConfig.waitQueueSizes[q]-1;
+                        }
+                    if (toRemoveCount == waitConfig.waitQueuesNum)
+                        // remove instruction
+                        wit->offset = SIZE_MAX;
+                }
+                size_t witStartIndex = witStart - waitInstrs.begin();
+                // remove obsolete wait instructions
+                auto witEnd = std::remove_if(witStart, waitInstrs.end(),
+                        [](const AsmWaitInstr& a)
+                        { return a.offset == SIZE_MAX; });
+                if (waitInstrs.capacity() < size_t(witEnd - waitInstrs.begin() + 1))
+                    // prepare capacity for insertion new instruction
+                    waitInstrs.reserve(witEnd - waitInstrs.begin() + 1);
+                waitInstrs.resize(witEnd - waitInstrs.begin());
+                waitInstrs.insert(waitInstrs.begin() + witStartIndex, gwaitI);
+            }
+        }
+    }
+}
+
 AsmWaitScheduler::AsmWaitScheduler(const AsmWaitConfig& _asmWaitConfig,
         Assembler& _assembler, const std::vector<CodeBlock>& _codeBlocks,
         const VarIndexMap* _vregIndexMaps, const Array<cxuint>* _graphColorMaps,
@@ -799,7 +859,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     {
         WaitFlowStackEntry0& entry = flowStack.back();
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
-        const WaitCodeBlock& wblock = waitCodeBlocks[entry.blockIndex];
+        WaitCodeBlock& wblock = waitCodeBlocks[entry.blockIndex];
         
         if (entry.nextIndex == 0)
         {
@@ -807,6 +867,8 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             if (!visited[entry.blockIndex])
             {
                 visited[entry.blockIndex] = true;
+                generateWaitInstrsWhileJoining(waitConfig, entry.queues, wblock.firstRegs,
+                            wblock.waitInstrs, onlyWarnings);
                 // code to join queue state in previous with current block
                 for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
                     entry.queues[q].joinNext(wblock.queues[q]);
