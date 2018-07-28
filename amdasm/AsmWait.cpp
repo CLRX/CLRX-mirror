@@ -317,7 +317,16 @@ struct CLRX_INTERNAL QueueState1
 struct CLRX_INTERNAL RRegInfo
 {
     size_t offset;  /// offset where is usage
+    uint16_t qsizes[ASM_WAIT_MAX_TYPES_NUM];  /// queue sizes in this reg usage
     uint16_t waits[ASM_WAIT_MAX_TYPES_NUM];  /// pending waits from block to this place
+};
+
+struct CLRX_INTERNAL RRegInfo2 // for cache or subroutine
+{
+    size_t offset;  /// offset where is usage
+    uint16_t qsizes[ASM_WAIT_MAX_TYPES_NUM];  /// queue sizes in this reg usage
+    uint16_t waits[ASM_WAIT_MAX_TYPES_NUM];  /// pending waits from block to this place
+    uint16_t nextReg; // next reg in this tree
 };
 
 struct CLRX_INTERNAL WaitFlowStackEntry0
@@ -361,7 +370,7 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
     }
 };
 
-struct CLRX_INTERNAL WCodeBlock
+struct CLRX_INTERNAL WaitCodeBlock
 {
     QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
     std::vector<AsmWaitInstr> waitInstrs;
@@ -438,7 +447,7 @@ static cxuint getRRegFromSVReg(const AsmSingleVReg& svreg, size_t outSSAIdIdx,
     return rreg;
 }
 
-static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
+static void processQueueBlock(const CodeBlock& cblock, WaitCodeBlock& wblock,
         ISAWaitHandler& waitHandler, ISAWaitHandler::ReadPos& waitPos,
         ISAUsageHandler& usageHandler, const AsmWaitConfig& waitConfig,
         const VarIndexMap* vregIndexMaps, const Array<cxuint>* graphColorMaps,
@@ -463,8 +472,11 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
         instrOffset = (isWaitInstr ? waitInstr.offset : delayedOp.offset);
     }
     
+    uint16_t curQueueSizes[ASM_WAIT_MAX_TYPES_NUM];
     uint16_t curWaits[ASM_WAIT_MAX_TYPES_NUM];
     std::fill(curWaits, curWaits + waitConfig.waitQueuesNum, uint16_t(0));
+    // we assume that current queue size at start is not limited
+    std::fill(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum, UINT16_MAX);
     
     cxuint flushedQueues = 0;
     while (usageHandler.hasNext(usagePos))
@@ -592,6 +604,7 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                 if (!wblock.queues[q].reallyFlushed)
                 {
                     // update wait after flush
+                    curQueueSizes[q] = wblock.queues[q].requestedQueueSize;
                     curWaits[q] = std::min(curWaits[q],
                                 uint16_t(wblock.queues[q].ordered.size()));
                 }
@@ -691,13 +704,18 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
                 // update current queue sizes from last delayed ops
                 if (flushedQueues < waitConfig.waitQueuesNum)
                 {
+                    curQueueSizes[queue1Idx] = wblock.queues[queue1Idx].requestedQueueSize;
                     // increment curWait for queue1
                     curWaits[queue1Idx] = std::min(uint16_t(curWaits[queue1Idx]+1),
                                     waitConfig.waitQueueSizes[queue1Idx]);
                     if (queue2Idx != UINT_MAX)
+                    {
+                        curQueueSizes[queue2Idx] =
+                                wblock.queues[queue2Idx].requestedQueueSize;
                         // increment curWait for queue2
                         curWaits[queue2Idx] = std::min(uint16_t(curWaits[queue2Idx]+1),
                                     waitConfig.waitQueueSizes[queue2Idx]);
+                    }
                 }
             }
             
@@ -706,8 +724,12 @@ static void processQueueBlock(const CodeBlock& cblock, WCodeBlock& wblock,
             {
                 // update current queue sizes
                 for (auto& re: curRegs)
+                {
+                    std::copy(curQueueSizes, curQueueSizes + waitConfig.waitQueuesNum,
+                                re.second.qsizes);
                     std::copy(curWaits, curWaits + waitConfig.waitQueuesNum,
                                 re.second.waits);
+                }
                 // put current regs to firstRegs
                 firstRegs.insert(curRegs.begin(), curRegs.end());
             }
@@ -744,8 +766,8 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     
     cxuint regRanges[MAX_REGTYPES_NUM*2];
     size_t regTypesNum;
-    std::vector<WCodeBlock> waitCodeBlocks(codeBlocks.size());
-    for(WCodeBlock& wblock: waitCodeBlocks)
+    std::vector<WaitCodeBlock> waitCodeBlocks(codeBlocks.size());
+    for(WaitCodeBlock& wblock: waitCodeBlocks)
         wblock.setMaxQueueSizes(waitConfig);
     
     assembler.isaAssembler->getRegisterRanges(regTypesNum, regRanges);
@@ -777,7 +799,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     {
         WaitFlowStackEntry0& entry = flowStack.back();
         const CodeBlock& cblock = codeBlocks[entry.blockIndex];
-        const WCodeBlock& wblock = waitCodeBlocks[entry.blockIndex];
+        const WaitCodeBlock& wblock = waitCodeBlocks[entry.blockIndex];
         
         if (entry.nextIndex == 0)
         {
