@@ -774,38 +774,7 @@ static void generateWaitInstrsWhileJoining(const AsmWaitConfig& waitConfig,
                 }
             }
             if (genWaitCnt)
-            {
-                // generate wait instr
-                auto witStart = std::lower_bound(waitInstrs.begin(), waitInstrs.end(),
-                    AsmWaitInstr{entry.second.offset},
-                    [](const AsmWaitInstr& a, const AsmWaitInstr& b)
-                    { return a.offset < b.offset; });
-                // remove obsolete flushes
-                for (auto wit = witStart; wit != waitInstrs.end(); ++wit)
-                {
-                    cxuint toRemoveCount = 0;
-                    for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
-                        if (wit->waits[q] >= entry.second.qsizes[q])
-                        {
-                            toRemoveCount++;
-                            // set as no wait (max wait queue size)
-                            wit->waits[q] = waitConfig.waitQueueSizes[q]-1;
-                        }
-                    if (toRemoveCount == waitConfig.waitQueuesNum)
-                        // remove instruction
-                        wit->offset = SIZE_MAX;
-                }
-                size_t witStartIndex = witStart - waitInstrs.begin();
-                // remove obsolete wait instructions
-                auto witEnd = std::remove_if(witStart, waitInstrs.end(),
-                        [](const AsmWaitInstr& a)
-                        { return a.offset == SIZE_MAX; });
-                if (waitInstrs.capacity() < size_t(witEnd - waitInstrs.begin() + 1))
-                    // prepare capacity for insertion new instruction
-                    waitInstrs.reserve(witEnd - waitInstrs.begin() + 1);
-                waitInstrs.resize(witEnd - waitInstrs.begin());
-                waitInstrs.insert(waitInstrs.begin() + witStartIndex, gwaitI);
-            }
+                waitInstrs.push_back(gwaitI);
         }
     }
 }
