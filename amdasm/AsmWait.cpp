@@ -135,6 +135,7 @@ static inline void updateRegPlaces(const QueueEntry1& b, uint16_t toBEntry,
 struct CLRX_INTERNAL QueueState1
 {
     cxuint maxQueueSize;
+    uint16_t minQueueIndex;
     uint16_t orderedStartPos;
     std::deque<QueueEntry1> ordered;  // ordered items
     QueueEntry1 random;   // items in random order
@@ -147,7 +148,7 @@ struct CLRX_INTERNAL QueueState1
     bool reallyFlushed; // if really already flushed (queue size has been shrinked)
     
     QueueState1(cxuint _maxQueueSize = 0) : maxQueueSize(_maxQueueSize),
-                orderedStartPos(0), requestedQueueSize(0),
+                minQueueIndex(0), orderedStartPos(0), requestedQueueSize(0),
                 firstFlush(true), reallyFlushed(false)
     { }
     
@@ -185,12 +186,16 @@ struct CLRX_INTERNAL QueueState1
         {
             // move first entry in ordered queue to first ordered
             QueueEntry1& firstOrdered = ordered.front();
-            for (auto e: firstOrdered.regs)
+            orderedStartPos++; // next start pos for ordered queue for first entry
+            if (orderedStartPos-minQueueIndex > 10000)
             {
-                auto rpit = regPlaces.find(e);
-                 // update regPlaces for firstOrdered before joining
-                if (rpit->second == orderedStartPos)
-                    rpit->second++;
+                for (auto e: firstOrdered.regs)
+                {
+                    auto rpit = regPlaces.find(e);
+                    // update regPlaces for firstOrdered before joining
+                    rpit->second = orderedStartPos;
+                }
+                minQueueIndex = orderedStartPos;
             }
             auto ordit = ordered.begin();
             ++ordit; // second entry
@@ -198,7 +203,6 @@ struct CLRX_INTERNAL QueueState1
             // to second entry
             second.regs.insert(firstOrdered.regs.begin(), firstOrdered.regs.end());
             ordered.pop_front();
-            orderedStartPos++; // next start pos for ordered queue for first entry
         }
         requestedQueueSize = std::min(requestedQueueSize+1, maxQueueSize);
     }
@@ -221,11 +225,12 @@ struct CLRX_INTERNAL QueueState1
             {
                 auto prit = regPlaces.find(e);
                 if (prit != regPlaces.end() && prit->second == orderedStartPos)
-                regPlaces.erase(prit); // remove from regPlaces if in this place
+                    regPlaces.erase(prit); // remove from regPlaces if in this place
             }
             ordered.pop_front();
             orderedStartPos++;
         }
+        minQueueIndex = orderedStartPos;
         requestedQueueSize = std::min(size, requestedQueueSize);
     }
     
@@ -235,7 +240,8 @@ struct CLRX_INTERNAL QueueState1
         if (it == regPlaces.end())
             // if found, then 0 otherwize not found (UINT_MAX)
             return random.regs.find(reg) != random.regs.end() ? 0 : UINT16_MAX;
-        const uint16_t pos = it->second - orderedStartPos;
+        const uint16_t pos = std::min(
+                    int(maxQueueSize), int(it->second - orderedStartPos));
         return ordered.size()-1 - cxuint(pos);
     }
     
@@ -773,9 +779,9 @@ static void generateWaitInstrsWhileJoining(const AsmWaitConfig& waitConfig,
                     genWaitCnt = true;
                 }
             }
-            if (genWaitCnt)
-                waitInstrs.push_back(gwaitI);
         }
+        if (genWaitCnt)
+            waitInstrs.push_back(gwaitI);
     }
 }
 
