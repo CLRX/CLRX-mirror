@@ -757,10 +757,11 @@ static void processQueueBlock(const CodeBlock& cblock, WaitCodeBlock& wblock,
 }
 
 static void generateWaitInstrsWhileJoining(const AsmWaitConfig& waitConfig,
-        const QueueState1* queues,
-        const std::vector<std::pair<uint16_t, RRegInfo> >& firstRegs,
-        std::vector<AsmWaitInstr>& waitInstrs, bool onlyWarnings)
+        QueueState1* queues, const std::vector<std::pair<uint16_t, RRegInfo> >& firstRegs,
+        std::vector<AsmWaitInstr>& waitInstrs, uint16_t* minReqQueueSizes,
+        bool onlyWarnings)
 {
+    std::fill(minReqQueueSizes, minReqQueueSizes + waitConfig.waitQueuesNum, UINT16_MAX);
     for (const auto& entry: firstRegs)
     {
         bool genWaitCnt = false;
@@ -777,6 +778,8 @@ static void generateWaitInstrsWhileJoining(const AsmWaitConfig& waitConfig,
                 {
                     gwaitI.waits[q] = std::min(gwaitI.waits[q], waitCnt);
                     genWaitCnt = true;
+                    minReqQueueSizes[q] = std::min(entry.second.qsizes[q],
+                                minReqQueueSizes[q]);
                 }
             }
         }
@@ -841,12 +844,17 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             // process current block
             if (!visited[entry.blockIndex])
             {
+                uint16_t minReqQueueSizes[ASM_WAIT_MAX_TYPES_NUM];
                 visited[entry.blockIndex] = true;
                 generateWaitInstrsWhileJoining(waitConfig, entry.queues, wblock.firstRegs,
-                            wblock.waitInstrs, onlyWarnings);
+                            wblock.waitInstrs, minReqQueueSizes, onlyWarnings);
                 // code to join queue state in previous with current block
                 for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                {
+                    //if (minReqQueueSizes[q]!=UINT16_MAX && !wblock.queues[q].reallyFlushed)
+                      //  wblock.queues[q].requestedQueueSize = minReqQueueSizes[q];
                     entry.queues[q].joinNext(wblock.queues[q]);
+                }
             }
             else
             {
