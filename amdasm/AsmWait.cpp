@@ -775,7 +775,7 @@ static void optimizeWaitInstrs(const AsmWaitConfig& waitConfig,
         cxuint toRemove = 0;
         for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
         {
-            if (wi.waits[q] - wi.qsizes[q] > extraQSizes[q])
+            if (wi.waits[q] - wi.qsizes[q] >= extraQSizes[q])
             {
                 // mark to remove
                 wi.waits[q] = UINT16_MAX;
@@ -837,6 +837,9 @@ static void generateWaitInstrsWhileJoining(const AsmWaitConfig& waitConfig,
             waitInstrs.push_back(gwaitI);
     }
     
+    std::sort(waitInstrs.begin(), waitInstrs.end(),
+              [](const WaitInstrXInfo& a, const WaitInstrXInfo& b)
+              { return a.offset < b.offset; });
     optimizeWaitInstrs(waitConfig, waitInstrs);
 }
 
