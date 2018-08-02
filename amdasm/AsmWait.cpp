@@ -153,7 +153,7 @@ struct CLRX_INTERNAL QueueState1
     { }
     
     void setMaxQueueSize(cxuint _maxQueueSize)
-    { maxQueueSize = _maxQueueSize; }
+    { requestedQueueSize = maxQueueSize = _maxQueueSize; }
     
     void pushOrdered(uint16_t reg)
     {
@@ -208,7 +208,7 @@ struct CLRX_INTERNAL QueueState1
     }
     void flushTo(cxuint size)
     {
-        if (firstFlush && requestedQueueSize < size)
+        if (firstFlush && ordered.size() < size)
         {
             // if higher than queue size and higher than requested queue size
             requestedQueueSize = size;
