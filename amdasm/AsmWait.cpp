@@ -148,7 +148,7 @@ struct CLRX_INTERNAL QueueState1
     bool reallyFlushed; // if really already flushed (queue size has been shrinked)
     
     QueueState1(cxuint _maxQueueSize = 0) : maxQueueSize(_maxQueueSize),
-                minQueueIndex(0), orderedStartPos(0), requestedQueueSize(0),
+                minQueueIndex(0), orderedStartPos(0), requestedQueueSize(_maxQueueSize),
                 firstFlush(true), reallyFlushed(false)
     { }
     
@@ -204,7 +204,7 @@ struct CLRX_INTERNAL QueueState1
             second.regs.insert(firstOrdered.regs.begin(), firstOrdered.regs.end());
             ordered.pop_front();
         }
-        requestedQueueSize = std::min(requestedQueueSize+1, maxQueueSize);
+        requestedQueueSize = std::max(cxuint(ordered.size()), maxQueueSize);
     }
     void flushTo(cxuint size)
     {
