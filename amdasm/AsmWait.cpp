@@ -376,10 +376,19 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
     }
 };
 
+struct CLRX_INTERNAL WaitInstrXInfo
+{
+    size_t offset;
+    uint16_t waits[ASM_WAIT_MAX_TYPES_NUM];
+    uint16_t qsizes[ASM_WAIT_MAX_TYPES_NUM];
+};
+
 struct CLRX_INTERNAL WaitCodeBlock
 {
     QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
     std::vector<AsmWaitInstr> waitInstrs;
+    // before wait instrs for delayed op in this block
+    std::vector<WaitInstrXInfo> firstWaitInstrs;
     std::vector<std::pair<uint16_t, RRegInfo> > firstRegs; ///< first occurence of reg
     
     void setMaxQueueSizes(const AsmWaitConfig& waitConfig)
@@ -758,7 +767,7 @@ static void processQueueBlock(const CodeBlock& cblock, WaitCodeBlock& wblock,
 
 static void generateWaitInstrsWhileJoining(const AsmWaitConfig& waitConfig,
         QueueState1* queues, const std::vector<std::pair<uint16_t, RRegInfo> >& firstRegs,
-        std::vector<AsmWaitInstr>& waitInstrs, uint16_t* extraMinQueueSizes,
+        std::vector<WaitInstrXInfo>& waitInstrs, uint16_t* extraMinQueueSizes,
         bool onlyWarnings)
 {
     std::fill(extraMinQueueSizes,
@@ -766,9 +775,12 @@ static void generateWaitInstrsWhileJoining(const AsmWaitConfig& waitConfig,
     for (const auto& entry: firstRegs)
     {
         bool genWaitCnt = false;
-        AsmWaitInstr gwaitI { entry.second.offset, { } };
+        WaitInstrXInfo gwaitI { entry.second.offset, { } };
         for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+        {
             gwaitI.waits[q] = waitConfig.waitQueueSizes[q]-1;
+            gwaitI.qsizes[q] = entry.second.qsizes[q];
+        }
         
         for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
         {
@@ -787,6 +799,14 @@ static void generateWaitInstrsWhileJoining(const AsmWaitConfig& waitConfig,
         }
         if (genWaitCnt)
             waitInstrs.push_back(gwaitI);
+    }
+}
+
+static void optimizeWaitInstrs(std::vector<WaitInstrXInfo>& waitInstrs)
+{
+    uint16_t qsizes[ASM_WAIT_MAX_TYPES_NUM];
+    for (WaitInstrXInfo& wi: waitInstrs)
+    {
     }
 }
 
@@ -849,7 +869,7 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                 uint16_t minExtraQueueSizes[ASM_WAIT_MAX_TYPES_NUM];
                 visited[entry.blockIndex] = true;
                 generateWaitInstrsWhileJoining(waitConfig, entry.queues, wblock.firstRegs,
-                            wblock.waitInstrs, minExtraQueueSizes, onlyWarnings);
+                            wblock.firstWaitInstrs, minExtraQueueSizes, onlyWarnings);
                 // code to join queue state in previous with current block
                 for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
                 {
