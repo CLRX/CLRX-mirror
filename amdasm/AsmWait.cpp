@@ -204,7 +204,7 @@ struct CLRX_INTERNAL QueueState1
             second.regs.insert(firstOrdered.regs.begin(), firstOrdered.regs.end());
             ordered.pop_front();
         }
-        requestedQueueSize = std::max(cxuint(ordered.size()), maxQueueSize);
+        requestedQueueSize = std::max(requestedQueueSize+1, maxQueueSize);
     }
     void flushTo(cxuint size)
     {
