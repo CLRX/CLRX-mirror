@@ -765,6 +765,42 @@ static void processQueueBlock(const CodeBlock& cblock, WaitCodeBlock& wblock,
     }
 }
 
+static void optimizeWaitInstrs(const AsmWaitConfig& waitConfig,
+                std::vector<WaitInstrXInfo>& waitInstrs)
+{
+    uint16_t extraQSizes[ASM_WAIT_MAX_TYPES_NUM];
+    std::fill(extraQSizes, extraQSizes + waitConfig.waitQueuesNum, uint16_t(UINT16_MAX));
+    for (WaitInstrXInfo& wi: waitInstrs)
+    {
+        cxuint toRemove = 0;
+        for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+        {
+            if (wi.waits[q] - wi.qsizes[q] > extraQSizes[q])
+            {
+                // mark to remove
+                wi.waits[q] = UINT16_MAX;
+                toRemove++;
+            }
+            else
+                // update new extraQSize for this queue
+                extraQSizes[q] = wi.waits[q] - wi.qsizes[q];
+        }
+        
+        if (toRemove == waitConfig.waitQueuesNum)
+            wi.offset = SIZE_MAX; // to remove
+        else
+            // correct waits
+            for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
+                if (wi.waits[q] == UINT16_MAX)
+                    wi.waits[q] = waitConfig.waitQueueSizes[q] - 1;
+    }
+    
+    const size_t newSize = std::remove_if(waitInstrs.begin(), waitInstrs.end(),
+                [](const WaitInstrXInfo& wi)
+                { return wi.offset == SIZE_MAX; }) - waitInstrs.begin();
+    waitInstrs.resize(newSize);
+}
+
 static void generateWaitInstrsWhileJoining(const AsmWaitConfig& waitConfig,
         QueueState1* queues, const std::vector<std::pair<uint16_t, RRegInfo> >& firstRegs,
         std::vector<WaitInstrXInfo>& waitInstrs, uint16_t* extraMinQueueSizes,
@@ -800,14 +836,8 @@ static void generateWaitInstrsWhileJoining(const AsmWaitConfig& waitConfig,
         if (genWaitCnt)
             waitInstrs.push_back(gwaitI);
     }
-}
-
-static void optimizeWaitInstrs(std::vector<WaitInstrXInfo>& waitInstrs)
-{
-    uint16_t qsizes[ASM_WAIT_MAX_TYPES_NUM];
-    for (WaitInstrXInfo& wi: waitInstrs)
-    {
-    }
+    
+    optimizeWaitInstrs(waitConfig, waitInstrs);
 }
 
 AsmWaitScheduler::AsmWaitScheduler(const AsmWaitConfig& _asmWaitConfig,
@@ -868,8 +898,12 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
             {
                 uint16_t minExtraQueueSizes[ASM_WAIT_MAX_TYPES_NUM];
                 visited[entry.blockIndex] = true;
+                std::vector<WaitInstrXInfo> thisWaitInstrs;
                 generateWaitInstrsWhileJoining(waitConfig, entry.queues, wblock.firstRegs,
-                            wblock.firstWaitInstrs, minExtraQueueSizes, onlyWarnings);
+                            thisWaitInstrs, minExtraQueueSizes, onlyWarnings);
+                // insert to firstWaitInstrs in wblock
+                wblock.firstWaitInstrs.insert(wblock.firstWaitInstrs.end(),
+                            thisWaitInstrs.begin(), thisWaitInstrs.end());
                 // code to join queue state in previous with current block
                 for (cxuint q = 0; q < waitConfig.waitQueuesNum; q++)
                 {
