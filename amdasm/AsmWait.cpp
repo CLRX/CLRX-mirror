@@ -283,13 +283,15 @@ struct CLRX_INTERNAL QueueState1
     {
         if (!reallyFlushed)
         {
-            if (!random.empty() && !ordered.empty() && requestedQueueSize == 0)
+            if (next.random.empty() && next.ordered.empty() &&
+                next.requestedQueueSize == maxQueueSize)
                 // no change
                 return false;
             
+            cxuint nextReqQSize = std::min(next.requestedQueueSize, requestedQueueSize);
             const cxuint oldOrderedSize = ordered.size();
-            const cxuint prevOrderedSize = (next.requestedQueueSize!=ordered.size() ?
-                    next.requestedQueueSize-ordered.size() : next.ordered.size());
+            const cxuint prevOrderedSize = (nextReqQSize!=ordered.size() ?
+                    nextReqQSize-ordered.size() : next.ordered.size());
             ordered.erase(ordered.begin(), ordered.end()-prevOrderedSize);
             ordered.insert(ordered.end(), next.ordered.begin(), next.ordered.end());
             orderedStartPos += ordered.size()-oldOrderedSize;
@@ -312,7 +314,7 @@ struct CLRX_INTERNAL QueueState1
                 orderedStartPos += toFirst;
             }
             random.join(next.random);
-            requestedQueueSize = ordered.size();
+            requestedQueueSize = std::min(nextReqQSize, maxQueueSize);
             return true;
         }
         
@@ -912,8 +914,8 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
                 {
                     if (minExtraQueueSizes[q]!=UINT16_MAX &&
                         !wblock.queues[q].reallyFlushed)
-                        wblock.queues[q].requestedQueueSize = std::min(
-                            size_t(wblock.queues[q].requestedQueueSize),
+                        entry.queues[q].requestedQueueSize = std::min(
+                            size_t(entry.queues[q].requestedQueueSize),
                             minExtraQueueSizes[q] + wblock.queues[q].ordered.size());
                     entry.queues[q].joinNext(wblock.queues[q]);
                 }
