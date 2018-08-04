@@ -837,14 +837,15 @@ static void generateWaitInstrsWhileJoining(const AsmWaitConfig& waitConfig,
             uint16_t waitCnt = queues[q].findMinQueueSizeForReg(entry.first);
             if (waitCnt != UINT16_MAX)
             {
-                if (!onlyWarnings)
+                waitCnt = std::min(gwaitI.waits[q], waitCnt);
+                if (!onlyWarnings && waitCnt < entry.second.qsizes[q])
                 {
-                    gwaitI.waits[q] = std::min(gwaitI.waits[q], waitCnt);
+                    gwaitI.waits[q] = waitCnt;
                     genWaitCnt = true;
-                    extraMinQueueSizes[q] = std::min(
-                                uint16_t(entry.second.qsizes[q] - entry.second.waits[q]),
-                                extraMinQueueSizes[q]);
                 }
+                extraMinQueueSizes[q] = std::min(
+                            uint16_t(entry.second.qsizes[q] - entry.second.waits[q]),
+                            extraMinQueueSizes[q]);
             }
         }
         if (genWaitCnt)
