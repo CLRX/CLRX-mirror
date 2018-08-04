@@ -322,6 +322,11 @@ struct CLRX_INTERNAL QueueState1
     }
 };
 
+struct CLRX_INTERNAL WaitFirstCacheEntry
+{
+    QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
+};
+
 struct CLRX_INTERNAL RRegInfo
 {
     size_t offset;  /// offset where is usage
@@ -329,12 +334,21 @@ struct CLRX_INTERNAL RRegInfo
     uint16_t waits[ASM_WAIT_MAX_TYPES_NUM];  /// pending waits from block to this place
 };
 
-struct CLRX_INTERNAL RRegInfo2 // for cache or subroutine
+typedef std::unordered_map<uint16_t, RRegInfo> RRegMap;
+
+struct CLRX_INTERNAL WaitSecRRegTreeEntry
 {
-    size_t offset;  /// offset where is usage
-    uint16_t qsizes[ASM_WAIT_MAX_TYPES_NUM];  /// queue sizes in this reg usage
-    uint16_t waits[ASM_WAIT_MAX_TYPES_NUM];  /// pending waits from block to this place
-    uint16_t nextReg; // next reg in this tree
+    size_t blockIndex;
+    std::vector<uint16_t> firstRegs; // sorted
+    std::vector<size_t> nextBlocks;
+};
+
+struct CLRX_INTERNAL WaitSecCacheEntry
+{
+    RRegMap firstRegs;
+    // tree of first regs, first entry is start point
+    // nextBlocks points to next points of ways
+    std::vector<WaitSecCacheEntry> firstRegsOrdering;
 };
 
 struct CLRX_INTERNAL WaitFlowStackEntry0
@@ -345,8 +359,6 @@ struct CLRX_INTERNAL WaitFlowStackEntry0
     bool haveReturn;
     
     QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
-    // key - reg, value - offset in codeblock
-    std::unordered_map<uint16_t, RRegInfo> firstRegs;
     
     WaitFlowStackEntry0(size_t _blockIndex, size_t _nextIndex,
                         const AsmWaitConfig& waitConfig)
@@ -477,7 +489,7 @@ static void processQueueBlock(const CodeBlock& cblock, WaitCodeBlock& wblock,
     SVRegMap svregWriteOffsets;
     std::vector<AsmRegVarUsage> instrRVUs;
     
-    std::unordered_map<uint16_t, RRegInfo> firstRegs;
+    RRegMap firstRegs;
     // process waits and delayed ops
     AsmWaitInstr waitInstr;
     AsmDelayedOp delayedOp;
