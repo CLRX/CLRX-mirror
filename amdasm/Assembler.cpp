@@ -827,6 +827,13 @@ Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
     resolvingRelocs = false;
     collectSourcePoses = false;
     formatHandler = nullptr;
+    if (filenames.empty())
+        throw AsmException("Filename list is empty");
+    for (cxuint i = 0; i < filenames.size(); i++)
+        if (isDirectory(filenames[i].c_str()))
+            throw AsmException(std::string("File '")+
+                        filenames[i].c_str()+"' is directory");
+    
     std::unique_ptr<AsmInputFilter> thatInputFilter(
                 new AsmStreamInputFilter(filenames[filenameIndex++]));
     asmInputFilters.push(thatInputFilter.get());
