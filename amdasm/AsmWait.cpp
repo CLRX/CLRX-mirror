@@ -116,6 +116,9 @@ struct QueueEntry1
         regs.insert(b.regs.begin(), b.regs.end());
         haveDelayedOp |= b.haveDelayedOp;
     }
+    
+    size_t size() const
+    { return regs.size(); }
 };
 
 // toBEntry - difference offset between output orderedStartPos and
@@ -320,11 +323,27 @@ struct CLRX_INTERNAL QueueState1
         
         return false;
     }
+    
+    size_t weight() const
+    {
+        size_t w = random.size();
+        for (const QueueEntry1& e: ordered)
+            w += e.size();
+        return w;
+    }
 };
 
 struct CLRX_INTERNAL WaitFirstCacheEntry
 {
     QueueState1 queues[ASM_WAIT_MAX_TYPES_NUM];
+    
+    size_t weight() const
+    {
+        size_t w = 0;
+        for (const QueueState1& q: queues)
+            w += q.weight();
+        return w;
+    }
 };
 
 struct CLRX_INTERNAL RRegInfo
@@ -349,6 +368,9 @@ struct CLRX_INTERNAL WaitSecCacheEntry
     // tree of first regs, first entry is start point
     // nextBlocks points to next points of ways
     std::vector<WaitSecCacheEntry> firstRegsOrdering;
+    
+    size_t weight() const
+    { return firstRegs.size() + firstRegsOrdering.size(); }
 };
 
 struct CLRX_INTERNAL WaitFlowStackEntry0
@@ -1004,4 +1026,57 @@ void AsmWaitScheduler::schedule(ISAUsageHandler& usageHandler, ISAWaitHandler& w
     
     // after, that resolve joins (join with already visited code)
     // next loop
+    flowStack.clear();
+    std::deque<FlowStackEntry2> flowStack2;
+    
+    std::fill(visited.begin(), visited.end(), false);
+    flowStack2.push_back({ 0, 0 });
+    SimpleCache<size_t, WaitFirstCacheEntry> resFirstPointsCache(codeBlocks.size()*256);
+    SimpleCache<size_t, WaitSecCacheEntry> resSecondPointsCache(codeBlocks.size()*128);
+    
+    while (!flowStack2.empty())
+    {
+        FlowStackEntry2& entry = flowStack2.back();
+        const CodeBlock& cblock = codeBlocks[entry.blockIndex];
+        
+        if (entry.nextIndex == 0)
+        {
+            // process current block
+            if (!visited[entry.blockIndex])
+                visited[entry.blockIndex] = true;
+            else
+            {
+                /*resolveSSAConflicts(flowStack2, routineMap, codeBlocks,
+                            prevWaysIndexMap, waysToCache, cblocksToCache,
+                            resFirstPointsCache, resSecondPointsCache, ssaReplacesMap);*/
+                
+                // back, already visited
+                flowStack2.pop_back();
+                continue;
+            }
+        }
+        
+        if (entry.nextIndex < cblock.nexts.size())
+        {
+            flowStack2.push_back({ cblock.nexts[entry.nextIndex].block, 0 });
+            entry.nextIndex++;
+        }
+        else if (((entry.nextIndex==0 && cblock.nexts.empty()) ||
+                // if have any call then go to next block
+                (cblock.haveCalls && entry.nextIndex==cblock.nexts.size())) &&
+                 !cblock.haveReturn && !cblock.haveEnd)
+        {
+            flowStack2.push_back({ entry.blockIndex+1, 0 });
+            entry.nextIndex++;
+        }
+        else // back
+        {
+            /*if (cblocksToCache.count(entry.blockIndex)==2 &&
+                !resSecondPointsCache.hasKey(entry.blockIndex))
+                // add to cache
+                addResSecCacheEntry(routineMap, codeBlocks, resSecondPointsCache,
+                            entry.blockIndex);*/
+            flowStack2.pop_back();
+        }
+    }
 }
