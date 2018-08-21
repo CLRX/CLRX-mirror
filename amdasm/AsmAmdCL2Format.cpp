@@ -1842,7 +1842,8 @@ bool AsmAmdCL2Handler::prepareBinary()
         const size_t sectionSize = asmSection.getSize();
         const cxbyte* sectionData = (!asmSection.content.empty()) ?
                 asmSection.content.data() : (const cxbyte*)"";
-        AmdCL2KernelInput* kernel = (section.kernelId!=ASMKERN_GLOBAL) ?
+        AmdCL2KernelInput* kernel = (section.kernelId!=ASMKERN_GLOBAL &&
+                    section.kernelId!=ASMKERN_INNER) ?
                     &output.kernels[section.kernelId] : nullptr;
         
         switch(asmSection.type)

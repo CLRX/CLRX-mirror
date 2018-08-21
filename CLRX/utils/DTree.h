@@ -138,7 +138,7 @@ public:
     };
     
     struct Node1;
-    static const int parentEntryIndex = -(parentEntrySize / sizeof(void*));
+    static const int parentEntryIndex = -int(parentEntrySize / sizeof(void*));
     
     // main node0 - holds elements
     /* holds slighty greater array of the elements
