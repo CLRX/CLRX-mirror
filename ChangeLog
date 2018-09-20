@@ -1,6 +1,44 @@
 
 Change Log
 
+CLRadeonExtender 0.1.8:
+
+* add chapter about binary formats to CLRX documentation
+* add some informations about compilation under FreeBSD
+* add '.nosectdiffs' to disable new section difference behaviour if new ROCm format choosen
+* small optimization in the AsmScope destructor.
+* add extra info about setting up number of the SGPRs register in documentation
+* fixed OpenCL detection for AMDGPU-PRO
+* add '.enum' pseudo-op to simplify defining enumerations
+* add CLRX_VERSION_NUMBER and CLRX_POLICY_UNIFIED_SGPR_COUNT
+* add policy to unify SGPR counting for all binary formats (by default disabled)
+* in documentation fix some some mistakes about building
+* add preliminary support for CPU architectures (untested): SPARC, IA64 and MIPS
+* add new '.dims' syntax for distinguish vector group ids and scalar local ids
+* improve CLZ32/64 for MSVC
+* introduce CTZ32/64
+* while disassemblying determine minimal AMD driver version for GPU device type
+  (better code detection while disassemblying)
+* fixed some types in documentation
+* update list of GPU devices in documentation
+* fix stupid and old bug in ImageMix sample
+* change a GPU device name for VEGA11 to GFX902
+* fixed segfault when attempt to disassemble old Gallium binaries using new Gallium binary format
+* sort the kernels by an offset order by disassemblying
+* better input data checking while disassemblying code
+* add HSALayout mode for AMDCL2 format (similar code layout like in ROCm and Gallium formats)
+* introduce kernel code parts ('.kcode' and '.kcodeend') to AMDCL2
+* check sanity of use LDS in AMD VEGA architecture (can be used only in SCRATCH and GLOBAL)
+* in source code add new types: GPUArchMask, AsmKernelId and AsmSectionId type.
+* allow constant literals in sym regranges
+* fixed symreg ranges checking
+* fixed handling some the symbol names similar to some register names (like exec_masc)
+* add new GPU devices to list (gfx904, gfx905, gfx906 and gfx907)
+* add AMD VEGA 20 instruction set
+* add much stuff to handle register allocation (still it doesn't work and it wasnot finished)
+* add a DTree structure to save memory in storing register allocation structures
+* fixed possible segfault while preparing to write when ASMKERN_INNER is present
+
 CLRadeonExtender 0.1.7:
 
 * update AmdCL2ABI chapter
