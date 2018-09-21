@@ -150,3 +150,15 @@ An assembler generates single output binary. If no output specified an assembler
 generate `a.out` binary file. `clrxasm` returns 0 if succeeded, otherwise
 it returns 1 and prints the error messages to stderr.
 
+### Sample usage
+
+Following sample usages:
+
+* `clrxasm -o output.clo source.clrx`
+
+    Assemble source code 'source.clrx' to binary output 'output.clo'.
+
+* `clrxasm -bamdcl2 -6 -t240500 -o output.clo source.clrx`
+
+    Assemble source code 'source.clrx' to AMD OpenCL 2.0  binary format output 'output.clo' with
+64-bits and for driver version 240500.

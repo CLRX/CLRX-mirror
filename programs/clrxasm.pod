@@ -153,6 +153,23 @@ Path to llvm-config program.
 
 =back
 
+=head1 SAMPLE USAGE
+
+Following sample usages:
+
+=over 8
+
+=item clrxasm -o output.clo source.clrx
+
+Assemble source code 'source.clrx' to binary output 'output.clo'.
+
+=item clrxasm -bamdcl2 -6 -t240500 -o output.clo source.clrx
+
+Assemble source code 'source.clrx' to AMD OpenCL 2.0  binary format output 'output.clo' with
+64-bits and for driver version 240500.
+
+=back
+
 =head1 RETURN VALUE
 
 Returns zero if assembler succeeded, otherwise returns 1.

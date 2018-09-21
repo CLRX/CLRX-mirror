@@ -22,6 +22,8 @@ GalliumCompute kernel binaries. It displays instructions of the code and optiona
 structure of the binaries (kernels and their configuration). Output of that program
 can be used as input to the CLRX assembler if option '--all' will be used.
 
+A disassembler can detect automatically binary format, bitness of the binary.
+
 =head1 OPTIONS
 
 Following options clrxdisasm can recognize:
@@ -124,6 +126,45 @@ Print usage for this program
 =item B<--version>
 
 Print version
+
+=back
+
+=head1 SAMPLE USAGE
+
+Following sample usages:
+
+=over 8
+
+=item clrxdisasm -aC source.clo
+
+Disassemble binary file source.clo. Print addresess, opcodes, metadata in human readable form.
+
+=item clrxdisasm -a source.clo
+
+Disassemble binary file source.clo. Print addresess, opcodes, metadata in machine readable form
+(enough rarely used).
+
+=item clrxdisasm -aC -t240400 source.clo
+
+Disassemble binary file source.clo including AMD driver version 240400.
+Print addresess, opcodes, metadata in human readable form.
+
+=item clrxdisasm -aCHL -t240400 source.clo
+
+Disassemble binary file AMD OpenCL 2.0 source.clo including AMD driver version 240400 in
+new HSA layout form (like ROCm).
+Print addresess, opcodes, metadata in human readable HSA config form.
+
+=item clrxdisasm -aC -gBonaire source.clo
+
+Disassemble binary file source.clo for Bonaire GPU device. It can be used while
+disassemblying GalliumCompute binaries. Print addresess, opcodes, metadata in human readable form.
+
+=item clrxdisasm -aC -t170000 --llvmVersion=40000 -gBonaire source.clo
+
+Disassemble new GalliumCompute (for new MesaOpenCL 17.0.0 or later and LLVM 4.0.0 or later)
+binary file source.clo for Bonaire GPU device.
+Print addresess, opcodes, metadata in human readable form.
 
 =back
 
