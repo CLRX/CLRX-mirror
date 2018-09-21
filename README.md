@@ -7,9 +7,9 @@ Original site is here [https://clrx.nativeboinc.org](https://clrx.nativeboinc.or
 if SSL certificate doesn't work.
 
 CLRadeonExtender provides tools to develop software in low-level for the Radeon GPU's
-compatible with GCN 1.0/1.1/1.2/1.4 (AMD VEGA) architecture.
-Currently, this project have two tools
-to develop that software:
+compatible with GCN 1.0/1.1/1.2/1.4 (AMD VEGA) architecture. Since version 0.1.8 also AMD VEGA
+Deep Learning extensions has been supported.
+Currently, this project have two tools to develop that software:
 
 * clrxasm - the GCN assembler
 * clrxdisasm - the GCN disassembler
