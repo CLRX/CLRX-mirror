@@ -396,7 +396,7 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags,
     /* change binary format to AMDCL2 if default for this driver version and 
      * architecture >= GCN 1.1 */
     bool useLegacy = false;
-    if (defaultCL2ForDriver &&
+    if (defaultCL2ForDriver && binaryFormat != BinaryFormat::ROCM &&
         getGPUArchitectureFromDeviceType(devType) >= GPUArchitecture::GCN1_1)
     {
         if (useCL!=1) // if not cl1/old
