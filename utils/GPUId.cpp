@@ -287,7 +287,7 @@ bool CLRX::isSpecialSGPRRegister(GPUArchMask archMask, cxuint index)
     {
         if (rindex == 104) // XNACK_MASK or FLAT_SCRATCH
             return true;
-        if ((archMask&(15U<<int(GPUArchitecture::GCN1_2))) != 0 && rindex == 102)
+        if ((archMask&(1U<<int(GPUArchitecture::GCN1_2))) != 0 && rindex == 102)
             // FLAT_SCRATCH
             return true;
     }
