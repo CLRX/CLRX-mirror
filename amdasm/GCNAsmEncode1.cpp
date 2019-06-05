@@ -1432,9 +1432,18 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             !regRangeCanEqual(src1Op.range, srcCCReg))
             sgprsReaded++;
     
-    if (sgprsReaded >= 2)
-        /* include VCCs (???) */
-        ASM_FAIL_BY_ERROR(instrPlace, "More than one SGPR to read in instruction")
+    if ((arch & ARCH_GCN_1_5)==0)
+    {
+        if (sgprsReaded >= 2)
+            /* include VCCs (???) */
+            ASM_FAIL_BY_ERROR(instrPlace, "More than one SGPR to read in instruction")
+    }
+    else
+    {   // NAVI
+        if (sgprsReaded >= 3)
+            /* include VCCs (???) */
+            ASM_FAIL_BY_ERROR(instrPlace, "More than two SGPRs to read in instruction")
+    }
     
     const bool needImm = (src0Op.range.start==255 || src1Op.range.start==255 ||
              mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM);
@@ -1755,7 +1764,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         (src0Op.range.isSGPR() || src0Op.range.isVal(124) ||
          src1Op.range.isSGPR() || src1Op.range.isVal(124)))
         ASM_FAIL_BY_ERROR(instrPlace, "Literal with SGPR or M0 is illegal")
-    if (src0Op.range.isSGPR() && src1Op.range.isSGPR() &&
+    if ((arch & ARCH_GCN_1_5) == 0 && src0Op.range.isSGPR() && src1Op.range.isSGPR() &&
         !regRangeCanEqual(src0Op.range, src1Op.range))
         /* include VCCs (???) */
         ASM_FAIL_BY_ERROR(instrPlace, "More than one SGPR to read in instruction")
@@ -2091,8 +2100,27 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 numSgprToRead++;
         }
         
-        if (numSgprToRead>=2)
-            ASM_FAIL_BY_ERROR(instrPlace, "More than one SGPR to read in instruction")
+        const bool v_div_fma = strncmp(gcnInsn.mnemonic, "v_div_fma", 9)==0;
+        if ((arch & ARCH_GCN_1_5)==0 && v_div_fma)
+        {
+            if (numSgprToRead >= 1)
+                /* include VCCs (???) */
+                ASM_FAIL_BY_ERROR(instrPlace, "No SGPR can be readed in v_div_fma")
+        }
+        else if ((arch & ARCH_GCN_1_5)==0 ||
+            // except v_div_fmas for NAVI
+            v_div_fma)
+        {
+            if (numSgprToRead >= 2)
+                /* include VCCs (???) */
+                ASM_FAIL_BY_ERROR(instrPlace, "More than one SGPR to read in instruction")
+        }
+        else
+        {   // NAVI
+            if (numSgprToRead >= 3)
+                /* include VCCs (???) */
+                ASM_FAIL_BY_ERROR(instrPlace, "More than two SGPRs to read in instruction")
+        }
     }
     
     // put data (instruction words)
