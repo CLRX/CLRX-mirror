@@ -150,7 +150,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
 {
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
     const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
-    const cxuint maxSgprsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
+    const cxuint maxSgprsNum = getGPUMaxAddrRegsNumByArchMask(arch, REGTYPE_SGPR);
     if ((op < maxSgprsNum) || (op >= 256 && op < 512))
     {
         // vector

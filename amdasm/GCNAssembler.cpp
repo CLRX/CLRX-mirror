@@ -171,7 +171,7 @@ GCNAssembler::~GCNAssembler()
 
 void GCNAssembler::setRegVarUsage(const AsmRegVarUsage& rvu)
 {
-    const cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(curArchMask, REGTYPE_SGPR);
+    const cxuint maxSGPRsNum = getGPUMaxAddrRegsNumByArchMask(curArchMask, REGTYPE_SGPR);
     if (rvu.regVar != nullptr || rvu.rstart < maxSGPRsNum || rvu.rstart >= 256 ||
         isSpecialSGPRRegister(curArchMask, rvu.rstart))
         instrRVUs[currentRVUIndex] = rvu;
@@ -502,8 +502,8 @@ const cxuint* GCNAssembler::getAllocatedRegisters(size_t& regTypesNum,
 
 void GCNAssembler::getMaxRegistersNum(size_t& regTypesNum, cxuint* maxRegs) const
 {
-    maxRegs[0] = getGPUMaxRegsNumByArchMask(curArchMask, 0);
-    maxRegs[1] = getGPUMaxRegsNumByArchMask(curArchMask, 1);
+    maxRegs[0] = getGPUMaxAddrRegsNumByArchMask(curArchMask, 0);
+    maxRegs[1] = getGPUMaxAddrRegsNumByArchMask(curArchMask, 1);
     regTypesNum = 2;
 }
 
@@ -512,7 +512,7 @@ void GCNAssembler::getRegisterRanges(size_t& regTypesNum, cxuint* regRanges) con
     regRanges[0] = 0;
     regRanges[1] = 108; // to extra SGPR register number
     regRanges[2] = 256; // vgpr
-    regRanges[3] = 256+getGPUMaxRegsNumByArchMask(curArchMask, 1);
+    regRanges[3] = 256+getGPUMaxAddrRegsNumByArchMask(curArchMask, 1);
     regTypesNum = 2;
 }
 

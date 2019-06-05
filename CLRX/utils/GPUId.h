@@ -183,6 +183,9 @@ extern cxuint getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType
 /// get maximum available registers for GPU (type: 0 - scalar, 1 - vector)
 extern cxuint getGPUMaxRegsNumByArchMask(GPUArchMask archMask, cxuint regType);
 
+/// get maximum available addressable registers for GPU (type: 0 - scalar, 1 - vector)
+extern cxuint getGPUMaxAddrRegsNumByArchMask(GPUArchMask archMask, cxuint regType);
+
 /// get maximum number of scalar register + extra scalar reg (VCC, FLAT_SCRATCH, ...)
 extern bool isSpecialSGPRRegister(GPUArchMask archMask, cxuint index);
 

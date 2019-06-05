@@ -22,7 +22,10 @@
 
 /* for Radeon RX VEGA series with GCN1.4 */
 const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
-{   /* extra scalar registers */
+{   /* extra regs from GCN 1.2 */
+    { 0x80663d04U, 0, false, "        s_add_u32       flat_scratch_lo, s4, s61\n" },
+    { 0x80673d04U, 0, false, "        s_add_u32       flat_scratch_hi, s4, s61\n" },
+    /* extra scalar registers */
     { 0x80153debU, 0, false, "        s_add_u32       s21, shared_base, s61\n" },
     { 0x8015eb04U, 0, false, "        s_add_u32       s21, s4, shared_base\n" },
     { 0x80153decU, 0, false, "        s_add_u32       s21, shared_limit, s61\n" },
@@ -60,9 +63,6 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
     { 0x99153d04U, 0, false, "        s_pack_ll_b32_b16 s21, s4, s61\n" },
     { 0x99953d04U, 0, false, "        s_pack_lh_b32_b16 s21, s4, s61\n" },
     { 0x9a153d04U, 0, false, "        s_pack_hh_b32_b16 s21, s4, s61\n" },
-    // extra SGPRs
-    { 0x96156604U, 0, false, "        s_mul_hi_u32    s21, s4, s102\n" },
-    { 0x96156704U, 0, false, "        s_mul_hi_u32    s21, s4, s103\n" },
     /* SOP1 instructions */
     { 0xbed63314U, 0, false, "        s_andn1_saveexec_b64 s[86:87], s[20:21]\n" },
     { 0xbed63414U, 0, false, "        s_orn1_saveexec_b64 s[86:87], s[20:21]\n" },
@@ -748,6 +748,10 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
 /* for VEGA 20 series with GCN1.4.1 */
 const GCNDisasmOpcodeCase decGCNOpcodeGCN141Cases[] =
 {
+    /* extra regs from GCN 1.2 */
+    { 0x80663d04U, 0, false, "        s_add_u32       flat_scratch_lo, s4, s61\n" },
+    { 0x80673d04U, 0, false, "        s_add_u32       flat_scratch_hi, s4, s61\n" },
+    //
     { 0xd3a04037U, 0x1f974d4fU, true, "        v_fma_mix_f32   v55, v79, v166, v229\n" },
     { 0xd3a14037U, 0x1f974d4fU, true, "        v_fma_mixlo_f16 v55, v79, v166, v229\n" },
     { 0xd3a24037U, 0x1f974d4fU, true, "        v_fma_mixhi_f16 v55, v79, v166, v229\n" },
@@ -778,8 +782,5 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN141Cases[] =
     { 0xd1760037U, 0x0000011bU, true, "        v_mov_prsv_b32  v55, v27 vop3\n" },
     { 0xd1770037U, 0x0000011bU, true,
         "        v_screen_partition_4se_b32 v55, v27 vop3\n" },
-    // extra SGPRs
-    { 0x96156604U, 0, false, "        s_mul_hi_u32    s21, s4, s102\n" },
-    { 0x96156704U, 0, false, "        s_mul_hi_u32    s21, s4, s103\n" },
     { 0, 0, false, nullptr }
 };

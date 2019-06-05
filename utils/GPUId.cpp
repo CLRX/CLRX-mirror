@@ -289,6 +289,19 @@ cxuint CLRX::getGPUMaxRegsNumByArchMask(GPUArchMask archMask, cxuint regType)
     }
 }
 
+cxuint CLRX::getGPUMaxAddrRegsNumByArchMask(GPUArchMask archMask, cxuint regType)
+{
+    if (regType == REGTYPE_VGPR)
+        return 256;
+    else {
+        if (archMask&(3U<<int(GPUArchitecture::GCN1_4)))
+            return 102;    // for VEGA
+        if (archMask&(1U<<int(GPUArchitecture::GCN1_5)))
+            return 106;    // for NAVI
+        return (archMask&(1U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
+    }
+}
+
 bool CLRX::isSpecialSGPRRegister(GPUArchMask archMask, cxuint index)
 {
     cxuint rindex = index&~1U;

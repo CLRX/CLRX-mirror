@@ -198,7 +198,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
         skipCharAndSpacesToEnd(linePtr, end);
     
     const char *regTypeName = (flags&INSTROP_VREGS) ? "vector" : "scalar";
-    const cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
+    const cxuint maxSGPRsNum = getGPUMaxAddrRegsNumByArchMask(arch, REGTYPE_SGPR);
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     if (asmr.parseSymbol(linePtr, symEntry, false, true)==
@@ -487,7 +487,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
     const cxuint ttmpSize = isGCN14 ? 16 : 12;
     const cxuint ttmpStart = isGCN14 ? 108 : 112;
         
-    const cxuint maxSGPRsNum = getGPUMaxRegsNumByArchMask(arch, REGTYPE_SGPR);
+    const cxuint maxSGPRsNum = getGPUMaxAddrRegsNumByArchMask(arch, REGTYPE_SGPR);
     if (singleSorTtmp)
     {
         if (isDigit(*linePtr))
