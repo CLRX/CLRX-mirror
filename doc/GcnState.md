@@ -11,6 +11,7 @@ PC   | Program counter | 40 bits | Current instruction address in memory
 V0-V255 | VGPR         | 32 bits | Vector general purpose register
 S0-S103 | SGPR         | 32 bits | Scalar general purpose register (GCN 1.0/1.1)
 S0-S101 | SGPR         | 32 bits | Scalar general purpose register (GCN 1.2)
+S0-S103 | SGPR         | 32 bits | Scalar general purpose register (GCN 1.4)
 LDS     | Local Data Share | 32 kB | Local Data Share memory (R/W)
 EXEC    | Execute Mask | 64-bits | One bit of that mask control execution for one lane
 EXECZ   | Execute Is Zero | 1 bit | Set if EXEC mask is zero

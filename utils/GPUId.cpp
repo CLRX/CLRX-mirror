@@ -255,7 +255,8 @@ cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
         throw GPUIdException("Unknown GPU architecture");
     if (regType == REGTYPE_VGPR)
         return 256; // VGPRS
-    cxuint maxSgprs = (architecture>=GPUArchitecture::GCN1_2) ? 102 : 104;
+    cxuint maxSgprs = (architecture>=GPUArchitecture::GCN1_2 &&
+            architecture<GPUArchitecture::GCN1_4) ? 102 : 104;
     // subtract from max SGPRs num number of special registers (VCC, ...)
     if ((flags & REGCOUNT_NO_FLAT)!=0 && (architecture>GPUArchitecture::GCN1_0))
         maxSgprs -= (architecture>=GPUArchitecture::GCN1_2) ? 6 : 4;
@@ -270,8 +271,11 @@ cxuint CLRX::getGPUMaxRegsNumByArchMask(GPUArchMask archMask, cxuint regType)
 {
     if (regType == REGTYPE_VGPR)
         return 256;
-    else
-        return (archMask&(15U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
+    else {
+        if (archMask&(3U<<int(GPUArchitecture::GCN1_4)))
+            return 104;    // for VEGA
+        return (archMask&(1U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
+    }
 }
 
 bool CLRX::isSpecialSGPRRegister(GPUArchMask archMask, cxuint index)

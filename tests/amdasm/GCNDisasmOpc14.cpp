@@ -60,6 +60,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
     { 0x99153d04U, 0, false, "        s_pack_ll_b32_b16 s21, s4, s61\n" },
     { 0x99953d04U, 0, false, "        s_pack_lh_b32_b16 s21, s4, s61\n" },
     { 0x9a153d04U, 0, false, "        s_pack_hh_b32_b16 s21, s4, s61\n" },
+    // extra SGPRs
+    { 0x96156604U, 0, false, "        s_mul_hi_u32    s21, s4, s102\n" },
+    { 0x96156704U, 0, false, "        s_mul_hi_u32    s21, s4, s103\n" },
     /* SOP1 instructions */
     { 0xbed63314U, 0, false, "        s_andn1_saveexec_b64 s[86:87], s[20:21]\n" },
     { 0xbed63414U, 0, false, "        s_orn1_saveexec_b64 s[86:87], s[20:21]\n" },
@@ -775,5 +778,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN141Cases[] =
     { 0xd1760037U, 0x0000011bU, true, "        v_mov_prsv_b32  v55, v27 vop3\n" },
     { 0xd1770037U, 0x0000011bU, true,
         "        v_screen_partition_4se_b32 v55, v27 vop3\n" },
+    // extra SGPRs
+    { 0x96156604U, 0, false, "        s_mul_hi_u32    s21, s4, s102\n" },
+    { 0x96156704U, 0, false, "        s_mul_hi_u32    s21, s4, s103\n" },
     { 0, 0, false, nullptr }
 };

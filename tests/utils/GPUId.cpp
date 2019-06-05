@@ -234,20 +234,20 @@ static const GPUMaxRegTestCase gpuMaxRegTestTable[] =
     { GPUArchitecture::GCN1_0, REGTYPE_SGPR, 0, 104 },
     { GPUArchitecture::GCN1_1, REGTYPE_SGPR, 0, 104 },
     { GPUArchitecture::GCN1_2, REGTYPE_SGPR, 0, 102 },
-    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, 0, 102 },
-    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, 0, 102 },
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, 0, 104 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, 0, 104 },
     { GPUArchitecture::GCN1_0, REGTYPE_SGPR, REGCOUNT_NO_VCC, 102 },
     { GPUArchitecture::GCN1_1, REGTYPE_SGPR, REGCOUNT_NO_VCC, 102 },
     { GPUArchitecture::GCN1_2, REGTYPE_SGPR, REGCOUNT_NO_VCC, 100 },
-    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_VCC, 100 },
-    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, REGCOUNT_NO_VCC, 100 },
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_VCC, 102 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, REGCOUNT_NO_VCC, 102 },
     { GPUArchitecture::GCN1_1, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 100 },
     { GPUArchitecture::GCN1_2, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 96 },
-    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 96 },
-    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 96 },
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 98 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, REGCOUNT_NO_FLAT, 98 },
     { GPUArchitecture::GCN1_2, REGTYPE_SGPR, REGCOUNT_NO_XNACK, 98 },
-    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_XNACK, 98 },
-    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, REGCOUNT_NO_XNACK, 98 }
+    { GPUArchitecture::GCN1_4, REGTYPE_SGPR, REGCOUNT_NO_XNACK, 100 },
+    { GPUArchitecture::GCN1_4_1, REGTYPE_SGPR, REGCOUNT_NO_XNACK, 100 }
 };
 
 static void testGetGPUMaxRegistersNum()

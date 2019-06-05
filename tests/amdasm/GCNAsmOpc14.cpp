@@ -65,6 +65,9 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
     { "        s_pack_ll_b32_b16 s21, s4, s61\n", 0x99153d04U, 0, false, true, "" },
     { "        s_pack_lh_b32_b16 s21, s4, s61\n", 0x99953d04U, 0, false, true, "" },
     { "        s_pack_hh_b32_b16 s21, s4, s61\n", 0x9a153d04U, 0, false, true, "" },
+    // extra SGPRs
+    { "        s_mul_hi_u32    s21, s4, s102\n", 0x96156604U, 0, false, true, "" },
+    { "        s_mul_hi_u32    s21, s4, s103\n", 0x96156704U, 0, false, true, "" },
     /* SOP1 instructions */
     { "s_andn1_saveexec_b64 s[86:87], s[20:21]\n", 0xbed63314U, 0, false, true, "" },
     { "s_orn1_saveexec_b64 s[86:87], s[20:21]\n", 0xbed63414U, 0, false, true, "" },
@@ -946,5 +949,8 @@ const GCNAsmOpcodeCase encGCN141OpcodeCases[] =
     // VOP3 CMP
     { "    v_cmp_f_f16 s[46:47], v78, v201", 0xd020002eU, 0x3934eU, true, true, "" },
     { "    v_cmp_lt_f16 s[46:47], v78, v201", 0xd021002eU, 0x3934eU, true, true, "" },
+    // extra SGPRs
+    { "        s_mul_hi_u32    s21, s4, s102\n", 0x96156604U, 0, false, true, "" },
+    { "        s_mul_hi_u32    s21, s4, s103\n", 0x96156704U, 0, false, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
