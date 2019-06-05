@@ -1886,6 +1886,9 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     GCNOperand src1Op{};
     GCNOperand src2Op{};
     
+    const bool v_div_fma = strncmp(gcnInsn.mnemonic, "v_div_fma", 9)==0;
+    const bool v_div_scale = strncmp(gcnInsn.mnemonic, "v_div_scale", 11)==0;
+    
     const bool is128Ops = (gcnInsn.mode & 0x7000) == GCN_VOP3_DS2_128;
     bool modHigh = false;
     cxbyte modifiers = 0;
@@ -1922,6 +1925,21 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             if (!skipRequiredComma(asmr, linePtr))
                 return false;
         }
+        else if (v_div_fma)
+        {
+            gcnAsm->setCurrentRVU(1);
+            gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                        uint16_t(106), uint16_t(107), GCNFIELD_VOP_VCC_IMPL,
+                        ASMRVU_READ, 0 });
+        }
+        else if (v_div_scale)
+        {
+            gcnAsm->setCurrentRVU(1);
+            gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
+                        uint16_t(106), uint16_t(107), GCNFIELD_VOP_VCC_IMPL,
+                        ASMRVU_WRITE, 0 });
+        }
+        
         const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
                 (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
         
@@ -2100,7 +2118,6 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 numSgprToRead++;
         }
         
-        const bool v_div_fma = strncmp(gcnInsn.mnemonic, "v_div_fma", 9)==0;
         if ((arch & ARCH_GCN_1_5)==0 && v_div_fma)
         {
             if (numSgprToRead >= 1)
