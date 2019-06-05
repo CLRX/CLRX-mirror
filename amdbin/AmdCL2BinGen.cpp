@@ -185,7 +185,7 @@ static const ArgTypeSizes argTypeSizesTable[] =
 // tables with GPU device codes for specific driver version
 // for almost cases are matches.
 
-static const uint32_t gpuDeviceCodeTable[30] =
+static const uint32_t gpuDeviceCodeTable[31] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -216,10 +216,11 @@ static const uint32_t gpuDeviceCodeTable[30] =
     UINT_MAX, // GPUDeviceType::GFX904
     UINT_MAX, // GPUDeviceType::GFX905
     UINT_MAX, // GPUDeviceType::GFX906
-    UINT_MAX  // GPUDeviceType::GFX907
+    UINT_MAX, // GPUDeviceType::GFX907
+    UINT_MAX  // GPUDeviceType::GFX1010
 };
 
-static const uint32_t gpuDeviceCodeTable15_7[30] =
+static const uint32_t gpuDeviceCodeTable15_7[31] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -250,10 +251,11 @@ static const uint32_t gpuDeviceCodeTable15_7[30] =
     UINT_MAX, // GPUDeviceType::GFX904
     UINT_MAX, // GPUDeviceType::GFX905
     UINT_MAX, // GPUDeviceType::GFX906
-    UINT_MAX  // GPUDeviceType::GFX907
+    UINT_MAX, // GPUDeviceType::GFX907
+    UINT_MAX // GPUDeviceType::GFX1010
 };
 
-static const uint32_t gpuDeviceCodeTable16_3[30] =
+static const uint32_t gpuDeviceCodeTable16_3[31] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -284,10 +286,11 @@ static const uint32_t gpuDeviceCodeTable16_3[30] =
     UINT_MAX, // GPUDeviceType::GFX904
     UINT_MAX, // GPUDeviceType::GFX905
     UINT_MAX, // GPUDeviceType::GFX906
-    UINT_MAX  // GPUDeviceType::GFX907
+    UINT_MAX, // GPUDeviceType::GFX907
+    UINT_MAX // GPUDeviceType::GFX1010
 };
 
-static const uint32_t gpuDeviceCodeTableGPUPRO[30] =
+static const uint32_t gpuDeviceCodeTableGPUPRO[31] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -318,10 +321,11 @@ static const uint32_t gpuDeviceCodeTableGPUPRO[30] =
     UINT_MAX, // GPUDeviceType::GFX904
     UINT_MAX, // GPUDeviceType::GFX905
     UINT_MAX, // GPUDeviceType::GFX906
-    UINT_MAX  // GPUDeviceType::GFX907
+    UINT_MAX, // GPUDeviceType::GFX907
+    UINT_MAX // GPUDeviceType::GFX1010
 };
 
-static const uint32_t gpuDeviceCodeTable2236[30] =
+static const uint32_t gpuDeviceCodeTable2236[31] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -352,10 +356,11 @@ static const uint32_t gpuDeviceCodeTable2236[30] =
     UINT_MAX, // GPUDeviceType::GFX904
     UINT_MAX, // GPUDeviceType::GFX905
     UINT_MAX, // GPUDeviceType::GFX906
-    UINT_MAX  // GPUDeviceType::GFX907
+    UINT_MAX, // GPUDeviceType::GFX907
+    UINT_MAX // GPUDeviceType::GFX1010
 };
 
-static const uint32_t gpuDeviceCodeTable2264[30] =
+static const uint32_t gpuDeviceCodeTable2264[31] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -386,10 +391,11 @@ static const uint32_t gpuDeviceCodeTable2264[30] =
     UINT_MAX, // GPUDeviceType::GFX904
     UINT_MAX, // GPUDeviceType::GFX905
     UINT_MAX, // GPUDeviceType::GFX906
-    UINT_MAX  // GPUDeviceType::GFX907
+    UINT_MAX, // GPUDeviceType::GFX907
+    UINT_MAX // GPUDeviceType::GFX1010
 };
 
-static const uint32_t gpuDeviceCodeTable2348[30] =
+static const uint32_t gpuDeviceCodeTable2348[31] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -420,10 +426,11 @@ static const uint32_t gpuDeviceCodeTable2348[30] =
     UINT_MAX, // GPUDeviceType::GFX904
     UINT_MAX, // GPUDeviceType::GFX905
     UINT_MAX, // GPUDeviceType::GFX906
-    UINT_MAX  // GPUDeviceType::GFX907
+    UINT_MAX, // GPUDeviceType::GFX907
+    UINT_MAX // GPUDeviceType::GFX1010
 };
 
-static const uint32_t gpuDeviceCodeTable2442[30] =
+static const uint32_t gpuDeviceCodeTable2442[31] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -454,10 +461,11 @@ static const uint32_t gpuDeviceCodeTable2442[30] =
     UINT_MAX, // GPUDeviceType::GFX904
     UINT_MAX, // GPUDeviceType::GFX905
     UINT_MAX, // GPUDeviceType::GFX906
-    UINT_MAX  // GPUDeviceType::GFX907
+    UINT_MAX, // GPUDeviceType::GFX907
+    UINT_MAX // GPUDeviceType::GFX1010
 };
 
-static const uint32_t gpuDeviceCodeTable2482[30] =
+static const uint32_t gpuDeviceCodeTable2482[31] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -488,10 +496,11 @@ static const uint32_t gpuDeviceCodeTable2482[30] =
     UINT_MAX, // GPUDeviceType::GFX904
     UINT_MAX, // GPUDeviceType::GFX905
     UINT_MAX, // GPUDeviceType::GFX906
-    UINT_MAX  // GPUDeviceType::GFX907
+    UINT_MAX, // GPUDeviceType::GFX907
+    UINT_MAX // GPUDeviceType::GFX1010
 };
 
-static const uint32_t gpuDeviceCodeTable2527[30] =
+static const uint32_t gpuDeviceCodeTable2527[31] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -522,10 +531,11 @@ static const uint32_t gpuDeviceCodeTable2527[30] =
     26, // GPUDeviceType::GFX904
     27, // GPUDeviceType::GFX905
     UINT_MAX, // GPUDeviceType::GFX906
-    UINT_MAX  // GPUDeviceType::GFX907
+    UINT_MAX, // GPUDeviceType::GFX907
+    UINT_MAX // GPUDeviceType::GFX1010
 };
 
-static const uint32_t gpuDeviceCodeTable2580[30] =
+static const uint32_t gpuDeviceCodeTable2580[31] =
 {
     UINT_MAX, // GPUDeviceType::CAPE_VERDE
     UINT_MAX, // GPUDeviceType::PITCAIRN
@@ -556,7 +566,8 @@ static const uint32_t gpuDeviceCodeTable2580[30] =
     26, // GPUDeviceType::GFX904
     27, // GPUDeviceType::GFX905
     28, // GPUDeviceType::GFX906
-    29  // GPUDeviceType::GFX907
+    29, // GPUDeviceType::GFX907
+    UINT_MAX // GPUDeviceType::GFX1010
 };
 
 
