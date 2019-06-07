@@ -106,7 +106,7 @@ static const uint16_t gpuDeviceCodeTable[34] =
     0xffff, // GPUDeviceType::GFX905
     0xffff, // GPUDeviceType::GFX906
     0xffff, // GPUDeviceType::GFX907
-    0xffff, // GPUDeviceType::GFX1010
+    0xffff, // GPUDeviceType::GFX1000
     0xffff, // GPUDeviceType::GFX1010
     0xffff, // GPUDeviceType::GFX1010
     0xffff, // GPUDeviceType::GFX1010
@@ -145,7 +145,7 @@ static const uint32_t gpuDeviceInnerCodeTable[34] =
     UINT_MAX, // GPUDeviceType::GFX905
     UINT_MAX, // GPUDeviceType::GFX906
     UINT_MAX, // GPUDeviceType::GFX907
-    UINT_MAX, // GPUDeviceType::GFX1010
+    UINT_MAX, // GPUDeviceType::GFX1000
     UINT_MAX, // GPUDeviceType::GFX1010
     UINT_MAX, // GPUDeviceType::GFX1010
     UINT_MAX // GPUDeviceType::GFX1010

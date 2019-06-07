@@ -31,7 +31,7 @@ GPUIdException::GPUIdException(const std::string& message) : Exception(message)
 { }
 
 // length of GPU device table (number of recognized GPU devices)
-static const size_t gpuDeviceTableSize = 31;
+static const size_t gpuDeviceTableSize = 32;
 
 static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
 {
@@ -65,7 +65,8 @@ static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
     "GFX905",
     "GFX906",
     "GFX907",
-    "GFX1010",
+    "GFX1000",
+    "GFX1010"
 };
 
 // sorted GPU device names with device types
@@ -79,6 +80,7 @@ lowerCaseGpuDeviceEntryTable[] =
     { "dummy", GPUDeviceType::DUMMY },
     { "ellesmere", GPUDeviceType::ELLESMERE },
     { "fiji", GPUDeviceType::FIJI },
+    { "gfx1000", GPUDeviceType::GFX1000 },
     { "gfx1010", GPUDeviceType::GFX1010 },
     { "gfx700", GPUDeviceType::SPECTRE },
     { "gfx701", GPUDeviceType::HAWAII },
@@ -159,7 +161,8 @@ static const GPUArchitecture gpuDeviceArchTable[gpuDeviceTableSize] =
     GPUArchitecture::GCN1_4, // GFX905
     GPUArchitecture::GCN1_4_1, // GFX906
     GPUArchitecture::GCN1_4_1, // GFX907
-    GPUArchitecture::GCN1_5 // GFX1010
+    GPUArchitecture::GCN1_5, // GFX1000
+    GPUArchitecture::GCN1_5  // GFX1010
 };
 
 static const char* gpuArchitectureNameTable[6] =
@@ -192,7 +195,7 @@ static const GPUDeviceType gpuLowestDeviceFromArchTable[6] =
     GPUDeviceType::ICELAND,
     GPUDeviceType::GFX900,
     GPUDeviceType::GFX906,
-    GPUDeviceType::GFX1010
+    GPUDeviceType::GFX1000
 };
 
 GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
@@ -424,6 +427,7 @@ static const AMDGPUArchVersion galliumGpuArchVersionTbl[] =
     { 9, 0, 5 }, // GPUDeviceType::GFX905
     { 9, 0, 6 }, // GPUDeviceType::GFX906
     { 9, 0, 7 }, // GPUDeviceType::GFX907
+    { 10, 0, 0 }, // GPUDeviceType::GFX1000
     { 10, 1, 0 } // GPUDeviceType::GFX1010
 };
 
@@ -460,6 +464,7 @@ static const AMDGPUArchVersion rocmGpuArchVersionTbl[] =
     { 9, 0, 5 }, // GPUDeviceType::GFX905
     { 9, 0, 6 }, // GPUDeviceType::GFX906
     { 9, 0, 7 }, // GPUDeviceType::GFX907
+    { 10, 0, 0 }, // GPUDeviceType::GFX1000
     { 10, 1, 0 } // GPUDeviceType::GFX1010
 };
 
@@ -496,6 +501,7 @@ static const AMDGPUArchVersion amdCL2GpuArchVersionTbl[] =
     { 9, 0, 5 }, // GPUDeviceType::GFX905
     { 9, 0, 6 }, // GPUDeviceType::GFX906
     { 9, 0, 7 }, // GPUDeviceType::GFX907
+    { 10, 0, 0 }, // GPUDeviceType::GFX1000
     { 10, 1, 0 } // GPUDeviceType::GFX1010
 };
 
@@ -541,6 +547,7 @@ static const AMDGPUArchVersionEntry amdGpuArchVersionEntriesTbl[] =
     { 9, 0, 5, GPUDeviceType::GFX905 },
     { 9, 0, 6, GPUDeviceType::GFX906 },
     { 9, 0, 7, GPUDeviceType::GFX907 },
+    { 10, 0, 0, GPUDeviceType::GFX1000 },
     { 10, 1, 0, GPUDeviceType::GFX1010 }
 };
 
@@ -562,7 +569,7 @@ GPUDeviceType CLRX::getGPUDeviceTypeFromArchVersion(cxuint archMajor, cxuint arc
     else if (archMajor==9)
         deviceType = GPUDeviceType::GFX900;
     else if (archMajor==10)
-        deviceType = GPUDeviceType::GFX1010;
+        deviceType = GPUDeviceType::GFX1000;
     
     // recognize device type by arch major, minor and stepping
     for (cxuint i = 0; i < amdGpuArchVersionEntriesNum; i++)
