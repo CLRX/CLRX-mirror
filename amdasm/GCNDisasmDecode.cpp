@@ -2155,7 +2155,7 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     putCommaSpace(bufPtr);
     // print VADDR
     decodeGCNVRegOperand(insnCode2&0xff,
-                 std::max(4, (gcnInsn.mode&GCN_MIMG_VA_MASK)+1), bufPtr);
+                 std::max(GCNInsnMode(4), (gcnInsn.mode&GCN_MIMG_VA_MASK)+1), bufPtr);
     putCommaSpace(bufPtr);
     // print SRSRC
     decodeGCNOperandNoLit(dasm, ((insnCode2>>14)&0x7c),

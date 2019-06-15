@@ -1886,8 +1886,8 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     GCNOperand src1Op{};
     GCNOperand src2Op{};
     
-    const bool v_div_fma = strncmp(gcnInsn.mnemonic, "v_div_fma", 9)==0;
-    const bool v_div_scale = strncmp(gcnInsn.mnemonic, "v_div_scale", 11)==0;
+    const bool vccImplRead = (gcnInsn.mode & GCN_VCC_IMPL_READ)!=0;
+    const bool vccImplWrite = (gcnInsn.mode & GCN_VCC_IMPL_WRITE)!=0;
     
     const bool is128Ops = (gcnInsn.mode & 0x7000) == GCN_VOP3_DS2_128;
     bool modHigh = false;
@@ -1925,14 +1925,14 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             if (!skipRequiredComma(asmr, linePtr))
                 return false;
         }
-        else if (v_div_fma)
+        else if (vccImplRead)
         {
             gcnAsm->setCurrentRVU(1);
             gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
                         uint16_t(106), uint16_t(107), GCNFIELD_VOP_VCC_IMPL,
                         ASMRVU_READ, 0 });
         }
-        else if (v_div_scale)
+        else if (vccImplWrite)
         {
             gcnAsm->setCurrentRVU(1);
             gcnAsm->setRegVarUsage({ size_t(asmr.currentOutPos), nullptr,
@@ -2118,15 +2118,15 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 numSgprToRead++;
         }
         
-        if ((arch & ARCH_GCN_1_5)==0 && v_div_fma)
+        if ((arch & ARCH_GCN_1_5)==0 && vccImplRead)
         {
             if (numSgprToRead >= 1)
                 /* include VCCs (???) */
-                ASM_FAIL_BY_ERROR(instrPlace, "No SGPR can be readed in v_div_fma")
+                ASM_FAIL_BY_ERROR(instrPlace, "No SGPR can be readed in vccImplRead")
         }
         else if ((arch & ARCH_GCN_1_5)==0 ||
-            // except v_div_fmas for NAVI
-            v_div_fma)
+            // except vccImplReads for NAVI
+            vccImplRead)
         {
             if (numSgprToRead >= 2)
                 /* include VCCs (???) */
