@@ -542,6 +542,17 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         "test.s:1:4: Error: SEXT modifiers is unavailable for DPP word\n" },
     { "   v_cndmask_b32  v154, 12333, v107, vcc bank_mask:0 row_mask:0", 0, 0,
         false, false, "test.s:1:4: Error: Literal with SDWA or DPP word is illegal\n" },
+    /* VOP DPP illegal */
+    { "   v_rsq_f64 v[2:3], v[6:7] bank_mask:4 row_mask:2", 0, 0,
+        false, false, "test.s:1:4: Error: DPP encoding is illegal for this instruction\n" },
+    { "    v_madmk_f32 v154, v21, 45543, v107  bank_mask:4 row_mask:2", 0, 0,
+        false, false, "test.s:1:5: Error: Literal with SDWA or DPP word is illegal\n" },
+    { "   v_sqrt_f64 v[2:3], v[6:7] bank_mask:4 row_mask:2", 0, 0,
+        false, false, "test.s:1:4: Error: DPP encoding is illegal for this instruction\n" },
+    { "   v_clrexcp bank_mask:4 row_mask:2", 0, 0, false, false,
+        "test.s:1:4: Error: SRC0 must be a vector register with SDWA or DPP word\n" },
+    { "   v_cmp_lt_f64 vcc, v[4:5], v[16:17] bank_mask:4 row_mask:2", 0, 0, false, false,
+        "test.s:1:4: Error: DPP encoding is illegal for this instruction\n" },
     /* VOP_SDWA and VOP_DPP mixing errors */
     { "   v_cndmask_b32  v154, v190, v107, vcc row_shl:3 clamp ", 0, 0, false, false,
         "test.s:1:41: Error: Mixing modifiers from different encodings is illegal\n" },

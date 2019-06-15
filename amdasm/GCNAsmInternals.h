@@ -304,7 +304,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                      GCNEncSize gcnEncSize, uint32_t wordsNum);
     // checking whether VOP encoding is match
     static bool checkGCNVOPEncoding(Assembler& asmr, const char* insnPtr,
-                     GCNVOPEnc vopEnc, const VOPExtraModifiers* modifiers);
+            GCNVOPEnc vopEnc, GCNInsnMode insnMode, const VOPExtraModifiers* modifiers);
     // checking whether VOP extra modifiers match
     static bool checkGCNVOPExtraModifers(Assembler& asmr, GPUArchMask arch,
                  bool needImm, bool sextFlags, bool vop3, GCNVOPEnc gcnVOPEnc,

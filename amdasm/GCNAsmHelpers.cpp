@@ -2633,12 +2633,14 @@ bool GCNAsmUtils::checkGCNEncodingSize(Assembler& asmr, const char* insnPtr,
 }
 
 bool GCNAsmUtils::checkGCNVOPEncoding(Assembler& asmr, const char* insnPtr,
-                     GCNVOPEnc vopEnc, const VOPExtraModifiers* modifiers)
+            GCNVOPEnc vopEnc, GCNInsnMode insnMode, const VOPExtraModifiers* modifiers)
 {
     if (vopEnc==GCNVOPEnc::DPP && !modifiers->needDPP)
         ASM_FAIL_BY_ERROR(insnPtr, "DPP encoding specified when DPP not present")
     if (vopEnc==GCNVOPEnc::SDWA && !modifiers->needSDWA)
-        ASM_FAIL_BY_ERROR(insnPtr, "DPP encoding specified when DPP not present")
+        ASM_FAIL_BY_ERROR(insnPtr, "SDWA encoding specified when SDWA not present")
+    if (modifiers->needDPP && (insnMode&GCN_VOP_NODPP)!=0)
+        ASM_FAIL_BY_ERROR(insnPtr, "DPP encoding is illegal for this instruction")
     return true;
 }
 
