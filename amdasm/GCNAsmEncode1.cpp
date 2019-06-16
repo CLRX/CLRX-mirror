@@ -1477,7 +1477,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (vop3 && needImm)
         ASM_FAIL_BY_ERROR(instrPlace, "Literal in VOP3 encoding is illegal")
     
-    if (!checkGCNVOPEncoding(asmr, instrPlace, gcnVOPEnc, gcnInsn.mode, &extraMods))
+    if (!checkGCNVOPEncoding(asmr, arch, instrPlace, gcnVOPEnc, gcnInsn.mode, &extraMods))
         return false;
     
     // set target expressions if needed
@@ -1641,7 +1641,7 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (vop3 && src0Op.range.isVal(255))
         ASM_FAIL_BY_ERROR(instrPlace, "Literal in VOP3 encoding is illegal")
     
-    if (!checkGCNVOPEncoding(asmr, instrPlace, gcnVOPEnc, gcnInsn.mode, &extraMods))
+    if (!checkGCNVOPEncoding(asmr, arch, instrPlace, gcnVOPEnc, gcnInsn.mode, &extraMods))
         return false;
     
     if (src0OpExpr!=nullptr)
@@ -1813,7 +1813,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (vop3 && (src0Op.range.isVal(255) || src1Op.range.isVal(255)))
         ASM_FAIL_BY_ERROR(instrPlace, "Literal in VOP3 encoding is illegal")
     
-    if (!checkGCNVOPEncoding(asmr, instrPlace, gcnVOPEnc, gcnInsn.mode, &extraMods))
+    if (!checkGCNVOPEncoding(asmr, arch, instrPlace, gcnVOPEnc, gcnInsn.mode, &extraMods))
         return false;
     
     if (isGCN14 && extraMods.needSDWA && ((modifiers & VOP3_CLAMP)!=0 || (modifiers&3)!=0))

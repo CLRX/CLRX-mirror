@@ -2632,7 +2632,7 @@ bool GCNAsmUtils::checkGCNEncodingSize(Assembler& asmr, const char* insnPtr,
     return true;
 }
 
-bool GCNAsmUtils::checkGCNVOPEncoding(Assembler& asmr, const char* insnPtr,
+bool GCNAsmUtils::checkGCNVOPEncoding(Assembler& asmr, GPUArchMask arch, const char* insnPtr,
             GCNVOPEnc vopEnc, GCNInsnMode insnMode, const VOPExtraModifiers* modifiers)
 {
     if (vopEnc==GCNVOPEnc::DPP && !modifiers->needDPP)
@@ -2641,6 +2641,10 @@ bool GCNAsmUtils::checkGCNVOPEncoding(Assembler& asmr, const char* insnPtr,
         ASM_FAIL_BY_ERROR(insnPtr, "SDWA encoding specified when SDWA not present")
     if (modifiers->needDPP && (insnMode&GCN_VOP_NODPP)!=0)
         ASM_FAIL_BY_ERROR(insnPtr, "DPP encoding is illegal for this instruction")
+    if (modifiers->needSDWA && (insnMode&GCN_VOP_NOSDWA)!=0)
+        ASM_FAIL_BY_ERROR(insnPtr, "SDWA encoding is illegal for this instruction")
+    if (modifiers->needSDWA && (insnMode&GCN_VOP_NOSDWAVEGA)!=0 && (arch & ARCH_GCN_1_4)!=0)
+        ASM_FAIL_BY_ERROR(insnPtr, "SDWA encoding is illegal for this instruction")
     return true;
 }
 

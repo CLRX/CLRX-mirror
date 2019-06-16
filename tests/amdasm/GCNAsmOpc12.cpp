@@ -636,6 +636,12 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "    v_xor_b32  v55, s27, v90 vop3", 0xd1150037U, 0x0002b41bU, true, true, "" },
     { "    v_mac_f32  v154, v21, v107", 0x2d34d715U, 0, false, true, "" },
     { "    v_mac_f32  v55, s27, v90 vop3", 0xd1160037U, 0x0002b41bU, true, true, "" },
+    // SDWA legal
+    { "    v_mac_f32  v55, v27, v90 dst_sel:b0 src0_sel:b1",
+        0x2c6eb4f9, 0x601001b, true, true, "" },
+    { "    v_mac_f16  v55, v27, v90 dst_sel:b0 src0_sel:b1",
+        0x466eb4f9, 0x601001b, true, true, "" },
+    //
     { "    v_madmk_f32 v154, v21, 6.9551627e+13, v107",
         0x2f34d715U, 0x567d0700U, true, true, "" },
     { "    v_madmk_f32 v154, v21, 45543, v107", 0x2f34d715U, 45543, true, true, "" },
@@ -721,6 +727,9 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         "test.s:1:5: Error: SRC0 must be a vector register with SDWA or DPP word\n" },
     { "    v_mov_b32  v158, v79 dst_sel:w1 mul:2", 0, 0, false, false,
         "test.s:1:26: Error: Mixing modifiers from different encodings is illegal\n" },
+    /* VOP1 - SDWA illegal */
+    { "    v_readfirstlane_b32 s30, s79 dst_sel:w1 src0_sel:b2", 0, 0, false, false,
+        "test.s:1:5: Error: SRC0 must be a vector register with SDWA or DPP word\n" },
     /* VOP1 - DPP */
     { "    v_mov_b32  v158, v79 quad_perm:[1,2,3,0] bound_ctrl row_mask:4 bank_mask:5",
         0x7f3c02faU, 0x4508394fU, true, true, "" },

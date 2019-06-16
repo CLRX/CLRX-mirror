@@ -116,9 +116,11 @@ enum : GCNInsnMode
     GCN_VOP3_MASK3 = 0x3000,    /// mask for VINTRP in VOP2 encodings
     GCN_VOP3_VOP3P = 0x8000,    /// VOP3P encoding
     GCN_VOP_NODPP = 0x10000,    /// VOP instruction can not have DPP
-    GCN_VOP_NOSDWA = 0x20000,    /// VOP instruction can not have DPP
-    GCN_VCC_IMPL_READ = 0x40000,    /// VOP instruction with implicit VCC read
-    GCN_VCC_IMPL_WRITE = 0x80000,   /// VOP instruction with implicit VCC write
+    GCN_VOP_NOSDWA = 0x20000,    /// VOP instruction can not have SDWA
+    GCN_VOP_NODPPSDWA = 0x30000,    /// VOP instruction can not have DPP and SDWA
+    GCN_VOP_NOSDWAVEGA = 0x40000,    /// VOP instruction can not have SDWA for VEGA
+    GCN_VCC_IMPL_READ = 0x80000,    /// VOP instruction with implicit VCC read
+    GCN_VCC_IMPL_WRITE = 0x100000,   /// VOP instruction with implicit VCC write
     // DS encoding modes
     GCN_ADDR_STD = 0x0,    /// standard place of address
     GCN_ADDR_DST = 0x10,    /// address operand in destination place

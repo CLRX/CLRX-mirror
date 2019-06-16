@@ -323,6 +323,11 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
     { "v_cmp_class_f32 vcc, sext(-abs(v65)), v107 clamp",
         0, 0, false, false,
         "test.s:1:1: Error: Modifiers CLAMP and OMOD is illegal in SDWAB\n" },
+    // SDWA illegal
+    { "    v_mac_f32  v55, v27, v90 dst_sel:b0 src0_sel:b1", 0, 0, false, false,
+        "test.s:1:5: Error: SDWA encoding is illegal for this instruction\n" },
+    { "    v_mac_f16  v55, v27, v90 dst_sel:b0 src0_sel:b1", 0, 0, false, false,
+        "test.s:1:5: Error: SDWA encoding is illegal for this instruction\n" },
     /* VOP2 instructions */
     { "v_add_co_u32    v154, vcc, v21, v107\n", 0x3334d715U, 0, false, true, "" },
     { "v_sub_co_u32    v154, vcc, v21, v107\n", 0x3534d715U, 0, false, true, "" },
