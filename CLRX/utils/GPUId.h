@@ -128,6 +128,7 @@ enum : GPUArchMask
     ARCH_GCN_1_1_2_4_5 = 0x3e,
     ARCH_GCN_1_2_4_5 = 0x3c,
     ARCH_GCN_1_4_5 = 0x38,
+    ARCH_GCN_1_0_1_5 = 0x23,
     ARCH_GCN_ALL = 0xffff
 };
 
