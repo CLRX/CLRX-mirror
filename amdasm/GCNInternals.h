@@ -101,6 +101,7 @@ enum : GCNInsnMode
     GCN_VOP_ARG_NONE = 0xd0,    /// no argument for VOP encodings
     GCN_NEW_OPCODE = 0xe0,  /// unique opcode that doesn't exists in VINTRP
     GCN_P0_P10_P20 = 0xf0,  /// second operand is param (P0,P10,P20)
+    GCN_VOPC_NOVCC = 0x80,  /// no VCC in VOPC instruction
     GCN_VOP3_VOP2 = 0x100,  /// VOP2 encoded as VOP3
     GCN_VOP3_VOP1 = 0x200,  /// VOP1 encoded as VOP3
     GCN_VOP3_VINTRP = 0x300,    /// VINTRP encoded as VOP3
@@ -115,6 +116,7 @@ enum : GCNInsnMode
     GCN_VINTRP_SRC2 = 0x1000,   /// VOP3/VINTRP with source2 (third source)
     GCN_VOP3_MASK3 = 0x3000,    /// mask for VINTRP in VOP2 encodings
     GCN_VOP3_VOP3P = 0x8000,    /// VOP3P encoding
+    GCN_VOP3_NODST = 0x1000000,  /// VOP3 - no DST
     GCN_VOP_NODPP = 0x10000,    /// VOP instruction can not have DPP
     GCN_VOP_NOSDWA = 0x20000,    /// VOP instruction can not have SDWA
     GCN_VOP_NODPPSDWA = 0x30000,    /// VOP instruction can not have DPP and SDWA
