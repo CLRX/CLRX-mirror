@@ -153,7 +153,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "s_getreg_regrd_b32",  GCNENC_SOPK,   GCN_IMM_SREG,             19,   ARCH_GCN_1_2_4  },
     { "s_setreg_imm32_b32",  GCNENC_SOPK,   GCN_IMM_SREG|GCN_SOPK_SRIMM32, 20,   ARCH_GCN_1_2_4  },
     { "s_call_b64",          GCNENC_SOPK,   GCN_REG_DST_64|GCN_IMM_REL, 21,   ARCH_GCN_1_4 },
-    { "s_version",           GCNENC_SOPK,   GCN_STDMODE,              1,   ARCH_GCN_1_5 },
+    { "s_version",           GCNENC_SOPK,   GCN_DST_NONE,              1,   ARCH_GCN_1_5 },
     { "s_call_b64",          GCNENC_SOPK,   GCN_REG_DST_64|GCN_IMM_REL, 22,   ARCH_GCN_1_5 },
     { "s_waitcnt_vscnt",     GCNENC_SOPK,   GCN_STDMODE,              23,   ARCH_GCN_1_5 },
     { "s_waitcnt_vmcnt",     GCNENC_SOPK,   GCN_STDMODE,              24,   ARCH_GCN_1_5 },
