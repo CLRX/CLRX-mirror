@@ -52,6 +52,7 @@ enum : cxbyte
     GCNENC_MIMG,    /* 0x3c<<26,  opcode = (7bit)<<18 */
     GCNENC_EXP,     /* 0x3e<<26,  opcode = none */
     GCNENC_FLAT,    /* 0x37<<26,  opcode = (8bit)<<18 (???8bit) */
+    GCNENC_VOP3P,
     GCNENC_MAXVAL = GCNENC_FLAT
 };
 
