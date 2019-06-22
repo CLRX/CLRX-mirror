@@ -31,7 +31,7 @@ GPUIdException::GPUIdException(const std::string& message) : Exception(message)
 { }
 
 // length of GPU device table (number of recognized GPU devices)
-static const size_t gpuDeviceTableSize = 32;
+static const size_t gpuDeviceTableSize = 33;
 
 static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
 {
@@ -66,7 +66,8 @@ static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
     "GFX906",
     "GFX907",
     "GFX1000",
-    "GFX1010"
+    "GFX1010",
+    "GFX1011"
 };
 
 // sorted GPU device names with device types
@@ -82,6 +83,7 @@ lowerCaseGpuDeviceEntryTable[] =
     { "fiji", GPUDeviceType::FIJI },
     { "gfx1000", GPUDeviceType::GFX1000 },
     { "gfx1010", GPUDeviceType::GFX1010 },
+    { "gfx1011", GPUDeviceType::GFX1010 },
     { "gfx700", GPUDeviceType::SPECTRE },
     { "gfx701", GPUDeviceType::HAWAII },
     { "gfx801", GPUDeviceType::CARRIZO },
@@ -162,40 +164,44 @@ static const GPUArchitecture gpuDeviceArchTable[gpuDeviceTableSize] =
     GPUArchitecture::GCN1_4_1, // GFX906
     GPUArchitecture::GCN1_4_1, // GFX907
     GPUArchitecture::GCN1_5, // GFX1000
-    GPUArchitecture::GCN1_5  // GFX1010
+    GPUArchitecture::GCN1_5, // GFX1010
+    GPUArchitecture::GCN1_5_1, // GFX1011
 };
 
-static const char* gpuArchitectureNameTable[6] =
+static const char* gpuArchitectureNameTable[7] =
 {
     "GCN1.0",
     "GCN1.1",
     "GCN1.2",
     "GCN1.4",
     "GCN1.4.1",
-    "GCN1.5"
+    "GCN1.5",
+    "GCN1.5.1"
 };
 
 /* three names for every architecture (GCN, GFX?, Shortcut) used by recognizing
  * architecture by name */
-static const char* gpuArchitectureNameTable2[18] =
+static const char* gpuArchitectureNameTable2[21] =
 {
     "GCN1.0", "GFX6", "SI",
     "GCN1.1", "GFX7", "CI",
     "GCN1.2", "GFX8", "VI",
     "GCN1.4", "GFX9", "Vega",
     "GCN1.4.1", "GFX906", "Vega20",
-    "GCN1.5", "GFX10", "Navi"
+    "GCN1.5", "GFX10", "Navi",
+    "GCN1.5.1", "GFX1011", "NaviDL",
 };
 
 /// lowest device for architecture
-static const GPUDeviceType gpuLowestDeviceFromArchTable[6] =
+static const GPUDeviceType gpuLowestDeviceFromArchTable[7] =
 {
     GPUDeviceType::CAPE_VERDE,
     GPUDeviceType::BONAIRE,
     GPUDeviceType::ICELAND,
     GPUDeviceType::GFX900,
     GPUDeviceType::GFX906,
-    GPUDeviceType::GFX1000
+    GPUDeviceType::GFX1000,
+    GPUDeviceType::GFX1011,
 };
 
 GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
@@ -286,7 +292,7 @@ cxuint CLRX::getGPUMaxRegsNumByArchMask(GPUArchMask archMask, cxuint regType)
     else {
         if (archMask&(3U<<int(GPUArchitecture::GCN1_4)))
             return 104;    // for VEGA
-        if (archMask&(1U<<int(GPUArchitecture::GCN1_5)))
+        if (archMask&(2U<<int(GPUArchitecture::GCN1_5)))
             return 106;    // for NAVI
         return (archMask&(1U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
     }
@@ -299,7 +305,7 @@ cxuint CLRX::getGPUMaxAddrRegsNumByArchMask(GPUArchMask archMask, cxuint regType
     else {
         if (archMask&(3U<<int(GPUArchitecture::GCN1_4)))
             return 102;    // for VEGA
-        if (archMask&(1U<<int(GPUArchitecture::GCN1_5)))
+        if (archMask&(2U<<int(GPUArchitecture::GCN1_5)))
             return 106;    // for NAVI
         return (archMask&(1U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
     }
@@ -311,7 +317,7 @@ bool CLRX::isSpecialSGPRRegister(GPUArchMask archMask, cxuint index)
     if (rindex == 106) // VCC
         return true;
     // TODO: add stuff for Navi
-    if ((archMask & 1U<<int(GPUArchitecture::GCN1_5)) != 0)
+    if ((archMask & 2U<<int(GPUArchitecture::GCN1_5)) != 0)
         return false;  // no other special registers
     if ((archMask&(31U<<int(GPUArchitecture::GCN1_1))) != 0)
     {
@@ -430,7 +436,8 @@ static const AMDGPUArchVersion galliumGpuArchVersionTbl[] =
     { 9, 0, 6 }, // GPUDeviceType::GFX906
     { 9, 0, 7 }, // GPUDeviceType::GFX907
     { 10, 0, 0 }, // GPUDeviceType::GFX1000
-    { 10, 1, 0 } // GPUDeviceType::GFX1010
+    { 10, 1, 0 }, // GPUDeviceType::GFX1010
+    { 10, 1, 1 } // GPUDeviceType::GFX1011
 };
 
 // AMD GPU architecture for ROCm
@@ -467,7 +474,8 @@ static const AMDGPUArchVersion rocmGpuArchVersionTbl[] =
     { 9, 0, 6 }, // GPUDeviceType::GFX906
     { 9, 0, 7 }, // GPUDeviceType::GFX907
     { 10, 0, 0 }, // GPUDeviceType::GFX1000
-    { 10, 1, 0 } // GPUDeviceType::GFX1010
+    { 10, 1, 0 }, // GPUDeviceType::GFX1010
+    { 10, 1, 1 } // GPUDeviceType::GFX1011
 };
 
 // AMDGPU architecture values for specific GPU device type for AMDOCL 2.0
@@ -504,7 +512,8 @@ static const AMDGPUArchVersion amdCL2GpuArchVersionTbl[] =
     { 9, 0, 6 }, // GPUDeviceType::GFX906
     { 9, 0, 7 }, // GPUDeviceType::GFX907
     { 10, 0, 0 }, // GPUDeviceType::GFX1000
-    { 10, 1, 0 } // GPUDeviceType::GFX1010
+    { 10, 1, 0 }, // GPUDeviceType::GFX1010
+    { 10, 1, 1 }, // GPUDeviceType::GFX1011
 };
 
 AMDGPUArchVersion CLRX::getGPUArchVersion(GPUDeviceType deviceType,
@@ -550,7 +559,8 @@ static const AMDGPUArchVersionEntry amdGpuArchVersionEntriesTbl[] =
     { 9, 0, 6, GPUDeviceType::GFX906 },
     { 9, 0, 7, GPUDeviceType::GFX907 },
     { 10, 0, 0, GPUDeviceType::GFX1000 },
-    { 10, 1, 0, GPUDeviceType::GFX1010 }
+    { 10, 1, 0, GPUDeviceType::GFX1010 },
+    { 10, 1, 1, GPUDeviceType::GFX1011 }
 };
 
 static const size_t amdGpuArchVersionEntriesNum = sizeof(amdGpuArchVersionEntriesTbl) /
