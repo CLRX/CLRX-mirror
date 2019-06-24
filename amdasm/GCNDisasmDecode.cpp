@@ -168,7 +168,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
     }
     
     const cxuint op2 = op&~1U;
-    if (op2 == 106 || (!isGCN14 && (op2 == 108 || op2 == 110)) || op2 == 126 ||
+    if (op2 == 106 || (!isGCN14 && !isGCN15 && (op2 == 108 || op2 == 110)) || op2 == 126 ||
         (op2 == 104 && (arch&ARCH_RX2X0)!=0) ||
         ((op2 == 102 || op2 == 104) && isGCN12))
     {
@@ -230,7 +230,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
         return;
     }
     
-    cxuint ttmpStart = (isGCN14 ? 108 : 112);
+    cxuint ttmpStart = ((isGCN14 || isGCN15) ? 108 : 112);
     if (op >= ttmpStart && op < 124)
     {
         // print ttmp register
