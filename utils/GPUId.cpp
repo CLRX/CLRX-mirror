@@ -292,7 +292,7 @@ cxuint CLRX::getGPUMaxRegsNumByArchMask(GPUArchMask archMask, cxuint regType)
     else {
         if (archMask&(3U<<int(GPUArchitecture::GCN1_4)))
             return 104;    // for VEGA
-        if (archMask&(2U<<int(GPUArchitecture::GCN1_5)))
+        if (archMask&(3U<<int(GPUArchitecture::GCN1_5)))
             return 106;    // for NAVI
         return (archMask&(1U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
     }
@@ -305,7 +305,7 @@ cxuint CLRX::getGPUMaxAddrRegsNumByArchMask(GPUArchMask archMask, cxuint regType
     else {
         if (archMask&(3U<<int(GPUArchitecture::GCN1_4)))
             return 102;    // for VEGA
-        if (archMask&(2U<<int(GPUArchitecture::GCN1_5)))
+        if (archMask&(3U<<int(GPUArchitecture::GCN1_5)))
             return 106;    // for NAVI
         return (archMask&(1U<<int(GPUArchitecture::GCN1_2))) ? 102 : 104;
     }
@@ -317,7 +317,7 @@ bool CLRX::isSpecialSGPRRegister(GPUArchMask archMask, cxuint index)
     if (rindex == 106) // VCC
         return true;
     // TODO: add stuff for Navi
-    if ((archMask & 2U<<int(GPUArchitecture::GCN1_5)) != 0)
+    if ((archMask & 3U<<int(GPUArchitecture::GCN1_5)) != 0)
         return false;  // no other special registers
     if ((archMask&(31U<<int(GPUArchitecture::GCN1_1))) != 0)
     {

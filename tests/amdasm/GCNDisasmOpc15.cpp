@@ -23,5 +23,11 @@
 /* for Radeon NAVI series with GCN1.5 */
 const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
 {
+    { 0x80153d04U, 0, false, "        s_add_u32       s21, s4, s61\n" },
+    { 0x80156404U, 0, false, "        s_add_u32       s21, s4, s100\n" },
+    { 0x80156604U, 0, false, "        s_add_u32       s21, s4, s102\n" },
+    { 0x80156704U, 0, false, "        s_add_u32       s21, s4, s103\n" },
+    { 0x80156804U, 0, false, "        s_add_u32       s21, s4, s104\n" },
+    { 0x80156904U, 0, false, "        s_add_u32       s21, s4, s105\n" },
     { 0, 0, false, nullptr }
 };
