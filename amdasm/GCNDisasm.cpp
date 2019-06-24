@@ -269,7 +269,8 @@ void GCNDisassembler::analyzeBeforeDisassemble()
                 disassembler.getDeviceType());
     const bool isGCN11 = (arch == GPUArchitecture::GCN1_1);
     const bool isGCN12 = (arch >= GPUArchitecture::GCN1_2);
-    const bool isGCN14 = (arch == GPUArchitecture::GCN1_4);
+    const bool isGCN14 = (arch == GPUArchitecture::GCN1_4 || arch == GPUArchitecture::GCN1_4_1);
+    const bool isGCN15 = (arch >= GPUArchitecture::GCN1_5 || arch == GPUArchitecture::GCN1_5_1);
     size_t pos;
     for (pos = 0; pos < codeWordsNum; pos++)
     {
@@ -314,7 +315,8 @@ void GCNDisassembler::analyzeBeforeDisassemble()
                         const cxuint opcode = (insnCode>>23)&0x1f;
                         if ((!isGCN12 && opcode == 17) ||
                             (isGCN12 && opcode == 16) || // if branch fork
-                            (isGCN14 && opcode == 21)) // if s_call_b64
+                            (isGCN14 && opcode == 21) ||
+                            (isGCN15 && opcode == 22)) // if s_call_b64
                             labels.push_back(startOffset +
                                     ((pos+int16_t(insnCode&0xffff)+1)<<2));
                         else if ((!isGCN12 && opcode == 21) ||
@@ -340,21 +342,24 @@ void GCNDisassembler::analyzeBeforeDisassemble()
         }
         else
         {
+            uint32_t src0 = (insnCode&0x1ff);
             // some vector instructions
             if ((insnCode & 0x7e000000U) == 0x7c000000U)
             {
                 // VOPC
-                if ((insnCode&0x1ff) == 0xff || // literal
-                    // SDWA, DDP
-                    (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                if (src0 == 0xff || // literal
+                    // SDWA, DPP
+                    (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
+                    (isGCN15 && src0 == 0xe9))
                     pos++;
             }
             else if ((insnCode & 0x7e000000U) == 0x7e000000U)
             {
                 // VOP1
-                if ((insnCode&0x1ff) == 0xff || // literal
-                    // SDWA, DDP
-                    (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                if (src0 == 0xff || // literal
+                    // SDWA, DPP
+                    (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
+                    (isGCN15 && src0 == 0xe9))
                     pos++;
             }
             else
@@ -365,9 +370,10 @@ void GCNDisassembler::analyzeBeforeDisassemble()
                     (isGCN12 && (opcode == 23 || opcode == 24 ||
                     opcode == 36 || opcode == 37))) // V_MADMK and V_MADAK
                     pos++;  // inline 32-bit constant
-                else if ((insnCode&0x1ff) == 0xff || // literal
-                    // SDWA, DDP
-                    (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                else if (src0 == 0xff || // literal
+                    // SDWA, DPP
+                    (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
+                    (isGCN15 && src0 == 0xe9))
                     pos++;  // literal
             }
         }
