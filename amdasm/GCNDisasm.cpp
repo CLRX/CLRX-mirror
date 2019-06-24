@@ -319,8 +319,8 @@ void GCNDisassembler::analyzeBeforeDisassemble()
                             (isGCN15 && opcode == 22)) // if s_call_b64
                             labels.push_back(startOffset +
                                     ((pos+int16_t(insnCode&0xffff)+1)<<2));
-                        else if ((!isGCN12 && opcode == 21) ||
-                            (isGCN12 && opcode == 20))
+                        else if (((!isGCN12 || isGCN15) && opcode == 21) ||
+                            (isGCN12 && !isGCN15 && opcode == 20))
                             pos++; // additional literal
                     }
                 }
@@ -335,7 +335,9 @@ void GCNDisassembler::analyzeBeforeDisassemble()
             {
                 // SMRD and others
                 const uint32_t encPart = (insnCode&0x3c000000U)>>26;
-                if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
+                if (isGCN15 && gcnSize12Table[encPart]==GCNENCSCH_MIMG_DWORDS)
+                    pos += ((insnCode>>1)&3) + 1;
+                else if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
                     (isGCN12 && gcnSize12Table[encPart]))
                     pos++;
             }
@@ -367,8 +369,11 @@ void GCNDisassembler::analyzeBeforeDisassemble()
                 // VOP2
                 const cxuint opcode = (insnCode >> 25)&0x3f;
                 if ((!isGCN12 && (opcode == 32 || opcode == 33)) ||
-                    (isGCN12 && (opcode == 23 || opcode == 24 ||
-                    opcode == 36 || opcode == 37))) // V_MADMK and V_MADAK
+                    (isGCN12 && !isGCN15 && (opcode == 23 || opcode == 24 ||
+                    opcode == 36 || opcode == 37)) ||
+                    (isGCN15 && (opcode == 32 || opcode == 33 || // V_MADMK and V_MADAK
+                        opcode == 44 || opcode == 45 || // V_FMAMK_F32, V_FMAAK_F32
+                        opcode == 55 || opcode == 56))) // V_FMAMK_F16, V_FMAAK_F16
                     pos++;  // inline 32-bit constant
                 else if (src0 == 0xff || // literal
                     // SDWA, DPP
