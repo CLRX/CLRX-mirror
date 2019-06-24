@@ -62,6 +62,7 @@ enum: Flags
     ASM_BUGGYFPLIT = 8, ///< buggy handling of fpliterals (including fp constants)
     ASM_MACRONOCASE = 16, /// disable case-insensitive naming (default)
     ASM_OLDMODPARAM = 32,   ///< use old modifier parametrization (values 0 and 1 only)
+    ASM_WAVE32 = 0x64, ///< use WAVESIZE32
     ASM_TESTRESOLVE = (1U<<30), ///< enable resolving symbols if ASM_TESTRUN enabled
     ASM_TESTRUN = (1U<<31), ///< only for running tests
     ASM_ALL = FLAGS_ALL&~(ASM_TESTRUN|ASM_TESTRESOLVE|ASM_BUGGYFPLIT|ASM_MACRONOCASE|

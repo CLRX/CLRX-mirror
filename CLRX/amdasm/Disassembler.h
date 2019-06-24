@@ -71,6 +71,7 @@ enum: Flags
     DISASM_CODEPOS = 0x200,   ///< print code position
     DISASM_HSACONFIG = 0x400,  ///< print HSA configuration
     DISASM_HSALAYOUT = 0x800,  ///< print in HSA layout (like Gallium or ROCm)
+    DISASM_WAVE32 = 0x1000, ///< use WAVESIZE32
     
     ///< all disassembler flags (without config)
     DISASM_ALL = FLAGS_ALL&(~(DISASM_CONFIG|DISASM_BUGGYFPLIT|
