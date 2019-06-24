@@ -190,67 +190,74 @@ GCNDisassembler::GCNDisassembler(Disassembler& disassembler)
 GCNDisassembler::~GCNDisassembler()
 { }
 
+enum : cxbyte
+{
+    GCNENCSCH_1DWORD = 0,
+    GCNENCSCH_2DWORD,
+    GCNENCSCH_MIMG_DWORDS
+};
+
 // gcn encoding sizes table: true - if 8 byte encoding, false - 4 byte encoding
 // for GCN1.0/1.1
-static const bool gcnSize11Table[16] =
+static const cxbyte gcnSize11Table[16] =
 {
-    false, // GCNENC_SMRD, // 0000
-    false, // GCNENC_SMRD, // 0001
-    false, // GCNENC_VINTRP, // 0010
-    false, // GCNENC_NONE, // 0011 - illegal
-    true,  // GCNENC_VOP3A, // 0100
-    false, // GCNENC_NONE, // 0101 - illegal
-    true,  // GCNENC_DS,   // 0110
-    true,  // GCNENC_FLAT, // 0111
-    true,  // GCNENC_MUBUF, // 1000
-    false, // GCNENC_NONE,  // 1001 - illegal
-    true,  // GCNENC_MTBUF, // 1010
-    false, // GCNENC_NONE,  // 1011 - illegal
-    true,  // GCNENC_MIMG,  // 1100
-    false, // GCNENC_NONE,  // 1101 - illegal
-    true,  // GCNENC_EXP,   // 1110
-    false // GCNENC_NONE   // 1111 - illegal
+    GCNENCSCH_1DWORD, // GCNENC_SMRD, // 0000
+    GCNENCSCH_1DWORD, // GCNENC_SMRD, // 0001
+    GCNENCSCH_1DWORD, // GCNENC_VINTRP, // 0010
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0011 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_VOP3A, // 0100
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0101 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_DS,   // 0110
+    GCNENCSCH_2DWORD,  // GCNENC_FLAT, // 0111
+    GCNENCSCH_2DWORD,  // GCNENC_MUBUF, // 1000
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1001 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MTBUF, // 1010
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1011 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MIMG,  // 1100
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1101 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_EXP,   // 1110
+    GCNENCSCH_1DWORD // GCNENC_NONE   // 1111 - illegal
 };
 
 // for GCN1.2/1.4
-static const bool gcnSize12Table[16] =
+static const cxbyte gcnSize12Table[16] =
 {
-    true,  // GCNENC_SMEM, // 0000
-    true,  // GCNENC_EXP, // 0001
-    false, // GCNENC_NONE, // 0010 - illegal
-    false, // GCNENC_NONE, // 0011 - illegal
-    true,  // GCNENC_VOP3A, // 0100
-    false, // GCNENC_VINTRP, // 0101
-    true,  // GCNENC_DS,   // 0110
-    true,  // GCNENC_FLAT, // 0111
-    true,  // GCNENC_MUBUF, // 1000
-    false, // GCNENC_NONE,  // 1001 - illegal
-    true,  // GCNENC_MTBUF, // 1010
-    false, // GCNENC_NONE,  // 1011 - illegal
-    true,  // GCNENC_MIMG,  // 1100
-    false, // GCNENC_NONE,  // 1101 - illegal
-    false, // GCNENC_NONE,  // 1110 - illegal
-    false // GCNENC_NONE   // 1111 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_SMEM, // 0000
+    GCNENCSCH_2DWORD,  // GCNENC_EXP, // 0001
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0010 - illegal
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0011 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_VOP3A, // 0100
+    GCNENCSCH_1DWORD, // GCNENC_VINTRP, // 0101
+    GCNENCSCH_2DWORD,  // GCNENC_DS,   // 0110
+    GCNENCSCH_2DWORD,  // GCNENC_FLAT, // 0111
+    GCNENCSCH_2DWORD,  // GCNENC_MUBUF, // 1000
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1001 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MTBUF, // 1010
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1011 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MIMG,  // 1100
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1101 - illegal
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1110 - illegal
+    GCNENCSCH_1DWORD // GCNENC_NONE   // 1111 - illegal
 };
 
-static const bool gcnSize15bbTable[16] =
+static const cxbyte gcnSize15bbTable[16] =
 {
-    false, // GCNENC_NONE, // 0000
-    false, // GCNENC_NONE, // 0001
-    false, // CNENC_VINTRP, // 0010
-    true,  // GCNENC_VOP3P, // 0011
-    false, // GCNENC_NONE, // 0100
-    true,  // GCNENC_VOP3A, // 0101
-    true,  // GCNENC_DS,   // 0110
-    true,  // GCNENC_FLAT, // 0111
-    true,  // GCNENC_MUBUF, // 1000
-    false, // GCNENC_NONE, // 1001 - illegal
-    true,  // GCNENC_MTBUF, // 1010
-    false, // GCNENC_NONE,  // 1011 - illegal
-    true,  // GCNENC_MIMG,  // 1100
-    true,  // GCNENC_SMEM,  // 1101
-    true,  // GCNENC_EXP,   // 1110
-    false // GCNENC_NONE   // 1111 - illegal
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0000
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0001
+    GCNENCSCH_1DWORD, // CNENC_VINTRP, // 0010
+    GCNENCSCH_2DWORD,  // GCNENC_VOP3P, // 0011
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0100
+    GCNENCSCH_2DWORD,  // GCNENC_VOP3A, // 0101
+    GCNENCSCH_2DWORD,  // GCNENC_DS,   // 0110
+    GCNENCSCH_2DWORD,  // GCNENC_FLAT, // 0111
+    GCNENCSCH_2DWORD,  // GCNENC_MUBUF, // 1000
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 1001 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MTBUF, // 1010
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1011 - illegal
+    GCNENCSCH_MIMG_DWORDS,  // GCNENC_MIMG,  // 1100
+    GCNENCSCH_2DWORD,  // GCNENC_SMEM,  // 1101
+    GCNENCSCH_2DWORD,  // GCNENC_EXP,   // 1110
+    GCNENCSCH_1DWORD // GCNENC_NONE   // 1111 - illegal
 };
 
 void GCNDisassembler::analyzeBeforeDisassemble()
