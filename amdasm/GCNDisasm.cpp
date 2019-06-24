@@ -233,6 +233,26 @@ static const bool gcnSize12Table[16] =
     false // GCNENC_NONE   // 1111 - illegal
 };
 
+static const bool gcnSize15bbTable[16] =
+{
+    false, // GCNENC_NONE, // 0000
+    false, // GCNENC_NONE, // 0001
+    false, // CNENC_VINTRP, // 0010
+    true,  // GCNENC_VOP3P, // 0011
+    false, // GCNENC_NONE, // 0100
+    true,  // GCNENC_VOP3A, // 0101
+    true,  // GCNENC_DS,   // 0110
+    true,  // GCNENC_FLAT, // 0111
+    true,  // GCNENC_MUBUF, // 1000
+    false, // GCNENC_NONE, // 1001 - illegal
+    true,  // GCNENC_MTBUF, // 1010
+    false, // GCNENC_NONE,  // 1011 - illegal
+    true,  // GCNENC_MIMG,  // 1100
+    true,  // GCNENC_SMEM,  // 1101
+    true,  // GCNENC_EXP,   // 1110
+    false // GCNENC_NONE   // 1111 - illegal
+};
+
 void GCNDisassembler::analyzeBeforeDisassemble()
 {
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
@@ -389,6 +409,26 @@ static const cxbyte gcnEncoding12Table[16] =
     GCNENC_NONE   // 1111 - illegal
 };
 
+static const cxbyte gcnEncoding15Table[16] =
+{
+    GCNENC_NONE, // 0000
+    GCNENC_NONE, // 0001
+    GCNENC_VINTRP, // 0010
+    GCNENC_VOP3P, // 0011
+    GCNENC_NONE, // 0100
+    GCNENC_VOP3A, // 0101
+    GCNENC_DS,   // 0110
+    GCNENC_FLAT, // 0111
+    GCNENC_MUBUF, // 1000
+    GCNENC_NONE, // 1001 - illegal
+    GCNENC_MTBUF, // 1010
+    GCNENC_NONE,  // 1011 - illegal
+    GCNENC_MIMG,  // 1100
+    GCNENC_SMEM,  // 1101
+    GCNENC_EXP,   // 1110
+    GCNENC_NONE   // 1111 - illegal
+};
+
 
 struct CLRX_INTERNAL GCNEncodingOpcodeBits
 {
@@ -443,7 +483,6 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcode12Table[GCNENC_MAXVAL+1] =
     { 0, 0 }, /* GCNENC_EXP, opcode = none */
     { 18, 7 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
 };
-
 
 /* main routine */
 
