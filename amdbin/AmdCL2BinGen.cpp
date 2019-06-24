@@ -1596,44 +1596,74 @@ struct CLRX_INTERNAL IntAmdCL2StubHeader
     uint32_t sgprsNumAll;
 };
 
-static const bool gcnSize11Table[16] =
+enum : cxbyte
 {
-    false, // GCNENC_SMRD, // 0000
-    false, // GCNENC_SMRD, // 0001
-    false, // GCNENC_VINTRP, // 0010
-    false, // GCNENC_NONE, // 0011 - illegal
-    true,  // GCNENC_VOP3A, // 0100
-    false, // GCNENC_NONE, // 0101 - illegal
-    true,  // GCNENC_DS,   // 0110
-    true,  // GCNENC_FLAT, // 0111
-    true,  // GCNENC_MUBUF, // 1000
-    false, // GCNENC_NONE,  // 1001 - illegal
-    true,  // GCNENC_MTBUF, // 1010
-    false, // GCNENC_NONE,  // 1011 - illegal
-    true,  // GCNENC_MIMG,  // 1100
-    false, // GCNENC_NONE,  // 1101 - illegal
-    true,  // GCNENC_EXP,   // 1110
-    false  // GCNENC_NONE   // 1111 - illegal
+    GCNENCSCH_1DWORD = 0,
+    GCNENCSCH_2DWORD,
+    GCNENCSCH_MIMG_DWORDS
 };
 
-static const bool gcnSize12Table[16] =
+// gcn encoding sizes table: true - if 8 byte encoding, false - 4 byte encoding
+// for GCN1.0/1.1
+static const cxbyte gcnSize11Table[16] =
 {
-    true,  // GCNENC_SMEM, // 0000
-    true,  // GCNENC_EXP, // 0001
-    false, // GCNENC_NONE, // 0010 - illegal
-    false, // GCNENC_NONE, // 0011 - illegal
-    true,  // GCNENC_VOP3A, // 0100
-    false, // GCNENC_VINTRP, // 0101
-    true,  // GCNENC_DS,   // 0110
-    true,  // GCNENC_FLAT, // 0111
-    true,  // GCNENC_MUBUF, // 1000
-    false, // GCNENC_NONE,  // 1001 - illegal
-    true,  // GCNENC_MTBUF, // 1010
-    false, // GCNENC_NONE,  // 1011 - illegal
-    true,  // GCNENC_MIMG,  // 1100
-    false, // GCNENC_NONE,  // 1101 - illegal
-    false, // GCNENC_NONE,  // 1110 - illegal
-    false  // GCNENC_NONE   // 1111 - illegal
+    GCNENCSCH_1DWORD, // GCNENC_SMRD, // 0000
+    GCNENCSCH_1DWORD, // GCNENC_SMRD, // 0001
+    GCNENCSCH_1DWORD, // GCNENC_VINTRP, // 0010
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0011 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_VOP3A, // 0100
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0101 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_DS,   // 0110
+    GCNENCSCH_2DWORD,  // GCNENC_FLAT, // 0111
+    GCNENCSCH_2DWORD,  // GCNENC_MUBUF, // 1000
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1001 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MTBUF, // 1010
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1011 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MIMG,  // 1100
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1101 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_EXP,   // 1110
+    GCNENCSCH_1DWORD // GCNENC_NONE   // 1111 - illegal
+};
+
+// for GCN1.2/1.4
+static const cxbyte gcnSize12Table[16] =
+{
+    GCNENCSCH_2DWORD,  // GCNENC_SMEM, // 0000
+    GCNENCSCH_2DWORD,  // GCNENC_EXP, // 0001
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0010 - illegal
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0011 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_VOP3A, // 0100
+    GCNENCSCH_1DWORD, // GCNENC_VINTRP, // 0101
+    GCNENCSCH_2DWORD,  // GCNENC_DS,   // 0110
+    GCNENCSCH_2DWORD,  // GCNENC_FLAT, // 0111
+    GCNENCSCH_2DWORD,  // GCNENC_MUBUF, // 1000
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1001 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MTBUF, // 1010
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1011 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MIMG,  // 1100
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1101 - illegal
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1110 - illegal
+    GCNENCSCH_1DWORD // GCNENC_NONE   // 1111 - illegal
+};
+
+static const cxbyte gcnSize15Table[16] =
+{
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0000
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0001
+    GCNENCSCH_1DWORD, // CNENC_VINTRP, // 0010
+    GCNENCSCH_2DWORD,  // GCNENC_VOP3P, // 0011
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0100
+    GCNENCSCH_2DWORD,  // GCNENC_VOP3A, // 0101
+    GCNENCSCH_2DWORD,  // GCNENC_DS,   // 0110
+    GCNENCSCH_2DWORD,  // GCNENC_FLAT, // 0111
+    GCNENCSCH_2DWORD,  // GCNENC_MUBUF, // 1000
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 1001 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MTBUF, // 1010
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1011 - illegal
+    GCNENCSCH_MIMG_DWORDS,  // GCNENC_MIMG,  // 1100
+    GCNENCSCH_2DWORD,  // GCNENC_SMEM,  // 1101
+    GCNENCSCH_2DWORD,  // GCNENC_EXP,   // 1110
+    GCNENCSCH_1DWORD // GCNENC_NONE   // 1111 - illegal
 };
 
 enum : cxbyte
@@ -1675,6 +1705,7 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(code);
     bool isGCN12 = (arch >= GPUArchitecture::GCN1_2);
     bool isGCN11 = (arch == GPUArchitecture::GCN1_1);
+    const bool isGCN15 = (arch >= GPUArchitecture::GCN1_5 || arch == GPUArchitecture::GCN1_5_1);
     
     /* main analyzing code loop, parse and determine instr encoding, and counts
      * global/local memory ops */
@@ -1726,7 +1757,20 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
             {
                 // SMRD and others
                 const uint32_t encPart = (insnCode&0x3c000000U)>>26;
-                if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
+                if (isGCN15)
+                {
+                    if (gcnSize15Table[encPart]==GCNENCSCH_MIMG_DWORDS)
+                    {
+                        const cxuint dwords = ((insnCode>>1)&3) + 1;
+                        if (pos+dwords <= codeWordsNum)
+                            pos += dwords;
+                    }
+                    else if (gcnSize15Table[encPart])
+                    {
+                        if (pos < codeWordsNum) pos++;
+                    }
+                }
+                else if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
                     (isGCN12 && gcnSize12Table[encPart]))
                 {
                     if (pos < codeWordsNum) pos++;
@@ -1741,12 +1785,14 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
         else
         {
             // some vector instructions
+            const uint32_t src0 = (insnCode&0x1ff);
             if ((insnCode & 0x7e000000U) == 0x7c000000U)
             {
                 // VOPC
-                if ((insnCode&0x1ff) == 0xff || // literal
+                if (src0 == 0xff || // literal
                     // SDWA, DDP
-                    (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                    (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
+                    (isGCN15 && src0 == 0xe9))
                 {
                     if (pos < codeWordsNum) pos++;
                 }
@@ -1754,24 +1800,29 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
             else if ((insnCode & 0x7e000000U) == 0x7e000000U)
             {
                 // VOP1
-                if ((insnCode&0x1ff) == 0xff || // literal
-                    // SDWA, DDP
-                    (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                if (src0 == 0xff || // literal
+                    // SDWA, DPP
+                    (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
+                    (isGCN15 && src0 == 0xe9))
                     if (pos < codeWordsNum) pos++;
             }
             else
             {
                 // VOP2
                 const cxuint opcode = (insnCode >> 25)&0x3f;
-                if ((!isGCN12 && (opcode == 32 || opcode == 33)) ||
-                    (isGCN12 && (opcode == 23 || opcode == 24 ||
-                    opcode == 36 || opcode == 37))) // V_MADMK and V_MADAK
+                if (((!isGCN12 || isGCN15) && (opcode == 32 || opcode == 33)) ||
+                    (isGCN12 && !isGCN15 && (opcode == 23 || opcode == 24 ||
+                    opcode == 36 || opcode == 37)) ||
+                    (isGCN15 && (opcode == 32 || opcode == 33 || // V_MADMK and V_MADAK
+                        opcode == 44 || opcode == 45 || // V_FMAMK_F32, V_FMAAK_F32
+                        opcode == 55 || opcode == 56))) // V_MADMK and V_MADAK
                 {
                     if (pos < codeWordsNum) pos++;
                 }
-                else if ((insnCode&0x1ff) == 0xff || // literal
-                    // SDWA, DDP
-                    (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                else if (src0 == 0xff || // literal
+                    // SDWA, DPP
+                    (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
+                    (isGCN15 && src0 == 0xe9))
                     if (pos < codeWordsNum) pos++; 
             }
         }
