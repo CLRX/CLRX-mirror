@@ -434,6 +434,8 @@ struct CLRX_INTERNAL GCNEncodingOpcodeBits
 {
     cxbyte bitPos;
     cxbyte bits;
+    cxbyte bitPos2;
+    cxbyte bits2;
 };
 
 // table of opcode positions in encoding (GCN1.0/1.1)
@@ -479,6 +481,30 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcode12Table[GCNENC_MAXVAL+1] =
     { 17, 8 }, /* GCNENC_DS, opcode = (8bit)<<17 */
     { 18, 7 }, /* GCNENC_MUBUF, opcode = (7bit)<<18 */
     { 15, 4 }, /* GCNENC_MTBUF, opcode = (4bit)<<15 */
+    { 18, 7 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
+    { 0, 0 }, /* GCNENC_EXP, opcode = none */
+    { 18, 7 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
+};
+
+// table of opcode positions in encoding (GCN1.5)
+static const GCNEncodingOpcodeBits gcnEncodingOpcode15Table[GCNENC_MAXVAL+2] =
+{
+    { 0, 0 },
+    { 16, 7 }, /* GCNENC_SOPC, opcode = (7bit)<<16 */
+    { 16, 7 }, /* GCNENC_SOPP, opcode = (7bit)<<16 */
+    { 8, 8 }, /* GCNENC_SOP1, opcode = (8bit)<<8 */
+    { 23, 7 }, /* GCNENC_SOP2, opcode = (7bit)<<23 */
+    { 23, 5 }, /* GCNENC_SOPK, opcode = (5bit)<<23 */
+    { 18, 8 }, /* GCNENC_SMEM, opcode = (8bit)<<18 */
+    { 17, 8 }, /* GCNENC_VOPC, opcode = (8bit)<<17 */
+    { 9, 8 }, /* GCNENC_VOP1, opcode = (8bit)<<9 */
+    { 25, 6 }, /* GCNENC_VOP2, opcode = (6bit)<<25 */
+    { 16, 10 }, /* GCNENC_VOP3A, opcode = (10bit)<<16 */
+    { 16, 10 }, /* GCNENC_VOP3B, opcode = (10bit)<<16 */
+    { 16, 2 }, /* GCNENC_VINTRP, opcode = (2bit)<<16 */
+    { 18, 8 }, /* GCNENC_DS, opcode = (8bit)<<18 */
+    { 18, 7 }, /* GCNENC_MUBUF, opcode = (7bit)<<18 */
+    { 16, 4, 53, 1 }, /* GCNENC_MTBUF, opcode = (4bit)<<15 */ // 53-bit opcode
     { 18, 7 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
     { 0, 0 }, /* GCNENC_EXP, opcode = none */
     { 18, 7 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
