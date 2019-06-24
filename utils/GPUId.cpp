@@ -317,7 +317,7 @@ bool CLRX::isSpecialSGPRRegister(GPUArchMask archMask, cxuint index)
     if (rindex == 106) // VCC
         return true;
     // TODO: add stuff for Navi
-    if ((archMask & 3U<<int(GPUArchitecture::GCN1_5)) != 0)
+    if ((archMask & (3U<<int(GPUArchitecture::GCN1_5))) != 0)
         return false;  // no other special registers
     if ((archMask&(31U<<int(GPUArchitecture::GCN1_1))) != 0)
     {
