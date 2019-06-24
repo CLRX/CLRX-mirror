@@ -124,6 +124,7 @@ enum : GCNInsnMode
     GCN_VOP_NOSDWAVEGA = 0x40000,    /// VOP instruction can not have SDWA for VEGA
     GCN_VCC_IMPL_READ = 0x80000,    /// VOP instruction with implicit VCC read
     GCN_VCC_IMPL_WRITE = 0x100000,   /// VOP instruction with implicit VCC write
+    GCN_VOP_NOWVSZ = 0x200000,      // VOP SDST/VCC size doesn't not depend on wavesize
     // DS encoding modes
     GCN_ADDR_STD = 0x0,    /// standard place of address
     GCN_ADDR_DST = 0x10,    /// address operand in destination place
