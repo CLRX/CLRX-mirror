@@ -17,23 +17,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __CLRXTEST_GCNDISASMOPC_H__
-#define __CLRXTEST_GCNDISASMOPC_H__
+#include <CLRX/Config.h>
+#include "GCNDisasmOpc.h"
 
-#include <cstdint>
-
-struct GCNDisasmOpcodeCase
+/* for Radeon NAVI series with GCN1.5 */
+const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
 {
-    uint32_t word0, word1;
-    bool twoWords;
-    const char* expected;
+    { 0, 0, false, nullptr }
 };
-
-extern const GCNDisasmOpcodeCase decGCNOpcodeCases[];
-extern const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[];
-extern const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[];
-extern const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[];
-extern const GCNDisasmOpcodeCase decGCNOpcodeGCN141Cases[];
-extern const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[];
-
-#endif

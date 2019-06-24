@@ -527,7 +527,7 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcode15Table[GCNENC_MAXVAL+2] =
     { 16, 2 }, /* GCNENC_VINTRP, opcode = (2bit)<<16 */
     { 18, 8 }, /* GCNENC_DS, opcode = (8bit)<<18 */
     { 18, 7 }, /* GCNENC_MUBUF, opcode = (7bit)<<18 */
-    { 16, 4, 53, 1 }, /* GCNENC_MTBUF, opcode = (4bit)<<15 */ // 53-bit opcode
+    { 16, 3, 53, 1 }, /* GCNENC_MTBUF, opcode = (4bit)<<15 */ // 53-bit opcode
     { 18, 7 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
     { 0, 0 }, /* GCNENC_EXP, opcode = none */
     { 18, 7 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
@@ -823,10 +823,22 @@ void GCNDisassembler::disassemble()
         else
         {
             const GCNEncodingOpcodeBits* encodingOpcodeTable = 
-                    (isGCN124) ? gcnEncodingOpcode12Table : gcnEncodingOpcodeTable;
-            const cxuint opcode =
+                    (isGCN15) ? gcnEncodingOpcode15Table :
+                    ((isGCN124) ? gcnEncodingOpcode12Table : gcnEncodingOpcodeTable);
+            cxuint opcode =
                     (insnCode>>encodingOpcodeTable[gcnEncoding].bitPos) & 
                     ((1U<<encodingOpcodeTable[gcnEncoding].bits)-1U);
+            if (encodingOpcodeTable[gcnEncoding].bitPos2!=0)
+            {
+                // next bits in opcode
+                cxuint val = 0;
+                if (encodingOpcodeTable[gcnEncoding].bitPos2>=32)
+                    val = (insnCode2>>(encodingOpcodeTable[gcnEncoding].bitPos2-32));
+                else
+                    val = insnCode2>>(encodingOpcodeTable[gcnEncoding].bitPos2);
+                opcode |= (val&((1U<<encodingOpcodeTable[gcnEncoding].bits2)-1U)) <<
+                            encodingOpcodeTable[gcnEncoding].bits;
+            }
             
             /* decode instruction and put to output */
             const GCNEncodingSpace& encSpace = 

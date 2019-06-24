@@ -23,7 +23,8 @@ ADD_EXECUTABLE(GCNDisasmOpcodes
         GCNDisasmOpcodes.cpp
         GCNDisasmOpc11.cpp
         GCNDisasmOpc12.cpp
-        GCNDisasmOpc14.cpp)
+        GCNDisasmOpc14.cpp
+        GCNDisasmOpc15.cpp)
 TEST_LINK_LIBRARIES(GCNDisasmOpcodes CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(GCNDisasmOpcodes GCNDisasmOpcodes)
 
