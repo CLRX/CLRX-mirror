@@ -406,5 +406,15 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xbf9d8d33U, 0, false, "        SOPP_ill_29     0x8d33\n" },
     { 0xbf9e0000U, 0, false, "        s_endpgm_ordered_ps_done\n" },
     { 0xbf9f0000U, 0, false, "        s_code_end\n" },
+    { 0xbfa01234U, 0, false, "        s_inst_prefetch 0x1234\n" },
+    { 0xbfa11234U, 0, false, "        s_clause        0x1234\n" },
+    { 0xbfa20000U, 0, false, "        s_wait_idle\n" },
+    { 0xbfa31234U, 0, false, "        s_waitcnt_decptr 0x1234\n" },
+    { 0xbfa41234U, 0, false, "        s_round_mode    0x1234\n" },
+    { 0xbfa51234U, 0, false, "        s_denorm_mode   0x1234\n" },
+    { 0xbfa61234U, 0, false, "        SOPP_ill_38     0x1234\n" },
+    { 0xbfa71234U, 0, false, "        SOPP_ill_39     0x1234\n" },
+    { 0xbfa81234U, 0, false, "        s_ttracedata_imm 0x1234\n" },
+    { 0xbfa91234U, 0, false, "        SOPP_ill_41     0x1234\n" },
     { 0, 0, false, nullptr }
 };

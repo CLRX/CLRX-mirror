@@ -343,7 +343,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "s_inst_prefetch",     GCNENC_SOPP,   GCN_STDMODE,              32,   ARCH_GCN_1_5  },
     { "s_clause",            GCNENC_SOPP,   GCN_STDMODE,              33,   ARCH_GCN_1_5  },
     { "s_wait_idle",         GCNENC_SOPP,   GCN_IMM_NONE,             34,   ARCH_GCN_1_5  },
-    { "s_wait_decptr",       GCNENC_SOPP,   GCN_STDMODE,              35,   ARCH_GCN_1_5  },
+    { "s_waitcnt_decptr",    GCNENC_SOPP,   GCN_STDMODE,              35,   ARCH_GCN_1_5  },
     { "s_round_mode",        GCNENC_SOPP,   GCN_STDMODE,              36,   ARCH_GCN_1_5  },
     { "s_denorm_mode",       GCNENC_SOPP,   GCN_STDMODE,              37,   ARCH_GCN_1_5  },
     { "s_ttracedata_imm",    GCNENC_SOPP,   GCN_STDMODE,              40,   ARCH_GCN_1_5  },
