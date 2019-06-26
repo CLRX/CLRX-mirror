@@ -309,5 +309,23 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xbf15451dU, 0, false, "        SOPC_ill_21     s29, s69\n" },
     { 0xbf16451dU, 0, false, "        SOPC_ill_22     s29, s69\n" },
     { 0xbf17451dU, 0, false, "        SOPC_ill_23     s29, s69\n" },
+    /* SOPP encoding */
+    { 0xbf800000U, 0, false, "        s_nop           0x0\n" },
+    { 0xbf800006U, 0, false, "        s_nop           0x6\n" },
+    { 0xbf80cd26U, 0, false, "        s_nop           0xcd26\n" },
+    { 0xbf810000U, 0, false, "        s_endpgm\n" },
+    { 0xbf818d33U, 0, false, "        s_endpgm        0x8d33\n" },
+    { 0xbf820029U, 0, false, "        s_branch        .L168_0\n" },
+    { 0xbf82ffffU, 0, false, "        s_branch        .L0_0\n" },
+    { 0xbf830000U, 0, false, "        s_wakeup\n" },
+    { 0xbf838d33U, 0, false, "        s_wakeup        0x8d33\n" },
+    { 0xbf840029U, 0, false, "        s_cbranch_scc0  .L168_0\n" },
+    { 0xbf850029U, 0, false, "        s_cbranch_scc1  .L168_0\n" },
+    { 0xbf860029U, 0, false, "        s_cbranch_vccz  .L168_0\n" },
+    { 0xbf870029U, 0, false, "        s_cbranch_vccnz .L168_0\n" },
+    { 0xbf880029U, 0, false, "        s_cbranch_execz .L168_0\n" },
+    { 0xbf890029U, 0, false, "        s_cbranch_execnz .L168_0\n" },
+    { 0xbf8a0000U, 0, false, "        s_barrier\n" },
+    { 0xbf8b032bU, 0, false, "        s_setkill       0x32b\n" },
     { 0, 0, false, nullptr }
 };
