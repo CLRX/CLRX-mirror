@@ -644,14 +644,16 @@ void GCNDisasmUtils::decodeSOP2Encoding(GCNDisassembler& dasm, size_t codePos,
 }
 
 // table hwreg names
-static const char* hwregNames[20] =
+static const char* hwregNames[24] =
 {
     "@0", "mode", "status", "trapsts",
     "hw_id", "gpr_alloc", "lds_alloc", "ib_sts",
     "pc_lo", "pc_hi", "inst_dw0", "inst_dw1",
     "ib_dbg0", "ib_dbg1", "flush_ib", "sh_mem_bases",
     "sq_shader_tba_lo", "sq_shader_tba_hi",
-    "sq_shader_tma_lo", "sq_shader_tma_hi"
+    "sq_shader_tma_lo", "sq_shader_tma_hi",
+    "flat_scr_lo", "flat_scr_hi",
+    "xnack_mask", "pops_packer"
 };
 
 /// about label writer - label is workaround for class hermetization
@@ -663,7 +665,7 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
     char* bufStart = output.reserve(90);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
-    if ((gcnInsn.mode & GCN_IMM_DST) == 0)
+    if ((gcnInsn.mode & GCN_IMM_DST) == 0 && (gcnInsn.mode&GCN_MASK1) != GCN_DST_NONE)
     {
         // if normal destination
         output.forward(bufPtr-bufStart);
@@ -688,6 +690,8 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
         cxuint hwregNamesNum = 13 + ((arch&ARCH_GCN_1_2_4)!=0);
         if ((arch&ARCH_GCN_1_4) != 0)
             hwregNamesNum = 20;
+        if ((arch&ARCH_GCN_1_5) != 0)
+            hwregNamesNum = 24;
         if (hwregId < hwregNamesNum)
             putChars(bufPtr, hwregNames[hwregId], ::strlen(hwregNames[hwregId]));
         else
@@ -723,13 +727,20 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
                 bufPtr += itocstrCStyle((insnCode>>16)&0x7f, bufPtr, 6, 16);
             }
         }
-        else
+        else if ((gcnInsn.mode&GCN_MASK1) != GCN_DST_NONE)
         {
             // for s_setreg_b32, print destination as source
             output.forward(bufPtr-bufStart);
             bufPtr = bufStart = decodeGCNOperand(dasm, codePos, relocIter,
                      (insnCode>>16)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1, arch);
         }
+    }
+    
+    // print value, if some are not used, but values is not default
+    if ((gcnInsn.mode & GCN_MASK1) == GCN_DST_NONE && ((insnCode>>16)&0x7f) != 0)
+    {
+        putChars(bufPtr, " sdst=", 6);
+        bufPtr += itocstrCStyle(((insnCode>>16)&0x7f), bufPtr, 6, 16);
     }
     output.forward(bufPtr-bufStart);
 }
