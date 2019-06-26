@@ -303,7 +303,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "s_bitcmp1_b32",       GCNENC_SOPC,   GCN_STDMODE,              13,   ARCH_GCN_ALL  },
     { "s_bitcmp0_b64",       GCNENC_SOPC,   GCN_REG_DS0_64,           14,   ARCH_GCN_ALL  },
     { "s_bitcmp1_b64",       GCNENC_SOPC,   GCN_REG_DS0_64,           15,   ARCH_GCN_ALL  },
-    { "s_setvskip",          GCNENC_SOPC,   GCN_STDMODE,              16,   ARCH_GCN_ALL  },
+    { "s_setvskip",          GCNENC_SOPC,   GCN_STDMODE,              16,   ARCH_GCN_1_0_1_2_4  },
     { "s_set_gpr_idx_on",    GCNENC_SOPC,   GCN_SRC1_IMM,             17,   ARCH_GCN_1_2_4  },
     { "s_cmp_eq_u64",        GCNENC_SOPC,   GCN_REG_ALL_64,           18,   ARCH_GCN_1_2_4_5  },
     { "s_cmp_lg_u64",        GCNENC_SOPC,   GCN_REG_ALL_64,           19,   ARCH_GCN_1_2_4_5  },

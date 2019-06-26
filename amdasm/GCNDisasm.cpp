@@ -207,7 +207,8 @@ static void initializeGCNDisassembler()
         {
             const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[
                         GCN_GFX10_ENCSPACE_IDX + instr.encoding];
-            gcnInstrTableByCode[encSpace.offset + instr.code] = instr;
+            if (gcnInstrTableByCode[encSpace.offset + instr.code].mnemonic == nullptr)
+                gcnInstrTableByCode[encSpace.offset + instr.code] = instr;
         }
     }
 }
