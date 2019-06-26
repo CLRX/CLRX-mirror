@@ -339,6 +339,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "s_set_gpr_idx_off",   GCNENC_SOPP,   GCN_IMM_NONE,             28,   ARCH_GCN_1_2_4  },
     { "s_set_gpr_idx_mode",  GCNENC_SOPP,   GCN_STDMODE,              29,   ARCH_GCN_1_2_4  },
     { "s_endpgm_ordered_ps_done", GCNENC_SOPP,    GCN_IMM_NONE,       30,   ARCH_GCN_1_4_5  },
+    { "s_code_end",          GCNENC_SOPP,   GCN_IMM_NONE,             31,   ARCH_GCN_1_5  },
     { "s_inst_prefetch",     GCNENC_SOPP,   GCN_STDMODE,              32,   ARCH_GCN_1_5  },
     { "s_clause",            GCNENC_SOPP,   GCN_STDMODE,              33,   ARCH_GCN_1_5  },
     { "s_wait_idle",         GCNENC_SOPP,   GCN_IMM_NONE,             34,   ARCH_GCN_1_5  },

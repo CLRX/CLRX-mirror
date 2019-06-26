@@ -515,9 +515,10 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             // print sendmsg
             putChars(bufPtr, "sendmsg(", 8);
             const cxuint msgType = imm16&15;
-            const char* msgName = (isGCN14 ? sendMsgCodeMessageTableVEGA[msgType] :
+            const char* msgName = ((isGCN14 || isGCN15) ?
+                    sendMsgCodeMessageTableVEGA[msgType] :
                     sendMsgCodeMessageTable[msgType]);
-            cxuint minUnknownMsgType = isGCN14 ? 11 : 4;
+            cxuint minUnknownMsgType = (isGCN14 || isGCN15) ? 11 : 4;
             if ((arch & ARCH_RX3X0) != 0 && msgType == 4)
             {
                 msgName = "savewave"; // 4 - savewave

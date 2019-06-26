@@ -94,6 +94,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
                 "sendmsg(early_prim_dealloc, cut, 0)\n" },
     { 0xbf900019U, 0, false, "        s_sendmsg       sendmsg(gs_alloc_req, cut, 0)\n" },
     { 0xbf90001aU, 0, false, "        s_sendmsg       sendmsg(get_doorbell, cut, 0)\n" },
+    { 0xbf900014U, 0, false, "        s_sendmsg       sendmsg(savewave, cut, 0)\n" },
+    { 0xbf900004U, 0, false, "        s_sendmsg       sendmsg(savewave)\n" },
     /* waitcnts */
     { 0xbf8c0d36U, 0, false, "        s_waitcnt       "
         "vmcnt(6) & expcnt(3) & lgkmcnt(13)\n" },

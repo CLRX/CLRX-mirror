@@ -350,6 +350,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
         "vmcnt(6) & expcnt(3) & lgkmcnt(42)\n" },
     { 0xbf8c3536U, 0, false, "        s_waitcnt       "
         "vmcnt(6) & expcnt(3) & lgkmcnt(53)\n" },
+    { 0xbf8c3f36U, 0, false, "        s_waitcnt       "
+        "vmcnt(6) & expcnt(3)\n" },
     { 0xbf8c0000U, 0, false, "        s_waitcnt       "
         "vmcnt(0) & expcnt(0) & lgkmcnt(0)\n" },
     { 0xbf8ccf7fU, 0, false, "        s_waitcnt       "
@@ -360,5 +362,49 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
         "vmcnt(63) & expcnt(7) & lgkmcnt(63)\n" },      // good???
     { 0xbf8cfdb6U, 0, false, "        s_waitcnt       "
         "vmcnt(54) & expcnt(3) & lgkmcnt(61) :0xfdb6\n" },
+    // other SOPP
+    { 0xbf8d032bU, 0, false, "        s_sethalt       0x32b\n" },
+    { 0xbf8e032bU, 0, false, "        s_sleep         0x32b\n" },
+    { 0xbf8f032bU, 0, false, "        s_setprio       0x32b\n" },
+    { 0xbf90001bU, 0, false, "        s_sendmsg       sendmsg(@11, cut, 0)\n" },
+    { 0xbf90000bU, 0, false, "        s_sendmsg       sendmsg(@11, nop)\n" },
+    { 0xbf900001U, 0, false, "        s_sendmsg       sendmsg(interrupt)\n" },
+    { 0xbf90000fU, 0, false, "        s_sendmsg       sendmsg(system)\n" },
+    { 0xbf90021fU, 0, false, "        s_sendmsg       sendmsg(system, cut, 2)\n" },
+    { 0xbf900a1fU, 0, false, "        s_sendmsg       sendmsg(system, cut, 2) :0xa1f\n" },
+    { 0xbf900002U, 0, false, "        s_sendmsg       sendmsg(gs, nop)\n" },
+    { 0xbf900003U, 0, false, "        s_sendmsg       sendmsg(gs_done, nop)\n" },
+    { 0xbf900022U, 0, false, "        s_sendmsg       sendmsg(gs, emit, 0)\n" },
+    { 0xbf900032U, 0, false, "        s_sendmsg       sendmsg(gs, emit-cut, 0)\n" },
+    { 0xbf900322U, 0, false, "        s_sendmsg       sendmsg(gs, emit, 3)\n" },
+    { 0xbf900332U, 0, false, "        s_sendmsg       sendmsg(gs, emit-cut, 3)\n" },
+    { 0xbf900015U, 0, false, "        s_sendmsg       sendmsg(stall_wave_gen, cut, 0)\n" },
+    { 0xbf900016U, 0, false, "        s_sendmsg       sendmsg(halt_waves, cut, 0)\n" },
+    { 0xbf900017U, 0, false, "        s_sendmsg       "
+                "sendmsg(ordered_ps_done, cut, 0)\n" },
+    { 0xbf900018U, 0, false, "        s_sendmsg       "
+                "sendmsg(early_prim_dealloc, cut, 0)\n" },
+    { 0xbf900019U, 0, false, "        s_sendmsg       sendmsg(gs_alloc_req, cut, 0)\n" },
+    { 0xbf90001aU, 0, false, "        s_sendmsg       sendmsg(get_doorbell, cut, 0)\n" },
+    { 0xbf900014U, 0, false, "        s_sendmsg       sendmsg(savewave, cut, 0)\n" },
+    { 0xbf900004U, 0, false, "        s_sendmsg       sendmsg(savewave)\n" },
+    { 0xbf91001bU, 0, false, "        s_sendmsghalt   sendmsg(@11, cut, 0)\n" },
+    { 0xbf92032bU, 0, false, "        s_trap          0x32b\n" },
+    { 0xbf93032bU, 0, false, "        s_icache_inv    0x32b\n" },
+    { 0xbf930000U, 0, false, "        s_icache_inv\n" },
+    { 0xbf941234U, 0, false, "        s_incperflevel  0x1234\n" },
+    { 0xbf951234U, 0, false, "        s_decperflevel  0x1234\n" },
+    { 0xbf960000U, 0, false, "        s_ttracedata\n" },
+    { 0xbf960dcaU, 0, false, "        s_ttracedata    0xdca\n" },
+    { 0xbf970029U, 0, false, "        s_cbranch_cdbgsys .L168_0\n" },
+    { 0xbf980029U, 0, false, "        s_cbranch_cdbguser .L168_0\n" },
+    { 0xbf990029U, 0, false, "        s_cbranch_cdbgsys_or_user .L168_0\n" },
+    { 0xbf9a0029U, 0, false, "        s_cbranch_cdbgsys_and_user .L168_0\n" },
+    { 0xbf9b0000U, 0, false, "        s_endpgm_saved\n" },
+    { 0xbf9b8d33U, 0, false, "        s_endpgm_saved  0x8d33\n" },
+    { 0xbf9c8d33U, 0, false, "        SOPP_ill_28     0x8d33\n" },
+    { 0xbf9d8d33U, 0, false, "        SOPP_ill_29     0x8d33\n" },
+    { 0xbf9e0000U, 0, false, "        s_endpgm_ordered_ps_done\n" },
+    { 0xbf9f0000U, 0, false, "        s_code_end\n" },
     { 0, 0, false, nullptr }
 };
