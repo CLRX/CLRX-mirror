@@ -837,6 +837,7 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     bool useOthers = false;
     bool spacesAdded = false;
     const bool isGCN14 = ((arch&ARCH_GCN_1_4) != 0);
+    const bool isGCN15 = ((arch&ARCH_GCN_1_5) != 0);
     bool printOffset = false;
     
     if (mode1 == GCN_SMRD_ONLYDST)
@@ -866,9 +867,10 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         decodeGCNOperandNoLit(dasm, (insnCode<<1)&0x7e, (gcnInsn.mode&GCN_SBASE4)?4:2,
                           bufPtr, arch);
         putCommaSpace(bufPtr);
-        if (insnCode&0x20000) // immediate value
+        if ((!isGCN15 && (insnCode&0x20000)) ||
+            (isGCN15 && (insnCode2>>25)==0x7d)) // immediate value
         {
-            if (isGCN14 && (insnCode & 0x4000) != 0)
+            if (!isGCN15 && isGCN14 && (insnCode & 0x4000) != 0)
             {
                 // last 8-bit in second dword
                 decodeGCNOperandNoLit(dasm, (insnCode2>>25), 1, bufPtr , arch);
@@ -883,7 +885,7 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         }
         else // SOFFSET register
         {
-            if (isGCN14 && (insnCode & 0x4000) != 0)
+            if (isGCN15 || (isGCN14 && (insnCode & 0x4000) != 0))
                 decodeGCNOperandNoLit(dasm, insnCode2>>25, 1, bufPtr, arch);
             else
                 decodeGCNOperandNoLit(dasm, insnCode2&0xff, 1, bufPtr, arch);
@@ -901,13 +903,22 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         putChars(bufPtr, " glc", 4);
     }
     
-    if (isGCN14 && (insnCode & 0x8000) != 0)
+    if ((isGCN14 || isGCN15) && (insnCode & 0x8000) != 0)
     {
         if (!spacesAdded)
             addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
         // print NV modifier
         putChars(bufPtr, " nv", 3);
+    }
+    
+    if (isGCN15 && (insnCode & 0x4000) != 0)
+    {
+        if (!spacesAdded)
+            addSpaces(bufPtr, spacesToAdd-1);
+        spacesAdded = true;
+        // print GLC modifier
+        putChars(bufPtr, " dlc", 4);
     }
     
     if (printOffset)
@@ -942,10 +953,11 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         if (!spacesAdded)
             addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
+        uint32_t immMask =  isGCN14 ? 0x1fffff : 0xfffff;
         putChars(bufPtr, " offset=", 8);
-        bufPtr += itocstrCStyle(insnCode2, bufPtr, 12, 16);
+        bufPtr += itocstrCStyle(insnCode2&immMask, bufPtr, 12, 16);
     }
-    if (!useOthers && (insnCode & 0x20000U)!=0)
+    if (!useOthers && !isGCN15 && (insnCode & 0x20000U)!=0)
     {
         if (!spacesAdded)
             addSpaces(bufPtr, spacesToAdd-1);

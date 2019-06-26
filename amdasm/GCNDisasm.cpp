@@ -995,7 +995,7 @@ void GCNDisassembler::disassemble()
                                spacesToAdd, curArchMask, *gcnInsn, insnCode, insnCode2);
                     break;
                 case GCNENC_SMRD:
-                    if (isGCN124)
+                    if (isGCN124 || isGCN15)
                         GCNDisasmUtils::decodeSMEMEncoding(*this, spacesToAdd, curArchMask,
                                   *gcnInsn, insnCode, insnCode2);
                     else

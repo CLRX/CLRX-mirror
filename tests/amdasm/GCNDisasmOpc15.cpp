@@ -416,5 +416,18 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xbfa71234U, 0, false, "        SOPP_ill_39     0x1234\n" },
     { 0xbfa81234U, 0, false, "        s_ttracedata_imm 0x1234\n" },
     { 0xbfa91234U, 0, false, "        SOPP_ill_41     0x1234\n" },
+    /* SMEM encoding */
+    { 0xf40000c0U, 0x08000000U, true, "        s_load_dword    s3, s[0:1], s4\n" },
+    { 0xf40000c0U, 0xfa06ba23U, true, "        s_load_dword    s3, s[0:1], 0x6ba23\n" },
+    { 0xf40000c9U, 0x08000000U, true, "        s_load_dword    s3, s[18:19], s4\n" },
+    { 0xf40000c9U, 0xfa06ba23U, true, "        s_load_dword    s3, s[18:19], 0x6ba23\n" },
+    { 0xf40140c0U, 0x08000000U, true, "        s_load_dword    s3, s[0:1], s4 glc dlc\n" },
+    { 0xf40040c0U, 0x08000000U, true, "        s_load_dword    s3, s[0:1], s4 dlc\n" },
+    { 0xf40080c0U, 0x08000000U, true, "        s_load_dword    s3, s[0:1], s4 nv\n" },
+    { 0xf40280c0U, 0x08000000U, true, "        s_load_dword    s3, s[0:1], s4 nv\n" },
+    { 0xf4040189U, 0x08000000U, true, "        s_load_dwordx2  s[6:7], s[18:19], s4\n" },
+    { 0xf4080309U, 0x08000000U, true, "        s_load_dwordx4  s[12:15], s[18:19], s4\n" },
+    { 0xf40c0309U, 0x08000000U, true, "        s_load_dwordx8  s[12:19], s[18:19], s4\n" },
+    { 0xf4100309U, 0x08000000U, true, "        s_load_dwordx16 s[12:27], s[18:19], s4\n" },
     { 0, 0, false, nullptr }
 };
