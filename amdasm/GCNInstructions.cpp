@@ -286,7 +286,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "s_orn1_saveexec_b32", GCNENC_SOP1,   GCN_STDMODE,              69,   ARCH_GCN_1_5  },
     { "s_andn1_wrexec_b32",  GCNENC_SOP1,   GCN_STDMODE,              70,   ARCH_GCN_1_5  },
     { "s_andn2_wrexec_b32",  GCNENC_SOP1,   GCN_STDMODE,              71,   ARCH_GCN_1_5  },
-    { "s_movrelsd_2_b32",  GCNENC_SOP1,   GCN_REG_DST_64,           73,   ARCH_GCN_1_5  },
+    { "s_movrelsd_2_b32",  GCNENC_SOP1,     GCN_STDMODE,           73,   ARCH_GCN_1_5  },
     { "s_cmp_eq_i32",        GCNENC_SOPC,   GCN_STDMODE,              0,    ARCH_GCN_ALL  },
     { "s_cmp_lg_i32",        GCNENC_SOPC,   GCN_STDMODE,              1,    ARCH_GCN_ALL  },
     { "s_cmp_gt_i32",        GCNENC_SOPC,   GCN_STDMODE,              2,    ARCH_GCN_ALL  },
