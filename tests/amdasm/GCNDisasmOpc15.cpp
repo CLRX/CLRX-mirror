@@ -327,5 +327,38 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xbf890029U, 0, false, "        s_cbranch_execnz .L168_0\n" },
     { 0xbf8a0000U, 0, false, "        s_barrier\n" },
     { 0xbf8b032bU, 0, false, "        s_setkill       0x32b\n" },
+    /* waitcnts */
+    { 0xbf8c0d36U, 0, false, "        s_waitcnt       "
+        "vmcnt(6) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c4d36U, 0, false, "        s_waitcnt       "
+        "vmcnt(22) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c8d36U, 0, false, "        s_waitcnt       "
+        "vmcnt(38) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8ccd36U, 0, false, "        s_waitcnt       "
+        "vmcnt(54) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c0d3fU, 0, false, "        s_waitcnt       "
+        "vmcnt(15) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c4d3fU, 0, false, "        s_waitcnt       "
+        "vmcnt(31) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c8d3fU, 0, false, "        s_waitcnt       "
+        "vmcnt(47) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8ccd3fU, 0, false, "        s_waitcnt       "
+        "expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c1436U, 0, false, "        s_waitcnt       "
+        "vmcnt(6) & expcnt(3) & lgkmcnt(20)\n" },
+    { 0xbf8c2a36U, 0, false, "        s_waitcnt       "
+        "vmcnt(6) & expcnt(3) & lgkmcnt(42)\n" },
+    { 0xbf8c3536U, 0, false, "        s_waitcnt       "
+        "vmcnt(6) & expcnt(3) & lgkmcnt(53)\n" },
+    { 0xbf8c0000U, 0, false, "        s_waitcnt       "
+        "vmcnt(0) & expcnt(0) & lgkmcnt(0)\n" },
+    { 0xbf8ccf7fU, 0, false, "        s_waitcnt       "
+        "lgkmcnt(15)\n" },
+    { 0xbf8cfd36U, 0, false, "        s_waitcnt       "
+        "vmcnt(54) & expcnt(3) & lgkmcnt(61)\n" },
+    { 0xbf8cff7fU, 0, false, "        s_waitcnt       "
+        "vmcnt(63) & expcnt(7) & lgkmcnt(63)\n" },      // good???
+    { 0xbf8cfdb6U, 0, false, "        s_waitcnt       "
+        "vmcnt(54) & expcnt(3) & lgkmcnt(61) :0xfdb6\n" },
     { 0, 0, false, nullptr }
 };

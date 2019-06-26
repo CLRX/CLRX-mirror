@@ -430,6 +430,7 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
          uint32_t literal, size_t pos)
 {
     const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
+    const bool isGCN15 = ((arch&ARCH_GCN_1_5)!=0);
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(70);
     char* bufPtr = bufStart;
@@ -449,13 +450,14 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         {
             bool prevLock = false;
             addSpaces(bufPtr, spacesToAdd);
-            const bool isf7f = (!isGCN14 && imm16==0xf7f) ||
-                    (isGCN14 && imm16==0xcf7f);
+            const bool isf7f = (isGCN15 && imm16 == 0xff7f) ||
+                    (!isGCN14 && !isGCN15 && imm16==0xf7f) ||
+                    (isGCN14 && imm16==0xcf7f) ;
             // print vmcnt only if not highest value and if 0x[c]f7f value
-            if ((!isGCN14 && (imm16&15) != 15) ||
-                (isGCN14 && (imm16&0xc00f) != 0xc00f) || isf7f)
+            if ((!isGCN14 && !isGCN15 && (imm16&15) != 15) ||
+                ((isGCN14 || isGCN15) && (imm16&0xc00f) != 0xc00f) || isf7f)
             {
-                const cxuint lockCnt = isGCN14 ?
+                const cxuint lockCnt = (isGCN14 || isGCN15) ?
                         ((imm16>>10)&0x30) + (imm16&15) : imm16&15;
                 putChars(bufPtr, "vmcnt(", 6);
                 // print value of lockCnt
@@ -479,10 +481,11 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                 prevLock = true;
             }
             // print only if lgkmcnt have not highest value (15)
-            if (((imm16>>8)&15) != 15 || isf7f)
+            if ((!isGCN15 && ((imm16>>8)&15) != 15) ||
+                (isGCN15 && ((imm16>>8)&63) != 63) || isf7f)
             {
                 /* LGKMCNT bits is 4 (5????) */
-                const cxuint lockCnt = (imm16>>8)&15;
+                const cxuint lockCnt = isGCN15 ? ((imm16>>8)&63) : ((imm16>>8)&15);
                 if (prevLock)
                     // print & before previous lock: vmcnt()
                     putChars(bufPtr, " & ", 3);
@@ -494,7 +497,8 @@ void GCNDisasmUtils::decodeSOPPEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                 *bufPtr++ = ')';
                 prevLock = true;
             }
-            if ((!isGCN14 && (imm16&0xf080) != 0) || (isGCN14 && (imm16&0x3080) != 0))
+            if ((!isGCN14 && !isGCN15 && (imm16&0xf080) != 0) ||
+                (isGCN14 && (imm16&0x3080) != 0) || (isGCN15 && (imm16&0x0080) != 0))
             {
                 /* additional info about imm16 */
                 if (prevLock)
