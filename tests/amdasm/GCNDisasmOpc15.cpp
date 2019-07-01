@@ -559,5 +559,62 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
         "        s_atomic_inc_x2 s[10:11], s[20:21], s4\n" },
     { 0xf6b0028aU, 0x08000000U, true,
         "        s_atomic_dec_x2 s[10:11], s[20:21], s4\n" },
+    /* VOP2 encoding */
+    { 0x0334d715U, 0, false, "        v_cndmask_b32   v154, v21, v107, vcc\n" },
+    { 0x0734d715U, 0, false, "        v_add_f32       v154, v21, v107\n" },
+    { 0x0734d6ffU, 0x40000000U, true, "        v_add_f32       v154, "
+            "0x40000000 /* 2f */, v107\n" },
+    { 0x0934d715U, 0, false, "        v_sub_f32       v154, v21, v107\n" },
+    { 0x0934d6ffU, 0x40000000U, true, "        v_sub_f32       v154, "
+            "0x40000000 /* 2f */, v107\n" },
+    { 0x0b34d715U, 0, false, "        v_subrev_f32    v154, v21, v107\n" },
+    { 0x0b34d6ffU, 0x40000000U, true, "        v_subrev_f32    v154, "
+            "0x40000000 /* 2f */, v107\n" },
+    { 0x0d34d715U, 0, false, "        v_mac_legacy_f32 v154, v21, v107\n" },
+    { 0x0d34d6ffU, 0x40000000U, true, "        v_mac_legacy_f32 v154, "
+            "0x40000000 /* 2f */, v107\n" },
+    { 0x0f34d715U, 0, false, "        v_mul_legacy_f32 v154, v21, v107\n" },
+    { 0x0f34d6ffU, 0x40000000U, true, "        v_mul_legacy_f32 v154, "
+        "0x40000000 /* 2f */, v107\n" },
+    { 0x1134d715U, 0, false, "        v_mul_f32       v154, v21, v107\n" },
+    { 0x1134d6ffU, 0x40000000U, true, "        v_mul_f32       v154, "
+        "0x40000000 /* 2f */, v107\n" },
+    { 0x1334d715U, 0, false, "        v_mul_i32_i24   v154, v21, v107\n" },
+    { 0x1534d715U, 0, false, "        v_mul_hi_i32_i24 v154, v21, v107\n" },
+    { 0x1734d715U, 0, false, "        v_mul_u32_u24   v154, v21, v107\n" },
+    { 0x1934d715U, 0, false, "        v_mul_hi_u32_u24 v154, v21, v107\n" },
+    { 0x1b34d715U, 0, false, "        VOP2_ill_13     v154, v21, v107\n" },
+    { 0x1d34d715U, 0, false, "        VOP2_ill_14     v154, v21, v107\n" },
+    { 0x1f34d715U, 0, false, "        v_min_f32       v154, v21, v107\n" },
+    { 0x2134d715U, 0, false, "        v_max_f32       v154, v21, v107\n" },
+    { 0x2334d715U, 0, false, "        v_min_i32       v154, v21, v107\n" },
+    { 0x2534d715U, 0, false, "        v_max_i32       v154, v21, v107\n" },
+    { 0x2734d715U, 0, false, "        v_min_u32       v154, v21, v107\n" },
+    { 0x2934d715U, 0, false, "        v_max_u32       v154, v21, v107\n" },
+    { 0x2b34d715U, 0, false, "        VOP2_ill_21     v154, v21, v107\n" },
+    { 0x2d34d715U, 0, false, "        v_lshrrev_b32   v154, v21, v107\n" },
+    { 0x2f34d715U, 0, false, "        VOP2_ill_23     v154, v21, v107\n" },
+    { 0x3134d715U, 0, false, "        v_ashrrev_i32   v154, v21, v107\n" },
+    { 0x3334d715U, 0, false, "        VOP2_ill_25     v154, v21, v107\n" },
+    { 0x3534d715U, 0, false, "        v_lshlrev_b32   v154, v21, v107\n" },
+    { 0x3734d715U, 0, false, "        v_and_b32       v154, v21, v107\n" },
+    { 0x3934d715U, 0, false, "        v_or_b32        v154, v21, v107\n" },
+    { 0x3b34d715U, 0, false, "        v_xor_b32       v154, v21, v107\n" },
+    { 0x3d34d715U, 0, false, "        v_xnor_b32      v154, v21, v107\n" },
+    { 0x3f34d715U, 0, false, "        v_mac_f32       v154, v21, v107\n" },
+    { 0x4134d715U, 0x567d0700U, true, "        v_madmk_f32     "
+            "v154, v21, 0x567d0700 /* 6.9551627e+13f */, v107\n" }, /* check floatLits */
+    { 0x4134d715U, 0x11U, true, "        v_madmk_f32     "
+            "v154, v21, 0x11 /* 2.38e-44f */, v107\n" }, /* check floatLits */
+    { 0x4134d6ffU, 0x567d0700U, true, "        v_madmk_f32     "
+            "v154, 0x567d0700 /* 6.9551627e+13f */, "
+            "0x567d0700 /* 6.9551627e+13f */, v107\n" }, /* check floatLits */
+    { 0x4334d715U, 0x567d0700U, true, "        v_madak_f32     "
+            "v154, v21, v107, 0x567d0700 /* 6.9551627e+13f */\n" },  /* check floatLits */
+    { 0x4334d715U, 0x11U, true, "        v_madak_f32     "
+            "v154, v21, v107, 0x11 /* 2.38e-44f */\n" },  /* check floatLits */
+    { 0x4334d6ffU, 0x567d0700U, true, "        v_madak_f32     "
+            "v154, 0x567d0700 /* 6.9551627e+13f */, "
+            "v107, 0x567d0700 /* 6.9551627e+13f */\n" },  /* check floatLits */
     { 0, 0, false, nullptr }
 };

@@ -453,6 +453,8 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "v_readlane_b32",      GCNENC_VOP2,   GCN_DS1_SGPR|GCN_VOP_NOWVSZ, 1,    ARCH_GCN_1_0_1  },
     { "v_readlane_b32",      GCNENC_VOP3A,  GCN_VOP3_VOP2_DS01|GCN_VOP3_DS1_SGPR|GCN_VOP_NOWVSZ,
         257,  ARCH_GCN_1_0_1  },
+    { "v_cndmask_b32",       GCNENC_VOP2,   GCN_SRC2_VCC,             1,    ARCH_GCN_1_5  },
+    { "v_cndmask_b32",       GCNENC_VOP3A,  GCN_SRC2_VCC|GCN_VOP3_VOP2, 257,  ARCH_GCN_1_5 },
     { "v_writelane_b32",     GCNENC_VOP2,   GCN_SRC1_SGPR|GCN_VOP_NOWVSZ, 2,    ARCH_GCN_1_0_1  },
     { "v_writelane_b32",     GCNENC_VOP3A,  GCN_VOP3_VOP2_DS01|GCN_VOP3_SRC1_SGPR|GCN_VOP_NOWVSZ,
         258,  ARCH_GCN_1_0_1  },
