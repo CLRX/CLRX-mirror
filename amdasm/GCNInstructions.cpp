@@ -825,6 +825,8 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "v_floor_f64",         GCNENC_VOP1,   GCN_REG_DS0_64|GCN_VOP_NODPP, 26, ARCH_GCN_1_1_2_4_5 },
     { "v_floor_f64",         GCNENC_VOP3A,  GCN_VOP3_VOP1_DS0|GCN_REG_DS0_64, 346,  ARCH_GCN_1_2_4  },
     { "v_floor_f64",         GCNENC_VOP3A,  GCN_VOP3_VOP1_DS0|GCN_REG_DS0_64, 410, ARCH_GCN_1_1_5 },
+    { "v_pipeflush",         GCNENC_VOP1,   GCN_VOP_ARG_NONE,         27,   ARCH_GCN_1_5 },
+    { "v_pipeflush",         GCNENC_VOP3A,  GCN_VOP_ARG_NONE|GCN_VOP3_VOP1, 411,  ARCH_GCN_1_5  },
     { "v_fract_f32",         GCNENC_VOP1,   GCN_FLOATLIT,             32,   ARCH_GCN_1_0_1_5  },
     { "v_fract_f32",         GCNENC_VOP3A,  GCN_VOP3_VOP1_DS0,        416,  ARCH_GCN_1_0_1_5  },
     { "v_trunc_f32",         GCNENC_VOP1,   GCN_FLOATLIT,             33,   ARCH_GCN_1_0_1_5  },
