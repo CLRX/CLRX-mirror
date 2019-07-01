@@ -616,5 +616,29 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0x4334d6ffU, 0x567d0700U, true, "        v_madak_f32     "
             "v154, 0x567d0700 /* 6.9551627e+13f */, "
             "v107, 0x567d0700 /* 6.9551627e+13f */\n" },  /* check floatLits */
+    { 0x4534d715U, 0, false, "        VOP2_ill_34     v154, v21, v107\n" },
+    { 0x4734d715U, 0, false, "        VOP2_ill_35     v154, v21, v107\n" },
+    { 0x4934d715U, 0, false, "        VOP2_ill_36     v154, v21, v107\n" },
+    { 0x4b34d715U, 0, false, "        v_add_nc_u32    v154, vcc, v21, v107\n" },
+    { 0x4d34d715U, 0, false, "        v_sub_nc_u32    v154, vcc, v21, v107\n" },
+    { 0x4f34d715U, 0, false, "        v_subrev_nc_u32 v154, vcc, v21, v107\n" },
+    { 0x5134d715U, 0, false, "        v_add_co_ci_u32 v154, vcc, v21, v107, vcc\n" },
+    { 0x5334d715U, 0, false, "        v_sub_co_ci_u32 v154, vcc, v21, v107, vcc\n" },
+    { 0x5534d715U, 0, false, "        v_subrev_co_ci_u32 v154, vcc, v21, v107, vcc\n" },
+    { 0x5734d715U, 0, false, "        v_fmac_f32      v154, v21, v107\n" },
+    { 0x5934d715U, 0x567d0700U, true, "        v_fmamk_f32     "
+            "v154, v21, 0x567d0700 /* 6.9551627e+13f */, v107\n" }, /* check floatLits */
+    { 0x5934d715U, 0x11U, true, "        v_fmamk_f32     "
+            "v154, v21, 0x11 /* 2.38e-44f */, v107\n" }, /* check floatLits */
+    { 0x5934d6ffU, 0x567d0700U, true, "        v_fmamk_f32     "
+            "v154, 0x567d0700 /* 6.9551627e+13f */, "
+            "0x567d0700 /* 6.9551627e+13f */, v107\n" }, /* check floatLits */
+    { 0x5b34d715U, 0x567d0700U, true, "        v_fmaak_f32     "
+            "v154, v21, v107, 0x567d0700 /* 6.9551627e+13f */\n" },  /* check floatLits */
+    { 0x5b34d715U, 0x11U, true, "        v_fmaak_f32     "
+            "v154, v21, v107, 0x11 /* 2.38e-44f */\n" },  /* check floatLits */
+    { 0x5b34d6ffU, 0x567d0700U, true, "        v_fmaak_f32     "
+            "v154, 0x567d0700 /* 6.9551627e+13f */, "
+            "v107, 0x567d0700 /* 6.9551627e+13f */\n" },  /* check floatLits */
     { 0, 0, false, nullptr }
 };
