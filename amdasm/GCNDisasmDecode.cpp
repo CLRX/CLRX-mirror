@@ -996,7 +996,7 @@ static const char* sdwaDstUnusedTbl[] =
 /* returns mask of abs,neg,sext for src0 and src1 argument and src0 register */
 static inline VOPExtraWordOut decodeVOPSDWAFlags(uint32_t insnCode2, GPUArchMask arch)
 {
-    const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4_5)!=0;
     return { uint16_t((insnCode2&0xff) +
         ((!isGCN14 || (insnCode2 & (1U<<23))==0) ? 256 : 0)),
         (insnCode2&(1U<<19))!=0, (insnCode2&(1U<<20))!=0, (insnCode2&(1U<<21))!=0,
@@ -1010,7 +1010,7 @@ static void decodeVOPSDWA(FastOutputBuffer& output, GPUArchMask arch, uint32_t i
 {
     char* bufStart = output.reserve(100);
     char* bufPtr = bufStart;
-    const bool isGCN14 = ((arch&ARCH_GCN_1_4) != 0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4_5) != 0);
     cxuint dstSel = 6;
     cxuint dstUnused = 0;
     if (!isGCN14 || !vopc)
@@ -1184,7 +1184,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
          FloatLitType displayFloatLits)
 {
     FastOutputBuffer& output = dasm.output;
-    const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
+    const bool isGCN12 = ((arch&ARCH_GCN_1_2_4_5)!=0);
     char* bufStart = output.reserve(120);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
@@ -1192,7 +1192,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
     const cxuint src0Field = (insnCode&0x1ff);
     // extra flags are zeroed by default
     VOPExtraWordOut extraFlags = { 0, 0, 0, 0, 0, 0, 0 };
-    if ((arch & ARCH_GCN_1_4) != 0 && src0Field==0xf9 && (literal & 0x8000) != 0)
+    if ((arch & ARCH_GCN_1_4_5) != 0 && src0Field==0xf9 && (literal & 0x8000) != 0)
     {
         // SDWAB replacement of SDST
         output.forward(bufPtr-bufStart);
@@ -1270,7 +1270,7 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
          FloatLitType displayFloatLits)
 {
     FastOutputBuffer& output = dasm.output;
-    const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
+    const bool isGCN12 = ((arch&ARCH_GCN_1_2_4_5)!=0);
     char* bufStart = output.reserve(130);
     char* bufPtr = bufStart;
     
@@ -1357,7 +1357,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
          FloatLitType displayFloatLits)
 {
     FastOutputBuffer& output = dasm.output;
-    const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
+    const bool isGCN12 = ((arch&ARCH_GCN_1_2_4_5)!=0);
     char* bufStart = output.reserve(150);
     char* bufPtr = bufStart;
     

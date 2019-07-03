@@ -1341,5 +1341,92 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0x7dfd92ffU, 0x3d4cU, true, "        v_cmpx_nlt_f16  0x3d4c /* 1.3242h */, v201\n" },
     { 0x7dff934fU, 0, false, "        v_cmpx_tru_f16  v79, v201\n" },
     { 0x7dff92ffU, 0x3d4cU, true, "        v_cmpx_tru_f16  0x3d4c /* 1.3242h */, v201\n" },
+    /* VOP_SDWA encoding */
+    { 0x0334d6f9U, 0, true, "        v_cndmask_b32   v154, v0, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x3d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x13d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte1 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x23d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte2 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x33d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte3 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x43d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:word0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x53d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:word1 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x63d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x73d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:invalid src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x93d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte1 dst_unused:sext src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x113d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte1 dst_unused:preserve src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x193d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte1 dst_unused:invalid src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x393d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "clamp dst_sel:byte1 dst_unused:invalid src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x1003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte1 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x2003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte2 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x3003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte3 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x4003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:word0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x5003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:word1 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x6003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x7003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:invalid src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0xd003d, true, "        v_cndmask_b32   v154, sext(v61), v107, vcc "
+        "dst_sel:byte0 src0_sel:word1 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x1d003d, true, "        v_cndmask_b32   v154, sext(-v61), v107, vcc "
+        "dst_sel:byte0 src0_sel:word1 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x3d003d, true, "        v_cndmask_b32   v154, sext(-abs(v61)), "
+        "v107, vcc dst_sel:byte0 src0_sel:word1 src1_sel:byte0\n" },
+    { 0x0334d6f9U, 0x100003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte1\n" },
+    { 0x0334d6f9U, 0x200003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte2\n" },
+    { 0x0334d6f9U, 0x300003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte3\n" },
+    { 0x0334d6f9U, 0x400003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:word0\n" },
+    { 0x0334d6f9U, 0x500003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:word1\n" },
+    { 0x0334d6f9U, 0x600003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0\n" },
+    { 0x0334d6f9U, 0x700003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:invalid\n" },
+    { 0x0334d6f9U, 0xf00003d, true, "        v_cndmask_b32   v154, v61, sext(v107), vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:invalid\n" },
+    { 0x0334d6f9U, 0x1f00003d, true, "        v_cndmask_b32   v154, v61, sext(-v107), vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:invalid\n" },
+    { 0x0334d6f9U, 0x3f00003d, true, "        v_cndmask_b32   v154, v61, "
+        "sext(-abs(v107)), vcc dst_sel:byte0 src0_sel:byte0 src1_sel:invalid\n" },
+    // SDWA word at end
+    { 0x0334d6f9U, 0x06060600, true, "        v_cndmask_b32   v154, v0, v107, vcc sdwa\n" },
+    { 0x0334d6f9U, 0x06160600, true,
+        "        v_cndmask_b32   v154, -v0, v107, vcc sdwa\n" },
+    { 0x0334d6f9U, 0x16160600, true,
+        "        v_cndmask_b32   v154, -v0, -v107, vcc sdwa\n" },
+    { 0x0334d6f9U, 0x26260600, true,
+        "        v_cndmask_b32   v154, abs(v0), abs(v107), vcc sdwa\n" },
+    { 0x0334d6f9U, 0x0e0e0600, true,
+        "        v_cndmask_b32   v154, sext(v0), sext(v107), vcc\n" },
+    // VOP1 SDWA
+    { 0x7e0000f9U, 0x3d003d, true, "        v_nop           "
+        "src0=0xf9 dst_sel:byte0 sext0 neg0 abs0\n" },
+    // VOPC SDWAB
+    { 0x7d1192f9U, 0x0404004eU, true, "        v_cmp_class_f32 vcc, v78, v201 "
+            "src0_sel:word0 src1_sel:word0\n" },
+    { 0x7d1192f9U, 0x0404924eU, true, "        v_cmp_class_f32 s[18:19], v78, v201 "
+            "src0_sel:word0 src1_sel:word0\n" },
+    { 0x7d1192f9U, 0x0404424eU, true, "        v_cmp_class_f32 vcc, v78, v201 "
+            "src0_sel:word0 src1_sel:word0\n" },
     { 0, 0, false, nullptr }
 };
