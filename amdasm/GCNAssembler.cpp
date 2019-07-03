@@ -570,44 +570,74 @@ bool GCNAssembler::parseRegisterType(const char*& linePtr, const char* end, cxui
     return false;
 }
 
-static const bool gcnSize11Table[16] =
+enum : cxbyte
 {
-    false, // GCNENC_SMRD, // 0000
-    false, // GCNENC_SMRD, // 0001
-    false, // GCNENC_VINTRP, // 0010
-    false, // GCNENC_NONE, // 0011 - illegal
-    true,  // GCNENC_VOP3A, // 0100
-    false, // GCNENC_NONE, // 0101 - illegal
-    true,  // GCNENC_DS,   // 0110
-    true,  // GCNENC_FLAT, // 0111
-    true,  // GCNENC_MUBUF, // 1000
-    false, // GCNENC_NONE,  // 1001 - illegal
-    true,  // GCNENC_MTBUF, // 1010
-    false, // GCNENC_NONE,  // 1011 - illegal
-    true,  // GCNENC_MIMG,  // 1100
-    false, // GCNENC_NONE,  // 1101 - illegal
-    true,  // GCNENC_EXP,   // 1110
-    false // GCNENC_NONE   // 1111 - illegal
+    GCNENCSCH_1DWORD = 0,
+    GCNENCSCH_2DWORD,
+    GCNENCSCH_MIMG_DWORDS
 };
 
-static const bool gcnSize12Table[16] =
+// gcn encoding sizes table: true - if 8 byte encoding, false - 4 byte encoding
+// for GCN1.0/1.1
+static const cxbyte gcnSize11Table[16] =
 {
-    true,  // GCNENC_SMEM, // 0000
-    true,  // GCNENC_EXP, // 0001
-    false, // GCNENC_NONE, // 0010 - illegal
-    false, // GCNENC_NONE, // 0011 - illegal
-    true,  // GCNENC_VOP3A, // 0100
-    false, // GCNENC_VINTRP, // 0101
-    true,  // GCNENC_DS,   // 0110
-    true,  // GCNENC_FLAT, // 0111
-    true,  // GCNENC_MUBUF, // 1000
-    false, // GCNENC_NONE,  // 1001 - illegal
-    true,  // GCNENC_MTBUF, // 1010
-    false, // GCNENC_NONE,  // 1011 - illegal
-    true,  // GCNENC_MIMG,  // 1100
-    false, // GCNENC_NONE,  // 1101 - illegal
-    false, // GCNENC_NONE,  // 1110 - illegal
-    false // GCNENC_NONE   // 1111 - illegal
+    GCNENCSCH_1DWORD, // GCNENC_SMRD, // 0000
+    GCNENCSCH_1DWORD, // GCNENC_SMRD, // 0001
+    GCNENCSCH_1DWORD, // GCNENC_VINTRP, // 0010
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0011 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_VOP3A, // 0100
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0101 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_DS,   // 0110
+    GCNENCSCH_2DWORD,  // GCNENC_FLAT, // 0111
+    GCNENCSCH_2DWORD,  // GCNENC_MUBUF, // 1000
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1001 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MTBUF, // 1010
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1011 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MIMG,  // 1100
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1101 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_EXP,   // 1110
+    GCNENCSCH_1DWORD // GCNENC_NONE   // 1111 - illegal
+};
+
+// for GCN1.2/1.4
+static const cxbyte gcnSize12Table[16] =
+{
+    GCNENCSCH_2DWORD,  // GCNENC_SMEM, // 0000
+    GCNENCSCH_2DWORD,  // GCNENC_EXP, // 0001
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0010 - illegal
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0011 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_VOP3A, // 0100
+    GCNENCSCH_1DWORD, // GCNENC_VINTRP, // 0101
+    GCNENCSCH_2DWORD,  // GCNENC_DS,   // 0110
+    GCNENCSCH_2DWORD,  // GCNENC_FLAT, // 0111
+    GCNENCSCH_2DWORD,  // GCNENC_MUBUF, // 1000
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1001 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MTBUF, // 1010
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1011 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MIMG,  // 1100
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1101 - illegal
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1110 - illegal
+    GCNENCSCH_1DWORD // GCNENC_NONE   // 1111 - illegal
+};
+
+static const cxbyte gcnSize15Table[16] =
+{
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0000
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0001
+    GCNENCSCH_1DWORD, // CNENC_VINTRP, // 0010
+    GCNENCSCH_2DWORD,  // GCNENC_VOP3P, // 0011
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 0100
+    GCNENCSCH_2DWORD,  // GCNENC_VOP3A, // 0101
+    GCNENCSCH_2DWORD,  // GCNENC_DS,   // 0110
+    GCNENCSCH_2DWORD,  // GCNENC_FLAT, // 0111
+    GCNENCSCH_2DWORD,  // GCNENC_MUBUF, // 1000
+    GCNENCSCH_1DWORD, // GCNENC_NONE, // 1001 - illegal
+    GCNENCSCH_2DWORD,  // GCNENC_MTBUF, // 1010
+    GCNENCSCH_1DWORD, // GCNENC_NONE,  // 1011 - illegal
+    GCNENCSCH_MIMG_DWORDS,  // GCNENC_MIMG,  // 1100
+    GCNENCSCH_2DWORD,  // GCNENC_SMEM,  // 1101
+    GCNENCSCH_2DWORD,  // GCNENC_EXP,   // 1110
+    GCNENCSCH_1DWORD // GCNENC_NONE   // 1111 - illegal
 };
 
 // get instruction size, used by register allocation to skip instruction
@@ -617,6 +647,7 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
         return 0; // no instruction
     bool isGCN11 = (curArchMask & ARCH_RX2X0)!=0;
     bool isGCN12 = (curArchMask & ARCH_GCN_1_2_4)!=0;
+    bool isGCN15 = (curArchMask & ARCH_GCN_1_5)!=0;
     const uint32_t insnCode = ULEV(*reinterpret_cast<const uint32_t*>(code));
     uint32_t words = 1;
     if ((insnCode & 0x80000000U) != 0)
@@ -645,8 +676,8 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
                 {
                     // SOPK
                     const cxuint opcode = (insnCode>>23)&0x1f;
-                    if ((!isGCN12 && opcode == 21) ||
-                        (isGCN12 && opcode == 20))
+                    if (((!isGCN12 || isGCN15) && opcode == 21) ||
+                        (isGCN12 && !isGCN15 && opcode == 20))
                         words++; // additional literal
                 }
             }
@@ -661,7 +692,14 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
         {
             // SMRD and others
             const uint32_t encPart = (insnCode&0x3c000000U)>>26;
-            if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
+            if (isGCN15)
+            {
+                if (gcnSize15Table[encPart]==GCNENCSCH_MIMG_DWORDS)
+                    words += ((insnCode>>1)&3) + 1;
+                else if (gcnSize15Table[encPart])
+                    words++;
+            }
+            else if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
                 (isGCN12 && gcnSize12Table[encPart]))
                 words++;
         }
@@ -673,17 +711,19 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
         if ((insnCode & 0x7e000000U) == 0x7c000000U)
         {
             // VOPC
-            if ((insnCode&0x1ff) == 0xff || // literal
+            if (src0 == 0xff || // literal
                 // SDWA, DDP
-                (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)))
+                (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
+                (isGCN15 && (src0 == 0xe9 || src0 == 0xea)))
                 words++;
         }
         else if ((insnCode & 0x7e000000U) == 0x7e000000U)
         {
             // VOP1
-            if ((insnCode&0x1ff) == 0xff || // literal
+            if (src0 == 0xff || // literal
                 // SDWA, DDP
-                (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)))
+                (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
+                (isGCN15 && (src0 == 0xe9 || src0 == 0xea)))
                 words++;
         }
         else
@@ -691,12 +731,16 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
             // VOP2
             const cxuint opcode = (insnCode >> 25)&0x3f;
             if ((!isGCN12 && (opcode == 32 || opcode == 33)) ||
-                (isGCN12 && (opcode == 23 || opcode == 24 ||
-                opcode == 36 || opcode == 37))) // V_MADMK and V_MADAK
+                (isGCN12 && !isGCN15 && (opcode == 23 || opcode == 24 ||
+                opcode == 36 || opcode == 37)) ||
+                    (isGCN15 && (opcode == 32 || opcode == 33 || // V_MADMK and V_MADAK
+                        opcode == 44 || opcode == 45 || // V_FMAMK_F32, V_FMAAK_F32
+                        opcode == 55 || opcode == 56))) // V_MADMK and V_MADAK
                 words++;  // inline 32-bit constant
-            else if ((insnCode&0x1ff) == 0xff || // literal
+            else if (src0 == 0xff || // literal
                 // SDWA, DDP
-                (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)))
+                (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
+                (isGCN15 && (src0 == 0xe9 || src0 == 0xea)))
                 words++;  // literal
         }
     }
