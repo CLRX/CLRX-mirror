@@ -1157,6 +1157,11 @@ static void decodeVOPDPP(FastOutputBuffer& output, GPUArchMask arch, uint32_t in
         // print other dpp modifier
         putChars(bufPtr, dppCtrl130TblPtr[dppCtrl-0x130],
                  ::strlen(dppCtrl130TblPtr[dppCtrl-0x130]));
+    else if (isGCN15 && dppCtrl >= 0x150 && dppCtrl < 0x170)
+    {
+        putChars(bufPtr, dppCtrl<0x160 ? " row_share:": " row_xmask:", 11);
+        putByteToBuf(dppCtrl&0xf, bufPtr);
+    }
     // otherwise print value of dppctrl (illegal value)
     else if (dppCtrl != 0x100)
     {
@@ -1172,6 +1177,9 @@ static void decodeVOPDPP(FastOutputBuffer& output, GPUArchMask arch, uint32_t in
     putByteToBuf((insnCode2>>24)&0xf, bufPtr);
     putChars(bufPtr, " row_mask:", 10);
     putByteToBuf((insnCode2>>28)&0xf, bufPtr);
+    
+    if (isGCN15 && (insnCode2 & 0x40000)!=0)
+        putChars(bufPtr, " fi:1", 5);
     // unused but fields
     if (!src0Used)
     {

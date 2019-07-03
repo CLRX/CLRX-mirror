@@ -1526,5 +1526,15 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0x7e0000faU, 0x3872be, true, "        v_nop           "
         "src0=0xfa quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0 neg0 abs0\n" },
     /* GFX10 specific DPP controls */
+    { 0x0734d6faU, 0x156be, true, "        v_add_f32       v154, v190, v107 "
+        "row_share:6 bank_mask:0 row_mask:0\n" },
+    { 0x0734d6faU, 0x15fbe, true, "        v_add_f32       v154, v190, v107 "
+        "row_share:15 bank_mask:0 row_mask:0\n" },
+    { 0x0734d6faU, 0x166be, true, "        v_add_f32       v154, v190, v107 "
+        "row_xmask:6 bank_mask:0 row_mask:0\n" },
+    { 0x0734d6faU, 0x16fbe, true, "        v_add_f32       v154, v190, v107 "
+        "row_xmask:15 bank_mask:0 row_mask:0\n" },
+    { 0x0734d6faU, 0x540be, true, "        v_add_f32       v154, v190, v107 "
+        "row_mirror bank_mask:0 row_mask:0 fi:1\n" },
     { 0, 0, false, nullptr }
 };
