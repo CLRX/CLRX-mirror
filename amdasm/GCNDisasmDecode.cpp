@@ -1558,8 +1558,8 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(170);
     char* bufPtr = bufStart;
-    const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
-    const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
+    const bool isGCN12 = ((arch&ARCH_GCN_1_2_4_5)!=0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4_5)!=0);
     const cxuint opcode = (isGCN12) ? ((insnCode>>16)&0x3ff) : ((insnCode>>17)&0x1ff);
     
     const cxuint vdst = insnCode&0xff;
@@ -1588,26 +1588,33 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     
     if (mode1 != GCN_VOP_ARG_NONE)
     {
+        vdstUsed = true;
         addSpaces(bufPtr, spacesToAdd);
         
-        if (opcode < 256 || (gcnInsn.mode&GCN_VOP3_DST_SGPR)!=0)
-            /* if compares (print DST as SDST) */
-            decodeGCNOperandNoLit(dasm, vdst, ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)?2:1,
-                              bufPtr, arch);
-        else /* regular instruction */
-            // for V_MQSAD_U32 SRC2 is 128-bit
-            decodeGCNVRegOperand(vdst, (is128Ops) ? 4 : 
-                                 ((gcnInsn.mode&GCN_REG_DST_64)?2:1), bufPtr);
+        if ((gcnInsn.mode & GCN_VOP3_NODST)==0)
+        {
+            if (opcode < 256 || (gcnInsn.mode&GCN_VOP3_DST_SGPR)!=0)
+                /* if compares (print DST as SDST) */
+                decodeGCNOperandNoLit(dasm, vdst, ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)?2:1,
+                                bufPtr, arch);
+            else /* regular instruction */
+                // for V_MQSAD_U32 SRC2 is 128-bit
+                decodeGCNVRegOperand(vdst, (is128Ops) ? 4 :
+                                    ((gcnInsn.mode&GCN_REG_DST_64)?2:1), bufPtr);
+        }
+        else
+            vdstUsed = false;
         
+        if (vdstUsed)
+            putCommaSpace(bufPtr);
         if (gcnInsn.encoding == GCNENC_VOP3B &&
             (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC || mode1 == GCN_DST_VCC_VSRC2 ||
              mode1 == GCN_S0EQS12)) /* VOP3b */
         {
             // print SDST operand (VOP3B)
-            putCommaSpace(bufPtr);
             decodeGCNOperandNoLit(dasm, ((insnCode>>8)&0x7f), 2, bufPtr, arch);
+            putCommaSpace(bufPtr);
         }
-        putCommaSpace(bufPtr);
         if (vop3Mode != GCN_VOP3_VINTRP)
         {
             // print negation or abs if supplied
@@ -1708,8 +1715,6 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             }
             vsrc1Used = true;
         }
-        
-        vdstUsed = true;
     }
     else
         addSpaces(bufPtr, spacesToAdd-1);

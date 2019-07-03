@@ -1571,5 +1571,79 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
         "        v_cmpx_tru_u64  v[190:191], v[201:202] dpp8:[1,7,2,5,6,3,6,4]\n" },
     { 0x7def92eaU, 0x99eab9be, true,
         "        v_cmpx_tru_u64  v[190:191], v[201:202] dpp8:[1,7,2,5,6,3,6,4] fi\n" },
+    /* VOP3 encoding */
+    { 0xd400002aU, 0x0002d732U, true, "        v_cmp_f_f32     s[42:43], v50, v107\n" },
+    { 0xd400032aU, 0x0002d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], abs(v50), abs(v107)\n" },
+    { 0xd400832aU, 0x0002d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], abs(v50), abs(v107) clamp\n" },
+    { 0xd400832aU, 0x0802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], abs(v50), abs(v107) mul:2 clamp\n" },
+    { 0xd400832aU, 0x1002d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], abs(v50), abs(v107) mul:4 clamp\n" },
+    { 0xd400832aU, 0xf802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], -abs(v50), -abs(v107) div:2 clamp neg2\n" },
+    { 0xd400832aU, 0xd802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], abs(v50), -abs(v107) div:2 clamp neg2\n" },
+    { 0xd400832aU, 0xb802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], -abs(v50), abs(v107) div:2 clamp neg2\n" },
+    { 0xd400822aU, 0xf802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], -v50, -abs(v107) div:2 clamp neg2\n" },
+    { 0xd400812aU, 0xf802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], -abs(v50), -v107 div:2 clamp neg2\n" },
+    { 0xd400012aU, 0x7002d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], -abs(v50), -v107 mul:4\n" },
+    { 0xd400812aU, 0xf802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], -abs(v50), -v107 div:2 clamp neg2\n" },
+    /* vop3 */
+    { 0xd400006aU, 0x0002d732U, true, "        v_cmp_f_f32     vcc, v50, v107 vop3\n" },
+    { 0xd400006aU, 0x0002d632U, true, "        v_cmp_f_f32     vcc, s50, v107 vop3\n" },
+    /* no vop3 */
+    { 0xd400806aU, 0x0002d632U, true, "        v_cmp_f_f32     vcc, s50, v107 clamp\n" },
+    { 0xd400006aU, 0x0000d632U, true, "        v_cmp_f_f32     vcc, s50, vcc_hi\n" },
+    { 0xd400002aU, 0x00aed732U, true, "        v_cmp_f_f32     "
+                "s[42:43], v50, v107 vsrc2=0x2b\n" },
+    { 0xd400006aU, 0x00aed732U, true, "        v_cmp_f_f32     "
+                "vcc, v50, v107 vsrc2=0x2b\n" },
+    { 0xd400006aU, 0x1002d732U, true, "        v_cmp_f_f32     vcc, v50, v107 mul:4\n" },
+    { 0xd400006aU, 0x8002d732U, true, "        v_cmp_f_f32     vcc, v50, v107 neg2\n" },
+    { 0xd400006aU, 0x4002d732U, true, "        v_cmp_f_f32     vcc, v50, -v107\n" },
+    { 0xd400016aU, 0x0002d732U, true, "        v_cmp_f_f32     vcc, abs(v50), v107\n" },
+    /// ??????
+    { 0xd400002aU, 0x0001feffU, true, "        v_cmp_f_f32     s[42:43], 0x0, 0x0\n" },
+    { 0xd40000ffU, 0x0001feffU, true, "        v_cmp_f_f32     0x0, 0x0, 0x0\n" },
+    /*** VOP3 comparisons ***/
+    { 0xd400002aU, 0x0002d732U, true, "        v_cmp_f_f32     s[42:43], v50, v107\n" },
+    { 0xd401002aU, 0x0002d732U, true, "        v_cmp_lt_f32    s[42:43], v50, v107\n" },
+    { 0xd402002aU, 0x0002d732U, true, "        v_cmp_eq_f32    s[42:43], v50, v107\n" },
+    { 0xd403002aU, 0x0002d732U, true, "        v_cmp_le_f32    s[42:43], v50, v107\n" },
+    { 0xd404002aU, 0x0002d732U, true, "        v_cmp_gt_f32    s[42:43], v50, v107\n" },
+    { 0xd405002aU, 0x0002d732U, true, "        v_cmp_lg_f32    s[42:43], v50, v107\n" },
+    { 0xd406002aU, 0x0002d732U, true, "        v_cmp_ge_f32    s[42:43], v50, v107\n" },
+    { 0xd407002aU, 0x0002d732U, true, "        v_cmp_o_f32     s[42:43], v50, v107\n" },
+    { 0xd408002aU, 0x0002d732U, true, "        v_cmp_u_f32     s[42:43], v50, v107\n" },
+    { 0xd409002aU, 0x0002d732U, true, "        v_cmp_nge_f32   s[42:43], v50, v107\n" },
+    { 0xd40a002aU, 0x0002d732U, true, "        v_cmp_nlg_f32   s[42:43], v50, v107\n" },
+    { 0xd40b002aU, 0x0002d732U, true, "        v_cmp_ngt_f32   s[42:43], v50, v107\n" },
+    { 0xd40c002aU, 0x0002d732U, true, "        v_cmp_nle_f32   s[42:43], v50, v107\n" },
+    { 0xd40d002aU, 0x0002d732U, true, "        v_cmp_neq_f32   s[42:43], v50, v107\n" },
+    { 0xd40e002aU, 0x0002d732U, true, "        v_cmp_nlt_f32   s[42:43], v50, v107\n" },
+    { 0xd40f002aU, 0x0002d732U, true, "        v_cmp_tru_f32   s[42:43], v50, v107\n" },
+    { 0xd4100000U, 0x0002d732U, true, "        v_cmpx_f_f32    v50, v107\n" },
+    { 0xd4110000U, 0x0002d732U, true, "        v_cmpx_lt_f32   v50, v107\n" },
+    { 0xd4120000U, 0x0002d732U, true, "        v_cmpx_eq_f32   v50, v107\n" },
+    { 0xd4130000U, 0x0002d732U, true, "        v_cmpx_le_f32   v50, v107\n" },
+    { 0xd4140000U, 0x0002d732U, true, "        v_cmpx_gt_f32   v50, v107\n" },
+    { 0xd4150000U, 0x0002d732U, true, "        v_cmpx_lg_f32   v50, v107\n" },
+    { 0xd4160000U, 0x0002d732U, true, "        v_cmpx_ge_f32   v50, v107\n" },
+    { 0xd4170000U, 0x0002d732U, true, "        v_cmpx_o_f32    v50, v107\n" },
+    { 0xd4180000U, 0x0002d732U, true, "        v_cmpx_u_f32    v50, v107\n" },
+    { 0xd4190000U, 0x0002d732U, true, "        v_cmpx_nge_f32  v50, v107\n" },
+    { 0xd41a0000U, 0x0002d732U, true, "        v_cmpx_nlg_f32  v50, v107\n" },
+    { 0xd41b0000U, 0x0002d732U, true, "        v_cmpx_ngt_f32  v50, v107\n" },
+    { 0xd41c0000U, 0x0002d732U, true, "        v_cmpx_nle_f32  v50, v107\n" },
+    { 0xd41d0000U, 0x0002d732U, true, "        v_cmpx_neq_f32  v50, v107\n" },
+    { 0xd41e0000U, 0x0002d732U, true, "        v_cmpx_nlt_f32  v50, v107\n" },
+    { 0xd41f0000U, 0x0002d732U, true, "        v_cmpx_tru_f32  v50, v107\n" },
     { 0, 0, false, nullptr }
 };
