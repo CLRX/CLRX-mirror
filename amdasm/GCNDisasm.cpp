@@ -119,24 +119,24 @@ static const GCNEncodingSpace gcnInstrTableByCodeSpaces[] =
     { 0x1e62+0x0100, 0x100 }, /* GCNENC_SOP1, opcode = (8bit)<<8 */
     { 0x1e62+0x0200, 0x80 }, /* GCNENC_SOP2, opcode = (7bit)<<23 */
     { 0x1e62+0x0280, 0x20 }, /* GCNENC_SOPK, opcode = (5bit)<<23 */
-    { 0x1e62+0x02a0, 0x40 }, /* GCNENC_SMRD, opcode = (6bit)<<22 */
-    { 0x1e62+0x02e0, 0x100 }, /* GCNENC_VOPC, opcode = (8bit)<<27 */
-    { 0x1e62+0x03e0, 0x100 }, /* GCNENC_VOP1, opcode = (8bit)<<9 */
-    { 0x1e62+0x04e0, 0x40 }, /* GCNENC_VOP2, opcode = (6bit)<<25 */
-    { 0x1e62+0x0520, 0x400 }, /* GCNENC_VOP3A, opcode = (9bit)<<17 */
-    { 0x1e62+0x0520, 0x400 }, /* GCNENC_VOP3B, opcode = (9bit)<<17 */
-    { 0x1e62+0x0920, 0x4 }, /* GCNENC_VINTRP, opcode = (2bit)<<16 */
-    { 0x1e62+0x0924, 0x100 }, /* GCNENC_DS, opcode = (8bit)<<18 */
-    { 0x1e62+0x0a24, 0x80 }, /* GCNENC_MUBUF, opcode = (7bit)<<18 */
-    { 0x1e62+0x0aa4, 0x8 }, /* GCNENC_MTBUF, opcode = (3bit)<<16 */
-    { 0x1e62+0x0aac, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
-    { 0x1e62+0x0b2c, 0x1 }, /* GCNENC_EXP, opcode = none */
-    { 0x1e62+0x0b2d, 0x80 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
-    { 0x1e62+0x0bad, 0x40 }, /* GCNENC_VOP3P */
+    { 0x1e62+0x02a0, 0x100 }, /* GCNENC_SMRD, opcode = (6bit)<<22 */
+    { 0x1e62+0x03a0, 0x100 }, /* GCNENC_VOPC, opcode = (8bit)<<27 */
+    { 0x1e62+0x04a0, 0x100 }, /* GCNENC_VOP1, opcode = (8bit)<<9 */
+    { 0x1e62+0x05a0, 0x40 }, /* GCNENC_VOP2, opcode = (6bit)<<25 */
+    { 0x1e62+0x05e0, 0x400 }, /* GCNENC_VOP3A, opcode = (9bit)<<17 */
+    { 0x1e62+0x05e0, 0x400 }, /* GCNENC_VOP3B, opcode = (9bit)<<17 */
+    { 0x1e62+0x09e0, 0x4 }, /* GCNENC_VINTRP, opcode = (2bit)<<16 */
+    { 0x1e62+0x09e4, 0x100 }, /* GCNENC_DS, opcode = (8bit)<<18 */
+    { 0x1e62+0x0ae4, 0x80 }, /* GCNENC_MUBUF, opcode = (7bit)<<18 */
+    { 0x1e62+0x0b64, 0x8 }, /* GCNENC_MTBUF, opcode = (3bit)<<16 */
+    { 0x1e62+0x0b6c, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
+    { 0x1e62+0x0bec, 0x1 }, /* GCNENC_EXP, opcode = none */
+    { 0x1e62+0x0bed, 0x80 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
+    { 0x1e62+0x0c6d, 0x40 }, /* GCNENC_VOP3P */
 };
 
 // total instruction table length
-static const size_t gcnInstrTableByCodeLength = 0x1e62 + 0x0bed;
+static const size_t gcnInstrTableByCodeLength = 0x1e62 + 0x0c6d;
 
 enum: cxuint {
     GCN_GFX10_ENCSPACE_IDX = 44

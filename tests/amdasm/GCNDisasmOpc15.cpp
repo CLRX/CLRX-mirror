@@ -849,5 +849,54 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0x7f3ccd4fU, 0, false, "        VOP1_ill_102    v158, v79\n" },
     { 0x7f3ccf4fU, 0, false, "        VOP1_ill_103    v158, v79\n" },
     { 0x7f3cd14fU, 0, false, "        v_swaprel_b32   v158, v79\n" },
+    /* VOPC encoding */
+    { 0x7c01934fU, 0, false, "        v_cmp_f_f32     vcc, v79, v201\n" },
+    { 0x7c0192ffU, 0x40000000U, true, "        v_cmp_f_f32     "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c03934fU, 0, false, "        v_cmp_lt_f32    vcc, v79, v201\n" },
+    { 0x7c0392ffU, 0x40000000U, true, "        v_cmp_lt_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c05934fU, 0, false, "        v_cmp_eq_f32    vcc, v79, v201\n" },
+    { 0x7c0592ffU, 0x40000000U, true, "        v_cmp_eq_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c07934fU, 0, false, "        v_cmp_le_f32    vcc, v79, v201\n" },
+    { 0x7c0792ffU, 0x40000000U, true, "        v_cmp_le_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c09934fU, 0, false, "        v_cmp_gt_f32    vcc, v79, v201\n" },
+    { 0x7c0992ffU, 0x40000000U, true, "        v_cmp_gt_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c0b934fU, 0, false, "        v_cmp_lg_f32    vcc, v79, v201\n" },
+    { 0x7c0b92ffU, 0x40000000U, true, "        v_cmp_lg_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c0d934fU, 0, false, "        v_cmp_ge_f32    vcc, v79, v201\n" },
+    { 0x7c0d92ffU, 0x40000000U, true, "        v_cmp_ge_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c0f934fU, 0, false, "        v_cmp_o_f32     vcc, v79, v201\n" },
+    { 0x7c0f92ffU, 0x40000000U, true, "        v_cmp_o_f32     "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c11934fU, 0, false, "        v_cmp_u_f32     vcc, v79, v201\n" },
+    { 0x7c1192ffU, 0x40000000U, true, "        v_cmp_u_f32     "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c13934fU, 0, false, "        v_cmp_nge_f32   vcc, v79, v201\n" },
+    { 0x7c1392ffU, 0x40000000U, true, "        v_cmp_nge_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c15934fU, 0, false, "        v_cmp_nlg_f32   vcc, v79, v201\n" },
+    { 0x7c1592ffU, 0x40000000U, true, "        v_cmp_nlg_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c17934fU, 0, false, "        v_cmp_ngt_f32   vcc, v79, v201\n" },
+    { 0x7c1792ffU, 0x40000000U, true, "        v_cmp_ngt_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c19934fU, 0, false, "        v_cmp_nle_f32   vcc, v79, v201\n" },
+    { 0x7c1992ffU, 0x40000000U, true, "        v_cmp_nle_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c1b934fU, 0, false, "        v_cmp_neq_f32   vcc, v79, v201\n" },
+    { 0x7c1b92ffU, 0x40000000U, true, "        v_cmp_neq_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c1d934fU, 0, false, "        v_cmp_nlt_f32   vcc, v79, v201\n" },
+    { 0x7c1d92ffU, 0x40000000U, true, "        v_cmp_nlt_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c1f934fU, 0, false, "        v_cmp_tru_f32   vcc, v79, v201\n" },
+    { 0x7c1f92ffU, 0x40000000U, true, "        v_cmp_tru_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
     { 0, 0, false, nullptr }
 };
