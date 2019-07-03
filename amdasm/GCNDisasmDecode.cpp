@@ -1200,7 +1200,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
                             (literal>>8)&0x7f, 2, arch);
         putCommaSpace(bufPtr);
     }
-    else // just vcc
+    else if ((gcnInsn.mode & GCN_VOPC_NOVCC) == 0) // just vcc
         putChars(bufPtr, "vcc, ", 5);
     
     if (isGCN12)

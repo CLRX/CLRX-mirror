@@ -136,7 +136,7 @@ static const GCNEncodingSpace gcnInstrTableByCodeSpaces[] =
 };
 
 // total instruction table length
-static const size_t gcnInstrTableByCodeLength = 0x1e62 + 0x0c6d;
+static const size_t gcnInstrTableByCodeLength = 0x1e62 + 0x0cad;
 
 enum: cxuint {
     GCN_GFX10_ENCSPACE_IDX = 44
