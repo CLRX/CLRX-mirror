@@ -1630,6 +1630,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xd40e002aU, 0x0002d732U, true, "        v_cmp_nlt_f32   s[42:43], v50, v107\n" },
     { 0xd40f002aU, 0x0002d732U, true, "        v_cmp_tru_f32   s[42:43], v50, v107\n" },
     { 0xd4100000U, 0x0002d732U, true, "        v_cmpx_f_f32    v50, v107\n" },
+    { 0xd4100033U, 0x0002d732U, true, "        v_cmpx_f_f32    v50, v107 dst=0x33\n" },
     { 0xd4110000U, 0x0002d732U, true, "        v_cmpx_lt_f32   v50, v107\n" },
     { 0xd4120000U, 0x0002d732U, true, "        v_cmpx_eq_f32   v50, v107\n" },
     { 0xd4130000U, 0x0002d732U, true, "        v_cmpx_le_f32   v50, v107\n" },
@@ -1645,5 +1646,55 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xd41d0000U, 0x0002d732U, true, "        v_cmpx_neq_f32  v50, v107\n" },
     { 0xd41e0000U, 0x0002d732U, true, "        v_cmpx_nlt_f32  v50, v107\n" },
     { 0xd41f0000U, 0x0002d732U, true, "        v_cmpx_tru_f32  v50, v107\n" },
+    { 0xd420002aU, 0x0002d732U, true, "        v_cmp_f_f64     "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd421002aU, 0x0002d732U, true, "        v_cmp_lt_f64    "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd422002aU, 0x0002d732U, true, "        v_cmp_eq_f64    "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd423002aU, 0x0002d732U, true, "        v_cmp_le_f64    "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd424002aU, 0x0002d732U, true, "        v_cmp_gt_f64    "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd425002aU, 0x0002d732U, true, "        v_cmp_lg_f64    "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd426002aU, 0x0002d732U, true, "        v_cmp_ge_f64    "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd427002aU, 0x0002d732U, true, "        v_cmp_o_f64     "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd428002aU, 0x0002d732U, true, "        v_cmp_u_f64     "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd429002aU, 0x0002d732U, true, "        v_cmp_nge_f64   "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd42a002aU, 0x0002d732U, true, "        v_cmp_nlg_f64   "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd42b002aU, 0x0002d732U, true, "        v_cmp_ngt_f64   "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd42c002aU, 0x0002d732U, true, "        v_cmp_nle_f64   "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd42d002aU, 0x0002d732U, true, "        v_cmp_neq_f64   "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd42e002aU, 0x0002d732U, true, "        v_cmp_nlt_f64   "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd42f002aU, 0x0002d732U, true, "        v_cmp_tru_f64   "
+                "s[42:43], v[50:51], v[107:108]\n" },
+    { 0xd4300000U, 0x0002d732U, true, "        v_cmpx_f_f64    v[50:51], v[107:108]\n" },
+    { 0xd430004bU, 0x0002d732U, true,
+        "        v_cmpx_f_f64    v[50:51], v[107:108] dst=0x4b\n" },
+    { 0xd4310000U, 0x0002d732U, true, "        v_cmpx_lt_f64   v[50:51], v[107:108]\n" },
+    { 0xd4320000U, 0x0002d732U, true, "        v_cmpx_eq_f64   v[50:51], v[107:108]\n" },
+    { 0xd4330000U, 0x0002d732U, true, "        v_cmpx_le_f64   v[50:51], v[107:108]\n" },
+    { 0xd4340000U, 0x0002d732U, true, "        v_cmpx_gt_f64   v[50:51], v[107:108]\n" },
+    { 0xd4350000U, 0x0002d732U, true, "        v_cmpx_lg_f64   v[50:51], v[107:108]\n" },
+    { 0xd4360000U, 0x0002d732U, true, "        v_cmpx_ge_f64   v[50:51], v[107:108]\n" },
+    { 0xd4370000U, 0x0002d732U, true, "        v_cmpx_o_f64    v[50:51], v[107:108]\n" },
+    { 0xd4380000U, 0x0002d732U, true, "        v_cmpx_u_f64    v[50:51], v[107:108]\n" },
+    { 0xd4390000U, 0x0002d732U, true, "        v_cmpx_nge_f64  v[50:51], v[107:108]\n" },
+    { 0xd43a0000U, 0x0002d732U, true, "        v_cmpx_nlg_f64  v[50:51], v[107:108]\n" },
+    { 0xd43b0000U, 0x0002d732U, true, "        v_cmpx_ngt_f64  v[50:51], v[107:108]\n" },
+    { 0xd43c0000U, 0x0002d732U, true, "        v_cmpx_nle_f64  v[50:51], v[107:108]\n" },
+    { 0xd43d0000U, 0x0002d732U, true, "        v_cmpx_neq_f64  v[50:51], v[107:108]\n" },
+    { 0xd43e0000U, 0x0002d732U, true, "        v_cmpx_nlt_f64  v[50:51], v[107:108]\n" },
+    { 0xd43f0000U, 0x0002d732U, true, "        v_cmpx_tru_f64  v[50:51], v[107:108]\n" },
     { 0, 0, false, nullptr }
 };
