@@ -1428,5 +1428,92 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
             "src0_sel:word0 src1_sel:word0\n" },
     { 0x7d1192f9U, 0x0404424eU, true, "        v_cmp_class_f32 vcc, v78, v201 "
             "src0_sel:word0 src1_sel:word0\n" },
+    // VOP DPP encoding
+    { 0x0334d6faU, 0xbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[0,0,0,0] bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x72be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0xb4be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[0,1,3,2] bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x100be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x101be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:1 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x102be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:2 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x105be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:5 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x106be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:6 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x10abe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:10 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x10dbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:13 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x10fbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:15 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x110be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x110 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x11abe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shr:10 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x120be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x120 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x12abe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_ror:10 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x12fbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_ror:15 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x130be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "wave_shl bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x131be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x131 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x134be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "wave_rol bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x136be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x136 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x138be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "wave_shr bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x13ebe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x13e bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x13cbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "wave_ror bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x140be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_mirror bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x141be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_half_mirror bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x142be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_bcast15 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x143be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_bcast31 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x14dbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x14d bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x193be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x193 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x872be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x872be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x1872be, true, "        v_cndmask_b32   v154, -v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x2872be, true, "        v_cndmask_b32   v154, abs(v190), v107, vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x3872be, true, "        v_cndmask_b32   v154, -abs(v190), v107, vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x4872be, true, "        v_cndmask_b32   v154, v190, -v107, vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x8872be, true, "        v_cndmask_b32   v154, v190, abs(v107), vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0xc872be, true, "        v_cndmask_b32   v154, v190, -abs(v107), vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x10072be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bank_mask:1 row_mask:0\n" },
+    { 0x0334d6faU, 0xe0072be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bank_mask:14 row_mask:0\n" },
+    { 0x0334d6faU, 0x100072be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bank_mask:0 row_mask:1\n" },
+    { 0x0334d6faU, 0xd00072be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bank_mask:0 row_mask:13\n" },
+    { 0x0334d6faU, 0x101be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:1 bank_mask:0 row_mask:0\n" },
+    { 0x0334d6faU, 0x102be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:2 bank_mask:0 row_mask:0\n" },
     { 0, 0, false, nullptr }
 };
