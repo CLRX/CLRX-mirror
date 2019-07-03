@@ -1535,6 +1535,6 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0x0734d6faU, 0x16fbe, true, "        v_add_f32       v154, v190, v107 "
         "row_xmask:15 bank_mask:0 row_mask:0\n" },
     { 0x0734d6faU, 0x540be, true, "        v_add_f32       v154, v190, v107 "
-        "row_mirror bank_mask:0 row_mask:0 fi:1\n" },
+        "row_mirror bank_mask:0 row_mask:0 fi\n" },
     { 0, 0, false, nullptr }
 };

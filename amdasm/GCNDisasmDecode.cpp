@@ -1179,7 +1179,7 @@ static void decodeVOPDPP(FastOutputBuffer& output, GPUArchMask arch, uint32_t in
     putByteToBuf((insnCode2>>28)&0xf, bufPtr);
     
     if (isGCN15 && (insnCode2 & 0x40000)!=0)
-        putChars(bufPtr, " fi:1", 5);
+        putChars(bufPtr, " fi", 3);
     // unused but fields
     if (!src0Used)
     {
