@@ -1560,5 +1560,16 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0x0734d6e9U, 0xe00000be, true, "        v_add_f32       v154, v190, v107 "
         "dpp8:[0,0,0,0,0,0,0,7]\n" },
     /* VOP1 DPP8 */
+    { 0x7e0000e9U, 0x99eab9be, true, "        v_nop           "
+        "src0=0xe9 dpp8:[1,7,2,5,6,3,6,4]\n" },
+    { 0x7e0000eaU, 0x99eab9be, true, "        v_nop           "
+        "src0=0xea dpp8:[1,7,2,5,6,3,6,4] fi\n" },
+    { 0x7e0a02eaU, 0x99eab9be, true, "        v_mov_b32       "
+        "v5, v190 dpp8:[1,7,2,5,6,3,6,4] fi\n" },
+    /* VOPC DPP8 */
+    { 0x7def92e9U, 0x99eab9be, true,
+        "        v_cmpx_tru_u64  v[190:191], v[201:202] dpp8:[1,7,2,5,6,3,6,4]\n" },
+    { 0x7def92eaU, 0x99eab9be, true,
+        "        v_cmpx_tru_u64  v[190:191], v[201:202] dpp8:[1,7,2,5,6,3,6,4] fi\n" },
     { 0, 0, false, nullptr }
 };
