@@ -619,9 +619,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0x4534d715U, 0, false, "        VOP2_ill_34     v154, v21, v107\n" },
     { 0x4734d715U, 0, false, "        VOP2_ill_35     v154, v21, v107\n" },
     { 0x4934d715U, 0, false, "        VOP2_ill_36     v154, v21, v107\n" },
-    { 0x4b34d715U, 0, false, "        v_add_nc_u32    v154, vcc, v21, v107\n" },
-    { 0x4d34d715U, 0, false, "        v_sub_nc_u32    v154, vcc, v21, v107\n" },
-    { 0x4f34d715U, 0, false, "        v_subrev_nc_u32 v154, vcc, v21, v107\n" },
+    { 0x4b34d715U, 0, false, "        v_add_nc_u32    v154, v21, v107\n" },
+    { 0x4d34d715U, 0, false, "        v_sub_nc_u32    v154, v21, v107\n" },
+    { 0x4f34d715U, 0, false, "        v_subrev_nc_u32 v154, v21, v107\n" },
     { 0x5134d715U, 0, false, "        v_add_co_ci_u32 v154, vcc, v21, v107, vcc\n" },
     { 0x5334d715U, 0, false, "        v_sub_co_ci_u32 v154, vcc, v21, v107, vcc\n" },
     { 0x5534d715U, 0, false, "        v_subrev_co_ci_u32 v154, vcc, v21, v107, vcc\n" },
@@ -1843,5 +1843,78 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xd4fd0000U, 0x0002d732U, true, "        v_cmpx_neq_f16  v50, v107\n" },
     { 0xd4fe0000U, 0x0002d732U, true, "        v_cmpx_nlt_f16  v50, v107\n" },
     { 0xd4ff0000U, 0x0002d732U, true, "        v_cmpx_tru_f16  v50, v107\n" },
+    /* VOP2 instructions encoded to VOP3a/VOP3b */
+    { 0xd501002aU, 0x0002d732U, true, "        v_cndmask_b32   v42, v50, v107, s[0:1]\n" },
+    { 0xd501002aU, 0x01aad732U, true, "        v_cndmask_b32   "
+                "v42, v50, v107, vcc vop3\n" },
+    { 0xd501002aU, 0x003ed732U, true, "        v_cndmask_b32   "
+                "v42, v50, v107, s[15:16]\n" },
+    { 0xd501002aU, 0x01aad732U, true, "        v_cndmask_b32   "
+                "v42, v50, v107, vcc vop3\n" },
+    { 0xd501042aU, 0x01aad732U, true, "        v_cndmask_b32   "
+                "v42, v50, v107, vcc vop3\n" },
+    { 0xd501002aU, 0x81aad732U, true, "        v_cndmask_b32   "
+                "v42, v50, v107, vcc vop3\n" },
+    /* no vop3 */
+    { 0xd501022aU, 0x01aad732U, true, "        v_cndmask_b32   "
+                "v42, v50, abs(v107), vcc\n" },
+    { 0xd501002aU, 0x41aad732U, true, "        v_cndmask_b32   v42, v50, -v107, vcc\n" },
+    { 0xd501012aU, 0x01aad732U, true, "        v_cndmask_b32   "
+                "v42, abs(v50), v107, vcc\n" },
+    { 0xd501002aU, 0x21aad732U, true, "        v_cndmask_b32   v42, -v50, v107, vcc\n" },
+    { 0xd501802aU, 0x21aad732U, true, "        v_cndmask_b32   v42, -v50, v107, vcc clamp\n" },
+    { 0xd501002aU, 0x81aad732U, true, "        v_cndmask_b32   "
+                "v42, v50, v107, vcc vop3\n" },
+    { 0xd501002aU, 0x81a8c932U, true, "        v_cndmask_b32   "
+                "v42, v50, s100, vcc\n" },
+    /* VOP2 in VOP3 */
+    { 0xd5020037U, 0x0002b51bU, true, "        VOP3A_ill_258   v55, v27, v90, s0\n" },
+    // v_add_f32
+    { 0xd5030037U, 0x0002b41bU, true, "        v_add_f32       v55, s27, v90 vop3\n" },
+    { 0xd5030037U, 0x0000b41bU, true, "        v_add_f32       v55, s27, s90\n" },
+    { 0xd5038037U, 0x0002b41bU, true, "        v_add_f32       v55, s27, v90 clamp\n" },
+    { 0xd5030037U, 0x4002b41bU, true, "        v_add_f32       v55, s27, -v90\n" },
+    { 0xd5030237U, 0x4002b41bU, true, "        v_add_f32       v55, s27, -abs(v90)\n" },
+    { 0xd5030437U, 0x0002b41bU, true, "        v_add_f32       v55, s27, v90 abs2\n" },
+    /* other opcodes */
+    { 0xd5040037U, 0x4002b41bU, true, "        v_sub_f32       v55, s27, -v90\n" },
+    { 0xd5050037U, 0x4002b41bU, true, "        v_subrev_f32    v55, s27, -v90\n" },
+    { 0xd5060037U, 0x4002b41bU, true, "        v_mac_legacy_f32 v55, s27, -v90\n" },
+    { 0xd5070037U, 0x4002b41bU, true, "        v_mul_legacy_f32 v55, s27, -v90\n" },
+    { 0xd5080037U, 0x4002b41bU, true, "        v_mul_f32       v55, s27, -v90\n" },
+    { 0xd5090037U, 0x4002b41bU, true, "        v_mul_i32_i24   v55, s27, -v90\n" },
+    { 0xd50a0037U, 0x4002b41bU, true, "        v_mul_hi_i32_i24 v55, s27, -v90\n" },
+    { 0xd50b0037U, 0x4002b41bU, true, "        v_mul_u32_u24   v55, s27, -v90\n" },
+    { 0xd50c0037U, 0x4002b41bU, true, "        v_mul_hi_u32_u24 v55, s27, -v90\n" },
+    { 0xd50d0037U, 0x4002b41bU, true, "        VOP3A_ill_269   v55, s27, -v90, s0\n" },
+    { 0xd50e0037U, 0x4002b41bU, true, "        VOP3A_ill_270   v55, s27, -v90, s0\n" },
+    { 0xd50f0037U, 0x4002b41bU, true, "        v_min_f32       v55, s27, -v90\n" },
+    { 0xd5100037U, 0x4002b41bU, true, "        v_max_f32       v55, s27, -v90\n" },
+    { 0xd5110037U, 0x4002b41bU, true, "        v_min_i32       v55, s27, -v90\n" },
+    { 0xd5120037U, 0x4002b41bU, true, "        v_max_i32       v55, s27, -v90\n" },
+    { 0xd5130037U, 0x4002b41bU, true, "        v_min_u32       v55, s27, -v90\n" },
+    { 0xd5140037U, 0x4002b41bU, true, "        v_max_u32       v55, s27, -v90\n" },
+    { 0xd5150037U, 0x4002b41bU, true, "        VOP3A_ill_277   v55, s27, -v90, s0\n" },
+    { 0xd5160037U, 0x4002b41bU, true, "        v_lshrrev_b32   v55, s27, -v90\n" },
+    { 0xd5170037U, 0x4002b41bU, true, "        VOP3A_ill_279   v55, s27, -v90, s0\n" },
+    { 0xd5180037U, 0x4002b41bU, true, "        v_ashrrev_i32   v55, s27, -v90\n" },
+    { 0xd5190037U, 0x4002b41bU, true, "        VOP3A_ill_281   v55, s27, -v90, s0\n" },
+    { 0xd51a0037U, 0x4002b41bU, true, "        v_lshlrev_b32   v55, s27, -v90\n" },
+    { 0xd51b0037U, 0x4002b41bU, true, "        v_and_b32       v55, s27, -v90\n" },
+    { 0xd51c0037U, 0x4002b41bU, true, "        v_or_b32        v55, s27, -v90\n" },
+    { 0xd51d0037U, 0x4002b41bU, true, "        v_xor_b32       v55, s27, -v90\n" },
+    { 0xd51e0037U, 0x4002b41bU, true, "        v_xnor_b32      v55, s27, -v90\n" },
+    { 0xd51f0037U, 0x4002b41bU, true, "        v_mac_f32       v55, s27, -v90\n" },
+    /* what is syntax for v_madmk_f32 and v_madak_f32 in vop3 encoding? I don't know */
+    { 0xd5200037U, 0x405ab41bU, true, "        v_madmk_f32     v55, s27, -v90, s22 vop3\n" },
+    { 0xd5200037U, 0x0002b41bU, true, "        v_madmk_f32     v55, s27, v90, s0 vop3\n" },
+    { 0xd5200037U, 0x445ab41bU, true, "        v_madmk_f32     v55, s27, -v90, v22 vop3\n" },
+    { 0xd5210037U, 0x405ab41bU, true, "        v_madak_f32     v55, s27, -v90, s22 vop3\n" },
+    { 0xd5210037U, 0x0002b41bU, true, "        v_madak_f32     v55, s27, v90, s0 vop3\n" },
+    { 0xd5220037U, 0x4002b41bU, true, "        VOP3A_ill_290   v55, s27, -v90, s0\n" },
+    { 0xd5230037U, 0x4002b41bU, true, "        VOP3A_ill_291   v55, s27, -v90, s0\n" },
+    { 0xd5240037U, 0x4002b41bU, true, "        VOP3A_ill_292   v55, s27, -v90, s0\n" },
+    // vadds
+    { 0xd5250037U, 0x4002b41bU, true, "        v_add_nc_u32    v55, s27, -v90\n" },
     { 0, 0, false, nullptr }
 };
