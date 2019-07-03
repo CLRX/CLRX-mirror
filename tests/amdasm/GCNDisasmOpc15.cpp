@@ -1536,5 +1536,29 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
         "row_xmask:15 bank_mask:0 row_mask:0\n" },
     { 0x0734d6faU, 0x540be, true, "        v_add_f32       v154, v190, v107 "
         "row_mirror bank_mask:0 row_mask:0 fi\n" },
+    /* VOP DPP8 */
+    { 0x0734d6e9U, 0xbe, true, "        v_add_f32       v154, v190, v107 "
+        "dpp8:[0,0,0,0,0,0,0,0]\n" },
+    { 0x0734d6e9U, 0x1be, true, "        v_add_f32       v154, v190, v107 "
+        "dpp8:[1,0,0,0,0,0,0,0]\n" },
+    { 0x0734d6e9U, 0x2be, true, "        v_add_f32       v154, v190, v107 "
+        "dpp8:[2,0,0,0,0,0,0,0]\n" },
+    { 0x0734d6e9U, 0x3be, true, "        v_add_f32       v154, v190, v107 "
+        "dpp8:[3,0,0,0,0,0,0,0]\n" },
+    { 0x0734d6e9U, 0x99eab9be, true, "        v_add_f32       v154, v190, v107 "
+        "dpp8:[1,7,2,5,6,3,6,4]\n" },
+    { 0x0734d6eaU, 0x99eab9be, true, "        v_add_f32       v154, v190, v107 "
+        "dpp8:[1,7,2,5,6,3,6,4] fi\n" },
+    { 0x0734d6e9U, 0x38be, true, "        v_add_f32       v154, v190, v107 "
+        "dpp8:[0,7,0,0,0,0,0,0]\n" },
+    { 0x0734d6e9U, 0x1c0be, true, "        v_add_f32       v154, v190, v107 "
+        "dpp8:[0,0,7,0,0,0,0,0]\n" },
+    { 0x0734d6e9U, 0xe00be, true, "        v_add_f32       v154, v190, v107 "
+        "dpp8:[0,0,0,7,0,0,0,0]\n" },
+    { 0x0734d6e9U, 0x1c0000be, true, "        v_add_f32       v154, v190, v107 "
+        "dpp8:[0,0,0,0,0,0,7,0]\n" },
+    { 0x0734d6e9U, 0xe00000be, true, "        v_add_f32       v154, v190, v107 "
+        "dpp8:[0,0,0,0,0,0,0,7]\n" },
+    /* VOP1 DPP8 */
     { 0, 0, false, nullptr }
 };

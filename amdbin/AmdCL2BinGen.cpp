@@ -1792,7 +1792,7 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
                 if (src0 == 0xff || // literal
                     // SDWA, DDP
                     (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
-                    (isGCN15 && src0 == 0xe9))
+                    (isGCN15 && (src0 == 0xe9 || src0 == 0xea)))
                 {
                     if (pos < codeWordsNum) pos++;
                 }
@@ -1803,7 +1803,7 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
                 if (src0 == 0xff || // literal
                     // SDWA, DPP
                     (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
-                    (isGCN15 && src0 == 0xe9))
+                    (isGCN15 && (src0 == 0xe9 || src0 == 0xea)))
                     if (pos < codeWordsNum) pos++;
             }
             else
@@ -1822,7 +1822,7 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
                 else if (src0 == 0xff || // literal
                     // SDWA, DPP
                     (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
-                    (isGCN15 && src0 == 0xe9))
+                    (isGCN15 && (src0 == 0xe9 || src0 == 0xea)))
                     if (pos < codeWordsNum) pos++; 
             }
         }

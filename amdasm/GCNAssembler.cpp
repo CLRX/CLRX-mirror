@@ -668,13 +668,14 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
     }
     else
     {
+        uint32_t src0 = (insnCode&0x1ff);
         // some vector instructions
         if ((insnCode & 0x7e000000U) == 0x7c000000U)
         {
             // VOPC
             if ((insnCode&0x1ff) == 0xff || // literal
                 // SDWA, DDP
-                (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)))
                 words++;
         }
         else if ((insnCode & 0x7e000000U) == 0x7e000000U)
@@ -682,7 +683,7 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
             // VOP1
             if ((insnCode&0x1ff) == 0xff || // literal
                 // SDWA, DDP
-                (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)))
                 words++;
         }
         else
@@ -695,7 +696,7 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
                 words++;  // inline 32-bit constant
             else if ((insnCode&0x1ff) == 0xff || // literal
                 // SDWA, DDP
-                (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)))
                 words++;  // literal
         }
     }

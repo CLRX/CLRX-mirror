@@ -392,7 +392,7 @@ void GCNDisassembler::analyzeBeforeDisassemble()
                 if (src0 == 0xff || // literal
                     // SDWA, DPP
                     (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
-                    (isGCN15 && src0 == 0xe9))
+                    (isGCN15 && (src0 == 0xe9 || src0 == 0xea)))
                     pos++;
             }
             else if ((insnCode & 0x7e000000U) == 0x7e000000U)
@@ -401,7 +401,7 @@ void GCNDisassembler::analyzeBeforeDisassemble()
                 if (src0 == 0xff || // literal
                     // SDWA, DPP
                     (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
-                    (isGCN15 && src0 == 0xe9))
+                    (isGCN15 && (src0 == 0xe9 || src0 == 0xea)))
                     pos++;
             }
             else
@@ -418,7 +418,7 @@ void GCNDisassembler::analyzeBeforeDisassemble()
                 else if (src0 == 0xff || // literal
                     // SDWA, DPP
                     (isGCN12 && (src0 == 0xf9 || src0 == 0xfa)) ||
-                    (isGCN15 && src0 == 0xe9))
+                    (isGCN15 && (src0 == 0xe9 || src0 == 0xea)))
                     pos++;  // literal
             }
         }
@@ -744,7 +744,7 @@ void GCNDisassembler::disassemble()
                 if (src0 == 0xff || // literal
                     // SDWA, DPP
                     (isGCN124 && (src0 == 0xf9 || src0 == 0xfa)) ||
-                    (isGCN15 && src0 == 0xe9))
+                    (isGCN15 && (src0 == 0xe9 || src0 == 0xea)))
                 {
                     if (pos < codeWordsNum)
                         insnCode2 = ULEV(codeWords[pos++]);
@@ -757,7 +757,7 @@ void GCNDisassembler::disassemble()
                 if (src0 == 0xff || // literal
                     // SDWA, DPP
                     (isGCN124 && (src0 == 0xf9 || src0 == 0xfa)) ||
-                    (isGCN15 && src0 == 0xe9))
+                    (isGCN15 && (src0 == 0xe9 || src0 == 0xea)))
                 {
                     if (pos < codeWordsNum)
                         insnCode2 = ULEV(codeWords[pos++]);
@@ -781,7 +781,7 @@ void GCNDisassembler::disassemble()
                 else if (src0 == 0xff || // literal
                     // SDWA, DDP
                     (isGCN124 && (src0 == 0xf9 || src0 == 0xfa)) ||
-                    (isGCN15 && src0 == 0xe9))
+                    (isGCN15 && (src0 == 0xe9 || src0 == 0xea)))
                 {
                     if (pos < codeWordsNum)
                         insnCode2 = ULEV(codeWords[pos++]);

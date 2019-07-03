@@ -1199,6 +1199,24 @@ static void decodeVOPDPP(FastOutputBuffer& output, GPUArchMask arch, uint32_t in
     output.forward(bufPtr-bufStart);
 }
 
+static void decodeVOPDPP8(FastOutputBuffer& output, uint32_t insnCode2, bool fiFlag)
+{
+    char* bufStart = output.reserve(50);
+    char* bufPtr = bufStart;
+    
+    putChars(bufPtr, " dpp8:[", 7);
+    for (cxuint i=0; i < 8; i++)
+    {
+        *bufPtr++ = '0' + ((insnCode2>>(8 + 3*i))&7);
+        *bufPtr++ = (i!=7) ? ',' : ']';
+    }
+    
+    if (fiFlag)
+        putChars(bufPtr, " fi", 3);
+    
+    output.forward(bufPtr-bufStart);
+}
+
 void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
          RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
@@ -1206,6 +1224,7 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
 {
     FastOutputBuffer& output = dasm.output;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4_5)!=0);
+    const bool isGCN15 = ((arch&ARCH_GCN_1_5)!=0);
     char* bufStart = output.reserve(120);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
@@ -1231,6 +1250,8 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
             extraFlags = decodeVOPSDWAFlags(literal, arch);
         else if (src0Field == 0xfa)
             extraFlags = decodeVOPDPPFlags(literal);
+        else if (isGCN15 && (src0Field == 0xe9 || src0Field == 0xea))
+            extraFlags.src0 = uint16_t((literal&0xff)+256);
         else
             extraFlags.src0 = src0Field;
     }
@@ -1282,6 +1303,13 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
             decodeVOPSDWA(output, arch, literal, true, true, true);
         else if (src0Field == 0xfa)
             decodeVOPDPP(output, arch, literal, true, true);
+        else if (isGCN15)
+        {
+            if (src0Field == 0xe9)
+                decodeVOPDPP8(output, literal, false);
+            else if (src0Field == 0xea)
+                decodeVOPDPP8(output, literal, true);
+        }
     }
 }
 
@@ -1292,6 +1320,7 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
 {
     FastOutputBuffer& output = dasm.output;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4_5)!=0);
+    const bool isGCN15 = ((arch&ARCH_GCN_1_5)!=0);
     char* bufStart = output.reserve(130);
     char* bufPtr = bufStart;
     
@@ -1306,6 +1335,8 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
             extraFlags = decodeVOPSDWAFlags(literal, arch);
         else if (src0Field == 0xfa)
             extraFlags = decodeVOPDPPFlags(literal);
+        else if (isGCN15 && (src0Field == 0xe9 || src0Field == 0xea))
+            extraFlags.src0 = uint16_t((literal&0xff)+256);
         else
             extraFlags.src0 = src0Field;
     }
@@ -1369,6 +1400,13 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
             decodeVOPSDWA(output, arch, literal, argsUsed, false);
         else if (src0Field == 0xfa)
             decodeVOPDPP(output, arch, literal, argsUsed, false);
+        else if (isGCN15)
+        {
+            if (src0Field == 0xe9)
+                decodeVOPDPP8(output, literal, false);
+            else if (src0Field == 0xea)
+                decodeVOPDPP8(output, literal, true);
+        }
     }
 }
 
@@ -1379,6 +1417,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
 {
     FastOutputBuffer& output = dasm.output;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4_5)!=0);
+    const bool isGCN15 = ((arch&ARCH_GCN_1_5)!=0);
     char* bufStart = output.reserve(150);
     char* bufPtr = bufStart;
     
@@ -1396,6 +1435,8 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
             extraFlags = decodeVOPSDWAFlags(literal, arch);
         else if (src0Field == 0xfa)
             extraFlags = decodeVOPDPPFlags(literal);
+        else if (isGCN15 && (src0Field == 0xe9 || src0Field == 0xea))
+            extraFlags.src0 = uint16_t((literal&0xff)+256);
         else
             extraFlags.src0 = src0Field;
     }
@@ -1485,6 +1526,13 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
             decodeVOPSDWA(output, arch, literal, true, true);
         else if (src0Field == 0xfa)
             decodeVOPDPP(output, arch, literal, true, true);
+        else if (isGCN15)
+        {
+            if (src0Field == 0xe9)
+                decodeVOPDPP8(output, literal, false);
+            else if (src0Field == 0xea)
+                decodeVOPDPP8(output, literal, true);
+        }
     }
 }
 
