@@ -1980,8 +1980,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
                 "v71, v169, v39 offset:52583\n" },
     { 0xd844cd67U, 0x0027a947U, true, "        ds_cmpst_f32    "
                 "v71, v169, v39 offset:52583\n" },
-    { 0xd848cd67U, 0x0000a947U, true, "        ds_min_f32      v71, v169 offset:52583\n" }, 
-    { 0xd84ccd67U, 0x0000a947U, true, "        ds_max_f32      v71, v169 offset:52583\n" }, 
+    { 0xd848cd67U, 0x0000a947U, true, "        ds_min_f32      v71, v169 offset:52583\n" },
+    { 0xd84ccd67U, 0x0000a947U, true, "        ds_max_f32      v71, v169 offset:52583\n" },
     { 0xd850cd67U, 0x8b27a947U, true, "        DS_ill_20       "
                 "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
     { 0xd854cd67U, 0x8b27a947U, true, "        DS_ill_21       "
