@@ -2475,5 +2475,20 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xcc204037U, 0x1f974d4fU, true, "        v_fma_mix_f32   v55, v79, v166, v229\n" },
     { 0xcc214037U, 0x1f974d4fU, true, "        v_fma_mixlo_f16 v55, v79, v166, v229\n" },
     { 0xcc224037U, 0x1f974d4fU, true, "        v_fma_mixhi_f16 v55, v79, v166, v229\n" },
+    /* VINTRP */
+    { 0xc9746bd3U, 0, false, "        v_interp_p1_f32 v93, v211, attr26.w\n" },
+    { 0xc9746ad3U, 0, false, "        v_interp_p1_f32 v93, v211, attr26.z\n" },
+    { 0xc97469d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr26.y\n" },
+    { 0xc97468d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr26.x\n" },
+    { 0xc97400d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr0.x\n" },
+    { 0xc97428d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr10.x\n" },
+    { 0xc9743cd3U, 0, false, "        v_interp_p1_f32 v93, v211, attr15.x\n" },
+    { 0xc9756bd3U, 0, false, "        v_interp_p2_f32 v93, v211, attr26.w\n" },
+    { 0xc9766b00U, 0, false, "        v_interp_mov_f32 v93, p10, attr26.w\n" },
+    { 0xc9766b01U, 0, false, "        v_interp_mov_f32 v93, p20, attr26.w\n" },
+    { 0xc9766b02U, 0, false, "        v_interp_mov_f32 v93, p0, attr26.w\n" },
+    { 0xc9766bd3U, 0, false, "        v_interp_mov_f32 v93, invalid_211, attr26.w\n" },
+    { 0xc974f4d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr61.x\n" },
+    { 0xc9776bd3U, 0, false, "        VINTRP_ill_3    v93, v211, attr26.w\n" },
     { 0, 0, false, nullptr }
 };
