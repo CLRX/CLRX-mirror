@@ -566,7 +566,7 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcode15Table[GCNENC_MAXVAL+2] =
     { 18, 7 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
     { 0, 0 }, /* GCNENC_EXP, opcode = none */
     { 18, 7 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
-    { 16, 6 } /* GCNENC_VOP3P, opcode = (10bit)<<16 */
+    { 16, 10 } /* GCNENC_VOP3P, opcode = (10bit)<<16 */
 };
 
 /* main routine */
