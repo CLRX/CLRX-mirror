@@ -132,11 +132,11 @@ static const GCNEncodingSpace gcnInstrTableByCodeSpaces[] =
     { 0x1e62+0x0b6c, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
     { 0x1e62+0x0bec, 0x1 }, /* GCNENC_EXP, opcode = none */
     { 0x1e62+0x0bed, 0x80 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
-    { 0x1e62+0x0c6d, 0x40 }, /* GCNENC_VOP3P */
+    { 0x1e62+0x0c6d, 0x80 }, /* GCNENC_VOP3P */
 };
 
 // total instruction table length
-static const size_t gcnInstrTableByCodeLength = 0x1e62 + 0x0cad;
+static const size_t gcnInstrTableByCodeLength = 0x1e62 + 0x0ced;
 
 enum: cxuint {
     GCN_GFX10_ENCSPACE_IDX = 44
@@ -566,7 +566,7 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcode15Table[GCNENC_MAXVAL+2] =
     { 18, 7 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
     { 0, 0 }, /* GCNENC_EXP, opcode = none */
     { 18, 7 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
-    { 16, 10 } /* GCNENC_VOP3P, opcode = (10bit)<<16 */
+    { 16, 7 } /* GCNENC_VOP3P, opcode = (7bit)<<16 */
 };
 
 /* main routine */
@@ -841,6 +841,13 @@ void GCNDisassembler::disassemble()
                 char* buf = output.reserve(8);
                 output.forward(addSpacesOld(buf, 8));
             }
+        }
+        
+        if (isGCN15 && gcnEncoding == GCNENC_VOP3P && (insnCode & 0x3000000U)!=0)
+        {
+            // unknown encoding
+            gcnEncoding = GCNENC_NONE;
+            pos--;
         }
         
         if (gcnEncoding == GCNENC_NONE)

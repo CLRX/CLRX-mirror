@@ -2475,6 +2475,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xcc204037U, 0x1f974d4fU, true, "        v_fma_mix_f32   v55, v79, v166, v229\n" },
     { 0xcc214037U, 0x1f974d4fU, true, "        v_fma_mixlo_f16 v55, v79, v166, v229\n" },
     { 0xcc224037U, 0x1f974d4fU, true, "        v_fma_mixhi_f16 v55, v79, v166, v229\n" },
+    { 0xcd024037U, 0x18034d4fU, true, "        .int 0xcd024037\n"
+            "        v_mul_hi_u32_u24 v1, v79, v166\n" }, // wrong encoding
     /* VINTRP */
     { 0xc9746bd3U, 0, false, "        v_interp_p1_f32 v93, v211, attr26.w\n" },
     { 0xc9746ad3U, 0, false, "        v_interp_p1_f32 v93, v211, attr26.z\n" },
