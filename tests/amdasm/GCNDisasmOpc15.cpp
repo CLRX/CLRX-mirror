@@ -2278,5 +2278,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xd7650037U, 0x00034d4fU, true, "        v_mbcnt_lo_u32_b32 v55, v79, v166\n" },
     { 0xd7660037U, 0x00034d4fU, true, "        v_mbcnt_hi_u32_b32 v55, v79, v166\n" },
     { 0xd7670037U, 0x07974d4fU, true, "        VOP3A_ill_871   v55, v79, v166, v229\n" },
+    { 0xd7680037U, 0x00034d4fU, true, "        v_cvt_pknorm_i16_f32 v55, v79, v166\n" },
+    { 0xd7690037U, 0x00034d4fU, true, "        v_cvt_pknorm_u16_f32 v55, v79, v166\n" },
+    { 0xd76a0037U, 0x00034d4fU, true, "        v_cvt_pk_u16_u32 v55, v79, v166\n" },
+    { 0xd76b0037U, 0x00034d4fU, true, "        v_cvt_pk_i16_i32 v55, v79, v166\n" },
     { 0, 0, false, nullptr }
 };

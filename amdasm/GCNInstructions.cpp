@@ -2537,7 +2537,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "v_cvt_pknorm_i16_f32", GCNENC_VOP3A,  GCN_SRC2_NONE,           872,  ARCH_GCN_1_5 },
     { "v_cvt_pknorm_u16_f32", GCNENC_VOP3A,  GCN_SRC2_NONE,           873,  ARCH_GCN_1_5 },
     { "v_cvt_pk_u16_u32",    GCNENC_VOP3A,  GCN_SRC2_NONE,            874,  ARCH_GCN_1_5 },
-    { "v_cvt_pk_i16_u32",    GCNENC_VOP3A,  GCN_SRC2_NONE,            875,  ARCH_GCN_1_5 },
+    { "v_cvt_pk_i16_i32",    GCNENC_VOP3A,  GCN_SRC2_NONE,            875,  ARCH_GCN_1_5 },
     { "v_add3_u32",          GCNENC_VOP3A,  GCN_STDMODE,              877,  ARCH_GCN_1_5 },
     { "v_lshl_or_b32",       GCNENC_VOP3A,  GCN_STDMODE,              879,  ARCH_GCN_1_5 },
     { "v_and_or_b32",        GCNENC_VOP3A,  GCN_STDMODE,              881,  ARCH_GCN_1_5 },
