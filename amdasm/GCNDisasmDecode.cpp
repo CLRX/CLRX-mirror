@@ -1585,6 +1585,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
         negFlags = (insnCode2>>29)&7;
     
     const bool is128Ops = (gcnInsn.mode&0x7000)==GCN_VOP3_DS2_128;
+    const bool vop3VOPC = (vop3Mode != GCN_VOP3_VOP3P && opcode < 256);
     
     if (mode1 != GCN_VOP_ARG_NONE)
     {
@@ -1593,7 +1594,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
         
         if ((gcnInsn.mode & GCN_VOP3_NODST)==0)
         {
-            if (opcode < 256 || (gcnInsn.mode&GCN_VOP3_DST_SGPR)!=0)
+            if (vop3VOPC || (gcnInsn.mode&GCN_VOP3_DST_SGPR)!=0)
                 /* if compares (print DST as SDST) */
                 decodeGCNOperandNoLit(dasm, vdst, ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)?2:1,
                                 bufPtr, arch);
@@ -1687,7 +1688,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             if (absFlags & 2)
                 *bufPtr++ = ')';
             /* GCN_DST_VCC - only sdst is used, no vsrc2 */
-            if (mode1 != GCN_SRC2_NONE && mode1 != GCN_DST_VCC && opcode >= 256)
+            if (mode1 != GCN_SRC2_NONE && mode1 != GCN_DST_VCC && !vop3VOPC)
             {
                 putCommaSpace(bufPtr);
                 
@@ -1906,7 +1907,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
         if (gcnInsn.encoding != GCNENC_VOP3B)
         {
             /* for VOPC */
-            if (opcode < 256 && vdst == 106 /* vcc */ && vsrc1 >= 256 && vsrc2 == 0)
+            if (vop3VOPC && vdst == 106 /* vcc */ && vsrc1 >= 256 && vsrc2 == 0)
                 isVOP1Word = true;
             /* for VOP1 */
             else if (vop3Mode == GCN_VOP3_VOP1 && vsrc1 == 0 && vsrc2 == 0)
