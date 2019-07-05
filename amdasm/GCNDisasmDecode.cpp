@@ -1976,6 +1976,7 @@ void GCNDisasmUtils::decodeDSEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(105);
     char* bufPtr = bufStart;
+    // isGCN12 - true if GCN1.2/GCN1.4, otherwise false (for GCN1.0/1.1/1.5)
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
     addSpaces(bufPtr, spacesToAdd);
     bool vdstUsed = false;

@@ -2492,5 +2492,46 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xc9766bd3U, 0, false, "        v_interp_mov_f32 v93, invalid_211, attr26.w\n" },
     { 0xc974f4d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr61.x\n" },
     { 0xc9776bd3U, 0, false, "        VINTRP_ill_3    v93, v211, attr26.w\n" },
+    /* DS encoding */
+    { 0xd800cd67U, 0x8b27a947U, true, "        ds_add_u32      "
+                "v71, v169 offset:52583 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd8000000U, 0x8b27a947U, true, "        ds_add_u32      "
+                "v71, v169 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd800cd67U, 0x0000a947U, true, "        ds_add_u32      v71, v169 offset:52583\n" },
+    { 0xd802cd67U, 0x8b27a947U, true, "        ds_add_u32      "
+                "v71, v169 offset:52583 gds vdata1=0x27 vdst=0x8b\n" },
+    { 0xd802cd67U, 0x0000a947U, true, "        ds_add_u32      "
+                "v71, v169 offset:52583 gds\n" },
+    { 0xd804cd67U, 0x0000a947U, true, "        ds_sub_u32      v71, v169 offset:52583\n" },
+    { 0xd808cd67U, 0x0000a947U, true, "        ds_rsub_u32     v71, v169 offset:52583\n" },
+    { 0xd80ccd67U, 0x0000a947U, true, "        ds_inc_u32      v71, v169 offset:52583\n" },
+    { 0xd810cd67U, 0x0000a947U, true, "        ds_dec_u32      v71, v169 offset:52583\n" },
+    { 0xd814cd67U, 0x0000a947U, true, "        ds_min_i32      v71, v169 offset:52583\n" },
+    { 0xd818cd67U, 0x0000a947U, true, "        ds_max_i32      v71, v169 offset:52583\n" },
+    { 0xd81ccd67U, 0x0000a947U, true, "        ds_min_u32      v71, v169 offset:52583\n" },
+    { 0xd820cd67U, 0x0000a947U, true, "        ds_max_u32      v71, v169 offset:52583\n" },
+    { 0xd824cd67U, 0x0000a947U, true, "        ds_and_b32      v71, v169 offset:52583\n" },
+    { 0xd828cd67U, 0x0000a947U, true, "        ds_or_b32       v71, v169 offset:52583\n" },
+    { 0xd82ccd67U, 0x0000a947U, true, "        ds_xor_b32      v71, v169 offset:52583\n" },
+    { 0xd830cd67U, 0x0027a947U, true, "        ds_mskor_b32    "
+                "v71, v169, v39 offset:52583\n" },
+    { 0xd830cd67U, 0x8b27a947U, true, "        ds_mskor_b32    "
+                "v71, v169, v39 offset:52583 vdst=0x8b\n" },
+    { 0xd834cd67U, 0x0000a947U, true, "        ds_write_b32    v71, v169 offset:52583\n" },
+    { 0xd838cd67U, 0x0027a947U, true, "        ds_write2_b32   "
+                "v71, v169, v39 offset0:103 offset1:205\n" },
+    { 0xd8380067U, 0x0027a947U, true, "        ds_write2_b32   "
+                "v71, v169, v39 offset0:103\n" },
+    { 0xd8381100U, 0x0027a947U, true, "        ds_write2_b32   "
+                "v71, v169, v39 offset1:17\n" },
+    { 0xd8380000U, 0x0027a947U, true, "        ds_write2_b32   v71, v169, v39\n" },
+    { 0xd83ccd67U, 0x0027a947U, true, "        ds_write2st64_b32 "
+                "v71, v169, v39 offset0:103 offset1:205\n" },
+    { 0xd840cd67U, 0x0027a947U, true, "        ds_cmpst_b32    "
+                "v71, v169, v39 offset:52583\n" },
+    { 0xd844cd67U, 0x0027a947U, true, "        ds_cmpst_f32    "
+                "v71, v169, v39 offset:52583\n" },
+    { 0xd848cd67U, 0x0000a947U, true, "        ds_min_f32      v71, v169 offset:52583\n" }, 
+    { 0xd84ccd67U, 0x0000a947U, true, "        ds_max_f32      v71, v169 offset:52583\n" }, 
     { 0, 0, false, nullptr }
 };
