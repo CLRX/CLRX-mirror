@@ -3045,5 +3045,73 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
                 "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe0f4325bU, 0x23343d12U, true, "        buffer_atomic_dec "
                 "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe0f8325bU, 0x23343d12U, true, "        MUBUF_ill_62    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe0fc325bU, 0x23343d12U, true, "        MUBUF_ill_63    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe100325bU, 0x23343d12U, true, "        MUBUF_ill_64    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe104325bU, 0x23343d12U, true, "        MUBUF_ill_65    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe108325bU, 0x23343d12U, true, "        MUBUF_ill_66    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe10c325bU, 0x23343d12U, true, "        MUBUF_ill_67    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe110325bU, 0x23343d12U, true, "        MUBUF_ill_68    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe114325bU, 0x23343d12U, true, "        MUBUF_ill_69    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe140325bU, 0x23343d12U, true, "        buffer_atomic_swap_x2 "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe144325bU, 0x23343d12U, true, "        buffer_atomic_cmpswap_x2 "
+                "v[61:64], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe148325bU, 0x23343d12U, true, "        buffer_atomic_add_x2 "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe14c325bU, 0x23343d12U, true, "        buffer_atomic_sub_x2 "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe150325bU, 0x23343d12U, true, "        MUBUF_ill_84    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe154325bU, 0x23343d12U, true, "        buffer_atomic_smin_x2 "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe158325bU, 0x23343d12U, true, "        buffer_atomic_umin_x2 "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe15c325bU, 0x23343d12U, true, "        buffer_atomic_smax_x2 "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe160325bU, 0x23343d12U, true, "        buffer_atomic_umax_x2 "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe164325bU, 0x23343d12U, true, "        buffer_atomic_and_x2 "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe168325bU, 0x23343d12U, true, "        buffer_atomic_or_x2 "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe16c325bU, 0x23343d12U, true, "        buffer_atomic_xor_x2 "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe170325bU, 0x23343d12U, true, "        buffer_atomic_inc_x2 "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe174325bU, 0x23343d12U, true, "        buffer_atomic_dec_x2 "
+                "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe178325bU, 0x23343d12U, true, "        MUBUF_ill_94    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe17c325bU, 0x23343d12U, true, "        MUBUF_ill_95    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe180325bU, 0x23343d12U, true, "        MUBUF_ill_96    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe184325bU, 0x23343d12U, true, "        MUBUF_ill_97    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe188325bU, 0x23343d12U, true, "        MUBUF_ill_98    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe18c325bU, 0x23343d12U, true, "        MUBUF_ill_99    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe190325bU, 0x23343d12U, true, "        MUBUF_ill_100   "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe194325bU, 0x23343d12U, true, "        MUBUF_ill_101   "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe198325bU, 0x23343d12U, true, "        MUBUF_ill_102   "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe19c325bU, 0x23343d12U, true, "        MUBUF_ill_103   "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe1c5325bU, 0x00200000U, true, "        buffer_gl0_inv  "
+        "offen idxen offset:603 lds\n" },
+    { 0xe1c9325bU, 0x00200000U, true, "        buffer_gl1_inv  "
+        "offen idxen offset:603 lds\n" },
     { 0, 0, false, nullptr }
 };
