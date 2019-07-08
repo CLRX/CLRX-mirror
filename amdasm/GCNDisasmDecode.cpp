@@ -2111,8 +2111,9 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(170);
     char* bufPtr = bufStart;
-    const bool isGCN12 = ((arch&ARCH_GCN_1_2_4)!=0);
-    const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
+    const bool isGCN12 = ((arch&ARCH_GCN_1_2_4_5)!=0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4_5)!=0);
+    const bool isGCN15 = ((arch&ARCH_GCN_1_5)!=0);
     const cxuint vaddr = insnCode2&0xff;
     const cxuint vdata = (insnCode2>>8)&0xff;
     const cxuint srsrc = (insnCode2>>16)&0x1f;
@@ -2166,12 +2167,15 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
         putChars(bufPtr, " glc", 4);
     
     // print SLD if supplied
-    if (((!isGCN12 || gcnInsn.encoding==GCNENC_MTBUF) && (insnCode2 & 0x400000U)!=0) ||
+    if (((!isGCN12 || isGCN15 ||
+            gcnInsn.encoding==GCNENC_MTBUF) && (insnCode2 & 0x400000U)!=0) ||
         ((isGCN12 && gcnInsn.encoding!=GCNENC_MTBUF) && (insnCode & 0x20000)!=0))
         putChars(bufPtr, " slc", 4);
     
     if (!isGCN12 && (insnCode & 0x8000U)!=0)
         putChars(bufPtr, " addr64", 7);
+    if (isGCN15 && (insnCode & 0x8000U)!=0)
+        putChars(bufPtr, " dlc", 4);
     if (gcnInsn.encoding!=GCNENC_MTBUF && (insnCode & 0x10000U) != 0)
         putChars(bufPtr, " lds", 4);
     if (insnCode2 & 0x800000U)

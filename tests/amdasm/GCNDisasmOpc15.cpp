@@ -2866,5 +2866,14 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
                 "v[155:157], v71 offset:52583 vdata0=0xa9 vdata1=0x56\n" },
     { 0xdbfccd67U, 0x9b56a947U, true, "        ds_read_b128    "
                 "v[155:158], v71 offset:52583 vdata0=0xa9 vdata1=0x56\n" },
+    /* MUBUF encoding */
+    { 0xe001f25bU, 0x23f43d12U, true, "        buffer_load_format_x "
+    "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 glc slc dlc lds tfe\n" },
+    { 0xe001f25bU, 0x23b43d12U, true, "        buffer_load_format_x "
+    "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 glc dlc lds tfe\n" },
+    { 0xe001f25bU, 0x23743d12U, true, "        buffer_load_format_x "
+    "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc dlc lds\n" },
+    { 0xe001f25bU, 0x23343d12U, true, "        buffer_load_format_x "
+    "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc dlc lds\n" },
     { 0, 0, false, nullptr }
 };
