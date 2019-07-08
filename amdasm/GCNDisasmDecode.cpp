@@ -2335,6 +2335,18 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     output.forward(bufPtr-bufStart);
 }
 
+struct GFX10MIMGDimEntry
+{
+    const char *name;
+    cxuint dwordsNum;
+};
+
+static const GFX10MIMGDimEntry gfx10MImgDimEntryTbl[8] =
+{
+    { "1d", 1 }, { "2d", 2 }, { "3d", 3 }, { "cube", 3 }, { "1d_array", 2 },
+    { "2d_array", 3 }, { "2d_msaa", 3 }, { "2d_msaa_array", 4 }
+};
+
 void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint spacesToAdd,
         GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
         uint32_t insnCode2, uint32_t insnCode3, uint32_t insnCode4, uint32_t insnCode5)
@@ -2344,6 +2356,7 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     
+    const cxuint dim = (insnCode>>3)&7;
     const cxuint dmask = (insnCode>>8)&15;
     cxuint dregsNum = 4;
     // determine register number for VDATA
@@ -2355,12 +2368,35 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
     if (insnCode & 0x10000)
         dregsNum++; // tfe
     
+    const cxuint extraCodes = 2 + ((insnCode>>2)&3);
     // print VDATA
     decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     putCommaSpace(bufPtr);
     // print VADDR
-    decodeGCNVRegOperand(insnCode2&0xff,
-                 std::max(GCNInsnMode(4), (gcnInsn.mode&GCN_MIMG_VA_MASK)+1), bufPtr);
+    if (extraCodes==0)
+        decodeGCNVRegOperand(insnCode2&0xff,
+                    std::max(GCNInsnMode(4), (gcnInsn.mode&GCN_MIMG_VA_MASK)+1), bufPtr);
+    else
+    {
+        // list of VADDR VGPRs
+        const cxuint daddrsNum = (extraCodes-2)*4 + 1;
+        *bufPtr++ = '[';
+        decodeGCNVRegOperand(insnCode2&0xff, 1, bufPtr);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+        uint32_t vaddrDwords[3] = { insnCode3, insnCode4, insnCode5 };
+        for (cxuint i = 1; i < daddrsNum && i < 13; i++)
+        {
+            decodeGCNVRegOperand((vaddrDwords[(i-1)>>3]>>(((i-1)&3)*8))&0xff, 1, bufPtr);
+            if (i+1 < daddrsNum)
+            {
+                *bufPtr++ = ',';
+                *bufPtr++ = ' ';
+            }
+            else
+                *bufPtr++ = ']';
+        }
+    }
     putCommaSpace(bufPtr);
     // print SRSRC
     decodeGCNOperandNoLit(dasm, ((insnCode2>>14)&0x7c),
@@ -2373,6 +2409,40 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
         // print SSAMP if supplied
         decodeGCNOperandNoLit(dasm, ssamp<<2, 4, bufPtr, arch);
     }
+    
+    if (dmask != 1)
+    {
+        putChars(bufPtr, " dmask:", 7);
+        // print value dmask (0-15)
+        if (dmask >= 10)
+        {
+            *bufPtr++ = '1';
+            *bufPtr++ = '0' + dmask - 10;
+        }
+        else
+            *bufPtr++ = '0' + dmask;
+    }
+    
+    {
+        putChars(bufPtr, " dim:", 5);
+        const char *dimName = gfx10MImgDimEntryTbl[dim].name;
+        putChars(bufPtr, dimName, ::strlen(dimName));
+    }
+    
+    if (insnCode & 0x1000)
+        putChars(bufPtr, " unorm", 6);
+    if (insnCode & 0x2000)
+        putChars(bufPtr, " glc", 4);
+    if (insnCode & 0x2000000)
+        putChars(bufPtr, " slc", 4);
+    if (insnCode & 0x8000)
+        putChars(bufPtr, " r128", 5);
+    if (insnCode & 0x10000)
+        putChars(bufPtr, " tfe", 4);
+    if (insnCode & 0x20000)
+        putChars(bufPtr, " lwe", 4);
+    if (insnCode2 & (1U<<31))
+        putChars(bufPtr, " d16", 4);
     
     // print value, if some are not used, but values is not default
     if ((gcnInsn.mode & GCN_MIMG_SAMPLE) == 0 && ssamp != 0)
