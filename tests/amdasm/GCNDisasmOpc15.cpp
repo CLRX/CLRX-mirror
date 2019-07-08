@@ -2875,5 +2875,50 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc dlc lds\n" },
     { 0xe001f25bU, 0x23343d12U, true, "        buffer_load_format_x "
     "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc dlc lds\n" },
+    /* zero reserved bit */
+    { 0xe001f25bU, 0x23d43d12U, true, "        buffer_load_format_x "
+    "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 glc slc dlc lds tfe\n" },
+    /* flags */
+    { 0xe001b25bU, 0x23f43d12U, true, "        buffer_load_format_x " /* no glc */
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 slc dlc lds tfe\n" },
+    { 0xe001b25bU, 0x23b43d12U, true, "        buffer_load_format_x " /* no glc */
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 dlc lds tfe\n" },
+    { 0xe000f25bU, 0x23f43d12U, true, "        buffer_load_format_x " /* no lds */
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 glc slc dlc tfe\n" },
+    { 0xe001f25bU, 0x23743d12U, true, "        buffer_load_format_x " /* no tfe */
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc dlc lds\n" },
+    { 0xe001f25bU, 0x23b43d12U, true, "        buffer_load_format_x " /* no slc */
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 glc dlc lds tfe\n" },
+    { 0xe000025bU, 0x23343d12U, true, "        buffer_load_format_x " /* no flags */
+        "v61, v18, s[80:83], s35 offset:603\n" },
+    /* fields */
+    { 0xe001c25bU, 0xf0f43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[80:83], 0.5 offset:603 glc slc dlc lds tfe\n" },
+    { 0xe001c25bU, 0x23fd3d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, ttmp[8:11], s35 offset:603 glc slc dlc lds tfe\n" },
+    { 0xe001c25bU, 0x23e93d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[36:39], s35 offset:603 glc slc dlc lds tfe\n" },
+    { 0xe001f000U, 0x23f43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen glc slc dlc lds tfe\n" },
+    /* vaddr sizing */
+    { 0xe003725bU, 0x23b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds tfe\n" },
+    { 0xe003425bU, 0x23b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[80:83], s35 offset:603 glc slc lds tfe\n" },
+    { 0xe003625bU, 0x23b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[80:83], s35 idxen offset:603 glc slc lds tfe\n" },
+    { 0xe003525bU, 0x23b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[80:83], s35 offen offset:603 glc slc lds tfe\n" },
+    /* flags */
+    { 0xe003c25bU, 0xf0b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[80:83], 0.5 offset:603 glc slc dlc lds tfe\n" },
+    { 0xe001c25bU, 0xf0b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[80:83], 0.5 offset:603 glc dlc lds tfe\n" },
+    { 0xe003c25bU, 0x23bd3d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, ttmp[8:11], s35 offset:603 glc slc dlc lds tfe\n" },
+    { 0xe003c25bU, 0x23a93d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[36:39], s35 offset:603 glc slc dlc lds tfe\n" },
+    { 0xe003f000U, 0x23b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen glc slc dlc lds tfe\n" },
     { 0, 0, false, nullptr }
 };
