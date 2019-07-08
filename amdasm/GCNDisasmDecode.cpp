@@ -2183,27 +2183,40 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
     // routine to decode MTBUF format (include default values)
     if (gcnInsn.encoding==GCNENC_MTBUF)
     {
-        const cxuint dfmt = (insnCode>>19)&15;
-        const cxuint nfmt = (insnCode>>23)&7;
-        if (dfmt!=1 || nfmt!=0)
+        if (!isGCN15)
         {
-            // in shortened form: format:[DFMT, NFMT]
-            putChars(bufPtr, " format:[", 9);
-            if (dfmt!=1)
+            const cxuint dfmt = (insnCode>>19)&15;
+            const cxuint nfmt = (insnCode>>23)&7;
+            if (dfmt!=1 || nfmt!=0)
             {
-                // print DATA_FORMAT if not default
-                const char* dfmtStr = mtbufDFMTTable[dfmt];
-                putChars(bufPtr, dfmtStr, ::strlen(dfmtStr));
+                // in shortened form: format:[DFMT, NFMT]
+                putChars(bufPtr, " format:[", 9);
+                if (dfmt!=1)
+                {
+                    // print DATA_FORMAT if not default
+                    const char* dfmtStr = mtbufDFMTTable[dfmt];
+                    putChars(bufPtr, dfmtStr, ::strlen(dfmtStr));
+                }
+                if (dfmt!=1 && nfmt!=0)
+                    *bufPtr++ = ',';
+                if (nfmt!=0)
+                {
+                    // print NUMBER_FORMAT if not default
+                    const char* nfmtStr = mtbufNFMTTable[nfmt];
+                    putChars(bufPtr, nfmtStr, ::strlen(nfmtStr));
+                }
+                *bufPtr++ = ']';
             }
-            if (dfmt!=1 && nfmt!=0)
-                *bufPtr++ = ',';
-            if (nfmt!=0)
+        }
+        else
+        {
+            // GFX10
+            const cxuint format = (insnCode>>19)&127;
+            if (format!=0)
             {
-                // print NUMBER_FORMAT if not default
-                const char* nfmtStr = mtbufNFMTTable[nfmt];
-                putChars(bufPtr, nfmtStr, ::strlen(nfmtStr));
+                putChars(bufPtr, " format:", 8);
+                putByteToBuf(format, bufPtr);
             }
-            *bufPtr++ = ']';
         }
     }
     // print value, if some are not used, but values is not default

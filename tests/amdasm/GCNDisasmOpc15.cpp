@@ -3113,5 +3113,37 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
         "offen idxen offset:603 lds\n" },
     { 0xe1c9325bU, 0x00200000U, true, "        buffer_gl1_inv  "
         "offen idxen offset:603 lds\n" },
+    /* MTBUF encoding */
+    { 0xea8877d4U, 0x23d43d12U, true, "        tbuffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:81\n" },
+    /* formats */
+    { 0xe80077d4U, 0x23d43d12U, true, "        tbuffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe\n" },
+    { 0xe80877d4U, 0x23d43d12U, true, "        tbuffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:1\n" },
+    { 0xe81077d4U, 0x23d43d12U, true, "        tbuffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:2\n" },
+    { 0xeb1077d4U, 0x23d43d12U, true, "        tbuffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:98\n" },
+    { 0xeab877d4U, 0x23d43d12U, true, "        tbuffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:87\n" },
+    { 0xe93077d4U, 0x23d43d12U, true, "        tbuffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
+        "format:38\n" },
+    /* flags */
+    { 0xea8877d4U, 0x23943d12U, true, "        tbuffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc tfe "
+        "format:81\n" },
+    { 0xea8877d4U, 0x23143d12U, true, "        tbuffer_load_format_x "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:2004 glc format:81\n" },
+    { 0xea88f7d4U, 0x23143d12U, true, "        tbuffer_load_format_x "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:2004 glc dlc format:81\n" },
+    { 0xea88b7d4U, 0x23143d12U, true, "        tbuffer_load_format_x "
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:2004 dlc format:81\n" },
     { 0, 0, false, nullptr }
 };
