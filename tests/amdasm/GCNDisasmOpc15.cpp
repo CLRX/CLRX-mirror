@@ -2674,5 +2674,95 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
                 "v71, v[169:170] offset:52583\n" },
     { 0xd94ccd67U, 0x0000a947U, true, "        ds_max_f64      "
                 "v71, v[169:170] offset:52583\n" },
+    { 0xd950cd67U, 0x8b27a947U, true, "        DS_ill_84       "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd954cd67U, 0x9b00a947U, true, "        ds_add_rtn_f32  "
+                "v155, v71, v169 offset:52583\n" },
+    { 0xd958cd67U, 0x8b27a947U, true, "        DS_ill_86       "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd95ccd67U, 0x8b27a947U, true, "        DS_ill_87       "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd960cd67U, 0x8b27a947U, true, "        DS_ill_88       "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd964cd67U, 0x8b27a947U, true, "        DS_ill_89       "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd980cd67U, 0x8b00a947U, true, "        ds_add_rtn_u64  "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd980cd67U, 0x8b11a947U, true, "        ds_add_rtn_u64  "
+                "v[139:140], v71, v[169:170] offset:52583 vdata1=0x11\n" },
+    { 0xd984cd67U, 0x8b00a947U, true, "        ds_sub_rtn_u64  "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd988cd67U, 0x8b00a947U, true, "        ds_rsub_rtn_u64 "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd98ccd67U, 0x8b00a947U, true, "        ds_inc_rtn_u64  "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd990cd67U, 0x8b00a947U, true, "        ds_dec_rtn_u64  "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd994cd67U, 0x8b00a947U, true, "        ds_min_rtn_i64  "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd998cd67U, 0x8b00a947U, true, "        ds_max_rtn_i64  "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd99ccd67U, 0x8b00a947U, true, "        ds_min_rtn_u64  "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd9a0cd67U, 0x8b00a947U, true, "        ds_max_rtn_u64  "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd9a4cd67U, 0x8b00a947U, true, "        ds_and_rtn_b64  "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd9a8cd67U, 0x8b00a947U, true, "        ds_or_rtn_b64   "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd9accd67U, 0x8b00a947U, true, "        ds_xor_rtn_b64  "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd9b0cd67U, 0x8b56a947U, true, "        ds_mskor_rtn_b64 "
+                "v[139:140], v71, v[169:170], v[86:87] offset:52583\n" },
+    { 0xd9b4cd67U, 0x8b00a947U, true, "        ds_wrxchg_rtn_b64 "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd9b8cd67U, 0x8b56a947U, true, "        ds_wrxchg2_rtn_b64 "
+                "v[139:142], v71, v[169:170], v[86:87] offset0:103 offset1:205\n" },
+    { 0xd9bccd67U, 0x8b56a947U, true, "        ds_wrxchg2st64_rtn_b64 "
+                "v[139:142], v71, v[169:170], v[86:87] offset0:103 offset1:205\n" },
+    { 0xd9c0cd67U, 0x8b56a947U, true, "        ds_cmpst_rtn_b64 "
+                "v[139:140], v71, v[169:170], v[86:87] offset:52583\n" },
+    { 0xd9c4cd67U, 0x8b56a947U, true, "        ds_cmpst_rtn_f64 "
+                "v[139:140], v71, v[169:170], v[86:87] offset:52583\n" },
+    { 0xd9c8cd67U, 0x8b00a947U, true, "        ds_min_rtn_f64  "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd9cccd67U, 0x8b00a947U, true, "        ds_max_rtn_f64  "
+                "v[139:140], v71, v[169:170] offset:52583\n" },
+    { 0xd9d0cd67U, 0x8b27a947U, true, "        DS_ill_116      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd9d4cd67U, 0x8b27a947U, true, "        DS_ill_117      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd9d8cd67U, 0x8b000047U, true, "        ds_read_b64     "
+                "v[139:140], v71 offset:52583\n" },
+    { 0xd9dccd67U, 0x8b000047U, true, "        ds_read2_b64    "
+                "v[139:142], v71 offset0:103 offset1:205\n" },
+    { 0xd9e0cd67U, 0x8b000047U, true, "        ds_read2st64_b64 "
+                "v[139:142], v71 offset0:103 offset1:205\n" },
+    { 0xd9e4cd67U, 0x8b27a947U, true, "        DS_ill_121      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd9e8cd67U, 0x8b27a947U, true, "        DS_ill_122      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd9eccd67U, 0x8b27a947U, true, "        DS_ill_123      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd9f0cd67U, 0x8b27a947U, true, "        DS_ill_124      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd9f4cd67U, 0x8b27a947U, true, "        DS_ill_125      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd9f8cd67U, 0x9b56a947U, true, "        ds_condxchg32_rtn_b64 "
+                "v[155:156], v71, v[169:170] offset:52583 vdata1=0x56\n" },
+    { 0xd9fccd67U, 0x8b27a947U, true, "        DS_ill_127      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xda00cd67U, 0x00000047U, true, "        ds_add_src2_u32 v71 offset:52583\n" },
+    { 0xda04cd67U, 0x00000047U, true, "        ds_sub_src2_u32 v71 offset:52583\n" },
+    { 0xda08cd67U, 0x00000047U, true, "        ds_rsub_src2_u32 v71 offset:52583\n" },
+    { 0xda0ccd67U, 0x00000047U, true, "        ds_inc_src2_u32 v71 offset:52583\n" },
+    { 0xda10cd67U, 0x00000047U, true, "        ds_dec_src2_u32 v71 offset:52583\n" },
+    { 0xda14cd67U, 0x00000047U, true, "        ds_min_src2_i32 v71 offset:52583\n" },
+    { 0xda18cd67U, 0x00000047U, true, "        ds_max_src2_i32 v71 offset:52583\n" },
+    { 0xda1ccd67U, 0x00000047U, true, "        ds_min_src2_u32 v71 offset:52583\n" },
+    { 0xda20cd67U, 0x00000047U, true, "        ds_max_src2_u32 v71 offset:52583\n" },
+    { 0xda24cd67U, 0x00000047U, true, "        ds_and_src2_b32 v71 offset:52583\n" },
+    { 0xda28cd67U, 0x00000047U, true, "        ds_or_src2_b32  v71 offset:52583\n" },
+    { 0xda2ccd67U, 0x00000047U, true, "        ds_xor_src2_b32 v71 offset:52583\n" },
     { 0, 0, false, nullptr }
 };
