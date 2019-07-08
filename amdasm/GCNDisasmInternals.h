@@ -112,6 +112,10 @@ struct CLRX_INTERNAL GCNDisasmUtils
     static void decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
              GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
              uint32_t insnCode2);
+    static void decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint spacesToAdd,
+             GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
+             uint32_t insnCode2, uint32_t insnCode3, uint32_t insnCode4,
+             uint32_t insnCode5);
     
     static void decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
              GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,

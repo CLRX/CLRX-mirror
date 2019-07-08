@@ -1054,8 +1054,13 @@ void GCNDisassembler::disassemble()
                                  *gcnInsn, insnCode, insnCode2);
                     break;
                 case GCNENC_MIMG:
-                    GCNDisasmUtils::decodeMIMGEncoding(*this, spacesToAdd, curArchMask,
-                                 *gcnInsn, insnCode, insnCode2);
+                    if (!isGCN15)
+                        GCNDisasmUtils::decodeMIMGEncoding(*this, spacesToAdd, curArchMask,
+                                    *gcnInsn, insnCode, insnCode2);
+                    else
+                        GCNDisasmUtils::decodeMIMGEncodingGFX10(*this, spacesToAdd,
+                                    curArchMask, *gcnInsn, insnCode, insnCode2, insnCode3,
+                                    insnCode4, insnCode5);
                     break;
                 case GCNENC_EXP:
                     GCNDisasmUtils::decodeEXPEncoding(*this, spacesToAdd, curArchMask,

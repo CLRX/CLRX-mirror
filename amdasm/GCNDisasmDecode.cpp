@@ -2335,6 +2335,54 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     output.forward(bufPtr-bufStart);
 }
 
+void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint spacesToAdd,
+        GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
+        uint32_t insnCode2, uint32_t insnCode3, uint32_t insnCode4, uint32_t insnCode5)
+{
+    FastOutputBuffer& output = dasm.output;
+    char* bufStart = output.reserve(250);
+    char* bufPtr = bufStart;
+    addSpaces(bufPtr, spacesToAdd);
+    
+    const cxuint dmask = (insnCode>>8)&15;
+    cxuint dregsNum = 4;
+    // determine register number for VDATA
+    if ((gcnInsn.mode & GCN_MIMG_VDATA4) == 0)
+        dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
+                ((dmask & 8)?1:0);
+    
+    dregsNum = (dregsNum == 0) ? 1 : dregsNum;
+    if (insnCode & 0x10000)
+        dregsNum++; // tfe
+    
+    // print VDATA
+    decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
+    putCommaSpace(bufPtr);
+    // print VADDR
+    decodeGCNVRegOperand(insnCode2&0xff,
+                 std::max(GCNInsnMode(4), (gcnInsn.mode&GCN_MIMG_VA_MASK)+1), bufPtr);
+    putCommaSpace(bufPtr);
+    // print SRSRC
+    decodeGCNOperandNoLit(dasm, ((insnCode2>>14)&0x7c),
+                ((insnCode & 0x8000)!=0) ? 4: 8, bufPtr, arch);
+    
+    const cxuint ssamp = (insnCode2>>21)&0x1f;
+    if ((gcnInsn.mode & GCN_MIMG_SAMPLE) != 0)
+    {
+        putCommaSpace(bufPtr);
+        // print SSAMP if supplied
+        decodeGCNOperandNoLit(dasm, ssamp<<2, 4, bufPtr, arch);
+    }
+    
+    // print value, if some are not used, but values is not default
+    if ((gcnInsn.mode & GCN_MIMG_SAMPLE) == 0 && ssamp != 0)
+    {
+        putChars(bufPtr, " ssamp=", 7);
+        bufPtr += itocstrCStyle(ssamp, bufPtr, 6, 16);
+    }
+    output.forward(bufPtr-bufStart);
+}
+
 void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
             GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
             uint32_t insnCode2)
