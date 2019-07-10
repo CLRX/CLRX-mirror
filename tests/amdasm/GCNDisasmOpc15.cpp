@@ -3188,21 +3188,21 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
 const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[] =
 {
     { { 0xf203bb00U, 0x00159d79U }, 2, "        image_load      v[157:160], "
-        "v[121:124], s[84:87] dmask:11 dim:1d unorm glc slc r128 tfe lwe\n" },
+        "v121, s[84:87] dmask:11 dim:1d unorm glc slc r128 tfe lwe\n" },
     /* MIMG flags */
     { { 0xf203bb00U, 0x80159d79U }, 2, "        image_load      v[157:160], "
-        "v[121:124], s[84:87] dmask:11 dim:1d unorm glc slc r128 tfe lwe d16\n" },
+        "v121, s[84:87] dmask:11 dim:1d unorm glc slc r128 tfe lwe d16\n" },
     { { 0xf2039b00U, 0x80159d79U }, 2, "        image_load      v[157:160], "
-        "v[121:124], s[84:87] dmask:11 dim:1d unorm slc r128 tfe lwe d16\n" },
+        "v121, s[84:87] dmask:11 dim:1d unorm slc r128 tfe lwe d16\n" },
     { { 0xf2038b00U, 0x80159d79U }, 2, "        image_load      v[157:160], "
-        "v[121:124], s[84:87] dmask:11 dim:1d slc r128 tfe lwe d16\n" },
+        "v121, s[84:87] dmask:11 dim:1d slc r128 tfe lwe d16\n" },
     { { 0xf2033b00U, 0x00159d79U }, 2, "        image_load      v[157:160], "
-        "v[121:124], s[84:91] dmask:11 dim:1d unorm glc slc tfe lwe\n" },
+        "v121, s[84:91] dmask:11 dim:1d unorm glc slc tfe lwe\n" },
     { { 0xf0033b00U, 0x00159d79U }, 2, "        image_load      v[157:160], "
-        "v[121:124], s[84:91] dmask:11 dim:1d unorm glc tfe lwe\n" },
+        "v121, s[84:91] dmask:11 dim:1d unorm glc tfe lwe\n" },
     { { 0xf2023b00U, 0x00159d79U }, 2, "        image_load      v[157:159], "
-        "v[121:124], s[84:91] dmask:11 dim:1d unorm glc slc lwe\n" },
+        "v121, s[84:91] dmask:11 dim:1d unorm glc slc lwe\n" },
     { { 0xf2003b00U, 0x00159d79U }, 2, "        image_load      v[157:159], "
-        "v[121:124], s[84:91] dmask:11 dim:1d unorm glc slc\n" },
+        "v121, s[84:91] dmask:11 dim:1d unorm glc slc\n" },
     { {}, 0, nullptr }
 };

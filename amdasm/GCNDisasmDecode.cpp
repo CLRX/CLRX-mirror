@@ -2372,10 +2372,12 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
     // print VDATA
     decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     putCommaSpace(bufPtr);
+    
+    cxuint dimAddrsNum = gfx10MImgDimEntryTbl[dim].dwordsNum;
     // print VADDR
     if (extraCodes==0)
         decodeGCNVRegOperand(insnCode2&0xff,
-                    std::max(GCNInsnMode(4), (gcnInsn.mode&GCN_MIMG_VA_MASK)+1), bufPtr);
+                            (gcnInsn.mode&GCN_MIMG_VA_MASK)+dimAddrsNum, bufPtr);
     else
     {
         // list of VADDR VGPRs
