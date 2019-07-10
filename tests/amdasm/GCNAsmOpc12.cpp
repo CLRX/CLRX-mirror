@@ -1475,6 +1475,10 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         0xf048fb00U, 0x00159d79U, true, true, "" },
     { "    image_atomic_sub  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
         0xf04cfb00U, 0x00159d79U, true, true, "" },
+    { "image_load      v[157:160], v[121:124], s[84:91] dmask:15 glc slc lwe da d16\n",
+        0xf2026f00U, 0x80159d79U, true, true, "" },
+    { "image_load      v[157:161], v[121:124], s[84:91] dmask:15 glc slc lwe da d16 tfe\n",
+        0xf2036f00U, 0x80159d79U, true, true, "" },
     /* MIMG uknown instructions */
     { "    image_atomic_fcmpswap  v[157:159], v[121:124], s[84:87] dmask:11 unorm "
         "glc r128 da", 0, 0, false, false, "test.s:1:5: Error: Unknown instruction\n" },

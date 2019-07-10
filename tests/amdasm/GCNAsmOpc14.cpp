@@ -742,6 +742,8 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         0xf2026e00U, 0x80159d79U, true, true, "" },
     { "image_load      v[157:158], v[121:124], s[84:91] dmask:15 glc slc lwe da d16\n",
         0xf2026f00U, 0x80159d79U, true, true, "" },
+    { "image_load      v[157:159], v[121:124], s[84:91] dmask:15 glc slc lwe da d16 tfe\n",
+        0xf2036f00U, 0x80159d79U, true, true, "" },
     /* FLAT encoding */
     { "flat_load_ubyte v47, v[187:188] nv\n", 0xdc400000U, 0x2f8000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188]\n", 0xdc400000U, 0x2f0000bbU, true, true, "" },
