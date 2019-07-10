@@ -3222,6 +3222,8 @@ const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[] =
     /* MIMG dmask */
     { { 0xf2003008U, 0x00159d79U }, 2, "        image_load      v157, "
         "v[121:122], s[84:91] dmask:0 dim:2d unorm glc slc\n" },
+    { { 0xf2003088U, 0x00159d79U }, 2, "        image_load      v157, "
+        "v[121:122], s[84:91] dmask:0 dim:2d unorm dlc glc slc\n" },
     { { 0xf2003108U, 0x00159d79U }, 2, "        image_load      v157, "
         "v[121:122], s[84:91] dim:2d unorm glc slc\n" },
     { { 0xf2003208U, 0x00159d79U }, 2, "        image_load      v157, "

@@ -2429,6 +2429,8 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
     
     if (insnCode & 0x1000)
         putChars(bufPtr, " unorm", 6);
+    if (insnCode & 0x80)
+        putChars(bufPtr, " dlc", 4);
     if (insnCode & 0x2000)
         putChars(bufPtr, " glc", 4);
     if (insnCode & 0x2000000)
