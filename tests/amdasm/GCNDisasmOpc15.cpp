@@ -3292,5 +3292,36 @@ const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[] =
         "[v121,v44,v75], s[84:91] dmask:15 dim:cube unorm glc slc d16\n" },
     { { 0xf2003f3aU, 0x80159d79U, 0x00b74b2cU }, 3, "        image_load      v[157:158], "
         "[v121,v44,v75,v183], s[84:91] dmask:15 dim:2d_msaa_array unorm glc slc d16\n" },
+    /* MIMG instructions */
+    { { 0xf2003b08U, 0x00159d79U }, 2, "        image_load      v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2043b08U, 0x00159d79U }, 2, "        image_load_mip  v[157:159], "
+        "v[121:123], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2083b08U, 0x00159d79U }, 2, "        image_load_pck  v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf20c3b08U, 0x00159d79U }, 2, "        image_load_pck_sgn v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2103b08U, 0x00159d79U }, 2, "        image_load_mip_pck v[157:159], "
+        "v[121:123], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2143b08U, 0x00159d79U }, 2, "        image_load_mip_pck_sgn v[157:159], "
+        "v[121:123], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2183b08U, 0x00159d79U }, 2, "        MIMG_ill_6      v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf21c3b08U, 0x00159d79U }, 2, "        MIMG_ill_7      v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2203b08U, 0x00159d79U }, 2, "        image_store     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2243b08U, 0x00159d79U }, 2, "        image_store_mip v[157:159], "
+        "v[121:123], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2283b08U, 0x00159d79U }, 2, "        image_store_pck v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf22c3b08U, 0x00159d79U }, 2, "        image_store_mip_pck v[157:159], "
+        "v[121:123], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2303b08U, 0x00159d79U }, 2, "        MIMG_ill_12     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2343b08U, 0x00159d79U }, 2, "        MIMG_ill_13     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2383b08U, 0x00159d79U }, 2, "        image_get_resinfo v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
     { {}, 0, nullptr }
 };
