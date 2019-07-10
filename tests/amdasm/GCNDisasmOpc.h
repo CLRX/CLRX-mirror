@@ -29,11 +29,19 @@ struct GCNDisasmOpcodeCase
     const char* expected;
 };
 
+struct GCNDisasmOpcodeCase2
+{
+    uint32_t words[6];
+    cxuint wordsNum;
+    const char* expected;
+};
+
 extern const GCNDisasmOpcodeCase decGCNOpcodeCases[];
 extern const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[];
 extern const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[];
 extern const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[];
 extern const GCNDisasmOpcodeCase decGCNOpcodeGCN141Cases[];
 extern const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[];
+extern const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[];
 
 #endif

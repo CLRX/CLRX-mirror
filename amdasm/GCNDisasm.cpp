@@ -128,15 +128,15 @@ static const GCNEncodingSpace gcnInstrTableByCodeSpaces[] =
     { 0x1e62+0x09e0, 0x4 }, /* GCNENC_VINTRP, opcode = (2bit)<<16 */
     { 0x1e62+0x09e4, 0x100 }, /* GCNENC_DS, opcode = (8bit)<<18 */
     { 0x1e62+0x0ae4, 0x80 }, /* GCNENC_MUBUF, opcode = (7bit)<<18 */
-    { 0x1e62+0x0b64, 0x8 }, /* GCNENC_MTBUF, opcode = (3bit)<<16 */
-    { 0x1e62+0x0b6c, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
-    { 0x1e62+0x0bec, 0x1 }, /* GCNENC_EXP, opcode = none */
-    { 0x1e62+0x0bed, 0x80 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
-    { 0x1e62+0x0c6d, 0x80 }, /* GCNENC_VOP3P */
+    { 0x1e62+0x0b64, 0x10 }, /* GCNENC_MTBUF, opcode = (3bit)<<16 */
+    { 0x1e62+0x0b74, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
+    { 0x1e62+0x0bf4, 0x1 }, /* GCNENC_EXP, opcode = none */
+    { 0x1e62+0x0bf5, 0x80 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
+    { 0x1e62+0x0c75, 0x80 }, /* GCNENC_VOP3P */
 };
 
 // total instruction table length
-static const size_t gcnInstrTableByCodeLength = 0x1e62 + 0x0ced;
+static const size_t gcnInstrTableByCodeLength = 0x1e62 + 0x0cf5;
 
 enum: cxuint {
     GCN_GFX10_ENCSPACE_IDX = 44
@@ -705,14 +705,14 @@ void GCNDisassembler::disassemble()
                         cxuint extraDwords = ((insnCode>>1)&3) + 1;
                         if (pos+extraDwords <= codeWordsNum)
                         {
-                            if (extraDwords==1)
-                                insnCode2 = ULEV(codeWords[pos+1]);
-                            if (extraDwords==2)
-                                insnCode3 = ULEV(codeWords[pos+2]);
-                            if (extraDwords==3)
-                                insnCode4 = ULEV(codeWords[pos+3]);
-                            if (extraDwords==4)
-                                insnCode5 = ULEV(codeWords[pos+4]);
+                            if (extraDwords>=1)
+                                insnCode2 = ULEV(codeWords[pos]);
+                            if (extraDwords>=2)
+                                insnCode3 = ULEV(codeWords[pos+1]);
+                            if (extraDwords>=3)
+                                insnCode4 = ULEV(codeWords[pos+2]);
+                            if (extraDwords>=4)
+                                insnCode5 = ULEV(codeWords[pos+3]);
                             pos += extraDwords;
                         }
                     }

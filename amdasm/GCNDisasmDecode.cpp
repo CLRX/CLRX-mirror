@@ -2368,7 +2368,7 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
     if (insnCode & 0x10000)
         dregsNum++; // tfe
     
-    const cxuint extraCodes = 2 + ((insnCode>>2)&3);
+    const cxuint extraCodes = ((insnCode>>2)&3);
     // print VDATA
     decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     putCommaSpace(bufPtr);
@@ -2379,7 +2379,7 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
     else
     {
         // list of VADDR VGPRs
-        const cxuint daddrsNum = (extraCodes-2)*4 + 1;
+        const cxuint daddrsNum = (extraCodes)*4 + 1;
         *bufPtr++ = '[';
         decodeGCNVRegOperand(insnCode2&0xff, 1, bufPtr);
         *bufPtr++ = ',';
@@ -2388,13 +2388,7 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
         for (cxuint i = 1; i < daddrsNum && i < 13; i++)
         {
             decodeGCNVRegOperand((vaddrDwords[(i-1)>>3]>>(((i-1)&3)*8))&0xff, 1, bufPtr);
-            if (i+1 < daddrsNum)
-            {
-                *bufPtr++ = ',';
-                *bufPtr++ = ' ';
-            }
-            else
-                *bufPtr++ = ']';
+            *bufPtr++ = (i+1 < daddrsNum) ? ',' : ']';
         }
     }
     putCommaSpace(bufPtr);

@@ -59,6 +59,39 @@ static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
     }
 }
 
+static void testDecGCNOpcodes2(cxuint i, const GCNDisasmOpcodeCase2& testCase,
+                      GPUDeviceType deviceType)
+{
+    std::ostringstream disOss;
+    AmdDisasmInput input;
+    // set device type
+    input.deviceType = deviceType;
+    input.is64BitMode = false;
+    // set up GCN disassembler
+    Disassembler disasm(&input, disOss, DISASM_FLOATLITS);
+    GCNDisassembler gcnDisasm(disasm);
+    // create input code
+    uint32_t inputCode[6];
+    for (cxuint i = 0; i < testCase.wordsNum; i++)
+        inputCode[i] = LEV(testCase.words[i]);
+    gcnDisasm.setInput(testCase.wordsNum<<2, reinterpret_cast<cxbyte*>(inputCode));
+    // disassemble
+    gcnDisasm.disassemble();
+    std::string outStr = disOss.str();
+    // compare output
+    if (outStr != testCase.expected)
+    {
+        // throw exception with detailed info
+        std::ostringstream oss;
+        oss << "FAILED for LONG " << getGPUDeviceTypeName(deviceType) <<
+            " decGCNCase#" << i << ": size=" << testCase.wordsNum;
+        for (cxuint i = 0; i < testCase.wordsNum; i++)
+            oss << ", word" << i << "=0x" << std::hex << testCase.words[i] << std::dec;
+        oss << "\nExpected: " << testCase.expected << ", Result: " << outStr;
+        throw Exception(oss.str());
+    }
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -105,6 +138,14 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; decGCNOpcodeGCN15Cases[i].expected!=nullptr; i++)
         try
         { testDecGCNOpcodes(i, decGCNOpcodeGCN15Cases[i], GPUDeviceType::GFX1010); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    for (cxuint i = 0; decGCNOpcodeGCN15Cases2[i].expected!=nullptr; i++)
+        try
+        { testDecGCNOpcodes2(i, decGCNOpcodeGCN15Cases2[i], GPUDeviceType::GFX1010); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;

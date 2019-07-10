@@ -3184,3 +3184,10 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc format:81\n" },
     { 0, 0, false, nullptr }
 };
+
+const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[] =
+{
+    { { 0xf203fb00U, 0x00159d79U }, 2, "        image_load      v[157:160], "
+        "v[121:124], s[84:87] dmask:11 dim:1d unorm glc slc r128 tfe lwe\n" },
+    { {}, 0, nullptr }
+};
