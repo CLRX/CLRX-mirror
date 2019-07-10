@@ -3287,5 +3287,10 @@ const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[] =
         "v[121:122], s[84:91] dmask:14 dim:2d unorm glc slc d16\n" },
     { { 0xf2003f08U, 0x80159d79U }, 2, "        image_load      v[157:158], "
         "v[121:122], s[84:91] dmask:15 dim:2d unorm glc slc d16\n" },
+    /* instr size, daddr size */
+    { { 0xf2003f1aU, 0x80159d79U, 0x00004b2cU }, 3, "        image_load      v[157:158], "
+        "[v121,v44,v75], s[84:91] dmask:15 dim:cube unorm glc slc d16\n" },
+    { { 0xf2003f3aU, 0x80159d79U, 0x00b74b2cU }, 3, "        image_load      v[157:158], "
+        "[v121,v44,v75,v183], s[84:91] dmask:15 dim:2d_msaa_array unorm glc slc d16\n" },
     { {}, 0, nullptr }
 };

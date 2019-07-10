@@ -2375,19 +2375,18 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
     decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     putCommaSpace(bufPtr);
     
-    cxuint dimAddrsNum = gfx10MImgDimEntryTbl[dim].dwordsNum;
+    cxuint daddrsNum = gfx10MImgDimEntryTbl[dim].dwordsNum +
+                (gcnInsn.mode&GCN_MIMG_VA_MASK);
     // print VADDR
     if (extraCodes==0)
-        decodeGCNVRegOperand(insnCode2&0xff,
-                            (gcnInsn.mode&GCN_MIMG_VA_MASK)+dimAddrsNum, bufPtr);
+        decodeGCNVRegOperand(insnCode2&0xff, daddrsNum, bufPtr);
     else
     {
         // list of VADDR VGPRs
-        const cxuint daddrsNum = (extraCodes)*4 + 1;
+        daddrsNum = std::min(daddrsNum, (extraCodes)*4 + 1);
         *bufPtr++ = '[';
         decodeGCNVRegOperand(insnCode2&0xff, 1, bufPtr);
         *bufPtr++ = ',';
-        *bufPtr++ = ' ';
         uint32_t vaddrDwords[3] = { insnCode3, insnCode4, insnCode5 };
         for (cxuint i = 1; i < daddrsNum && i < 13; i++)
         {
