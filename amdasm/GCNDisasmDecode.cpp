@@ -2368,7 +2368,7 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
     if (insnCode & 0x10000)
         dregsNum++; // tfe
     
-    const cxuint extraCodes = ((insnCode>>2)&3);
+    const cxuint extraCodes = ((insnCode>>1)&3);
     // print VDATA
     decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     putCommaSpace(bufPtr);

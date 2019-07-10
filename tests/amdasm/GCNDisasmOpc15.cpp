@@ -3204,5 +3204,20 @@ const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[] =
         "v121, s[84:91] dmask:11 dim:1d unorm glc slc lwe\n" },
     { { 0xf2003b00U, 0x00159d79U }, 2, "        image_load      v[157:159], "
         "v121, s[84:91] dmask:11 dim:1d unorm glc slc\n" },
+    /* MIMG dims */
+    { { 0xf2003b08U, 0x00159d79U }, 2, "        image_load      v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2003b10U, 0x00159d79U }, 2, "        image_load      v[157:159], "
+        "v[121:123], s[84:91] dmask:11 dim:3d unorm glc slc\n" },
+    { { 0xf2003b18U, 0x00159d79U }, 2, "        image_load      v[157:159], "
+        "v[121:123], s[84:91] dmask:11 dim:cube unorm glc slc\n" },
+    { { 0xf2003b20U, 0x00159d79U }, 2, "        image_load      v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:1d_array unorm glc slc\n" },
+    { { 0xf2003b28U, 0x00159d79U }, 2, "        image_load      v[157:159], "
+        "v[121:123], s[84:91] dmask:11 dim:2d_array unorm glc slc\n" },
+    { { 0xf2003b30U, 0x00159d79U }, 2, "        image_load      v[157:159], "
+        "v[121:123], s[84:91] dmask:11 dim:2d_msaa unorm glc slc\n" },
+    { { 0xf2003b38U, 0x00159d79U }, 2, "        image_load      v[157:159], "
+        "v[121:124], s[84:91] dmask:11 dim:2d_msaa_array unorm glc slc\n" },
     { {}, 0, nullptr }
 };
