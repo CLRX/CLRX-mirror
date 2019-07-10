@@ -2268,6 +2268,8 @@ void GCNDisasmUtils::decodeMIMGEncoding(GCNDisassembler& dasm, cxuint spacesToAd
                 ((dmask & 8)?1:0);
     
     dregsNum = (dregsNum == 0) ? 1 : dregsNum;
+    if (isGCN14 && (insnCode2 & (1U<<31))!=0)
+        dregsNum = (dregsNum+1)>>1;
     if (insnCode & 0x10000)
         dregsNum++; // tfe
     

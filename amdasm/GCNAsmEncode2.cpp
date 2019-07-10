@@ -606,8 +606,13 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     cxuint dregsNum = 4;
     // check number of registers in VDATA
     if ((gcnInsn.mode & GCN_MIMG_VDATA4) == 0)
+    {
         dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
-                ((dmask & 8)?1:0) + (haveTfe);
+                ((dmask & 8)?1:0);
+        if (isGCN14 && haveD16)
+            dregsNum = (dregsNum+1)>>1;
+        dregsNum += (haveTfe);
+    }
     if (dregsNum!=0 && !isXRegRange(vdataReg, dregsNum))
     {
         char errorMsg[40];

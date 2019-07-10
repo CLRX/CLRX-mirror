@@ -558,6 +558,41 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN14Cases[] =
             "v[157:160], v[121:124], s[84:91], s[0:3] dmask:11 unorm glc a16 da\n" },
     { 0xf12cfb00U, 0x00159d79U, true, "        image_gather8h_pck "
             "v[157:160], v[121:124], s[84:91], s[0:3] dmask:11 unorm glc a16 da\n" },
+    { 0xf2026f00U, 0x00159d79U, true, "        image_load      "
+            "v[157:160], v[121:124], s[84:91] dmask:15 glc slc lwe da\n" },
+    // DMASK D16
+    { 0xf2026000U, 0x80159d79U, true, "        image_load      "
+            "v157, v[121:124], s[84:91] dmask:0 glc slc lwe da d16\n" },
+    { 0xf2026100U, 0x80159d79U, true, "        image_load      "
+            "v157, v[121:124], s[84:91] glc slc lwe da d16\n" },
+    { 0xf2026200U, 0x80159d79U, true, "        image_load      "
+            "v157, v[121:124], s[84:91] dmask:2 glc slc lwe da d16\n" },
+    { 0xf2026300U, 0x80159d79U, true, "        image_load      "
+            "v157, v[121:124], s[84:91] dmask:3 glc slc lwe da d16\n" },
+    { 0xf2026400U, 0x80159d79U, true, "        image_load      "
+            "v157, v[121:124], s[84:91] dmask:4 glc slc lwe da d16\n" },
+    { 0xf2026500U, 0x80159d79U, true, "        image_load      "
+            "v157, v[121:124], s[84:91] dmask:5 glc slc lwe da d16\n" },
+    { 0xf2026600U, 0x80159d79U, true, "        image_load      "
+            "v157, v[121:124], s[84:91] dmask:6 glc slc lwe da d16\n" },
+    { 0xf2026700U, 0x80159d79U, true, "        image_load      "
+            "v[157:158], v[121:124], s[84:91] dmask:7 glc slc lwe da d16\n" },
+    { 0xf2026800U, 0x80159d79U, true, "        image_load      "
+            "v157, v[121:124], s[84:91] dmask:8 glc slc lwe da d16\n" },
+    { 0xf2026900U, 0x80159d79U, true, "        image_load      "
+            "v157, v[121:124], s[84:91] dmask:9 glc slc lwe da d16\n" },
+    { 0xf2026a00U, 0x80159d79U, true, "        image_load      "
+            "v157, v[121:124], s[84:91] dmask:10 glc slc lwe da d16\n" },
+    { 0xf2026b00U, 0x80159d79U, true, "        image_load      "
+            "v[157:158], v[121:124], s[84:91] dmask:11 glc slc lwe da d16\n" },
+    { 0xf2026c00U, 0x80159d79U, true, "        image_load      "
+            "v157, v[121:124], s[84:91] dmask:12 glc slc lwe da d16\n" },
+    { 0xf2026d00U, 0x80159d79U, true, "        image_load      "
+            "v[157:158], v[121:124], s[84:91] dmask:13 glc slc lwe da d16\n" },
+    { 0xf2026e00U, 0x80159d79U, true, "        image_load      "
+            "v[157:158], v[121:124], s[84:91] dmask:14 glc slc lwe da d16\n" },
+    { 0xf2026f00U, 0x80159d79U, true, "        image_load      "
+            "v[157:158], v[121:124], s[84:91] dmask:15 glc slc lwe da d16\n" },
     /* FLAT encoding */
     { 0xdc400000U, 0x2f8000bbU, true, "        flat_load_ubyte v47, v[187:188] nv\n" },
     { 0xdc400000U, 0x2f0000bbU, true, "        flat_load_ubyte v47, v[187:188]\n" },
