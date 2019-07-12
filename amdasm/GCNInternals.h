@@ -189,6 +189,15 @@ enum : GCNInsnMode
     GCN_MIMG_VAGE4D = 0x13,  /// vaddr requires 4 or more registers and holds user derivs
     GCN_MIMG_VAGE5D = 0x14,  /// vaddr requires 5 or more registers and holds user derivs
     GCN_MIMG_VAGE6D = 0x15,  /// vaddr requires 6 or more registers and holds user derivs
+    GCN_MIMG_VA_O = 0x20,  // vaddr *O*
+    GCN_MIMG_VA_B = 0x40,  // vaddr *B*
+    GCN_MIMG_VA_B_O = GCN_MIMG_VA_B|GCN_MIMG_VA_O, // vaddr *B* and *O*
+    GCN_MIMG_VA_C = 0x80,  // vaddr *C*
+    GCN_MIMG_VA_C_B = GCN_MIMG_VA_C|GCN_MIMG_VA_B,  // vaddr *C* and *B*
+    GCN_MIMG_VA_L = 0x400,  // vaddr *L*
+    GCN_MIMG_VA_L_O = GCN_MIMG_VA_L|GCN_MIMG_VA_O,  // vaddr *L* anc *O*
+    GCN_MIMG_VA_C_L = GCN_MIMG_VA_C|GCN_MIMG_VA_L,  // vaddr *C* and *L*
+    GCN_MIMG_VA_MIP = 0x800,  // vaddr _MIP
     GCN_MIMG_VA_MASK = 0xf,
     GCN_MLOAD = 0x1000, // instruction load data to vgprs
     GCN_MATOMIC = 0x2000, // instruction perform atomics and returns data if glc==1
