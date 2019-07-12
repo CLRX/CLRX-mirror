@@ -2384,7 +2384,8 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
                 (gcnInsn.mode&GCN_MIMG_VA_MASK);
     if ((gcnInsn.mode & GCN_MIMG_VADERIV)!=0)
         daddrsNum += gfx10MImgDimEntryTbl[dim].derivsNum;
-    daddrsNum += ((gcnInsn.mode & GCN_MIMG_VA_C)!=0) +
+    daddrsNum += ((gcnInsn.mode & GCN_MIMG_VA_MIP)!=0) +
+                ((gcnInsn.mode & GCN_MIMG_VA_C)!=0) +
                 ((gcnInsn.mode & GCN_MIMG_VA_CL)!=0) +
                 ((gcnInsn.mode & GCN_MIMG_VA_L)!=0) +
                 ((gcnInsn.mode & GCN_MIMG_VA_B)!=0) +
