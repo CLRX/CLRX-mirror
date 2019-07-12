@@ -197,6 +197,11 @@ enum : GCNInsnMode
     GCN_MIMG_VA_L = 0x400,  // vaddr *L*
     GCN_MIMG_VA_L_O = GCN_MIMG_VA_L|GCN_MIMG_VA_O,  // vaddr *L* anc *O*
     GCN_MIMG_VA_C_L = GCN_MIMG_VA_C|GCN_MIMG_VA_L,  // vaddr *C* and *L*
+    GCN_MIMG_VA_C_O = GCN_MIMG_VA_C|GCN_MIMG_VA_O,  // vaddr *C* and *O*
+    // vaddr *C* and *L* and *O*
+    GCN_MIMG_VA_C_L_O = GCN_MIMG_VA_C|GCN_MIMG_VA_L|GCN_MIMG_VA_O,
+    // vaddr *C* and *B* and *O*
+    GCN_MIMG_VA_C_B_O = GCN_MIMG_VA_C|GCN_MIMG_VA_B|GCN_MIMG_VA_O,
     GCN_MIMG_VA_MIP = 0x800,  // vaddr _MIP
     GCN_MIMG_VA_MASK = 0xf,
     GCN_MLOAD = 0x1000, // instruction load data to vgprs
