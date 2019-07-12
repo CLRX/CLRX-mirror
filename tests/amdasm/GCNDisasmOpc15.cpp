@@ -3556,5 +3556,31 @@ const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[] =
         "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
     { { 0xf3cc3b08U, 0x00159d79U }, 2, "        MIMG_ill_115    v[157:159], "
         "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    /* MIMG long versions */
+    { { 0xf2003f0aU, 0x80159d79U, 0x0000002cU }, 3, "        image_load      v[157:158], "
+        "[v121,v44], s[84:91] dmask:15 dim:2d unorm glc slc d16\n" },
+    { { 0xf2003f12U, 0x80159d79U, 0x0000d42cU }, 3, "        image_load      v[157:158], "
+        "[v121,v44,v212], s[84:91] dmask:15 dim:3d unorm glc slc d16\n" },
+    { { 0xf2003f14U, 0x80159d79U, 0x0000d42cU, 0 }, 4, "        image_load      v[157:158], "
+        "[v121,v44,v212], s[84:91] dmask:15 dim:3d unorm glc slc d16\n" },
+    { { 0xf2903b12U, 0x02759d79U, 0x005b492cU }, 3, "        image_sample_l  v[157:159], "
+        "[v121,v44,v73,v91], s[84:91], s[76:79] dmask:11 dim:3d unorm glc slc\n" },
+    { { 0xf2983b12U, 0x02759d79U, 0x615b492cU }, 3, "        image_sample_b_cl v[157:159], "
+        "[v121,v44,v73,v91,v97], s[84:91], s[76:79] dmask:11 dim:3d unorm glc slc\n" },
+    { { 0xf2883b0aU, 0x02759d79U, 0x615b492cU }, 3, "        image_sample_d  v[157:159], "
+        "[v121,v44,v73,v91,v97], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2883b0cU, 0x02759d79U, 0x615b492cU, 0xd8U }, 4,
+        "        image_sample_d  v[157:159], [v121,v44,v73,v91,v97,v216], "
+        "s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf2883b14U, 0x02759d79U, 0x615b492cU, 0x199b3ed8U }, 4,
+        "        image_sample_d  v[157:159], [v121,v44,v73,v91,v97,v216,v62,v155,v25], "
+        "s[84:91], s[76:79] dmask:11 dim:3d unorm glc slc\n" },
+    { { 0xf28c3b16U, 0x02759d79U, 0x615b492cU, 0x199b3ed8U, 0x77U }, 5, "        "
+        "image_sample_d_cl v[157:159], [v121,v44,v73,v91,v97,v216,v62,v155,v25,v119], "
+        "s[84:91], s[76:79] dmask:11 dim:3d unorm glc slc\n" },
+    { { 0xf2ec3b16U, 0x02759d79U, 0x615b492cU, 0x199b3ed8U, 0x00090177U }, 5, "        "
+        "image_sample_c_d_cl_o v[157:159], "
+        "[v121,v44,v73,v91,v97,v216,v62,v155,v25,v119,v1,v9], "
+        "s[84:91], s[76:79] dmask:11 dim:3d unorm glc slc\n" },
     { {}, 0, nullptr }
 };

@@ -2402,7 +2402,7 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
         uint32_t vaddrDwords[3] = { insnCode3, insnCode4, insnCode5 };
         for (cxuint i = 1; i < daddrsNum && i < 13; i++)
         {
-            decodeGCNVRegOperand((vaddrDwords[(i-1)>>3]>>(((i-1)&3)*8))&0xff, 1, bufPtr);
+            decodeGCNVRegOperand((vaddrDwords[(i-1)>>2]>>(((i-1)&3)*8))&0xff, 1, bufPtr);
             *bufPtr++ = (i+1 < daddrsNum) ? ',' : ']';
         }
     }
