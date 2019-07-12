@@ -2992,7 +2992,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "image_sample_l_o",    GCNENC_MIMG,
         GCN_MIMG_VAGE3|GCN_MIMG_SAMPLE|GCN_MLOAD|GCN_MIMG_VA_L_O, 52,   ARCH_GCN_ALL  },
     { "image_sample_b_o",    GCNENC_MIMG,
-        GCN_MIMG_VAGE3|GCN_MIMG_SAMPLE|GCN_MLOAD|GCN_MIMG_VA_L_O, 53,   ARCH_GCN_ALL  },
+        GCN_MIMG_VAGE3|GCN_MIMG_SAMPLE|GCN_MLOAD|GCN_MIMG_VA_B_O, 53,   ARCH_GCN_ALL  },
     { "image_sample_b_cl_o", GCNENC_MIMG,
         GCN_MIMG_VAGE4|GCN_MIMG_SAMPLE|GCN_MLOAD|GCN_MIMG_VA_B_CL_O, 54,   ARCH_GCN_ALL  },
     { "image_sample_lz_o",   GCNENC_MIMG,

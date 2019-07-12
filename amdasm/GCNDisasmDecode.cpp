@@ -2380,8 +2380,7 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
     putCommaSpace(bufPtr);
     
     // calculate VADDR registers number
-    cxuint daddrsNum = gfx10MImgDimEntryTbl[dim].dwordsNum +
-                (gcnInsn.mode&GCN_MIMG_VA_MASK);
+    cxuint daddrsNum = gfx10MImgDimEntryTbl[dim].dwordsNum;
     if ((gcnInsn.mode & GCN_MIMG_VADERIV)!=0)
         daddrsNum += gfx10MImgDimEntryTbl[dim].derivsNum;
     daddrsNum += ((gcnInsn.mode & GCN_MIMG_VA_MIP)!=0) +
