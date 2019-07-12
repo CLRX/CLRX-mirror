@@ -3452,5 +3452,109 @@ const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[] =
         "v[121:126], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
     { { 0xf2fc3b08U, 0x02759d79U }, 2, "        image_sample_c_lz_o v[157:159], "
         "v[121:124], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3003b08U, 0x02759d79U }, 2, "        image_gather4   v[157:160], "
+        "v[121:122], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3043b08U, 0x02759d79U }, 2, "        image_gather4_cl v[157:160], "
+        "v[121:123], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3083b08U, 0x00159d79U }, 2, "        MIMG_ill_66     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf30c3b08U, 0x00159d79U }, 2, "        MIMG_ill_67     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3103b08U, 0x02759d79U }, 2, "        image_gather4_l v[157:160], "
+        "v[121:123], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3143b08U, 0x02759d79U }, 2, "        image_gather4_b v[157:160], "
+        "v[121:123], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3183b08U, 0x02759d79U }, 2, "        image_gather4_b_cl v[157:160], "
+        "v[121:124], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf31c3b08U, 0x02759d79U }, 2, "        image_gather4_lz v[157:160], "
+        "v[121:122], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3203b08U, 0x02759d79U }, 2, "        image_gather4_c v[157:160], "
+        "v[121:123], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3243b08U, 0x02759d79U }, 2, "        image_gather4_c_cl v[157:160], "
+        "v[121:124], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3283b08U, 0x00159d79U }, 2, "        MIMG_ill_74     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf32c3b08U, 0x00159d79U }, 2, "        MIMG_ill_75     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3303b08U, 0x02759d79U }, 2, "        image_gather4_c_l v[157:160], "
+        "v[121:124], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3343b08U, 0x02759d79U }, 2, "        image_gather4_c_b v[157:160], "
+        "v[121:124], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3383b08U, 0x02759d79U }, 2, "        image_gather4_c_b_cl v[157:160], "
+        "v[121:125], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf33c3b08U, 0x02759d79U }, 2, "        image_gather4_c_lz v[157:160], "
+        "v[121:123], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3403b08U, 0x02759d79U }, 2, "        image_gather4_o v[157:160], "
+        "v[121:123], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3443b08U, 0x02759d79U }, 2, "        image_gather4_cl_o v[157:160], "
+        "v[121:124], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3483b08U, 0x00159d79U }, 2, "        MIMG_ill_82     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf34c3b08U, 0x00159d79U }, 2, "        MIMG_ill_83     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3503b08U, 0x02759d79U }, 2, "        image_gather4_l_o v[157:160], "
+        "v[121:124], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3543b08U, 0x02759d79U }, 2, "        image_gather4_b_o v[157:160], "
+        "v[121:124], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3583b08U, 0x02759d79U }, 2, "        image_gather4_b_cl_o v[157:160], "
+        "v[121:125], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf35c3b08U, 0x02759d79U }, 2, "        image_gather4_lz_o v[157:160], "
+        "v[121:123], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3603b08U, 0x02759d79U }, 2, "        image_gather4_c_o v[157:160], "
+        "v[121:124], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3643b08U, 0x02759d79U }, 2, "        image_gather4_c_cl_o v[157:160], "
+        "v[121:125], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3683b08U, 0x00159d79U }, 2, "        MIMG_ill_90     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf36c3b08U, 0x00159d79U }, 2, "        MIMG_ill_91     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3703b08U, 0x02759d79U }, 2, "        image_gather4_c_l_o v[157:160], "
+        "v[121:125], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3743b08U, 0x02759d79U }, 2, "        image_gather4_c_b_o v[157:160], "
+        "v[121:125], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3783b08U, 0x02759d79U }, 2, "        image_gather4_c_b_cl_o v[157:160], "
+        "v[121:126], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf37c3b08U, 0x02759d79U }, 2, "        image_gather4_c_lz_o v[157:160], "
+        "v[121:124], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3803b08U, 0x02759d79U }, 2, "        image_get_lod   v[157:159], "
+        "v[121:122], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3843b08U, 0x00159d79U }, 2, "        MIMG_ill_97     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3883b08U, 0x00159d79U }, 2, "        MIMG_ill_98     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf38c3b08U, 0x00159d79U }, 2, "        MIMG_ill_99     v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3903b08U, 0x00159d79U }, 2, "        MIMG_ill_100    v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3943b08U, 0x00159d79U }, 2, "        MIMG_ill_101    v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3983b08U, 0x00159d79U }, 2, "        MIMG_ill_102    v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf39c3b08U, 0x00159d79U }, 2, "        MIMG_ill_103    v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3a03b08U, 0x02759d79U }, 2, "        image_sample_cd v[157:159], "
+        "v[121:126], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3a43b08U, 0x02759d79U }, 2, "        image_sample_cd_cl v[157:159], "
+        "v[121:127], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3a83b08U, 0x02759d79U }, 2, "        image_sample_c_cd v[157:159], "
+        "v[121:127], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3ac3b08U, 0x02759d79U }, 2, "        image_sample_c_cd_cl v[157:159], "
+        "v[121:128], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3b03b08U, 0x02759d79U }, 2, "        image_sample_cd_o v[157:159], "
+        "v[121:127], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3b43b08U, 0x02759d79U }, 2, "        image_sample_cd_cl_o v[157:159], "
+        "v[121:128], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3b83b08U, 0x02759d79U }, 2, "        image_sample_c_cd_o v[157:159], "
+        "v[121:128], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3bc3b08U, 0x02759d79U }, 2, "        image_sample_c_cd_cl_o v[157:159], "
+        "v[121:129], s[84:91], s[76:79] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3c03b08U, 0x00159d79U }, 2, "        MIMG_ill_112    v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3c43b08U, 0x00159d79U }, 2, "        MIMG_ill_113    v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3c83b08U, 0x00159d79U }, 2, "        MIMG_ill_114    v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
+    { { 0xf3cc3b08U, 0x00159d79U }, 2, "        MIMG_ill_115    v[157:159], "
+        "v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n" },
     { {}, 0, nullptr }
 };
