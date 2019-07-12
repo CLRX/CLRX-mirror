@@ -2341,12 +2341,14 @@ struct GFX10MIMGDimEntry
 {
     const char *name;
     cxuint dwordsNum;
+    cxuint derivsNum; // deriv dwords num
 };
 
 static const GFX10MIMGDimEntry gfx10MImgDimEntryTbl[8] =
 {
-    { "1d", 1 }, { "2d", 2 }, { "3d", 3 }, { "cube", 3 }, { "1d_array", 2 },
-    { "2d_array", 3 }, { "2d_msaa", 3 }, { "2d_msaa_array", 4 }
+    { "1d", 1, 2 }, { "2d", 2, 4 }, { "3d", 3, 6 }, { "cube", 3, 4 },
+    { "1d_array", 2, 2 }, { "2d_array", 3, 4 }, { "2d_msaa", 3, 4 },
+    { "2d_msaa_array", 4, 4 }
 };
 
 void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint spacesToAdd,
@@ -2377,8 +2379,16 @@ void GCNDisasmUtils::decodeMIMGEncodingGFX10(GCNDisassembler& dasm, cxuint space
     decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     putCommaSpace(bufPtr);
     
+    // calculate VADDR registers number
     cxuint daddrsNum = gfx10MImgDimEntryTbl[dim].dwordsNum +
                 (gcnInsn.mode&GCN_MIMG_VA_MASK);
+    if ((gcnInsn.mode & GCN_MIMG_VADERIV)!=0)
+        daddrsNum += gfx10MImgDimEntryTbl[dim].derivsNum;
+    daddrsNum += ((gcnInsn.mode & GCN_MIMG_VA_C)!=0) +
+                ((gcnInsn.mode & GCN_MIMG_VA_CL)!=0) +
+                ((gcnInsn.mode & GCN_MIMG_VA_L)!=0) +
+                ((gcnInsn.mode & GCN_MIMG_VA_B)!=0) +
+                ((gcnInsn.mode & GCN_MIMG_VA_O)!=0);
     // print VADDR
     if (extraCodes==0)
         decodeGCNVRegOperand(insnCode2&0xff, daddrsNum, bufPtr);

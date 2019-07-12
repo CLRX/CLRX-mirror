@@ -191,13 +191,25 @@ enum : GCNInsnMode
     GCN_MIMG_VAGE6D = 0x15,  /// vaddr requires 6 or more registers and holds user derivs
     GCN_MIMG_VA_O = 0x20,  // vaddr *O*
     GCN_MIMG_VA_B = 0x40,  // vaddr *B*
-    GCN_MIMG_VA_B_O = GCN_MIMG_VA_B|GCN_MIMG_VA_O, // vaddr *B* and *O*
     GCN_MIMG_VA_C = 0x80,  // vaddr *C*
-    GCN_MIMG_VA_C_B = GCN_MIMG_VA_C|GCN_MIMG_VA_B,  // vaddr *C* and *B*
     GCN_MIMG_VA_L = 0x400,  // vaddr *L*
+    GCN_MIMG_VA_CL = 0x800,  // vaddr *CL*
+    GCN_MIMG_VA_B_O = GCN_MIMG_VA_B|GCN_MIMG_VA_O, // vaddr *B* and *O*
+    GCN_MIMG_VA_B_CL = GCN_MIMG_VA_B|GCN_MIMG_VA_CL, // vaddr *B* and *CL*
+     // vaddr *B* and *CL* and *O*
+    GCN_MIMG_VA_B_CL_O = GCN_MIMG_VA_B|GCN_MIMG_VA_CL|GCN_MIMG_VA_O,
+    GCN_MIMG_VA_C_B = GCN_MIMG_VA_C|GCN_MIMG_VA_B,  // vaddr *C* and *B*
+    // vaddr *C* and *B* and *CL*
+    GCN_MIMG_VA_C_B_CL = GCN_MIMG_VA_C|GCN_MIMG_VA_B|GCN_MIMG_VA_CL,
     GCN_MIMG_VA_L_O = GCN_MIMG_VA_L|GCN_MIMG_VA_O,  // vaddr *L* anc *O*
     GCN_MIMG_VA_C_L = GCN_MIMG_VA_C|GCN_MIMG_VA_L,  // vaddr *C* and *L*
+    GCN_MIMG_VA_C_CL = GCN_MIMG_VA_C|GCN_MIMG_VA_CL,  // vaddr *C* and *CLL*
     GCN_MIMG_VA_C_O = GCN_MIMG_VA_C|GCN_MIMG_VA_O,  // vaddr *C* and *O*
+    GCN_MIMG_VA_CL_O = GCN_MIMG_VA_CL|GCN_MIMG_VA_O,  // vaddr *CL* and *O*
+    // vaddr *C* and *CL* and *O*
+    GCN_MIMG_VA_C_CL_O = GCN_MIMG_VA_C|GCN_MIMG_VA_CL|GCN_MIMG_VA_O,
+    // vaddr *C* and *CL* and *B* and *O*
+    GCN_MIMG_VA_C_B_CL_O = GCN_MIMG_VA_C|GCN_MIMG_VA_CL|GCN_MIMG_VA_B|GCN_MIMG_VA_O,
     // vaddr *C* and *L* and *O*
     GCN_MIMG_VA_C_L_O = GCN_MIMG_VA_C|GCN_MIMG_VA_L|GCN_MIMG_VA_O,
     // vaddr *C* and *B* and *O*
