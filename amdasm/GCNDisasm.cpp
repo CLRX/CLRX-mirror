@@ -1042,7 +1042,8 @@ void GCNDisassembler::disassemble()
                     break;
                 case GCNENC_VOPC:
                     GCNDisasmUtils::decodeVOPCEncoding(*this, pos, curReloc, spacesToAdd,
-                           curArchMask, *gcnInsn, insnCode, insnCode2, displayFloatLits);
+                           curArchMask, *gcnInsn, insnCode, insnCode2, displayFloatLits,
+                           disassembler.getFlags());
                     break;
                 case GCNENC_VOP1:
                     GCNDisasmUtils::decodeVOP1Encoding(*this, pos, curReloc, spacesToAdd,
@@ -1050,18 +1051,21 @@ void GCNDisassembler::disassemble()
                     break;
                 case GCNENC_VOP2:
                     GCNDisasmUtils::decodeVOP2Encoding(*this, pos, curReloc, spacesToAdd,
-                           curArchMask, *gcnInsn, insnCode, insnCode2, displayFloatLits);
+                           curArchMask, *gcnInsn, insnCode, insnCode2, displayFloatLits,
+                           disassembler.getFlags());
                     break;
                 case GCNENC_VOP3A:
                     GCNDisasmUtils::decodeVOP3Encoding(*this, spacesToAdd, curArchMask,
-                                 *gcnInsn, insnCode, insnCode2, displayFloatLits);
+                                 *gcnInsn, insnCode, insnCode2, displayFloatLits,
+                                 disassembler.getFlags());
                     break;
                 case GCNENC_VOP3P: {
                     GCNInstruction newInsn = *gcnInsn;
                     newInsn.encoding = GCNENC_VOP3A;
                     newInsn.mode |= GCN_VOP3_VOP3P;
                     GCNDisasmUtils::decodeVOP3Encoding(*this, spacesToAdd, curArchMask,
-                                 newInsn, insnCode, insnCode2, displayFloatLits);
+                                 newInsn, insnCode, insnCode2, displayFloatLits,
+                                 disassembler.getFlags());
                     break;
                 }
                 case GCNENC_VINTRP:

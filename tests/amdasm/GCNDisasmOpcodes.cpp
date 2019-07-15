@@ -28,7 +28,7 @@
 using namespace CLRX;
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
-                      GPUDeviceType deviceType)
+                      GPUDeviceType deviceType, Flags flags = 0)
 {
     std::ostringstream disOss;
     AmdDisasmInput input;
@@ -36,7 +36,7 @@ static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
     input.deviceType = deviceType;
     input.is64BitMode = false;
     // set up GCN disassembler
-    Disassembler disasm(&input, disOss, DISASM_FLOATLITS);
+    Disassembler disasm(&input, disOss, DISASM_FLOATLITS|flags);
     GCNDisassembler gcnDisasm(disasm);
     // create input code
     uint32_t inputCode[2] = { LEV(testCase.word0), LEV(testCase.word1) };
@@ -49,7 +49,7 @@ static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
     {
         // throw exception with detailed info
         std::ostringstream oss;
-        oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<
+        oss << "FAILED for " << getGPUDeviceTypeName(deviceType) << " flag=" << flags <<
             " decGCNCase#" << i << ": size=" << (testCase.twoWords?2:1) <<
             ", word0=0x" << std::hex << testCase.word0 << std::dec;
         if (testCase.twoWords)
@@ -154,6 +154,15 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; decGCNOpcodeGCN151Cases[i].expected!=nullptr; i++)
         try
         { testDecGCNOpcodes(i, decGCNOpcodeGCN151Cases[i], GPUDeviceType::GFX1011); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    for (cxuint i = 0; decGCNOpcodeGCN15W32Cases[i].expected!=nullptr; i++)
+        try
+        { testDecGCNOpcodes(i, decGCNOpcodeGCN15W32Cases[i], GPUDeviceType::GFX1010,
+                                DISASM_WAVE32); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;

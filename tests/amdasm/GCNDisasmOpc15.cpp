@@ -4035,6 +4035,52 @@ const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[] =
     { {}, 0, nullptr }
 };
 
+/* for Radeon NAVI series with GCN1.5 with wavefront size 32 */
+const GCNDisasmOpcodeCase decGCNOpcodeGCN15W32Cases[] =
+{
+    // VOP2
+    { 0x0334d715U, 0, false, "        v_cndmask_b32   v154, v21, v107, vcc_lo\n" },
+    { 0x5134d715U, 0, false, "        v_add_co_ci_u32 v154, vcc_lo, v21, v107, vcc_lo\n" },
+    { 0x5334d715U, 0, false, "        v_sub_co_ci_u32 v154, vcc_lo, v21, v107, vcc_lo\n" },
+    { 0x5534d715U, 0, false, "        v_subrev_co_ci_u32 "
+                "v154, vcc_lo, v21, v107, vcc_lo\n" },
+    // VOPC
+    { 0x7c01934fU, 0, false, "        v_cmp_f_f32     vcc_lo, v79, v201\n" },
+    // VOP3/VOP2
+    { 0xd501002aU, 0x003ed732U, true, "        v_cndmask_b32   v42, v50, v107, s15\n" },
+    { 0xd5280737U, 0x4066b41bU, true, "        v_add_co_ci_u32 "
+                "v55, s7, s27, -v90, s25\n" },
+    { 0xd5286a37U, 0x01aab41bU, true, "        v_add_co_ci_u32 "
+                "v55, vcc_lo, s27, v90, vcc_lo vop3\n" },
+    { 0xd5286a37U, 0x41aab41bU, true, "        v_add_co_ci_u32 "
+                "v55, vcc_lo, s27, -v90, vcc_lo\n" },
+    { 0xd5290737U, 0x4066b41bU, true, "        v_sub_co_ci_u32 "
+                "v55, s7, s27, -v90, s25\n" },
+    { 0xd52a0737U, 0x4066b41bU, true, "        v_subrev_co_ci_u32 "
+                "v55, s7, s27, -v90, s25\n" },
+    // VOP3/VOPC
+    { 0xd401002aU, 0x0002d732U, true, "        v_cmp_lt_f32    s42, v50, v107\n" },
+    // VOP3b/VOP3
+    { 0xd56d2537U, 0x07974d4fU, true, "        v_div_scale_f32 "
+                "v55, s37, v79, v166, v229\n" },
+    { 0xd56d6a37U, 0x00034d4fU, true, "        v_div_scale_f32 "
+                "v55, vcc_lo, v79, v166, s0\n" },
+    { 0xd56e2537U, 0x07974d4fU, true, "        v_div_scale_f64 "
+                "v[55:56], s37, v[79:80], v[166:167], v[229:230]\n" },
+    { 0xd5762f37U, 0x07974d4fU, true, "        v_mad_u64_u32   "
+                "v[55:56], s47, v79, v166, v[229:230]\n" },
+    { 0xd5772f37U, 0x07974d4fU, true, "        v_mad_i64_i32   "
+                "v[55:56], s47, v79, v166, v[229:230]\n" },
+    { 0xd70f1a37U, 0x00034d4fU, true, "        v_add_co_u32    v55, s26, v79, v166\n" },
+    { 0xd7101a37U, 0x00034d4fU, true, "        v_sub_co_u32    v55, s26, v79, v166\n" },
+    { 0xd7191a37U, 0x00034d4fU, true, "        v_subrev_co_u32 v55, s26, v79, v166\n" },
+    // no apply
+    { 0xd7600037U, 0x00034d4fU, true, "        v_readlane_b32  s55, v79, v166\n" },
+    { 0xd7610037U, 0x00034d4fU, true, "        v_writelane_b32 v55, v79, v166\n" },
+    { 0xd7610037U, 0x00034c4fU, true, "        v_writelane_b32 v55, s79, v166\n" },
+    { 0, 0, false, nullptr }
+};
+
 const GCNDisasmOpcodeCase decGCNOpcodeGCN151Cases[] =
 {
     { 0x0534d715U, 0, false, "        v_dot2c_f32_f16 v154, v21, v107\n" },

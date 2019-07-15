@@ -1220,7 +1220,7 @@ static void decodeVOPDPP8(FastOutputBuffer& output, uint32_t insnCode2, bool fiF
 void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
          RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
-         FloatLitType displayFloatLits)
+         FloatLitType displayFloatLits, Flags flags)
 {
     FastOutputBuffer& output = dasm.output;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4_5)!=0);
@@ -1241,7 +1241,12 @@ void GCNDisasmUtils::decodeVOPCEncoding(GCNDisassembler& dasm, size_t codePos,
         putCommaSpace(bufPtr);
     }
     else if ((gcnInsn.mode & GCN_VOPC_NOVCC) == 0) // just vcc
-        putChars(bufPtr, "vcc, ", 5);
+    {
+        if (!isGCN15 || (flags&DISASM_WAVE32)==0 || (gcnInsn.mode&GCN_VOP_NOWVSZ)!=0)
+            putChars(bufPtr, "vcc, ", 5);
+        else
+            putChars(bufPtr, "vcc_lo, ", 8);
+    }
     
     if (isGCN12)
     {
@@ -1413,7 +1418,7 @@ void GCNDisasmUtils::decodeVOP1Encoding(GCNDisassembler& dasm, size_t codePos,
 void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
          RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
-         FloatLitType displayFloatLits)
+         FloatLitType displayFloatLits, Flags flags)
 {
     FastOutputBuffer& output = dasm.output;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4_5)!=0);
@@ -1453,7 +1458,12 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     
     // add VCC if V_ADD_XXX or other instruction VCC as DST
     if (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC)
-        putChars(bufPtr, ", vcc", 5);
+    {
+        if (!isGCN15 || (flags&DISASM_WAVE32)==0 || (gcnInsn.mode&GCN_VOP_NOWVSZ)!=0)
+            putChars(bufPtr, ", vcc", 5);
+        else
+            putChars(bufPtr, ", vcc_lo", 8);
+    }
     putCommaSpace(bufPtr);
     // apply sext, negation and abs if supplied
     if (extraFlags.sextSrc0)
@@ -1514,7 +1524,10 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
     else if (mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC)
     {
         // VCC like in V_CNDMASK_B32 or V_SUBB_B32
-        putChars(bufPtr, ", vcc", 5);
+        if (!isGCN15 || (flags&DISASM_WAVE32)==0 || (gcnInsn.mode&GCN_VOP_NOWVSZ)!=0)
+            putChars(bufPtr, ", vcc", 5);
+        else
+            putChars(bufPtr, ", vcc_lo", 8);
         output.forward(bufPtr-bufStart);
     }
     else
@@ -1553,13 +1566,14 @@ static void decodeVINTRPParam(uint16_t p, char*& bufPtr)
 
 void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAdd,
          GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
-         uint32_t insnCode2, FloatLitType displayFloatLits)
+         uint32_t insnCode2, FloatLitType displayFloatLits, Flags flags)
 {
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(170);
     char* bufPtr = bufStart;
     const bool isGCN12 = ((arch&ARCH_GCN_1_2_4_5)!=0);
     const bool isGCN14 = ((arch&ARCH_GCN_1_4_5)!=0);
+    const bool isGCN15 = ((arch&ARCH_GCN_1_5)!=0);
     const cxuint opcode = (isGCN12) ? ((insnCode>>16)&0x3ff) : ((insnCode>>17)&0x1ff);
     
     const cxuint vdst = insnCode&0xff;
@@ -1587,6 +1601,9 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
     const bool is128Ops = (gcnInsn.mode&0x7000)==GCN_VOP3_DS2_128;
     const bool vop3VOPC = (vop3Mode != GCN_VOP3_VOP3P && opcode < 256);
     
+    const cxuint wvSize = (!isGCN15 || (flags&DISASM_WAVE32)==0 ||
+                    (gcnInsn.mode&GCN_VOP_NOWVSZ)!=0) ? 2 : 1;
+    
     if (mode1 != GCN_VOP_ARG_NONE)
     {
         vdstUsed = true;
@@ -1596,8 +1613,8 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
         {
             if (vop3VOPC || (gcnInsn.mode&GCN_VOP3_DST_SGPR)!=0)
                 /* if compares (print DST as SDST) */
-                decodeGCNOperandNoLit(dasm, vdst, ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)?2:1,
-                                bufPtr, arch);
+                decodeGCNOperandNoLit(dasm, vdst, ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0) ?
+                                        wvSize:1, bufPtr, arch);
             else /* regular instruction */
                 // for V_MQSAD_U32 SRC2 is 128-bit
                 decodeGCNVRegOperand(vdst, (is128Ops) ? 4 :
@@ -1613,7 +1630,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
              mode1 == GCN_S0EQS12)) /* VOP3b */
         {
             // print SDST operand (VOP3B)
-            decodeGCNOperandNoLit(dasm, ((insnCode>>8)&0x7f), 2, bufPtr, arch);
+            decodeGCNOperandNoLit(dasm, ((insnCode>>8)&0x7f), wvSize, bufPtr, arch);
             putCommaSpace(bufPtr);
         }
         if (vop3Mode != GCN_VOP3_VINTRP)
@@ -1694,7 +1711,7 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
                 
                 if (mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC)
                 {
-                    decodeGCNOperandNoLit(dasm, vsrc2, 2, bufPtr, arch);
+                    decodeGCNOperandNoLit(dasm, vsrc2, wvSize, bufPtr, arch);
                     vsrc2CC = true;
                 }
                 else

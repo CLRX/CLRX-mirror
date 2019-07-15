@@ -82,7 +82,7 @@ struct CLRX_INTERNAL GCNDisasmUtils
     static void decodeVOPCEncoding(GCNDisassembler& dasm,
              size_t codePos, RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
-             FloatLitType displayFloatLits);
+             FloatLitType displayFloatLits, Flags flags);
     
     static void decodeVOP1Encoding(GCNDisassembler& dasm,
              size_t codePos, RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
@@ -92,11 +92,11 @@ struct CLRX_INTERNAL GCNDisasmUtils
     static void decodeVOP2Encoding(GCNDisassembler& dasm,
              size_t codePos, RelocIter& relocIter, cxuint spacesToAdd, GPUArchMask arch,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
-             FloatLitType displayFloatLits);
+             FloatLitType displayFloatLits, Flags flags);
     
     static void decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAdd,
             GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
-            uint32_t insnCode2, FloatLitType displayFloatLits);
+            uint32_t insnCode2, FloatLitType displayFloatLits, Flags flags);
     
     static void decodeVINTRPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
              GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode);
