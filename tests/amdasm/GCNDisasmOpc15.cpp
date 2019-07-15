@@ -3253,6 +3253,18 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
         "param5, v116, off, v27, v124 done vm vsrc1=0x5d\n" },
     { 0xf8001a5bU, 0x7c1b5d74U, true, "        exp             "
         "param5, v116, v93, off, v124 done vm vsrc2=0x1b\n" },
+    /* FLAT encoding */
+    { 0xdc230000U, 0x2f7d00bbU, true, "        flat_load_ubyte "
+                "v47, v[187:188] glc slc\n" },
+    { 0xdc220000U, 0x2f7d00bbU, true, "        flat_load_ubyte v47, v[187:188] slc\n" },
+    { 0xdc200000U, 0x2f7d00bbU, true, "        flat_load_ubyte v47, v[187:188]\n" },
+    { 0xdc200000U, 0x2f0000bbU, true, "        flat_load_ubyte "
+                "v47, v[187:188] saddr=0x0\n" },
+    { 0xdc201000U, 0x2f7d00bbU, true, "        flat_load_ubyte v47, v[187:188] dlc\n" },
+    { 0xdc2017d3U, 0x2f7d00bbU, true, "        flat_load_ubyte "
+        "v47, v[187:188] inst_offset:2003 dlc\n" },
+    { 0xdc201fd3U, 0x2f7d00bbU, true, "        flat_load_ubyte "
+        "v47, v[187:188] inst_offset:2003 dlc\n" },
     { 0, 0, false, nullptr }
 };
 

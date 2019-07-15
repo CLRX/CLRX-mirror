@@ -2577,7 +2577,8 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
             uint32_t insnCode2)
 {
-    const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4_5)!=0);
+    const bool isGCN15 = ((arch&ARCH_GCN_1_5)!=0);
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(150);
     char* bufPtr = bufStart;
@@ -2639,8 +2640,9 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     }
     
     // get inst_offset, with sign if FLAT_SCRATCH, FLAT_GLOBAL
-    const cxint instOffset = (flatMode != 0 && (insnCode&0x1000) != 0) ?
-                -4096+(insnCode&0xfff) : insnCode&0xfff;
+    const cxuint offsetMask = isGCN15 ? 0x7ff : 0xfff;
+    const cxint instOffset = (flatMode != 0 && (insnCode&0x1000) != 0 && !isGCN15) ?
+                -4096+(insnCode&offsetMask) : insnCode&offsetMask;
     if (isGCN14 && instOffset != 0)
     {
         putChars(bufPtr, " inst_offset:", 13);
@@ -2648,8 +2650,10 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     }
     
     // print other modifers
-    if (isGCN14 && (insnCode & 0x2000U))
+    if (isGCN14 && !isGCN15 && (insnCode & 0x2000U))
         putChars(bufPtr, " lds", 4);
+    if (isGCN15 && (insnCode & 0x1000U))
+        putChars(bufPtr, " dlc", 4);
     if (insnCode & 0x10000U)
         putChars(bufPtr, " glc", 4);
     if (insnCode & 0x20000U)
@@ -2674,10 +2678,12 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         putChars(bufPtr, " vdst=", 6);
         bufPtr += itocstrCStyle(insnCode2>>24, bufPtr, 6, 16);
     }
-    if (flatMode != 0 && !saddrUsed && ((insnCode>>16)&0xff) != 0)
+    if ((flatMode != 0 && !saddrUsed && ((insnCode>>16)&0xff) != 0) ||
+        (isGCN15 && flatMode==0 && !saddrUsed && ((insnCode2>>16)&0x7f) != 0x7d))
     {
         putChars(bufPtr, " saddr=", 7);
         bufPtr += itocstrCStyle((insnCode2>>16)&0xff, bufPtr, 6, 16);
     }
+    
     output.forward(bufPtr-bufStart);
 }
