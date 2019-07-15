@@ -995,7 +995,8 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             good &= parseModEnable(asmr, linePtr, haveGlc, "glc modifier");
         else if (::strcmp(name, "slc") == 0)
             good &= parseModEnable(asmr, linePtr, haveSlc, "slc modifier");
-        else if (isGCN14 && ::strcmp(name, "inst_offset")==0)
+        else if (isGCN14 && (::strcmp(name, "inst_offset")==0 ||
+                            ::strcmp(name, "offset")==0))
         {
             // parse inst_offset, 13-bit with sign, or 12-bit unsigned
             if (parseModImm(asmr, linePtr, instOffset, &instOffsetExpr, "inst_offset",

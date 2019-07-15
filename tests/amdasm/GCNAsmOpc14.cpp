@@ -749,6 +749,8 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
     { "flat_load_ubyte v47, v[187:188]\n", 0xdc400000U, 0x2f0000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188] inst_offset:529\n",
         0xdc400211U, 0x2f0000bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188] offset:529\n",
+        0xdc400211U, 0x2f0000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188] inst_offset:zzz\nzzz=529\n",
         0xdc400211U, 0x2f0000bbU, true, true, "" },
     /* FLAT instructions */
