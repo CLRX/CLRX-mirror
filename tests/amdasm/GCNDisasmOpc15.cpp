@@ -3463,6 +3463,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
                 "v47, v[187:188], v0 glc slc\n" },
     { 0xdd9f0000U, 0x2f7d00bbU, true, "        FLAT_ill_103    "
                 "v47, v[187:188], v0 glc slc\n" },
+    /*{ 0xdc234000U, 0x2f7d00bbU, true, "        scratch_load_ubyte "
+                "v47, v[187:188] glc slc\n" },*/
     { 0, 0, false, nullptr }
 };
 

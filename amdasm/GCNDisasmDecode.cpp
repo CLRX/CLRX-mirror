@@ -2630,7 +2630,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         // if GLOBAL_ or SCRATCH_
         putCommaSpace(bufPtr);
         cxuint saddr = (insnCode2>>16)&0x7f;
-        if ((saddr&0x7f) != 0x7f)
+        if ((isGCN14 && (saddr&0x7f) != 0x7f) || (isGCN15 && (saddr&0x7f) != 0x7d))
             // print SADDR (GCN 1.4)
             decodeGCNOperandNoLit(dasm, saddr, flatMode == GCN_FLAT_SCRATCH ? 1 : 2,
                         bufPtr, arch, FLTLIT_NONE);

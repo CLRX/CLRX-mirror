@@ -133,10 +133,12 @@ static const GCNEncodingSpace gcnInstrTableByCodeSpaces[] =
     { 0x1e62+0x0bf4, 0x1 }, /* GCNENC_EXP, opcode = none */
     { 0x1e62+0x0bf5, 0x80 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
     { 0x1e62+0x0c75, 0x80 }, /* GCNENC_VOP3P */
+    { 0x1e62+0x0cf5, 0x80 }, /* GCNENC_FLAT_SCRATCH, opcode = (8bit)<<18 (???8bit) */
+    { 0x1e62+0x0d75, 0x80 }, /* GCNENC_FLAT_GLOBAL, opcode = (8bit)<<18 (???8bit) */
 };
 
 // total instruction table length
-static const size_t gcnInstrTableByCodeLength = 0x1e62 + 0x0cf5;
+static const size_t gcnInstrTableByCodeLength = 0x1e62 + 0x0df5;
 
 enum: cxuint {
     GCN_GFX10_ENCSPACE_IDX = 44
@@ -209,6 +211,17 @@ static void initializeGCNDisassembler()
             {
                 const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[
                             GCN_GFX10_ENCSPACE_IDX + instr.encoding];
+                if (gcnInstrTableByCode[encSpace.offset + instr.code].mnemonic == nullptr ||
+                    ((instr.archMask == ARCH_GCN_1_5) &&
+                    (gcnInstrTableByCode[encSpace.offset + instr.code].archMask) !=
+                            ARCH_GCN_1_5))
+                    gcnInstrTableByCode[encSpace.offset + instr.code] = instr;
+            }
+            else
+            {
+                const cxuint encFlatMode = (instr.mode & GCN_FLAT_MODEMASK);
+                const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[
+                            GCN_GFX10_ENCSPACE_IDX + GCNENC_VOP3P + encFlatMode];
                 if (gcnInstrTableByCode[encSpace.offset + instr.code].mnemonic == nullptr ||
                     ((instr.archMask == ARCH_GCN_1_5) &&
                     (gcnInstrTableByCode[encSpace.offset + instr.code].archMask) !=
@@ -943,6 +956,17 @@ void GCNDisassembler::disassemble()
                 const GCNEncodingSpace& encSpace4 =
                     gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2+3 +
                         ((insnCode>>14)&3)-1];
+                gcnInsn = gcnInstrTableByCode.get() + encSpace4.offset + opcode;
+                if (gcnInsn->mnemonic == nullptr ||
+                        (curArchMask & gcnInsn->archMask) == 0)
+                    isIllegal = true; // illegal
+            }
+            else if (isGCN15 && gcnEncoding == GCNENC_FLAT && ((insnCode>>14)&3)!=0)
+            {
+                // GLOBAL_/SCRATCH_* instructions
+                const GCNEncodingSpace& encSpace4 =
+                    gcnInstrTableByCodeSpaces[GCN_GFX10_ENCSPACE_IDX + GCNENC_VOP3P +
+                        ((insnCode>>14)&3)];
                 gcnInsn = gcnInstrTableByCode.get() + encSpace4.offset + opcode;
                 if (gcnInsn->mnemonic == nullptr ||
                         (curArchMask & gcnInsn->archMask) == 0)
