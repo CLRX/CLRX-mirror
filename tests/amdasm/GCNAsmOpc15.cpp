@@ -22,6 +22,22 @@
 
 const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
 {
+    { "        s_add_u32       s21, s4, s61\n", 0x80153d04U, 0, false, true, "" },
+    { "        s_add_u32       s21, s4, s100\n", 0x80156404U, 0, false, true, "" },
+    { "        s_add_u32       s21, s4, s102\n", 0x80156604U, 0, false, true, "" },
+    { "        s_add_u32       s21, s4, s103\n", 0x80156704U, 0, false, true, "" },
+    { "        s_add_u32       s21, s4, s104\n", 0x80156804U, 0, false, true, "" },
+    { "        s_add_u32       s21, s4, s105\n", 0x80156904U, 0, false, true, "" },
+    { "xrv = %s105; s_add_u32 s21, s4, xrv\n", 0x80156904U, 0, false, true, "" },
+    { "        s_add_u32       s21, s4, vcc_lo\n", 0x80156a04U, 0, false, true, "" },
+    { "        s_add_u32       s21, s4, vcc_hi\n", 0x80156b04U, 0, false, true, "" },
+    { "    s_add_u32  vcc[1:1], s4, s61", 0x806b3d04U, 0, false, true, "" },
+    { "    s_add_u32  vcc[1], s4, s61", 0x806b3d04U, 0, false, true, "" },
+    { "    s_add_u32  ttmp0, s4, s61", 0x806c3d04U, 0, false, true, "" },
+    { "    s_add_u32  ttmp1, s4, s61", 0x806d3d04U, 0, false, true, "" },
+    { "    s_add_u32  ttmp[2:2], s4, s61", 0x806e3d04U, 0, false, true, "" },
+    { "    s_add_u32  ttmp12, s4, s61", 0x80783d04U, 0, false, true, "" },
+    { "    s_add_u32  ttmp15, s4, s61", 0x807b3d04U, 0, false, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
