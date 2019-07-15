@@ -121,7 +121,8 @@ struct CLRX_INTERNAL GCNDisasmUtils
              GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
              uint32_t insnCode2);
 
-    static void printFLATAddr(cxuint flatMode, char*& bufPtr, uint32_t insnCode2);
+    static void printFLATAddr(cxuint flatMode, char*& bufPtr, uint32_t insnCode2,
+                              cxuint nullCode);
     
     static void decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
              GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,

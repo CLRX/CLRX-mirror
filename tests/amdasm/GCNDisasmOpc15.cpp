@@ -3463,8 +3463,58 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
                 "v47, v[187:188], v0 glc slc\n" },
     { 0xdd9f0000U, 0x2f7d00bbU, true, "        FLAT_ill_103    "
                 "v47, v[187:188], v0 glc slc\n" },
-    /*{ 0xdc234000U, 0x2f7d00bbU, true, "        scratch_load_ubyte "
-                "v47, v[187:188] glc slc\n" },*/
+    /* FLAT SCRATCH encoding */
+    { 0xdc234000U, 0x2f7d00bbU, true, "        scratch_load_ubyte "
+                "v47, v187, off glc slc\n" },
+    { 0xdc234000U, 0x2f5300bbU, true, "        scratch_load_ubyte "
+                "v47, off, s83 glc slc\n" },
+    { 0xdc234563U, 0x2f530000U, true, "        scratch_load_ubyte "
+                "v47, off, s83 inst_offset:1379 glc slc\n" },
+    { 0xdc234d63U, 0x2f530000U, true, "        scratch_load_ubyte "
+                "v47, off, s83 inst_offset:1379 glc slc\n" },
+    /* FLAT SCRATCH instructions */
+    { 0xdc274000U, 0x2f7d00bbU, true, "        scratch_load_sbyte "
+                "v47, v187, off glc slc\n" },
+    { 0xdc2b4000U, 0x2f7d00bbU, true, "        scratch_load_ushort "
+                "v47, v187, off glc slc\n" },
+    { 0xdc2f4000U, 0x2f7d00bbU, true, "        scratch_load_sshort "
+                "v47, v187, off glc slc\n" },
+    { 0xdc334000U, 0x2f7d00bbU, true, "        scratch_load_dword "
+                "v47, v187, off glc slc\n" },
+    { 0xdc374000U, 0x2f7d00bbU, true, "        scratch_load_dwordx2 "
+                "v[47:48], v187, off glc slc\n" },
+    { 0xdc3b4000U, 0x2f7d00bbU, true, "        scratch_load_dwordx4 "
+                "v[47:50], v187, off glc slc\n" },
+    { 0xdc3f4000U, 0x2f7d00bbU, true, "        scratch_load_dwordx3 "
+                "v[47:49], v187, off glc slc\n" },
+    { 0xdc634000U, 0x007d39bbU, true, "        scratch_store_byte "
+                "v187, v57, off glc slc\n" },
+    { 0xdc674000U, 0x007d39bbU, true, "        scratch_store_byte_d16_hi "
+                "v187, v57, off glc slc\n" },
+    { 0xdc6b4000U, 0x007d39bbU, true, "        scratch_store_short "
+                "v187, v57, off glc slc\n" },
+    { 0xdc6f4000U, 0x007d39bbU, true, "        scratch_store_short_d16_hi "
+                "v187, v57, off glc slc\n" },
+    { 0xdc734000U, 0x007d39bbU, true, "        scratch_store_dword "
+                "v187, v57, off glc slc\n" },
+    { 0xdc774000U, 0x007d39bbU, true, "        scratch_store_dwordx2 "
+                "v187, v[57:58], off glc slc\n" },
+    { 0xdc7b4000U, 0x007d39bbU, true, "        scratch_store_dwordx4 "
+                "v187, v[57:60], off glc slc\n" },
+    { 0xdc7f4000U, 0x007d39bbU, true, "        scratch_store_dwordx3 "
+                "v187, v[57:59], off glc slc\n" },
+    { 0xdc834000U, 0x2f7d00bbU, true, "        scratch_load_ubyte_d16 "
+                "v47, v187, off glc slc\n" },
+    { 0xdc874000U, 0x2f7d00bbU, true, "        scratch_load_ubyte_d16_hi "
+                "v47, v187, off glc slc\n" },
+    { 0xdc8b4000U, 0x2f7d00bbU, true, "        scratch_load_sbyte_d16 "
+                "v47, v187, off glc slc\n" },
+    { 0xdc8f4000U, 0x2f7d00bbU, true, "        scratch_load_sbyte_d16_hi "
+                "v47, v187, off glc slc\n" },
+    { 0xdc934000U, 0x2f7d00bbU, true, "        scratch_load_short_d16 "
+                "v47, v187, off glc slc\n" },
+    { 0xdc974000U, 0x2f7d00bbU, true, "        scratch_load_short_d16_hi "
+                "v47, v187, off glc slc\n" },
     { 0, 0, false, nullptr }
 };
 

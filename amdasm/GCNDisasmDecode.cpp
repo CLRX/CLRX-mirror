@@ -2555,7 +2555,8 @@ void GCNDisasmUtils::decodeEXPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd
 }
 
 // routine to print FLAT address including 'off' for GCN 1.4
-void GCNDisasmUtils::printFLATAddr(cxuint flatMode, char*& bufPtr, uint32_t insnCode2)
+void GCNDisasmUtils::printFLATAddr(cxuint flatMode, char*& bufPtr, uint32_t insnCode2,
+                                   cxuint nullCode)
 {
     const cxuint vaddr = insnCode2&0xff;
     if (flatMode == 0)
@@ -2566,7 +2567,7 @@ void GCNDisasmUtils::printFLATAddr(cxuint flatMode, char*& bufPtr, uint32_t insn
                 ((insnCode2>>16)&0x7f) == 0x7f ? 2 : 1, bufPtr); // addr
     else if (flatMode == GCN_FLAT_SCRATCH)
     {
-        if (((insnCode2>>16)&0x7f) == 0x7f)
+        if (((insnCode2>>16)&0x7f) == nullCode)
             decodeGCNVRegOperand(vaddr, 1, bufPtr); // addr
         else // no vaddr
             putChars(bufPtr, "off", 3);
@@ -2577,7 +2578,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
             GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
             uint32_t insnCode2)
 {
-    const bool isGCN14 = ((arch&ARCH_GCN_1_4_5)!=0);
+    const bool isGCN14 = ((arch&ARCH_GCN_1_4)!=0);
     const bool isGCN15 = ((arch&ARCH_GCN_1_5)!=0);
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(150);
@@ -2591,8 +2592,10 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     cxuint dstRegsNum = ((gcnInsn.mode & GCN_CMPSWAP)!=0) ? (dregsNum>>1) :  dregsNum;
     const cxuint flatMode = gcnInsn.mode & GCN_FLAT_MODEMASK;
     // add tfe extra register if needed
-    dstRegsNum = (!isGCN14 && (insnCode2 & 0x800000U)) ? dstRegsNum+1 : dstRegsNum;
+    dstRegsNum = (!isGCN14 && !isGCN15 && (insnCode2 & 0x800000U)) ?
+                        dstRegsNum+1 : dstRegsNum;
     
+    const cxuint nullCode = isGCN15 ? 0x7d : 0x7f;
     bool printAddr = false;
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
@@ -2600,13 +2603,13 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         // print VDST
         decodeGCNVRegOperand(insnCode2>>24, dstRegsNum, bufPtr);
         putCommaSpace(bufPtr);
-        printFLATAddr(flatMode, bufPtr, insnCode2);
+        printFLATAddr(flatMode, bufPtr, insnCode2, nullCode);
         printAddr = true;
     }
     else
     {
         /* two vregs, because 64-bitness stored in PTR32 mode (at runtime) */
-        printFLATAddr(flatMode, bufPtr, insnCode2);
+        printFLATAddr(flatMode, bufPtr, insnCode2, nullCode);
         printAddr = true;
         if ((gcnInsn.mode & GCN_FLAT_NODST) == 0)
         {
@@ -2643,14 +2646,14 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     const cxuint offsetMask = isGCN15 ? 0x7ff : 0xfff;
     const cxint instOffset = (flatMode != 0 && (insnCode&0x1000) != 0 && !isGCN15) ?
                 -4096+(insnCode&offsetMask) : insnCode&offsetMask;
-    if (isGCN14 && instOffset != 0)
+    if ((isGCN14 || isGCN15) && instOffset != 0)
     {
         putChars(bufPtr, " inst_offset:", 13);
         bufPtr += itocstrCStyle(instOffset, bufPtr, 7, 10);
     }
     
     // print other modifers
-    if (isGCN14 && !isGCN15 && (insnCode & 0x2000U))
+    if (isGCN14 && (insnCode & 0x2000U))
         putChars(bufPtr, " lds", 4);
     if (isGCN15 && (insnCode & 0x1000U))
         putChars(bufPtr, " dlc", 4);
@@ -2660,7 +2663,7 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         putChars(bufPtr, " slc", 4);
     if (insnCode2 & 0x800000U)
     {
-        if (!isGCN14)
+        if (!isGCN14 && !isGCN15)
             putChars(bufPtr, " tfe", 4);
         else
             // if GCN 1.4 this bit is NV
