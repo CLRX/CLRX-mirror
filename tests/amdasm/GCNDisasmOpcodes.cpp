@@ -151,5 +151,13 @@ int main(int argc, const char** argv)
             std::cerr << ex.what() << std::endl;
             retVal = 1;
         }
+    for (cxuint i = 0; decGCNOpcodeGCN151Cases[i].expected!=nullptr; i++)
+        try
+        { testDecGCNOpcodes(i, decGCNOpcodeGCN151Cases[i], GPUDeviceType::GFX1011); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
     return retVal;
 }

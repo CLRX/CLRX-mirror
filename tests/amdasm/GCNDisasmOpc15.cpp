@@ -583,6 +583,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0x1534d715U, 0, false, "        v_mul_hi_i32_i24 v154, v21, v107\n" },
     { 0x1734d715U, 0, false, "        v_mul_u32_u24   v154, v21, v107\n" },
     { 0x1934d715U, 0, false, "        v_mul_hi_u32_u24 v154, v21, v107\n" },
+    { 0x0534d715U, 0, false, "        VOP2_ill_2      v154, v21, v107\n" },
     { 0x1b34d715U, 0, false, "        VOP2_ill_13     v154, v21, v107\n" },
     { 0x1d34d715U, 0, false, "        VOP2_ill_14     v154, v21, v107\n" },
     { 0x1f34d715U, 0, false, "        v_min_f32       v154, v21, v107\n" },
@@ -4032,4 +4033,20 @@ const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[] =
         "[v121,v44,v73,v91,v97,v216,v62,v155,v25,v119,v1,v9], "
         "s[84:91], s[76:79] dmask:11 dim:3d unorm glc slc\n" },
     { {}, 0, nullptr }
+};
+
+const GCNDisasmOpcodeCase decGCNOpcodeGCN151Cases[] =
+{
+    { 0x0534d715U, 0, false, "        v_dot2c_f32_f16 v154, v21, v107\n" },
+    { 0x1b34d715U, 0, false, "        v_dot4c_i32_i8  v154, v21, v107\n" },
+    { 0xd5020037U, 0x0002b51bU, true, "        VOP3A_ill_258   v55, v27, v90, s0\n" },
+    { 0xd50d0037U, 0x4002b41bU, true, "        VOP3A_ill_269   v55, s27, -v90, s0\n" },
+    { 0xcc134037U, 0x1f974d4fU, true, "        v_dot2_f32_f16  v55, v79, v166, v229\n" },
+    { 0xcc144037U, 0x1f974d4fU, true, "        v_dot2_i32_i16  v55, v79, v166, v229\n" },
+    { 0xcc154037U, 0x1f974d4fU, true, "        v_dot2_u32_u16  v55, v79, v166, v229\n" },
+    { 0xcc164037U, 0x1f974d4fU, true, "        v_dot4_i32_i8   v55, v79, v166, v229\n" },
+    { 0xcc174037U, 0x1f974d4fU, true, "        v_dot4_u32_u8   v55, v79, v166, v229\n" },
+    { 0xcc184037U, 0x1f974d4fU, true, "        v_dot8_i32_i4   v55, v79, v166, v229\n" },
+    { 0xcc194037U, 0x1f974d4fU, true, "        v_dot8_u32_u4   v55, v79, v166, v229\n" },
+    { 0, 0, false, nullptr }
 };
