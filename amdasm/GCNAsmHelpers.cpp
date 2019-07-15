@@ -170,7 +170,7 @@ static inline bool isGCNConstLiteral(uint16_t rstart, GPUArchMask arch)
 {
     if ((rstart >= 128 && rstart <= 208) || (rstart >= 240 && rstart <= 247))
         return true;
-    return ((arch & ARCH_GCN_1_2_4) != 0 && rstart == 248);
+    return ((arch & ARCH_GCN_1_2_4_5) != 0 && rstart == 248);
 }
 
 static inline bool isGCNVReg(uint16_t rstart, uint16_t rend, const AsmRegVar* regVar)
@@ -483,7 +483,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
     }
     
     /* parse single SGPR */
-    const bool isGCN14 = (arch & ARCH_GCN_1_4) != 0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4_5) != 0;
     const cxuint ttmpSize = isGCN14 ? 16 : 12;
     const cxuint ttmpStart = isGCN14 ? 108 : 112;
         
@@ -556,6 +556,12 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         else // otherwise reset regName
             regName[0] = 0;
         toLowerString(regName);
+        
+        if ((arch & ARCH_GCN_1_5) != 0 && ::strcmp(regName, "null")==0)
+        {
+            regPair = { 125, 126 };
+            return true;
+        }
         
         size_t loHiRegSuffix = 0;
         cxuint loHiReg = 0;
@@ -1133,7 +1139,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             return parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
                              instrOpMask & ~INSTROP_VOP3MODS, regField);
         
-        if ((arch & ARCH_GCN_1_2_4)!=0 &&
+        if ((arch & ARCH_GCN_1_2_4_5)!=0 &&
             (instrOpMask & (INSTROP_NOSEXT|INSTROP_VOP3P))==0 &&
             linePtr+4 <= end && strncasecmp(linePtr, "sext", 4)==0)
         {
@@ -1410,7 +1416,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                                 operand.range = { 247, 0 };
                                 return true;
                             case 0x3e22f983: // 1/(2*PI)
-                                if (arch&ARCH_GCN_1_2_4)
+                                if (arch&ARCH_GCN_1_2_4_5)
                                 {
                                     operand.range = { 248, 0 };
                                     return true;
@@ -1463,7 +1469,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                                 operand.range = { 247, 0 };
                                 return true;
                             case 0x3118: // 1/(2*PI)
-                                if (arch&ARCH_GCN_1_2_4)
+                                if (arch&ARCH_GCN_1_2_4_5)
                                 {
                                     operand.range = { 248, 0 };
                                     return true;
@@ -1501,7 +1507,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                                 operand.range = { 247, 0 };
                                 return true;
                             case 0x3e22f983: // 1/(2*PI)
-                                if (arch&ARCH_GCN_1_2_4)
+                                if (arch&ARCH_GCN_1_2_4_5)
                                 {
                                     operand.range = { 248, 0 };
                                     return true;
@@ -1539,7 +1545,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                                 operand.range = { 247, 0 };
                                 return true;
                             case 0x3fc45f30: // 1/(2*PI)
-                                if (arch&ARCH_GCN_1_2_4)
+                                if (arch&ARCH_GCN_1_2_4_5)
                                 {
                                     operand.range = { 248, 0 };
                                     return true;
@@ -1922,7 +1928,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                     else
                         good = false;
                 }
-                else if (!vop3p &&(arch & ARCH_GCN_1_2_4) &&
+                else if (!vop3p &&(arch & ARCH_GCN_1_2_4_5) &&
                         (flags & PARSEVOP_WITHSEXT)!=0 &&
                          modOperands>1 && ::strcmp(mod, "sext")==0)
                 {
@@ -2476,7 +2482,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
         opMods.sextMod!=0 || haveSDWA);
     const bool vopDPP = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask ||
             haveDPP);
-    const bool isGCN14 = (arch & ARCH_GCN_1_4) != 0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4_5) != 0;
     // mul/div modifier does not apply to vop3 if RXVEGA (this case will be checked later)
     const bool vop3 = (mods & ((isGCN14 ? 0 : 3)|VOP3_VOP3))!=0 ||
                 ((opMods.opselMod&15)!=0);
