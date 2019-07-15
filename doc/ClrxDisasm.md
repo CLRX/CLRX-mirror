@@ -15,10 +15,10 @@ A disassembler can detect automatically binary format, bitness of the binary.
 
 The `clrxdisasm` can be invoked in following way:
 
-clrxdisasm [-mdcCfsHLhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
+clrxdisasm [-mdcCfsHLhar3?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
 [--calNotes] [--config] [--floats] [--hexcode] [--setup] [--HSAConfig] [--HSALayout]
 [--all] [--raw] [--gpuType=GPUDEVICE] [--arch=ARCH] [--driverVersion=VERSION]
-[--llvmVersion=VERSION] [--buggyFPLit] [--help] [--usage] [--version] [file...]
+[--llvmVersion=VERSION] [--buggyFPLit] [--wave32] [--help] [--usage] [--version] [file...]
 
 ### Program Options
 
@@ -110,6 +110,10 @@ Version is number in that form: MajorVersion*100 + MinorVersion.
 
     Choose old and buggy floating point literals rules (to 0.1.2 version)
 for compatibility.
+
+* **-3**, **--wave32**
+
+    Set wavefront size as 32 elements (apply only for GFX10 devices).
 
 * **-?**, **--help**
 

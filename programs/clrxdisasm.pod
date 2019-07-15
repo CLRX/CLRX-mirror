@@ -6,10 +6,10 @@ clrxdisasm - disassemble Radeon code binaries
 
 =head1 SYNOPSIS
 
-clrxdisasm [-mdcCfsHLhar?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
+clrxdisasm [-mdcCfsHLhar3?] [-g GPUDEVICE] [-a ARCH] [-t VERSION] [--metadata] [--data]
 [--calNotes] [--config] [--floats] [--hexcode] [--all] [--setup] [--HSAConfig]
 [--HSALayout] [--raw] [--gpuType=GPUDEVICE] [--arch=ARCH] [--driverVersion=VERSION]
-[--llvmVersion=VERSION] [--buggyFPLit] [--help] [--usage] [--version] [file...]
+[--llvmVersion=VERSION] [--buggyFPLit] [--wave32] [--help] [--usage] [--version] [file...]
 
 =head1 DESCRIPTION
 
@@ -114,6 +114,10 @@ Version is number in that form: MajorVersion*100 + MinorVersion.
 =item B<--buggyFPLit>
 
 Choose old and buggy floating point literals rules (to 0.1.2 version) for compatibility.
+
+=item B<-3>, B<--wave32>
+
+Set wavefront size as 32 elements (apply only for GFX10 devices).
 
 =item B<-?>, B<--help>
 

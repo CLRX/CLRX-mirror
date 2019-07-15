@@ -74,7 +74,7 @@ enum: Flags
     DISASM_WAVE32 = 0x1000, ///< use WAVESIZE32
     
     ///< all disassembler flags (without config)
-    DISASM_ALL = FLAGS_ALL&(~(DISASM_CONFIG|DISASM_BUGGYFPLIT|
+    DISASM_ALL = FLAGS_ALL&(~(DISASM_CONFIG|DISASM_BUGGYFPLIT|DISASM_WAVE32|
                     DISASM_HSACONFIG|DISASM_HSALAYOUT))
 };
 

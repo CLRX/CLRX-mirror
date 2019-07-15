@@ -51,6 +51,8 @@ static const CLIOption programOptions[] =
         "set GPU type for Gallium/raw binaries", "DEVICE" },
     { "arch", 'A', CLIArgType::TRIMMED_STRING, false, false,
         "set GPU architecture for Gallium/raw binaries", "ARCH" },
+    { "wave32", '3', CLIArgType::NONE, false, false,
+        "set wavefront size as 32 elements", nullptr },
     { "driverVersion", 't', CLIArgType::UINT, false, false,
         "set driver version (for AmdCL2)", "VERSION" },
     { "llvmVersion", 0, CLIArgType::UINT, false, false,
@@ -84,7 +86,8 @@ try
             (cli.hasShortOption('c')?DISASM_CALNOTES:0) |
             (cli.hasShortOption('s')?DISASM_SETUP:0) |
             (cli.hasShortOption('f')?DISASM_FLOATLITS:0) |
-            (cli.hasShortOption('h')?DISASM_HEXCODE:0);
+            (cli.hasShortOption('h')?DISASM_HEXCODE:0) |
+            (cli.hasShortOption('3')?DISASM_WAVE32:0);
      disasmFlags |= (cli.hasShortOption('C')?DISASM_CONFIG:0) |
              (cli.hasLongOption("buggyFPLit")?DISASM_BUGGYFPLIT:0) |
              (cli.hasShortOption('H')?DISASM_HSACONFIG:0) |
