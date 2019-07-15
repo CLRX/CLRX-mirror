@@ -17,25 +17,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __CLRXTEST_GCNASMOPC_H__
-#define __CLRXTEST_GCNASMOPC_H__
+#include <CLRX/Config.h>
+#include "GCNAsmOpc.h"
 
-#include <cstdint>
-
-struct GCNAsmOpcodeCase
+const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
 {
-    const char* input;
-    uint32_t expWord0, expWord1;
-    bool twoWords;
-    bool good;
-    const char* errorMessages;
+    { nullptr, 0, 0, false, false, 0 }
 };
 
-extern const GCNAsmOpcodeCase encGCNOpcodeCases[];
-extern const GCNAsmOpcodeCase encGCN11OpcodeCases[];
-extern const GCNAsmOpcodeCase encGCN12OpcodeCases[];
-extern const GCNAsmOpcodeCase encGCN14OpcodeCases[];
-extern const GCNAsmOpcodeCase encGCN141OpcodeCases[];
-extern const GCNAsmOpcodeCase encGCN15OpcodeCases[];
-
-#endif
