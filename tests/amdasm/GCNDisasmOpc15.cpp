@@ -3315,6 +3315,154 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
                 "v47, v[187:188], v0 glc slc\n" },
     { 0xdc5f0000U, 0x2f7d00bbU, true, "        FLAT_ill_23     "
                 "v47, v[187:188], v0 glc slc\n" },
+    { 0xdc630000U, 0x007d5abbU, true, "        flat_store_byte "
+                "v[187:188], v90 glc slc\n" },
+    { 0xdc670000U, 0x007d5abbU, true, "        flat_store_byte_d16_hi "
+                "v[187:188], v90 glc slc\n" },
+    { 0xdc6b0000U, 0x007d5abbU, true, "        flat_store_short "
+                "v[187:188], v90 glc slc\n" },
+    { 0xdc6f0000U, 0x007d5abbU, true, "        flat_store_short_d16_hi "
+                "v[187:188], v90 glc slc\n" },
+    { 0xdc730000U, 0x007d5abbU, true, "        flat_store_dword "
+                "v[187:188], v90 glc slc\n" },
+    { 0xdc770000U, 0x007d5abbU, true, "        flat_store_dwordx2 "
+                "v[187:188], v[90:91] glc slc\n" },
+    { 0xdc7b0000U, 0x007d5abbU, true, "        flat_store_dwordx4 "
+                "v[187:188], v[90:93] glc slc\n" },
+    { 0xdc7f0000U, 0x007d5abbU, true, "        flat_store_dwordx3 "
+                "v[187:188], v[90:92] glc slc\n" },
+    { 0xdc830000U, 0x2f7d00bbU, true, "        flat_load_ubyte_d16 "
+                "v47, v[187:188] glc slc\n" },
+    { 0xdc870000U, 0x2f7d00bbU, true, "        flat_load_ubyte_d16_hi "
+                "v47, v[187:188] glc slc\n" },
+    { 0xdc8b0000U, 0x2f7d00bbU, true, "        flat_load_sbyte_d16 "
+                "v47, v[187:188] glc slc\n" },
+    { 0xdc8f0000U, 0x2f7d00bbU, true, "        flat_load_sbyte_d16_hi "
+                "v47, v[187:188] glc slc\n" },
+    { 0xdc930000U, 0x2f7d00bbU, true, "        flat_load_short_d16 "
+                "v47, v[187:188] glc slc\n" },
+    { 0xdc970000U, 0x2f7d00bbU, true, "        flat_load_short_d16_hi "
+                "v47, v[187:188] glc slc\n" },
+    { 0xdc9b0000U, 0x2f7d00bbU, true, "        FLAT_ill_38     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdc9f0000U, 0x2f7d00bbU, true, "        FLAT_ill_39     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdca30000U, 0x2f7d00bbU, true, "        FLAT_ill_40     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdca70000U, 0x2f7d00bbU, true, "        FLAT_ill_41     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdcab0000U, 0x2f7d00bbU, true, "        FLAT_ill_42     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdcaf0000U, 0x2f7d00bbU, true, "        FLAT_ill_43     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdcb30000U, 0x2f7d00bbU, true, "        FLAT_ill_44     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdcb70000U, 0x2f7d00bbU, true, "        FLAT_ill_45     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdcbb0000U, 0x2f7d00bbU, true, "        FLAT_ill_46     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdcbf0000U, 0x2f7d00bbU, true, "        FLAT_ill_47     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdcc30000U, 0x9e7d5abbU, true, "        flat_atomic_swap "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdcc20000U, 0x9e7d5abbU, true, "        flat_atomic_swap "
+                "v158, v[187:188], v90 slc\n" },
+    { 0xdcc70000U, 0x9e7d5abbU, true, "        flat_atomic_cmpswap "
+                "v158, v[187:188], v[90:91] glc slc\n" },
+    { 0xdccb0000U, 0x9e7d5abbU, true, "        flat_atomic_add "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdccf0000U, 0x9e7d5abbU, true, "        flat_atomic_sub "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdcd30000U, 0x2f7d00bbU, true, "        FLAT_ill_52     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdcd70000U, 0x9e7d5abbU, true, "        flat_atomic_smin "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdcdb0000U, 0x9e7d5abbU, true, "        flat_atomic_umin "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdcdf0000U, 0x9e7d5abbU, true, "        flat_atomic_smax "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdce30000U, 0x9e7d5abbU, true, "        flat_atomic_umax "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdce70000U, 0x9e7d5abbU, true, "        flat_atomic_and "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdceb0000U, 0x9e7d5abbU, true, "        flat_atomic_or  "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdcef0000U, 0x9e7d5abbU, true, "        flat_atomic_xor "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdcf30000U, 0x9e7d5abbU, true, "        flat_atomic_inc "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdcf70000U, 0x9e7d5abbU, true, "        flat_atomic_dec "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdcfb0000U, 0x9e7d5abbU, true, "        flat_atomic_fcmpswap "
+                "v158, v[187:188], v[90:91] glc slc\n" },
+    { 0xdcff0000U, 0x9e7d5abbU, true, "        flat_atomic_fmin "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdd030000U, 0x9e7d5abbU, true, "        flat_atomic_fmax "
+                "v158, v[187:188], v90 glc slc\n" },
+    { 0xdd070000U, 0x2f7d00bbU, true, "        FLAT_ill_65     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd0b0000U, 0x2f7d00bbU, true, "        FLAT_ill_66     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd0f0000U, 0x2f7d00bbU, true, "        FLAT_ill_67     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd130000U, 0x2f7d00bbU, true, "        FLAT_ill_68     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd170000U, 0x2f7d00bbU, true, "        FLAT_ill_69     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd1b0000U, 0x2f7d00bbU, true, "        FLAT_ill_70     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd1f0000U, 0x2f7d00bbU, true, "        FLAT_ill_71     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd430000U, 0x9e7d5abbU, true, "        flat_atomic_swap_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd420000U, 0x9e7d5abbU, true, "        flat_atomic_swap_x2 "
+                "v[158:159], v[187:188], v[90:91] slc\n" },
+    { 0xdd470000U, 0x9e7d5abbU, true, "        flat_atomic_cmpswap_x2 "
+                "v[158:159], v[187:188], v[90:93] glc slc\n" },
+    { 0xdd4b0000U, 0x9e7d5abbU, true, "        flat_atomic_add_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd4f0000U, 0x9e7d5abbU, true, "        flat_atomic_sub_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd530000U, 0x2f7d00bbU, true, "        FLAT_ill_84     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd570000U, 0x9e7d5abbU, true, "        flat_atomic_smin_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd5b0000U, 0x9e7d5abbU, true, "        flat_atomic_umin_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd5f0000U, 0x9e7d5abbU, true, "        flat_atomic_smax_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd630000U, 0x9e7d5abbU, true, "        flat_atomic_umax_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd670000U, 0x9e7d5abbU, true, "        flat_atomic_and_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd6b0000U, 0x9e7d5abbU, true, "        flat_atomic_or_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd6f0000U, 0x9e7d5abbU, true, "        flat_atomic_xor_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd730000U, 0x9e7d5abbU, true, "        flat_atomic_inc_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd770000U, 0x9e7d5abbU, true, "        flat_atomic_dec_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd7b0000U, 0x9e7d5abbU, true, "        flat_atomic_fcmpswap_x2 "
+                "v[158:159], v[187:188], v[90:93] glc slc\n" },
+    { 0xdd7f0000U, 0x9e7d5abbU, true, "        flat_atomic_fmin_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd830000U, 0x9e7d5abbU, true, "        flat_atomic_fmax_x2 "
+                "v[158:159], v[187:188], v[90:91] glc slc\n" },
+    { 0xdd870000U, 0x2f7d00bbU, true, "        FLAT_ill_97     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd8b0000U, 0x2f7d00bbU, true, "        FLAT_ill_98     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd8f0000U, 0x2f7d00bbU, true, "        FLAT_ill_99     "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd930000U, 0x2f7d00bbU, true, "        FLAT_ill_100    "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd970000U, 0x2f7d00bbU, true, "        FLAT_ill_101    "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd9b0000U, 0x2f7d00bbU, true, "        FLAT_ill_102    "
+                "v47, v[187:188], v0 glc slc\n" },
+    { 0xdd9f0000U, 0x2f7d00bbU, true, "        FLAT_ill_103    "
+                "v47, v[187:188], v0 glc slc\n" },
     { 0, 0, false, nullptr }
 };
 
