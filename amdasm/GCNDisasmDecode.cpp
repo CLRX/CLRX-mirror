@@ -2564,7 +2564,7 @@ void GCNDisasmUtils::printFLATAddr(cxuint flatMode, char*& bufPtr, uint32_t insn
     else if (flatMode == GCN_FLAT_GLOBAL)
         decodeGCNVRegOperand(vaddr,
                 // if off in SADDR, then single VGPR offset
-                ((insnCode2>>16)&0x7f) == 0x7f ? 2 : 1, bufPtr); // addr
+                ((insnCode2>>16)&0x7f) == nullCode ? 2 : 1, bufPtr); // addr
     else if (flatMode == GCN_FLAT_SCRATCH)
     {
         if (((insnCode2>>16)&0x7f) == nullCode)
