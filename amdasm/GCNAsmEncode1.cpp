@@ -290,7 +290,7 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     gcnAsm->setCurrentRVU(0);
     bool doWrite = (gcnInsn.mode&GCN_MASK1) != GCN_DST_SRC &&
             ((gcnInsn.mode&GCN_MASK1) != GCN_IMM_REL);
-    if ((gcnInsn.mode & GCN_IMM_DST) == 0)
+    if ((gcnInsn.mode & GCN_IMM_DST) == 0 && (gcnInsn.mode&GCN_MASK1) != GCN_DST_NONE)
     {
         // parse SDST (SGPR)
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
@@ -408,7 +408,7 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     uint32_t imm32 = 0;
     std::unique_ptr<AsmExpression> imm32Expr;
-    if (gcnInsn.mode & GCN_IMM_DST)
+    if ((gcnInsn.mode & GCN_IMM_DST) != 0 && (gcnInsn.mode&GCN_MASK1) != GCN_DST_NONE)
     {
         // parse SDST as immediate or next source
         if (!skipRequiredComma(asmr, linePtr))
