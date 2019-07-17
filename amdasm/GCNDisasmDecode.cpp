@@ -853,7 +853,8 @@ void GCNDisasmUtils::decodeSMEMEncoding(GCNDisassembler& dasm, cxuint spacesToAd
     {
         const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
         addSpaces(bufPtr, spacesToAdd);
-        if (!(mode1 & GCN_SMEM_NOSDATA)) {
+        if ((mode1 & GCN_SMEM_NOSDATA) == 0)
+        {
             if (mode1 & GCN_SMEM_SDATA_IMM)
                 // print immediate value
                 putHexByteToBuf((insnCode>>6)&0x7f, bufPtr);

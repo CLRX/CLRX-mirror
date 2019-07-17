@@ -1039,14 +1039,17 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
         // parse SDST (SGPR's (1-16 registers))
         gcnAsm->setCurrentRVU(0);
-        if ((mode1 & GCN_SMEM_SDATA_IMM)==0)
-            good &= parseSRegRange(asmr, linePtr, dataReg, arch, dregsNum,
-                    GCNFIELD_SMRD_SDST, true, INSTROP_SYMREGRANGE|
-                    ((gcnInsn.mode & GCN_MLOAD) != 0 ? INSTROP_WRITE : INSTROP_READ));
-        else
-            good &= parseImm(asmr, linePtr, dataReg.start, &simm7Expr, 7);
-        if (!skipRequiredComma(asmr, linePtr))
-            return false;
+        if ((mode1 & GCN_SMEM_NOSDATA) == 0)
+        {
+            if ((mode1 & GCN_SMEM_SDATA_IMM)==0)
+                good &= parseSRegRange(asmr, linePtr, dataReg, arch, dregsNum,
+                        GCNFIELD_SMRD_SDST, true, INSTROP_SYMREGRANGE|
+                        ((gcnInsn.mode & GCN_MLOAD) != 0 ? INSTROP_WRITE : INSTROP_READ));
+            else
+                good &= parseImm(asmr, linePtr, dataReg.start, &simm7Expr, 7);
+            if (!skipRequiredComma(asmr, linePtr))
+                return false;
+        }
         
         // parse SBASE (2 or 4 SGPR's)
         gcnAsm->setCurrentRVU(1);
@@ -1064,8 +1067,8 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             const char* soffsetPlace = linePtr;
             good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1,
                        GCNFIELD_SMRD_SOFFSET, false, INSTROP_SYMREGRANGE|INSTROP_READ);
-            if (good && !isGCN14 && (gcnInsn.mode & GCN_MLOAD) == 0 && soffsetReg &&
-                    !soffsetReg.isVal(124))
+            if (good && (!isGCN14 && !isGCN15) && (gcnInsn.mode & GCN_MLOAD) == 0 &&
+                    soffsetReg && !soffsetReg.isVal(124))
                 // if no M0 register
                 ASM_NOTGOOD_BY_ERROR(soffsetPlace,
                         "Store/Atomic SMEM instructions accepts only M0 register")
