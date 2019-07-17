@@ -264,7 +264,7 @@ void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
                                curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_SMRD:
-            if (curArchMask & ARCH_GCN_1_2_4)
+            if (curArchMask & ARCH_GCN_1_2_4_5)
                 good = GCNAsmUtils::parseSMEMEncoding(assembler, *it, mnemPlace, linePtr,
                                curArchMask, output, regs, gcnEncSize);
             else

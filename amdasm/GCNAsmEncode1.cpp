@@ -1021,6 +1021,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> simm7Expr;
     const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
     const bool isGCN14 = (arch & ARCH_GCN_1_4) != 0;
+    const bool isGCN15 = (arch & ARCH_GCN_1_5) != 0;
     
     const char* soffsetPlace = nullptr;
     AsmSourcePos soffsetPos;
@@ -1086,6 +1087,7 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool haveGlc = false;
     bool haveNv = false;
     bool haveOffset = false;
+    bool haveDlc = false;
     // parse modifiers
     while (linePtr != end)
     {
@@ -1099,7 +1101,9 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             toLowerString(name);
             if (::strcmp(name, "glc")==0)
                 good &= parseModEnable(asmr, linePtr, haveGlc, "glc modifier");
-            else if (isGCN14 && ::strcmp(name, "nv")==0)
+            else if (::strcmp(name, "dlc")==0)
+                good &= parseModEnable(asmr, linePtr, haveDlc, "dlc modifier");
+            else if ((isGCN14 || isGCN15) && ::strcmp(name, "nv")==0)
                 good &= parseModEnable(asmr, linePtr, haveNv, "nv modifier");
             else if (isGCN14 && ::strcmp(name, "offset")==0)
             {
@@ -1181,16 +1185,22 @@ bool GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     // put data (2 instruction words)
     uint32_t words[2];
-    SLEV(words[0], 0xc0000000U | (uint32_t(gcnInsn.code1)<<18) | (dataReg.bstart()<<6) |
+    const uint32_t encoding = isGCN15 ? 0xf4000000U : 0xc0000000U;
+    const uint32_t soffsetRegNull = isGCN15 ? 0x7d : 0;
+    SLEV(words[0], encoding | (uint32_t(gcnInsn.code1)<<18) | (dataReg.bstart()<<6) |
             (sbaseReg.bstart()>>1) |
             // enable IMM if soffset is immediate or haveOffset with SGPR
-            ((soffsetReg.isVal(255) || haveOffset) ? 0x20000 : 0) |
-            (haveGlc ? 0x10000 : 0) | (haveNv ? 0x8000 : 0) | (haveOffset ? 0x4000 : 0));
-    SLEV(words[1], (
+            ((!isGCN15 && (soffsetReg.isVal(255) || haveOffset)) ? 0x20000 : 0) |
+            (haveGlc ? 0x10000 : 0) | (haveNv ? 0x8000 : 0) |
+            (((!isGCN15 && haveOffset) || (isGCN15 && haveDlc)) ? 0x4000 : 0));
+    SLEV(words[1],
             // store IMM OFFSET if offset: or IMM offset instead SGPR
-            ((soffsetReg.isVal(255) || haveOffset) ? soffsetVal : soffsetReg.bstart())) |
+            ((isGCN15 || soffsetReg.isVal(255) || haveOffset) ?
+                                soffsetVal : soffsetReg.bstart()) |
             // store SGPR in SOFFSET if have offset and have SGPR offset
-                ((haveOffset && !soffsetReg.isVal(255)) ? (soffsetReg.bstart()<<25) : 0));
+                (((isGCN15 && !soffsetReg.isVal(255)) ||
+                        (!isGCN15 && haveOffset && !soffsetReg.isVal(255))) ?
+                        (soffsetReg.bstart()<<25) : (soffsetRegNull<<25)));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
             reinterpret_cast<cxbyte*>(words+2));

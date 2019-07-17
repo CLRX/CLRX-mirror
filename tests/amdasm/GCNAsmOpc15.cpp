@@ -536,5 +536,19 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
     { "        s_round_mode    0x1234\n", 0xbfa41234U, 0, false, true, "" },
     { "        s_denorm_mode   0x1234\n", 0xbfa51234U, 0, false, true, "" },
     { "        s_ttracedata_imm 0x1234\n", 0xbfa81234U, 0, false, true, "" },
+    /* SMEM encoding */
+    { "    s_load_dword    s3, s[0:1], s4\n", 0xf40000c0U, 0x08000000U, true, true, "" },
+    { "        s_load_dword    s3, s[0:1], 0x6ba23\n",
+                0xf40000c0U, 0xfa06ba23U, true, true, "" },
+    { "        s_load_dword    s3, s[18:19], s4\n",
+                0xf40000c9U, 0x08000000U, true, true, "" },
+    { "        s_load_dword    s3, s[18:19], 0x6ba23\n",
+                0xf40000c9U, 0xfa06ba23U, true, true, "" },
+    { "        s_load_dword    s3, s[0:1], s4 glc dlc\n",
+                0xf40140c0U, 0x08000000U, true, true, "" },
+    { "        s_load_dword    s3, s[0:1], s4 dlc\n",
+                0xf40040c0U, 0x08000000U, true, true, "" },
+    { "        s_load_dword    s3, s[0:1], s4 nv\n",
+                0xf40080c0U, 0x08000000U, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
