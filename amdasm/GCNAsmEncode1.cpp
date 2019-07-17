@@ -774,16 +774,16 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     toLowerString(name);
                     const size_t msgNameIndex = (::strncmp(name, "msg_", 4) == 0) ? 4 : 0;
                     // choose message name table
-                    auto msgMap = isGCN14 ? sendMessageNamesGCN14Map :
+                    auto msgMap = (isGCN14 || isGCN15) ? sendMessageNamesGCN14Map :
                             sendMessageNamesMap;
-                    const size_t msgMapSize = isGCN14 ?
+                    const size_t msgMapSize = (isGCN14 || isGCN15) ?
                             sendMessageNamesGCN14MapSize : sendMessageNamesMapSize;
                     // find message name
                     size_t index = binaryMapFind(msgMap, msgMap + msgMapSize,
                             name+msgNameIndex, CStringLess()) - msgMap;
                     if (index != msgMapSize &&
-                        // save_wave only for GCN1.2
-                        (msgMap[index].second!=4 || (arch&ARCH_GCN_1_2_4)!=0))
+                        // save_wave only for >=GCN1.2
+                        (msgMap[index].second!=4 || (arch&ARCH_GCN_1_2_4_5)!=0))
                         sendMessage = msgMap[index].second;
                     else
                         ASM_NOTGOOD_BY_ERROR(funcArg1Place, "Unknown message")
