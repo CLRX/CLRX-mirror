@@ -306,7 +306,7 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
     switch(op)
     {
         case 248:
-            if (isGCN12)
+            if (isGCN12 || isGCN15)
             {
                 // 1/(2*PI)
                 putChars(bufPtr, "0.15915494", 10);

@@ -1276,11 +1276,11 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             toLowerString(regName);
             operand.range = {0, 0};
             
-            auto regNameTblEnd = (arch & ARCH_GCN_1_4) ?
+            auto regNameTblEnd = (arch & ARCH_GCN_1_4_5) ?
                         ssourceNamesGCN14Tbl + ssourceNamesGCN14TblSize :
                         ssourceNamesTbl + ssourceNamesTblSize;
             auto regNameIt = binaryMapFind(
-                    (arch & ARCH_GCN_1_4) ? ssourceNamesGCN14Tbl : ssourceNamesTbl,
+                    (arch & ARCH_GCN_1_4_5) ? ssourceNamesGCN14Tbl : ssourceNamesTbl,
                     regNameTblEnd, regName, CStringLess());
             
             // if found in table

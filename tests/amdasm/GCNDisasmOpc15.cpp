@@ -47,6 +47,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0x80157904U, 0, false, "        s_add_u32       s21, s4, ttmp13\n" },
     { 0x80157a04U, 0, false, "        s_add_u32       s21, s4, ttmp14\n" },
     { 0x80157b04U, 0, false, "        s_add_u32       s21, s4, ttmp15\n" },
+    { 0x80153df8U, 0, false, "        s_add_u32       s21, 0.15915494, s61\n" },
     { 0x80157c04U, 0, false, "        s_add_u32       s21, s4, m0\n" },
     { 0x80157e04U, 0, false, "        s_add_u32       s21, s4, exec_lo\n" },
     { 0x80158004U, 0, false, "        s_add_u32       s21, s4, 0\n" },
