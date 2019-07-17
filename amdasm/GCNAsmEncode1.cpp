@@ -365,8 +365,8 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             {
                 asmr.sections[asmr.currentSection].addCodeFlowEntry({ 
                     size_t(asmr.currentOutPos), size_t(value),
-                    (isGCN14 && gcnInsn.code1==21) ? AsmCodeFlowType::CALL :
-                            AsmCodeFlowType::CJUMP });
+                    ((isGCN14 && gcnInsn.code1==21) || (isGCN15 && gcnInsn.code1==22)) ?
+                            AsmCodeFlowType::CALL : AsmCodeFlowType::CJUMP });
             }
         }
     }

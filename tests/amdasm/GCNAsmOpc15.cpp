@@ -412,5 +412,13 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
                 0xb92b0017U, 0, false, true, "" },
     { "    s_getreg_b32    s43, hwreg(HWREG_POPS_PACKER, 0, 1)",
                 0xb92b0017U, 0, false, true, "" },
+    // SOPK instructions
+    { "s_call_b64 s[44:45], xxxx+8\nxxxx:", 0xbb2c0002U, 0, false, true, "" },
+    { "    s_waitcnt_vscnt  s43, 0xd3b9", 0xbbabd3b9U, 0, false, true, "" },
+    { "    s_waitcnt_vmcnt  s43, 0xd3b9", 0xbc2bd3b9U, 0, false, true, "" },
+    { "    s_waitcnt_expcnt s43, 0xd3b9", 0xbcabd3b9U, 0, false, true, "" },
+    { "    s_waitcnt_lgkmcnt s43, 0xd3b9", 0xbd2bd3b9U, 0, false, true, "" },
+    { "    s_subvector_loop_begin s43, 0xd3b9", 0xbdabd3b9U, 0, false, true, "" },
+    { "    s_subvector_loop_end s43, 0xd3b9", 0xbe2bd3b9U, 0, false, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };

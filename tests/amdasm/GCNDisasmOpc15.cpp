@@ -202,8 +202,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xbc2bd3b9U, 0, false, "        s_waitcnt_vmcnt s43, 0xd3b9\n" },
     { 0xbcabd3b9U, 0, false, "        s_waitcnt_expcnt s43, 0xd3b9\n" },
     { 0xbd2bd3b9U, 0, false, "        s_waitcnt_lgkmcnt s43, 0xd3b9\n" },
-    { 0xbdabd3b9U, 0, false, "        s_subvector_begin s43, 0xd3b9\n" },
-    { 0xbe2bd3b9U, 0, false, "        s_subvector_end s43, 0xd3b9\n" },
+    { 0xbdabd3b9U, 0, false, "        s_subvector_loop_begin s43, 0xd3b9\n" },
+    { 0xbe2bd3b9U, 0, false, "        s_subvector_loop_end s43, 0xd3b9\n" },
     /* SOP1 opcodes */
     { 0xbed60014U, 0, false, "        SOP1_ill_0      s86, s20\n" },
     { 0xbed60114U, 0, false, "        SOP1_ill_1      s86, s20\n" },
