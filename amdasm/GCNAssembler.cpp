@@ -421,7 +421,8 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                             (oldV & 0xffe00000U) | (value&0x1fffffU));
             }
             else
-                SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value&0xfffffU);
+                SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4),
+                      (value&0xfffffU) | ((curArchMask & ARCH_GCN_1_5) ? 0x7dU<<25 : 0));
             printWarningForRange(targetType==GCNTGT_SMEMOFFSETVEGA ? 21 : 20,
                             value, sourcePos,
                             targetType==GCNTGT_SMEMOFFSETVEGA ? WS_BOTH : WS_UNSIGNED);
