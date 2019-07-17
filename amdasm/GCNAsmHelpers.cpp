@@ -578,7 +578,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             loHiRegSuffix = 4;
             loHiReg = 126;
         }
-        else if ((arch & ARCH_GCN_1_4) == 0 && regName[0]=='t')
+        else if ((arch & ARCH_GCN_1_4_5) == 0 && regName[0]=='t')
         {
             /* tma,tba */
             if (regName[1] == 'b' && regName[2] == 'a')

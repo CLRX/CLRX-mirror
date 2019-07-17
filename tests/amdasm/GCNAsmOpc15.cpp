@@ -38,6 +38,14 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
     { "    s_add_u32  ttmp[2:2], s4, s61", 0x806e3d04U, 0, false, true, "" },
     { "    s_add_u32  ttmp12, s4, s61", 0x80783d04U, 0, false, true, "" },
     { "    s_add_u32  ttmp15, s4, s61", 0x807b3d04U, 0, false, true, "" },
+    { "    s_add_u32  tba_lo, s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Expected 1 scalar register\n" },
+    { "    s_add_u32  tba_hi, s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Expected 1 scalar register\n" },
+    { "    s_add_u32  tma_lo, s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Expected 1 scalar register\n" },
+    { "    s_add_u32  tma_hi, s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Expected 1 scalar register\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
