@@ -50,7 +50,7 @@ static void tryPromoteConstImmToLiteral(GCNOperand& src0Op, GPUArchMask arch)
     }
     else if (!src0Op.range.isRegVar() &&
             ((src0Op.range.start>=240 && src0Op.range.start<248) ||
-             ((arch&ARCH_GCN_1_2_4)!=0 && src0Op.range.start==248)))
+             ((arch&ARCH_GCN_1_2_4_5)!=0 && src0Op.range.start==248)))
     {
         // floating point immediates to literal
         src0Op.value = constImmFloatLiterals[src0Op.range.start-240];
