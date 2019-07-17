@@ -22,6 +22,14 @@
 
 const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
 {
+    { "    s_add_u32  flat_scratch_lo, s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Expected 1 scalar register\n" },
+    { "    s_add_u32  flat_scratch_hi, s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Expected 1 scalar register\n" },
+    { "    s_add_u32  xnack_mask_lo, s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Expected 1 scalar register\n" },
+    { "    s_add_u32  xnack_mask_hi, s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Expected 1 scalar register\n" },
     { "        s_add_u32       s21, s4, s61\n", 0x80153d04U, 0, false, true, "" },
     { "        s_add_u32       s21, s4, s100\n", 0x80156404U, 0, false, true, "" },
     { "        s_add_u32       s21, s4, s102\n", 0x80156604U, 0, false, true, "" },
@@ -31,6 +39,12 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
     { "xrv = %s105; s_add_u32 s21, s4, xrv\n", 0x80156904U, 0, false, true, "" },
     { "        s_add_u32       s21, s4, vcc_lo\n", 0x80156a04U, 0, false, true, "" },
     { "        s_add_u32       s21, s4, vcc_hi\n", 0x80156b04U, 0, false, true, "" },
+    { "    s_add_u32  s21, 0.15915494, s61", 0x80153df8U, 0, false, true, "" },
+    { "vval=%0.15915494; s_add_u32  s21, vval, s61",
+        0x80153df8U, 0, false, true, "" },
+    { "        s_add_u32       s21, s4, null\n", 0x80157d04U, 0, false, true, "" },
+    { "        s_add_u32       s21, null, s61\n", 0x80153d7dU, 0, false, true, "" },
+    { "        s_add_u32       null, s4, s61\n", 0x807d3d04U, 0, false, true, "" },
     { "    s_add_u32  vcc[1:1], s4, s61", 0x806b3d04U, 0, false, true, "" },
     { "    s_add_u32  vcc[1], s4, s61", 0x806b3d04U, 0, false, true, "" },
     { "    s_add_u32  ttmp0, s4, s61", 0x806c3d04U, 0, false, true, "" },

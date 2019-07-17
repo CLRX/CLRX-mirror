@@ -2660,10 +2660,10 @@ bool GCNAsmUtils::checkGCNVOPExtraModifers(Assembler& asmr, GPUArchMask arch, bo
 {
     if (needImm)
         ASM_FAIL_BY_ERROR(instrPlace, "Literal with SDWA or DPP word is illegal")
-    if ((arch & ARCH_GCN_1_4)==0 && !src0Op.range.isVGPR())
+    if ((arch & ARCH_GCN_1_4_5)==0 && !src0Op.range.isVGPR())
         ASM_FAIL_BY_ERROR(instrPlace, "SRC0 must be a vector register with "
                     "SDWA or DPP word")
-    if ((arch & ARCH_GCN_1_4)!=0 && extraMods.needDPP && !src0Op.range.isVGPR())
+    if ((arch & ARCH_GCN_1_4_5)!=0 && extraMods.needDPP && !src0Op.range.isVGPR())
         ASM_FAIL_BY_ERROR(instrPlace, "SRC0 must be a vector register with DPP word")
     if (vop3)
         // if VOP3 and (VOP_DPP or VOP_SDWA)
