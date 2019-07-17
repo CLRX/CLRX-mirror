@@ -270,10 +270,49 @@ static const std::pair<const char*, cxuint> hwregNamesGCN14Map[] =
     { "sq_shader_tma_hi", 19 },
     { "sq_shader_tma_lo", 18 },
     { "status", 2 },
+    { "tba_hi", 17 },
+    { "tba_lo", 16 },
+    { "tma_hi", 19 },
+    { "tma_lo", 18 },
     { "trapsts", 3 }
 };
 
 static const size_t hwregNamesGCN14MapSize = sizeof(hwregNamesGCN14Map) /
+            sizeof(std::pair<const char*, uint16_t>);
+
+// update SGPR counting and VCC usage (regflags) for GCN 1.4 (VEGA)
+static const std::pair<const char*, cxuint> hwregNamesGCN15Map[] =
+{
+    { "flat_scr_hi", 21 },
+    { "flat_scr_lo", 20 },
+    { "flush_ib", 14 },
+    { "gpr_alloc", 5 },
+    { "hw_id", 4 },
+    { "ib_dbg0", 12 },
+    { "ib_dbg1", 13 },
+    { "ib_sts", 7 },
+    { "inst_dw0", 10 },
+    { "inst_dw1", 11 },
+    { "lds_alloc", 6 },
+    { "mode", 1 },
+    { "pc_hi", 9 },
+    { "pc_lo", 8 },
+    { "pops_packer", 23 },
+    { "sh_mem_bases", 15 },
+    { "sq_shader_tba_hi", 17 },
+    { "sq_shader_tba_lo", 16 },
+    { "sq_shader_tma_hi", 19 },
+    { "sq_shader_tma_lo", 18 },
+    { "status", 2 },
+    { "tba_hi", 17 },
+    { "tba_lo", 16 },
+    { "tma_hi", 19 },
+    { "tma_lo", 18 },
+    { "trapsts", 3 },
+    { "xnack_mask", 22 },
+};
+
+static const size_t hwregNamesGCN15MapSize = sizeof(hwregNamesGCN15Map) /
             sizeof(std::pair<const char*, uint16_t>);
 
 bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -286,6 +325,7 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     RegRange dstReg(0, 0);
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
+    const bool isGCN15 = (arch & ARCH_GCN_1_5)!=0;
     
     gcnAsm->setCurrentRVU(0);
     bool doWrite = (gcnInsn.mode&GCN_MASK1) != GCN_DST_SRC &&
@@ -351,12 +391,13 @@ bool GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             // parse hwreg by name
             const char* hwregNamePlace = linePtr;
             // choose hwReg names map
-            const size_t regMapSize = isGCN14 ? hwregNamesGCN14MapSize : hwregNamesMapSize;
-            const std::pair<const char*, cxuint>* regMap = isGCN14 ?
-                        hwregNamesGCN14Map : hwregNamesMap;
+            const size_t regMapSize = isGCN15 ? hwregNamesGCN15MapSize :
+                        (isGCN14 ? hwregNamesGCN14MapSize : hwregNamesMapSize);
+            const std::pair<const char*, cxuint>* regMap = isGCN15 ? hwregNamesGCN15Map :
+                        (isGCN14 ? hwregNamesGCN14Map : hwregNamesMap);
             good &= getEnumeration(asmr, linePtr, "HWRegister",
                         regMapSize, regMap, hwregId, "hwreg_");
-            if (good && (arch & ARCH_GCN_1_2_4) == 0 && hwregId == 13)
+            if (good && (arch & ARCH_GCN_1_2_4_5) == 0 && hwregId == 13)
                 // if ib_dgb1 in not GCN 1.2
                 ASM_NOTGOOD_BY_ERROR(hwregNamePlace, "Unknown HWRegister")
         }
