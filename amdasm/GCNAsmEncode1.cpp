@@ -624,6 +624,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     bool good = true;
     const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
+    const bool isGCN15 = (arch & ARCH_GCN_1_5)!=0;
     if (gcnEncSize==GCNEncSize::BIT64)
         ASM_FAIL_BY_ERROR(instrPlace, "Only 32-bit size for SOPP encoding")
     
@@ -663,7 +664,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             bool haveLgkmCnt = false;
             bool haveExpCnt = false;
             bool haveVMCnt = false;
-            imm16 = isGCN14 ? 0xcf7f : 0xf7f;
+            imm16 = isGCN15 ? 0xff7f : (isGCN14 ? 0xcf7f : 0xf7f);
             while (true)
             {
                 skipSpacesToEnd(linePtr, end);
@@ -682,7 +683,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     if (haveVMCnt)
                         asmr.printWarning(funcNamePlace, "vmcnt was already defined");
                     bitPos = 0;
-                    bitMask = isGCN14 ? 63 : 15;
+                    bitMask = (isGCN14 || isGCN15) ? 63 : 15;
                     doVMCnt = haveVMCnt = true;
                 }
                 else if (::strcmp(name, "lgkmcnt")==0)
@@ -690,7 +691,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     if (haveLgkmCnt)
                         asmr.printWarning(funcNamePlace, "lgkmcnt was already defined");
                     bitPos = 8;
-                    bitMask = 15;
+                    bitMask = isGCN15 ? 63 : 15;
                     haveLgkmCnt = true;
                 }
                 else if (::strcmp(name, "expcnt")==0)
@@ -720,7 +721,7 @@ bool GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 {
                     if (value > bitMask)
                         asmr.printWarning(argPlace, "Value out of range");
-                    if (!isGCN14 || !doVMCnt)
+                    if ((!isGCN14 && !isGCN15) || !doVMCnt)
                         imm16 = (imm16 & ~(bitMask<<bitPos)) | ((value&bitMask)<<bitPos);
                     else // vmcnt for GFX9
                         imm16 = (imm16 & 0x3ff0) | ((value&15) | ((value&0x30)<<10));
