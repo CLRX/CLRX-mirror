@@ -761,7 +761,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* OMOD already defined */
     { "    v_add_f32  v154, v21, v107 mul:4 div:2", 0xd206009aU, 0x1802d715U, true, true, 
         "test.s:1:38: Warning: OMOD is already defined\n" },
-    /* rest of the VOP2 pcodes */
+    /* rest of the VOP2 opcodes */
     { "    v_sub_f32  v154, v21, v107", 0x0934d715U, 0, false, true, "" },
     { "    v_sub_f32  v55, s27, -v90", 0xd2080037U, 0x4002b41bU, true, true, "" },
     { "    v_subrev_f32  v154, v21, v107", 0x0b34d715U, 0, false, true, "" },
