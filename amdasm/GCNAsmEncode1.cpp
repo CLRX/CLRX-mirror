@@ -1283,12 +1283,13 @@ static void encodeVOPWords(uint32_t vop0Word, cxbyte modifiers,
         SLEV(words[wordsNum++], immValue);
 }
 
-static void encodeVOP3Words(bool isGCN12, const GCNAsmInstruction& gcnInsn,
+static void encodeVOP3Words(GPUArchMask arch, const GCNAsmInstruction& gcnInsn,
         cxbyte modifiers, VOPOpModifiers opMods, bool haveDstCC,
         const RegRange& dstReg, const RegRange& dstCCReg, const RegRange& srcCCReg,
         const GCNOperand& src0Op, const GCNOperand& src1Op,
         cxuint& wordsNum, uint32_t* words)
 {
+    const bool isGCN12 = (arch & ARCH_GCN_1_2_4_5)!=0;
     // VOP3 encoding
     uint32_t code = (isGCN12) ?
             (uint32_t(gcnInsn.code2)<<16) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) :
@@ -1558,7 +1559,7 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 0, wordsNum, words);
     else
         // VOP3 encoding
-        encodeVOP3Words(isGCN12, gcnInsn, modifiers, opMods, haveDstCC,
+        encodeVOP3Words(arch, gcnInsn, modifiers, opMods, haveDstCC,
                 dstReg, dstCCReg, srcCCReg, src0Op, src1Op, wordsNum, words);
     
     if (!checkGCNEncodingSize(asmr, instrPlace, gcnEncSize, wordsNum))
@@ -1714,7 +1715,7 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 0, wordsNum, words);
     else
         // VOP3 encoding
-        encodeVOP3Words(isGCN12, gcnInsn, modifiers, opMods, false,
+        encodeVOP3Words(arch, gcnInsn, modifiers, opMods, false,
                 dstReg, RegRange{}, RegRange{}, src0Op, GCNOperand{}, wordsNum, words);
     
     if (!checkGCNEncodingSize(asmr, instrPlace, gcnEncSize, wordsNum))
@@ -1897,7 +1898,7 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     else
         // VOP3 encoding
-        encodeVOP3Words(isGCN12, gcnInsn, modifiers, opMods, false,
+        encodeVOP3Words(arch, gcnInsn, modifiers, opMods, false,
                 dstReg, RegRange{}, RegRange{}, src0Op, src1Op, wordsNum, words);
     
     if (!checkGCNEncodingSize(asmr, instrPlace, gcnEncSize, wordsNum))
