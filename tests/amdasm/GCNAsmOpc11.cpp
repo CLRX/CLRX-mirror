@@ -925,6 +925,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_cvt_i32_f64  v55, abs(v[27:28])", 0xd3060137U, 0x0000011bU, true, true, "" },
     { "    v_cvt_i32_f64  v55, abs(s[26:27])", 0xd3060137U, 0x0000001aU, true, true, "" },
     { "    v_cvt_i32_f64  v55, -s[26:27]", 0xd3060037U, 0x2000001aU, true, true, "" },
+    { "    v_cvt_f64_i32  v[158:159], v79", 0x7f3c094fU, 0, false, true, "" },
+    { "    v_cvt_f64_i32  v[55:56], abs(v27)", 0xd3080137U, 0x0000011bU, true, true, "" },
     { "    v_cvt_f32_i32  v158, v79", 0x7f3c0b4fU, 0, false, true, "" },
     { "    v_cvt_f32_i32  v55, v27 vop3", 0xd30a0037U, 0x0000011bU, true, true, "" },
     { "    v_cvt_f32_u32  v158, v79", 0x7f3c0d4fU, 0, false, true, "" },
