@@ -1243,6 +1243,8 @@ static void encodeVOPWords(uint32_t vop0Word, cxbyte modifiers,
         src0out = 0xf9;
     else if (extraMods.needDPP)
         src0out = 0xfa;
+    else if (extraMods.needDPP8)
+        src0out = (extraMods.fi ? 0xea : 0xe9);
     SLEV(words[0], vop0Word | uint32_t(src0out));
     if (extraMods.needSDWA)
     {
@@ -1275,6 +1277,8 @@ static void encodeVOPWords(uint32_t vop0Word, cxbyte modifiers,
                 (extraMods.fi ? 0x40000U : 0) |
                 (uint32_t(extraMods.bankMask)<<24) |
                 (uint32_t(extraMods.rowMask)<<28));
+    else if (extraMods.needDPP8)
+        SLEV(words[wordsNum++], (src0Op.range.bstart()&0xff) | (extraMods.dpp8Value<<8));
     else if (src0Op.range.isVal(255)) // otherwise we check for immediate/literal value
         SLEV(words[wordsNum++], src0Op.value);
     else if (src1Op.range.isVal(255))
@@ -1507,12 +1511,13 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
              mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM);
     
     bool sextFlags = ((src0Op.vopMods|src1Op.vopMods) & VOPOP_SEXT);
-    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
-                gcnVOPEnc!=GCNVOPEnc::NORMAL))
+    bool absNegFlags = ((src0Op.vopMods|src1Op.vopMods) & (VOPOP_ABS|VOPOP_NEG));
+    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || extraMods.needDPP8 ||
+                sextFlags || gcnVOPEnc!=GCNVOPEnc::NORMAL))
     {
         /* if VOP_SDWA or VOP_DPP is required */
         if (!checkGCNVOPExtraModifers(asmr, arch, needImm, sextFlags, vop3,
-                    gcnVOPEnc, src0Op, extraMods, instrPlace))
+                    gcnVOPEnc, src0Op, extraMods, absNegFlags, instrPlace))
             return false;
         if (gcnAsm->instrRVUs[2].regField != ASMFIELD_NONE)
             gcnAsm->instrRVUs[2].regField = GCNFIELD_DPPSDWA_SRC0;
@@ -1674,13 +1679,14 @@ bool GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     
     bool sextFlags = (src0Op.vopMods & VOPOP_SEXT);
+    bool absNegFlags = (src0Op.vopMods & (VOPOP_ABS|VOPOP_NEG));
     bool needImm = (src0Op && src0Op.range.isVal(255));
-    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
-                gcnVOPEnc!=GCNVOPEnc::NORMAL))
+    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || extraMods.needDPP8 ||
+                sextFlags || gcnVOPEnc!=GCNVOPEnc::NORMAL))
     {
         /* if VOP_SDWA or VOP_DPP is required */
         if (!checkGCNVOPExtraModifers(asmr, arch, needImm, sextFlags, vop3,
-                    gcnVOPEnc, src0Op, extraMods, instrPlace))
+                    gcnVOPEnc, src0Op, extraMods, absNegFlags, instrPlace))
             return false;
         if (gcnAsm->instrRVUs[1].regField != ASMFIELD_NONE)
             gcnAsm->instrRVUs[1].regField = GCNFIELD_DPPSDWA_SRC0;
@@ -1842,12 +1848,13 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const bool needImm = src0Op.range.start==255 || src1Op.range.start==255;
     
     bool sextFlags = ((src0Op.vopMods|src1Op.vopMods) & VOPOP_SEXT);
-    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
-                gcnVOPEnc!=GCNVOPEnc::NORMAL))
+    bool absNegFlags = (src0Op.vopMods & (VOPOP_ABS|VOPOP_NEG));
+    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || extraMods.needDPP8 ||
+                sextFlags || gcnVOPEnc!=GCNVOPEnc::NORMAL))
     {
         /* if VOP_SDWA or VOP_DPP is required */
         if (!checkGCNVOPExtraModifers(asmr, arch, needImm, sextFlags, vop3,
-                    gcnVOPEnc, src0Op, extraMods, instrPlace))
+                    gcnVOPEnc, src0Op, extraMods, absNegFlags, instrPlace))
             return false;
         if (gcnAsm->instrRVUs[1].regField != ASMFIELD_NONE)
             gcnAsm->instrRVUs[1].regField = GCNFIELD_DPPSDWA_SRC0;

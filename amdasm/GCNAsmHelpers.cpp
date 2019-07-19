@@ -1875,7 +1875,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
     bool haveNeg = false, haveAbs = false;
     bool haveSext = false, haveOpsel = false;
     bool haveNegHi = false, haveOpselHi = false;
-    bool haveFi = false;
+    bool haveFi = false, haveDPP8 = false;
     bool haveDPP = false, haveSDWA = false;
     
     // set default VOP extra modifiers (SDWA/DPP)
@@ -2477,6 +2477,65 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                         good &= parseModEnable(asmr, linePtr, fi, "vop3 modifier");
                         extraMods->fi = fi;
                     }
+                    else if ((arch & ARCH_GCN_1_5)!=0 && ::strcmp(mod, "dpp8")==0)
+                    {
+                        skipSpacesToEnd(linePtr, end);
+                        if (linePtr!=end && *linePtr==':')
+                        {
+                            // parse dpp8 array
+                            bool goodMod = true;
+                            skipCharAndSpacesToEnd(linePtr, end);
+                            if (linePtr==end || *linePtr!='[')
+                            {
+                                ASM_NOTGOOD_BY_ERROR1(goodMod = good, linePtr,
+                                        "Expected '[' before dpp8 list")
+                                continue;
+                            }
+                            uint32_t dpp8 = 0;
+                            linePtr++;
+                            // parse four 3-bit values
+                            for (cxuint k = 0; k < 8; k++)
+                            {
+                                skipSpacesToEnd(linePtr, end);
+                                cxbyte qpv = 0;
+                                good &= parseImm(asmr, linePtr, qpv, nullptr,
+                                        3, WS_UNSIGNED);
+                                dpp8 |= qpv<<(k*3);
+                                skipSpacesToEnd(linePtr, end);
+                                if (k!=7)
+                                {
+                                    // skip ',' before next value
+                                    if (linePtr==end || *linePtr!=',')
+                                    {
+                                        ASM_NOTGOOD_BY_ERROR1(goodMod = good, linePtr,
+                                            "Expected ',' before dpp8 component")
+                                        break;
+                                    }
+                                    else
+                                        ++linePtr;
+                                }
+                                else if (linePtr==end || *linePtr!=']')
+                                {
+                                    // unterminated dpp8
+                                    asmr.printError(linePtr, "Unterminated dpp8");
+                                    goodMod = good = false;
+                                }
+                                else
+                                    ++linePtr;
+                            }
+                            if (goodMod)
+                            {
+                                // set up dpp8
+                                extraMods->dpp8Value = dpp8;
+                                if (haveDPP8)
+                                    asmr.printWarning(modPlace,
+                                              "DPP8 is already defined");
+                                haveDPP8 = true;
+                            }
+                        }
+                        else
+                            ASM_NOTGOOD_BY_ERROR(linePtr, "Expected ':' before quad_perm")
+                    }
                     else if (::strcmp(mod, "sdwa")==0)
                     {
                         // SDWA - force SDWA encoding
@@ -2514,7 +2573,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
     const bool vopSDWA = (haveDstSel || haveDstUnused || haveSrc0Sel || haveSrc1Sel ||
         opMods.sextMod!=0 || haveSDWA);
     const bool vopDPP = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask ||
-            haveDPP || haveFi);
+            haveDPP || (haveFi && !haveDPP8));
+    const bool vopDPP8 = (haveFi || haveDPP8);
     const bool isGCN14 = (arch & ARCH_GCN_1_4_5) != 0;
     // mul/div modifier does not apply to vop3 if RXVEGA (this case will be checked later)
     const bool vop3 = (mods & ((isGCN14 ? 0 : 3)|VOP3_VOP3))!=0 ||
@@ -2523,11 +2583,12 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
     {
         extraMods->needSDWA = vopSDWA;
         extraMods->needDPP = vopDPP;
+        extraMods->needDPP8 = vopDPP8;
     }
-    if ((int(vop3)+vopSDWA+vopDPP)>1 ||
+    if ((int(vop3)+vopSDWA+vopDPP+vopDPP8)>1 ||
                 // RXVEGA: mul/div modifier are accepted in VOP_SDWA but not for VOP_DPP
-                (isGCN14 && (mods & 3)!=0 && vopDPP) ||
-                ((mods&VOP3_CLAMP)!=0 && vopDPP))
+                (isGCN14 && (mods & 3)!=0 && (vopDPP||vopDPP8)) ||
+                ((mods&VOP3_CLAMP)!=0 && (vopDPP||vopDPP8)))
         ASM_FAIL_BY_ERROR(modsPlace, "Mixing modifiers from different encodings is illegal")
     return good;
 }
@@ -2674,11 +2735,11 @@ bool GCNAsmUtils::checkGCNEncodingSize(Assembler& asmr, const char* insnPtr,
 bool GCNAsmUtils::checkGCNVOPEncoding(Assembler& asmr, GPUArchMask arch, const char* insnPtr,
             GCNVOPEnc vopEnc, GCNInsnMode insnMode, const VOPExtraModifiers* modifiers)
 {
-    if (vopEnc==GCNVOPEnc::DPP && !modifiers->needDPP)
+    if (vopEnc==GCNVOPEnc::DPP && (!modifiers->needDPP && !modifiers->needDPP8))
         ASM_FAIL_BY_ERROR(insnPtr, "DPP encoding specified when DPP not present")
     if (vopEnc==GCNVOPEnc::SDWA && !modifiers->needSDWA)
         ASM_FAIL_BY_ERROR(insnPtr, "SDWA encoding specified when SDWA not present")
-    if (modifiers->needDPP && (insnMode&GCN_VOP_NODPP)!=0)
+    if ((modifiers->needDPP || modifiers->needDPP8) && (insnMode&GCN_VOP_NODPP)!=0)
         ASM_FAIL_BY_ERROR(insnPtr, "DPP encoding is illegal for this instruction")
     if (modifiers->needSDWA && (insnMode&GCN_VOP_NOSDWA)!=0)
         ASM_FAIL_BY_ERROR(insnPtr, "SDWA encoding is illegal for this instruction")
@@ -2689,21 +2750,24 @@ bool GCNAsmUtils::checkGCNVOPEncoding(Assembler& asmr, GPUArchMask arch, const c
 
 bool GCNAsmUtils::checkGCNVOPExtraModifers(Assembler& asmr, GPUArchMask arch, bool needImm,
                  bool sextFlags, bool vop3, GCNVOPEnc gcnVOPEnc, const GCNOperand& src0Op,
-                 VOPExtraModifiers& extraMods, const char* instrPlace)
+                 VOPExtraModifiers& extraMods, bool absNegFlags, const char* instrPlace)
 {
     if (needImm)
         ASM_FAIL_BY_ERROR(instrPlace, "Literal with SDWA or DPP word is illegal")
     if ((arch & ARCH_GCN_1_4_5)==0 && !src0Op.range.isVGPR())
         ASM_FAIL_BY_ERROR(instrPlace, "SRC0 must be a vector register with "
                     "SDWA or DPP word")
-    if ((arch & ARCH_GCN_1_4_5)!=0 && extraMods.needDPP && !src0Op.range.isVGPR())
+    if ((arch & ARCH_GCN_1_4_5)!=0 && (extraMods.needDPP || extraMods.needDPP8) &&
+                    !src0Op.range.isVGPR())
         ASM_FAIL_BY_ERROR(instrPlace, "SRC0 must be a vector register with DPP word")
     if (vop3)
         // if VOP3 and (VOP_DPP or VOP_SDWA)
         ASM_FAIL_BY_ERROR(instrPlace, "Mixing VOP3 with SDWA or WORD is illegal")
-    if (sextFlags && extraMods.needDPP)
+    if (sextFlags && (extraMods.needDPP || extraMods.needDPP8))
         ASM_FAIL_BY_ERROR(instrPlace, "SEXT modifiers is unavailable for DPP word")
-    if (!extraMods.needSDWA && !extraMods.needDPP)
+    if (absNegFlags && extraMods.needDPP8)
+        ASM_FAIL_BY_ERROR(instrPlace, "ABS and NEG modifiers is unavailable for DPP8 word")
+    if (!extraMods.needSDWA && !extraMods.needDPP && !extraMods.needDPP8)
     {
         if (gcnVOPEnc!=GCNVOPEnc::DPP)
             extraMods.needSDWA = true; // by default we choose SDWA word

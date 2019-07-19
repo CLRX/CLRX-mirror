@@ -148,6 +148,8 @@ struct CLRX_INTERNAL VOPExtraModifiers
     bool needSDWA;
     bool needDPP;
     bool fi; // DPP GFX10
+    bool needDPP8;
+    uint32_t dpp8Value;
 };
 
 // VOP operand modifiers (booleans)
@@ -310,7 +312,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool checkGCNVOPExtraModifers(Assembler& asmr, GPUArchMask arch,
                  bool needImm, bool sextFlags, bool vop3, GCNVOPEnc gcnVOPEnc,
                  const GCNOperand& src0Op, VOPExtraModifiers& extraMods,
-                 const char* instrPlace);
+                 bool absNegFlags, const char* instrPlace);
     
     // routines to parse GCN encodings
     static bool parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,

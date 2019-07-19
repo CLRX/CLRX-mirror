@@ -1122,5 +1122,8 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
         0x0734d6faU, 0x540be, true, true, "" },
     { "v_add_f32       v154, v190, v107 row_mirror bank_mask:0 row_mask:0 fi:0\n",
         0x0734d6faU, 0x140be, true, true, "" },
+    /* VOP DPP8 */
+    { "v_add_f32       v154, v190, v107 " "dpp8:[1,7,2,5,6,3,6,4]\n",
+        0x0734d6e9U, 0x99eab9be, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
