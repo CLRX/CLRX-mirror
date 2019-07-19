@@ -147,6 +147,7 @@ struct CLRX_INTERNAL VOPExtraModifiers
     uint16_t dppCtrl;
     bool needSDWA;
     bool needDPP;
+    bool fi; // DPP GFX10
 };
 
 // VOP operand modifiers (booleans)

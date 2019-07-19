@@ -1272,6 +1272,7 @@ static void encodeVOPWords(uint32_t vop0Word, cxbyte modifiers,
                 ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0) |
                 ((src1Op.vopMods&VOPOP_NEG) ? (1U<<22) : 0) |
                 ((src1Op.vopMods&VOPOP_ABS) ? (1U<<23) : 0) |
+                (extraMods.fi ? 0x40000U : 0) |
                 (uint32_t(extraMods.bankMask)<<24) |
                 (uint32_t(extraMods.rowMask)<<28));
     else if (src0Op.range.isVal(255)) // otherwise we check for immediate/literal value

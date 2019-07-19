@@ -1875,13 +1875,14 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
     bool haveNeg = false, haveAbs = false;
     bool haveSext = false, haveOpsel = false;
     bool haveNegHi = false, haveOpselHi = false;
+    bool haveFi = false;
     bool haveDPP = false, haveSDWA = false;
     
     // set default VOP extra modifiers (SDWA/DPP)
     if (extraMods!=nullptr)
         *extraMods = { 6, 0, cxbyte((withSDWAOperands>=2)?6:0),
                     cxbyte((withSDWAOperands>=3)?6:0),
-                    15, 15, 0xe4 /* TODO: why not 0xe4? */, false, false };
+                    15, 15, 0xe4 /* TODO: why not 0xe4? */, false, false, false };
     
     skipSpacesToEnd(linePtr, end);
     const char* modsPlace = linePtr;
@@ -2445,6 +2446,37 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             haveDppCtrl = true;
                         }
                     }
+                    else if ((arch & ARCH_GCN_1_5)!=0 &&
+                        (::strcmp(mod, "row_share")==0 || ::strcmp(mod, "row_xmask")==0))
+                    {
+                        // row_XXX (shl, shr, ror) modifier (shift is in 1-15)
+                        skipSpacesToEnd(linePtr, end);
+                        if (linePtr!=end && *linePtr==':')
+                        {
+                            skipCharAndSpacesToEnd(linePtr, end);
+                            cxbyte shift = 0;
+                            if (parseImm(asmr, linePtr, shift , nullptr, 4, WS_UNSIGNED))
+                            {
+                                if (haveDppCtrl)
+                                    asmr.printWarning(modPlace,
+                                              "DppCtrl is already defined");
+                                haveDppCtrl = true;
+                                extraMods->dppCtrl = (0x150U +
+                                            (mod[4]=='x' ? 0x10 : 0)) | shift;
+                            }
+                            else
+                                good = false;
+                        }
+                        else
+                            ASM_NOTGOOD_BY_ERROR(linePtr, (std::string(
+                                        "Expected ':' before ")+mod).c_str())
+                    }
+                    else if ((arch & ARCH_GCN_1_5)!=0 && ::strcmp(mod, "fi")==0)
+                    {
+                        bool fi = false;
+                        good &= parseModEnable(asmr, linePtr, fi, "vop3 modifier");
+                        extraMods->fi = fi;
+                    }
                     else if (::strcmp(mod, "sdwa")==0)
                     {
                         // SDWA - force SDWA encoding
@@ -2482,7 +2514,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
     const bool vopSDWA = (haveDstSel || haveDstUnused || haveSrc0Sel || haveSrc1Sel ||
         opMods.sextMod!=0 || haveSDWA);
     const bool vopDPP = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask ||
-            haveDPP);
+            haveDPP || haveFi);
     const bool isGCN14 = (arch & ARCH_GCN_1_4_5) != 0;
     // mul/div modifier does not apply to vop3 if RXVEGA (this case will be checked later)
     const bool vop3 = (mods & ((isGCN14 ? 0 : 3)|VOP3_VOP3))!=0 ||
