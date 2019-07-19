@@ -2366,7 +2366,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             ASM_NOTGOOD_BY_ERROR(linePtr, (std::string(
                                         "Expected ':' before ")+mod).c_str())
                     }
-                    else if (memcmp(mod, "wave_", 5)==0 &&
+                    else if ((arch & ARCH_GCN_1_5)==0 && memcmp(mod, "wave_", 5)==0 &&
                         (::strcmp(mod+5, "shl")==0 || ::strcmp(mod+5, "shr")==0 ||
                             ::strcmp(mod+5, "rol")==0 || ::strcmp(mod+5, "ror")==0))
                     {
@@ -2405,7 +2405,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr,
                             asmr.printWarning(modPlace, "DppCtrl is already defined");
                         haveDppCtrl = true;
                     }
-                    else if (::strncmp(mod, "row_bcast", 9)==0 && (
+                    else if ((arch & ARCH_GCN_1_5)==0 &&
+                        ::strncmp(mod, "row_bcast", 9)==0 && (
                         (mod[9]=='1' && mod[10]=='5' && mod[11]==0) ||
                         (mod[9]=='3' && mod[10]=='1' && mod[11]==0) || mod[9]==0))
                     {
