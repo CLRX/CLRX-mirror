@@ -1319,6 +1319,7 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
     { "    v_ldexp_f16  v154, v21, v107", 0x7734d715U, 0, false, true, "" },
     { "    v_ldexp_f16  v55, s27, v90 vop3", 0xd53b0037U, 0x0002b41bU, true, true, "" },
     { "    v_pk_fmac_f16  v154, v21, v107", 0x7934d715U, 0, false, true, "" },
-    //{ "    v_pk_fmac_f16  v55, s27, v90 vop3", 0xd53b0037U, 0x0002b41bU, true, true, "" },
+    { "    v_pk_fmac_f16  v55, s27, v90 vop3", 0, 0, false, false,
+        "test.s:1:5: Error: No VOP3 encoding for this instruction\n" },
     { nullptr, 0, 0, false, false, 0 }
 };

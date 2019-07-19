@@ -1543,6 +1543,9 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!checkGCNVOPEncoding(asmr, arch, instrPlace, gcnVOPEnc, gcnInsn.mode, &extraMods))
         return false;
     
+    if (vop3 && gcnInsn.code2==UINT16_MAX)
+        ASM_FAIL_BY_ERROR(instrPlace, "No VOP3 encoding for this instruction")
+    
     // set target expressions if needed
     if (src0OpExpr!=nullptr)
         src0OpExpr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
