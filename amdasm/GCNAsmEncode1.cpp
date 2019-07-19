@@ -1294,11 +1294,12 @@ static void encodeVOP3Words(GPUArchMask arch, const GCNAsmInstruction& gcnInsn,
     uint32_t code = (isGCN12) ?
             (uint32_t(gcnInsn.code2)<<16) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) :
             (uint32_t(gcnInsn.code2)<<17) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0);
+    cxuint encoding = (arch & ARCH_GCN_1_5)!=0 ? 0xd4000000U : 0xd0000000U;
     if (haveDstCC) // if VOP3B
-        SLEV(words[0], 0xd0000000U | code |
+        SLEV(words[0], encoding | code |
             (dstReg.bstart()&0xff) | (uint32_t(dstCCReg.bstart())<<8));
     else // if VOP3A
-        SLEV(words[0], 0xd0000000U | code | (dstReg.bstart()&0xff) |
+        SLEV(words[0], encoding | code | (dstReg.bstart()&0xff) |
             ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
             ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0) |
             ((opMods.opselMod&15) << 11));
