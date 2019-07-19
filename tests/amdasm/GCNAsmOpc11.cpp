@@ -865,6 +865,10 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_subbrev_u32  v154, vcc, v21, v107, vcc", 0x5534d715U, 0, false, true, "" },
     { "    v_addc_u32 v55, s[6:7], v27, -v90, s[24:25]\n",
             0xd2500637U, 0x4062b51bU, true, true, "" },
+    { "    v_subb_u32 v55, s[6:7], v27, -v90, s[24:25]\n",
+            0xd2520637U, 0x4062b51bU, true, true, "" },
+    { "    v_subbrev_u32 v55, s[6:7], v27, -v90, s[24:25]\n",
+            0xd2540637U, 0x4062b51bU, true, true, "" },
     /* VOP3B errors */
     { "    v_add_i32  v55, s[10:11], s27, abs(v90)", 0, 0, false, false,
         "test.s:1:39: Error: Expected operator\n"
