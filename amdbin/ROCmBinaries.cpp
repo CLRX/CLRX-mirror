@@ -1410,7 +1410,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
         const cxbyte bind = ELF64_ST_BIND(sym.st_info);
         if (ULEV(sym.st_shndx)==textIndex &&
-            (symType==STT_GNU_IFUNC || symType==STT_FUNC ||
+            (symType==STT_GNU_IFUNC || (symType==STT_FUNC && !newBinFormat) ||
                 (bind==STB_GLOBAL && symType==STT_OBJECT)))
             regionsNum++;
     }
@@ -1443,7 +1443,11 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
                 type = ROCmRegionType::KERNEL;
             // if function kernel
             else if (symType==STT_FUNC)
+            {
+                if (newBinFormat)
+                    continue;
                 type = ROCmRegionType::FKERNEL;
+            }
             symOffsets[j] = std::make_pair(value, j);
             if (type!=ROCmRegionType::DATA && value+0x100 > codeOffset+codeSize)
                 throw BinException("Kernel or code offset is too big!");
