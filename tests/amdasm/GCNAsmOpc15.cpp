@@ -1539,5 +1539,33 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
     { "    v_swap_b32  v55, v27 vop3", 0xd5e50037U, 0x0000011bU, true, true, "" },
     { "    v_swaprel_b32  v158, v79", 0x7f3cd14fU, 0, false, true, "" },
     { "    v_swaprel_b32  v55, v27 vop3", 0xd5e80037U, 0x0000011bU, true, true, "" },
+    /* VOP1 SDWA */
+    { "    v_sin_f32  v158, -abs(v79) dst_sel:word1",
+            0x7f3c6af9U, 0x36054fU, true, true, "" },
+    { "    v_sin_f32  v158, -abs(v79) dst_sel:word1 src0_sel:word0",
+            0x7f3c6af9U, 0x34054fU, true, true, "" },
+    { "    v_sin_f32  v158, -abs(s79) dst_sel:word1",
+            0x7f3c6af9U, 0xb6054fU, true, true, "" },
+    /* VOP DPP */
+    { "    v_sin_f32  v158, v79 row_shr:14", 0x7f3c6afaU, 0xff011e4fU, true, true, "" },
+    /* VOP DPP8 */
+    { "    v_sin_f32  v158, v79 dpp8:[1,7,2,5,6,3,6,4]",
+        0x7f3c6ae9U, 0x99eab94fU, true, true, "" },
+        { "    v_sin_f32  v158, v79 dpp8:[1,7,2,5,6,3,6,4] fi",
+        0x7f3c6aeaU, 0x99eab94fU, true, true, "" },
+    /* VOP1 errors */
+    { "    v_mov_b32  v15, 133 vop3", 0, 0, false, false,
+        "test.s:1:5: Error: Literal in VOP3 encoding is illegal\n" },
+    { "    v_rcp_f64  v[158:], v[79:80]", 0, 0, false, false,
+        "test.s:1:22: Error: Expected expression\n"
+        "test.s:1:22: Error: Expected ',' before argument\n" },
+    { "    v_rcp_f64  v[158:159, v[79:80]", 0, 0, false, false,
+        "test.s:1:16: Error: Unterminated vector register range\n" },
+    { "    v_rcp_f64  v158, s79", 0, 0, false, false,
+        "test.s:1:16: Error: Required 2 vector registers\n"
+        "test.s:1:25: Error: Required 2 scalar registers\n" },
+    { "    v_mov_b32  v[48:59], s[80:81]", 0, 0, false, false,
+        "test.s:1:16: Error: Required 1 vector register\n"
+        "test.s:1:26: Error: Required 1 scalar register\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
