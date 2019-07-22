@@ -2167,6 +2167,23 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
     { "    v_cmpx_tru_f16  v50, v107 vop3", 0xd4ff0000U, 0x0002d732U, true, true, "" },
     { "    v_cmpx_t_f16  v79, v201", 0x7dff934fU, 0, false, true, "" },
     { "    v_cmpx_t_f16  v50, v107 vop3", 0xd4ff0000U, 0x0002d732U, true, true, "" },
-    
+    /* OP_SEL */
+    /* for VOP1/VOP3 */
+    { "    v_not_b32  v55, v27 op_sel:[0,1]", 0xd5b74037U, 0x0000011bU, true, true, "" },
+    { "    v_not_b32  v55, v27 op_sel:[1,0]", 0xd5b70837U, 0x0000011bU, true, true, "" },
+    /* for VOP2/VOP3 */
+    { "    v_min_f32  v55, s27, -v90 op_sel:[1,0,0]",
+        0xd50f0837U, 0x4002b41bU, true, true, "" },
+    { "    v_min_f32  v55, s27, -v90 op_sel:[0,1,0]",
+        0xd50f1037U, 0x4002b41bU, true, true, "" },
+    { "    v_min_f32  v55, s27, -v90 op_sel:[0,0,1]",
+        0xd50f4037U, 0x4002b41bU, true, true, "" },
+    /* for VOPC/VOP3 */
+    { "    v_cmp_lt_i16  s[42:43], v50, v107 op_sel:[1,0,0]",
+        0xd489082aU, 0x0002d732U, true, true, "" },
+    { "    v_cmp_lt_i16  s[42:43], v50, v107 op_sel:[0,1,0]",
+        0xd489102aU, 0x0002d732U, true, true, "" },
+    { "    v_cmp_lt_i16  s[42:43], v50, v107 op_sel:[0,0,1]",
+        0xd489402aU, 0x0002d732U, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
