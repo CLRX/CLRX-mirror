@@ -1771,11 +1771,14 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     cxbyte modifiers = 0;
     
     // parse SDST (2 SGPR's)
-    gcnAsm->setCurrentRVU(0);
-    good &= parseSRegRange(asmr, linePtr, dstReg, arch, 2, GCNFIELD_VOP3_SDST0, true,
-                           INSTROP_SYMREGRANGE|INSTROP_SGPR_UNALIGNED|INSTROP_WRITE);
-    if (!skipRequiredComma(asmr, linePtr))
-        return false;
+    if ((gcnInsn.mode & GCN_VOPC_NOVCC) == 0)
+    {
+        gcnAsm->setCurrentRVU(0);
+        good &= parseSRegRange(asmr, linePtr, dstReg, arch, 2, GCNFIELD_VOP3_SDST0, true,
+                            INSTROP_SYMREGRANGE|INSTROP_SGPR_UNALIGNED|INSTROP_WRITE);
+        if (!skipRequiredComma(asmr, linePtr))
+            return false;
+    }
     
     const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
                 (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
@@ -1816,10 +1819,11 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 ((opMods.negMod&2) ? VOPOP_NEG : 0) |
                 ((opMods.sextMod&2) ? VOPOP_SEXT : 0);
     
+    const cxuint vccCode = ((gcnInsn.mode & GCN_VOPC_NOVCC) == 0) ? 106 : 0;
     // determine whether SDWA is needed or VOP3 encoding needed
     extraMods.needSDWA |= ((src0Op.vopMods | src1Op.vopMods) & VOPOP_SEXT) != 0;
     bool vop3 = //(dstReg.start!=106) || (src1Op.range.start<256) ||
-        ((!isGCN14 || !extraMods.needSDWA) && !dstReg.isVal(106)) ||
+        ((!isGCN14 || !extraMods.needSDWA) && !dstReg.isVal(vccCode)) ||
         ((!isGCN14 || !extraMods.needSDWA) && src1Op.range.isNonVGPR()) ||
         (!isGCN12 && (src0Op.vopMods!=0 || src1Op.vopMods!=0)) ||
         (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)|
