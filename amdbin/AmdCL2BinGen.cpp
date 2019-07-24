@@ -1769,6 +1769,15 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
                     {
                         if (pos < codeWordsNum) pos++;
                     }
+                    if (isGCN15 && (encPart==3 || encPart==5))
+                    {
+                        // include VOP3 literal
+                        const uint32_t insnCode2 = ULEV(codeWords[pos-1]);
+                        if ((insnCode2 & 0x1ff) == 0xff ||
+                            ((insnCode2>>9) & 0x1ff) == 0xff ||
+                            ((insnCode2>>18) & 0x1ff) == 0xff)
+                            pos++;
+                    }
                 }
                 else if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
                     (isGCN12 && gcnSize12Table[encPart]))

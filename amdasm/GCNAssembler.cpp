@@ -703,6 +703,15 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
             else if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
                 (isGCN12 && gcnSize12Table[encPart]))
                 words++;
+            if (isGCN15 && (encPart==3 || encPart==5))
+            {
+                // include VOP3 literal
+                const uint32_t insnCode2 = ULEV(
+                                *reinterpret_cast<const uint32_t*>(code+4));
+                if ((insnCode2 & 0x1ff) == 0xff || ((insnCode2>>9) & 0x1ff) == 0xff ||
+                    ((insnCode2>>18) & 0x1ff) == 0xff)
+                    words++;
+            }
         }
     }
     else

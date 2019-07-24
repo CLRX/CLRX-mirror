@@ -396,6 +396,14 @@ void GCNDisassembler::analyzeBeforeDisassemble()
                 else if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
                     (isGCN12 && gcnSize12Table[encPart]))
                     pos++;
+                if (isGCN15 && (encPart==3 || encPart==5))
+                {
+                    // include VOP3 literal
+                    const uint32_t insnCode2 = ULEV(codeWords[pos]);
+                    if ((insnCode2 & 0x1ff) == 0xff || ((insnCode2>>9) & 0x1ff) == 0xff ||
+                        ((insnCode2>>18) & 0x1ff) == 0xff)
+                        pos++;
+                }
             }
         }
         else
@@ -734,6 +742,13 @@ void GCNDisassembler::disassemble()
                     }
                     if (gcnSize15Table[encPart] && pos < codeWordsNum)
                         insnCode2 = ULEV(codeWords[pos++]);
+                    if (isGCN15 && (encPart==3 || encPart==5))
+                    {
+                        // include VOP3 literal
+                        if ((insnCode2 & 0x1ff) == 0xff || ((insnCode2>>9) & 0x1ff) == 0xff ||
+                            ((insnCode2>>18) & 0x1ff) == 0xff)
+                            insnCode3 = ULEV(codeWords[pos++]);
+                    }
                 }
                 else if ((!isGCN124 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
                     (isGCN124 && gcnSize12Table[encPart]))
