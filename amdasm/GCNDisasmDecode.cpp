@@ -1565,9 +1565,10 @@ static void decodeVINTRPParam(uint16_t p, char*& bufPtr)
         putChars(bufPtr, vintrpParamsTbl[p], ::strlen(vintrpParamsTbl[p]));
 }
 
-void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAdd,
+void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, size_t codePos,
+         RelocIter& relocIter, cxuint spacesToAdd,
          GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
-         uint32_t insnCode2, FloatLitType displayFloatLits, Flags flags)
+         uint32_t insnCode2, uint32_t literal, FloatLitType displayFloatLits, Flags flags)
 {
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(170);
@@ -1642,8 +1643,15 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             if (absFlags & 1)
                 putChars(bufPtr, "abs(", 4);
             // print VSRC0
-            decodeGCNOperandNoLit(dasm, vsrc0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
+            if (!isGCN15)
+                decodeGCNOperandNoLit(dasm, vsrc0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
                                    bufPtr, arch, displayFloatLits);
+            else
+            {
+                output.forward(bufPtr-bufStart);
+                bufStart = bufPtr = decodeGCNOperand(dasm, codePos, relocIter, vsrc0,
+                 (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, arch, literal, displayFloatLits);
+            }
             // closing abs
             if (absFlags & 1)
                 *bufPtr++ = ')';
@@ -1661,8 +1669,17 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
                 // VINTRP param
                 decodeVINTRPParam(vsrc1, bufPtr);
             else
+            {
                 // print VSRC1
-                decodeGCNOperandNoLit(dasm, vsrc1, 1, bufPtr, arch, displayFloatLits);
+                if (!isGCN15)
+                    decodeGCNOperandNoLit(dasm, vsrc1, 1, bufPtr, arch, displayFloatLits);
+                else
+                {
+                    output.forward(bufPtr-bufStart);
+                    bufStart = bufPtr = decodeGCNOperand(dasm, codePos, relocIter, vsrc1,
+                        1, arch, literal, displayFloatLits);
+                }
+            }
             if (absFlags & 2)
                 *bufPtr++ = ')';
             // print VINTRP attr
@@ -1681,7 +1698,14 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
                 if (absFlags & 4)
                     putChars(bufPtr, "abs(", 4);
                 // print VSRC2
-                decodeGCNOperandNoLit(dasm, vsrc2, 1, bufPtr, arch, displayFloatLits);
+                if (!isGCN15)
+                    decodeGCNOperandNoLit(dasm, vsrc2, 1, bufPtr, arch, displayFloatLits);
+                else
+                {
+                    output.forward(bufPtr-bufStart);
+                    bufStart = bufPtr = decodeGCNOperand(dasm, codePos, relocIter, vsrc2,
+                        1, arch, literal, displayFloatLits);
+                }
                 if (absFlags & 4)
                     *bufPtr++ = ')';
                 vsrc2Used = true;
@@ -1701,8 +1725,15 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
             if (absFlags & 2)
                 putChars(bufPtr, "abs(", 4);
             // print VSRC1
-            decodeGCNOperandNoLit(dasm, vsrc1, (gcnInsn.mode&GCN_REG_SRC1_64)?2:1,
-                      bufPtr, arch, displayFloatLits);
+            if (!isGCN15)
+                decodeGCNOperandNoLit(dasm, vsrc1, (gcnInsn.mode&GCN_REG_SRC1_64)?2:1,
+                        bufPtr, arch, displayFloatLits);
+            else
+            {
+                output.forward(bufPtr-bufStart);
+                bufStart = bufPtr = decodeGCNOperand(dasm, codePos, relocIter, vsrc1,
+                    (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, arch, literal, displayFloatLits);
+            }
             if (absFlags & 2)
                 *bufPtr++ = ')';
             /* GCN_DST_VCC - only sdst is used, no vsrc2 */
@@ -1724,9 +1755,17 @@ void GCNDisasmUtils::decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAd
                         putChars(bufPtr, "abs(", 4);
                     // for V_MQSAD_U32 SRC2 is 128-bit
                     // print VSRC2
-                    decodeGCNOperandNoLit(dasm, vsrc2, is128Ops ? 4 :
-                                (gcnInsn.mode&GCN_REG_SRC2_64)?2:1,
-                                 bufPtr, arch, displayFloatLits);
+                    if (!isGCN15)
+                        decodeGCNOperandNoLit(dasm, vsrc2, is128Ops ? 4 :
+                                    (gcnInsn.mode&GCN_REG_SRC2_64)?2:1,
+                                    bufPtr, arch, displayFloatLits);
+                    else
+                    {
+                        output.forward(bufPtr-bufStart);
+                        bufStart = bufPtr = decodeGCNOperand(dasm, codePos, relocIter,
+                                vsrc2, is128Ops ? 4 : (gcnInsn.mode&GCN_REG_SRC2_64)?2:1,
+                                arch, literal, displayFloatLits);
+                    }
                     if (absFlags & 4)
                         *bufPtr++ = ')';
                 }

@@ -1070,17 +1070,17 @@ void GCNDisassembler::disassemble()
                            disassembler.getFlags());
                     break;
                 case GCNENC_VOP3A:
-                    GCNDisasmUtils::decodeVOP3Encoding(*this, spacesToAdd, curArchMask,
-                                 *gcnInsn, insnCode, insnCode2, displayFloatLits,
-                                 disassembler.getFlags());
+                    GCNDisasmUtils::decodeVOP3Encoding(*this, pos, curReloc,
+                            spacesToAdd, curArchMask, *gcnInsn, insnCode, insnCode2,
+                            insnCode3, displayFloatLits, disassembler.getFlags());
                     break;
                 case GCNENC_VOP3P: {
                     GCNInstruction newInsn = *gcnInsn;
                     newInsn.encoding = GCNENC_VOP3A;
                     newInsn.mode |= GCN_VOP3_VOP3P;
-                    GCNDisasmUtils::decodeVOP3Encoding(*this, spacesToAdd, curArchMask,
-                                 newInsn, insnCode, insnCode2, displayFloatLits,
-                                 disassembler.getFlags());
+                    GCNDisasmUtils::decodeVOP3Encoding(*this, pos, curReloc,
+                            spacesToAdd, curArchMask, newInsn, insnCode, insnCode2,
+                            insnCode3, displayFloatLits, disassembler.getFlags());
                     break;
                 }
                 case GCNENC_VINTRP:

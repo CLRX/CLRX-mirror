@@ -94,9 +94,11 @@ struct CLRX_INTERNAL GCNDisasmUtils
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
              FloatLitType displayFloatLits, Flags flags);
     
-    static void decodeVOP3Encoding(GCNDisassembler& dasm, cxuint spacesToAdd,
+    static void decodeVOP3Encoding(GCNDisassembler& dasm, size_t codePos,
+            RelocIter& relocIter, cxuint spacesToAdd,
             GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
-            uint32_t insnCode2, FloatLitType displayFloatLits, Flags flags);
+            uint32_t insnCode2, uint32_t literal, FloatLitType displayFloatLits,
+            Flags flags);
     
     static void decodeVINTRPEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
              GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode);
