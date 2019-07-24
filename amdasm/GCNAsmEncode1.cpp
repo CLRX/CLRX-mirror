@@ -1949,7 +1949,8 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4_5)!=0;
     const bool isGCN14 = (arch & ARCH_GCN_1_4_5)!=0;
     const bool isGCN15 = (arch & ARCH_GCN_1_5)!=0;
-    const bool vop3p = (gcnInsn.mode & GCN_VOP3_VOP3P) != 0;
+    const bool vop3p = (gcnInsn.mode & GCN_VOP3_VOP3P) != 0 ||
+                    (gcnInsn.encoding == GCNENC_VOP3P);
     if (gcnVOPEnc!=GCNVOPEnc::NORMAL)
         ASM_FAIL_BY_ERROR(instrPlace, "DPP and SDWA encoding is illegal for VOP3")
     
@@ -2236,7 +2237,8 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     // put data (instruction words)
     uint32_t words[2];
     cxuint wordsNum = 2;
-    const uint32_t encoding = (arch & ARCH_GCN_1_5)!=0 ? 0xd4000000U : 0xd0000000U;
+    const uint32_t encoding = (arch & ARCH_GCN_1_5)!=0 ?
+            (gcnInsn.encoding==GCNENC_VOP3P ? 0xcc000000U : 0xd4000000U) : 0xd0000000U;
     if (gcnInsn.encoding == GCNENC_VOP3B)
     {
         // VOP3B encoding

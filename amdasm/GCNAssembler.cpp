@@ -285,6 +285,7 @@ void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
             break;
         case GCNENC_VOP3A:
         case GCNENC_VOP3B:
+        case GCNENC_VOP3P:
             good = GCNAsmUtils::parseVOP3Encoding(assembler, *it, mnemPlace, linePtr,
                                    curArchMask, output, regs, gcnEncSize, vopEnc);
             break;
