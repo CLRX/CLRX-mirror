@@ -150,8 +150,9 @@ enum : GCNInsnMode
     GCN_ONLY_SRC = 0x8000,
     // others
     GCN_SBASE4 = 0x10,  /// SBASE requires 4 registers
-    GCN_FLOATLIT = 0x100,   /// float literal
-    GCN_F16LIT = 0x200, /// half literal
+    GCN_FLOATLIT = 0x40000000U,   /// float literal
+    GCN_F16LIT = 0x80000000U, /// half literal
+    GCN_LITMASK = 0xc0000000U,
     GCN_SMRD_ONLYDST = 0x30,    // only destination (no other operands)
     GCN_SMEM_SDATA_IMM = 0x40,  // treat SDATA as immediate
     GCN_SMEM_NOSDATA = 0x80,  // no destination

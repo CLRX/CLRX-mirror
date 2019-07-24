@@ -462,7 +462,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x7f3c14ffU, 0x40000000U, true, "        v_cvt_f16_f32   v158, "
                 "0x40000000 /* 2f */\n" },
     { 0x7f3c174fU, 0, false, "        v_cvt_f32_f16   v158, v79\n" },
-    { 0x7f3c16ffU, 0x3d4cU, true, "        v_cvt_f32_f16   v158, 0x3d4c\n" },
+    { 0x7f3c16ffU, 0x3d4cU, true, "        v_cvt_f32_f16   v158, 0x3d4c /* 1.3242h */\n" },
     { 0x7f3c194fU, 0, false, "        v_cvt_rpi_i32_f32 v158, v79\n" },
     { 0x7f3c18ffU, 0x40000000U, true, "        v_cvt_rpi_i32_f32 v158, "
                 "0x40000000 /* 2f */\n" },

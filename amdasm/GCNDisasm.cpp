@@ -1005,8 +1005,8 @@ void GCNDisassembler::disassemble()
             // determine float literal type to display
             const FloatLitType displayFloatLits = 
                     ((disassembler.getFlags()&DISASM_FLOATLITS) != 0) ?
-                    (((gcnInsn->mode & GCN_MASK2) == GCN_FLOATLIT) ? FLTLIT_F32 : 
-                    ((gcnInsn->mode & GCN_MASK2) == GCN_F16LIT) ? FLTLIT_F16 :
+                    (((gcnInsn->mode & GCN_LITMASK) == GCN_FLOATLIT) ? FLTLIT_F32 :
+                    ((gcnInsn->mode & GCN_LITMASK) == GCN_F16LIT) ? FLTLIT_F16 :
                      FLTLIT_NONE) : FLTLIT_NONE;
             
             // print instruction in correct encoding
