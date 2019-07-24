@@ -2583,6 +2583,21 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
         "test.s:1:1: Error: Unknown instruction\n" },
     { "v_mad_mixhi_f16 v55, v79, v166, v229\n", 0, 0, false, false,
         "test.s:1:1: Error: Unknown instruction\n" },
+    /* VINTRP encoding */
+    { "   v_interp_p1_f32 v93, v211, attr26.w", 0xc9746bd3U, 0, false, true, "" },
+    { "   v_interp_p1_f32_e32 v93, v211, attr26.w", 0xc9746bd3U, 0, false, true, "" },
+    { "   v_interp_p1_f32 v93, v211, attr26 . w", 0xc9746bd3U, 0, false, true, "" },
+    { "   v_interp_p1_f32 v93, v211, aTTR26 . W", 0xc9746bd3U, 0, false, true, "" },
+    { "   v_interp_p1_f32 v93, v211, aTTR00026 . W", 0xc9746bd3U, 0, false, true, "" },
+    { "   v_interp_p1_f32 v93, v211, attr26.x", 0xc97468d3U, 0, false, true, "" },
+    { "   v_interp_p1_f32 v93, v211, attr26.y", 0xc97469d3U, 0, false, true, "" },
+    { "   v_interp_p1_f32 v93, v211, attr26.z", 0xc9746ad3U, 0, false, true, "" },
+    { "   v_interp_p1_f32 v93, v211, attr63.z", 0xc974fed3U, 0, false, true, "" },
+    { "   v_interp_p1_f32 v93  , v211  , attr63.z", 0xc974fed3U, 0, false, true, "" },
+    { "   v_interp_p2_f32 v93, v211, attr26.w", 0xc9756bd3U, 0, false, true, "" },
+    { "   v_interp_mov_f32 v93, p10, attr26.w", 0xc9766b00U, 0, false, true, "" },
+    { "   v_interp_mov_f32 v93, p20, attr26.w", 0xc9766b01U, 0, false, true, "" },
+    { "   v_interp_mov_f32 v93, p0, attr26.w", 0xc9766b02U, 0, false, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
