@@ -2653,5 +2653,11 @@ const GCNAsmOpcodeCase2 encGCN15OpcodeCases2[] =
         { 0xd7570037U, 0x0795ffb4U, 0x3d4c }, 3, true, "" },
     { "v_med3_f16 v55, s71, v166, 1.3242\n",
         { 0xd7570037U, 0x03ff4c47U, 0x3d4c }, 3, true, "" },
+    { "v_pk_fma_f16 v55, 0x3d4c /* 1.3242h */, v166, v229 op_sel_hi:[0,0,0]\n",
+        { 0xcc0e0037U, 0x07974cffU, 0x3d4c }, 3, true, "" },
+    { "v_pk_fma_f16 v55, v180, 0x3d4c /* 1.3242h */, v229 op_sel_hi:[0,0,0]\n",
+        { 0xcc0e0037U, 0x0795ffb4U, 0x3d4c }, 3, true, "" },
+    { "v_pk_fma_f16 v55, s71, v166, 0x3d4c /* 1.3242h */ op_sel_hi:[0,0,0]\n",
+        { 0xcc0e0037U, 0x03ff4c47U, 0x3d4c }, 3, true, "" },
     { nullptr, { }, 0, false, 0 }
 };

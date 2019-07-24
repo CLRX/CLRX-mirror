@@ -4064,6 +4064,12 @@ const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[] =
         "s[42:43], 0x1452 /* 7.29e-42f */, 0x1452 /* 7.29e-42f */\n" },
     { { 0xd40000ffU, 0x0001feffU, 0x1452 }, 3, "        v_cmp_f_f32     "
         "0x0, 0x1452 /* 7.29e-42f */, 0x1452 /* 7.29e-42f */\n" },
+    { { 0xcc0e0037U, 0x07974cffU, 0x3d4c }, 3, "        v_pk_fma_f16    "
+        "v55, 0x3d4c /* 1.3242h */, v166, v229 op_sel_hi:[0,0,0]\n" },
+    { { 0xcc0e0037U, 0x0795ffb4U, 0x3d4c }, 3, "        v_pk_fma_f16    "
+        "v55, v180, 0x3d4c /* 1.3242h */, v229 op_sel_hi:[0,0,0]\n" },
+    { { 0xcc0e0037U, 0x03ff4c47U, 0x3d4c }, 3, "        v_pk_fma_f16    "
+        "v55, s71, v166, 0x3d4c /* 1.3242h */ op_sel_hi:[0,0,0]\n" },
     { {}, 0, nullptr }
 };
 
