@@ -2243,12 +2243,6 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
     { "    v_mad_legacy_f32 v55, s79, v99, s18",
         0xd5400037U, 0x004ac64fU, true, true, "" },
     /* VOP3 errors */
-    { "v_mad_legacy_f32 v55, 66, v166, v229", 0, 0, false, false,
-        "test.s:1:23: Error: Literal in VOP3 is illegal\n" },
-    { "v_mad_legacy_f32 v55, s79, 743, v229", 0, 0, false, false,
-        "test.s:1:28: Error: Literal in VOP3 is illegal\n" },
-    { "v_mad_legacy_f32 v55, s79, v44, 6434", 0, 0, false, false,
-        "test.s:1:33: Error: Literal in VOP3 is illegal\n" },
     { "    v_mad_legacy_f32 v55, s79, s166, v229", 0, 0, false, false,
         "test.s:1:32: Error: Scalar register number out of range\n" },
     { "   v_mad_legacy_f32 v55, v79, v166, v229 clamp ,", 0, 0, false, false,
@@ -2337,4 +2331,36 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
     { "   v_div_scale_f64 v[55:56], s[38:39], v[79:80], v[79:80], v[229:230]",
         0xd56e2637U, 0x07969f4fU, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
+};
+
+const GCNAsmOpcodeCase2 encGCN15OpcodeCases2[] =
+{
+    /* VOP3 with literal */
+    { "v_mad_legacy_f32 v55, 66, v166, v229",
+        { 0xd5400037U, 0x7974cffU, 66 }, 3, true, "" },
+    { "zx=5; zy=61; v_mad_legacy_f32 v55, zx*zy, v166, v229",
+        { 0xd5400037U, 0x7974cffU, 305 }, 3, true, "" },
+    { "v_mad_legacy_f32 v55, zx*zy, v166, v229; zx=5; zy=61",
+        { 0xd5400037U, 0x7974cffU, 305 }, 3, true, "" },
+    { "v_mad_legacy_f32 v55, v166, 385, v229",
+        { 0xd5400037U, 0x795ffa6U, 385 }, 3, true, "" },
+    { "aa=14; ac=7; v_mad_legacy_f32 v55, v166, aa*ac, v229",
+        { 0xd5400037U, 0x795ffa6U, 98 }, 3, true, "" },
+    { "v_mad_legacy_f32 v55, v166, aa*ac, v229; aa=14; ac=9",
+        { 0xd5400037U, 0x795ffa6U, 126 }, 3, true, "" },
+    { "v_mad_legacy_f32 v55, v166, v229, 267",
+        { 0xd5400037U, 0x3ffcba6U, 267 }, 3, true, "" },
+    { "v_min3_f32 v55, 6.9551627e+13, v166, v229\n",
+        { 0xd5510037U, 0x07974cffU, 0x567d0700U }, 3, true, "" },
+    { "v_min3_f32 v55, v107, 6.9551627e+13, v229\n",
+        { 0xd5510037U, 0x0795ff6bU, 0x567d0700U }, 3, true, "" },
+    { "v_min3_f32 v55, v122, v166, 6.9551627e+13\n",
+        { 0xd5510037U, 0x03ff4d7aU, 0x567d0700U }, 3, true, "" },
+    { "v_med3_f16 v55, 1.3242, v166, v229\n",
+        { 0xd7570037U, 0x07974cffU, 0x3d4c }, 3, true, "" },
+    { "v_med3_f16 v55, v180, 1.3242h, v229\n",
+        { 0xd7570037U, 0x0795ffb4U, 0x3d4c }, 3, true, "" },
+    { "v_med3_f16 v55, s71, v166, 1.3242\n",
+        { 0xd7570037U, 0x03ff4c47U, 0x3d4c }, 3, true, "" },
+    { nullptr, { }, 0, false, 0 }
 };

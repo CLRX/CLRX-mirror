@@ -454,6 +454,14 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                     ((value&0x1f00)>>8);
             printWarningForRange(13, value, sourcePos, WS_BOTH);
             return true;
+        case GCNTGT_VOP3LITIMM:
+            // VOP3 literal in instruction
+            if (sectionId != ASMSECT_ABS)
+                GCN_FAIL_BY_ERROR(sourcePos,
+                        "Relative value is illegal in literal expressions")
+            SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+8), value);
+            printWarningForRange(32, value, sourcePos);
+            return true;
         default:
             return false;
     }

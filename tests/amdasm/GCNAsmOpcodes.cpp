@@ -93,6 +93,78 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
               testCase.errorMessages, errorStream.str());
 }
 
+static void testEncGCNOpcodes2(cxuint i, const GCNAsmOpcodeCase2& testCase,
+                      GPUDeviceType deviceType)
+{
+    std::istringstream input(testCase.input);
+    std::ostringstream errorStream;
+    
+    // create assembler with input stream (content is string
+    Assembler assembler("test.s", input, ASM_ALL&~ASM_ALTMACRO,
+                    BinaryFormat::GALLIUM, deviceType, errorStream);
+    // try to assemble code
+    bool good = assembler.assemble();
+    std::ostringstream oss;
+    oss << getGPUDeviceTypeName(deviceType) << " encGCNCase#" << i;
+    const std::string testCaseName = oss.str();
+    // check is good match in testcase
+    assertValue<bool>("testEncGCNOpcodes", testCaseName+".good", testCase.good, good);
+    if (assembler.getSections().size()<1)
+    {
+        std::ostringstream oss;
+        oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<
+            " encGCNCase#" << i;
+        throw Exception(oss.str());
+    }
+    const AsmSection& section = assembler.getSections()[0];
+    const size_t codeSize = section.content.size();
+    const size_t expectedSize = (testCase.good) ? (testCase.expWordsNum<<2) : 0;
+    // check size of output content
+    if (good && codeSize != expectedSize)
+    {
+        std::ostringstream oss;
+        oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<
+            " encGCNCase#" << i << ". Wrong code size: " << expectedSize << "!=" <<
+            codeSize;
+        throw Exception(oss.str());
+    }
+    // check content
+    if (expectedSize!=0)
+    {
+        bool good = true;
+        for (cxuint i = 0; i < testCase.expWordsNum; i++)
+        {
+            uint32_t resultWord = ULEV(*reinterpret_cast<const uint32_t*>(
+                    section.content.data()+i*4));
+            if (testCase.expWords[i] != resultWord)
+            {
+                good = false;
+                break;
+            }
+        }
+        
+        if (!good)
+        {
+            // if content doesn't match
+            std::ostringstream oss;
+            oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<
+                " encGCNCase#" << i << ". Content doesn't match";
+            for (cxuint i = 0; i < testCase.expWordsNum; i++)
+            {
+                uint32_t resultWord = ULEV(*reinterpret_cast<const uint32_t*>(
+                    section.content.data()+i*4));
+                oss << (i==0 ? ':' : ',') << " 0x" << std::hex << testCase.expWords[i] <<
+                        "!=0x" << resultWord << std::dec;
+            }
+            throw Exception(oss.str());
+        }
+    }
+    // check error messages
+    assertString("testEncGCNOpcodes", testCaseName+".errorMessages",
+              testCase.errorMessages, errorStream.str());
+}
+
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -139,6 +211,14 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; encGCN15OpcodeCases[i].input!=nullptr; i++)
         try
         { testEncGCNOpcodes(i, encGCN15OpcodeCases[i], GPUDeviceType::GFX1010); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    for (cxuint i = 0; encGCN15OpcodeCases2[i].input!=nullptr; i++)
+        try
+        { testEncGCNOpcodes2(i, encGCN15OpcodeCases2[i], GPUDeviceType::GFX1010); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;

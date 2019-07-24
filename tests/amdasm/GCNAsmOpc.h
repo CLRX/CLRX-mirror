@@ -31,11 +31,22 @@ struct GCNAsmOpcodeCase
     const char* errorMessages;
 };
 
+struct GCNAsmOpcodeCase2
+{
+    const char* input;
+    uint32_t expWords[6];
+    cxuint expWordsNum;
+    bool good;
+    const char* errorMessages;
+};
+
+
 extern const GCNAsmOpcodeCase encGCNOpcodeCases[];
 extern const GCNAsmOpcodeCase encGCN11OpcodeCases[];
 extern const GCNAsmOpcodeCase encGCN12OpcodeCases[];
 extern const GCNAsmOpcodeCase encGCN14OpcodeCases[];
 extern const GCNAsmOpcodeCase encGCN141OpcodeCases[];
 extern const GCNAsmOpcodeCase encGCN15OpcodeCases[];
+extern const GCNAsmOpcodeCase2 encGCN15OpcodeCases2[];
 
 #endif
