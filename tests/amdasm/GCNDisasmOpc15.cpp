@@ -1612,8 +1612,6 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xd400006aU, 0x4002d732U, true, "        v_cmp_f_f32     vcc, v50, -v107\n" },
     { 0xd400016aU, 0x0002d732U, true, "        v_cmp_f_f32     vcc, abs(v50), v107\n" },
     /// ??????
-    //{ 0xd400002aU, 0x0001feffU, true, "        v_cmp_f_f32     s[42:43], 0x0, 0x0\n" },
-    //{ 0xd40000ffU, 0x0001feffU, true, "        v_cmp_f_f32     0x0, 0x0, 0x0\n" },
     /*** VOP3 comparisons ***/
     { 0xd400002aU, 0x0002d732U, true, "        v_cmp_f_f32     s[42:43], v50, v107\n" },
     { 0xd401002aU, 0x0002d732U, true, "        v_cmp_lt_f32    s[42:43], v50, v107\n" },
@@ -4062,6 +4060,10 @@ const GCNDisasmOpcodeCase2 decGCNOpcodeGCN15Cases2[] =
         "v42, s1, attr39.z, 0x4689dc /* -0.00017881h */ high\n" },
     { { 0xd4c20007U, 0x00000effU, 0x105b0a1U }, 3,
         "        v_cmp_eq_u32    s[7:8], 0x105b0a1, s7\n" },
+    { { 0xd400002aU, 0x0001feffU, 0x1452 }, 3, "        v_cmp_f_f32     "
+        "s[42:43], 0x1452 /* 7.29e-42f */, 0x1452 /* 7.29e-42f */\n" },
+    { { 0xd40000ffU, 0x0001feffU, 0x1452 }, 3, "        v_cmp_f_f32     "
+        "0x0, 0x1452 /* 7.29e-42f */, 0x1452 /* 7.29e-42f */\n" },
     { {}, 0, nullptr }
 };
 
