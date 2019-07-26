@@ -2900,6 +2900,34 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
         0xdbf8cd67U, 0x9b000047U, true, true, "" },
     { "    ds_read_b128  v[155:158], v71 offset:52583",
         0xdbfccd67U, 0x9b000047U, true, true, "" },
+    /* MUBUF encoding */
+    { "    buffer_load_format_x  v[61:62], v18, s[80:83], s35 "
+        "offset:603 glc slc tfe", 0xe000425bU, 0x23d43d12U, true, true, "" },
+    { "buffer_load_format_x v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 "
+        "glc slc dlc tfe\n", 0xe000f25bU, 0x23d43d12U, true, true, "" },
+    { "buffer_load_format_x v61, v[18:19], s[80:83], s35 offen idxen offset:603 "
+        "glc dlc lds\n", 0xe001f25bU, 0x23143d12U, true, true, "" },
+    { "buffer_load_format_x v61, v[18:19], s[80:83], s35 offen idxen offset:603 "
+        "glc lds\n", 0xe001725bU, 0x23143d12U, true, true, "" },
+    /* parametrization with values higher than 1 */
+    { "    buffer_load_format_x  v61, v[18:19], s[80:83], s35 "
+        "offset:603 glc:132 slc:771 offen:-1 idxen:-1 lds:-1",
+        0xe001725bU, 0x23543d12U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
+        "offset:603 glc slc idxen offen lds tfe", 0, 0, false, false,
+        "test.s:1:5: Error: Both LDS and TFE is illegal\n" },
+    { "buffer_load_format_x v61, v[18:19], s[80:83], s35 offen idxen offset:603",
+        0xe000325bU, 0x23143d12U, true, true, "" },
+    { "buffer_load_format_x v61, v[18:19], s[80:83], s35 offen idxen offset:603 lds",
+        0xe001325bU, 0x23143d12U, true, true, "" },
+    { "buffer_load_format_x v61, v[18:19], s[80:83], s35 offen idxen offset:603 dlc",
+        0xe000b25bU, 0x23143d12U, true, true, "" },
+    { "buffer_load_format_x v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc",
+        0xe000725bU, 0x23143d12U, true, true, "" },
+    { "buffer_load_format_x v61, v[18:19], s[80:83], s35 offen idxen offset:603 slc",
+        0xe000325bU, 0x23543d12U, true, true, "" },
+    { "buffer_load_format_x v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 tfe",
+        0xe000325bU, 0x23943d12U, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
