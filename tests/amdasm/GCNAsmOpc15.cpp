@@ -2928,6 +2928,35 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
         0xe000325bU, 0x23543d12U, true, true, "" },
     { "buffer_load_format_x v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 tfe",
         0xe000325bU, 0x23943d12U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], v18, s[80:83], s35 offen "
+        "offset:603 glc slc tfe", 0xe000525bU, 0x23d43d12U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], v18, s[80:83], s35 idxen "
+        "offset:603 glc slc tfe", 0xe000625bU, 0x23d43d12U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 offen idxen "
+        "offset:603 glc slc tfe", 0xe000725bU, 0x23d43d12U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], v18, s[80:83], s35 offen glc slc tfe",
+        0xe0005000U, 0x23d43d12U, true, true, "" },
+    { "x=34; y=51; buffer_load_format_x  v[61:62], v18, s[80:83], s35 offen "
+        "offset:x+y glc slc tfe", 0xe0005055U, 0x23d43d12U, true, true, "" },
+    { "buffer_load_format_x  v[61:62], v18, s[80:83], s35 offen "
+        "offset:x+y glc slc tfe; x=36; y=51", 0xe0005057U, 0x23d43d12U, true, true, "" },
+    { "buffer_load_format_x v[61:62], v[18:19], s[80:83], s35 offen idxen "
+        "glc dlc tfe\n", 0xe000f000U, 0x23943d12U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], v18, s[80:83], s35 offen "
+        "offset:5821 glc slc tfe", 0xe00056bdU, 0x23d43d12U, true, true,
+        "test.s:1:69: Warning: Value 0x16bd truncated to 0x6bd\n" },
+    { "    buffer_load_format_x  v[61:62], v18, s[80:83], s35 offen offset:603 "
+        "offset:884 glc slc tfe", 0xe0005374U, 0x23d43d12U, true, true,
+        "test.s:1:73: Warning: Offset is already defined\n" },
+    /* MUBUF errors */
+    { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 addr64 "
+        "offset:603 glc slc tfe", 0, 9, false, false,
+        "test.s:1:61: Error: Unknown MUBUF modifier\n"
+        "test.s:1:37: Error: Required 1 vector register\n" },
+    { "    buffer_load_format_x v61, v18, s[80:83], 3435 idxen offset:603",
+        0, 0, false, false, "test.s:1:46: Error: Literal in MUBUF is illegal\n" },
+    { "    buffer_load_format_x v61, v18, s[80:83], xx idxen offset:603",
+        0, 0, false, false, "test.s:1:46: Error: Literal in MUBUF is illegal\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
