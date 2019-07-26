@@ -2901,25 +2901,29 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xe001f000U, 0x23f43d12U, true, "        buffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen glc slc dlc lds tfe\n" },
     /* vaddr sizing */
-    { 0xe003725bU, 0x23b43d12U, true, "        buffer_load_format_x "
-        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds tfe\n" },
-    { 0xe003425bU, 0x23b43d12U, true, "        buffer_load_format_x "
-        "v[61:62], v18, s[80:83], s35 offset:603 glc slc lds tfe\n" },
-    { 0xe003625bU, 0x23b43d12U, true, "        buffer_load_format_x "
-        "v[61:62], v18, s[80:83], s35 idxen offset:603 glc slc lds tfe\n" },
-    { 0xe003525bU, 0x23b43d12U, true, "        buffer_load_format_x "
-        "v[61:62], v18, s[80:83], s35 offen offset:603 glc slc lds tfe\n" },
+    { 0xe001725bU, 0x23b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 glc lds tfe\n" },
+    { 0xe001425bU, 0x23b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[80:83], s35 offset:603 glc lds tfe\n" },
+    { 0xe001625bU, 0x23b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[80:83], s35 idxen offset:603 glc lds tfe\n" },
+    { 0xe001525bU, 0x23b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[80:83], s35 offen offset:603 glc lds tfe\n" },
     /* flags */
     { 0xe003c25bU, 0xf0b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[80:83], 0.5 offset:603 glc dlc lds tfe\n" },
+    { 0xe001c25bU, 0xf0b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[80:83], 0.5 offset:603 glc dlc lds tfe\n" },
+    { 0xe001c25bU, 0xf0f43d12U, true, "        buffer_load_format_x "
         "v[61:62], v18, s[80:83], 0.5 offset:603 glc slc dlc lds tfe\n" },
     { 0xe001c25bU, 0xf0b43d12U, true, "        buffer_load_format_x "
         "v[61:62], v18, s[80:83], 0.5 offset:603 glc dlc lds tfe\n" },
-    { 0xe003c25bU, 0x23bd3d12U, true, "        buffer_load_format_x "
-        "v[61:62], v18, ttmp[8:11], s35 offset:603 glc slc dlc lds tfe\n" },
-    { 0xe003c25bU, 0x23a93d12U, true, "        buffer_load_format_x "
-        "v[61:62], v18, s[36:39], s35 offset:603 glc slc dlc lds tfe\n" },
-    { 0xe003f000U, 0x23b43d12U, true, "        buffer_load_format_x "
-        "v[61:62], v[18:19], s[80:83], s35 offen idxen glc slc dlc lds tfe\n" },
+    { 0xe001c25bU, 0x23bd3d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, ttmp[8:11], s35 offset:603 glc dlc lds tfe\n" },
+    { 0xe001c25bU, 0x23a93d12U, true, "        buffer_load_format_x "
+        "v[61:62], v18, s[36:39], s35 offset:603 glc dlc lds tfe\n" },
+    { 0xe001f000U, 0x23b43d12U, true, "        buffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen glc dlc lds tfe\n" },
     /* MUBUF instructions */
     { 0xe000325bU, 0x23343d12U, true, "        buffer_load_format_x "
                 "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
@@ -2972,11 +2976,11 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xe060325bU, 0x23343d12U, true, "        buffer_store_byte "
                 "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe067725bU, 0x23343d12U, true, "        buffer_store_byte_d16_hi "
-        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc lds\n" },
     { 0xe068325bU, 0x23343d12U, true, "        buffer_store_short "
                 "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe06f725bU, 0x23343d12U, true, "        buffer_store_short_d16_hi "
-        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc lds\n" },
     { 0xe070325bU, 0x23343d12U, true, "        buffer_store_dword "
                 "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe074325bU, 0x23343d12U, true, "        buffer_store_dwordx2 "
@@ -2986,17 +2990,17 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN15Cases[] =
     { 0xe07c325bU, 0x23343d12U, true, "        buffer_store_dwordx3 "
                 "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe083725bU, 0x23343d12U, true, "        buffer_load_ubyte_d16 "
-        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc lds\n" },
     { 0xe087725bU, 0x23343d12U, true, "        buffer_load_ubyte_d16_hi "
-        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc lds\n" },
     { 0xe08b725bU, 0x23343d12U, true, "        buffer_load_sbyte_d16 "
-        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc lds\n" },
     { 0xe08f725bU, 0x23343d12U, true, "        buffer_load_sbyte_d16_hi "
-        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc lds\n" },
     { 0xe093725bU, 0x23343d12U, true, "        buffer_load_short_d16 "
-        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc lds\n" },
     { 0xe097725bU, 0x23343d12U, true, "        buffer_load_short_d16_hi "
-        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc slc lds\n" },
+        "v61, v[18:19], s[80:83], s35 offen idxen offset:603 glc lds\n" },
     { 0xe098325bU, 0x23343d12U, true, "        MUBUF_ill_38    "
                 "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
     { 0xe09c325bU, 0x23343d12U, true, "        MUBUF_ill_39    "

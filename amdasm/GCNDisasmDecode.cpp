@@ -2224,9 +2224,13 @@ void GCNDisasmUtils::decodeMUBUFEncoding(GCNDisassembler& dasm, cxuint spacesToA
         putChars(bufPtr, " glc", 4);
     
     // print SLC if supplied
-    if (((!isGCN12 || isGCN15 ||
-            gcnInsn.encoding==GCNENC_MTBUF) && (insnCode2 & 0x400000U)!=0) ||
-        ((isGCN12 && gcnInsn.encoding!=GCNENC_MTBUF) && (insnCode & 0x20000)!=0))
+    if (!isGCN15)
+    {
+        if (((!isGCN12 || gcnInsn.encoding==GCNENC_MTBUF) && (insnCode2 & 0x400000U)!=0) ||
+            ((isGCN12 && gcnInsn.encoding!=GCNENC_MTBUF) && (insnCode & 0x20000)!=0))
+            putChars(bufPtr, " slc", 4);
+    }
+    else if ((insnCode2 & 0x400000U)!=0)
         putChars(bufPtr, " slc", 4);
     
     if (!isGCN12 && (insnCode & 0x8000U)!=0)

@@ -145,8 +145,9 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     RegRange vdataReg(0, 0);
     GCNOperand soffsetOp{};
     RegRange srsrcReg(0, 0);
-    const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
-    const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
+    const bool isGCN12 = (arch & ARCH_GCN_1_2_4_5)!=0;
+    const bool isGCN14 = (arch & ARCH_GCN_1_4_5)!=0;
+    const bool isGCN15 = ((arch&ARCH_GCN_1_5)!=0);
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     skipSpacesToEnd(linePtr, end);
@@ -429,7 +430,8 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         SLEV(words[0], 0xe0000000U | offset | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 ((haveAddr64 && !isGCN12) ? 0x8000U : 0U) | (haveLds ? 0x10000U : 0U) |
-                ((haveSlc && isGCN12) ? 0x20000U : 0) | (uint32_t(gcnInsn.code1)<<18));
+                ((haveSlc && (isGCN12 && !isGCN15)) ? 0x20000U : 0) |
+                (uint32_t(gcnInsn.code1)<<18));
     else
     {
         // MTBUF encoding
@@ -443,7 +445,8 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     // second word
     SLEV(words[1], (vaddrReg.bstart()&0xff) | (uint32_t(vdataReg.bstart()&0xff)<<8) |
             (uint32_t(srsrcReg.bstart()>>2)<<16) |
-            ((haveSlc && (!isGCN12 || gcnInsn.encoding==GCNENC_MTBUF)) ? (1U<<22) : 0) |
+            ((haveSlc && (!isGCN12 || isGCN15 ||
+                        gcnInsn.encoding==GCNENC_MTBUF)) ? (1U<<22) : 0) |
             (haveTfe ? (1U<<23) : 0) | (uint32_t(soffsetOp.range.bstart())<<24));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
