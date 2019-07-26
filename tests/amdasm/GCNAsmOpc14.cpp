@@ -656,6 +656,8 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         0xd8b2cd67U, 0x8b000047U, true, true, "" },
     { "ds_read_u16_d16 v139, v71 offset:52583\n",
         0xd8b4cd67U, 0x8b000047U, true, true, "" },
+    { "ds_read_u16_d16_hi v139, v71 offset:52583\n",
+        0xd8b6cd67U, 0x8b000047U, true, true, "" },
     { "ds_read_addtid_b32 v139 offset:52583\n", 0xd96ccd67U, 0x8b000000U, true, true, "" },
     /* MUBUF instructions */
     { "buffer_store_byte_d16_hi v61, v[18:19], s[80:83], s35 offen idxen "
