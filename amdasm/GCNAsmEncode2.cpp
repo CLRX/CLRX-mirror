@@ -207,8 +207,10 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     bool haveOffset = false, haveFormat = false;
     cxuint dfmt = 1, nfmt = 0;
     cxuint offset = 0;
+    cxuint format = 0;
     std::unique_ptr<AsmExpression> offsetExpr;
-    bool haveAddr64 = false, haveTfe = false, haveSlc = false, haveLds = false;
+    bool haveAddr64 = false, haveTfe = false, haveSlc = false;
+    bool haveDlc = false, haveLds = false;
     bool haveGlc = false, haveOffen = false, haveIdxen = false;
     const char* modName = (gcnInsn.encoding==GCNENC_MTBUF) ?
             "MTBUF modifier" : "MUBUF modifier";
@@ -262,6 +264,8 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             }
             skipCharAndSpacesToEnd(linePtr, end);
             
+            if (!isGCN15)
+            { // pre NAVI
             // parse [DATA_FORMAT:NUMBER_FORMAT]
             if (linePtr==end || *linePtr!='[')
                 ASM_NOTGOOD_BY_ERROR1(modGood = good, modPlace,
@@ -343,6 +347,20 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     haveFormat = true;
                 }
             }
+            // end for pre NAVI
+            }
+            else
+            {
+                // GFX10 and NAVI
+                if (parseModImm(asmr, linePtr, format, nullptr, "format", 7, WS_UNSIGNED))
+                {
+                    if (haveFormat)
+                        asmr.printWarning(modPlace, "Format is already defined");
+                    haveFormat = true;
+                }
+                else
+                    good = false;
+            }
         }
         // other modifiers
         else if (!isGCN12 && ::strcmp(name, "addr64")==0)
@@ -351,6 +369,8 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             good &= parseModEnable(asmr, linePtr, haveTfe, "tfe modifier");
         else if (::strcmp(name, "glc")==0)
             good &= parseModEnable(asmr, linePtr, haveGlc, "glc modifier");
+        else if (isGCN15 && ::strcmp(name, "dlc")==0)
+            good &= parseModEnable(asmr, linePtr, haveDlc, "dlc modifier");
         else if (::strcmp(name, "slc")==0)
             good &= parseModEnable(asmr, linePtr, haveSlc, "slc modifier");
         else if (gcnInsn.encoding==GCNENC_MUBUF && ::strcmp(name, "lds")==0)
@@ -430,24 +450,28 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         SLEV(words[0], 0xe0000000U | offset | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 ((haveAddr64 && !isGCN12) ? 0x8000U : 0U) | (haveLds ? 0x10000U : 0U) |
-                ((haveSlc && (isGCN12 && !isGCN15)) ? 0x20000U : 0) |
+                ((haveSlc && isGCN12 && !isGCN15) ? 0x20000U : 0) |
+                ((haveDlc && isGCN15) ? 0x8000U : 0) |
                 (uint32_t(gcnInsn.code1)<<18));
     else
     {
         // MTBUF encoding
-        uint32_t code = (isGCN12) ? (uint32_t(gcnInsn.code1)<<15) :
-                (uint32_t(gcnInsn.code1)<<16);
+        uint32_t code = (isGCN12 && !isGCN15) ? (uint32_t(gcnInsn.code1)<<15) :
+                (uint32_t(gcnInsn.code1&7)<<16);
         SLEV(words[0], 0xe8000000U | offset | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 ((haveAddr64 && !isGCN12) ? 0x8000U : 0U) | code |
+                ((haveDlc && isGCN15) ? 0x8000U : 0) |
                 (uint32_t(dfmt)<<19) | (uint32_t(nfmt)<<23));
     }
     // second word
     SLEV(words[1], (vaddrReg.bstart()&0xff) | (uint32_t(vdataReg.bstart()&0xff)<<8) |
             (uint32_t(srsrcReg.bstart()>>2)<<16) |
             ((haveSlc && (!isGCN12 || isGCN15 ||
-                        gcnInsn.encoding==GCNENC_MTBUF)) ? (1U<<22) : 0) |
-            (haveTfe ? (1U<<23) : 0) | (uint32_t(soffsetOp.range.bstart())<<24));
+                    gcnInsn.encoding==GCNENC_MTBUF)) ? (1U<<22) : 0) |
+            (haveTfe ? (1U<<23) : 0) | (uint32_t(soffsetOp.range.bstart())<<24) |
+            ((isGCN15 && gcnInsn.encoding==GCNENC_MTBUF &&
+                        (gcnInsn.code1&8)!=0) ? (1U<<21) : 0));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + 2));
