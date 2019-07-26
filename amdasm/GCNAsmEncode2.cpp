@@ -254,6 +254,9 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         }
         else if (gcnInsn.encoding==GCNENC_MTBUF && ::strcmp(name, "format")==0)
         {
+            
+            if (!isGCN15)
+            { // pre NAVI
             // parse format
             bool modGood = true;
             skipSpacesToEnd(linePtr, end);
@@ -263,9 +266,6 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 continue;
             }
             skipCharAndSpacesToEnd(linePtr, end);
-            
-            if (!isGCN15)
-            { // pre NAVI
             // parse [DATA_FORMAT:NUMBER_FORMAT]
             if (linePtr==end || *linePtr!='[')
                 ASM_NOTGOOD_BY_ERROR1(modGood = good, modPlace,
@@ -458,11 +458,12 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         // MTBUF encoding
         uint32_t code = (isGCN12 && !isGCN15) ? (uint32_t(gcnInsn.code1)<<15) :
                 (uint32_t(gcnInsn.code1&7)<<16);
+        uint32_t formatVal = isGCN15 ? (uint32_t(format)<<19) :
+                    ((uint32_t(dfmt)<<19) | (uint32_t(nfmt)<<23));
         SLEV(words[0], 0xe8000000U | offset | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 ((haveAddr64 && !isGCN12) ? 0x8000U : 0U) | code |
-                ((haveDlc && isGCN15) ? 0x8000U : 0) |
-                (uint32_t(dfmt)<<19) | (uint32_t(nfmt)<<23));
+                ((haveDlc && isGCN15) ? 0x8000U : 0) | formatVal);
     }
     // second word
     SLEV(words[1], (vaddrReg.bstart()&0xff) | (uint32_t(vdataReg.bstart()&0xff)<<8) |

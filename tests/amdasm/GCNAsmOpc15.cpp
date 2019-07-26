@@ -3083,6 +3083,77 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
     { "        buffer_gl0_inv\n", 0xe1c40000U, 0x00000000U, true, true, "" },
     { "        buffer_wbinvl1\n", 0xe1c40000U, 0x00000000U, true, true, "" },
     { "        buffer_gl1_inv\n", 0xe1c80000U, 0x00000000U, true, true, "" },
+    /* MTBUF encoding */
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc tfe format:59", 0xe9d867d4U, 0x23d43d12U, true, true, "" },
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc tfe format  :  59", 0xe9d867d4U, 0x23d43d12U, true, true, "" },
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc tfe", 0xe80067d4U, 0x23d43d12U, true, true, "" },
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc tfe format:0", 0xe80067d4U, 0x23d43d12U, true, true, "" },
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc tfe format:1", 0xe80867d4U, 0x23d43d12U, true, true, "" },
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc tfe format:2", 0xe81067d4U, 0x23d43d12U, true, true, "" },
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc tfe format:111", 0xeb7867d4U, 0x23d43d12U, true, true, "" },
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc tfe format:38", 0xe93067d4U, 0x23d43d12U, true, true, "" },
+    /* MTBUF format warnings */
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc tfe format:12 format:38", 0xe93067d4U, 0x23d43d12U, true, true,
+        "test.s:1:96: Warning: Format is already defined\n" },
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc tfe format:166", 0xe93067d4U, 0x23d43d12U, true, true,
+        "test.s:1:93: Warning: Value 0xa6 truncated to 0x26\n" },
+    ////
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc tfe format:38", 0xe93067d4U, 0x23943d12U, true, true, "" },
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "tfe format:38", 0xe93027d4U, 0x23943d12U, true, true, "" },
+    { "    tbuffer_load_format_x v61, v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93027d4U, 0x23143d12U, true, true, "" },
+    { "    tbuffer_load_format_x v61, v18, s[80:83], s35 idxen offset:2004 "
+        "dlc format:38", 0xe930a7d4U, 0x23143d12U, true, true, "" },
+    /* vaddr sizing */
+    { "    tbuffer_load_format_x v61, v18, s[80:83], s35 offset:2004 "
+        "dlc format:38", 0xe93087d4U, 0x23143d12U, true, true, "" },
+    { "    tbuffer_load_format_x v61, v[18:19], s[80:83], s35 idxen offen offset:2004 "
+        "dlc format:38", 0xe930b7d4U, 0x23143d12U, true, true, "" },
+    { "    tbuffer_load_format_x v61, v18, s[80:83], s35 offen offset:2004 "
+        "dlc format:38", 0xe93097d4U, 0x23143d12U, true, true, "" },
+    /* MTBUF instructions */
+    { "    tbuffer_load_format_xy v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93127d4U, 0x23143d12U, true, true, "" },
+    { "    tbuffer_load_format_xyz v[61:63], v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93227d4U, 0x23143d12U, true, true, "" },
+    { "    tbuffer_load_format_xyzw v[61:64], v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93327d4U, 0x23143d12U, true, true, "" },
+    { "    tbuffer_store_format_x v61, v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93427d4U, 0x23143d12U, true, true, "" },
+    { "    tbuffer_store_format_xy v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93527d4U, 0x23143d12U, true, true, "" },
+    { "    tbuffer_store_format_xyz v[61:63], v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93627d4U, 0x23143d12U, true, true, "" },
+    { "    tbuffer_store_format_xyzw v[61:64], v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93727d4U, 0x23143d12U, true, true, "" },
+    { "    tbuffer_load_format_d16_x v61, v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93027d4U, 0x23343d12U, true, true, "" },
+    { "    tbuffer_load_format_d16_xy v61, v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93127d4U, 0x23343d12U, true, true, "" },
+    { "    tbuffer_load_format_d16_xyz v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93227d4U, 0x23343d12U, true, true, "" },
+    { "    tbuffer_load_format_d16_xyzw v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93327d4U, 0x23343d12U, true, true, "" },
+    { "    tbuffer_store_format_d16_x v61, v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93427d4U, 0x23343d12U, true, true, "" },
+    { "    tbuffer_store_format_d16_xy v61, v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93527d4U, 0x23343d12U, true, true, "" },
+    { "    tbuffer_store_format_d16_xyz v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93627d4U, 0x23343d12U, true, true, "" },
+    { "    tbuffer_store_format_d16_xyzw v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "format:38", 0xe93727d4U, 0x23343d12U, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
