@@ -2235,7 +2235,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                       output.size()));
     
     // put data (instruction words)
-    uint32_t words[2];
+    uint32_t words[3];
     cxuint wordsNum = 2;
     const uint32_t encoding = (arch & ARCH_GCN_1_5)!=0 ?
             (gcnInsn.encoding==GCNENC_VOP3P ? 0xcc000000U : 0xd4000000U) : 0xd0000000U;
