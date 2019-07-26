@@ -192,6 +192,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* regRangePlace = linePtr;
+    const bool isGCN15 = ((arch & ARCH_GCN_1_5)!=0);
     
     AsmSymbolEntry* symEntry = nullptr;
     if (linePtr!=end && *linePtr=='@')
@@ -278,7 +279,8 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
                             ASM_FAIL_BY_ERROR(regRangePlace,
                                         "Unaligned scalar register range")
                     }
-                    else if ((flags & INSTROP_UNALIGNED) == INSTROP_SGPR_UNALIGNED)
+                    else if (!isGCN15 &&
+                        (flags & INSTROP_UNALIGNED) == INSTROP_SGPR_UNALIGNED)
                         if ((rstart & 0xfc) != ((rend-1) & 0xfc))
                             // unaligned, but some restrictions:
                             // two regs can be in single 4-dword register line
@@ -452,6 +454,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* sgprRangePlace = linePtr;
+    const bool isGCN15 = ((arch & ARCH_GCN_1_5)!=0);
     if (linePtr == end)
     {
         if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar", regsNum, required))
@@ -798,7 +801,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                     (value2-value1>1 && (value1&3)!=0))
                     ASM_FAIL_BY_ERROR(sgprRangePlace, "Unaligned scalar register range")
             }
-            else  if ((flags & INSTROP_UNALIGNED)==INSTROP_SGPR_UNALIGNED)
+            else  if (!isGCN15 &&
+                (flags & INSTROP_UNALIGNED)==INSTROP_SGPR_UNALIGNED)
                 if ((value1 & 0xfc) != ((value2) & 0xfc))
                    // unaligned, but some restrictions
                     // two regs can be in single 4-dword register line
