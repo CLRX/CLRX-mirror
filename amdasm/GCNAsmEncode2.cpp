@@ -486,6 +486,19 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     return true;
 }
 
+// dim values names
+static const std::pair<const char*, cxuint> mimgDimNamesMap[] =
+{
+    { "1d", 0 },
+    { "1d_array", 4 },
+    { "2d", 1 },
+    { "2d_array", 5 },
+    { "2d_msaa", 6 },
+    { "2d_msaa_array", 7 },
+    { "3d", 2 },
+    { "cube", 3 },
+};
+
 bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, GPUArchMask arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
@@ -494,7 +507,9 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const char* end = asmr.line+asmr.lineSize;
     if (gcnEncSize==GCNEncSize::BIT32)
         ASM_FAIL_BY_ERROR(instrPlace, "Only 64-bit size for MIMG encoding")
+    const bool isGCN12 = (arch & ARCH_GCN_1_2_4)!=0;
     const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
+    const bool isGCN15 = (arch & ARCH_GCN_1_5)!=0;
     bool good = true;
     RegRange vaddrReg(0, 0);
     RegRange vdataReg(0, 0);
@@ -550,6 +565,8 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool haveTfe = false, haveSlc = false, haveGlc = false;
     bool haveDa = false, haveR128 = false, haveLwe = false, haveUnorm = false;
     bool haveDMask = false, haveD16 = false, haveA16 = false;
+    bool haveDlc = false, haveDim = false;
+    cxbyte dimVal = 0;
     cxbyte dmask = 0x1;
     /* modifiers and modifiers */
     while(linePtr!=end)
@@ -571,8 +588,48 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             if (name[1]=='a' && name[2]==0)
                 // DA modifier
                 good &= parseModEnable(asmr, linePtr, haveDa, "da modifier");
-            else if ((arch & ARCH_GCN_1_2_4)!=0 && name[1]=='1' &&
-                name[2]=='6' && name[3]==0)
+            else if (isGCN15 && name[1]=='l' && name[2]=='c' && name[3]==0)
+                good &= parseModEnable(asmr, linePtr, haveDlc, "dlc modifier");
+            else if (isGCN15 && name[1]=='i' && name[2]=='m' && name[3]==0)
+            {
+                // parse dim
+                // parse dmask
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr!=end && *linePtr==':')
+                {
+                    skipCharAndSpacesToEnd(linePtr, end);
+                    const char* dimPlace = linePtr;
+                    char dimName[30];
+                    if (linePtr != end && *linePtr=='@')
+                    {
+                        // expression, parse DATA_FORMAT
+                        linePtr++;
+                        if (!parseImm(asmr, linePtr, dimVal, nullptr, 3, WS_UNSIGNED))
+                            good = false;
+                    }
+                    else if (getMUBUFFmtNameArg(
+                                asmr, 30, dimName, linePtr, "MIMG dimension"))
+                    {
+                        toLowerString(dimName);
+                        size_t nfmtNameIndex = (::strncmp(dimName,
+                                 "sq_rsrc_img_", 12)==0) ? 12 : 0;
+                        size_t dimIdx = binaryMapFind(mimgDimNamesMap,
+                               mimgDimNamesMap+8, dimName+nfmtNameIndex,
+                               CStringLess())-mimgDimNamesMap;
+                        // check if found
+                        if (dimIdx!=8)
+                        {
+                            dimVal = dimIdx;
+                            if (haveDim)
+                                asmr.printWarning(modPlace, "Dim is already defined");
+                            haveDim = true;
+                        }
+                        else
+                            ASM_NOTGOOD_BY_ERROR1(good, dimPlace, "Unknown MIMG dimension")
+                    }
+                }
+            }
+            else if ((isGCN12 || isGCN15) && name[1]=='1' && name[2]=='6' && name[3]==0)
                 // D16 modifier
                 good &= parseModEnable(asmr, linePtr, haveD16, "d16 modifier");
             else if (::strcmp(name+1, "mask")==0)
@@ -637,7 +694,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
                 ((dmask & 8)?1:0);
-        if (isGCN14 && haveD16)
+        if ((isGCN14 || isGCN15) && haveD16)
             dregsNum = (dregsNum+1)>>1;
         dregsNum += (haveTfe);
     }
@@ -655,6 +712,9 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
+    
+    if (isGCN15 && !haveDim)
+        ASM_FAIL_BY_ERROR(instrPlace, "MIMG instruction for GFX10 requires DIM modifier")
     
     /* checking modifiers conditions */
     if (!haveUnorm && ((gcnInsn.mode&GCN_MLOAD) == 0 || (gcnInsn.mode&GCN_MATOMIC)!=0))
@@ -677,7 +737,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t words[2];
     SLEV(words[0], 0xf0000000U | (uint32_t(dmask&0xf)<<8) | (haveUnorm ? 0x1000U : 0) |
         (haveGlc ? 0x2000U : 0) | (haveDa ? 0x4000U : 0) |
-        (haveR128|haveA16 ? 0x8000U : 0) |
+        (haveR128|haveA16 ? 0x8000U : 0) | (haveDlc ? 0x80U : 0) |
         (haveTfe ? 0x10000U : 0) | (haveLwe ? 0x20000U : 0) |
         (uint32_t(gcnInsn.code1)<<18) | (haveSlc ? (1U<<25) : 0));
     SLEV(words[1], (vaddrReg.bstart()&0xff) | (uint32_t(vdataReg.bstart()&0xff)<<8) |
