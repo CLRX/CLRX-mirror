@@ -446,6 +446,60 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
     }
 }
 
+bool GCNAsmUtils::parseVRegRangesLimited(Assembler& asmr, const char*& linePtr,
+                   cxuint vgprsLimit, std::vector<RegRange>& regPairs,
+                   AsmRegField regField, bool required, Flags flags)
+{
+    const char* oldLinePtr = linePtr;
+    const char* end = asmr.line+asmr.lineSize;
+    regPairs.clear();
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr==end && *linePtr!='[')
+    {
+        linePtr = oldLinePtr;
+        return false;
+    }
+    
+    skipCharAndSpacesToEnd(linePtr, end);
+    // real parsing
+    cxuint curRegField = regField;
+    for (cxuint parsedVgprs = 0; parsedVgprs < vgprsLimit;)
+    {
+        const char *curRangePlace = linePtr;
+        regPairs.push_back({ 0, 0 });
+        if (!parseVRegRange(asmr, linePtr, regPairs.back(), 0,
+                            curRegField, required, flags))
+            return false;
+        const RegRange& rpair = regPairs.back();
+        if (cxuint(rpair.end-rpair.start) > vgprsLimit-parsedVgprs)
+            ASM_FAIL_BY_ERROR(curRangePlace,
+                              "Register range have more registers than left")
+        parsedVgprs += rpair.end-rpair.start;
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr!=end && *linePtr==']' && parsedVgprs!=vgprsLimit)
+        {
+            char buf[60];
+            snprintf(buf, 60, "VGPR register list requires %u registers", vgprsLimit);
+            ASM_FAIL_BY_ERROR(curRangePlace, buf)
+        }
+        else if (linePtr!=end && *linePtr==',')
+        {
+            if (parsedVgprs==vgprsLimit)
+            {
+                char buf[60];
+                snprintf(buf, 60, "VGPR register list need no more than %u registers",
+                                    vgprsLimit);
+                ASM_FAIL_BY_ERROR(curRangePlace, buf)
+            }
+            skipCharAndSpacesToEnd(linePtr, end);
+        }
+        else
+            ASM_FAIL_BY_ERROR(curRangePlace, "Expected ',' in  VGPR register list")
+        curRegField++;
+    }
+    return true;
+}
+
 bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
                     GPUArchMask arch, cxuint regsNum, AsmRegField regField,
                     bool required, Flags flags)
