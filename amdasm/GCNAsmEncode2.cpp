@@ -997,6 +997,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (gcnEncSize==GCNEncSize::BIT32)
         ASM_FAIL_BY_ERROR(instrPlace, "Only 64-bit size for FLAT encoding")
     const bool isGCN14 = (arch & ARCH_GCN_1_4)!=0;
+    const bool isGCN15 = ((arch&ARCH_GCN_1_5)!=0);
     const cxuint flatMode = (gcnInsn.mode & GCN_FLAT_MODEMASK);
     bool good = true;
     RegRange vaddrReg(0, 0);
@@ -1124,7 +1125,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     "SCRATCH mode")
     
     if (saddrOff)
-        saddrReg.start = 0x7f;
+        saddrReg.start = isGCN15 ? 0x7d : 0x7f;
     if (vaddrOff)
         vaddrReg.start = 0x00;
     
@@ -1132,6 +1133,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> instOffsetExpr;
     bool haveTfe = false, haveSlc = false, haveGlc = false;
     bool haveNv = false, haveLds = false, haveInstOffset = false;
+    bool haveDlc = false;
     
     // main loop to parsing FLAT modifiers
     while(linePtr!=end)
@@ -1148,7 +1150,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             continue;
         }
         // only GCN1.2 modifiers
-        if (!isGCN14 && ::strcmp(name, "tfe") == 0)
+        if (!isGCN14 && !isGCN15 && ::strcmp(name, "tfe") == 0)
             good &= parseModEnable(asmr, linePtr, haveTfe, "tfe modifier");
         // only GCN1.4 modifiers
         else if (isGCN14 && ::strcmp(name, "nv") == 0)
@@ -1158,14 +1160,23 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         // GCN 1.2/1.4 modifiers
         else if (::strcmp(name, "glc") == 0)
             good &= parseModEnable(asmr, linePtr, haveGlc, "glc modifier");
+        else if (isGCN15 && ::strcmp(name, "dlc") == 0)
+            good &= parseModEnable(asmr, linePtr, haveDlc, "dlc modifier");
         else if (::strcmp(name, "slc") == 0)
             good &= parseModEnable(asmr, linePtr, haveSlc, "slc modifier");
-        else if (isGCN14 && (::strcmp(name, "inst_offset")==0 ||
+        else if ((isGCN14 || isGCN15) && (::strcmp(name, "inst_offset")==0 ||
                             ::strcmp(name, "offset")==0))
         {
             // parse inst_offset, 13-bit with sign, or 12-bit unsigned
+            cxbyte bits = flatMode!=0 ? 13 : 12;
+            cxbyte wssign = flatMode!=0 ? WS_BOTH : WS_UNSIGNED;
+            if (isGCN15)
+            {
+                bits = 11;
+                wssign = WS_UNSIGNED;
+            }
             if (parseModImm(asmr, linePtr, instOffset, &instOffsetExpr, "inst_offset",
-                            flatMode!=0 ? 13 : 12, flatMode!=0 ? WS_BOTH : WS_UNSIGNED))
+                            bits, wssign))
             {
                 if (haveInstOffset)
                     asmr.printWarning(modPlace, "InstOffset is already defined");
@@ -1250,7 +1261,7 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t words[2];
     SLEV(words[0], 0xdc000000U | (haveGlc ? 0x10000 : 0) | (haveSlc ? 0x20000: 0) |
             (uint32_t(gcnInsn.code1)<<18) | (haveLds ? 0x2000U : 0) | instOffset |
-            (uint32_t(flatMode)<<14));
+            (uint32_t(haveDlc)<<12) | (uint32_t(flatMode)<<14));
     SLEV(words[1], (vaddrReg.bstart()&0xff) | (uint32_t(vdataReg.bstart()&0xff)<<8) |
             (haveTfe|haveNv ? (1U<<23) : 0) | (uint32_t(vdstReg.bstart()&0xff)<<24) |
             (uint32_t(saddrReg.bstart())<<16));
