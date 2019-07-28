@@ -3334,9 +3334,21 @@ const GCNAsmOpcodeCase2 encGCN15OpcodeCases2[] =
         "glc d16 slc\n", { 0xf2003e08U, 0x80159d79U }, 2, true, "" },
     { "image_load      v[157:158], v[121:122], s[84:91] dmask:15 dim:2d unorm "
         "glc d16 slc\n", { 0xf2003f08U, 0x80159d79U }, 2, true, "" },
+    /* VADDR reglist */
     { "image_load      v[157:158], [v121,v44,v75], s[84:91] dmask:15 dim:cube unorm "
         "glc slc d16\n", { 0xf2003f1aU, 0x80159d79U, 0x00004b2cU }, 3, true, "" },
     { "image_load      v[157:158], [v121,v[44:45]], s[84:91] dmask:15 dim:cube unorm "
         "glc slc d16\n", { 0xf2003f1aU, 0x80159d79U, 0x00002d2cU }, 3, true, "" },
+    { "image_load      v[157:158], [v121,v44,v75], s[84:91] dmask:15 dim:cube unorm "
+        "glc slc d16\n", { 0xf2003f1aU, 0x80159d79U, 0x00004b2cU }, 3, true, "" },
+    { "image_sample_c_l v[157:159], [v121,v42,v85,v196,v153], s[84:91], s[76:79] "
+        "dmask:11 dim:2d unorm glc slc\n",
+        { 0xf2b03b0aU, 0x02759d79U, 0x99c4552aU }, 3, true, "" },
+    { "image_sample_c_l v[157:159], [  v121 , v42,v85  ,  v196 ,v153 ]  , s[84:91], "
+        "s[76:79] dmask:11 dim:2d unorm glc slc\n",
+        { 0xf2b03b0aU, 0x02759d79U, 0x99c4552aU }, 3, true, "" },
+    { "image_sample_c_l v[157:159], [v[121:124],v153], s[84:91], s[76:79] "
+        "dmask:11 dim:2d unorm glc slc\n",
+        { 0xf2b03b0aU, 0x02759d79U, 0x997c7b7aU }, 3, true, "" },
     { nullptr, { }, 0, false, 0 }
 };
