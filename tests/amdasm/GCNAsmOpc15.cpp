@@ -3231,6 +3231,21 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
         "test.s:1:6: Error: Unknown EXP target\n" },
     { "exp  param, v116, v93, v27, v124 done vm", 0, 0, false, false,
         "test.s:1:6: Error: Missing number\n" },
+    /* FLAT encoding */
+    { "flat_load_ubyte v47, v[187:188] glc slc",
+        0xdc230000U, 0x2f7d00bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188] glc", 0xdc210000U, 0x2f7d00bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188] glc   ", 0xdc210000U, 0x2f7d00bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188]", 0xdc200000U, 0x2f7d00bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188]   ", 0xdc200000U, 0x2f7d00bbU, true, true, "" },
+    { "flat_load_ubyte " "v47, v[187:188] glc slc\n",
+        0xdc230000U, 0x2f7d00bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188] slc\n", 0xdc220000U, 0x2f7d00bbU, true, true, "" },
+    /* FLAT errors */
+    { "flat_load_ubyte v47, v[187:188] glc slcx", 0, 0, false, false,
+        "test.s:1:37: Error: Unknown FLAT modifier\n" },
+    { "flat_load_ubyte v[47:48], v[187:188] glc", 0, 0, false, false,
+        "test.s:1:17: Error: Required 1 vector register\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
 

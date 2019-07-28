@@ -1105,6 +1105,8 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                         INSTROP_SYMREGRANGE|INSTROP_READ);
         }
     }
+    else if (isGCN15)
+        saddrReg = { 125, 125 };
     
     if (addrRegsNum == 0)
     {
