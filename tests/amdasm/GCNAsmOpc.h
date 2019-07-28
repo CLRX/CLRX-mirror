@@ -48,5 +48,6 @@ extern const GCNAsmOpcodeCase encGCN14OpcodeCases[];
 extern const GCNAsmOpcodeCase encGCN141OpcodeCases[];
 extern const GCNAsmOpcodeCase encGCN15OpcodeCases[];
 extern const GCNAsmOpcodeCase2 encGCN15OpcodeCases2[];
+extern const GCNAsmOpcodeCase encGCN151OpcodeCases[];
 
 #endif

@@ -4060,3 +4060,21 @@ const GCNAsmOpcodeCase2 encGCN15OpcodeCases2[] =
         "glc slc d16\n", { 0xf2003f12U, 0x80159d79U, 0x004cd42cU }, 3, true, "" },
     { nullptr, { }, 0, false, 0 }
 };
+
+const GCNAsmOpcodeCase encGCN151OpcodeCases[] =
+{
+    { "v_dot2c_f32_f16 v154, v21, v107\n", 0x0534d715U, 0, false, true, "" },
+    { "v_dot4c_i32_i8  v154, v21, v107\n", 0x1b34d715U, 0, false, true, "" },
+    { "v_dot2c_f32_f16 v154, v21, v107 vop3\n", 0, 0, false, false,
+        "test.s:1:1: Error: No VOP3 encoding for this instruction\n" },
+    { "v_dot4c_i32_i8  v154, v21, v107 vop3\n", 0, 0, false, false,
+        "test.s:1:1: Error: No VOP3 encoding for this instruction\n" },
+    { "v_dot2_f32_f16  v55, v79, v166, v229\n", 0xcc134037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot2_i32_i16  v55, v79, v166, v229\n", 0xcc144037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot2_u32_u16  v55, v79, v166, v229\n", 0xcc154037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot4_i32_i8   v55, v79, v166, v229\n", 0xcc164037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot4_u32_u8   v55, v79, v166, v229\n", 0xcc174037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot8_i32_i4   v55, v79, v166, v229\n", 0xcc184037U, 0x1f974d4fU, true, true, "" },
+    { "v_dot8_u32_u4   v55, v79, v166, v229\n", 0xcc194037U, 0x1f974d4fU, true, true, "" },
+    { nullptr, 0, 0, false, false, 0 }
+};
