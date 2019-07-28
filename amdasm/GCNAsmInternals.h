@@ -210,8 +210,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     /* return true if no error */
     static bool parseVRegRangesLimited(Assembler& asmr, const char*& linePtr,
                    cxuint vgprsLimit, std::vector<RegRange>& regPairs,
-                   AsmRegField regField, bool required = true,
-                   Flags flags = INSTROP_SYMREGRANGE);
+                   AsmRegField regField, Flags flags = INSTROP_SYMREGRANGE);
     /* return true if no error */
     static bool parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
                    GPUArchMask arch, cxuint regsNum, AsmRegField regField,

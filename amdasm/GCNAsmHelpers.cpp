@@ -448,7 +448,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
 
 bool GCNAsmUtils::parseVRegRangesLimited(Assembler& asmr, const char*& linePtr,
                    cxuint vgprsLimit, std::vector<RegRange>& regPairs,
-                   AsmRegField regField, bool required, Flags flags)
+                   AsmRegField regField, Flags flags)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
@@ -467,8 +467,7 @@ bool GCNAsmUtils::parseVRegRangesLimited(Assembler& asmr, const char*& linePtr,
     {
         const char *curRangePlace = linePtr;
         regPairs.push_back({ 0, 0 });
-        if (!parseVRegRange(asmr, linePtr, regPairs.back(), 0,
-                            curRegField, required, flags))
+        if (!parseVRegRange(asmr, linePtr, regPairs.back(), 0, curRegField, true, flags))
             return false;
         const RegRange& rpair = regPairs.back();
         if (cxuint(rpair.end-rpair.start) > vgprsLimit-parsedVgprs)

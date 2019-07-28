@@ -548,7 +548,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                         INSTROP_SYMREGRANGE|INSTROP_READ);
     else // for VADDR register list
         good &= parseVRegRangesLimited(asmr, linePtr, 13, vaddrRegList,
-                   GCNFIELD_M_VADDR_MULTI, true, INSTROP_SYMREGRANGE|INSTROP_READ);
+                   GCNFIELD_M_VADDR_MULTI, INSTROP_SYMREGRANGE|INSTROP_READ);
     
     if (!isGCN15)
     {
@@ -757,7 +757,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         totalVaddrRegs = vaddrReg ? vaddrReg.end-vaddrReg.start : 0;
         if (!vaddrReg)
             for (const RegRange& rpair: vaddrRegList)
-                totalVaddrRegs = rpair.end - rpair.start;
+                totalVaddrRegs += rpair.end - rpair.start;
         
         if (totalVaddrRegs < daddrsNum)
         {
@@ -818,7 +818,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             reinterpret_cast<cxbyte*>(words + 2));
     if (isGCN15 && !vaddrReg)
     {
-        output.insert(output.end(), vaddrRegCodes, vaddrRegCodes+totalVaddrRegs-1);
+        output.insert(output.end(), vaddrRegCodes+1, vaddrRegCodes+totalVaddrRegs);
         // alignment to dword
         output.insert(output.end(), (4 - ((totalVaddrRegs-1)&3))&3, cxbyte(0));
     }
