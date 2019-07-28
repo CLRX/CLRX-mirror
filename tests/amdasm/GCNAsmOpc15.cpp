@@ -3403,6 +3403,10 @@ const GCNAsmOpcodeCase2 encGCN15OpcodeCases2[] =
     { "image_load      v[157:158], [], s[84:91] dmask:15 dim:cube unorm "
         "glc slc d16\n", { }, 0, false, "test.s:1:30: Error: Expected vector registers\n"
         "test.s:1:29: Error: MIMG VADDR requires least 3 registers\n" },
+    { "image_sample_c_l v[157:159], [v[121:124],s53], s[84:91], s[76:79] "
+        "dmask:11 dim:2d unorm glc slc\n", { }, 0, false,
+        "test.s:1:42: Error: Expected vector registers\n"
+        "test.s:1:45: Error: Expected ',' before argument\n" },
     /* MIMG instructions */
     { "image_load      v[157:159], v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n",
         { 0xf2003b08U, 0x00159d79U }, 2, true, "" },
@@ -3638,5 +3642,17 @@ const GCNAsmOpcodeCase2 encGCN15OpcodeCases2[] =
         "[v121,v44,v73,v91,v97,v216,v62,v155,v25,v119,v1,v9], "
         "s[84:91], s[76:79] dmask:11 dim:3d unorm glc slc\n",
         { 0xf2ec3b16U, 0x02759d79U, 0x615b492cU, 0x199b3ed8U, 0x00090177U }, 5, true, "" },
+    // MIMG symregs VADDR
+    { "xr=%v44; image_load v[157:158], [v121,xr,v212], s[84:91] dmask:15 dim:3d unorm "
+        "glc slc d16\n", { 0xf2003f12U, 0x80159d79U, 0x0000d42cU }, 3, true, "" },
+    { "xr=%v[44:45]; image_load v[157:158], [v121,xr], s[84:91] dmask:15 dim:3d unorm "
+        "glc slc d16\n", { 0xf2003f12U, 0x80159d79U, 0x00002d2cU }, 3, true, "" },
+    { "aha=%v44; ab=%v216; cb=%v[91:92]\n"
+        "image_sample_d  v[157:159], [v121,aha,v73,cb,ab,v62,v155,v25], "
+        "s[84:91], s[76:79] dmask:11 dim:3d unorm glc slc\n",
+        { 0xf2883b14U, 0x02759d79U, 0x5c5b492cU, 0x199b3ed8U }, 4, true, "" },
+    // MIMG VADDR longer
+    { "image_load      v[157:158], [v121,v44,v212,v76], s[84:91] dmask:15 dim:3d unorm "
+        "glc slc d16\n", { 0xf2003f12U, 0x80159d79U, 0x004cd42cU }, 3, true, "" },
     { nullptr, { }, 0, false, 0 }
 };
