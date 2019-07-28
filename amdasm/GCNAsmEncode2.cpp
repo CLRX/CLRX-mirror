@@ -486,17 +486,24 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     return true;
 }
 
-// dim values names
-static const std::pair<const char*, cxuint> mimgDimNamesMap[] =
+struct GFX10MIMGDimInfoEntry
 {
-    { "1d", 0 },
-    { "1d_array", 4 },
-    { "2d", 1 },
-    { "2d_array", 5 },
-    { "2d_msaa", 6 },
-    { "2d_msaa_array", 7 },
-    { "3d", 2 },
-    { "cube", 3 },
+    cxuint value;
+    cxuint dwordsNum;
+    cxuint derivsNum; // deriv dwords num
+};
+
+// dim values names
+static const std::pair<const char*, GFX10MIMGDimInfoEntry> mimgDimNamesMap[] =
+{
+    { "1d", { 0, 1, 2 } },
+    { "1d_array",{ 4, 2, 2 } },
+    { "2d", { 1, 2, 4 } },
+    { "2d_array",{ 5, 3, 4 } },
+    { "2d_msaa", { 6, 3, 4 } },
+    { "2d_msaa_array", { 7, 4, 4 } },
+    { "3d", { 2, 3, 6 } },
+    { "cube", { 3, 3, 4 } },
 };
 
 bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -512,6 +519,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const bool isGCN15 = (arch & ARCH_GCN_1_5)!=0;
     bool good = true;
     RegRange vaddrReg(0, 0);
+    std::vector<RegRange> vaddrRegList;
     RegRange vdataReg(0, 0);
     RegRange ssampReg(0, 0);
     RegRange srsrcReg(0, 0);
@@ -529,18 +537,26 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     skipSpacesToEnd(linePtr, end);
     const char* vaddrPlace = linePtr;
     gcnAsm->setCurrentRVU(1);
-    // // parse VADDR (various VGPR number, verified later)
-    good &= parseVRegRange(asmr, linePtr, vaddrReg, 0, GCNFIELD_M_VADDR, true,
-                    INSTROP_SYMREGRANGE|INSTROP_READ);
-    cxuint geRegRequired = (gcnInsn.mode&GCN_MIMG_VA_MASK)+1;
-    cxuint vaddrRegsNum = vaddrReg.end-vaddrReg.start;
-    cxuint vaddrMaxExtraRegs = (gcnInsn.mode&GCN_MIMG_VADERIV) ? 7 : 3;
-    if (vaddrRegsNum < geRegRequired || vaddrRegsNum > geRegRequired+vaddrMaxExtraRegs)
+    if (!isGCN15 || linePtr==end || *linePtr!='[')
+        // parse VADDR (various VGPR number, verified later)
+        good &= parseVRegRange(asmr, linePtr, vaddrReg, 0, GCNFIELD_M_VADDR, true,
+                        INSTROP_SYMREGRANGE|INSTROP_READ);
+    else // for VADDR register list
+        good &= parseVRegRangesLimited(asmr, linePtr, 13, vaddrRegList,
+                   GCNFIELD_M_VADDR_MULTI, true, INSTROP_SYMREGRANGE|INSTROP_READ);
+    
+    if (!isGCN15)
     {
-        char buf[60];
-        snprintf(buf, 60, "Required (%u-%u) vector registers", geRegRequired,
-                 geRegRequired+vaddrMaxExtraRegs);
-        ASM_NOTGOOD_BY_ERROR(vaddrPlace, buf)
+        cxuint geRegRequired = (gcnInsn.mode&GCN_MIMG_VA_MASK)+1;
+        cxuint vaddrRegsNum = vaddrReg.end-vaddrReg.start;
+        cxuint vaddrMaxExtraRegs = (gcnInsn.mode&GCN_MIMG_VADERIV) ? 7 : 3;
+        if (vaddrRegsNum < geRegRequired || vaddrRegsNum > geRegRequired+vaddrMaxExtraRegs)
+        {
+            char buf[60];
+            snprintf(buf, 60, "Required (%u-%u) vector registers", geRegRequired,
+                    geRegRequired+vaddrMaxExtraRegs);
+            ASM_NOTGOOD_BY_ERROR(vaddrPlace, buf)
+        }
     }
     
     if (!skipRequiredComma(asmr, linePtr))
@@ -567,6 +583,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool haveDMask = false, haveD16 = false, haveA16 = false;
     bool haveDlc = false, haveDim = false;
     cxbyte dimVal = 0;
+    cxuint dimDwordsNum = 0, dimDerivsNum = 0;
     cxbyte dmask = 0x1;
     /* modifiers and modifiers */
     while(linePtr!=end)
@@ -619,7 +636,9 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                         // check if found
                         if (dimIdx!=8)
                         {
-                            dimVal = dimIdx;
+                            dimVal = mimgDimNamesMap[dimIdx].second.value;
+                            dimDwordsNum = mimgDimNamesMap[dimIdx].second.dwordsNum;
+                            dimDerivsNum = mimgDimNamesMap[dimIdx].second.derivsNum;
                             if (haveDim)
                                 asmr.printWarning(modPlace, "Dim is already defined");
                             haveDim = true;
@@ -710,11 +729,40 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         ASM_NOTGOOD_BY_ERROR(srsrcPlace, (haveR128) ? "Required 4 scalar registers" :
                     "Required 8 scalar registers")
     
+    cxuint totalVaddrRegs = 0;
+    if (isGCN15)
+    {
+        if (!haveDim)
+            ASM_FAIL_BY_ERROR(instrPlace,
+                              "MIMG instruction for GFX10 requires DIM modifier")
+        
+        // check number of VADDR registers
+        cxuint daddrsNum = dimDwordsNum;
+        if ((gcnInsn.mode & GCN_MIMG_VADERIV)!=0)
+            daddrsNum += dimDerivsNum;
+        daddrsNum += ((gcnInsn.mode & GCN_MIMG_VA_MIP)!=0) +
+                    ((gcnInsn.mode & GCN_MIMG_VA_C)!=0) +
+                    ((gcnInsn.mode & GCN_MIMG_VA_CL)!=0) +
+                    ((gcnInsn.mode & GCN_MIMG_VA_L)!=0) +
+                    ((gcnInsn.mode & GCN_MIMG_VA_B)!=0) +
+                    ((gcnInsn.mode & GCN_MIMG_VA_O)!=0);
+        totalVaddrRegs = vaddrReg ? vaddrReg.end-vaddrReg.start : 0;
+        if (!vaddrReg)
+            for (const RegRange& rpair: vaddrRegList)
+                totalVaddrRegs = rpair.end - rpair.start;
+        
+        if (totalVaddrRegs < daddrsNum)
+        {
+            char buf[60];
+            sprintf(buf, "MIMG VADDR requires least %u registers", daddrsNum);
+            ASM_FAIL_BY_ERROR(vaddrPlace, buf);
+        }
+        else if (totalVaddrRegs > 13)
+            ASM_FAIL_BY_ERROR(vaddrPlace, "MIMG VADDR accepts no more than 13 registers");
+    }
+    
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return false;
-    
-    if (isGCN15 && !haveDim)
-        ASM_FAIL_BY_ERROR(instrPlace, "MIMG instruction for GFX10 requires DIM modifier")
     
     /* checking modifiers conditions */
     if (!haveUnorm && ((gcnInsn.mode&GCN_MLOAD) == 0 || (gcnInsn.mode&GCN_MATOMIC)!=0))
@@ -735,16 +783,37 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     // put instruction words
     uint32_t words[2];
+    uint32_t extraDwordEnc = 0;
+    cxbyte vaddrRegCodes[13];
+    vaddrRegCodes[0] = vaddrReg.bstart()&0xff;
+    if (isGCN15 && !vaddrReg) // if vaddr reg list
+    {
+        extraDwordEnc = (((totalVaddrRegs-1+3)>>2)&3)<<1;
+        cxuint i = 0;
+        for (const RegRange& rpair: vaddrRegList)
+        {
+            for (cxuint r = rpair.start; r < rpair.end; r++)
+                vaddrRegCodes[i++] = rpair.isRegVar() ? 0 : (r&0xff);
+        }
+    }
+    
     SLEV(words[0], 0xf0000000U | (uint32_t(dmask&0xf)<<8) | (haveUnorm ? 0x1000U : 0) |
         (haveGlc ? 0x2000U : 0) | (haveDa ? 0x4000U : 0) |
+        (haveDim ? uint32_t(dimVal)<<3 : 0) | extraDwordEnc |
         (haveR128|haveA16 ? 0x8000U : 0) | (haveDlc ? 0x80U : 0) |
         (haveTfe ? 0x10000U : 0) | (haveLwe ? 0x20000U : 0) |
         (uint32_t(gcnInsn.code1)<<18) | (haveSlc ? (1U<<25) : 0));
-    SLEV(words[1], (vaddrReg.bstart()&0xff) | (uint32_t(vdataReg.bstart()&0xff)<<8) |
+    SLEV(words[1], vaddrRegCodes[0] | (uint32_t(vdataReg.bstart()&0xff)<<8) |
             (uint32_t(srsrcReg.bstart()>>2)<<16) | (uint32_t(ssampReg.bstart()>>2)<<21) |
             (haveD16 ? (1U<<31) : 0));
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + 2));
+    if (isGCN15 && !vaddrReg)
+    {
+        output.insert(output.end(), vaddrRegCodes, vaddrRegCodes+totalVaddrRegs-1);
+        // alignment to dword
+        output.insert(output.end(), (4 - ((totalVaddrRegs-1)&3))&3, cxbyte(0));
+    }
     
     // update register pool (instr loads or save old value) */
     if (vdataReg && !vdataReg.isRegVar() && (vdataToWrite || haveTfe))

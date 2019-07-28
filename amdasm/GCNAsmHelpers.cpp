@@ -476,12 +476,12 @@ bool GCNAsmUtils::parseVRegRangesLimited(Assembler& asmr, const char*& linePtr,
                               "Register range have more registers than left")
         parsedVgprs += rpair.end-rpair.start;
         skipSpacesToEnd(linePtr, end);
-        if (linePtr!=end && *linePtr==']' && parsedVgprs!=vgprsLimit)
+        if (linePtr!=end && *linePtr==']')
         {
-            char buf[60];
-            snprintf(buf, 60, "VGPR register list requires %u registers", vgprsLimit);
-            ASM_FAIL_BY_ERROR(curRangePlace, buf)
+            skipCharAndSpacesToEnd(linePtr, end);
+            break; // end of register list
         }
+        
         else if (linePtr!=end && *linePtr==',')
         {
             if (parsedVgprs==vgprsLimit)
