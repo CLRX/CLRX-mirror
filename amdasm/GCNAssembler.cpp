@@ -445,6 +445,15 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             sectionData[offset+1] = (sectionData[offset+1]&0xf0) | ((value&0xf00)>>8);
             printWarningForRange(12, value, sourcePos, WS_UNSIGNED);
             return true;
+        case GCNTGT_INSTOFFSET_GFX10:
+            // FLAT unsigned inst_offset
+            if (sectionId != ASMSECT_ABS)
+                GCN_FAIL_BY_ERROR(sourcePos,
+                        "Relative value is illegal in offset expressions")
+            sectionData[offset] = value;
+            sectionData[offset+1] = (sectionData[offset+1]&0xf0) | ((value&0x700)>>8);
+            printWarningForRange(11, value, sourcePos, WS_UNSIGNED);
+            return true;
         case GCNTGT_INSTOFFSET_S:
             // FLAT signed inst_offset
             if (sectionId != ASMSECT_ABS)

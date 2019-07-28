@@ -1255,9 +1255,9 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                             gcnAsm->instrRVUs[2].rwFlags : 0) };
     
     if (instOffsetExpr!=nullptr)
-        instOffsetExpr->setTarget(AsmExprTarget(flatMode!=0 ?
-                    GCNTGT_INSTOFFSET_S : GCNTGT_INSTOFFSET, asmr.currentSection,
-                    output.size()));
+        instOffsetExpr->setTarget(AsmExprTarget(isGCN15 ? GCNTGT_INSTOFFSET_GFX10 :
+                    (flatMode!=0 ? GCNTGT_INSTOFFSET_S : GCNTGT_INSTOFFSET),
+                    asmr.currentSection, output.size()));
     
     // put data (instruction words)
     uint32_t words[2];
