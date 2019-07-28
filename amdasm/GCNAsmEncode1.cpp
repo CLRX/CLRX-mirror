@@ -1327,6 +1327,8 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const GCNInsnMode mode2 = (gcnInsn.mode & GCN_LITMASK);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4_5)!=0;
     const bool isGCN14 = (arch & ARCH_GCN_1_4_5)!=0;
+    const bool isGCN15 = (arch & ARCH_GCN_1_5)!=0;
+    const bool isWave32 = (asmr.getFlags() & ASM_WAVE32)!=0;
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     RegRange dstReg(0, 0);
@@ -1351,14 +1353,18 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     const bool haveDstCC = mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC;
     const bool haveSrcCC = mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC;
+    
+    const cxuint waveRegSize = (!isGCN15 || !isWave32 ||
+                        (gcnInsn.mode&GCN_VOP_NOWVSZ)!=0) ? 2 : 1;
     if (haveDstCC) /* VOP3b */
     {
         if (!skipRequiredComma(asmr, linePtr))
             return false;
         // parse SDST (in place VCC) (2 SGPR's)
         gcnAsm->setCurrentRVU(1);
-        good &= parseSRegRange(asmr, linePtr, dstCCReg, arch, 2, GCNFIELD_VOP3_SDST1, true,
-                               INSTROP_SYMREGRANGE|INSTROP_SGPR_UNALIGNED|INSTROP_WRITE);
+        good &= parseSRegRange(asmr, linePtr, dstCCReg, arch, waveRegSize,
+                    GCNFIELD_VOP3_SDST1, true, INSTROP_SYMREGRANGE|INSTROP_SGPR_UNALIGNED|
+                    INSTROP_WRITE);
     }
     
     GCNOperand src0Op{}, src1Op{};
@@ -1417,8 +1423,9 @@ bool GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             return false;
         gcnAsm->setCurrentRVU(4);
         // parse SSRC (VCC) (2 SGPR's)
-        good &= parseSRegRange(asmr, linePtr, srcCCReg, arch, 2, GCNFIELD_VOP3_SSRC, true,
-                       INSTROP_SYMREGRANGE|INSTROP_UNALIGNED|INSTROP_READ);
+        good &= parseSRegRange(asmr, linePtr, srcCCReg, arch, waveRegSize,
+                    GCNFIELD_VOP3_SSRC, true,INSTROP_SYMREGRANGE|INSTROP_UNALIGNED|
+                    INSTROP_READ);
     }
     
     // modifiers
@@ -1761,6 +1768,8 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const GCNInsnMode mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4_5)!=0;
     const bool isGCN14 = (arch & ARCH_GCN_1_4_5)!=0;
+    const bool isGCN15 = (arch & ARCH_GCN_1_5)!=0;
+    const bool isWave32 = (asmr.getFlags() & ASM_WAVE32)!=0;
     
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     RegRange dstReg(0, 0);
@@ -1774,8 +1783,10 @@ bool GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if ((gcnInsn.mode & GCN_VOPC_NOVCC) == 0)
     {
         gcnAsm->setCurrentRVU(0);
-        good &= parseSRegRange(asmr, linePtr, dstReg, arch, 2, GCNFIELD_VOP3_SDST0, true,
-                            INSTROP_SYMREGRANGE|INSTROP_SGPR_UNALIGNED|INSTROP_WRITE);
+        const cxuint regSize = (!isGCN15 || !isWave32 ||
+                        (gcnInsn.mode&GCN_VOP_NOWVSZ)!=0) ? 2 : 1;
+        good &= parseSRegRange(asmr, linePtr, dstReg, arch, regSize, GCNFIELD_VOP3_SDST0,
+                        true, INSTROP_SYMREGRANGE|INSTROP_SGPR_UNALIGNED|INSTROP_WRITE);
         if (!skipRequiredComma(asmr, linePtr))
             return false;
     }
@@ -1949,6 +1960,7 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const bool isGCN12 = (arch & ARCH_GCN_1_2_4_5)!=0;
     const bool isGCN14 = (arch & ARCH_GCN_1_4_5)!=0;
     const bool isGCN15 = (arch & ARCH_GCN_1_5)!=0;
+    const bool isWave32 = (asmr.getFlags() & ASM_WAVE32)!=0;
     const bool vop3p = (gcnInsn.mode & GCN_VOP3_VOP3P) != 0 ||
                     (gcnInsn.encoding == GCNENC_VOP3P);
     if (gcnVOPEnc!=GCNVOPEnc::NORMAL)
@@ -2001,8 +2013,11 @@ bool GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             // SDST (VCC) (2 SGPR's)
             gcnAsm->setCurrentRVU(1);
-            good &= parseSRegRange(asmr, linePtr, sdstReg, arch, 2, GCNFIELD_VOP3_SDST1,
-                       true, INSTROP_SYMREGRANGE|INSTROP_WRITE|INSTROP_SGPR_UNALIGNED);
+            const cxuint regSize = (!isGCN15 || !isWave32 ||
+                        (gcnInsn.mode&GCN_VOP_NOWVSZ)!=0) ? 2 : 1;
+            good &= parseSRegRange(asmr, linePtr, sdstReg, arch, regSize,
+                        GCNFIELD_VOP3_SDST1, true, INSTROP_SYMREGRANGE|INSTROP_WRITE|
+                        INSTROP_SGPR_UNALIGNED);
             if (!skipRequiredComma(asmr, linePtr))
                 return false;
         }
