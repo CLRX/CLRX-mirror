@@ -776,6 +776,11 @@ Disable ignoring letter's case in macro names.
 
 Disable old modifier parametrization that accepts only 0 and 1 values (to 0.1.5 version).
 
+### .nowave32
+
+Disable wavefront size as 32 elements (apply only for GFX10 devices).
+Use default 64 element wavesize.
+
 ### .octa
 
 Syntax: .octa OCTA-LITERAL,...
@@ -983,6 +988,10 @@ Assembler start searching object begins from the last declared 'using' to first 
 Syntax: .warning "STRING"
 
 Print warning message specified in first argument.
+
+### .wave32
+
+Set wavefront size as 32 elements (apply only for GFX10 devices).
 
 ### .weak
 

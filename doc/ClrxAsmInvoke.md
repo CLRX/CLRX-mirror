@@ -10,12 +10,12 @@ repetitions.
 
 The `clrxasm` can be invoked in following way:
 
-clrxasm [-6Swam?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
+clrxasm [-63Swam?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
 [-g GPUDEVICE] [-A ARCH] [-t VERSION] [--defsym=SYM[=VALUE]] [--includePath=PATH]
 [--output OUTFILE] [--binaryFormat=BINFORMAT] [--64bit] [--gpuType=GPUDEVICE]
 [--arch=ARCH] [--driverVersion=VERSION] [--llvmVersion=VERSION] [--newROCmBinFormat]
 [--forceAddSymbols] [--noWarnings] [--alternate] [--buggyFPLit] [--oldModParam]
-[--noMacroCase] [--policy=VERSION] [--help] [--usage] [--version] [file...]
+[--noMacroCase] [--wave32] [--policy=VERSION] [--help] [--usage] [--version] [file...]
 
 ### Input
 
@@ -108,6 +108,10 @@ for compatibility.
 * **-m**, **--noMacroCase**
 
     Do not ignore letter's case in macro names (by default is ignored).
+
+* **-3**, **--wave32**
+
+    Set wavefront size as 32 elements (apply only for GFX10 devices).
 
 * **--policy=VERSION**
 

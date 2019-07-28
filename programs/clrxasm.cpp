@@ -45,6 +45,8 @@ static const CLIOption programOptions[] =
         "set GPU type for Gallium/raw binaries", "DEVICE" },
     { "arch", 'A', CLIArgType::TRIMMED_STRING, false, false,
         "set GPU architecture for Gallium/raw binaries", "ARCH" },
+    { "wave32", '3', CLIArgType::NONE, false, false,
+        "set wavefront size as 32 elements", nullptr },
     { "driverVersion", 't', CLIArgType::UINT, false, false,
         "set driver version (for Amd/GalliumCompute)", "VERSION" },
     { "llvmVersion", 0, CLIArgType::UINT, false, false,
@@ -137,6 +139,8 @@ try
         flags |= ASM_MACRONOCASE;
     if (cli.hasLongOption("oldModParam"))
         flags |= ASM_OLDMODPARAM;
+    if (cli.hasShortOption('3'))
+        flags |= ASM_WAVE32;
     if (cli.hasLongOption("newROCmBinFormat"))
         newROCmBinFormat = true;
     if (cli.hasLongOption("policy"))

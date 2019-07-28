@@ -621,6 +621,8 @@ void Disassembler::disassemble()
     const char* gpuName = getGPUDeviceTypeName(deviceType);
     output.write(gpuName, ::strlen(gpuName));
     output.put('\n');
+    if ((flags & DISASM_WAVE32)!=0)
+        output.write(".wave32\n", 8);
     
     // call main disasembly routine
     switch(binaryFormat)

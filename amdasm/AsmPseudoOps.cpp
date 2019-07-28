@@ -112,8 +112,8 @@ static const char* pseudoOpNamesTbl[] =
     "include", "int", "irp", "irpc", "kernel", "lflags",
     "line", "ln", "local", "long",
     "macro", "macrocase", "main", "noaltmacro",
-    "nobuggyfplit", "nomacrocase", "nooldmodparam", "octa",
-    "offset", "oldmodparam", "org",
+    "nobuggyfplit", "nomacrocase", "nooldmodparam",
+    "nowave32", "octa", "offset", "oldmodparam", "org",
     "p2align", "policy", "print", "purgem", "quad",
     "rawcode", "regvar", "rept", "rocm", "rodata",
     "rvlin", "rvlin_once", "sbttl", "scope", "section", "set",
@@ -121,7 +121,7 @@ static const char* pseudoOpNamesTbl[] =
     "space", "string", "string16", "string32",
     "string64", "struct", "text", "title",
     "undef", "unusing", "usereg", "using", "version",
-    "warning", "weak", "while", "word"
+    "warning", "wave32", "weak", "while", "word"
 };
 
 // enum for all pseudo-ops
@@ -155,8 +155,8 @@ enum
     ASMOP_INCLUDE, ASMOP_INT, ASMOP_IRP, ASMOP_IRPC, ASMOP_KERNEL, ASMOP_LFLAGS,
     ASMOP_LINE, ASMOP_LN, ASMOP_LOCAL, ASMOP_LONG,
     ASMOP_MACRO, ASMOP_MACROCASE, ASMOP_MAIN, ASMOP_NOALTMACRO,
-    ASMOP_NOBUGGYFPLIT, ASMOP_NOMACROCASE, ASMOP_NOOLDMODPARAM, ASMOP_OCTA,
-    ASMOP_OFFSET, ASMOP_OLDMODPARAM, ASMOP_ORG,
+    ASMOP_NOBUGGYFPLIT, ASMOP_NOMACROCASE, ASMOP_NOOLDMODPARAM,
+    ASMOP_NOWAVE32, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_OLDMODPARAM, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_POLICY, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
     ASMOP_RAWCODE, ASMOP_REGVAR, ASMOP_REPT, ASMOP_ROCM, ASMOP_RODATA,
     ASMOP_RVLIN, ASMOP_RVLIN_ONCE, ASMOP_SBTTL, ASMOP_SCOPE, ASMOP_SECTION, ASMOP_SET,
@@ -164,7 +164,7 @@ enum
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
     ASMOP_STRING64, ASMOP_STRUCT, ASMOP_TEXT, ASMOP_TITLE,
     ASMOP_UNDEF, ASMOP_UNUSING, ASMOP_USEREG, ASMOP_USING, ASMOP_VERSION,
-    ASMOP_WARNING, ASMOP_WEAK, ASMOP_WHILE, ASMOP_WORD
+    ASMOP_WARNING, ASMOP_WAVE32, ASMOP_WEAK, ASMOP_WHILE, ASMOP_WORD
 };
 
 namespace CLRX
@@ -597,6 +597,10 @@ void Assembler::parsePseudoOps(const CString& firstName,
             if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
                 oldModParam = false;
             break;
+        case ASMOP_NOWAVE32:
+            if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+                wave32 = false;
+            break;
         case ASMOP_OCTA:
             AsmPseudoOps::putUInt128s(*this, stmtPlace, linePtr);
             break;
@@ -696,6 +700,10 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_WARNING:
             AsmPseudoOps::doWarning(*this, stmtPlace, linePtr);
+            break;
+        case ASMOP_WAVE32:
+            if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+                wave32 = true;
             break;
         case ASMOP_WEAK:
             AsmPseudoOps::setSymbolBind(*this, linePtr, STB_WEAK);
