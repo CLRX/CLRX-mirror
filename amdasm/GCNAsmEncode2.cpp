@@ -676,7 +676,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                             asmr.printWarning(modPlace, "Dmask is already defined");
                         haveDMask = true;
                         if (value>0xf)
-                            asmr.printWarning(valuePlace, "Dmask out of range (0-15)");
+                            asmr.printWarning(valuePlace, "Dmask out of range (1-15)");
                         dmask = value&0xf;
                         if (dmask == 0)
                             ASM_NOTGOOD_BY_ERROR(valuePlace, "Zero in dmask is illegal")

@@ -2704,12 +2704,12 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    image_load  v157, v[121:124], s[84:87] dmask:0 unorm glc slc r128 lwe da",
         0, 0, false, false, "test.s:1:50: Error: Zero in dmask is illegal\n" },
     { "    image_load  v157, v[121:124], s[84:87] dmask:0x1ab0 unorm glc slc r128 lwe da",
-        0, 0, false, false, "test.s:1:50: Warning: Dmask out of range (0-15)\n"
+        0, 0, false, false, "test.s:1:50: Warning: Dmask out of range (1-15)\n"
         "test.s:1:50: Error: Zero in dmask is illegal\n" },
     /* MIMG warnings */
     { "    image_load  v[157:161], v[121:124], s[84:87] dmask:0xdaf unorm glc tfe slc r128 "
         "lwe da", 0xf203ff00U, 0x00159d79U, true, true,
-        "test.s:1:56: Warning: Dmask out of range (0-15)\n" },
+        "test.s:1:56: Warning: Dmask out of range (1-15)\n" },
     /* MIMG instructions */
     { "    image_load_mip  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
         0xf004fb00U, 0x00159d79U, true, true, "" },

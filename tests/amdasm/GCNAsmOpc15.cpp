@@ -3257,6 +3257,9 @@ const GCNAsmOpcodeCase2 encGCN15OpcodeCases2[] =
         { 0xf2003b08U, 0x00159d79U }, 2, true, "" },
     { "image_load      v[157:159], v[121:123], s[84:91] dmask:11 dim:@3 unorm glc slc\n",
         { 0xf2003b18U, 0x00159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v[121:123], s[84:91] dmask:11 dim:@83 unorm glc slc\n",
+        { 0xf2003b18U, 0x00159d79U }, 2, true,
+        "test.s:1:64: Warning: Value 0x53 truncated to 0x3\n" },
     { "dimX=4; image_load      v[157:159], v[121:122], s[84:91] dmask:11 dim : @dimX "
         "unorm glc slc\n", { 0xf2003b20U, 0x00159d79U }, 2, true, "" },
     { "image_load      v[157:159], v[121:122], s[84:91] dmask:11 dim:@6 dim:@1 "
@@ -3350,5 +3353,52 @@ const GCNAsmOpcodeCase2 encGCN15OpcodeCases2[] =
     { "image_sample_c_l v[157:159], [v[121:124],v153], s[84:91], s[76:79] "
         "dmask:11 dim:2d unorm glc slc\n",
         { 0xf2b03b0aU, 0x02759d79U, 0x997c7b7aU }, 3, true, "" },
+    /* MIMG errors */
+    { "    image_load  v157, v[121:124], s[84:91] sxc dim:1d", { }, 0, false,
+        "test.s:1:44: Error: Unknown MIMG modifier\n" },
+    { "    image_load  v157, v[121:124], s[84:91] g53 aa3 daa db dim:1d", { }, 0, false,
+        "test.s:1:44: Error: Unknown MIMG modifier\n"
+        "test.s:1:48: Error: Unknown MIMG modifier\n"
+        "test.s:1:52: Error: Unknown MIMG modifier\n"
+        "test.s:1:56: Error: Unknown MIMG modifier\n" },
+    { "    image_load  v157, v[121:124], s[84:91] dim:1d dmask:", { }, 0, false,
+        "test.s:1:57: Error: Expected expression\n" },
+    { "    image_load  v157, v[121:124], s[84:91] dim:1d dmask", { }, 0, false,
+        "test.s:1:56: Error: Expected ':' before dmask\n" },
+    { "    image_load  v157, v[121:124], s[84:90] dim:1d", { }, 0, false,
+        "test.s:1:35: Error: Required 8 scalar registers\n" },
+    { "    image_load  v157, v[121:124], s[84:90] r128 dim:1d", { }, 0, false,
+        "test.s:1:35: Error: Required 4 scalar registers\n" },
+    { "    image_store v157, v[121:124], s[84:91] dim:1d", { }, 0, false,
+        "test.s:1:5: Error: Unorm is not set for store or atomic instruction\n" },
+    { "    image_atomic_add v157, v[121:124], s[84:91] dim:1d", { }, 0, false,
+        "test.s:1:5: Error: Unorm is not set for store or atomic instruction\n" },
+    { "    image_load  v[157:158], v[121:124], s[84:87] dmask:8 unorm r128 lwe da dim:1d",
+        { }, 0, false, "test.s:1:17: Error: Required 1 vector register\n" },
+    { "    image_load  v157, v[121:124], s[84:87] dmask:0x1ab0 dim:1d unorm "
+        "glc slc r128 lwe da", { }, 0, false,
+        "test.s:1:50: Warning: Dmask out of range (1-15)\n"
+        "test.s:1:50: Error: Zero in dmask is illegal\n" },
+    { "image_load    v[157:159], v[121:123], s[84:91] dmask:11 unorm glc slc\n", { },
+        0, false, "test.s:1:1: Error: MIMG instruction for GFX10 requires DIM modifier\n" },
+    { "image_load      v[157:159], v[121:122], s[84:91] dmask:7 dim:2x unorm glc slc\n",
+        { }, 0, false, "test.s:1:62: Error: Unknown MIMG dimension\n"
+        "test.s:1:1: Error: MIMG instruction for GFX10 requires DIM modifier\n" },
+    { "image_load      v[157:159], v[121:122], s[84:91] dmask:7 dim:sq_rsrc_img3d "
+        "unorm glc slc\n", { }, 0, false, "test.s:1:62: Error: Unknown MIMG dimension\n"
+        "test.s:1:1: Error: MIMG instruction for GFX10 requires DIM modifier\n" },
+    { "image_load      v[157:158], [v121,v44,v75, s[84:91] dmask:15 dim:cube unorm "
+        "glc slc\n", { }, 3, false, "test.s:1:44: Error: Expected vector registers\n"
+        "test.s:1:45: Error: Expected ',' before argument\n" },
+    { "image_load      v[157:158], [v121,,v44,v75], s[84:91] dmask:15 dim:cube unorm "
+        "glc slc d16\n", { }, 0, false, "test.s:1:35: Error: Expected vector registers\n"
+        "test.s:1:36: Error: Expected scalar registers\n"
+        "test.s:1:39: Error: Some garbages at MIMG modifier place\n"
+        "test.s:1:46: Error: Unknown MIMG modifier\n"
+        "test.s:1:47: Error: Some garbages at MIMG modifier place\n"
+        "test.s:1:29: Error: MIMG VADDR requires least 3 registers\n" },
+    { "image_load      v[157:158], [], s[84:91] dmask:15 dim:cube unorm "
+        "glc slc d16\n", { }, 0, false, "test.s:1:30: Error: Expected vector registers\n"
+        "test.s:1:29: Error: MIMG VADDR requires least 3 registers\n" },
     { nullptr, { }, 0, false, 0 }
 };
