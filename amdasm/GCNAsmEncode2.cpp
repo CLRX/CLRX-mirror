@@ -488,22 +488,27 @@ bool GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
 
 struct GFX10MIMGDimInfoEntry
 {
-    cxuint value;
     cxuint dwordsNum;
     cxuint derivsNum; // deriv dwords num
 };
 
-// dim values names
-static const std::pair<const char*, GFX10MIMGDimInfoEntry> mimgDimNamesMap[] =
+static const GFX10MIMGDimInfoEntry gfx10MImgDimInfoTbl[8] =
 {
-    { "1d", { 0, 1, 2 } },
-    { "1d_array",{ 4, 2, 2 } },
-    { "2d", { 1, 2, 4 } },
-    { "2d_array",{ 5, 3, 4 } },
-    { "2d_msaa", { 6, 3, 4 } },
-    { "2d_msaa_array", { 7, 4, 4 } },
-    { "3d", { 2, 3, 6 } },
-    { "cube", { 3, 3, 4 } },
+    { 1, 2 }, { 2, 4 }, { 3, 6 }, { 3, 4 }, { 2, 2 }, { 3, 4 }, { 3, 4 }, { 4, 4 }
+};
+
+
+// dim values names
+static const std::pair<const char*, cxuint> mimgDimNamesMap[] =
+{
+    { "1d", 0 },
+    { "1d_array",4 },
+    { "2d", 1 },
+    { "2d_array", 5 },
+    { "2d_msaa", 6 },
+    { "2d_msaa_array", 7 },
+    { "3d", 2 },
+    { "cube", 3 }
 };
 
 bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -583,7 +588,6 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool haveDMask = false, haveD16 = false, haveA16 = false;
     bool haveDlc = false, haveDim = false;
     cxbyte dimVal = 0;
-    cxuint dimDwordsNum = 0, dimDerivsNum = 0;
     cxbyte dmask = 0x1;
     /* modifiers and modifiers */
     while(linePtr!=end)
@@ -623,6 +627,12 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                         linePtr++;
                         if (!parseImm(asmr, linePtr, dimVal, nullptr, 3, WS_UNSIGNED))
                             good = false;
+                        if (good)
+                        {
+                            if (haveDim)
+                                asmr.printWarning(modPlace, "Dim is already defined");
+                            haveDim = true;
+                        }
                     }
                     else if (getMUBUFFmtNameArg(
                                 asmr, 30, dimName, linePtr, "MIMG dimension"))
@@ -636,9 +646,7 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                         // check if found
                         if (dimIdx!=8)
                         {
-                            dimVal = mimgDimNamesMap[dimIdx].second.value;
-                            dimDwordsNum = mimgDimNamesMap[dimIdx].second.dwordsNum;
-                            dimDerivsNum = mimgDimNamesMap[dimIdx].second.derivsNum;
+                            dimVal = mimgDimNamesMap[dimIdx].second;
                             if (haveDim)
                                 asmr.printWarning(modPlace, "Dim is already defined");
                             haveDim = true;
@@ -737,9 +745,9 @@ bool GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                               "MIMG instruction for GFX10 requires DIM modifier")
         
         // check number of VADDR registers
-        cxuint daddrsNum = dimDwordsNum;
+        cxuint daddrsNum = gfx10MImgDimInfoTbl[dimVal].dwordsNum;
         if ((gcnInsn.mode & GCN_MIMG_VADERIV)!=0)
-            daddrsNum += dimDerivsNum;
+            daddrsNum += gfx10MImgDimInfoTbl[dimVal].derivsNum;
         daddrsNum += ((gcnInsn.mode & GCN_MIMG_VA_MIP)!=0) +
                     ((gcnInsn.mode & GCN_MIMG_VA_C)!=0) +
                     ((gcnInsn.mode & GCN_MIMG_VA_CL)!=0) +

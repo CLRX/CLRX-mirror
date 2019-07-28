@@ -3192,5 +3192,42 @@ const GCNAsmOpcodeCase2 encGCN15OpcodeCases2[] =
         { 0xcc0e0037U, 0x0795ffb4U, 0x3d4c }, 3, true, "" },
     { "v_pk_fma_f16 v55, s71, v166, 0x3d4c /* 1.3242h */ op_sel_hi:[0,0,0]\n",
         { 0xcc0e0037U, 0x03ff4c47U, 0x3d4c }, 3, true, "" },
+    /* MIMG encoding */
+    { "image_load      v[157:160], v121, s[84:87] dmask:11 dim:1d unorm glc slc "
+        "r128 tfe lwe\n", { 0xf203bb00U, 0x00159d79U }, 2, true, "" },
+    /* MIMG flags */
+    { "image_load      v[157:159], v121, s[84:87] dmask:11 dim:1d unorm glc slc "
+        "r128 tfe lwe d16\n", { 0xf203bb00U, 0x80159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v121, s[84:87] dmask:11 dim:1d unorm slc r128 "
+        "tfe lwe d16\n", { 0xf2039b00U, 0x80159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v121, s[84:87] dmask:11 dim:1d slc r128 tfe lwe d16\n",
+        { 0xf2038b00U, 0x80159d79U }, 2, true, "" },
+    { "image_load      v[157:160], v121, s[84:91] dmask:11 dim:1d unorm glc slc tfe lwe\n",
+        { 0xf2033b00U, 0x00159d79U }, 2, true, "" },
+    { "image_load      v[157:160], v121, s[84:91] dmask:11 dim:1d unorm glc tfe lwe\n",
+        { 0xf0033b00U, 0x00159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v121, s[84:91] dmask:11 dim:1d unorm glc slc lwe\n",
+        { 0xf2023b00U, 0x00159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v121, s[84:91] dmask:11 dim:1d unorm glc slc\n",
+        { 0xf2003b00U, 0x00159d79U }, 2, true, "" },
+    /* MIMG dims */
+    { "image_load      v[157:159], v[121:122], s[84:91] dmask:11 dim:2d unorm glc slc\n",
+        { 0xf2003b08U, 0x00159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v[121:123], s[84:91] dmask:11 dim:3d unorm glc slc\n",
+        { 0xf2003b10U, 0x00159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v[121:123], s[84:91] dmask:11 dim:cube unorm glc slc\n",
+        { 0xf2003b18U, 0x00159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v[121:122], s[84:91] dmask:11 dim:1d_array "
+        "unorm glc slc\n", { 0xf2003b20U, 0x00159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v[121:123], s[84:91] dmask:11 dim:2d_array unorm "
+        "glc slc\n", { 0xf2003b28U, 0x00159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v[121:123], s[84:91] dmask:11 dim:2d_msaa unorm "
+        "glc slc\n", { 0xf2003b30U, 0x00159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v[121:124], s[84:91] dmask:11 dim:2d_msaa_array "
+        "unorm glc slc\n", { 0xf2003b38U, 0x00159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v[121:122], s[84:91] dmask:11 dim:@1 unorm glc slc\n",
+        { 0xf2003b08U, 0x00159d79U }, 2, true, "" },
+    { "image_load      v[157:159], v[121:123], s[84:91] dmask:11 dim:@3 unorm glc slc\n",
+        { 0xf2003b18U, 0x00159d79U }, 2, true, "" },
     { nullptr, { }, 0, false, 0 }
 };
