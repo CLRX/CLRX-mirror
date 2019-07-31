@@ -86,12 +86,12 @@ try
             (cli.hasShortOption('c')?DISASM_CALNOTES:0) |
             (cli.hasShortOption('s')?DISASM_SETUP:0) |
             (cli.hasShortOption('f')?DISASM_FLOATLITS:0) |
-            (cli.hasShortOption('h')?DISASM_HEXCODE:0) |
-            (cli.hasShortOption('3')?DISASM_WAVE32:0);
+            (cli.hasShortOption('h')?DISASM_HEXCODE:0);
      disasmFlags |= (cli.hasShortOption('C')?DISASM_CONFIG:0) |
              (cli.hasLongOption("buggyFPLit")?DISASM_BUGGYFPLIT:0) |
              (cli.hasShortOption('H')?DISASM_HSACONFIG:0) |
-             (cli.hasShortOption('L')?DISASM_HSALAYOUT:0);
+             (cli.hasShortOption('L')?DISASM_HSALAYOUT:0) |
+             (cli.hasShortOption('3')?DISASM_WAVE32:0);
     
     GPUDeviceType gpuDeviceType = GPUDeviceType::CAPE_VERDE;
     const bool fromRawCode = cli.hasShortOption('r');
