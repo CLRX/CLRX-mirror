@@ -366,8 +366,9 @@ void GCNDisassembler::analyzeBeforeDisassemble()
                         const cxuint opcode = (insnCode>>23)&0x1f;
                         if ((!isGCN12 && opcode == 17) ||
                             (isGCN12 && opcode == 16) || // if branch fork
-                            (isGCN14 && opcode == 21) ||
-                            (isGCN15 && opcode == 22)) // if s_call_b64
+                            (isGCN14 && opcode == 21) || // if s_call_b64
+                            (isGCN15 && (opcode == 22 ||
+                                opcode == 27 || opcode == 28))) // if s_subvector_loop_*
                             labels.push_back(startOffset +
                                     ((pos+int16_t(insnCode&0xffff)+1)<<2));
                         else if (((!isGCN12 || isGCN15) && opcode == 21) ||

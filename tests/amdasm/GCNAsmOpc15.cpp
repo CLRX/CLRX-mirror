@@ -418,8 +418,8 @@ const GCNAsmOpcodeCase encGCN15OpcodeCases[] =
     { "    s_waitcnt_vmcnt  s43, 0xd3b9", 0xbc2bd3b9U, 0, false, true, "" },
     { "    s_waitcnt_expcnt s43, 0xd3b9", 0xbcabd3b9U, 0, false, true, "" },
     { "    s_waitcnt_lgkmcnt s43, 0xd3b9", 0xbd2bd3b9U, 0, false, true, "" },
-    { "    s_subvector_loop_begin s43, 0xd3b9", 0xbdabd3b9U, 0, false, true, "" },
-    { "    s_subvector_loop_end s43, 0xd3b9", 0xbe2bd3b9U, 0, false, true, "" },
+    { "    s_subvector_loop_begin s43, xxxx+8\nxxxx:", 0xbdab0002U, 0, false, true, "" },
+    { "    s_subvector_loop_end s43, xxxx+8\nxxxx:", 0xbe2b0002U, 0, false, true, "" },
     /* SOPP encoding */
     { "s_nop  0x0", 0xbf800000U, 0, false, true, "" },
     { "s_nop  7", 0xbf800007U, 0, false, true, "" },
