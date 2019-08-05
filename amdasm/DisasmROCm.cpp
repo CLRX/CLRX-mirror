@@ -536,7 +536,7 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
                     output.write(".skip 256\n", 10);
             }
             
-            if (doDumpCode)
+            if (doDumpCode && dataSize >= 256)
             {
                 // dump code of region
                 isaDisassembler->setInput(dataSize-256, code + region.offset+256,
