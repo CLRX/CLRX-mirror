@@ -134,7 +134,10 @@ struct ROCmKernelArgInfo
     CString name;       ///< name
     CString typeName;   ///< type name
     uint64_t size;      ///< argument size in bytes
-    uint64_t align;     ///< argument alignment in bytes
+    union {
+        uint64_t align;     ///< argument alignment in bytes
+        uint64_t offset;
+    };
     uint64_t pointeeAlign;      ///< alignemnt of pointed data of pointer
     ROCmValueKind valueKind;    ///< value kind
     ROCmValueType valueType;    ///< value type
@@ -170,6 +173,7 @@ struct ROCmKernelMetadata
     cxuint fixedWorkGroupSize[3];
     cxuint spilledSgprs;    ///< number of spilled SGPRs
     cxuint spilledVgprs;    ///< number of spilled VGPRs
+    CString deviceEnqueueSymbol;
     
     void initialize();
 };
