@@ -90,6 +90,7 @@ The list of value kinds:
 * goy, globaloffsety - hidden global offset y
 * goz, globaloffsetz - hidden global offset z
 * image - image object
+* multigridsyncarg - global address to multigrid synchronization
 * none - hidden none to make space between arguments
 * pipe - OpenCL 2.0 pipe object
 * printfbuf - hidden printf buffer

@@ -60,7 +60,7 @@ static const char* rocmRegionTypeNames[3] =
 static const char* rocmValueKindNames[] =
 {
     "value", "globalbuf", "dynshptr", "sampler", "image", "pipe", "queue",
-    "gox", "goy", "goz", "none", "printfbuf", "defqueue", "complact"
+    "gox", "goy", "goz", "none", "printfbuf", "defqueue", "complact", "mgsa"
 };
 
 static const char* rocmValueTypeNames[] =
@@ -856,6 +856,7 @@ maybe not unrecognizable by parser but it is understandable by human
         .arg , "", 8, 8, globaloffsetx, i64
         .arg , "", 8, 8, globaloffsety, i64
         .arg , "", 8, 8, globaloffsetz, i64
+        .arg , "", 8, 8, multigridsyncarg, i64
 .text
 kxx1:   .skip 256
         s_mov_b32 s7, 0
@@ -1099,6 +1100,10 @@ kxx1:   .skip 256
         Flags=
       Arg name=, type=, size=8, align=8
         valuekind=gox, valuetype=i64, pointeeAlign=0
+        addrSpace=none, accQual=default, actAccQual=default
+        Flags=
+      Arg name=, type=, size=8, align=8
+        valuekind=mgsa, valuetype=i64, pointeeAlign=0
         addrSpace=none, accQual=default, actAccQual=default
         Flags=
   EFlags=3

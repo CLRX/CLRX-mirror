@@ -587,7 +587,7 @@ static inline bool hasValue(uint64_t value)
 static const char* disasmROCmValueKindNames[] =
 {
     "value", "globalbuf", "dynshptr", "sampler", "image", "pipe", "queue",
-    "gox", "goy", "goz", "none", "printfbuf", "defqueue", "complact"
+    "gox", "goy", "goz", "none", "printfbuf", "defqueue", "complact", "multigridsyncarg"
 };
 
 static const char* disasmROCmValueTypeNames[] =

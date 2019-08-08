@@ -886,6 +886,7 @@ static const std::pair<const char*, ROCmValueKind> rocmValueKindNamesMap[] =
     { "HiddenGlobalOffsetX", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X },
     { "HiddenGlobalOffsetY", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y },
     { "HiddenGlobalOffsetZ", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z },
+    { "HiddenMultiGridSyncArg", ROCmValueKind::HIDDEN_MULTIGRID_SYNC_ARG },
     { "HiddenNone", ROCmValueKind::HIDDEN_NONE },
     { "HiddenPrintfBuffer", ROCmValueKind::HIDDEN_PRINTF_BUFFER },
     { "Image", ROCmValueKind::IMAGE },
@@ -1653,7 +1654,8 @@ static const char* rocmValueKindNames[] =
 {
     "ByValue", "GlobalBuffer", "DynamicSharedPointer", "Sampler", "Image", "Pipe", "Queue",
     "HiddenGlobalOffsetX", "HiddenGlobalOffsetY", "HiddenGlobalOffsetZ", "HiddenNone",
-    "HiddenPrintfBuffer", "HiddenDefaultQueue", "HiddenCompletionAction"
+    "HiddenPrintfBuffer", "HiddenDefaultQueue", "HiddenCompletionAction",
+    "HiddenMultiGridSyncArg"
 };
 
 static const char* rocmValueTypeNames[] =

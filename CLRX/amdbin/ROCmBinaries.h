@@ -83,7 +83,8 @@ enum class ROCmValueKind : cxbyte
     HIDDEN_PRINTF_BUFFER,   ///< buffer for printf calls
     HIDDEN_DEFAULT_QUEUE,   ///< OpenCL default queue
     HIDDEN_COMPLETION_ACTION,    ///< ???
-    MAX_VALUE = HIDDEN_COMPLETION_ACTION
+    HIDDEN_MULTIGRID_SYNC_ARG, /// ???
+    MAX_VALUE = HIDDEN_MULTIGRID_SYNC_ARG
 };
 
 /// ROCm argument's value type

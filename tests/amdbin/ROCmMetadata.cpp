@@ -261,6 +261,11 @@ Kernels:
         ValueKind:       HiddenDefaultQueue
         ValueType:       I8
         AddrSpaceQual:   Global
+      - Size:            8
+        Align:           8
+        ValueKind:       HiddenMultiGridSyncArg
+        ValueType:       I8
+        AddrSpaceQual:   Global
     CodeProps:       
       KernargSegmentSize: 64
       GroupSegmentFixedSize: 120
@@ -326,6 +331,10 @@ Kernels:
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
                           false, false, false, false },
                         { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_DEFAULT_QUEUE,
+                          ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                          ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                          false, false, false, false },
+                        { "", "", 8, 8, 0, ROCmValueKind::HIDDEN_MULTIGRID_SYNC_ARG,
                           ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
                           ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
                           false, false, false, false }

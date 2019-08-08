@@ -809,6 +809,7 @@ static const std::pair<const char*, cxuint> rocmValueKindNamesTbl[] =
     { "goy", cxuint(ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y) },
     { "goz", cxuint(ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z) },
     { "image", cxuint(ROCmValueKind::IMAGE) },
+    { "multigridsyncarg", cxuint(ROCmValueKind::HIDDEN_MULTIGRID_SYNC_ARG) },
     { "none", cxuint(ROCmValueKind::HIDDEN_NONE) },
     { "pipe", cxuint(ROCmValueKind::PIPE) },
     { "printfbuf", cxuint(ROCmValueKind::HIDDEN_PRINTF_BUFFER) },
