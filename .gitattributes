@@ -9,6 +9,7 @@ CLRX/amdasm/Assembler.h -text
 CLRX/amdasm/Commons.h -text
 CLRX/amdasm/Disassembler.h -text
 CLRX/amdasm/GCNDefs.h -text
+CLRX/amdbin/Amd3Binaries.h -text
 CLRX/amdbin/AmdBinGen.h -text
 CLRX/amdbin/AmdBinaries.h -text
 CLRX/amdbin/AmdCL2BinGen.h -text
@@ -77,6 +78,7 @@ amdasm/GCNDisasmDecode.cpp -text
 amdasm/GCNDisasmInternals.h -text
 amdasm/GCNInstructions.cpp -text
 amdasm/GCNInternals.h -text
+amdbin/Amd3Binaries.cpp -text
 amdbin/AmdBinGen.cpp -text
 amdbin/AmdBinaries.cpp -text
 amdbin/AmdCL2BinGen.cpp -text

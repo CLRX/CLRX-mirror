@@ -50,7 +50,7 @@ enum : Flags {
 };
 
 /// ROCm region/symbol type
-enum ROCmRegionType: uint8_t
+enum class ROCmRegionType: uint8_t
 {
     DATA,   ///< data object
     FKERNEL,   ///< function kernel (code)
