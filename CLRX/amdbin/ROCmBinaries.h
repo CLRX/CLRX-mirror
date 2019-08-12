@@ -197,6 +197,8 @@ struct ROCmMetadata
     void initialize();
     /// parse metadata info from metadata string
     void parse(size_t metadataSize, const char* metadata);
+    /// parse metadata info from MsgPack
+    void parseMsgPack(size_t metadataSize, const cxbyte* metadata);
 };
 
 /// ROCm main binary for GPU for 64-bit mode

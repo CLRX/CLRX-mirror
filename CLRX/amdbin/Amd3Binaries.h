@@ -88,6 +88,17 @@ struct Amd3KernelDescriptor
     uint32_t pgmRsrc2;
     uint16_t initialKernelExecState;
     cxbyte reserved3[6];
+    
+    void toLE()
+    {
+        SLEV(groupSegmentFixedSize, groupSegmentFixedSize);
+        SLEV(privateSegmentFixedSize, privateSegmentFixedSize);
+        SLEV(kernelCodeEntryOffset, kernelCodeEntryOffset);
+        SLEV(pgmRsrc3, pgmRsrc3);
+        SLEV(pgmRsrc1, pgmRsrc1);
+        SLEV(pgmRsrc2, pgmRsrc2);
+        SLEV(initialKernelExecState, initialKernelExecState);
+    }
 };
 
 class Amd3Binary : public ElfBinary64, public NonCopyableAndNonMovable

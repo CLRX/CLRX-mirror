@@ -28,3 +28,4 @@
 #include <CLRX/utils/Containers.h>
 #include <CLRX/amdbin/Amd3Binaries.h>
 
+using namespace CLRX;

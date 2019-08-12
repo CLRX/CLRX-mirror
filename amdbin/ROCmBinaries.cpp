@@ -1343,6 +1343,169 @@ void ROCmMetadata::parse(size_t metadataSize, const char* metadata)
 }
 
 /*
+ * ROCm metadata MsgPack parser
+ */
+
+static void parseMsgPackNil(const cxbyte*& dataPtr, const cxbyte* dataEnd)
+{
+    if (dataPtr>=dataEnd || *dataPtr != 0xc0)
+        throw ParseException("MsgPack: Can't parse nil value");
+    dataPtr++;
+}
+
+static bool parseMsgPackBool(const cxbyte*& dataPtr, const cxbyte* dataEnd)
+{
+    if (dataPtr>=dataEnd || ((*dataPtr)&0xfe) != 0xc2)
+        throw ParseException("MsgPack: Can't parse bool value");
+    const bool v = (*dataPtr==0xc3);
+    dataPtr++;
+    return v;
+}
+
+enum: cxbyte {
+    MSGPACK_WS_UNSIGNED = 0,  // only unsigned
+    MSGPACK_WS_SIGNED = 1,  // only signed
+    MSGPACK_WS_BOTH = 2  // both signed and unsigned range checking
+};
+
+
+static uint64_t parseMsgPackInteger(const cxbyte*& dataPtr, const cxbyte* dataEnd,
+                cxbyte signess = MSGPACK_WS_BOTH)
+{
+    if (dataPtr>=dataEnd)
+        throw ParseException("MsgPack: Can't parse integer value");
+    uint64_t v = 0;
+    if (*dataPtr < 0x80)
+        v = *dataPtr++;
+    else if (*dataPtr >= 0xe0)
+        v = uint64_t(-32) + ((*dataPtr++) & 0x1f);
+    else
+    {
+        const cxbyte code = *dataPtr++;
+        switch(code)
+        {
+            case 0xcc:
+            case 0xd0:
+                if (dataPtr>=dataEnd)
+                    throw ParseException("MsgPack: Can't parse integer value");
+                v = *dataPtr++;
+                break;
+            case 0xcd:
+            case 0xd1:
+                if (dataPtr+1>=dataEnd)
+                    throw ParseException("MsgPack: Can't parse integer value");
+                v = *dataPtr++;
+                v |= uint32_t(*dataPtr++)<<8;
+                break;
+            case 0xce:
+            case 0xd2:
+                if (dataPtr+3>=dataEnd)
+                    throw ParseException("MsgPack: Can't parse integer value");
+                for (cxuint i = 0; i < 32; i+=8)
+                    v |= uint32_t(*dataPtr++)<<i;
+                break;
+            case 0xcf:
+            case 0xd3:
+                if (dataPtr+7>=dataEnd)
+                    throw ParseException("MsgPack: Can't parse integer value");
+                for (cxuint i = 0; i < 64; i+=8)
+                    v |= uint64_t(*dataPtr++)<<i;
+                break;
+            default:
+                throw ParseException("MsgPack: Can't parse integer value");
+        }
+        
+        if (signess == MSGPACK_WS_UNSIGNED && code >= 0xd0 && v >= (1ULL<<63))
+            throw ParseException("MsgPack: Negative value for unsigned integer");
+        if (signess == MSGPACK_WS_SIGNED && code < 0xd0 && v >= (1ULL<<63))
+            throw ParseException("MsgPack: Positive value out of range for signed integer");
+    }
+    return v;
+}
+
+static double parseMsgPackFloat(const cxbyte*& dataPtr, const cxbyte* dataEnd)
+{
+    if (dataPtr>=dataEnd)
+        throw ParseException("MsgPack: Can't parse float value");
+    const cxbyte code = *dataPtr++;
+    double vf = 0.0;
+    if (code == 0xca)
+    {
+        uint32_t v = 0;
+        if (dataPtr+3>=dataEnd)
+            throw ParseException("MsgPack: Can't parse float value");
+        for (cxuint i = 0; i < 32; i+=8)
+            v |= uint32_t(*dataPtr++)<<i;
+        vf = *reinterpret_cast<float*>(&v);
+    }
+    else if (code == 0xcb)
+    {
+        uint64_t v = 0;
+        if (dataPtr+7>=dataEnd)
+            throw ParseException("MsgPack: Can't parse float value");
+        for (cxuint i = 0; i < 64; i+=8)
+            v |= uint64_t(*dataPtr++)<<i;
+        vf = *reinterpret_cast<double*>(&v);
+    }
+    else
+        throw ParseException("MsgPack: Can't parse float value");
+    return vf;
+}
+
+static Array<cxbyte> parseMsgPackData(const cxbyte*& dataPtr, const cxbyte* dataEnd)
+{
+    if (dataPtr>=dataEnd)
+        throw ParseException("MsgPack: Can't parse byte-array");
+    const cxbyte code = *dataPtr++;
+    size_t size = 0;
+    switch (code)
+    {
+        case 0xc4:
+            if (dataPtr>=dataEnd)
+                throw ParseException("MsgPack: Can't parse byte-array size");
+            size = *dataPtr++;
+            break;
+        case 0xc5:
+            if (dataPtr+1>=dataEnd)
+                throw ParseException("MsgPack: Can't parse byte-array size");
+            size = *dataPtr++;
+            size |= uint32_t(*dataPtr++)<<8;
+            break;
+        case 0xc6:
+            if (dataPtr+3>=dataEnd)
+                throw ParseException("MsgPack: Can't parse byte-array size");
+            for (cxuint i = 0; i < 32; i+=8)
+                size |= uint32_t(*dataPtr++)<<i;
+            break;
+        default:
+            throw ParseException("MsgPack: Can't parse byte-array");
+    }
+    
+    Array<cxbyte> out(size);
+    if (dataPtr+size > dataEnd)
+        throw ParseException("MsgPack: Can't parse byte-array");
+    std::copy(dataPtr, dataPtr + size, out.begin());
+    dataPtr += size;
+    return out;
+}
+
+static void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
+                ROCmMetadata& metadataInfo)
+{
+    // init metadata info object
+    metadataInfo.kernels.clear();
+    metadataInfo.printfInfos.clear();
+    metadataInfo.version[0] = metadataInfo.version[1] = 0;
+    
+    std::vector<ROCmKernelMetadata>& kernels = metadataInfo.kernels;
+}
+
+void ROCmMetadata::parseMsgPack(size_t metadataSize, const cxbyte* metadata)
+{
+    parseROCmMetadataMsgPack(metadataSize, metadata, *this);
+}
+
+/*
  * ROCm binary reader and generator
  */
 
