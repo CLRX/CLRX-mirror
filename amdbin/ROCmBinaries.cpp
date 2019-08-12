@@ -2039,10 +2039,16 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
                 kernel.deviceEnqueueSymbol = kParser.parseValueString();
                 break;
             case ROCMMP_KERNEL_GROUP_SEGMENT_FIXED_SIZE:
+                kernel.groupSegmentFixedSize = kParser.
+                                    parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_KERNARG_SEGMENT_ALIGN:
+                kernel.kernargSegmentAlign = kParser.
+                                    parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_KERNARG_SEGMENT_SIZE:
+                kernel.kernargSegmentSize = kParser.
+                                    parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_LANGUAGE:
                 kernel.language = kParser.parseValueString();
@@ -2050,11 +2056,15 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
             case ROCMMP_KERNEL_LANGUAGE_VERSION:
                 break;
             case ROCMMP_KERNEL_MAX_FLAT_WORKGROUP_SIZE:
+                kernel.maxFlatWorkGroupSize = kParser.
+                                    parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_NAME:
                 kernel.name = kParser.parseValueString();
                 break;
             case ROCMMP_KERNEL_PRIVATE_SEGMENT_FIXED_SIZE:
+                kernel.privateSegmentFixedSize = kParser.
+                                    parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_REQD_WORKGROUP_SIZE:
                 break;
@@ -2068,6 +2078,7 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
                 kernel.symbolName = kParser.parseValueString();
                 break;
             case ROCMMP_KERNEL_VEC_TYPE_HINT:
+                kernel.vecTypeHint = kParser.parseValueString();
                 break;
             case ROCMMP_KERNEL_VGPR_COUNT:
                 kernel.vgprsNum = kParser.parseValueInteger(MSGPACK_WS_UNSIGNED);
