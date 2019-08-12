@@ -1652,6 +1652,7 @@ private:
     const cxbyte*& dataPtr;
     const cxbyte* dataEnd;
     size_t count;
+    void handleErrors();
 public:
     MsgPackArrayParser(const cxbyte*& _dataPtr, const cxbyte* _dataEnd);
     
@@ -1673,6 +1674,7 @@ private:
     const cxbyte* dataEnd;
     size_t count;
     bool keyLeft;
+    void handleErrors(bool key);
 public:
     MsgPackMapParser(const cxbyte*& _dataPtr, const cxbyte* _dataEnd);
     
@@ -1726,18 +1728,22 @@ MsgPackArrayParser::MsgPackArrayParser(const cxbyte*& _dataPtr, const cxbyte* _d
     }
 }
 
-void MsgPackArrayParser::parseNil()
+void MsgPackArrayParser::handleErrors()
 {
     if (count == 0)
         throw ParseException("MsgPack: No left element to parse");
+}
+
+void MsgPackArrayParser::parseNil()
+{
+    handleErrors();
     parseMsgPackNil(dataPtr, dataEnd);
     count--;
 }
 
 bool MsgPackArrayParser::parseBool()
 {
-    if (count == 0)
-        throw ParseException("MsgPack: No left element to parse");
+    handleErrors();
     auto v = parseMsgPackBool(dataPtr, dataEnd);
     count--;
     return v;
@@ -1745,8 +1751,7 @@ bool MsgPackArrayParser::parseBool()
 
 uint64_t MsgPackArrayParser::parseInteger(cxbyte signess)
 {
-    if (count == 0)
-        throw ParseException("MsgPack: No left element to parse");
+    handleErrors();
     auto v = parseMsgPackInteger(dataPtr, dataEnd, signess);
     count--;
     return v;
@@ -1754,8 +1759,7 @@ uint64_t MsgPackArrayParser::parseInteger(cxbyte signess)
 
 double MsgPackArrayParser::parseFloat()
 {
-    if (count == 0)
-        throw ParseException("MsgPack: No left element to parse");
+    handleErrors();
     auto v = parseMsgPackFloat(dataPtr, dataEnd);
     count--;
     return v;
@@ -1763,8 +1767,7 @@ double MsgPackArrayParser::parseFloat()
 
 CString MsgPackArrayParser::parseString()
 {
-    if (count == 0)
-        throw ParseException("MsgPack: No left element to parse");
+    handleErrors();
     auto v = parseMsgPackString(dataPtr, dataEnd);
     count--;
     return v;
@@ -1772,8 +1775,7 @@ CString MsgPackArrayParser::parseString()
 
 Array<cxbyte> MsgPackArrayParser::parseData()
 {
-    if (count == 0)
-        throw ParseException("MsgPack: No left element to parse");
+    handleErrors();
     auto v = parseMsgPackData(dataPtr, dataEnd);
     count--;
     return v;
@@ -1781,8 +1783,7 @@ Array<cxbyte> MsgPackArrayParser::parseData()
 
 MsgPackArrayParser MsgPackArrayParser::parseArray()
 {
-    if (count == 0)
-        throw ParseException("MsgPack: No left element to parse");
+    handleErrors();
     auto v = MsgPackArrayParser(dataPtr, dataEnd);
     count--;
     return v;
@@ -1790,8 +1791,7 @@ MsgPackArrayParser MsgPackArrayParser::parseArray()
 
 MsgPackMapParser MsgPackArrayParser::parseMap()
 {
-    if (count == 0)
-        throw ParseException("MsgPack: No left element to parse");
+    handleErrors();
     auto v = MsgPackMapParser(dataPtr, dataEnd);
     count--;
     return v;
@@ -1835,22 +1835,26 @@ MsgPackMapParser::MsgPackMapParser(const cxbyte*& _dataPtr, const cxbyte* _dataE
     }
 }
 
-void MsgPackMapParser::parseKeyNil()
+void MsgPackMapParser::handleErrors(bool key)
 {
     if (count == 0)
         throw ParseException("MsgPack: No left element to parse");
-    if (!keyLeft)
+    if (key && !keyLeft)
         throw ParseException("MsgPack: Key already parsed");
+    if (!key && keyLeft)
+        throw ParseException("MsgPack: Value already parsed");
+}
+
+void MsgPackMapParser::parseKeyNil()
+{
+    handleErrors(true);
     parseMsgPackNil(dataPtr, dataEnd);
     keyLeft = false;
 }
 
 bool MsgPackMapParser::parseKeyBool()
 {
-    if (count == 0)
-        throw ParseException("MsgPack: No left element to parse");
-    if (!keyLeft)
-        throw ParseException("MsgPack: Key already parsed");
+    handleErrors(true);
     auto v = parseMsgPackBool(dataPtr, dataEnd);
     keyLeft = false;
     return v;
@@ -1858,14 +1862,118 @@ bool MsgPackMapParser::parseKeyBool()
 
 uint64_t MsgPackMapParser::parseKeyInteger(cxbyte signess)
 {
-    if (count == 0)
-        throw ParseException("MsgPack: No left element to parse");
-    if (!keyLeft)
-        throw ParseException("MsgPack: Key already parsed");
+    handleErrors(true);
     auto v = parseMsgPackInteger(dataPtr, dataEnd, signess);
     keyLeft = false;
     return v;
 }
+
+CString MsgPackMapParser::parseKeyString()
+{
+    handleErrors(true);
+    auto v = parseMsgPackString(dataPtr, dataEnd);
+    keyLeft = false;
+    return v;
+}
+
+Array<cxbyte> MsgPackMapParser::parseKeyData()
+{
+    handleErrors(true);
+    auto v = parseMsgPackData(dataPtr, dataEnd);
+    keyLeft = false;
+    return v;
+}
+
+MsgPackArrayParser MsgPackMapParser::parseKeyArray()
+{
+    handleErrors(true);
+    auto v = MsgPackArrayParser(dataPtr, dataEnd);
+    keyLeft = false;
+    return v;
+}
+
+MsgPackMapParser MsgPackMapParser::parseKeyMap()
+{
+    handleErrors(true);
+    auto v = MsgPackMapParser(dataPtr, dataEnd);
+    keyLeft = false;
+    return v;
+}
+
+void MsgPackMapParser::parseValueNil()
+{
+    handleErrors(false);
+    parseMsgPackNil(dataPtr, dataEnd);
+    keyLeft = true;
+    count--;
+}
+
+bool MsgPackMapParser::parseValueBool()
+{
+    handleErrors(false);
+    auto v = parseMsgPackBool(dataPtr, dataEnd);
+    keyLeft = true;
+    count--;
+    return v;
+}
+
+uint64_t MsgPackMapParser::parseValueInteger(cxbyte signess)
+{
+    handleErrors(false);
+    auto v = parseMsgPackInteger(dataPtr, dataEnd, signess);
+    keyLeft = true;
+    count--;
+    return v;
+}
+
+CString MsgPackMapParser::parseValueString()
+{
+    handleErrors(false);
+    auto v = parseMsgPackString(dataPtr, dataEnd);
+    keyLeft = true;
+    count--;
+    return v;
+}
+
+Array<cxbyte> MsgPackMapParser::parseValueData()
+{
+    handleErrors(false);
+    auto v = parseMsgPackData(dataPtr, dataEnd);
+    keyLeft = true;
+    count--;
+    return v;
+}
+
+MsgPackArrayParser MsgPackMapParser::parseValueArray()
+{
+    handleErrors(false);
+    auto v = MsgPackArrayParser(dataPtr, dataEnd);
+    keyLeft = true;
+    count--;
+    return v;
+}
+
+MsgPackMapParser MsgPackMapParser::parseValueMap()
+{
+    handleErrors(false);
+    auto v = MsgPackMapParser(dataPtr, dataEnd);
+    keyLeft = true;
+    count--;
+    return v;
+}
+
+size_t MsgPackMapParser::end()
+{
+    if (!keyLeft)
+        skipMsgPackObject(dataPtr, dataEnd);
+    for (size_t i = 0; i < count; i++)
+    {
+        skipMsgPackObject(dataPtr, dataEnd);
+        skipMsgPackObject(dataPtr, dataEnd);
+    }
+    return count;
+}
+
 
 static void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
                 ROCmMetadata& metadataInfo)
