@@ -1660,10 +1660,7 @@ private:
     size_t count;
     void handleErrors();
 public:
-    friend class MsgPackMapParser;
     MsgPackArrayParser(const cxbyte*& _dataPtr, const cxbyte* _dataEnd);
-    static MsgPackArrayParser fromArrayParser(MsgPackArrayParser& ap);
-    static MsgPackArrayParser fromMapParser(MsgPackMapParser& mp);
     
     void parseNil();
     bool parseBool();
@@ -1688,10 +1685,7 @@ private:
     bool keyLeft;
     void handleErrors(bool key);
 public:
-    friend class MsgPackArrayParser;
     MsgPackMapParser(const cxbyte*& _dataPtr, const cxbyte* _dataEnd);
-    static MsgPackMapParser fromArrayParser(MsgPackArrayParser& ap);
-    static MsgPackMapParser fromMapParser(MsgPackMapParser& mp);
     
     void parseKeyNil();
     bool parseKeyBool();
@@ -1746,11 +1740,6 @@ MsgPackArrayParser::MsgPackArrayParser(const cxbyte*& _dataPtr, const cxbyte* _d
             throw ParseException("MsgPack: Can't parse array of elements");
     }
 }
-
-MsgPackArrayParser MsgPackArrayParser::fromArrayParser(MsgPackArrayParser& ap)
-{ return MsgPackArrayParser(ap.dataPtr, ap.dataEnd); }
-MsgPackArrayParser MsgPackArrayParser::fromMapParser(MsgPackMapParser& mp)
-{ return MsgPackArrayParser(mp.dataPtr, mp.dataEnd); }
 
 void MsgPackArrayParser::handleErrors()
 {
@@ -1858,11 +1847,6 @@ MsgPackMapParser::MsgPackMapParser(const cxbyte*& _dataPtr, const cxbyte* _dataE
             throw ParseException("MsgPack: Can't parse map");
     }
 }
-
-MsgPackMapParser MsgPackMapParser::fromArrayParser(MsgPackArrayParser& ap)
-{ return MsgPackMapParser(ap.dataPtr, ap.dataEnd); }
-MsgPackMapParser MsgPackMapParser::fromMapParser(MsgPackMapParser& mp)
-{ return MsgPackMapParser(mp.dataPtr, mp.dataEnd); }
 
 void MsgPackMapParser::handleErrors(bool key)
 {
@@ -2039,7 +2023,7 @@ static const size_t rocmMetadataMPKernelNamesSize = sizeof(rocmMetadataMPKernelN
 static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
                         ROCmKernelMetadata& kernel)
 {
-    MsgPackMapParser kParser = MsgPackMapParser::fromArrayParser(kernelsParser);
+    MsgPackMapParser kParser = kernelsParser.parseMap();
     while (kParser.haveElements())
     {
         const CString name = kParser.parseKeyString();
@@ -2052,6 +2036,7 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
             case ROCMMP_KERNEL_ARGS:
                 break;
             case ROCMMP_KERNEL_DEVICE_ENQUEUE_SYMBOL:
+                kernel.deviceEnqueueSymbol = kParser.parseValueString();
                 break;
             case ROCMMP_KERNEL_GROUP_SEGMENT_FIXED_SIZE:
                 break;
@@ -2060,30 +2045,38 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
             case ROCMMP_KERNEL_KERNARG_SEGMENT_SIZE:
                 break;
             case ROCMMP_KERNEL_LANGUAGE:
+                kernel.language = kParser.parseValueString();
                 break;
             case ROCMMP_KERNEL_LANGUAGE_VERSION:
                 break;
             case ROCMMP_KERNEL_MAX_FLAT_WORKGROUP_SIZE:
                 break;
             case ROCMMP_KERNEL_NAME:
+                kernel.name = kParser.parseValueString();
                 break;
             case ROCMMP_KERNEL_PRIVATE_SEGMENT_FIXED_SIZE:
                 break;
             case ROCMMP_KERNEL_REQD_WORKGROUP_SIZE:
                 break;
             case ROCMMP_KERNEL_SGPR_COUNT:
+                kernel.sgprsNum = kParser.parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_SGPR_SPILL_COUNT:
+                kernel.spilledSgprs = kParser.parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_SYMBOL:
+                kernel.symbolName = kParser.parseValueString();
                 break;
             case ROCMMP_KERNEL_VEC_TYPE_HINT:
                 break;
             case ROCMMP_KERNEL_VGPR_COUNT:
+                kernel.vgprsNum = kParser.parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_VGPR_SPILL_COUNT:
+                kernel.spilledVgprs = kParser.parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_WAVEFRONT_SIZE:
+                kernel.wavefrontSize = kParser.parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_WORKGROUP_SIZE_HINT:
                 break;
@@ -2109,7 +2102,7 @@ static void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata
         const CString name = mainMap.parseKeyString();
         if (name == "amdhsa.version")
         {
-            MsgPackArrayParser verArrParser = MsgPackArrayParser::fromMapParser(mainMap);
+            MsgPackArrayParser verArrParser = mainMap.parseValueArray();
             metadataInfo.version[0] = verArrParser.parseInteger(MSGPACK_WS_UNSIGNED);
             metadataInfo.version[1] = verArrParser.parseInteger(MSGPACK_WS_UNSIGNED);
             if (verArrParser.haveElements())
@@ -2117,7 +2110,7 @@ static void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata
         }
         else if (name == "amdhsa.kernels")
         {
-            MsgPackArrayParser kernelsParser = MsgPackArrayParser::fromMapParser(mainMap);
+            MsgPackArrayParser kernelsParser = mainMap.parseValueArray();
             while (kernelsParser.haveElements())
             {
                 ROCmKernelMetadata kernel{};
