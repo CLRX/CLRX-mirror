@@ -1654,7 +1654,10 @@ private:
     size_t count;
     void handleErrors();
 public:
+    friend class MsgPackMapParser;
     MsgPackArrayParser(const cxbyte*& _dataPtr, const cxbyte* _dataEnd);
+    static MsgPackArrayParser fromArrayParser(MsgPackArrayParser& ap);
+    static MsgPackArrayParser fromMapParser(MsgPackMapParser& mp);
     
     void parseNil();
     bool parseBool();
@@ -1665,6 +1668,9 @@ public:
     MsgPackArrayParser parseArray();
     MsgPackMapParser parseMap();
     size_t end(); // return left elements
+    
+    bool haveElements() const
+    { return count!=0; }
 };
 
 class CLRX_INTERNAL MsgPackMapParser
@@ -1676,7 +1682,10 @@ private:
     bool keyLeft;
     void handleErrors(bool key);
 public:
+    friend class MsgPackArrayParser;
     MsgPackMapParser(const cxbyte*& _dataPtr, const cxbyte* _dataEnd);
+    static MsgPackMapParser fromArrayParser(MsgPackArrayParser& ap);
+    static MsgPackMapParser fromMapParser(MsgPackMapParser& mp);
     
     void parseKeyNil();
     bool parseKeyBool();
@@ -1694,7 +1703,11 @@ public:
     Array<cxbyte> parseValueData();
     MsgPackArrayParser parseValueArray();
     MsgPackMapParser parseValueMap();
+    void skipValue();
     size_t end(); // return left elements
+    
+    bool haveElements() const
+    { return count!=0; }
 };
 
 //////////////////
@@ -1727,6 +1740,11 @@ MsgPackArrayParser::MsgPackArrayParser(const cxbyte*& _dataPtr, const cxbyte* _d
             throw ParseException("MsgPack: Can't parse array of elements");
     }
 }
+
+MsgPackArrayParser MsgPackArrayParser::fromArrayParser(MsgPackArrayParser& ap)
+{ return MsgPackArrayParser(ap.dataPtr, ap.dataEnd); }
+MsgPackArrayParser MsgPackArrayParser::fromMapParser(MsgPackMapParser& mp)
+{ return MsgPackArrayParser(mp.dataPtr, mp.dataEnd); }
 
 void MsgPackArrayParser::handleErrors()
 {
@@ -1834,6 +1852,11 @@ MsgPackMapParser::MsgPackMapParser(const cxbyte*& _dataPtr, const cxbyte* _dataE
             throw ParseException("MsgPack: Can't parse map");
     }
 }
+
+MsgPackMapParser MsgPackMapParser::fromArrayParser(MsgPackArrayParser& ap)
+{ return MsgPackMapParser(ap.dataPtr, ap.dataEnd); }
+MsgPackMapParser MsgPackMapParser::fromMapParser(MsgPackMapParser& mp)
+{ return MsgPackMapParser(mp.dataPtr, mp.dataEnd); }
 
 void MsgPackMapParser::handleErrors(bool key)
 {
@@ -1962,6 +1985,14 @@ MsgPackMapParser MsgPackMapParser::parseValueMap()
     return v;
 }
 
+void MsgPackMapParser::skipValue()
+{
+    handleErrors(false);
+    skipMsgPackObject(dataPtr, dataEnd);
+    keyLeft = true;
+    count--;
+}
+
 size_t MsgPackMapParser::end()
 {
     if (!keyLeft)
@@ -1974,6 +2005,87 @@ size_t MsgPackMapParser::end()
     return count;
 }
 
+enum {
+    ROCMMP_KERNEL_ARGS = 0, ROCMMP_KERNEL_DEVICE_ENQUEUE_SYMBOL,
+    ROCMMP_KERNEL_GROUP_SEGMENT_FIXED_SIZE, ROCMMP_KERNEL_KERNARG_SEGMENT_ALIGN,
+    ROCMMP_KERNEL_KERNARG_SEGMENT_SIZE, ROCMMP_KERNEL_LANGUAGE,
+    ROCMMP_KERNEL_LANGUAGE_VERSION, ROCMMP_KERNEL_MAX_FLAT_WORKGROUP_SIZE,
+    ROCMMP_KERNEL_NAME, ROCMMP_KERNEL_PRIVATE_SEGMENT_FIXED_SIZE,
+    ROCMMP_KERNEL_REQD_WORKGROUP_SIZE, ROCMMP_KERNEL_SGPR_COUNT,
+    ROCMMP_KERNEL_SGPR_SPILL_COUNT, ROCMMP_KERNEL_SYMBOL,
+    ROCMMP_KERNEL_VEC_TYPE_HINT, ROCMMP_KERNEL_VGPR_COUNT,
+    ROCMMP_KERNEL_VGPR_SPILL_COUNT, ROCMMP_KERNEL_WAVEFRONT_SIZE,
+    ROCMMP_KERNEL_WORKGROUP_SIZE_HINT
+};
+
+static const char* rocmMetadataMPKernelNames[] =
+{
+    "args", "device_enqueue_symbol", "group_segment_fixed_size", "kernarg_segment_align",
+    "kernarg_segment_size", "language", "language_version", "max_flat_workgroup_size",
+    "name", "private_segment_fixed_size", "reqd_workgroup_size", "sgpr_count",
+    "sgpr_spill_count", "symbol", "vec_type_hint", "vgpr_count", "vgpr_spill_count",
+    "wavefront_size", "workgroup_size_hint"
+};
+
+static const size_t rocmMetadataMPKernelNamesSize = sizeof(rocmMetadataMPKernelNames) /
+                    sizeof(const char*);
+
+static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
+                        ROCmKernelMetadata& kernel)
+{
+    MsgPackMapParser kParser = MsgPackMapParser::fromArrayParser(kernelsParser);
+    while (kParser.haveElements())
+    {
+        const CString name = kParser.parseKeyString();
+        const size_t index = binaryFind(rocmMetadataMPKernelNames,
+                    rocmMetadataMPKernelNames + rocmMetadataMPKernelNamesSize,
+                    name.c_str()) - rocmMetadataMPKernelNames;
+        
+        switch(index)
+        {
+            case ROCMMP_KERNEL_ARGS:
+                break;
+            case ROCMMP_KERNEL_DEVICE_ENQUEUE_SYMBOL:
+                break;
+            case ROCMMP_KERNEL_GROUP_SEGMENT_FIXED_SIZE:
+                break;
+            case ROCMMP_KERNEL_KERNARG_SEGMENT_ALIGN:
+                break;
+            case ROCMMP_KERNEL_KERNARG_SEGMENT_SIZE:
+                break;
+            case ROCMMP_KERNEL_LANGUAGE:
+                break;
+            case ROCMMP_KERNEL_LANGUAGE_VERSION:
+                break;
+            case ROCMMP_KERNEL_MAX_FLAT_WORKGROUP_SIZE:
+                break;
+            case ROCMMP_KERNEL_NAME:
+                break;
+            case ROCMMP_KERNEL_PRIVATE_SEGMENT_FIXED_SIZE:
+                break;
+            case ROCMMP_KERNEL_REQD_WORKGROUP_SIZE:
+                break;
+            case ROCMMP_KERNEL_SGPR_COUNT:
+                break;
+            case ROCMMP_KERNEL_SGPR_SPILL_COUNT:
+                break;
+            case ROCMMP_KERNEL_SYMBOL:
+                break;
+            case ROCMMP_KERNEL_VEC_TYPE_HINT:
+                break;
+            case ROCMMP_KERNEL_VGPR_COUNT:
+                break;
+            case ROCMMP_KERNEL_VGPR_SPILL_COUNT:
+                break;
+            case ROCMMP_KERNEL_WAVEFRONT_SIZE:
+                break;
+            case ROCMMP_KERNEL_WORKGROUP_SIZE_HINT:
+                break;
+            default:
+                break;
+        }
+    }
+}
 
 static void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
                 ROCmMetadata& metadataInfo)
@@ -1984,6 +2096,29 @@ static void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata
     metadataInfo.version[0] = metadataInfo.version[1] = 0;
     
     std::vector<ROCmKernelMetadata>& kernels = metadataInfo.kernels;
+    
+    MsgPackMapParser mainMap(metadata, metadata+metadataSize);
+    while (mainMap.haveElements())
+    {
+        const CString name = mainMap.parseKeyString();
+        if (name == "amdhsa.version")
+        {
+            MsgPackArrayParser verArrParser = MsgPackArrayParser::fromMapParser(mainMap);
+            metadataInfo.version[0] = verArrParser.parseInteger(MSGPACK_WS_UNSIGNED);
+            metadataInfo.version[1] = verArrParser.parseInteger(MSGPACK_WS_UNSIGNED);
+            if (verArrParser.haveElements())
+                throw ParseException("VerArray has too many elements");
+        }
+        else if (name == "amdhsa.kernels")
+        {
+            MsgPackArrayParser kernelsParser = MsgPackArrayParser::fromMapParser(mainMap);
+            while (kernelsParser.haveElements())
+            {
+                ROCmKernelMetadata kernel{};
+                parseROCmMetadataKernelMsgPack(kernelsParser, kernel);
+            }
+        }
+    }
 }
 
 void ROCmMetadata::parseMsgPack(size_t metadataSize, const cxbyte* metadata)
