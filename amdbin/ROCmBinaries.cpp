@@ -1428,28 +1428,34 @@ static double parseMsgPackFloat(const cxbyte*& dataPtr, const cxbyte* dataEnd)
     if (dataPtr>=dataEnd)
         throw ParseException("MsgPack: Can't parse float value");
     const cxbyte code = *dataPtr++;
-    double vf = 0.0;
     if (code == 0xca)
     {
-        uint32_t v = 0;
+        union {
+            uint32_t v;
+            float vf;
+        } v;
+        v.v = 0;
         if (dataPtr+3>=dataEnd)
             throw ParseException("MsgPack: Can't parse float value");
         for (cxuint i = 0; i < 32; i+=8)
-            v |= uint32_t(*dataPtr++)<<i;
-        vf = *reinterpret_cast<float*>(&v);
+            v.v |= uint32_t(*dataPtr++)<<i;
+        return v.vf;
     }
     else if (code == 0xcb)
     {
-        uint64_t v = 0;
+        union {
+            uint64_t v;
+            double vf;
+        } v;
+        v.v = 0;
         if (dataPtr+7>=dataEnd)
             throw ParseException("MsgPack: Can't parse float value");
         for (cxuint i = 0; i < 64; i+=8)
-            v |= uint64_t(*dataPtr++)<<i;
-        vf = *reinterpret_cast<double*>(&v);
+            v.v |= uint64_t(*dataPtr++)<<i;
+        return v.vf;
     }
     else
         throw ParseException("MsgPack: Can't parse float value");
-    return vf;
 }
 
 static CString parseMsgPackString(const cxbyte*& dataPtr, const cxbyte* dataEnd)
