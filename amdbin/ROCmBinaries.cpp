@@ -1452,6 +1452,49 @@ static double parseMsgPackFloat(const cxbyte*& dataPtr, const cxbyte* dataEnd)
     return vf;
 }
 
+static CString parseMsgPackString(const cxbyte*& dataPtr, const cxbyte* dataEnd)
+{
+    if (dataPtr>=dataEnd)
+        throw ParseException("MsgPack: Can't parse string");
+    size_t size = 0;
+    
+    if ((*dataPtr&0xe0) == 0xa0)
+        size = (*dataPtr++) & 0x1f;
+    else
+    {
+        const cxbyte code = *dataPtr++;
+        switch (code)
+        {
+            case 0xd9:
+                if (dataPtr>=dataEnd)
+                    throw ParseException("MsgPack: Can't parse string size");
+                size = *dataPtr++;
+                break;
+            case 0xda:
+                if (dataPtr+1>=dataEnd)
+                    throw ParseException("MsgPack: Can't parse string size");
+                size = *dataPtr++;
+                size |= uint32_t(*dataPtr++)<<8;
+                break;
+            case 0xdb:
+                if (dataPtr+3>=dataEnd)
+                    throw ParseException("MsgPack: Can't parse string size");
+                for (cxuint i = 0; i < 32; i+=8)
+                    size |= uint32_t(*dataPtr++)<<i;
+                break;
+            default:
+                throw ParseException("MsgPack: Can't parse string");
+        }
+    }
+    
+    if (dataPtr+size > dataEnd)
+        throw ParseException("MsgPack: Can't parse string");
+    const char* strData = reinterpret_cast<const char*>(dataPtr);
+    CString out(strData, strData + size);
+    dataPtr += size;
+    return out;
+}
+
 static Array<cxbyte> parseMsgPackData(const cxbyte*& dataPtr, const cxbyte* dataEnd)
 {
     if (dataPtr>=dataEnd)
@@ -1481,12 +1524,347 @@ static Array<cxbyte> parseMsgPackData(const cxbyte*& dataPtr, const cxbyte* data
             throw ParseException("MsgPack: Can't parse byte-array");
     }
     
-    Array<cxbyte> out(size);
     if (dataPtr+size > dataEnd)
         throw ParseException("MsgPack: Can't parse byte-array");
-    std::copy(dataPtr, dataPtr + size, out.begin());
+    Array<cxbyte> out(dataPtr, dataPtr + size);
     dataPtr += size;
     return out;
+}
+
+static void skipMsgPackObject(const cxbyte*& dataPtr, const cxbyte* dataEnd)
+{
+    if (dataPtr>=dataEnd)
+        throw ParseException("MsgPack: Can't skip object");
+    if (*dataPtr==0xc0 || *dataPtr==0xc2 || *dataPtr==0xc3 ||
+        *dataPtr < 0x80 || *dataPtr >= 0xe0)
+        dataPtr++;
+    else if (*dataPtr==0xcc || *dataPtr==0xd0)
+    {
+        if (dataPtr+1>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        dataPtr += 2;
+    }
+    else if (*dataPtr==0xcd || *dataPtr==0xd1)
+    {
+        if (dataPtr+2>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        dataPtr += 3;
+    }
+    else if (*dataPtr==0xce || *dataPtr==0xd2 || *dataPtr==0xca)
+    {
+        if (dataPtr+4>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        dataPtr += 5;
+    }
+    else if (*dataPtr==0xcf || *dataPtr==0xd3 || *dataPtr==0xcb)
+    {
+        if (dataPtr+8>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        dataPtr += 9;
+    }
+    else if(((*dataPtr)&0xe0)==0xa0)
+    {
+        const size_t size = *dataPtr&0x1f;
+        if (dataPtr+size>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        dataPtr += size+1;
+    }
+    else if (*dataPtr == 0xc4 || *dataPtr == 0xd9)
+    {
+        dataPtr++;
+        if (dataPtr>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        const size_t size = *dataPtr++;
+        if (dataPtr+size>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        dataPtr += size;
+    }
+    else if (*dataPtr == 0xc5 || *dataPtr == 0xda)
+    {
+        dataPtr++;
+        if (dataPtr+1>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        size_t size = *dataPtr++;
+        size |= (*dataPtr++)<<8;
+        if (dataPtr+size>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        dataPtr += size;
+    }
+    else if (*dataPtr == 0xc6 || *dataPtr == 0xdb)
+    {
+        dataPtr++;
+        if (dataPtr+1>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        size_t size = 0;
+        for (cxuint i = 0; i < 32; i+=8)
+            size |= (*dataPtr++)<<i;
+        if (dataPtr+size>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        dataPtr += size;
+    }
+    else if ((*dataPtr&0xf0) == 0x90 || (*dataPtr&0xf0) == 0x80)
+    {
+        const bool isMap = (*dataPtr<0x90);
+        size_t size = (*dataPtr++)&15;
+        if (isMap)
+            size <<= 1;
+        for (size_t i = 0; i < size; i++)
+            skipMsgPackObject(dataPtr, dataEnd);
+    }
+    else if (*dataPtr == 0xdc || *dataPtr==0xde)
+    {
+        const bool isMap = (*dataPtr==0xde);
+        dataPtr++;
+        if (dataPtr>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        size_t size = *dataPtr++;
+        size |= (*dataPtr++)<<8;
+        if (dataPtr+size>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        if (isMap)
+            size<<=1;
+        for (size_t i = 0; i < size; i++)
+            skipMsgPackObject(dataPtr, dataEnd);
+    }
+    else if (*dataPtr == 0xdd || *dataPtr==0xdf)
+    {
+        const bool isMap = (*dataPtr==0xdf);
+        dataPtr++;
+        if (dataPtr>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        size_t size = 0;
+        for (cxuint i = 0; i < 32; i+=8)
+            size |= (*dataPtr++)<<i;
+        if (dataPtr+size>=dataEnd)
+            throw ParseException("MsgPack: Can't skip object");
+        if (isMap)
+            size<<=1;
+        for (size_t i = 0; i < size; i++)
+            skipMsgPackObject(dataPtr, dataEnd);
+    }
+}
+
+class CLRX_INTERNAL MsgPackMapParser;
+
+class CLRX_INTERNAL MsgPackArrayParser
+{
+private:
+    const cxbyte*& dataPtr;
+    const cxbyte* dataEnd;
+    size_t count;
+public:
+    MsgPackArrayParser(const cxbyte*& _dataPtr, const cxbyte* _dataEnd);
+    
+    void parseNil();
+    bool parseBool();
+    uint64_t parseInteger(cxbyte signess);
+    double parseFloat();
+    CString parseString();
+    Array<cxbyte> parseData();
+    MsgPackArrayParser parseArray();
+    MsgPackMapParser parseMap();
+    size_t end(); // return left elements
+};
+
+class CLRX_INTERNAL MsgPackMapParser
+{
+private:
+    const cxbyte*& dataPtr;
+    const cxbyte* dataEnd;
+    size_t count;
+    bool keyLeft;
+public:
+    MsgPackMapParser(const cxbyte*& _dataPtr, const cxbyte* _dataEnd);
+    
+    void parseKeyNil();
+    bool parseKeyBool();
+    uint64_t parseKeyInteger(cxbyte signess);
+    double parseKeyFloat();
+    CString parseKeyString();
+    Array<cxbyte> parseKeyData();
+    MsgPackArrayParser parseKeyArray();
+    MsgPackMapParser parseKeyMap();
+    void parseValueNil();
+    bool parseValueBool();
+    uint64_t parseValueInteger(cxbyte signess);
+    double parseValueFloat();
+    CString parseValueString();
+    Array<cxbyte> parseValueData();
+    MsgPackArrayParser parseValueArray();
+    MsgPackMapParser parseValueMap();
+    size_t end(); // return left elements
+};
+
+//////////////////
+MsgPackArrayParser::MsgPackArrayParser(const cxbyte*& _dataPtr, const cxbyte* _dataEnd)
+        : dataPtr(_dataPtr), dataEnd(_dataEnd), count(0)
+{
+    if (dataPtr==dataEnd)
+        throw ParseException("MsgPack: Can't parse array of elements");
+    
+    if (((*dataPtr) & 0xf0) == 0x90)
+        count = (*dataPtr++) & 15;
+    else
+    {
+        const cxbyte code = *dataPtr++;
+        if (code == 0xdc)
+        {
+            if (dataPtr+1 >= dataEnd)
+                throw ParseException("MsgPack: Can't parse array size");
+            count = *dataPtr++;
+            count |= (*dataPtr++)<<8;
+        }
+        else if (code == 0xdd)
+        {
+            if (dataPtr+3 >= dataEnd)
+                throw ParseException("MsgPack: Can't parse array size");
+            for (cxuint i = 0; i < 32; i+=8)
+                count |= uint32_t(*dataPtr++)<<i;
+        }
+        else
+            throw ParseException("MsgPack: Can't parse array of elements");
+    }
+}
+
+void MsgPackArrayParser::parseNil()
+{
+    if (count == 0)
+        throw ParseException("MsgPack: No left element to parse");
+    parseMsgPackNil(dataPtr, dataEnd);
+    count--;
+}
+
+bool MsgPackArrayParser::parseBool()
+{
+    if (count == 0)
+        throw ParseException("MsgPack: No left element to parse");
+    auto v = parseMsgPackBool(dataPtr, dataEnd);
+    count--;
+    return v;
+}
+
+uint64_t MsgPackArrayParser::parseInteger(cxbyte signess)
+{
+    if (count == 0)
+        throw ParseException("MsgPack: No left element to parse");
+    auto v = parseMsgPackInteger(dataPtr, dataEnd, signess);
+    count--;
+    return v;
+}
+
+double MsgPackArrayParser::parseFloat()
+{
+    if (count == 0)
+        throw ParseException("MsgPack: No left element to parse");
+    auto v = parseMsgPackFloat(dataPtr, dataEnd);
+    count--;
+    return v;
+}
+
+CString MsgPackArrayParser::parseString()
+{
+    if (count == 0)
+        throw ParseException("MsgPack: No left element to parse");
+    auto v = parseMsgPackString(dataPtr, dataEnd);
+    count--;
+    return v;
+}
+
+Array<cxbyte> MsgPackArrayParser::parseData()
+{
+    if (count == 0)
+        throw ParseException("MsgPack: No left element to parse");
+    auto v = parseMsgPackData(dataPtr, dataEnd);
+    count--;
+    return v;
+}
+
+MsgPackArrayParser MsgPackArrayParser::parseArray()
+{
+    if (count == 0)
+        throw ParseException("MsgPack: No left element to parse");
+    auto v = MsgPackArrayParser(dataPtr, dataEnd);
+    count--;
+    return v;
+}
+
+MsgPackMapParser MsgPackArrayParser::parseMap()
+{
+    if (count == 0)
+        throw ParseException("MsgPack: No left element to parse");
+    auto v = MsgPackMapParser(dataPtr, dataEnd);
+    count--;
+    return v;
+}
+
+size_t MsgPackArrayParser::end()
+{
+    for (size_t i = 0; i < count; i++)
+        skipMsgPackObject(dataPtr, dataEnd);
+    return count;
+}
+
+//////////////////
+MsgPackMapParser::MsgPackMapParser(const cxbyte*& _dataPtr, const cxbyte* _dataEnd)
+        : dataPtr(_dataPtr), dataEnd(_dataEnd), count(0), keyLeft(true)
+{
+    if (dataPtr==dataEnd)
+        throw ParseException("MsgPack: Can't parse map");
+    
+    if (((*dataPtr) & 0xf0) == 0x80)
+        count = (*dataPtr++) & 15;
+    else
+    {
+        const cxbyte code = *dataPtr++;
+        if (code == 0xde)
+        {
+            if (dataPtr+1 >= dataEnd)
+                throw ParseException("MsgPack: Can't parse map size");
+            count = *dataPtr++;
+            count |= (*dataPtr++)<<8;
+        }
+        else if (code == 0xdf)
+        {
+            if (dataPtr+3 >= dataEnd)
+                throw ParseException("MsgPack: Can't parse map size");
+            for (cxuint i = 0; i < 32; i+=8)
+                count |= uint32_t(*dataPtr++)<<i;
+        }
+        else
+            throw ParseException("MsgPack: Can't parse map");
+    }
+}
+
+void MsgPackMapParser::parseKeyNil()
+{
+    if (count == 0)
+        throw ParseException("MsgPack: No left element to parse");
+    if (!keyLeft)
+        throw ParseException("MsgPack: Key already parsed");
+    parseMsgPackNil(dataPtr, dataEnd);
+    keyLeft = false;
+}
+
+bool MsgPackMapParser::parseKeyBool()
+{
+    if (count == 0)
+        throw ParseException("MsgPack: No left element to parse");
+    if (!keyLeft)
+        throw ParseException("MsgPack: Key already parsed");
+    auto v = parseMsgPackBool(dataPtr, dataEnd);
+    keyLeft = false;
+    return v;
+}
+
+uint64_t MsgPackMapParser::parseKeyInteger(cxbyte signess)
+{
+    if (count == 0)
+        throw ParseException("MsgPack: No left element to parse");
+    if (!keyLeft)
+        throw ParseException("MsgPack: Key already parsed");
+    auto v = parseMsgPackInteger(dataPtr, dataEnd, signess);
+    keyLeft = false;
+    return v;
 }
 
 static void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
