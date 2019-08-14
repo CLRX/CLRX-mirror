@@ -496,6 +496,72 @@ void parseROCmMetadata(size_t metadataSize, const char* metadata,
 void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
                 ROCmMetadata& metadataInfo);
 
+class MsgPackMapParser;
+
+class MsgPackArrayParser
+{
+private:
+    const cxbyte*& dataPtr;
+    const cxbyte* dataEnd;
+    size_t count;
+    void handleErrors();
+public:
+    MsgPackArrayParser(const cxbyte*& _dataPtr, const cxbyte* _dataEnd);
+    
+    void parseNil();
+    bool parseBool();
+    uint64_t parseInteger(cxbyte signess);
+    double parseFloat();
+    std::string parseString();
+    Array<cxbyte> parseData();
+    MsgPackArrayParser parseArray();
+    MsgPackMapParser parseMap();
+    size_t end(); // return left elements
+    
+    bool haveElements() const
+    { return count!=0; }
+};
+
+enum: cxbyte {
+    MSGPACK_WS_UNSIGNED = 0,  // only unsigned
+    MSGPACK_WS_SIGNED = 1,  // only signed
+    MSGPACK_WS_BOTH = 2  // both signed and unsigned range checking
+};
+
+class MsgPackMapParser
+{
+private:
+    const cxbyte*& dataPtr;
+    const cxbyte* dataEnd;
+    size_t count;
+    bool keyLeft;
+    void handleErrors(bool key);
+public:
+    MsgPackMapParser(const cxbyte*& _dataPtr, const cxbyte* _dataEnd);
+    
+    void parseKeyNil();
+    bool parseKeyBool();
+    uint64_t parseKeyInteger(cxbyte signess);
+    double parseKeyFloat();
+    std::string parseKeyString();
+    Array<cxbyte> parseKeyData();
+    MsgPackArrayParser parseKeyArray();
+    MsgPackMapParser parseKeyMap();
+    void parseValueNil();
+    bool parseValueBool();
+    uint64_t parseValueInteger(cxbyte signess);
+    double parseValueFloat();
+    std::string parseValueString();
+    Array<cxbyte> parseValueData();
+    MsgPackArrayParser parseValueArray();
+    MsgPackMapParser parseValueMap();
+    void skipValue();
+    size_t end(); // return left elements
+    
+    bool haveElements() const
+    { return count!=0; }
+};
+
 };
 
 #endif
