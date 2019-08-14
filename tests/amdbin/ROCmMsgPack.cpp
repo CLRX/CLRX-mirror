@@ -69,6 +69,30 @@ static void testMsgPackBytes()
         assertTrue("MsgPack0", "tc2.value0", arrParser.parseBool());
         assertValue("MsgPack0", "tc2.DataPtr", dataPtr, tc2 + sizeof(tc2));
     }
+    
+    const cxbyte tc3[2] = { 0x91, 0x21 };
+    dataPtr = tc3;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc3));
+        assertValue("MsgPack0", "tc3.value0", uint64_t(33),
+                   arrParser.parseInteger(MSGPACK_WS_UNSIGNED));
+        assertValue("MsgPack0", "tc3.DataPtr", dataPtr, tc3 + sizeof(tc3));
+    }
+    dataPtr = tc3;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc3)-1);
+        assertCLRXException("MsgPack0", "tc3_1.Ex", "MsgPack: Can't parse integer value",
+                    [&arrParser]() { arrParser.parseInteger(MSGPACK_WS_UNSIGNED); });
+        assertValue("MsgPack0", "tc3_1.DataPtr", dataPtr, tc3 + sizeof(tc3)-1);
+    }
+    const cxbyte tc4[2] = { 0x91, 0x5b };
+    dataPtr = tc4;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc4));
+        assertValue("MsgPack0", "tc4.value0", uint64_t(91),
+                   arrParser.parseInteger(MSGPACK_WS_UNSIGNED));
+        assertValue("MsgPack0", "tc4.DataPtr", dataPtr, tc4 + sizeof(tc4));
+    }
 }
 
 int main(int argc, const char** argv)
