@@ -2237,7 +2237,7 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
     }
 }
 
-static void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
+void CLRX::parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
                 ROCmMetadata& metadataInfo)
 {
     // init metadata info object

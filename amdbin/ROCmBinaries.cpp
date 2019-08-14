@@ -208,6 +208,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     // get metadata
     const size_t notesSize = getNotesSize();
     const cxbyte* noteContent = (const cxbyte*)getNotes();
+    bool isMetadataV3 = false;
     
     for (size_t offset = 0; offset < notesSize; )
     {
@@ -217,20 +218,28 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         if (usumGt(offset, namesz+descsz, notesSize))
             throw BinException("Note offset+size out of range");
         
-        if (namesz==4 &&
-            ::strcmp((const char*)noteContent+offset+ sizeof(Elf64_Nhdr), "AMD")==0)
+        const size_t alignedNamesz = ((namesz+3)&~size_t(3));
+        if ((namesz==4 &&
+            ::strcmp((const char*)noteContent+offset+ sizeof(Elf64_Nhdr), "AMD")==0) ||
+            (namesz==7 &&
+            ::strcmp((const char*)noteContent+offset+ sizeof(Elf64_Nhdr), "AMDGPU")==0))
         {
             const uint32_t noteType = ULEV(nhdr->n_type);
-            if (noteType == 0xa)
+            if ((noteType == 0xa && namesz==4) || (noteType == 0x20 && namesz==7))
             {
-                metadata = (char*)(noteContent+offset+sizeof(Elf64_Nhdr) + 4);
+                if (namesz==7)
+                    isMetadataV3 = true;
+                if (namesz==4 && isMetadataV3)
+                    throw Exception("MetadataV2 in MetadataV3 compliant binary!");
+                metadata = (char*)(noteContent+offset+sizeof(Elf64_Nhdr) + alignedNamesz);
                 metadataSize = descsz;
             }
-            else if (noteType == 0xb)
-                target.assign((char*)(noteContent+offset+sizeof(Elf64_Nhdr) + 4), descsz);
+            else if (noteType == 0xb && namesz==4)
+                target.assign((char*)(noteContent+offset+sizeof(Elf64_Nhdr) +
+                                        alignedNamesz), descsz);
         }
-        size_t align = (((namesz+descsz)&3)!=0) ? 4-((namesz+descsz)&3) : 0;
-        offset += sizeof(Elf64_Nhdr) + namesz + descsz + align;
+        size_t align = (((alignedNamesz+descsz)&3)!=0) ? 4-((alignedNamesz+descsz)&3) : 0;
+        offset += sizeof(Elf64_Nhdr) + alignedNamesz + descsz + align;
     }
     
     if (hasRegionMap())
@@ -247,7 +256,11 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         metadata != nullptr && metadataSize != 0)
     {
         metadataInfo.reset(new ROCmMetadata());
-        parseROCmMetadata(metadataSize, metadata, *metadataInfo);
+        if (!isMetadataV3)
+            parseROCmMetadata(metadataSize, metadata, *metadataInfo);
+        else
+            parseROCmMetadataMsgPack(metadataSize,
+                    reinterpret_cast<const cxbyte*>(metadata), *metadataInfo);
         
         if (hasKernelInfoMap())
         {

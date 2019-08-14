@@ -493,6 +493,9 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo,
 void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 ROCmMetadata& metadataInfo);
 
+void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
+                ROCmMetadata& metadataInfo);
+
 };
 
 #endif
