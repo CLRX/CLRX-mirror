@@ -2006,6 +2006,11 @@ static void parseMsgPackValueTypedArrayForMap(MsgPackMapParser& map, T* out,
         throw ParseException("Typed Array has too many elements");
 }
 
+static void parseROCmMetadataKernelArgMsgPack(MsgPackArrayParser& argsParser,
+                        ROCmKernelArgInfo& argInfo)
+{
+}
+
 enum {
     ROCMMP_KERNEL_ARGS = 0, ROCMMP_KERNEL_DEVICE_ENQUEUE_SYMBOL,
     ROCMMP_KERNEL_GROUP_SEGMENT_FIXED_SIZE, ROCMMP_KERNEL_KERNARG_SEGMENT_ALIGN,
@@ -2021,11 +2026,11 @@ enum {
 
 static const char* rocmMetadataMPKernelNames[] =
 {
-    "args", "device_enqueue_symbol", "group_segment_fixed_size", "kernarg_segment_align",
-    "kernarg_segment_size", "language", "language_version", "max_flat_workgroup_size",
-    "name", "private_segment_fixed_size", "reqd_workgroup_size", "sgpr_count",
-    "sgpr_spill_count", "symbol", "vec_type_hint", "vgpr_count", "vgpr_spill_count",
-    "wavefront_size", "workgroup_size_hint"
+    ".args", ".device_enqueue_symbol", ".group_segment_fixed_size", ".kernarg_segment_align",
+    ".kernarg_segment_size", ".language", ".language_version", ".max_flat_workgroup_size",
+    ".name", ".private_segment_fixed_size", ".reqd_workgroup_size", ".sgpr_count",
+    ".sgpr_spill_count", ".symbol", ".vec_type_hint", ".vgpr_count", ".vgpr_spill_count",
+    ".wavefront_size", ".workgroup_size_hint"
 };
 
 static const size_t rocmMetadataMPKernelNamesSize = sizeof(rocmMetadataMPKernelNames) /
@@ -2045,7 +2050,16 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
         switch(index)
         {
             case ROCMMP_KERNEL_ARGS:
+            {
+                MsgPackArrayParser argsParser = kParser.parseValueArray();
+                while (argsParser.haveElements())
+                {
+                    ROCmKernelArgInfo arg{};
+                    parseROCmMetadataKernelArgMsgPack(kernelsParser, arg);
+                    kernel.argInfos.push_back(arg);
+                }
                 break;
+            }
             case ROCMMP_KERNEL_DEVICE_ENQUEUE_SYMBOL:
                 kernel.deviceEnqueueSymbol = kParser.parseValueString();
                 break;
@@ -2139,6 +2153,7 @@ static void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata
             {
                 ROCmKernelMetadata kernel{};
                 parseROCmMetadataKernelMsgPack(kernelsParser, kernel);
+                kernels.push_back(kernel);
             }
         }
         else
