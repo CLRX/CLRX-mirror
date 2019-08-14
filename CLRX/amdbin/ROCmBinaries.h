@@ -487,6 +487,12 @@ public:
     void generate(std::vector<char>& vector);
 };
 
+void generateROCmMetadata(const ROCmMetadata& mdInfo,
+                    const ROCmKernelConfig** kconfigs, std::string& output);
+
+void parseROCmMetadata(size_t metadataSize, const char* metadata,
+                ROCmMetadata& metadataInfo);
+
 };
 
 #endif
