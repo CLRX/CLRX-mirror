@@ -1247,7 +1247,7 @@ void CLRX::parseROCmMetadata(size_t metadataSize, const char* metadata,
                     const std::string acc = trimStrSpaces(parseYAMLStringValue(
                                     ptr, end, lineNo, level, true));
                     size_t accIndex = 0;
-                    for (; accIndex < 6; accIndex++)
+                    for (; accIndex < 4; accIndex++)
                         if (::strcmp(rocmAccessQualifierTbl[accIndex], acc.c_str())==0)
                             break;
                     if (accIndex == 4)
@@ -1264,7 +1264,7 @@ void CLRX::parseROCmMetadata(size_t metadataSize, const char* metadata,
                                     ptr, end, lineNo, level, true));
                     size_t aspaceIndex = 0;
                     for (; aspaceIndex < 6; aspaceIndex++)
-                        if (::strcmp(rocmAddrSpaceTypesTbl[aspaceIndex],
+                        if (::strcasecmp(rocmAddrSpaceTypesTbl[aspaceIndex],
                                     aspace.c_str())==0)
                             break;
                     if (aspaceIndex == 6)
@@ -1456,7 +1456,7 @@ static double parseMsgPackFloat(const cxbyte*& dataPtr, const cxbyte* dataEnd)
         throw ParseException("MsgPack: Can't parse float value");
 }
 
-static CString parseMsgPackString(const cxbyte*& dataPtr, const cxbyte* dataEnd)
+static std::string parseMsgPackString(const cxbyte*& dataPtr, const cxbyte* dataEnd)
 {
     if (dataPtr>=dataEnd)
         throw ParseException("MsgPack: Can't parse string");
@@ -1494,7 +1494,7 @@ static CString parseMsgPackString(const cxbyte*& dataPtr, const cxbyte* dataEnd)
     if (dataPtr+size > dataEnd)
         throw ParseException("MsgPack: Can't parse string");
     const char* strData = reinterpret_cast<const char*>(dataPtr);
-    CString out(strData, strData + size);
+    std::string out(strData, strData + size);
     dataPtr += size;
     return out;
 }
@@ -1664,7 +1664,7 @@ public:
     bool parseBool();
     uint64_t parseInteger(cxbyte signess);
     double parseFloat();
-    CString parseString();
+    std::string parseString();
     Array<cxbyte> parseData();
     MsgPackArrayParser parseArray();
     MsgPackMapParser parseMap();
@@ -1689,7 +1689,7 @@ public:
     bool parseKeyBool();
     uint64_t parseKeyInteger(cxbyte signess);
     double parseKeyFloat();
-    CString parseKeyString();
+    std::string parseKeyString();
     Array<cxbyte> parseKeyData();
     MsgPackArrayParser parseKeyArray();
     MsgPackMapParser parseKeyMap();
@@ -1697,7 +1697,7 @@ public:
     bool parseValueBool();
     uint64_t parseValueInteger(cxbyte signess);
     double parseValueFloat();
-    CString parseValueString();
+    std::string parseValueString();
     Array<cxbyte> parseValueData();
     MsgPackArrayParser parseValueArray();
     MsgPackMapParser parseValueMap();
@@ -1776,7 +1776,7 @@ double MsgPackArrayParser::parseFloat()
     return v;
 }
 
-CString MsgPackArrayParser::parseString()
+std::string MsgPackArrayParser::parseString()
 {
     handleErrors();
     auto v = parseMsgPackString(dataPtr, dataEnd);
@@ -1879,7 +1879,7 @@ uint64_t MsgPackMapParser::parseKeyInteger(cxbyte signess)
     return v;
 }
 
-CString MsgPackMapParser::parseKeyString()
+std::string MsgPackMapParser::parseKeyString()
 {
     handleErrors(true);
     auto v = parseMsgPackString(dataPtr, dataEnd);
@@ -1937,7 +1937,7 @@ uint64_t MsgPackMapParser::parseValueInteger(cxbyte signess)
     return v;
 }
 
-CString MsgPackMapParser::parseValueString()
+std::string MsgPackMapParser::parseValueString()
 {
     handleErrors(false);
     auto v = parseMsgPackString(dataPtr, dataEnd);
@@ -2021,46 +2021,101 @@ static const char* rocmMetadataMPKernelArgNames[] =
 static const size_t rocmMetadataMPKernelArgNamesSize =
                 sizeof(rocmMetadataMPKernelArgNames) / sizeof(const char*);
 
+static const char* rocmMPAccessQualifierTbl[] =
+{ "read_only", "write_only", "read_write" };
+
 static void parseROCmMetadataKernelArgMsgPack(MsgPackArrayParser& argsParser,
                         ROCmKernelArgInfo& argInfo)
 {
     MsgPackMapParser aParser = argsParser.parseMap();
     while (aParser.haveElements())
     {
-        const CString name = aParser.parseKeyString();
+        const std::string name = aParser.parseKeyString();
         const size_t index = binaryFind(rocmMetadataMPKernelArgNames,
                     rocmMetadataMPKernelArgNames + rocmMetadataMPKernelArgNamesSize,
                     name.c_str()) - rocmMetadataMPKernelArgNames;
         switch(index)
         {
             case ROCMMP_ARG_ACCESS:
-                break;
             case ROCMMP_ARG_ACTUAL_ACCESS:
+            {
+                const std::string acc = trimStrSpaces(aParser.parseValueString());
+                size_t accIndex = 0;
+                for (; accIndex < 3; accIndex++)
+                    if (::strcmp(rocmMPAccessQualifierTbl[accIndex], acc.c_str())==0)
+                        break;
+                if (accIndex == 3)
+                    throw ParseException("Wrong access qualifier");
+                if (index == ROCMMP_ARG_ACCESS)
+                    argInfo.accessQual = ROCmAccessQual(accIndex+1);
+                else
+                    argInfo.actualAccessQual = ROCmAccessQual(accIndex+1);
                 break;
+            }
             case ROCMMP_ARG_ADDRESS_SPACE:
+            {
+                const std::string aspace = trimStrSpaces(aParser.parseValueString());
+                size_t aspaceIndex = 0;
+                for (; aspaceIndex < 6; aspaceIndex++)
+                    if (::strcasecmp(rocmAddrSpaceTypesTbl[aspaceIndex],
+                                aspace.c_str())==0)
+                        break;
+                if (aspaceIndex == 6)
+                    throw ParseException("Wrong address space");
+                argInfo.addressSpace = ROCmAddressSpace(aspaceIndex+1);
                 break;
+            }
             case ROCMMP_ARG_IS_CONST:
+                argInfo.isConst = aParser.parseValueBool();
                 break;
             case ROCMMP_ARG_IS_PIPE:
+                argInfo.isPipe = aParser.parseValueBool();
                 break;
             case ROCMMP_ARG_IS_RESTRICT:
+                argInfo.isRestrict = aParser.parseValueBool();
                 break;
             case ROCMMP_ARG_IS_VOLATILE:
+                argInfo.isVolatile = aParser.parseValueBool();
                 break;
             case ROCMMP_ARG_NAME:
+                argInfo.name = aParser.parseValueString();
                 break;
             case ROCMMP_ARG_OFFSET:
+                argInfo.offset = aParser.parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_ARG_POINTEE_ALIGN:
+                argInfo.pointeeAlign = aParser.parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_ARG_SIZE:
+                argInfo.size = aParser.parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_ARG_TYPE_NAME:
+                argInfo.typeName = aParser.parseValueString();
                 break;
             case ROCMMP_ARG_VALUE_KIND:
+            {
+                const std::string vkind = trimStrSpaces(aParser.parseValueString());
+                const size_t vkindIndex = binaryMapFind(rocmValueKindNamesMap,
+                            rocmValueKindNamesMap + rocmValueKindNamesNum, vkind.c_str(),
+                            CStringLess()) - rocmValueKindNamesMap;
+                    // if unknown kind
+                    if (vkindIndex == rocmValueKindNamesNum)
+                        throw ParseException("Wrong argument value kind");
+                    argInfo.valueKind = rocmValueKindNamesMap[vkindIndex].second;
                 break;
+            }
             case ROCMMP_ARG_VALUE_TYPE:
+            {
+                const std::string vtype = trimStrSpaces(aParser.parseValueString());
+                const size_t vtypeIndex = binaryMapFind(rocmValueTypeNamesMap,
+                        rocmValueTypeNamesMap + rocmValueTypeNamesNum, vtype.c_str(),
+                        CStringLess()) - rocmValueTypeNamesMap;
+                // if unknown type
+                if (vtypeIndex == rocmValueTypeNamesNum)
+                    throw ParseException("Wrong argument value type");
+                argInfo.valueType = rocmValueTypeNamesMap[vtypeIndex].second;
                 break;
+            }
             default:
                 aParser.skipValue();
                 break;
@@ -2099,7 +2154,7 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
     MsgPackMapParser kParser = kernelsParser.parseMap();
     while (kParser.haveElements())
     {
-        const CString name = kParser.parseKeyString();
+        const std::string name = kParser.parseKeyString();
         const size_t index = binaryFind(rocmMetadataMPKernelNames,
                     rocmMetadataMPKernelNames + rocmMetadataMPKernelNamesSize,
                     name.c_str()) - rocmMetadataMPKernelNames;
