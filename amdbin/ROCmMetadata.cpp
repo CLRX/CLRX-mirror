@@ -18,15 +18,11 @@
  */
 
 #include <CLRX/Config.h>
-#include <cassert>
-#include <cstdio>
 #include <cstring>
 #include <cstdint>
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <utility>
-#include <memory>
 #include <unordered_set>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/InputOutput.h>
