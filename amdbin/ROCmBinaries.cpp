@@ -2006,10 +2006,69 @@ static void parseMsgPackValueTypedArrayForMap(MsgPackMapParser& map, T* out,
         throw ParseException("Typed Array has too many elements");
 }
 
+enum {
+    ROCMMP_ARG_ACCESS = 0, ROCMMP_ARG_ACTUAL_ACCESS, ROCMMP_ARG_ADDRESS_SPACE,
+    ROCMMP_ARG_IS_CONST, ROCMMP_ARG_IS_PIPE, ROCMMP_ARG_IS_RESTRICT,
+    ROCMMP_ARG_IS_VOLATILE, ROCMMP_ARG_NAME, ROCMMP_ARG_OFFSET, ROCMMP_ARG_POINTEE_ALIGN,
+    ROCMMP_ARG_SIZE, ROCMMP_ARG_TYPE_NAME, ROCMMP_ARG_VALUE_KIND, ROCMMP_ARG_VALUE_TYPE
+};
+
+static const char* rocmMetadataMPKernelArgNames[] =
+{
+    ".access", ".actual_access", ".address_space", ".is_const", ".is_pipe", ".is_restrict",
+    ".is_volatile", ".name", ".offset", ".pointee_align", ".size", ".type_name",
+    ".value_kind", ".value_type"
+};
+
+static const size_t rocmMetadataMPKernelArgNamesSize =
+                sizeof(rocmMetadataMPKernelArgNames) / sizeof(const char*);
+
 static void parseROCmMetadataKernelArgMsgPack(MsgPackArrayParser& argsParser,
                         ROCmKernelArgInfo& argInfo)
 {
-}
+    MsgPackMapParser aParser = argsParser.parseMap();
+    while (aParser.haveElements())
+    {
+        const CString name = aParser.parseKeyString();
+        const size_t index = binaryFind(rocmMetadataMPKernelArgNames,
+                    rocmMetadataMPKernelArgNames + rocmMetadataMPKernelArgNamesSize,
+                    name.c_str()) - rocmMetadataMPKernelArgNames;
+        switch(index)
+        {
+            case ROCMMP_ARG_ACCESS:
+                break;
+            case ROCMMP_ARG_ACTUAL_ACCESS:
+                break;
+            case ROCMMP_ARG_ADDRESS_SPACE:
+                break;
+            case ROCMMP_ARG_IS_CONST:
+                break;
+            case ROCMMP_ARG_IS_PIPE:
+                break;
+            case ROCMMP_ARG_IS_RESTRICT:
+                break;
+            case ROCMMP_ARG_IS_VOLATILE:
+                break;
+            case ROCMMP_ARG_NAME:
+                break;
+            case ROCMMP_ARG_OFFSET:
+                break;
+            case ROCMMP_ARG_POINTEE_ALIGN:
+                break;
+            case ROCMMP_ARG_SIZE:
+                break;
+            case ROCMMP_ARG_TYPE_NAME:
+                break;
+            case ROCMMP_ARG_VALUE_KIND:
+                break;
+            case ROCMMP_ARG_VALUE_TYPE:
+                break;
+            default:
+                aParser.skipValue();
+                break;
+        }
+    }
+};
 
 enum {
     ROCMMP_KERNEL_ARGS = 0, ROCMMP_KERNEL_DEVICE_ENQUEUE_SYMBOL,
