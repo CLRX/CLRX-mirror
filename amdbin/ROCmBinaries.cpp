@@ -1995,6 +1995,17 @@ size_t MsgPackMapParser::end()
     return count;
 }
 
+template<typename T>
+static void parseMsgPackValueTypedArrayForMap(MsgPackMapParser& map, T* out,
+                                    size_t elemsNum, cxbyte signess)
+{
+    MsgPackArrayParser arrParser = map.parseValueArray();
+    for (size_t i = 0; i < elemsNum; i++)
+        out[i] = arrParser.parseInteger(signess);
+    if (arrParser.haveElements())
+        throw ParseException("Typed Array has too many elements");
+}
+
 enum {
     ROCMMP_KERNEL_ARGS = 0, ROCMMP_KERNEL_DEVICE_ENQUEUE_SYMBOL,
     ROCMMP_KERNEL_GROUP_SEGMENT_FIXED_SIZE, ROCMMP_KERNEL_KERNARG_SEGMENT_ALIGN,
@@ -2054,6 +2065,8 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
                 kernel.language = kParser.parseValueString();
                 break;
             case ROCMMP_KERNEL_LANGUAGE_VERSION:
+                parseMsgPackValueTypedArrayForMap(kParser, kernel.langVersion,
+                                        2, MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_MAX_FLAT_WORKGROUP_SIZE:
                 kernel.maxFlatWorkGroupSize = kParser.
@@ -2067,6 +2080,8 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
                                     parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_REQD_WORKGROUP_SIZE:
+                parseMsgPackValueTypedArrayForMap(kParser, kernel.reqdWorkGroupSize,
+                                        3, MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_SGPR_COUNT:
                 kernel.sgprsNum = kParser.parseValueInteger(MSGPACK_WS_UNSIGNED);
@@ -2090,8 +2105,11 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
                 kernel.wavefrontSize = kParser.parseValueInteger(MSGPACK_WS_UNSIGNED);
                 break;
             case ROCMMP_KERNEL_WORKGROUP_SIZE_HINT:
+                parseMsgPackValueTypedArrayForMap(kParser, kernel.workGroupSizeHint,
+                                        3, MSGPACK_WS_UNSIGNED);
                 break;
             default:
+                kParser.skipValue();
                 break;
         }
     }
@@ -2112,13 +2130,8 @@ static void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata
     {
         const CString name = mainMap.parseKeyString();
         if (name == "amdhsa.version")
-        {
-            MsgPackArrayParser verArrParser = mainMap.parseValueArray();
-            metadataInfo.version[0] = verArrParser.parseInteger(MSGPACK_WS_UNSIGNED);
-            metadataInfo.version[1] = verArrParser.parseInteger(MSGPACK_WS_UNSIGNED);
-            if (verArrParser.haveElements())
-                throw ParseException("VerArray has too many elements");
-        }
+            parseMsgPackValueTypedArrayForMap(mainMap, metadataInfo.version,
+                                        2, MSGPACK_WS_UNSIGNED);
         else if (name == "amdhsa.kernels")
         {
             MsgPackArrayParser kernelsParser = mainMap.parseValueArray();
@@ -2128,6 +2141,8 @@ static void parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata
                 parseROCmMetadataKernelMsgPack(kernelsParser, kernel);
             }
         }
+        else
+            mainMap.skipValue();
     }
 }
 
