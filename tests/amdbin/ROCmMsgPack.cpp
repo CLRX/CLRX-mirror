@@ -214,7 +214,7 @@ static void testMsgPackBytes()
     dataPtr = tc10_1;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc10_1));
-        assertValue("MsgPack0", "tc10_1.value0", uint64_t(int16_t(0xb37e)),
+        assertValue("MsgPack0", "tc10_1.value0", uint64_t(0)+int16_t(0xb37e),
                    arrParser.parseInteger(MSGPACK_WS_SIGNED));
         assertValue("MsgPack0", "tc10_1.DataPtr", dataPtr, tc10_1 + sizeof(tc10_1));
     }
@@ -235,6 +235,121 @@ static void testMsgPackBytes()
         assertValue("MsgPack0", "tc10_3.DataPtr", dataPtr, tc10_3+ sizeof(tc10_3)-1);
     }
     // 32-bit integers
+    const cxbyte tc11[6] = { 0x91, 0xce, 0xbe, 0x96, 0x41, 0x2e };
+    dataPtr = tc11;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc11));
+        assertValue("MsgPack0", "tc11.value0", uint64_t(0x2e4196beU),
+                   arrParser.parseInteger(MSGPACK_WS_UNSIGNED));
+        assertValue("MsgPack0", "tc11.DataPtr", dataPtr, tc11 + sizeof(tc11));
+    }
+    const cxbyte tc11_1[6] = { 0x91, 0xce, 0xbe, 0x96, 0x42, 0xda };
+    dataPtr = tc11_1;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc11_1));
+        assertValue("MsgPack0", "tc11_1.value0", uint64_t(0xda4296beU),
+                   arrParser.parseInteger(MSGPACK_WS_UNSIGNED));
+        assertValue("MsgPack0", "tc11_1.DataPtr", dataPtr, tc11_1 + sizeof(tc11_1));
+    }
+    for (cxuint i = 1; i <= 3; i++)
+    {
+        dataPtr = tc11_1;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc11_1)-i);
+        assertCLRXException("MsgPack0", "tc11_2.Ex", "MsgPack: Can't parse integer value",
+                    [&arrParser]() { arrParser.parseInteger(MSGPACK_WS_UNSIGNED); });
+        assertValue("MsgPack0", "tc11_2.DataPtr", dataPtr, tc11_1 + 2);
+    }
+    const cxbyte tc12[6] = { 0x91, 0xd2, 0xbe, 0x96, 0x41, 0x2e };
+    dataPtr = tc12;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc12));
+        assertValue("MsgPack0", "tc12.value0", uint64_t(0x2e4196beU),
+                   arrParser.parseInteger(MSGPACK_WS_SIGNED));
+        assertValue("MsgPack0", "tc12.DataPtr", dataPtr, tc12 + sizeof(tc12));
+    }
+    for (cxuint i = 1; i <= 3; i++)
+    {
+        dataPtr = tc12;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc12)-i);
+        assertCLRXException("MsgPack0", "tc12_1.Ex", "MsgPack: Can't parse integer value",
+                    [&arrParser]() { arrParser.parseInteger(MSGPACK_WS_SIGNED); });
+        assertValue("MsgPack0", "tc12_1.DataPtr", dataPtr, tc12 + 2);
+    }
+    const cxbyte tc12_2[6] = { 0x91, 0xd2, 0xaf, 0x11, 0x79, 0xc1 };
+    dataPtr = tc12_2;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc12_2));
+        assertValue("MsgPack0", "tc12_2.value0", uint64_t(0)+int32_t(0xc17911afU),
+                   arrParser.parseInteger(MSGPACK_WS_SIGNED));
+        assertValue("MsgPack0", "tc12_2.DataPtr", dataPtr, tc12_2 + sizeof(tc12_2));
+    }
+    dataPtr = tc12_2;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc12_2));
+        assertCLRXException("MsgPack0", "tc12_3.Ex",
+                    "MsgPack: Negative value for unsigned integer",
+                    [&arrParser]() { arrParser.parseInteger(MSGPACK_WS_UNSIGNED); });
+        assertValue("MsgPack0", "tc12_3.DataPtr", dataPtr, tc12_2 + sizeof(tc12_2));
+    }
+    // 64-bit integers
+    const cxbyte tc13[10] = { 0x91, 0xcf, 0x11, 0x3a, 0xf1, 0x4b, 0x13, 0xd9, 0x1e, 0x62 };
+    dataPtr = tc13;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc13));
+        assertValue("MsgPack0", "tc13.value0", uint64_t(0x621ed9134bf13a11ULL),
+                   arrParser.parseInteger(MSGPACK_WS_UNSIGNED));
+        assertValue("MsgPack0", "tc13.DataPtr", dataPtr, tc13 + sizeof(tc13));
+    }
+    const cxbyte tc13_1[10] = { 0x91, 0xcf, 0x14, 0x3a, 0xf1,
+                            0x4b, 0x13, 0xd9, 0x1e, 0xd7 };
+    dataPtr = tc13_1;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc13_1));
+        assertValue("MsgPack0", "tc13_1.value0", uint64_t(0xd71ed9134bf13a14ULL),
+                   arrParser.parseInteger(MSGPACK_WS_UNSIGNED));
+        assertValue("MsgPack0", "tc13_1.DataPtr", dataPtr, tc13_1 + sizeof(tc13_1));
+    }
+    for (cxuint i = 1; i <= 7; i++)
+    {
+        dataPtr = tc13_1;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc13_1)-i);
+        assertCLRXException("MsgPack0", "tc13_2.Ex", "MsgPack: Can't parse integer value",
+                    [&arrParser]() { arrParser.parseInteger(MSGPACK_WS_UNSIGNED); });
+        assertValue("MsgPack0", "tc13_2.DataPtr", dataPtr, tc13_1 + 2);
+    }
+    dataPtr = tc13_1;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc13_1));
+        assertCLRXException("MsgPack0", "tc13_3.Ex",
+                    "MsgPack: Positive value out of range for signed integer",
+                    [&arrParser]() { arrParser.parseInteger(MSGPACK_WS_SIGNED); });
+        assertValue("MsgPack0", "tc13_3.DataPtr", dataPtr, tc13_1 + sizeof(tc13_1));
+    }
+    const cxbyte tc14[10] = { 0x91, 0xd3, 0x17, 0x3a, 0xf1, 0x4b, 0x13, 0xd9, 0x1e, 0x62 };
+    dataPtr = tc14;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc14));
+        assertValue("MsgPack0", "tc14.value0", uint64_t(0x621ed9134bf13a17ULL),
+                   arrParser.parseInteger(MSGPACK_WS_SIGNED));
+        assertValue("MsgPack0", "tc14.DataPtr", dataPtr, tc14 + sizeof(tc14));
+    }
+    const cxbyte tc14_1[10] = { 0x91, 0xd3, 0x14, 0x3a, 0xf1,
+                            0x4b, 0x13, 0xd9, 0x1e, 0xd7 };
+    dataPtr = tc14_1;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc14_1));
+        assertValue("MsgPack0", "tc14_1.value0", uint64_t(0xd71ed9134bf13a14ULL),
+                   arrParser.parseInteger(MSGPACK_WS_SIGNED));
+        assertValue("MsgPack0", "tc14_1.DataPtr", dataPtr, tc14_1 + sizeof(tc14_1));
+    }
+    for (cxuint i = 1; i <= 7; i++)
+    {
+        dataPtr = tc14_1;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc14_1)-i);
+        assertCLRXException("MsgPack0", "tc14_2.Ex", "MsgPack: Can't parse integer value",
+                    [&arrParser]() { arrParser.parseInteger(MSGPACK_WS_SIGNED); });
+        assertValue("MsgPack0", "tc14_2.DataPtr", dataPtr, tc14_1 + 2);
+    }
 }
 
 int main(int argc, const char** argv)
