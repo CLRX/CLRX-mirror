@@ -350,6 +350,56 @@ static void testMsgPackBytes()
                     [&arrParser]() { arrParser.parseInteger(MSGPACK_WS_SIGNED); });
         assertValue("MsgPack0", "tc14_2.DataPtr", dataPtr, tc14_1 + 2);
     }
+    
+    // parseFloat
+    const cxbyte tc15[6] = { 0x91, 0xca, 0xf3, 0x9c, 0x76, 0x42 };
+    dataPtr = tc15;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc15));
+        assertValue("MsgPack0", "tc15.value0", double(61.653271f), arrParser.parseFloat());
+        assertValue("MsgPack0", "tc15.DataPtr", dataPtr, tc15 + sizeof(tc15));
+    }
+    for (cxuint i = 1; i <= 3; i++)
+    {
+        dataPtr = tc15;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc15)-i);
+        assertCLRXException("MsgPack0", "tc15_1.Ex", "MsgPack: Can't parse float value",
+                    [&arrParser]() { arrParser.parseFloat(); });
+        assertValue("MsgPack0", "tc15_1.DataPtr", dataPtr, tc15 + 2);
+    }
+    const cxbyte tc15_2[6] = { 0x91, 0xca, 0xf3, 0x9c, 0x76, 0xc2 };
+    dataPtr = tc15_2;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc15_2));
+        assertValue("MsgPack0", "tc15_2.value0", double(-61.653271f),
+                            arrParser.parseFloat());
+        assertValue("MsgPack0", "tc15_2.DataPtr", dataPtr, tc15_2 + sizeof(tc15_2));
+    }
+    const cxbyte tc16[10] = { 0x91, 0xcb, 0xa3, 0x0b, 0x43, 0x99, 0x3c, 0xd1, 0x8d, 0x40 };
+    dataPtr = tc16;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc16));
+        assertValue("MsgPack0", "tc16.value0", double(954.1545891988683663),
+                    arrParser.parseFloat());
+        assertValue("MsgPack0", "tc16.DataPtr", dataPtr, tc16 + sizeof(tc16));
+    }
+    for (cxuint i = 1; i <= 7; i++)
+    {
+        dataPtr = tc16;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc16)-i);
+        assertCLRXException("MsgPack0", "tc16_1.Ex", "MsgPack: Can't parse float value",
+                    [&arrParser]() { arrParser.parseFloat(); });
+        assertValue("MsgPack0", "tc16_1.DataPtr", dataPtr, tc16 + 2);
+    }
+    const cxbyte tc16_1[10] = { 0x91, 0xcb, 0xa3, 0x0b, 0x43, 0x99,
+                0x3c, 0xd1, 0x8d, 0xc0 };
+    dataPtr = tc16_1;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc16_1));
+        assertValue("MsgPack0", "tc16_1.value0", double(-954.1545891988683663),
+                    arrParser.parseFloat());
+        assertValue("MsgPack0", "tc16_1.DataPtr", dataPtr, tc16_1 + sizeof(tc16_1));
+    }
 }
 
 int main(int argc, const char** argv)
