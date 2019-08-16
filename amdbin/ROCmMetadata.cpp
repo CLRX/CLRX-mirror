@@ -1365,7 +1365,11 @@ static uint64_t parseMsgPackInteger(const cxbyte*& dataPtr, const cxbyte* dataEn
     if (*dataPtr < 0x80)
         v = *dataPtr++;
     else if (*dataPtr >= 0xe0)
+    {
         v = uint64_t(-32) + ((*dataPtr++) & 0x1f);
+        if (signess == MSGPACK_WS_UNSIGNED && v >= (1ULL<<63))
+            throw ParseException("MsgPack: Negative value for unsigned integer");
+    }
     else
     {
         const cxbyte code = *dataPtr++;
@@ -1375,14 +1379,19 @@ static uint64_t parseMsgPackInteger(const cxbyte*& dataPtr, const cxbyte* dataEn
             case 0xd0:
                 if (dataPtr>=dataEnd)
                     throw ParseException("MsgPack: Can't parse integer value");
-                v = *dataPtr++;
+                if (code==0xcc)
+                    v = *dataPtr++;
+                else
+                    v = int8_t(*dataPtr++);
                 break;
             case 0xcd:
             case 0xd1:
                 if (dataPtr+1>=dataEnd)
                     throw ParseException("MsgPack: Can't parse integer value");
                 v = *dataPtr++;
-                v |= uint32_t(*dataPtr++)<<8;
+                v |= uint16_t(*dataPtr++)<<8;
+                if (code==0xd1 && (v&(1ULL<<15))!=0)
+                    v |= (0xffffffffffffULL<<16);
                 break;
             case 0xce:
             case 0xd2:
@@ -1390,6 +1399,8 @@ static uint64_t parseMsgPackInteger(const cxbyte*& dataPtr, const cxbyte* dataEn
                     throw ParseException("MsgPack: Can't parse integer value");
                 for (cxuint i = 0; i < 32; i+=8)
                     v |= uint32_t(*dataPtr++)<<i;
+                if (code==0xd2 && (v&(1ULL<<31))!=0)
+                    v |= (0xffffffffULL<<32);
                 break;
             case 0xcf:
             case 0xd3:
