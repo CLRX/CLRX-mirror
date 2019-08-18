@@ -418,6 +418,13 @@ static void testMsgPackBytes()
                     [&arrParser]() { arrParser.parseData(); });
         assertValue("MsgPack0", "tc17_1.DataPtr", dataPtr, tc17 + 3);
     }
+    dataPtr = tc17;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + 2);
+        assertCLRXException("MsgPack0", "tc17_2.Ex", "MsgPack: Can't parse byte-array size",
+                    [&arrParser]() { arrParser.parseData(); });
+        assertValue("MsgPack0", "tc17_2.DataPtr", dataPtr, tc17 + 2);
+    }
     // longer data (16-bit size)
     {
         Array<cxbyte> tc18(4 + 12615);
@@ -441,6 +448,24 @@ static void testMsgPackBytes()
             assertCLRXException("MsgPack0", "tc18_1.Ex", "MsgPack: Can't parse byte-array",
                         [&arrParser]() { arrParser.parseData(); });
             assertValue("MsgPack0", "tc18_1.DataPtr", dataPtr, dataEnd);
+        }
+        dataPtr = tc18.data();
+        {
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + 2);
+            assertCLRXException("MsgPack0", "tc18_2.Ex",
+                        "MsgPack: Can't parse byte-array size",
+                        [&arrParser]() { arrParser.parseData(); });
+            dataEnd = tc18.begin()+2;
+            assertValue("MsgPack0", "tc18_2.DataPtr", dataPtr, dataEnd);
+        }
+        dataPtr = tc18.data();
+        {
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + 3);
+            assertCLRXException("MsgPack0", "tc18_3.Ex",
+                        "MsgPack: Can't parse byte-array size",
+                        [&arrParser]() { arrParser.parseData(); });
+            dataEnd = tc18.begin()+2;
+            assertValue("MsgPack0", "tc18_3.DataPtr", dataPtr, dataEnd);
         }
     }
     // longer data (32-bit size)
@@ -468,6 +493,16 @@ static void testMsgPackBytes()
             assertCLRXException("MsgPack0", "tc19_1.Ex", "MsgPack: Can't parse byte-array",
                         [&arrParser]() { arrParser.parseData(); });
             assertValue("MsgPack0", "tc19_1.DataPtr", dataPtr, dataEnd);
+        }
+        for (cxuint i = 1; i <= 3; i++)
+        {
+            dataPtr = tc19.data();
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + 2 + i);
+            assertCLRXException("MsgPack0", "tc19_2.Ex",
+                        "MsgPack: Can't parse byte-array size",
+                        [&arrParser]() { arrParser.parseData(); });
+            dataEnd = tc19.begin()+2;
+            assertValue("MsgPack0", "tc19_2.DataPtr", dataPtr, dataEnd);
         }
     }
     // parseString
@@ -510,6 +545,13 @@ static void testMsgPackBytes()
                     [&arrParser]() { arrParser.parseString(); });
         assertValue("MsgPack0", "tc21_1.DataPtr", dataPtr, tc21 + 3);
     }
+    dataPtr = tc21;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + 2);
+        assertCLRXException("MsgPack0", "tc21_2.Ex", "MsgPack: Can't parse string size",
+                    [&arrParser]() { arrParser.parseString(); });
+        assertValue("MsgPack0", "tc21_2.DataPtr", dataPtr, tc21 + 2);
+    }
     // longer data (16-bit size)
     {
         Array<cxbyte> tc22(4 + 12615);
@@ -534,6 +576,24 @@ static void testMsgPackBytes()
             assertCLRXException("MsgPack0", "tc22_1.Ex", "MsgPack: Can't parse string",
                         [&arrParser]() { arrParser.parseString(); });
             assertValue("MsgPack0", "tc22_1.DataPtr", dataPtr, dataEnd);
+        }
+        dataPtr = tc22.data();
+        {
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + 2);
+            assertCLRXException("MsgPack0", "tc18_2.Ex",
+                        "MsgPack: Can't parse string size",
+                        [&arrParser]() { arrParser.parseString(); });
+            dataEnd = tc22.begin()+2;
+            assertValue("MsgPack0", "tc22_2.DataPtr", dataPtr, dataEnd);
+        }
+        dataPtr = tc22.data();
+        {
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + 3);
+            assertCLRXException("MsgPack0", "tc18_3.Ex",
+                        "MsgPack: Can't parse string size",
+                        [&arrParser]() { arrParser.parseString(); });
+            dataEnd = tc22.begin()+2;
+            assertValue("MsgPack0", "tc22_3.DataPtr", dataPtr, dataEnd);
         }
     }
     // longer data (32-bit size)
@@ -563,6 +623,32 @@ static void testMsgPackBytes()
                         [&arrParser]() { arrParser.parseString(); });
             assertValue("MsgPack0", "tc23_1.DataPtr", dataPtr, dataEnd);
         }
+        for (cxuint i = 1; i <= 3; i++)
+        {
+            dataPtr = tc23.data();
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + 2 + i);
+            assertCLRXException("MsgPack0", "tc23_2.Ex",
+                        "MsgPack: Can't parse string size",
+                        [&arrParser]() { arrParser.parseString(); });
+            dataEnd = tc23.begin()+2;
+            assertValue("MsgPack0", "tc23_2.DataPtr", dataPtr, dataEnd);
+        }
+    }
+    
+    // parseArray
+    const cxbyte tc24[10] = { 0x91, 0x96, 0x11, 0x33, 0xcc, 0xb4, 0x74, 0xcc, 0x99, 0x21 };
+    {
+        dataPtr = tc24;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc24));
+        MsgPackArrayParser childParser = arrParser.parseArray();
+        std::vector<cxuint> res;
+        while (childParser.haveElements())
+            res.push_back(childParser.parseInteger(MSGPACK_WS_BOTH));
+        const cxuint expected[6] = { 0x11, 0x33, 0xb4, 0x74, 0x99, 0x21 };
+        assertArray("MsgPack0", "tc24.value", Array<cxuint>(expected, expected + 6),
+                        Array<cxuint>(res.begin(), res.end()));
+        assertValue("MsgPack0", "tc24.DataPtr", dataPtr, tc24 + sizeof(tc24));
+        assertTrue("MsgPack0", "No elements", !childParser.haveElements());
     }
 }
 
