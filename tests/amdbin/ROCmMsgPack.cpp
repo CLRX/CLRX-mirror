@@ -400,6 +400,76 @@ static void testMsgPackBytes()
                     arrParser.parseFloat());
         assertValue("MsgPack0", "tc16_1.DataPtr", dataPtr, tc16_1 + sizeof(tc16_1));
     }
+    
+    // parseData
+    const cxbyte tc17[8] = { 0x91, 0xc4, 0x05, 0x91, 0xff, 0xa1, 0x5e, 0x1b };
+    dataPtr = tc17;
+    {
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc17));
+        assertArray("MsgPack0", "tc17.value", arrParser.parseData(),
+                    Array<cxbyte>(tc17+3, tc17+sizeof(tc17)));
+        assertValue("MsgPack0", "tc17.DataPtr", dataPtr, tc17 + sizeof(tc17));
+    }
+    for (cxuint i = 1; i <= 5; i ++)
+    {
+        dataPtr = tc17;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc17)-i);
+        assertCLRXException("MsgPack0", "tc17_1.Ex", "MsgPack: Can't parse byte-array",
+                    [&arrParser]() { arrParser.parseData(); });
+        assertValue("MsgPack0", "tc17_1.DataPtr", dataPtr, tc17 + 3);
+    }
+    // longer data (16-bit size)
+    {
+        Array<cxbyte> tc18(4 + 12615);
+        tc18[0] = 0x91;
+        tc18[1] = 0xc5;
+        tc18[2] = (12615&0xff);
+        tc18[3] = (12615>>8);
+        for (cxuint i = 0; i < tc18.size()-4; i++)
+            tc18[i+4] = ((i*0x71f)^i) + (12342%(i+1));
+        dataPtr = tc18.data();
+        const cxbyte* dataEnd = tc18.end();
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + tc18.size());
+        assertArray("MsgPack0", "tc18.value", arrParser.parseData(),
+                    Array<cxbyte>(tc18.begin()+4, tc18.end()));
+        assertValue("MsgPack0", "tc18.DataPtr", dataPtr, dataEnd);
+        for (cxuint i = 1; i <= 5; i ++)
+        {
+            dataPtr = tc18.data();
+            dataEnd = tc18.begin()+4;
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + tc18.size()-i);
+            assertCLRXException("MsgPack0", "tc18_1.Ex", "MsgPack: Can't parse byte-array",
+                        [&arrParser]() { arrParser.parseData(); });
+            assertValue("MsgPack0", "tc18_1.DataPtr", dataPtr, dataEnd);
+        }
+    }
+    // longer data (32-bit size)
+    {
+        Array<cxbyte> tc19(6 + 20818241);
+        tc19[0] = 0x91;
+        tc19[1] = 0xc6;
+        tc19[2] = (20818241&0xff);
+        tc19[3] = (20818241>>8)&0xff;
+        tc19[4] = (20818241>>16)&0xff;
+        tc19[5] = (20818241>>24);
+        for (cxuint i = 0; i < tc19.size()-6; i++)
+            tc19[i+6] = ((i*0x11f)^i)*3 + (1334123421%(i*5+1));
+        dataPtr = tc19.data();
+        const cxbyte* dataEnd = tc19.end();
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + tc19.size());
+        assertArray("MsgPack0", "tc19.value", arrParser.parseData(),
+                    Array<cxbyte>(tc19.begin()+6, tc19.end()));
+        assertValue("MsgPack0", "tc19.DataPtr", dataPtr, dataEnd);
+        for (cxuint i = 1; i <= 5; i ++)
+        {
+            dataPtr = tc19.data();
+            dataEnd = tc19.begin()+6;
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + tc19.size()-i);
+            assertCLRXException("MsgPack0", "tc19_1.Ex", "MsgPack: Can't parse byte-array",
+                        [&arrParser]() { arrParser.parseData(); });
+            assertValue("MsgPack0", "tc19_1.DataPtr", dataPtr, dataEnd);
+        }
+    }
 }
 
 int main(int argc, const char** argv)
