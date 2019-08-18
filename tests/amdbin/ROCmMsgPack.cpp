@@ -650,6 +650,98 @@ static void testMsgPackBytes()
         assertValue("MsgPack0", "tc24.DataPtr", dataPtr, tc24 + sizeof(tc24));
         assertTrue("MsgPack0", "No elements", !childParser.haveElements());
     }
+    // longer array (more than 15 elements)
+    const cxbyte tc25[39] = { 0x91, 0xdc, 0x23, 0x00,
+        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x78,
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x21, 0x12, 0x23, 0x54, 0x25, 0x46, 0x77, 0x58,
+        0x0f, 0x0a, 0x0b, 0x0d, 0x0e, 0x01, 0x21, 0x22,
+        0x79, 0x7b, 0x7f };
+    {
+        dataPtr = tc25;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc25));
+        MsgPackArrayParser childParser = arrParser.parseArray();
+        std::vector<cxuint> res;
+        while (childParser.haveElements())
+            res.push_back(childParser.parseInteger(MSGPACK_WS_BOTH));
+        const cxuint expected[35] = {
+            0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x78,
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+            0x21, 0x12, 0x23, 0x54, 0x25, 0x46, 0x77, 0x58,
+            0x0f, 0x0a, 0x0b, 0x0d, 0x0e, 0x01, 0x21, 0x22,
+            0x79, 0x7b, 0x7f };
+        assertArray("MsgPack0", "tc25.value", Array<cxuint>(expected, expected + 35),
+                        Array<cxuint>(res.begin(), res.end()));
+        assertValue("MsgPack0", "tc25.DataPtr", dataPtr, tc25 + sizeof(tc25));
+        assertTrue("MsgPack0", "No elements", !childParser.haveElements());
+    }
+    // longer array (16-bit size)
+    {
+        Array<cxbyte> tc26(4 + 12615);
+        tc26[0] = 0x91;
+        tc26[1] = 0xdc;
+        tc26[2] = (12615&0xff);
+        tc26[3] = (12615>>8);
+        for (cxuint i = 0; i < tc26.size()-4; i++)
+            tc26[i+4] = (((i*0x71f)^i) + (12342%(i+1)))&0x7f;
+        dataPtr = tc26.data();
+        const cxbyte* dataEnd = tc26.end();
+        std::vector<cxbyte> res;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + tc26.size());
+        MsgPackArrayParser childParser = arrParser.parseArray();
+        while (childParser.haveElements())
+            res.push_back(childParser.parseInteger(MSGPACK_WS_BOTH));
+        assertArray("MsgPack0", "tc26.value",
+                    Array<cxbyte>(tc26.begin()+4, tc26.end()), res);
+        assertValue("MsgPack0", "tc26.DataPtr", dataPtr, dataEnd);
+        dataPtr = tc26.data();
+        {
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + 2);
+            assertCLRXException("MsgPack0", "tc26_2.Ex", "MsgPack: Can't parse array size",
+                        [&arrParser]() { arrParser.parseArray(); });
+            dataEnd = tc26.begin()+2;
+            assertValue("MsgPack0", "tc26_2.DataPtr", dataPtr, dataEnd);
+        }
+        dataPtr = tc26.data();
+        {
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + 3);
+            assertCLRXException("MsgPack0", "tc26_3.Ex", "MsgPack: Can't parse array size",
+                        [&arrParser]() { arrParser.parseArray(); });
+            dataEnd = tc26.begin()+2;
+            assertValue("MsgPack0", "tc26_3.DataPtr", dataPtr, dataEnd);
+        }
+    }
+    // longer data (32-bit size)
+    {
+        Array<cxbyte> tc27(6 + 1818241);
+        tc27[0] = 0x91;
+        tc27[1] = 0xdd;
+        tc27[2] = (1818241&0xff);
+        tc27[3] = (1818241>>8)&0xff;
+        tc27[4] = (1818241>>16)&0xff;
+        tc27[5] = (1818241>>24);
+        for (cxuint i = 0; i < tc27.size()-6; i++)
+            tc27[i+6] = (((i*0x11f)^i)*3 + (1334123421%(i*5+1)))&0x7f;
+        dataPtr = tc27.data();
+        const cxbyte* dataEnd = tc27.end();
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + tc27.size());
+        std::vector<cxbyte> res;
+        MsgPackArrayParser childParser = arrParser.parseArray();
+        while (childParser.haveElements())
+            res.push_back(childParser.parseInteger(MSGPACK_WS_BOTH));
+        assertArray("MsgPack0", "tc27.value",
+                    Array<cxbyte>(tc27.begin()+6, tc27.end()), res);
+        assertValue("MsgPack0", "tc27.DataPtr", dataPtr, dataEnd);
+        for (cxuint i = 1; i <= 3; i++)
+        {
+            dataPtr = tc27.data();
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + 2 + i);
+            assertCLRXException("MsgPack0", "tc27_2.Ex", "MsgPack: Can't parse array size",
+                        [&arrParser]() { arrParser.parseArray(); });
+            dataEnd = tc27.begin()+2;
+            assertValue("MsgPack0", "tc27_2.DataPtr", dataPtr, dataEnd);
+        }
+    }
 }
 
 int main(int argc, const char** argv)
