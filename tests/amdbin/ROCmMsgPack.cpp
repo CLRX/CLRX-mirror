@@ -480,6 +480,14 @@ static void testMsgPackBytes()
                         v.size(), reinterpret_cast<const cxbyte*>(v.c_str()));
         assertValue("MsgPack0", "tc20.DataPtr", dataPtr, tc20 + sizeof(tc20));
     }
+    for (cxuint i = 1; i <= 5; i ++)
+    {
+        dataPtr = tc20;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc20)-i);
+        assertCLRXException("MsgPack0", "tc20_1.Ex", "MsgPack: Can't parse string",
+                    [&arrParser]() { arrParser.parseString(); });
+        assertValue("MsgPack0", "tc20_1.DataPtr", dataPtr, tc20 + 2);
+    }
     const cxbyte tc21[0x2c] = { 0x91, 0xd9, 0x29,
         0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x99,
         0x17, 0x27, 0x73, 0x54, 0x55, 0x56, 0x33, 0xab,
@@ -493,6 +501,14 @@ static void testMsgPackBytes()
         assertArray("MsgPack0", "tc21.value", Array<cxbyte>(tc21+3, tc21+sizeof(tc21)),
                         v.size(), reinterpret_cast<const cxbyte*>(v.c_str()));
         assertValue("MsgPack0", "tc21.DataPtr", dataPtr, tc21 + sizeof(tc21));
+    }
+    for (cxuint i = 1; i <= 20; i ++)
+    {
+        dataPtr = tc21;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc21)-i);
+        assertCLRXException("MsgPack0", "tc21_1.Ex", "MsgPack: Can't parse string",
+                    [&arrParser]() { arrParser.parseString(); });
+        assertValue("MsgPack0", "tc21_1.DataPtr", dataPtr, tc21 + 3);
     }
     // longer data (16-bit size)
     {
