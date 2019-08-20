@@ -711,7 +711,7 @@ static void testMsgPackBytes()
             assertValue("MsgPack0", "tc26_3.DataPtr", dataPtr, dataEnd);
         }
     }
-    // longer data (32-bit size)
+    // longer array (32-bit size)
     {
         Array<cxbyte> tc27(6 + 1818241);
         tc27[0] = 0x91;
@@ -740,6 +740,100 @@ static void testMsgPackBytes()
                         [&arrParser]() { arrParser.parseArray(); });
             dataEnd = tc27.begin()+2;
             assertValue("MsgPack0", "tc27_2.DataPtr", dataPtr, dataEnd);
+        }
+    }
+    
+    // parseMap
+    const cxbyte tc28[16] = { 0x91, 0x85, 0x11, 0x33, 0xcc, 0xb4, 0x74, 0xcc, 0x99,
+                        0x21, 0xcc, 0xff, 0x42, 0x71, 0xcc, 0xca };
+    {
+        dataPtr = tc28;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc28));
+        MsgPackMapParser childParser = arrParser.parseMap();
+        std::vector<cxuint> res;
+        while (childParser.haveElements())
+        {
+            res.push_back(childParser.parseKeyInteger(MSGPACK_WS_BOTH));
+            res.push_back(childParser.parseValueInteger(MSGPACK_WS_BOTH));
+        }
+        const cxuint expected[10] = { 0x11, 0x33, 0xb4, 0x74, 0x99,
+                                    0x21, 0xff, 0x42, 0x71, 0xca };
+        assertArray("MsgPack0", "tc28.value", Array<cxuint>(expected, expected + 10),
+                        Array<cxuint>(res.begin(), res.end()));
+        assertValue("MsgPack0", "tc28.DataPtr", dataPtr, tc28 + sizeof(tc28));
+        assertTrue("MsgPack0", "No elements", !childParser.haveElements());
+    }
+    // longer map (16-bit size)
+    {
+        Array<cxbyte> tc29(4 + 12615*2);
+        tc29[0] = 0x91;
+        tc29[1] = 0xde;
+        tc29[2] = (12615&0xff);
+        tc29[3] = (12615>>8);
+        for (cxuint i = 0; i < tc29.size()-4; i++)
+            tc29[i+4] = (((i*0x71f)^i) + (12342%(i+1)))&0x7f;
+        dataPtr = tc29.data();
+        const cxbyte* dataEnd = tc29.end();
+        std::vector<cxbyte> res;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + tc29.size());
+        MsgPackMapParser childParser = arrParser.parseMap();
+        while (childParser.haveElements())
+        {
+            res.push_back(childParser.parseKeyInteger(MSGPACK_WS_BOTH));
+            res.push_back(childParser.parseValueInteger(MSGPACK_WS_BOTH));
+        }
+        assertArray("MsgPack0", "tc29.value",
+                    Array<cxbyte>(tc29.begin()+4, tc29.end()), res);
+        assertValue("MsgPack0", "tc29.DataPtr", dataPtr, dataEnd);
+        dataPtr = tc29.data();
+        {
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + 2);
+            assertCLRXException("MsgPack0", "tc29_2.Ex", "MsgPack: Can't parse map size",
+                        [&arrParser]() { arrParser.parseMap(); });
+            dataEnd = tc29.begin()+2;
+            assertValue("MsgPack0", "tc29_2.DataPtr", dataPtr, dataEnd);
+        }
+        dataPtr = tc29.data();
+        {
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + 3);
+            assertCLRXException("MsgPack0", "tc29_3.Ex", "MsgPack: Can't parse map size",
+                        [&arrParser]() { arrParser.parseMap(); });
+            dataEnd = tc29.begin()+2;
+            assertValue("MsgPack0", "tc29_3.DataPtr", dataPtr, dataEnd);
+        }
+    }
+    // longer map (32-bit size)
+    {
+        Array<cxbyte> tc30(6 + 1818241*2);
+        tc30[0] = 0x91;
+        tc30[1] = 0xdf;
+        tc30[2] = (1818241&0xff);
+        tc30[3] = (1818241>>8)&0xff;
+        tc30[4] = (1818241>>16)&0xff;
+        tc30[5] = (1818241>>24);
+        for (cxuint i = 0; i < tc30.size()-6; i++)
+            tc30[i+6] = (((i*0x11f)^i)*3 + (1334123421%(i*5+1)))&0x7f;
+        dataPtr = tc30.data();
+        const cxbyte* dataEnd = tc30.end();
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + tc30.size());
+        std::vector<cxbyte> res;
+        MsgPackMapParser childParser = arrParser.parseMap();
+        while (childParser.haveElements())
+        {
+            res.push_back(childParser.parseKeyInteger(MSGPACK_WS_BOTH));
+            res.push_back(childParser.parseValueInteger(MSGPACK_WS_BOTH));
+        }
+        assertArray("MsgPack0", "tc30.value",
+                    Array<cxbyte>(tc30.begin()+6, tc30.end()), res);
+        assertValue("MsgPack0", "tc30.DataPtr", dataPtr, dataEnd);
+        for (cxuint i = 1; i <= 3; i++)
+        {
+            dataPtr = tc30.data();
+            MsgPackArrayParser arrParser(dataPtr, dataPtr + 2 + i);
+            assertCLRXException("MsgPack0", "tc30_2.Ex", "MsgPack: Can't parse map size",
+                        [&arrParser]() { arrParser.parseMap(); });
+            dataEnd = tc30.begin()+2;
+            assertValue("MsgPack0", "tc30_2.DataPtr", dataPtr, dataEnd);
         }
     }
 }
