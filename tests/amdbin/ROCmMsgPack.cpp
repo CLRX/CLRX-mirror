@@ -928,6 +928,21 @@ static void testMsgPackSkip()
         assertCLRXException("MsgPackSkip", "tc3_1.DataPtr", "MsgPack: Can't skip object",
                     [&mapParser]() { mapParser.skipValue(); });
     }
+    const cxbyte tc3_2[4] = { 0x81, 0xc0, 0xd0, 0xda };
+    dataPtr = tc3_2;
+    {
+        MsgPackMapParser mapParser(dataPtr, dataPtr + sizeof(tc3_2));
+        mapParser.parseKeyNil();
+        mapParser.skipValue();
+        assertValue("MsgPackSkip", "tc3_2.DataPtr", dataPtr, tc3_2 + sizeof(tc3_2));
+    }
+    dataPtr = tc3_2;
+    {
+        MsgPackMapParser mapParser(dataPtr, dataPtr + sizeof(tc3_2)-1);
+        mapParser.parseKeyNil();
+        assertCLRXException("MsgPackSkip", "tc3_3.DataPtr", "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+    }
     const cxbyte tc4[5] = { 0x81, 0xc0, 0xcd, 0xda, 0x99 };
     dataPtr = tc4;
     {
@@ -950,6 +965,14 @@ static void testMsgPackSkip()
         assertCLRXException("MsgPackSkip", "tc4_2.DataPtr", "MsgPack: Can't skip object",
                     [&mapParser]() { mapParser.skipValue(); });
     }
+    const cxbyte tc4_3[5] = { 0x81, 0xc0, 0xd1, 0xda, 0x99 };
+    dataPtr = tc4_3;
+    {
+        MsgPackMapParser mapParser(dataPtr, dataPtr + sizeof(tc4_3));
+        mapParser.parseKeyNil();
+        mapParser.skipValue();
+        assertValue("MsgPackSkip", "tc4_3.DataPtr", dataPtr, tc4_3 + sizeof(tc4_3));
+    }
     const cxbyte tc5[7] = { 0x81, 0xc0, 0xce, 0x11, 0xbb, 0xd1, 0xe6 };
     dataPtr = tc5;
     {
@@ -965,6 +988,14 @@ static void testMsgPackSkip()
         mapParser.parseKeyNil();
         assertCLRXException("MsgPackSkip", "tc5_1.DataPtr", "MsgPack: Can't skip object",
                     [&mapParser]() { mapParser.skipValue(); });
+    }
+    const cxbyte tc5_2[7] = { 0x81, 0xc0, 0xd2, 0x11, 0xbb, 0xd1, 0xe6 };
+    dataPtr = tc5_2;
+    {
+        MsgPackMapParser mapParser(dataPtr, dataPtr + sizeof(tc5_2));
+        mapParser.parseKeyNil();
+        mapParser.skipValue();
+        assertValue("MsgPackSkip", "tc5_2.DataPtr", dataPtr, tc5_2 + sizeof(tc5_2));
     }
     const cxbyte tc6[11] = { 0x81, 0xc0, 0xcf, 0x11, 0x77, 0xab, 0x3c,
                     0x1a, 0x88, 0x83, 0xde };
@@ -982,6 +1013,15 @@ static void testMsgPackSkip()
         mapParser.parseKeyNil();
         assertCLRXException("MsgPackSkip", "tc6_1.DataPtr", "MsgPack: Can't skip object",
                     [&mapParser]() { mapParser.skipValue(); });
+    }
+    const cxbyte tc6_2[11] = { 0x81, 0xc0, 0xd3, 0x11, 0x77, 0xab, 0x3c,
+                    0x1a, 0x88, 0x83, 0xde };
+    dataPtr = tc6_2;
+    {
+        MsgPackMapParser mapParser(dataPtr, dataPtr + sizeof(tc6_2));
+        mapParser.parseKeyNil();
+        mapParser.skipValue();
+        assertValue("MsgPackSkip", "tc6_2.DataPtr", dataPtr, tc6_2 + sizeof(tc6_2));
     }
     // skip floats
     const cxbyte tc7[7] = { 0x81, 0xc0, 0xca, 0x11, 0xbb, 0xd1, 0xe6 };
@@ -1239,14 +1279,18 @@ static void testMsgPackSkip()
         assertValue("MsgPackSkip", "tc16_1.DataPtr", dataPtr, tc16_1 + sizeof(tc16_1));
     }
     {
-        Array<cxbyte> tc17(5 + 11277);
+        Array<cxbyte> tc17(5 + 11277*3);
         tc17[0] = 0x81;
         tc17[1] = 0xc0;
         tc17[2] = 0xdc;
         tc17[3] = (11277)&255;
         tc17[4] = (11277)>>8;
-        for (size_t i = 0; i < tc17.size()-5; i++)
-            tc17[i+5] = i&0x7f;
+        for (size_t i = 0; i < tc17.size()-5; i+=3)
+        {
+            tc17[i+5] = 0xcd;
+            tc17[i+5+1] = (i&0xff);
+            tc17[i+5+2] = ((i>>8)&0xff);
+        }
         dataPtr = tc17.data();
         MsgPackMapParser mapParser(dataPtr, dataPtr + tc17.size());
         mapParser.parseKeyNil();
