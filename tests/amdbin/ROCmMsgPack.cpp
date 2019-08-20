@@ -1438,10 +1438,182 @@ static void testMsgPackSkip()
     }
 }
 
+struct ROCmMsgPackMDTestCase
+{
+    size_t inputSize;
+    const cxbyte* input;      // input metadata string
+    ROCmMetadata expected;
+    bool good;
+    const char* error;
+};
+
+static const ROCmMsgPackMDTestCase rocmMsgPackMDTestCases[] =
+{
+};
+
+static void testParseROCmMsgPackMDCase(cxuint testId, const ROCmMsgPackMDTestCase& testCase)
+{
+    //
+    ROCmMetadata result{};
+    result.initialize();
+    bool good = true;
+    std::string error;
+    try
+    { result.parseMsgPack(testCase.inputSize, testCase.input); }
+    catch(const std::exception& ex)
+    {
+        good = false;
+        error = ex.what();
+    }
+    const ROCmMetadata& expected = testCase.expected;
+    char testName[30];
+    snprintf(testName, 30, "Test #%u", testId);
+    assertValue(testName, "good", testCase.good, good);
+    assertString(testName, "error", testCase.error, error.c_str());
+    if (!good)
+        // do not check if test failed
+        return;
+    
+    assertValue(testName, "version[0]", expected.version[0], result.version[0]);
+    assertValue(testName, "version[1]", expected.version[1], result.version[1]);
+    assertValue(testName, "printfInfosNum", expected.printfInfos.size(),
+                result.printfInfos.size());
+    char buf[32];
+    for (cxuint i = 0; i < expected.printfInfos.size(); i++)
+    {
+        snprintf(buf, 32, "Printf[%u].", i);
+        std::string caseName(buf);
+        const ROCmPrintfInfo& expPrintf = expected.printfInfos[i];
+        const ROCmPrintfInfo& resPrintf = result.printfInfos[i];
+        assertValue(testName, caseName+"id", expPrintf.id, resPrintf.id);
+        assertValue(testName, caseName+"argSizesNum", expPrintf.argSizes.size(),
+                    resPrintf.argSizes.size());
+        char buf2[32];
+        for (cxuint j = 0; j < expPrintf.argSizes.size(); j++)
+        {
+            snprintf(buf2, 32, "argSizes[%u]", j);
+            std::string caseName2(caseName);
+            caseName2 += buf2;
+            assertValue(testName, caseName2, expPrintf.argSizes[j], resPrintf.argSizes[j]);
+        }
+        assertValue(testName, caseName+"format", expPrintf.format, resPrintf.format);
+    }
+    
+    assertValue(testName, "kernelsNum", expected.kernels.size(), result.kernels.size());
+    // kernels
+    for (cxuint i = 0; i < expected.kernels.size(); i++)
+    {
+        snprintf(buf, 32, "Kernel[%u].", i);
+        std::string caseName(buf);
+        const ROCmKernelMetadata& expKernel = expected.kernels[i];
+        const ROCmKernelMetadata& resKernel = result.kernels[i];
+        
+        assertValue(testName, caseName+"name", expKernel.name, resKernel.name);
+        assertValue(testName, caseName+"symbolName",
+                    expKernel.symbolName, resKernel.symbolName);
+        assertValue(testName, caseName+"argsNum",
+                    expKernel.argInfos.size(), resKernel.argInfos.size());
+        
+        char buf2[32];
+        for (cxuint j = 0; j < expKernel.argInfos.size(); j++)
+        {
+            snprintf(buf2, 32, "args[%u].", j);
+            std::string caseName2(caseName);
+            caseName2 += buf2;
+            const ROCmKernelArgInfo& expArgInfo = expKernel.argInfos[j];
+            const ROCmKernelArgInfo& resArgInfo = resKernel.argInfos[j];
+            assertValue(testName, caseName2+"name", expArgInfo.name, resArgInfo.name);
+            assertValue(testName, caseName2+"typeName",
+                        expArgInfo.typeName, resArgInfo.typeName);
+            assertValue(testName, caseName2+"size",
+                        expArgInfo.size, resArgInfo.size);
+            assertValue(testName, caseName2+"offset",
+                        expArgInfo.offset, resArgInfo.offset);
+            assertValue(testName, caseName2+"pointeeAlign",
+                        expArgInfo.pointeeAlign, resArgInfo.pointeeAlign);
+            assertValue(testName, caseName2+"valueKind",
+                        cxuint(expArgInfo.valueKind), cxuint(resArgInfo.valueKind));
+            assertValue(testName, caseName2+"valueType",
+                        cxuint(expArgInfo.valueType), cxuint(resArgInfo.valueType));
+            assertValue(testName, caseName2+"addressSpace",
+                        cxuint(expArgInfo.addressSpace), cxuint(resArgInfo.addressSpace));
+            assertValue(testName, caseName2+"accessQual",
+                        cxuint(expArgInfo.accessQual), cxuint(resArgInfo.accessQual));
+            assertValue(testName, caseName2+"actualAccessQual",
+                cxuint(expArgInfo.actualAccessQual), cxuint(resArgInfo.actualAccessQual));
+            assertValue(testName, caseName2+"isConst",
+                        cxuint(expArgInfo.isConst), cxuint(resArgInfo.isConst));
+            assertValue(testName, caseName2+"isRestrict",
+                        cxuint(expArgInfo.isRestrict), cxuint(resArgInfo.isRestrict));
+            assertValue(testName, caseName2+"isPipe",
+                        cxuint(expArgInfo.isPipe), cxuint(resArgInfo.isPipe));
+            assertValue(testName, caseName2+"isVolatile",
+                        cxuint(expArgInfo.isVolatile), cxuint(resArgInfo.isVolatile));
+        }
+        
+        assertValue(testName, caseName+"language", expKernel.language, resKernel.language);
+        assertValue(testName, caseName+"langVersion[0]", expKernel.langVersion[0],
+                    resKernel.langVersion[0]);
+        assertValue(testName, caseName+"langVersion[1]", expKernel.langVersion[1],
+                    resKernel.langVersion[1]);
+        assertValue(testName, caseName+"reqdWorkGroupSize[0]",
+                    expKernel.reqdWorkGroupSize[0], resKernel.reqdWorkGroupSize[0]);
+        assertValue(testName, caseName+"reqdWorkGroupSize[1]",
+                    expKernel.reqdWorkGroupSize[1], resKernel.reqdWorkGroupSize[1]);
+        assertValue(testName, caseName+"reqdWorkGroupSize[2]",
+                    expKernel.reqdWorkGroupSize[2], resKernel.reqdWorkGroupSize[2]);
+        assertValue(testName, caseName+"workGroupSizeHint[0]",
+                    expKernel.workGroupSizeHint[0], resKernel.workGroupSizeHint[0]);
+        assertValue(testName, caseName+"workGroupSizeHint[1]",
+                    expKernel.workGroupSizeHint[1], resKernel.workGroupSizeHint[1]);
+        assertValue(testName, caseName+"workGroupSizeHint[2]",
+                    expKernel.workGroupSizeHint[2], resKernel.workGroupSizeHint[2]);
+        assertValue(testName, caseName+"vecTypeHint",
+                    expKernel.vecTypeHint, resKernel.vecTypeHint);
+        assertValue(testName, caseName+"runtimeHandle",
+                    expKernel.runtimeHandle, resKernel.runtimeHandle);
+        assertValue(testName, caseName+"deviceEnqueueSymbol",
+                    expKernel.deviceEnqueueSymbol, resKernel.deviceEnqueueSymbol);
+        assertValue(testName, caseName+"kernargSegmentSize",
+                    expKernel.kernargSegmentSize, resKernel.kernargSegmentSize);
+        assertValue(testName, caseName+"groupSegmentFixedSize",
+                    expKernel.groupSegmentFixedSize, resKernel.groupSegmentFixedSize);
+        assertValue(testName, caseName+"privateSegmentFixedSize",
+                    expKernel.privateSegmentFixedSize, resKernel.privateSegmentFixedSize);
+        assertValue(testName, caseName+"kernargSegmentAlign",
+                    expKernel.kernargSegmentAlign, resKernel.kernargSegmentAlign);
+        assertValue(testName, caseName+"wavefrontSize",
+                    expKernel.wavefrontSize, resKernel.wavefrontSize);
+        assertValue(testName, caseName+"sgprsNum", expKernel.sgprsNum, resKernel.sgprsNum);
+        assertValue(testName, caseName+"vgprsNum", expKernel.vgprsNum, resKernel.vgprsNum);
+        assertValue(testName, caseName+"maxFlatWorkGroupSize",
+                    expKernel.maxFlatWorkGroupSize, resKernel.maxFlatWorkGroupSize);
+        assertValue(testName, caseName+"fixedWorkGroupSize[0]",
+                    expKernel.fixedWorkGroupSize[0], resKernel.fixedWorkGroupSize[0]);
+        assertValue(testName, caseName+"fixedWorkGroupSize[1]",
+                    expKernel.fixedWorkGroupSize[1], resKernel.fixedWorkGroupSize[1]);
+        assertValue(testName, caseName+"fixedWorkGroupSize[2]",
+                    expKernel.fixedWorkGroupSize[2], resKernel.fixedWorkGroupSize[2]);
+        assertValue(testName, caseName+"spilledSgprs",
+                    expKernel.spilledSgprs, resKernel.spilledSgprs);
+        assertValue(testName, caseName+"spilledVgprs",
+                    expKernel.spilledVgprs, resKernel.spilledVgprs);
+    }
+};
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
     retVal |= callTest(testMsgPackBytes);
     retVal |= callTest(testMsgPackSkip);
+    for (cxuint i = 0; i < sizeof(rocmMsgPackMDTestCases)/
+                            sizeof(ROCmMsgPackMDTestCase); i++)
+        try
+        { testParseROCmMsgPackMDCase(i, rocmMsgPackMDTestCases[i]); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
     return retVal;
 }

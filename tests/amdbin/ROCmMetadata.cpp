@@ -1465,17 +1465,17 @@ static void testROCmMetadataCase(cxuint testId, const ROCmMetadataTestCase& test
                     resKernel.langVersion[0]);
         assertValue(testName, caseName+"langVersion[1]", expKernel.langVersion[1],
                     resKernel.langVersion[1]);
-        assertValue(testName, caseName+"reqdWorkGroupSize[0]", 
+        assertValue(testName, caseName+"reqdWorkGroupSize[0]",
                     expKernel.reqdWorkGroupSize[0], resKernel.reqdWorkGroupSize[0]);
-        assertValue(testName, caseName+"reqdWorkGroupSize[1]", 
+        assertValue(testName, caseName+"reqdWorkGroupSize[1]",
                     expKernel.reqdWorkGroupSize[1], resKernel.reqdWorkGroupSize[1]);
-        assertValue(testName, caseName+"reqdWorkGroupSize[2]", 
+        assertValue(testName, caseName+"reqdWorkGroupSize[2]",
                     expKernel.reqdWorkGroupSize[2], resKernel.reqdWorkGroupSize[2]);
-        assertValue(testName, caseName+"workGroupSizeHint[0]", 
+        assertValue(testName, caseName+"workGroupSizeHint[0]",
                     expKernel.workGroupSizeHint[0], resKernel.workGroupSizeHint[0]);
-        assertValue(testName, caseName+"workGroupSizeHint[1]", 
+        assertValue(testName, caseName+"workGroupSizeHint[1]",
                     expKernel.workGroupSizeHint[1], resKernel.workGroupSizeHint[1]);
-        assertValue(testName, caseName+"workGroupSizeHint[2]", 
+        assertValue(testName, caseName+"workGroupSizeHint[2]",
                     expKernel.workGroupSizeHint[2], resKernel.workGroupSizeHint[2]);
         assertValue(testName, caseName+"vecTypeHint",
                     expKernel.vecTypeHint, resKernel.vecTypeHint);
