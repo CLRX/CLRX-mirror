@@ -1068,7 +1068,7 @@ static void testMsgPackSkip()
         tc11[3] = (11232)&255;
         tc11[4] = (11232)>>8;
         for (size_t i = 0; i < tc11.size()-5; i++)
-            tc11[i+5] = (i&0x80)&0xff;
+            tc11[i+5] = (i^0x80)&0xff;
         dataPtr = tc11.data();
         MsgPackMapParser mapParser(dataPtr, dataPtr + tc11.size());
         mapParser.parseKeyNil();
@@ -1102,7 +1102,7 @@ static void testMsgPackSkip()
         tc12[5] = ((4511232)>>16)&255;
         tc12[6] = ((4511232)>>24);
         for (size_t i = 0; i < tc12.size()-7; i++)
-            tc12[i+7] = (i&0x80)&0xff;
+            tc12[i+7] = (i^0x80)&0xff;
         dataPtr = tc12.data();
         MsgPackMapParser mapParser(dataPtr, dataPtr + tc12.size());
         mapParser.parseKeyNil();
@@ -1138,7 +1138,7 @@ static void testMsgPackSkip()
         MsgPackMapParser mapParser(dataPtr, dataPtr + sizeof(tc13));
         mapParser.parseKeyNil();
         mapParser.skipValue();
-        assertValue("MsgPackSkip", "tc9.DataPtr", dataPtr, tc13 + sizeof(tc13));
+        assertValue("MsgPackSkip", "tc13.DataPtr", dataPtr, tc13 + sizeof(tc13));
     }
     dataPtr = tc13;
     {
@@ -1162,7 +1162,7 @@ static void testMsgPackSkip()
         tc14[3] = (11232)&255;
         tc14[4] = (11232)>>8;
         for (size_t i = 0; i < tc14.size()-5; i++)
-            tc14[i+5] = (i&0x80)&0xff;
+            tc14[i+5] = (i^0x80)&0xff;
         dataPtr = tc14.data();
         MsgPackMapParser mapParser(dataPtr, dataPtr + tc14.size());
         mapParser.parseKeyNil();
@@ -1196,7 +1196,7 @@ static void testMsgPackSkip()
         tc15[5] = ((4511232)>>16)&255;
         tc15[6] = ((4511232)>>24);
         for (size_t i = 0; i < tc15.size()-7; i++)
-            tc15[i+7] = (i&0x80)&0xff;
+            tc15[i+7] = (i^0x80)&0xff;
         dataPtr = tc15.data();
         MsgPackMapParser mapParser(dataPtr, dataPtr + tc15.size());
         mapParser.parseKeyNil();
@@ -1221,6 +1221,55 @@ static void testMsgPackSkip()
         }
     }
     /* skip arrays */
+    const cxbyte tc16[10] = { 0x81, 0xc0, 0x93, 0x12, 0x92, 0xe9, 0xcd, 0x01, 0x27, 0x45 };
+    dataPtr = tc16;
+    {
+        MsgPackMapParser mapParser(dataPtr, dataPtr + sizeof(tc16));
+        mapParser.parseKeyNil();
+        mapParser.skipValue();
+        assertValue("MsgPackSkip", "tc16.DataPtr", dataPtr, tc16 + sizeof(tc16));
+    }
+    const cxbyte tc16_1[12] = { 0x81, 0xc0, 0x93, 0x12, 0xa4, 0x33,
+                    0x35, 0x37, 0x4a, 0xcd, 0x01, 0x02 };
+    dataPtr = tc16_1;
+    {
+        MsgPackMapParser mapParser(dataPtr, dataPtr + sizeof(tc16_1));
+        mapParser.parseKeyNil();
+        mapParser.skipValue();
+        assertValue("MsgPackSkip", "tc16_1.DataPtr", dataPtr, tc16_1 + sizeof(tc16_1));
+    }
+    {
+        Array<cxbyte> tc17(5 + 11277);
+        tc17[0] = 0x81;
+        tc17[1] = 0xc0;
+        tc17[2] = 0xdc;
+        tc17[3] = (11277)&255;
+        tc17[4] = (11277)>>8;
+        for (size_t i = 0; i < tc17.size()-5; i++)
+            tc17[i+5] = i&0x7f;
+        dataPtr = tc17.data();
+        MsgPackMapParser mapParser(dataPtr, dataPtr + tc17.size());
+        mapParser.parseKeyNil();
+        mapParser.skipValue();
+        const cxbyte* dataEnd = tc17.end();
+        assertValue("MsgPackSkip", "tc17.DataPtr", dataPtr, dataEnd);
+        {
+            dataPtr = tc17.data();
+            MsgPackMapParser mapParser(dataPtr, dataPtr + tc17.size()-1);
+            mapParser.parseKeyNil();
+            assertCLRXException("MsgPackSkip", "tc17_1.DataPtr",
+                    "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+        }
+        {
+            dataPtr = tc17.data();
+            MsgPackMapParser mapParser(dataPtr, dataPtr + 4);
+            mapParser.parseKeyNil();
+            assertCLRXException("MsgPackSkip", "tc17_2.DataPtr",
+                    "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+        }
+    }
 }
 
 int main(int argc, const char** argv)
