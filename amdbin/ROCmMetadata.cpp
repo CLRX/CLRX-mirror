@@ -1579,7 +1579,7 @@ static void skipMsgPackObject(const cxbyte*& dataPtr, const cxbyte* dataEnd)
         if (dataPtr>=dataEnd)
             throw ParseException("MsgPack: Can't skip object");
         const size_t size = *dataPtr++;
-        if (dataPtr+size>=dataEnd)
+        if (dataPtr+size>dataEnd)
             throw ParseException("MsgPack: Can't skip object");
         dataPtr += size;
     }
@@ -1590,7 +1590,7 @@ static void skipMsgPackObject(const cxbyte*& dataPtr, const cxbyte* dataEnd)
             throw ParseException("MsgPack: Can't skip object");
         size_t size = *dataPtr++;
         size |= (*dataPtr++)<<8;
-        if (dataPtr+size>=dataEnd)
+        if (dataPtr+size>dataEnd)
             throw ParseException("MsgPack: Can't skip object");
         dataPtr += size;
     }
@@ -1602,7 +1602,7 @@ static void skipMsgPackObject(const cxbyte*& dataPtr, const cxbyte* dataEnd)
         size_t size = 0;
         for (cxuint i = 0; i < 32; i+=8)
             size |= (*dataPtr++)<<i;
-        if (dataPtr+size>=dataEnd)
+        if (dataPtr+size>dataEnd)
             throw ParseException("MsgPack: Can't skip object");
         dataPtr += size;
     }
