@@ -1793,7 +1793,7 @@ void MsgPackMapParser::handleErrors(bool key)
     if (key && !keyLeft)
         throw ParseException("MsgPack: Key already parsed");
     if (!key && keyLeft)
-        throw ParseException("MsgPack: Value already parsed");
+        throw ParseException("MsgPack: This is not a value");
 }
 
 void MsgPackMapParser::parseKeyNil()

@@ -673,7 +673,7 @@ static void testMsgPackBytes()
         assertArray("MsgPack0", "tc25.value", Array<cxuint>(expected, expected + 35),
                         Array<cxuint>(res.begin(), res.end()));
         assertValue("MsgPack0", "tc25.DataPtr", dataPtr, tc25 + sizeof(tc25));
-        assertTrue("MsgPack0", "No elements", !childParser.haveElements());
+        assertTrue("MsgPack0", "tc25.No elements", !childParser.haveElements());
     }
     // longer array (16-bit size)
     {
@@ -761,7 +761,36 @@ static void testMsgPackBytes()
         assertArray("MsgPack0", "tc28.value", Array<cxuint>(expected, expected + 10),
                         Array<cxuint>(res.begin(), res.end()));
         assertValue("MsgPack0", "tc28.DataPtr", dataPtr, tc28 + sizeof(tc28));
-        assertTrue("MsgPack0", "No elements", !childParser.haveElements());
+        assertTrue("MsgPack0", "tc28.No elements", !childParser.haveElements());
+    }
+    {
+        dataPtr = tc28;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc28));
+        MsgPackMapParser childParser = arrParser.parseMap();
+        for (cxuint i = 0; i < 4; i++)
+        {
+            childParser.parseKeyInteger(MSGPACK_WS_BOTH);
+            childParser.parseValueInteger(MSGPACK_WS_BOTH);
+        }
+        childParser.parseKeyInteger(MSGPACK_WS_BOTH);
+        assertTrue("MsgPack0", "tc28_1.HaveElements", childParser.haveElements());
+    }
+    {
+        dataPtr = tc28;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc28));
+        MsgPackMapParser childParser = arrParser.parseMap();
+        assertCLRXException("MsgPack0", "tc28_2.IsNotValue",
+                    "MsgPack: This is not a value",
+                    [&childParser]() { childParser.parseValueBool(); });
+    }
+    {
+        dataPtr = tc28;
+        MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc28));
+        MsgPackMapParser childParser = arrParser.parseMap();
+        childParser.parseKeyInteger(MSGPACK_WS_BOTH);
+        assertCLRXException("MsgPack0", "tc28_2.IsNotKey",
+                    "MsgPack: Key already parsed",
+                    [&childParser]() { childParser.parseKeyBool(); });
     }
     // longer map (16-bit size)
     {
