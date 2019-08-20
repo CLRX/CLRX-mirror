@@ -1060,6 +1060,167 @@ static void testMsgPackSkip()
         assertCLRXException("MsgPackSkip", "tc10_2.DataPtr", "MsgPack: Can't skip object",
                     [&mapParser]() { mapParser.skipValue(); });
     }
+    {
+        Array<cxbyte> tc11(5 + 11232);
+        tc11[0] = 0x81;
+        tc11[1] = 0xc0;
+        tc11[2] = 0xda;
+        tc11[3] = (11232)&255;
+        tc11[4] = (11232)>>8;
+        for (size_t i = 0; i < tc11.size()-5; i++)
+            tc11[i+5] = (i&0x80)&0xff;
+        dataPtr = tc11.data();
+        MsgPackMapParser mapParser(dataPtr, dataPtr + tc11.size());
+        mapParser.parseKeyNil();
+        mapParser.skipValue();
+        const cxbyte* dataEnd = tc11.end();
+        assertValue("MsgPackSkip", "tc11.DataPtr", dataPtr, dataEnd);
+        {
+            dataPtr = tc11.data();
+            MsgPackMapParser mapParser(dataPtr, dataPtr + tc11.size()-1);
+            mapParser.parseKeyNil();
+            assertCLRXException("MsgPackSkip", "tc11_1.DataPtr",
+                    "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+        }
+        {
+            dataPtr = tc11.data();
+            MsgPackMapParser mapParser(dataPtr, dataPtr + 4);
+            mapParser.parseKeyNil();
+            assertCLRXException("MsgPackSkip", "tc11_2.DataPtr",
+                    "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+        }
+    }
+    {
+        Array<cxbyte> tc12(7 + 4511232);
+        tc12[0] = 0x81;
+        tc12[1] = 0xc0;
+        tc12[2] = 0xdb;
+        tc12[3] = (4511232)&255;
+        tc12[4] = ((4511232)>>8)&255;
+        tc12[5] = ((4511232)>>16)&255;
+        tc12[6] = ((4511232)>>24);
+        for (size_t i = 0; i < tc12.size()-7; i++)
+            tc12[i+7] = (i&0x80)&0xff;
+        dataPtr = tc12.data();
+        MsgPackMapParser mapParser(dataPtr, dataPtr + tc12.size());
+        mapParser.parseKeyNil();
+        mapParser.skipValue();
+        const cxbyte* dataEnd = tc12.end();
+        assertValue("MsgPackSkip", "tc12.DataPtr", dataPtr, dataEnd);
+        {
+            dataPtr = tc12.data();
+            MsgPackMapParser mapParser(dataPtr, dataPtr + tc12.size()-1);
+            mapParser.parseKeyNil();
+            assertCLRXException("MsgPackSkip", "tc12_1.DataPtr",
+                    "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+        }
+        {
+            dataPtr = tc12.data();
+            MsgPackMapParser mapParser(dataPtr, dataPtr + 6);
+            mapParser.parseKeyNil();
+            assertCLRXException("MsgPackSkip", "tc12_2.DataPtr",
+                    "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+        }
+    }
+    /* skip bin data */
+    const cxbyte tc13[38] = { 0x81, 0xc0, 0xc4, 0x22,
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x01, 0x02, 0x03, 0x54, 0x05, 0x06, 0x07, 0x08,
+        0x01, 0x04, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x01, 0x02, 0x03, 0x04, 0xf5, 0x06, 0x07, 0x08,
+        0x33, 0x66 };
+    dataPtr = tc13;
+    {
+        MsgPackMapParser mapParser(dataPtr, dataPtr + sizeof(tc13));
+        mapParser.parseKeyNil();
+        mapParser.skipValue();
+        assertValue("MsgPackSkip", "tc9.DataPtr", dataPtr, tc13 + sizeof(tc13));
+    }
+    dataPtr = tc13;
+    {
+        MsgPackMapParser mapParser(dataPtr, dataPtr + sizeof(tc13)-1);
+        mapParser.parseKeyNil();
+        assertCLRXException("MsgPackSkip", "tc13_1.DataPtr", "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+    }
+    dataPtr = tc13;
+    {
+        MsgPackMapParser mapParser(dataPtr, dataPtr + 3);
+        mapParser.parseKeyNil();
+        assertCLRXException("MsgPackSkip", "tc13_2.DataPtr", "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+    }
+    {
+        Array<cxbyte> tc14(5 + 11232);
+        tc14[0] = 0x81;
+        tc14[1] = 0xc0;
+        tc14[2] = 0xc5;
+        tc14[3] = (11232)&255;
+        tc14[4] = (11232)>>8;
+        for (size_t i = 0; i < tc14.size()-5; i++)
+            tc14[i+5] = (i&0x80)&0xff;
+        dataPtr = tc14.data();
+        MsgPackMapParser mapParser(dataPtr, dataPtr + tc14.size());
+        mapParser.parseKeyNil();
+        mapParser.skipValue();
+        const cxbyte* dataEnd = tc14.end();
+        assertValue("MsgPackSkip", "tc14.DataPtr", dataPtr, dataEnd);
+        {
+            dataPtr = tc14.data();
+            MsgPackMapParser mapParser(dataPtr, dataPtr + tc14.size()-1);
+            mapParser.parseKeyNil();
+            assertCLRXException("MsgPackSkip", "tc14_1.DataPtr",
+                    "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+        }
+        {
+            dataPtr = tc14.data();
+            MsgPackMapParser mapParser(dataPtr, dataPtr + 4);
+            mapParser.parseKeyNil();
+            assertCLRXException("MsgPackSkip", "tc14_2.DataPtr",
+                    "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+        }
+    }
+    {
+        Array<cxbyte> tc15(7 + 4511232);
+        tc15[0] = 0x81;
+        tc15[1] = 0xc0;
+        tc15[2] = 0xc6;
+        tc15[3] = (4511232)&255;
+        tc15[4] = ((4511232)>>8)&255;
+        tc15[5] = ((4511232)>>16)&255;
+        tc15[6] = ((4511232)>>24);
+        for (size_t i = 0; i < tc15.size()-7; i++)
+            tc15[i+7] = (i&0x80)&0xff;
+        dataPtr = tc15.data();
+        MsgPackMapParser mapParser(dataPtr, dataPtr + tc15.size());
+        mapParser.parseKeyNil();
+        mapParser.skipValue();
+        const cxbyte* dataEnd = tc15.end();
+        assertValue("MsgPackSkip", "tc15.DataPtr", dataPtr, dataEnd);
+        {
+            dataPtr = tc15.data();
+            MsgPackMapParser mapParser(dataPtr, dataPtr + tc15.size()-1);
+            mapParser.parseKeyNil();
+            assertCLRXException("MsgPackSkip", "tc15_1.DataPtr",
+                    "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+        }
+        {
+            dataPtr = tc15.data();
+            MsgPackMapParser mapParser(dataPtr, dataPtr + 6);
+            mapParser.parseKeyNil();
+            assertCLRXException("MsgPackSkip", "tc15_2.DataPtr",
+                    "MsgPack: Can't skip object",
+                    [&mapParser]() { mapParser.skipValue(); });
+        }
+    }
+    /* skip arrays */
 }
 
 int main(int argc, const char** argv)
