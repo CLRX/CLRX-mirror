@@ -21,7 +21,6 @@
 #include <cstring>
 #include <cstdint>
 #include <string>
-#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <unordered_set>
@@ -2059,10 +2058,7 @@ static void parseROCmMetadataKernelArgMsgPack(MsgPackArrayParser& argsParser,
                             CStringLess()) - rocmMPValueKindNamesMap;
                     // if unknown kind
                     if (vkindIndex == rocmValueKindNamesNum)
-                    {
-                        std::cerr << "vkind:" << vkind << std::endl;
                         throw ParseException("Wrong argument value kind");
-                    }
                     argInfo.valueKind = rocmValueKindNamesMap[vkindIndex].second;
                 break;
             }
