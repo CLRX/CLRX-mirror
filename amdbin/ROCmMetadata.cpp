@@ -21,6 +21,7 @@
 #include <cstring>
 #include <cstdint>
 #include <string>
+#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <unordered_set>
@@ -1960,6 +1961,28 @@ static const size_t rocmMetadataMPKernelArgNamesSize =
 static const char* rocmMPAccessQualifierTbl[] =
 { "read_only", "write_only", "read_write" };
 
+static const std::pair<const char*, ROCmValueKind> rocmMPValueKindNamesMap[] =
+{
+    { "by_value", ROCmValueKind::BY_VALUE },
+    { "dynamic_shared_pointer", ROCmValueKind::DYN_SHARED_PTR },
+    { "global_buffer", ROCmValueKind::GLOBAL_BUFFER },
+    { "hHidden_completion_action", ROCmValueKind::HIDDEN_COMPLETION_ACTION },
+    { "hidden_default_queue", ROCmValueKind::HIDDEN_DEFAULT_QUEUE },
+    { "hidden_global_offset_x", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X },
+    { "hidden_global_offset_y", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y },
+    { "hidden_global_offset_z", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z },
+    { "hidden_multigrid_sync_arg", ROCmValueKind::HIDDEN_MULTIGRID_SYNC_ARG },
+    { "hidden_none", ROCmValueKind::HIDDEN_NONE },
+    { "hidden_printf_buffer", ROCmValueKind::HIDDEN_PRINTF_BUFFER },
+    { "image", ROCmValueKind::IMAGE },
+    { "pipe", ROCmValueKind::PIPE },
+    { "queue", ROCmValueKind::QUEUE },
+    { "sampler", ROCmValueKind::SAMPLER }
+};
+
+static const size_t rocmMPValueKindNamesNum =
+        sizeof(rocmMPValueKindNamesMap) / sizeof(std::pair<const char*, ROCmValueKind>);
+
 static void parseROCmMetadataKernelArgMsgPack(MsgPackArrayParser& argsParser,
                         ROCmKernelArgInfo& argInfo)
 {
@@ -1969,7 +1992,7 @@ static void parseROCmMetadataKernelArgMsgPack(MsgPackArrayParser& argsParser,
         const std::string name = aParser.parseKeyString();
         const size_t index = binaryFind(rocmMetadataMPKernelArgNames,
                     rocmMetadataMPKernelArgNames + rocmMetadataMPKernelArgNamesSize,
-                    name.c_str()) - rocmMetadataMPKernelArgNames;
+                    name.c_str(), CStringLess()) - rocmMetadataMPKernelArgNames;
         switch(index)
         {
             case ROCMMP_ARG_ACCESS:
@@ -2031,12 +2054,15 @@ static void parseROCmMetadataKernelArgMsgPack(MsgPackArrayParser& argsParser,
             case ROCMMP_ARG_VALUE_KIND:
             {
                 const std::string vkind = trimStrSpaces(aParser.parseValueString());
-                const size_t vkindIndex = binaryMapFind(rocmValueKindNamesMap,
-                            rocmValueKindNamesMap + rocmValueKindNamesNum, vkind.c_str(),
-                            CStringLess()) - rocmValueKindNamesMap;
+                const size_t vkindIndex = binaryMapFind(rocmMPValueKindNamesMap,
+                            rocmMPValueKindNamesMap + rocmMPValueKindNamesNum, vkind.c_str(),
+                            CStringLess()) - rocmMPValueKindNamesMap;
                     // if unknown kind
                     if (vkindIndex == rocmValueKindNamesNum)
+                    {
+                        std::cerr << "vkind:" << vkind << std::endl;
                         throw ParseException("Wrong argument value kind");
+                    }
                     argInfo.valueKind = rocmValueKindNamesMap[vkindIndex].second;
                 break;
             }
@@ -2045,7 +2071,7 @@ static void parseROCmMetadataKernelArgMsgPack(MsgPackArrayParser& argsParser,
                 const std::string vtype = trimStrSpaces(aParser.parseValueString());
                 const size_t vtypeIndex = binaryMapFind(rocmValueTypeNamesMap,
                         rocmValueTypeNamesMap + rocmValueTypeNamesNum, vtype.c_str(),
-                        CStringLess()) - rocmValueTypeNamesMap;
+                        CStringCaseLess()) - rocmValueTypeNamesMap;
                 // if unknown type
                 if (vtypeIndex == rocmValueTypeNamesNum)
                     throw ParseException("Wrong argument value type");
@@ -2093,7 +2119,7 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
         const std::string name = kParser.parseKeyString();
         const size_t index = binaryFind(rocmMetadataMPKernelNames,
                     rocmMetadataMPKernelNames + rocmMetadataMPKernelNamesSize,
-                    name.c_str()) - rocmMetadataMPKernelNames;
+                    name.c_str(), CStringLess()) - rocmMetadataMPKernelNames;
         
         switch(index)
         {
@@ -2103,7 +2129,7 @@ static void parseROCmMetadataKernelMsgPack(MsgPackArrayParser& kernelsParser,
                 while (argsParser.haveElements())
                 {
                     ROCmKernelArgInfo arg{};
-                    parseROCmMetadataKernelArgMsgPack(kernelsParser, arg);
+                    parseROCmMetadataKernelArgMsgPack(argsParser, arg);
                     kernel.argInfos.push_back(arg);
                 }
                 break;
@@ -2200,6 +2226,7 @@ void CLRX::parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
             while (kernelsParser.haveElements())
             {
                 ROCmKernelMetadata kernel{};
+                kernel.initialize();
                 parseROCmMetadataKernelMsgPack(kernelsParser, kernel);
                 kernels.push_back(kernel);
             }

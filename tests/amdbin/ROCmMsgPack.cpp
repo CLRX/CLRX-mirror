@@ -1449,12 +1449,14 @@ struct ROCmMsgPackMDTestCase
 
 static const cxbyte rocmMsgPackInput[] =
 {
-    0x82, 0xae, 'a', 'm', 'd', 'h', 's', 'a', '.', 'k', 'e', 'r', 'n', 'e', 'l', 's',
-    0x92, 0x8f,
+    0x82,
+    0xae, 'a', 'm', 'd', 'h', 's', 'a', '.', 'k', 'e', 'r', 'n', 'e', 'l', 's',
+    0x91,
     // kernel A
+    0x8f,
     0xa5, '.', 'a', 'r', 'g', 's',
     // kernel args
-    0x9a, 0x88,
+    0x98, 0x88,
         0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
             0xa6, 'g', 'l', 'o', 'b', 'a', 'l',
         0xa9, '.', 'i', 's', '_', 'c', 'o', 'n', 's', 't', 0xc3,
@@ -1489,19 +1491,22 @@ static const cxbyte rocmMsgPackInput[] =
         0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x18,
         0xa5, '.', 's', 'i', 'z', 'e', 0x08,
         0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
-            0xaf, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'g', 'l', 'o', 'b', 'a', 'l', '_', 'x',
+            0xb6, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'g', 'l', 'o', 'b', 'a', 'l', '_',
+            'o', 'f', 'f', 's', 'e', 't', '_', 'x',
         0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
     0x84,
         0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x20,
         0xa5, '.', 's', 'i', 'z', 'e', 0x08,
         0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
-            0xaf, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'g', 'l', 'o', 'b', 'a', 'l', '_', 'y',
+            0xb6, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'g', 'l', 'o', 'b', 'a', 'l', '_',
+            'o', 'f', 'f', 's', 'e', 't', '_', 'y',
         0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
     0x84,
         0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x28,
         0xa5, '.', 's', 'i', 'z', 'e', 0x08,
         0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
-            0xaf, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'g', 'l', 'o', 'b', 'a', 'l', '_', 'z',
+            0xb6, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'g', 'l', 'o', 'b', 'a', 'l', '_',
+            'o', 'f', 'f', 's', 'e', 't', '_', 'z',
         0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
     0x85,
         0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
@@ -1532,13 +1537,73 @@ static const cxbyte rocmMsgPackInput[] =
         'v', 'e', 'r', 's', 'i', 'o', 'n', 0x92, 0x01, 0x02,
     0xb8, '.', 'm', 'a', 'x', '_', 'f', 'l', 'a', 't', '_', 'w', 'o', 'r', 'k',
         'g', 'r', 'o', 'u', 'p', '_', 's', 'i', 'z', 'e', 0xcd, 0x01, 0x00,
+    0xa5, '.', 'n', 'a', 'm', 'e', 0xa7, 'v', 'e', 'c', 'p', 'r', 'o', 'c',
+    0xbb, '.', 'p', 'r', 'i', 'v', 'a', 't', 'e', '_', 's', 'e', 'g', 'm', 'e', 'n', 't',
+        '_', 'f', 'i', 'x', 'e', 'd', '_', 's', 'i', 'z', 'e', 0x00,
+    0xab, '.', 's', 'g', 'p', 'r', '_', 'c', 'o', 'u', 'n', 't', 0x1a,
+    0xb1, '.', 's', 'g', 'p', 'r', '_', 's', 'p', 'i', 'l', 'l', '_',
+            'c', 'o', 'u', 'n', 't', 0x02,
+    0xa7, '.', 's', 'y', 'm', 'b', 'o', 'l',
+        0xaa, 'v', 'e', 'c', 'p', 'r', 'o', 'c', '.', 'k', 'd',
+    0xab, '.', 'v', 'g', 'p', 'r', '_', 'c', 'o', 'u', 'n', 't', 0x06,
+    0xb1, '.', 'v', 'g', 'p', 'r', '_', 's', 'p', 'i', 'l', 'l', '_',
+            'c', 'o', 'u', 'n', 't', 0x03,
+    0xaf, '.', 'w', 'a', 'v', 'e', 'f', 'r', 'o', 'n', 't', '_', 's', 'i', 'z', 'e', 0x20,
+    // version
+    0xae, 'a', 'm', 'd', 'h', 's', 'a', '.', 'v', 'e', 'r', 's', 'i', 'o', 'n',
+        0x92, 0x01, 0x00
 };
 
 static const ROCmMsgPackMDTestCase rocmMsgPackMDTestCases[] =
 {
-    /*{
-        sizeof(rocmMsgPackInput), rocmMsgPackInput, {}, true, ""
-    },*/
+    {
+        sizeof(rocmMsgPackInput), rocmMsgPackInput,
+        {
+            { 1, 0 },
+            { }, // printinfos
+            {
+                {
+                    "vecproc", "vecproc.kd",
+                    {   // args
+                        { "in", "float*", 8, 0, 0, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            true, false, false, false },
+                        { "out", "float*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "n", "int", 4, 16, 0, ROCmValueKind::BY_VALUE,
+                            ROCmValueType::INT32, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 24, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 32, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 40, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 48, 0, ROCmValueKind::HIDDEN_NONE,
+                            ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 56, 0, ROCmValueKind::HIDDEN_NONE,
+                            ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false }
+                    },
+                    "OpenCL C", { 1, 2 }, { 0, 0, 0 }, { 0, 0, 0 }, "", "",
+                    64, 0, 0, 8, 32, 26, 6, 256, { 0, 0, 0 }, 2, 3, ""
+                }
+            }
+        }, true, ""
+    },
 };
 
 static void testParseROCmMsgPackMDCase(cxuint testId, const ROCmMsgPackMDTestCase& testCase)
