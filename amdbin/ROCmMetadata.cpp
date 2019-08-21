@@ -1388,8 +1388,8 @@ static uint64_t parseMsgPackInteger(const cxbyte*& dataPtr, const cxbyte* dataEn
             case 0xd1:
                 if (dataPtr+1>=dataEnd)
                     throw ParseException("MsgPack: Can't parse integer value");
-                v = *dataPtr++;
-                v |= uint16_t(*dataPtr++)<<8;
+                v = uint16_t(*dataPtr++)<<8;
+                v |= *dataPtr++;
                 if (code==0xd1 && (v&(1ULL<<15))!=0)
                     v |= (0xffffffffffffULL<<16);
                 break;
@@ -1397,7 +1397,7 @@ static uint64_t parseMsgPackInteger(const cxbyte*& dataPtr, const cxbyte* dataEn
             case 0xd2:
                 if (dataPtr+3>=dataEnd)
                     throw ParseException("MsgPack: Can't parse integer value");
-                for (cxuint i = 0; i < 32; i+=8)
+                for (cxint i = 24; i >= 0; i-=8)
                     v |= uint32_t(*dataPtr++)<<i;
                 if (code==0xd2 && (v&(1ULL<<31))!=0)
                     v |= (0xffffffffULL<<32);
@@ -1406,7 +1406,7 @@ static uint64_t parseMsgPackInteger(const cxbyte*& dataPtr, const cxbyte* dataEn
             case 0xd3:
                 if (dataPtr+7>=dataEnd)
                     throw ParseException("MsgPack: Can't parse integer value");
-                for (cxuint i = 0; i < 64; i+=8)
+                for (cxint i = 56; i >= 0; i-=8)
                     v |= uint64_t(*dataPtr++)<<i;
                 break;
             default:
@@ -1435,7 +1435,7 @@ static double parseMsgPackFloat(const cxbyte*& dataPtr, const cxbyte* dataEnd)
         v.v = 0;
         if (dataPtr+3>=dataEnd)
             throw ParseException("MsgPack: Can't parse float value");
-        for (cxuint i = 0; i < 32; i+=8)
+        for (cxint i = 24; i >= 0; i-=8)
             v.v |= uint32_t(*dataPtr++)<<i;
         return v.vf;
     }
@@ -1448,7 +1448,7 @@ static double parseMsgPackFloat(const cxbyte*& dataPtr, const cxbyte* dataEnd)
         v.v = 0;
         if (dataPtr+7>=dataEnd)
             throw ParseException("MsgPack: Can't parse float value");
-        for (cxuint i = 0; i < 64; i+=8)
+        for (cxint i = 56; i >= 0; i-=8)
             v.v |= uint64_t(*dataPtr++)<<i;
         return v.vf;
     }
@@ -1477,13 +1477,13 @@ static std::string parseMsgPackString(const cxbyte*& dataPtr, const cxbyte* data
             case 0xda:
                 if (dataPtr+1>=dataEnd)
                     throw ParseException("MsgPack: Can't parse string size");
-                size = *dataPtr++;
-                size |= uint32_t(*dataPtr++)<<8;
+                size = uint32_t(*dataPtr++)<<8;
+                size |= *dataPtr++;
                 break;
             case 0xdb:
                 if (dataPtr+3>=dataEnd)
                     throw ParseException("MsgPack: Can't parse string size");
-                for (cxuint i = 0; i < 32; i+=8)
+                for (cxint i = 24; i >= 0; i-=8)
                     size |= uint32_t(*dataPtr++)<<i;
                 break;
             default:
@@ -1515,13 +1515,13 @@ static Array<cxbyte> parseMsgPackData(const cxbyte*& dataPtr, const cxbyte* data
         case 0xc5:
             if (dataPtr+1>=dataEnd)
                 throw ParseException("MsgPack: Can't parse byte-array size");
-            size = *dataPtr++;
-            size |= uint32_t(*dataPtr++)<<8;
+            size = uint32_t(*dataPtr++)<<8;
+            size |= *dataPtr++;
             break;
         case 0xc6:
             if (dataPtr+3>=dataEnd)
                 throw ParseException("MsgPack: Can't parse byte-array size");
-            for (cxuint i = 0; i < 32; i+=8)
+            for (cxint i = 24; i >= 0; i-=8)
                 size |= uint32_t(*dataPtr++)<<i;
             break;
         default:
@@ -1588,8 +1588,8 @@ static void skipMsgPackObject(const cxbyte*& dataPtr, const cxbyte* dataEnd)
         dataPtr++;
         if (dataPtr+1>=dataEnd)
             throw ParseException("MsgPack: Can't skip object");
-        size_t size = *dataPtr++;
-        size |= uint16_t(*dataPtr++)<<8;
+        size_t size = uint16_t(*dataPtr++)<<8;
+        size |= *dataPtr++;
         if (dataPtr+size>dataEnd)
             throw ParseException("MsgPack: Can't skip object");
         dataPtr += size;
@@ -1600,7 +1600,7 @@ static void skipMsgPackObject(const cxbyte*& dataPtr, const cxbyte* dataEnd)
         if (dataPtr+1>=dataEnd)
             throw ParseException("MsgPack: Can't skip object");
         size_t size = 0;
-        for (cxuint i = 0; i < 32; i+=8)
+        for (cxint i = 24; i >= 0; i-=8)
             size |= uint32_t(*dataPtr++)<<i;
         if (dataPtr+size>dataEnd)
             throw ParseException("MsgPack: Can't skip object");
@@ -1621,8 +1621,8 @@ static void skipMsgPackObject(const cxbyte*& dataPtr, const cxbyte* dataEnd)
         dataPtr++;
         if (dataPtr>=dataEnd)
             throw ParseException("MsgPack: Can't skip object");
-        size_t size = *dataPtr++;
-        size |= uint16_t(*dataPtr++)<<8;
+        size_t size = uint16_t(*dataPtr++)<<8;
+        size |= *dataPtr++;
         if (isMap)
             size<<=1;
         for (size_t i = 0; i < size; i++)
@@ -1635,7 +1635,7 @@ static void skipMsgPackObject(const cxbyte*& dataPtr, const cxbyte* dataEnd)
         if (dataPtr>=dataEnd)
             throw ParseException("MsgPack: Can't skip object");
         size_t size = 0;
-        for (cxuint i = 0; i < 32; i+=8)
+        for (cxint i = 24; i >= 0; i-=8)
             size |= (*dataPtr++)<<i;
         if (isMap)
             size<<=1;
@@ -1660,14 +1660,14 @@ MsgPackArrayParser::MsgPackArrayParser(const cxbyte*& _dataPtr, const cxbyte* _d
         {
             if (dataPtr+1 >= dataEnd)
                 throw ParseException("MsgPack: Can't parse array size");
-            count = *dataPtr++;
-            count |= uint16_t(*dataPtr++)<<8;
+            count = uint16_t(*dataPtr++)<<8;
+            count |= *dataPtr++;
         }
         else if (code == 0xdd)
         {
             if (dataPtr+3 >= dataEnd)
                 throw ParseException("MsgPack: Can't parse array size");
-            for (cxuint i = 0; i < 32; i+=8)
+            for (cxint i = 24; i >= 0; i-=8)
                 count |= uint32_t(*dataPtr++)<<i;
         }
         else
@@ -1767,14 +1767,14 @@ MsgPackMapParser::MsgPackMapParser(const cxbyte*& _dataPtr, const cxbyte* _dataE
         {
             if (dataPtr+1 >= dataEnd)
                 throw ParseException("MsgPack: Can't parse map size");
-            count = *dataPtr++;
-            count |= uint16_t(*dataPtr++)<<8;
+            count = uint16_t(*dataPtr++)<<8;
+            count |= *dataPtr++;
         }
         else if (code == 0xdf)
         {
             if (dataPtr+3 >= dataEnd)
                 throw ParseException("MsgPack: Can't parse map size");
-            for (cxuint i = 0; i < 32; i+=8)
+            for (cxint i = 24; i >= 0; i-=8)
                 count |= uint32_t(*dataPtr++)<<i;
         }
         else

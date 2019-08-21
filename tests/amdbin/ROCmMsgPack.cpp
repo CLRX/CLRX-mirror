@@ -170,7 +170,7 @@ static void testMsgPackBytes()
         assertValue("MsgPack0", "tc8_2.DataPtr", dataPtr, tc8_1 + sizeof(tc8_1));
     }
     // 16-bit integers
-    const cxbyte tc9[4] = { 0x91, 0xcd, 0x37, 0x1c };
+    const cxbyte tc9[4] = { 0x91, 0xcd, 0x1c, 0x37 };
     dataPtr = tc9;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc9));
@@ -178,7 +178,7 @@ static void testMsgPackBytes()
                    arrParser.parseInteger(MSGPACK_WS_UNSIGNED));
         assertValue("MsgPack0", "tc9.DataPtr", dataPtr, tc9 + sizeof(tc9));
     }
-    const cxbyte tc9_1[4] = { 0x91, 0xcd, 0x7e, 0xb3 };
+    const cxbyte tc9_1[4] = { 0x91, 0xcd, 0xb3, 0x7e };
     dataPtr = tc9_1;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc9_1));
@@ -202,7 +202,7 @@ static void testMsgPackBytes()
                     [&arrParser]() { arrParser.parseInteger(MSGPACK_WS_UNSIGNED); });
         assertValue("MsgPack0", "tc9_3.DataPtr", dataPtr, tc9_3 + sizeof(tc9_3));
     }
-    const cxbyte tc10[4] = { 0x91, 0xd1, 0x37, 0x1c };
+    const cxbyte tc10[4] = { 0x91, 0xd1, 0x1c, 0x37 };
     dataPtr = tc10;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc10));
@@ -210,7 +210,7 @@ static void testMsgPackBytes()
                    arrParser.parseInteger(MSGPACK_WS_SIGNED));
         assertValue("MsgPack0", "tc10.DataPtr", dataPtr, tc10 + sizeof(tc10));
     }
-    const cxbyte tc10_1[4] = { 0x91, 0xd1, 0x7e, 0xb3 };
+    const cxbyte tc10_1[4] = { 0x91, 0xd1, 0xb3, 0x7e };
     dataPtr = tc10_1;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc10_1));
@@ -235,7 +235,7 @@ static void testMsgPackBytes()
         assertValue("MsgPack0", "tc10_3.DataPtr", dataPtr, tc10_3+ sizeof(tc10_3)-1);
     }
     // 32-bit integers
-    const cxbyte tc11[6] = { 0x91, 0xce, 0xbe, 0x96, 0x41, 0x2e };
+    const cxbyte tc11[6] = { 0x91, 0xce, 0x2e, 0x41, 0x96, 0xbe };
     dataPtr = tc11;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc11));
@@ -243,7 +243,7 @@ static void testMsgPackBytes()
                    arrParser.parseInteger(MSGPACK_WS_UNSIGNED));
         assertValue("MsgPack0", "tc11.DataPtr", dataPtr, tc11 + sizeof(tc11));
     }
-    const cxbyte tc11_1[6] = { 0x91, 0xce, 0xbe, 0x96, 0x42, 0xda };
+    const cxbyte tc11_1[6] = { 0x91, 0xce, 0xda, 0x42, 0x96, 0xbe };
     dataPtr = tc11_1;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc11_1));
@@ -259,7 +259,7 @@ static void testMsgPackBytes()
                     [&arrParser]() { arrParser.parseInteger(MSGPACK_WS_UNSIGNED); });
         assertValue("MsgPack0", "tc11_2.DataPtr", dataPtr, tc11_1 + 2);
     }
-    const cxbyte tc12[6] = { 0x91, 0xd2, 0xbe, 0x96, 0x41, 0x2e };
+    const cxbyte tc12[6] = { 0x91, 0xd2, 0x2e, 0x41, 0x96, 0xbe };
     dataPtr = tc12;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc12));
@@ -275,7 +275,7 @@ static void testMsgPackBytes()
                     [&arrParser]() { arrParser.parseInteger(MSGPACK_WS_SIGNED); });
         assertValue("MsgPack0", "tc12_1.DataPtr", dataPtr, tc12 + 2);
     }
-    const cxbyte tc12_2[6] = { 0x91, 0xd2, 0xaf, 0x11, 0x79, 0xc1 };
+    const cxbyte tc12_2[6] = { 0x91, 0xd2, 0xc1, 0x79, 0x11, 0xaf };
     dataPtr = tc12_2;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc12_2));
@@ -292,7 +292,7 @@ static void testMsgPackBytes()
         assertValue("MsgPack0", "tc12_3.DataPtr", dataPtr, tc12_2 + sizeof(tc12_2));
     }
     // 64-bit integers
-    const cxbyte tc13[10] = { 0x91, 0xcf, 0x11, 0x3a, 0xf1, 0x4b, 0x13, 0xd9, 0x1e, 0x62 };
+    const cxbyte tc13[10] = { 0x91, 0xcf, 0x62, 0x1e, 0xd9, 0x13, 0x4b, 0xf1, 0x3a, 0x11 };
     dataPtr = tc13;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc13));
@@ -300,8 +300,8 @@ static void testMsgPackBytes()
                    arrParser.parseInteger(MSGPACK_WS_UNSIGNED));
         assertValue("MsgPack0", "tc13.DataPtr", dataPtr, tc13 + sizeof(tc13));
     }
-    const cxbyte tc13_1[10] = { 0x91, 0xcf, 0x14, 0x3a, 0xf1,
-                            0x4b, 0x13, 0xd9, 0x1e, 0xd7 };
+    const cxbyte tc13_1[10] = { 0x91, 0xcf, 0xd7, 0x1e, 0xd9, 0x13, 0x4b,
+                            0xf1, 0x3a, 0x14 };
     dataPtr = tc13_1;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc13_1));
@@ -325,7 +325,7 @@ static void testMsgPackBytes()
                     [&arrParser]() { arrParser.parseInteger(MSGPACK_WS_SIGNED); });
         assertValue("MsgPack0", "tc13_3.DataPtr", dataPtr, tc13_1 + sizeof(tc13_1));
     }
-    const cxbyte tc14[10] = { 0x91, 0xd3, 0x17, 0x3a, 0xf1, 0x4b, 0x13, 0xd9, 0x1e, 0x62 };
+    const cxbyte tc14[10] = { 0x91, 0xd3, 0x62, 0x1e, 0xd9, 0x13, 0x4b, 0xf1, 0x3a, 0x17 };
     dataPtr = tc14;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc14));
@@ -333,8 +333,8 @@ static void testMsgPackBytes()
                    arrParser.parseInteger(MSGPACK_WS_SIGNED));
         assertValue("MsgPack0", "tc14.DataPtr", dataPtr, tc14 + sizeof(tc14));
     }
-    const cxbyte tc14_1[10] = { 0x91, 0xd3, 0x14, 0x3a, 0xf1,
-                            0x4b, 0x13, 0xd9, 0x1e, 0xd7 };
+    const cxbyte tc14_1[10] = { 0x91, 0xd3, 0xd7, 0x1e, 0xd9, 0x13, 0x4b,
+                            0xf1, 0x3a, 0x14 };
     dataPtr = tc14_1;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc14_1));
@@ -352,7 +352,7 @@ static void testMsgPackBytes()
     }
     
     // parseFloat
-    const cxbyte tc15[6] = { 0x91, 0xca, 0xf3, 0x9c, 0x76, 0x42 };
+    const cxbyte tc15[6] = { 0x91, 0xca, 0x42, 0x76, 0x9c, 0xf3 };
     dataPtr = tc15;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc15));
@@ -367,7 +367,7 @@ static void testMsgPackBytes()
                     [&arrParser]() { arrParser.parseFloat(); });
         assertValue("MsgPack0", "tc15_1.DataPtr", dataPtr, tc15 + 2);
     }
-    const cxbyte tc15_2[6] = { 0x91, 0xca, 0xf3, 0x9c, 0x76, 0xc2 };
+    const cxbyte tc15_2[6] = { 0x91, 0xca, 0xc2, 0x76, 0x9c, 0xf3 };
     dataPtr = tc15_2;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc15_2));
@@ -375,7 +375,7 @@ static void testMsgPackBytes()
                             arrParser.parseFloat());
         assertValue("MsgPack0", "tc15_2.DataPtr", dataPtr, tc15_2 + sizeof(tc15_2));
     }
-    const cxbyte tc16[10] = { 0x91, 0xcb, 0xa3, 0x0b, 0x43, 0x99, 0x3c, 0xd1, 0x8d, 0x40 };
+    const cxbyte tc16[10] = { 0x91, 0xcb, 0x40, 0x8d, 0xd1, 0x3c, 0x99, 0x43, 0x0b, 0xa3 };
     dataPtr = tc16;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc16));
@@ -391,8 +391,8 @@ static void testMsgPackBytes()
                     [&arrParser]() { arrParser.parseFloat(); });
         assertValue("MsgPack0", "tc16_1.DataPtr", dataPtr, tc16 + 2);
     }
-    const cxbyte tc16_1[10] = { 0x91, 0xcb, 0xa3, 0x0b, 0x43, 0x99,
-                0x3c, 0xd1, 0x8d, 0xc0 };
+    const cxbyte tc16_1[10] = { 0x91, 0xcb, 0xc0, 0x8d, 0xd1, 0x3c, 0x99,
+                    0x43, 0x0b, 0xa3 };
     dataPtr = tc16_1;
     {
         MsgPackArrayParser arrParser(dataPtr, dataPtr + sizeof(tc16_1));
@@ -430,8 +430,8 @@ static void testMsgPackBytes()
         Array<cxbyte> tc18(4 + 12615);
         tc18[0] = 0x91;
         tc18[1] = 0xc5;
-        tc18[2] = (12615&0xff);
-        tc18[3] = (12615>>8);
+        tc18[2] = (12615>>8);
+        tc18[3] = (12615&0xff);
         for (cxuint i = 0; i < tc18.size()-4; i++)
             tc18[i+4] = ((i*0x71f)^i) + (12342%(i+1));
         dataPtr = tc18.data();
@@ -473,10 +473,10 @@ static void testMsgPackBytes()
         Array<cxbyte> tc19(6 + 20818241);
         tc19[0] = 0x91;
         tc19[1] = 0xc6;
-        tc19[2] = (20818241&0xff);
-        tc19[3] = (20818241>>8)&0xff;
-        tc19[4] = (20818241>>16)&0xff;
-        tc19[5] = (20818241>>24);
+        tc19[2] = (20818241>>24);
+        tc19[3] = (20818241>>16)&0xff;
+        tc19[4] = (20818241>>8)&0xff;
+        tc19[5] = (20818241&0xff);
         for (cxuint i = 0; i < tc19.size()-6; i++)
             tc19[i+6] = ((i*0x11f)^i)*3 + (1334123421%(i*5+1));
         dataPtr = tc19.data();
@@ -557,8 +557,8 @@ static void testMsgPackBytes()
         Array<cxbyte> tc22(4 + 12615);
         tc22[0] = 0x91;
         tc22[1] = 0xda;
-        tc22[2] = (12615&0xff);
-        tc22[3] = (12615>>8);
+        tc22[2] = (12615>>8);
+        tc22[3] = (12615&0xff);
         for (cxuint i = 0; i < tc22.size()-4; i++)
             tc22[i+4] = ((i*0x71f)^i) + (12342%(i+1));
         dataPtr = tc22.data();
@@ -601,10 +601,10 @@ static void testMsgPackBytes()
         Array<cxbyte> tc23(6 + 20818241);
         tc23[0] = 0x91;
         tc23[1] = 0xdb;
-        tc23[2] = (20818241&0xff);
-        tc23[3] = (20818241>>8)&0xff;
-        tc23[4] = (20818241>>16)&0xff;
-        tc23[5] = (20818241>>24);
+        tc23[2] = (20818241>>24);
+        tc23[3] = (20818241>>16)&0xff;
+        tc23[4] = (20818241>>8)&0xff;
+        tc23[5] = (20818241&0xff);
         for (cxuint i = 0; i < tc23.size()-6; i++)
             tc23[i+6] = ((i*0x11f)^i)*3 + (1334123421%(i*5+1));
         dataPtr = tc23.data();
@@ -651,7 +651,7 @@ static void testMsgPackBytes()
         assertTrue("MsgPack0", "No elements", !childParser.haveElements());
     }
     // longer array (more than 15 elements)
-    const cxbyte tc25[39] = { 0x91, 0xdc, 0x23, 0x00,
+    const cxbyte tc25[39] = { 0x91, 0xdc, 0x00, 0x23,
         0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x78,
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
         0x21, 0x12, 0x23, 0x54, 0x25, 0x46, 0x77, 0x58,
@@ -680,8 +680,8 @@ static void testMsgPackBytes()
         Array<cxbyte> tc26(4 + 12615);
         tc26[0] = 0x91;
         tc26[1] = 0xdc;
-        tc26[2] = (12615&0xff);
-        tc26[3] = (12615>>8);
+        tc26[2] = (12615>>8);
+        tc26[3] = (12615&0xff);
         for (cxuint i = 0; i < tc26.size()-4; i++)
             tc26[i+4] = (((i*0x71f)^i) + (12342%(i+1)))&0x7f;
         dataPtr = tc26.data();
@@ -716,10 +716,10 @@ static void testMsgPackBytes()
         Array<cxbyte> tc27(6 + 1818241);
         tc27[0] = 0x91;
         tc27[1] = 0xdd;
-        tc27[2] = (1818241&0xff);
-        tc27[3] = (1818241>>8)&0xff;
-        tc27[4] = (1818241>>16)&0xff;
-        tc27[5] = (1818241>>24);
+        tc27[2] = (1818241>>24);
+        tc27[3] = (1818241>>16)&0xff;
+        tc27[4] = (1818241>>8)&0xff;
+        tc27[5] = (1818241&0xff);
         for (cxuint i = 0; i < tc27.size()-6; i++)
             tc27[i+6] = (((i*0x11f)^i)*3 + (1334123421%(i*5+1)))&0x7f;
         dataPtr = tc27.data();
@@ -797,8 +797,8 @@ static void testMsgPackBytes()
         Array<cxbyte> tc29(4 + 12615*2);
         tc29[0] = 0x91;
         tc29[1] = 0xde;
-        tc29[2] = (12615&0xff);
-        tc29[3] = (12615>>8);
+        tc29[2] = (12615>>8);
+        tc29[3] = (12615&0xff);
         for (cxuint i = 0; i < tc29.size()-4; i++)
             tc29[i+4] = (((i*0x71f)^i) + (12342%(i+1)))&0x7f;
         dataPtr = tc29.data();
@@ -836,10 +836,10 @@ static void testMsgPackBytes()
         Array<cxbyte> tc30(6 + 1818241*2);
         tc30[0] = 0x91;
         tc30[1] = 0xdf;
-        tc30[2] = (1818241&0xff);
-        tc30[3] = (1818241>>8)&0xff;
-        tc30[4] = (1818241>>16)&0xff;
-        tc30[5] = (1818241>>24);
+        tc30[2] = (1818241>>24);
+        tc30[3] = (1818241>>16)&0xff;
+        tc30[4] = (1818241>>8)&0xff;
+        tc30[5] = (1818241&0xff);
         for (cxuint i = 0; i < tc30.size()-6; i++)
             tc30[i+6] = (((i*0x11f)^i)*3 + (1334123421%(i*5+1)))&0x7f;
         dataPtr = tc30.data();
@@ -1105,8 +1105,8 @@ static void testMsgPackSkip()
         tc11[0] = 0x81;
         tc11[1] = 0xc0;
         tc11[2] = 0xda;
-        tc11[3] = (11232)&255;
-        tc11[4] = (11232)>>8;
+        tc11[3] = (11232)>>8;
+        tc11[4] = (11232)&255;
         for (size_t i = 0; i < tc11.size()-5; i++)
             tc11[i+5] = (i^0x80)&0xff;
         dataPtr = tc11.data();
@@ -1137,10 +1137,10 @@ static void testMsgPackSkip()
         tc12[0] = 0x81;
         tc12[1] = 0xc0;
         tc12[2] = 0xdb;
-        tc12[3] = (4511232)&255;
-        tc12[4] = ((4511232)>>8)&255;
-        tc12[5] = ((4511232)>>16)&255;
-        tc12[6] = ((4511232)>>24);
+        tc12[3] = ((4511232)>>24);
+        tc12[4] = ((4511232)>>16)&255;
+        tc12[5] = ((4511232)>>8)&255;
+        tc12[6] = (4511232)&255;
         for (size_t i = 0; i < tc12.size()-7; i++)
             tc12[i+7] = (i^0x80)&0xff;
         dataPtr = tc12.data();
@@ -1199,8 +1199,8 @@ static void testMsgPackSkip()
         tc14[0] = 0x81;
         tc14[1] = 0xc0;
         tc14[2] = 0xc5;
-        tc14[3] = (11232)&255;
-        tc14[4] = (11232)>>8;
+        tc14[3] = (11232)>>8;
+        tc14[4] = (11232)&255;
         for (size_t i = 0; i < tc14.size()-5; i++)
             tc14[i+5] = (i^0x80)&0xff;
         dataPtr = tc14.data();
@@ -1231,10 +1231,10 @@ static void testMsgPackSkip()
         tc15[0] = 0x81;
         tc15[1] = 0xc0;
         tc15[2] = 0xc6;
-        tc15[3] = (4511232)&255;
-        tc15[4] = ((4511232)>>8)&255;
-        tc15[5] = ((4511232)>>16)&255;
-        tc15[6] = ((4511232)>>24);
+        tc15[3] = ((4511232)>>24);
+        tc15[4] = ((4511232)>>16)&255;
+        tc15[5] = ((4511232)>>8)&255;
+        tc15[6] = (4511232)&255;
         for (size_t i = 0; i < tc15.size()-7; i++)
             tc15[i+7] = (i^0x80)&0xff;
         dataPtr = tc15.data();
@@ -1283,8 +1283,8 @@ static void testMsgPackSkip()
         tc17[0] = 0x81;
         tc17[1] = 0xc0;
         tc17[2] = 0xdc;
-        tc17[3] = (11277)&255;
-        tc17[4] = (11277)>>8;
+        tc17[3] = (11277)>>8;
+        tc17[4] = (11277)&255;
         for (size_t i = 0; i < tc17.size()-5; i+=3)
         {
             tc17[i+5] = 0xcd;
@@ -1319,10 +1319,10 @@ static void testMsgPackSkip()
         tc18[0] = 0x81;
         tc18[1] = 0xc0;
         tc18[2] = 0xdd;
-        tc18[3] = (3788213)&255;
-        tc18[4] = ((3788213)>>8)&255;
-        tc18[5] = ((3788213)>>16)&255;
-        tc18[6] = (3788213)>>24;
+        tc18[3] = (3788213)>>24;
+        tc18[4] = ((3788213)>>16)&255;
+        tc18[5] = ((3788213)>>8)&255;
+        tc18[6] = (3788213)&255;
         for (size_t i = 0; i < tc18.size()-7; i+=3)
         {
             tc18[i+7] = 0xcd;
@@ -1367,8 +1367,8 @@ static void testMsgPackSkip()
         tc20[0] = 0x81;
         tc20[1] = 0xc0;
         tc20[2] = 0xde;
-        tc20[3] = (8214)&255;
-        tc20[4] = (8214)>>8;
+        tc20[3] = (8214)>>8;
+        tc20[4] = (8214)&255;
         for (size_t i = 0; i < tc20.size()-5; i+=3)
         {
             tc20[i+5] = 0xcd;
@@ -1403,10 +1403,10 @@ static void testMsgPackSkip()
         tc21[0] = 0x81;
         tc21[1] = 0xc0;
         tc21[2] = 0xdf;
-        tc21[3] = (1662135)&255;
-        tc21[4] = ((1662135)>>8)&255;
-        tc21[5] = ((1662135)>>16)&255;
-        tc21[6] = (1662135)>>24;
+        tc21[3] = (1662135)>>24;
+        tc21[4] = ((1662135)>>16)&255;
+        tc21[5] = ((1662135)>>8)&255;
+        tc21[6] = (1662135)&255;
         for (size_t i = 0; i < tc21.size()-7; i+=3)
         {
             tc21[i+7] = 0xcd;
