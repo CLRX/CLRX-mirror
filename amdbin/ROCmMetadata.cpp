@@ -651,13 +651,13 @@ public:
             throw ParseException(oldLineNo, "Duplicate of printf id");
         
         skipSpacesToLineEnd(ptr2, end2);
-        if (ptr2==end || *ptr2!=':')
+        if (ptr2==end2 || *ptr2!=':')
             throw ParseException(oldLineNo, "No colon after printf callId");
         ptr2++;
         skipSpacesToLineEnd(ptr2, end2);
         uint32_t argsNum = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
         skipSpacesToLineEnd(ptr2, end2);
-        if (ptr2==end || *ptr2!=':')
+        if (ptr2==end2 || *ptr2!=':')
             throw ParseException(oldLineNo, "No colon after printf argsNum");
         ptr2++;
         
@@ -669,7 +669,7 @@ public:
             skipSpacesToLineEnd(ptr2, end2);
             printfInfo.argSizes[i] = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
             skipSpacesToLineEnd(ptr2, end2);
-            if (ptr2==end || *ptr2!=':')
+            if (ptr2==end2 || *ptr2!=':')
                 throw ParseException(lineNo, "No colon after printf argsNum");
             ptr2++;
         }
