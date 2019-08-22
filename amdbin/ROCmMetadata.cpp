@@ -1965,7 +1965,7 @@ static const std::pair<const char*, ROCmValueKind> rocmMPValueKindNamesMap[] =
     { "by_value", ROCmValueKind::BY_VALUE },
     { "dynamic_shared_pointer", ROCmValueKind::DYN_SHARED_PTR },
     { "global_buffer", ROCmValueKind::GLOBAL_BUFFER },
-    { "hHidden_completion_action", ROCmValueKind::HIDDEN_COMPLETION_ACTION },
+    { "hidden_completion_action", ROCmValueKind::HIDDEN_COMPLETION_ACTION },
     { "hidden_default_queue", ROCmValueKind::HIDDEN_DEFAULT_QUEUE },
     { "hidden_global_offset_x", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X },
     { "hidden_global_offset_y", ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y },
@@ -2225,6 +2225,14 @@ void CLRX::parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
                 kernel.initialize();
                 parseROCmMetadataKernelMsgPack(kernelsParser, kernel);
                 kernels.push_back(kernel);
+            }
+        }
+        else if (name == "amdhsa.printf")
+        {
+            MsgPackArrayParser printfsParser = mainMap.parseValueArray();
+            while (printfsParser.haveElements())
+            {
+                printfsParser.parseString();
             }
         }
         else
