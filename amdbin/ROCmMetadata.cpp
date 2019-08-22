@@ -617,6 +617,48 @@ public:
     }
 };
 
+static void parsePrintfInfoString(const char* ptr2, const char* end2, size_t oldLineNo,
+                size_t lineNo, ROCmPrintfInfo& printfInfo,
+                std::unordered_set<cxuint>& printfIds)
+{
+    skipSpacesToLineEnd(ptr2, end2);
+    try
+    { printfInfo.id = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2); }
+    catch(const ParseException& ex)
+    { throw ParseException(oldLineNo, ex.what()); }
+    
+    // check printf id uniqueness
+    if (!printfIds.insert(printfInfo.id).second)
+        throw ParseException(oldLineNo, "Duplicate of printf id");
+    
+    skipSpacesToLineEnd(ptr2, end2);
+    if (ptr2==end2 || *ptr2!=':')
+        throw ParseException(oldLineNo, "No colon after printf callId");
+    ptr2++;
+    skipSpacesToLineEnd(ptr2, end2);
+    uint32_t argsNum = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
+    skipSpacesToLineEnd(ptr2, end2);
+    if (ptr2==end2 || *ptr2!=':')
+        throw ParseException(oldLineNo, "No colon after printf argsNum");
+    ptr2++;
+    
+    printfInfo.argSizes.resize(argsNum);
+    
+    // parse arg sizes
+    for (size_t i = 0; i < argsNum; i++)
+    {
+        skipSpacesToLineEnd(ptr2, end2);
+        printfInfo.argSizes[i] = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
+        skipSpacesToLineEnd(ptr2, end2);
+        if (ptr2==end2 || *ptr2!=':')
+            throw ParseException(lineNo, "No colon after printf argsNum");
+        ptr2++;
+    }
+    // format
+    printfInfo.format.assign(ptr2, end2);
+    
+}
+
 // printf info string consumer
 class CLRX_INTERNAL YAMLPrintfVectorConsumer: public YAMLElemConsumer
 {
@@ -640,41 +682,7 @@ public:
         
         const char* ptr2 = str.c_str();
         const char* end2 = str.c_str() + str.size();
-        skipSpacesToLineEnd(ptr2, end2);
-        try
-        { printfInfo.id = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2); }
-        catch(const ParseException& ex)
-        { throw ParseException(oldLineNo, ex.what()); }
-        
-        // check printf id uniqueness
-        if (!printfIds.insert(printfInfo.id).second)
-            throw ParseException(oldLineNo, "Duplicate of printf id");
-        
-        skipSpacesToLineEnd(ptr2, end2);
-        if (ptr2==end2 || *ptr2!=':')
-            throw ParseException(oldLineNo, "No colon after printf callId");
-        ptr2++;
-        skipSpacesToLineEnd(ptr2, end2);
-        uint32_t argsNum = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
-        skipSpacesToLineEnd(ptr2, end2);
-        if (ptr2==end2 || *ptr2!=':')
-            throw ParseException(oldLineNo, "No colon after printf argsNum");
-        ptr2++;
-        
-        printfInfo.argSizes.resize(argsNum);
-        
-        // parse arg sizes
-        for (size_t i = 0; i < argsNum; i++)
-        {
-            skipSpacesToLineEnd(ptr2, end2);
-            printfInfo.argSizes[i] = cstrtovCStyle<uint32_t>(ptr2, end2, ptr2);
-            skipSpacesToLineEnd(ptr2, end2);
-            if (ptr2==end2 || *ptr2!=':')
-                throw ParseException(lineNo, "No colon after printf argsNum");
-            ptr2++;
-        }
-        // format
-        printfInfo.format.assign(ptr2, end2);
+        parsePrintfInfoString(ptr2, end2, oldLineNo, lineNo, printfInfo, printfIds);
         
         printfInfos.push_back(printfInfo);
     }
@@ -2229,10 +2237,15 @@ void CLRX::parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
         }
         else if (name == "amdhsa.printf")
         {
+            std::unordered_set<cxuint> printfIds;
             MsgPackArrayParser printfsParser = mainMap.parseValueArray();
             while (printfsParser.haveElements())
             {
-                printfsParser.parseString();
+                ROCmPrintfInfo printfInfo{};
+                std::string pistr = printfsParser.parseString();
+                parsePrintfInfoString(pistr.c_str(), pistr.c_str() + pistr.size(),
+                                0, 0, printfInfo, printfIds);
+                metadataInfo.printfInfos.push_back(printfInfo);
             }
         }
         else
