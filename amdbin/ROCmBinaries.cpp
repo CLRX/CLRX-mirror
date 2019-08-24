@@ -306,13 +306,6 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
         }
     }
-    
-    if (llvm10BinFormat)
-    {
-        // remove global data for LLVM10 bin format
-        globalData = nullptr;
-        globalDataSize = 0;
-    }
 }
 
 /// determint GPU device from ROCm notes
@@ -349,6 +342,13 @@ GPUDeviceType ROCmBinary::determineGPUDeviceType(uint32_t& outArchMinor,
             offset += sizeof(Elf64_Nhdr) + namesz + descsz + align;
         }
     }
+    if (llvm10BinFormat && archMajor==0 && archMajor==0 && archStepping==0)
+    {
+        // default is Navi
+        outArchMinor = 1;
+        outArchStepping = 0;
+        return GPUDeviceType::GFX1010;
+    }
     // determine device type
     GPUDeviceType deviceType = getGPUDeviceTypeFromArchVersion(archMajor, archMinor,
                                     archStepping);
@@ -375,6 +375,17 @@ const ROCmKernelMetadata& ROCmBinary::getKernelInfo(const char* name) const
     if (it == kernelInfosMap.end())
         throw BinException("Can't find kernel info name");
     return metadataInfo->kernels[it->second];
+}
+
+const ROCmKernelDescriptor& ROCmBinary::getKernelDescriptor(const char* name) const
+{
+    RegionMap::const_iterator it = binaryMapFind(regionsMap.begin(),
+                             regionsMap.end(), name);
+    if (it == regionsMap.end())
+        throw BinException("Can't find kernel descriptor name");
+    if (kernelDescs[it->second]==nullptr)
+        throw BinException("No kernel descriptor for region name");
+    return *(kernelDescs[it->second]);
 }
 
 // if ROCm binary
