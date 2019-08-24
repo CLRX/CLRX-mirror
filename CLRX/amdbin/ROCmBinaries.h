@@ -46,6 +46,7 @@ enum : Flags {
     ROCMBIN_CREATE_REGIONMAP = 0x10,    ///< create region map
     ROCMBIN_CREATE_METADATAINFO = 0x20,     ///< create metadata info object
     ROCMBIN_CREATE_KERNELINFOMAP = 0x40,    ///< create kernel metadata info map
+    ROCMBIN_CREATE_KERNELDESCMAP = 0x80,    ///< create kernel descriptor map
     ROCMBIN_CREATE_ALL = ELF_CREATE_ALL | 0xfff0 ///< all ROCm binaries flags
 };
 
@@ -201,6 +202,32 @@ struct ROCmMetadata
     void parseMsgPack(size_t metadataSize, const cxbyte* metadata);
 };
 
+struct ROCmKernelDescriptor
+{
+    uint32_t groupSegmentFixedSize;
+    uint32_t privateSegmentFixedSize;
+    uint64_t reserved0;
+    uint64_t kernelCodeEntryOffset;
+    uint64_t reserved1;
+    cxbyte reserved2[12];
+    uint32_t pgmRsrc3;
+    uint32_t pgmRsrc1;
+    uint32_t pgmRsrc2;
+    uint16_t initialKernelExecState;
+    cxbyte reserved3[6];
+    
+    void toLE()
+    {
+        SLEV(groupSegmentFixedSize, groupSegmentFixedSize);
+        SLEV(privateSegmentFixedSize, privateSegmentFixedSize);
+        SLEV(kernelCodeEntryOffset, kernelCodeEntryOffset);
+        SLEV(pgmRsrc3, pgmRsrc3);
+        SLEV(pgmRsrc1, pgmRsrc1);
+        SLEV(pgmRsrc2, pgmRsrc2);
+        SLEV(initialKernelExecState, initialKernelExecState);
+    }
+};
+
 /// ROCm main binary for GPU for 64-bit mode
 /** This object doesn't copy binary code content.
  * Only it takes and uses a binary code.
@@ -223,8 +250,11 @@ private:
     char* metadata;
     std::unique_ptr<ROCmMetadata> metadataInfo;
     RegionMap kernelInfosMap;
+    Array<const ROCmKernelDescriptor*> kernelDescs;
     Array<size_t> gotSymbols;
     bool newBinFormat;
+    bool llvm10BinFormat;
+    bool metadataV3Format;
 public:
     /// constructor
     ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode,
@@ -304,6 +334,14 @@ public:
     /// return true is new binary format
     bool isNewBinaryFormat() const
     { return newBinFormat; }
+    
+    /// return true is LLVM10 binary format
+    bool isLLVM10BinaryFormat() const
+    { return llvm10BinFormat; }
+    
+    /// return true is metadata V3 code object format
+    bool isMetadataV3Format() const
+    { return metadataV3Format; }
     
     /// get GOT symbol index (from elfbin dynsymbols)
     size_t getGotSymbolsNum() const

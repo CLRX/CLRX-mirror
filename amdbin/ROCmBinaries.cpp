@@ -48,7 +48,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         : ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
           regionsNum(0), codeSize(0), code(nullptr),
           globalDataSize(0), globalData(nullptr), metadataSize(0), metadata(nullptr),
-          newBinFormat(false)
+          newBinFormat(false), llvm10BinFormat(false), metadataV3Format(false)
 {
     cxuint textIndex = SHN_UNDEF;
     try
@@ -65,7 +65,11 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         codeOffset = ULEV(textShdr.sh_offset);
     }
     
+    if (getHeader().e_ident[EI_ABIVERSION] == 1)
+        llvm10BinFormat = true; // likely llvm10 bin format
+    
     cxuint rodataIndex = SHN_UNDEF;
+    const cxbyte* rodataContent = nullptr;
     try
     { rodataIndex = getSectionIndex(".rodata"); }
     catch(const Exception& ex)
@@ -73,7 +77,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     // find '.text' section
     if (rodataIndex!=SHN_UNDEF)
     {
-        globalData = getSectionContent(rodataIndex);
+        rodataContent = globalData = getSectionContent(rodataIndex);
         const Elf64_Shdr& rodataShdr = getSectionHeader(rodataIndex);
         globalDataSize = ULEV(rodataShdr.sh_size);
     }
@@ -98,6 +102,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     { } // ignore failed
     
     // counts regions (symbol or kernel)
+    std::vector<std::pair<CString, size_t> > tmpKernelDescs;
     regionsNum = 0;
     const size_t symbolsNum = getSymbolsNum();
     for (size_t i = 0; i < symbolsNum; i++)
@@ -106,11 +111,30 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         const Elf64_Sym& sym = getSymbol(i);
         const cxbyte symType = ELF64_ST_TYPE(sym.st_info);
         const cxbyte bind = ELF64_ST_BIND(sym.st_info);
-        if (ULEV(sym.st_shndx)==textIndex &&
+        Elf64_Half shndx = ULEV(sym.st_shndx);
+        if (shndx==textIndex &&
             (symType==STT_GNU_IFUNC || (symType==STT_FUNC && !newBinFormat) ||
                 (bind==STB_GLOBAL && symType==STT_OBJECT)))
             regionsNum++;
+        if (llvm10BinFormat && shndx==rodataIndex && symType==STT_OBJECT)
+        {
+            const char* symName = getSymbolName(i);
+            size_t symNameLen = ::strlen(symName);
+            // if symname have '.kd' at end
+            if (symNameLen > 3 && symName[symNameLen-3]=='.' &&
+                symName[symNameLen-2]=='k' && symName[symNameLen-1]=='d')
+                tmpKernelDescs.push_back({ CString(symName, symName+symNameLen-3),
+                            ULEV(sym.st_value) });
+        }
     }
+    if (llvm10BinFormat)
+    {
+        if (rodataContent==nullptr)
+            throw BinException("No rodata section in ROCm LLVM10Bin format");
+        mapSort(tmpKernelDescs.begin(), tmpKernelDescs.end());
+        kernelDescs.resize(regionsNum);
+    }
+    
     if (code==nullptr && regionsNum!=0)
         throw BinException("No code if regions number is not zero");
     regions.reset(new ROCmRegion[regionsNum]);
@@ -148,7 +172,18 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             symOffsets[j] = std::make_pair(value, j);
             if (type!=ROCmRegionType::DATA && value+0x100 > codeOffset+codeSize)
                 throw BinException("Kernel or code offset is too big!");
-            regions[j++] = { getSymbolName(i), size, value, type };
+            const char* symName = getSymbolName(i);
+            regions[j++] = { symName, size, value, type };
+            if (llvm10BinFormat)
+            {
+                auto it = binaryMapFind(tmpKernelDescs.begin(), tmpKernelDescs.end(),
+                                        CString(symName));
+                if (it != tmpKernelDescs.end())
+                    kernelDescs[i] = reinterpret_cast<const ROCmKernelDescriptor*>(
+                                rodataContent + it->second);
+                else
+                    kernelDescs[i] = nullptr;
+            }
         }
     }
     // sort regions by offset
