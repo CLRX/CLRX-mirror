@@ -243,7 +243,6 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     // get metadata
     const size_t notesSize = getNotesSize();
     const cxbyte* noteContent = (const cxbyte*)getNotes();
-    bool isMetadataV3 = false;
     
     for (size_t offset = 0; offset < notesSize; )
     {
@@ -263,8 +262,8 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             if ((noteType == 0xa && namesz==4) || (noteType == 0x20 && namesz==7))
             {
                 if (namesz==7)
-                    isMetadataV3 = true;
-                if (namesz==4 && isMetadataV3)
+                    metadataV3Format = true;
+                if (namesz==4 && metadataV3Format)
                     throw Exception("MetadataV2 in MetadataV3 compliant binary!");
                 metadata = (char*)(noteContent+offset+sizeof(Elf64_Nhdr) + alignedNamesz);
                 metadataSize = descsz;
@@ -291,7 +290,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         metadata != nullptr && metadataSize != 0)
     {
         metadataInfo.reset(new ROCmMetadata());
-        if (!isMetadataV3)
+        if (!metadataV3Format)
             parseROCmMetadata(metadataSize, metadata, *metadataInfo);
         else
             parseROCmMetadataMsgPack(metadataSize,
@@ -306,6 +305,13 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             // sort region map
             mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
         }
+    }
+    
+    if (llvm10BinFormat)
+    {
+        // remove global data for LLVM10 bin format
+        globalData = nullptr;
+        globalDataSize = 0;
     }
 }
 
