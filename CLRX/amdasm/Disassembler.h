@@ -323,6 +323,8 @@ struct ROCmDisasmInput
     uint32_t archStepping;     ///< GPU arch stepping
     uint32_t eflags;   ///< ELF header e_flags field
     bool newBinFormat;  ///< new binary format
+    bool llvm10BinFormat;  ///< new LLVM10 binary format
+    bool metadataV3;    ///< new metadata v3 format
     std::vector<ROCmDisasmRegionInput> regions;  ///< regions
     size_t codeSize;    ///< code size
     const cxbyte* code; ///< code

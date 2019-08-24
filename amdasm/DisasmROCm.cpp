@@ -89,6 +89,8 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
     input->globalDataSize = binary.getGlobalDataSize();
     input->target = binary.getTarget();
     input->newBinFormat = binary.isNewBinaryFormat();
+    input->llvm10BinFormat = binary.isLLVM10BinaryFormat();
+    input->metadataV3 = binary.isMetadataV3Format();
     return input.release();
 }
 
@@ -843,8 +845,12 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
         output.write(buf, size);
     }
     
-    if (rocmInput->newBinFormat)
+    if (rocmInput->llvm10BinFormat)
+        output.write(".llvm10binfmt\n", 14);
+    else if (rocmInput->newBinFormat)
         output.write(".newbinfmt\n", 11);
+    if (rocmInput->metadataV3)
+        output.write(".metadatav3\n", 12);
     
     if (!rocmInput->target.empty())
     {
