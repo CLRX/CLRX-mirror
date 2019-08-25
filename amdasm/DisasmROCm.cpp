@@ -567,7 +567,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
 void CLRX::disassembleAMDHSACode(std::ostream& output,
             const std::vector<ROCmDisasmRegionInput>& regions,
             size_t codeSize, const cxbyte* code, ISADisassembler* isaDisassembler,
-            Flags flags)
+            Flags flags, bool llvm10BinFormat)
 {
     const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
     const bool doMetadata = ((flags & (DISASM_METADATA|DISASM_CONFIG)) != 0);
@@ -594,17 +594,20 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
         isaDisassembler->analyzeBeforeDisassemble();
     }
     
+    const size_t kconfigSize = llvm10BinFormat ? 0 : 256;
+    
     for (size_t i = 0; i < regionsNum; i++)
     {
         const ROCmDisasmRegionInput& region = regions[sorted[i].second];
         if ((region.type==ROCmRegionType::KERNEL ||
              region.type==ROCmRegionType::FKERNEL) && doDumpCode)
         {
-            if (region.offset+256 > codeSize)
+            if (region.offset+kconfigSize > codeSize)
                 throw DisasmException("Region Offset out of range");
             // kernel code begin after HSA config
-            isaDisassembler->setInput(region.size-256, code + region.offset+256,
-                                region.offset+256);
+            isaDisassembler->setInput(region.size-kconfigSize,
+                                code + region.offset+kconfigSize,
+                                region.offset+kconfigSize);
             isaDisassembler->analyzeBeforeDisassemble();
         }
         isaDisassembler->addNamedLabel(region.offset, region.regionName);
@@ -661,15 +664,17 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
             {
                 if (!doDumpConfig)
                     printDisasmData(0x100, code + region.offset, output, true);
-                else    // skip, config was dumped in kernel configuration
+                else if (kconfigSize!=0)
+                    // skip, config was dumped in kernel configuration
                     output.write(".skip 256\n", 10);
             }
             
-            if (doDumpCode && dataSize >= 256)
+            if (doDumpCode && dataSize >= kconfigSize)
             {
                 // dump code of region
-                isaDisassembler->setInput(dataSize-256, code + region.offset+256,
-                                region.offset+256, region.offset+1);
+                isaDisassembler->setInput(dataSize-kconfigSize,
+                                code + region.offset+kconfigSize,
+                                region.offset+kconfigSize, region.offset+1);
                 isaDisassembler->setDontPrintLabels(i+1<regionsNum);
                 isaDisassembler->disassemble();
             }
@@ -1095,6 +1100,6 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     
     // disassembly code in HSA form
     if (rocmInput->code != nullptr && rocmInput->codeSize != 0)
-        disassembleAMDHSACode(output, rocmInput->regions,
-                        rocmInput->codeSize, rocmInput->code, isaDisassembler, flags);
+        disassembleAMDHSACode(output, rocmInput->regions, rocmInput->codeSize,
+                    rocmInput->code, isaDisassembler, flags, rocmInput->llvm10BinFormat);
 }
