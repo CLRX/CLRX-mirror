@@ -297,15 +297,6 @@ struct AmdCL2DisasmInput
     std::vector<AmdCL2DisasmKernelInput> kernels;    ///< kernel inputs
 };
 
-/// disasm ROCm kernel input
-struct ROCmDisasmKernelInput
-{
-    CString kernelName; ///< kernel name
-    const cxbyte* setup;    ///< setup
-    size_t codeSize;    ///< code size
-    size_t offset;      ///< kernel offset
-};
-
 /// disasm ROCm region
 struct ROCmDisasmRegionInput
 {
@@ -334,6 +325,7 @@ struct ROCmDisasmInput
     size_t metadataSize;    ///< metadata size
     const char* metadata;   ///< metadata
     Array<std::pair<CString, size_t> > gotSymbols; ///< GOT symbols names
+    std::vector<const ROCmKernelDescriptor*> kernelDescs; ///< kernel descriptors
 };
 
 /// disasm kernel info structure (Gallium binaries)

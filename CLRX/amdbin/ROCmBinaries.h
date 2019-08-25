@@ -327,14 +327,10 @@ public:
     const ROCmKernelMetadata& getKernelInfo(const char* name) const;
     
     /// get kernel descriptor
-    const ROCmKernelDescriptor& getKernelDescriptor(size_t index) const
-    {
-        if (kernelDescs[index]==nullptr)
-            throw BinException("No kernel descriptor for region index");
-        return *(kernelDescs[index]);
-    }
+    const ROCmKernelDescriptor* getKernelDescriptor(size_t index) const
+    { return kernelDescs[index]; }
     // get kernel descriptor by name
-    const ROCmKernelDescriptor& getKernelDescriptor(const char* name) const;
+    const ROCmKernelDescriptor* getKernelDescriptor(const char* name) const;
     
     /// get target
     const CString& getTarget() const

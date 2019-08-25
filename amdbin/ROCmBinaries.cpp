@@ -377,15 +377,13 @@ const ROCmKernelMetadata& ROCmBinary::getKernelInfo(const char* name) const
     return metadataInfo->kernels[it->second];
 }
 
-const ROCmKernelDescriptor& ROCmBinary::getKernelDescriptor(const char* name) const
+const ROCmKernelDescriptor* ROCmBinary::getKernelDescriptor(const char* name) const
 {
     RegionMap::const_iterator it = binaryMapFind(regionsMap.begin(),
                              regionsMap.end(), name);
     if (it == regionsMap.end())
         throw BinException("Can't find kernel descriptor name");
-    if (kernelDescs[it->second]==nullptr)
-        throw BinException("No kernel descriptor for region name");
-    return *(kernelDescs[it->second]);
+    return kernelDescs[it->second];
 }
 
 // if ROCm binary

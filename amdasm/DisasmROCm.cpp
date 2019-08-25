@@ -52,6 +52,12 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
         input->regions[i] = { region.regionName, size_t(region.size),
             size_t(region.offset - codeOffset), region.type };
     }
+    if (binary.isLLVM10BinaryFormat())
+    {
+        input->kernelDescs.resize(regionsNum);
+        for (size_t i = 0; i < regionsNum; i++)
+            input->kernelDescs[i] = binary.getKernelDescriptor(i);
+    }
     
     const size_t gotSymbolsNum = binary.getGotSymbolsNum();
     input->gotSymbols.resize(gotSymbolsNum);
@@ -1062,9 +1068,13 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                 output.write("    .fkernel\n", 13);
             if (doDumpConfig)
             {
-                dumpKernelConfig(output, maxSgprsNum, arch,
-                     *reinterpret_cast<const ROCmKernelConfig*>(
-                             rocmInput->code + rinput.offset));
+                if (!rocmInput->llvm10BinFormat)
+                    dumpKernelConfig(output, maxSgprsNum, arch,
+                        *reinterpret_cast<const ROCmKernelConfig*>(
+                                rocmInput->code + rinput.offset));
+                else
+                {
+                }
                 
                 if (!haveMetadataInfo)
                     continue; // no metatadata info
