@@ -94,6 +94,127 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
     return input.release();
 }
 
+static void dumpKernelDescriptor(std::ostream& output, cxuint maxSgprsNum,
+                GPUArchitecture arch, const ROCmKernelDescriptor& kdesc)
+{
+    uint32_t groupSegmentFixedSize = ULEV(kdesc.groupSegmentFixedSize);
+    uint32_t privateSegmentFixedSize = ULEV(kdesc.privateSegmentFixedSize);
+    uint64_t kernelCodeEntryOffset = ULEV(kdesc.kernelCodeEntryOffset);
+    uint32_t computePgmRsrc3 = ULEV(kdesc.pgmRsrc3);
+    uint32_t computePgmRsrc1 = ULEV(kdesc.pgmRsrc1);
+    uint32_t computePgmRsrc2 = ULEV(kdesc.pgmRsrc2);
+    uint16_t initialKernelExecState = ULEV(initialKernelExecState);
+    
+    size_t bufSize;
+    char buf[100];
+    const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
+    const uint32_t pgmRsrc1 = computePgmRsrc1;
+    const uint32_t pgmRsrc2 = computePgmRsrc2;
+    
+    const cxuint dimMask = getDefaultDimMask(arch, pgmRsrc2);
+    // print dims (hsadims for gallium): .[hsa_]dims xyz
+    strcpy(buf, "        .dims ");
+    bufSize = 14;
+    if ((dimMask & 1) != 0)
+        buf[bufSize++] = 'x';
+    if ((dimMask & 2) != 0)
+        buf[bufSize++] = 'y';
+    if ((dimMask & 4) != 0)
+        buf[bufSize++] = 'z';
+    if ((dimMask & 7) != ((dimMask>>3) & 7))
+    {
+        buf[bufSize++] = ',';
+        buf[bufSize++] = ' ';
+        if ((dimMask & 8) != 0)
+            buf[bufSize++] = 'x';
+        if ((dimMask & 16) != 0)
+            buf[bufSize++] = 'y';
+        if ((dimMask & 32) != 0)
+            buf[bufSize++] = 'z';
+    }
+    buf[bufSize++] = '\n';
+    output.write(buf, bufSize);
+    
+    bufSize = snprintf(buf, 100, "        .sgprsnum %u\n",
+            std::min((((pgmRsrc1>>6) & 0xf)<<3)+8, maxSgprsNum));
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", ((pgmRsrc1 & 0x3f)<<2)+4);
+    output.write(buf, bufSize);
+    if (arch >= GPUArchitecture::GCN1_5)
+    {
+        bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", (computePgmRsrc1 & 15)<<3);
+        output.write(buf, bufSize);
+    }
+    if ((pgmRsrc1 & (1U<<20)) != 0)
+        output.write("        .privmode\n", 18);
+    if ((pgmRsrc1 & (1U<<22)) != 0)
+        output.write("        .debugmode\n", 19);
+    if ((pgmRsrc1 & (1U<<21)) != 0)
+        output.write("        .dx10clamp\n", 19);
+    if ((pgmRsrc1 & (1U<<23)) != 0)
+        output.write("        .ieeemode\n", 18);
+    if ((pgmRsrc2 & 0x400) != 0)
+        output.write("        .tgsize\n", 16);
+    
+    bufSize = snprintf(buf, 100, "        .floatmode 0x%02x\n", (pgmRsrc1>>12) & 0xff);
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .priority %u\n", (pgmRsrc1>>10) & 3);
+    output.write(buf, bufSize);
+    if (((pgmRsrc1>>24) & 0x7f) != 0)
+    {
+        bufSize = snprintf(buf, 100, "        .exceptions 0x%02x\n",
+                (pgmRsrc1>>24) & 0x7f);
+        output.write(buf, bufSize);
+    }
+    const cxuint localSize = ((pgmRsrc2>>15) & 0x1ff) << ldsShift;
+    if (localSize!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .localsize %u\n", localSize);
+        output.write(buf, bufSize);
+    }
+    bufSize = snprintf(buf, 100, "        .userdatanum %u\n", (pgmRsrc2>>1) & 0x1f);
+    output.write(buf, bufSize);
+    
+    bufSize = snprintf(buf, 100, "        .pgmrsrc1 0x%08x\n", pgmRsrc1);
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", pgmRsrc2);
+    output.write(buf, bufSize);
+    if (arch >= GPUArchitecture::GCN1_5)
+    {
+        bufSize = snprintf(buf, 100, "        .pgmrsrc3 0x%08x\n", computePgmRsrc3);
+        output.write(buf, bufSize);
+    }
+    
+    bufSize = snprintf(buf, 100, "        .group_segment_fixed_size %u\n",
+                        groupSegmentFixedSize);
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .private_segment_fixed_size %u\n",
+                        privateSegmentFixedSize);
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .kernel_code_entry_offset 0x%" PRIx64 "\n",
+                       kernelCodeEntryOffset);
+    output.write(buf, bufSize);
+    
+    const uint16_t sgprFlags = initialKernelExecState;
+    // print SGPRregister flags (features)
+    if ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER) != 0)
+        output.write("        .use_private_segment_buffer\n", 36);
+    if ((sgprFlags&ROCMFLAG_USE_DISPATCH_PTR) != 0)
+        output.write("        .use_dispatch_ptr\n", 26);
+    if ((sgprFlags&ROCMFLAG_USE_QUEUE_PTR) != 0)
+        output.write("        .use_queue_ptr\n", 23);
+    if ((sgprFlags&ROCMFLAG_USE_KERNARG_SEGMENT_PTR) != 0)
+        output.write("        .use_kernarg_segment_ptr\n", 33);
+    if ((sgprFlags&ROCMFLAG_USE_DISPATCH_ID) != 0)
+        output.write("        .use_dispatch_id\n", 25);
+    if ((sgprFlags&ROCMFLAG_USE_FLAT_SCRATCH_INIT) != 0)
+        output.write("        .use_flat_scratch_init\n", 31);
+    if ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_SIZE) != 0)
+        output.write("        .use_private_segment_size\n", 34);
+    if ((sgprFlags&(1U<<10)) != 0)
+        output.write("        .wave32\n", 16);
+}
+
 void CLRX::dumpAMDHSAConfig(std::ostream& output, cxuint maxSgprsNum,
              GPUArchitecture arch, const ROCmKernelConfig& config, bool amdhsaPrefix)
 {
