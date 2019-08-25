@@ -732,7 +732,6 @@ static void dumpKernelMetadataInfo(std::ostream& output, const ROCmKernelMetadat
 {
     output.write("    .config\n", 12);
     output.write("        .md_symname \"", 21);
-    //output.write(kernel.symbolName.c_str(), kernel.symbolName.size());
     {
         std::string symName = escapeStringCStyle(kernel.symbolName);
         output.write(symName.c_str(), symName.size());

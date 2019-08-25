@@ -363,7 +363,8 @@ bool CLRX::isElfBinary(size_t binarySize, const cxbyte* binary)
     if ((binary[EI_CLASS] == ELFCLASS32 && binarySize < sizeof(Elf32_Ehdr)) ||
         (binary[EI_CLASS] == ELFCLASS64 && binarySize < sizeof(Elf64_Ehdr)))
         return false;
-    if (ULEV(*((const uint64_t*)(binary+8))) != 0)
+    const uint64_t padval = ULEV(*((const uint64_t*)(binary+8)));
+    if (padval != 0 && padval != 1)
         return false;
     return true;
 }
