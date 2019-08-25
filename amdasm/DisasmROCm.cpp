@@ -950,7 +950,11 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     bool haveMetadataInfo = false;
     if (doDumpConfig && rocmInput->metadata!=nullptr)
     {
-        metadataInfo.parse(rocmInput->metadataSize, rocmInput->metadata);
+        if (!rocmInput->metadataV3)
+            metadataInfo.parse(rocmInput->metadataSize, rocmInput->metadata);
+        else
+            metadataInfo.parseMsgPack(rocmInput->metadataSize,
+                        reinterpret_cast<const cxbyte*>(rocmInput->metadata));
         haveMetadataInfo = true;
     }
     

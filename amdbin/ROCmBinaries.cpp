@@ -113,7 +113,8 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
         const cxbyte bind = ELF64_ST_BIND(sym.st_info);
         Elf64_Half shndx = ULEV(sym.st_shndx);
         if (shndx==textIndex &&
-            (symType==STT_GNU_IFUNC || (symType==STT_FUNC && !newBinFormat) ||
+            (symType==STT_GNU_IFUNC ||
+                (symType==STT_FUNC && (!newBinFormat || llvm10BinFormat)) ||
                 (bind==STB_GLOBAL && symType==STT_OBJECT)))
             regionsNum++;
         if (llvm10BinFormat && shndx==rodataIndex && symType==STT_OBJECT)
@@ -165,9 +166,9 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             // if function kernel
             else if (symType==STT_FUNC)
             {
-                if (newBinFormat)
+                if (newBinFormat && !llvm10BinFormat)
                     continue;
-                type = ROCmRegionType::FKERNEL;
+                type = llvm10BinFormat ? ROCmRegionType::KERNEL : ROCmRegionType::FKERNEL;
             }
             symOffsets[j] = std::make_pair(value, j);
             if (type!=ROCmRegionType::DATA && value+0x100 > codeOffset+codeSize)
@@ -195,8 +196,9 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
     {
         size_t end = (i<regionsNum) ? symOffsets[i].first : codeOffset+codeSize;
         ROCmRegion& region = regions[symOffsets[i-1].second];
-        if (region.type==ROCmRegionType::KERNEL && symOffsets[i-1].first+0x100 > end)
-            throw BinException("Kernel size is too small!");
+        if (!llvm10BinFormat)
+            if (region.type==ROCmRegionType::KERNEL && symOffsets[i-1].first+0x100 > end)
+                throw BinException("Kernel size is too small!");
         
         const size_t regSize = end - symOffsets[i-1].first;
         if (region.size==0)
