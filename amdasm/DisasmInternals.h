@@ -71,7 +71,9 @@ extern CLRX_INTERNAL void dumpAMDHSAConfig(std::ostream& output, cxuint maxSgprs
 extern CLRX_INTERNAL void disassembleAMDHSACode(std::ostream& output,
             const std::vector<ROCmDisasmRegionInput>& regions,
             size_t codeSize, const cxbyte* code, ISADisassembler* isaDisassembler,
-            Flags flags, bool llvm10BinFormat = false);
+            Flags flags, bool llvm10BinFormat = false,
+            const std::vector<const ROCmKernelDescriptor*>& kdescs =
+                std::vector<const ROCmKernelDescriptor*>());
 
 // disassemble Gallium binary input
 extern CLRX_INTERNAL void disassembleGallium(std::ostream& output,

@@ -217,8 +217,8 @@ static void dumpKernelDescriptor(std::ostream& output, cxuint maxSgprsNum,
         output.write("        .use_flat_scratch_init\n", 31);
     if ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_SIZE) != 0)
         output.write("        .use_private_segment_size\n", 34);
-    if ((sgprFlags&(1U<<10)) != 0)
-        output.write("        .wave32\n", 16);
+    if ((sgprFlags&AMDHSAFLAG_USE_WAVE32) != 0)
+        output.write("        .use_wave32\n", 20);
 }
 
 void CLRX::dumpAMDHSAConfig(std::ostream& output, cxuint maxSgprsNum,
@@ -567,7 +567,8 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
 void CLRX::disassembleAMDHSACode(std::ostream& output,
             const std::vector<ROCmDisasmRegionInput>& regions,
             size_t codeSize, const cxbyte* code, ISADisassembler* isaDisassembler,
-            Flags flags, bool llvm10BinFormat)
+            Flags flags, bool llvm10BinFormat,
+            const std::vector<const ROCmKernelDescriptor*>& kernelDescs)
 {
     const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
     const bool doMetadata = ((flags & (DISASM_METADATA|DISASM_CONFIG)) != 0);
@@ -675,6 +676,17 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
                 isaDisassembler->setInput(dataSize-kconfigSize,
                                 code + region.offset+kconfigSize,
                                 region.offset+kconfigSize, region.offset+1);
+                if (llvm10BinFormat)
+                {
+                    const ROCmKernelDescriptor* kdesc = kernelDescs[sorted[i].second];
+                    if (kdesc!=nullptr)
+                    {
+                        Flags flags = isaDisassembler->getFlags() & ~DISASM_WAVE32;
+                        if (kdesc->initialKernelExecState & ROCMFLAG_USE_WAVE32)
+                            flags |= DISASM_WAVE32;
+                        isaDisassembler->setFlags(flags);
+                    }
+                }
                 isaDisassembler->setDontPrintLabels(i+1<regionsNum);
                 isaDisassembler->disassemble();
             }
@@ -1100,6 +1112,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     
     // disassembly code in HSA form
     if (rocmInput->code != nullptr && rocmInput->codeSize != 0)
-        disassembleAMDHSACode(output, rocmInput->regions, rocmInput->codeSize,
-                    rocmInput->code, isaDisassembler, flags, rocmInput->llvm10BinFormat);
+        disassembleAMDHSACode(output, rocmInput->regions,
+                    rocmInput->codeSize, rocmInput->code, isaDisassembler,
+                    flags, rocmInput->llvm10BinFormat, rocmInput->kernelDescs);
 }

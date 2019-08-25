@@ -188,6 +188,11 @@ public:
     /// flush output
     void flushOutput()
     { return output.flush(); }
+    
+    /// get disassemblers flags
+    Flags getFlags() const;
+    /// set disassemblers flags
+    void setFlags(Flags flags);
 };
 
 /// GCN architectur dissassembler
@@ -478,7 +483,7 @@ public:
     /// get disassemblers flags
     Flags getFlags() const
     { return flags; }
-    /// get disassemblers flags
+    /// set disassemblers flags
     void setFlags(Flags flags)
     { this->flags = flags; }
     
@@ -504,6 +509,13 @@ public:
     std::ostream& getOutput()
     { return output; }
 };
+
+/// get disassemblers flags
+inline Flags ISADisassembler::getFlags() const
+{ return disassembler.getFlags(); }
+/// set disassemblers flags
+inline void ISADisassembler::setFlags(Flags flags)
+{ disassembler.setFlags(flags); }
 
 // routines to get binary config inputs
 

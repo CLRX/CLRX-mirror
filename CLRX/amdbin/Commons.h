@@ -52,6 +52,8 @@ enum {
     AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_Y = 256,    ///< use workgroup count for Y dim
     AMDHSAFLAG_USE_GRID_WORKGROUP_COUNT_Z = 512,    ///< use workgroup count for Z dim
     
+    AMDHSAFLAG_USE_WAVE32 = (1U<<10),
+    
     AMDHSAFLAG_USE_ORDERED_APPEND_GDS = 1,  /// use ordered append gds
     AMDHSAFLAG_PRIVATE_ELEM_SIZE_BIT = 1,
     AMDHSAFLAG_USE_PTR64 = 8,       ///< use 64-bit pointers
