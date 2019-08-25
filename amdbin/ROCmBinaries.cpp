@@ -175,7 +175,6 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
                 throw BinException("Kernel or code offset is too big!");
             const char* symName = getSymbolName(i);
             regions[j] = { symName, size, value, type };
-            kernelDescs[j] = nullptr;
             if (llvm10BinFormat)
             {
                 auto it = binaryMapFind(tmpKernelDescs.begin(), tmpKernelDescs.end(),
@@ -183,6 +182,8 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
                 if (it != tmpKernelDescs.end())
                     kernelDescs[j] = reinterpret_cast<const ROCmKernelDescriptor*>(
                                 binaryCode + it->second);
+                else
+                    kernelDescs[j] = nullptr;
             }
             j++;
         }
