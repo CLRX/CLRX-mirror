@@ -109,7 +109,7 @@ static void dumpKernelDescriptor(std::ostream& output, cxuint maxSgprsNum,
     uint32_t computePgmRsrc3 = ULEV(kdesc.pgmRsrc3);
     uint32_t computePgmRsrc1 = ULEV(kdesc.pgmRsrc1);
     uint32_t computePgmRsrc2 = ULEV(kdesc.pgmRsrc2);
-    uint16_t initialKernelExecState = ULEV(initialKernelExecState);
+    uint16_t initialKernelExecState = ULEV(kdesc.initialKernelExecState);
     
     size_t bufSize;
     char buf[100];
@@ -1058,7 +1058,9 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     }
     
     // dump kernel config
-    for (const ROCmDisasmRegionInput& rinput: rocmInput->regions)
+    for (size_t i = 0; i < rocmInput->regions.size(); i++)
+    {
+        const ROCmDisasmRegionInput& rinput = rocmInput->regions[i];
         if (rinput.type != ROCmRegionType::DATA)
         {
             output.write(".kernel ", 8);
@@ -1072,9 +1074,9 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                     dumpKernelConfig(output, maxSgprsNum, arch,
                         *reinterpret_cast<const ROCmKernelConfig*>(
                                 rocmInput->code + rinput.offset));
-                else
-                {
-                }
+                else if (rocmInput->kernelDescs[i]!=nullptr)
+                    dumpKernelDescriptor(output, maxSgprsNum, arch,
+                                *(rocmInput->kernelDescs[i]));
                 
                 if (!haveMetadataInfo)
                     continue; // no metatadata info
@@ -1086,6 +1088,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                 dumpKernelMetadataInfo(output, metadataInfo.kernels[it->second]);
             }
         }
+    }
     
     // disassembly code in HSA form
     if (rocmInput->code != nullptr && rocmInput->codeSize != 0)
