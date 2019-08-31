@@ -1039,11 +1039,32 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     {
         output.write(".globaldata\n", 12);
         output.write(".gdata:\n", 8); /// symbol used by text relocations
-        //if (rocmInput->llvm10BinFormat)
+        if (!rocmInput->llvm10BinFormat)
             printDisasmData(rocmInput->globalDataSize, rocmInput->globalData, output);
-        /*else
+        else
         {
-        }*/
+            Array<size_t> kdescOffsets(rocmInput->kernelDescs.size());
+            for (size_t i = 0; i < rocmInput->kernelDescs.size(); i++)
+                kdescOffsets[i] = rocmInput->kernelDescs[i].sectionOffset;
+            std::sort(kdescOffsets.begin(), kdescOffsets.end());
+            auto kdit = kdescOffsets.begin();
+            for (size_t p = 0; p < rocmInput->globalDataSize; )
+            {
+                const size_t end = kdit != kdescOffsets.end() ?
+                        *kdit : rocmInput->globalDataSize;
+                if (kdit == kdescOffsets.end() || p < *kdit)
+                {
+                    printDisasmData(end-p, rocmInput->globalData+p, output);
+                    p = end;
+                }
+                if (kdit != kdescOffsets.end() && p == *kdit)
+                {
+                    output.write(".skip 64\n", 10);
+                    p += 64;
+                    ++kdit;
+                }
+            }
+        }
     }
     
     if (doMetadata && !doDumpConfig &&
