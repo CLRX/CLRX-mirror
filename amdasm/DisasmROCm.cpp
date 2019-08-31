@@ -117,6 +117,8 @@ static void dumpKernelDescriptor(std::ostream& output, cxuint maxSgprsNum,
     const uint32_t pgmRsrc1 = computePgmRsrc1;
     const uint32_t pgmRsrc2 = computePgmRsrc2;
     
+    output.write("    .config\n", 12);
+    
     const cxuint dimMask = getDefaultDimMask(arch, pgmRsrc2);
     // print dims (hsadims for gallium): .[hsa_]dims xyz
     strcpy(buf, "        .dims ");
@@ -661,7 +663,7 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
         }
         if (region.type!=ROCmRegionType::DATA)
         {
-            if (doMetadata)
+            if (doMetadata && !llvm10BinFormat)
             {
                 if (!doDumpConfig)
                     printDisasmData(0x100, code + region.offset, output, true);
@@ -1033,7 +1035,12 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     {
         output.write(".globaldata\n", 12);
         output.write(".gdata:\n", 8); /// symbol used by text relocations
-        printDisasmData(rocmInput->globalDataSize, rocmInput->globalData, output);
+        if (rocmInput->llvm10BinFormat)
+            printDisasmData(rocmInput->globalDataSize, rocmInput->globalData, output);
+        else
+        {
+            rocmInput->kernelDescs.
+        }
     }
     
     if (doMetadata && !doDumpConfig &&
