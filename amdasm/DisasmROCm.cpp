@@ -1039,7 +1039,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     {
         output.write(".globaldata\n", 12);
         output.write(".gdata:\n", 8); /// symbol used by text relocations
-        if (!rocmInput->llvm10BinFormat)
+        if (!rocmInput->llvm10BinFormat || !doDumpConfig)
             printDisasmData(rocmInput->globalDataSize, rocmInput->globalData, output);
         else
         {
