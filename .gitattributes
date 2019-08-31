@@ -220,6 +220,7 @@ tests/amdasm/amdbins/rocm-fiji.hsaco -text svneol=unset#application/x-sharedlib
 tests/amdasm/amdbins/samplekernels.cl -text
 tests/amdasm/amdbins/samplekernels.clo -text svneol=unset#application/x-executable
 tests/amdasm/amdbins/samplekernels_64.clo -text svneol=unset#application/x-executable
+tests/amdasm/amdbins/two_kernels-rocm-llvm10.clo -text svneol=unset#application/x-sharedlib
 tests/amdasm/incdir0/inc1.s -text
 tests/amdasm/incdir0/inc2.s -text
 tests/amdasm/incdir0/incbin1 -text svneol=unset#application/octet-stream

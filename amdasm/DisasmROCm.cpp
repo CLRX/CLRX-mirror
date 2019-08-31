@@ -1059,7 +1059,7 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                 }
                 if (kdit != kdescOffsets.end() && p == *kdit)
                 {
-                    output.write(".skip 64\n", 10);
+                    output.write(".skip 64\n", 9);
                     p += 64;
                     ++kdit;
                 }

@@ -1993,6 +1993,217 @@ data2:
         "", true, false, 40000U,
         "Gallium kernel region is too small" // error
     },
+    /* 15 - rocm llvm10  */
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/two_kernels-rocm-llvm10.clo",
+        R"ffDXD(.rocm
+.gpu GFX1010
+.arch_minor 1
+.arch_stepping 0
+.eflags 51
+.llvm10binfmt
+.metadatav3
+.globaldata
+.gdata:
+.skip 64
+.skip 64
+.md_version 1, 0
+.kernel sample_kernel
+    .config
+        .dims x
+        .sgprsnum 16
+        .vgprsnum 4
+        .vgprsnum 0
+        .dx10clamp
+        .ieeemode
+        .floatmode 0xf0
+        .priority 0
+        .exceptions 0x60
+        .userdatanum 8
+        .pgmrsrc1 0x60af0040
+        .pgmrsrc2 0x00000090
+        .pgmrsrc3 0x00000000
+        .group_segment_fixed_size 0
+        .private_segment_fixed_size 0
+        .kernel_code_entry_offset 0x500
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .use_wave32
+    .config
+        .md_symname "sample_kernel.kd"
+        .md_language "OpenCL C", 1, 2
+        .md_kernarg_segment_size 64
+        .md_kernarg_segment_align 8
+        .md_group_segment_fixed_size 0
+        .md_private_segment_fixed_size 0
+        .md_wavefront_size 32
+        .md_sgprsnum 11
+        .md_vgprsnum 4
+        .spilledsgprs 0
+        .spilledvgprs 0
+        .max_flat_work_group_size 256
+        .arg g_input, "uint*", 8, 0, globalbuf, u32, global, default
+        .arg g_output, "uint*", 8, 8, globalbuf, u32, global, default
+        .arg , "", 8, 16, gox, i64
+        .arg , "", 8, 24, goy, i64
+        .arg , "", 8, 32, goz, i64
+        .arg , "", 8, 40, none, i8
+        .arg , "", 8, 48, none, i8
+        .arg , "", 8, 56, none, i8
+.kernel sample_kernel2
+    .config
+        .dims x
+        .sgprsnum 16
+        .vgprsnum 4
+        .vgprsnum 0
+        .dx10clamp
+        .ieeemode
+        .floatmode 0xf0
+        .priority 0
+        .exceptions 0x60
+        .userdatanum 8
+        .pgmrsrc1 0x60af0040
+        .pgmrsrc2 0x00000090
+        .pgmrsrc3 0x00000000
+        .group_segment_fixed_size 0
+        .private_segment_fixed_size 0
+        .kernel_code_entry_offset 0x5c0
+        .use_private_segment_buffer
+        .use_dispatch_ptr
+        .use_kernarg_segment_ptr
+        .use_wave32
+    .config
+        .md_symname "sample_kernel2.kd"
+        .md_language "OpenCL C", 1, 2
+        .md_kernarg_segment_size 64
+        .md_kernarg_segment_align 8
+        .md_group_segment_fixed_size 0
+        .md_private_segment_fixed_size 0
+        .md_wavefront_size 32
+        .md_sgprsnum 11
+        .md_vgprsnum 5
+        .spilledsgprs 0
+        .spilledvgprs 0
+        .max_flat_work_group_size 256
+        .arg g_input2, "uint*", 8, 0, globalbuf, u32, global, default
+        .arg g_output2, "uint*", 8, 8, globalbuf, u32, global, default
+        .arg , "", 8, 16, gox, i64
+        .arg , "", 8, 24, goy, i64
+        .arg , "", 8, 32, goz, i64
+        .arg , "", 8, 40, none, i8
+        .arg , "", 8, 48, none, i8
+        .arg , "", 8, 56, none, i8
+.text
+sample_kernel:
+/*f4000102 fa000004*/ s_load_dword    s4, s[4:5], 0x4
+/*f4000143 fa000010*/ s_load_dword    s5, s[6:7], 0x10
+/*f4080003 fa000000*/ s_load_dwordx4  s[0:3], s[6:7], 0x0
+/*7e020280         */ v_mov_b32       v1, 0
+/*bf8cc07f         */ s_waitcnt       lgkmcnt(0)
+/*8704ff04 0000ffff*/ s_and_b32       s4, s4, 0xffff
+/*93080408         */ s_mul_i32       s8, s8, s4
+/*d76d0000 04001005*/ v_add3_u32      v0, s5, s8, v0
+/*d6ff0000 00020082*/ v_lshlrev_b64   v[0:1], 2, v[0:1]
+/*d70f6a02 00020000*/ v_add_co_u32    v2, vcc_lo, s0, v0
+/*50060201         */ v_add_co_ci_u32 v3, vcc_lo, s1, v1, vcc_lo
+/*d70f6a00 00020002*/ v_add_co_u32    v0, vcc_lo, s2, v0
+/*dc308000 027d0002*/ global_load_dword v2, v[2:3], off
+/*50020203         */ v_add_co_ci_u32 v1, vcc_lo, s3, v1, vcc_lo
+/*bf8c3f70         */ s_waitcnt       vmcnt(0)
+/*dc708000 007d0200*/ global_store_dword v[0:1], v2, off
+/*bf810000         */ s_endpgm
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+/*bf800000         */ s_nop           0x0
+sample_kernel2:
+/*f4000102 fa000004*/ s_load_dword    s4, s[4:5], 0x4
+/*f4000143 fa000010*/ s_load_dword    s5, s[6:7], 0x10
+/*f4080003 fa000000*/ s_load_dwordx4  s[0:3], s[6:7], 0x0
+/*7e020280         */ v_mov_b32       v1, 0
+/*bf8cc07f         */ s_waitcnt       lgkmcnt(0)
+/*8704ff04 0000ffff*/ s_and_b32       s4, s4, 0xffff
+/*93080408         */ s_mul_i32       s8, s8, s4
+/*d76d0004 04001005*/ v_add3_u32      v4, s5, s8, v0
+/*4a000887         */ v_add_nc_u32    v0, 7, v4
+/*d6ff0002 00020082*/ v_lshlrev_b64   v[2:3], 2, v[0:1]
+/*4a000885         */ v_add_nc_u32    v0, 5, v4
+/*d6ff0000 00020082*/ v_lshlrev_b64   v[0:1], 2, v[0:1]
+/*d70f6a02 00020400*/ v_add_co_u32    v2, vcc_lo, s0, v2
+/*50060601         */ v_add_co_ci_u32 v3, vcc_lo, s1, v3, vcc_lo
+/*d70f6a00 00020002*/ v_add_co_u32    v0, vcc_lo, s2, v0
+/*dc308000 027d0002*/ global_load_dword v2, v[2:3], off
+/*50020203         */ v_add_co_ci_u32 v1, vcc_lo, s3, v1, vcc_lo
+/*bf8c3f70         */ s_waitcnt       vmcnt(0)
+/*dc708000 007d0200*/ global_store_dword v[0:1], v2, off
+/*bf810000         */ s_endpgm
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+/*bf9f0000         */ s_code_end
+)ffDXD", true, false }
 };
 
 static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
