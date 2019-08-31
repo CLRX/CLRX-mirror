@@ -54,9 +54,13 @@ ROCmDisasmInput* CLRX::getROCmDisasmInputFromBinary(const ROCmBinary& binary)
     }
     if (binary.isLLVM10BinaryFormat())
     {
-        input->kernelDescs.resize(regionsNum);
+        input->kernelDescs.resize(regionsNum, ROCmDisasmKernelDescInfo{});
         for (size_t i = 0; i < regionsNum; i++)
-            input->kernelDescs[i] = binary.getKernelDescriptor(i);
+        {
+            input->kernelDescs[i].sectionOffset = reinterpret_cast<const cxbyte*>(
+                binary.getKernelDescriptor(i)) - binary.getGlobalData();
+            input->kernelDescs[i].desc = binary.getKernelDescriptor(i);
+        }
     }
     
     const size_t gotSymbolsNum = binary.getGotSymbolsNum();
@@ -570,7 +574,7 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
             const std::vector<ROCmDisasmRegionInput>& regions,
             size_t codeSize, const cxbyte* code, ISADisassembler* isaDisassembler,
             Flags flags, bool llvm10BinFormat,
-            const std::vector<const ROCmKernelDescriptor*>& kernelDescs)
+            const std::vector<ROCmDisasmKernelDescInfo>& kernelDescs)
 {
     const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
     const bool doMetadata = ((flags & (DISASM_METADATA|DISASM_CONFIG)) != 0);
@@ -680,7 +684,7 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
                                 region.offset+kconfigSize, region.offset+1);
                 if (llvm10BinFormat)
                 {
-                    const ROCmKernelDescriptor* kdesc = kernelDescs[sorted[i].second];
+                    const ROCmKernelDescriptor* kdesc = kernelDescs[sorted[i].second].desc;
                     if (kdesc!=nullptr)
                     {
                         Flags flags = isaDisassembler->getFlags() & ~DISASM_WAVE32;
@@ -1035,12 +1039,11 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
     {
         output.write(".globaldata\n", 12);
         output.write(".gdata:\n", 8); /// symbol used by text relocations
-        if (rocmInput->llvm10BinFormat)
+        //if (rocmInput->llvm10BinFormat)
             printDisasmData(rocmInput->globalDataSize, rocmInput->globalData, output);
-        else
+        /*else
         {
-            rocmInput->kernelDescs.
-        }
+        }*/
     }
     
     if (doMetadata && !doDumpConfig &&
@@ -1101,9 +1104,9 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
                     dumpKernelConfig(output, maxSgprsNum, arch,
                         *reinterpret_cast<const ROCmKernelConfig*>(
                                 rocmInput->code + rinput.offset));
-                else if (rocmInput->kernelDescs[i]!=nullptr)
+                else if (rocmInput->kernelDescs[i].desc!=nullptr)
                     dumpKernelDescriptor(output, maxSgprsNum, arch,
-                                *(rocmInput->kernelDescs[i]));
+                                *(rocmInput->kernelDescs[i].desc));
                 
                 if (!haveMetadataInfo)
                     continue; // no metatadata info

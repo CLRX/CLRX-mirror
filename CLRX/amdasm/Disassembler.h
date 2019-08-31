@@ -311,6 +311,12 @@ struct ROCmDisasmRegionInput
     ROCmRegionType type;  ///< type
 };
 
+struct ROCmDisasmKernelDescInfo
+{
+    size_t sectionOffset;
+    const ROCmKernelDescriptor* desc;
+};
+
 /// disasm ROCm input
 struct ROCmDisasmInput
 {
@@ -330,7 +336,7 @@ struct ROCmDisasmInput
     size_t metadataSize;    ///< metadata size
     const char* metadata;   ///< metadata
     Array<std::pair<CString, size_t> > gotSymbols; ///< GOT symbols names
-    std::vector<const ROCmKernelDescriptor*> kernelDescs; ///< kernel descriptors
+    std::vector<ROCmDisasmKernelDescInfo> kernelDescs; ///< kernel descriptors
 };
 
 /// disasm kernel info structure (Gallium binaries)
