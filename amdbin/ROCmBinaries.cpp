@@ -571,7 +571,7 @@ void ROCmBinGenerator::prepareBinaryGen()
             commentSize = ::strlen(comment);
     }
     
-    uint32_t eflags = input->newBinFormat ? 2 : 0;
+    uint32_t eflags = input->newBinFormat ? ((input->llvm10BinFormat) ? 51 : 2) : 0;
     if (input->eflags != BINGEN_DEFAULT)
         eflags = input->eflags;
     
@@ -604,7 +604,9 @@ void ROCmBinGenerator::prepareBinaryGen()
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_SHSTRTAB);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_STRTAB);
     
-    elfBinGen64.reset(new ElfBinaryGen64({ 0U, 0U, 0x40, 0, ET_DYN, 0xe0, EV_CURRENT,
+    const cxuint abiVer = (input->newBinFormat && input->llvm10BinFormat) ? 1 : 0;
+    
+    elfBinGen64.reset(new ElfBinaryGen64({ 0U, abiVer, 0x40, 0, ET_DYN, 0xe0, EV_CURRENT,
             cxuint(input->newBinFormat ? execProgHeaderRegionIndex : UINT_MAX), 0, eflags },
             true, true, true, PHREGION_FILESTART));
     

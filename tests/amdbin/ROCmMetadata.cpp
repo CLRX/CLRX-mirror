@@ -1350,6 +1350,8 @@ static void testROCmMetadataCase(cxuint testId, const ROCmMetadataTestCase& test
     rocmInput.archMinor = 0;
     rocmInput.archStepping = 3;
     rocmInput.newBinFormat = true;
+    rocmInput.llvm10BinFormat = false;
+    rocmInput.metadataV3Format = false;
     rocmInput.target = "amdgcn-amd-amdhsa-amdgizcl-gfx803";
     rocmInput.metadataSize = ::strlen(testCase.input);
     rocmInput.metadata = testCase.input;

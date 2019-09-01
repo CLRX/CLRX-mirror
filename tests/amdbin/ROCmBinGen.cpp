@@ -56,6 +56,8 @@ static ROCmInput genROCmInput(const ROCmBinary& binary)
     rocmInput.metadataSize = binary.getMetadataSize();
     rocmInput.metadata = binary.getMetadata();
     rocmInput.newBinFormat = binary.isNewBinaryFormat();
+    rocmInput.llvm10BinFormat = binary.isLLVM10BinaryFormat();
+    rocmInput.metadataV3Format = binary.isMetadataV3Format();
     rocmInput.globalDataSize = binary.getGlobalDataSize();
     rocmInput.globalData = binary.getGlobalData();
     rocmInput.useMetadataInfo = false;
