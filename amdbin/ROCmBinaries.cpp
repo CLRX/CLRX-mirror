@@ -473,6 +473,8 @@ ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
     _input->archStepping = archStepping;
     _input->eflags = 0;
     _input->newBinFormat = false;
+    _input->llvm10BinFormat = false;
+    _input->metadataV3Format = false;
     _input->globalDataSize = globalDataSize;
     _input->globalData = globalData;
     _input->symbols = symbols;
@@ -501,6 +503,8 @@ ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
     _input->archStepping = archStepping;
     _input->eflags = 0;
     _input->newBinFormat = false;
+    _input->llvm10BinFormat = false;
+    _input->metadataV3Format = false;
     _input->globalDataSize = globalDataSize;
     _input->globalData = globalData;
     _input->symbols = std::move(symbols);

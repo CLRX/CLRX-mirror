@@ -427,6 +427,8 @@ struct ROCmInput
     uint32_t archStepping;      ///< GPU arch stepping
     uint32_t eflags;    ///< ELF headef e_flags field
     bool newBinFormat;       ///< use new binary format for ROCm
+    bool llvm10BinFormat;
+    bool metadataV3Format;
     size_t globalDataSize;  ///< global data size
     const cxbyte* globalData;   ///< global data
     std::vector<ROCmSymbolInput> symbols;   ///< symbols
