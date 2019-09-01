@@ -770,6 +770,11 @@ void ROCmBinGenerator::updateSymbols()
                   mainBuiltinSectTable[ROCMSECTID_DYNAMIC-ELFSECTID_START],
                   ELF64_ST_INFO(STB_LOCAL, STT_NOTYPE), STV_HIDDEN, true, 0, 0));
     const uint16_t textSectIndex = mainBuiltinSectTable[ELFSECTID_TEXT-ELFSECTID_START];
+    const uint16_t rodataSectIndex = mainBuiltinSectTable[ELFSECTID_RODATA-ELFSECTID_START];
+    
+    const cxuint kernelSymType = input->llvm10BinFormat ? STT_FUNC : STT_GNU_IFUNC;
+    const cxuint kernelSymVis = input->llvm10BinFormat ? STV_PROTECTED : STV_DEFAULT;
+    size_t kdOffset = 0;
     for (const ROCmSymbolInput& symbol: input->symbols)
     {
         ElfSymbol64 elfsym;
@@ -777,7 +782,8 @@ void ROCmBinGenerator::updateSymbols()
         {
             case ROCmRegionType::KERNEL:
                 elfsym = ElfSymbol64(symbol.symbolName.c_str(), textSectIndex,
-                      ELF64_ST_INFO(STB_GLOBAL, STT_GNU_IFUNC), 0, true,
+                      ELF64_ST_INFO(STB_GLOBAL, kernelSymType),
+                      ELF64_ST_VISIBILITY(kernelSymVis), true,
                       symbol.offset, symbol.size);
                 break;
             case ROCmRegionType::FKERNEL:
@@ -796,6 +802,15 @@ void ROCmBinGenerator::updateSymbols()
         // add to symbols and dynamic symbols table
         elfBinGen64->addSymbol(elfsym);
         elfBinGen64->addDynSymbol(elfsym);
+        if (input->llvm10BinFormat)
+        {
+            std::string kdsym(symbol.symbolName.c_str());
+            kdsym += ".kd";
+            elfsym = ElfSymbol64(kdsym.c_str(), rodataSectIndex,
+                      ELF64_ST_INFO(STB_GLOBAL, kernelSymType),
+                      ELF64_ST_VISIBILITY(kernelSymVis), true, kdOffset, symbol.size);
+            kdOffset += sizeof(ROCmKernelDescriptor);
+        }
     }
     /* extra symbols */
     for (const BinSymbol& symbol: input->extraSymbols)
