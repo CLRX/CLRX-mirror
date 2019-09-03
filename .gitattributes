@@ -88,6 +88,7 @@ amdbin/ElfBinaries.cpp -text
 amdbin/GalliumBinaries.cpp -text
 amdbin/ROCmBinaries.cpp -text
 amdbin/ROCmMetadata.cpp -text
+amdbin/ROCmMetadataMP.cpp -text
 clhelper/CLHelper.cpp -text
 clhelper/CMakeLists.txt -text svneol=unset#text/plain
 clwrapper/CLFunctions1.cpp -text

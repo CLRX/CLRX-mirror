@@ -28,7 +28,8 @@ SET(LIBAMDBINSRC
         ElfBinaries.cpp
         GalliumBinaries.cpp
         ROCmBinaries.cpp
-        ROCmMetadata.cpp)
+        ROCmMetadata.cpp
+        ROCmMetadataMP.cpp)
 
 SET(LINK_LIBRARIES CLRXUtils)
 
