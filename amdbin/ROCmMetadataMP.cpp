@@ -1061,19 +1061,19 @@ static void msgPackWriteUInt(uint64_t v, std::vector<cxbyte>& output)
 
 class CLRX_INTERNAL MsgPackMapWriter;
 
-class CLRX_INTERNAL MsgPackArrayWriter
+class CLRX_INTERNAL MsgPackStaticArrayWriter
 {
 private:
     std::vector<cxbyte>& output;
     size_t elemsNum;
-    std::vector<cxbyte> temp;
+    size_t count;
 public:
-    MsgPackArrayWriter(std::vector<cxbyte>& output);
+    MsgPackStaticArrayWriter(size_t elemsNum, std::vector<cxbyte>& output);
     
     void putBool(bool b);
     void putString(const char* str);
     void putUInt(uint64_t v);
-    MsgPackArrayWriter putArray();
+    MsgPackStaticArrayWriter putStaticArray(size_t aelemsNum);
     MsgPackMapWriter putMap();
     void flush();
 };
@@ -1091,40 +1091,14 @@ public:
     void putValueBool(bool b);
     void putValueString(const char* str);
     void putValueUInt(uint64_t v);
-    MsgPackArrayWriter putValueArray();
+    MsgPackStaticArrayWriter putValueStaticArray(size_t aelemsNum);
     MsgPackMapWriter putValueMap();
+    std::vector<cxbyte>& putValueElement();
     void flush();
 };
 
-MsgPackArrayWriter::MsgPackArrayWriter(std::vector<cxbyte>& _output)
-        : output(_output), elemsNum(0)
-{ }
-
-void MsgPackArrayWriter::putBool(bool b)
-{
-    elemsNum++;
-    msgPackWriteBool(b, temp);
-}
-
-void MsgPackArrayWriter::putString(const char* str)
-{
-    elemsNum++;
-    msgPackWriteString(str, temp);
-}
-
-void MsgPackArrayWriter::putUInt(uint64_t v)
-{
-    elemsNum++;
-    msgPackWriteUInt(v, temp);
-}
-
-MsgPackArrayWriter MsgPackArrayWriter::putArray()
-{
-    elemsNum++;
-    return MsgPackArrayWriter(temp);
-}
-
-void MsgPackArrayWriter::flush()
+MsgPackStaticArrayWriter::MsgPackStaticArrayWriter(size_t _elemsNum,
+            std::vector<cxbyte>& _output) : output(_output), elemsNum(_elemsNum), count(0)
 {
     if (elemsNum < 16)
         output.push_back(0x90 + elemsNum);
@@ -1145,7 +1119,38 @@ void MsgPackArrayWriter::flush()
             d[i] = v2&0xff;
         output.insert(output.end(), d, d+3);
     }
-    output.insert(output.end(), temp.begin(), temp.end());
+}
+
+void MsgPackStaticArrayWriter::putBool(bool b)
+{
+    if (count == elemsNum)
+        throw BinException("MsgPack: Too many array elements");
+    count++;
+    msgPackWriteBool(b, output);
+}
+
+void MsgPackStaticArrayWriter::putString(const char* str)
+{
+    if (count == elemsNum)
+        throw BinException("MsgPack: Too many array elements");
+    count++;
+    msgPackWriteString(str, output);
+}
+
+void MsgPackStaticArrayWriter::putUInt(uint64_t v)
+{
+    if (count == elemsNum)
+        throw BinException("MsgPack: Too many array elements");
+    count++;
+    msgPackWriteUInt(v, output);
+}
+
+MsgPackStaticArrayWriter MsgPackStaticArrayWriter::putStaticArray(size_t aelemsNum)
+{
+    if (count == elemsNum)
+        throw BinException("MsgPack: Too many array elements");
+    count++;
+    return MsgPackStaticArrayWriter(aelemsNum, output);
 }
 
 MsgPackMapWriter::MsgPackMapWriter(std::vector<cxbyte>& _output)
@@ -1185,12 +1190,20 @@ void MsgPackMapWriter::putValueUInt(uint64_t v)
     msgPackWriteUInt(v, temp);
 }
 
-MsgPackArrayWriter MsgPackMapWriter::putValueArray()
+MsgPackStaticArrayWriter MsgPackMapWriter::putValueStaticArray(size_t aelemsNum)
 {
     if (inKey)
         throw BinException("MsgPack: Not in value value");
     inKey = true;
-    return MsgPackArrayWriter(temp);
+    return MsgPackStaticArrayWriter(aelemsNum, temp);
+}
+
+std::vector<cxbyte>& MsgPackMapWriter::putValueElement()
+{
+    if (inKey)
+        throw BinException("MsgPack: Not in value value");
+    inKey = true;
+    return temp;
 }
 
 MsgPackMapWriter MsgPackMapWriter::putValueMap()
