@@ -981,8 +981,233 @@ void CLRX::parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
     }
 }
 
+static void msgPackWriteString(const char* str, std::vector<cxbyte>& output)
+{
+    const size_t len = ::strlen(str);
+    if (len < 32)
+        output.push_back(0xa0 + len);
+    else if (len < 256)
+    {
+        cxbyte v[2];
+        v[0] = 0xd9;
+        v[1] = len;
+        output.insert(output.end(), v, v+2);
+    }
+    else if (len < 0x10000U)
+    {
+        cxbyte v[3];
+        v[0] = 0xda;
+        v[1] = len>>8;
+        v[2] = len&0xff;
+        output.insert(output.end(), v, v+3);
+    }
+    else
+    {
+        cxbyte v[5];
+        v[0] = 0xdb;
+        v[1] = len>>24;
+        v[2] = (len>>16)&0xff;
+        v[3] = (len>>8)&0xff;
+        v[4] = len&0xff;
+        output.insert(output.end(), v, v+5);
+    }
+    output.insert(output.end(), reinterpret_cast<const cxbyte*>(str),
+                  reinterpret_cast<const cxbyte*>(str+len));
+}
+
+static inline void msgPackWriteBool(bool b, std::vector<cxbyte>& output)
+{
+    output.push_back(b ? 0xc3 : 0xc2);
+}
+
+static void msgPackWriteUInt(uint64_t v, std::vector<cxbyte>& output)
+{
+    if (v < 128)
+        output.push_back(cxbyte(v));
+    else if (v < 256)
+    {
+        cxbyte d[2];
+        d[0] = 0xcc;
+        d[1] = cxbyte(v);
+        output.insert(output.end(), d, d+2);
+    }
+    else if (v < 0x10000U)
+    {
+        cxbyte d[3];
+        d[0] = 0xcd;
+        d[1] = v>>8;
+        d[2] = v&0xff;
+        output.insert(output.end(), d, d+3);
+    }
+    else if (v < 0x100000000ULL)
+    {
+        cxbyte d[5];
+        d[0] = 0xce;
+        uint64_t v2 = v;
+        for (cxuint i=5; i >= 0; i--, v2>>=8)
+            d[i] = v2&0xff;
+        output.insert(output.end(), d, d+5);
+    }
+    else
+    {
+        cxbyte d[9];
+        d[0] = 0xcf;
+        uint64_t v2 = v;
+        for (cxuint i=9; i >= 0; i--, v2>>=8)
+            d[i] = v2&0xff;
+        output.insert(output.end(), d, d+9);
+    }
+}
+
+class CLRX_INTERNAL MsgPackMapWriter;
+
+class CLRX_INTERNAL MsgPackArrayWriter
+{
+private:
+    std::vector<cxbyte>& output;
+    size_t elemsNum;
+    std::vector<cxbyte> temp;
+public:
+    MsgPackArrayWriter(std::vector<cxbyte>& output);
+    
+    void putBool(bool b);
+    void putString(const char* str);
+    void putUInt(uint64_t v);
+    MsgPackArrayWriter putArray();
+    MsgPackMapWriter putMap();
+    void flush();
+};
+
+class CLRX_INTERNAL MsgPackMapWriter
+{
+private:
+    std::vector<cxbyte>& output;
+    size_t elemsNum;
+    bool inKey;
+    std::vector<cxbyte> temp;
+public:
+    MsgPackMapWriter(std::vector<cxbyte>& output);
+    void putKeyString(const char* str);
+    void putValueBool(bool b);
+    void putValueString(const char* str);
+    void putValueUInt(uint64_t v);
+    MsgPackArrayWriter putValueArray();
+    MsgPackMapWriter putValueMap();
+    void flush();
+};
+
+MsgPackArrayWriter::MsgPackArrayWriter(std::vector<cxbyte>& _output)
+        : output(_output), elemsNum(0)
+{ }
+
+void MsgPackArrayWriter::putBool(bool b)
+{
+    elemsNum++;
+    msgPackWriteBool(b, temp);
+}
+
+void MsgPackArrayWriter::putString(const char* str)
+{
+    elemsNum++;
+    msgPackWriteString(str, temp);
+}
+
+void MsgPackArrayWriter::putUInt(uint64_t v)
+{
+    elemsNum++;
+    msgPackWriteUInt(v, temp);
+}
+
+MsgPackArrayWriter MsgPackArrayWriter::putArray()
+{
+    elemsNum++;
+    return MsgPackArrayWriter(temp);
+}
+
+void MsgPackArrayWriter::flush()
+{
+    if (elemsNum < 16)
+        output.push_back(0x90 + elemsNum);
+    else if (elemsNum < 0x10000U)
+    {
+        cxbyte d[3];
+        d[0] = 0xdc;
+        d[1] = elemsNum>>8;
+        d[2] = elemsNum&0xff;
+        output.insert(output.end(), d, d+3);
+    }
+    else
+    {
+        cxbyte d[5];
+        d[0] = 0xdd;
+        uint32_t v2 = elemsNum;
+        for (cxuint i=5; i >= 0; i--, v2>>=8)
+            d[i] = v2&0xff;
+        output.insert(output.end(), d, d+3);
+    }
+    output.insert(output.end(), temp.begin(), temp.end());
+}
+
+MsgPackMapWriter::MsgPackMapWriter(std::vector<cxbyte>& _output)
+        : output(_output), elemsNum(0), inKey(true)
+{ }
+
+void MsgPackMapWriter::putKeyString(const char* str)
+{
+    if (!inKey)
+        throw BinException("MsgPack: Not in key value");
+    inKey = false;
+    elemsNum++;
+    msgPackWriteString(str, temp);
+}
+
+void MsgPackMapWriter::putValueBool(bool b)
+{
+    if (inKey)
+        throw BinException("MsgPack: Not in value value");
+    inKey = true;
+    msgPackWriteBool(b, temp);
+}
+
+void MsgPackMapWriter::putValueString(const char* str)
+{
+    if (inKey)
+        throw BinException("MsgPack: Not in value value");
+    inKey = true;
+    msgPackWriteString(str, temp);
+}
+
+void MsgPackMapWriter::putValueUInt(uint64_t v)
+{
+    if (inKey)
+        throw BinException("MsgPack: Not in value value");
+    inKey = true;
+    msgPackWriteUInt(v, temp);
+}
+
+MsgPackArrayWriter MsgPackMapWriter::putValueArray()
+{
+    if (inKey)
+        throw BinException("MsgPack: Not in value value");
+    inKey = true;
+    return MsgPackArrayWriter(temp);
+}
+
+MsgPackMapWriter MsgPackMapWriter::putValueMap()
+{
+    if (inKey)
+        throw BinException("MsgPack: Not in value value");
+    inKey = true;
+    return MsgPackMapWriter(temp);
+}
+
+
 void ROCmMetadata::parseMsgPack(size_t metadataSize, const cxbyte* metadata)
 {
     parseROCmMetadataMsgPack(metadataSize, metadata, *this);
 }
 
+void CLRX::generateROCmMetadataMsgPack(const ROCmMetadata& mdInfo,
+                    const ROCmKernelConfig** kconfigs, std::vector<cxbyte>& output)
+{
+}
