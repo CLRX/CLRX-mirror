@@ -1061,20 +1061,20 @@ static void msgPackWriteUInt(uint64_t v, std::vector<cxbyte>& output)
 
 class CLRX_INTERNAL MsgPackMapWriter;
 
-class CLRX_INTERNAL MsgPackStaticArrayWriter
+class CLRX_INTERNAL MsgPackArrayWriter
 {
 private:
     std::vector<cxbyte>& output;
     size_t elemsNum;
     size_t count;
 public:
-    MsgPackStaticArrayWriter(size_t elemsNum, std::vector<cxbyte>& output);
+    MsgPackArrayWriter(size_t elemsNum, std::vector<cxbyte>& output);
     
     void putBool(bool b);
     void putString(const char* str);
     void putUInt(uint64_t v);
-    MsgPackStaticArrayWriter putStaticArray(size_t aelemsNum);
-    MsgPackMapWriter putMap();
+    MsgPackArrayWriter putArray(size_t aelemsNum);
+    MsgPackMapWriter putMap(size_t melemsNum);
     void flush();
 };
 
@@ -1083,21 +1083,21 @@ class CLRX_INTERNAL MsgPackMapWriter
 private:
     std::vector<cxbyte>& output;
     size_t elemsNum;
+    size_t count;
     bool inKey;
-    std::vector<cxbyte> temp;
 public:
-    MsgPackMapWriter(std::vector<cxbyte>& output);
+    MsgPackMapWriter(size_t elemsNum, std::vector<cxbyte>& output);
     void putKeyString(const char* str);
     void putValueBool(bool b);
     void putValueString(const char* str);
     void putValueUInt(uint64_t v);
-    MsgPackStaticArrayWriter putValueStaticArray(size_t aelemsNum);
-    MsgPackMapWriter putValueMap();
+    MsgPackArrayWriter putValueArray(size_t aelemsNum);
+    MsgPackMapWriter putValueMap(size_t melemsNum);
     std::vector<cxbyte>& putValueElement();
     void flush();
 };
 
-MsgPackStaticArrayWriter::MsgPackStaticArrayWriter(size_t _elemsNum,
+MsgPackArrayWriter::MsgPackArrayWriter(size_t _elemsNum,
             std::vector<cxbyte>& _output) : output(_output), elemsNum(_elemsNum), count(0)
 {
     if (elemsNum < 16)
@@ -1121,7 +1121,7 @@ MsgPackStaticArrayWriter::MsgPackStaticArrayWriter(size_t _elemsNum,
     }
 }
 
-void MsgPackStaticArrayWriter::putBool(bool b)
+void MsgPackArrayWriter::putBool(bool b)
 {
     if (count == elemsNum)
         throw BinException("MsgPack: Too many array elements");
@@ -1129,7 +1129,7 @@ void MsgPackStaticArrayWriter::putBool(bool b)
     msgPackWriteBool(b, output);
 }
 
-void MsgPackStaticArrayWriter::putString(const char* str)
+void MsgPackArrayWriter::putString(const char* str)
 {
     if (count == elemsNum)
         throw BinException("MsgPack: Too many array elements");
@@ -1137,7 +1137,7 @@ void MsgPackStaticArrayWriter::putString(const char* str)
     msgPackWriteString(str, output);
 }
 
-void MsgPackStaticArrayWriter::putUInt(uint64_t v)
+void MsgPackArrayWriter::putUInt(uint64_t v)
 {
     if (count == elemsNum)
         throw BinException("MsgPack: Too many array elements");
@@ -1145,25 +1145,55 @@ void MsgPackStaticArrayWriter::putUInt(uint64_t v)
     msgPackWriteUInt(v, output);
 }
 
-MsgPackStaticArrayWriter MsgPackStaticArrayWriter::putStaticArray(size_t aelemsNum)
+MsgPackArrayWriter MsgPackArrayWriter::putArray(size_t aelemsNum)
 {
     if (count == elemsNum)
         throw BinException("MsgPack: Too many array elements");
     count++;
-    return MsgPackStaticArrayWriter(aelemsNum, output);
+    return MsgPackArrayWriter(aelemsNum, output);
 }
 
-MsgPackMapWriter::MsgPackMapWriter(std::vector<cxbyte>& _output)
-        : output(_output), elemsNum(0), inKey(true)
-{ }
+MsgPackMapWriter MsgPackArrayWriter::putMap(size_t melemsNum)
+{
+    if (count == elemsNum)
+        throw BinException("MsgPack: Too many array elements");
+    count++;
+    return MsgPackMapWriter(melemsNum, output);
+}
+
+MsgPackMapWriter::MsgPackMapWriter(size_t _elemsNum, std::vector<cxbyte>& _output)
+        : output(_output), elemsNum(_elemsNum), count(0), inKey(true)
+{
+    if (elemsNum < 16)
+        output.push_back(0x80 + elemsNum);
+    else if (elemsNum < 0x10000U)
+    {
+        cxbyte d[3];
+        d[0] = 0xde;
+        d[1] = elemsNum>>8;
+        d[2] = elemsNum&0xff;
+        output.insert(output.end(), d, d+3);
+    }
+    else
+    {
+        cxbyte d[5];
+        d[0] = 0xdf;
+        uint32_t v2 = elemsNum;
+        for (cxuint i=5; i >= 0; i--, v2>>=8)
+            d[i] = v2&0xff;
+        output.insert(output.end(), d, d+3);
+    }
+}
 
 void MsgPackMapWriter::putKeyString(const char* str)
 {
     if (!inKey)
         throw BinException("MsgPack: Not in key value");
     inKey = false;
-    elemsNum++;
-    msgPackWriteString(str, temp);
+    if (count == elemsNum)
+        throw BinException("MsgPack: Too many map elements");
+    count++;
+    msgPackWriteString(str, output);
 }
 
 void MsgPackMapWriter::putValueBool(bool b)
@@ -1171,7 +1201,7 @@ void MsgPackMapWriter::putValueBool(bool b)
     if (inKey)
         throw BinException("MsgPack: Not in value value");
     inKey = true;
-    msgPackWriteBool(b, temp);
+    msgPackWriteBool(b, output);
 }
 
 void MsgPackMapWriter::putValueString(const char* str)
@@ -1179,7 +1209,7 @@ void MsgPackMapWriter::putValueString(const char* str)
     if (inKey)
         throw BinException("MsgPack: Not in value value");
     inKey = true;
-    msgPackWriteString(str, temp);
+    msgPackWriteString(str, output);
 }
 
 void MsgPackMapWriter::putValueUInt(uint64_t v)
@@ -1187,15 +1217,15 @@ void MsgPackMapWriter::putValueUInt(uint64_t v)
     if (inKey)
         throw BinException("MsgPack: Not in value value");
     inKey = true;
-    msgPackWriteUInt(v, temp);
+    msgPackWriteUInt(v, output);
 }
 
-MsgPackStaticArrayWriter MsgPackMapWriter::putValueStaticArray(size_t aelemsNum)
+MsgPackArrayWriter MsgPackMapWriter::putValueArray(size_t aelemsNum)
 {
     if (inKey)
         throw BinException("MsgPack: Not in value value");
     inKey = true;
-    return MsgPackStaticArrayWriter(aelemsNum, temp);
+    return MsgPackArrayWriter(aelemsNum, output);
 }
 
 std::vector<cxbyte>& MsgPackMapWriter::putValueElement()
@@ -1203,15 +1233,15 @@ std::vector<cxbyte>& MsgPackMapWriter::putValueElement()
     if (inKey)
         throw BinException("MsgPack: Not in value value");
     inKey = true;
-    return temp;
+    return output;
 }
 
-MsgPackMapWriter MsgPackMapWriter::putValueMap()
+MsgPackMapWriter MsgPackMapWriter::putValueMap(size_t  melemsNum)
 {
     if (inKey)
         throw BinException("MsgPack: Not in value value");
     inKey = true;
-    return MsgPackMapWriter(temp);
+    return MsgPackMapWriter(melemsNum, output);
 }
 
 
