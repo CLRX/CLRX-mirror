@@ -537,7 +537,7 @@ void generateROCmMetadata(const ROCmMetadata& mdInfo,
                     const ROCmKernelConfig** kconfigs, std::string& output);
 
 void generateROCmMetadataMsgPack(const ROCmMetadata& mdInfo,
-                    const ROCmKernelConfig** kconfigs, std::vector<cxbyte>& output);
+                    const ROCmKernelDescriptor** kdescs, std::vector<cxbyte>& output);
 
 void parseROCmMetadata(size_t metadataSize, const char* metadata,
                 ROCmMetadata& metadataInfo);

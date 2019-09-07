@@ -715,8 +715,8 @@ static const std::pair<const char*, ROCmValueType> rocmValueTypeNamesMap[] =
 static const size_t rocmValueTypeNamesNum =
         sizeof(rocmValueTypeNamesMap) / sizeof(std::pair<const char*, ROCmValueType>);
 
-static const char* rocmAddrSpaceTypesTbl[] =
-{ "Private", "Global", "Constant", "Local", "Generic", "Region" };
+static const char* rocmMPAddrSpaceTypesTbl[] =
+{ "private", "global", "constant", "local", "generic", "region" };
 
 static void parseROCmMetadataKernelArgMsgPack(MsgPackArrayParser& argsParser,
                         ROCmKernelArgInfo& argInfo)
@@ -751,7 +751,7 @@ static void parseROCmMetadataKernelArgMsgPack(MsgPackArrayParser& argsParser,
                 const std::string aspace = trimStrSpaces(aParser.parseValueString());
                 size_t aspaceIndex = 0;
                 for (; aspaceIndex < 6; aspaceIndex++)
-                    if (::strcasecmp(rocmAddrSpaceTypesTbl[aspaceIndex],
+                    if (::strcasecmp(rocmMPAddrSpaceTypesTbl[aspaceIndex],
                                 aspace.c_str())==0)
                         break;
                 if (aspaceIndex == 6)
@@ -979,6 +979,11 @@ void CLRX::parseROCmMetadataMsgPack(size_t metadataSize, const cxbyte* metadata,
         else
             mainMap.skipValue();
     }
+}
+
+void ROCmMetadata::parseMsgPack(size_t metadataSize, const cxbyte* metadata)
+{
+    parseROCmMetadataMsgPack(metadataSize, metadata, *this);
 }
 
 static void msgPackWriteString(const char* str, std::vector<cxbyte>& output)
@@ -1244,13 +1249,135 @@ MsgPackMapWriter MsgPackMapWriter::putValueMap(size_t  melemsNum)
     return MsgPackMapWriter(melemsNum, output);
 }
 
-
-void ROCmMetadata::parseMsgPack(size_t metadataSize, const cxbyte* metadata)
+static const char* rocmMPValueKindNames[] =
 {
-    parseROCmMetadataMsgPack(metadataSize, metadata, *this);
-}
+    "by_value", "global_buffer", "dynamic_shared_pointer", "sampler", "image", "pipe",
+    "queue", "hidden_Global_offset_x", "hidden_global_offset_y",
+    "hidden_global_offset_z", "hidden_none", "hidden_printf_buffer",
+    "hidden_default_queue", "hidden_completion_action", "hidden_multigrid_sync_arg"
+};
+
+static const char* rocmMPValueTypeNames[] =
+{
+    "struct", "i8", "u8", "i16", "u16", "f16", "i32", "u32", "f32", "i64", "u64", "f64"
+};
+
+
 
 void CLRX::generateROCmMetadataMsgPack(const ROCmMetadata& mdInfo,
-                    const ROCmKernelConfig** kconfigs, std::vector<cxbyte>& output)
+                    const ROCmKernelDescriptor** kdescs, std::vector<cxbyte>& output)
 {
+    output.clear();
+    MsgPackArrayWriter kernelsWriter(mdInfo.kernels.size(), output);
+    for (size_t i = 0; i < mdInfo.kernels.size(); i++)
+    {
+        const ROCmKernelMetadata& kernelMD = mdInfo.kernels[i];
+        const size_t mapSize = 15 + (!kernelMD.deviceEnqueueSymbol.empty()) +
+                (kernelMD.reqdWorkGroupSize[0]!=0 ||
+                 kernelMD.reqdWorkGroupSize[1]!=0 ||
+                 kernelMD.reqdWorkGroupSize[2]!=0) +
+                (!kernelMD.vecTypeHint.empty()) +
+                (kernelMD.workGroupSizeHint[0]!=0 ||
+                 kernelMD.workGroupSizeHint[1]!=0 ||
+                 kernelMD.workGroupSizeHint[2]!=0);
+        MsgPackMapWriter kwriter = kernelsWriter.putMap(mapSize);
+        kwriter.putKeyString(".args");
+        // kernel arguments
+        {
+        MsgPackArrayWriter kargsWriter = kwriter.putValueArray(kernelMD.argInfos.size());
+        for (const ROCmKernelArgInfo& arg: kernelMD.argInfos)
+        {
+            const bool hasAccess = (arg.accessQual != ROCmAccessQual::DEFAULT &&
+                     (arg.valueKind==ROCmValueKind::IMAGE ||
+                      arg.valueKind==ROCmValueKind::PIPE));
+            const bool hasActualAccess = (
+                     arg.actualAccessQual != ROCmAccessQual::DEFAULT &&
+                     (arg.valueKind==ROCmValueKind::GLOBAL_BUFFER ||
+                      arg.valueKind==ROCmValueKind::IMAGE ||
+                      arg.valueKind==ROCmValueKind::PIPE));
+            const bool hasAddrSpace = (arg.addressSpace != ROCmAddressSpace::NONE &&
+                     (arg.valueKind==ROCmValueKind::GLOBAL_BUFFER ||
+                      arg.valueKind==ROCmValueKind::DYN_SHARED_PTR));
+            const size_t amapSize = 4 + (arg.isConst) + (arg.isPipe) +
+                    (arg.isRestrict) + (arg.isVolatile) +
+                    (!arg.name.empty()) + (!arg.typeName.empty()) +
+                     hasAddrSpace + hasAccess + hasActualAccess + (arg.pointeeAlign!=0);
+            MsgPackMapWriter argWriter = kargsWriter.putMap(amapSize);
+            if (hasAccess)
+            {
+                if (arg.accessQual > ROCmAccessQual::MAX_VALUE)
+                    throw BinGenException("Unknown AccessQualifier");
+                argWriter.putKeyString(".access");
+                argWriter.putValueString(
+                        rocmMPAccessQualifierTbl[cxuint(arg.accessQual)-1]);
+            }
+            if (hasActualAccess)
+            {
+                if (arg.actualAccessQual > ROCmAccessQual::MAX_VALUE)
+                    throw BinGenException("Unknown ActualAccessQualifier");
+                argWriter.putKeyString(".actual_access");
+                argWriter.putValueString(
+                        rocmMPAccessQualifierTbl[cxuint(arg.actualAccessQual)-1]);
+            }
+            if (hasAddrSpace)
+            {
+                if (arg.addressSpace > ROCmAddressSpace::MAX_VALUE ||
+                    arg.addressSpace == ROCmAddressSpace::NONE)
+                    throw BinGenException("Unknown AddressSpace");
+                argWriter.putKeyString(".address_space");
+                argWriter.putValueString(
+                        rocmMPAddrSpaceTypesTbl[cxuint(arg.addressSpace)-1]);
+            }
+            if (arg.isConst)
+            {
+                argWriter.putKeyString(".is_const");
+                argWriter.putValueBool(true);
+            }
+            if (arg.isPipe)
+            {
+                argWriter.putKeyString(".is_pipe");
+                argWriter.putValueBool(true);
+            }
+            if (arg.isRestrict)
+            {
+                argWriter.putKeyString(".is_restrict");
+                argWriter.putValueBool(true);
+            }
+            if (arg.isVolatile)
+            {
+                argWriter.putKeyString(".is_volatile");
+                argWriter.putValueBool(true);
+            }
+            if (!arg.name.empty())
+            {
+                argWriter.putKeyString(".name");
+                argWriter.putValueString(arg.name.c_str());
+            }
+            argWriter.putKeyString(".offset");
+            argWriter.putValueUInt(arg.offset);
+            if (arg.pointeeAlign!=0)
+            {
+                argWriter.putKeyString(".pointee_align");
+                argWriter.putValueUInt(arg.pointeeAlign);
+            }
+            argWriter.putKeyString(".size");
+            argWriter.putValueUInt(arg.size);
+            if (!arg.typeName.empty())
+            {
+                argWriter.putKeyString(".type_name");
+                argWriter.putValueString(arg.typeName.c_str());
+            }
+            
+            if (arg.valueKind > ROCmValueKind::MAX_VALUE)
+                throw BinGenException("Unknown ValueKind");
+            argWriter.putKeyString(".value_kind");
+            argWriter.putValueString(rocmMPValueKindNames[cxuint(arg.valueKind)]);
+            
+            if (arg.valueType > ROCmValueType::MAX_VALUE)
+                throw BinGenException("Unknown ValueType");
+            argWriter.putKeyString(".value_type");
+            argWriter.putValueString(rocmMPValueTypeNames[cxuint(arg.valueType)]);
+        }
+        } //
+    }
 }
