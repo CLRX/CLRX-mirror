@@ -1080,7 +1080,6 @@ public:
     void putUInt(uint64_t v);
     MsgPackArrayWriter putArray(size_t aelemsNum);
     MsgPackMapWriter putMap(size_t melemsNum);
-    void flush();
 };
 
 class CLRX_INTERNAL MsgPackMapWriter
@@ -1099,7 +1098,6 @@ public:
     MsgPackArrayWriter putValueArray(size_t aelemsNum);
     MsgPackMapWriter putValueMap(size_t melemsNum);
     std::vector<cxbyte>& putValueElement();
-    void flush();
 };
 
 MsgPackArrayWriter::MsgPackArrayWriter(size_t _elemsNum,
@@ -1262,7 +1260,12 @@ static const char* rocmMPValueTypeNames[] =
     "struct", "i8", "u8", "i16", "u16", "f16", "i32", "u32", "f32", "i64", "u64", "f64"
 };
 
+// helper for checking whether value is supplied
+static inline bool hasValue(cxuint value)
+{ return value!=BINGEN_NOTSUPPLIED && value!=BINGEN_DEFAULT; }
 
+static inline bool hasValue(uint64_t value)
+{ return value!=BINGEN64_NOTSUPPLIED && value!=BINGEN64_DEFAULT; }
 
 void CLRX::generateROCmMetadataMsgPack(const ROCmMetadata& mdInfo,
                     const ROCmKernelDescriptor** kdescs, std::vector<cxbyte>& output)
@@ -1272,14 +1275,16 @@ void CLRX::generateROCmMetadataMsgPack(const ROCmMetadata& mdInfo,
     for (size_t i = 0; i < mdInfo.kernels.size(); i++)
     {
         const ROCmKernelMetadata& kernelMD = mdInfo.kernels[i];
-        const size_t mapSize = 15 + (!kernelMD.deviceEnqueueSymbol.empty()) +
+        const size_t mapSize = 13 + (!kernelMD.deviceEnqueueSymbol.empty()) +
                 (kernelMD.reqdWorkGroupSize[0]!=0 ||
                  kernelMD.reqdWorkGroupSize[1]!=0 ||
                  kernelMD.reqdWorkGroupSize[2]!=0) +
                 (!kernelMD.vecTypeHint.empty()) +
                 (kernelMD.workGroupSizeHint[0]!=0 ||
                  kernelMD.workGroupSizeHint[1]!=0 ||
-                 kernelMD.workGroupSizeHint[2]!=0);
+                 kernelMD.workGroupSizeHint[2]!=0) +
+                (!kernelMD.language.empty()) +
+                (kernelMD.langVersion[0]!=BINGEN_NOTSUPPLIED);
         MsgPackMapWriter kwriter = kernelsWriter.putMap(mapSize);
         kwriter.putKeyString(".args");
         // kernel arguments
@@ -1379,5 +1384,75 @@ void CLRX::generateROCmMetadataMsgPack(const ROCmMetadata& mdInfo,
             argWriter.putValueString(rocmMPValueTypeNames[cxuint(arg.valueType)]);
         }
         } //
+        if (!kernelMD.deviceEnqueueSymbol.empty())
+        {
+            kwriter.putKeyString(".device_enqueue_symbol");
+            kwriter.putValueString(kernelMD.deviceEnqueueSymbol.c_str());
+        }
+        
+        const ROCmKernelDescriptor& kdesc = *(kdescs[i]);
+        
+        kwriter.putKeyString(".group_segment_fixed_size");
+        kwriter.putValueUInt(hasValue(kernelMD.groupSegmentFixedSize) ?
+                kernelMD.groupSegmentFixedSize : kdesc.groupSegmentFixedSize);
+        kwriter.putKeyString(".kernarg_segment_align");
+        kwriter.putValueUInt(kernelMD.kernargSegmentAlign);
+        kwriter.putKeyString(".kernarg_segment_size");
+        kwriter.putValueUInt(kernelMD.kernargSegmentSize);
+        
+        if (!kernelMD.language.empty())
+        {
+            kwriter.putKeyString(".language");
+            kwriter.putValueString(kernelMD.language.c_str());
+        }
+        if (kernelMD.langVersion[0]!=BINGEN_NOTSUPPLIED)
+        {
+            kwriter.putKeyString(".language_version");
+            MsgPackArrayWriter verWriter = kwriter.putValueArray(2);
+            verWriter.putUInt(kernelMD.langVersion[0]);
+            verWriter.putUInt(kernelMD.langVersion[1]);
+        }
+        
+        kwriter.putKeyString(".max_flat_workgroup_size");
+        kwriter.putValueUInt(kernelMD.maxFlatWorkGroupSize);
+        kwriter.putKeyString(".name");
+        kwriter.putValueString(kernelMD.name.c_str());
+        kwriter.putKeyString(".private_segment_fixed_size");
+        kwriter.putValueUInt(hasValue(kernelMD.privateSegmentFixedSize) ?
+                kernelMD.privateSegmentFixedSize : kdesc.privateSegmentFixedSize);
+        
+        if (kernelMD.reqdWorkGroupSize[0] != 0 || kernelMD.reqdWorkGroupSize[1] != 0 ||
+            kernelMD.reqdWorkGroupSize[2] != 0)
+        {
+            kwriter.putKeyString(".reqd_workgroup_size");
+            MsgPackArrayWriter rwriter = kwriter.putValueArray(3);
+            for (cxuint i = 0; i < 3; i++)
+                rwriter.putUInt(kernelMD.reqdWorkGroupSize[i]);
+        }
+        
+        kwriter.putKeyString(".sgpr_count");
+        kwriter.putValueUInt(kernelMD.sgprsNum);
+        kwriter.putKeyString(".sgpr_spill_count");
+        kwriter.putValueUInt(kernelMD.spilledSgprs);
+        if (!kernelMD.vecTypeHint.empty())
+        {
+            kwriter.putKeyString(".vec_type_hint");
+            kwriter.putValueString(kernelMD.vecTypeHint.c_str());
+        }
+        kwriter.putKeyString(".vgpr_count");
+        kwriter.putValueUInt(kernelMD.vgprsNum);
+        kwriter.putKeyString(".vgpr_spill_count");
+        kwriter.putValueUInt(kernelMD.spilledVgprs);
+        kwriter.putKeyString(".wavefront_size");
+        kwriter.putValueUInt(kernelMD.wavefrontSize);
+        
+        if (kernelMD.workGroupSizeHint[0] != 0 || kernelMD.workGroupSizeHint[1] != 0 ||
+            kernelMD.workGroupSizeHint[2] != 0)
+        {
+            kwriter.putKeyString(".workgroup_size_hint");
+            MsgPackArrayWriter rwriter = kwriter.putValueArray(3);
+            for (cxuint i = 0; i < 3; i++)
+                rwriter.putUInt(kernelMD.workGroupSizeHint[i]);
+        }
     }
 }
