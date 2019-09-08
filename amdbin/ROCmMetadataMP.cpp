@@ -1394,7 +1394,7 @@ void CLRX::generateROCmMetadataMsgPack(const ROCmMetadata& mdInfo,
         
         kwriter.putKeyString(".group_segment_fixed_size");
         kwriter.putValueUInt(hasValue(kernelMD.groupSegmentFixedSize) ?
-                kernelMD.groupSegmentFixedSize : kdesc.groupSegmentFixedSize);
+                kernelMD.groupSegmentFixedSize : ULEV(kdesc.groupSegmentFixedSize));
         kwriter.putKeyString(".kernarg_segment_align");
         kwriter.putValueUInt(kernelMD.kernargSegmentAlign);
         kwriter.putKeyString(".kernarg_segment_size");
@@ -1419,7 +1419,7 @@ void CLRX::generateROCmMetadataMsgPack(const ROCmMetadata& mdInfo,
         kwriter.putValueString(kernelMD.name.c_str());
         kwriter.putKeyString(".private_segment_fixed_size");
         kwriter.putValueUInt(hasValue(kernelMD.privateSegmentFixedSize) ?
-                kernelMD.privateSegmentFixedSize : kdesc.privateSegmentFixedSize);
+                kernelMD.privateSegmentFixedSize : ULEV(kdesc.privateSegmentFixedSize));
         
         if (kernelMD.reqdWorkGroupSize[0] != 0 || kernelMD.reqdWorkGroupSize[1] != 0 ||
             kernelMD.reqdWorkGroupSize[2] != 0)
