@@ -73,7 +73,7 @@ static void testMsgPackBytesWrite()
         }
         assertArray("MsgPackWrite0", "tc3", outBytes3, out);
     }
-    {   // long array (12222 elements)
+    {   // long array (1777777 elements)
         Array<cxbyte> outBytes3(1777777+5);
         outBytes3[0] = 0xdd;
         outBytes3[1] = 1777777>>24;
@@ -89,6 +89,7 @@ static void testMsgPackBytesWrite()
         }
         assertArray("MsgPackWrite0", "tc4", outBytes3, out);
     }
+    /* test putting values */
 }
 
 int main(int argc, const char** argv)

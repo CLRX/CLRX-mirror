@@ -1010,10 +1010,9 @@ static void msgPackWriteString(const char* str, std::vector<cxbyte>& output)
     {
         cxbyte v[5];
         v[0] = 0xdb;
-        v[1] = len>>24;
-        v[2] = (len>>16)&0xff;
-        v[3] = (len>>8)&0xff;
-        v[4] = len&0xff;
+        size_t len2 = len;
+        for (cxuint i=4; i > 0; i--, len2>>=8)
+            v[i] = len2&0xff;
         output.insert(output.end(), v, v+5);
     }
     output.insert(output.end(), reinterpret_cast<const cxbyte*>(str),
@@ -1049,7 +1048,7 @@ static void msgPackWriteUInt(uint64_t v, std::vector<cxbyte>& output)
         cxbyte d[5];
         d[0] = 0xce;
         uint64_t v2 = v;
-        for (cxuint i=5; i >= 0; i--, v2>>=8)
+        for (cxuint i=4; i > 0; i--, v2>>=8)
             d[i] = v2&0xff;
         output.insert(output.end(), d, d+5);
     }
@@ -1058,7 +1057,7 @@ static void msgPackWriteUInt(uint64_t v, std::vector<cxbyte>& output)
         cxbyte d[9];
         d[0] = 0xcf;
         uint64_t v2 = v;
-        for (cxuint i=9; i >= 0; i--, v2>>=8)
+        for (cxuint i=8; i > 0; i--, v2>>=8)
             d[i] = v2&0xff;
         output.insert(output.end(), d, d+9);
     }
@@ -1082,7 +1081,7 @@ MsgPackArrayWriter::MsgPackArrayWriter(size_t _elemsNum,
         cxbyte d[5];
         d[0] = 0xdd;
         uint32_t v2 = elemsNum;
-        for (cxint i=4; i > 0; i--, v2>>=8)
+        for (cxuint i=4; i > 0; i--, v2>>=8)
             d[i] = v2&0xff;
         output.insert(output.end(), d, d+5);
     }
@@ -1146,7 +1145,7 @@ MsgPackMapWriter::MsgPackMapWriter(size_t _elemsNum, std::vector<cxbyte>& _outpu
         cxbyte d[5];
         d[0] = 0xdf;
         uint32_t v2 = elemsNum;
-        for (cxint i=4; i > 0; i--, v2>>=8)
+        for (cxuint i=4; i > 0; i--, v2>>=8)
             d[i] = v2&0xff;
         output.insert(output.end(), d, d+5);
     }
