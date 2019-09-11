@@ -20,6 +20,7 @@
 #include <CLRX/Config.h>
 #include <iostream>
 #include <cstring>
+#include <cstdio>
 #include <vector>
 #include <memory>
 #include <CLRX/utils/Containers.h>
@@ -160,6 +161,70 @@ static void testMsgPackBytesWrite()
         assertArray("MsgPackWrite0", "tc9", outBytes9, out);
     }
     /* map writer class */
+    {
+        static const cxbyte outBytes10[21] = { 0x83,
+            0xa4, 'a', 'b', 'a', 'b', 15,
+            0xa3, 'c', 'o', 'b', 0xcd, 0xe9, 0x11,
+            0xa5, 'e', 'x', 't', 'r', 'a', 11 };
+        std::vector<cxbyte> out;
+        MsgPackMapWriter mwriter(3, out);
+        mwriter.putKeyString("abab");
+        mwriter.putValueUInt(15);
+        mwriter.putKeyString("cob");
+        mwriter.putValueUInt(0xe911);
+        mwriter.putKeyString("extra");
+        mwriter.putValueUInt(11);
+        assertArray("MsgPackWrite0", "tc10",
+                    Array<cxbyte>(outBytes10, outBytes10 + sizeof(outBytes10)), out);
+    }
+    // longer map testcase
+    {
+        Array<cxbyte> outBytes11(14821*10+3);
+        outBytes11[0] = 0xde;
+        outBytes11[1] = 14821>>8;
+        outBytes11[2] = 14821&0xff;
+        std::vector<cxbyte> out;
+        MsgPackMapWriter mwriter(14821, out);
+        for (cxuint i = 0; i < 14821; i++)
+        {
+            char kbuf[8], vbuf[8];
+            ::snprintf(kbuf, 8, "%04x", i);
+            ::snprintf(vbuf, 8, "%04x", i^0xdca1);
+            outBytes11[3+i*10] = 0xa4;
+            std::copy(kbuf, kbuf+4, ((char*)outBytes11.data())+3 + i*10 + 1);
+            outBytes11[3+i*10 + 5] = 0xa4;
+            std::copy(vbuf, vbuf+4, ((char*)outBytes11.data())+3 + i*10 + 6);
+            
+            mwriter.putKeyString(kbuf);
+            mwriter.putValueString(vbuf);
+        }
+        assertArray("MsgPackWrite0", "tc11", outBytes11, out);
+    }
+    // longer map testcase
+    {
+        Array<cxbyte> outBytes12(793894*14+5);
+        outBytes12[0] = 0xdf;
+        outBytes12[1] = 793894>>24;
+        outBytes12[2] = (793894>>16)&0xff;
+        outBytes12[3] = (793894>>8)&0xff;
+        outBytes12[4] = 793894&0xff;
+        std::vector<cxbyte> out;
+        MsgPackMapWriter mwriter(793894, out);
+        for (cxuint i = 0; i < 793894; i++)
+        {
+            char kbuf[10], vbuf[10];
+            ::snprintf(kbuf, 10, "%06x", i);
+            ::snprintf(vbuf, 10, "%06x", (i^0x11b3dca1U)&0xffffffU);
+            outBytes12[5+i*14] = 0xa6;
+            std::copy(kbuf, kbuf+6, ((char*)outBytes12.data())+5 + i*14 + 1);
+            outBytes12[5+i*14 + 7] = 0xa6;
+            std::copy(vbuf, vbuf+6, ((char*)outBytes12.data())+5 + i*14 + 8);
+            
+            mwriter.putKeyString(kbuf);
+            mwriter.putValueString(vbuf);
+        }
+        assertArray("MsgPackWrite0", "tc12", outBytes12, out);
+    }
 }
 
 int main(int argc, const char** argv)
