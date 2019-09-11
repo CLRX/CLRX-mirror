@@ -1064,42 +1064,6 @@ static void msgPackWriteUInt(uint64_t v, std::vector<cxbyte>& output)
     }
 }
 
-class CLRX_INTERNAL MsgPackMapWriter;
-
-class CLRX_INTERNAL MsgPackArrayWriter
-{
-private:
-    std::vector<cxbyte>& output;
-    size_t elemsNum;
-    size_t count;
-public:
-    MsgPackArrayWriter(size_t elemsNum, std::vector<cxbyte>& output);
-    
-    void putBool(bool b);
-    void putString(const char* str);
-    void putUInt(uint64_t v);
-    MsgPackArrayWriter putArray(size_t aelemsNum);
-    MsgPackMapWriter putMap(size_t melemsNum);
-};
-
-class CLRX_INTERNAL MsgPackMapWriter
-{
-private:
-    std::vector<cxbyte>& output;
-    size_t elemsNum;
-    size_t count;
-    bool inKey;
-public:
-    MsgPackMapWriter(size_t elemsNum, std::vector<cxbyte>& output);
-    void putKeyString(const char* str);
-    void putValueBool(bool b);
-    void putValueString(const char* str);
-    void putValueUInt(uint64_t v);
-    MsgPackArrayWriter putValueArray(size_t aelemsNum);
-    MsgPackMapWriter putValueMap(size_t melemsNum);
-    std::vector<cxbyte>& putValueElement();
-};
-
 MsgPackArrayWriter::MsgPackArrayWriter(size_t _elemsNum,
             std::vector<cxbyte>& _output) : output(_output), elemsNum(_elemsNum), count(0)
 {
