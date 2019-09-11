@@ -1082,9 +1082,9 @@ MsgPackArrayWriter::MsgPackArrayWriter(size_t _elemsNum,
         cxbyte d[5];
         d[0] = 0xdd;
         uint32_t v2 = elemsNum;
-        for (cxuint i=5; i >= 0; i--, v2>>=8)
+        for (cxint i=4; i > 0; i--, v2>>=8)
             d[i] = v2&0xff;
-        output.insert(output.end(), d, d+3);
+        output.insert(output.end(), d, d+5);
     }
 }
 
@@ -1146,9 +1146,9 @@ MsgPackMapWriter::MsgPackMapWriter(size_t _elemsNum, std::vector<cxbyte>& _outpu
         cxbyte d[5];
         d[0] = 0xdf;
         uint32_t v2 = elemsNum;
-        for (cxuint i=5; i >= 0; i--, v2>>=8)
+        for (cxint i=4; i > 0; i--, v2>>=8)
             d[i] = v2&0xff;
-        output.insert(output.end(), d, d+3);
+        output.insert(output.end(), d, d+5);
     }
 }
 
