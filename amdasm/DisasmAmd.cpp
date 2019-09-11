@@ -518,7 +518,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 if (nextPtr==nullptr)
                     throw ParseException(lineNo, "Can't parse value argument");
                 nextPtr++;
-                cxuint vectorSize = cstrtoui(nextPtr, lineEnd, outEnd);
+                cxuint vectorSize = cstrtoui(ptr, lineEnd, outEnd);
                 arg.argType = determineKernelArgType(typeStr, vectorSize, lineNo);
             }
             argUavIds.push_back(0);

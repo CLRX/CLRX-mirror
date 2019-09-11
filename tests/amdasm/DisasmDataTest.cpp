@@ -1070,10 +1070,10 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
         .userdata imm_const_buffer, 7, 12, 2
         .arg x, "float", float
         .arg xff, "SP", float
-        .arg x4, "float4", float
-        .arg aaa, "SP4", float
-        .arg vv, "double3", double
-        .arg vv3, "SP4", double
+        .arg x4, "float4", float4
+        .arg aaa, "SP4", float4
+        .arg vv, "double3", double3
+        .arg vv3, "SP4", double3
         .arg sampler, "sampler_t", sampler
         .arg structor, "TypeX", structure, 24
         .arg structor2, "TypeX", structure, 24
@@ -1122,10 +1122,10 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
         .userdata imm_const_buffer, 7, 12, 2
         .arg x, "float", float
         .arg xff, "SP", float
-        .arg x4, "float4", float
-        .arg aaa, "SP4", float
-        .arg vv, "double3", double
-        .arg vv3, "SP4", double
+        .arg x4, "float4", float4
+        .arg aaa, "SP4", float4
+        .arg vv, "double3", double3
+        .arg vv3, "SP4", double3
         .arg sampler, "sampler_t", sampler
         .arg structor, "TypeX", structure, 24
         .arg structor2, "TypeX", structure, 24
