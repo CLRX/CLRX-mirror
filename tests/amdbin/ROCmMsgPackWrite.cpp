@@ -227,9 +227,451 @@ static void testMsgPackBytesWrite()
     }
 }
 
+struct ROCmMsgPackMDTestCase
+{
+    ROCmMetadata input;
+    Array<ROCmKernelDescriptor> inputKDescs;
+    size_t expectedSize;
+    const cxbyte* expected;      // input metadata string
+    bool good;
+    const char* error;
+};
+
+static const cxbyte rocmMsgPackInput0[] =
+{
+    0x83,
+    0xae, 'a', 'm', 'd', 'h', 's', 'a', '.', 'k', 'e', 'r', 'n', 'e', 'l', 's',
+    0x91,
+    // kernel A
+    0xde, 0x00, 0x13,
+    0xa5, '.', 'a', 'r', 'g', 's',
+    // kernel args
+    0xdc, 0x00, 0x16,
+    0x88,   // 0
+        0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
+            0xa6, 'g', 'l', 'o', 'b', 'a', 'l',
+        0xa9, '.', 'i', 's', '_', 'c', 'o', 'n', 's', 't', 0xc3,
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'n', '0',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x00,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa7, 'i', 'n', 't', '8', '_', 't', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xad, 'g', 'l', 'o', 'b', 'a', 'l', '_', 'b', 'u', 'f', 'f', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa2, 'i', '8',
+    0x88,   // 1
+        0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
+            0xa8, 'c', 'o', 'n', 's', 't', 'a', 'n', 't',
+        0xac, '.', 'i', 's', '_', 'v', 'o', 'l', 'a', 't', 'i', 'l', 'e', 0xc3,
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'n', '1',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x08,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa6, 'u', 'c', 'h', 'a', 'r', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xad, 'g', 'l', 'o', 'b', 'a', 'l', '_', 'b', 'u', 'f', 'f', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa2, 'u', '8',
+    0x88,   // 2
+        0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
+            0xa7, 'p', 'r', 'i', 'v', 'a', 't', 'e',
+        0xac, '.', 'i', 's', '_', 'r', 'e', 's', 't', 'r', 'i', 'c', 't', 0xc3,
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'n', '2',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x10,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa6, 'i', 'n', 't', '1', '6', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xad, 'g', 'l', 'o', 'b', 'a', 'l', '_', 'b', 'u', 'f', 'f', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '1', '6',
+    0x88,   // 3
+        0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
+            0xa5, 'l', 'o', 'c', 'a', 'l',
+        0xa9, '.', 'i', 's', '_', 'c', 'o', 'n', 's', 't', 0xc3,
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'n', '3',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x18,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa9, 'u', 'i', 'n', 't', '1', '6', '_', 't', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xad, 'g', 'l', 'o', 'b', 'a', 'l', '_', 'b', 'u', 'f', 'f', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'u', '1', '6',
+    0x89,   // 4
+        0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
+            0xa5, 'l', 'o', 'c', 'a', 'l',
+        0xa9, '.', 'i', 's', '_', 'c', 'o', 'n', 's', 't', 0xc3,
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa4, 'i', 'n', '3', 'x',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x20,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xae, '.', 'p', 'o', 'i', 'n', 't', 'e', 'e', '_', 'a', 'l', 'i', 'g', 'n', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa5, 'h', 'a', 'l', 'f', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xad, 'g', 'l', 'o', 'b', 'a', 'l', '_', 'b', 'u', 'f', 'f', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'f', '1', '6',
+    0x88,   // 5
+        0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
+            0xa7, 'g', 'e', 'n', 'e', 'r', 'i', 'c',
+        0xa9, '.', 'i', 's', '_', 'c', 'o', 'n', 's', 't', 0xc3,
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'n', '4',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x28,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa6, 'i', 'n', 't', '3', '2', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xad, 'g', 'l', 'o', 'b', 'a', 'l', '_', 'b', 'u', 'f', 'f', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '3', '2',
+    0x88,   // 6
+        0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
+            0xa6, 'r', 'e', 'g', 'i', 'o', 'n',
+        0xa9, '.', 'i', 's', '_', 'c', 'o', 'n', 's', 't', 0xc3,
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'n', '5',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x30,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa7, 'u', 'i', 'n', 't', '3', '2', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xad, 'g', 'l', 'o', 'b', 'a', 'l', '_', 'b', 'u', 'f', 'f', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'u', '3', '2',
+    0x87,   // 7
+        0xa9, '.', 'i', 's', '_', 'c', 'o', 'n', 's', 't', 0xc3,
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'n', '6',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x38,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa6, 'f', 'l', 'o', 'a', 't', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xa5, 'q', 'u', 'e', 'u', 'e',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'f', '3', '2',
+    0x88,   // 8
+        0xa7, '.', 'a', 'c', 'c', 'e', 's', 's',
+            0xa9, 'r', 'e', 'a', 'd', '_', 'o', 'n', 'l', 'y',
+        0xa8, '.', 'i', 's', '_', 'p', 'i', 'p', 'e', 0xc3,
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'n', '7',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x40,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa5, 'l', 'o', 'n', 'g', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xa4, 'p', 'i', 'p', 'e',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
+    0x87,   // 9
+        0xa7, '.', 'a', 'c', 'c', 'e', 's', 's',
+            0xaa, 'r', 'e', 'a', 'd', '_', 'w', 'r', 'i', 't', 'e',
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'n', '8',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x48,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa9, 'i', 'm', 'a', 'g', 'e', '2', 'd', '_', 't',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xa5, 'i', 'm', 'a', 'g', 'e',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'u', '6', '4',
+    0x86,   // 10
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'n', '9',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x50,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa9, 's', 'a', 'm', 'p', 'l', 'e', 'r', '_', 't',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xa7, 's', 'a', 'm', 'p', 'l', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'f', '6', '4',
+    0x87,   // 11
+        0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
+            0xa6, 'g', 'l', 'o', 'b', 'a', 'l',
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa4, 'i', 'n', '1', '0',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x58,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa6, 's', 't', 'r', 'u', 'c', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xb6, 'd', 'y', 'n', 'a', 'm', 'i', 'c', '_', 's', 'h', 'a', 'r', 'e', 'd', '_',
+                'p', 'o', 'i', 'n', 't', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e',
+            0xa6, 's', 't', 'r', 'u', 'c', 't',
+    0x86,   // 12
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa1, 'n',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x60,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x04,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e', 0xa3, 'i', 'n', 't',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xa8, 'b', 'y', '_', 'v', 'a', 'l', 'u', 'e',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '3', '2',
+    0x84,   // 13
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x70,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xb6, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'g', 'l', 'o', 'b', 'a', 'l', '_',
+            'o', 'f', 'f', 's', 'e', 't', '_', 'x',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
+    0x84,   // 14
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x78,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xb6, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'g', 'l', 'o', 'b', 'a', 'l', '_',
+            'o', 'f', 'f', 's', 'e', 't', '_', 'y',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
+    0x84,   // 15
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0xcc, 0x80,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xb6, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'g', 'l', 'o', 'b', 'a', 'l', '_',
+            'o', 'f', 'f', 's', 'e', 't', '_', 'z',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
+    0x84,   // 16
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0xcc, 0x88,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xb4, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'p', 'r', 'i', 'n', 't', 'f', '_',
+            'b', 'u', 'f', 'f', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
+    0x84,   // 17
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0xcc, 0x90,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xb4, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'd', 'e', 'f', 'a', 'u', 'l', 't',
+            '_', 'q', 'u', 'e', 'u', 'e',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
+    0x84,   // 18
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0xcc, 0x98,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xb8, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'c', 'o', 'm', 'p', 'l', 'e', 't',
+            'i', 'o', 'n', '_', 'a', 'c', 't', 'i', 'o', 'n',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
+    0x84,   // 19
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0xcc, 0xa0,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xb9, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'm', 'u', 'l', 't', 'i', 'g', 'r',
+            'i', 'd', '_', 's', 'y', 'n', 'c', '_', 'a', 'r', 'g',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
+    0x88,   // 20
+        0xae, '.', 'a', 'c', 't', 'u', 'a', 'l', '_', 'a', 'c', 'c', 'e', 's', 's',
+            0xaa, 'w', 'r', 'i', 't', 'e', '_', 'o', 'n', 'l', 'y',
+        0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
+            0xa6, 'g', 'l', 'o', 'b', 'a', 'l',
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'x', '0',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0xcc, 0xa8,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa7, 'i', 'n', 't', '8', '_', 't', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xad, 'g', 'l', 'o', 'b', 'a', 'l', '_', 'b', 'u', 'f', 'f', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa2, 'i', '8',
+    0x88,   // 21
+        0xae, '.', 'a', 'c', 't', 'u', 'a', 'l', '_', 'a', 'c', 'c', 'e', 's', 's',
+            0xaa, 'r', 'e', 'a', 'd', '_', 'w', 'r', 'i', 't', 'e',
+        0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
+            0xa6, 'g', 'l', 'o', 'b', 'a', 'l',
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'x', '1',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0xcc, 0xb0,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa7, 'i', 'n', 't', '8', '_', 't', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xad, 'g', 'l', 'o', 'b', 'a', 'l', '_', 'b', 'u', 'f', 'f', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa2, 'i', '8',
+    0xb6, '.', 'd', 'e', 'v', 'i', 'c', 'e', '_', 'e', 'n', 'q', 'u', 'e', 'u', 'e', '_',
+        's', 'y', 'm', 'b', 'o', 'l', 0xa4, 'a', 'b', 'c', 'd',
+    0xb9, '.', 'g', 'r', 'o', 'u', 'p', '_', 's', 'e', 'g', 'm', 'e', 'n', 't', '_',
+        'f', 'i', 'x', 'e', 'd', '_', 's', 'i', 'z', 'e', 0x48,
+    0xb6, '.', 'k', 'e', 'r', 'n', 'a', 'r', 'g', '_', 's', 'e', 'g', 'm', 'e', 'n', 't',
+        '_', 'a', 'l', 'i', 'g', 'n', 0x10,
+    0xb5, '.', 'k', 'e', 'r', 'n', 'a', 'r', 'g', '_', 's', 'e', 'g', 'm', 'e', 'n', 't',
+        '_', 's', 'i', 'z', 'e', 0xcc, 0xc0,
+    0xa9, '.', 'l', 'a', 'n', 'g', 'u', 'a', 'g', 'e',
+        0xa8, 'O', 'p', 'e', 'n', 'C', 'L', ' ', 'C',
+    0xb1, '.', 'l', 'a', 'n', 'g', 'u', 'a', 'g', 'e', '_',
+        'v', 'e', 'r', 's', 'i', 'o', 'n', 0x92, 0x03, 0x02,
+    0xb8, '.', 'm', 'a', 'x', '_', 'f', 'l', 'a', 't', '_', 'w', 'o', 'r', 'k',
+        'g', 'r', 'o', 'u', 'p', '_', 's', 'i', 'z', 'e', 0xcd, 0x01, 0x8c,
+    0xa5, '.', 'n', 'a', 'm', 'e', 0xa8, 't', 'e', 's', 't', 'e', 'r', 'e', 'k',
+    0xbb, '.', 'p', 'r', 'i', 'v', 'a', 't', 'e', '_', 's', 'e', 'g', 'm', 'e', 'n', 't',
+        '_', 'f', 'i', 'x', 'e', 'd', '_', 's', 'i', 'z', 'e', 0x20,
+    0xb4, '.', 'r', 'e', 'q', 'd', '_', 'w', 'o', 'r', 'k', 'g', 'r', 'o', 'u', 'p', '_',
+            's', 'i', 'z', 'e', 0x93, 0x06, 0x09, 0x11,
+    0xab, '.', 's', 'g', 'p', 'r', '_', 'c', 'o', 'u', 'n', 't', 0x2b,
+    0xb1, '.', 's', 'g', 'p', 'r', '_', 's', 'p', 'i', 'l', 'l', '_',
+            'c', 'o', 'u', 'n', 't', 0x05,
+    0xa7, '.', 's', 'y', 'm', 'b', 'o', 'l',
+        0xab, 't', 'e', 's', 't', 'e', 'r', 'e', 'k', '.', 'k', 'd',
+    0xae, '.', 'v', 'e', 'c', '_', 't', 'y', 'p', 'e', '_', 'h', 'i', 'n', 't',
+        0xa5, 'i', 'n', 't', '1', '6',
+    0xab, '.', 'v', 'g', 'p', 'r', '_', 'c', 'o', 'u', 'n', 't', 0x09,
+    0xb1, '.', 'v', 'g', 'p', 'r', '_', 's', 'p', 'i', 'l', 'l', '_',
+            'c', 'o', 'u', 'n', 't', 0x08,
+    0xaf, '.', 'w', 'a', 'v', 'e', 'f', 'r', 'o', 'n', 't', '_', 's', 'i', 'z', 'e', 0x40,
+    0xb4, '.', 'w', 'o', 'r', 'k', 'g', 'r', 'o', 'u', 'p', '_', 's', 'i', 'z', 'e', '_',
+            'h', 'i', 'n', 't', 0x93, 0x04, 0x0b, 0x05,
+    // printf infos
+    0xad, 'a', 'm', 'd', 'h', 's', 'a', '.', 'p', 'r', 'i', 'n', 't', 'f', 0x92,
+        0xd9, 0x20, '2', ':', '4', ':', '4', ':', '4', ':', '4', ':', '4', ':','i', '=',
+        '%', 'd', ',', 'a', '=', '%', 'f', ',', 'b', '=', '%', 'f', ',',
+        'c', '=', '%', 'f', 0x0a,
+        0xaf, '1', ':', '1', ':', '4', ':', 'i', 'n', 'd', 'e', 'x', 'a', '%', 'd', 0x0a,
+    // version
+    0xae, 'a', 'm', 'd', 'h', 's', 'a', '.', 'v', 'e', 'r', 's', 'i', 'o', 'n',
+        0x92, 0x27, 0x34
+};
+
+static const ROCmMsgPackMDTestCase rocmMsgPackMDTestCases[] =
+{
+    {   // testcase 0
+        {
+            { 39, 52 },
+            {   // printfInfos
+                { 2, { 4, 4, 4, 4 }, "i=%d,a=%f,b=%f,c=%f\n" },
+                { 1, { 4 }, "indexa%d\n" },
+            },
+            {   // kernels
+                { // kernel 1
+                    "testerek", "testerek.kd",
+                    {   // args
+                        { "in0", "int8_t*", 8, 0, 0, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            true, false, false, false },
+                        { "in1", "uchar*", 8, 8, 0, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::UINT8, ROCmAddressSpace::CONSTANT,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, true, false },
+                        { "in2", "int16*", 8, 16, 0, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::INT16, ROCmAddressSpace::PRIVATE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, true, false, false },
+                        { "in3", "uint16_t*", 8, 24, 0, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::UINT16, ROCmAddressSpace::LOCAL,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            true, false, false, false },
+                        { "in3x", "half*", 8, 32, 8, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::FLOAT16, ROCmAddressSpace::LOCAL,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            true, false, false, false },
+                        { "in4", "int32*", 8, 40, 0, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::INT32, ROCmAddressSpace::GENERIC,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            true, false, false, false },
+                        { "in5", "uint32*", 8, 48, 0, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::UINT32, ROCmAddressSpace::REGION,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            true, false, false, false },
+                        { "in6", "float*", 8, 56, 0, ROCmValueKind::QUEUE,
+                            ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            true, false, false, false },
+                        { "in7", "long*", 8, 64, 0, ROCmValueKind::PIPE,
+                            ROCmValueType::INT64, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::READ_ONLY, ROCmAccessQual::DEFAULT,
+                            false, false, false, true },
+                        { "in8", "image2d_t", 8, 72, 0, ROCmValueKind::IMAGE,
+                            ROCmValueType::UINT64, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::READ_WRITE, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "in9", "sampler_t", 8, 80, 0, ROCmValueKind::SAMPLER,
+                            ROCmValueType::FLOAT64, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "in10", "struc*", 8, 88, 0, ROCmValueKind::DYN_SHARED_PTR,
+                            ROCmValueType::STRUCTURE, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "n", "int", 4, 96, 0, ROCmValueKind::BY_VALUE,
+                            ROCmValueType::INT32, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 112, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 120, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 128, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 136, 0, ROCmValueKind::HIDDEN_PRINTF_BUFFER,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 144, 0, ROCmValueKind::HIDDEN_DEFAULT_QUEUE,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 152, 0, ROCmValueKind::HIDDEN_COMPLETION_ACTION,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 160, 0, ROCmValueKind::HIDDEN_MULTIGRID_SYNC_ARG,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "ix0", "int8_t*", 8, 168, 0, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::READ_ONLY, ROCmAccessQual::WRITE_ONLY,
+                            false, false, false, false },
+                        { "ix1", "int8_t*", 8, 176, 0, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::INT8, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::WRITE_ONLY, ROCmAccessQual::READ_WRITE,
+                            false, false, false, false }
+                    },
+                    "OpenCL C", { 3, 2 }, { 6, 9, 17 }, { 4, 11, 5 }, "int16", "",
+                    192, 72, 32, 16, 64, 43, 9, 396, { 0, 0, 0 }, 5, 8, "abcd"
+                }
+            }
+        },
+        {
+            {
+                BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, 0, 0, 0, { },
+                0, 0, 0, 0, { }
+            }
+        },
+        sizeof(rocmMsgPackInput0), rocmMsgPackInput0,
+        true, ""
+    }
+};
+
+static void testParseROCmMsgPackMDCase(cxuint testId, const ROCmMsgPackMDTestCase& testCase)
+{
+    std::vector<const ROCmKernelDescriptor*> kdescs(testCase.inputKDescs.size());
+    for (size_t i = 0; i < testCase.inputKDescs.size(); i++)
+        kdescs[i] = testCase.inputKDescs.data()+i;
+    
+    bool good = true;
+    std::string error;
+    std::vector<cxbyte> result;
+    try
+    { generateROCmMetadataMsgPack(testCase.input, kdescs.data(), result); }
+    catch(const std::exception& ex)
+    {
+        good = false;
+        error = ex.what();
+    }
+    
+    char testName[30];
+    snprintf(testName, 30, "Test #%u", testId);
+    assertValue(testName, "good", testCase.good, good);
+    assertString(testName, "error", testCase.error, error.c_str());
+    if (!good)
+        // do not check if test failed
+        return;
+    
+    assertArray(testName, "result", Array<cxbyte>(testCase.expected,
+                        testCase.expected + testCase.expectedSize), result);
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
     retVal |= callTest(testMsgPackBytesWrite);
+    for (cxuint i = 0; i < sizeof(rocmMsgPackMDTestCases)/
+                            sizeof(ROCmMsgPackMDTestCase); i++)
+        try
+        { testParseROCmMsgPackMDCase(i, rocmMsgPackMDTestCases[i]); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
     return retVal;
 }

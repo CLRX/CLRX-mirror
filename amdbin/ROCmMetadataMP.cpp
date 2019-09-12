@@ -1213,7 +1213,7 @@ MsgPackMapWriter MsgPackMapWriter::putValueMap(size_t  melemsNum)
 static const char* rocmMPValueKindNames[] =
 {
     "by_value", "global_buffer", "dynamic_shared_pointer", "sampler", "image", "pipe",
-    "queue", "hidden_Global_offset_x", "hidden_global_offset_y",
+    "queue", "hidden_global_offset_x", "hidden_global_offset_y",
     "hidden_global_offset_z", "hidden_none", "hidden_printf_buffer",
     "hidden_default_queue", "hidden_completion_action", "hidden_multigrid_sync_arg"
 };
@@ -1230,11 +1230,25 @@ static inline bool hasValue(cxuint value)
 static inline bool hasValue(uint64_t value)
 { return value!=BINGEN64_NOTSUPPLIED && value!=BINGEN64_DEFAULT; }
 
+static std::string escapePrintfFormat(const std::string& fmt)
+{
+    std::string out;
+    out.reserve(fmt.size());
+    for (char c: fmt)
+        if (c!=':')
+            out.push_back(c);
+        else
+            out += "\\72";
+    return out;
+}
+
 void CLRX::generateROCmMetadataMsgPack(const ROCmMetadata& mdInfo,
                     const ROCmKernelDescriptor** kdescs, std::vector<cxbyte>& output)
 {
     output.clear();
-    MsgPackArrayWriter kernelsWriter(mdInfo.kernels.size(), output);
+    MsgPackMapWriter writer(2 + (!mdInfo.printfInfos.empty()), output);
+    writer.putKeyString("amdhsa.kernels");
+    MsgPackArrayWriter kernelsWriter = writer.putValueArray(mdInfo.kernels.size());
     for (size_t i = 0; i < mdInfo.kernels.size(); i++)
     {
         const ROCmKernelMetadata& kernelMD = mdInfo.kernels[i];
@@ -1323,13 +1337,13 @@ void CLRX::generateROCmMetadataMsgPack(const ROCmMetadata& mdInfo,
             }
             argWriter.putKeyString(".offset");
             argWriter.putValueUInt(arg.offset);
+            argWriter.putKeyString(".size");
+            argWriter.putValueUInt(arg.size);
             if (arg.pointeeAlign!=0)
             {
                 argWriter.putKeyString(".pointee_align");
                 argWriter.putValueUInt(arg.pointeeAlign);
             }
-            argWriter.putKeyString(".size");
-            argWriter.putValueUInt(arg.size);
             if (!arg.typeName.empty())
             {
                 argWriter.putKeyString(".type_name");
@@ -1397,6 +1411,8 @@ void CLRX::generateROCmMetadataMsgPack(const ROCmMetadata& mdInfo,
         kwriter.putValueUInt(kernelMD.sgprsNum);
         kwriter.putKeyString(".sgpr_spill_count");
         kwriter.putValueUInt(kernelMD.spilledSgprs);
+        kwriter.putKeyString(".symbol");
+        kwriter.putValueString(kernelMD.symbolName.c_str());
         if (!kernelMD.vecTypeHint.empty())
         {
             kwriter.putKeyString(".vec_type_hint");
@@ -1418,4 +1434,51 @@ void CLRX::generateROCmMetadataMsgPack(const ROCmMetadata& mdInfo,
                 rwriter.putUInt(kernelMD.workGroupSizeHint[i]);
         }
     }
+    if (!mdInfo.printfInfos.empty())
+    {
+        writer.putKeyString("amdhsa.printf");
+        MsgPackArrayWriter pwriter = writer.putValueArray(mdInfo.printfInfos.size());
+        std::unordered_set<cxuint> printfIds;
+        for (const ROCmPrintfInfo& printfInfo: mdInfo.printfInfos)
+            if (printfInfo.id!=BINGEN_DEFAULT)
+                if (!printfIds.insert(printfInfo.id).second)
+                    throw BinGenException("Duplicate of printf id");
+        // printfs
+        uint32_t freePrintfId = 1;
+        char numBuf[24];
+        for (const ROCmPrintfInfo& printfInfo: mdInfo.printfInfos)
+        {
+            // skip used printfids;
+            uint32_t printfId = printfInfo.id;
+            if (printfId == BINGEN_DEFAULT)
+            {
+                // skip used printfids
+                for (; printfIds.find(freePrintfId) != printfIds.end(); ++freePrintfId);
+                // just use this free printfid
+                printfId = freePrintfId++;
+            }
+            
+            std::string prStr;
+            itocstrCStyle(printfId, numBuf, 24);
+            prStr += numBuf;
+            prStr += ':';
+            itocstrCStyle(printfInfo.argSizes.size(), numBuf, 24);
+            prStr += numBuf;
+            prStr += ':';
+            for (size_t argSize: printfInfo.argSizes)
+            {
+                itocstrCStyle(argSize, numBuf, 24);
+                prStr += numBuf;
+                prStr += ':';
+            }
+            // printf format
+            std::string escaped = escapePrintfFormat(printfInfo.format.c_str());
+            prStr += escaped;
+            pwriter.putString(prStr.c_str());
+        }
+    }
+    writer.putKeyString("amdhsa.version");
+    MsgPackArrayWriter vwriter = writer.putValueArray(2);
+    vwriter.putUInt(mdInfo.version[0]);
+    vwriter.putUInt(mdInfo.version[1]);
 }
