@@ -513,6 +513,98 @@ static const cxbyte rocmMsgPackInput0[] =
         0x92, 0x27, 0x34
 };
 
+static const cxbyte rocmMsgPackInput1[] =
+{
+    0x82,
+    0xae, 'a', 'm', 'd', 'h', 's', 'a', '.', 'k', 'e', 'r', 'n', 'e', 'l', 's',
+    0x91,
+    // kernel A
+    0xde, 0x00, 0x13,
+    0xa5, '.', 'a', 'r', 'g', 's',
+    // kernel args
+    0x95,
+    0x88,   // 0
+        0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
+            0xa6, 'g', 'l', 'o', 'b', 'a', 'l',
+        0xa9, '.', 'i', 's', '_', 'c', 'o', 'n', 's', 't', 0xc3,
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa3, 'i', 'n', '0',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x00,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa6, 'f', 'l', 'o', 'a', 't', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xad, 'g', 'l', 'o', 'b', 'a', 'l', '_', 'b', 'u', 'f', 'f', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'f', '3', '2',
+    0x88,   // 1
+        0xae, '.', 'a', 'd', 'd', 'r', 'e', 's', 's', '_', 's', 'p', 'a', 'c', 'e',
+            0xa6, 'g', 'l', 'o', 'b', 'a', 'l',
+        0xa9, '.', 'i', 's', '_', 'c', 'o', 'n', 's', 't', 0xc3,
+        0xa5, '.', 'n', 'a', 'm', 'e', 0xa4, 'o', 'u', 't', '0',
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x00,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xaa, '.', 't', 'y', 'p', 'e', '_', 'n', 'a', 'm', 'e',
+            0xa6, 'f', 'l', 'o', 'a', 't', '*',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xad, 'g', 'l', 'o', 'b', 'a', 'l', '_', 'b', 'u', 'f', 'f', 'e', 'r',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'f', '3', '2',
+    0x84,   // 2
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x70,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xb6, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'g', 'l', 'o', 'b', 'a', 'l', '_',
+            'o', 'f', 'f', 's', 'e', 't', '_', 'x',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
+    0x84,   // 3
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0x78,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xb6, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'g', 'l', 'o', 'b', 'a', 'l', '_',
+            'o', 'f', 'f', 's', 'e', 't', '_', 'y',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
+    0x84,   // 4
+        0xa7, '.', 'o', 'f', 'f', 's', 'e', 't', 0xcc, 0x80,
+        0xa5, '.', 's', 'i', 'z', 'e', 0x08,
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 'k', 'i', 'n', 'd',
+            0xb6, 'h', 'i', 'd', 'd', 'e', 'n', '_', 'g', 'l', 'o', 'b', 'a', 'l', '_',
+            'o', 'f', 'f', 's', 'e', 't', '_', 'z',
+        0xab, '.', 'v', 'a', 'l', 'u', 'e', '_', 't', 'y', 'p', 'e', 0xa3, 'i', '6', '4',
+    0xb6, '.', 'd', 'e', 'v', 'i', 'c', 'e', '_', 'e', 'n', 'q', 'u', 'e', 'u', 'e', '_',
+        's', 'y', 'm', 'b', 'o', 'l', 0xa4, 'a', 'b', 'c', 'd',
+    0xb9, '.', 'g', 'r', 'o', 'u', 'p', '_', 's', 'e', 'g', 'm', 'e', 'n', 't', '_',
+        'f', 'i', 'x', 'e', 'd', '_', 's', 'i', 'z', 'e', 0xcc, 0xe7,
+    0xb6, '.', 'k', 'e', 'r', 'n', 'a', 'r', 'g', '_', 's', 'e', 'g', 'm', 'e', 'n', 't',
+        '_', 'a', 'l', 'i', 'g', 'n', 0x10,
+    0xb5, '.', 'k', 'e', 'r', 'n', 'a', 'r', 'g', '_', 's', 'e', 'g', 'm', 'e', 'n', 't',
+        '_', 's', 'i', 'z', 'e', 0xcc, 0xc0,
+    0xa9, '.', 'l', 'a', 'n', 'g', 'u', 'a', 'g', 'e',
+        0xa8, 'O', 'p', 'e', 'n', 'C', 'L', ' ', 'C',
+    0xb1, '.', 'l', 'a', 'n', 'g', 'u', 'a', 'g', 'e', '_',
+        'v', 'e', 'r', 's', 'i', 'o', 'n', 0x92, 0x03, 0x02,
+    0xb8, '.', 'm', 'a', 'x', '_', 'f', 'l', 'a', 't', '_', 'w', 'o', 'r', 'k',
+        'g', 'r', 'o', 'u', 'p', '_', 's', 'i', 'z', 'e', 0xcd, 0x01, 0x8c,
+    0xa5, '.', 'n', 'a', 'm', 'e', 0xa7, 'v', 'e', 'c', 't', 'o', 'r', 's',
+    0xbb, '.', 'p', 'r', 'i', 'v', 'a', 't', 'e', '_', 's', 'e', 'g', 'm', 'e', 'n', 't',
+        '_', 'f', 'i', 'x', 'e', 'd', '_', 's', 'i', 'z', 'e', 0xcd, 0x15, 0x2e,
+    0xb4, '.', 'r', 'e', 'q', 'd', '_', 'w', 'o', 'r', 'k', 'g', 'r', 'o', 'u', 'p', '_',
+            's', 'i', 'z', 'e', 0x93, 0x06, 0x09, 0x11,
+    0xab, '.', 's', 'g', 'p', 'r', '_', 'c', 'o', 'u', 'n', 't', 0x2b,
+    0xb1, '.', 's', 'g', 'p', 'r', '_', 's', 'p', 'i', 'l', 'l', '_',
+            'c', 'o', 'u', 'n', 't', 0x05,
+    0xa7, '.', 's', 'y', 'm', 'b', 'o', 'l',
+        0xaa, 'v', 'e', 'c', 't', 'o', 'r', 's', '.', 'k', 'd',
+    0xae, '.', 'v', 'e', 'c', '_', 't', 'y', 'p', 'e', '_', 'h', 'i', 'n', 't',
+        0xa5, 'i', 'n', 't', '1', '6',
+    0xab, '.', 'v', 'g', 'p', 'r', '_', 'c', 'o', 'u', 'n', 't', 0x09,
+    0xb1, '.', 'v', 'g', 'p', 'r', '_', 's', 'p', 'i', 'l', 'l', '_',
+            'c', 'o', 'u', 'n', 't', 0x08,
+    0xaf, '.', 'w', 'a', 'v', 'e', 'f', 'r', 'o', 'n', 't', '_', 's', 'i', 'z', 'e', 0x40,
+    0xb4, '.', 'w', 'o', 'r', 'k', 'g', 'r', 'o', 'u', 'p', '_', 's', 'i', 'z', 'e', '_',
+            'h', 'i', 'n', 't', 0x93, 0x04, 0x0b, 0x05,
+    // version
+    0xae, 'a', 'm', 'd', 'h', 's', 'a', '.', 'v', 'e', 'r', 's', 'i', 'o', 'n',
+        0x92, 0x27, 0x34
+};
+
 static const ROCmMsgPackMDTestCase rocmMsgPackMDTestCases[] =
 {
     {   // testcase 0
@@ -621,12 +713,50 @@ static const ROCmMsgPackMDTestCase rocmMsgPackMDTestCases[] =
             }
         },
         {
-            {
-                BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, 0, 0, 0, { },
-                0, 0, 0, 0, { }
-            }
+            { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, 0, 0, 0, { }, 0, 0, 0, 0, { } }
         },
         sizeof(rocmMsgPackInput0), rocmMsgPackInput0,
+        true, ""
+    },
+    {   // testcase 1
+        {
+            { 39, 52 },
+            { },
+            {   // kernels
+                { // kernel 1
+                    "vectors", "vectors.kd",
+                    {   // args
+                        { "in0", "float*", 8, 0, 0, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            true, false, false, false },
+                        { "out0", "float*", 8, 0, 0, ROCmValueKind::GLOBAL_BUFFER,
+                            ROCmValueType::FLOAT32, ROCmAddressSpace::GLOBAL,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            true, false, false, false },
+                        { "", "", 8, 112, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_X,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 120, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Y,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                        { "", "", 8, 128, 0, ROCmValueKind::HIDDEN_GLOBAL_OFFSET_Z,
+                            ROCmValueType::INT64, ROCmAddressSpace::NONE,
+                            ROCmAccessQual::DEFAULT, ROCmAccessQual::DEFAULT,
+                            false, false, false, false },
+                    },
+                    "OpenCL C", { 3, 2 }, { 6, 9, 17 }, { 4, 11, 5 }, "int16", "",
+                    192, BINGEN64_DEFAULT, BINGEN64_DEFAULT,
+                    16, 64, 43, 9, 396, { 0, 0, 0 }, 5, 8, "abcd"
+                }
+            }
+        },
+        {
+            { 231, 5422, 0, 0, 0, { }, 0, 0, 0, 0, { } }
+        },
+        sizeof(rocmMsgPackInput1), rocmMsgPackInput1,
         true, ""
     }
 };
