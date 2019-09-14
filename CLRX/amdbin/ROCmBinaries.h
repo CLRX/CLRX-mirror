@@ -470,6 +470,7 @@ private:
     std::string target;
     std::unique_ptr<cxbyte[]> noteBuf;
     std::string metadataStr;
+    std::vector<cxbyte> metadataBytes;
     size_t metadataSize;
     const char* metadata;
     cxuint mainSectionsNum;

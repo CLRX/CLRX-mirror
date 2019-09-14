@@ -553,6 +553,9 @@ static inline void addMainSectionToTable(cxuint& sectionsNum, uint16_t* builtinT
 
 void ROCmBinGenerator::prepareBinaryGen()
 {
+    if (input->globalData == nullptr && (input->llvm10BinFormat || input->metadataV3Format))
+        throw BinGenException("LLVM10 binary format requires global data");
+    
     AMDGPUArchVersion amdGpuArchValues = getGPUArchVersion(input->deviceType,
                 GPUArchVersionTable::ROCM);
     if (input->archMinor!=UINT32_MAX)
@@ -670,28 +673,49 @@ void ROCmBinGenerator::prepareBinaryGen()
         mapSort(symbolIndices.begin(), symbolIndices.end());
         
         const size_t mdKernelsNum = input->metadataInfo.kernels.size();
-        std::unique_ptr<const ROCmKernelConfig*[]> kernelConfigPtrs(
-                new const ROCmKernelConfig*[mdKernelsNum]);
-        // generate ROCm kernel config pointers
-        for (size_t k = 0; k < mdKernelsNum; k++)
+        if (!input->metadataV3Format)
         {
-            auto it = binaryMapFind(symbolIndices.begin(), symbolIndices.end(), 
-                        input->metadataInfo.kernels[k].name);
-            if (it == symbolIndices.end() ||
-                (input->symbols[it->second].type != ROCmRegionType::FKERNEL &&
-                 input->symbols[it->second].type != ROCmRegionType::KERNEL))
-                throw BinGenException("Kernel in metadata doesn't exists in code");
-            kernelConfigPtrs[k] = reinterpret_cast<const ROCmKernelConfig*>(
-                        input->code + input->symbols[it->second].offset);
+            std::unique_ptr<const ROCmKernelConfig*[]> kernelConfigPtrs(
+                    new const ROCmKernelConfig*[mdKernelsNum]);
+            // generate ROCm kernel config pointers
+            for (size_t k = 0; k < mdKernelsNum; k++)
+            {
+                auto it = binaryMapFind(symbolIndices.begin(), symbolIndices.end(),
+                            input->metadataInfo.kernels[k].name);
+                if (it == symbolIndices.end() ||
+                    (input->symbols[it->second].type != ROCmRegionType::FKERNEL &&
+                    input->symbols[it->second].type != ROCmRegionType::KERNEL))
+                    throw BinGenException("Kernel in metadata doesn't exists in code");
+                kernelConfigPtrs[k] = reinterpret_cast<const ROCmKernelConfig*>(
+                            input->code + input->symbols[it->second].offset);
+            }
+            // just generate ROCm metadata from info
+            generateROCmMetadata(input->metadataInfo, kernelConfigPtrs.get(), metadataStr);
+            metadataSize = metadataStr.size();
+            metadata = metadataStr.c_str();
         }
-        // just generate ROCm metadata from info
-        generateROCmMetadata(input->metadataInfo, kernelConfigPtrs.get(), metadataStr);
-        metadataSize = metadataStr.size();
-        metadata = metadataStr.c_str();
+        else
+        {
+            std::unique_ptr<const ROCmKernelDescriptor*[]> kernelDescPtrs(
+                    new const ROCmKernelDescriptor*[mdKernelsNum]);
+            for (size_t k = 0; k < mdKernelsNum; k++)
+                kernelDescPtrs[k] = reinterpret_cast<const ROCmKernelDescriptor*>(
+                            input->globalData + k*sizeof(ROCmKernelDescriptor));
+            // just generate ROCm metadata from info
+            generateROCmMetadataMsgPack(input->metadataInfo,
+                                kernelDescPtrs.get(), metadataBytes);
+            metadataSize = metadataStr.size();
+            metadata = metadataStr.c_str();
+        }
     }
     
     if (metadataSize != 0)
-        elfBinGen64->addNote({"AMD", metadataSize, (const cxbyte*)metadata, 0xaU});
+    {
+        if (!input->metadataV3Format)
+            elfBinGen64->addNote({"AMD", metadataSize, (const cxbyte*)metadata, 0xaU});
+        else
+            elfBinGen64->addNote({"AMDGPU", metadataSize, (const cxbyte*)metadata, 0x20U});
+    }
     
     /// region and sections
     elfBinGen64->addRegion(ElfRegion64::programHeaderTable());
