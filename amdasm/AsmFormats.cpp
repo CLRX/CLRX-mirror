@@ -56,7 +56,7 @@ void AsmAmdHsaKernelConfig::initialize()
     privilegedMode = false;
     dx10Clamp = false;
     pgmRsrc3 = 0;
-    sharedVGPRsNum = 0;
+    sharedVGPRsNum = BINGEN_DEFAULT;
 }
 
 AsmFormatHandler::AsmFormatHandler(Assembler& _assembler) : assembler(_assembler),

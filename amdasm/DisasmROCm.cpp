@@ -154,7 +154,7 @@ static void dumpKernelDescriptor(std::ostream& output, cxuint maxSgprsNum,
     output.write(buf, bufSize);
     if (arch >= GPUArchitecture::GCN1_5)
     {
-        bufSize = snprintf(buf, 100, "        .shared_vgprsnum %u\n",
+        bufSize = snprintf(buf, 100, "        .shared_vgprs %u\n",
                            (computePgmRsrc3 & 15)<<3);
         output.write(buf, bufSize);
     }

@@ -59,7 +59,7 @@ static const char* rocmPseudoOpNamesTbl[] =
     "privmode", "reqd_work_group_size",
     "reserved_sgprs", "reserved_vgprs",
     "runtime_handle", "runtime_loader_kernel_symbol",
-    "scratchbuffer", "sgprsnum",
+    "scratchbuffer", "sgprsnum", "shared_vgprs",
     "spilledsgprs", "spilledvgprs", "target", "tgsize", "tripple",
     "use_debug_enabled", "use_dispatch_id",
     "use_dispatch_ptr", "use_dynamic_call_stack",
@@ -99,7 +99,8 @@ enum
     ROCMOP_PRIVMODE, ROCMOP_REQD_WORK_GROUP_SIZE,
     ROCMOP_RESERVED_SGPRS, ROCMOP_RESERVED_VGPRS,
     ROCMOP_RUNTIME_HANDLE, ROCMOP_RUNTIME_LOADER_KERNEL_SYMBOL,
-    ROCMOP_SCRATCHBUFFER, ROCMOP_SGPRSNUM, ROCMOP_SPILLEDSGPRS, ROCMOP_SPILLEDVGPRS,
+    ROCMOP_SCRATCHBUFFER, ROCMOP_SGPRSNUM, ROCMOP_SHARED_VGPRS,
+    ROCMOP_SPILLEDSGPRS, ROCMOP_SPILLEDVGPRS,
     ROCMOP_TARGET, ROCMOP_TGSIZE, ROCMOP_TRIPPLE,
     ROCMOP_USE_DEBUG_ENABLED, ROCMOP_USE_DISPATCH_ID,
     ROCMOP_USE_DISPATCH_PTR, ROCMOP_USE_DYNAMIC_CALL_STACK,
@@ -1262,11 +1263,17 @@ void AsmROCmPseudoOps::setConfigValueMain(AsmAmdHsaKernelConfig& config,
         case ROCMCVAL_VGPRSNUM:
             config.usedVGPRsNum = value;
             break;
+        case ROCMCVAL_SHARED_VGPRSNUM:
+            config.sharedVGPRsNum = value;
+            break;
         case ROCMCVAL_PGMRSRC1:
             config.computePgmRsrc1 = value;
             break;
         case ROCMCVAL_PGMRSRC2:
             config.computePgmRsrc2 = value;
+            break;
+        case ROCMCVAL_PGMRSRC3:
+            config.pgmRsrc3 = value;
             break;
         case ROCMCVAL_FLOATMODE:
             config.floatMode = value;
@@ -1483,6 +1490,9 @@ void AsmROCmPseudoOps::setConfigBoolValueMain(AsmAmdHsaKernelConfig& config,
             break;
         case ROCMCVAL_USE_XNACK_ENABLED:
             config.enableFeatureFlags |= ROCMFLAG_USE_XNACK_ENABLED;
+            break;
+        case ROCMCVAL_USE_WAVE32:
+            config.enableFeatureFlags |= ROCMFLAG_USE_WAVE32;
             break;
         default:
             break;
@@ -2061,6 +2071,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_PGMRSRC2);
             break;
         case ROCMOP_PGMRSRC3:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_PGMRSRC3);
             break;
         case ROCMOP_PRINTF:
             AsmROCmPseudoOps::addPrintf(*this, stmtPlace, linePtr);
@@ -2100,6 +2111,10 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
         case ROCMOP_SGPRSNUM:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_SGPRSNUM);
+            break;
+        case ROCMOP_SHARED_VGPRS:
+            AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_SHARED_VGPRSNUM);
             break;
         case ROCMOP_TARGET:
             AsmROCmPseudoOps::setTarget(*this, linePtr, false);
@@ -2161,6 +2176,10 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
         case ROCMOP_USE_XNACK_ENABLED:
             AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_USE_XNACK_ENABLED);
+            break;
+        case ROCMOP_USE_WAVE32:
+            AsmROCmPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                             ROCMCVAL_USE_WAVE32);
             break;
         case ROCMOP_USERDATANUM:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,

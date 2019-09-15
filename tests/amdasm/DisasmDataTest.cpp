@@ -2012,7 +2012,7 @@ data2:
         .dims x
         .sgprsnum 16
         .vgprsnum 4
-        .shared_vgprsnum 0
+        .shared_vgprs 0
         .dx10clamp
         .ieeemode
         .floatmode 0xf0
@@ -2055,7 +2055,7 @@ data2:
         .dims x
         .sgprsnum 16
         .vgprsnum 4
-        .shared_vgprsnum 0
+        .shared_vgprs 0
         .dx10clamp
         .ieeemode
         .floatmode 0xf0
