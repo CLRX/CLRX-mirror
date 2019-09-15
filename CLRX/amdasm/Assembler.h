@@ -553,6 +553,8 @@ private:
     uint32_t llvmVersion; // GalliumCompute
     bool _64bit;    ///
     bool newROCmBinFormat;
+    bool llvm10BinFormat;
+    bool rocmMetadataV3;
     bool good;
     bool resolvingRelocs;
     bool doNotRemoveFromSymbolClones;
@@ -865,6 +867,18 @@ public:
     /// set new ROCm binary format
     void setNewROCmBinFormat(bool newFmt)
     { newROCmBinFormat = newFmt; }
+    /// is new ROCm LLVM10 binary format
+    bool isLLVM10BinFormat() const
+    { return llvm10BinFormat; }
+    /// set new ROCm LLVM10 binary format
+    void setLLVM10BinFormat(bool newFmt)
+    { llvm10BinFormat = newFmt; }
+    /// is new ROCm metadata V3 format
+    bool isROCmMetadataV3() const
+    { return rocmMetadataV3; }
+    /// is new ROCm metadata V3 format
+    void setROCmMetadataV3(bool newFmt)
+    { rocmMetadataV3 = newFmt; }
     /// get policy version
     cxuint getPolicyVersion() const
     { return policyVersion; }

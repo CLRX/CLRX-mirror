@@ -158,6 +158,9 @@ struct CLRX_INTERNAL AsmROCmPseudoOps: AsmPseudoOps
     // .newbinfmt
     static void setNewBinFormat(AsmROCmHandler& handler, const char* linePtr);
     
+    static void setLLVM10BinFormat(AsmROCmHandler& handler, const char* linePtr);
+    static void setMetadataV3Format(AsmROCmHandler& handler, const char* linePtr);
+    
     // checkConfigValue, setConfigValueMain routines used by other handlers
     // to check and set AMD HSA config value
     static bool checkConfigValue(Assembler& asmr, const char* valuePlace,

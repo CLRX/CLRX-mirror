@@ -126,6 +126,8 @@ AsmROCmHandler::AsmROCmHandler(Assembler& assembler):
     codeSection = 0;
     sectionDiffsResolvable = true;
     output.newBinFormat = assembler.isNewROCmBinFormat();
+    output.llvm10BinFormat = assembler.isLLVM10BinFormat();
+    output.metadataV3Format = assembler.isROCmMetadataV3();
     output.metadataInfo.initialize();
     output.archMinor = output.archStepping = UINT32_MAX;
     output.eflags = BINGEN_DEFAULT;
@@ -454,6 +456,22 @@ void AsmROCmPseudoOps::setNewBinFormat(AsmROCmHandler& handler, const char* line
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     handler.output.newBinFormat = true;
+}
+
+void AsmROCmPseudoOps::setLLVM10BinFormat(AsmROCmHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.llvm10BinFormat = true;
+}
+
+void AsmROCmPseudoOps::setMetadataV3Format(AsmROCmHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.metadataV3Format = true;
 }
 
 void AsmROCmPseudoOps::addMetadata(AsmROCmHandler& handler, const char* pseudoOpPlace,
@@ -1962,6 +1980,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
                              ROCMCVAL_KERNEL_CODE_PREFETCH_SIZE);
             break;
         case ROCMOP_LLVMBINFMT:
+            AsmROCmPseudoOps::setLLVM10BinFormat(*this, linePtr);
             break;
         case ROCMOP_LOCALSIZE:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
@@ -1982,6 +2001,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::addMetadata(*this, stmtPlace, linePtr);
             break;
         case ROCMOP_METADATAV3:
+            AsmROCmPseudoOps::setMetadataV3Format(*this, linePtr);
             break;
         case ROCMOP_MD_GROUP_SEGMENT_FIXED_SIZE:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,

@@ -571,13 +571,14 @@ private:
     {
         AsmSectionId configSection;
         std::unique_ptr<AsmROCmKernelConfig> config;
+        std::unique_ptr<ROCmKernelDescriptor> desc;
         bool isFKernel;
         AsmSectionId ctrlDirSection;
         AsmSectionId savedSection;
         
         explicit Kernel(AsmSectionId _configSection = ASMSECT_NONE): KernelBase{},
-                configSection(_configSection), config(nullptr), isFKernel(false),
-                ctrlDirSection(ASMSECT_NONE), savedSection(ASMSECT_NONE)
+                configSection(_configSection), config(nullptr), desc(nullptr),
+                isFKernel(false), ctrlDirSection(ASMSECT_NONE), savedSection(ASMSECT_NONE)
         { }
         
         void initializeKernelConfig();
