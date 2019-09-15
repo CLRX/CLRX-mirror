@@ -47,14 +47,14 @@ static const char* rocmPseudoOpNamesTbl[] =
     "kcodeend", "kernarg_segment_align",
     "kernarg_segment_size", "kernel_code_entry_offset",
     "kernel_code_prefetch_offset", "kernel_code_prefetch_size",
-    "localsize", "machine",
+    "llvmbinfmt", "localsize", "machine",
     "max_flat_work_group_size", "max_scratch_backing_memory",
     "md_group_segment_fixed_size", "md_kernarg_segment_align",
     "md_kernarg_segment_size", "md_language","md_private_segment_fixed_size",
     "md_sgprsnum", "md_symname", "md_version",
     "md_vgprsnum", "md_wavefront_size",
-    "metadata", "newbinfmt", "nosectdiffs",
-    "pgmrsrc1", "pgmrsrc2", "printf", "priority",
+    "metadata", "metadatav3", "newbinfmt", "nosectdiffs",
+    "pgmrsrc1", "pgmrsrc2", "pgmrsrc3", "printf", "priority",
     "private_elem_size", "private_segment_align",
     "privmode", "reqd_work_group_size",
     "reserved_sgprs", "reserved_vgprs",
@@ -66,7 +66,7 @@ static const char* rocmPseudoOpNamesTbl[] =
     "use_flat_scratch_init", "use_grid_workgroup_count",
     "use_kernarg_segment_ptr", "use_ordered_append_gds",
     "use_private_segment_buffer", "use_private_segment_size",
-    "use_ptr64", "use_queue_ptr", "use_xnack_enabled",
+    "use_ptr64", "use_queue_ptr", "use_wave32", "use_xnack_enabled",
     "userdatanum", "vectypehint", "vgprsnum", "wavefront_sgpr_count",
     "wavefront_size", "work_group_size_hint", "workgroup_fbarrier_count",
     "workgroup_group_segment_size", "workitem_private_segment_size",
@@ -87,14 +87,14 @@ enum
     ROCMOP_KCODEEND, ROCMOP_KERNARG_SEGMENT_ALIGN,
     ROCMOP_KERNARG_SEGMENT_SIZE, ROCMOP_KERNEL_CODE_ENTRY_OFFSET,
     ROCMOP_KERNEL_CODE_PREFETCH_OFFSET, ROCMOP_KERNEL_CODE_PREFETCH_SIZE,
-    ROCMOP_LOCALSIZE, ROCMOP_MACHINE,
+    ROCMOP_LLVMBINFMT, ROCMOP_LOCALSIZE, ROCMOP_MACHINE,
     ROCMOP_MAX_FLAT_WORK_GROUP_SIZE, ROCMOP_MAX_SCRATCH_BACKING_MEMORY,
     ROCMOP_MD_GROUP_SEGMENT_FIXED_SIZE, ROCMOP_MD_KERNARG_SEGMENT_ALIGN,
     ROCMOP_MD_KERNARG_SEGMENT_SIZE, ROCMOP_MD_LANGUAGE,
     ROCMOP_MD_PRIVATE_SEGMENT_FIXED_SIZE, ROCMOP_MD_SGPRSNUM,
     ROCMOP_MD_SYMNAME, ROCMOP_MD_VERSION, ROCMOP_MD_VGPRSNUM, ROCMOP_MD_WAVEFRONT_SIZE,
-    ROCMOP_METADATA, ROCMOP_NEWBINFMT, ROCMOP_NOSECTDIFFS,
-    ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PRINTF,
+    ROCMOP_METADATA, ROCMOP_METADATAV3, ROCMOP_NEWBINFMT, ROCMOP_NOSECTDIFFS,
+    ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PGMRSRC3, ROCMOP_PRINTF,
     ROCMOP_PRIORITY, ROCMOP_PRIVATE_ELEM_SIZE, ROCMOP_PRIVATE_SEGMENT_ALIGN,
     ROCMOP_PRIVMODE, ROCMOP_REQD_WORK_GROUP_SIZE,
     ROCMOP_RESERVED_SGPRS, ROCMOP_RESERVED_VGPRS,
@@ -106,7 +106,7 @@ enum
     ROCMOP_USE_FLAT_SCRATCH_INIT, ROCMOP_USE_GRID_WORKGROUP_COUNT,
     ROCMOP_USE_KERNARG_SEGMENT_PTR, ROCMOP_USE_ORDERED_APPEND_GDS,
     ROCMOP_USE_PRIVATE_SEGMENT_BUFFER, ROCMOP_USE_PRIVATE_SEGMENT_SIZE,
-    ROCMOP_USE_PTR64, ROCMOP_USE_QUEUE_PTR, ROCMOP_USE_XNACK_ENABLED,
+    ROCMOP_USE_PTR64, ROCMOP_USE_QUEUE_PTR, ROCMOP_USE_WAVE32, ROCMOP_USE_XNACK_ENABLED,
     ROCMOP_USERDATANUM, ROCMOP_VECTYPEHINT, ROCMOP_VGPRSNUM, ROCMOP_WAVEFRONT_SGPR_COUNT,
     ROCMOP_WAVEFRONT_SIZE, ROCM_WORK_GROUP_SIZE_HINT, ROCMOP_WORKGROUP_FBARRIER_COUNT,
     ROCMOP_WORKGROUP_GROUP_SEGMENT_SIZE, ROCMOP_WORKITEM_PRIVATE_SEGMENT_SIZE,
@@ -1961,6 +1961,8 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_KERNEL_CODE_PREFETCH_SIZE);
             break;
+        case ROCMOP_LLVMBINFMT:
+            break;
         case ROCMOP_LOCALSIZE:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE);
@@ -1978,6 +1980,8 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             break;
         case ROCMOP_METADATA:
             AsmROCmPseudoOps::addMetadata(*this, stmtPlace, linePtr);
+            break;
+        case ROCMOP_METADATAV3:
             break;
         case ROCMOP_MD_GROUP_SEGMENT_FIXED_SIZE:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
@@ -2035,6 +2039,8 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             break;
         case ROCMOP_PGMRSRC2:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr, ROCMCVAL_PGMRSRC2);
+            break;
+        case ROCMOP_PGMRSRC3:
             break;
         case ROCMOP_PRINTF:
             AsmROCmPseudoOps::addPrintf(*this, stmtPlace, linePtr);
