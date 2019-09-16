@@ -114,6 +114,18 @@ enum
     ROCMOP_WORKITEM_VGPR_COUNT
 };
 
+static const void configToKernelDescriptor(const AsmROCmKernelConfig& config,
+                                      ROCmKernelDescriptor& desc)
+{
+    desc.groupSegmentFixedSize = config.workgroupGroupSegmentSize;
+    desc.privateSegmentFixedSize = config.workitemPrivateSegmentSize;
+    desc.kernelCodeEntryOffset = config.kernelCodeEntryOffset;
+    desc.pgmRsrc1 = config.computePgmRsrc1;
+    desc.pgmRsrc2 = config.computePgmRsrc2;
+    desc.pgmRsrc3 = config.pgmRsrc3;
+    desc.initialKernelExecState = config.enableSgprRegisterFlags;
+}
+
 /*
  * ROCm format handler
  */
@@ -1492,7 +1504,7 @@ void AsmROCmPseudoOps::setConfigBoolValueMain(AsmAmdHsaKernelConfig& config,
             config.enableFeatureFlags |= ROCMFLAG_USE_XNACK_ENABLED;
             break;
         case ROCMCVAL_USE_WAVE32:
-            config.enableFeatureFlags |= ROCMFLAG_USE_WAVE32;
+            config.enableSgprRegisterFlags |= ROCMFLAG_USE_WAVE32;
             break;
         default:
             break;
@@ -2243,6 +2255,18 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
     size_t sectionsNum = sections.size();
     output.deviceType = assembler.getDeviceType();
     
+    const bool llvm10BinFormat = assembler.isLLVM10BinFormat();
+    // check whether ctrlDirSection if llvm10BinFormat
+    if (llvm10BinFormat)
+        for (const Kernel* kernel: kernelStates)
+            if (kernel->ctrlDirSection != ASMSECT_NONE)
+            {
+                good = false;
+                assembler.printError(AsmSourcePos(), "Some kernels have "
+                        "Control directive section if LLVM10 binary format used");
+                break;
+            }
+    
     prepareKcodeState();
     
     // set sections as outputs
@@ -2319,6 +2343,12 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
     if (output.archStepping!=UINT32_MAX)
         amdGpuArchValues.stepping = output.archStepping;
     
+    size_t kdescBaseOffset = 0;
+    if (llvm10BinFormat)
+    {
+        AsmSection& asmDSection = assembler.sections[dataSection];
+        kdescBaseOffset = ((asmDSection.content.size() + 4095)&0xfff);
+    }
     // prepare kernels configuration
     for (size_t i = 0; i < kernelStates.size(); i++)
     {
@@ -2341,7 +2371,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
             config.amdMachineMinor = amdGpuArchValues.minor;
         if (config.amdMachineStepping == BINGEN16_DEFAULT)
             config.amdMachineStepping = amdGpuArchValues.stepping;
-        if (config.kernelCodeEntryOffset == BINGEN64_DEFAULT)
+        if (config.kernelCodeEntryOffset == BINGEN64_DEFAULT && !llvm10BinFormat)
             config.kernelCodeEntryOffset = 256;
         if (config.kernelCodePrefetchOffset == BINGEN64_DEFAULT)
             config.kernelCodePrefetchOffset = 0;
@@ -2471,12 +2501,15 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         if (config.runtimeLoaderKernelSymbol == BINGEN64_DEFAULT)
             config.runtimeLoaderKernelSymbol = 0;
         
-        config.toLE(); // to little-endian
-        // put control directive section to config
-        if (kernel.ctrlDirSection!=ASMSECT_NONE &&
-            assembler.sections[kernel.ctrlDirSection].content.size()==128)
-            ::memcpy(config.controlDirective, 
-                 assembler.sections[kernel.ctrlDirSection].content.data(), 128);
+        if (!llvm10BinFormat)
+        {
+            config.toLE(); // to little-endian
+            // put control directive section to config
+            if (kernel.ctrlDirSection!=ASMSECT_NONE &&
+                assembler.sections[kernel.ctrlDirSection].content.size()==128)
+                ::memcpy(config.controlDirective,
+                    assembler.sections[kernel.ctrlDirSection].content.data(), 128);
+        }
     }
     
     // check kernel symbols and setup kernel configs
@@ -2517,19 +2550,50 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         const Kernel& kernel = *kernelStates[ki];
         kinput.offset = symbol.value;
         
-        if (asmCSection.content.size() < symbol.value + sizeof(ROCmKernelConfig))
+        if (!llvm10BinFormat)
         {
-            // if kernel configuration out of section size
-            assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
-                "Code for kernel '")+kinput.symbolName.c_str()+
-                "' is too small for configuration").c_str());
-            good = false;
-            continue;
+            if (asmCSection.content.size() < symbol.value + sizeof(ROCmKernelConfig))
+            {
+                // if kernel configuration out of section size
+                assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
+                    "Code for kernel '")+kinput.symbolName.c_str()+
+                    "' is too small for configuration").c_str());
+                good = false;
+                continue;
+            }
+            else if (kernel.config!=nullptr)
+                // put config to code section
+                ::memcpy(asmCSection.content.data() + symbol.value,
+                        kernel.config.get(), sizeof(ROCmKernelConfig));
         }
-        else if (kernel.config!=nullptr)
-            // put config to code section
-            ::memcpy(asmCSection.content.data() + symbol.value,
-                     kernel.config.get(), sizeof(ROCmKernelConfig));
+        else
+        {
+            AsmSection& asmDSection = assembler.sections[dataSection];
+            if (asmDSection.content.size() < sizeof(ROCmKernelDescriptor)*(ki+1))
+            {
+                // if kernel descriptor out of section size
+                assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
+                    "Global data for kernel '")+kinput.symbolName.c_str()+
+                    "' is too small for descriptor").c_str());
+                good = false;
+                continue;
+            }
+            else if (kernel.config!=nullptr)
+            {
+                AsmROCmKernelConfig& config = *kernel.config.get();
+                if (config.kernelCodeEntryOffset == BINGEN64_DEFAULT)
+                    // calculate kernel entry offset (if default)
+                    config.kernelCodeEntryOffset = kdescBaseOffset + kinput.offset -
+                                ki*sizeof(ROCmKernelDescriptor);
+                
+                // put kernel descriptor to global data
+                ROCmKernelDescriptor kdesc{};
+                configToKernelDescriptor(config, kdesc);
+                kdesc.toLE();
+                ::memcpy(asmDSection.content.data() + ki*sizeof(ROCmKernelDescriptor),
+                         &kdesc, sizeof(ROCmKernelDescriptor));
+            }
+        }
         // set symbol type
         kinput.type = kernel.isFKernel ? ROCmRegionType::FKERNEL : ROCmRegionType::KERNEL;
     }
