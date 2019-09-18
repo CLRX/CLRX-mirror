@@ -182,6 +182,11 @@ ISAUsageHandler* GCNAssembler::createUsageHandler() const
     return new GCNUsageHandler();
 }
 
+Flags GCNAssembler::getImportantCodeFlags() const
+{
+    return (curArchMask & ARCH_GCN_1_5)!=0 ? ASM_CODE_WAVE32 : 0;
+}
+
 void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
             const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output,
             ISAUsageHandler* usageHandler, ISAWaitHandler* waitHandler)

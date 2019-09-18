@@ -166,6 +166,7 @@ AsmKernelId AsmROCmHandler::addKernel(const char* kernelName)
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
     kernelStates.push_back(new Kernel(thisSection));
+    kernelStates.back()->codeFlags = assembler.codeFlags;
     output.metadataInfo.kernels.push_back(ROCmKernelMetadata());
     output.metadataInfo.kernels.back().initialize();
     output.metadataInfo.kernels.back().name = kernelName;
@@ -315,6 +316,12 @@ AsmFormatHandler::SectionInfo AsmROCmHandler::getSectionInfo(AsmSectionId sectio
     
     info.name = sections[sectionId].name;
     return info;
+}
+
+void AsmROCmHandler::setCodeFlags(Flags codeFlags)
+{
+    if (assembler.currentKernel != ASMKERN_GLOBAL)
+        kernelStates[assembler.currentKernel]->codeFlags = codeFlags;
 }
 
 bool AsmROCmHandler::isCodeSection() const
@@ -1528,6 +1535,12 @@ void AsmROCmPseudoOps::setConfigBoolValue(AsmROCmHandler& handler,
     AsmROCmKernelConfig& config = *(handler.kernelStates[asmr.currentKernel]->config);
     
     setConfigBoolValueMain(config, target);
+    
+    if (target == ROCMCVAL_USE_WAVE32)
+    {
+        AsmROCmHandler::KernelBase& kbase = *(handler.kernelStates[asmr.currentKernel]);
+        kbase.codeFlags |= ASM_CODE_WAVE32;
+    }
 }
 
 void AsmROCmPseudoOps::setDefaultHSAFeatures(AsmROCmHandler& handler,

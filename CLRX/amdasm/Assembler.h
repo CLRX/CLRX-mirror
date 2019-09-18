@@ -248,12 +248,15 @@ public:
                  AsmSectionId sectionId, uint64_t value) = 0;
     /// check if name is mnemonic
     virtual bool checkMnemonic(const CString& mnemonic) const = 0;
+    virtual Flags getImportantCodeFlags() const = 0;
     /// set allocated registers (if regs is null then reset them)
     virtual void setAllocatedRegisters(const cxuint* regs = nullptr,
                 Flags regFlags = 0) = 0;
+    void setCodeFlags(Flags codeFlags);
     /// get allocated register numbers after assemblying
     virtual const cxuint* getAllocatedRegisters(size_t& regTypesNum,
                 Flags& regFlags) const = 0;
+    Flags getCodeFlags() const;
     /// get max registers number
     virtual void getMaxRegistersNum(size_t& regTypesNum, cxuint* maxRegs) const = 0;
     /// get registers ranges
@@ -347,6 +350,7 @@ public:
                  cxbyte* sectionData, size_t offset, AsmExprTargetType targetType,
                  AsmSectionId sectionId, uint64_t value);
     bool checkMnemonic(const CString& mnemonic) const;
+    Flags getImportantCodeFlags() const;
     void setAllocatedRegisters(const cxuint* regs, Flags regFlags);
     const cxuint* getAllocatedRegisters(size_t& regTypesNum, Flags& regFlags) const;
     void getMaxRegistersNum(size_t& regTypesNum, cxuint* maxRegs) const;
@@ -980,6 +984,12 @@ inline void ISAAssembler::printError(const AsmSourcePos& sourcePos, const char* 
 inline void ISAAssembler::addCodeFlowEntry(AsmSectionId sectionId,
                     const AsmCodeFlowEntry& entry)
 { assembler.sections[sectionId].addCodeFlowEntry(entry); }
+
+inline void ISAAssembler::setCodeFlags(Flags codeFlags)
+{ assembler.setCodeFlags(codeFlags); }
+
+inline Flags ISAAssembler::getCodeFlags() const
+{ return assembler.getCodeFlags(); }
 
 };
 

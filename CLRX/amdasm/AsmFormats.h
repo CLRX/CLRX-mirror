@@ -147,6 +147,7 @@ public:
     {
         cxuint allocRegs[MAX_REGTYPES_NUM];
         Flags allocRegFlags;
+        Flags codeFlags;
     };
 protected:
     Assembler& assembler;   ///< assembler reference
@@ -213,6 +214,7 @@ public:
     
     /// prepare before section diference resolving
     virtual bool prepareSectionDiffsResolving();
+    virtual void setCodeFlags(Flags codeFlags);
 };
 
 /// format handler with Kcode (kernel-code) handling
@@ -631,6 +633,7 @@ public:
     bool isCodeSection() const;
     KernelBase& getKernelBase(AsmKernelId index);
     size_t getKernelsNum() const;
+    void setCodeFlags(Flags codeFlags);
 };
 
 };

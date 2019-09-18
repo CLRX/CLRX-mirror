@@ -69,6 +69,9 @@ AsmFormatHandler::~AsmFormatHandler()
 void AsmFormatHandler::handleLabel(const CString& label)
 { }
 
+void AsmFormatHandler::setCodeFlags(Flags codeFlags)
+{ }
+
 bool AsmFormatHandler::resolveSymbol(const AsmSymbol& symbol, uint64_t& value,
                  AsmSectionId& sectionId)
 {
@@ -187,6 +190,7 @@ void AsmKcodeHandler::restoreKcodeCurrentAllocRegs()
         KernelBase& newKernel = getKernelBase(currentKcodeKernel);
         assembler.isaAssembler->setAllocatedRegisters(newKernel.allocRegs,
                             newKernel.allocRegFlags);
+        assembler.isaAssembler->setCodeFlags(newKernel.codeFlags);
     }
 }
 
@@ -200,6 +204,7 @@ void AsmKcodeHandler::saveKcodeCurrentAllocRegs()
         const cxuint* regs = assembler.isaAssembler->getAllocatedRegisters(
                             regTypesNum, oldKernel.allocRegFlags);
         std::copy(regs, regs+regTypesNum, oldKernel.allocRegs);
+        oldKernel.codeFlags = assembler.isaAssembler->getCodeFlags();
     }
 }
 
@@ -214,7 +219,7 @@ void AsmKcodeHandler::prepareKcodeState()
             while (!kcodeSelStack.empty())
             {
                 // pop from kcode stack and apply changes
-                AsmKcodePseudoOps::updateKCodeSel(*this, kcodeSelection);
+                AsmKcodePseudoOps::updateKCodeSel(*this, kcodeSelection, nullptr);
                 kcodeSelection = kcodeSelStack.top();
                 kcodeSelStack.pop();
             }
@@ -251,14 +256,18 @@ void AsmKcodeHandler::handleLabel(const CString& label)
 /* update kernel code selection, join all regallocation and store to
  * current kernel regalloc */
 void AsmKcodePseudoOps::updateKCodeSel(AsmKcodeHandler& handler,
-                    const std::vector<AsmKernelId>& oldset)
+                    const std::vector<AsmKernelId>& oldset, const char* pseudoOpPlace)
 {
     Assembler& asmr = handler.assembler;
     // old elements - join current regstate with all them
     size_t regTypesNum;
+    bool first = true;
+    bool codeFlagsMismatch = false;
     for (auto it = oldset.begin(); it != oldset.end(); ++it)
     {
         Flags curAllocRegFlags;
+        Flags curCodeFlags = asmr.isaAssembler->getCodeFlags();
+        Flags importantCodeFlags = asmr.isaAssembler->getImportantCodeFlags();
         const cxuint* curAllocRegs = asmr.isaAssembler->getAllocatedRegisters(regTypesNum,
                                curAllocRegFlags);
         cxuint newAllocRegs[MAX_REGTYPES_NUM];
@@ -266,7 +275,18 @@ void AsmKcodePseudoOps::updateKCodeSel(AsmKcodeHandler& handler,
         for (size_t i = 0; i < regTypesNum; i++)
             newAllocRegs[i] = std::max(curAllocRegs[i], kernel.allocRegs[i]);
         kernel.allocRegFlags |= curAllocRegFlags;
+        if (!first && ((kernel.codeFlags ^ curCodeFlags) & importantCodeFlags) != 0)
+            codeFlagsMismatch = true;
+        kernel.codeFlags |= curCodeFlags;
         std::copy(newAllocRegs, newAllocRegs+regTypesNum, kernel.allocRegs);
+        first = false;
+    }
+    if (codeFlagsMismatch)
+    {
+        if (pseudoOpPlace!=nullptr)
+            asmr.printError(pseudoOpPlace, "Code flags mismatch for kernel set");
+        else
+            asmr.printError(AsmSourcePos{}, "Code flags mismatch for kernel set");
     }
     asmr.isaAssembler->setAllocatedRegisters();
 }
@@ -346,7 +366,7 @@ void AsmKcodePseudoOps::doKCode(AsmKcodeHandler& handler, const char* pseudoOpPl
                             handler.codeSection);
     }
     
-    updateKCodeSel(handler, handler.kcodeSelStack.top());
+    updateKCodeSel(handler, handler.kcodeSelStack.top(), pseudoOpPlace);
 }
 
 void AsmKcodePseudoOps::doKCodeEnd(AsmKcodeHandler& handler, const char* pseudoOpPlace,
@@ -360,7 +380,7 @@ void AsmKcodePseudoOps::doKCodeEnd(AsmKcodeHandler& handler, const char* pseudoO
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    updateKCodeSel(handler, handler.kcodeSelection);
+    updateKCodeSel(handler, handler.kcodeSelection, pseudoOpPlace);
     std::vector<AsmKernelId> oldKCodeSel = handler.kcodeSelection;
     handler.kcodeSelection = handler.kcodeSelStack.top();
     
