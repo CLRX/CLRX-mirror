@@ -377,8 +377,9 @@ uint32_t CLRX::calculatePgmRSrc1(GPUArchitecture arch, cxuint vgprsNum, cxuint s
             bool debugMode, bool ieeeMode)
 {
     const uint32_t sgprsField = arch<GPUArchitecture::GCN1_5 ? (((sgprsNum-1)>>3)<<6) : 0;
-    return ((vgprsNum-1)>>2) | sgprsField |
-            ((uint32_t(floatMode)&0xff)<<12) |
+    const uint32_t vgprsField = arch<GPUArchitecture::GCN1_5 ? ((vgprsNum-1)>>2) :
+                    ((vgprsNum-1)>>3);
+    return vgprsField | sgprsField | ((uint32_t(floatMode)&0xff)<<12) |
             (ieeeMode?1U<<23:0) | (uint32_t(priority&3)<<10) |
             (privMode?1U<<20:0) | (dx10Clamp?1U<<21:0) |
             (debugMode?1U<<22:0);

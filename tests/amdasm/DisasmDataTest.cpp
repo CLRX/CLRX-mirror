@@ -2011,7 +2011,7 @@ data2:
     .config
         .dims x
         .sgprsnum 16
-        .vgprsnum 4
+        .vgprsnum 8
         .shared_vgprs 0
         .dx10clamp
         .ieeemode
@@ -2054,7 +2054,7 @@ data2:
     .config
         .dims x
         .sgprsnum 16
-        .vgprsnum 4
+        .vgprsnum 8
         .shared_vgprs 0
         .dx10clamp
         .ieeemode

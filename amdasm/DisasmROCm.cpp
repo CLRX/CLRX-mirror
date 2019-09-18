@@ -150,7 +150,9 @@ static void dumpKernelDescriptor(std::ostream& output, cxuint maxSgprsNum,
     bufSize = snprintf(buf, 100, "        .sgprsnum %u\n",
             std::min((((pgmRsrc1>>6) & 0xf)<<3)+8, maxSgprsNum));
     output.write(buf, bufSize);
-    bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", ((pgmRsrc1 & 0x3f)<<2)+4);
+    const cxuint vgprsNum = arch < GPUArchitecture::GCN1_5 ? ((pgmRsrc1 & 0x3f)<<2)+4 :
+                ((pgmRsrc1 & 0x3f)<<3)+8;
+    bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", vgprsNum);
     output.write(buf, bufSize);
     if (arch >= GPUArchitecture::GCN1_5)
     {
