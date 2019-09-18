@@ -599,7 +599,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_NOWAVE32:
             if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
-                wave32 = false;
+                codeFlags &= ~ASM_CODE_WAVE32;
             break;
         case ASMOP_OCTA:
             AsmPseudoOps::putUInt128s(*this, stmtPlace, linePtr);
@@ -703,7 +703,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_WAVE32:
             if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
-                wave32 = true;
+                codeFlags |= ASM_CODE_WAVE32;
             break;
         case ASMOP_WEAK:
             AsmPseudoOps::setSymbolBind(*this, linePtr, STB_WEAK);

@@ -780,7 +780,7 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
     buggyFPLit = (flags & ASM_BUGGYFPLIT)!=0;
     macroCase = (flags & ASM_MACRONOCASE)==0;
     oldModParam = (flags & ASM_OLDMODPARAM)!=0;
-    wave32 = (flags & ASM_WAVE32)!=0;
+    codeFlags = ((flags & ASM_WAVE32)!=0)?ASM_CODE_WAVE32:0;
     localCount = macroCount = inclusionLevel = 0;
     macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;
@@ -823,7 +823,7 @@ Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
     buggyFPLit = (flags & ASM_BUGGYFPLIT)!=0;
     macroCase = (flags & ASM_MACRONOCASE)==0;
     oldModParam = (flags & ASM_OLDMODPARAM)!=0;
-    wave32 = (flags & ASM_WAVE32)!=0;
+    codeFlags = ((flags & ASM_WAVE32)!=0)?ASM_CODE_WAVE32:0;
     localCount = macroCount = inclusionLevel = 0;
     macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;

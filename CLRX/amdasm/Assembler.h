@@ -69,6 +69,11 @@ enum: Flags
                     ASM_WAVE32|ASM_OLDMODPARAM)  ///< all flags
 };
 
+enum: Flags
+{
+    ASM_CODE_WAVE32 = 1
+};
+
 struct AsmRegVar;
 
 /// ISA (register and regvar) Usage handler
@@ -583,7 +588,7 @@ private:
     bool buggyFPLit;
     bool macroCase;
     bool oldModParam;
-    bool wave32;
+    Flags codeFlags;
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;
@@ -891,6 +896,12 @@ public:
     /// set flags
     void setFlags(Flags flags)
     { this->flags = flags; }
+    /// get code flags
+    Flags getCodeFlags() const
+    { return codeFlags; }
+    /// set code flags
+    void setCodeFlags(Flags flags)
+    { this->codeFlags = flags; }
     /// get true if altMacro enabled
     bool isAltMacro() const
     { return alternateMacro; }
