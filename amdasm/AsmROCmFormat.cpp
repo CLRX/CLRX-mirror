@@ -2397,7 +2397,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
     if (output.llvm10BinFormat)
     {
         AsmSection& asmDSection = assembler.sections[dataSection];
-        kdescBaseOffset = ((asmDSection.content.size() + 4095)&0xfff);
+        kdescBaseOffset = ((asmDSection.content.size() + 4095)&~0xfff);
     }
     // prepare kernels configuration
     for (size_t i = 0; i < kernelStates.size(); i++)

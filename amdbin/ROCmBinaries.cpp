@@ -586,11 +586,15 @@ void ROCmBinGenerator::prepareBinaryGen()
     // generate main builtin section table (for section id translation)
     if (input->newBinFormat)
         addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ROCMSECTID_NOTE);
-    if (input->globalData != nullptr)
-        addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_RODATA);
+    if (!input->llvm10BinFormat)
+        if (input->globalData != nullptr)
+            addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_RODATA);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_DYNSYM);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ROCMSECTID_HASH);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_DYNSTR);
+    if (input->llvm10BinFormat)
+        if (input->globalData != nullptr)
+            addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_RODATA);
     if (!input->gotSymbols.empty())
         addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ROCMSECTID_RELADYN);
     const cxuint execProgHeaderRegionIndex = mainSectionsNum;
@@ -725,9 +729,10 @@ void ROCmBinGenerator::prepareBinaryGen()
     elfBinGen64->addRegion(ElfRegion64::programHeaderTable());
     if (input->newBinFormat)
         elfBinGen64->addRegion(ElfRegion64::noteSection());
-    if (input->globalData != nullptr)
-        elfBinGen64->addRegion(ElfRegion64(input->globalDataSize, input->globalData, 4,
-                ".rodata", SHT_PROGBITS, SHF_ALLOC, 0, 0, Elf64Types::nobase));
+    if (!input->llvm10BinFormat)
+        if (input->globalData != nullptr)
+            elfBinGen64->addRegion(ElfRegion64(input->globalDataSize, input->globalData, 4,
+                    ".rodata", SHT_PROGBITS, SHF_ALLOC, 0, 0, Elf64Types::nobase));
     
     elfBinGen64->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8,
                 ".dynsym", SHT_DYNSYM, SHF_ALLOC, 0, BINGEN_DEFAULT, Elf64Types::nobase));
@@ -737,6 +742,10 @@ void ROCmBinGenerator::prepareBinaryGen()
                 Elf64Types::nobase));
     elfBinGen64->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".dynstr", SHT_STRTAB,
                 SHF_ALLOC, 0, 0, Elf64Types::nobase));
+    if (input->llvm10BinFormat)
+        if (input->globalData != nullptr)
+            elfBinGen64->addRegion(ElfRegion64(input->globalDataSize, input->globalData, 64,
+                    ".rodata", SHT_PROGBITS, SHF_ALLOC, 0, 0, Elf64Types::nobase));
     if (!input->gotSymbols.empty())
     {
         ROCmRelaDynGen* sgen = new ROCmRelaDynGen(input);
