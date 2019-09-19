@@ -642,25 +642,28 @@ void ROCmBinGenerator::prepareBinaryGen()
         elfBinGen64->addProgramHeader({ PT_NOTE, PF_R, 1, 1, true,
                     Elf64Types::nobase, Elf64Types::nobase, 0, 4 });
     
-    target = input->target.c_str();
-    if (target.empty() && !input->targetTripple.empty())
+    if (!input->llvm10BinFormat)
     {
-        target = input->targetTripple.c_str();
-        char dbuf[20];
-        snprintf(dbuf, 20, "-gfx%u%u%u", amdGpuArchValues.major, amdGpuArchValues.minor,
-                 amdGpuArchValues.stepping);
-        target += dbuf;
+        target = input->target.c_str();
+        if (target.empty() && !input->targetTripple.empty())
+        {
+            target = input->targetTripple.c_str();
+            char dbuf[20];
+            snprintf(dbuf, 20, "-gfx%u%u%u", amdGpuArchValues.major, amdGpuArchValues.minor,
+                    amdGpuArchValues.stepping);
+            target += dbuf;
+        }
+        // elf notes
+        elfBinGen64->addNote({"AMD", sizeof noteDescType1, noteDescType1, 1U});
+        noteBuf.reset(new cxbyte[0x1b]);
+        ::memcpy(noteBuf.get(), noteDescType3, 0x1b);
+        SULEV(*(uint32_t*)(noteBuf.get()+4), amdGpuArchValues.major);
+        SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
+        SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);
+        elfBinGen64->addNote({"AMD", 0x1b, noteBuf.get(), 3U});
+        if (!target.empty())
+            elfBinGen64->addNote({"AMD", target.size(), (const cxbyte*)target.c_str(), 0xbU});
     }
-    // elf notes
-    elfBinGen64->addNote({"AMD", sizeof noteDescType1, noteDescType1, 1U});
-    noteBuf.reset(new cxbyte[0x1b]);
-    ::memcpy(noteBuf.get(), noteDescType3, 0x1b);
-    SULEV(*(uint32_t*)(noteBuf.get()+4), amdGpuArchValues.major);
-    SULEV(*(uint32_t*)(noteBuf.get()+8), amdGpuArchValues.minor);
-    SULEV(*(uint32_t*)(noteBuf.get()+12), amdGpuArchValues.stepping);
-    elfBinGen64->addNote({"AMD", 0x1b, noteBuf.get(), 3U});
-    if (!target.empty())
-        elfBinGen64->addNote({"AMD", target.size(), (const cxbyte*)target.c_str(), 0xbU});
     
     metadataSize = input->metadataSize;
     metadata = input->metadata;
@@ -705,8 +708,8 @@ void ROCmBinGenerator::prepareBinaryGen()
             // just generate ROCm metadata from info
             generateROCmMetadataMsgPack(input->metadataInfo,
                                 kernelDescPtrs.get(), metadataBytes);
-            metadataSize = metadataStr.size();
-            metadata = metadataStr.c_str();
+            metadataSize = metadataBytes.size();
+            metadata = (const char*)metadataBytes.data();
         }
     }
     
