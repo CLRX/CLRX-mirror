@@ -134,6 +134,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             throw BinException("No rodata section in ROCm LLVM10Bin format");
         mapSort(tmpKernelDescs.begin(), tmpKernelDescs.end());
         kernelDescs.resize(regionsNum);
+        std::fill(kernelDescs.begin(), kernelDescs.end(), nullptr);
     }
     
     if (code==nullptr && regionsNum!=0)
@@ -607,7 +608,7 @@ void ROCmBinGenerator::prepareBinaryGen()
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_SHSTRTAB);
     addMainSectionToTable(mainSectionsNum, mainBuiltinSectTable, ELFSECTID_STRTAB);
     
-    const cxuint abiVer = (input->newBinFormat && input->llvm10BinFormat) ? 1 : 0;
+    const cxbyte abiVer = (input->newBinFormat && input->llvm10BinFormat) ? 1 : 0;
     
     elfBinGen64.reset(new ElfBinaryGen64({ 0U, 0U, 0x40, abiVer, ET_DYN, 0xe0, EV_CURRENT,
             cxuint(input->newBinFormat ? execProgHeaderRegionIndex : UINT_MAX), 0, eflags },

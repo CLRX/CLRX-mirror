@@ -1053,7 +1053,8 @@ void CLRX::disassembleROCm(std::ostream& output, const ROCmDisasmInput* rocmInpu
             auto kdit = kdescOffsets.begin();
             for (size_t p = 0; p < rocmInput->globalDataSize; )
             {
-                const size_t end = kdit != kdescOffsets.end() ?
+                const size_t end = (kdit != kdescOffsets.end() &&
+                        *kdit < rocmInput->globalDataSize) ?
                         *kdit : rocmInput->globalDataSize;
                 if (kdit == kdescOffsets.end() || p < *kdit)
                 {
