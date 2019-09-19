@@ -477,6 +477,7 @@ private:
     uint16_t mainBuiltinSectTable[ROCMSECTID_MAX-ELFSECTID_START+1];
     void* rocmGotGen;
     void* rocmRelaDynGen;
+    void* rocmLLVMGDataGen;
     Array<CString> kdescSymNames;
     
     void generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,

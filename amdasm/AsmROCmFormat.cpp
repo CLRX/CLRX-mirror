@@ -2393,12 +2393,6 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
     if (output.archStepping!=UINT32_MAX)
         amdGpuArchValues.stepping = output.archStepping;
     
-    size_t kdescBaseOffset = 0;
-    if (output.llvm10BinFormat)
-    {
-        AsmSection& asmDSection = assembler.sections[dataSection];
-        kdescBaseOffset = ((asmDSection.content.size() + 4095)&~0xfff);
-    }
     // prepare kernels configuration
     for (size_t i = 0; i < kernelStates.size(); i++)
     {
@@ -2649,11 +2643,6 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
             else if (kernel.config!=nullptr)
             {
                 AsmROCmKernelConfig& config = *kernel.config.get();
-                if (config.kernelCodeEntryOffset == BINGEN64_DEFAULT)
-                    // calculate kernel entry offset (if default)
-                    config.kernelCodeEntryOffset = kdescBaseOffset + kinput.offset -
-                                ki*sizeof(ROCmKernelDescriptor);
-                
                 // put kernel descriptor to global data
                 ROCmKernelDescriptor kdesc{};
                 configToKernelDescriptor(config, kdesc);

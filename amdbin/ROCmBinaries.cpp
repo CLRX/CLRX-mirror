@@ -451,6 +451,43 @@ public:
     }
 };
 
+class CLRX_INTERNAL ROCmLLVM10GlobalDataGen: public ElfRegionContent
+{
+private:
+    size_t gdataSize;
+    const cxbyte* gdata;
+    ElfBinaryGen64& gen;
+    cxuint gdataIndex;
+    std::vector<size_t> kernelOffsets;
+public:
+    ROCmLLVM10GlobalDataGen(size_t gsize, const cxbyte* _gdata, ElfBinaryGen64& _gen,
+            cxuint _gdataIndex, std::vector<size_t>&& _kernelOffsets) :
+        gdataSize(gsize), gdata(_gdata), gen(_gen), gdataIndex(_gdataIndex)
+    {
+        kernelOffsets = std::move(_kernelOffsets);
+    }
+    
+    void operator()(FastOutputBuffer& fob) const
+    {
+        size_t p = 0;
+        size_t f = 16;
+        size_t kdescOffset = 0;
+        size_t gdataOffset = gen.getRegionOffset(gdataIndex);
+        const size_t codeOffset = gen.getRegionOffset(gdataIndex+1);
+        for (size_t ko: kernelOffsets)
+        {
+            fob.writeArray(std::min(f, gdataSize)-p, gdata+p);
+            uint64_t v = 0;
+            SULEV(v, (codeOffset + ko) - (gdataOffset + kdescOffset));
+            fob.writeObject(v);
+            p = f + 8;
+            f += sizeof(ROCmKernelDescriptor);
+            kdescOffset += sizeof(ROCmKernelDescriptor);
+        }
+        fob.writeArray(gdataSize-p, gdata+p);
+    }
+};
+
 /*
  * ROCm Binary Generator
  */
@@ -496,7 +533,7 @@ ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
         uint32_t archMinor, uint32_t archStepping, size_t codeSize, const cxbyte* code,
         size_t globalDataSize, const cxbyte* globalData,
         std::vector<ROCmSymbolInput>&& symbols) :
-        rocmGotGen(nullptr), rocmRelaDynGen(nullptr)
+        rocmGotGen(nullptr), rocmRelaDynGen(nullptr), rocmLLVMGDataGen(nullptr)
 {
     std::unique_ptr<ROCmInput> _input(new ROCmInput{});
     _input->deviceType = deviceType;
@@ -530,6 +567,8 @@ ROCmBinGenerator::~ROCmBinGenerator()
         delete (ROCmGotGen*)rocmGotGen;
     if (rocmRelaDynGen!=nullptr)
         delete (ROCmRelaDynGen*)rocmRelaDynGen;
+    if (rocmLLVMGDataGen!=nullptr)
+        delete (ROCmLLVM10GlobalDataGen*)rocmLLVMGDataGen;
 }
 
 void ROCmBinGenerator::setInput(const ROCmInput* input)
@@ -744,8 +783,21 @@ void ROCmBinGenerator::prepareBinaryGen()
                 SHF_ALLOC, 0, 0, Elf64Types::nobase));
     if (input->llvm10BinFormat)
         if (input->globalData != nullptr)
-            elfBinGen64->addRegion(ElfRegion64(input->globalDataSize, input->globalData, 64,
+        {
+            std::vector<size_t> koffsets;
+            for (const ROCmSymbolInput& sym: input->symbols)
+            {
+                if (sym.type == ROCmRegionType::KERNEL)
+                    koffsets.push_back(sym.offset);
+            }
+            ROCmLLVM10GlobalDataGen* sgen = new ROCmLLVM10GlobalDataGen(input->globalDataSize,
+                        input->globalData, *elfBinGen64.get(),
+                        mainBuiltinSectTable[ELFSECTID_RODATA-ELFSECTID_START],
+                        std::move(koffsets));
+            rocmLLVMGDataGen = (void*)sgen;
+            elfBinGen64->addRegion(ElfRegion64(input->globalDataSize, sgen, 4,
                     ".rodata", SHT_PROGBITS, SHF_ALLOC, 0, 0, Elf64Types::nobase));
+        }
     if (!input->gotSymbols.empty())
     {
         ROCmRelaDynGen* sgen = new ROCmRelaDynGen(input);
