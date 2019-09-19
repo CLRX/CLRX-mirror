@@ -2547,7 +2547,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         cxuint sharedVgprsNum = 0;
         if (config.sharedVGPRsNum != BINGEN_DEFAULT)
             sharedVgprsNum = config.sharedVGPRsNum;
-        if (sharedVgprsNum + vgprsNum > 256)
+        if (((vgprsNum+7)&~7) + sharedVgprsNum > 256)
         {
             assembler.printError(AsmSourcePos(), (std::string(
                     "Number of total VGPRs with shared VGPRs for kernel '")+
