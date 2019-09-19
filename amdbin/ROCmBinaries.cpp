@@ -842,7 +842,7 @@ void ROCmBinGenerator::updateSymbols()
         // add to symbols and dynamic symbols table
         elfBinGen64->addSymbol(elfsym);
         elfBinGen64->addDynSymbol(elfsym);
-        if (input->llvm10BinFormat)
+        if (symbol.type == ROCmRegionType::KERNEL && input->llvm10BinFormat)
         {
             std::string kdsym(symbol.symbolName.c_str());
             kdsym += ".kd";
