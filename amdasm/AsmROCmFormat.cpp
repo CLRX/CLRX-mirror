@@ -927,6 +927,7 @@ void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoO
         PSEUDOOP_RETURN_BY_ERROR("Metadata config can't be defined if "
                     "metadata section exists")
     
+    ROCmKernelMetadata& metadata = handler.output.metadataInfo.kernels[asmr.currentKernel];
     bool good = true;
     skipSpacesToEnd(linePtr, end);
     CString argName;
@@ -961,14 +962,16 @@ void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoO
         return;
     
     skipSpacesToEnd(linePtr, end);
-    // parse argument alignment
+    // parse argument alignment (or offset for metadatav3)
     uint64_t argAlign = 0;
     if (linePtr!=end && *linePtr!=',')
     {
         const char* valuePlace = linePtr;
         if (getAbsoluteValueArg(asmr, argAlign, linePtr, true))
         {
-            if (argAlign==0 || argAlign != (1ULL<<(63-CLZ64(argAlign))))
+            if (!handler.output.metadataV3Format &&
+                // only for older metadata format is align
+                (argAlign==0 || argAlign != (1ULL<<(63-CLZ64(argAlign)))))
                 ASM_NOTGOOD_BY_ERROR(valuePlace, "Argument alignment is not power of 2")
         }
         else
@@ -976,9 +979,25 @@ void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoO
     }
     if (argAlign == 0)
     {
-        argAlign = (argSize!=0) ? 1ULL<<(63-CLZ64(argSize)) : 1;
-        if (argSize > argAlign)
-            argAlign <<= 1;
+        if (!handler.output.metadataV3Format)
+        {
+            argAlign = (argSize!=0) ? 1ULL<<(63-CLZ64(argSize)) : 1;
+            if (argSize > argAlign)
+                argAlign <<= 1;
+        }
+        else
+        {   // metadatav3 format (offset)
+            if (!metadata.argInfos.empty())
+            {
+                size_t realArgAlign = (argSize!=0) ? 1ULL<<(63-CLZ64(argSize)) : 1;
+                if (argSize > realArgAlign)
+                    realArgAlign <<= 1;
+                // calculate arg offset
+                const ROCmKernelArgInfo& prevArg = metadata.argInfos.back();
+                argAlign = (prevArg.offset + prevArg.size + realArgAlign-1) &
+                            (realArgAlign-1);
+            }
+        }
     }
     
     if (!skipRequiredComma(asmr, linePtr))
@@ -1086,7 +1105,6 @@ void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoO
         return;
     
     handler.output.useMetadataInfo = true;
-    ROCmKernelMetadata& metadata = handler.output.metadataInfo.kernels[asmr.currentKernel];
     // setup kernel arg info
     ROCmKernelArgInfo argInfo{};
     argInfo.name = argName;
@@ -2268,9 +2286,8 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
     size_t sectionsNum = sections.size();
     output.deviceType = assembler.getDeviceType();
     
-    const bool llvm10BinFormat = assembler.isLLVM10BinFormat();
     // check whether ctrlDirSection if llvm10BinFormat
-    if (llvm10BinFormat)
+    if (output.llvm10BinFormat)
         for (const Kernel* kernel: kernelStates)
             if (kernel->ctrlDirSection != ASMSECT_NONE)
             {
@@ -2357,7 +2374,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         amdGpuArchValues.stepping = output.archStepping;
     
     size_t kdescBaseOffset = 0;
-    if (llvm10BinFormat)
+    if (output.llvm10BinFormat)
     {
         AsmSection& asmDSection = assembler.sections[dataSection];
         kdescBaseOffset = ((asmDSection.content.size() + 4095)&0xfff);
@@ -2384,7 +2401,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
             config.amdMachineMinor = amdGpuArchValues.minor;
         if (config.amdMachineStepping == BINGEN16_DEFAULT)
             config.amdMachineStepping = amdGpuArchValues.stepping;
-        if (config.kernelCodeEntryOffset == BINGEN64_DEFAULT && !llvm10BinFormat)
+        if (config.kernelCodeEntryOffset == BINGEN64_DEFAULT && !output.llvm10BinFormat)
             config.kernelCodeEntryOffset = 256;
         if (config.kernelCodePrefetchOffset == BINGEN64_DEFAULT)
             config.kernelCodePrefetchOffset = 0;
@@ -2498,6 +2515,12 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         config.computePgmRsrc1 |= calculatePgmRSrc1(arch, vgprsNum, sgprsNum,
                         config.priority, config.floatMode, config.privilegedMode,
                         config.dx10Clamp, config.debugMode, config.ieeeMode);
+        if (output.llvm10BinFormat && output.metadataV3Format &&
+            arch >= GPUArchitecture::GCN1_5)
+            // very weird in current LLVM10 bin format:
+            // SGPR is supplied in PGMRSRC1 for AMD3 format?? why??
+            config.computePgmRsrc1 |= ((sgprsNum-1)>>3)<<6;
+        
         // computePGMRSRC2
         config.computePgmRsrc2 = (config.computePgmRsrc2 & 0xffffe440U) |
                 calculatePgmRSrc2(arch, (config.workitemPrivateSegmentSize != 0),
@@ -2514,7 +2537,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         if (config.runtimeLoaderKernelSymbol == BINGEN64_DEFAULT)
             config.runtimeLoaderKernelSymbol = 0;
         
-        if (!llvm10BinFormat)
+        if (!output.llvm10BinFormat)
         {
             config.toLE(); // to little-endian
             // put control directive section to config
@@ -2563,7 +2586,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         const Kernel& kernel = *kernelStates[ki];
         kinput.offset = symbol.value;
         
-        if (!llvm10BinFormat)
+        if (!output.llvm10BinFormat)
         {
             if (asmCSection.content.size() < symbol.value + sizeof(ROCmKernelConfig))
             {
