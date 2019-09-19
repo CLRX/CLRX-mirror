@@ -85,7 +85,7 @@ enum
 static const char* pseudoOpNamesTbl[] =
 {
     "32bit", "64bit", "abort", "align", "altmacro",
-    "amd", "amdcl2", "arch", "ascii", "asciz",
+    "amd", "amd3", "amdcl2", "arch", "ascii", "asciz",
     "balign", "balignl", "balignw", "buggyfplit", "byte",
     "cf_call", "cf_cjump", "cf_end",
     "cf_jump", "cf_ret", "cf_start",
@@ -128,7 +128,7 @@ static const char* pseudoOpNamesTbl[] =
 enum
 {
     ASMOP_32BIT = 0, ASMOP_64BIT, ASMOP_ABORT, ASMOP_ALIGN, ASMOP_ALTMACRO,
-    ASMOP_AMD, ASMOP_AMDCL2, ASMOP_ARCH, ASMOP_ASCII, ASMOP_ASCIZ,
+    ASMOP_AMD, ASMOP_AMD3, ASMOP_AMDCL2, ASMOP_ARCH, ASMOP_ASCII, ASMOP_ASCIZ,
     ASMOP_BALIGN, ASMOP_BALIGNL, ASMOP_BALIGNW, ASMOP_BUGGYFPLIT, ASMOP_BYTE,
     ASMOP_CF_CALL, ASMOP_CF_CJUMP, ASMOP_CF_END,
     ASMOP_CF_JUMP, ASMOP_CF_RET, ASMOP_CF_START,
@@ -257,6 +257,20 @@ void Assembler::parsePseudoOps(const CString& firstName,
                         (pseudoOp == ASMOP_AMDCL2) ? BinaryFormat::AMDCL2 :
                         (pseudoOp == ASMOP_ROCM) ? BinaryFormat::ROCM :
                         BinaryFormat::RAWCODE;
+            }
+            break;
+        case ASMOP_AMD3:
+            if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+            {
+                if (formatHandler!=nullptr)
+                    printError(linePtr, "Output format type is already defined");
+                else
+                {
+                    format = BinaryFormat::ROCM;
+                    newROCmBinFormat = true;
+                    llvm10BinFormat = true;
+                    rocmMetadataV3 = true;
+                }
             }
             break;
         case ASMOP_CF_CALL:
