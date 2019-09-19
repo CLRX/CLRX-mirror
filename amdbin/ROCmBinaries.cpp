@@ -609,7 +609,7 @@ void ROCmBinGenerator::prepareBinaryGen()
     
     const cxuint abiVer = (input->newBinFormat && input->llvm10BinFormat) ? 1 : 0;
     
-    elfBinGen64.reset(new ElfBinaryGen64({ 0U, abiVer, 0x40, 0, ET_DYN, 0xe0, EV_CURRENT,
+    elfBinGen64.reset(new ElfBinaryGen64({ 0U, 0U, 0x40, abiVer, ET_DYN, 0xe0, EV_CURRENT,
             cxuint(input->newBinFormat ? execProgHeaderRegionIndex : UINT_MAX), 0, eflags },
             true, true, true, PHREGION_FILESTART));
     

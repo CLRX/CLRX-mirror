@@ -485,6 +485,7 @@ void AsmROCmPseudoOps::setLLVM10BinFormat(AsmROCmHandler& handler, const char* l
     Assembler& asmr = handler.assembler;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
+    handler.output.newBinFormat = true;
     handler.output.llvm10BinFormat = true;
 }
 
