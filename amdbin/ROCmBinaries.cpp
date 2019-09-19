@@ -492,18 +492,20 @@ public:
  * ROCm Binary Generator
  */
 
-ROCmBinGenerator::ROCmBinGenerator() : manageable(false), input(nullptr)
+ROCmBinGenerator::ROCmBinGenerator() : manageable(false), input(nullptr),
+                rocmLLVMGDataGen(nullptr)
 { }
 
 ROCmBinGenerator::ROCmBinGenerator(const ROCmInput* rocmInput)
-        : manageable(false), input(rocmInput), rocmGotGen(nullptr), rocmRelaDynGen(nullptr)
+        : manageable(false), input(rocmInput), rocmGotGen(nullptr), rocmRelaDynGen(nullptr),
+          rocmLLVMGDataGen(nullptr)
 { }
 
 ROCmBinGenerator::ROCmBinGenerator(GPUDeviceType deviceType,
         uint32_t archMinor, uint32_t archStepping, size_t codeSize, const cxbyte* code,
         size_t globalDataSize, const cxbyte* globalData,
         const std::vector<ROCmSymbolInput>& symbols) :
-        rocmGotGen(nullptr), rocmRelaDynGen(nullptr)
+        rocmGotGen(nullptr), rocmRelaDynGen(nullptr), rocmLLVMGDataGen(nullptr)
 {
     std::unique_ptr<ROCmInput> _input(new ROCmInput{});
     _input->deviceType = deviceType;
