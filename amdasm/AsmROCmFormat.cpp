@@ -43,11 +43,12 @@ static const char* rocmPseudoOpNamesTbl[] =
     "debugmode", "default_hsa_features", "dims", "dx10clamp",
     "eflags", "exceptions", "fixed_work_group_size",
     "fkernel", "floatmode", "gds_segment_size",
-    "globaldata", "gotsym", "group_segment_align", "ieeemode", "kcode",
+    "globaldata", "gotsym", "group_segment_align",
+    "group_segment_fixed_size", "ieeemode", "kcode",
     "kcodeend", "kernarg_segment_align",
     "kernarg_segment_size", "kernel_code_entry_offset",
     "kernel_code_prefetch_offset", "kernel_code_prefetch_size",
-    "llvmbinfmt", "localsize", "machine",
+    "llvm10binfmt", "localsize", "machine",
     "max_flat_work_group_size", "max_scratch_backing_memory",
     "md_group_segment_fixed_size", "md_kernarg_segment_align",
     "md_kernarg_segment_size", "md_language","md_private_segment_fixed_size",
@@ -56,7 +57,7 @@ static const char* rocmPseudoOpNamesTbl[] =
     "metadata", "metadatav3", "newbinfmt", "nosectdiffs",
     "pgmrsrc1", "pgmrsrc2", "pgmrsrc3", "printf", "priority",
     "private_elem_size", "private_segment_align",
-    "privmode", "reqd_work_group_size",
+    "private_segment_fixed_size", "privmode", "reqd_work_group_size",
     "reserved_sgprs", "reserved_vgprs",
     "runtime_handle", "runtime_loader_kernel_symbol",
     "scratchbuffer", "sgprsnum", "shared_vgprs",
@@ -83,11 +84,12 @@ enum
     ROCMOP_DEBUGMODE, ROCMOP_DEFAULT_HSA_FEATURES, ROCMOP_DIMS, ROCMOP_DX10CLAMP,
     ROCMOP_EFLAGS, ROCMOP_EXCEPTIONS, ROCMOP_FIXED_WORK_GROUP_SIZE, ROCMOP_FKERNEL,
     ROCMOP_FLOATMODE, ROCMOP_GDS_SEGMENT_SIZE, ROCMOP_GLOBALDATA, ROCMOP_GOTSYM,
-    ROCMOP_GROUP_SEGMENT_ALIGN, ROCMOP_IEEEMODE, ROCMOP_KCODE,
+    ROCMOP_GROUP_SEGMENT_ALIGN, ROCMOP_GROUP_SEGMENT_FIXED_SIZE,
+    ROCMOP_IEEEMODE, ROCMOP_KCODE,
     ROCMOP_KCODEEND, ROCMOP_KERNARG_SEGMENT_ALIGN,
     ROCMOP_KERNARG_SEGMENT_SIZE, ROCMOP_KERNEL_CODE_ENTRY_OFFSET,
     ROCMOP_KERNEL_CODE_PREFETCH_OFFSET, ROCMOP_KERNEL_CODE_PREFETCH_SIZE,
-    ROCMOP_LLVMBINFMT, ROCMOP_LOCALSIZE, ROCMOP_MACHINE,
+    ROCMOP_LLVM10BINFMT, ROCMOP_LOCALSIZE, ROCMOP_MACHINE,
     ROCMOP_MAX_FLAT_WORK_GROUP_SIZE, ROCMOP_MAX_SCRATCH_BACKING_MEMORY,
     ROCMOP_MD_GROUP_SEGMENT_FIXED_SIZE, ROCMOP_MD_KERNARG_SEGMENT_ALIGN,
     ROCMOP_MD_KERNARG_SEGMENT_SIZE, ROCMOP_MD_LANGUAGE,
@@ -96,7 +98,7 @@ enum
     ROCMOP_METADATA, ROCMOP_METADATAV3, ROCMOP_NEWBINFMT, ROCMOP_NOSECTDIFFS,
     ROCMOP_PGMRSRC1, ROCMOP_PGMRSRC2, ROCMOP_PGMRSRC3, ROCMOP_PRINTF,
     ROCMOP_PRIORITY, ROCMOP_PRIVATE_ELEM_SIZE, ROCMOP_PRIVATE_SEGMENT_ALIGN,
-    ROCMOP_PRIVMODE, ROCMOP_REQD_WORK_GROUP_SIZE,
+    ROCMOP_PRIVATE_SEGMENT_FIXED_SIZE, ROCMOP_PRIVMODE, ROCMOP_REQD_WORK_GROUP_SIZE,
     ROCMOP_RESERVED_SGPRS, ROCMOP_RESERVED_VGPRS,
     ROCMOP_RUNTIME_HANDLE, ROCMOP_RUNTIME_LOADER_KERNEL_SYMBOL,
     ROCMOP_SCRATCHBUFFER, ROCMOP_SGPRSNUM, ROCMOP_SHARED_VGPRS,
@@ -2047,7 +2049,7 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_KERNEL_CODE_PREFETCH_SIZE);
             break;
-        case ROCMOP_LLVMBINFMT:
+        case ROCMOP_LLVM10BINFMT:
             AsmROCmPseudoOps::setLLVM10BinFormat(*this, linePtr);
             break;
         case ROCMOP_LOCALSIZE:
@@ -2268,10 +2270,12 @@ bool AsmROCmHandler::parsePseudoOp(const CString& firstName, const char* stmtPla
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_WORKGROUP_FBARRIER_COUNT);
             break;
+        case ROCMOP_GROUP_SEGMENT_FIXED_SIZE:
         case ROCMOP_WORKGROUP_GROUP_SEGMENT_SIZE:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_WORKGROUP_GROUP_SEGMENT_SIZE);
             break;
+        case ROCMOP_PRIVATE_SEGMENT_FIXED_SIZE:
         case ROCMOP_WORKITEM_PRIVATE_SEGMENT_SIZE:
             AsmROCmPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                              ROCMCVAL_WORKITEM_PRIVATE_SEGMENT_SIZE);
