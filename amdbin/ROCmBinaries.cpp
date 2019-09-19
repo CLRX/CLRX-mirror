@@ -800,6 +800,9 @@ void ROCmBinGenerator::updateSymbols()
     const cxuint kernelSymType = input->llvm10BinFormat ? STT_FUNC : STT_GNU_IFUNC;
     const cxuint kernelSymVis = input->llvm10BinFormat ? STV_PROTECTED : STV_DEFAULT;
     size_t kdOffset = 0;
+    size_t kdescIndex = 0;
+    if (input->llvm10BinFormat)
+        kdescSymNames.resize(input->symbols.size());
     for (const ROCmSymbolInput& symbol: input->symbols)
     {
         ElfSymbol64 elfsym;
@@ -831,10 +834,14 @@ void ROCmBinGenerator::updateSymbols()
         {
             std::string kdsym(symbol.symbolName.c_str());
             kdsym += ".kd";
-            elfsym = ElfSymbol64(kdsym.c_str(), rodataSectIndex,
-                      ELF64_ST_INFO(STB_GLOBAL, kernelSymType),
+            kdescSymNames[kdescIndex] = kdsym;
+            elfsym = ElfSymbol64(kdescSymNames[kdescIndex].c_str(), rodataSectIndex,
+                      ELF64_ST_INFO(STB_GLOBAL, STT_OBJECT),
                       ELF64_ST_VISIBILITY(kernelSymVis), true, kdOffset, symbol.size);
             kdOffset += sizeof(ROCmKernelDescriptor);
+            elfBinGen64->addSymbol(elfsym);
+            elfBinGen64->addDynSymbol(elfsym);
+            kdescIndex++;
         }
     }
     /* extra symbols */
