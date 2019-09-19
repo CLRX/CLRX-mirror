@@ -404,6 +404,13 @@ uint32_t CLRX::calculatePgmRSrc2(GPUArchitecture arch, bool scratchEn, cxuint us
             ((uint32_t(exceptions)&0x7f)<<24);
 }
 
+uint32_t CLRX::calculatePgmRSrc3(GPUArchitecture arch, cxuint sharedVgprsNum)
+{
+    if (arch < GPUArchitecture::GCN1_5)
+        return 0;
+    return ((sharedVgprsNum+7)>>3);
+}
+
 // AMD GPU architecture for Gallium
 static const AMDGPUArchVersion galliumGpuArchVersionTbl[] =
 {

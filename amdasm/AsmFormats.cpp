@@ -286,7 +286,7 @@ void AsmKcodePseudoOps::updateKCodeSel(AsmKcodeHandler& handler,
         if (pseudoOpPlace!=nullptr)
             asmr.printError(pseudoOpPlace, "Code flags mismatch for kernel set");
         else
-            asmr.printError(AsmSourcePos{}, "Code flags mismatch for kernel set");
+            asmr.printError(AsmSourcePos(), "Code flags mismatch for kernel set");
     }
     asmr.isaAssembler->setAllocatedRegisters();
 }

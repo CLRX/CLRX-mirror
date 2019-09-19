@@ -1157,6 +1157,21 @@ bool AsmROCmPseudoOps::checkConfigValue(Assembler& asmr, const char* valuePlace,
             }
             break;
         }
+        case ROCMCVAL_SHARED_VGPRSNUM:
+        {
+            const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                        asmr.deviceType);
+            if (arch >= GPUArchitecture::GCN1_5 && value > 120)
+            {
+                char buf[64];
+                snprintf(buf, 64, "Shared VGPRs number out of range (0-120)");
+                ASM_NOTGOOD_BY_ERROR(valuePlace, buf)
+            }
+            else if (value != 0)
+                ASM_NOTGOOD_BY_ERROR(valuePlace,
+                        "Shared VGPRS number must be zero for device older than GCN1.5");
+            break;
+        }
         case ROCMCVAL_EXCEPTIONS:
             asmr.printWarningForRange(7, value,
                                 asmr.getSourcePos(valuePlace), WS_UNSIGNED);
@@ -2528,6 +2543,18 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
                             (config.computePgmRsrc2 & 0x1b80U), config.tgSize,
                             (output.newBinFormat ? 0 : config.workgroupGroupSegmentSize),
                             config.exceptions);
+        // shared_vgprs
+        cxuint sharedVgprsNum = 0;
+        if (config.sharedVGPRsNum != BINGEN_DEFAULT)
+            sharedVgprsNum = config.sharedVGPRsNum;
+        if (sharedVgprsNum + vgprsNum > 256)
+        {
+            assembler.printError(AsmSourcePos(), (std::string(
+                    "Number of total VGPRs with shared VGPRs for kernel '")+
+                    kernelName.c_str()+"' is higher than 256").c_str());
+            good = false;
+        }
+        config.pgmRsrc3 |= calculatePgmRSrc3(arch, sharedVgprsNum);
         
         if (config.wavefrontSgprCount == BINGEN16_DEFAULT)
             config.wavefrontSgprCount = sgprsNum;
