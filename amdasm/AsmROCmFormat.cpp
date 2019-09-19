@@ -995,7 +995,7 @@ void AsmROCmPseudoOps::addKernelArg(AsmROCmHandler& handler, const char* pseudoO
                 // calculate arg offset
                 const ROCmKernelArgInfo& prevArg = metadata.argInfos.back();
                 argAlign = (prevArg.offset + prevArg.size + realArgAlign-1) &
-                            (realArgAlign-1);
+                            ~(realArgAlign-1);
             }
         }
     }
