@@ -2433,9 +2433,23 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         if (config.kernargSegmentSize == BINGEN64_DEFAULT)
         {
             if (output.useMetadataInfo)
+            {
                 // calculate kernel arg size
-                config.kernargSegmentSize = calculateKernelArgSize(
-                        output.metadataInfo.kernels[i].argInfos);
+                if (!output.metadataV3Format)
+                    config.kernargSegmentSize = calculateKernelArgSize(
+                            output.metadataInfo.kernels[i].argInfos);
+                else
+                {
+                    // for metadataV3 format
+                    config.kernargSegmentSize = 0;
+                    if (!output.metadataInfo.kernels[i].argInfos.empty())
+                    {
+                        const ROCmKernelArgInfo& lastArg =
+                            output.metadataInfo.kernels[i].argInfos.back();
+                        config.kernargSegmentSize = lastArg.offset + lastArg.size;
+                    }
+                }
+            }
             else
                 config.kernargSegmentSize = 0;
         }
@@ -2562,6 +2576,22 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
         
         if (config.runtimeLoaderKernelSymbol == BINGEN64_DEFAULT)
             config.runtimeLoaderKernelSymbol = 0;
+        
+        ROCmKernelMetadata& kmd = output.metadataInfo.kernels[i];
+        if (kmd.kernargSegmentSize == BINGEN64_NOTSUPPLIED)
+            kmd.kernargSegmentSize = config.kernargSegmentSize;
+        if (kmd.sgprsNum == BINGEN_NOTSUPPLIED)
+            kmd.sgprsNum = sgprsNum;
+        if (kmd.vgprsNum == BINGEN_NOTSUPPLIED)
+            kmd.vgprsNum = vgprsNum;
+        if (kmd.kernargSegmentAlign == BINGEN64_NOTSUPPLIED)
+            kmd.kernargSegmentAlign = config.kernargSegmentAlignment;
+        if (kmd.privateSegmentFixedSize == BINGEN64_NOTSUPPLIED)
+            kmd.privateSegmentFixedSize = config.workitemPrivateSegmentSize;
+        if (kmd.groupSegmentFixedSize == BINGEN64_NOTSUPPLIED)
+            kmd.groupSegmentFixedSize = config.workgroupGroupSegmentSize;
+        if (kmd.wavefrontSize == BINGEN_NOTSUPPLIED)
+            kmd.wavefrontSize = 1U<<config.wavefrontSize;
         
         if (!output.llvm10BinFormat)
         {
