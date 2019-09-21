@@ -797,7 +797,7 @@ void ROCmBinGenerator::prepareBinaryGen()
                         mainBuiltinSectTable[ELFSECTID_RODATA-ELFSECTID_START],
                         std::move(koffsets));
             rocmLLVMGDataGen = (void*)sgen;
-            elfBinGen64->addRegion(ElfRegion64(input->globalDataSize, sgen, 4,
+            elfBinGen64->addRegion(ElfRegion64(input->globalDataSize, sgen, 64,
                     ".rodata", SHT_PROGBITS, SHF_ALLOC, 0, 0, Elf64Types::nobase));
         }
     if (!input->gotSymbols.empty())
