@@ -94,6 +94,12 @@ Choose AMD Catalyst OpenCL 1.2 program binary format.
 This pseudo-operation should to be at begin of source.
 Choose AMD Catalyst new (introduced for OpenCL 2.0 support) program binary format.
 
+### .amd3
+
+This pseudo-operation should to be at begin of source.
+Choose ROCm LLV10 binary format with metadata V3 format -
+new AMD OpenCL format for Navi (GCN1.5).
+
 ### .arch
 
 Syntax: .arch ARCHITECTURE

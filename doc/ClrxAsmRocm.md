@@ -69,10 +69,14 @@ Set architecture stepping number.
 
 ### .arg
 
-Syntax arg: .arg [NAME]\[, "TYPENAME"], SIZE, [ALIGN], VALUEKIND, VALUETYPE[,POINTEEALIGN]\[, ADDRSPACE]\[,ACCQUAL]\[,ACTACCQUAL] \[FLAG1\] \[FLAG2\]...
+Syntax: .arg [NAME]\[, "TYPENAME"], SIZE, [ALIGN], VALUEKIND, VALUETYPE[,POINTEEALIGN]\[, ADDRSPACE]\[,ACCQUAL]\[,ACTACCQUAL] \[FLAG1\] \[FLAG2\]...
+
+or for LLVM10 binary format:
+
+Syntax: .arg [NAME]\[, "TYPENAME"], SIZE, [OFFSET], VALUEKIND, VALUETYPE[,POINTEEALIGN]\[, ADDRSPACE]\[,ACCQUAL]\[,ACTACCQUAL] \[FLAG1\] \[FLAG2\]...
 
 This pseudo-op must be inside kernel configuration (`.config`).
-Define kernel argument in metadata info. The argument name, type name, alignment are
+Define kernel argument in metadata info. The argument name, type name, alignment, offset are
 optional. The ADDRSPACE is address space and it present only if value kind is
 `globalbuf` or `dynshptr`. The POINTEEALIGN is pointee alignment in bytes and it present
 only if value kind is `dynshptr`. The ACCQUAL defines access qualifier and it present
@@ -285,6 +289,13 @@ Syntax: .group_segment_align ALIGN
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `group_segment_align` field in kernel configuration.
 
+### .group_segment_fixes_size
+
+Syntax: .group_segment_fixes_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`workgroup_group_segment_byte_size` in kernel configuration.
+
 ### .ieeemode
 
 Syntax: .ieeemode
@@ -353,6 +364,10 @@ Syntax: .kernel_code_prefetch_size OFFSET
 
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `kernel_code_prefetch_byte_size` field in kernel configuration.
+
+### .llvm10binfmt
+
+Enable LLVM10 binary format (from AMD OpenCL for GCN1.5 Navi).
 
 ### .localsize
 
@@ -455,6 +470,10 @@ Define number of vector registers for kernel in metadata info.
 
 This pseudo-operation must be inside kernel. Go to metadata (metadata ELF note) section.
 
+### .metadatav3
+
+Enable metadata V3 format.
+
 ### .newbinfmt
 
 This pseudo-op set new binary format.
@@ -479,6 +498,13 @@ Syntax: .pgmrsrc2 VALUE
 This pseudo-op must be inside kernel configuration (`.config`).
 Define value of the PGMRSRC2. If dimensions is set then bits that controls dimension setup
 will be ignored. SCRATCH_EN bit will be ignored.
+
+### .pgmrsrc3
+
+Syntax: .pgmrsrc3 VALUE
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Define value of the PGMRSRC3 (only for GCN1.5 Navi).
 
 ### .printf
 
@@ -508,6 +534,13 @@ Syntax: .private_segment ALIGN
 
 This pseudo-op must be inside kernel configuration (`.config`). Set
 `private_segment_alignment` field in kernel configuration. Value must be a power of two.
+
+### .private_segment_fixed_size
+
+Syntax: .private_segment_fixed_size SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`). Set
+`workitem_private_segment_byte_size` field in kernel configuration.
 
 ### .privmode
 
@@ -557,6 +590,14 @@ Syntax: .sgprsnum REGNUM
 This pseudo-op must be inside kernel configuration (`.config`). Set number of scalar
 registers which can be used during kernel execution.
 It counts SGPR registers including VCC, FLAT_SCRATCH and XNACK_MASK.
+
+### .shared_vgprs
+
+Syntax: .shared_vgprs REGNUM
+
+
+This pseudo-op must be inside kernel configuration (`.config`). Set number of shared vector
+registers between two 32-lane waves (only for GCN1.5 Navi).
 
 ### .spilledsgprs
 
@@ -658,6 +699,11 @@ This pseudo-op must be inside kernel configuration (`.config`). Enable
 
 This pseudo-op must be inside kernel configuration (`.config`). Enable
 `is_xnack_enabled` field in kernel configuration.
+
+### .use_wave32
+
+This pseudo-op must be inside kernel configuration (`.config`). Enable
+32-lane wave (only for GCN1.5 Navi).
 
 ### .userdatanum
 
