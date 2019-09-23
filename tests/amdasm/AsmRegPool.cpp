@@ -43,6 +43,7 @@ struct AsmRegPoolTestCase
 
 static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
 {
+#if 0
     /* gcn asm test cases */
     { ".amd;.kernel xx;.config;.tgsize;.text;s_add_u32 s5,s0,s1", { { "xx", 6, 0 } } },
     { ".amd;.kernel xx;.config;.tgsize;.text;s_and_b64 s[6:7],s[0:1],s[2:3]",
@@ -455,6 +456,55 @@ a2:
         s_endpgm
         )ffDXD",
         { { "a1", 1, 1, ASM_CODE_WAVE32 }, { "a2", 2, 1, 0 } }
+    },
+#endif
+    /* rocm wave32 flags 4 */
+    {
+        R"ffDXD(            .rocm; .gpu gfx1010
+    .llvm10binfmt
+    .metadatav3
+    .kernel a1
+    .config
+        .use_wave32
+    .kernel a2
+    .config
+    .kernel a3
+    .config
+    .kernel a4
+    .config
+        .use_wave32
+    .globaldata
+    .skip 256
+    .text
+.p2align 8
+a1:
+        v_cmp_gt_i32    vcc_lo, s1, v1
+        s_endpgm
+.p2align 8
+a2:
+        v_cmp_gt_i32    vcc, s5, v2
+        s_endpgm
+.p2align 8
+a3:
+        v_cmp_gt_i32    vcc, s5, v2
+        s_endpgm
+.p2align 8
+a4:
+        v_cmp_gt_i32    vcc_lo, s1, v1
+.p2align 8
+x:
+.kcode a1,a4
+        v_cmp_gt_i32    vcc_lo, s1, v1
+.kcodeend
+.p2align 8
+y:
+.kcode a2,a3
+        v_cmp_gt_i32    vcc, s1, v1
+        s_endpgm
+.kcodeend
+        )ffDXD",
+        { { "a1", 1, 1, ASM_CODE_WAVE32 }, { "a2", 2, 1, 0 },
+            { "a3", 2, 1, 0 }, { "a4", 1, 1, ASM_CODE_WAVE32 } }
     }
 };
 

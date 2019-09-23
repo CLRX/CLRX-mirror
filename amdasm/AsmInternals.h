@@ -340,8 +340,10 @@ struct CLRX_INTERNAL AsmKcodePseudoOps : AsmParseUtils
     // .kcodeend (close kernel code)
     static void doKCodeEnd(AsmKcodeHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    static void updateKCodeSel(AsmKcodeHandler& handler,
-                      const std::vector<cxuint>& oldset, const char* pseudoOpPlace);
+    static void updateKCodeSel(AsmKcodeHandler& handler, const std::vector<cxuint>& oldset);
+    
+    static void updateCodeFlags(AsmKcodeHandler& handler,
+                      const std::vector<cxuint>& newset, const char* pseudoOpPlace);
 };
 
 // macro helper to handle printing error
