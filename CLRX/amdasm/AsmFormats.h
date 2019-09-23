@@ -241,6 +241,8 @@ public:
     virtual bool isCodeSection() const = 0;
     /// return KernelBase for kernel index
     virtual KernelBase& getKernelBase(AsmKernelId index) = 0;
+    /// return KernelBase for kernel index
+    virtual const KernelBase& getKernelBase(AsmKernelId index) const = 0;
     /// return kernel number
     virtual size_t getKernelsNum() const = 0;
 };
@@ -466,6 +468,7 @@ public:
     // kcode support
     bool isCodeSection() const;
     KernelBase& getKernelBase(AsmKernelId index);
+    const KernelBase& getKernelBase(AsmKernelId index) const;
     size_t getKernelsNum() const;
     void handleLabel(const CString& label);
 };
@@ -551,6 +554,7 @@ public:
     // kcode support
     bool isCodeSection() const;
     KernelBase& getKernelBase(AsmKernelId index);
+    const KernelBase& getKernelBase(AsmKernelId index) const;
     size_t getKernelsNum() const;
 };
 
@@ -632,6 +636,7 @@ public:
     // kcode support
     bool isCodeSection() const;
     KernelBase& getKernelBase(AsmKernelId index);
+    const KernelBase& getKernelBase(AsmKernelId index) const;
     size_t getKernelsNum() const;
     void setCodeFlags(Flags codeFlags);
 };

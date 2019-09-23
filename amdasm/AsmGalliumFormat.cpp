@@ -333,6 +333,9 @@ bool AsmGalliumHandler::isCodeSection() const
 AsmKcodeHandler::KernelBase& AsmGalliumHandler::getKernelBase(AsmKernelId index)
 { return *kernelStates[index]; }
 
+const AsmKcodeHandler::KernelBase& AsmGalliumHandler::getKernelBase(AsmKernelId index) const
+{ return *kernelStates[index]; }
+
 size_t AsmGalliumHandler::getKernelsNum() const
 { return kernelStates.size(); }
 

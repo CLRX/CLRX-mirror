@@ -32,6 +32,7 @@ struct KernelRegPool
     const char* kernelName;
     cxuint sgprsNum;
     cxuint vgprsNum;
+    Flags codeFlags;
 };
 
 struct AsmRegPoolTestCase
@@ -431,6 +432,30 @@ kx5: .skip 256; s_mov_b32 s11, s0
         { { "kx0", 11, 5 }, { "kx1", 15, 15 }, { "kx2", 20, 1 },
             { "kx3", 17, 8 }, { "kx4", 9, 8 }, { "kx5", 12, 8 } }
     },
+    /* rocm wave32 flags */
+    {
+        R"ffDXD(            .rocm; .gpu gfx1010
+    .llvm10binfmt
+    .metadatav3
+    .kernel a1
+    .config
+        .use_wave32
+    .kernel a2
+    .config
+    .globaldata
+    .skip 128
+    .text
+.p2align 8
+a1:
+        v_cmp_gt_i32    vcc_lo, s1, v1
+        s_endpgm
+.p2align 8
+a2:
+        v_cmp_gt_i32    vcc, s5, v2
+        s_endpgm
+        )ffDXD",
+        { { "a1", 2, 1, ASM_CODE_WAVE32 }, { "a2", 2, 1, 0 } }
+    }
 };
 
 static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& testCase)
@@ -496,8 +521,9 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
     else if (assembler.getBinaryFormat()==BinaryFormat::ROCM)
     {
         // ROCmCompute
-        const ROCmInput* input = static_cast<const AsmROCmHandler*>(
-                    assembler.getFormatHandler())->getOutput();
+        const AsmROCmHandler* handler = static_cast<const AsmROCmHandler*>(
+                    assembler.getFormatHandler());
+        const ROCmInput* input = handler->getOutput();
         assertTrue(testName, "input!=nullptr", input!=nullptr);
         assertValue(testName, "kernels.length", testCase.regPools.size(),
                     input->symbols.size());
@@ -511,12 +537,26 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
             std::string caseName(buf);
             assertString(testName, caseName+"name", regPool.kernelName, kinput.symbolName);
             assertTrue(testName, caseName+"useConfig", true);
-            const ROCmKernelConfig* config = reinterpret_cast<const ROCmKernelConfig*>(
-                            input->code + kinput.offset);
-            assertValue(testName, caseName+"sgprsNum", regPool.sgprsNum,
-                        cxuint(ULEV(config->wavefrontSgprCount)));
-            assertValue(testName, caseName+"vgprsNum", regPool.vgprsNum,
-                        cxuint(ULEV(config->workitemVgprCount)));
+            if (!input->llvm10BinFormat)
+            {
+                const ROCmKernelConfig* config = reinterpret_cast<const ROCmKernelConfig*>(
+                                input->code + kinput.offset);
+                assertValue(testName, caseName+"sgprsNum", regPool.sgprsNum,
+                            cxuint(ULEV(config->wavefrontSgprCount)));
+                assertValue(testName, caseName+"vgprsNum", regPool.vgprsNum,
+                            cxuint(ULEV(config->workitemVgprCount)));
+            }
+            else
+            {
+                const ROCmKernelMetadata& kmd = input->metadataInfo.kernels[i];
+                assertValue(testName, caseName+"sgprsNum", regPool.sgprsNum,
+                            cxuint(ULEV(kmd.sgprsNum)));
+                assertValue(testName, caseName+"vgprsNum", regPool.vgprsNum,
+                            cxuint(ULEV(kmd.vgprsNum)));
+            }
+            const AsmKcodeHandler::KernelBase& kcbase = handler->getKernelBase(i);
+            assertValue(testName, caseName+"codeFlags", regPool.codeFlags,
+                        kcbase.codeFlags);
         }
     }
     else if (assembler.getBinaryFormat()==BinaryFormat::AMDCL2)

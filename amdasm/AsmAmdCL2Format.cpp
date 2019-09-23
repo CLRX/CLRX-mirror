@@ -432,6 +432,9 @@ bool AsmAmdCL2Handler::isCodeSection() const
 AsmKcodeHandler::KernelBase& AsmAmdCL2Handler::getKernelBase(AsmKernelId index)
 { return *kernelStates[index]; }
 
+const AsmKcodeHandler::KernelBase& AsmAmdCL2Handler::getKernelBase(AsmKernelId index) const
+{ return *kernelStates[index]; }
+
 size_t AsmAmdCL2Handler::getKernelsNum() const
 { return kernelStates.size(); }
 

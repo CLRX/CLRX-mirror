@@ -334,6 +334,9 @@ bool AsmROCmHandler::isCodeSection() const
 AsmKcodeHandler::KernelBase& AsmROCmHandler::getKernelBase(AsmKernelId index)
 { return *kernelStates[index]; }
 
+const AsmKcodeHandler::KernelBase& AsmROCmHandler::getKernelBase(AsmKernelId index) const
+{ return *kernelStates[index]; }
+
 size_t AsmROCmHandler::getKernelsNum() const
 { return kernelStates.size(); }
 
@@ -2308,6 +2311,7 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
     
     // check whether ctrlDirSection if llvm10BinFormat
     if (output.llvm10BinFormat)
+    {
         for (const Kernel* kernel: kernelStates)
             if (kernel->ctrlDirSection != ASMSECT_NONE)
             {
@@ -2316,6 +2320,12 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
                         "Control directive section if LLVM10 binary format used");
                 break;
             }
+        if (dataSection == ASMSECT_NONE)
+        {
+            assembler.printError(AsmSourcePos(), "No data section for LLVM10BinFormat");
+            return false;
+        }
+    }
     
     prepareKcodeState();
     
