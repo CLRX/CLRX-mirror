@@ -551,7 +551,32 @@ x:
         )ffDXD",
         { { "a1", 1, 1, ASM_CODE_WAVE32 }, { "a2", 2, 1, 0 },
             { "a3", 2, 1, 0 }, { "a4", 1, 1, ASM_CODE_WAVE32 } }
-    }
+    },
+    /* rocm wave32 flags 2 */
+    {
+        R"ffDXD(            .rocm; .gpu gfx1010
+    .llvm10binfmt
+    .metadatav3
+    .kernel a1
+    .config
+    .kernel a2
+    .config
+    .globaldata
+    .skip 128
+    .text
+.p2align 8
+a1:
+        .wave32
+        v_cmp_gt_i32    vcc_lo, s1, v1
+        s_endpgm
+.p2align 8
+a2:
+        .nowave32
+        v_cmp_gt_i32    vcc, s5, v2
+        s_endpgm
+        )ffDXD",
+        { { "a1", 1, 1, ASM_CODE_WAVE32 }, { "a2", 2, 1, 0 } }
+    },
 };
 
 static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& testCase)

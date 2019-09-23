@@ -322,8 +322,15 @@ AsmFormatHandler::SectionInfo AsmROCmHandler::getSectionInfo(AsmSectionId sectio
 
 void AsmROCmHandler::setCodeFlags(Flags codeFlags)
 {
-    if (assembler.currentKernel != ASMKERN_GLOBAL)
-        kernelStates[assembler.currentKernel]->codeFlags = codeFlags;
+    if (currentKcodeKernel != ASMKERN_GLOBAL)
+    {
+        Kernel* kernel = kernelStates[currentKcodeKernel];
+        kernel->codeFlags = codeFlags;
+        if (kernel->config != nullptr)
+            kernel->config->enableSgprRegisterFlags =
+                    (kernel->config->enableSgprRegisterFlags & ~ROCMFLAG_USE_WAVE32) |
+                (((codeFlags & ASM_CODE_WAVE32)!=0) ? ROCMFLAG_USE_WAVE32 : 0);
+    }
 }
 
 bool AsmROCmHandler::isCodeSection() const
