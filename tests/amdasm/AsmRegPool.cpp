@@ -454,7 +454,7 @@ a2:
         v_cmp_gt_i32    vcc, s5, v2
         s_endpgm
         )ffDXD",
-        { { "a1", 2, 1, ASM_CODE_WAVE32 }, { "a2", 2, 1, 0 } }
+        { { "a1", 1, 1, ASM_CODE_WAVE32 }, { "a2", 2, 1, 0 } }
     }
 };
 

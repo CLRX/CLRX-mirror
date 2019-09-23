@@ -175,7 +175,8 @@ enum : Flags
 {
     GCN_VCC = 1,
     GCN_FLAT = 2,
-    GCN_XNACK = 4
+    GCN_XNACK = 4,
+    GCN_REG_WAVE32 = 8
 };
 
 enum: Flags {

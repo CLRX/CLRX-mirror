@@ -2540,7 +2540,9 @@ bool AsmROCmHandler::prepareSectionDiffsResolving()
                             GCN_XNACK : 0);
             config.usedSGPRsNum = std::min(
                 std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]) +
-                    getGPUExtraRegsNum(arch, REGTYPE_SGPR, flags|GCN_VCC),
+                    getGPUExtraRegsNum(arch, REGTYPE_SGPR, flags|GCN_VCC|
+                        ((config.enableSgprRegisterFlags & ROCMFLAG_USE_WAVE32) ?
+                                GCN_REG_WAVE32 : 0)),
                     maxSGPRsNum); // include all extra sgprs
         }
         // set usedVGPRsNum

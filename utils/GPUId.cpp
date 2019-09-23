@@ -361,14 +361,16 @@ size_t CLRX::getGPUMaxGDSSize(GPUArchitecture architecture)
 // get extra (special) registers depends on architectures and flags
 cxuint CLRX::getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType, Flags flags)
 {
+    const cxuint vccCount = (architecture >= GPUArchitecture::GCN1_5 &&
+                (flags&GCN_REG_WAVE32)!=0) ? 1 : 2;
     if (regType == REGTYPE_VGPR)
         return 0;
     if ((flags & GCN_FLAT)!=0 && (architecture>GPUArchitecture::GCN1_0))
-        return (architecture>=GPUArchitecture::GCN1_2) ? 6 : 4;
+        return ((architecture>=GPUArchitecture::GCN1_2) ? 4 : 2) + vccCount;
     else if ((flags & GCN_XNACK)!=0 && (architecture>GPUArchitecture::GCN1_1))
-        return 4;
+        return 2+vccCount;
     else if ((flags & GCN_VCC)!=0)
-        return 2;
+        return vccCount;
     return 0;
 }
 
