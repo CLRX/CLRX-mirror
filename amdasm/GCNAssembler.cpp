@@ -177,6 +177,18 @@ void GCNAssembler::setRegVarUsage(const AsmRegVarUsage& rvu)
         instrRVUs[currentRVUIndex] = rvu;
 }
 
+void GCNAssembler::moveRVUToNext(cxbyte index)
+{
+    instrRVUs[index+1] = instrRVUs[index];
+    instrRVUs[index] = AsmRegVarUsage{};
+}
+
+void GCNAssembler::setRVUFieldAndRWFlags(cxbyte index, AsmRegField rfield, cxbyte rwFlags)
+{
+    instrRVUs[index].regField = rfield;
+    instrRVUs[index].rwFlags = (instrRVUs[index].rwFlags & ~ASMRVU_ACCESS_MASK) | rwFlags;
+}
+
 ISAUsageHandler* GCNAssembler::createUsageHandler() const
 {
     return new GCNUsageHandler();

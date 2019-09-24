@@ -916,6 +916,8 @@ const GCNAsmOpcodeCase encGCN14OpcodeCases[] =
         0xdd078000U, 0x2f3241bbU, true, true, "" },
     { "global_atomic_add v47, v187, v65, s[50:51] glc slc\n",
         0xdd0b8000U, 0x2f3241bbU, true, true, "" },
+    { "global_atomic_add v187, v65, s[50:51] slc\n",
+        0xdd0a8000U, 0x003241bbU, true, true, "" }, // no dst
     { "global_atomic_sub v47, v187, v65, s[50:51] glc slc\n",
         0xdd0f8000U, 0x2f3241bbU, true, true, "" },
     { "global_atomic_smin v47, v187, v65, s[50:51] glc slc\n",

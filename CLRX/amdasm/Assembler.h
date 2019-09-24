@@ -319,6 +319,9 @@ private:
     
     void setRegVarUsage(const AsmRegVarUsage& rvu);
     
+    void moveRVUToNext(cxbyte index);
+    void setRVUFieldAndRWFlags(cxbyte index, AsmRegField rfield, cxbyte rwFlags);
+    
     void flushInstrRVUs(ISAUsageHandler* usageHandler)
     {
         for (const AsmRegVarUsage& rvu: instrRVUs)

@@ -1009,20 +1009,33 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     skipSpacesToEnd(linePtr, end);
     const char* vdstPlace = nullptr;
     
+    bool vdstOff = false; // for shortened for for ATOMICS
     bool vaddrOff = false;
     const cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
     
     const cxuint addrRegsNum = (flatMode != GCN_FLAT_SCRATCH ?
                 (flatMode==GCN_FLAT_FLAT ? 2 : 0)  : 1);
     const char* addrPlace = nullptr;
+    
+    const bool atomic = (gcnInsn.mode & GCN_MATOMIC)!=0;
+    
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
         // first is destination
         vdstPlace = linePtr;
-        
-        gcnAsm->setCurrentRVU(0);
-        good &= parseVRegRange(asmr, linePtr, vdstReg, 0, GCNFIELD_FLAT_VDST, true,
-                        INSTROP_SYMREGRANGE|INSTROP_WRITE);
+        if (atomic && flatMode == GCN_FLAT_SCRATCH && linePtr+3<=end &&
+            strncasecmp(linePtr, "off", 3)==0 && (linePtr+3==end || !isAlnum(linePtr[3])))
+        {
+            // // if 'off' word
+            vdstOff = true;
+            linePtr+=3;
+        }
+        else
+        {
+            gcnAsm->setCurrentRVU(0);
+            good &= parseVRegRange(asmr, linePtr, vdstReg, 0, GCNFIELD_FLAT_VDST, true,
+                            INSTROP_SYMREGRANGE|INSTROP_WRITE);
+        }
         if (!skipRequiredComma(asmr, linePtr))
             return false;
         skipSpacesToEnd(linePtr, end);
@@ -1038,8 +1051,13 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             gcnAsm->setCurrentRVU(1);
             // parse VADDR (1 or 2 VGPR's)
-            good &= parseVRegRange(asmr, linePtr, vaddrReg, addrRegsNum,
-                    GCNFIELD_FLAT_ADDR, true, INSTROP_SYMREGRANGE|INSTROP_READ);
+            if (!atomic)
+                good &= parseVRegRange(asmr, linePtr, vaddrReg, addrRegsNum,
+                        GCNFIELD_FLAT_ADDR, true, INSTROP_SYMREGRANGE|INSTROP_READ);
+            else
+                // we don't know whether is
+                good &= parseVRegRange(asmr, linePtr, vaddrReg, 0,
+                        GCNFIELD_FLAT_ADDR, true, INSTROP_SYMREGRANGE|INSTROP_READ);
         }
     }
     else
@@ -1074,14 +1092,78 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
     }
     
+    bool moveRVUNext = false;
+    
     if ((gcnInsn.mode & GCN_FLAT_NODATA) == 0) /* print data */
     {
-        if (!skipRequiredComma(asmr, linePtr))
-            return false;
-        gcnAsm->setCurrentRVU(2);
-        // parse VDATA (VGPRS, 1-4 registers)
-        good &= parseVRegRange(asmr, linePtr, vdataReg, dregsNum, GCNFIELD_FLAT_DATA,
-                               true, INSTROP_SYMREGRANGE|INSTROP_READ);
+        if (!atomic)
+        {
+            if (!skipRequiredComma(asmr, linePtr))
+                return false;
+            gcnAsm->setCurrentRVU(2);
+            // parse VDATA (VGPRS, 1-4 registers)
+            good &= parseVRegRange(asmr, linePtr, vdataReg, dregsNum, GCNFIELD_FLAT_DATA,
+                                true, INSTROP_SYMREGRANGE|INSTROP_READ);
+        }
+        else if (flatMode != 0)
+        {
+            const char* oldLinePtr = linePtr;
+            if (!skipRequiredComma(asmr, linePtr))
+                return false;
+            gcnAsm->setCurrentRVU(2);
+            good &= parseVRegRange(asmr, linePtr, vdataReg, dregsNum, GCNFIELD_FLAT_DATA,
+                                false, INSTROP_SYMREGRANGE|INSTROP_READ);
+            if (!vdataReg)
+            {
+                // this is shorten version
+                linePtr = oldLinePtr;
+                moveRVUNext = true;
+            }
+        }
+        else
+        {
+            bool haveComma = false;
+            if (!skipComma(asmr, haveComma, linePtr, false))
+                return false;
+            if (!haveComma)
+                // this is shorten version
+                moveRVUNext = true;
+            else
+            {
+                gcnAsm->setCurrentRVU(2);
+                good &= parseVRegRange(asmr, linePtr, vdataReg, dregsNum, GCNFIELD_FLAT_DATA,
+                                true, INSTROP_SYMREGRANGE|INSTROP_READ);
+            }
+        }
+    }
+    
+    if (moveRVUNext)
+    {
+        // shorten version for atomic
+        gcnAsm->moveRVUToNext(1);
+        gcnAsm->moveRVUToNext(0);
+        gcnAsm->setRVUFieldAndRWFlags(2, GCNFIELD_FLAT_DATA, ASMRVU_READ);
+        gcnAsm->setRVUFieldAndRWFlags(1, GCNFIELD_FLAT_ADDR, ASMRVU_READ);
+        vaddrOff = vdstOff;
+        vdstOff = false;
+        vdataReg = vaddrReg;
+        vaddrReg = vdstReg;
+        vdstReg = RegRange(0, 0);
+        // checking register number
+        if (addrRegsNum!=0 && !isXRegRange(vaddrReg, addrRegsNum))
+        {
+            char errorMsg[40];
+            snprintf(errorMsg, 40, "Required %u vector register%s", addrRegsNum,
+                     (addrRegsNum>1) ? "s" : "");
+            ASM_NOTGOOD_BY_ERROR(vdstPlace, errorMsg)
+        }
+        if (!isXRegRange(vdataReg, dregsNum))
+        {
+            char errorMsg[40];
+            snprintf(errorMsg, 40, "Required %u vector register%s", dregsNum,
+                     (dregsNum>1) ? "s" : "");
+            ASM_NOTGOOD_BY_ERROR(addrPlace, errorMsg)
+        }
     }
     
     bool saddrOff = false;
@@ -1190,6 +1272,13 @@ bool GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         else
             ASM_NOTGOOD_BY_ERROR(modPlace, "Unknown FLAT modifier")
     }
+    
+    if (vdstOff)
+        ASM_NOTGOOD_BY_ERROR(instrPlace, "OFF in VDST field is illegal")
+    
+    if (moveRVUNext && haveGlc)
+        ASM_NOTGOOD_BY_ERROR(instrPlace, "GLC modifier requires VDST field")
+    
     /* check register ranges */
     bool dstToWrite = vdstReg && ((gcnInsn.mode & GCN_MATOMIC)==0 || haveGlc);
     if (vdstReg)
