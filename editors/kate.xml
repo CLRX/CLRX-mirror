@@ -1787,6 +1787,7 @@
             <item>.align</item>
             <item>.altmacro</item>
             <item>.amd</item>
+            <item>.amd3</item>
             <item>.amdcl2</item>
             <item>.arch</item>
             <item>.arch_minor</item>
@@ -1902,6 +1903,7 @@
             <item>.gotsym</item>
             <item>.gpu</item>
             <item>.group_segment_align</item>
+            <item>.group_segment_fixed_size</item>
             <item>.half</item>
             <item>.header</item>
             <item>.hsa_debugmode</item>
@@ -1970,6 +1972,7 @@
             <item>.kernel_code_prefetch_size</item>
             <item>.lflags</item>
             <item>.line</item>
+            <item>.llvm10binfmt</item>
             <item>.llvm_version</item>
             <item>.ln</item>
             <item>.local</item>
@@ -1992,11 +1995,13 @@
             <item>.md_vgprsnum</item>
             <item>.md_wavefront_size</item>
             <item>.metadata</item>
+            <item>.metadatav3</item>
             <item>.newbinfmt</item>
             <item>.noaltmacro</item>
             <item>.nobuggyfplit</item>
             <item>.nomacrocase</item>
             <item>.nosectdiffs</item>
+            <item>.nowave32</item>
             <item>.octa</item>
             <item>.offset</item>
             <item>.org</item>
@@ -2005,12 +2010,14 @@
             <item>.persistentbuffers</item>
             <item>.pgmrsrc1</item>
             <item>.pgmrsrc2</item>
+            <item>.pgmrsrc3</item>
             <item>.policy</item>
             <item>.print</item>
             <item>.printfid</item>
             <item>.priority</item>
             <item>.private_elem_size</item>
             <item>.private_segment_align</item>
+            <item>.private_segment_fixed_size</item>
             <item>.privateid</item>
             <item>.privmode</item>
             <item>.proginfo</item>
@@ -2043,6 +2050,7 @@
             <item>.setup</item>
             <item>.setupargs</item>
             <item>.sgprsnum</item>
+            <item>.shared_vgprs</item>
             <item>.short</item>
             <item>.single</item>
             <item>.size</item>
@@ -2096,6 +2104,7 @@
             <item>.version</item>
             <item>.vgprsnum</item>
             <item>.warning</item>
+            <item>.wave32</item>
             <item>.wavefront_sgpr_count</item>
             <item>.wavefront_size</item>
             <item>.weak</item>

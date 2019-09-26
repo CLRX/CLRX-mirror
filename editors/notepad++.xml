@@ -1407,6 +1407,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .align
 .altmacro
 .amd
+.amd3
 .amdcl2
 .arch
 .arch_minor
@@ -1522,6 +1523,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .gotsym
 .gpu
 .group_segment_align
+.group_segment_fixed_size
 .half
 .header
 .hsa_debugmode
@@ -1590,6 +1592,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .kernel_code_prefetch_size
 .lflags
 .line
+.llvm10binfmt
 .llvm_version
 .ln
 .local
@@ -1612,11 +1615,13 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .md_vgprsnum
 .md_wavefront_size
 .metadata
+.metadatav3
 .newbinfmt
 .noaltmacro
 .nobuggyfplit
 .nomacrocase
 .nosectdiffs
+.nowave32
 .octa
 .offset
 .org
@@ -1625,12 +1630,14 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .persistentbuffers
 .pgmrsrc1
 .pgmrsrc2
+.pgmrsrc3
 .policy
 .print
 .printfid
 .priority
 .private_elem_size
 .private_segment_align
+.private_segment_fixed_size
 .privateid
 .privmode
 .proginfo
@@ -1663,6 +1670,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .setup
 .setupargs
 .sgprsnum
+.shared_vgprs
 .short
 .single
 .size
@@ -1716,6 +1724,7 @@ private_limit src_private_limit pops_exiting_wave_id src_pops_exiting_wave_id
 .version
 .vgprsnum
 .warning
+.wave32
 .wavefront_sgpr_count
 .wavefront_size
 .weak

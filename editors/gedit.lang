@@ -70,6 +70,7 @@
             <keyword>align</keyword>
             <keyword>altmacro</keyword>
             <keyword>amd</keyword>
+            <keyword>amd3</keyword>
             <keyword>amdcl2</keyword>
             <keyword>arch</keyword>
             <keyword>arch_minor</keyword>
@@ -185,6 +186,7 @@
             <keyword>gotsym</keyword>
             <keyword>gpu</keyword>
             <keyword>group_segment_align</keyword>
+            <keyword>group_segment_fixed_size</keyword>
             <keyword>half</keyword>
             <keyword>header</keyword>
             <keyword>hsa_debugmode</keyword>
@@ -253,6 +255,7 @@
             <keyword>kernel_code_prefetch_size</keyword>
             <keyword>lflags</keyword>
             <keyword>line</keyword>
+            <keyword>llvm10binfmt</keyword>
             <keyword>llvm_version</keyword>
             <keyword>ln</keyword>
             <keyword>local</keyword>
@@ -276,10 +279,12 @@
             <keyword>md_vgprsnum</keyword>
             <keyword>md_wavefront_size</keyword>
             <keyword>metadata</keyword>
+            <keyword>metadatav3</keyword>
             <keyword>noaltmacro</keyword>
             <keyword>nobuggyfplit</keyword>
             <keyword>nomacrocase</keyword>
             <keyword>nosectdiffs</keyword>
+            <keyword>nowave32</keyword>
             <keyword>octa</keyword>
             <keyword>offset</keyword>
             <keyword>org</keyword>
@@ -288,12 +293,14 @@
             <keyword>persistentbuffers</keyword>
             <keyword>pgmrsrc1</keyword>
             <keyword>pgmrsrc2</keyword>
+            <keyword>pgmrsrc3</keyword>
             <keyword>policy</keyword>
             <keyword>print</keyword>
             <keyword>printfid</keyword>
             <keyword>priority</keyword>
             <keyword>private_elem_size</keyword>
             <keyword>private_segment_align</keyword>
+            <keyword>private_segment_fixed_size</keyword>
             <keyword>privateid</keyword>
             <keyword>privmode</keyword>
             <keyword>proginfo</keyword>
@@ -326,6 +333,7 @@
             <keyword>setup</keyword>
             <keyword>setupargs</keyword>
             <keyword>sgprsnum</keyword>
+            <keyword>shared_vgprs</keyword>
             <keyword>short</keyword>
             <keyword>single</keyword>
             <keyword>size</keyword>
@@ -379,6 +387,7 @@
             <keyword>version</keyword>
             <keyword>vgprsnum</keyword>
             <keyword>warning</keyword>
+            <keyword>wave32</keyword>
             <keyword>wavefront_sgpr_count</keyword>
             <keyword>wavefront_size</keyword>
             <keyword>weak</keyword>
