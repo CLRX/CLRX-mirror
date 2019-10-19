@@ -390,6 +390,14 @@ CLAsmSetup CLRX::assemblerSetupForCLDevice(cl_device_id clDevice, Flags flags,
                 { sptr++; /* not found skip this '(' */ }
             }
         }
+        else if (binaryFormat==BinaryFormat::ROCM)
+        {
+            size_t index = strcspn(devNamePtr, "+-");
+            if (index==0)
+                throw;
+            CString tdevName(devNamePtr, devNamePtr+index);
+            devType = getGPUDeviceTypeFromName(tdevName.c_str());
+        }
         else
             throw;
     }
