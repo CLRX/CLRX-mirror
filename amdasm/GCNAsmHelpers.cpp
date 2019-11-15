@@ -991,6 +991,7 @@ bool GCNAsmUtils::parseSMRDImm(Assembler& asmr, const char*& linePtr, uint32_t& 
         outValue = value & ((1ULL<<32)-1ULL);
         if (haveLit)
         {
+            skipSpacesToEnd(linePtr, end);
             if (linePtr==end || *linePtr!=')')
                 ASM_FAIL_BY_ERROR(linePtr, "Expected ')' after expression at 'lit'")
             else // skip end of lit
