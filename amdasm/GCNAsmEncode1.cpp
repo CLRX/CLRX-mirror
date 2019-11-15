@@ -917,6 +917,7 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     RegRange sbaseReg(0, 0);
     RegRange soffsetReg(0, 0);
     uint32_t soffsetVal = 0;
+    bool haveLit = false;
     std::unique_ptr<AsmExpression> soffsetExpr;
     const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
     if (mode1 == GCN_SMRD_ONLYDST)
@@ -958,9 +959,12 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         
         if (!soffsetReg)
         {
-            // parse immediate
             soffsetReg.start = 255; // indicate an immediate
-            good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr, 8, WS_UNSIGNED);
+            // parse immediate
+            if ((arch & ARCH_HD7X00) != 0)
+                good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr, 8, WS_UNSIGNED);
+            else
+                good &= parseSMRDImm(asmr, linePtr, soffsetVal, &soffsetExpr, haveLit);
         }
     }
     /// if errors
@@ -974,22 +978,29 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     cxbyte(gcnAsm->instrRVUs[0].rend - gcnAsm->instrRVUs[0].rstart),
                     GCNDELOP_SMEMOP, GCNDELOP_NONE, gcnAsm->instrRVUs[0].rwFlags };
     
-    const cxuint wordsNum = 1;
+    const cxuint wordsNum = haveLit ? 2 : 1;
     if (!checkGCNEncodingSize(asmr, instrPlace, gcnEncSize, wordsNum))
         return false;
     
     if (soffsetExpr!=nullptr)
-        soffsetExpr->setTarget(AsmExprTarget(GCNTGT_SMRDOFFSET, asmr.currentSection,
-                       output.size()));
+        soffsetExpr->setTarget(AsmExprTarget(haveLit ? GCNTGT_LITIMM : GCNTGT_SMRDOFFSET,
+                        asmr.currentSection, output.size()));
     
     // put data (instruction word)
     uint32_t word;
     SLEV(word, 0xc0000000U | (uint32_t(gcnInsn.code1)<<22) |
             (uint32_t(dstReg.bstart())<<15) |
-            ((sbaseReg.bstart()&~1U)<<8) | ((soffsetReg.isVal(255)) ? 0x100 : 0) |
-            ((soffsetReg.isVal(255)) ? soffsetVal : soffsetReg.bstart()));
-    output.insert(output.end(), reinterpret_cast<cxbyte*>(&word), 
+            (haveLit ? 0xff /* have literal */ :
+             ((soffsetReg.isVal(255)) ? 0x100 : 0)) |
+             ((sbaseReg.bstart()&~1U)<<8) |
+            (haveLit ? 0 : ((soffsetReg.isVal(255)) ? soffsetVal : soffsetReg.bstart())));
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(&word),
             reinterpret_cast<cxbyte*>(&word)+4);
+    uint32_t lit32Val;
+    SLEV(lit32Val, soffsetVal);
+    if (haveLit)
+        output.insert(output.end(), reinterpret_cast<cxbyte*>(&lit32Val),
+            reinterpret_cast<cxbyte*>(&lit32Val)+4);
     /// prevent freeing expression
     soffsetExpr.release();
     

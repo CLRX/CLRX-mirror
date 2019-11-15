@@ -221,6 +221,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& value,
             std::unique_ptr<AsmExpression>* outTargetExpr, cxuint bits = 0,
             cxbyte signess = WS_BOTH);
+    static bool parseSMRDImm(Assembler& asmr, const char*& linePtr, uint32_t& value,
+            std::unique_ptr<AsmExpression>* outTargetExpr, bool &litimm);
     
     // parse immediate value (for field) with specified bits (can be signed)
     template<typename T>

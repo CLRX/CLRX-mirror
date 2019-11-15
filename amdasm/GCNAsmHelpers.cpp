@@ -953,6 +953,93 @@ bool GCNAsmUtils::parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& o
     }
 }
 
+bool GCNAsmUtils::parseSMRDImm(Assembler& asmr, const char*& linePtr, uint32_t& outValue,
+            std::unique_ptr<AsmExpression>* outTargetExpr, bool &litimm)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    if (outTargetExpr!=nullptr)
+        outTargetExpr->reset();
+    skipSpacesToEnd(linePtr, end);
+    
+    bool haveLit = false;
+    const char* oldLinePtr = linePtr;
+    if (linePtr+4<end && toLower(linePtr[0])=='l' && toLower(linePtr[1])=='i' &&
+            toLower(linePtr[2])=='t' && (isSpace(linePtr[3]) || linePtr[3]=='('))
+    {
+        // lit() - force encoding as literal
+        linePtr+=3;
+        skipSpacesToEnd(linePtr, end);
+        
+        // space between lit and (
+        if (linePtr!=end && *linePtr=='(')
+        {
+            linePtr++;
+            skipSpacesToEnd(linePtr, end);
+            haveLit = true;
+        }
+        else // back to expression start
+            linePtr = oldLinePtr;
+    }
+    
+    uint64_t value;
+    const char* exprPlace = linePtr;
+    // if fast expression
+    if (AsmExpression::fastExprEvaluate(asmr, linePtr, value))
+    {
+        asmr.printWarningForRange(32, value,
+                        asmr.getSourcePos(exprPlace), WS_BOTH);
+        outValue = value & ((1ULL<<32)-1ULL);
+        if (haveLit)
+        {
+            if (linePtr==end || *linePtr!=')')
+                ASM_FAIL_BY_ERROR(linePtr, "Expected ')' after expression at 'lit'")
+            else // skip end of lit
+                linePtr++;
+        }
+        litimm = haveLit || (outValue >= 0x100);
+        return true;
+    }
+    
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr));
+    if (expr==nullptr) // error
+        return false;
+    if (expr->isEmpty())
+        ASM_FAIL_BY_ERROR(exprPlace, "Expected expression")
+    if (expr->getSymOccursNum()==0)
+    {
+        // resolved now
+        cxuint sectionId; // for getting
+        if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
+            return false;
+        else if (sectionId != ASMSECT_ABS)
+            // if not absolute value
+            ASM_FAIL_BY_ERROR(exprPlace, "Expression must be absolute!")
+        
+        asmr.printWarningForRange(32, value,
+                        asmr.getSourcePos(exprPlace), WS_BOTH);
+        outValue = value & ((1ULL<<32)-1ULL);
+    }
+    else
+    {
+        // return output expression with symbols to resolve
+        if (outTargetExpr!=nullptr)
+            *outTargetExpr = std::move(expr);
+        else
+            ASM_FAIL_BY_ERROR(exprPlace, "Unresolved expression is illegal in this place")
+    }
+    litimm = haveLit || (outValue >= 0x100);
+    // end of 'lit('
+    if (haveLit)
+    {
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr==end || *linePtr!=')')
+            ASM_FAIL_BY_ERROR(linePtr, "Expected ')' after expression at 'lit'")
+        else // skip end of lit
+            linePtr++;
+    }
+    return true;
+}
+
 enum FloatLitType
 {
     FLTT_F16,
