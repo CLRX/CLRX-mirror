@@ -909,14 +909,14 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 {
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
-    if (gcnEncSize==GCNEncSize::BIT64)
+    if (gcnEncSize==GCNEncSize::BIT64 && (arch & ARCH_HD7X00) != 0)
         ASM_FAIL_BY_ERROR(instrPlace, "Only 32-bit size for SMRD encoding")
     GCNAssembler* gcnAsm = static_cast<GCNAssembler*>(asmr.isaAssembler);
     
     RegRange dstReg(0, 0);
     RegRange sbaseReg(0, 0);
     RegRange soffsetReg(0, 0);
-    cxbyte soffsetVal = 0;
+    uint32_t soffsetVal = 0;
     std::unique_ptr<AsmExpression> soffsetExpr;
     const GCNInsnMode mode1 = (gcnInsn.mode & GCN_MASK1);
     if (mode1 == GCN_SMRD_ONLYDST)
@@ -960,7 +960,7 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             // parse immediate
             soffsetReg.start = 255; // indicate an immediate
-            good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr, 0, WS_UNSIGNED);
+            good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr, 8, WS_UNSIGNED);
         }
     }
     /// if errors
@@ -973,6 +973,10 @@ bool GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     gcnAsm->instrRVUs[0].rend,
                     cxbyte(gcnAsm->instrRVUs[0].rend - gcnAsm->instrRVUs[0].rstart),
                     GCNDELOP_SMEMOP, GCNDELOP_NONE, gcnAsm->instrRVUs[0].rwFlags };
+    
+    const cxuint wordsNum = 1;
+    if (!checkGCNEncodingSize(asmr, instrPlace, gcnEncSize, wordsNum))
+        return false;
     
     if (soffsetExpr!=nullptr)
         soffsetExpr->setTarget(AsmExprTarget(GCNTGT_SMRDOFFSET, asmr.currentSection,

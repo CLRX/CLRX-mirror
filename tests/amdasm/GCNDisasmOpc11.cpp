@@ -2984,6 +2984,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
     { 0xbf990029U, 0, false, "        s_cbranch_cdbgsys_or_user .L168_0\n" },
     { 0xbf9a0029U, 0, false, "        s_cbranch_cdbgsys_and_user .L168_0\n" },
     /* SMRD encoding */
+    { 0xc219baffU, 0x13314, true, "        s_buffer_load_dword s51, s[58:61], 0x13314\n" },
+    { 0xc219baffU, 0xfd, true, "        s_buffer_load_dword s51, s[58:61], lit(253)\n" },
+    { 0xc219bbffU, 0, false, "        s_buffer_load_dword s51, s[58:61], 0xff\n" },
     { 0xc77ff023U, 0, false, "        s_dcache_inv_vol "
                 "sdst=0x7f sbase=0x38 offset=0x23\n" },
     /* VOP2 encoding (is in GCN1.1???) */

@@ -112,7 +112,8 @@ static void decodeGCNVRegOperand(cxuint op, cxuint vregNum, char*& bufPtr)
 /* parameters: dasm - disassembler, codePos - code position for relocation,
  * relocIter, optional - if literal is optional (can be replaced by inline constant) */
 void GCNDisasmUtils::printLiteral(GCNDisassembler& dasm, size_t codePos,
-          RelocIter& relocIter, uint32_t literal, FloatLitType floatLit, bool optional)
+          RelocIter& relocIter, uint32_t literal, FloatLitType floatLit, bool optional,
+          bool useSMRDLit)
 {
     // if with relocation, just write
     if (dasm.writeRelocation(dasm.startOffset + (codePos<<2)-4, relocIter))
@@ -120,7 +121,9 @@ void GCNDisasmUtils::printLiteral(GCNDisassembler& dasm, size_t codePos,
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(50);
     char* bufPtr = bufStart;
-    if (optional && (int32_t(literal)<=64 && int32_t(literal)>=-16)) // use lit(...)
+    if ((useSMRDLit && optional && literal <= 0xff) ||
+        (!useSMRDLit && optional && (int32_t(literal)<=64 && int32_t(literal)>=-16)))
+        // use lit(...)
     {
         // use lit() to force correct encoding (avoid constants)
         putChars(bufPtr, "lit(", 4);
@@ -340,13 +343,13 @@ void GCNDisasmUtils::decodeGCNOperandNoLit(GCNDisassembler& dasm, cxuint op,
 
 char* GCNDisasmUtils::decodeGCNOperand(GCNDisassembler& dasm, size_t codePos,
               RelocIter& relocIter, cxuint op, cxuint regNum, GPUArchMask arch,
-              uint32_t literal, FloatLitType floatLit)
+              uint32_t literal, FloatLitType floatLit, bool useLit)
 {
     FastOutputBuffer& output = dasm.output;
     if (op == 255)
     {
         // if literal
-        printLiteral(dasm, codePos, relocIter, literal, floatLit, true);
+        printLiteral(dasm, codePos, relocIter, literal, floatLit, true, useLit);
         return output.reserve(100);
     }
     char* bufStart = output.reserve(50);
@@ -750,8 +753,10 @@ void GCNDisasmUtils::decodeSOPKEncoding(GCNDisassembler& dasm, size_t codePos,
     output.forward(bufPtr-bufStart);
 }
 
-void GCNDisasmUtils::decodeSMRDEncoding(GCNDisassembler& dasm, cxuint spacesToAdd,
-             GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode)
+void GCNDisasmUtils::decodeSMRDEncoding(GCNDisassembler& dasm,
+             size_t codePos, RelocIter& relocIter, cxuint spacesToAdd,
+             GPUArchMask arch, const GCNInstruction& gcnInsn, uint32_t insnCode,
+             uint32_t literal)
 {
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(100);
@@ -784,7 +789,16 @@ void GCNDisasmUtils::decodeSMRDEncoding(GCNDisassembler& dasm, cxuint spacesToAd
         if (insnCode&0x100) // immediate value
             bufPtr += itocstrCStyle(insnCode&0xff, bufPtr, 11, 16);
         else // S register
-            decodeGCNOperandNoLit(dasm, insnCode&0xff, 1, bufPtr, arch);
+        {
+            if ((arch & ARCH_RX2X0)==0) // if GCN 1.0
+                decodeGCNOperandNoLit(dasm, insnCode&0xff, 1, bufPtr, arch);
+            else
+            {   // if GCN1.1
+                output.forward(bufPtr-bufStart);
+                bufPtr = bufStart = decodeGCNOperand(dasm, codePos, relocIter,
+                            insnCode&0xff, 1, arch, literal, FLTLIT_NONE, true);
+            }
+        }
         // set what is printed
         useDst = true;
         useOthers = true;

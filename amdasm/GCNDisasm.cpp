@@ -394,6 +394,8 @@ void GCNDisassembler::analyzeBeforeDisassemble()
                     else if (gcnSize15Table[encPart])
                         pos++;
                 }
+                else if (isGCN11 && encPart==0 && (insnCode&0x1ff)==0xff)
+                    pos++;
                 else if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
                     (isGCN12 && gcnSize12Table[encPart]))
                     pos++;
@@ -751,6 +753,11 @@ void GCNDisassembler::disassemble()
                             insnCode3 = ULEV(codeWords[pos++]);
                     }
                 }
+                else if (isGCN11 && encPart==0 && (insnCode&0x1ff)==0xff)
+                {
+                    if (pos < codeWordsNum)
+                        insnCode2 = ULEV(codeWords[pos++]);
+                }
                 else if ((!isGCN124 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
                     (isGCN124 && gcnSize12Table[encPart]))
                 {
@@ -1053,8 +1060,8 @@ void GCNDisassembler::disassemble()
                         GCNDisasmUtils::decodeSMEMEncoding(*this, spacesToAdd, curArchMask,
                                   *gcnInsn, insnCode, insnCode2);
                     else
-                        GCNDisasmUtils::decodeSMRDEncoding(*this, spacesToAdd, curArchMask,
-                                  *gcnInsn, insnCode);
+                        GCNDisasmUtils::decodeSMRDEncoding(*this, pos, curReloc,
+                                spacesToAdd, curArchMask, *gcnInsn, insnCode, insnCode2);
                     break;
                 case GCNENC_VOPC:
                     GCNDisasmUtils::decodeVOPCEncoding(*this, pos, curReloc, spacesToAdd,

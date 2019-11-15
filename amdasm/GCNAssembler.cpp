@@ -735,6 +735,8 @@ size_t GCNAssembler::getInstructionSize(size_t codeSize, const cxbyte* code) con
                 else if (gcnSize15Table[encPart])
                     words++;
             }
+            else if (isGCN11 && encPart==0 && (insnCode&0x1ff)==0xff)
+                words++;
             else if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
                 (isGCN12 && gcnSize12Table[encPart]))
                 words++;

@@ -1779,6 +1779,10 @@ static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* cod
                             pos++;
                     }
                 }
+                else if (isGCN11 && encPart==0 && (insnCode&0x1ff)==0xff)
+                {
+                    if (pos < codeWordsNum) pos++;
+                }
                 else if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
                     (isGCN12 && gcnSize12Table[encPart]))
                 {
