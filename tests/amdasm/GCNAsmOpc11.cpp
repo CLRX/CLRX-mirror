@@ -3001,6 +3001,8 @@ const GCNAsmOpcodeCase encGCN11OpcodeCases[] =
     { "xxx: s_cbranch_cdbgsys_or_user xxx+16", 0xbf990003U, 0, false, true, "" },
     { "xxx: s_cbranch_cdbgsys_and_user xxx+16", 0xbf9a0003U, 0, false, true, "" },
     /* SMRD */
+    { "        s_buffer_load_dword_e32 s51, s[60:63], 0x13\n",
+        0xc219bd13U, 0, false, true, "" },
     { "        s_buffer_load_dword s51, s[60:63], 0x13\n",
         0xc219bd13U, 0, false, true, "" },
     { "zyy=67; s_buffer_load_dword s51, s[60:63], zyy\n",
@@ -3008,6 +3010,8 @@ const GCNAsmOpcodeCase encGCN11OpcodeCases[] =
     { "s_buffer_load_dword s51, s[60:63], ulol; ulol=89\n",
         0xc219bd59U, 0, false, true, "" },
     { "        s_buffer_load_dword s51, s[60:63], 0x13314\n",
+        0xc219bcffU, 0x13314, true, true, "" },
+    { "        s_buffer_load_dword_e64 s51, s[60:63], 0x13314\n",
         0xc219bcffU, 0x13314, true, true, "" },
     { "zx=0x62135; s_buffer_load_dword s51, s[60:63], zx\n",
         0xc219bcffU, 0x62135, true, true, "" },
