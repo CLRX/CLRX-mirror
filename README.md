@@ -6,6 +6,9 @@ Original site is here [https://clrx.nativeboinc.org](https://clrx.nativeboinc.or
 [http://clrx.nativeboinc.org](http://clrx.nativeboinc.org)
 if SSL certificate doesn't work.
 
+**DONATION**: If you want to donate this project just send Bitcoins to following address:
+3M6z45UGXgimFs3QGQgbmqVZzK9s3RnfLL
+
 CLRadeonExtender provides tools to develop software in low-level for the Radeon GPU's
 compatible with GCN 1.0/1.1/1.2/1.4 (AMD VEGA) architecture. Since version 0.1.8 also AMD VEGA
 Deep Learning extensions has been supported.
