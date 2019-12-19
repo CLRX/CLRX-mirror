@@ -435,6 +435,8 @@
             <keyword>buffer_atomic_umin_x2</keyword>
             <keyword>buffer_atomic_xor</keyword>
             <keyword>buffer_atomic_xor_x2</keyword>
+            <keyword>buffer_gl0_inv</keyword>
+            <keyword>buffer_gl1_inv</keyword>
             <keyword>buffer_load_dword</keyword>
             <keyword>buffer_load_dwordx2</keyword>
             <keyword>buffer_load_dwordx3</keyword>
@@ -697,6 +699,12 @@
             <keyword>global_atomic_cmpswap_x2</keyword>
             <keyword>global_atomic_dec</keyword>
             <keyword>global_atomic_dec_x2</keyword>
+            <keyword>global_atomic_fcmpswap</keyword>
+            <keyword>global_atomic_fcmpswap_x2</keyword>
+            <keyword>global_atomic_fmax</keyword>
+            <keyword>global_atomic_fmax_x2</keyword>
+            <keyword>global_atomic_fmin</keyword>
+            <keyword>global_atomic_fmin_x2</keyword>
             <keyword>global_atomic_inc</keyword>
             <keyword>global_atomic_inc_x2</keyword>
             <keyword>global_atomic_or</keyword>
@@ -841,12 +849,17 @@
             <keyword>s_addk_i32</keyword>
             <keyword>s_and_b32</keyword>
             <keyword>s_and_b64</keyword>
+            <keyword>s_and_saveexec_b32</keyword>
             <keyword>s_and_saveexec_b64</keyword>
+            <keyword>s_andn1_saveexec_b32</keyword>
             <keyword>s_andn1_saveexec_b64</keyword>
+            <keyword>s_andn1_wrexec_b32</keyword>
             <keyword>s_andn1_wrexec_b64</keyword>
             <keyword>s_andn2_b32</keyword>
             <keyword>s_andn2_b64</keyword>
+            <keyword>s_andn2_saveexec_b32</keyword>
             <keyword>s_andn2_saveexec_b64</keyword>
+            <keyword>s_andn2_wrexec_b32</keyword>
             <keyword>s_andn2_wrexec_b64</keyword>
             <keyword>s_ashr_i32</keyword>
             <keyword>s_ashr_i64</keyword>
@@ -949,6 +962,7 @@
             <keyword>s_cbranch_scc1</keyword>
             <keyword>s_cbranch_vccnz</keyword>
             <keyword>s_cbranch_vccz</keyword>
+            <keyword>s_clause</keyword>
             <keyword>s_cmov_b32</keyword>
             <keyword>s_cmov_b64</keyword>
             <keyword>s_cmovk_i32</keyword>
@@ -979,6 +993,7 @@
             <keyword>s_cmpk_lg_u32</keyword>
             <keyword>s_cmpk_lt_i32</keyword>
             <keyword>s_cmpk_lt_u32</keyword>
+            <keyword>s_code_end</keyword>
             <keyword>s_cselect_b32</keyword>
             <keyword>s_cselect_b64</keyword>
             <keyword>s_dcache_discard</keyword>
@@ -988,6 +1003,7 @@
             <keyword>s_dcache_wb</keyword>
             <keyword>s_dcache_wb_vol</keyword>
             <keyword>s_decperflevel</keyword>
+            <keyword>s_denorm_mode</keyword>
             <keyword>s_endpgm</keyword>
             <keyword>s_endpgm_ordered_ps_done</keyword>
             <keyword>s_endpgm_saved</keyword>
@@ -999,11 +1015,14 @@
             <keyword>s_flbit_i32_b32</keyword>
             <keyword>s_flbit_i32_b64</keyword>
             <keyword>s_flbit_i32_i64</keyword>
+            <keyword>s_get_waveid_in_workgroup</keyword>
             <keyword>s_getpc_b64</keyword>
             <keyword>s_getreg_b32</keyword>
             <keyword>s_getreg_regrd_b32</keyword>
+            <keyword>s_gl1_inv</keyword>
             <keyword>s_icache_inv</keyword>
             <keyword>s_incperflevel</keyword>
+            <keyword>s_inst_prefetch</keyword>
             <keyword>s_load_dword</keyword>
             <keyword>s_load_dwordx16</keyword>
             <keyword>s_load_dwordx2</keyword>
@@ -1032,25 +1051,31 @@
             <keyword>s_movreld_b64</keyword>
             <keyword>s_movrels_b32</keyword>
             <keyword>s_movrels_b64</keyword>
+            <keyword>s_movrelsd_2_b32</keyword>
             <keyword>s_mul_hi_i32</keyword>
             <keyword>s_mul_hi_u32</keyword>
             <keyword>s_mul_i32</keyword>
             <keyword>s_mulk_i32</keyword>
             <keyword>s_nand_b32</keyword>
             <keyword>s_nand_b64</keyword>
+            <keyword>s_nand_saveexec_b32</keyword>
             <keyword>s_nand_saveexec_b64</keyword>
             <keyword>s_nop</keyword>
             <keyword>s_nor_b32</keyword>
             <keyword>s_nor_b64</keyword>
+            <keyword>s_nor_saveexec_b32</keyword>
             <keyword>s_nor_saveexec_b64</keyword>
             <keyword>s_not_b32</keyword>
             <keyword>s_not_b64</keyword>
             <keyword>s_or_b32</keyword>
             <keyword>s_or_b64</keyword>
+            <keyword>s_or_saveexec_b32</keyword>
             <keyword>s_or_saveexec_b64</keyword>
+            <keyword>s_orn1_saveexec_b32</keyword>
             <keyword>s_orn1_saveexec_b64</keyword>
             <keyword>s_orn2_b32</keyword>
             <keyword>s_orn2_b64</keyword>
+            <keyword>s_orn2_saveexec_b32</keyword>
             <keyword>s_orn2_saveexec_b64</keyword>
             <keyword>s_pack_hh_b32_b16</keyword>
             <keyword>s_pack_lh_b32_b16</keyword>
@@ -1059,6 +1084,7 @@
             <keyword>s_quadmask_b64</keyword>
             <keyword>s_rfe_b64</keyword>
             <keyword>s_rfe_restore_b64</keyword>
+            <keyword>s_round_mode</keyword>
             <keyword>s_scratch_load_dword</keyword>
             <keyword>s_scratch_load_dwordx2</keyword>
             <keyword>s_scratch_load_dwordx4</keyword>
@@ -1087,18 +1113,30 @@
             <keyword>s_sub_i32</keyword>
             <keyword>s_sub_u32</keyword>
             <keyword>s_subb_u32</keyword>
+            <keyword>s_subvector_loop_begin</keyword>
+            <keyword>s_subvector_loop_end</keyword>
             <keyword>s_swappc_b64</keyword>
             <keyword>s_trap</keyword>
             <keyword>s_ttracedata</keyword>
+            <keyword>s_ttracedata_imm</keyword>
+            <keyword>s_version</keyword>
+            <keyword>s_wait_idle</keyword>
             <keyword>s_waitcnt</keyword>
+            <keyword>s_waitcnt_decptr</keyword>
+            <keyword>s_waitcnt_expcnt</keyword>
+            <keyword>s_waitcnt_lgkmcnt</keyword>
+            <keyword>s_waitcnt_vmcnt</keyword>
+            <keyword>s_waitcnt_vscnt</keyword>
             <keyword>s_wakeup</keyword>
             <keyword>s_wqm_b32</keyword>
             <keyword>s_wqm_b64</keyword>
             <keyword>s_xnor_b32</keyword>
             <keyword>s_xnor_b64</keyword>
+            <keyword>s_xnor_saveexec_b32</keyword>
             <keyword>s_xnor_saveexec_b64</keyword>
             <keyword>s_xor_b32</keyword>
             <keyword>s_xor_b64</keyword>
+            <keyword>s_xor_saveexec_b32</keyword>
             <keyword>s_xor_saveexec_b64</keyword>
             <keyword>scratch_load_dword</keyword>
             <keyword>scratch_load_dwordx2</keyword>
@@ -1139,6 +1177,7 @@
             <keyword>tbuffer_store_format_xyz</keyword>
             <keyword>tbuffer_store_format_xyzw</keyword>
             <keyword>v_add3_u32</keyword>
+            <keyword>v_add_co_ci_u32</keyword>
             <keyword>v_add_co_u32</keyword>
             <keyword>v_add_f16</keyword>
             <keyword>v_add_f32</keyword>
@@ -1146,6 +1185,10 @@
             <keyword>v_add_i16</keyword>
             <keyword>v_add_i32</keyword>
             <keyword>v_add_lshl_u32</keyword>
+            <keyword>v_add_nc_i16</keyword>
+            <keyword>v_add_nc_i32</keyword>
+            <keyword>v_add_nc_u16</keyword>
+            <keyword>v_add_nc_u32</keyword>
             <keyword>v_add_u16</keyword>
             <keyword>v_add_u32</keyword>
             <keyword>v_addc_co_u32</keyword>
@@ -1534,7 +1577,10 @@
             <keyword>v_fma_f32</keyword>
             <keyword>v_fma_f64</keyword>
             <keyword>v_fma_legacy_f16</keyword>
+            <keyword>v_fmaak_f16</keyword>
+            <keyword>v_fmac_f16</keyword>
             <keyword>v_fmac_f32</keyword>
+            <keyword>v_fmamk_f16</keyword>
             <keyword>v_fract_f16</keyword>
             <keyword>v_fract_f32</keyword>
             <keyword>v_fract_f64</keyword>
@@ -1636,6 +1682,7 @@
             <keyword>v_mov_prsv_b32</keyword>
             <keyword>v_movreld_b32</keyword>
             <keyword>v_movrels_b32</keyword>
+            <keyword>v_movrelsd_2_b32</keyword>
             <keyword>v_movrelsd_b32</keyword>
             <keyword>v_mqsad_pk_u16_u8</keyword>
             <keyword>v_mqsad_u32_u8</keyword>
@@ -1661,11 +1708,15 @@
             <keyword>v_or_b32</keyword>
             <keyword>v_pack_b32_f16</keyword>
             <keyword>v_perm_b32</keyword>
+            <keyword>v_permlane16_b32</keyword>
+            <keyword>v_permlanex16_b32</keyword>
+            <keyword>v_pipeflush</keyword>
             <keyword>v_pk_add_f16</keyword>
             <keyword>v_pk_add_i16</keyword>
             <keyword>v_pk_add_u16</keyword>
             <keyword>v_pk_ashrrev_i16</keyword>
             <keyword>v_pk_fma_f16</keyword>
+            <keyword>v_pk_fmac_f16</keyword>
             <keyword>v_pk_lshlrev_b16</keyword>
             <keyword>v_pk_lshrrev_b16</keyword>
             <keyword>v_pk_mad_i16</keyword>
@@ -1712,24 +1763,32 @@
             <keyword>v_sqrt_f16</keyword>
             <keyword>v_sqrt_f32</keyword>
             <keyword>v_sqrt_f64</keyword>
+            <keyword>v_sub_co_ci_u32</keyword>
             <keyword>v_sub_co_u32</keyword>
             <keyword>v_sub_f16</keyword>
             <keyword>v_sub_f32</keyword>
             <keyword>v_sub_i16</keyword>
             <keyword>v_sub_i32</keyword>
+            <keyword>v_sub_nc_i16</keyword>
+            <keyword>v_sub_nc_i32</keyword>
+            <keyword>v_sub_nc_u16</keyword>
+            <keyword>v_sub_nc_u32</keyword>
             <keyword>v_sub_u16</keyword>
             <keyword>v_sub_u32</keyword>
             <keyword>v_subb_co_u32</keyword>
             <keyword>v_subb_u32</keyword>
             <keyword>v_subbrev_co_u32</keyword>
             <keyword>v_subbrev_u32</keyword>
+            <keyword>v_subrev_co_ci_u32</keyword>
             <keyword>v_subrev_co_u32</keyword>
             <keyword>v_subrev_f16</keyword>
             <keyword>v_subrev_f32</keyword>
             <keyword>v_subrev_i32</keyword>
+            <keyword>v_subrev_nc_u32</keyword>
             <keyword>v_subrev_u16</keyword>
             <keyword>v_subrev_u32</keyword>
             <keyword>v_swap_b32</keyword>
+            <keyword>v_swaprel_b32</keyword>
             <keyword>v_trig_preop_f64</keyword>
             <keyword>v_trunc_f16</keyword>
             <keyword>v_trunc_f32</keyword>
@@ -1738,6 +1797,7 @@
             <keyword>v_writelane_regwr_b32</keyword>
             <keyword>v_xad_u32</keyword>
             <keyword>v_xnor_b32</keyword>
+            <keyword>v_xor3_b32</keyword>
             <keyword>v_xor_b32</keyword>
         </context>
         
