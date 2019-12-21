@@ -713,7 +713,8 @@ static const ROCmMsgPackMDTestCase rocmMsgPackMDTestCases[] =
             }
         },
         {
-            { BINGEN_NOTSUPPLIED, BINGEN_NOTSUPPLIED, 0, 0, 0, { }, 0, 0, 0, 0, { } }
+            { ULEV(BINGEN_NOTSUPPLIED), ULEV(BINGEN_NOTSUPPLIED),
+                0, 0, 0, { }, 0, 0, 0, 0, { } }
         },
         sizeof(rocmMsgPackInput0), rocmMsgPackInput0,
         true, ""
@@ -754,7 +755,7 @@ static const ROCmMsgPackMDTestCase rocmMsgPackMDTestCases[] =
             }
         },
         {
-            { 231, 5422, 0, 0, 0, { }, 0, 0, 0, 0, { } }
+            { ULEV(231), ULEV(5422), 0, 0, 0, { }, 0, 0, 0, 0, { } }
         },
         sizeof(rocmMsgPackInput1), rocmMsgPackInput1,
         true, ""
