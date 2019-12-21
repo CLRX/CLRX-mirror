@@ -210,7 +210,7 @@ static void dumpKernelDescriptor(std::ostream& output, cxuint maxSgprsNum,
                        kernelCodeEntryOffset);
     output.write(buf, bufSize);
     
-    const uint16_t sgprFlags = ULEV(initialKernelExecState);
+    const uint16_t sgprFlags = initialKernelExecState;
     // print SGPRregister flags (features)
     if ((sgprFlags&ROCMFLAG_USE_PRIVATE_SEGMENT_BUFFER) != 0)
         output.write("        .use_private_segment_buffer\n", 36);
