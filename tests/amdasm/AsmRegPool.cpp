@@ -671,9 +671,9 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
             {
                 const ROCmKernelMetadata& kmd = input->metadataInfo.kernels[i];
                 assertValue(testName, caseName+"sgprsNum", regPool.sgprsNum,
-                            cxuint(ULEV(kmd.sgprsNum)));
+                            cxuint(kmd.sgprsNum));
                 assertValue(testName, caseName+"vgprsNum", regPool.vgprsNum,
-                            cxuint(ULEV(kmd.vgprsNum)));
+                            cxuint(kmd.vgprsNum));
             }
             const AsmKcodeHandler::KernelBase& kcbase = handler->getKernelBase(i);
             assertValue(testName, caseName+"codeFlags", regPool.codeFlags,
