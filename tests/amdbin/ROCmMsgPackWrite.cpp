@@ -755,7 +755,7 @@ static const ROCmMsgPackMDTestCase rocmMsgPackMDTestCases[] =
             }
         },
         {
-            { ULEV(231), ULEV(5422), 0, 0, 0, { }, 0, 0, 0, 0, { } }
+            { ULEV(uint32_t(231)), ULEV(uint32_t(5422)), 0, 0, 0, { }, 0, 0, 0, 0, { } }
         },
         sizeof(rocmMsgPackInput1), rocmMsgPackInput1,
         true, ""
