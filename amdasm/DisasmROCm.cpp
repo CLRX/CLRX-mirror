@@ -691,7 +691,7 @@ void CLRX::disassembleAMDHSACode(std::ostream& output,
                     if (kdesc!=nullptr)
                     {
                         Flags flags = isaDisassembler->getFlags() & ~DISASM_WAVE32;
-                        if (kdesc->initialKernelExecState & ROCMFLAG_USE_WAVE32)
+                        if (ULEV(kdesc->initialKernelExecState) & ROCMFLAG_USE_WAVE32)
                             flags |= DISASM_WAVE32;
                         isaDisassembler->setFlags(flags);
                     }
