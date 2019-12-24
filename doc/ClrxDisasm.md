@@ -84,14 +84,14 @@ Baffin, Bonaire, CapeVerde, Carrizo, Dummy, Ellesmere, Fiji, GFX700, GFX701, GFX
 GFX802, GFX803, GFX804, GFX900, GFX901, GFX902, GFX903, GFX904, GFX905, GFX906, GFX907,
 Goose, Hainan, Hawaii, Horse, Iceland, Kalindi, Mullins, Oland, Pitcairn, Polaris10,
 Polaris11, Polaris12, Polaris20, Polaris21, Polaris22, Raven, Spectre, Spooky, Stoney,
-Tahiti, Tonga, Topaz, Vega10, Vega11, Vega12 and Vega20.
+Tahiti, Tonga, Topaz, Vega10, Vega11, Vega12, Vega20, GFX1000, GFX1010, GFX1011, Navi10.
 
 * **-A ARCH**, **--arch=ARCH**
 
     Choose device architecture. Architecture name is case-insensitive.
 List of supported architectures:
-SI, VI, CI, VEGA, VEGA20, GFX6, GFX7, GFX8, GFX9, GFX906, GCN1.0, GCN1.1, GCN1.2,
-GCN1.4 and GCN1.4.1.
+SI, VI, CI, VEGA, VEGA20, Navi, NaviDL, GFX6, GFX7, GFX8, GFX9, GFX906, GFX10, GFX1011,
+GCN1.0, GCN1.1, GCN1.2, GCN1.4, GCN1.4.1, GCN1.5, GCN1.5.1.
 
 * **-t VERSION**, **--driverVersion=VERSION**
 
