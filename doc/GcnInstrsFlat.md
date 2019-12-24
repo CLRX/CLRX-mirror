@@ -48,12 +48,20 @@ SEG | Prefix  | Description
  2  | GLOBAL  | GLOBAL instruction (only for global memory access)
 
 Instruction syntax: INSTRUCTION VDST, VADDR(2) [MODIFIERS]  
-Instruction syntax: INSTRUCTION VADDR(2), VDATA [MODIFIERS]
+Instruction syntax: INSTRUCTION VADDR(2), VDATA [MODIFIERS]__
 
 GLOBAL instruction syntax: INSTRUCTION VDST, VADDR(2), SADDR(2)|OFF [MODIFIERS]  
 GLOBAL instruction syntax: INSTRUCTION VADDR(1:2), VDATA, SADDR(2)|OFF [MODIFIERS]  
 SCRATCH instruction syntax: INSTRUCTION VDST, VADDR(2), SADDR|OFF [MODIFIERS]  
 SCRATCH instruction syntax: INSTRUCTION VADDR, VDATA, SADDR|OFF [MODIFIERS]
+
+For atomic operations assembler accepts following instruction syntax:
+
+INSTRUCTION VDST(X), VADDR(X), VDATA(X)  
+
+and if instruction does not have GLC flag:
+
+INSTRUCTION VADDR(X), VDATA(X)  
 
 Modifiers can be supplied in any order. Modifiers list: SLC, GLC, TFE,
 LDS, NV, INST_OFFSET:OFFSET. The TFE flag requires additional the VDATA register.
