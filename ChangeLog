@@ -5,7 +5,7 @@ CLRadeonExtender 0.1.9:
 
 * add AMD Navi support for assembler and disassembler
 * add shorter addressing of FLAT/GLOBAL/SCRATCH
-* add literal immediate for SMRD addressing
+* add literal immediate for SMRD addressing for GCN1.1
 * add Amd3 OpenCL binary format for AMD Navi for AMD OpenCL implementation
 * include specific extension in device name for ROCm-OpenCL platform
 
