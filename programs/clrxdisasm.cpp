@@ -93,13 +93,20 @@ try
              (cli.hasShortOption('L')?DISASM_HSALAYOUT:0) |
              (cli.hasShortOption('3')?DISASM_WAVE32:0);
     
+    bool hasGPUDeviceType = false;
     GPUDeviceType gpuDeviceType = GPUDeviceType::CAPE_VERDE;
     const bool fromRawCode = cli.hasShortOption('r');
     if (cli.hasShortOption('g'))
+    {
         gpuDeviceType = getGPUDeviceTypeFromName(cli.getShortOptArg<const char*>('g'));
+        hasGPUDeviceType = true;
+    }
     else if (cli.hasShortOption('A'))
+    {
         gpuDeviceType = getLowestGPUDeviceTypeFromArchitecture(
                     getGPUArchitectureFromName(cli.getShortOptArg<const char*>('A')));
+        hasGPUDeviceType = true;
+    }
     
     cxuint driverVersion = 0;
     if (cli.hasShortOption('t'))
@@ -184,7 +191,8 @@ try
                 {
                     // ROCm binary
                     ROCmBinary rocmBin(binaryData.size(), binaryData.data(), 0);
-                    Disassembler disasm(rocmBin, std::cout, disasmFlags);
+                    Disassembler disasm(rocmBin, std::cout, hasGPUDeviceType, gpuDeviceType,
+                                        disasmFlags);
                     disasm.disassemble();
                 }
                 else

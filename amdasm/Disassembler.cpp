@@ -328,6 +328,22 @@ Disassembler::Disassembler(const ROCmBinary& binary, std::ostream& _output, Flag
     rocmInput = getROCmDisasmInputFromBinary(binary);
 }
 
+Disassembler::Disassembler(const ROCmBinary& binary, std::ostream& _output,
+                bool hasGPUDeviceType, GPUDeviceType deviceType, Flags _flags)
+         : fromBinary(true), binaryFormat(BinaryFormat::ROCM),
+           rocmInput(nullptr), output(_output), flags(_flags), sectionCount(0)
+{
+    isaDisassembler.reset(new GCNDisassembler(*this));
+    ROCmDisasmInput* _rocmInput = getROCmDisasmInputFromBinary(binary);
+    if (hasGPUDeviceType && _rocmInput->llvm10BinFormat)
+    {
+        _rocmInput->deviceType = deviceType;
+        _rocmInput->archMinor = 0;
+        _rocmInput->archStepping = 0;
+    }
+    rocmInput = _rocmInput;
+}
+
 Disassembler::Disassembler(const AmdDisasmInput* disasmInput, std::ostream& _output,
             Flags _flags) : fromBinary(false), binaryFormat(BinaryFormat::AMD),
             amdInput(disasmInput), output(_output), flags(_flags), sectionCount(0)

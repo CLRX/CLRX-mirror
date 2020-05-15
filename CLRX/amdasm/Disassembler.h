@@ -432,6 +432,14 @@ public:
      * \param flags flags for disassembler
      */
     Disassembler(const ROCmBinary& binary, std::ostream& output, Flags flags = 0);
+    /// constructor for ROCm GPU binary 2
+    /**
+     * \param binary main GPU binary
+     * \param output output stream
+     * \param flags flags for disassembler
+     */
+    Disassembler(const ROCmBinary& binary, std::ostream& output, bool hasGPUDeviceType,
+                 GPUDeviceType deviceType, Flags flags = 0);
     /// constructor for AMD disassembler input
     /**
      * \param disasmInput disassembler input object
@@ -507,6 +515,10 @@ public:
     /// get disassembler input
     const GalliumDisasmInput* getGalliumInput() const
     { return galliumInput; }
+    
+    /// get disassembler input
+    const ROCmDisasmInput* getROCmInput() const
+    { return rocmInput; }
     
     /// get output stream
     const std::ostream& getOutput() const
