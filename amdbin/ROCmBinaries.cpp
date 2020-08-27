@@ -125,7 +125,7 @@ ROCmBinary::ROCmBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creation
             if (symNameLen > 3 && symName[symNameLen-3]=='.' &&
                 symName[symNameLen-2]=='k' && symName[symNameLen-1]=='d')
                 tmpKernelDescs.push_back({ CString(symName, symName+symNameLen-3),
-                            ULEV(size_t(sym.st_value)) });
+                            size_t(ULEV(sym.st_value)) });
         }
     }
     if (llvm10BinFormat)
