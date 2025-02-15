@@ -285,7 +285,7 @@ SCC = SDST!=0
 
 Opcode: 36 (0x24) for GCN 1.0/1.1; 34 (0x22) for GCN 1.2  
 Syntax: S_BFM_B32 SDST, SSRC0, SSRC1  
-Description: Make 32-bit bitmask from (SSRC1 & 31) bit that have length (SSRC0 & 31) and
+Description: Make 32-bit bitmask from (SSRC1 & 31) bit that has length (SSRC0 & 31) and
 store it to SDST. SCC not touched.  
 Operation:  
 ```
@@ -296,7 +296,7 @@ SDST = ((1U << (SSRC0&31))-1) << (SSRC1&31)
 
 Opcode: 37 (0x25) for GCN 1.0/1.1; 35 (0x23) for GCN 1.2  
 Syntax: S_BFM_B64 SDST(2), SSRC0, SSRC1  
-Description: Make 64-bit bitmask from (SSRC1 & 63) bit that have length (SSRC0 & 63) and
+Description: Make 64-bit bitmask from (SSRC1 & 63) bit that has length (SSRC0 & 63) and
 store it to SDST. SCC not touched.  
 Operation:  
 ```
@@ -312,7 +312,7 @@ passed conditions. Make two masks: for passed conditions (EXEC & SSRC0),
 for failed conditions: (EXEC & ~SSRC0).
 Choose way that have smallest active threads and push data for second way to control stack 
 (EXEC mask, jump address). Control stack pointer is stored in CSP
-(3 last bits in MODE register). One entry of the stack have 4 dwords.
+(3 last bits in MODE register). One entry of the stack has 4 dwords.
 This instruction doesn't work if SSRC0 is immediate value.  
 Operation:  
 ```

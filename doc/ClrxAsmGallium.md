@@ -10,7 +10,7 @@ supports only these binaries.
 The binary format contains: kernel informations and the main binary in the ELF format.
 Main `.text` section contains all code for all kernels. Optionally,
 section `.rodata` contains constant global data for all kernels.
-Main binary have the kernel configuration (ProgInfo) in the `.AMDGPU.config` section.
+Main binary has the kernel configuration (ProgInfo) in the `.AMDGPU.config` section.
 ProgInfo holds three addresses and values that describes runtime environment for kernel:
 floating point setup, register usage, local data usage and rest.
 
@@ -603,14 +603,14 @@ It counts SGPR registers including VCC, FLAT_SCRATCH and XNACK_MASK.
 Syntax: .spilledsgprs REGNUM
 
 This pseudo-op must be inside kernel configuration (`.config`). Set number of scalar
-registers to spill in scratch buffer. It have meaning for LLVM 3.9 or later.
+registers to spill in scratch buffer. It has meaning for LLVM 3.9 or later.
 
 ### .spilledvgprs
 
 Syntax: .spilledvgprs REGNUM
 
 This pseudo-op must be inside kernel configuration (`.config`). Set number of vector
-registers to spill in scratch buffer. It have meaning for LLVM 3.9 or later. 
+registers to spill in scratch buffer. It has meaning for LLVM 3.9 or later. 
 
 ### .tgsize
 

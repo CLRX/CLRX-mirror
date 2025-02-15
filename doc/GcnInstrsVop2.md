@@ -402,7 +402,7 @@ VDST = SRC1 + BITCOUNT(SRC0)
 Opcode VOP2: 30 (0x1e) for GCN 1.0/1.1  
 Opcode VOP3A: 286 (0x11e) for GCN 1.0/1.1  
 Syntax: V_BFM_B32 VDST, SRC0, SRC1  
-Description: Make 32-bit bitmask from (SRC1 & 31) bit that have length (SRC0 & 31) and
+Description: Make 32-bit bitmask from (SRC1 & 31) bit that has length (SRC0 & 31) and
 store it to VDST.  
 Operation:  
 ```

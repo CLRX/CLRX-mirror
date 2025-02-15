@@ -80,7 +80,7 @@ passed conditions. Make two masks: for passed conditions (EXEC & SSRC0),
 for failed conditions: (EXEC & ~SSRC0).
 Choose way that have smallest active threads and push data for second way to control stack 
 (EXEC mask, jump address). Control stack pointer is stored in CSP
-(3 last bits in MODE register). One entry of the stack have 4 dwords.
+(3 last bits in MODE register). One entry of the stack has 4 dwords.
 This instruction doesn't work if SSRC0 is immediate value.  
 Operation:  
 ```

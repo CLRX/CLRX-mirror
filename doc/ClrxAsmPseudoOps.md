@@ -10,7 +10,7 @@ A CLRX assembler stores values greater than byte in the little-endian ordering.
 ### .32bit
 
 This pseudo-operation should to be at begin of source.
-Choose 32-bit binaries (it have meaningful for the AMD Catalyst and GalliumCompute
+Choose 32-bit binaries (it has meaningful for the AMD Catalyst and GalliumCompute
 binary format). For AMD Catalyst OpenCL 1.2 and 2.0 format, it determines
 bitness of address. For GalliumCompute, it determines bitness of inner ELF binary.
 For ROCm binary format, bitness is ignored.
@@ -18,7 +18,7 @@ For ROCm binary format, bitness is ignored.
 ### .64bit
 
 This pseudo-operation should to be at begin of source.
-Choose 64-bit binaries (it have meaningful for the AMD Catalyst and GalliumCompute
+Choose 64-bit binaries (it has meaningful for the AMD Catalyst and GalliumCompute
 binary format). For AMD Catalyst OpenCL 1.2 and 2.0 format, it determines
 bitness of address. For GalliumCompute, it determines bitness of inner ELF binary.
 For ROCm binary format, bitness is ignored.
@@ -696,7 +696,7 @@ macro1 Linux # define LinuxSymbol=10
 ```
 
 That substitution is useful to create labels and symbols that can not be redefined.
-Value of the argument is string. Optionally, argument can have the default value
+Value of the argument is string. Optionally, argument can has the default value
 which will be used if no argument value is not given in a macro call.
 
 List of the argument definition:
@@ -912,7 +912,7 @@ Open visbility's scope (if no name specified, then temporary scope).
 The labels (except local labels), symbols, scopes and regvars are defined
 inside scopes and visible inside them. The assembler create always global scope at begin.
 If scope doesn't exists then will be created. The nested scopes are allowed even
-if parent scope is temporary scope. The opened scope have parent that is previous scope.
+if parent scope is temporary scope. The opened scope has parent that is previous scope.
 Temporary scopes exists until first close.
 
 ### .section
@@ -1043,4 +1043,4 @@ Emit processor's word values. If any expression is empty then
 an assembler stores 0 and warns about empty expression. If expression will give a value
 that can not be stored in processor's word then an assembler warn about that.
 
-Processor's word have always 4 bytes.
+Processor's word has always 4 bytes.

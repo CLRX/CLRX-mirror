@@ -59,7 +59,7 @@ For atomic operations assembler accepts following instruction syntax:
 
 INSTRUCTION VDST(X), VADDR(X), VDATA(X)  
 
-and if instruction does not have GLC flag:
+and if instruction does not has GLC flag:
 
 INSTRUCTION VADDR(X), VDATA(X)  
 
@@ -74,7 +74,7 @@ to main memory, or LKGMCNT if accesses to LDS.
 OFFSET (INST_OFFSET modifier) can be 13-bit signed for GLOBAL_\* and SCRATCH_\*
 instructions or 12-bit unsigned for FLAT_\* instructions.
 
-For GLOBAL instruction VADDR have 2 registers if SADDR is OFF, otherwise VADDR holds
+For GLOBAL instruction VADDR has 2 registers if SADDR is OFF, otherwise VADDR holds
 32-bit offset in single VGPR register.
 
 ### Instructions by opcode

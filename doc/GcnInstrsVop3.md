@@ -447,7 +447,7 @@ VDST = (SRC0 & SRC1) | (~SRC0 & SRC2)
 
 Opcode: 659 (0x293) for GCN 1.2/1.4  
 Syntax: V_BFM_B32 VDST, SRC0, SRC1  
-Description: Make 32-bit bitmask from (SRC1 & 31) bit that have length (SRC0 & 31) and
+Description: Make 32-bit bitmask from (SRC1 & 31) bit that has length (SRC0 & 31) and
 store it to VDST.  
 Operation:  
 ```

@@ -173,7 +173,7 @@ For 32-bit and wider operations, an address are aligned to 4 bytes.
 For 16-bit operations, an address are aligned to 2 bytes.
 
 The coalescing works for STRIDE==0 on offset (hardware looks at offset), otherwise it works
-if stride<=1 or swizzle mode enabled and all offsets are equal and ELEMSIZE have same value
+if stride<=1 or swizzle mode enabled and all offsets are equal and ELEMSIZE has same value
 as size of element that can be operated by instruction. Then hardware coalesce across any
 set of contiguous indices for raw buffers. For swizzled buffers, it
 cannot coalesce across INDEXSTRIDE boundaries.

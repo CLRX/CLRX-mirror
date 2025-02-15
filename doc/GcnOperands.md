@@ -78,7 +78,7 @@ last register's number.
 
 The names of the registers are case-insensitive.
 
-The constant values are automatically resolved if an expression have already value.
+The constant values are automatically resolved if an expression has already value.
 The 1/(2*PI), 1.0, -2.0 and other floating point constant values will be
 resolved if that accurate floating point value will be given.
 

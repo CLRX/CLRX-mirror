@@ -48,7 +48,7 @@ end:  s_endpgm
 ```
 
 Special kind of the label is local labels. They can be used only locally. The identifier
-of local labels can have only digits. In contrast, local labels can to be
+of local labels can has only digits. In contrast, local labels can to be
 redefined many times.
 In source code reference can be to previous or next local label by
 adding `b` or `f` suffix.
@@ -92,7 +92,7 @@ New feature is the visibility's scopes. The scopes concerns symbols, labels
 is root of next defined scopes. The scope can be opened by using `.scope` pseudo-op and
 they can be closed by using `.ends` or `.endscope`. We distinguish scope to two types:
 normal and temporary scopes.
-The temporary scopes doesn't have name and they exists until first close.
+The temporary scopes doesn't has name and they exists until first close.
 
 If scope will be opened, any object in this scope will directly available (by simple name).
 Next available object is in used scopes (declared by `.using` pseudo-op)
@@ -297,7 +297,7 @@ Binary|   ?:     |   6   | Choice (this same as in C++)
 
 'vert-line' is `|`, and 'dbl-vert-line' is `||`.
 
-The `?:` operator have this same meanigful as in C/C++ and performed from
+The `?:` operator has this same meanigful as in C/C++ and performed from
 right to left side. 
 
 **Important note**: Comparison operators return all ones (-1) value instead 1.

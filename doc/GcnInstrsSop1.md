@@ -290,7 +290,7 @@ SDST = REVBIT(SSRC0)
 Opcode: 50 (0x32) for GCN 1.0/1.1; 46 (0x2e) for GCN 1.2/1.4  
 Syntax: S_CBRANCH_JOIN SSRC0  
 Description: Join conditional branch that begin from S_CBRANCH_*_FORK. If control stack
-pointer have same value as SSRC0 then do nothing and jump to next instruction, otherwise
+pointer has same value as SSRC0 then do nothing and jump to next instruction, otherwise
 pop from control stack program counter and EXEC value.  
 Operation:  
 ```
