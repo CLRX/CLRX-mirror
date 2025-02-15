@@ -482,7 +482,7 @@ This pseudo-op set new binary format.
 
 This pseudo-op disable section difference resolving. After disabling it, the global data
 and GOT sections are absolute addressable. This is old ROCm mode for compatibility with
-older an assembler's versions.
+older assembler's versions.
 
 ### .pgmrsrc1
 

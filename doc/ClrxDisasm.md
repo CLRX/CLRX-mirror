@@ -1,6 +1,6 @@
 ## CLRadeonExtender Disassembler
 
-The CLRadeonExtender provides a disassembler that can disassemble code
+The CLRadeonExtender provides the disassembler that can disassemble code
 for the Radeon GPU's based on the GCN 1.0/1.1/1.2/1.4 (AMD VEGA) architecture.
 Program is called `clrxdisasm`.
 
@@ -11,7 +11,7 @@ can be used as input to the CLRX assembler if option '--all' will be used.
 
 The disassembler can detect automatically binary format, bitness of the binary.
 
-### Invoking a disassembler
+### Invoking the disassembler
 
 The `clrxdisasm` can be invoked in following way:
 

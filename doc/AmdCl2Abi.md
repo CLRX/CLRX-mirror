@@ -66,7 +66,7 @@ For 32-bit AMD OpenCL 2.0 all setup arguments and pointers are 32-bit.
 
 ### Image arguments
 
-An images are passed via pointers to argument's buffer. An image pointers points to
+Images are passed via pointers to argument's buffer. The image pointers points to
 image resource and image informations. Image resources tooks 8 dwords. 8 dword hold
 information about channel data type. Following table describes data channel type value's
 and their counterpart from OpenCL:
@@ -104,7 +104,7 @@ Before looking up table, value should be masked: (value&0x1f).
 
 ### Sampler arguments
 
-A samplers are passed via pointers. A sampler pointers points to sampler resource.
+A samplers are passed via pointers. Sampler pointers points to sampler resource.
 
 ### Scratch buffer access
 

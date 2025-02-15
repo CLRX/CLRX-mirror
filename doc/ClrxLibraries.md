@@ -1,7 +1,7 @@
 ## CLRX Libraries
 
 The assembler and disassembler program are linked with CLRadeonExtender libraries.
-These libraries can be used easily to embed an assembler or a disassembler in user/developer
+These libraries can be used easily to embed the assembler or the disassembler in user/developer
 programs and libraries. CLRadeonExtender provides four libraries:
 
 * CLRXAmdAsm - main assembler and disassembler library

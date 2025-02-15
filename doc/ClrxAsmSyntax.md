@@ -73,7 +73,7 @@ zx = 10 # zx symbol
 v_xor_b32 regpool[zx+1], regpool[zx+5], regpool[zx+7]    # v_xor_b32 v27, v31, v33
 ```
 
-Additionally, an assembler accepts constant literals in symreganges like `zz=%1` or
+Additionally, the assembler accepts constant literals in symreganges like `zz=%1` or
 `xx=%0.5`. These symreganges are permitted in fields that accepts a scalar sources and
 are not permitted in a scalar destination.
 
@@ -100,10 +100,10 @@ begins from last 'using' to 'first'.
 
 The scopes are organized in tree where global scope is root of tree.
 This feature, allow to nest scopes (even named scopes inside temporary scopes).
-During searching object, an assembler begins from
+During searching object, the assembler begins from
 top (current) scope and ends at global scope. In every scope, it is possible to
 start using object from other scopes (by `.using` pseudo-op).
-While searching at scope stack level, an assembler firstly search that scope and
+While searching at scope stack level, the assembler firstly search that scope and
 if not found then search object through 'usings'.
 
 Example of using scopes:
@@ -304,7 +304,7 @@ right to left side.
 
 Symbol refering to some place can be added, subtracted, compared or negated if
 final result of the expression can be represented as place of the code or absolute value
-(without refering to any place). An assembler performs this same operations
+(without refering to any place). The assembler performs this same operations
 on the sections during evaluating an expression. Division, modulo,
 binary operations (except negation), logical operations is not legal.
 

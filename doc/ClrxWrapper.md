@@ -1,7 +1,7 @@
 ## CLRadeonExtender CLRXWrapper
 
 CLRXWrapper embeds and integrates the assembler into AMD Catalyst OpenCL implementation.
-It make possible to call an assembler from OpenCL applications. Assembler will be called
+It make possible to call the assembler from OpenCL applications. Assembler will be called
 when special build options will be added: `-xasm` or `-x asm`.
 
 ### Installation

@@ -141,9 +141,9 @@ Enable old and buggy behavior for floating point literals and constants.
 
 Syntax: .byte ABS-EXPR,....
 
-Emit byte values. If any expression is empty then an assembler stores
+Emit byte values. If any expression is empty then the assembler stores
 0 and warns about empty expression. If expression will give a value that can not be stored
-in byte then an assembler warn about that.
+in byte then the assembler warn about that.
 
 ### .data
 
@@ -154,7 +154,7 @@ Go to `.data` section. If this section doesn't exist assembler create it.
 Syntax: .double DOUBLE-VAL,...
 
 Put double-precision floating point values into current section.
-If no value between comma then an assembler stores 0 and warn about no value.
+If no value between comma then the assembler stores 0 and warn about no value.
 This pseudo-operation accepts only double precision floating point literals.
 
 ### .else
@@ -493,7 +493,7 @@ Tahiti, Tonga, Topaz, Vega10, Vega11, Vega12, Vega20, GFX1000, GFX1010, GFX1011,
 Syntax: .half HALF-VAL,...
 
 Emit half-precision floating point values.
-If no value between comma then an assembler stores 0 and warn about no value.
+If no value between comma then the assembler stores 0 and warn about no value.
 This pseudo-operation accepts only half precision floating point literals.
 
 ### .hword, .short
@@ -501,9 +501,9 @@ This pseudo-operation accepts only half precision floating point literals.
 Syntax: .hword ABS-EXPR,....
 Syntax: .short ABS-EXPR,....
 
-Emit 2-byte word values. If any expression is empty then an assembler
+Emit 2-byte word values. If any expression is empty then the assembler
 stores 0 and warns about empty expression. If expression will give a value that can not be
-stored in 2-byte word then an assembler warn about that.
+stored in 2-byte word then the assembler warn about that.
 
 ### .ifXXX
 
@@ -648,9 +648,9 @@ Rules regarding to substituting variables are same as in macro substitution. Ref
 Syntax: .int ABS-EXPR,....  
 Syntax: .long ABS-EXPR,....
 
-Emit 4-byte word values. If any expression is empty then an assembler
+Emit 4-byte word values. If any expression is empty then the assembler
 stores 0 and warns about empty expression. If expression will give a value that can not be
-stored in 4-byte word then an assembler warn about that.
+stored in 4-byte word then the assembler warn about that.
 
 ### .kernel
 
@@ -796,7 +796,7 @@ Use default 64 element wavesize.
 
 Syntax: .octa OCTA-LITERAL,...
 
-Emit 128-bit word values. If no value between comma then an assembler stores 0 and warn
+Emit 128-bit word values. If no value between comma then the assembler stores 0 and warn
 about no value. This pseudo-operation accepts only 128-bit word literals.
 
 ### .offset, .struct
@@ -852,7 +852,7 @@ Undefine macro MACRONAME.
 
 Syntax: .quad ABS-EXPR,....
 
-Emit 8-byte word values. If any expression is empty then an assembler
+Emit 8-byte word values. If any expression is empty then the assembler
 stores 0 and warns about empty expression.
 
 ### .rawcode
@@ -1040,7 +1040,7 @@ generates:
 Syntax: .word ABS-EXPR,....
 
 Emit processor's word values. If any expression is empty then
-an assembler stores 0 and warns about empty expression. If expression will give a value
-that can not be stored in processor's word then an assembler warn about that.
+the assembler stores 0 and warns about empty expression. If expression will give a value
+that can not be stored in processor's word then the assembler warn about that.
 
 Processor's word has always 4 bytes.
