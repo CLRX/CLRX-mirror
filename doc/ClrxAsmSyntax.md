@@ -37,7 +37,7 @@ it can refer to some place in binary code. Special symbol that is always defined
 refers to current place of a binary code.
 This is `.` and is called in this manual as output counter.
 Symbol names can contains alphanumeric characters, `.` and `_`. First character
-must not be a digit. This same rules concerns a labels.
+must not be a digit. This same rules concerns labels.
 
 Label is symbol that can not be redefined.
 Labels precedes statement and can occurred many times. Like that:

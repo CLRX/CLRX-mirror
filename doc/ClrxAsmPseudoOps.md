@@ -1008,7 +1008,7 @@ Set wavefront size as 32 elements (apply only for GFX10 devices).
 
 Syntax: .weak SYMBOL,...
 
-Indicates that symbols will be a weak. Currently, unused feature of the symbol by
+Indicates that symbols will be weak. Currently, unused feature of the symbol by
 the CLRX assembler.
 
 ### .while
