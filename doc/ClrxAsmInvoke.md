@@ -19,7 +19,7 @@ clrxasm [-63Swam?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
 
 ### Input
 
-An assembler read source from many files. If no input file specified an assembler
+The assembler read source from many files. If no input file specified an assembler
 will read source from standard input.
 
 ### Program options

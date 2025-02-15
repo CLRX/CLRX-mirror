@@ -21,7 +21,7 @@ OpenCL binaries and the GalliumCompute OpenCL binaries. It is compatible with GN
 and support the almost GNU assembler's pseudo-operations (directives) including macros and
 repetitions.
 
-An assembler read source from many files. If no input file specified an assembler
+The assembler read source from many files. If no input file specified an assembler
 will read source from standard input.
 
 =head1 OPTIONS

@@ -9,7 +9,7 @@ GalliumCompute kernel binaries. It displays instructions of the code and optiona
 structure of the binaries (kernels and their configuration). Output of that program
 can be used as input to the CLRX assembler if option '--all' will be used.
 
-A disassembler can detect automatically binary format, bitness of the binary.
+The disassembler can detect automatically binary format, bitness of the binary.
 
 ### Invoking a disassembler
 
