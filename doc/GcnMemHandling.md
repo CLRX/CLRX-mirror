@@ -133,11 +133,11 @@ BUFOFFSET = AOFFSET_LSB + ELEMSIZE*AINDEX_LSB + INDEXSTRIDE * (AINDEX_MSB*STRIDE
 ```
 
 The expression to calculate element size (ELEMSIZE) from ELEMSIZE field of a
-buffer resource is: 2<<ELEMSIZE. The expression to calculate index stride (INDEXSTRIDE)
-from INDEXSTRIDE field of buffer resource is: 8<<INDEXSTRIDE.
+buffer resource is: '2<<ELEMSIZE'. The expression to calculate index stride (INDEXSTRIDE)
+from INDEXSTRIDE field of buffer resource is: '8<<INDEXSTRIDE'.
 
 The 64-bit addressing can be enabled by set ADDR64 flag in instruction. In this case,
-two VADDR registers contains an address. Expression to calculate address in this case:
+two VADDR registers contain an address. Expression to calculate address in this case:
 
 ```
 ADDRESS = BASE + VGPR_ADDRESS + OFFSET + SGPR_OFFSET // 64-bit addressing
@@ -221,14 +221,14 @@ Bits   | Name       | Description
 173-185 | LASTARRAY | Last index of slice in array
 192-203 | MINLODWARN | feedback trigger for LOD
 
-The 1D images requires only width parameter.
-The 2D images requires only width and height parameters. Pitch is optional.
-The array of 1D images requires width, depth (for number of slices),
+The 1D images require only width parameter.
+The 2D images require only width and height parameters. Pitch is optional.
+The array of 1D images require width, depth (for number of slices),
 base and last array (BASEARRAY and LASTARRAY) indices for slices.
-The array of 2D images requires width, height, depth (for number of slices),
+The array of 2D images require width, height, depth (for number of slices),
 base and last array (BASEARRAY and LASTARRAY) indices for slices.
-The 3D array images requires width, height and depth.
-The 2D cubes requires width, height and base and last array indices of slices.
+The 3D array images require width, height and depth.
+The 2D cubes require width, height and base and last array indices of slices.
 The mipmaps are defined by setting base and last level (BASE_LEVEL and LAST_LEVEL).
 
 The image types list.
@@ -458,7 +458,7 @@ The linear MIP filtering get value from two nearest mipmaps to choosen LOD.
 About accuracy: Threshold of coordinates for image's sampling are 1/256 of distance
 between pixels.
 
-The sampling of the mipmaps requires normalized coordinates.
+The sampling of the mipmaps require normalized coordinates.
 
 ### Flat addressing
 

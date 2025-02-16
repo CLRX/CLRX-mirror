@@ -30,7 +30,7 @@ Instruction syntax: INSTRUCTION VDATA, VADDR, SRSRC, SSAMP [MODIFIERS]
 Modifiers can be supplied in any order. Modifiers list: SLC, GLC, TFE, LWE, DA, R128.
 The TFE flag requires additional the VDATA register.
 
-The MIMG instructions is executed in order. Any MIMG instruction increments VMCNT and
+The MIMG instructions are executed in order. Any MIMG instruction increments VMCNT and
 it decrements VMCNT after memory operation. Any memory-write operation increments EXPCNT,
 and it decrements EXPCNT after reading data from VDATA.
 

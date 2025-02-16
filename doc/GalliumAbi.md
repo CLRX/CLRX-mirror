@@ -7,7 +7,7 @@ In this chapter, size is given in dwords. Dword is 4-byte value.
 ### Argument passing
 
 Arguments are stored in memory which address is stored in s[0:1].
-Arguments begins from 9 dword. First 9 dwords are:
+Arguments begin from 9 dword. First 9 dwords are:
 
 * 0-2 - number of groups for each dimension
 * 3-5 - global size for each dimension

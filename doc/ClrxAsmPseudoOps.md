@@ -3,7 +3,7 @@
 The CLRX assembler accepts the almost pseudo-operations from GNU assembler.
 This chapter lists and explains standard pseudo-operations.
 
-A CLRX assembler stores values greater than byte in the little-endian ordering.
+The CLRX assembler stores values greater than byte in the little-endian ordering.
 
 ## List of the pseudo-operations
 
@@ -575,7 +575,7 @@ Syntax: .incbin FILENAME[, [OFFSET] [, COUNT]]
 Append the binary file into currenct section. If file not found in the current directory
 then assembler searches file in the include paths. If file not found again then assembler
 prints error. Second optional argument defines offset (how many bytes should to be skipped).
-By default assembler begin appending from first byte.
+By default assembler begins appending from first byte.
 Third argument defines maximum number bytes to append. By default all data from binary
 will be appended.
 
@@ -584,7 +584,7 @@ will be appended.
 Syntax: .include "FILENAME"
 
 Include new source code file and begins assemblying from this file.
-An assembler automatically returns to previous file if encounters end of the that file.
+The assembler automatically returns to previous file if encounters end of the that file.
 If file not found in the current directory then assembler searches file in the
 include paths. If file not found again then assembler prints error.
 
@@ -680,7 +680,7 @@ binary objects and they can be used only locally.
 Syntax: .macro MACRONAME, ARG,...  
 Syntax: .macro MACRONAME ARG ...
 
-Begin macro definition. The macro is recorded code that can be used later in source code.
+Begins macro definition. The macro is recorded code that can be used later in source code.
 Macro can accepts one or more arguments that will be substituted in its body.
 Occurrence of the argument must be preceded by `\` character.
 

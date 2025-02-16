@@ -1,6 +1,6 @@
 ## CLRadeonExtender Policy versions
 
-Because some things has been developed enough chaotically and these things will be later
+Because some things have been developed enough chaotically and these things will be later
 cleaned up, the CLRX assembler provides simple mechanism to choice what behaviour
 is needed: the policy version.
 

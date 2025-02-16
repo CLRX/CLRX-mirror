@@ -107,7 +107,7 @@ For example, instructions `v_frexp_exp_i32_f64 v3, lit(45)` and
 `v_frexp_exp_i32_f64 v3, 45` generates different results, because literal and constant
 will be have different meaning.
 
-**NOTE:** These same literals and constants gives different values for 64-bit operand in
+**NOTE:** These same literals and constants give different values for 64-bit operand in
 vector instructions. To distinguish values, please use `lit()` function.
 
 **OLD_VERSIONS**: This version of CLRadeonExtender adds '--buggyFPLit' option to support

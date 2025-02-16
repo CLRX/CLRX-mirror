@@ -91,7 +91,7 @@ Memory address bitness - bitness of the memory access.
 
 ### The kernel's call conventions (ABI)
 
-The various drivers uses various kernel's call convention. The kernel call convetion
+The various drivers use various kernel's call convention. The kernel call convetion
 encompass the kernel argument's passinhg, the kernel setup
 (global offset, work size, work group size) passing and way to pass constant data.
 We call this as ABI.

@@ -39,7 +39,7 @@ All global pointers resource descriptors stored in the UAV table begin from
 UAVID+1 id. By default UAVID=11 (or for driver older than 1384.xx UAVID=9).
 By default 10th entry is reserved for global data constant buffer.
 9th entry is reserved for printf buffer.
-First eight entries is write only image descriptors if defined.
+First eight entries are write only image descriptors if defined.
 
 Read only image descriptors stored in resource table.
 Constant buffer descriptors (0 and 1) stored in const buffer tables
@@ -62,8 +62,8 @@ First const buffer (id=0) holds:
 
 Second const buffer (id=1) holds arguments aligned to 4 dwords.
 
-Global pointers holds vector offset (64-bit for 64-bit binary) to the memory.
-Local pointers holds its offset in bytes (1 dword).
+Global pointers hold vector offset (64-bit for 64-bit binary) to the memory.
+Local pointers hold its offset in bytes (1 dword).
 
 ### Image arguments
 

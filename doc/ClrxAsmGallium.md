@@ -26,7 +26,7 @@ Kernel function should to be aligned to 256 byte boundary.
 
 ## Relocations
 
-A CLRX assembler handles relocations to scratch symbol (`.scratchsym` pseudo-op).
+The CLRX assembler handles relocations to scratch symbol (`.scratchsym` pseudo-op).
 These relocations can be applied to places that accepts
 32-bit literal immediates. Only two types of relocations is allowed:
 

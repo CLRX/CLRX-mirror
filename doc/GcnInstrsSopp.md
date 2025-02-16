@@ -1,6 +1,6 @@
 ## GCN ISA SOPP instructions
 
-The basic encoding of the SOPP instructions needs 4 bytes (dword). List of fields:
+The basic encoding of the SOPP instructions need 4 bytes (dword). List of fields:
 
 Bits  | Name     | Description
 ------|----------|------------------------------

@@ -12,9 +12,9 @@ GCN 1.1 and later architectures.
 An AMD Catalyst binary format for OpenCL 2.0 support significantly differs from
 prevbious binary format for OpenCL 1.2. The Kernel codes are in single text inner binary.
 Instead of AMD CAL notes and ProgInfo entries, the kernel setup is in special
-format structure. Metadatas mainly holds arguments definitions of kernels.
+format structure. Metadatas mainly hold arguments definitions of kernels.
 
-A CLRadeonExtender supports two versions of binary formats for OpenCL 2.0: newer (since 
+The CLRadeonExtender supports two versions of binary formats for OpenCL 2.0: newer (since 
 AMD OpenCL 1912.05) and older (before 1912.05 driver version).
 
 Special section to define global data for all kernels:
@@ -25,7 +25,7 @@ Special section to define global data for all kernels:
 
 ## Relocations
 
-A CLRX assembler handles relocations to symbol at global data, global rwdata and
+The CLRX assembler handles relocations to symbol at global data, global rwdata and
 global bss data in kernel code. These relocations can be applied to places that accepts
 32-bit literal immediates. Only two types of relocations is allowed:
 
@@ -47,7 +47,7 @@ s_mov_b32       s14, (gdata+160)&0xffffffff
 
 ## Layout of the source code
 
-The CLRX assembler allow to use one of two ways to configure kernel setup:
+The CLRX assembler allows to use one of two ways to configure kernel setup:
 for human (`.config`) and for quick recompilation (kernel setup, stub, metadata content).
 
 In the HSA layout mode the kernel codes in single main code section and no code section

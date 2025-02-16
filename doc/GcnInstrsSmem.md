@@ -1,6 +1,6 @@
 ## GCN ISA SMEM instructions (GCN 1.2/1.4)
 
-The encoding of the SMEM instructions needs 8 bytes (2 dwords). List of fields:
+The encoding of the SMEM instructions need 8 bytes (2 dwords). List of fields:
 
 Bits  | Name     | Description
 ------|----------|------------------------------

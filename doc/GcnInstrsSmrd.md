@@ -1,6 +1,6 @@
 ## GCN ISA SMRD instructions
 
-The basic encoding of the SMRD instructions needs 4 bytes (dword). List of fields:
+The basic encoding of the SMRD instructions need 4 bytes (dword). List of fields:
 
 Bits  | Name     | Description
 ------|----------|------------------------------

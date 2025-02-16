@@ -1,6 +1,6 @@
 ## GCN ISA SOP1 instructions
 
-The basic encoding of the SOP1 instructions needs 4 bytes (dword). List of fields:
+The basic encoding of the SOP1 instructions need 4 bytes (dword). List of fields:
 
 Bits  | Name     | Description
 ------|----------|------------------------------

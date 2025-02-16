@@ -34,7 +34,7 @@ This setup can be replaced by pseudo-ops '.sgprsnum' and '.vgprsnum'.
 
 ## Scalar register allocation
 
-An assembler for ROCm format counts all SGPR registers and add extra registers
+The assembler for ROCm format counts all SGPR registers and add extra registers
 (FLAT_SCRATCH, XNACK_MASK). Special fields determines
 what extra SGPR registers (FLAT_SCRATCH, VCC and XNACK_MASK) has been added.
 The VCC register is included by default.
@@ -43,7 +43,7 @@ The `.sgprsnum` set number of all SGPRs including VCC, FLAT_SCRATCH and XNACK_MA
 
 ## Expression with sections
 
-An assembler can calculate difference between symbols which present in one of three sections:
+The assembler can calculate difference between symbols which present in one of three sections:
 globaldata (rodata) section, code section and GOT (Global Offset Table) section.
 For example, an expression `.-globaldata1` (if globaldata is defined in global data section)
 calculates distance between current position and `globaldata1` place.

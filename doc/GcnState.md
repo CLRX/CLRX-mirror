@@ -33,7 +33,7 @@ LGKMCNT | LDS, GDS, Kmem, Message Count | 5 bits | Counts the number of LDS, GDS
 
 ### Initial vector registers
 
-First three vector registers holds local ids for each dimension.
+First three vector registers hold local ids for each dimension.
 
 ### Scalar registers layout
 

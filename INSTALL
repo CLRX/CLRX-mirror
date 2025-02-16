@@ -18,7 +18,7 @@ This package provides source code and requires:
 * Threads support (for Linux, recommended NPTL)
 * Unix-like (Linux or BSD) system or Windows system
 
-Optionally for clwrapper (an OpenCL wrapper that replaces AMD Catalyst driver
+Optionally for clwrapper (the OpenCL wrapper that replaces AMD Catalyst driver
 behaviour) requires:
 
 * libOpenCL.so or OpenCL.dll
@@ -31,9 +31,9 @@ and documentation requires:
 * markdown_py utility for CLRX Documentation
 * Doxygen for CLRX API Documentation
 
-These utilities is working with the OpenCL kernel binaries compiled for the
+These utilities are working with OpenCL kernel binaries compiled for the
 Radeon GPU's based on GCN 1.0/1.1/1.2 architecture. Any binaries compiled
-for older Radeons (VLIW architecture) has not been handled.
+for older Radeons (VLIW architecture) have not been handled.
 
 2. Compilation
 

@@ -5,7 +5,7 @@ and features.
 
 The GPU architectures differs significantly from CPU architectures. Main pressure in the GPU
 architectures is the parallelism and an efficient hiding memory latencies.
-The most CPU architectures provides an unified memory access approach. By contrast,
+The most CPU architectures provide an unified memory access approach. By contrast,
 the most GPU's have few different resource types for which access is different. Hence,
 few instruction's kinds: scalar, vector, main memory access instructions.
 

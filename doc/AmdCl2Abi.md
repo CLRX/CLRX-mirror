@@ -18,7 +18,7 @@ to user data registers.
 * useenqueue - enable enqueue mechanism support
 * usegeneric - enable generic pointers support
 
-The number of user data registers depends on set of an enabled features. Following rules will
+The number of user data registers depend on set of an enabled features. Following rules will
 be applied:
 
 * if no feature enabled only 4 user data registers will be used.
@@ -67,7 +67,7 @@ For 32-bit AMD OpenCL 2.0 all setup arguments and pointers are 32-bit.
 ### Image arguments
 
 Images are passed via pointers to argument's buffer. The image pointers points to
-image resource and image informations. Image resources tooks 8 dwords. 8 dword hold
+image resource and image informations. Image resources took 8 dwords. 8 dword hold
 information about channel data type. Following table describes data channel type value's
 and their counterpart from OpenCL:
 

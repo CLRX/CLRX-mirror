@@ -252,7 +252,7 @@ per cycle.
 
 ### DS Instruction timings
 
-Timings of DS instructions includes only execution without waiting for completing
+Timings of DS instructions include only execution without waiting for completing
 LDS/GDS memory access on a single wavefront. Throughput indicates maximal possible
 throughput that excludes any other delays and penalties.
 Timings of DS instructions are in this table:
@@ -409,7 +409,7 @@ can be not greater 1/32 requests per cycle.
  
 ### MUBUF Instruction timings
 
-Timings of MUBUF instructions includes only execution without waiting for completing
+Timings of MUBUF instructions include only execution without waiting for completing
 main memory access on a single wavefront. Additional GLCX adds X cycles to instruction
 if the instruction uses the GLC modifier. Timings of MUBUF instructions are in this table:
 
