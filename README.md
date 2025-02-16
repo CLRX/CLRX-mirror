@@ -200,4 +200,4 @@ Useful options for clrxdisasm:
 * -A ARCH - architecture ('gcn1.0', 'gcn1.1', 'gcn1.2' or 'gcn1.4')
 * -t VERSION - driver version for which a binary will be generated
 
-A CLRX assembler accepts source from disassembler.
+The CLRX assembler accepts source from disassembler.
